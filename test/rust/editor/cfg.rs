@@ -99,6 +99,30 @@ fn user_default_profile_kept_when_valid() {
 }
 
 #[test]
+fn geist_mono_by_default_user_font_kept() {
+    let (_t, kit) = kit_with("cfg-fonts", &[]);
+    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    let s = read(&kit);
+    assert_eq!(s["editor.fontFamily"], EDITOR_FONT);
+    assert_eq!(s["terminal.integrated.fontFamily"], EDITOR_FONT);
+    assert_eq!(s["editor.fontLigatures"], false);
+    assert!(EDITOR_FONT.starts_with("'Geist Mono',"));
+    assert!(EDITOR_FONT.ends_with("monospace"));
+
+    let path = settings_path(&kit);
+    fs::write(
+        &path,
+        r#"{"editor.fontFamily":"Fira Code","editor.fontLigatures":true}"#,
+    )
+    .unwrap();
+    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    let s = read(&kit);
+    assert_eq!(s["editor.fontFamily"], "Fira Code");
+    assert_eq!(s["editor.fontLigatures"], true);
+    assert_eq!(s["terminal.integrated.fontFamily"], EDITOR_FONT);
+}
+
+#[test]
 fn file_with_comments_left_alone() {
     let (_t, kit) = kit_with("cfg-comments", &[]);
     let path = settings_path(&kit);
