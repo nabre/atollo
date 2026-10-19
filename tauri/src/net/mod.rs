@@ -96,6 +96,9 @@ pub struct Cancelled;
 pub struct ByHand {
     pub url: String,
     pub file_name: String,
+    /// The checksum the file must have: also how the run knows, later, which
+    /// component a file added by hand is for (`downloads::want`).
+    pub expect: verify::Expect,
     pub cause: anyhow::Error,
 }
 
