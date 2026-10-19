@@ -64,7 +64,11 @@ pub fn stages_for(inst: &dyn Installer, component: &Component, target: Target) -
     if !inst.custom(effective) {
         return false;
     }
-    !can_execute_on_host(effective) || (component.id == "rust" && target != Target::detect())
+    // Android's sdkmanager runs with the kit's own Java, built for `target`:
+    // the x64 SDK of Windows ARM64 (emulated) still waits for that system.
+    !can_execute_on_host(effective)
+        || (component.id == "rust" && target != Target::detect())
+        || (component.id == "android" && !can_execute_on_host(target))
 }
 
 /// Returns `true` when `component`'s bootstrap has been pre-downloaded for `kit`

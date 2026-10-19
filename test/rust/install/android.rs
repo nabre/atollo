@@ -42,3 +42,77 @@ fn real_download_page() {
     let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
     assert!(tools_on_page(&net.text(STUDIO).unwrap()).is_some());
 }
+
+/// Since build 15859902 the page has one Mac zip per processor (checked on
+/// developer.android.com/studio on 19/10/2026); a page with the older single
+/// Mac zip still works.
+#[test]
+fn mac_tools_by_processor() {
+    let row = |name: &str| {
+        format!(
+            r#"<tr><td>Mac</td><td><button class="devsite-dialog-button"
+            >{name}</button></td><td>150 MB</td>
+            <td>{}</td></tr>"#,
+            "b".repeat(64)
+        )
+    };
+    let page = row("commandlinetools-mac_arm64-15859902_latest.zip")
+        + &row("commandlinetools-mac_x86_64-15859902_latest.zip")
+        + &row("commandlinetools-linux-15859902_latest.zip");
+    let pick = |target: Target, page: &str| {
+        os_tags_of(target)
+            .iter()
+            .find_map(|tag| tools_on_page_for(page, tag))
+            .map(|(name, _, _)| name)
+    };
+    assert_eq!(
+        pick(Target::DARWIN_ARM64, &page).as_deref(),
+        Some("commandlinetools-mac_arm64-15859902_latest.zip")
+    );
+    assert_eq!(
+        pick(Target::DARWIN_X64, &page).as_deref(),
+        Some("commandlinetools-mac_x86_64-15859902_latest.zip")
+    );
+    assert_eq!(
+        pick(Target::LINUX_ARM64, &page).as_deref(),
+        Some("commandlinetools-linux-15859902_latest.zip")
+    );
+    let old = row("commandlinetools-mac-13114758_latest.zip");
+    assert_eq!(
+        pick(Target::DARWIN_X64, &old).as_deref(),
+        Some("commandlinetools-mac-13114758_latest.zip")
+    );
+}
+
+/// The x64 SDK of Windows ARM64 runs emulated, but its sdkmanager needs
+/// that kit's own (ARM64) Java: from a PC that cannot run Windows ARM64 it
+/// completes on the first start there.
+#[test]
+fn android_waits_for_a_system_whose_java_cannot_run_here() {
+    let android = Catalog::get().find("android").unwrap();
+    for target in Target::ALL {
+        let staged = crate::router::bootstrap::stages_for(&Android, android, target);
+        if !crate::router::target::can_execute_on_host(target) {
+            assert!(staged, "{target}");
+        }
+        if target == Target::detect() {
+            assert!(!staged, "{target}: this PC");
+        }
+    }
+}
+
+/// The real download page has the zip of every system (`cargo test -- --ignored`).
+#[test]
+#[ignore]
+fn real_download_page_every_system() {
+    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let page = net.text(STUDIO).unwrap();
+    for target in Target::ALL {
+        assert!(
+            os_tags_of(target)
+                .iter()
+                .any(|tag| tools_on_page_for(&page, tag).is_some()),
+            "{target}"
+        );
+    }
+}
