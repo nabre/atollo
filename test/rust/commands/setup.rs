@@ -17,7 +17,11 @@ fn r_is_not_available_on_arm64() {
         );
         assert_eq!(r.unavailable_reason, None);
         let php = infos.iter().find(|c| c.id == "php").unwrap();
-        assert!(php.available && !php.no_arm64 && php.x64_only, "emulated");
+        assert!(php.available && !php.no_arm64);
+        assert_eq!(
+            php.x64_only, arm64,
+            "the «x64» mark only where it is emulated"
+        );
     }
 }
 
@@ -38,6 +42,9 @@ fn unavailable_for_the_system_is_not_arm64() {
         );
         let python = infos.iter().find(|c| c.id == "python").unwrap();
         assert_eq!(python.unavailable_reason, None);
+        // Native on macOS and Linux: no «x64» mark.
+        let php = infos.iter().find(|c| c.id == "php").unwrap();
+        assert!(!php.x64_only, "{target:?}");
     }
     let kit = Kit::at_target(tmp.0.join("arm"), Target::WIN32_ARM64);
     kit.prepare().unwrap();

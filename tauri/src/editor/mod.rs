@@ -125,7 +125,11 @@ impl Editor {
             installed: is_installed(&self.kit),
             running: alive,
             port: guard.as_ref().map(|s| s.port),
-            emulated: self.kit.arch() == crate::kit::Arch::Arm64,
+            // The x64 build only where the catalog says so (Windows ARM64):
+            // native on macOS and Linux ARM64.
+            emulated: crate::setup::catalog::Catalog::get()
+                .find("vscodium-server")
+                .is_some_and(|c| c.is_emulated_on(self.kit.target())),
             extensions: self
                 .extensions
                 .lock()
