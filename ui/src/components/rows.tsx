@@ -220,7 +220,7 @@ export function ComponentRow({
             <LinkProblems id={c.id} links={links} />
           </label>
           {c.x64Only && (
-            <span className="text-[12px] text-vsc-desc" title={t("Su PC ARM64 gira in emulazione x64")}>
+            <span className="text-[12px] text-vsc-desc" title={t("Su Windows ARM64 gira in emulazione x64")}>
               x64
             </span>
           )}

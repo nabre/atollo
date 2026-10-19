@@ -239,7 +239,7 @@ Kit preparato su Windows per un altro sistema (a ogni rilascio):
 ### Agenti
 - [ ] **Claude Code, Codex e Antigravity.** Accesso, avvio dall'app e dall'editor, allineamento di istruzioni e skill fra i tre.
 - [ ] **Console di un agente.** Home o Progetti › Agente con Claude Code: si apre la console classica di Windows, anche se il terminale predefinito del PC è Windows Terminal o un altro. Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
-- [ ] **Git con GitHub CLI.** Su un kit senza Git, all'avvio Git si installa con i componenti di sistema; in «Linguaggi e strumenti» è spuntato, non modificabile, con l'etichetta «per GitHub CLI».
+- [ ] **Git quando serve.** Su un kit senza Git, all'avvio si installano solo i componenti di sistema: GitHub CLI funziona senza Git (D-81). Scegliere Claude Code, clonare un progetto o avviare un'azione con `git` installa Git; togliere la spunta a Git toglie anche Claude Code.
 - [ ] **Editor aggiornato con una cartella aperta.** Con Esplora file aperto su `data\apps\win32-x64\vscodium-server\extensions`, l'editor di un'altra versione viene comunque sostituito all'avvio (D-60).
 
 - [ ] **Limiti d'uso.** Con l'accesso fatto in Claude Code e Codex, Agenti mostra gli stessi valori di `/usage` e `/status`, con l'ora in cui si azzerano. Senza accesso compare «accesso non fatto». Senza rete l'errore si legge e la pagina resta usabile. «Aggiorna i consumi» premuto più volte di fila non fa più di una richiesta ogni 20 s.

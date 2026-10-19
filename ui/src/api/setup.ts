@@ -118,7 +118,7 @@ export interface ComponentInfo {
   installed: boolean;
   /** Something of it is on disk, even half installed: it can be removed. */
   present: boolean;
-  /** A system component, or needed by one (Git for GitHub CLI): always installed. */
+  /** A system component, or needed by one (PowerShell 7 for the editor): always installed. */
   locked: boolean;
   version: string | null;
   /** This version of the app can install it on this kit. */
@@ -206,19 +206,18 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
     locked: true,
     version: "1.140.0",
   }),
-  sampleComponent("git", "Git", "required", "controllo di versione", 350, { ...ON, locked: true, version: "2.56.0" }),
+  sampleComponent("git", "Git", "languages", "controllo di versione", 350, { ...ON, version: "2.56.0" }),
   sampleComponent("gh", "GitHub CLI", "required", "GitHub dal terminale", 40, {
     ...ON,
     locked: true,
     version: "2.83.0",
-    needs: ["git"],
   }),
   sampleComponent("claude", "Claude Code", "agents", "agente di Anthropic", 220, {
     ...ON,
     version: "2.1.299",
-    needs: ["node"],
+    needs: ["git"],
   }),
-  sampleComponent("codex", "Codex", "agents", "agente di OpenAI", 120, { needs: ["node"] }),
+  sampleComponent("codex", "Codex", "agents", "agente di OpenAI", 120),
   sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.3.0" }),
   sampleComponent("python", "Python", "languages", "con uv", 120),
   sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
@@ -257,8 +256,8 @@ function sampleGrid(): TargetGrid {
   const targets = profiles.map(({ id, ...p }): TargetSummary => {
     const tools = SAMPLE_COMPONENTS.map((c): TargetToolStatus => {
       const apache = c.id === "apache" && p.os !== "win32";
-      const emulated = c.x64Only && p.arch === "arm64" && p.os !== "linux";
-      const available = !apache && !(c.x64Only && p.os === "linux" && p.arch === "arm64");
+      const emulated = c.x64Only && id === "win32-arm64";
+      const available = !apache;
       const here = id === "win32-x64";
       return {
         id: c.id,
