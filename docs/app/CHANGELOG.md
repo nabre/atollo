@@ -1,5 +1,11 @@
 # Novità
 
+## Arretrato delle piattaforme (19/10/2026, issue #8)
+
+- **pnpm su Windows**: rimuovendo il componente «pnpm, yarn» va via anche il corepack che aveva installato, come già su macOS e Linux.
+- **exFAT e FAT su macOS e Linux**: il README dice che lì i link diventano copie (per esempio i 142 link interni di Git) e consiglia APFS o ext4 per una chiavetta usata solo con un Mac o con Linux.
+- **Pool automatici** (D-101): la decisione ora dice che i siti senza server scelto entrano già nel pool automatico delle loro linee.
+
 ## Nuovo progetto dentro Progetti (19/10/2026)
 
 - **Il wizard è una scheda di Progetti** (D-83): «Nuovo progetto» non è più una voce della barra delle attività, si apre nell'editor accanto ai progetti e tiene scelte e avanzamento quando passi a un'altra scheda.
