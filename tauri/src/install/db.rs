@@ -813,14 +813,6 @@ pub(crate) fn sqlite_tools_for(
     Ok((c[1].to_owned(), c[2].to_owned(), c[3].to_owned()))
 }
 
-/// The other build of the SQLite tools to take when sqlite.org has none
-/// for `target`: x64 on Windows ARM64, which runs it emulated. Nowhere
-/// else: an x64 binary does not start on Linux ARM64 (no silent fallback,
-/// D-108; SQLite comes from conda-forge there).
-pub(crate) fn sqlite_fallback_arch(target: Target) -> Option<&'static str> {
-    (target == Target::WIN32_ARM64).then_some("x64")
-}
-
 /// sqlite.org publishes no command-line tools for Linux ARM64: there SQLite
 /// is conda-forge `sqlite` (D-112).
 fn sqlite_from_conda(target: Target) -> bool {
@@ -901,12 +893,9 @@ impl Installer for Sqlite {
         };
         let arch = arch_of(ctx, component);
         let page = ctx.net.text("https://sqlite.org/download.html")?;
-        let (version, path, sha3) = sqlite_tools_for(&page, os_tag, arch).or_else(|e| {
-            match sqlite_fallback_arch(target) {
-                Some(other) => sqlite_tools_for(&page, os_tag, other),
-                None => Err(e),
-            }
-        })?;
+        // The build of the kit's architecture or an error: never the x64
+        // one in its place (D-108), as the catalog says SQLite is native.
+        let (version, path, sha3) = sqlite_tools_for(&page, os_tag, arch)?;
         let name = path.rsplit('/').next().unwrap_or("sqlite.zip").to_owned();
         Ok(Release::single(
             version,
