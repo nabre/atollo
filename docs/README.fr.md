@@ -40,6 +40,19 @@ En bas de chaque page, le panneau **Activité** : ce qui tourne ou s'installe (p
 
 La console d'Atollo est la console classique de Windows avec PowerShell 7 intégré et uniquement l'environnement isolé d'Atollo : les programmes installés sur le PC hôte n'interfèrent pas.
 
+## Reste à faire
+
+Atollo est en alpha (version 0.2.0). Windows x64 est le système le plus testé, installations réelles en CI comprises ; macOS, Linux et Windows ARM64 ne sont construits et testés qu'en CI. La liste complète est dans [app/TESTING.md](app/TESTING.md) (en italien).
+
+- **La première version publique.** Aucune version n'est encore publiée sur GitHub : les fichiers des six systèmes arrivent avec le premier tag. D'ici là, Atollo se compile depuis les sources ([Compiler](#compiler)).
+- **Tests alpha.** Il faut des personnes qui utilisent Atollo sur de vrais projets et des PC différents, et qui signalent ce qui ne va pas : installation des composants, projets, bases de données, agents.
+- **macOS sur de vrais Mac** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon et Intel sont construits et lancés en CI, jamais sur un Mac vierge : le zip téléchargé avec un navigateur, la quarantaine et Gatekeeper, App Translocation, un kit sur une clé exFAT, les connexions des agents emportées d'un Mac à l'autre.
+- **Linux sur de vraies machines** ([#5](https://github.com/nabre/atollo/issues/5)). x64 et ARM64 sur Ubuntu 24.04, Fedora 42 et Debian 13 : AppImage avec et sans FUSE, le `tar.gz` avec WebKitGTK 4.1, clés exFAT ou montées `noexec`, connexions avec GNOME, KeePassXC ou KWallet.
+- **Mises à jour et Apache hors de Windows.** La mise à jour de l'application d'une version à l'autre sur macOS et Linux n'est pas encore essayée. Apache sur ces systèmes arrive quand sa build pour le kit sera publiée : d'ici là, les sites tournent sous Caddy.
+- **Signature du code.** Sous macOS, seulement une signature ad hoc, sans notarisation Apple : il faut `xattr -dr com.apple.quarantine`. Sous Windows, la signature SignPath reste à confirmer sur la première version ; sans elle, SmartScreen peut avertir au premier lancement.
+
+Vous avez un Mac, un PC Linux ou un PC Windows ARM64 ? Essayez Atollo et racontez-nous comment ça s'est passé : [ouvrez une issue sur GitHub](https://github.com/nabre/atollo/issues).
+
 ## Limites connues
 
 - Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL, MongoDB, Android SDK, Julia et TinyTeX tournent en émulation x64 et R n'est pas disponible ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux, à partir du prochain tag, sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/atollo/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [app/CATALOG.md](app/CATALOG.md) (en italien), la matrice composant × système dans [app/MATRICE-STRUMENTI.html](app/MATRICE-STRUMENTI.html). Apache sur macOS et Linux arrive avec la première version publiée du build du kit (D-116) ; d'ici là, le serveur web y est Caddy.

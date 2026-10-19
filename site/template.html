@@ -37,6 +37,7 @@
       <a href="#how">{{navHow}}</a>
       <a href="#tools">{{navTools}}</a>
       <a href="#platforms">{{navPlatforms}}</a>
+      <a href="#todo">{{navTodo}}</a>
       <a href="https://github.com/nabre/atollo">GitHub</a>
     </nav>
     <nav class="langs" aria-label="Language">{{langLinks}}</nav>
@@ -189,6 +190,25 @@
       </ul>
       <p class="muted small">{{checksum}}. {{platformsNote}}</p>
       <p><a class="link" href="{{readmeHref}}">{{readGuide}} →</a></p>
+    </div>
+  </section>
+
+  <!-- Honest state of the project: kept in step with the READMEs'
+       «C'è ancora da fare» and with docs/app/TESTING.md. -->
+  <section id="todo">
+    <div class="wrap">
+      <p class="eyebrow reveal">07</p>
+      <h2 class="reveal">{{todoTitle}}</h2>
+      <p class="muted reveal">{{todoLead}}</p>
+      <div class="aspects">
+        <article class="reveal"><h3>{{t1Title}}</h3><p>{{t1Text}}</p></article>
+        <article class="reveal"><h3>{{t2Title}}</h3><p>{{t2Text}}</p></article>
+        <article class="reveal"><h3>{{t3Title}}</h3><p>{{t3Text}}</p></article>
+        <article class="reveal"><h3>{{t4Title}}</h3><p>{{t4Text}}</p></article>
+        <article class="reveal"><h3>{{t5Title}}</h3><p>{{t5Text}}</p></article>
+        <article class="reveal"><h3>{{t6Title}}</h3><p>{{t6Text}}</p></article>
+      </div>
+      <p class="todo-help reveal">{{todoHelp}} <a class="link" href="https://github.com/nabre/atollo/issues">{{todoHelpLink}} →</a></p>
     </div>
   </section>
 
