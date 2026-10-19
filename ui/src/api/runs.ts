@@ -2,7 +2,8 @@
 // output, ports. Rust: tauri/src/commands/runs.rs.
 
 import { invoke } from "@tauri-apps/api/core";
-import { act, query, subscribe } from "./core";
+import { act, browserPreview, query, subscribe } from "./core";
+import { previewLog, previewRuns, previewStart, previewStop } from "./preview-runs";
 import type { ActionKind } from "./projects";
 
 export type RunState = "starting" | "running" | "finished" | "error" | "stopped";
@@ -34,19 +35,21 @@ export interface Ports {
 }
 
 export function runList(): Promise<RunInfo[]> {
-  return query<RunInfo[]>("run_list", []);
+  return query<RunInfo[]>("run_list", browserPreview ? previewRuns() : []);
 }
 
 export function runStart(project: string, action: string): Promise<RunInfo> {
+  if (browserPreview) return Promise.resolve(previewStart(project, action));
   return invoke<RunInfo>("run_start", { project, action });
 }
 
 export function runStop(key: string): Promise<void> {
+  if (browserPreview) previewStop(key);
   return act("run_stop", { key });
 }
 
 export function runLog(key: string): Promise<string[]> {
-  return query<string[]>("run_log", [], { key });
+  return query<string[]>("run_log", browserPreview ? previewLog(key) : [], { key });
 }
 
 export function runClear(key: string): Promise<void> {
