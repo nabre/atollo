@@ -166,7 +166,36 @@ fn tinytex_list(ctx: &Ctx) -> std::path::PathBuf {
     join_rel(ctx.kit.data(), "texlive/packages.txt")
 }
 
+/// TinyTeX for `target` is staged when prepared on a host that cannot run
+/// it (`runs_here` false, `can_execute_on_host`), off Windows. Nearly every
+/// program of its tarball is a symbolic link (`tlmgr ->
+/// ../../texmf-dist/scripts/texlive/tlmgr.pl`, `pdflatex -> pdftex`), and
+/// `tlmgr.pl` finds TeX Live from its own path: copies made on a Windows
+/// host do not work. So the archive is only downloaded and verified, and
+/// the first start on the target unpacks it with its links, as Git.
+pub const fn tinytex_staged(target: Target, runs_here: bool) -> bool {
+    !target.is_windows() && !runs_here
+}
+
 impl Installer for TinyTex {
+    /// Staged where [`tinytex_staged`]; `install_custom` is never reached,
+    /// since `should_stage` is true exactly when this is.
+    fn custom(&self, target: Target) -> bool {
+        tinytex_staged(target, crate::router::target::can_execute_on_host(target))
+    }
+
+    fn install_custom(
+        &self,
+        _ctx: &Ctx,
+        _component: &Component,
+        _release: &Release,
+        _progress: &mut dyn crate::install::Progress,
+    ) -> Result<()> {
+        anyhow::bail!(
+            "tinytex: the archive is staged for its target, never unpacked on this system"
+        )
+    }
+
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         let target = target_of(ctx, component);
         let rel = ctx.net.github_latest(TINYTEX_REPO)?;
