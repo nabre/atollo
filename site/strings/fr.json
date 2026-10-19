@@ -113,5 +113,6 @@
   "themeLabel": "Thème",
   "themeSystem": "Comme le système",
   "themeLight": "Clair",
-  "themeDark": "Sombre"
+  "themeDark": "Sombre",
+  "langLabel": "Langue"
 }

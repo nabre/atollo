@@ -140,21 +140,43 @@ section { padding: 96px 0; position: relative; }
 .nav { display: flex; gap: 22px; margin-left: auto; font-size: 0.9rem; }
 .nav a { color: var(--fg); }
 .nav a:hover { color: var(--title); text-decoration: none; }
-.langs { display: flex; gap: 2px; font: 0.8rem var(--mono); }
-.langs a, .langs span { padding: 2px 6px; border-radius: 4px; color: var(--desc); }
-.langs [aria-current] { color: var(--title); background: var(--button2); }
-/* The theme switch: system, light, dark. It needs site.js, so only with .js. */
-.themes { display: none; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 7px; }
-.js .themes { display: flex; }
-.themes button {
-  display: grid; place-items: center; width: 26px; height: 22px; padding: 0;
-  border: 0; border-radius: 4px; background: none; color: var(--desc); cursor: pointer;
+/* The language menu: a <details>, so it opens without JavaScript too
+   (site.js closes it on a click outside or Escape). */
+.langs { position: relative; }
+.lang-menu summary, .theme-cycle {
+  display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 9px;
+  border: 1px solid var(--border); border-radius: 7px; background: none;
+  font: 500 0.8rem var(--mono); color: var(--fg); cursor: pointer; list-style: none;
 }
-.themes button:hover { color: var(--title); }
-.themes button[aria-pressed="true"] { color: var(--title); background: var(--button2); }
-.themes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.themes svg { width: 15px; height: 15px; }
-@media (max-width: 820px) { .nav { display: none; } .langs { margin-left: auto; } .top-row { gap: 12px; } }
+.lang-menu summary::-webkit-details-marker { display: none; }
+.lang-menu summary:hover, .lang-menu[open] summary, .theme-cycle:hover { color: var(--title); border-color: color-mix(in srgb, var(--title) 30%, var(--border)); }
+.lang-menu summary:focus-visible, .theme-cycle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lang-menu .chev { width: 9px; height: 6px; color: var(--desc); transition: transform 0.2s; }
+.lang-menu[open] .chev { transform: rotate(180deg); }
+.lang-menu b { font-weight: 500; }
+.flag { display: flex; width: 18px; height: 12px; border-radius: 2px; overflow: hidden; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 18%, transparent); }
+.flag svg { width: 100%; height: 100%; }
+.lang-menu ul {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 170px;
+  margin: 0; padding: 4px; list-style: none;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 9px; box-shadow: var(--shadow);
+}
+.lang-menu li a, .lang-menu li span[aria-current] {
+  display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 6px;
+  font-size: 0.875rem; color: var(--fg);
+}
+.lang-menu li b { font: 500 0.75rem var(--mono); color: var(--desc); width: 1.6em; }
+.lang-menu li a:hover { background: var(--hover); color: var(--title); text-decoration: none; }
+.lang-menu li [aria-current] { background: var(--button2); color: var(--title); }
+/* The theme: one button through system, light and dark (site.js), with the
+   current one's icon. It needs site.js, so only with .js. */
+.theme-cycle { display: none; padding: 0; width: 30px; justify-content: center; }
+.js .theme-cycle { display: flex; }
+.theme-cycle svg { display: none; width: 15px; height: 15px; }
+:root:not([data-theme]) .theme-cycle [data-icon="system"],
+:root[data-theme="light"] .theme-cycle [data-icon="light"],
+:root[data-theme="dark"] .theme-cycle [data-icon="dark"] { display: block; }
+@media (max-width: 820px) { .nav { display: none; } .langs { margin-left: auto; } .top-row { gap: 10px; } }
 
 /* Hero */
 .hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding: min(104px, 10vh) 0 min(40px, 2vh); overflow: hidden; background: var(--bg-deep); }

@@ -113,5 +113,6 @@
   "themeLabel": "Theme",
   "themeSystem": "Match system",
   "themeLight": "Light",
-  "themeDark": "Dark"
+  "themeDark": "Dark",
+  "langLabel": "Language"
 }

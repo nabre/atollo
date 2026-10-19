@@ -41,13 +41,15 @@
       <a href="#todo">{{navTodo}}</a>
       <a href="https://github.com/nabre/atollo">GitHub</a>
     </nav>
-    <nav class="langs" aria-label="Language">{{langLinks}}</nav>
-    <!-- The theme: the system's until one is picked (site.js, localStorage). -->
-    <div class="themes" role="group" aria-label="{{themeLabel}}">
-      <button type="button" data-theme-pick="system" aria-label="{{themeSystem}}" title="{{themeSystem}}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.75" y="2.5" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 13.5h5M8 11v2.5"/></svg></button>
-      <button type="button" data-theme-pick="light" aria-label="{{themeLight}}" title="{{themeLight}}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06"/></svg></button>
-      <button type="button" data-theme-pick="dark" aria-label="{{themeDark}}" title="{{themeDark}}"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.75 5.75 0 0 1 6.4 2.5a5.75 5.75 0 1 0 7.1 7.1Z"/></svg></button>
-    </div>
+    <nav class="langs" aria-label="{{langLabel}}">{{langLinks}}</nav>
+    <!-- The theme: the system's until one is picked; each press goes on to
+         the next (site.js, localStorage). Its label names the current one. -->
+    <button type="button" class="theme-cycle" aria-label="{{themeLabel}}: {{themeSystem}}" title="{{themeLabel}}: {{themeSystem}}"
+      data-label="{{themeLabel}}" data-system="{{themeSystem}}" data-light="{{themeLight}}" data-dark="{{themeDark}}">
+      <svg data-icon="system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.75" y="2.5" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 13.5h5M8 11v2.5"/></svg>
+      <svg data-icon="light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06"/></svg>
+      <svg data-icon="dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 9.6A5.75 5.75 0 0 1 6.4 2.5a5.75 5.75 0 1 0 7.1 7.1Z"/></svg>
+    </button>
   </div>
 </header>
 

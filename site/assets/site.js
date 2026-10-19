@@ -1,7 +1,8 @@
 // The page's motion: the header's background once the hero is scrolled past,
 // sections revealed as they enter the view, the numbers counted up, the
-// glow under the pointer on the feature tiles, and the theme switch. Everything
-// is visible without it (the .js class on <html> gates the hidden states).
+// glow under the pointer on the feature tiles, the theme button and the
+// language menu. Everything is visible without it (the .js class on <html>
+// gates the hidden states).
 (function () {
   "use strict";
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -13,7 +14,8 @@
   const root = document.documentElement;
   const media = Array.from(document.querySelectorAll("[media*='prefers-color-scheme']"));
   media.forEach((el) => (el.dataset.media = el.media));
-  const picks = document.querySelectorAll("[data-theme-pick]");
+  const cycle = document.querySelector(".theme-cycle");
+  const order = ["system", "light", "dark"];
   function theme(pick) {
     if (pick === "system") delete root.dataset.theme;
     else root.dataset.theme = pick;
@@ -21,12 +23,16 @@
       const scheme = /light/.test(el.dataset.media) ? "light" : "dark";
       el.media = pick === "system" ? el.dataset.media : pick === scheme ? "all" : "not all";
     });
-    picks.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themePick === pick)));
+    if (cycle) {
+      const label = `${cycle.dataset.label}: ${cycle.dataset[pick]}`;
+      cycle.setAttribute("aria-label", label);
+      cycle.title = label;
+    }
   }
   theme(root.dataset.theme || "system");
-  picks.forEach((b) =>
-    b.addEventListener("click", () => {
-      const pick = b.dataset.themePick;
+  if (cycle) {
+    cycle.addEventListener("click", () => {
+      const pick = order[(order.indexOf(root.dataset.theme || "system") + 1) % order.length];
       theme(pick);
       try {
         if (pick === "system") localStorage.removeItem("atollo-theme");
@@ -34,8 +40,22 @@
       } catch (e) {
         // Storage blocked: the choice lasts for this page.
       }
-    }),
-  );
+    });
+  }
+
+  // The language menu closes on a click outside it and on Escape.
+  const langMenu = document.querySelector(".lang-menu");
+  if (langMenu) {
+    document.addEventListener("click", (e) => {
+      if (langMenu.open && !langMenu.contains(e.target)) langMenu.open = false;
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && langMenu.open) {
+        langMenu.open = false;
+        langMenu.querySelector("summary").focus();
+      }
+    });
+  }
 
   const top = document.querySelector(".top");
   const onScroll = () => top && top.classList.toggle("scrolled", window.scrollY > 24);
