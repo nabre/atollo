@@ -105,10 +105,10 @@ export function ToolPage({
             <span
               key="state"
               className="flex items-center gap-1 text-vsc-success"
-              title={t("Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema")}
+              title={t("Gli archivi sono già nel kit: l'installazione termina al primo avvio su quel sistema")}
             >
               <VscCheck size={14} aria-hidden="true" />
-              {shown ? `${shown} (${t("pre-scaricato")})` : t("pre-scaricato")}
+              {shown ? `${shown} (${t("pre-installato")})` : t("pre-installato")}
             </span>
           ) : c.noArm64 ? (
             <span key="state" className="text-vsc-desc">

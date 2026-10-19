@@ -1571,7 +1571,7 @@ Related topics: [2.4 Components and versions of a project](#24-components-and-ve
 
 #### Grid
 
-A table with one component per row and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-downloaded, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
+A table with one component per row and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
 
 > [!NOTE]
 > **Good to know**
