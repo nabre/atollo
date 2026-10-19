@@ -46,7 +46,7 @@
   "how2": "Starte es: Es legt <code>projects/</code> und <code>data/</code> an. Beim ersten Start wählst du Agenten, Sprachen und Werkzeuge; Atollo lädt und prüft sie.",
   "how3": "Lege ein Projekt aus einer von über 60 Basen an (Laravel, Next.js, Django, WordPress, Astro, Tauri…), klone es von GitHub oder starte mit einem leeren Ordner. Editor, Terminal und Agenten öffnen sich immer im Ordner des Projekts.",
   "shotsTitle": "In der App",
-  "shot1": "Projekte: Start, Ausgabe und Aktivität",
+  "shot1": "Projekte: Schnellübersicht und Aktivität",
   "shot2": "Agenten: Limits und Verbrauch",
   "shot3": "Werkzeuge: Komponenten × Systeme",
   "aspectsTitle": "So funktioniert es",
