@@ -1,5 +1,12 @@
 # Novità
 
+## La Guida ripensata (19/10/2026)
+
+- **Nove capitoli** (D-136), dal più semplice al più tecnico: Primi passi, Progetti, Database siti e terminali, Agenti IA, Strumenti e linguaggi, Account e impostazioni, Portare il kit con sé, Come funziona dentro, Aiuto. 36 argomenti, ognuno con «In breve», i passi con le etichette dell'interfaccia, consigli, la parte tecnica ripiegata e gli argomenti collegati.
+- **Nuovi argomenti**: un primo progetto passo per passo, la finestra spiegata parte per parte, la pagina Terminali, problemi comuni con il loro messaggio, domande frequenti, glossario.
+- **Corretta** su ogni punto rispetto all'app di oggi: niente più funzioni che non esistono, percorsi e variabili verificati nel codice; screenshot nuovi dall'anteprima, senza il vecchio marchio.
+- La pagina **Terminali** ha il suo pulsante della guida.
+
 ## Documentazione in inglese prima di tutto (19/10/2026)
 
 - **README** (D-135): `README.md` è in inglese, l'italiano è in `docs/README.it.md`; nelle quattro lingue wordmark, badge in inglese, screenshot, «Features» e tabella dei documenti, con l'inglese primo nella barra delle lingue. Il tedesco dà del «du» ovunque.

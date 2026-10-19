@@ -211,7 +211,7 @@ export function ProjectsPage({
     },
     onGuide: onGuide
       ? () => {
-          onGuide("feat-projects");
+          onGuide("project-page");
         }
       : undefined,
   };
@@ -266,7 +266,7 @@ export function ProjectsPage({
                 icon={VscBook}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
-                  onGuide("feat-projects");
+                  onGuide("project-page");
                 }}
               />
             )}

@@ -36,7 +36,7 @@ export interface AppInfo {
 /** The browser preview's language: `?lang=en` (the site's screenshots,
  * site/shots/make.mjs), Italian otherwise. */
 function previewLang(): AppInfo["lang"] {
-  const asked = new URLSearchParams(globalThis.location?.search ?? "").get("lang");
+  const asked = new URLSearchParams(location.search).get("lang");
   return asked === "en" || asked === "fr" || asked === "de" ? asked : "it";
 }
 
