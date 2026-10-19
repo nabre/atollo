@@ -560,3 +560,110 @@ fn removal_reaches_every_system() {
         );
     });
 }
+
+/// A component taken out of the choice whose only trace is what was
+/// pre-downloaded for it (bootstrap-staged for its first start there) is
+/// removed too, here and on the other systems, with its staged files, the
+/// lists of its kept conda packages and the archives no other list names.
+#[test]
+fn removal_takes_what_was_pre_downloaded() {
+    with_ctx("run-remove-staged", |ctx| {
+        let catalog = Catalog::get();
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "rust", false);
+        choice.write(ctx.kit, catalog).unwrap();
+        let rust = catalog.find("rust").unwrap();
+        // Here: staged with its version and mark, nothing installed.
+        let here = crate::router::bootstrap::staged_dir(ctx.kit, "rust", None);
+        fs::create_dir_all(&here).unwrap();
+        fs::write(here.join("rustup-init.exe"), b"init").unwrap();
+        rust.save_version(ctx.kit, "1.91.0").unwrap();
+        rust.mark_reinstall(ctx.kit, "bootstrap:win32-x64").unwrap();
+        // On Linux: only the staged file, no version.
+        let linux = ctx.kit.for_target(crate::kit::Target::LINUX_X64);
+        let there = crate::router::bootstrap::staged_dir(&linux, "rust", None);
+        fs::create_dir_all(&there).unwrap();
+        fs::write(there.join("rustup-init"), b"init").unwrap();
+        assert!(!rust.is_present(ctx.kit) && !rust.is_present(&linux));
+        // Kept conda packages on Linux: a list of the component next to one
+        // of another component.
+        let conda = install::conda::root(&linux);
+        let (locks, pkgs) = (conda.join("locks"), conda.join("pkgs"));
+        fs::create_dir_all(&locks).unwrap();
+        fs::create_dir_all(&pkgs).unwrap();
+        for name in ["rust@1.91.txt", "rust@1.91.json", "r@4.5.txt", "r@4.5.json"] {
+            fs::write(locks.join(name), b"").unwrap();
+        }
+        install::conda::forget(&linux, "rust", None);
+        assert!(!locks.join("rust@1.91.txt").exists());
+        assert!(!locks.join("rust@1.91.json").exists());
+        assert!(
+            locks.join("r@4.5.txt").is_file(),
+            "another component's list stays"
+        );
+        fs::write(locks.join("rust@1.91.txt"), b"").unwrap();
+        fs::write(pkgs.join("rust-1-0.conda"), b"x").unwrap();
+
+        let plan = plan(ctx, catalog, &choice, &Options::default()).unwrap();
+        assert!(plan.remove.contains(&"rust".to_owned()), "{plan:?}");
+        let elsewhere = remove_elsewhere(ctx.kit, catalog, &choice, &Options::default());
+        assert!(elsewhere.contains(&(crate::kit::Target::LINUX_X64, "rust".into())));
+
+        ctx.cancel.store(true, Ordering::Relaxed);
+        let mut sink = Collect::default();
+        let results = run(ctx, &Options::default(), &mut sink).unwrap();
+        assert_eq!(
+            results
+                .iter()
+                .filter(|(id, o)| id == "rust" && *o == Outcome::Removed)
+                .count(),
+            2,
+            "{results:?}"
+        );
+        for kit in [ctx.kit, &linux] {
+            assert!(!kit.apps().join(".bootstrap").exists(), "{}", kit.target());
+            assert!(!has_trace(kit, rust), "{}", kit.target());
+        }
+        assert_eq!(rust.installed_version(ctx.kit), None);
+        assert!(!rust.needs_reinstall(ctx.kit));
+        assert!(!locks.join("rust@1.91.txt").exists());
+        assert!(!pkgs.join("rust-1-0.conda").exists(), "swept on Linux too");
+    });
+}
+
+/// The files added by hand for a component removed go with it; another
+/// file, or one another component waits for with the same checksum, stays.
+#[test]
+fn removal_takes_the_files_added_for_it() {
+    with_ctx("run-remove-downloads", |ctx| {
+        let catalog = Catalog::get();
+        let mut choice = Choice::defaults(catalog);
+        choice.set(catalog, "zig", false);
+        choice.write(ctx.kit, catalog).unwrap();
+        fake_install(ctx, "zig");
+        let sha = |b: &[u8]| {
+            crate::net::verify::Expect::Sha256(
+                <sha2::Sha256 as sha2::Digest>::digest(b)
+                    .iter()
+                    .map(|x| format!("{x:02x}"))
+                    .collect(),
+            )
+        };
+        let downloads = crate::setup::downloads::dir(ctx.kit);
+        fs::create_dir_all(&downloads).unwrap();
+        fs::write(downloads.join("zig (1).zip"), b"zig").unwrap();
+        fs::write(downloads.join("shared.zip"), b"shared").unwrap();
+        fs::write(downloads.join("other.zip"), b"other").unwrap();
+        crate::setup::downloads::want(ctx.kit, "zig", &sha(b"zig"));
+        crate::setup::downloads::want(ctx.kit, "zig", &sha(b"shared"));
+        crate::setup::downloads::want(ctx.kit, "uv", &sha(b"shared"));
+
+        ctx.cancel.store(true, Ordering::Relaxed);
+        let mut sink = Collect::default();
+        let results = run(ctx, &Options::default(), &mut sink).unwrap();
+        assert!(results.contains(&("zig".to_owned(), Outcome::Removed)));
+        assert!(!downloads.join("zig (1).zip").exists());
+        assert!(downloads.join("shared.zip").is_file(), "uv waits for it");
+        assert!(downloads.join("other.zip").is_file());
+    });
+}
