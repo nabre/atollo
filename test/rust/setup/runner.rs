@@ -194,18 +194,25 @@ fn half_installed_components_are_removed() {
     });
 }
 
+/// R is planned on Windows ARM64 too, its x64 build in emulation (it was
+/// `noArm64`, never planned there); no component of the catalog is
+/// `noArm64` any more.
 #[test]
-fn no_arm64_components_are_never_planned_on_arm64() {
+fn r_is_planned_on_arm64() {
     let catalog = Catalog::get();
-    assert!(catalog.find("r").unwrap().no_arm64);
+    assert!(catalog.all().iter().all(|c| !c.no_arm64));
+    assert!(catalog
+        .find("r")
+        .unwrap()
+        .is_emulated_on(crate::kit::Target::WIN32_ARM64));
     let mut choice = Choice::defaults(catalog);
     choice.set(catalog, "r", true);
     with_arch_ctx("plan-arm64", Arch::Arm64, |ctx| {
         let p = plan_with(ctx, &choice, &[], &[]).unwrap();
-        assert!(!p.handle.contains(&"r".into()), "not from the choice");
+        assert!(p.handle.contains(&"r".into()), "ARM64: planned");
         assert!(p.handle.contains(&"git".into()));
-        let e = plan_with(ctx, &choice, &["r"], &[]).unwrap_err();
-        assert_eq!(e.to_string(), "r is not available on ARM64");
+        let p = plan_with(ctx, &choice, &["r"], &[]).unwrap();
+        assert_eq!(p.handle, ["r"]);
     });
     with_ctx("plan-x64", |ctx| {
         let p = plan_with(ctx, &choice, &[], &[]).unwrap();
@@ -223,7 +230,7 @@ fn no_arm64_components_are_never_planned_on_arm64() {
 fn unix_plans_follow_the_unix_catalog() {
     use crate::kit::Target;
     let catalog = Catalog::get();
-    for target in [Target::LINUX_X64, Target::DARWIN_ARM64] {
+    for target in [Target::LINUX_ARM64, Target::DARWIN_ARM64] {
         let mut choice = Choice::defaults(catalog);
         for c in catalog.all() {
             choice.set(catalog, &c.id, true);
@@ -240,9 +247,12 @@ fn unix_plans_follow_the_unix_catalog() {
                 .iter()
                 .filter(|c| !c.is_available_on(target))
                 .collect();
-            assert!(
-                !missing.is_empty(),
-                "{}: some component has no build",
+            // Linux ARM64 has no Android SDK; macOS has everything since
+            // Apache came there (D-116).
+            assert_eq!(
+                missing.is_empty(),
+                target != Target::LINUX_ARM64,
+                "{}: components without a build",
                 target.as_str()
             );
             for c in missing {

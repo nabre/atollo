@@ -1,32 +1,31 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch, Os, Target};
 
-/// Windows x64 and ARM64 kits, whatever system runs the tests: `no_arm64`
-/// and the x64 build in emulation are Windows rows.
+/// Windows x64 and ARM64 kits, whatever system runs the tests: the x64
+/// build in emulation is a Windows ARM64 row. R is there too since its
+/// `win-64` build runs emulated (it was `noArm64`).
 #[test]
-fn r_is_not_available_on_arm64() {
+fn r_is_emulated_on_arm64() {
     let tmp = TempDir::new("cmd-comps");
     for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
         let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Win32, arch));
         kit.prepare().unwrap();
         let infos = component_infos_from(&kit, "it", Target::WIN32_ARM64);
-        let r = infos.iter().find(|c| c.id == "r").unwrap();
-        assert_eq!(
-            (r.available, r.no_arm64, r.x64_only),
-            (!arm64, arm64, false)
-        );
-        assert_eq!(r.unavailable_reason, None);
-        let php = infos.iter().find(|c| c.id == "php").unwrap();
-        assert!(php.available && !php.no_arm64);
-        assert_eq!(
-            php.x64_only, arm64,
-            "the «x64» mark only where it is emulated"
-        );
+        for id in ["r", "php"] {
+            let c = infos.iter().find(|c| c.id == id).unwrap();
+            assert!(c.available && !c.no_arm64, "{id}");
+            assert_eq!(c.unavailable_reason, None, "{id}");
+            assert_eq!(
+                c.x64_only, arm64,
+                "{id}: the «x64» mark only where it is emulated"
+            );
+        }
     }
 }
 
-/// Unavailable on macOS or Linux is not "no ARM64 build": the page gets the
-/// system as the reason (BUG-24c).
+/// Unavailable on another system is not "no ARM64 build": the page gets the
+/// system as the reason (BUG-24c). Apache, the example before D-116, is now
+/// on macOS and Linux too.
 #[test]
 fn unavailable_for_the_system_is_not_arm64() {
     let tmp = TempDir::new("cmd-comps-os");
@@ -34,34 +33,17 @@ fn unavailable_for_the_system_is_not_arm64() {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
         let infos = component_infos(&kit, "en");
+        // Apache is on every system since D-116.
         let apache = infos.iter().find(|c| c.id == "apache").unwrap();
-        assert!(!apache.available && !apache.no_arm64, "{target:?}");
-        assert_eq!(
-            apache.unavailable_reason.as_deref(),
-            Some(format!("not available for {}", target.as_str()).as_str())
-        );
+        assert!(apache.available && apache.unavailable_reason.is_none());
         let python = infos.iter().find(|c| c.id == "python").unwrap();
         assert_eq!(python.unavailable_reason, None);
         // Native on macOS and Linux: no «x64» mark.
         let php = infos.iter().find(|c| c.id == "php").unwrap();
         assert!(!php.x64_only, "{target:?}");
     }
-    let kit = Kit::at_target(tmp.0.join("arm"), Target::WIN32_ARM64);
-    kit.prepare().unwrap();
-    let infos = component_infos_from(&kit, "en", Target::WIN32_ARM64);
-    let r = infos.iter().find(|c| c.id == "r").unwrap();
-    assert!(r.no_arm64 && r.unavailable_reason.is_none());
-    // "Not available on ARM64 PCs" only on such a PC: from another one the
-    // system is named, as for macOS and Linux.
-    for host in [Target::WIN32_X64, Target::DARWIN_ARM64, Target::LINUX_ARM64] {
-        let infos = component_infos_from(&kit, "en", host);
-        let r = infos.iter().find(|c| c.id == "r").unwrap();
-        assert!(!r.available && !r.no_arm64, "{host}");
-        assert_eq!(
-            r.unavailable_reason.as_deref(),
-            Some("not available for win32-arm64")
-        );
-    }
+    // A `noArm64` component seen from another PC: router::availability
+    // (no component of the catalog is one since R runs emulated).
 }
 
 /// The catalog's own reason, translated, in place of "not available for
@@ -82,10 +64,7 @@ fn catalog_reasons_reach_the_page() {
     );
     let sqlite = row("sqlite");
     assert!(sqlite.available && sqlite.unavailable_reason.is_none());
-    assert_eq!(
-        row("apache").unavailable_reason.as_deref(),
-        Some("not available for linux-arm64")
-    );
+    assert_eq!(row("apache").unavailable_reason, None);
     assert_eq!(row("python").unavailable_reason, None);
     let it = component_infos(&kit, "it");
     let android = it.iter().find(|c| c.id == "android").unwrap();
@@ -153,20 +132,23 @@ fn needs_and_xcode_follow_the_target() {
     }
 }
 
-/// On Windows ARM64 (a Windows kit on every host) R keeps its choice.
+/// On Linux ARM64 (a Linux kit on every host) the Android SDK, which has
+/// no build there, keeps its choice (R on Windows ARM64 before it ran
+/// emulated).
 #[test]
 fn unavailable_components_keep_their_choice() {
     let tmp = TempDir::new("cmd-choice");
     let catalog = Catalog::get();
     for (arch, kept) in [(Arch::X64, false), (Arch::Arm64, true)] {
-        let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Win32, arch));
+        let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Linux, arch));
         kit.prepare().unwrap();
         let mut saved = Choice::defaults(catalog);
-        saved.set(catalog, "r", true);
+        saved.set(catalog, "android", true);
         saved.write(&kit, catalog).unwrap();
-        let text = choice_text(&kit, &["git".into(), "php".into()]);
+        // Java ticked: the Android SDK needs it on every target.
+        let text = choice_text(&kit, &["git".into(), "php".into(), "java".into()]);
         let choice = Choice::parse(&text, catalog);
-        assert_eq!(choice.is_chosen("r"), kept, "{arch:?}");
+        assert_eq!(choice.is_chosen("android"), kept, "{arch:?}");
         assert!(choice.is_chosen("php") && !choice.is_chosen("go"));
     }
 }

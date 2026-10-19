@@ -3,7 +3,7 @@
 
 use std::collections::BTreeSet;
 
-use super::{Action, EnvVar, Kind, Piece};
+use super::{Action, EnvVar, Kind, Piece, CATEGORIES};
 
 /// A problem: the Italian source and its argument (translated by the caller).
 pub type Problem = (&'static str, Vec<String>);
@@ -91,6 +91,11 @@ pub fn validate(pieces: &[Piece]) -> Result<(), Problem> {
         }
         if !p.home.is_empty() && !p.home.starts_with("https://") {
             return Err(("Indirizzo non valido: {0}", vec![p.home.clone()]));
+        }
+        if let Some(c) = &p.category {
+            if p.kind == Kind::Addon || !CATEGORIES.contains(&c.as_str()) {
+                return Err(("Categoria non valida: {0}", vec![c.clone()]));
+            }
         }
     }
     let bases: BTreeSet<&str> = pieces

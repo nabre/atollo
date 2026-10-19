@@ -376,6 +376,7 @@ macro_rules! command_handler {
             $crate::commands::projects::project_action_save,
             $crate::commands::projects::project_action_remove,
             $crate::commands::projects::project_action_default,
+            $crate::commands::projects::project_pin,
             $crate::commands::projects::project_status,
             $crate::commands::databases::project_databases,
             $crate::commands::databases::project_db_create,

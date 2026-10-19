@@ -80,9 +80,13 @@ fn ruby_conda_lines_and_pick() {
     assert_eq!(ruby_conda_lines(&old), ["3.2", "10.0"]);
     assert_eq!(ruby_conda_spec("4.0.7"), "ruby=4.0.7");
     assert_eq!(
-        crate::install::native::micromamba_create_args(Path::new("/kit/ruby/4.0"), &["ruby=4.0.7"])
-            .last()
-            .map(String::as_str),
+        crate::install::native::micromamba_create_args(
+            Path::new("/kit/ruby/4.0"),
+            &["ruby=4.0.7"],
+            None
+        )
+        .last()
+        .map(String::as_str),
         Some("ruby=4.0.7")
     );
 }

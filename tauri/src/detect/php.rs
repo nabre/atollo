@@ -73,8 +73,8 @@ pub fn htaccess_has_own_rules(text: &str) -> bool {
         .any(|l| !KNOWN_RULES.contains(&l.to_ascii_lowercase().as_str()))
 }
 
-/// The catalog has Apache for `target` (D-116: Windows, and macOS and
-/// Linux once the kit's build is pinned there).
+/// The catalog has Apache for `target` (every system since D-116: Apache
+/// Lounge on Windows, the kit's build on macOS and Linux).
 pub fn apache_available(target: Target) -> bool {
     crate::setup::catalog::Catalog::get()
         .find("apache")

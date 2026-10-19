@@ -172,6 +172,8 @@ fn matrix_follows_the_target() {
         }
         counts.push(m.links.len());
     }
-    // Some system lacks a component another one has (Apache, Android).
-    assert!(counts.iter().any(|n| *n != counts[0]), "{counts:?}");
+    // The same links everywhere: Android, the only component missing on
+    // some system (Linux ARM64), has none; Apache and R had some before
+    // they came to every target (D-116, R emulated on Windows ARM64).
+    assert!(counts.iter().all(|n| *n == counts[0]), "{counts:?}");
 }

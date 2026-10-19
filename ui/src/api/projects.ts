@@ -53,7 +53,13 @@ export interface ProjectInfo {
   custom: boolean;
   default: string | null;
   /** The kit's settings of the project (data\projects\<id>\dev-settings.json). */
-  settings: { agent?: string; lastOpened?: number; extensions?: { added: string[]; removed: string[] } };
+  settings: {
+    agent?: string;
+    lastOpened?: number;
+    /** Among the favorites of the Projects home. */
+    pinned?: boolean;
+    extensions?: { added: string[]; removed: string[] };
+  };
   /** Editor extensions of its languages, then those added by hand. */
   extensions: ProjectExtension[];
 }
@@ -292,6 +298,11 @@ export function projectActionRemove(project: string, id: string): Promise<void> 
 /** The action that "Avvia" starts. */
 export function projectActionDefault(project: string, id: string): Promise<void> {
   return act("project_action_default", { project, id });
+}
+
+/** The project among the favorites of the Projects home, or not. */
+export function projectPin(project: string, pinned: boolean): Promise<void> {
+  return act("project_pin", { project, pinned });
 }
 
 /** "Servi come sito web": writes the "site" action in the project's panel.json. */

@@ -21,6 +21,8 @@ fn validation() {
     assert!(bad(|p| p.steps.push("a\u{7}b".into())));
     assert!(bad(|p| p.actions[0].name.clear()));
     assert!(bad(|p| p.home = "http://x".into()));
+    assert!(bad(|p| p.category = Some("games".into())));
+    assert!(!bad(|p| p.category = None));
     assert!(bad(|p| {
         p.kind = Kind::Addon;
         p.on.insert("nothing".into(), Variant::default());

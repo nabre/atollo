@@ -344,7 +344,7 @@ function ServiceDetails({
           </div>
         ))}
       {section === "details" && (
-        <EditorBody narrow>
+        <EditorBody>
           {s.state === "error" && s.message && (
             <Notice tone="error">
               <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap">{s.message}</pre>

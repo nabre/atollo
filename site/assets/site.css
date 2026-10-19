@@ -149,7 +149,7 @@ section { padding: 96px 0; position: relative; }
 .top.scrolled { background: var(--glass); backdrop-filter: blur(12px); border-color: var(--border); }
 .top-row { display: flex; align-items: center; gap: 24px; height: 60px; }
 .brand { display: flex; }
-.logo { height: 20px; width: auto; }
+.logo { height: 25px; width: auto; }
 .logo-light { display: none; }
 @media (prefers-color-scheme: light) { .logo-dark { display: none; } .logo-light { display: block; } }
 .nav { display: flex; gap: 22px; margin-left: auto; font-size: 0.9rem; }
@@ -217,49 +217,49 @@ section { padding: 96px 0; position: relative; }
   border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
   border-radius: 14px; box-shadow: var(--shadow); overflow: hidden;
 }
-.kit-bar, .frame-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); font: 0.75rem var(--mono); color: var(--desc); }
-.frame-bar i, .kit-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--button2); }
-.frame-bar i:first-child, .kit-dots i:first-child { background: var(--warm); }
-.frame-bar i:nth-child(2), .kit-dots i:nth-child(2) { background: var(--amber); }
-.frame-bar i:nth-child(3), .kit-dots i:nth-child(3) { background: var(--accent); }
-.frame-bar span, .kit-title { margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kit-tree { margin: 0; padding: 20px 20px 8px; font: 0.85rem/1.75 var(--mono); color: var(--fg); overflow-x: auto; }
 
-/* The kit's window bar, as the visitor's system draws it (download.js sets
-   html[data-os]); the brand's dots until then, or without JavaScript. */
-.kit-bar { position: relative; min-height: 40px; }
-.kit-dots { display: flex; gap: 6px; }
-.kit-ctl { display: none; margin-left: auto; color: var(--fg); }
-.kit-ctl i { position: relative; display: block; }
-.kit-ctl i::before, .kit-ctl i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 1px; background: currentColor; transform: translate(-50%, -50%); }
-.kit-ctl .max::before { width: 9px; height: 9px; background: none; border: 1px solid currentColor; box-sizing: border-box; }
-.kit-ctl .min::after, .kit-ctl .max::after { content: none; }
-.kit-ctl .close::before { transform: translate(-50%, -50%) rotate(45deg); }
-.kit-ctl .close::after { transform: translate(-50%, -50%) rotate(-45deg); }
+/* A window's bar (.win: the hero's kit, the gallery's screenshots), as the
+   visitor's system draws it (download.js sets html[data-os]); the brand's
+   dots until then, or without JavaScript. */
+.win-bar { position: relative; display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 10px 14px; border-bottom: 1px solid var(--border); font: 0.75rem var(--mono); color: var(--desc); }
+.win-dots { display: flex; gap: 6px; }
+.win-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--button2); }
+.win-dots i:first-child { background: var(--warm); }
+.win-dots i:nth-child(2) { background: var(--amber); }
+.win-dots i:nth-child(3) { background: var(--accent); }
+.win-title { margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.win-ctl { display: none; margin-left: auto; color: var(--fg); }
+.win-ctl i { position: relative; display: block; }
+.win-ctl i::before, .win-ctl i::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 1px; background: currentColor; transform: translate(-50%, -50%); }
+.win-ctl .max::before { width: 9px; height: 9px; background: none; border: 1px solid currentColor; box-sizing: border-box; }
+.win-ctl .min::after, .win-ctl .max::after { content: none; }
+.win-ctl .close::before { transform: translate(-50%, -50%) rotate(45deg); }
+.win-ctl .close::after { transform: translate(-50%, -50%) rotate(-45deg); }
 /* macOS: the three lights on the left, the title in the middle. */
-:root[data-os="darwin"] .kit-dots i { width: 12px; height: 12px; }
-:root[data-os="darwin"] .kit-dots i:first-child { background: #ff5f57; }
-:root[data-os="darwin"] .kit-dots i:nth-child(2) { background: #febc2e; }
-:root[data-os="darwin"] .kit-dots i:nth-child(3) { background: #28c840; }
-:root[data-os="darwin"] .kit-title,
-:root[data-os="linux"] .kit-title { position: absolute; left: 50%; transform: translateX(-50%); max-width: 55%; margin: 0; font-family: var(--ui); font-weight: 600; color: var(--title); }
+:root[data-os="darwin"] .win-dots i { width: 12px; height: 12px; }
+:root[data-os="darwin"] .win-dots i:first-child { background: #ff5f57; }
+:root[data-os="darwin"] .win-dots i:nth-child(2) { background: #febc2e; }
+:root[data-os="darwin"] .win-dots i:nth-child(3) { background: #28c840; }
+:root[data-os="darwin"] .win-title,
+:root[data-os="linux"] .win-title { position: absolute; left: 50%; transform: translateX(-50%); max-width: 55%; margin: 0; font-family: var(--ui); font-weight: 600; color: var(--title); }
 /* Windows 11: the title on the left, minimise, maximise and close on the right. */
-:root[data-os="win32"] .kit { border-radius: 8px; }
-:root[data-os="win32"] .kit-bar { padding: 0 0 0 14px; font-family: var(--ui); }
-:root[data-os="win32"] .kit-dots { display: none; }
-:root[data-os="win32"] .kit-title { margin-left: 0; color: var(--title); }
-:root[data-os="win32"] .kit-ctl { display: flex; align-self: stretch; }
-:root[data-os="win32"] .kit-ctl i { width: 46px; }
-:root[data-os="win32"] .kit-ctl .close::before, :root[data-os="win32"] .kit-ctl .close::after { width: 13px; }
-:root[data-os="win32"] .kit:hover .kit-ctl .close { background: #c42b1c; color: #fff; }
+:root[data-os="win32"] .win { border-radius: 8px; }
+:root[data-os="win32"] .win-bar { padding: 0 0 0 14px; font-family: var(--ui); }
+:root[data-os="win32"] .win-dots { display: none; }
+:root[data-os="win32"] .win-title { margin-left: 0; color: var(--title); }
+:root[data-os="win32"] .win-ctl { display: flex; align-self: stretch; }
+:root[data-os="win32"] .win-ctl i { width: 46px; }
+:root[data-os="win32"] .win-ctl .close::before, :root[data-os="win32"] .win-ctl .close::after { width: 13px; }
+:root[data-os="win32"] .win:hover .win-ctl .close { background: #c42b1c; color: #fff; }
 /* Linux (GNOME): the title in the middle, one round close button on the right. */
-:root[data-os="linux"] .kit-bar { min-height: 46px; padding: 8px 11px; }
-:root[data-os="linux"] .kit-dots { display: none; }
-:root[data-os="linux"] .kit-title { font-weight: 700; }
-:root[data-os="linux"] .kit-ctl { display: flex; }
-:root[data-os="linux"] .kit-ctl .min, :root[data-os="linux"] .kit-ctl .max { display: none; }
-:root[data-os="linux"] .kit-ctl .close { width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, var(--fg) 14%, transparent); }
-:root[data-os="linux"] .kit-ctl .close::before, :root[data-os="linux"] .kit-ctl .close::after { width: 9px; height: 1.5px; }
+:root[data-os="linux"] .win-bar { min-height: 46px; padding: 8px 11px; }
+:root[data-os="linux"] .win-dots { display: none; }
+:root[data-os="linux"] .win-title { font-weight: 700; }
+:root[data-os="linux"] .win-ctl { display: flex; }
+:root[data-os="linux"] .win-ctl .min, :root[data-os="linux"] .win-ctl .max { display: none; }
+:root[data-os="linux"] .win-ctl .close { width: 24px; height: 24px; border-radius: 50%; background: color-mix(in srgb, var(--fg) 14%, transparent); }
+:root[data-os="linux"] .win-ctl .close::before, :root[data-os="linux"] .win-ctl .close::after { width: 9px; height: 1.5px; }
 .t-dir { color: var(--link); font-weight: 600; }
 .t-exe { color: var(--warm); font-weight: 600; }
 .t-l { color: var(--desc); }
@@ -349,8 +349,9 @@ section { padding: 96px 0; position: relative; }
 .shot { margin: 0; min-width: 0; }
 .shot-main { grid-row: span 2; }
 .frame { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--widget); box-shadow: var(--shadow); }
-.frame-bar { background: var(--panel); }
-/* 2560×1640 screenshots: 72px of title bar and 60px of status bar cut away. */
+.frame .win-bar { background: var(--panel); }
+/* 2560×1640 screenshots: 72px of title bar and 60px of status bar cut away;
+   the frame's .win-bar stands in for the title bar. */
 .crop { aspect-ratio: 2560 / 1508; overflow: hidden; }
 .crop img { display: block; width: 100%; height: auto; margin-top: -2.8125%; }
 .shot figcaption { font-size: 0.875rem; color: var(--desc); margin-top: 10px; }

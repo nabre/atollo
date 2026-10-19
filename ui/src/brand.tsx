@@ -9,10 +9,12 @@ export function BrandSymbol({ size }: { size: number }) {
   return <img data-tauri-drag-region src={symbol} alt="" width={size} height={size} draggable={false} />;
 }
 
-/** The name, in Deep Forest on light and Cloud on dark; `height` in px. */
+/** The name, in Deep Forest on light and Cloud on dark, its last O the
+ * symbol with the waves below the baseline: never next to BrandSymbol.
+ * `height` in px, waves included (the capitals take 100/129 of it). */
 export function BrandWordmark({ height, label = true }: { height: number; label?: boolean }) {
-  // 558 x 100: the wordmark's viewBox.
-  const width = Math.round((height * 558) / 100);
+  // 514 x 129: the wordmark's viewBox.
+  const width = Math.round((height * 514) / 129);
   const alt = label ? "Atollo" : "";
   return (
     <>

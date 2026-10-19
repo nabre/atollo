@@ -309,7 +309,9 @@ fn php_release_of(ctx: &Ctx, version: String, mut parts: Vec<Part>) -> Result<Re
     })
 }
 
-/// PHP for macOS and Linux (D-112): the builds of static-php-cli,
+/// PHP for macOS and Linux (D-112): the kit's own builds where the catalog
+/// pins one for the line ([`php_build_release`], issue #4: with
+/// `pdo_sqlite` and `pdo_pgsql`), otherwise the builds of static-php-cli,
 /// one static binary per archive, `php` (CLI) and `php-fpm` (the FastCGI
 /// server of Caddy, `projects/fastcgi.rs`), with their extensions built in.
 /// Its "bulk" set: the only one with `intl`, `mysqli` (phpMyAdmin,
@@ -462,6 +464,107 @@ fn static_php_release(ctx: &Ctx, target: Target, line: Option<&str>) -> Result<R
     )
 }
 
+/// The kit's PHP builds for macOS and Linux (`scripts/build-php`, issue #4):
+/// releases `php-v<version>` of this repository, one tarball per target with
+/// `bin/php` and `sbin/php-fpm`, built with static-php-cli from the
+/// extensions of its "bulk" set but `swoole-hook-sqlite` and
+/// `swoole-hook-pgsql`, so with the real `pdo_sqlite` and `pdo_pgsql`. Each
+/// line's version (`8.4.23-1`: PHP and the kit's build number) and the
+/// SHA-256 of each tarball are fixed in `sha256ByLine` of `php`.
+fn php_build_pins() -> &'static BTreeMap<String, super::db::MysqlPin> {
+    static PINS: std::sync::OnceLock<BTreeMap<String, super::db::MysqlPin>> =
+        std::sync::OnceLock::new();
+    PINS.get_or_init(|| {
+        serde_json::from_str::<Value>(include_str!("../../catalog/components.json"))
+            .map(|v| line_pins_in(&v, "php"))
+            .unwrap_or_default()
+    })
+}
+
+/// The tarball of the kit's PHP `version` (`8.4.23-1`) for a macOS or Linux
+/// `target`.
+pub fn php_build_file(target: Target, version: &str) -> String {
+    format!("php-{version}-{target}.tar.gz")
+}
+
+/// The address of `file` in the release of the kit's PHP `version`.
+pub fn php_build_url(version: &str, file: &str) -> String {
+    format!("{HTTPD_RELEASES}/php-v{version}/{file}")
+}
+
+/// The part of the kit's PHP build of `line` for `target` when `pins` has one
+/// with a valid SHA-256, and its version (`8.4.23-1`).
+pub fn php_build_part(
+    pins: &BTreeMap<String, super::db::MysqlPin>,
+    target: Target,
+    line: &str,
+) -> Option<(String, Part)> {
+    if target.os == Os::Win32
+        || !super::db::mysql_lines_for(pins, target)
+            .iter()
+            .any(|l| l == line)
+    {
+        return None;
+    }
+    let pin = &pins[line];
+    let sha = pin
+        .sha256_by_target
+        .get(target.as_str())?
+        .to_ascii_lowercase();
+    if sha.len() != 64 || !sha.chars().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    let file = php_build_file(target, &pin.version);
+    Some((
+        pin.version.clone(),
+        Part {
+            url: php_build_url(&pin.version, &file),
+            file_name: file,
+            expect: Expect::Sha256(sha),
+            kind: Kind::TarGz,
+            inner: Inner::Root,
+            dest: Dest::Own,
+            sign: None,
+        },
+    ))
+}
+
+/// The lines of PHP for macOS or Linux `target`, newest first, each with the
+/// version installed: the kit's build when pinned, otherwise
+/// static-php-cli's.
+pub fn unix_php_versions(
+    builds: &BTreeMap<String, super::db::MysqlPin>,
+    bulk: &BTreeMap<String, String>,
+    target: Target,
+) -> Vec<(String, String)> {
+    let mut out = static_php_versions(bulk, target);
+    for line in super::db::mysql_lines_for(builds, target) {
+        let version = builds[&line].version.clone();
+        match out.iter_mut().find(|(l, _)| *l == line) {
+            Some(found) => found.1 = version,
+            None => out.push((line, version)),
+        }
+    }
+    out.sort_by_key(|(l, _)| std::cmp::Reverse(super::lang::version_key(l)));
+    out
+}
+
+/// The release of `line` (the newest with `None`) for macOS or Linux: the
+/// kit's build when the catalog pins one, static-php-cli's otherwise.
+fn unix_php_release(ctx: &Ctx, target: Target, line: Option<&str>) -> Result<Release> {
+    let builds = php_build_pins();
+    let newest = unix_php_versions(builds, catalog_pins(), target);
+    let wanted = line.or_else(|| newest.first().map(|(l, _)| l.as_str()));
+    if let Some((version, part)) = wanted.and_then(|l| php_build_part(builds, target, l)) {
+        // Composer is chosen for PHP's version; the release keeps the build.
+        let php = version.split('-').next().unwrap_or(&version).to_owned();
+        let mut release = php_release_of(ctx, php.clone(), vec![part])?;
+        release.version = release.version.replacen(&php, &version, 1);
+        return Ok(release);
+    }
+    static_php_release(ctx, target, line)
+}
+
 /// The branches of `releases.json` with a Thread Safe x64 build, newest first.
 pub fn php_lines(releases: &Value) -> Vec<String> {
     let mut out: Vec<String> = releases
@@ -557,7 +660,7 @@ impl Installer for Php {
     fn lines(&self, ctx: &Ctx, component: &Component) -> Result<Vec<String>> {
         let target = target_of(ctx, component);
         if !target.is_windows() {
-            return Ok(static_php_versions(catalog_pins(), target)
+            return Ok(unix_php_versions(php_build_pins(), catalog_pins(), target)
                 .into_iter()
                 .map(|(line, _)| line)
                 .collect());
@@ -575,7 +678,7 @@ impl Installer for Php {
     fn release_line(&self, ctx: &Ctx, component: &Component, line: &str) -> Result<Release> {
         let target = target_of(ctx, component);
         if !target.is_windows() {
-            return static_php_release(ctx, target, Some(line));
+            return unix_php_release(ctx, target, Some(line));
         }
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let (version, path, sha) = match pick_php(&releases, Some(line)) {
@@ -595,7 +698,7 @@ impl Installer for Php {
         if !target.is_windows() {
             // The line of the settings when it has a build with a fixed hash
             // here (a kit prepared on Windows may name one that has none).
-            let pinned = static_php_versions(catalog_pins(), target);
+            let pinned = unix_php_versions(php_build_pins(), catalog_pins(), target);
             let line = branch
                 .as_deref()
                 .filter(|b| pinned.iter().any(|(l, _)| l == b));
@@ -604,7 +707,7 @@ impl Installer for Php {
                     "PHP {b} has no build for {target}: the newest one is installed"
                 ));
             }
-            return static_php_release(ctx, target, line);
+            return unix_php_release(ctx, target, line);
         }
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
         let (version, path, sha) = match pick_php(&releases, branch.as_deref()) {
@@ -911,11 +1014,11 @@ pub fn php_ini_unix() -> String {
     [
         "; Atollo php.ini for the PHP of static-php-cli (macOS, Linux): yours,",
         "; updates never touch it. Its extensions are built in: no extension= line.",
-        "; SQLite through PDO (new PDO('sqlite:...')) works with the driver of",
-        "; swoole-hook-sqlite, but php -m does not list pdo_sqlite: a composer.json",
-        "; that requires ext-pdo_sqlite, extension_loaded('pdo_sqlite') and the",
-        "; class Sqlite of PHP 8.4's Pdo namespace do not see it (static-php-cli's",
-        "; bulk build, the only one with intl, mysqli and sodium).",
+        "; The kit's own build (BUILDINFO.txt next to bin/) has pdo_sqlite and",
+        "; pdo_pgsql. static-php-cli's bulk build, used for a line the kit has no",
+        "; build of, has SQLite through PDO by swoole-hook-sqlite only: php -m does",
+        "; not list pdo_sqlite, so a composer.json that requires ext-pdo_sqlite and",
+        "; extension_loaded('pdo_sqlite') do not see it.",
         "[PHP]",
         "engine = On",
         "short_open_tag = Off",

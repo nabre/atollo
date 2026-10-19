@@ -39,7 +39,8 @@ import { Databases } from "./databases";
 import { Git } from "./git";
 import { DeleteProjectDialog } from "./delete";
 
-type Section = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
+export type ProjectSection = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
+type Section = ProjectSection;
 
 export function ProjectPage({
   p,
@@ -55,6 +56,7 @@ export function ProjectPage({
   onShowLog,
   onForget,
   onChanged,
+  initial,
 }: {
   p: ProjectInfo;
   agents: AgentInfo[] | null;
@@ -69,10 +71,12 @@ export function ProjectPage({
   onShowLog: (key: string) => void;
   onForget: (key: string) => void;
   onChanged: () => void;
+  /** Where the page opens (the home's «Installa», «Vedi l'output»). */
+  initial?: { section?: ProjectSection; action?: string } | undefined;
 }) {
-  const [section, setSection] = useState<Section>("run");
+  const [section, setSection] = useState<Section>(initial?.section ?? "run");
   /** The action shown in Avvio (null: the default one). */
-  const [chosen, setChosen] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string | null>(initial?.action ?? null);
   /** The confirmation of the deletion is open. */
   const [deleting, setDeleting] = useState(false);
   const readStatus = useCallback(() => projectStatus(p.id), [p.id]);
@@ -213,7 +217,7 @@ export function ProjectPage({
         <ErrorLine error={error} />
       </div>
       <NavBar label={t("Sezioni del progetto")} items={items} active={section} onSelect={setSection} />
-      <EditorBody narrow fill={section === "run"}>
+      <EditorBody fill={section === "run"}>
         {section === "run" && (
           <>
             {action && (

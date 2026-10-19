@@ -1,12 +1,169 @@
-// The ways to make a new project in the side bar of Projects: an empty
-// folder, or a clone of a Git address.
-import { useState, type SyntheticEvent } from "react";
-import { VscCloudDownload } from "react-icons/vsc";
+// The ways to make a new project: a tree in the side bar of Projects (an
+// empty folder, a clone of a Git address, a framework or CMS and its bases
+// by group: web with PHP, CMS, desktop…), each opening its procedure in the
+// «Nuovo progetto» tab of the editor.
+import { useState, type ReactNode, type SyntheticEvent } from "react";
+import { VscCloudDownload, VscNewFolder, VscRepoClone, VscWand } from "react-icons/vsc";
 import { projectClone, projectCreate } from "../api";
+import { bases, basesByCategory, PieceLogo, textOf, type Frameworks } from "../frameworks";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Button, TextField } from "../workbench";
+import { Button, EditorBody, EditorHeader, List, ListRow, TextField } from "../workbench";
+
+/** The procedure shown in the «Nuovo progetto» tab. */
+export type NewWay = "empty" | "git" | "framework";
+
+export function wayLabel(way: NewWay): string {
+  return { empty: t("Progetto vuoto"), git: t("Da un indirizzo Git"), framework: t("Da framework o CMS") }[way];
+}
+
+/** The side bar's tree of the ways; under the frameworks, their bases. */
+export function NewProjectTree({
+  fw,
+  way,
+  base,
+  onSelect,
+}: {
+  fw: Frameworks;
+  /** The procedure shown, or null when the tab is not the active one. */
+  way: NewWay | null;
+  base: string;
+  onSelect: (way: NewWay, base?: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  /** Groups opened or closed by hand; the others open while they hold the base shown. */
+  const [groups, setGroups] = useState<Record<string, boolean>>({});
+  const list = bases(fw.pieces);
+  return (
+    <List label={t("Nuovo progetto")}>
+      <ListRow
+        icon={<VscNewFolder size={16} aria-hidden="true" />}
+        label={wayLabel("empty")}
+        selected={way === "empty"}
+        current="page"
+        onSelect={() => {
+          onSelect("empty");
+        }}
+      />
+      <ListRow
+        icon={<VscRepoClone size={16} aria-hidden="true" />}
+        label={wayLabel("git")}
+        selected={way === "git"}
+        current="page"
+        onSelect={() => {
+          onSelect("git");
+        }}
+      />
+      <ListRow
+        twistie={list.length > 0 ? (open ? "open" : "closed") : undefined}
+        icon={<VscWand size={16} aria-hidden="true" />}
+        label={wayLabel("framework")}
+        description={list.length > 0 ? String(list.length) : undefined}
+        selected={way === "framework" && !open}
+        current="page"
+        onSelect={() => {
+          // Shown already: the branch opens and closes. Else the wizard
+          // opens, the bases under it.
+          if (way === "framework") setOpen(!open);
+          else setOpen(true);
+          onSelect("framework");
+        }}
+      >
+        {list.length > 0 && (
+          <List label={wayLabel("framework")}>
+            {basesByCategory(fw.pieces).map((g) => {
+              const holds = way === "framework" && g.bases.some((b) => b.id === base);
+              const shown = groups[g.id] ?? holds;
+              return (
+                <ListRow
+                  key={g.id}
+                  depth={1}
+                  twistie={shown ? "open" : "closed"}
+                  label={g.label}
+                  description={String(g.bases.length)}
+                  onSelect={() => {
+                    setGroups((all) => ({ ...all, [g.id]: !shown }));
+                  }}
+                >
+                  <List label={g.label}>
+                    {g.bases.map((b) => (
+                      <ListRow
+                        key={b.id}
+                        depth={2}
+                        icon={<PieceLogo piece={b} />}
+                        label={b.name || b.id}
+                        title={textOf(fw.view, b.desc)}
+                        selected={way === "framework" && base === b.id}
+                        current="page"
+                        onSelect={() => {
+                          onSelect("framework", b.id);
+                        }}
+                      />
+                    ))}
+                  </List>
+                </ListRow>
+              );
+            })}
+          </List>
+        )}
+      </ListRow>
+    </List>
+  );
+}
+
+/** A simple procedure in the editor: its header, its form. */
+function WayEditor({
+  way,
+  icon,
+  description,
+  children,
+}: {
+  way: NewWay;
+  icon: ReactNode;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <EditorHeader
+        icon={icon}
+        title={t("Nuovo progetto")}
+        meta={[<span key="way">{wayLabel(way)}</span>]}
+        description={description}
+      />
+      <EditorBody>
+        <div className="max-w-105">{children}</div>
+      </EditorBody>
+    </div>
+  );
+}
+
+const BIG = "text-vsc-icon opacity-80";
+
+export function EmptyProjectEditor({ onDone, focus }: { onDone: (name: string) => void; focus: number }) {
+  return (
+    <WayEditor
+      way="empty"
+      icon={<VscNewFolder size={56} aria-hidden="true" className={BIG} />}
+      description={t("Una cartella nuova e vuota in projects.")}
+    >
+      <NewProject onDone={onDone} focus={focus} />
+    </WayEditor>
+  );
+}
+
+export function GitProjectEditor({ onDone }: { onDone: (name: string) => void }) {
+  return (
+    <WayEditor
+      way="git"
+      icon={<VscRepoClone size={56} aria-hidden="true" className={BIG} />}
+      description={t("Il repository si clona in una cartella di projects.")}
+    >
+      <CloneProject onDone={onDone} />
+    </WayEditor>
+  );
+}
 
 export function NewProject({
   onDone,
