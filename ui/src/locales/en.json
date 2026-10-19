@@ -872,8 +872,8 @@
   "Riduci": "Collapse",
   "Mostra solo lo stato sulla piattaforma scelta": "Show only the state on the chosen platform",
   "Mostra lo stato anche sulle altre piattaforme": "Show the state on the other platforms too",
-  "da reinstallare": "to reinstall",
-  "incompleto": "incomplete",
-  "scelto, non scaricato": "chosen, not downloaded",
+  "da aggiornare": "to update",
+  "pre-installato": "pre-installed",
+  "non esiste": "not present",
   "nessun file in data/apps/{0}": "no files in data/apps/{0}"
 }

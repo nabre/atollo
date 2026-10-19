@@ -872,8 +872,8 @@
   "Riduci": "Reduzieren",
   "Mostra solo lo stato sulla piattaforma scelta": "Nur den Status auf der gewählten Plattform zeigen",
   "Mostra lo stato anche sulle altre piattaforme": "Den Status auch auf den anderen Plattformen zeigen",
-  "da reinstallare": "neu zu installieren",
-  "incompleto": "unvollständig",
-  "scelto, non scaricato": "gewählt, nicht heruntergeladen",
+  "da aggiornare": "zu aktualisieren",
+  "pre-installato": "vorinstalliert",
+  "non esiste": "nicht vorhanden",
   "nessun file in data/apps/{0}": "keine Dateien in data/apps/{0}"
 }
