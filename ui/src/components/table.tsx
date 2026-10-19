@@ -2,8 +2,17 @@
 // group and state, sortable columns, the choice of each row (or of all
 // those shown) applied with "Apply" as on the tool's own page, and the
 // actions done at once: install (at a chosen version), add a version, update.
-import { useMemo, useState } from "react";
-import { VscArrowDown, VscArrowUp, VscCheck, VscCloudDownload, VscSync, VscWarning } from "react-icons/vsc";
+import { Fragment, useMemo, useState } from "react";
+import {
+  VscArrowDown,
+  VscArrowUp,
+  VscCheck,
+  VscCloudDownload,
+  VscFold,
+  VscSync,
+  VscUnfold,
+  VscWarning,
+} from "react-icons/vsc";
 import {
   TARGETS,
   componentsInstall,
@@ -12,17 +21,19 @@ import {
   versionsInstall,
   type ComponentInfo,
   type SetupSnapshot,
+  type TargetId,
 } from "../api";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
 import { ComponentLogo } from "../logos";
-import { ItemStatus, itemState } from "../setup";
+import { itemState } from "../setup";
 import { Tag } from "../tags";
 import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } from "../versions";
 import { Checkbox, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
 import { groups, linesOf, matches, sizeText } from "./model";
 import type { ComponentsState } from "./state";
-import { targetLabel } from "./targets";
+import { TOOL_STATES, ToolStateIcon, otherStatus, shownStatus, toolStateLabel } from "./status";
+import { targetLabel, targetName } from "./targets";
 
 type Sort = "name" | "group" | "version" | "size" | "state";
 type Show = "all" | "installed" | "missing" | "pending" | "needed";
@@ -105,13 +116,6 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
   );
 }
 
-/** The order of the states in the "State" column. */
-function stateRank(c: ComponentInfo, on: boolean): number {
-  if (on !== (c.chosen || c.locked)) return 0;
-  if (c.installed || c.bootstrapStaged) return 1;
-  return on ? 2 : 3;
-}
-
 export function ToolsTable({
   state,
   kit,
@@ -125,8 +129,15 @@ export function ToolsTable({
 }) {
   const list = state.list ?? [];
   const { chosen, choose, neededBy, target, setTarget, checks, checking, verifyTarget, grid, host } = state;
-  const activeTarget = target ?? host ?? setup?.target ?? "win32-x64";
+  const activeTarget = (target ?? host ?? setup?.target ?? "win32-x64") as TargetId;
   const running = setup?.running ?? false;
+  // The state is a column per system, as in the «Matrice» overview: the
+  // system shown, and with "Expand" each of the others.
+  const [expanded, setExpanded] = useState(false);
+  const allProfiles = grid?.profiles ?? [];
+  const columns: TargetId[] = expanded && allProfiles.length > 0 ? allProfiles.map((p) => p.id) : [activeTarget];
+  const status = (id: string, of: TargetId) =>
+    grid?.targets.find((s) => s.target === of)?.tools.find((x) => x.id === id);
   const all = groups();
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState("all");
@@ -164,7 +175,10 @@ export function ToolsTable({
         case "size":
           return c.mb;
         case "state":
-          return stateRank(c, chosen.has(c.id));
+          return TOOL_STATES.indexOf(
+            shownStatus(c, status(c.id, activeTarget), chosen.has(c.id), itemState(setup, c.id, c.name), activeTarget)
+              .state,
+          );
       }
     };
     return shown.sort((a, b) => {
@@ -175,20 +189,25 @@ export function ToolsTable({
     });
     // groupOf and all only read the catalog's groups, fixed for the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list, chosen, search, group, show, sort, neededBy]);
+  }, [list, chosen, search, group, show, sort, neededBy, grid, activeTarget, setup]);
 
   const free = rows.filter((c) => !c.locked && (c.available || chosen.has(c.id)));
   const allOn = free.length > 0 && free.every((c) => chosen.has(c.id));
   const someOn = free.some((c) => chosen.has(c.id));
-  const header = (by: Sort, label: string, right = false) => (
-    <th scope="col" aria-sort={sort.by === by ? (sort.up ? "ascending" : "descending") : undefined} className="p-0">
+  const header = (by: Sort, label: string, align: "left" | "right" | "center" = "left", extra = "", title?: string) => (
+    <th
+      scope="col"
+      aria-sort={sort.by === by ? (sort.up ? "ascending" : "descending") : undefined}
+      title={title}
+      className={`p-0 ${extra}`}
+    >
       <button
         type="button"
         onClick={() => {
           setSort((s) => ({ by, up: s.by === by ? !s.up : true }));
         }}
         className={`flex w-full items-center gap-1 px-2 py-[5px] leading-5 font-bold whitespace-nowrap hover:bg-vsc-list-hover ${
-          right ? "justify-end" : ""
+          { left: "", right: "justify-end", center: "justify-center" }[align]
         }`}
       >
         {label}
@@ -229,6 +248,19 @@ export function ToolsTable({
           ]}
         />
         <ActionButton
+          icon={expanded ? VscFold : VscUnfold}
+          label={expanded ? t("Riduci") : t("Espandi")}
+          title={
+            expanded
+              ? t("Mostra solo lo stato sulla piattaforma scelta")
+              : t("Mostra lo stato anche sulle altre piattaforme")
+          }
+          disabled={allProfiles.length < 2}
+          onClick={() => {
+            setExpanded((v) => !v);
+          }}
+        />
+        <ActionButton
           icon={VscCheck}
           label={t("Verifica")}
           busy={checking}
@@ -239,6 +271,14 @@ export function ToolsTable({
           {t("{0} di {1}", rows.length, list.length)}
         </span>
       </div>
+      <ul aria-label={t("Legenda")} className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 px-5 pb-2 text-[12px]">
+        {TOOL_STATES.map((s) => (
+          <li key={s} className="flex items-center gap-1.5">
+            <ToolStateIcon state={s} />
+            {toolStateLabel(s)}
+          </li>
+        ))}
+      </ul>
       {kit.error && (
         <div className="px-5 pb-2">
           <ErrorLine
@@ -270,8 +310,23 @@ export function ToolsTable({
               <th scope="col" className="px-2 py-[5px] text-left font-bold whitespace-nowrap">
                 {t("Versioni su disco")}
               </th>
-              {header("size", t("Dimensione"), true)}
-              {header("state", t("Stato"))}
+              {header("size", t("Dimensione"), "right")}
+              {columns.map((id) =>
+                id === activeTarget ? (
+                  <Fragment key={id}>
+                    {header("state", targetName(id), "center", "bg-vsc-focus/15", targetLabel(id, allProfiles))}
+                  </Fragment>
+                ) : (
+                  <th
+                    key={id}
+                    scope="col"
+                    title={targetLabel(id, allProfiles)}
+                    className="px-2 py-[5px] text-center font-bold whitespace-nowrap"
+                  >
+                    {targetName(id)}
+                  </th>
+                ),
+              )}
               <th scope="col" className="px-2 py-[5px] text-left font-bold whitespace-nowrap">
                 {t("Progetti")}
               </th>
@@ -330,35 +385,29 @@ export function ToolsTable({
                   )}
                 </td>
                 <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>{sizeText(c.mb)}</td>
-                <td className={`${cell} whitespace-nowrap`}>
-                  <span className="flex items-center gap-1.5">
-                    {item ? (
-                      <ItemStatus state={item} />
-                    ) : pending ? (
-                      <span className="text-vsc-settings-modified">{on ? t("da installare") : t("da rimuovere")}</span>
-                    ) : c.installed ? (
-                      <span className="text-vsc-success">{t("installato")}</span>
-                    ) : c.bootstrapStaged ? (
-                      <span
-                        className="text-vsc-success"
-                        title={t("Bootstrap pre-scaricato; l'installazione termina al primo avvio su quel sistema")}
-                      >
-                        {t("pre-scaricato")}
+                {columns.map((id) => {
+                  const here = id === activeTarget;
+                  const s = status(c.id, id);
+                  const st = here ? shownStatus(c, s, on, item, id) : s ? otherStatus(s, id) : null;
+                  if (!st) return <td key={id} className={cell} />;
+                  const parts = [toolStateLabel(st.state), st.detail];
+                  if (here && check) parts.push(`${t("Verifica")}: ${check.answer}`);
+                  const label = `${c.name}, ${targetName(id)}: ${parts.filter(Boolean).join(" — ")}`;
+                  return (
+                    <td key={id} className={`${cell} text-center whitespace-nowrap ${here ? "bg-vsc-focus/10" : ""}`}>
+                      <span role="img" aria-label={label} title={label} className="inline-flex items-center gap-1">
+                        <ToolStateIcon state={st.state} />
+                        {here &&
+                          check &&
+                          (check.ok ? (
+                            <VscCheck size={12} aria-hidden="true" className="text-vsc-focus" />
+                          ) : (
+                            <VscWarning size={12} aria-hidden="true" className="text-vsc-warning" />
+                          ))}
                       </span>
-                    ) : c.noArm64 ? (
-                      <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
-                    ) : c.unavailableReason !== null ? (
-                      <span className="text-vsc-desc">{c.unavailableReason}</span>
-                    ) : (
-                      <span className="text-vsc-desc">{t("non installato")}</span>
-                    )}
-                    {check && (
-                      <Tag tone={check.ok ? "focus" : "warning"}>
-                        {check.ok ? "√" : "x"} {check.answer}
-                      </Tag>
-                    )}
-                  </span>
-                </td>
+                    </td>
+                  );
+                })}
                 <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
                   {needed.length > 0 && !on && (
                     <VscWarning

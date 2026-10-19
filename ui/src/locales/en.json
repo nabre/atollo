@@ -867,5 +867,13 @@
   "{0} con {1}": "{0} with {1}",
   "Aggiunte": "Additions",
   "I comandi di {0} quando si sceglie con {1}: dopo quelli della base; se crea il progetto, la sua creazione prende il posto di quella della base.": "The commands of {0} when chosen with {1}: after those of the base; if it creates the project, its creation replaces the base's.",
-  "{0} con tutte le basi": "{0} with all the bases"
+  "{0} con tutte le basi": "{0} with all the bases",
+  "Espandi": "Expand",
+  "Riduci": "Collapse",
+  "Mostra solo lo stato sulla piattaforma scelta": "Show only the state on the chosen platform",
+  "Mostra lo stato anche sulle altre piattaforme": "Show the state on the other platforms too",
+  "da reinstallare": "to reinstall",
+  "incompleto": "incomplete",
+  "scelto, non scaricato": "chosen, not downloaded",
+  "nessun file in data/apps/{0}": "no files in data/apps/{0}"
 }

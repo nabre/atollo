@@ -867,5 +867,13 @@
   "{0} con {1}": "{0} avec {1}",
   "Aggiunte": "Ajouts",
   "I comandi di {0} quando si sceglie con {1}: dopo quelli della base; se crea il progetto, la sua creazione prende il posto di quella della base.": "Les commandes de {0} quand on le choisit avec {1} : après celles de la base ; s'il crée le projet, sa création remplace celle de la base.",
-  "{0} con tutte le basi": "{0} avec toutes les bases"
+  "{0} con tutte le basi": "{0} avec toutes les bases",
+  "Espandi": "Développer",
+  "Riduci": "Réduire",
+  "Mostra solo lo stato sulla piattaforma scelta": "Afficher seulement l'état sur la plateforme choisie",
+  "Mostra lo stato anche sulle altre piattaforme": "Afficher aussi l'état sur les autres plateformes",
+  "da reinstallare": "à réinstaller",
+  "incompleto": "incomplet",
+  "scelto, non scaricato": "choisi, non téléchargé",
+  "nessun file in data/apps/{0}": "aucun fichier dans data/apps/{0}"
 }

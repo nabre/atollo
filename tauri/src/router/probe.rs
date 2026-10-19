@@ -24,6 +24,10 @@ pub struct TargetToolStatus {
     pub chosen: bool,
     pub installed: bool,
     pub present: bool,
+    /// Something of it is on disk but not all: the first part missing,
+    /// relative to the kit's folder (`data/apps/<target>/…`). A download or
+    /// an installation that did not finish.
+    pub missing: Option<String>,
     pub version: Option<String>,
     pub needs_reinstall: bool,
     pub bootstrap_staged: bool,
@@ -78,6 +82,13 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
         let chosen = available && (choice.is_chosen(&c.id) || here.contains(c.id.as_str()));
         let installed = available && c.is_installed(&scoped);
         let present = c.is_present(&scoped);
+        let missing = (present && !c.is_installed(&scoped))
+            .then(|| c.missing_part(&scoped))
+            .flatten()
+            .map(|p| {
+                let p = p.strip_prefix(scoped.root()).unwrap_or(&p);
+                p.display().to_string().replace('\\', "/")
+            });
         let version = c.installed_version(&scoped);
         let needs_reinstall = c.needs_reinstall(&scoped);
         let bootstrap_staged = available && super::bootstrap::is_staged(&scoped, c);
@@ -107,6 +118,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             chosen,
             installed,
             present,
+            missing,
             version,
             needs_reinstall,
             bootstrap_staged,
