@@ -1,5 +1,12 @@
 # Novità
 
+## La Guida ripensata (19/10/2026)
+
+- **Nove capitoli** (D-135), dal più semplice al più tecnico: Primi passi, Progetti, Database siti e terminali, Agenti IA, Strumenti e linguaggi, Account e impostazioni, Portare il kit con sé, Come funziona dentro, Aiuto. 36 argomenti, ognuno con «In breve», i passi con le etichette dell'interfaccia, consigli, la parte tecnica ripiegata e gli argomenti collegati.
+- **Nuovi argomenti**: un primo progetto passo per passo, la finestra spiegata parte per parte, la pagina Terminali, problemi comuni con il loro messaggio, domande frequenti, glossario.
+- **Corretta** su ogni punto rispetto all'app di oggi: niente più funzioni che non esistono, percorsi e variabili verificati nel codice; screenshot nuovi dall'anteprima, senza il vecchio marchio.
+- La pagina **Terminali** ha il suo pulsante della guida.
+
 ## Testi al passo con il rilascio 0.2.0 (19/10/2026)
 
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue): la 0.2.0 alpha è su GitHub per i sei sistemi e va provata su macchine pulite; su Windows esce senza firma, SignPath è ancora da attivare.

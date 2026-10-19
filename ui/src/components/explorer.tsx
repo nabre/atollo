@@ -202,7 +202,7 @@ export function ToolsPage({
                 icon={VscBook}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
-                  onGuide("sources-table");
+                  onGuide("tools");
                 }}
               />
             )}

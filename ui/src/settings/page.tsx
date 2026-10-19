@@ -263,7 +263,7 @@ export function SettingsPage({
               icon={VscBook}
               label={t("Apri la guida di questa pagina")}
               onClick={() => {
-                onGuide(tabs.active === "github" ? "github-setup" : "cfg-init-net");
+                onGuide(tabs.active === "github" ? "github" : tabs.active === "network" ? "network" : "settings");
               }}
             />
           ) : undefined

@@ -4,7 +4,7 @@
 // one on disk (tauri/src/terminals.rs).
 
 import { useCallback, useState } from "react";
-import { VscAdd, VscCopy, VscFolderOpened, VscRefresh, VscSave, VscTerminal, VscTrash } from "react-icons/vsc";
+import { VscAdd, VscBook, VscCopy, VscFolderOpened, VscRefresh, VscSave, VscTerminal, VscTrash } from "react-icons/vsc";
 import {
   terminalDirPick,
   terminalLaunch,
@@ -460,7 +460,10 @@ function TerminalEditor({
   );
 }
 
-export function TerminalsPage({ onTools }: { onTools?: () => void } = {}) {
+export function TerminalsPage({
+  onTools,
+  onGuide,
+}: { onTools?: () => void; onGuide?: (topic: "terminals") => void } = {}) {
   const {
     data: view,
     error: loadError,
@@ -498,6 +501,15 @@ export function TerminalsPage({ onTools }: { onTools?: () => void } = {}) {
           <>
             <IconButton icon={VscAdd} label={t("Nuovo terminale")} onClick={startNew} />
             <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={reload} />
+            {onGuide && (
+              <IconButton
+                icon={VscBook}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("terminals");
+                }}
+              />
+            )}
           </>
         }
       />
