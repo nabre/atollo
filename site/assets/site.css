@@ -109,7 +109,9 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+/* overflow-x on html too: on body it does not reach the viewport, and a phone
+   widened its layout to the tools matrix (min-width 760px) and zoomed the page out. */
+html { scroll-behavior: smooth; scroll-padding-top: 64px; overflow-x: clip; }
 body {
   margin: 0;
   background: var(--bg);
@@ -269,8 +271,19 @@ section { padding: 96px 0; position: relative; }
 .kit-targets li.here { border-color: var(--accent); color: var(--title); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 .kit-targets li.here::before { content: "● "; color: var(--accent); }
 
-/* Narrow desktops: the text column keeps both buttons on one line. */
-@media (min-width: 861px) and (max-width: 1100px) { .hero-grid { grid-template-columns: 1.6fr 1fr; gap: 32px; } }
+/* Narrow desktops: the text column keeps both buttons on one line (the
+   kit's tree sets the side column's width, so the buttons get narrower),
+   and the stats stay on the first screen with the title in every language. */
+@media (min-width: 861px) and (max-width: 1100px) {
+  .hero-grid { grid-template-columns: 1.6fr 1fr; gap: 32px; }
+  .btn { padding: 0 18px; }
+  .kit-tree { font-size: 0.78rem; }
+  .stat { padding-left: 16px; padding-right: 16px; }
+  .stat span { font-size: 0.8rem; }
+}
+/* Short two-column screens (900×600): the side column (icon over the kit)
+   sets the hero's height there, so less room above the kit. */
+@media (min-width: 861px) and (max-height: 640px) { .hero-side { padding-top: min(148px, 6vh); } }
 @media (max-width: 860px) {
   .hero { min-height: auto; padding-top: 110px; }
   .hero-grid { grid-template-columns: 1fr; gap: 40px; }
@@ -292,7 +305,9 @@ section { padding: 96px 0; position: relative; }
 }
 
 /* Stats */
-.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; margin-top: min(48px, 3vh); border: 1px solid var(--border); border-radius: 14px; background: var(--panel); position: relative; z-index: 2; box-shadow: var(--shadow); }
+/* The first label (the six systems) is three times the others: its column
+   is wider, so the four labels take about as many lines and the row stays low. */
+.stats-row { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; width: 100%; margin-top: min(48px, 3vh); border: 1px solid var(--border); border-radius: 14px; background: var(--panel); position: relative; z-index: 2; box-shadow: var(--shadow); }
 .stat { padding: min(26px, 2.4vh) 24px; border-left: 1px solid var(--border); }
 .stat:first-child { border-left: 0; }
 .stat b { display: block; font: 700 clamp(2rem, 4vw, 2.75rem)/1 var(--ui); color: var(--title); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
