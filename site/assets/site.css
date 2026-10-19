@@ -151,7 +151,7 @@ section { padding: 96px 0; position: relative; }
 .lang-menu summary::-webkit-details-marker { display: none; }
 .lang-menu summary:hover, .lang-menu[open] summary, .theme-cycle:hover { color: var(--title); border-color: color-mix(in srgb, var(--title) 30%, var(--border)); }
 .lang-menu summary:focus-visible, .theme-cycle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.lang-menu .chev { width: 9px; height: 6px; color: var(--desc); transition: transform 0.2s; }
+.lang-menu .chev { width: 14px; height: 14px; color: var(--desc); transition: transform 0.2s; }
 .lang-menu[open] .chev { transform: rotate(180deg); }
 .lang-menu b { font-weight: 500; }
 .flag { display: flex; width: 18px; height: 12px; border-radius: 2px; overflow: hidden; box-shadow: 0 0 0 1px color-mix(in srgb, var(--fg) 18%, transparent); }
@@ -172,7 +172,7 @@ section { padding: 96px 0; position: relative; }
    current one's icon. It needs site.js, so only with .js. */
 .theme-cycle { display: none; padding: 0; width: 30px; justify-content: center; }
 .js .theme-cycle { display: flex; }
-.theme-cycle svg { display: none; width: 15px; height: 15px; }
+.theme-cycle svg { display: none; width: 16px; height: 16px; }
 :root:not([data-theme]) .theme-cycle [data-icon="system"],
 :root[data-theme="light"] .theme-cycle [data-icon="light"],
 :root[data-theme="dark"] .theme-cycle [data-icon="dark"] { display: block; }
