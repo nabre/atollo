@@ -107,5 +107,9 @@
   "privacyText": "Atollo ne collecte aucune donnée et ne contacte aucun serveur de son auteur. Il se connecte seulement aux sources officielles des composants choisis et, si vous les utilisez, aux API de GitHub et des agents.",
   "footerLicense": "Licence MIT",
   "footerSigning": "Signature de code Windows offerte par SignPath.io, certificat de la SignPath Foundation.",
-  "readmeHref": "https://github.com/nabre/atollo/blob/main/docs/README.fr.md"
+  "readmeHref": "https://github.com/nabre/atollo/blob/main/docs/README.fr.md",
+  "signingLink": "Code signing policy",
+  "signingHref": "https://github.com/nabre/atollo/blob/main/docs/README.fr.md#code-signing-policy",
+  "privacyLink": "Privacy policy",
+  "privacyHref": "https://github.com/nabre/atollo/blob/main/docs/README.fr.md#privacy-policy"
 }
