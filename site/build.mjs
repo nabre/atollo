@@ -1,7 +1,8 @@
 // Builds the landing page into _site/: one page per language (Italian at the
 // root, the others in en/, fr/, de/, as the READMEs), the brand files from
 // docs/brand (the wordmark, whose last O is the symbol: MARKETING.md, «Logo
-// nelle intestazioni») and three screenshots from docs/app/images. No dependencies:
+// nelle intestazioni») and the gallery's screenshots, dark and light, from
+// site/shots (made by site/shots/make.mjs). No dependencies:
 // node site/build.mjs. Published by .github/workflows/site.yml.
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -61,8 +62,7 @@ for (const lang of langs) {
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
 const brand = join(repo, "docs", "brand");
 for (const f of ["wordmark-dark.svg", "wordmark-light.svg", "symbol.svg", "brand.png", "hero-dark.svg", "hero-light.svg"]) cpSync(join(brand, f), join(out, "assets", f));
-const images = join(repo, "docs", "app", "images");
-const shots = { "shot-projects.png": "05-progetto-avvio-log.png", "shot-agents.png": "10-agenti-quote-statistiche.png", "shot-tools.png": "13-strumenti-catalogo-matrice.png" };
-for (const [to, from] of Object.entries(shots)) cpSync(join(images, from), join(out, "assets", to));
+const shots = join(site, "shots");
+for (const f of readdirSync(shots).filter((f) => f.endsWith(".png"))) cpSync(join(shots, f), join(out, "assets", f));
 
 console.log(`_site: ${langs.length} pages`);

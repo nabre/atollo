@@ -46,7 +46,7 @@
   "how2": "Lancez-le : il crée <code>projects/</code> et <code>data/</code>. Au premier lancement, choisissez agents, langages et outils ; Atollo les télécharge et les vérifie.",
   "how3": "Créez un projet à partir de l'une des plus de 60 bases (Laravel, Next.js, Django, WordPress, Astro, Tauri…), clonez-le depuis GitHub ou partez d'un dossier vide. L'éditeur, le terminal et les agents s'ouvrent toujours dans le dossier du projet.",
   "shotsTitle": "Dans l'application",
-  "shot1": "Projets : lancement, sortie et activité",
+  "shot1": "Projets : panneau rapide et activité",
   "shot2": "Agents : limites et consommation",
   "shot3": "Outils : composants × systèmes",
   "aspectsTitle": "Comment ça marche",

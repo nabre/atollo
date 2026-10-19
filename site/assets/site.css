@@ -353,6 +353,7 @@ section { padding: 96px 0; position: relative; }
 /* 2560×1640 screenshots: 72px of title bar and 60px of status bar cut away;
    the frame's .win-bar stands in for the title bar. */
 .crop { aspect-ratio: 2560 / 1508; overflow: hidden; }
+.crop picture { display: block; }
 .crop img { display: block; width: 100%; height: auto; margin-top: -2.8125%; }
 .shot figcaption { font-size: 0.875rem; color: var(--desc); margin-top: 10px; }
 .shot-main .frame { transform: perspective(1600px) rotateY(4deg); transform-origin: left center; transition: transform 0.6s; }
