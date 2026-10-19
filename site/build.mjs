@@ -1,9 +1,9 @@
 // Builds the landing page into _site/: one page per language (Italian at the
 // root, the others in en/, fr/, de/, as the READMEs), the brand files from
-// docs/brand (the wordmark, never the lockup: symbol and word both start
-// with an A) and three screenshots from docs/app/images. No dependencies:
+// docs/brand (the wordmark, never the lockup: MARKETING.md, «Logo nelle
+// intestazioni») and three screenshots from docs/app/images. No dependencies:
 // node site/build.mjs. Published by .github/workflows/site.yml.
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCatalog, matrixHtml } from "./matrix.mjs";
@@ -29,7 +29,10 @@ const escape = (s) => s.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
 const catalog = loadCatalog(repo);
 
-rmSync(out, { recursive: true, force: true });
+// The folder's contents, not the folder: a local preview server started
+// in _site keeps the folder itself busy on Windows.
+mkdirSync(out, { recursive: true });
+for (const entry of readdirSync(out)) rmSync(join(out, entry), { recursive: true, force: true });
 mkdirSync(join(out, "assets"), { recursive: true });
 
 for (const lang of langs) {
