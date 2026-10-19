@@ -69,8 +69,8 @@
       <!-- The kit's real layout (README, «Struttura»), not a mock of the app.
            download.js dresses it as the visitor's system (html[data-os]):
            the window's bar, the app's file, the path on a stick. -->
-      <figure class="kit rise" style="--d:3" aria-label="{{folderTitle}}" data-version="{{version}}">
-        <div class="kit-bar"><span class="kit-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="kit-title">{{folderTitle}}</span><span class="kit-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
+      <figure class="kit win rise" style="--d:3" aria-label="{{folderTitle}}" data-version="{{version}}">
+        <div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">{{folderTitle}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
         <pre class="kit-tree"><span class="t-dir" data-kit="root">Atollo/</span>
 <span class="t-l">├─</span> <span class="t-exe" data-kit="app">Atollo</span>
 <span class="t-l">│</span>  <span class="t-c">{{folderExe}}</span>
@@ -126,19 +126,20 @@
       <h2 class="reveal">{{shotsTitle}}</h2>
       <div class="shots">
         <!-- The screenshots' own title and status bars are cropped (.crop):
-             a frame of the site stands in for them. -->
+             a window of the site stands in for them, dressed as the visitor's
+             system like the hero's kit (.win, html[data-os]). -->
         <figure class="shot shot-main reveal">
-          <div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>Atollo — {{shot1}}</span></div>
+          <div class="frame win"><div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">Atollo — {{shot1}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
             <div class="crop"><img src="{{root}}assets/shot-projects.png" alt="{{shot1}}" loading="lazy" width="2560" height="1640"></div></div>
           <figcaption>{{shot1}}</figcaption>
         </figure>
         <figure class="shot shot-side reveal">
-          <div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>Atollo — {{shot2}}</span></div>
+          <div class="frame win"><div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">Atollo — {{shot2}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
             <div class="crop"><img src="{{root}}assets/shot-agents.png" alt="{{shot2}}" loading="lazy" width="2560" height="1640"></div></div>
           <figcaption>{{shot2}}</figcaption>
         </figure>
         <figure class="shot shot-side reveal">
-          <div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>Atollo — {{shot3}}</span></div>
+          <div class="frame win"><div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-title">Atollo — {{shot3}}</span><span class="win-ctl" aria-hidden="true"><i class="min"></i><i class="max"></i><i class="close"></i></span></div>
             <div class="crop"><img src="{{root}}assets/shot-tools.png" alt="{{shot3}}" loading="lazy" width="2560" height="1640"></div></div>
           <figcaption>{{shot3}}</figcaption>
         </figure>

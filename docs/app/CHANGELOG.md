@@ -1,5 +1,11 @@
 # Novità
 
+## Il sito al passo con l'app (19/10/2026)
+
+- **«Dentro l'app»**: le tre schermate stanno in una finestra vestita come il sistema di chi visita, la stessa della cartella nella hero (Windows 11, macOS, Linux con GNOME); senza JavaScript restano i puntini del brand. Barra e controlli sono un componente solo del sito, `.win`.
+- **Testi**: «Come si usa» nomina le oltre 60 basi dei progetti, «Tutto da una finestra» il pannello rapido e Ctrl+P, i server web dicono «su ogni sistema». In «C'è ancora da fare» Apache fuori da Windows non è più in arrivo (D-116): resta da provare su macchine vere, con il PHP del kit con `pdo_sqlite` che arriva con il suo primo rilascio (D-133).
+- **README**: la riga Progetti descrive pannello rapido, ▶ nella lista, Ctrl+P e la scheda Nuovo progetto con le 63 basi in gruppi; la voce da fare su Apache come nel sito. **CATALOG.md** e **TESTING.md** non dicono più R assente su Windows ARM64 (D-132) né Apache solo su Windows.
+
 ## PHP del kit per macOS e Linux, con pdo_sqlite (19/10/2026)
 
 - **Build propria di PHP** (D-133, issue #4): `scripts/build-php` e il workflow `php.yml` compilano PHP 8.4.26 e 8.5.11 con static-php-cli sui quattro sistemi, con le estensioni del set «bulk» e in più `pdo_sqlite` e `pdo_pgsql` veri: `ext-pdo_sqlite` nei `composer.json` e `extension_loaded('pdo_sqlite')` funzionano.
