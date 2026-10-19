@@ -10,11 +10,11 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 
 ## Verwendung
 
-1. `Atollo.exe` in einen leeren Ordner kopieren: einen USB-Stick, eine externe Festplatte oder einen Ordner im eigenen Profil (Leerzeichen, Klammern oder `&` im Namen sind kein Problem).
+1. Die exe von Atollo (zum Beispiel `Atollo-0.2.0-win32-x64.exe`) in einen leeren Ordner kopieren: einen USB-Stick, eine externe Festplatte oder einen Ordner im eigenen Profil (Leerzeichen, Klammern oder `&` im Namen sind kein Problem).
 2. Doppelklicken: die App legt `projects\` und `data\` an. Beim ersten Start Agenten, Sprachen und Werkzeuge wählen: die App lädt sie herunter und prüft sie (Prüfsumme oder Signatur).
 3. Auf der Seite **Projekte** ein Projekt anlegen oder klonen. Editor, Terminal und Agenten öffnen sich immer im Ordner eines Projekts, nie anderswo.
 
-Von der [Release-Seite](https://github.com/nabre/atollo/releases): `Atollo-x64.exe` oder `Atollo-arm64.exe` für Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) oder `Atollo-darwin-x64.app.zip` (Intel) für macOS, `Atollo-linux-x64` oder `Atollo-linux-arm64` (`.AppImage` und `.tar.gz`) für Linux; jede Datei hat ihre `.sha256`.
+Von der [Release-Seite](https://github.com/nabre/atollo/releases): `Atollo-<Version>-win32-x64.exe` oder `Atollo-<Version>-win32-arm64.exe` für Windows, `Atollo-<Version>-darwin-arm64.app.zip` (Apple Silicon) oder `Atollo-<Version>-darwin-x64.app.zip` (Intel) für macOS, `Atollo-<Version>-linux-x64` oder `Atollo-<Version>-linux-arm64` (`.AppImage` und `.tar.gz`) für Linux; jede Datei hat ihre `.sha256`. Der Name nennt die Version: Wenn sich die App selbst aktualisiert, bekommen die exe und die AppImage den Namen der neuen Version. In den Beispielen unten steht `Atollo.exe` für Ihre exe.
 
 **macOS** (12 oder neuer). Die App hat nur eine Ad-hoc-Signatur, ohne Notarisierung durch Apple:
 1. Das Zip entpacken und `Atollo.app` mit dem Finder in den Ordner des Kits verschieben (zum Beispiel `/Volumes/KIT/Atollo/`).
@@ -23,7 +23,7 @@ Von der [Release-Seite](https://github.com/nabre/atollo/releases): `Atollo-x64.e
 
 Ohne Schritt 2 startet macOS die App aus einer temporären Kopie (App Translocation), und Atollo hält mit demselben Befehl an, statt das Kit in einem Ordner anzulegen, der wieder verschwindet.
 
-**Linux** (x64 und ARM64, glibc 2.35 oder neuer: Ubuntu 22.04, Debian 12 und neuer). `Atollo-linux-<arch>.AppImage` in den Ordner des Kits kopieren, `chmod +x Atollo-linux-<arch>.AppImage` und starten: das Kit ist der Ordner der AppImage. Ohne FUSE (Container, manche minimalen Distributionen): `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run` ausführen, oder `Atollo-linux-<arch>.tar.gz` mit installiertem WebKitGTK 4.1 verwenden (auf Ubuntu und Debian `sudo apt install libwebkit2gtk-4.1-0`): `Atollo` in den Ordner des Kits entpacken und `./Atollo` starten. Die AppImage aktualisiert sich selbst; das `tar.gz` meldet, wenn eine neue Version zum Herunterladen bereitsteht.
+**Linux** (x64 und ARM64, glibc 2.35 oder neuer: Ubuntu 22.04, Debian 12 und neuer). `Atollo-<Version>-linux-<arch>.AppImage` in den Ordner des Kits kopieren, `chmod +x Atollo-<Version>-linux-<arch>.AppImage` und starten: das Kit ist der Ordner der AppImage. Ohne FUSE (Container, manche minimalen Distributionen): `./Atollo-<Version>-linux-<arch>.AppImage --appimage-extract-and-run` ausführen, oder `Atollo-<Version>-linux-<arch>.tar.gz` mit installiertem WebKitGTK 4.1 verwenden (auf Ubuntu und Debian `sudo apt install libwebkit2gtk-4.1-0`): `Atollo` in den Ordner des Kits entpacken und `./Atollo` starten. Die AppImage aktualisiert sich selbst; das `tar.gz` meldet, wenn eine neue Version zum Herunterladen bereitsteht.
 
 ## Seiten
 

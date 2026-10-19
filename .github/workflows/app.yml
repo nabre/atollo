@@ -209,7 +209,7 @@ jobs:
   # Atollo.app for macOS (D-113: ad hoc, no Developer ID), one
   # native build per architecture, ad hoc signed under the hardened runtime
   # with tauri/entitlements.plist, zipped as the self-updater reads it
-  # (Atollo-<target>.app.zip, setup/self_update.rs). The artifact
+  # (Atollo-<version>-<target>.app.zip, setup/self_update.rs). The artifact
   # bundle-<target> is what the release job publishes, after release-smoke
   # has started it again (D-113, D-119).
   bundle-macos:
@@ -233,6 +233,9 @@ jobs:
           key: bundle-${{ matrix.target }}
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
+      # The release names carry the version of tauri/Cargo.toml.
+      - name: App version
+        run: echo "VERSION=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)" >> "$GITHUB_ENV"
       # bundle.macOS of tauri.conf.json: minimumSystemVersion 12.0 (also
       # MACOSX_DEPLOYMENT_TARGET of the build), signingIdentity "-".
       - name: Build (Atollo.app)
@@ -278,15 +281,15 @@ jobs:
       - name: Zip
         run: |
           mkdir -p out
-          ditto -c -k --norsrc --noextattr --noacl --keepParent target/release/bundle/macos/Atollo.app "out/Atollo-${{ matrix.target }}.app.zip"
-          (cd out && shasum -a 256 "Atollo-${{ matrix.target }}.app.zip" | tee "Atollo-${{ matrix.target }}.app.zip.sha256")
+          ditto -c -k --norsrc --noextattr --noacl --keepParent target/release/bundle/macos/Atollo.app "out/Atollo-$VERSION-${{ matrix.target }}.app.zip"
+          (cd out && shasum -a 256 "Atollo-$VERSION-${{ matrix.target }}.app.zip" | tee "Atollo-$VERSION-${{ matrix.target }}.app.zip.sha256")
       # From the zip, as a user (and the updater) gets it, in a new kit
       # folder with a space and a parenthesis in its path.
       - name: Smoke test
         run: |
           kit="$RUNNER_TEMP/kit (1)"
           mkdir -p "$kit"
-          ditto -x -k "out/Atollo-${{ matrix.target }}.app.zip" "$kit"
+          ditto -x -k "out/Atollo-$VERSION-${{ matrix.target }}.app.zip" "$kit"
           codesign --verify --strict "$kit/Atollo.app"
           version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)
           out=$("$kit/Atollo.app/Contents/MacOS/Atollo" --version)
@@ -350,6 +353,9 @@ jobs:
           key: bundle-${{ matrix.target }}
       - name: Frontend dependencies
         run: npm ci --no-fund --no-audit
+      # The release names carry the version of tauri/Cargo.toml.
+      - name: App version
+        run: echo "VERSION=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)" >> "$GITHUB_ENV"
       - name: Build (AppImage)
         run: ./node_modules/.bin/tauri build --bundles appimage
       # The newest glibc symbol the binary needs: never above the build
@@ -364,9 +370,9 @@ jobs:
           mkdir -p out
           images=(target/release/bundle/appimage/*.AppImage)
           [ "${#images[@]}" -eq 1 ] && [ -f "${images[0]}" ] || { echo "want one AppImage: ${images[*]}" >&2; exit 1; }
-          cp "${images[0]}" "out/Atollo-${{ matrix.target }}.AppImage"
-          chmod 755 "out/Atollo-${{ matrix.target }}.AppImage"
-          tar -czf "out/Atollo-${{ matrix.target }}.tar.gz" -C target/release Atollo
+          cp "${images[0]}" "out/Atollo-$VERSION-${{ matrix.target }}.AppImage"
+          chmod 755 "out/Atollo-$VERSION-${{ matrix.target }}.AppImage"
+          tar -czf "out/Atollo-$VERSION-${{ matrix.target }}.tar.gz" -C target/release Atollo
           (cd out && for f in *; do sha256sum "$f" | tee "$f.sha256"; done)
       # In new kit folders with a space and a parenthesis: --version, then
       # check under a virtual display. The AppImage runs with
@@ -389,11 +395,11 @@ jobs:
           }
           image="$RUNNER_TEMP/image (1)"
           mkdir -p "$image"
-          cp "out/Atollo-${{ matrix.target }}.AppImage" "$image/Atollo.AppImage"
+          cp "out/Atollo-$VERSION-${{ matrix.target }}.AppImage" "$image/Atollo.AppImage"
           smoke "$image" ./Atollo.AppImage --appimage-extract-and-run
           plain="$RUNNER_TEMP/plain (1)"
           mkdir -p "$plain"
-          tar -xzf "out/Atollo-${{ matrix.target }}.tar.gz" -C "$plain"
+          tar -xzf "out/Atollo-$VERSION-${{ matrix.target }}.tar.gz" -C "$plain"
           smoke "$plain" ./Atollo
       - uses: actions/upload-artifact@v6
         with:
@@ -431,13 +437,15 @@ jobs:
         with:
           name: bundle-${{ matrix.target }}
           path: assets
+      - name: App version
+        run: echo "VERSION=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)" >> "$GITHUB_ENV"
       # The names the release publishes and the updater looks for
       # (setup/self_update.rs, asset_name), each with its .sha256.
       - name: Names and checksums
         run: |
           case "${{ matrix.target }}" in
-            darwin-*) want="Atollo-${{ matrix.target }}.app.zip" ;;
-            *) want="Atollo-${{ matrix.target }}.AppImage Atollo-${{ matrix.target }}.tar.gz" ;;
+            darwin-*) want="Atollo-$VERSION-${{ matrix.target }}.app.zip" ;;
+            *) want="Atollo-$VERSION-${{ matrix.target }}.AppImage Atollo-$VERSION-${{ matrix.target }}.tar.gz" ;;
           esac
           cd assets
           ls -la
@@ -454,7 +462,7 @@ jobs:
           version=$(sed -n 's/^version = "\(.*\)"$/\1/p' tauri/Cargo.toml | head -n 1)
           kit="$RUNNER_TEMP/release kit (1)"
           mkdir -p "$kit"
-          ditto -x -k "assets/Atollo-${{ matrix.target }}.app.zip" "$kit"
+          ditto -x -k "assets/Atollo-$VERSION-${{ matrix.target }}.app.zip" "$kit"
           app="$kit/Atollo.app"
           # As a browser download: quarantined. Then the README's command.
           xattr -w com.apple.quarantine "0083;$(printf %x "$(date +%s)");Safari;" "$app"
@@ -493,7 +501,7 @@ jobs:
             [ "$code" -le 1 ] || { echo "check failed with $code" >&2; exit 1; }
             [ -d "$kit/data" ] && [ -d "$kit/projects" ] || { echo "no kit next to the app in $kit" >&2; ls -la "$kit"; exit 1; }
           }
-          name="Atollo-${{ matrix.target }}.AppImage"
+          name="Atollo-$VERSION-${{ matrix.target }}.AppImage"
           image="$RUNNER_TEMP/release image (1)"
           mkdir -p "$image"
           cp "assets/$name" "$image/"
@@ -502,7 +510,7 @@ jobs:
           smoke "$image" "./$name" --appimage-extract-and-run
           plain="$RUNNER_TEMP/release plain (1)"
           mkdir -p "$plain"
-          tar -xzf "assets/Atollo-${{ matrix.target }}.tar.gz" -C "$plain"
+          tar -xzf "assets/Atollo-$VERSION-${{ matrix.target }}.tar.gz" -C "$plain"
           [ -x "$plain/Atollo" ] || { echo "Atollo in the tar.gz is not executable" >&2; exit 1; }
           if ldd "$plain/Atollo" | grep 'not found'; then echo "the tar.gz needs libraries the README does not name" >&2; exit 1; fi
           smoke "$plain" ./Atollo
@@ -612,16 +620,25 @@ jobs:
           } finally {
             Remove-Item $pfx -Force
           }
+      # The release name of the exe (setup/self_update.rs, asset_name), as
+      # the smoke test and the release use it.
+      - name: App version
+        shell: pwsh
+        run: |
+          $v = [regex]::Match((Get-Content tauri/Cargo.toml -Raw), '(?m)^version\s*=\s*"([^"]+)"').Groups[1].Value
+          "VERSION=$v" >> $env:GITHUB_ENV
+      # Under its release name, as a user downloads it.
       - name: Smoke test (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
+          $name = "Atollo-$env:VERSION-win32-x64.exe"
           New-Item -ItemType Directory -Force $kit | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/Atollo.exe" $kit
+          Copy-Item "target/${{ matrix.target }}/release/Atollo.exe" "$kit/$name"
           # Atollo.exe is a window program: without a pipe PowerShell neither
           # waits for it nor reads its output.
-          $env_out = & "$kit/Atollo.exe" env | Write-Output
+          $env_out = & "$kit/$name" env | Write-Output
           if ($LASTEXITCODE -ne 0) {
             Get-ChildItem "$kit/data/app/logs" -File -ErrorAction SilentlyContinue | Get-Content
             throw "env failed ($LASTEXITCODE)"
@@ -631,7 +648,7 @@ jobs:
             if (-not ($entry.StartsWith("$kit\data") -or $entry -like "$env:SystemRoot\System32*")) { throw "foreign PATH entry: $entry" }
           }
           $names = (Get-ChildItem $kit -Force).Name | Sort-Object
-          if (($names -join ',') -ne 'Atollo.exe,data,projects') { throw "unexpected files: $names" }
+          if (($names -join ',') -ne "$name,data,projects") { throw "unexpected files: $names" }
       - name: Real install of pwsh, node, git and the editor server (x64)
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
@@ -639,7 +656,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           $kit = Join-Path $env:RUNNER_TEMP "kit (1) & co"
-          & "$kit/Atollo.exe" prepare --only "pwsh,node,git,vscodium-server" | Out-Host
+          $exe = "$kit/Atollo-$env:VERSION-win32-x64.exe"
+          & $exe prepare --only "pwsh,node,git,vscodium-server" | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "prepare failed ($LASTEXITCODE)" }
           $apps = "$kit/data/apps/win32-x64"
           # One folder per minor version (D-91): exactly one line installed.
@@ -652,7 +670,7 @@ jobs:
           & (Line node node.exe) -v
           & (Line git cmd/git.exe) --version
           if (-not (Test-Path "$apps/vscodium-server/out/server-main.js")) { throw "editor server missing" }
-          & "$kit/Atollo.exe" prepare --only "pwsh,node" --update-all | Out-Host
+          & $exe prepare --only "pwsh,node" --update-all | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "update check failed" }
       - name: Real kit tests (editor server with the kit environment)
         if: matrix.target == 'x86_64-pc-windows-msvc'
@@ -702,8 +720,9 @@ jobs:
           ARM64_RUNNERS: ${{ vars.ARM64_RUNNERS }}
         run: |
           # Names and .sha256 files as read by tauri/src/setup/self_update.rs
-          # (asset_name): Atollo-<arch>.exe, Atollo-<target>.app.zip,
-          # Atollo-<target>.AppImage; the tar.gz is downloaded by hand.
+          # (asset_name): Atollo-<version>-<target>.exe, .app.zip and
+          # .AppImage; the tar.gz, named the same way, is downloaded by hand.
+          $version = $env:GITHUB_REF_NAME.Substring('app-v'.Length)
           New-Item -ItemType Directory -Force dist | Out-Null
           function Publish([string]$from, [string]$name) {
             if (-not (Test-Path $from)) { throw "missing release input: $from" }
@@ -716,13 +735,13 @@ jobs:
             }
             Set-Content "dist/$name.sha256" "$hash  $name" -Encoding ascii
           }
-          $exes = @{ 'x86_64-pc-windows-msvc' = 'Atollo-x64.exe'; 'aarch64-pc-windows-msvc' = 'Atollo-arm64.exe' }
-          foreach ($target in $exes.Keys) { Publish "artifacts/Atollo-$target/Atollo.exe" $exes[$target] }
+          $exes = @{ 'x86_64-pc-windows-msvc' = 'win32-x64'; 'aarch64-pc-windows-msvc' = 'win32-arm64' }
+          foreach ($triple in $exes.Keys) { Publish "artifacts/Atollo-$triple/Atollo.exe" "Atollo-$version-$($exes[$triple]).exe" }
           $unix = @('darwin-arm64', 'darwin-x64', 'linux-x64')
           # Without ARM64 runners there is no linux-arm64 build (bundle-linux).
           if ($env:ARM64_RUNNERS -ne 'off') { $unix += 'linux-arm64' }
           foreach ($target in $unix) {
-            $files = if ($target -like 'darwin-*') { @("Atollo-$target.app.zip") } else { @("Atollo-$target.AppImage", "Atollo-$target.tar.gz") }
+            $files = if ($target -like 'darwin-*') { @("Atollo-$version-$target.app.zip") } else { @("Atollo-$version-$target.AppImage", "Atollo-$version-$target.tar.gz") }
             foreach ($name in $files) { Publish "artifacts/bundle-$target/$name" $name }
           }
           Get-ChildItem dist | Format-Table Name, Length
@@ -737,11 +756,11 @@ jobs:
           $notes = @'
           Atollo {0}. Put the app in an empty folder (a USB stick, an external drive, a folder of yours): `projects` and `data` are created next to it. A kit that already has the app updates itself.
 
-          **Windows** (x64, ARM64): `Atollo-x64.exe` or `Atollo-arm64.exe`: double-click it, or replace your `Atollo.exe` with it.
+          **Windows** (x64, ARM64): `Atollo-{0}-win32-x64.exe` or `Atollo-{0}-win32-arm64.exe`: double-click it, or put it in place of your old Atollo exe. An update gives the file the new version's name.
 
-          **macOS 12 or later** (Apple Silicon: `Atollo-darwin-arm64.app.zip`, Intel: `Atollo-darwin-x64.app.zip`): ad hoc signed, not notarized. Unzip, move `Atollo.app` with the Finder into the kit folder, then in Terminal `xattr -dr com.apple.quarantine /path/to/kit/Atollo.app` and open it from that folder. Without this step macOS starts it from a temporary copy (App Translocation) and Atollo stops with the same command.
+          **macOS 12 or later** (Apple Silicon: `Atollo-{0}-darwin-arm64.app.zip`, Intel: `Atollo-{0}-darwin-x64.app.zip`): ad hoc signed, not notarized. Unzip, move `Atollo.app` with the Finder into the kit folder, then in Terminal `xattr -dr com.apple.quarantine /path/to/kit/Atollo.app` and open it from that folder. Without this step macOS starts it from a temporary copy (App Translocation) and Atollo stops with the same command.
 
-          **Linux** (x64, ARM64; glibc 2.35 or later): `Atollo-linux-<arch>.AppImage`, then `chmod +x` and start it. Without FUSE (containers, some minimal distributions): run `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run`, or use `Atollo-linux-<arch>.tar.gz` with WebKitGTK 4.1 installed (the tar.gz does not update itself).
+          **Linux** (x64, ARM64; glibc 2.35 or later): `Atollo-{0}-linux-<arch>.AppImage`, then `chmod +x` and start it; an update gives the file the new version's name. Without FUSE (containers, some minimal distributions): run `./Atollo-{0}-linux-<arch>.AppImage --appimage-extract-and-run`, or use `Atollo-{0}-linux-<arch>.tar.gz` with WebKitGTK 4.1 installed (the tar.gz does not update itself).
 
           Each file has its `.sha256`.
           '@ -f $version

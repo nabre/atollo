@@ -29,6 +29,11 @@ const escape = (s) => s.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
 const catalog = loadCatalog(repo);
 
+// The app's version, in the download names (Atollo-<version>-<target>.exe,
+// .github/workflows/app.yml); download.js puts the latest release's in.
+const version = readFileSync(join(repo, "tauri", "Cargo.toml"), "utf8").match(/^version = "(\d+\.\d+\.\d+)"$/m)?.[1];
+if (!version) throw new Error("tauri/Cargo.toml: no version");
+
 // The folder's contents, not the folder: a local preview server started
 // in _site keeps the folder itself busy on Windows.
 mkdirSync(out, { recursive: true });
@@ -44,7 +49,7 @@ for (const lang of langs) {
   const langLinks = langs
     .map((l) => (l === lang ? `<span aria-current="page" lang="${l}">${l.toUpperCase()}</span>` : `<a href="${root}${pathOf(l)}" hreflang="${l}" lang="${l}" title="${strings[l].langName}">${l.toUpperCase()}</a>`))
     .join("");
-  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, toolsMatrix: matrixHtml(catalog, lang, strings[lang]), componentCount: String(catalog.components.length) };
+  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, toolsMatrix: matrixHtml(catalog, lang, strings[lang]), componentCount: String(catalog.components.length), version };
   const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
     return values[key];

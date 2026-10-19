@@ -10,11 +10,11 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 
 ## Come si usa
 
-1. Copia `Atollo.exe` in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
+1. Copia l'exe di Atollo (per esempio `Atollo-0.2.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
 2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma).
 3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
 
-Dalla [pagina dei rilasci](https://github.com/nabre/atollo/releases): `Atollo-x64.exe` o `Atollo-arm64.exe` per Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) o `Atollo-darwin-x64.app.zip` (Intel) per macOS, `Atollo-linux-x64` o `Atollo-linux-arm64` (`.AppImage` e `.tar.gz`) per Linux; ogni file ha il suo `.sha256`.
+Dalla [pagina dei rilasci](https://github.com/nabre/atollo/releases): `Atollo-<versione>-win32-x64.exe` o `Atollo-<versione>-win32-arm64.exe` per Windows, `Atollo-<versione>-darwin-arm64.app.zip` (Apple Silicon) o `Atollo-<versione>-darwin-x64.app.zip` (Intel) per macOS, `Atollo-<versione>-linux-x64` o `Atollo-<versione>-linux-arm64` (`.AppImage` e `.tar.gz`) per Linux; ogni file ha il suo `.sha256`. Il nome dice la versione: quando l'app si aggiorna da sola, l'exe e l'AppImage prendono il nome della versione nuova. Negli esempi qui sotto `Atollo.exe` sta per il tuo exe.
 
 **macOS** (12 o successivo). L'app ha solo una firma ad hoc, senza notarizzazione di Apple:
 1. Estrai lo zip e sposta `Atollo.app` con il Finder nella cartella del kit (per esempio `/Volumes/KIT/Atollo/`).
@@ -23,7 +23,7 @@ Dalla [pagina dei rilasci](https://github.com/nabre/atollo/releases): `Atollo-x6
 
 Senza il passo 2 macOS avvia l'app da una copia temporanea (App Translocation) e Atollo si ferma mostrando lo stesso comando, invece di creare il kit in una cartella che sparisce.
 
-**Linux** (x64 e ARM64, glibc 2.35 o successiva: Ubuntu 22.04, Debian 12 e più recenti). Copia `Atollo-linux-<arch>.AppImage` nella cartella del kit, `chmod +x Atollo-linux-<arch>.AppImage` e avviala: il kit è la cartella dell'AppImage. Senza FUSE (container, alcune distribuzioni minime): `./Atollo-linux-<arch>.AppImage --appimage-extract-and-run`, oppure `Atollo-linux-<arch>.tar.gz` con WebKitGTK 4.1 installato (su Ubuntu e Debian `sudo apt install libwebkit2gtk-4.1-0`): estrai `Atollo` nella cartella del kit e avvia `./Atollo`. L'AppImage si aggiorna da sola, il `tar.gz` dice che c'è una versione nuova da scaricare.
+**Linux** (x64 e ARM64, glibc 2.35 o successiva: Ubuntu 22.04, Debian 12 e più recenti). Copia `Atollo-<versione>-linux-<arch>.AppImage` nella cartella del kit, `chmod +x Atollo-<versione>-linux-<arch>.AppImage` e avviala: il kit è la cartella dell'AppImage. Senza FUSE (container, alcune distribuzioni minime): `./Atollo-<versione>-linux-<arch>.AppImage --appimage-extract-and-run`, oppure `Atollo-<versione>-linux-<arch>.tar.gz` con WebKitGTK 4.1 installato (su Ubuntu e Debian `sudo apt install libwebkit2gtk-4.1-0`): estrai `Atollo` nella cartella del kit e avvia `./Atollo`. L'AppImage si aggiorna da sola, il `tar.gz` dice che c'è una versione nuova da scaricare.
 
 ## Pagine
 
