@@ -897,10 +897,10 @@ export const PROJECTS: TopicTexts = {
             "Der Stern „Standard“ legt die Aktion der Schaltfläche „Starten“ fest.",
           ),
           tr(
-            "Le azioni si riconoscono da sole; quelle tue si scrivono nel file panel.json del progetto.",
-            "Actions are recognized by themselves; your own are written in the project's panel.json file.",
-            "Les actions se reconnaissent toutes seules ; les vôtres s'écrivent dans le fichier panel.json du projet.",
-            "Aktionen werden von selbst erkannt; deine eigenen schreibst du in die Datei panel.json des Projekts.",
+            "Le azioni si riconoscono da sole; le tue si aggiungono con «Nuova azione» e finiscono nel file panel.json del progetto.",
+            "Actions are recognized by themselves; you add your own with “New action” and they end up in the project's panel.json file.",
+            "Les actions se reconnaissent toutes seules ; les vôtres s'ajoutent avec « Nouvelle action » et vont dans le fichier panel.json du projet.",
+            "Aktionen werden von selbst erkannt; deine eigenen fügst du mit „Neue Aktion“ hinzu, sie landen in der Datei panel.json des Projekts.",
           ),
         ]}
       />
@@ -1137,18 +1137,72 @@ export const PROJECTS: TopicTexts = {
 
       <Section
         title={tr(
-          "Le tue azioni: il file panel.json",
-          "Your own actions: the panel.json file",
-          "Vos actions : le fichier panel.json",
-          "Deine eigenen Aktionen: die Datei panel.json",
+          "Aggiungere, modificare e togliere azioni",
+          "Adding, editing and removing actions",
+          "Ajouter, modifier et retirer des actions",
+          "Aktionen hinzufügen, bearbeiten und entfernen",
+        )}
+      >
+        <Steps
+          steps={[
+            tr(
+              "Nella sezione «Avvio» premi «Nuova azione», accanto al titolo «Azioni».",
+              "In the “Run” section press “New action”, next to the “Actions” heading.",
+              "Dans la section « Lancement », appuyez sur « Nouvelle action », à côté du titre « Actions ».",
+              "Klicke im Bereich „Start“ auf „Neue Aktion“, neben der Überschrift „Aktionen“.",
+            ),
+            tr(
+              "Compila «Nome», «Tipo» («Sito o server web», «App con finestra» o «Comando») e «Comando»; se serve, «Cartella» (relativa al progetto), «Indirizzo» (solo per un sito) e «Variabili», una NOME=valore per riga. Nel comando, {port} diventa la porta dell'azione.",
+              "Fill in “Name”, “Type” (“Website or web server”, “Windowed app” or “Command”) and “Command”; if needed, “Folder” (relative to the project), “Address” (websites only) and “Variables”, one NAME=value per line. In the command, {port} becomes the action's port.",
+              "Remplissez « Nom », « Type » (« Site ou serveur web », « App avec fenêtre » ou « Commande ») et « Commande » ; si besoin, « Dossier » (relatif au projet), « Adresse » (sites seulement) et « Variables », une NOM=valeur par ligne. Dans la commande, {port} devient le port de l'action.",
+              "Fülle „Name“, „Typ“ („Website oder Webserver“, „App mit Fenster“ oder „Befehl“) und „Befehl“ aus; bei Bedarf „Ordner“ (relativ zum Projekt), „Adresse“ (nur für Websites) und „Variablen“, eine NAME=Wert pro Zeile. Im Befehl wird {port} zum Port der Aktion.",
+            ),
+            tr(
+              "Premi «Salva». L'azione compare nell'elenco; l'identificativo si ricava dal nome.",
+              "Press “Save”. The action appears in the list; its id comes from the name.",
+              "Appuyez sur « Enregistrer ». L'action apparaît dans la liste ; son identifiant vient du nom.",
+              "Klicke auf „Speichern“. Die Aktion erscheint in der Liste; ihre ID ergibt sich aus dem Namen.",
+            ),
+          ]}
+        />
+        <Bullets
+          items={[
+            tr(
+              "«Modifica», sull'azione scelta, riapre lo stesso modulo. Su un'azione riconosciuta salva una tua versione con lo stesso identificativo, che prende il suo posto.",
+              "“Edit”, on the chosen action, opens the same form again. On a recognized action it saves your own version with the same id, which takes its place.",
+              "« Modifier », sur l'action choisie, rouvre le même formulaire. Sur une action reconnue, il enregistre votre version avec le même identifiant, qui prend sa place.",
+              "„Bearbeiten“ öffnet für die gewählte Aktion dasselbe Formular. Bei einer erkannten Aktion speichert es deine Version mit derselben ID, die an ihre Stelle tritt.",
+            ),
+            tr(
+              "«Togli» c'è solo per le azioni tue e chiede conferma; se esiste un'azione riconosciuta con lo stesso identificativo, torna quella.",
+              "“Remove” exists only for your own actions and asks for confirmation; if a recognized action has the same id, that one comes back.",
+              "« Retirer » n'existe que pour vos actions et demande confirmation ; si une action reconnue a le même identifiant, elle revient.",
+              "„Entfernen“ gibt es nur für deine eigenen Aktionen und fragt nach; hat eine erkannte Aktion dieselbe ID, kommt sie zurück.",
+            ),
+            tr(
+              "Il sito web si modifica nella sezione «Sito web», non qui.",
+              "The website is edited in the “Website” section, not here.",
+              "Le site web se modifie dans la section « Site web », pas ici.",
+              "Die Website bearbeitest du im Bereich „Website“, nicht hier.",
+            ),
+          ]}
+        />
+      </Section>
+
+      <Section
+        title={tr(
+          "Il file panel.json",
+          "The panel.json file",
+          "Le fichier panel.json",
+          "Die Datei panel.json",
         )}
       >
         <P>
           {tr(
-            "Le azioni riconosciute bastano quasi sempre. Se ne vuoi altre, o vuoi cambiarne una, scrivile nel file panel.json nella cartella del progetto (lo crei tu, se non c'è) e premi «Aggiorna». Il file sta nel progetto, quindi va in Git e vale per chiunque usi il progetto con Atollo.",
-            "The recognized actions are almost always enough. If you want others, or want to change one, write them in the panel.json file in the project folder (you create it if it is not there) and press “Refresh”. The file lives in the project, so it goes into Git and applies to anyone who uses the project with Atollo.",
-            "Les actions reconnues suffisent presque toujours. Si vous en voulez d'autres, ou voulez en changer une, écrivez-les dans le fichier panel.json dans le dossier du projet (créez-le s'il n'existe pas) et appuyez sur « Actualiser ». Le fichier est dans le projet, donc il va dans Git et vaut pour quiconque utilise le projet avec Atollo.",
-            "Die erkannten Aktionen reichen fast immer. Wenn du weitere möchtest oder eine ändern willst, schreib sie in die Datei panel.json im Projektordner (du legst sie an, falls sie fehlt) und klicke auf „Aktualisieren“. Die Datei liegt im Projekt, kommt also in Git und gilt für alle, die das Projekt mit Atollo verwenden.",
+            "Le azioni tue, la stella e il sito web stanno nel file panel.json nella cartella del progetto. Puoi anche scriverlo a mano e premere «Aggiorna». Il file sta nel progetto, quindi va in Git e vale per chiunque usi il progetto con Atollo.",
+            "Your own actions, the star and the website live in the panel.json file in the project folder. You can also write it by hand and press “Refresh”. The file lives in the project, so it goes into Git and applies to anyone who uses the project with Atollo.",
+            "Vos actions, l'étoile et le site web se trouvent dans le fichier panel.json dans le dossier du projet. Vous pouvez aussi l'écrire à la main et appuyer sur « Actualiser ». Le fichier est dans le projet, donc il va dans Git et vaut pour quiconque utilise le projet avec Atollo.",
+            "Deine eigenen Aktionen, der Stern und die Website stehen in der Datei panel.json im Projektordner. Du kannst sie auch von Hand schreiben und auf „Aktualisieren“ klicken. Die Datei liegt im Projekt, kommt also in Git und gilt für alle, die das Projekt mit Atollo verwenden.",
           )}
         </P>
         <GuideCode
@@ -1247,10 +1301,10 @@ export const PROJECTS: TopicTexts = {
         />
         <Callout tone="info">
           {tr(
-            "Un'azione con lo stesso id di una riconosciuta la sostituisce. Se il file non è un JSON valido, il kit lo ignora e lo dice in «Componenti» › «Come è stato riconosciuto»; correggilo prima di usare stella o sito web, che scrivono nello stesso file. Nell'app non c'è un modulo per aggiungere o modificare le azioni: si fa nel file.",
-            "An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star or the website, which write to the same file. There is no form in the app to add or edit actions: it is done in the file.",
-            "Une action avec le même id qu'une action reconnue la remplace. Si le fichier n'est pas un JSON valide, le kit l'ignore et le signale dans « Composants » › « Comment il a été reconnu » ; corrigez-le avant d'utiliser l'étoile ou le site web, qui écrivent dans le même fichier. Il n'y a pas de formulaire dans l'application pour ajouter ou modifier les actions : cela se fait dans le fichier.",
-            "Eine Aktion mit derselben id wie eine erkannte ersetzt diese. Ist die Datei kein gültiges JSON, ignoriert das Kit sie und meldet das unter „Komponenten“ › „Wie es erkannt wurde“; korrigiere sie, bevor du Stern oder Website verwendest, die in dieselbe Datei schreiben. In der App gibt es kein Formular zum Hinzufügen oder Bearbeiten von Aktionen: Das geschieht in der Datei.",
+            "Un'azione con lo stesso id di una riconosciuta la sostituisce. Se il file non è un JSON valido, il kit lo ignora e lo dice in «Componenti» › «Come è stato riconosciuto»; correggilo prima di usare stella, sito web o «Nuova azione», che scrivono nello stesso file.",
+            "An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star, the website or “New action”, which write to the same file.",
+            "Une action avec le même id qu'une action reconnue la remplace. Si le fichier n'est pas un JSON valide, le kit l'ignore et le signale dans « Composants » › « Comment il a été reconnu » ; corrigez-le avant d'utiliser l'étoile, le site web ou « Nouvelle action », qui écrivent dans le même fichier.",
+            "Eine Aktion mit derselben id wie eine erkannte ersetzt diese. Ist die Datei kein gültiges JSON, ignoriert das Kit sie und meldet das unter „Komponenten“ › „Wie es erkannt wurde“; korrigiere sie, bevor du Stern, Website oder „Neue Aktion“ verwendest, die in dieselbe Datei schreiben.",
           )}
         </Callout>
         <Under>
