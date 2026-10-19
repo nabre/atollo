@@ -173,7 +173,7 @@ export function ToolsPage({
               ) : c.installed ? (
                 <Dot tone="ok" label={t("installato")} />
               ) : c.bootstrapStaged ? (
-                <Dot tone="ok" label={t("pre-scaricato")} />
+                <Dot tone="ok" label={t("pre-installato")} />
               ) : null}
             </>
           )

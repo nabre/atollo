@@ -175,7 +175,7 @@ describe("TargetMatrix", () => {
   it("says each state, with the reason where it is not available", () => {
     render(<TargetMatrix state={fakeState()} onOpen={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Git, Windows x64: disponibile" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Git, macOS Apple Silicon: pre-scaricato" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Git, macOS Apple Silicon: pre-installato" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Git, macOS Intel: si completa al primo avvio" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Android SDK, Windows ARM64: in emulazione" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "R, macOS Apple Silicon: disponibile" })).toBeTruthy();

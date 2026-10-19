@@ -198,10 +198,36 @@ pub fn holdings(kit: &Kit, project: &str) -> Option<Holdings> {
     })
 }
 
+/// The files of the kit that any project gets just by being created,
+/// cloned or opened once (`pin_newest`, `last_opened`): its settings and
+/// the versions files made from them (`versions::write_project_file`).
+/// They never stop a link: the orphan's take their place.
+const LIGHT: [&str; 3] = ["dev-settings.json", "versions.json", "versions.txt"];
+
+/// Files of the kit under `dir` besides the [`LIGHT`] ones at its top:
+/// ports (the runner holds them in memory under the project's name),
+/// server configurations, passwords, database copies, anything unknown.
+/// Empty folders are not files; links count and are never followed.
+fn has_own_data(dir: &Path) -> bool {
+    fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|e| match e.file_type() {
+            Ok(t) if t.is_dir() => has_files(&e.path()),
+            Ok(t) if t.is_file() => e.file_name().to_str().is_none_or(|n| !LIGHT.contains(&n)),
+            _ => true,
+        })
+}
+
 /// Gives the files of `orphan` to `project` (the same project renamed
 /// outside the app): refused when `orphan` is not an orphan, when
-/// `project` has no folder in `projects\` or already has files of the kit
-/// (empty folders are not files: they are removed first).
+/// `project` has no folder in `projects\` or has data of the kit of its
+/// own ([`has_own_data`]: ports, servers, databases, copies). Its settings
+/// alone do not stop it (every project opened once has them): the
+/// orphan's replace them, keeping the target's last opening, favorite
+/// mark and agent only where the orphan has none. Empty folders are
+/// removed first.
 ///
 /// The databases on the servers keep their name and user, made from the
 /// old name: the passwords stay valid for them and the project's `.env`
@@ -212,7 +238,7 @@ pub fn holdings(kit: &Kit, project: &str) -> Option<Holdings> {
 ///
 /// A link (junction) in place of either folder is refused before anything
 /// is read or moved (D-77).
-pub fn adopt(kit: &Kit, orphan: &str, project: &str) -> io::Result<ProjectState> {
+pub fn adopt(kit: &Kit, lang: &str, orphan: &str, project: &str) -> io::Result<ProjectState> {
     let invalid = |m: &str| io::Error::new(io::ErrorKind::InvalidInput, m.to_owned());
     let from = ProjectState::of(kit, orphan).ok_or_else(|| invalid("not a project name"))?;
     let to = ProjectState::of(kit, project).ok_or_else(|| invalid("not a project name"))?;
@@ -230,22 +256,56 @@ pub fn adopt(kit: &Kit, orphan: &str, project: &str) -> io::Result<ProjectState>
     if !kit.projects().join(project).is_dir() {
         return Err(invalid(&format!("{project}: no such project")));
     }
-    if has_files(&to.dir) {
+    if has_own_data(&to.dir) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
-            format!("{project} already has files of the kit"),
+            crate::i18n::t(
+                lang,
+                "{0} ha già dati suoi nel kit (porte, server, database o copie): i dati si collegano solo a un progetto che ha al massimo le impostazioni.",
+                &[project],
+            ),
         ));
     }
     // Before anything moves: a `db.json` that cannot be read stops here.
     crate::db::auth::keep_legacy_names(kit, orphan)
         .map_err(|e| io::Error::other(format!("{orphan}: databases: {e:#}")))?;
+    let target = crate::projects::settings::load(kit, project);
+    let target_text = fs::read(to.settings_file()).ok();
+    for name in LIGHT {
+        match fs::remove_file(to.dir.join(name)) {
+            Err(e) if e.kind() != io::ErrorKind::NotFound => return Err(e),
+            _ => {}
+        }
+    }
     if to.dir.exists() && !remove_empty_dirs(&to.dir) {
         return Err(io::Error::other(format!(
             "{}: not removed",
             to.dir.display()
         )));
     }
-    from.rename(kit, project)
+    let adopted = match from.rename(kit, project) {
+        Ok(state) => state,
+        Err(e) => {
+            // Nothing moved: the target gets its settings back.
+            if let Some(text) = target_text {
+                let _ =
+                    fs::create_dir_all(&to.dir).and_then(|()| fs::write(to.settings_file(), text));
+            }
+            crate::versions::write_project_file(kit, project);
+            return Err(e);
+        }
+    };
+    if target.last_opened.is_some() || target.pinned || target.agent.is_some() {
+        crate::projects::settings::update(kit, project, |s| {
+            s.last_opened = s.last_opened.or(target.last_opened);
+            s.pinned |= target.pinned;
+            if s.agent.is_none() {
+                s.agent.clone_from(&target.agent);
+            }
+        });
+    }
+    crate::versions::write_project_file(kit, project);
+    Ok(adopted)
 }
 
 #[cfg(test)]

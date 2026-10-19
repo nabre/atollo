@@ -131,6 +131,8 @@ pub async fn github_repos<R: Runtime>(
 }
 
 /// Clones a repository of the account into `projects\`; returns the project.
+/// A new clone is settled as one from an address (`project_clone`): the
+/// same [`settle_project`], in the same blocking task.
 #[tauri::command]
 pub async fn github_clone<R: Runtime>(
     app: AppHandle<R>,
@@ -144,8 +146,13 @@ pub async fn github_clone<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &["git"])?;
         let token = crate::github::token(&kit, &env);
-        crate::github::clone_repo(&kit, &env, &full_name, token.as_deref(), lang)
-            .or_fail_chain("clone")
+        let cloned = crate::github::clone_repo(&kit, &env, &full_name, token.as_deref(), lang)
+            .or_fail_chain("clone")?;
+        if cloned.new {
+            let dir = kit.projects().join(&cloned.project);
+            settle_project(&app, &task, &kit, lang, &cloned.project, &dir);
+        }
+        Ok(cloned.project)
     })
     .await
     .or_fail("clone")?

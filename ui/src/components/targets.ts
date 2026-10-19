@@ -62,7 +62,7 @@ export function cellLabel(state: CellState): string {
   return {
     available: t("disponibile"),
     emulated: t("in emulazione"),
-    staged: t("pre-scaricato"),
+    staged: t("pre-installato"),
     firstStart: t("si completa al primo avvio"),
     unavailable: t("non disponibile"),
   }[state];
