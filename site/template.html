@@ -16,6 +16,8 @@
 <meta property="og:url" content="{{base}}{{path}}">
 <meta property="og:image" content="{{base}}assets/brand.png">
 <link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
+<!-- Geist, self-hosted (assets/fonts): the text font is on every first screen. -->
+<link rel="preload" href="{{root}}assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{root}}assets/site.css">
 <!-- Without JavaScript nothing waits for a reveal: .js gates the animations. -->
 <script>document.documentElement.classList.add("js")</script>

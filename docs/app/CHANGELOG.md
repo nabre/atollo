@@ -1,5 +1,12 @@
 # Novità
 
+## Caratteri Geist e Geist Mono (19/10/2026)
+
+- **App, sito ed editor** usano Geist per testi e titoli e Geist Mono per codice, percorsi, terminale ed editor, al posto di Segoe UI, Inter e Consolas: lo stesso aspetto su Windows, macOS e Linux.
+- **Sempre in locale**: i caratteri viaggiano con l'app e con il sito, nessun servizio esterno (l'app resta portabile e senza rete).
+- **Editor integrato**: Geist Mono nel testo e nel terminale, Geist nell'interfaccia. Chi ha già scelto un carattere nelle impostazioni dell'editor lo tiene.
+- **Titoli del sito** un poco più leggeri e stretti, perché Geist è più largo di Segoe UI.
+
 ## Il simbolo è un atollo (19/10/2026)
 
 - **Icona dell'app, favicon e simbolo** mostrano un atollo visto dall'alto al posto della «A»: barriera ad anello, tre isolotti (smeraldo, smeraldo che passa ad ambra e arancio, un isolotto arancio), laguna turchese e due onde stilizzate. Restano il fondo verde foresta, i colori e la scritta «ATOLLO».

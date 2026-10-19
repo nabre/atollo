@@ -44,8 +44,13 @@ describe("theme-vscode.css", () => {
   });
 
   it("declares the fonts and the same names in both themes", () => {
-    expect(fonts.get("--vscode-font-family")).toBe('"Segoe WPC", "Segoe UI", sans-serif');
-    expect(fonts.get("--vscode-editor-font-family")).toBe('Consolas, "Courier New", monospace');
+    // Geist and Geist Mono (@fontsource-variable, main.tsx), the system's behind.
+    expect(fonts.get("--vscode-font-family")).toBe('"Geist Variable", "Geist", system-ui, "Segoe UI", sans-serif');
+    expect(fonts.get("--vscode-editor-font-family")).toBe(
+      '"Geist Mono Variable", "Geist Mono", ui-monospace, Consolas, monospace',
+    );
+    expect(fonts.get("--vscode-font-size")).toBe("13px");
+    expect(fonts.get("--vscode-editor-font-feature-settings")).toBe('"liga" off, "calt" off');
     expect(themes.dark.size).toBeGreaterThan(700);
     expect([...themes.light.keys()]).toEqual([...themes.dark.keys()]);
   });
