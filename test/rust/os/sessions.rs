@@ -3,6 +3,34 @@ use crate::kit::{tests::TempDir, Arch};
 use std::process::Command;
 use std::time::Duration;
 
+/// A kit reached through a link (on macOS every temporary folder:
+/// `/var/folders/…` is `/private/var/folders/…`): the system names its
+/// programs by the real path, and they are the kit's all the same.
+#[cfg(unix)]
+#[test]
+fn a_kit_through_a_link_lists_its_programs() {
+    let tmp = TempDir::new("sessions-link");
+    let real = tmp.0.join("real");
+    std::fs::create_dir_all(&real).unwrap();
+    let link = tmp.0.join("link");
+    std::os::unix::fs::symlink(&real, &link).unwrap();
+    let kit = Kit::at(link, Arch::X64);
+    kit.prepare().unwrap();
+    let exe = kit.apps().join("tools").join("sleep-link");
+    std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
+    std::fs::copy("/bin/sleep", &exe).unwrap();
+    let mut child = Command::new(&exe).arg("30").spawn().unwrap();
+    std::thread::sleep(Duration::from_millis(300));
+    let open = kit_processes(&kit);
+    let _ = child.kill();
+    let _ = child.wait();
+    let found = open.iter().find(|p| p.pid == child.id());
+    assert!(found.is_some(), "{open:?}");
+    // Relative to the kit, not the real path.
+    assert!(!found.unwrap().program.starts_with('/'), "{open:?}");
+    assert!(other_kits(&kit).iter().all(|r| !r.ends_with("real")));
+}
+
 #[test]
 fn lists_and_stops_a_kit_program() {
     let tmp = TempDir::new("sessions");
