@@ -1,17 +1,40 @@
 """Tool x system x architecture matrix of the catalog, as one HTML page.
 
-python scripts/matrix/gen_matrix.py <repo> docs/app/MATRICE-STRUMENTI.html
+python -I scripts/matrix/gen_matrix.py [<repo> [<out>]]
+(default: this repository and docs/app/MATRICE-STRUMENTI.html)
 
-Availability comes from tauri/catalog/components.json with the logic of
-Component::is_available_on (tauri/src/setup/catalog.rs); sizes and sources
-are those of docs/app/CATALOG.md, kept here by hand.
+Everything comes from the code: availability, emulation, needs and sizes
+from tauri/catalog/components.json with the logic of
+Component::is_available_on (tauri/src/setup/catalog.rs); the retired
+components from RETIRED in tauri/src/versions/disk.rs; sources and the
+targets where a component is a conda environment that does not follow the
+kit from scripts/matrix/sources.json, which test/rust/install/mod.rs checks
+against the installers. The page has no date or commit: running the script
+again without changes gives the same file.
 """
-import json, sys, html, subprocess, datetime
+import html
+import json
+import os
+import re
+import sys
 
-repo = sys.argv[1]
-out = sys.argv[2]
-cat = json.load(open(f"{repo}/tauri/catalog/components.json", encoding="utf-8"))["components"]
-commit = subprocess.run(["git", "-C", repo, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+here = os.path.dirname(os.path.abspath(__file__))
+repo = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.dirname(here))
+out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(repo, "docs", "app", "MATRICE-STRUMENTI.html")
+
+
+def read(*parts):
+    with open(os.path.join(repo, *parts), encoding="utf-8") as f:
+        return f.read()
+
+
+cat = json.loads(read("tauri", "catalog", "components.json"))["components"]
+SRC = json.loads(read("scripts", "matrix", "sources.json"))["components"]
+missing = sorted({c["id"] for c in cat} ^ set(SRC))
+if missing:
+    sys.exit(f"scripts/matrix/sources.json and the catalog differ: {', '.join(missing)}")
+retired = re.search(r"const RETIRED: \[&str; \d+\] = \[([^\]]*)\]", read("tauri", "src", "versions", "disk.rs"))
+RETIRED = re.findall(r'"([^"]+)"', retired.group(1)) if retired else []
 
 TARGETS = [
     ("win32-x64", "Windows", "x64"),
@@ -28,67 +51,17 @@ GROUPS = {
     "languages": "Linguaggi e strumenti",
     "databases": "Database",
 }
-MB = {
-    "gh": 40, "pwsh": 110, "vscodium-server": 250, "claude": 250, "codex": 440, "antigravity": 190,
-    "git": 350, "python": 70, "node": 110, "uv": 35, "php": 100, "apache": 45, "caddy": 45,
-    "rust": 920, "go": 250, "java": 300, "kotlin": 80, "android": 600, "dotnet": 250, "dart": 200,
-    "zig": 200, "julia": 500, "bun": 90, "deno": 100, "typst": 50, "tinytex": 280, "pnpm": 10,
-    "cmake": 100, "cc": 720, "ruby": 270, "r": 1100, "mysql": 520, "mongodb": 570,
-    "phpmyadmin": 60, "sqlite": 15,
-}
-# Fonte su Windows / su macOS e Linux (CATALOG.md §1 «Fonti per sistema» e §2)
-SRC = {
-    "claude": ("npm, binario nativo", "npm, binario nativo"),
-    "codex": ("npm, binario nativo", "npm, binario nativo"),
-    "antigravity": ("manifesto Google, exe", "manifesto Google, .tar.gz"),
-    "git": ("PortableGit (git-for-windows)", "dugite-native"),
-    "python": ("python-build-standalone", "python-build-standalone"),
-    "node": ("nodejs.org", "nodejs.org"),
-    "uv": ("GitHub astral-sh/uv", "GitHub astral-sh/uv"),
-    "gh": ("GitHub cli/cli", "GitHub cli/cli"),
-    "php": ("windows.php.net + VC++ locale", "static-php-cli"),
-    "apache": ("Apache Lounge (modulo PHP)", "build del kit, rilascio httpd-v<v> (php-fpm)"),
-    "caddy": ("GitHub caddyserver/caddy", "GitHub caddyserver/caddy"),
-    "rust": ("rustup (gnu su x64, gnullvm su ARM64)", "rustup"),
-    "go": ("go.dev", "go.dev"),
-    "java": ("Adoptium Temurin + Maven + Gradle", "Adoptium Temurin + Maven + Gradle"),
-    "kotlin": ("GitHub JetBrains/kotlin", "GitHub JetBrains/kotlin"),
-    "android": ("cmdline-tools Google", "cmdline-tools Google"),
-    "dotnet": ("dotnet release-metadata", "dotnet release-metadata"),
-    "dart": ("dart-archive", "dart-archive"),
-    "zig": ("ziglang.org", "ziglang.org"),
-    "julia": ("julialang-s3", "julialang-s3"),
-    "bun": ("GitHub oven-sh/bun", "GitHub oven-sh/bun"),
-    "deno": ("GitHub denoland/deno", "GitHub denoland/deno"),
-    "typst": ("GitHub typst/typst", "GitHub typst/typst"),
-    "tinytex": ("GitHub rstudio/tinytex-releases", "GitHub rstudio/tinytex-releases"),
-    "pnpm": ("registro npm", "registro npm"),
-    "cmake": ("GitHub Kitware/CMake + Ninja", "GitHub Kitware/CMake + Ninja"),
-    "cc": ("llvm-mingw (ucrt)", "shim su zig cc + GNU make (conda-forge)"),
-    "ruby": ("RubyInstaller2", "conda-forge ruby"),
-    "r": ("conda-forge r-base", "conda-forge r-base"),
-    "mysql": ("cdn.mysql.com 8.4 / 9.7", "cdn.mysql.com 8.4 / 9.7"),
-    "mongodb": ("build MongoDB", "macOS: build MongoDB; Linux: conda-forge"),
-    "phpmyadmin": ("phpmyadmin.net", "phpmyadmin.net"),
-    "sqlite": ("sqlite.org", "sqlite.org; linux-arm64: conda-forge"),
-    "pwsh": ("GitHub PowerShell/PowerShell", "GitHub PowerShell/PowerShell"),
-    "vscodium-server": ("VSCodium reh-web, versione fissata", "VSCodium reh-web, versione fissata"),
-}
-NOT_RELOCATABLE = {  # D-92: reinstallati se il kit cambia cartella
-    "r": {"all"}, "ruby": {"unix"}, "mongodb": {"linux"}, "cc": {"unix"},
-    "sqlite": {"linux-arm64"},
-}
 
 byid = {c["id"]: c for c in cat}
 
 
 def base_status(c, t):
     if c.get("targets") and t not in c["targets"]:
-        return ("no", "non nel catalogo per questo sistema")
+        return ("no", SRC[c["id"]].get("notOffered", "il catalogo non lo offre su questo sistema"))
     if t in c.get("unavailable", {}):
         return ("no", c["unavailable"][t])
     if t == "win32-arm64" and c.get("noArm64"):
-        return ("no", "nessuna build per Windows ARM64")
+        return ("no", "nessuna build per Windows ARM64, nemmeno in emulazione")
     if t == "win32-arm64" and c.get("x64Only"):
         return ("emu", "build x64 in emulazione (Prism)")
     if t == "darwin-arm64" and c.get("rosetta"):
@@ -111,10 +84,73 @@ def status(c, t):
 
 
 def nonreloc(cid, t):
-    r = NOT_RELOCATABLE.get(cid, set())
-    return ("all" in r or t in r or ("unix" in r and not t.startswith("win"))
-            or ("linux" in r and t.startswith("linux")))
+    return t in SRC[cid].get("notRelocatable", [])
 
+
+def names(ids):
+    return ", ".join(byid[i]["name"] for i in ids)
+
+
+def where(ts):
+    ts = set(ts)
+    out = []
+    for os_, prefix in (("macOS", "darwin-"), ("Linux", "linux-")):
+        both = {t for t, _, _ in TARGETS if t.startswith(prefix)}
+        if both <= ts:
+            out.append(os_)
+            ts -= both
+    out = [" e ".join(out)] if out else []
+    out += [f"{os_} {ar}" for t, os_, ar in TARGETS if t in ts]
+    return ", ".join(out)
+
+
+# Notes, from the same catalog.
+notes = []
+emu = [c["id"] for c in cat if c.get("x64Only")]
+noarm = [c["id"] for c in cat if c.get("noArm64")]
+arm_needs = [(c["id"], c["needsByTarget"]["win32-arm64"]) for c in cat if "win32-arm64" in c.get("needsByTarget", {})]
+line = f"<b>Windows ARM64</b>: {html.escape(names(emu))} usano la build x64 in emulazione"
+if noarm:
+    line += f"; {html.escape(names(noarm))} non ha build"
+for cid, deps in arm_needs:
+    line += f"; {html.escape(byid[cid]['name'])} richiede anche {html.escape(names(deps))}"
+notes.append(line + ".")
+rosetta = [c["id"] for c in cat if c.get("rosetta")]
+notes.append(
+    "<b>macOS Apple Silicon</b>: "
+    + (f"{html.escape(names(rosetta))} con Rosetta 2." if rosetta else "tutto nativo, nessun componente richiede Rosetta 2.")
+)
+for c in cat:
+    for t, why in c.get("unavailable", {}).items():
+        notes.append(f"<b>{html.escape(c['name'])}</b> su {where([t])}: {html.escape(why)}.")
+    if c.get("targets"):
+        off = [t for t, _, _ in TARGETS if t not in c["targets"]]
+        why = SRC[c["id"]].get("notOffered", "il catalogo non lo offre")
+        notes.append(f"<b>{html.escape(c['name'])}</b> non c'è su {where(off)}: {html.escape(why)}.")
+for c in cat:
+    extra = {t: d for t, d in c.get("needsByTarget", {}).items() if t != "win32-arm64"}
+    if extra:
+        ts = sorted(extra, key=[t for t, _, _ in TARGETS].index)
+        deps = sorted({d for v in extra.values() for d in v})
+        notes.append(f"<b>{html.escape(c['name'])}</b> su {where(ts)} richiede anche {html.escape(names(deps))}.")
+conda = [(cid, s["notRelocatable"]) for cid, s in SRC.items() if s.get("notRelocatable")]
+notes.append(
+    "<b>Non rilocabili</b> (ambienti conda, <i class=\"tag\">conda</i>): "
+    + "; ".join(f"{html.escape(byid[cid]['name'])} su {where(ts)}" for cid, ts in conda)
+    + ". Quando il kit cambia cartella si ricreano dai pacchetti conservati nel kit, senza rete (D-92, D-118); tutto il resto segue il kit."
+)
+if RETIRED:
+    notes.append(
+        f"<b>Tolti dal catalogo</b> (<code>RETIRED</code>, cartelle rimosse all'avvio): {html.escape(', '.join(RETIRED))}."
+        " MySQL è l'unico server SQL (D-117), Caddy il server web predefinito (D-120)."
+    )
+notes.append(
+    "Fonte dei dati: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, "
+    "<code>noArm64</code>, <code>x64Only</code>, <code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>, "
+    "<code>mb</code>) con la logica di <code>Component::is_available_on</code>; fonti e componenti non rilocabili da "
+    "<code>scripts/matrix/sources.json</code>, controllato contro gli installatori da <code>cargo test</code>."
+)
+NOTES = "\n".join(f"  <li>{n}</li>" for n in notes)
 
 LABEL = {"ok": "Nativo", "emu": "x64 emulato", "no": "Non disponibile", "dep": "Bloccato"}
 ICON = {"ok": "●", "emu": "◐", "no": "○", "dep": "◌"}
@@ -132,40 +168,39 @@ for g in order:
             k, why = status(c, t)
             counts[t][k] += 1
             extra = ""
-            notes = [why]
+            tips = [why]
             ndeps = c.get("needsByTarget", {}).get(t)
             if ndeps and k != "no":
-                notes.append("qui serve anche " + ", ".join(byid[d]["name"] for d in ndeps))
+                tips.append("qui serve anche " + names(ndeps))
                 extra += '<i class="tag">+dip</i>'
             if k in ("ok", "emu") and nonreloc(cid, t):
-                notes.append("non rilocabile: reinstallato se il kit cambia cartella (D-92)")
+                tips.append("ambiente conda, non rilocabile: ricreato dai pacchetti conservati se il kit cambia cartella (D-92, D-118)")
                 extra += '<i class="tag">conda</i>'
-            tip = html.escape("; ".join(notes))
+            tip = html.escape("; ".join(tips))
             cells.append(f'<td class="s-{k}" title="{tip}"><span class="pill"><b>{ICON[k]}</b>{LABEL[k]}</span>{extra}</td>')
-        deps = ", ".join(byid[n]["name"] for n in c.get("needs", []) if n in byid) or ""
-        w, u = SRC.get(cid, ("", ""))
+        deps = names(n for n in c.get("needs", []) if n in byid)
+        w, u = SRC[cid]["windows"], SRC[cid]["unix"]
         rows.append(
             f'<tr data-group="{g}" data-search="{html.escape((cid + " " + c["name"] + " " + w + " " + u).lower())}">'
             f'<th scope="row"><span class="nm">{html.escape(c["name"])}</span><code>{cid}</code></th>'
-            f'<td class="num">{MB.get(cid, "")}</td>'
+            f'<td class="num">{c.get("mb", "")}</td>'
             + "".join(cells)
             + f'<td class="dep">{html.escape(deps)}</td>'
             f'<td class="src"><span>Win:</span> {html.escape(w)}<br><span>Unix:</span> {html.escape(u)}</td></tr>'
         )
 
 head_cells = "".join(
-    f'<th class="tg"><span class="os">{os}</span><span class="ar">{ar}</span><code>{t}</code></th>' for t, os, ar in TARGETS
+    f'<th class="tg"><span class="os">{os_}</span><span class="ar">{ar}</span><code>{t}</code></th>' for t, os_, ar in TARGETS
 )
 summary = "".join(
-    f'<div class="card"><div class="cos">{os} <em>{ar}</em></div><code>{t}</code>'
+    f'<div class="card"><div class="cos">{os_} <em>{ar}</em></div><code>{t}</code>'
     f'<div class="bar">'
     + "".join(f'<span class="b-{k}" style="flex:{counts[t][k]}"></span>' for k in ("ok", "emu", "dep", "no") if counts[t][k])
     + f'</div><div class="nums"><span class="c-ok">{counts[t]["ok"]} nativi</span>'
     f'<span class="c-emu">{counts[t]["emu"]} emulati</span>'
     f'<span class="c-no">{counts[t]["no"] + counts[t]["dep"]} assenti</span></div></div>'
-    for t, os, ar in TARGETS
+    for t, os_, ar in TARGETS
 )
-today = datetime.date.today().strftime("%d/%m/%Y")
 
 page = f"""<!doctype html>
 <html lang="it">
@@ -231,7 +266,7 @@ tr.hide {{ display:none; }}
 <body>
 <main>
 <h1>Matrice strumenti × sistema operativo × architettura</h1>
-<p class="sub">{len(cat)} componenti di <code>tauri/catalog/components.json</code> · 6 target · commit <code>{commit}</code> · generata il {today}</p>
+<p class="sub">{len(cat)} componenti di <code>tauri/catalog/components.json</code> · 6 target · generata da <code>scripts/matrix/gen_matrix.py</code></p>
 <div class="cards">{summary}</div>
 <div class="tools">
   <input id="q" type="search" placeholder="Cerca componente o fonte…" aria-label="Cerca">
@@ -244,7 +279,7 @@ tr.hide {{ display:none; }}
   <span>◌ <b style="color:var(--dep)">Bloccato</b>: manca una dipendenza su quel target</span>
   <span>○ Non disponibile</span>
   <span><i class="tag">+dip</i> dipendenza in più su quel target</span>
-  <span><i class="tag">conda</i> non rilocabile (D-92)</span>
+  <span><i class="tag">conda</i> non rilocabile, ricreato dai pacchetti conservati (D-92, D-118)</span>
   <span>Passa il mouse su una cella per il motivo.</span>
 </div>
 <div class="wrap">
@@ -256,13 +291,7 @@ tr.hide {{ display:none; }}
 </table>
 </div>
 <ul class="notes">
-  <li><b>Windows ARM64</b>: PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX e l'editor usano la build x64 in emulazione; R non ha build. Rust usa l'host <code>aarch64-pc-windows-gnullvm</code> con llvm-mingw di C/C++ come linker.</li>
-  <li><b>Apache</b>: su Windows Apache Lounge con il modulo PHP; su macOS e Linux la build del kit con <code>php-fpm</code> (D-116), offerta lì quando il primo rilascio <code>httpd-v2.4.69-1</code> è fissato nel catalogo. Si propone solo per i progetti con regole proprie nel <code>.htaccess</code>; Caddy è il server web predefinito su tutti i sistemi.</li>
-  <li><b>Nginx</b>: non c'è più; i suoi pool e siti passano a Caddy all'avvio (D-120).</li>
-  <li><b>MySQL</b> è l'unico server SQL del kit (D-117): phpMyAdmin apre MySQL su tutti i sistemi.</li>
-  <li><b>Android SDK</b>: Google non pubblica platform-tools e build-tools per Linux ARM64.</li>
-  <li><b>C/C++</b> su macOS e Linux: shim su <code>zig cc</code> del kit (richiede Zig); i framework Apple vogliono Xcode CLT.</li>
-  <li>Fonte dei dati: <code>components.json</code> (campi <code>targets</code>, <code>unavailable</code>, <code>noArm64</code>, <code>x64Only</code>, <code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>) con la logica di <code>Component::is_available_on</code> in <code>tauri/src/setup/catalog.rs</code>; dimensioni e fonti da <code>docs/app/CATALOG.md</code>.</li>
+{NOTES}
 </ul>
 </main>
 <script>
@@ -288,6 +317,7 @@ document.querySelectorAll('.tools button').forEach(b => b.addEventListener('clic
 </body>
 </html>
 """
-open(out, "w", encoding="utf-8").write(page)
-for t, os, ar in TARGETS:
+with open(out, "w", encoding="utf-8", newline="\n") as f:
+    f.write(page)
+for t, _, _ in TARGETS:
     print(t, counts[t])
