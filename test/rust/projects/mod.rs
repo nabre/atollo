@@ -453,7 +453,7 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
 }
 
 /// A4 handoff: what a project can add follows the catalog's targets, not
-/// only ARM64 (no Apache off Windows, PHP everywhere since D-112, R
+/// only ARM64 (Apache everywhere since D-116, PHP since D-112, R
 /// everywhere but Windows ARM64).
 #[test]
 fn addable_follows_the_platform() {
@@ -473,7 +473,7 @@ fn addable_follows_the_platform() {
     assert!(addable(&win_arm, apache) && !addable(&win_arm, r));
     for t in [Target::LINUX_ARM64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = on(t);
-        assert!(!addable(&kit, apache), "{t:?}");
+        assert!(addable(&kit, apache), "{t:?}");
         assert!(addable(&kit, php), "{t:?}");
         assert!(addable(&kit, r) && addable(&kit, node), "{t:?}");
     }

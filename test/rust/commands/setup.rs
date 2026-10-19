@@ -25,8 +25,9 @@ fn r_is_not_available_on_arm64() {
     }
 }
 
-/// Unavailable on macOS or Linux is not "no ARM64 build": the page gets the
-/// system as the reason (BUG-24c).
+/// Unavailable on another system is not "no ARM64 build": the page gets the
+/// system as the reason (BUG-24c). Apache, the example before D-116, is now
+/// on macOS and Linux too.
 #[test]
 fn unavailable_for_the_system_is_not_arm64() {
     let tmp = TempDir::new("cmd-comps-os");
@@ -34,12 +35,9 @@ fn unavailable_for_the_system_is_not_arm64() {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
         let infos = component_infos(&kit, "en");
+        // Apache is on every system since D-116.
         let apache = infos.iter().find(|c| c.id == "apache").unwrap();
-        assert!(!apache.available && !apache.no_arm64, "{target:?}");
-        assert_eq!(
-            apache.unavailable_reason.as_deref(),
-            Some(format!("not available for {}", target.as_str()).as_str())
-        );
+        assert!(apache.available && apache.unavailable_reason.is_none());
         let python = infos.iter().find(|c| c.id == "python").unwrap();
         assert_eq!(python.unavailable_reason, None);
         // Native on macOS and Linux: no «x64» mark.
@@ -82,10 +80,7 @@ fn catalog_reasons_reach_the_page() {
     );
     let sqlite = row("sqlite");
     assert!(sqlite.available && sqlite.unavailable_reason.is_none());
-    assert_eq!(
-        row("apache").unavailable_reason.as_deref(),
-        Some("not available for linux-arm64")
-    );
+    assert_eq!(row("apache").unavailable_reason, None);
     assert_eq!(row("python").unavailable_reason, None);
     let it = component_infos(&kit, "it");
     let android = it.iter().find(|c| c.id == "android").unwrap();

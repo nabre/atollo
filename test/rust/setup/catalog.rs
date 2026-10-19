@@ -382,7 +382,7 @@ fn editor_installed_means_the_files_started() {
 #[test]
 fn shared_paths_go_with_the_last_owner() {
     let tmp = TempDir::new("catalog-shared");
-    // PHP and Apache are Windows only (web_stack_is_windows_only).
+    // The shared VC++ runtime is Windows only.
     let kit = Kit::at_target(tmp.0.clone(), crate::kit::Target::WIN32_X64);
     kit.prepare().unwrap();
     let catalog = Catalog::get();
@@ -419,37 +419,22 @@ fn shared_paths_go_with_the_last_owner() {
         .contains(&kit.apps().join("apache")));
 }
 
-/// Option C (BUG-23b, BUG-24a): Apache is Windows only until the kit's
-/// build is pinned (D-116). PHP (static-php-cli on macOS and Linux,
-/// D-112), phpMyAdmin on it and Caddy (D-111) are on every target; Nginx
-/// is no longer in the catalog (D-120). Git stays everywhere: Claude Code
-/// needs it.
+/// The web stack is on every target: PHP (static-php-cli on macOS and
+/// Linux, D-112), phpMyAdmin on it, Caddy (D-111) and Apache (Apache Lounge
+/// on Windows, the kit's build elsewhere, D-116); Nginx is no longer in the
+/// catalog (D-120). Git stays everywhere: Claude Code needs it.
 #[test]
-fn web_stack_is_windows_only() {
+fn web_stack_is_everywhere() {
     use crate::kit::Target;
 
     let catalog = Catalog::get();
-    for id in ["php", "phpmyadmin", "caddy"] {
+    for id in ["php", "phpmyadmin", "caddy", "apache"] {
         let c = catalog.find(id).unwrap();
         for target in Target::ALL {
             assert!(c.is_available_on(target), "{id} on {target}");
         }
     }
     assert!(catalog.find("nginx").is_none());
-    for id in ["apache"] {
-        let c = catalog.find(id).unwrap();
-        for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
-            assert!(c.is_available_on(target), "{id} on {target}");
-        }
-        for target in [
-            Target::DARWIN_ARM64,
-            Target::DARWIN_X64,
-            Target::LINUX_X64,
-            Target::LINUX_ARM64,
-        ] {
-            assert!(!c.is_available_on(target), "{id} on {target}");
-        }
-    }
     for id in ["git", "claude"] {
         let c = catalog.find(id).unwrap();
         for target in Target::ALL {
@@ -458,15 +443,16 @@ fn web_stack_is_windows_only() {
     }
 }
 
-/// Asking for Apache on Linux names the system, not ARM64 (phpMyAdmin
-/// before D-112 made it available there).
+/// Asking on Linux for a component without a build there names the system,
+/// not "ARM64" (Android on Linux ARM64; Apache before D-116, phpMyAdmin
+/// before D-112).
 #[test]
-fn phpmyadmin_on_linux_names_the_system() {
+fn unavailable_on_linux_names_the_system() {
     use crate::kit::Target;
     use crate::setup::runner::{plan, Options};
 
-    let tmp = TempDir::new("catalog-apache-linux");
-    let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
+    let tmp = TempDir::new("catalog-android-linux");
+    let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_ARM64);
     kit.prepare().unwrap();
     let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
     let env = crate::env::KitEnv::default();
@@ -479,17 +465,21 @@ fn phpmyadmin_on_linux_names_the_system() {
     };
     let catalog = Catalog::get();
     let opts = Options {
-        only: vec!["apache".into()],
+        only: vec!["android".into()],
         ..Options::default()
     };
     let e = plan(&ctx, catalog, &Choice::defaults(catalog), &opts)
         .err()
         .unwrap()
         .to_string();
-    assert!(e.contains("linux-x64") && !e.contains("ARM64"), "{e}");
-    let msg =
-        crate::commands::unavailable_msg("en", "Apache", Target::LINUX_X64, Target::WIN32_ARM64);
-    assert_eq!(msg, "Apache is not available for linux-x64.");
+    assert_eq!(e, "android is not available on linux-arm64");
+    let msg = crate::commands::unavailable_msg(
+        "en",
+        "Android SDK",
+        Target::LINUX_ARM64,
+        Target::WIN32_ARM64,
+    );
+    assert_eq!(msg, "Android SDK is not available for linux-arm64.");
 }
 
 #[test]
@@ -503,8 +493,10 @@ fn multi_platform_availability_and_paths_across_targets() {
     assert!(php.is_available_on(Target::DARWIN_ARM64));
     assert!(php.is_available_on(Target::LINUX_X64));
     let apache = catalog.find("apache").unwrap();
-    assert!(!apache.is_available_on(Target::DARWIN_ARM64));
-    assert!(!apache.is_available_on(Target::LINUX_X64));
+    assert!(apache.is_available_on(Target::DARWIN_ARM64));
+    assert!(apache.is_available_on(Target::LINUX_X64));
+    assert!(apache.is_emulated_on(Target::WIN32_ARM64));
+    assert!(!apache.is_emulated_on(Target::LINUX_ARM64));
 
     let tex = catalog.find("tinytex").unwrap();
     assert!(tex.is_emulated_on(Target::WIN32_ARM64));
@@ -579,9 +571,15 @@ fn unavailable_targets_have_a_reason() {
         }
     }
     // Outside `targets` or `noArm64`: not available, no reason of its own.
-    let apache = catalog.find("apache").unwrap();
-    assert!(!apache.is_available_on(Target::LINUX_X64));
-    assert_eq!(apache.unavailable_reason(Target::LINUX_X64), None);
+    let windows: Component = serde_json::from_value(serde_json::json!({
+        "id": "w", "name": "W", "group": "languages", "def": false, "mb": 1,
+        "desc": "w", "home": "https://w", "key": "w/w.exe",
+        "targets": ["win32-x64", "win32-arm64"]
+    }))
+    .unwrap();
+    assert!(!windows.is_available_on(Target::LINUX_X64));
+    assert!(windows.is_available_on(Target::WIN32_ARM64));
+    assert_eq!(windows.unavailable_reason(Target::LINUX_X64), None);
     let r = catalog.find("r").unwrap();
     assert!(!r.is_available_on(Target::WIN32_ARM64));
     assert_eq!(r.unavailable_reason(Target::WIN32_ARM64), None);

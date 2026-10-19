@@ -432,9 +432,11 @@ fn httpd_pinned_releases() {
 }
 
 /// The catalog's own pins name real lines of the kit's build, each with a
-/// SHA-256 for the four macOS and Linux targets (none for Windows).
+/// SHA-256 for the four macOS and Linux targets (none for Windows). At
+/// least one line: Apache is offered on every system (D-116).
 #[test]
 fn httpd_catalog_pins_cover_unix() {
+    assert!(!httpd_pins().is_empty(), "no pinned httpd line");
     for (line, pin) in httpd_pins() {
         assert_eq!(
             crate::versions::line_of(&pin.version).as_deref(),

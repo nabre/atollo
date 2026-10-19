@@ -10,7 +10,7 @@
     "uv": { "windows": "GitHub astral-sh/uv", "unix": "GitHub astral-sh/uv" },
     "gh": { "windows": "GitHub cli/cli", "unix": "GitHub cli/cli" },
     "php": { "windows": "windows.php.net Thread Safe x64 + VC++ locale", "unix": "static-php-cli bulk (cli + fpm), 8.4 e 8.5 fissate in sha256ByFile" },
-    "apache": { "windows": "Apache Lounge 2.4 (modulo PHP)", "unix": "build del kit httpd-v<v> (php-fpm), offerta quando è fissata in sha256ByLine", "notOffered": "installatore pronto (build del kit, D-116), ma nessun rilascio httpd-v<v> è ancora fissato in sha256ByLine: il catalogo offre Apache solo su Windows" },
+    "apache": { "windows": "Apache Lounge 2.4 (modulo PHP)", "unix": "build del kit httpd-v<v> (php-fpm), SHA-256 fissati in sha256ByLine" },
     "caddy": { "windows": "GitHub caddyserver/caddy", "unix": "GitHub caddyserver/caddy" },
     "rust": { "windows": "rustup: host gnu su x64, gnullvm su ARM64 (linker di C/C++), msvc dalle Impostazioni", "unix": "rustup, host nativo" },
     "go": { "windows": "go.dev", "unix": "go.dev" },
