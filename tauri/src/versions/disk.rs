@@ -26,6 +26,7 @@ pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
     if default_line(kit, c).as_deref() != Some(line) {
         crate::net::archive::remove_dir(&saved_dir(kit, c, line))?;
         c.clear_line_reinstall(kit, line);
+        forget_line(kit, c, line, Some(line));
         return Ok(());
     }
     let Some(next) = saved(kit, c).into_iter().next() else {
@@ -38,7 +39,21 @@ pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
         bail!("{id} {line}: not in its own folder yet");
     }
     crate::net::archive::remove_dir(&dir)?;
+    forget_line(kit, c, line, None);
     promote(kit, c, &next)
+}
+
+/// What was kept for `line` besides its folder: the files pre-downloaded
+/// for it for another system (`.bootstrap`, under `staged`: the saved line,
+/// or `None` for the default) and the list of its kept conda packages,
+/// whose archives go with the next sweep (D-118). The line itself is gone
+/// already: a staged file in use is only logged, and goes with the
+/// component.
+fn forget_line(kit: &Kit, c: &Component, line: &str, staged: Option<&str>) {
+    crate::install::conda::forget(kit, &c.id, Some(line));
+    if let Err(e) = crate::router::bootstrap::remove_line(kit, &c.id, staged) {
+        crate::log::warn(&format!("{} {line}: {e:#}", c.id));
+    }
 }
 
 /// `line` becomes the default: the installed version is its own.

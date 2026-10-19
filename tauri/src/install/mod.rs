@@ -333,6 +333,7 @@ pub fn fetch(
             return Err(crate::net::ByHand {
                 url: url.to_owned(),
                 file_name: file_name.to_owned(),
+                expect: expect.clone(),
                 cause: e,
             }
             .into())

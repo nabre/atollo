@@ -8,9 +8,13 @@
 //! On first startup on that target OS, `setup::task::outdated_app` triggers the
 //! installer and [`take`] consumes the pre-downloaded files without hitting the
 //! network again.
+//!
+//! Each component has its own folder in `.bootstrap` (`<id>`, `<id>@<line>`
+//! for a saved line), so removing it knows which files are its own; the files
+//! an older version put at the top of `.bootstrap` are still used.
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
@@ -19,33 +23,128 @@ use super::fs::{ensure_tree_executables, set_executable};
 use super::target::{can_execute_on_host, effective_target};
 use crate::install::{self, Ctx, Dest, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
-use crate::net::archive;
+use crate::net::archive::{self, InUse};
 use crate::net::verify::{self, Expect};
-use crate::setup::catalog::Component;
+use crate::setup::catalog::{Catalog, Component};
+
+/// `data/apps/<target>/.bootstrap`: what is pre-downloaded for that system.
+fn boot_dir(kit: &Kit) -> PathBuf {
+    kit.apps().join(".bootstrap")
+}
+
+/// The folder of the files pre-downloaded for component `id` (`<id>`), or
+/// for its saved `line` (`<id>@<line>`). Two components that download the
+/// same file (micromamba for Git and R) keep a copy each: removing one never
+/// takes the other's.
+pub fn staged_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf {
+    match line {
+        Some(line) => boot_dir(kit).join(format!("{id}@{line}")),
+        None => boot_dir(kit).join(id),
+    }
+}
+
+/// The folders of `id` in `.bootstrap`: its own and those of its saved lines.
+fn staged_dirs(kit: &Kit, id: &str) -> Vec<PathBuf> {
+    let prefix = format!("{id}@");
+    fs::read_dir(boot_dir(kit))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+        .filter(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            name == id || name.starts_with(&prefix)
+        })
+        .map(|e| e.path())
+        .collect()
+}
+
+/// Some file is pre-downloaded for `id` on `kit`'s system, also when
+/// nothing else of it is on disk (its folder stays empty until the first
+/// start there): a component the run can still remove.
+pub fn has_staged(kit: &Kit, id: &str) -> bool {
+    staged_dirs(kit, id)
+        .iter()
+        .any(|d| fs::read_dir(d).is_ok_and(|mut e| e.next().is_some()))
+}
 
 /// Uses a pre-downloaded bootstrap archive from `data/apps/<target>/.bootstrap`
-/// when present and matching `expect`. Removes the staged file once consumed on
-/// a host that can execute `kit.target()`.
+/// when present and matching `expect`: at the top (an older version's
+/// layout), then in any component's folder, since the download does not say
+/// for which component it is. Removes the staged file once consumed on a
+/// host that can execute `kit.target()`.
 pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<bool> {
-    let boot_dir = kit.apps().join(".bootstrap");
-    let candidate = boot_dir.join(file_name);
-    if !candidate.is_file() {
-        return Ok(false);
+    let top = boot_dir(kit);
+    let legacy = top.join(file_name);
+    if legacy.is_file() {
+        if let Err(e) = verify::check(&legacy, expect) {
+            crate::log::warn(&format!("bootstrap {file_name} discarded: {e}"));
+        }
     }
-    if let Err(e) = verify::check(&candidate, expect) {
-        crate::log::warn(&format!("bootstrap {file_name} discarded: {e}"));
-        let _ = fs::remove_file(&candidate);
+    let mut candidates = vec![legacy];
+    candidates.extend(
+        fs::read_dir(&top)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+            .map(|e| e.path().join(file_name)),
+    );
+    // A file of the same name in another component's folder may be another
+    // version it still waits for: skipped, not deleted.
+    let Some(candidate) = candidates
+        .into_iter()
+        .find(|c| c.is_file() && verify::matches(c, expect).unwrap_or(false))
+    else {
         return Ok(false);
-    }
+    };
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent)?;
     }
     fs::copy(&candidate, dest)?;
     if can_execute_on_host(kit.target()) {
         let _ = fs::remove_file(&candidate);
-        let _ = fs::remove_dir(&boot_dir);
+        if let Some(folder) = candidate.parent().filter(|p| *p != top) {
+            let _ = fs::remove_dir(folder);
+        }
+        let _ = fs::remove_dir(&top);
     }
     Ok(true)
+}
+
+/// Removes what was pre-downloaded for `c` on `kit`'s system, its saved
+/// lines included, and `.bootstrap` once empty. The files at the top of
+/// `.bootstrap` (an older version's layout, whose owner is not known) go
+/// with the last component staged there. A folder or file in use stops
+/// here (`InUse`), as for the component's own folder.
+pub fn remove(kit: &Kit, c: &Component) -> Result<()> {
+    for dir in staged_dirs(kit, &c.id) {
+        archive::remove_dir(&dir)?;
+    }
+    let others_staged = Catalog::get()
+        .all()
+        .iter()
+        .filter(|o| o.id != c.id)
+        .any(|o| is_staged(kit, o) || has_staged(kit, &o.id));
+    if !others_staged {
+        for entry in fs::read_dir(boot_dir(kit)).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
+            }
+        }
+    }
+    let _ = fs::remove_dir(boot_dir(kit));
+    Ok(())
+}
+
+/// Removes what was pre-downloaded for one line of `id` on `kit`'s system
+/// (the line removed from the Tools page): saved `line`, or with `None` the
+/// default one; then `.bootstrap` once empty.
+pub fn remove_line(kit: &Kit, id: &str, line: Option<&str>) -> Result<()> {
+    archive::remove_dir(&staged_dir(kit, id, line))?;
+    let _ = fs::remove_dir(boot_dir(kit));
+    Ok(())
 }
 
 /// Returns `true` when `component` uses a process-based custom installer that
@@ -79,9 +178,10 @@ pub fn is_staged(kit: &Kit, component: &Component) -> bool {
         && component.installed_version(kit).is_some()
 }
 
-/// Downloads and verifies every part of `release` into `data/apps/<target>/.bootstrap`
-/// and stages the bootstrap binaries/tools into `data/apps/<target>`, recording
-/// the version and `.reinstall` marker.
+/// Downloads and verifies every part of `release` into the component's folder
+/// of `data/apps/<target>/.bootstrap` ([`staged_dir`]) and stages the
+/// bootstrap binaries/tools into `data/apps/<target>`, recording the version
+/// and `.reinstall` marker.
 pub fn stage(
     ctx: &Ctx,
     inst: &dyn Installer,
@@ -91,8 +191,8 @@ pub fn stage(
     progress: &mut dyn Progress,
 ) -> Result<()> {
     let work = install::work_dir(ctx, component)?;
-    let boot_dir = ctx.kit.apps().join(".bootstrap");
-    fs::create_dir_all(&boot_dir)?;
+    let staged = staged_dir(ctx.kit, &component.id, line.map(|(l, _)| l));
+    fs::create_dir_all(&staged)?;
     for (i, part) in release.parts.iter().enumerate() {
         let step_work = work.path().join(i.to_string());
         fs::create_dir_all(&step_work)?;
@@ -104,7 +204,7 @@ pub fn stage(
             &step_work,
             progress,
         )?;
-        install::put_file(&file, &boot_dir.join(&part.file_name))?;
+        install::put_file(&file, &staged.join(&part.file_name))?;
         if component.id == "rust" {
             let rust_dir = ctx.kit.apps().join("rust");
             fs::create_dir_all(&rust_dir)?;
@@ -139,6 +239,14 @@ pub fn stage(
         }
     }
     drop(work);
+    // What an earlier release staged here (another version's file) waits
+    // for nothing any more.
+    for entry in fs::read_dir(&staged).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !release.parts.iter().any(|p| p.file_name == name) {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
     let marker = format!("bootstrap:{}", ctx.kit.target());
     match line {
         Some((line_str, target_dir)) => {
