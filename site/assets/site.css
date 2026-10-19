@@ -296,6 +296,9 @@ section { padding: 96px 0; position: relative; }
 .aspects p { margin: 0; }
 @media (max-width: 760px) { .aspects { grid-template-columns: 1fr; } }
 
+/* Still to do: the same grid as How it works, then a line on how to help */
+.todo-help { margin-top: 40px; }
+
 /* Tool matrix (site/matrix.mjs): one row per component, a column per target */
 .mx-scroll { overflow-x: auto; margin-top: 32px; border: 1px solid var(--border); border-radius: 12px; }
 .mx { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 760px; }
