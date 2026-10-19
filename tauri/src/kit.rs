@@ -724,7 +724,7 @@ pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
 }
 
 /// `\\?\C:\x` -> `C:\x` (keeps `\\?\UNC\` and other forms unchanged).
-fn strip_verbatim(path: &Path) -> PathBuf {
+pub(crate) fn strip_verbatim(path: &Path) -> PathBuf {
     let s = path.to_string_lossy();
     match s.strip_prefix(r"\\?\") {
         Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
