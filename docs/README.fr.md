@@ -1,12 +1,69 @@
-# Atollo — Universal Portable Dev & AI Workspace
+<p align="center">
+  <a href="https://nabre.github.io/atollo/fr/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-dark.svg">
+      <img src="brand/wordmark-light.svg" alt="Atollo" width="280">
+    </picture>
+  </a>
+</p>
 
-[Italiano](../README.md) · [English](README.en.md) · Français · [Deutsch](README.de.md)
+<h1 align="center">Atollo — Universal Portable Dev & AI Workspace</h1>
+
+<p align="center">
+  Un environnement de développement portable et sans installation pour Windows, macOS et Linux, en x64 et ARM64.<br>
+  Éditeur, plus de 20 langages et runtimes, bases de données locales et les agents IA Claude Code, Codex et Antigravity dans un dossier à emporter sur une clé USB.
+</p>
+
+<p align="center">
+  <a href="https://github.com/nabre/atollo/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/nabre/atollo?include_prereleases&label=release"></a>
+  <a href="https://github.com/nabre/atollo/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/nabre/atollo/total?label=downloads"></a>
+  <a href="https://github.com/nabre/atollo/actions/workflows/app.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/nabre/atollo/app.yml?branch=main&label=build"></a>
+  <a href="../LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/nabre/atollo?label=license"></a>
+  <img alt="Platforms: Windows, macOS, Linux" src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-informational">
+  <img alt="Architectures: x64, ARM64" src="https://img.shields.io/badge/arch-x64%20%7C%20ARM64-informational">
+  <img alt="Built with Rust and Tauri 2" src="https://img.shields.io/badge/built%20with-Rust%20%2B%20Tauri%202-informational">
+</p>
+
+<p align="center">
+  <a href="https://nabre.github.io/atollo/fr/"><b>Site</b></a> ·
+  <a href="https://github.com/nabre/atollo/releases/latest"><b>Télécharger</b></a> ·
+  <a href="app/GUIDE.md"><b>Guide (en anglais)</b></a> ·
+  <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a>
+</p>
+
+<p align="center"><a href="../README.md">English</a> · <a href="README.it.md">Italiano</a> · Français · <a href="README.de.md">Deutsch</a></p>
 
 **Atollo** est un *Universal Portable Dev & AI Workspace* autonome (`Atollo.exe`) qui réunit **Éditeur** (VSCodium intégré), **Gestionnaire de langages et d'outils** (plus de 20 langages et outils téléchargés à la demande), **Serveurs/Bases de données locales** (MySQL, MongoDB, SQLite, Caddy/Apache) et **Orchestrateur d'agents IA** (Claude Code, Codex et Antigravity avec instructions, skills et serveurs MCP synchronisés) dans un seul dossier portable. Aucune installation, aucun droit d'administrateur, aucun service système hors du dossier de l'espace de travail.
 
 Au premier démarrage, l'application télécharge d'elle-même les composants système : PowerShell 7, GitHub CLI et l'éditeur. Le reste se choisit dans la page « Outils », ou arrive quand il sert : Node.js avec une action `npm`, uv avec un serveur MCP `uvx`, et ainsi de suite.
 
-> En italien : guide [app/GUIDA.md](app/GUIDA.md), décisions [app/DECISIONS.md](app/DECISIONS.md), nouveautés [app/CHANGELOG.md](app/CHANGELOG.md) ; travail ouvert : [issues](https://github.com/nabre/atollo/issues).
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="../site/shots/shot-projects-light.png">
+  <img src="../site/shots/shot-projects-dark.png" alt="La page Projets d'Atollo : panneau rapide et activité" width="100%">
+</picture>
+
+## Fonctionnalités
+
+- **Éditeur et terminaux isolés.** VSCodium intégré avec les thèmes Atollo sombre et clair. Les terminaux ne voient que le `PATH` et les variables du kit : les programmes du PC hôte n'interfèrent pas, et le PC reste propre.
+- **Langages et outils à la demande.** Plus de 20 langages et outils (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), téléchargés quand il le faut et vérifiés par somme SHA-256 ou signature. Plusieurs versions côte à côte, une par projet.
+- **Bases de données et serveurs web locaux.** MySQL avec phpMyAdmin, MongoDB et SQLite, démarrés et arrêtés d'un clic, avec base, utilisateur et mot de passe pour chaque projet. Caddy et Apache pour les sites, sur chaque système. Aucun service système.
+- **Trois agents IA, une seule configuration.** Claude Code, Codex et Antigravity : installation, connexion et lancement. Instructions, skills et serveurs MCP s'écrivent une fois dans `data/agents` et `atollo sync` les aligne pour les trois. Limites du forfait et consommation du jour et des 7 derniers jours.
+- **Un dossier pour six systèmes.** Le même dossier, ou le même SSD externe, passe de Windows à macOS à Linux avec projets, bases de données et réglages des agents intacts : chaque machine exécute les programmes natifs de son système. « Retirer le lecteur » ferme tout ce qu'Atollo a ouvert et laisse éjecter le disque.
+
+## Documentation
+
+La documentation détaillée est en anglais (et en italien) :
+
+| Document | Contenu |
+| --- | --- |
+| [Guide](app/GUIDE.md) | chaque page de l'application, pas à pas, avec captures d'écran |
+| [Catalogue des composants](app/CATALOG.md) | les composants, la source de chacun, la disponibilité par système |
+| [Matrice outils × systèmes](app/TOOLS-MATRIX.html) | chaque composant sur les six cibles : natif, émulé ou absent |
+| [Architecture](app/ARCHITECTURE.md) | l'organisation du code et où placer une modification |
+| [Tests](app/TESTING.md) | contrôles automatiques et liste de vérification manuelle par système |
+| [Décisions](app/DECISIONS.md) et [nouveautés](app/CHANGELOG.md) | les raisons de chaque choix et ce qui a changé, en italien |
+
+Le travail ouvert est suivi dans les [issues](https://github.com/nabre/atollo/issues).
 
 ## Utilisation
 
@@ -42,7 +99,7 @@ La console d'Atollo est la console classique de Windows avec PowerShell 7 intég
 
 ## Reste à faire
 
-Atollo est en alpha (version 0.2.0). Windows x64 est le système le plus testé, installations réelles en CI comprises ; macOS, Linux et Windows ARM64 ne sont construits et testés qu'en CI. La liste complète est dans [app/TESTING.md](app/TESTING.md) (en italien).
+Atollo est en alpha (version 0.2.0). Windows x64 est le système le plus testé, installations réelles en CI comprises ; macOS, Linux et Windows ARM64 ne sont construits et testés qu'en CI. La liste complète est dans [docs/app/TESTING.md](app/TESTING.md) (en anglais).
 
 - **La première version, à essayer.** [La 0.2.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.2.0) est sur GitHub pour Windows, macOS et Linux, chacun en x64 et ARM64. Les fichiers publiés sont construits et testés en CI : il reste à les télécharger et à les lancer sur des machines vierges.
 - **Tests alpha.** Il faut des personnes qui utilisent Atollo sur de vrais projets et des PC différents, et qui signalent ce qui ne va pas : installation des composants, projets, bases de données, agents.
@@ -55,7 +112,7 @@ Vous avez un Mac, un PC Linux ou un PC Windows ARM64 ? Essayez Atollo et raconte
 
 ## Limites connues
 
-- Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX et R tournent en émulation x64 ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/atollo/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [app/CATALOG.md](app/CATALOG.md) (en italien), la matrice composant × système dans [app/MATRICE-STRUMENTI.html](app/MATRICE-STRUMENTI.html). Apache sur macOS et Linux est un build du kit (D-116), avec PHP via `php-fpm`.
+- Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX et R tournent en émulation x64 ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/atollo/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [docs/app/CATALOG.md](app/CATALOG.md) (en anglais), la matrice composant × système dans [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html). Apache sur macOS et Linux est un build du kit (D-116), avec PHP via `php-fpm`.
 - Sous Linux, MySQL a besoin de deux bibliothèques du système, `libaio` et `libnuma` : sur Ubuntu 24.04 et Debian 13 `sudo apt install libaio1t64 libnuma1` (sur les versions précédentes `libaio1`), sur Fedora et RHEL `sudo dnf install libaio numactl-libs`. Si elles manquent, Atollo le dit avec la commande à exécuter.
 - Sur macOS et Linux, un dossier Atollo sur exFAT ou FAT (une clé formatée pour Windows) fonctionne, mais ces systèmes de fichiers n'ont pas de liens : là où un programme en apporte, Atollo copie les fichiers (par exemple les 142 liens internes de Git), ce qui prend plus de place. Sur une clé utilisée seulement avec un Mac ou Linux, mieux vaut APFS ou ext4.
 - Hors du dossier d'Atollo, il ne reste que les traces de Windows, les fichiers temporaires de transit dans le dossier temporaire du système (supprimés automatiquement à la fermeture), la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
@@ -126,7 +183,7 @@ npm test
 npm -w ui run build
 ```
 
-`npm run lint` exécute `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, ESLint et Prettier ; `npm test` exécute `cargo test` et les tests de l'interface ; `npm -w ui run build` vérifie les types et compile l'interface. Détails (en italien) dans [app/TESTING.md](app/TESTING.md). Organisation du code et où placer une modification (en italien) : [app/ARCHITECTURE.md](app/ARCHITECTURE.md).
+`npm run lint` exécute `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, ESLint et Prettier ; `npm test` exécute `cargo test` et les tests de l'interface ; `npm -w ui run build` vérifie les types et compile l'interface. Détails (en anglais) dans [docs/app/TESTING.md](app/TESTING.md). Organisation du code et où placer une modification (en anglais) : [docs/app/ARCHITECTURE.md](app/ARCHITECTURE.md).
 
 Développement avec rechargement automatique : `npm run dev`.
 

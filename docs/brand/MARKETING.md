@@ -15,7 +15,7 @@ Quando ti viene chiesto di lavorare su qualsiasi aspetto di comunicazione, marke
    * **Sobrio, ingegneristico, concreto, mai gonfiato:** Evita superlativi vuoti (*"rivoluzionario"*, *"magico"*, *"il migliore al mondo"*). Gli sviluppatori si convincono con i fatti tecnici (*zero installazione, zero diritti di amministratore, 6 architetture native, isolamento del PATH, sincronizzazione di 3 agenti AI*).
    * **Evocativo ma funzionale:** La metafora marina dell'**Atollo** (laguna protetta, isola autosufficiente in qualsiasi oceano/OS) serve a rendere immediato il concetto di isolamento e portabilità, senza mai appesantire l'interfaccia tecnica con gergo nautico forzato.
 5. **Parità multilingua obbligatoria (`IT`, `EN`, `FR`, `DE`):** Ogni testo rivolto all'utente finale va mantenuto allineato nelle quattro lingue supportate dal progetto.
-6. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/CATALOG.md`](../app/CATALOG.md), «Disponibilità per target» e «Fonti per sistema»).
+6. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/CATALOG.md`](../app/CATALOG.md), “Availability per target” e “Sources per system”; in italiano [`CATALOG.it.md`](../app/CATALOG.it.md), «Disponibilità per target» e «Fonti per sistema»).
 
 ---
 
@@ -74,7 +74,7 @@ Ogni presentazione completa di Atollo deve articolarsi su questi **5 punti**:
    * **Sincronizzazione unificata (`sync`):** scrivi una sola volta istruzioni, skill, regole e server MCP in `data/agents` (o per singolo progetto) e Atollo li mantiene allineati automaticamente per tutti e tre gli agenti.
    * **Controllo dei consumi:** monitoraggio in tempo reale dei limiti del piano e dei consumi giornalieri e degli ultimi 7 giorni.
 5. **Il Fondamento: Continuità Fisica Multi-OS (`6/6`) e Rimozione Sicura**
-   * Grazie al Router multipiattaforma (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite (su Windows ARM64 alcuni componenti usano la build x64 in emulazione, come dice la matrice in [`docs/app/MATRICE-STRUMENTI.html`](../app/MATRICE-STRUMENTI.html)).
+   * Grazie al Router multipiattaforma (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite (su Windows ARM64 alcuni componenti usano la build x64 in emulazione, come dice la matrice in [`docs/app/TOOLS-MATRIX.html`](../app/TOOLS-MATRIX.html)).
    * La funzione **Rimuovi l'unità** chiude tutti i processi figli, mette in sicurezza le sessioni e le credenziali nel kit e permette di espellere il disco senza rischi.
 
 ---
@@ -252,6 +252,6 @@ Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel co
 3. **Localizzazione e Documentazione:**
    * [`tauri/i18n/catalog.json`](../../tauri/i18n/catalog.json) (stringhe del motore Rust in `it`, `en`, `fr`, `de`)
    * [`ui/src/locales/en.json`](../../ui/src/locales/en.json), [`fr.json`](../../ui/src/locales/fr.json), [`de.json`](../../ui/src/locales/de.json) e testi italiani nei componenti `ui/src/**`
-   * [`README.md`](../../README.md), `docs/README.{en,fr,de}.md`, [`docs/app/GUIDA.md`](../app/GUIDA.md), [`docs/app/ARCHITECTURE.md`](../app/ARCHITECTURE.md)
+   * [`README.md`](../../README.md) (inglese, la pagina principale), `docs/README.{it,fr,de}.md`, [`docs/app/GUIDE.md`](../app/GUIDE.md) e [`GUIDE.it.md`](../app/GUIDE.it.md), [`docs/app/ARCHITECTURE.md`](../app/ARCHITECTURE.md) e [`ARCHITECTURE.it.md`](../app/ARCHITECTURE.it.md), [`docs/app/CATALOG.md`](../app/CATALOG.md) e [`docs/app/TESTING.md`](../app/TESTING.md) con le loro copie `.it.md`, la matrice [`docs/app/TOOLS-MATRIX.html`](../app/TOOLS-MATRIX.html) (generata da `scripts/matrix/gen_matrix.py`, solo in inglese)
 4. **Sito (`https://nabre.github.io/atollo/`):**
    * [`site/strings/`](../../site/strings/) (`it`, `en`, `fr`, `de`, stesse chiavi: la build si ferma se una manca), [`site/template.html`](../../site/template.html), [`site/assets/site.css`](../../site/assets/site.css) (i colori della Sezione 5); l'hero e la chiusura usano `hero-dark.svg` / `hero-light.svg` secondo il tema; le schermate di `docs/app/images` si mostrano ritagliate (`.crop`: via la barra del titolo e quella di stato) dentro una cornice del sito; la tabella «Strumenti per sistema» si genera da `tauri/catalog/components.json` in [`site/matrix.mjs`](../../site/matrix.mjs) (generi in `KIND_OF`), mai a mano; compilato da [`site/build.mjs`](../../site/build.mjs) e pubblicato da `.github/workflows/site.yml` (DECISIONS.md D-126).
