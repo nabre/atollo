@@ -41,7 +41,7 @@ for (const lang of langs) {
   const langLinks = langs
     .map((l) => (l === lang ? `<span aria-current="page" lang="${l}">${l.toUpperCase()}</span>` : `<a href="${root}${pathOf(l)}" hreflang="${l}" lang="${l}" title="${strings[l].langName}">${l.toUpperCase()}</a>`))
     .join("");
-  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, toolsMatrix: matrixHtml(catalog, lang, strings[lang]) };
+  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, toolsMatrix: matrixHtml(catalog, lang, strings[lang]), componentCount: String(catalog.components.length) };
   const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
     return values[key];
@@ -52,9 +52,9 @@ for (const lang of langs) {
 
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
 const brand = join(repo, "docs", "brand");
-for (const f of ["wordmark-dark.svg", "wordmark-light.svg", "symbol.svg", "brand.png"]) cpSync(join(brand, f), join(out, "assets", f));
+for (const f of ["wordmark-dark.svg", "wordmark-light.svg", "symbol.svg", "brand.png", "hero-dark.svg", "hero-light.svg"]) cpSync(join(brand, f), join(out, "assets", f));
 const images = join(repo, "docs", "app", "images");
-const shots = { "shot-projects.png": "02-progetti-elenco.png", "shot-agents.png": "10-agenti-quote-statistiche.png", "shot-tools.png": "13-strumenti-catalogo-matrice.png" };
+const shots = { "shot-projects.png": "05-progetto-avvio-log.png", "shot-agents.png": "10-agenti-quote-statistiche.png", "shot-tools.png": "13-strumenti-catalogo-matrice.png" };
 for (const [to, from] of Object.entries(shots)) cpSync(join(images, from), join(out, "assets", to));
 
 console.log(`_site: ${langs.length} pages`);
