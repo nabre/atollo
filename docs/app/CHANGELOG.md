@@ -3,6 +3,7 @@
 ## Strumenti descritti come li installa il codice (19/10/2026)
 
 - **Windows ARM64**: README, sito e catalogo elencano tutti i componenti che lì usano la build x64 in emulazione (editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX); prima mancavano MongoDB, Android SDK e Julia. L'etichetta «x64» della pagina Strumenti dice «Su Windows ARM64 gira in emulazione x64», non «sui PC ARM64»: su un Mac o un Linux ARM64 quei componenti sono nativi. L'etichetta compare solo nel kit Windows ARM64 (prima su ogni sistema), e l'editor non si dice più «in emulazione x64» su macOS e Linux ARM64, dove è nativo.
+- **SQLite su Windows ARM64** prende sempre lo zip `win-arm64` di sqlite.org: se mancasse, l'installazione lo dice invece di prendere in silenzio quello x64 (D-108).
 - **R** non c'è solo su Windows ARM64: su macOS e Linux, ARM64 compreso, viene da conda-forge (il catalogo diceva «non disponibile sui kit ARM64»). **Apache** oggi il catalogo lo offre solo su Windows: su macOS e Linux arriva quando la build del kit è fissata (D-116); il sito diceva «Caddy e Apache per i siti» senza distinguere.
 - **Git** non arriva più con GitHub CLI (D-81): arriva con Claude Code, un clone o un progetto. README e catalogo dicevano ancora «Git per GitHub CLI». La sua descrizione dice che Git Bash c'è solo su Windows.
 - **Rust su Windows ARM64** usa l'host `gnullvm` collegato da C/C++ (D-112), non sempre MSVC come dicevano guida e catalogo; preparato da un altro sistema si completa al primo avvio, non dà errore.

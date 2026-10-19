@@ -155,21 +155,23 @@ fn mongosh_asset_per_target() {
         .is_match("mongosh-2.5.9-win32-arm64.zip"));
 }
 
-/// No silent fallback to x64 for SQLite (D-108), except on Windows ARM64
-/// where the x64 build runs emulated.
+/// No fallback to x64 for SQLite (D-108): the build of the architecture
+/// asked for, or an error.
 #[test]
-fn sqlite_falls_back_to_x64_only_on_windows_arm64() {
-    use crate::kit::Target;
-
-    for t in Target::ALL {
-        let want = (t == Target::WIN32_ARM64).then_some("x64");
-        assert_eq!(sqlite_fallback_arch(t), want, "{t}");
-    }
-    let page = format!(
-        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-linux-x64-3540000.zip,456,{l}\n-->",
-        l = "c".repeat(64)
+fn sqlite_never_falls_back_to_x64() {
+    let both = format!(
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-win-x64-3540000.zip,456,{c}\nPRODUCT,3.54.0,2026/sqlite-tools-win-arm64-3540000.zip,457,{a}\n-->",
+        c = "c".repeat(64),
+        a = "a".repeat(64)
     );
-    assert!(sqlite_tools_for(&page, "linux", "arm64").is_err());
+    let (_, path, _) = sqlite_tools_for(&both, "win", "arm64").unwrap();
+    assert_eq!(path, "2026/sqlite-tools-win-arm64-3540000.zip");
+    let x64_only = format!(
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-win-x64-3540000.zip,456,{c}\n-->",
+        c = "c".repeat(64)
+    );
+    assert!(sqlite_tools_for(&x64_only, "win", "arm64").is_err());
+    assert!(sqlite_tools_for(&x64_only, "linux", "arm64").is_err());
 }
 
 /// `/etc/os-release` of real systems (Ubuntu 24.04 is the one of WSL2 on
