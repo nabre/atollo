@@ -2,11 +2,16 @@
 // root, the others in en/, fr/, de/, as the READMEs), the brand files from
 // docs/brand (the wordmark, whose last O is the symbol: MARKETING.md, «Logo
 // nelle intestazioni») and the gallery's screenshots, dark and light, from
-// site/shots (made by site/shots/make.mjs). No dependencies:
+// site/shots (made by site/shots/make.mjs). The icons are react-icons', as
+// in the app, drawn here into plain SVG: the page runs no React. After
+// npm ci (the ui workspace's react, react-dom and react-icons):
 // node site/build.mjs. Published by .github/workflows/site.yml.
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { RiArrowDownSLine, RiComputerLine, RiMoonLine, RiSunLine } from "react-icons/ri";
 import { loadCatalog, matrixHtml } from "./matrix.mjs";
 
 const site = dirname(fileURLToPath(import.meta.url));
@@ -29,6 +34,16 @@ for (const l of langs) {
 const escape = (s) => s.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 
 const catalog = loadCatalog(repo);
+
+// A react-icons icon as SVG markup, hidden from screen readers (the control
+// around it carries the label); its size comes from site.css.
+const icon = (Icon, props = {}) => renderToStaticMarkup(createElement(Icon, { "aria-hidden": true, ...props }));
+const icons = {
+  iconSystem: icon(RiComputerLine, { "data-icon": "system" }),
+  iconLight: icon(RiSunLine, { "data-icon": "light" }),
+  iconDark: icon(RiMoonLine, { "data-icon": "dark" }),
+};
+const chevron = icon(RiArrowDownSLine, { className: "chev" });
 
 // The language menu's flags, inline SVG at 3:2 (Windows draws no flag emoji):
 // English is the United Kingdom's, cut to 3:2. The Union Jack's clip path
@@ -68,9 +83,9 @@ for (const lang of langs) {
       : `<li><a href="${root}${pathOf(l)}" hreflang="${l}" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</a></li>`;
   const langLinks =
     `<details class="lang-menu"><summary aria-label="${escape(strings[lang].langLabel)}: ${strings[lang].langName}">${flag(lang)}<b>${lang.toUpperCase()}</b>` +
-    `<svg class="chev" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>` +
+    `${chevron}</summary>` +
     `<ul>${langs.map(item).join("")}</ul></details>`;
-  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, toolsMatrix: matrixHtml(catalog, lang, strings[lang]), componentCount: String(catalog.components.length), version };
+  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, langLinks, ...icons, toolsMatrix: matrixHtml(catalog, lang, strings[lang]), componentCount: String(catalog.components.length), version };
   const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
     return values[key];
