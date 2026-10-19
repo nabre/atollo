@@ -271,14 +271,6 @@ export function ToolsTable({
           {t("{0} di {1}", rows.length, list.length)}
         </span>
       </div>
-      <ul aria-label={t("Legenda")} className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 px-5 pb-2 text-[12px]">
-        {TOOL_STATES.map((s) => (
-          <li key={s} className="flex items-center gap-1.5">
-            <ToolStateIcon state={s} />
-            {toolStateLabel(s)}
-          </li>
-        ))}
-      </ul>
       {kit.error && (
         <div className="px-5 pb-2">
           <ErrorLine
