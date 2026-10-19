@@ -30,20 +30,50 @@ const locales = { en: "en_US", it: "it_IT", fr: "fr_FR", de: "de_DE" };
 // The words the page is found by, in English on every page (as the GitHub
 // topics): the meta keywords and the JSON-LD's keywords.
 const keywords = [
-  "portable development environment", "portable dev environment", "zero install", "no admin rights",
-  "USB development environment", "AI agents", "Claude Code", "Codex", "Antigravity", "MCP servers",
-  "VSCodium", "portable VS Code", "toolchain manager", "runtime manager", "version manager",
-  "MySQL", "MongoDB", "SQLite", "phpMyAdmin", "Caddy", "Apache", "PHP", "Node.js", "Python", "Rust", "Go", "Java",
-  "Windows", "macOS", "Linux", "ARM64", "Tauri",
+  "portable development environment",
+  "portable dev environment",
+  "zero install",
+  "no admin rights",
+  "USB development environment",
+  "AI agents",
+  "Claude Code",
+  "Codex",
+  "Antigravity",
+  "MCP servers",
+  "VSCodium",
+  "portable VS Code",
+  "toolchain manager",
+  "runtime manager",
+  "version manager",
+  "MySQL",
+  "MongoDB",
+  "SQLite",
+  "phpMyAdmin",
+  "Caddy",
+  "Apache",
+  "PHP",
+  "Node.js",
+  "Python",
+  "Rust",
+  "Go",
+  "Java",
+  "Windows",
+  "macOS",
+  "Linux",
+  "ARM64",
+  "Tauri",
 ].join(", ");
 
 const template = readFileSync(join(site, "template.html"), "utf8");
-const strings = Object.fromEntries(langs.map((l) => [l, JSON.parse(readFileSync(join(site, "strings", `${l}.json`), "utf8"))]));
+const strings = Object.fromEntries(
+  langs.map((l) => [l, JSON.parse(readFileSync(join(site, "strings", `${l}.json`), "utf8"))]),
+);
 
 // Same keys in every language: a missing one would show as {{key}}.
 const keys = Object.keys(strings.en).sort().join();
 for (const l of langs) {
-  if (Object.keys(strings[l]).sort().join() !== keys) throw new Error(`site/strings/${l}.json: keys differ from en.json`);
+  if (Object.keys(strings[l]).sort().join() !== keys)
+    throw new Error(`site/strings/${l}.json: keys differ from en.json`);
 }
 
 // The strings may hold <code>; & and " are escaped so they fit in attributes too.
@@ -66,9 +96,12 @@ const chevron = icon(RiArrowDownSLine, { className: "chev" });
 // gets a new id each time, as the menu may show it twice.
 let flagIds = 0;
 const flags = {
-  it: () => `<svg viewBox="0 0 3 2"><path fill="#009246" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#ce2b37" d="M2 0h1v2H2z"/></svg>`,
-  fr: () => `<svg viewBox="0 0 3 2"><path fill="#0055a4" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#ef4135" d="M2 0h1v2H2z"/></svg>`,
-  de: () => `<svg viewBox="0 0 5 3" preserveAspectRatio="none"><path fill="#000" d="M0 0h5v1H0z"/><path fill="#dd0000" d="M0 1h5v1H0z"/><path fill="#ffce00" d="M0 2h5v1H0z"/></svg>`,
+  it: () =>
+    `<svg viewBox="0 0 3 2"><path fill="#009246" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#ce2b37" d="M2 0h1v2H2z"/></svg>`,
+  fr: () =>
+    `<svg viewBox="0 0 3 2"><path fill="#0055a4" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#ef4135" d="M2 0h1v2H2z"/></svg>`,
+  de: () =>
+    `<svg viewBox="0 0 5 3" preserveAspectRatio="none"><path fill="#000" d="M0 0h5v1H0z"/><path fill="#dd0000" d="M0 1h5v1H0z"/><path fill="#ffce00" d="M0 2h5v1H0z"/></svg>`,
   en: () => {
     const id = `uk${++flagIds}`;
     return `<svg viewBox="0 0 60 30" preserveAspectRatio="xMidYMid slice"><clipPath id="${id}"><path d="M30 15h30v15zv15H0zH0V0zV0h30z"/></clipPath><path fill="#012169" d="M0 0h60v30H0z"/><path d="M0 0l60 30m0-30L0 30" stroke="#fff" stroke-width="6"/><path d="M0 0l60 30m0-30L0 30" clip-path="url(#${id})" stroke="#c8102e" stroke-width="4"/><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/><path d="M30 0v30M0 15h60" stroke="#c8102e" stroke-width="6"/></svg>`;
@@ -109,7 +142,7 @@ const jsonLd = (lang) =>
     license: "https://opensource.org/licenses/MIT",
     isAccessibleForFree: true,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-    image: `${base}assets/brand.png`,
+    image: `${base}assets/social.png`,
     screenshot: `${base}assets/shot-projects-dark.png`,
     author: { "@type": "Person", name: "nabre", url: "https://github.com/nabre" },
     keywords,
@@ -132,7 +165,23 @@ for (const lang of langs) {
     `<details class="lang-menu"><summary aria-label="${escape(strings[lang].langLabel)}: ${strings[lang].langName}">${flag(lang)}<b>${lang.toUpperCase()}</b>` +
     `${chevron}</summary>` +
     `<ul>${langs.map(item).join("")}</ul></details>`;
-  const values = { ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])), lang, root, base, path: pathOf(lang), langPath: pathOf(lang), alternates, ogLocales, keywords: escape(keywords), jsonLd: jsonLd(lang), langLinks, ...icons, toolsMatrix: matrixHtml(catalog, lang, strings[lang]), componentCount: String(catalog.components.length), version };
+  const values = {
+    ...Object.fromEntries(Object.entries(strings[lang]).map(([k, v]) => [k, escape(v)])),
+    lang,
+    root,
+    base,
+    path: pathOf(lang),
+    langPath: pathOf(lang),
+    alternates,
+    ogLocales,
+    keywords: escape(keywords),
+    jsonLd: jsonLd(lang),
+    langLinks,
+    ...icons,
+    toolsMatrix: matrixHtml(catalog, lang, strings[lang]),
+    componentCount: String(catalog.components.length),
+    version,
+  };
   const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
     return values[key];
@@ -142,8 +191,21 @@ for (const lang of langs) {
 }
 
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
+// Files that must sit at the site's root, as they are: the Google Search
+// Console ownership check of https://nabre.github.io/atollo/ (keep it, or the
+// property loses its verification).
+cpSync(join(site, "root"), out, { recursive: true });
 const brand = join(repo, "docs", "brand");
-for (const f of ["wordmark-dark.svg", "wordmark-light.svg", "symbol.svg", "brand.png", "hero-dark.svg", "hero-light.svg"]) cpSync(join(brand, f), join(out, "assets", f));
+for (const f of [
+  "wordmark-dark.svg",
+  "wordmark-light.svg",
+  "symbol.svg",
+  "brand.png",
+  "social.png",
+  "hero-dark.svg",
+  "hero-light.svg",
+])
+  cpSync(join(brand, f), join(out, "assets", f));
 const shots = join(site, "shots");
 for (const f of readdirSync(shots).filter((f) => f.endsWith(".png"))) cpSync(join(shots, f), join(out, "assets", f));
 

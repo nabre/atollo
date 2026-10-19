@@ -9,7 +9,6 @@ on:
     paths:
       - 'site/**'
       - 'docs/brand/**'
-      - 'docs/app/images/**'
       # The tool matrix (site/matrix.mjs) follows the app's catalog.
       - 'tauri/catalog/components.json'
       - 'tauri/i18n/catalog.json'
