@@ -875,5 +875,21 @@
   "da aggiornare": "zu aktualisieren",
   "pre-installato": "vorinstalliert",
   "non esiste": "nicht vorhanden",
-  "nessun file in data/apps/{0}": "keine Dateien in data/apps/{0}"
+  "nessun file in data/apps/{0}": "keine Dateien in data/apps/{0}",
+  "Nuova azione": "Neue Aktion",
+  "Modifica {0}": "{0} bearbeiten",
+  "Modifica": "Bearbeiten",
+  "Modifica: la tua versione va in panel.json": "Bearbeiten: deine Version kommt in panel.json",
+  "Azione rilevata: salvata, la tua versione in panel.json prende il suo posto.": "Erkannte Aktion: Sobald du speicherst, tritt deine Version in panel.json an ihre Stelle.",
+  "Sito o server web": "Website oder Webserver",
+  "App con finestra": "App mit Fenster",
+  "{port} nel comando diventa la porta dell'azione.": "{port} im Befehl wird zum Port der Aktion.",
+  "Variabili": "Variablen",
+  "facoltativa, relativa al progetto": "optional, relativ zum Projekt",
+  "facoltative, NOME=valore una per riga": "optional, NAME=Wert eine pro Zeile",
+  "Riga {0} delle variabili: scrivi NOME=valore.": "Zeile {0} der Variablen: schreib NAME=Wert.",
+  "Id: {0}": "Id: {0}",
+  "Togli da panel.json": "Aus panel.json entfernen",
+  "Togliere {0} da panel.json?": "{0} aus panel.json entfernen?",
+  "Se Atollo rileva un'azione con lo stesso id, torna quella rilevata.": "Erkennt Atollo eine Aktion mit derselben Id, kommt die erkannte zurück."
 }

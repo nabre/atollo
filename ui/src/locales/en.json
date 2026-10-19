@@ -875,5 +875,21 @@
   "da aggiornare": "to update",
   "pre-installato": "pre-installed",
   "non esiste": "not present",
-  "nessun file in data/apps/{0}": "no files in data/apps/{0}"
+  "nessun file in data/apps/{0}": "no files in data/apps/{0}",
+  "Nuova azione": "New action",
+  "Modifica {0}": "Edit {0}",
+  "Modifica": "Edit",
+  "Modifica: la tua versione va in panel.json": "Edit: your version goes in panel.json",
+  "Azione rilevata: salvata, la tua versione in panel.json prende il suo posto.": "Detected action: once saved, your version in panel.json takes its place.",
+  "Sito o server web": "Website or web server",
+  "App con finestra": "Windowed app",
+  "{port} nel comando diventa la porta dell'azione.": "{port} in the command becomes the action's port.",
+  "Variabili": "Variables",
+  "facoltativa, relativa al progetto": "optional, relative to the project",
+  "facoltative, NOME=valore una per riga": "optional, NAME=value one per line",
+  "Riga {0} delle variabili: scrivi NOME=valore.": "Line {0} of the variables: write NAME=value.",
+  "Id: {0}": "Id: {0}",
+  "Togli da panel.json": "Remove from panel.json",
+  "Togliere {0} da panel.json?": "Remove {0} from panel.json?",
+  "Se Atollo rileva un'azione con lo stesso id, torna quella rilevata.": "If Atollo detects an action with the same id, the detected one comes back."
 }
