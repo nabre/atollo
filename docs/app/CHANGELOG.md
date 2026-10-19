@@ -1,5 +1,11 @@
 # Novità
 
+## La cartella della home del sito come la vede il tuo sistema (19/10/2026)
+
+- **La finestra della cartella** nella hero del sito prende la barra del sistema di chi visita: Windows 11 (titolo a sinistra, riduci, ingrandisci e chiudi a destra), macOS (i tre semafori, titolo al centro), Linux con GNOME (titolo al centro, chiusura tonda).
+- **Dentro, i file veri**: `Atollo-<versione>-win32-x64.exe`, `Atollo.app` o `Atollo-<versione>-linux-<arch>.AppImage`, con la versione dell'ultimo rilascio, i separatori del sistema e una chiavetta come radice (`E:\Atollo\`, `/Volumes/KIT/Atollo/`, `/media/kit/Atollo/`). Senza JavaScript resta la cartella generica.
+- **`?os=<target>`** nell'indirizzo mostra la pagina come la vede un altro sistema (per esempio `?os=linux-arm64`).
+
 ## Caratteri Geist e Geist Mono (19/10/2026)
 
 - **App, sito ed editor** usano Geist per testi e titoli e Geist Mono per codice, percorsi, terminale ed editor, al posto di Segoe UI, Inter e Consolas: lo stesso aspetto su Windows, macOS e Linux.
