@@ -57,7 +57,7 @@ function diskTree(): { path: string; depth: number; text: string }[] {
         "I tuoi progetti, una cartella ciascuno. È tuo: il kit non ci scrive senza che tu lo chieda.",
         "Your projects, one folder each. It is yours: the kit does not write there unless you ask.",
         "Vos projets, un dossier chacun. Il est à vous : le kit n'y écrit pas sans que vous le demandiez.",
-        "Ihre Projekte, je ein Ordner. Er gehört Ihnen: Das Kit schreibt dort nichts, ohne dass Sie es verlangen.",
+        "Deine Projekte, je ein Ordner. Er gehört dir: Das Kit schreibt dort nichts, ohne dass du es verlangst.",
       ),
     },
     {
@@ -87,7 +87,7 @@ function diskTree(): { path: string; depth: number; text: string }[] {
         "Password di amministratore dei database e accessi di mysql. Protetta: la legge solo il tuo utente.",
         "Database administrator passwords and mysql logins. Protected: only your user can read it.",
         "Mots de passe d'administrateur des bases de données et accès de mysql. Protégé : seul votre utilisateur peut le lire.",
-        "Administratorpasswörter der Datenbanken und Zugänge von mysql. Geschützt: Nur Ihr Benutzer kann ihn lesen.",
+        "Administratorpasswörter der Datenbanken und Zugänge von mysql. Geschützt: Nur dein Benutzer kann ihn lesen.",
       ),
     },
     {
@@ -413,7 +413,7 @@ export const INSIDE: TopicTexts = {
             "Sul PC di un collega c'è già Node.js 18 installato, con i suoi pacchetti globali e le sue impostazioni di npm. Se apri una console del kit e scrivi node --version, rispondi Node 24 del kit, non il 18 del PC: la console del kit non sa nemmeno che l'altro esiste. E quando installi un pacchetto globale, finisce nella cartella del kit, non nel profilo del collega.",
             "A colleague's PC already has Node.js 18 installed, with its global packages and its npm settings. If you open a kit console and type node --version, the kit's Node 24 answers, not the PC's 18: the kit console does not even know the other one exists. And when you install a global package, it ends up in the kit folder, not in your colleague's profile.",
             "Sur le PC d'un collègue, Node.js 18 est déjà installé, avec ses paquets globaux et ses paramètres npm. Si vous ouvrez une console du kit et tapez node --version, c'est Node 24 du kit qui répond, pas le 18 du PC : la console du kit ne sait même pas que l'autre existe. Et quand vous installez un paquet global, il atterrit dans le dossier du kit, pas dans le profil du collègue.",
-            "Auf dem PC eines Kollegen ist bereits Node.js 18 installiert, mit seinen globalen Paketen und seinen npm-Einstellungen. Wenn Sie eine Konsole des Kits öffnen und node --version eingeben, antwortet Node 24 des Kits, nicht die 18 des PCs: Die Konsole des Kits weiß nicht einmal, dass die andere existiert. Und wenn Sie ein globales Paket installieren, landet es im Kit-Ordner, nicht im Profil des Kollegen.",
+            "Auf dem PC eines Kollegen ist bereits Node.js 18 installiert, mit seinen globalen Paketen und seinen npm-Einstellungen. Wenn du eine Konsole des Kits öffnest und node --version eingibst, antwortet Node 24 des Kits, nicht die 18 des PCs: Die Konsole des Kits weiß nicht einmal, dass die andere existiert. Und wenn du ein globales Paket installierst, landet es im Kit-Ordner, nicht im Profil des Kollegen.",
           )}
         </P>
         <P>
@@ -520,7 +520,7 @@ export const INSIDE: TopicTexts = {
               "Per vedere l'ambiente completo apri una console nella cartella del kit e usa il comando {0} (le chiavi e le password sono mascherate con ***).",
               "To see the complete environment open a console in the kit folder and use the command {0} (keys and passwords are masked with ***).",
               "Pour voir l'environnement complet, ouvrez une console dans le dossier du kit et utilisez la commande {0} (les clés et les mots de passe sont masqués par ***).",
-              "Um die vollständige Umgebung zu sehen, öffnen Sie eine Konsole im Kit-Ordner und verwenden den Befehl {0} (Schlüssel und Passwörter werden mit *** maskiert).",
+              "Um die vollständige Umgebung zu sehen, öffnest du eine Konsole im Kit-Ordner und verwendest den Befehl {0} (Schlüssel und Passwörter werden mit *** maskiert).",
             ),
             <Code key="e">.\Atollo.exe env | Out-Host</Code>,
           )}
@@ -562,13 +562,13 @@ export const INSIDE: TopicTexts = {
               "Se esegui gh auth login a mano in una console, GitHub CLI può salvare l'accesso nella Gestione credenziali di Windows: accedi invece dalle Impostazioni.",
               "If you run gh auth login manually in a console, GitHub CLI may save the sign-in in the Windows Credential Manager: sign in from Settings instead.",
               "Si vous exécutez gh auth login à la main dans une console, GitHub CLI peut enregistrer la connexion dans le Gestionnaire d'identification de Windows : connectez-vous plutôt depuis les Paramètres.",
-              "Wenn Sie gh auth login manuell in einer Konsole ausführen, kann GitHub CLI die Anmeldung in der Windows-Anmeldeinformationsverwaltung speichern: Melden Sie sich stattdessen über die Einstellungen an.",
+              "Wenn du gh auth login manuell in einer Konsole ausführst, kann GitHub CLI die Anmeldung in der Windows-Anmeldeinformationsverwaltung speichern: Melde dich stattdessen über die Einstellungen an.",
             ),
             tr(
               "Su macOS: i dati della finestra in ~/Library/WebKit e, se non usi il token, l'accesso di Claude Code nel Portachiavi.",
               "On macOS: the window's data in ~/Library/WebKit and, if you do not use the token, the Claude Code sign-in in the Keychain.",
               "Sur macOS : les données de la fenêtre dans ~/Library/WebKit et, si vous n'utilisez pas le jeton, la connexion de Claude Code dans le Trousseau.",
-              "Unter macOS: die Daten des Fensters in ~/Library/WebKit und, wenn Sie das Token nicht verwenden, die Anmeldung von Claude Code im Schlüsselbund.",
+              "Unter macOS: die Daten des Fensters in ~/Library/WebKit und, wenn du das Token nicht verwendest, die Anmeldung von Claude Code im Schlüsselbund.",
             ),
           ]}
         />
@@ -633,7 +633,7 @@ export const INSIDE: TopicTexts = {
             "Tutto sta nella cartella del kit: l'eseguibile, projects (tuo) e data (del kit).",
             "Everything is in the kit folder: the executable, projects (yours) and data (the kit's).",
             "Tout se trouve dans le dossier du kit : l'exécutable, projects (à vous) et data (au kit).",
-            "Alles liegt im Kit-Ordner: die ausführbare Datei, projects (Ihrer) und data (der des Kits).",
+            "Alles liegt im Kit-Ordner: die ausführbare Datei, projects (deiner) und data (der des Kits).",
           ),
           tr(
             "In data i programmi sono separati per sistema; il resto è in comune fra Windows, macOS e Linux.",
@@ -645,7 +645,7 @@ export const INSIDE: TopicTexts = {
             "Le cartelle con password sono leggibili solo dal tuo utente (sui dischi NTFS).",
             "The folders with passwords can be read only by your user (on NTFS drives).",
             "Les dossiers avec des mots de passe ne sont lisibles que par votre utilisateur (sur les disques NTFS).",
-            "Die Ordner mit Passwörtern sind nur für Ihren Benutzer lesbar (auf NTFS-Laufwerken).",
+            "Die Ordner mit Passwörtern sind nur für deinen Benutzer lesbar (auf NTFS-Laufwerken).",
           ),
         ]}
       />
@@ -671,7 +671,7 @@ export const INSIDE: TopicTexts = {
         {info && (
           <P>
             {rich(
-              tr("Il tuo kit è in {0}.", "Your kit is in {0}.", "Votre kit est dans {0}.", "Ihr Kit liegt in {0}."),
+              tr("Il tuo kit è in {0}.", "Your kit is in {0}.", "Votre kit est dans {0}.", "Dein Kit liegt in {0}."),
               <Code key="r">{info.root}</Code>,
             )}
           </P>
@@ -683,7 +683,7 @@ export const INSIDE: TopicTexts = {
           "Che cosa è tuo e che cosa è del kit",
           "What is yours and what is the kit's",
           "Ce qui est à vous et ce qui est au kit",
-          "Was Ihnen gehört und was dem Kit",
+          "Was dir gehört und was dem Kit",
         )}
       >
         <Table
@@ -692,7 +692,7 @@ export const INSIDE: TopicTexts = {
               "Puoi modificare a mano",
               "You can edit by hand",
               "Vous pouvez modifier à la main",
-              "Sie können von Hand ändern",
+              "Du kannst von Hand ändern",
             ),
             tr(
               "Meglio lasciare al kit",
@@ -723,7 +723,7 @@ export const INSIDE: TopicTexts = {
             "Non cancellare a mano le cartelle dei database (data\\db) o le cartelle private dei progetti: perderesti dati e password. Per togliere un componente usa la pagina Strumenti; per pulire i dati di un progetto usa «Dati senza progetto».",
             "Do not delete the database folders (data\\db) or the projects' private folders by hand: you would lose data and passwords. To remove a component use the Tools page; to clean up a project's data use “Data without a project”.",
             "N'effacez pas à la main les dossiers des bases de données (data\\db) ni les dossiers privés des projets : vous perdriez données et mots de passe. Pour retirer un composant, utilisez la page Outils ; pour nettoyer les données d'un projet, utilisez « Données sans projet ».",
-            "Löschen Sie die Ordner der Datenbanken (data\\db) oder die privaten Ordner der Projekte nicht von Hand: Sie würden Daten und Passwörter verlieren. Um eine Komponente zu entfernen, verwenden Sie die Seite Werkzeuge; um die Daten eines Projekts zu bereinigen, verwenden Sie „Daten ohne Projekt“.",
+            "Lösche die Ordner der Datenbanken (data\\db) oder die privaten Ordner der Projekte nicht von Hand: Du würdest Daten und Passwörter verlieren. Um eine Komponente zu entfernen, verwende die Seite Werkzeuge; um die Daten eines Projekts zu bereinigen, verwende „Daten ohne Projekt“.",
           )}
         </Callout>
       </Section>
@@ -735,7 +735,7 @@ export const INSIDE: TopicTexts = {
               "Cartelle protette (solo il tuo utente, su NTFS; permessi 700 su macOS e Linux): data\\app\\db, data\\projects\\<progetto>\\private, data\\agents\\claude, data\\tmp quando è la cartella temporanea di Claude.",
               "Protected folders (only your user, on NTFS; permissions 700 on macOS and Linux): data\\app\\db, data\\projects\\<project>\\private, data\\agents\\claude, data\\tmp when it is Claude's temporary folder.",
               "Dossiers protégés (seulement votre utilisateur, sur NTFS ; permissions 700 sur macOS et Linux) : data\\app\\db, data\\projects\\<projet>\\private, data\\agents\\claude, data\\tmp quand c'est le dossier temporaire de Claude.",
-              "Geschützte Ordner (nur Ihr Benutzer, auf NTFS; Berechtigungen 700 unter macOS und Linux): data\\app\\db, data\\projects\\<Projekt>\\private, data\\agents\\claude, data\\tmp, wenn es der temporäre Ordner von Claude ist.",
+              "Geschützte Ordner (nur dein Benutzer, auf NTFS; Berechtigungen 700 unter macOS und Linux): data\\app\\db, data\\projects\\<Projekt>\\private, data\\agents\\claude, data\\tmp, wenn es der temporäre Ordner von Claude ist.",
             ),
             tr(
               "Su exFAT e FAT32 i permessi non esistono: il kit funziona, ma quelle cartelle non sono protette.",
@@ -753,7 +753,7 @@ export const INSIDE: TopicTexts = {
               "data\\kit viene riscritta a ogni avvio: non metterci file tuoi.",
               "data\\kit is rewritten at every start: do not put your own files there.",
               "data\\kit est réécrit à chaque démarrage : n'y mettez pas vos propres fichiers.",
-              "data\\kit wird bei jedem Start neu geschrieben: Legen Sie dort keine eigenen Dateien ab.",
+              "data\\kit wird bei jedem Start neu geschrieben: Leg dort keine eigenen Dateien ab.",
             ),
           ]}
         />
@@ -771,7 +771,7 @@ export const INSIDE: TopicTexts = {
             "Quando apri Atollo partono solo le cose che hai chiesto: i database e i server con «Avvia con Atollo».",
             "When you open Atollo only the things you asked for start: the databases and servers with “Start with Atollo”.",
             "Quand vous ouvrez Atollo, seules les choses que vous avez demandées démarrent : les bases de données et les serveurs avec « Démarrer avec Atollo ».",
-            "Wenn Sie Atollo öffnen, starten nur die Dinge, die Sie verlangt haben: die Datenbanken und Server mit „Mit Atollo starten“.",
+            "Wenn du Atollo öffnest, starten nur die Dinge, die du verlangt hast: die Datenbanken und Server mit „Mit Atollo starten“.",
           ),
           tr(
             "Ogni programma avviato dal kit è legato all'app: se l'app si chiude, anche nel modo peggiore, si chiudono con lei.",
@@ -876,7 +876,7 @@ export const INSIDE: TopicTexts = {
         </Callout>
       </Section>
 
-      <Section title={tr("Mentre lavori", "While you work", "Pendant que vous travaillez", "Während Sie arbeiten")}>
+      <Section title={tr("Mentre lavori", "While you work", "Pendant que vous travaillez", "Während du arbeitest")}>
         <Table
           columns={[
             tr("Che cosa", "What", "Quoi", "Was"),
@@ -951,7 +951,7 @@ export const INSIDE: TopicTexts = {
                 "Quando le chiudi, o alla chiusura dell'app",
                 "When you close them, or when the app closes",
                 "Quand vous les fermez, ou à la fermeture de l'application",
-                "Wenn Sie sie schließen oder beim Schließen der App",
+                "Wenn du sie schließt oder beim Schließen der App",
               ),
             ],
           ]}
@@ -961,7 +961,7 @@ export const INSIDE: TopicTexts = {
             "Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app.",
             "Closing a console does not shut down the databases: they stay on until you stop them or close the app.",
             "Fermer une console n'arrête pas les bases de données : elles restent allumées jusqu'à ce que vous les arrêtiez ou fermiez l'application.",
-            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis Sie sie stoppen oder die App schließen.",
+            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt.",
           )}
         </P>
       </Section>
@@ -973,7 +973,7 @@ export const INSIDE: TopicTexts = {
               "Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e spegne con ordine i database, poi esce. Prima di staccare l'unità usa {0}.",
               "If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions and the web servers and shuts down the databases neatly, then exits. Before unplugging the drive use {0}.",
               "Si quelque chose est ouvert, Atollo demande « Fermer Atollo ? » avec la liste ; « Tout fermer » arrête les actions, les serveurs web et éteint proprement les bases de données, puis quitte. Avant de débrancher le lecteur, utilisez {0}.",
-              "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ mit der Liste; „Alles schließen“ stoppt die Aktionen und die Webserver, fährt die Datenbanken geordnet herunter und beendet sich dann. Bevor Sie das Laufwerk abziehen, verwenden Sie {0}.",
+              "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ mit der Liste; „Alles schließen“ stoppt die Aktionen und die Webserver, fährt die Datenbanken geordnet herunter und beendet sich dann. Bevor du das Laufwerk abziehst, verwende {0}.",
             ),
             <See key="e" id="eject" />,
           )}
@@ -1041,7 +1041,7 @@ export const INSIDE: TopicTexts = {
             "Se un download non riesce, puoi scaricare il file con il browser e consegnarlo al kit, che lo verifica allo stesso modo.",
             "If a download fails, you can download the file with the browser and hand it to the kit, which verifies it the same way.",
             "Si un téléchargement échoue, vous pouvez télécharger le fichier avec le navigateur et le remettre au kit, qui le vérifie de la même façon.",
-            "Wenn ein Download fehlschlägt, können Sie die Datei mit dem Browser herunterladen und dem Kit übergeben, das sie auf dieselbe Weise prüft.",
+            "Wenn ein Download fehlschlägt, kannst du die Datei mit dem Browser herunterladen und dem Kit übergeben, das sie auf dieselbe Weise prüft.",
           ),
         ]}
       />
@@ -1176,7 +1176,7 @@ export const INSIDE: TopicTexts = {
             "Ogni parte di un componente (per esempio PHP e il suo Composer) viene scaricata e verificata prima di toccare quella installata: se qualcosa va storto, la versione che avevi resta com'era.",
             "Every part of a component (for example PHP and its Composer) is downloaded and verified before touching the installed one: if something goes wrong, the version you had stays as it was.",
             "Chaque partie d'un composant (par exemple PHP et son Composer) est téléchargée et vérifiée avant de toucher à celle installée : si quelque chose se passe mal, la version que vous aviez reste telle quelle.",
-            "Jeder Teil einer Komponente (zum Beispiel PHP und sein Composer) wird heruntergeladen und geprüft, bevor der installierte angetastet wird: Wenn etwas schiefgeht, bleibt die Version, die Sie hatten, wie sie war.",
+            "Jeder Teil einer Komponente (zum Beispiel PHP und sein Composer) wird heruntergeladen und geprüft, bevor der installierte angetastet wird: Wenn etwas schiefgeht, bleibt die Version, die du hattest, wie sie war.",
           )}
         </Callout>
       </Section>
@@ -1203,13 +1203,13 @@ export const INSIDE: TopicTexts = {
               "Fai clic su «Scaricalo dal browser: <nome del file>»: si apre l'indirizzo esatto nel browser.",
               "Click “Download it in the browser: <file name>”: the exact address opens in the browser.",
               "Cliquez sur « Téléchargez-le dans le navigateur : <nom du fichier> » : l'adresse exacte s'ouvre dans le navigateur.",
-              "Klicken Sie auf „Im Browser herunterladen: <Dateiname>“: Die genaue Adresse öffnet sich im Browser.",
+              "Klicke auf „Im Browser herunterladen: <Dateiname>“: Die genaue Adresse öffnet sich im Browser.",
             ),
             tr(
               "Quando il file è scaricato, trascinalo nel riquadro o usa «sfoglia…».",
               "When the file has downloaded, drag it onto the panel or use “browse…”.",
               "Quand le fichier est téléchargé, faites-le glisser dans le panneau ou utilisez « parcourez… ».",
-              "Wenn die Datei heruntergeladen ist, ziehen Sie sie in den Bereich oder verwenden Sie „durchsuchen…“.",
+              "Wenn die Datei heruntergeladen ist, ziehe sie in den Bereich oder verwende „durchsuchen…“.",
             ),
             tr(
               "Il kit lo conserva e lo usa solo se la sua impronta è quella pubblicata; l'installazione riparte da sola («Aggiunto …: nuovo tentativo.»).",
@@ -1382,13 +1382,13 @@ export const INSIDE: TopicTexts = {
         ]}
       />
 
-      <Section title={tr("Come si usa", "How to use it", "Comment l'utiliser", "So verwenden Sie es")}>
+      <Section title={tr("Come si usa", "How to use it", "Comment l'utiliser", "So verwendest du es")}>
         <P>
           {tr(
             "Apri una console nella cartella del kit. Su Windows, in PowerShell, aggiungi | Out-Host perché l'output compaia nella console (l'eseguibile è un programma con finestra); nel Prompt dei comandi non serve. Su macOS e Linux usa il percorso del programma (per esempio ./Atollo.AppImage).",
             "Open a console in the kit folder. On Windows, in PowerShell, add | Out-Host so the output appears in the console (the executable is a windowed program); in Command Prompt it is not needed. On macOS and Linux use the program's path (for example ./Atollo.AppImage).",
             "Ouvrez une console dans le dossier du kit. Sur Windows, dans PowerShell, ajoutez | Out-Host pour que la sortie apparaisse dans la console (l'exécutable est un programme à fenêtre) ; dans l'Invite de commandes, ce n'est pas nécessaire. Sur macOS et Linux, utilisez le chemin du programme (par exemple ./Atollo.AppImage).",
-            "Öffnen Sie eine Konsole im Kit-Ordner. Unter Windows fügen Sie in PowerShell | Out-Host hinzu, damit die Ausgabe in der Konsole erscheint (die ausführbare Datei ist ein Programm mit Fenster); in der Eingabeaufforderung ist das nicht nötig. Unter macOS und Linux verwenden Sie den Pfad des Programms (zum Beispiel ./Atollo.AppImage).",
+            "Öffne eine Konsole im Kit-Ordner. Unter Windows fügst du in PowerShell | Out-Host hinzu, damit die Ausgabe in der Konsole erscheint (die ausführbare Datei ist ein Programm mit Fenster); in der Eingabeaufforderung ist das nicht nötig. Unter macOS und Linux verwendest du den Pfad des Programms (zum Beispiel ./Atollo.AppImage).",
           )}
         </P>
         <GuideCode title={tr("Esempio", "Example", "Exemple", "Beispiel")} code={CLI_EXAMPLE} />
@@ -1402,7 +1402,7 @@ export const INSIDE: TopicTexts = {
           ]}
           rows={[
             [
-              <Code key="a">env [--project &lt;nome&gt;]</Code>,
+              <Code key="a">{`env [--project ${tr("<nome>", "<name>", "<nom>", "<Name>")}]`}</Code>,
               tr(
                 "Stampa l'ambiente del kit (segreti mascherati); con un progetto, con le sue versioni.",
                 "Prints the kit's environment (secrets masked); with a project, with its versions.",
@@ -1411,7 +1411,7 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
-              <Code key="b">components [--target &lt;sistema&gt;]</Code>,
+              <Code key="b">{`components [--target ${tr("<sistema>", "<system>", "<système>", "<System>")}]`}</Code>,
               tr(
                 "Elenca i componenti: scelto o no, gruppo, versione installata o perché non è disponibile.",
                 "Lists the components: chosen or not, group, installed version or why it is not available.",
@@ -1438,7 +1438,7 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
-              <Code key="e">prepare [opzioni]</Code>,
+              <Code key="e">{`prepare ${tr("[opzioni]", "[options]", "[options]", "[Optionen]")}`}</Code>,
               tr(
                 "Installa, aggiorna e toglie i componenti secondo la scelta. Le opzioni sono nella tabella sotto.",
                 "Installs, updates and removes components according to the choice. The options are in the table below.",
@@ -1447,7 +1447,7 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
-              <Code key="f">sync [--project &lt;cartella&gt;] [--verbose]</Code>,
+              <Code key="f">{`sync [--project ${tr("<cartella>", "<folder>", "<dossier>", "<Ordner>")}] [--verbose]`}</Code>,
               tr(
                 "Allinea istruzioni, skill e server MCP degli agenti.",
                 "Syncs the agents' instructions, skills and MCP servers.",
@@ -1456,7 +1456,7 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
-              <Code key="g">serve &lt;cartella&gt; &lt;porta&gt;</Code>,
+              <Code key="g">{`serve ${tr("<cartella>", "<folder>", "<dossier>", "<Ordner>")} ${tr("<porta>", "<port>", "<port>", "<Port>")}`}</Code>,
               tr(
                 "Serve una cartella come sito statico (il server di file del kit).",
                 "Serves a folder as a static site (the kit's file server).",
@@ -1536,7 +1536,7 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
-              <Code key="f">--target &lt;sistema&gt;</Code>,
+              <Code key="f">{`--target ${tr("<sistema>", "<system>", "<système>", "<System>")}`}</Code>,
               tr(
                 "Prepara per un altro sistema: win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64.",
                 "Prepares for another system: win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64.",
@@ -1551,7 +1551,7 @@ export const INSIDE: TopicTexts = {
             "Senza --only, prepare toglie i componenti non scelti, anche dalle cartelle degli altri sistemi. Se non sei sicuro, guarda prima components.",
             "Without --only, prepare removes the components not chosen, from the other systems' folders too. If you are not sure, look at components first.",
             "Sans --only, prepare retire les composants non choisis, y compris des dossiers des autres systèmes. Si vous n'êtes pas sûr, regardez d'abord components.",
-            "Ohne --only entfernt prepare die nicht gewählten Komponenten, auch aus den Ordnern der anderen Systeme. Wenn Sie unsicher sind, sehen Sie sich zuerst components an.",
+            "Ohne --only entfernt prepare die nicht gewählten Komponenten, auch aus den Ordnern der anderen Systeme. Wenn du unsicher bist, sieh dir zuerst components an.",
           )}
         </Callout>
       </Section>

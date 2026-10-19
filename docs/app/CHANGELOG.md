@@ -1,5 +1,11 @@
 # Novità
 
+## Guida nei documenti, schermate per lingua, tedesco con il «du» (19/10/2026)
+
+- **GUIDE.md e GUIDE.it.md** (D-136) riscritte dalla Guida dell'app: nove capitoli, 36 argomenti, le stesse schermate.
+- **Schermate** nella lingua dell'app (italiano, inglese, francese, tedesco); tolte le vecchie immagini di `docs/app/images`.
+- **Tedesco**: la Guida e i testi dell'app danno del «du», come il sito e il README.
+
 ## La Guida ripensata (19/10/2026)
 
 - **Nove capitoli** (D-136), dal più semplice al più tecnico: Primi passi, Progetti, Database siti e terminali, Agenti IA, Strumenti e linguaggi, Account e impostazioni, Portare il kit con sé, Come funziona dentro, Aiuto. 36 argomenti, ognuno con «In breve», i passi con le etichette dell'interfaccia, consigli, la parte tecnica ripiegata e gli argomenti collegati.

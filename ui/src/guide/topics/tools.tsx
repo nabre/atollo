@@ -34,13 +34,13 @@ export const TOOLS: TopicTexts = {
             "Le icone delle righe agiscono subito: «Installa» e «Aggiorna» partono appena le premi.",
             "The icons on the rows act right away: “Install” and “Update” start as soon as you press them.",
             "Les icônes des lignes agissent tout de suite : « Installer » et « Mettre à jour » démarrent dès que vous appuyez dessus.",
-            "Die Symbole in den Zeilen wirken sofort: „Installieren“ und „Aktualisieren“ starten, sobald Sie sie drücken.",
+            "Die Symbole in den Zeilen wirken sofort: „Installieren“ und „Aktualisieren“ starten, sobald du sie drückst.",
           ),
           tr(
             "Le caselle invece preparano una scelta, che si conferma con «Applica»: così si installano e tolgono più cose insieme.",
             "The checkboxes, instead, prepare a choice that you confirm with “Apply”: this way you install and remove several things at once.",
             "Les cases, elles, préparent un choix, que vous confirmez avec « Appliquer » : ainsi vous installez et retirez plusieurs choses à la fois.",
-            "Die Kontrollkästchen bereiten dagegen eine Auswahl vor, die Sie mit „Übernehmen“ bestätigen: So installieren und entfernen Sie mehrere Dinge auf einmal.",
+            "Die Kontrollkästchen bereiten dagegen eine Auswahl vor, die du mit „Übernehmen“ bestätigst: So installierst und entfernst du mehrere Dinge auf einmal.",
           ),
           tr(
             "Ogni riga mostra lo stato su disco con un'icona: non esiste, pre-installato, installato, da aggiornare, errore.",
@@ -277,7 +277,7 @@ export const TOOLS: TopicTexts = {
             "Passa il mouse sull'icona di stato: il suggerimento dice componente, sistema, stato e il dettaglio (per esempio «download 42%» o «in uso: chiudi i programmi del kit e riprova»).",
             "Hover over the status icon: the tooltip gives the component, system, status and the detail (for example “download 42%” or “in use: close the kit programs and try again”).",
             "Passez la souris sur l'icône d'état : l'infobulle indique le composant, le système, l'état et le détail (par exemple « téléchargement 42% » ou « en cours d'utilisation : fermez les programmes du kit et réessayez »).",
-            "Fahren Sie mit der Maus über das Statussymbol: Der Tooltip nennt Komponente, System, Status und das Detail (zum Beispiel „Download 42%“ oder „in Verwendung: Schließen Sie die Programme des Kits und versuchen Sie es erneut“).",
+            "Fahr mit der Maus über das Statussymbol: Der Tooltip nennt Komponente, System, Status und das Detail (zum Beispiel „Download 42%“ oder „in Verwendung: Schließe die Programme des Kits und versuche es erneut“).",
           )}
         </Callout>
       </Section>
@@ -329,7 +329,7 @@ export const TOOLS: TopicTexts = {
                 "Lo installa subito nella versione che scegli dal menu.",
                 "Installs it right away in the version you choose from the menu.",
                 "L'installe tout de suite dans la version que vous choisissez dans le menu.",
-                "Installiert sie sofort in der Version, die Sie im Menü wählen.",
+                "Installiert sie sofort in der Version, die du im Menü wählst.",
               ),
             ],
             [
@@ -379,7 +379,7 @@ export const TOOLS: TopicTexts = {
                 "Segna il componente da installare o da togliere, in attesa di «Applica».",
                 "Marks the component to install or remove, waiting for “Apply”.",
                 "Marque le composant à installer ou à retirer, en attendant « Appliquer ».",
-                "Markiert die Komponente zum Installieren oder Entfernen, bis Sie „Übernehmen“ drücken.",
+                "Markiert die Komponente zum Installieren oder Entfernen, bis du „Übernehmen“ drückst.",
               ),
             ],
             [
@@ -389,7 +389,7 @@ export const TOOLS: TopicTexts = {
                 "Mostra il riepilogo e, con «Conferma», installa e toglie ciò che hai segnato.",
                 "Shows the summary and, with “Confirm”, installs and removes what you marked.",
                 "Affiche le récapitulatif et, avec « Confirmer », installe et retire ce que vous avez marqué.",
-                "Zeigt die Zusammenfassung und installiert und entfernt mit „Bestätigen“, was Sie markiert haben.",
+                "Zeigt die Zusammenfassung und installiert und entfernt mit „Bestätigen“, was du markiert hast.",
               ),
             ],
             [
@@ -410,7 +410,7 @@ export const TOOLS: TopicTexts = {
               "Spunta i componenti da aggiungere e togli la spunta a quelli da rimuovere. Le righe cambiate si colorano.",
               "Tick the components to add and untick the ones to remove. The changed rows are highlighted in color.",
               "Cochez les composants à ajouter et décochez ceux à supprimer. Les lignes modifiées se colorent.",
-              "Haken Sie die hinzuzufügenden Komponenten an und entfernen Sie den Haken bei denen, die entfernt werden sollen. Die geänderten Zeilen werden farbig markiert.",
+              "Hak die hinzuzufügenden Komponenten an und entferne den Haken bei denen, die entfernt werden sollen. Die geänderten Zeilen werden farbig markiert.",
             ),
             tr(
               "In fondo la barra dice per esempio «2 da installare (circa 180 MB), 1 da rimuovere».",
@@ -422,13 +422,13 @@ export const TOOLS: TopicTexts = {
               "Premi «Applica»: compare «Applicare le modifiche?» con l'elenco di ciò che si installa e si toglie.",
               "Press “Apply”: “Apply the changes?” appears with the list of what will be installed and removed.",
               "Appuyez sur « Appliquer » : « Appliquer les modifications ? » apparaît avec la liste de ce qui s'installe et se retire.",
-              "Drücken Sie „Übernehmen“: „Änderungen übernehmen?“ erscheint mit der Liste dessen, was installiert und entfernt wird.",
+              "Drück „Übernehmen“: „Änderungen übernehmen?“ erscheint mit der Liste dessen, was installiert und entfernt wird.",
             ),
             tr(
               "Premi «Conferma». Prima si tolgono, poi si installano; lo stato scorre nella barra («Installazione 1/3: …»). «Annulla» ferma alla fine del passo in corso.",
               "Press “Confirm”. First things are removed, then installed; the progress runs in the bar (“Installing 1/3: …”). “Cancel” stops at the end of the current step.",
               "Appuyez sur « Confirmer ». D'abord les retraits, puis les installations ; l'état défile dans la barre (« Installation 1/3 : … »). « Annuler » arrête à la fin de l'étape en cours.",
-              "Drücken Sie „Bestätigen“. Zuerst wird entfernt, dann installiert; der Fortschritt läuft in der Leiste („Installation 1/3: …“). „Abbrechen“ hält am Ende des laufenden Schritts an.",
+              "Drück „Bestätigen“. Zuerst wird entfernt, dann installiert; der Fortschritt läuft in der Leiste („Installation 1/3: …“). „Abbrechen“ hält am Ende des laufenden Schritts an.",
             ),
           ]}
         />
@@ -437,7 +437,7 @@ export const TOOLS: TopicTexts = {
             "«Aggiorna tutto» applica anche le scelte in attesa, senza la finestra di conferma. Se hai caselle cambiate che non vuoi applicare, rimettile com'erano prima.",
             "“Update all” also applies the pending choices, without the confirmation window. If you have changed checkboxes that you do not want to apply, put them back as they were first.",
             "« Tout mettre à jour » applique aussi les choix en attente, sans la fenêtre de confirmation. Si vous avez modifié des cases que vous ne voulez pas appliquer, remettez-les d'abord comme elles étaient.",
-            "„Alle aktualisieren“ übernimmt auch die ausstehende Auswahl, ohne Bestätigungsfenster. Wenn Sie Kontrollkästchen geändert haben, die Sie nicht übernehmen möchten, setzen Sie sie vorher zurück.",
+            "„Alle aktualisieren“ übernimmt auch die ausstehende Auswahl, ohne Bestätigungsfenster. Wenn du Kontrollkästchen geändert hast, die du nicht übernehmen möchtest, setze sie vorher zurück.",
           )}
         </Callout>
         <Bullets
@@ -540,7 +540,7 @@ export const TOOLS: TopicTexts = {
               "«Piattaforma» sceglie per quale sistema guardare (e preparare) i componenti: Windows x64 o ARM64, macOS Apple Silicon o Intel, Linux x64 o ARM64. Lo stesso kit su una chiavetta si apre su tutti e sei: da qui puoi preparare i programmi per un altro sistema prima di portarci la chiavetta.",
               "“Platform” chooses which system to view (and prepare) the components for: Windows x64 or ARM64, macOS Apple Silicon or Intel, Linux x64 or ARM64. The same kit on a USB stick opens on all six: from here you can prepare the programs for another system before taking the stick there.",
               "« Plateforme » choisit pour quel système regarder (et préparer) les composants : Windows x64 ou ARM64, macOS Apple Silicon ou Intel, Linux x64 ou ARM64. Le même kit sur une clé USB s'ouvre sur les six : d'ici, vous pouvez préparer les programmes pour un autre système avant d'y apporter la clé.",
-              "„Plattform“ wählt, für welches System Sie die Komponenten ansehen (und vorbereiten): Windows x64 oder ARM64, macOS Apple Silicon oder Intel, Linux x64 oder ARM64. Dasselbe Kit auf einem USB-Stick öffnet sich auf allen sechs: Hier können Sie die Programme für ein anderes System vorbereiten, bevor Sie den Stick dorthin mitnehmen.",
+              "„Plattform“ wählt, für welches System du die Komponenten ansiehst (und vorbereitest): Windows x64 oder ARM64, macOS Apple Silicon oder Intel, Linux x64 oder ARM64. Dasselbe Kit auf einem USB-Stick öffnet sich auf allen sechs: Hier kannst du die Programme für ein anderes System vorbereiten, bevor du den Stick dorthin mitnimmst.",
             ),
             tr(
               "«Espandi» aggiunge una colonna di stato per ognuno dei sei sistemi.",
@@ -695,13 +695,13 @@ export const TOOLS: TopicTexts = {
               "Per aggiungere una versione premi + «Aggiungi una versione di …»: il menu «Versioni da scaricare» le raggruppa (8.x, 7.x…).",
               "To add a version, press + “Add a version of …”: the “Versions to download” menu groups them (8.x, 7.x…).",
               "Pour ajouter une version, appuyez sur + « Ajouter une version de … » : le menu « Versions à télécharger » les regroupe (8.x, 7.x…).",
-              "Um eine Version hinzuzufügen, drücken Sie + „Eine Version von … hinzufügen“: Das Menü „Herunterzuladende Versionen“ gruppiert sie (8.x, 7.x…).",
+              "Um eine Version hinzuzufügen, drück + „Eine Version von … hinzufügen“: Das Menü „Herunterzuladende Versionen“ gruppiert sie (8.x, 7.x…).",
             ),
             tr(
               "Scegli la versione: il download parte e la riga compare in grigio finché non è pronta.",
               "Choose the version: the download starts and the row appears in grey until it is ready.",
               "Choisissez la version : le téléchargement démarre et la ligne apparaît en gris jusqu'à ce qu'elle soit prête.",
-              "Wählen Sie die Version: Der Download startet, und die Zeile erscheint grau, bis sie bereit ist.",
+              "Wähle die Version: Der Download startet, und die Zeile erscheint grau, bis sie bereit ist.",
             ),
             tr(
               "Se l'elenco sembra vecchio, «Cerca altre versioni di …» lo chiede di nuovo alla fonte.",
@@ -725,7 +725,7 @@ export const TOOLS: TopicTexts = {
               "Non c'è una versione «predefinita» da scegliere: il kit usa la più recente che ha su disco. Un progetto nuovo fissa quella che c'è alla sua creazione; per cambiarla vai nella pagina del progetto, «Componenti» › «Versioni» ({0}).",
               "There is no “default” version to choose: the kit uses the newest one it has on disk. A new project pins the one available when it is created; to change it, go to the project's page, “Components” › “Versions” ({0}).",
               "Il n'y a pas de version « par défaut » à choisir : le kit utilise la plus récente qu'il a sur le disque. Un nouveau projet fixe celle qui existe à sa création ; pour la changer, allez dans la page du projet, « Composants » › « Versions » ({0}).",
-              "Es gibt keine „Standard“-Version zu wählen: Das Kit verwendet die neueste, die es auf dem Datenträger hat. Ein neues Projekt legt die bei seiner Erstellung vorhandene fest; um sie zu ändern, gehen Sie auf die Seite des Projekts, „Komponenten“ › „Versionen“ ({0}).",
+              "Es gibt keine „Standard“-Version zu wählen: Das Kit verwendet die neueste, die es auf dem Datenträger hat. Ein neues Projekt legt die bei seiner Erstellung vorhandene fest; um sie zu ändern, geh auf die Seite des Projekts, „Komponenten“ › „Versionen“ ({0}).",
             ),
             <See key="p" id="project-versions" />,
           )}
@@ -757,7 +757,7 @@ export const TOOLS: TopicTexts = {
               "In Impostazioni › «Versioni» si sceglie quale versione di Python e di PHP installare quando il componente si installa o si aggiorna, e il compilatore di Rust: non cambia la versione usata dal kit.",
               "In Settings › “Versions” you choose which version of Python and PHP to install when the component is installed or updated, and the Rust compiler: this does not change the version used by the kit.",
               "Dans Paramètres › « Versions », vous choisissez quelle version de Python et de PHP installer quand le composant s'installe ou se met à jour, et le compilateur de Rust : cela ne change pas la version utilisée par le kit.",
-              "Unter Einstellungen › „Versionen“ wählen Sie, welche Version von Python und PHP installiert wird, wenn die Komponente installiert oder aktualisiert wird, sowie den Compiler von Rust: Das ändert nicht die vom Kit verwendete Version.",
+              "Unter Einstellungen › „Versionen“ wählst du, welche Version von Python und PHP installiert wird, wenn die Komponente installiert oder aktualisiert wird, sowie den Compiler von Rust: Das ändert nicht die vom Kit verwendete Version.",
             ),
           ]}
         />
@@ -898,7 +898,7 @@ export const TOOLS: TopicTexts = {
               "Una tabella in sola lettura: in riga le estensioni, in colonna i linguaggi e gli strumenti. ● vuol dire che l'estensione è attiva di default nei progetti con quel linguaggio, ○ che è facoltativa; ✓ che è installata. I linguaggi dei tuoi progetti sono in evidenza. Le estensioni si scelgono per progetto: {0}.",
               "A read-only table: the extensions as rows, the languages and tools as columns. ● means the extension is on by default in projects with that language, ○ that it is optional; ✓ that it is installed. The languages of your projects are highlighted. Extensions are chosen per project: {0}.",
               "Un tableau en lecture seule : les extensions en lignes, les langages et les outils en colonnes. ● signifie que l'extension est active par défaut dans les projets avec ce langage, ○ qu'elle est facultative ; ✓ qu'elle est installée. Les langages de vos projets sont mis en évidence. Les extensions se choisissent par projet : {0}.",
-              "Eine schreibgeschützte Tabelle: die Erweiterungen als Zeilen, die Sprachen und Werkzeuge als Spalten. ● bedeutet, dass die Erweiterung in Projekten mit dieser Sprache standardmäßig aktiv ist, ○, dass sie optional ist; ✓, dass sie installiert ist. Die Sprachen Ihrer Projekte sind hervorgehoben. Die Erweiterungen werden pro Projekt gewählt: {0}.",
+              "Eine schreibgeschützte Tabelle: die Erweiterungen als Zeilen, die Sprachen und Werkzeuge als Spalten. ● bedeutet, dass die Erweiterung in Projekten mit dieser Sprache standardmäßig aktiv ist, ○, dass sie optional ist; ✓, dass sie installiert ist. Die Sprachen deiner Projekte sind hervorgehoben. Die Erweiterungen werden pro Projekt gewählt: {0}.",
             ),
             <See key="e" id="project-editor" />,
           )}
