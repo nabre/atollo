@@ -96,7 +96,7 @@
   "t4Title": "Linux auf echten Rechnern",
   "t4Text": "x64 und ARM64 auf Ubuntu 24.04, Fedora 42 und Debian 13: AppImage mit und ohne FUSE, das <code>tar.gz</code> mit WebKitGTK 4.1, exFAT-Sticks oder mit <code>noexec</code> eingehängte Sticks, Anmeldung mit GNOME, KeePassXC oder KWallet.",
   "t5Title": "Updates und Kit-Builds außerhalb von Windows",
-  "t5Text": "Das Update der App von einer Version zur nächsten ist auf macOS und Linux noch nicht ausprobiert. Das Apache des Kits (2.4.69) ist im Katalog, aber nur in der CI ausprobiert; das PHP des Kits mit <code>pdo_sqlite</code> kommt mit seinem ersten Release: Bis dahin kommt PHP von static-php-cli.",
+  "t5Text": "Das Update der App von einer Version zur nächsten ist auf macOS und Linux noch nicht ausprobiert. Das Apache des Kits (2.4.69) ist im Katalog, aber nur in der CI ausprobiert; ebenso das PHP des Kits mit <code>pdo_sqlite</code> (8.4.26 und 8.5.11), das die App ab der Version nach 0.2.0 nutzt (0.2.0 holt PHP noch von static-php-cli).",
   "t6Title": "Code-Signatur",
   "t6Text": "Auf macOS nur eine Ad-hoc-Signatur, ohne Notarisierung durch Apple: <code>xattr -dr com.apple.quarantine</code> ist nötig. Auf Windows erscheint 0.2.0 ohne Signatur: Die SignPath-Signatur muss noch aktiviert werden, bis dahin kann SmartScreen beim ersten Start warnen.",
   "todoHelp": "Du hast einen Mac, einen Linux-PC oder einen PC mit Windows ARM64? Probier Atollo aus und erzähl uns, wie es lief:",
