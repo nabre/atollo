@@ -44,15 +44,16 @@ fn safe_directory_is_the_kits_folder() {
         "/Volumes/USB/Atollo/*"
     );
     // Written by older kits, or by this kit where it was: replaced.
-    assert!(kit_safe_value("*"));
-    assert!(kit_safe_value("Z:/gone/kit/*"));
+    assert!(kit_safe_value("*", None));
+    assert!(kit_safe_value("Z:/old/kit/*", Some("Z:/old/kit/*")));
     let tmp = crate::kit::tests::TempDir::new("safe-dir");
     std::fs::create_dir_all(tmp.0.join("data").join("app")).unwrap();
-    assert!(kit_safe_value(&safe_pattern(&tmp.0)));
-    // The user's own: kept.
+    assert!(kit_safe_value(&safe_pattern(&tmp.0), None));
+    // The user's own: kept, also for a drive not plugged in now (BUG-V5-03).
     std::fs::create_dir_all(tmp.0.join("work")).unwrap();
-    assert!(!kit_safe_value(&safe_pattern(&tmp.0.join("work"))));
-    assert!(!kit_safe_value("C:/Users/me/repo"));
+    assert!(!kit_safe_value(&safe_pattern(&tmp.0.join("work")), None));
+    assert!(!kit_safe_value("Z:/gone/repos/*", Some("D:/Atollo/*")));
+    assert!(!kit_safe_value("C:/Users/me/repo", None));
 }
 
 #[test]

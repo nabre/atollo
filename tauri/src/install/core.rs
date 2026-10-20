@@ -266,11 +266,10 @@ impl Installer for Git {
             fs::create_dir_all(ctx.kit.home())?;
             // Git trusts the repositories inside the kit only (D-137);
             // github::sync_git rewrites it at every start as the kit moves.
-            let text = format!(
-                "[init]\n\tdefaultBranch = main\n[safe]\n\tdirectory = {}\n",
-                crate::github::safe_pattern(ctx.kit.root())
-            );
+            let safe = crate::github::safe_pattern(ctx.kit.root());
+            let text = format!("[init]\n\tdefaultBranch = main\n[safe]\n\tdirectory = {safe}\n");
             write_atomic(&gitconfig, text.as_bytes())?;
+            crate::github::remember_safe_value(ctx.kit, &safe);
         }
         Ok(())
     }
