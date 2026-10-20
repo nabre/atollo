@@ -202,15 +202,18 @@ export function SideBarTitle({ title, actions }: { title: string; actions?: Reac
   );
 }
 
-/** The panes of a side bar, one over the other, 4px in from the sides;
- * `fill` panes share the rest. */
+/** The panes of a side bar, one over the other; `fill` panes share the
+ * rest. Each pane sets its header and rows 4px in from the sides, so the
+ * scroll bars stay on the edge. */
 export function PaneStack({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-0 flex-1 flex-col px-1 pb-1">{children}</div>;
+  return <div className="flex min-h-0 flex-1 flex-col pb-vsc-size40">{children}</div>;
 }
 
-/** A collapsible pane (Outline, Timeline): a 28px rounded header, 12px
- * semibold, a line 4px in from the sides above all but the first, its
- * actions on hover, a badge, the body scrolling inside (modern UI). */
+/** A collapsible pane (Outline, Timeline), as the modern UI's: a 28px
+ * header with the small radius, 4px in from the sides, its title 12px
+ * semibold, list-hoverBackground on hover, a line 4px further in above all
+ * but the first, its actions on hover, a badge; the body scrolls inside,
+ * its rows 4px in from the sides. */
 export function ViewPane({
   title,
   expanded,
@@ -234,36 +237,38 @@ export function ViewPane({
 }) {
   return (
     <section
-      className={`flex min-h-7 flex-col ${expanded && fill ? "flex-1 basis-0" : "shrink-0"} ${
+      className={`flex min-h-vsc-pane-header flex-col ${expanded && fill ? "flex-1 basis-0" : "shrink-0"} ${
         expanded && !fill ? "max-h-[60%]" : ""
       }`}
     >
       <h3
-        className={`group/pane relative flex h-7 shrink-0 items-center rounded text-vsc-section-fg hover:bg-vsc-list-hover ${
-          first ? "" : "before:absolute before:inset-x-1 before:top-0 before:h-px before:bg-vsc-section-border"
+        className={`group/pane relative mx-vsc-size40 flex h-vsc-pane-header shrink-0 items-center rounded-vsc-small text-vsc-section-fg hover:bg-vsc-list-hover ${
+          first
+            ? ""
+            : "before:absolute before:inset-x-vsc-size40 before:top-0 before:h-(--vscode-strokeThickness) before:bg-vsc-section-border"
         }`}
       >
         <button
           type="button"
           aria-expanded={expanded}
           onClick={onToggle}
-          className="flex h-full min-w-0 flex-1 items-center gap-0.5 rounded pl-0.5 text-left text-[12px] font-semibold outline-none focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-vsc-focus"
+          className="flex h-full min-w-0 flex-1 items-center rounded-vsc-small pl-vsc-size40 text-left text-vsc-label1 font-vsc-semibold outline-none focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-vsc-focus"
         >
           <VscChevronRight
             size={16}
             aria-hidden="true"
-            className={`shrink-0 transition-transform duration-100 ${expanded ? "rotate-90" : ""}`}
+            className={`mx-vsc-size20 shrink-0 transition-transform duration-100 ${expanded ? "rotate-90" : ""}`}
           />
           <span className="truncate">{title}</span>
         </button>
-        {badge !== undefined && badge !== null && <CountBadge className="mx-1">{badge}</CountBadge>}
+        {badge !== undefined && badge !== null && <CountBadge className="mx-vsc-size40">{badge}</CountBadge>}
         {actions && expanded && (
-          <ActionBar className="invisible ml-1 gap-1 pr-1 group-focus-within/pane:visible group-hover/pane:visible">
+          <ActionBar className="invisible ml-vsc-size40 gap-vsc-size40 pr-vsc-size40 group-focus-within/pane:visible group-hover/pane:visible">
             {actions}
           </ActionBar>
         )}
       </h3>
-      {expanded && <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>}
+      {expanded && <div className="min-h-0 flex-1 overflow-y-auto px-vsc-size40">{children}</div>}
     </section>
   );
 }

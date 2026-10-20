@@ -84,10 +84,12 @@ body {
   user-select: none;
 }
 
-/* Scroll bars as VSCodium's: thin, no arrows, a translucent thumb. */
+/* Scroll bars as the workbench's (.monaco-scrollable-element>.scrollbar in
+   the modern UI): 8px, no arrows, a transparent track, the thumb in the
+   theme's scrollbarSlider colors with its small radius. */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: var(--vsc-size-scrollbar);
+  height: var(--vsc-size-scrollbar);
 }
 ::-webkit-scrollbar-button {
   display: none;
@@ -97,6 +99,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
+  border-radius: var(--vscode-cornerRadius-small);
   background: var(--vsc-scrollbar);
 }
 ::-webkit-scrollbar-thumb:hover {
