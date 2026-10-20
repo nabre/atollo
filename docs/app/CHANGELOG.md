@@ -1,5 +1,19 @@
 # Novità
 
+## Rilievi del report v5, priorità 1-4 (20/10/2026)
+
+- **Database**: due avvii insieme della stessa versione di MySQL fanno partire un solo server; cambiando la versione del server nessuna porta si sposta, e le stringhe di connessione dei progetti restano giuste (D-140). Due backup avviati insieme non si rubano più il file di login.
+- **Porte**: un pool, una versione di un database o un'azione di un progetto non si salvano su una porta già usata da un altro, né in quelle dell'editor; il messaggio dice di chi è (D-141).
+- **Pool di server web**: un sito nel pool usa il `conf.d` del suo progetto, come con il server dedicato (D-141).
+- **Rete locale**: con i server dei progetti in rete permessi, `php -S` risponde ai dispositivi della rete che lo chiamano per indirizzo IP; ogni altro nome resta rifiutato.
+- **Sito statico** raggiungibile anche come `<progetto>.localhost`.
+- **Attività e barra di stato** contano anche le versioni secondarie dei database e i pool accesi, e li elencano; «Ferma tutto» ferma ogni cosa dopo una conferma.
+- **Conferme**: «Elimina profilo» di un pool chiede prima; Esc chiude la domanda di rimozione di un terminale.
+- **Terminali**: se la versione salvata di un terminale non c'è più, dice quale usa al suo posto (per esempio «PHP 8.2 → 8.4»).
+- **Wizard**: la password del database generata vince su una vuota della base.
+- **Server web**: un progetto creato, clonato o cancellato compare o sparisce subito.
+- **Sviluppo**: il server dell'interfaccia si ferma anche quando Tauri chiude la pipe dello stdin.
+
 ## Rilascio 0.4.0 alpha (20/10/2026)
 
 - **Versione 0.4.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.4.0` pubblica i file per i sei sistemi.
