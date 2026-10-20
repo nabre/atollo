@@ -45,9 +45,9 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 
 ## Funzionalità
 
-- **Editor e terminali isolati.** VSCodium integrato con i temi Atollo scuro e chiaro. I terminali vedono solo il `PATH` e le variabili del kit: i programmi del PC ospite non interferiscono, e il PC non si sporca.
+- **Editor e terminali isolati.** VSCodium integrato con i temi Atollo scuro e chiaro, in una finestra misurata sul workbench di VSCodium 1.135: le stesse dimensioni, gli stessi colori e le icone codicon. I terminali vedono solo il `PATH` e le variabili del kit: i programmi del PC ospite non interferiscono, e il PC non si sporca.
 - **Linguaggi e strumenti su richiesta.** Più di 20 linguaggi e strumenti (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), scaricati quando servono e verificati con checksum SHA-256 o firma. Più versioni affiancate, una per progetto.
-- **Database e server web locali.** MySQL con phpMyAdmin, MongoDB e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto. Caddy e Apache per i siti, su ogni sistema. Nessun servizio di sistema.
+- **Database e server web locali.** MySQL con phpMyAdmin, MongoDB e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto; più versioni affiancate, ognuna con la sua porta. Caddy e Apache per i siti su `<progetto>.localhost`, su ogni sistema, da soli o in un server condiviso da più progetti. Una porta già occupata viene rifiutata, dicendo chi la tiene. Nessun servizio di sistema.
 - **Tre agenti AI, una sola configurazione.** Claude Code, Codex e Antigravity: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in `data/agents` e `atollo sync` li allinea per tutti e tre. Limiti del piano e consumi di oggi e degli ultimi 7 giorni.
 - **Una cartella per sei sistemi.** La stessa cartella, o lo stesso SSD esterno, passa da Windows a macOS a Linux con progetti, database e configurazioni degli agenti intatti: su ogni macchina girano i programmi nativi di quel sistema. «Rimuovi l'unità» chiude tutto ciò che Atollo ha aperto e lascia espellere il disco.
 
@@ -68,7 +68,7 @@ Il lavoro aperto è nelle [segnalazioni](https://github.com/nabre/atollo/issues)
 
 1. Copia l'exe di Atollo (per esempio `Atollo-0.4.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
 2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma).
-3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
+3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti di un progetto si aprono sempre nella sua cartella.
 
 Dalla [pagina dei rilasci](https://github.com/nabre/atollo/releases): `Atollo-<versione>-win32-x64.exe` o `Atollo-<versione>-win32-arm64.exe` per Windows, `Atollo-<versione>-darwin-arm64.app.zip` (Apple Silicon) o `Atollo-<versione>-darwin-x64.app.zip` (Intel) per macOS, `Atollo-<versione>-linux-x64` o `Atollo-<versione>-linux-arm64` (`.AppImage` e `.tar.gz`) per Linux; ogni file ha il suo `.sha256`. Il nome dice la versione: quando l'app si aggiorna da sola, l'exe e l'AppImage prendono il nome della versione nuova. Negli esempi qui sotto `Atollo.exe` sta per il tuo exe.
 
@@ -85,16 +85,19 @@ Senza il passo 2 macOS avvia l'app da una copia temporanea (App Translocation) e
 
 | Pagina | Cosa c'è |
 | --- | --- |
-| **Progetti** | il **pannello rapido** (cosa è in esecuzione, preferiti e recenti con Avvia, Editor, Terminale e agente, cosa c'è da sistemare), la lista dei progetti con ▶ su ogni riga, Ctrl+P per aprirne uno per nome; **Nuovo progetto**, una scheda accanto ai progetti: vuoto, dai tuoi repository GitHub (con clone, rinomina ed eliminazione su GitHub), da un indirizzo Git o da una delle 63 basi in gruppi (Laravel, Next.js, Django, WordPress, Astro, Tauri…); avvisi sull'ambiente. Ogni progetto ha la sua pagina: **Riepilogo** (l'azione principale con il suo output, linguaggi, database, agente, Git), **Risorse** (componenti, database del progetto con utente e password, estensioni dell'editor), **Avanzate** (azioni, porte, sito statico, Git, istruzioni degli agenti) |
+| **Progetti** | il **pannello rapido** (cosa è in esecuzione, preferiti e recenti con Avvia, Editor, Terminale e agente, cosa c'è da sistemare), la lista dei progetti con ▶ su ogni riga, Ctrl+P per aprirne uno per nome; **Nuovo progetto**, una scheda accanto ai progetti: vuoto, dai tuoi repository GitHub (con clone, rinomina ed eliminazione su GitHub), da un indirizzo Git o da una delle 63 basi in gruppi (Laravel, Next.js, Django, WordPress, Astro, Tauri…); avvisi sull'ambiente. Ogni progetto ha la sua pagina, con Avvia, Editor, Terminale e agente in alto e sette sezioni: **Avvio** (azioni, porte e il loro output), **Sito web**, **Componenti** (con le versioni), **Database** (database del progetto con utente e password, copie), **Estensioni**, **Editor** (impostazioni e server MCP), **Git** |
 | **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
-| **Database** | i server MySQL (con phpMyAdmin) e MongoDB di Atollo: avvio e arresto, password dell'amministratore, porta, dati in `data\db`, solo su questo PC; SQLite senza server |
-| **Strumenti** | linguaggi e strumenti con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove; la matrice delle estensioni dell'editor |
-| **Impostazioni** | lingua, terminale, rete (proxy, certificati, rete locale), chiave di Gemini, versioni di Python e PHP, compilatore di Rust (GNU o MSVC), aggiornamenti dell'app; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI); dove si trova la cartella di Atollo |
+| **Database** | i server MySQL (con phpMyAdmin) e MongoDB di Atollo: avvio e arresto, password dell'amministratore, porta, più versioni affiancate ognuna con la sua porta, dati in `data\db`, solo su questo PC; SQLite senza server |
+| **Server Web** | i server Caddy e Apache condivisi dai progetti (pool) e i tuoi profili, con i siti `<progetto>.localhost` che servono; solo su questo PC, o sulla rete locale se le Impostazioni lo permettono |
+| **Terminali** | console con gli strumenti del kit in qualunque cartella del PC: «Tutti gli strumenti» e terminali tuoi, con gli strumenti e le versioni che scegli |
+| **Strumenti** | linguaggi e strumenti divisi per tipo (sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database), con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove, più versioni; il compilatore di Rust (GNU o MSVC) nella pagina di Rust; la matrice delle estensioni dell'editor |
+| **Guida** | la guida dell'app, in nove capitoli; ogni pagina apre il suo argomento |
+| **Impostazioni** | salvate mentre le cambi: lingua, tema, rete (proxy, certificati, rete locale), chiave di Gemini, aggiornamenti dell'app, privacy; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI), e chi firma i commit; dove si trova la cartella di Atollo; le istruzioni dei framework |
 | **Rimuovi l'unità** | chiude tutto ciò che Atollo ha aperto, riporta in `data\` l'accesso di Antigravity e lascia espellere l'unità |
 
-In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (progetti, database, componenti), con l'output e gli errori in un solo posto.
+In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (azioni dei progetti, ogni versione dei database, pool dei server web, componenti), con l'output e gli errori in un solo posto; «Ferma tutto» ferma ogni cosa dopo una conferma. La barra di stato conta le stesse cose.
 
-La console di Atollo è la console classica di Windows con PowerShell 7 integrata e il solo ambiente isolato di Atollo: i programmi installati sul PC ospite non interferiscono.
+Su Windows la console di Atollo è la console classica di Windows con il PowerShell 7 del kit, su macOS e Linux una scheda del pannello dei terminali dell'app; in tutti e due i casi ha solo l'ambiente isolato di Atollo: i programmi installati sul PC ospite non interferiscono. Se la versione salvata di un terminale è stata rimossa, dice quale usa al suo posto (per esempio PHP 8.2 → 8.4).
 
 ## C'è ancora da fare
 
@@ -203,7 +206,7 @@ Il testo completo, con ogni connessione di rete e ogni file che l'app conserva, 
 
 - **Nessuna telemetria o raccolta dati:** l'applicazione non raccoglie dati personali, statistiche d'uso, telemetria o report di crash, e non contatta alcun server gestito dall'autore del progetto. Disattiva inoltre la telemetria predefinita dei componenti gestiti (come PowerShell 7 e il server di VSCodium).
 - **Archiviazione locale:** impostazioni, progetti, database locali, log e credenziali sono salvati in locale nella cartella `data\` (e `projects\`) di Atollo sul dispositivo dell'utente; le poche eccezioni (file temporanei, l'accesso di Antigravity mentre è in esecuzione) sono elencate nell'informativa.
-- **Connessioni di rete:** l'applicazione si collega solo a GitHub per cercare i propri aggiornamenti (Impostazioni › Generale › Aggiornamento automatico, oppure `ATOLLO_NO_UPDATE`), alle fonti ufficiali dei componenti che scarica, al registro Open VSX per le estensioni dell'editor e, quando l'utente usa la pagina GitHub o la pagina Agenti, a GitHub e ai fornitori degli agenti (**Claude Code**, **Codex**, **Antigravity**) secondo le loro informative sulla privacy.
+- **Connessioni di rete:** l'applicazione si collega solo a GitHub per cercare i propri aggiornamenti (Impostazioni › Generale › Aggiornamento automatico, oppure `ATOLLO_NO_UPDATE`), alle fonti ufficiali dei componenti che scarica, al registro Open VSX per le estensioni dell'editor e, quando l'utente fa l'accesso a GitHub (Impostazioni › Account GitHub) o apre la pagina Agenti, a GitHub e ai fornitori degli agenti (**Claude Code**, **Codex**, **Antigravity**) secondo le loro informative sulla privacy.
 
 ## Licenza
 
