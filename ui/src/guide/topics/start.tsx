@@ -155,10 +155,10 @@ function PageMap() {
       icon: VscSettingsGear,
       name: tr("Impostazioni", "Settings", "Paramètres", "Einstellungen"),
       text: tr(
-        "Lingua, rete, account GitHub, chiave di Gemini, aggiornamenti e istruzioni dei framework.",
-        "Language, network, GitHub account, Gemini key, updates and framework instructions.",
-        "Langue, réseau, compte GitHub, clé Gemini, mises à jour et instructions des frameworks.",
-        "Sprache, Netzwerk, GitHub-Konto, Gemini-Schlüssel, Aktualisierungen und Anweisungen der Frameworks.",
+        "Lingua, tema, rete, account GitHub e chi firma i commit, chiave di Gemini, aggiornamenti, privacy e istruzioni dei framework, salvati da soli.",
+        "Language, theme, network, GitHub account and who signs the commits, Gemini key, updates, privacy and framework instructions, saved by themselves.",
+        "Langue, thème, réseau, compte GitHub et qui signe les commits, clé Gemini, mises à jour, confidentialité et instructions des frameworks, enregistrés tout seuls.",
+        "Sprache, Design, Netzwerk, GitHub-Konto und wer die Commits signiert, Gemini-Schlüssel, Aktualisierungen, Datenschutz und Anweisungen der Frameworks, die sich von selbst speichern.",
       ),
       page: "settings",
       topic: "settings",
@@ -504,10 +504,10 @@ export const START: TopicTexts = {
             "Leg das Atollo-Programm in einen leeren Ordner, in dem du das Kit aufbewahren möchtest, und öffne es.",
           ),
           tr(
-            "La prima volta compare la pagina «Benvenuto»: scegli agenti e linguaggi e premi «Installa».",
-            "The first time, the “Welcome” page appears: choose agents and languages and press “Install”.",
-            "La première fois, la page « Bienvenue » apparaît : choisissez les agents et les langages et appuyez sur « Installer ».",
-            "Beim ersten Mal erscheint die Seite „Willkommen“: Wähle Agenten und Sprachen und klicke auf „Installieren“.",
+            "La prima volta compare la pagina «Benvenuto»: scegli lingua e, se serve, proxy e certificati, poi agenti e linguaggi, e premi «Installa». Prima di «Installa» non si scarica niente.",
+            "The first time, the “Welcome” page appears: choose the language and, if needed, proxy and certificates, then agents and languages, and press “Install”. Nothing is downloaded before “Install”.",
+            "La première fois, la page « Bienvenue » apparaît : choisissez la langue et, si besoin, le proxy et les certificats, puis les agents et les langages, et appuyez sur « Installer ». Rien n'est téléchargé avant « Installer ».",
+            "Beim ersten Mal erscheint die Seite „Willkommen“: Wähle die Sprache und, falls nötig, Proxy und Zertifikate, dann Agenten und Sprachen, und klicke auf „Installieren“. Vor „Installieren“ wird nichts heruntergeladen.",
           ),
           tr(
             "I componenti si scaricano in sottofondo dalle fonti ufficiali: puoi già usare l'app mentre arrivano.",
@@ -633,6 +633,14 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
+            "In cima ci sono due gruppi di impostazioni, salvate da sole mentre le cambi (come nella pagina Impostazioni, dove le ritrovi): «Prima di iniziare», con «Lingua», «Tema» e «Aggiornamento automatico», e «Rete», con proxy, certificati aggiuntivi e rete locale. Compila «Rete» solo se la tua rete passa da un proxy o ispeziona il traffico HTTPS: dato che niente si scarica prima di «Installa», anche i primi download li useranno.",
+            "At the top there are two groups of settings, saved by themselves as you change them (as on the Settings page, where you will find them again): “Before you start”, with “Language”, “Theme” and “Automatic update”, and “Network”, with proxy, additional certificates and local network. Fill in “Network” only if your network goes through a proxy or inspects HTTPS traffic: since nothing is downloaded before “Install”, the very first downloads will use them too.",
+            "En haut se trouvent deux groupes de paramètres, enregistrés tout seuls quand vous les changez (comme sur la page Paramètres, où vous les retrouvez) : « Avant de commencer », avec « Langue », « Thème » et « Mise à jour automatique », et « Réseau », avec le proxy, les certificats supplémentaires et le réseau local. Ne remplissez « Réseau » que si votre réseau passe par un proxy ou inspecte le trafic HTTPS : comme rien n'est téléchargé avant « Installer », même les premiers téléchargements les utiliseront.",
+            "Oben stehen zwei Gruppen von Einstellungen, die sich beim Ändern von selbst speichern (wie auf der Seite Einstellungen, wo du sie wiederfindest): „Bevor du beginnst“ mit „Sprache“, „Design“ und „Automatisches Update“ und „Netzwerk“ mit Proxy, zusätzlichen Zertifikaten und lokalem Netzwerk. Fülle „Netzwerk“ nur aus, wenn dein Netzwerk über einen Proxy läuft oder den HTTPS-Verkehr untersucht: Da vor „Installieren“ nichts heruntergeladen wird, verwenden auch die ersten Downloads diese Werte.",
+          )}
+        </P>
+        <P>
+          {tr(
             "Sotto c'è l'elenco dei componenti, diviso in cinque gruppi, con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.",
             "Below is the list of components, split into five groups, with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.",
             "En dessous se trouve la liste des composants, divisée en cinq groupes, avec un champ de recherche et un index à gauche. Chaque ligne a une case à cocher, le logo, le nom, une description, la taille et des étiquettes qui disent de quoi il a besoin ou à quoi il sert.",
@@ -655,10 +663,10 @@ export const START: TopicTexts = {
                 "Der Editor, PowerShell 7 (die Konsole des Kits) und GitHub CLI. Darunter die Anforderungen an den PC.",
               ),
               tr(
-                "Sono sempre installati: le caselle sono bloccate.",
-                "They are always installed: the checkboxes are locked.",
-                "Ils sont toujours installés : les cases sont verrouillées.",
-                "Sie werden immer installiert: Die Kontrollkästchen sind gesperrt.",
+                "Sono sempre installati, insieme agli altri, quando premi «Installa»: le caselle sono bloccate.",
+                "They are always installed, together with the others, when you press “Install”: the checkboxes are locked.",
+                "Ils sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : les cases sont verrouillées.",
+                "Sie werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Die Kontrollkästchen sind gesperrt.",
               ),
             ],
             [
@@ -733,6 +741,12 @@ export const START: TopicTexts = {
         </P>
         <Steps
           steps={[
+            tr(
+              "In «Prima di iniziare» scegli la lingua e, se vuoi, il tema; se sei dietro un proxy aziendale, compila anche «Rete».",
+              "In “Before you start” choose the language and, if you like, the theme; if you are behind a company proxy, also fill in “Network”.",
+              "Dans « Avant de commencer », choisissez la langue et, si vous le souhaitez, le thème ; si vous êtes derrière un proxy d'entreprise, remplissez aussi « Réseau ».",
+              "Wähle unter „Bevor du beginnst“ die Sprache und, wenn du willst, das Design; wenn du hinter einem Firmen-Proxy bist, fülle auch „Netzwerk“ aus.",
+            ),
             tr(
               "Togli la spunta a ciò che non ti interessa e aggiungi ciò che usi.",
               "Untick what does not interest you and add what you use.",
@@ -852,10 +866,10 @@ export const START: TopicTexts = {
                 "Die Auswahl der Komponenten wird in data\\app\\components.txt gespeichert, eine Zeile pro Komponente (id=1 gewählt, id=0 nicht).",
               ),
               tr(
-                "A ogni avvio il kit controlla che ci siano i componenti obbligatori e li reinstalla da solo se mancano, senza chiedere.",
-                "At every start the kit checks that the required components are there and reinstalls them by itself if they are missing, without asking.",
-                "À chaque lancement, le kit vérifie que les composants obligatoires sont présents et les réinstalle tout seul s'ils manquent, sans demander.",
-                "Bei jedem Start prüft das Kit, ob die erforderlichen Komponenten vorhanden sind, und installiert sie selbst neu, wenn sie fehlen, ohne zu fragen.",
+                "Al primo avvio non si scarica niente, nemmeno i componenti obbligatori, finché non premi «Installa»: così proxy e certificati scelti nella pagina valgono già per i primi download. Dagli avvii successivi il kit controlla che ci siano i componenti obbligatori e li reinstalla da solo se mancano, senza chiedere.",
+                "At the first start nothing is downloaded, not even the required components, until you press “Install”: this way the proxy and certificates chosen on the page already apply to the first downloads. From the following starts the kit checks that the required components are there and reinstalls them by itself if they are missing, without asking.",
+                "Au premier lancement, rien n'est téléchargé, pas même les composants obligatoires, tant que vous n'appuyez pas sur « Installer » : ainsi le proxy et les certificats choisis sur la page s'appliquent déjà aux premiers téléchargements. Aux lancements suivants, le kit vérifie que les composants obligatoires sont présents et les réinstalle tout seul s'ils manquent, sans demander.",
+                "Beim ersten Start wird nichts heruntergeladen, nicht einmal die erforderlichen Komponenten, bis du auf „Installieren“ klickst: So gelten Proxy und Zertifikate, die du auf der Seite gewählt hast, schon für die ersten Downloads. Bei den folgenden Starts prüft das Kit, ob die erforderlichen Komponenten vorhanden sind, und installiert sie selbst neu, wenn sie fehlen, ohne zu fragen.",
               ),
               tr(
                 "Se il primo avvio viene interrotto, alla riapertura la pagina «Benvenuto» non ricompare se la scelta è già stata salvata: si riprende da Strumenti, dove le righe non scaricate mostrano lo stato «non esiste» o «errore».",
@@ -1169,10 +1183,10 @@ export const START: TopicTexts = {
               "Fahr mit der Maus über Symbole, Punkte und Etiketten: Fast alles hat einen Hinweis, der erklärt, was es ist oder was es tut.",
             ),
             tr(
-              "Il tema chiaro o scuro segue quello del sistema operativo. La lingua si cambia in Impostazioni › Generale › «Lingua».",
-              "The light or dark theme follows the operating system's. The language is changed in Settings › General › “Language”.",
-              "Le thème clair ou sombre suit celui du système d'exploitation. La langue se change dans Paramètres › Général › « Langue ».",
-              "Das helle oder dunkle Design folgt dem des Betriebssystems. Die Sprache änderst du unter Einstellungen › Allgemein › „Sprache“.",
+              "Lingua e tema si cambiano in Impostazioni › Generale › «Lingua» e «Tema»: di base il tema chiaro o scuro segue quello del sistema operativo, e vale anche per l'editor e i terminali.",
+              "The language and the theme are changed in Settings › General › “Language” and “Theme”: by default the light or dark theme follows the operating system's, and it applies to the editor and the terminals too.",
+              "La langue et le thème se changent dans Paramètres › Général › « Langue » et « Thème » : par défaut, le thème clair ou sombre suit celui du système d'exploitation, et il vaut aussi pour l'éditeur et les terminaux.",
+              "Sprache und Design änderst du unter Einstellungen › Allgemein › „Sprache“ und „Design“: Standardmäßig folgt das helle oder dunkle Design dem des Betriebssystems, und es gilt auch für den Editor und die Terminals.",
             ),
             tr(
               "L'icona a forma di libro nella barra laterale di ogni pagina apre l'argomento della guida che la spiega.",

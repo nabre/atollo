@@ -1,5 +1,23 @@
 # Novità
 
+## Impostazioni senza «Salva», primo avvio, privacy (20/10/2026)
+
+- **Impostazioni**: ogni modifica si salva e si applica da sola, senza «Salva»; anche le istruzioni dei framework. La chiave di Gemini si salva quando lasci il campo (D-137).
+- **Primo avvio**: lingua, aggiornamenti e rete (proxy, certificati) si scelgono nella pagina di benvenuto, prima di scaricare qualunque cosa.
+- **Privacy**: nuova sezione nelle Impostazioni e informativa `docs/PRIVACY.md` in inglese, italiano, francese e tedesco, collegata da README e sito.
+- **Più robuste**: le chiavi di una versione più nuova restano nel file, due modifiche contemporanee non si perdono più, l'ambiente del kit non torna indietro dopo un salvataggio.
+- **Aree vuote** con lo sfondo del marchio.
+- **macOS e Linux**: «Lingua del sistema», esempi e percorsi con la barra giusta, il compilatore di Rust solo dove serve.
+- **Chiave di Gemini** in un file proprio, leggibile solo dal tuo utente, non più in chiaro in `settings.json`.
+- **Proxy e certificati** valgono anche per i download di Atollo: «Proxy HTTP», «Senza proxy per» e il file PEM, che ora raggiunge anche Python, pip, curl, Git e Cargo.
+- **Atollo avviato da una console del kit** non riprende più lingua e proxy del kit come se fossero del PC.
+- **Kit spostato**: il file PEM e le cartelle dei terminali dentro il kit lo seguono.
+- **Tema** chiaro, scuro o come il sistema, per Atollo, l'editor e i terminali, anche al primo avvio.
+- **Chi firma i commit**: nome ed e-mail di Git in Impostazioni › Account GitHub; con l'accesso a GitHub si compilano da soli, con l'indirizzo privato «noreply».
+- **Git più prudente**: si fida solo dei repository dentro la cartella del kit, non più di ogni repository del PC.
+- **Aggiornamento automatico** vale subito: acceso, cerca la nuova versione senza aspettare il prossimo avvio.
+- **Niente più sezione «Versioni»**: le linee di Python e PHP si scelgono in Strumenti e per progetto; il compilatore di Rust (Windows) è nella pagina di Rust in Strumenti.
+
 ## Rilascio 0.3.0 alpha (20/10/2026)
 
 - **Versione 0.3.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.3.0` pubblica i file per i sei sistemi.

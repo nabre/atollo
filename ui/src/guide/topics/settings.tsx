@@ -50,6 +50,12 @@ export const SETTINGS: TopicTexts = {
             "La connexion reste dans le kit : sur un autre PC, vous êtes déjà connecté.",
             "Die Anmeldung bleibt im Kit: Auf einem anderen PC bist du bereits angemeldet.",
           ),
+          tr(
+            "Con l'accesso, nome ed e-mail dei commit si riempiono dall'account, con l'indirizzo noreply di GitHub; li cambi in «Chi firma i commit».",
+            "With the sign-in, the commits' name and email are filled from the account, with GitHub's noreply address; you change them in “Who signs the commits”.",
+            "Avec la connexion, le nom et l'e-mail des commits se remplissent depuis le compte, avec l'adresse noreply de GitHub ; vous les changez dans « Qui signe les commits ».",
+            "Mit der Anmeldung werden Name und E-Mail der Commits aus dem Konto gefüllt, mit der noreply-Adresse von GitHub; du änderst sie unter „Wer die Commits signiert“.",
+          ),
         ]}
       />
 
@@ -215,10 +221,40 @@ export const SETTINGS: TopicTexts = {
       >
         <P>
           {tr(
-            "L'accesso serve per leggere e scrivere su GitHub, non dice a Git chi firma i commit. Imposta nome ed email una volta, in un terminale del kit:",
-            "The sign-in is for reading and writing on GitHub; it does not tell Git who signs the commits. Set your name and email once, in a kit terminal:",
-            "La connexion sert à lire et écrire sur GitHub ; elle ne dit pas à Git qui signe les commits. Définissez votre nom et votre e-mail une fois, dans un terminal du kit :",
-            "Die Anmeldung dient zum Lesen und Schreiben auf GitHub; sie sagt Git nicht, wer die Commits signiert. Leg Name und E-Mail einmal fest, in einem Terminal des Kits:",
+            "In Impostazioni › «Account GitHub», sotto l'account, «Chi firma i commit» ha due campi, «Nome» ed «E-mail»: sono il nome e l'e-mail dei commit fatti con il Git del kit. Ognuno si salva quando il campo perde il focus.",
+            "In Settings › “GitHub account”, below the account, “Who signs the commits” has two fields, “Name” and “Email”: they are the name and email of the commits made with the kit's Git. Each one is saved when the field loses focus.",
+            "Dans Paramètres › « Compte GitHub », sous le compte, « Qui signe les commits » a deux champs, « Nom » et « E-mail » : ce sont le nom et l'e-mail des commits faits avec le Git du kit. Chacun s'enregistre quand le champ perd le focus.",
+            "Unter Einstellungen › „GitHub-Konto“ hat „Wer die Commits signiert“ unter dem Konto zwei Felder, „Name“ und „E-Mail“: Das sind Name und E-Mail der Commits, die mit dem Git des Kits gemacht werden. Jedes wird gespeichert, wenn das Feld den Fokus verliert.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "Se sono vuoti tutti e due e il kit ha accesso a GitHub, Atollo li riempie da solo, all'accesso e a ogni avvio: il nome dell'account (o il login) e l'indirizzo privato di GitHub, id+login@users.noreply.github.com. Così la tua e-mail vera resta privata.",
+              "If both are empty and the kit is signed in to GitHub, Atollo fills them by itself, at sign-in and at every start: the account's name (or login) and GitHub's private address, id+login@users.noreply.github.com. That way your real email stays private.",
+              "S'ils sont vides tous les deux et que le kit est connecté à GitHub, Atollo les remplit tout seul, à la connexion et à chaque démarrage : le nom du compte (ou le login) et l'adresse privée de GitHub, id+login@users.noreply.github.com. Ainsi votre vraie adresse e-mail reste privée.",
+              "Wenn beide leer sind und das Kit bei GitHub angemeldet ist, füllt Atollo sie von selbst aus, bei der Anmeldung und bei jedem Start: den Namen des Kontos (oder den Login) und die private Adresse von GitHub, id+login@users.noreply.github.com. So bleibt deine echte E-Mail privat.",
+            ),
+            tr(
+              "Puoi scrivere altro nome ed e-mail quando vuoi. Se svuoti tutti e due, vengono tolti; al prossimo avvio, se il kit ha ancora accesso a GitHub, tornano quelli dell'account.",
+              "You can type another name and email whenever you like. If you empty both, they are removed; at the next start, if the kit is still signed in to GitHub, the account's come back.",
+              "Vous pouvez saisir un autre nom et une autre adresse quand vous voulez. Si vous videz les deux, ils sont supprimés ; au prochain démarrage, si le kit est toujours connecté à GitHub, ceux du compte reviennent.",
+              "Du kannst jederzeit einen anderen Namen und eine andere E-Mail eingeben. Wenn du beide leerst, werden sie entfernt; beim nächsten Start kommen die des Kontos zurück, wenn das Kit noch bei GitHub angemeldet ist.",
+            ),
+            tr(
+              "Un valore che non va bene mostra «Nome non valido.» o «Indirizzo e-mail non valido.». Se Git non è ancora nel kit compare «Git non è ancora nel kit: si installa con GitHub CLI.».",
+              "A value that is not valid shows “Invalid name.” or “Invalid email address.”. If Git is not in the kit yet, “Git is not in the kit yet: it is installed with GitHub CLI.” appears.",
+              "Une valeur non valable affiche « Nom non valide. » ou « Adresse e-mail non valide. ». Si Git n'est pas encore dans le kit, « Git n'est pas encore dans le kit : il s'installe avec GitHub CLI. » apparaît.",
+              "Ein ungültiger Wert zeigt „Ungültiger Name.“ oder „Ungültige E-Mail-Adresse.“. Wenn Git noch nicht im Kit ist, erscheint „Git ist noch nicht im Kit: Es wird mit GitHub CLI installiert.“.",
+            ),
+          ]}
+        />
+        <P>
+          {tr(
+            "Sono i valori user.name e user.email di Git: in un terminale del kit funziona anche git config --global.",
+            "They are Git's user.name and user.email values: in a kit terminal git config --global works too.",
+            "Ce sont les valeurs user.name et user.email de Git : dans un terminal du kit, git config --global fonctionne aussi.",
+            "Das sind die Werte user.name und user.email von Git: In einem Terminal des Kits funktioniert auch git config --global.",
           )}
         </P>
         <GuideCode
@@ -230,14 +266,6 @@ export const SETTINGS: TopicTexts = {
           )}
           code={'git config --global user.name "Nome Cognome"\ngit config --global user.email "tu@esempio.it"'}
         />
-        <P>
-          {tr(
-            "Per non pubblicare la tua email puoi usare l'indirizzo noreply che GitHub ti assegna (lo trovi nelle impostazioni Email del tuo account).",
-            "To keep your email private you can use the noreply address GitHub gives you (you find it in the Email settings of your account).",
-            "Pour ne pas publier votre e-mail, vous pouvez utiliser l'adresse noreply que GitHub vous attribue (vous la trouvez dans les paramètres Email de votre compte).",
-            "Um deine E-Mail nicht zu veröffentlichen, kannst du die noreply-Adresse verwenden, die GitHub dir zuweist (du findest sie in den Email-Einstellungen deines Kontos).",
-          )}
-        </P>
       </Section>
 
       <Under>
@@ -260,6 +288,24 @@ export const SETTINGS: TopicTexts = {
               "Git uses the same account through a credential helper (gh auth git-credential) written in the file data\\home\\.gitconfig for github.com and gist.github.com, without absolute paths: it survives moving the kit. At every start the kit aligns it with the state of gh; a helper you wrote yourself for those addresses stays as it is.",
               "Git utilise le même compte grâce à un credential helper (gh auth git-credential) écrit dans le fichier data\\home\\.gitconfig pour github.com et gist.github.com, sans chemins absolus : il survit au déplacement du kit. À chaque démarrage, le kit l'aligne sur l'état de gh ; un helper que vous avez écrit vous-même pour ces adresses reste tel quel.",
               "Git verwendet dasselbe Konto über einen Credential Helper (gh auth git-credential), der in die Datei data\\home\\.gitconfig für github.com und gist.github.com geschrieben wird, ohne absolute Pfade: Er übersteht das Verschieben des Kits. Bei jedem Start gleicht das Kit ihn an den Zustand von gh an; ein Helper, den du selbst für diese Adressen geschrieben hast, bleibt unverändert.",
+            ),
+            tr(
+              "«Chi firma i commit» legge e scrive git config --global user.name e user.email, cioè il file data\\home\\.gitconfig del kit. Per riempirli dall'account basta una chiamata a gh api user.",
+              "“Who signs the commits” reads and writes git config --global user.name and user.email, that is the kit's data\\home\\.gitconfig file. Filling them from the account takes one gh api user call.",
+              "« Qui signe les commits » lit et écrit git config --global user.name et user.email, c'est-à-dire le fichier data\\home\\.gitconfig du kit. Les remplir depuis le compte demande un seul appel à gh api user.",
+              "„Wer die Commits signiert“ liest und schreibt git config --global user.name und user.email, also die Datei data\\home\\.gitconfig des Kits. Um sie aus dem Konto zu füllen, genügt ein Aufruf von gh api user.",
+            ),
+            tr(
+              "Git si fida solo dei repository nella cartella del kit: il .gitconfig del kit ha safe.directory = <cartella del kit>/* (per esempio D:/Atollo/*), riscritto a ogni avvio perché segua il kit quando cambia cartella; i valori aggiunti da te restano. Prima era safe.directory = *, cioè ogni repository del PC, anche di altri utenti.",
+              "Git trusts only the repositories in the kit's folder: the kit's .gitconfig has safe.directory = <kit folder>/* (for example D:/Atollo/*), rewritten at every start so it follows the kit when it changes folder; values you added stay. Before it was safe.directory = *, that is every repository on the PC, even other users'.",
+              "Git ne fait confiance qu'aux dépôts du dossier du kit : le .gitconfig du kit a safe.directory = <dossier du kit>/* (par exemple D:/Atollo/*), réécrit à chaque démarrage pour suivre le kit quand il change de dossier ; les valeurs que vous avez ajoutées restent. Avant, c'était safe.directory = *, c'est-à-dire tous les dépôts du PC, même ceux d'autres utilisateurs.",
+              "Git vertraut nur den Repositorys im Ordner des Kits: Die .gitconfig des Kits hat safe.directory = <Kit-Ordner>/* (zum Beispiel D:/Atollo/*), bei jedem Start neu geschrieben, damit es dem Kit folgt, wenn es den Ordner wechselt; Werte, die du hinzugefügt hast, bleiben. Vorher war es safe.directory = *, also jedes Repository auf dem PC, auch das anderer Benutzer.",
+            ),
+            tr(
+              "Per un repository fuori dal kit che appartiene a un altro utente, Git avvisa di nuovo «dubious ownership». Se ti fidi, in un terminale del kit: git config --global --add safe.directory <cartella>.",
+              "For a repository outside the kit that belongs to another user, Git again warns about “dubious ownership”. If you trust it, in a kit terminal: git config --global --add safe.directory <folder>.",
+              "Pour un dépôt hors du kit qui appartient à un autre utilisateur, Git avertit de nouveau « dubious ownership ». Si vous lui faites confiance, dans un terminal du kit : git config --global --add safe.directory <dossier>.",
+              "Bei einem Repository außerhalb des Kits, das einem anderen Benutzer gehört, warnt Git wieder vor „dubious ownership“. Wenn du ihm vertraust, in einem Terminal des Kits: git config --global --add safe.directory <Ordner>.",
             ),
             tr(
               "Per clonare un repository privato il token viene passato a Git solo per quella operazione, mai sulla riga di comando né nel file .git\\config.",
@@ -292,16 +338,16 @@ export const SETTINGS: TopicTexts = {
       <InBrief
         points={[
           tr(
-            "Le Impostazioni hanno sette sezioni nella barra laterale e, sotto, le istruzioni dei framework.",
-            "Settings has seven sections in the sidebar and, below them, the framework instructions.",
-            "Les Paramètres ont sept sections dans la barre latérale et, en dessous, les instructions des frameworks.",
-            "Die Einstellungen haben sieben Abschnitte in der Seitenleiste und darunter die Anweisungen der Frameworks.",
+            "Le Impostazioni hanno sette sezioni nella barra laterale (Generale, Rete, Agenti, Aggiornamenti, Account GitHub, Privacy, Il kit) e, sotto, le istruzioni dei framework.",
+            "Settings has seven sections in the sidebar (General, Network, Agents, Updates, GitHub account, Privacy, The kit) and, below them, the framework instructions.",
+            "Les Paramètres ont sept sections dans la barre latérale (Général, Réseau, Agents, Mises à jour, Compte GitHub, Confidentialité, Le kit) et, en dessous, les instructions des frameworks.",
+            "Die Einstellungen haben sieben Abschnitte in der Seitenleiste (Allgemein, Netzwerk, Agenten, Updates, GitHub-Konto, Datenschutz, Das Kit) und darunter die Anweisungen der Frameworks.",
           ),
           tr(
-            "Le modifiche si salvano con «Salva» sulla barra delle schede.",
-            "Changes are saved with “Save” on the tab bar.",
-            "Les modifications s'enregistrent avec « Enregistrer » dans la barre des onglets.",
-            "Änderungen werden mit „Speichern“ in der Registerkartenleiste gespeichert.",
+            "Non c'è un pulsante «Salva»: ogni modifica si salva da sola mezzo secondo dopo, e la barra delle schede mostra «Salvataggio…» e poi «Salvato.».",
+            "There is no “Save” button: every change saves itself half a second later, and the tab bar shows “Saving…” and then “Saved.”.",
+            "Il n'y a pas de bouton « Enregistrer » : chaque modification s'enregistre toute seule une demi-seconde plus tard, et la barre des onglets affiche « Enregistrement… » puis « Enregistré. ».",
+            "Es gibt keine Schaltfläche „Speichern“: Jede Änderung speichert sich eine halbe Sekunde später von selbst, und die Registerkartenleiste zeigt „Wird gespeichert…“ und dann „Gespeichert.“.",
           ),
           tr(
             "Valgono subito per l'app, le console e gli agenti; i terminali dell'editor dopo «Riavvia l'editor».",
@@ -316,12 +362,50 @@ export const SETTINGS: TopicTexts = {
         src="settings.webp"
         title={tr("La pagina Impostazioni", "The Settings page", "La page Paramètres", "Die Seite Einstellungen")}
         caption={tr(
-          "Le sezioni a sinistra, sotto le istruzioni dei framework; «Salva» sulla barra delle schede.",
-          "The sections on the left, the framework instructions below them; “Save” on the tab bar.",
-          "Les sections à gauche, les instructions des frameworks en dessous ; « Enregistrer » sur la barre des onglets.",
-          "Die Bereiche links, darunter die Framework-Anleitungen; „Speichern“ in der Registerleiste.",
+          "Le sezioni a sinistra, sotto le istruzioni dei framework; lo stato del salvataggio sulla barra delle schede.",
+          "The sections on the left, the framework instructions below them; the saving status on the tab bar.",
+          "Les sections à gauche, les instructions des frameworks en dessous ; l'état de l'enregistrement sur la barre des onglets.",
+          "Die Bereiche links, darunter die Framework-Anleitungen; der Speicherstatus in der Registerleiste.",
         )}
       />
+
+      <Section
+        title={tr(
+          "Come si salvano le modifiche",
+          "How changes are saved",
+          "Comment les modifications sont enregistrées",
+          "Wie Änderungen gespeichert werden",
+        )}
+      >
+        <Bullets
+          items={[
+            tr(
+              "Ogni modifica si salva e si applica da sola, circa mezzo secondo dopo l'ultima battuta: sulla barra delle schede compare «Salvataggio…», poi «Salvato.».",
+              "Every change is saved and applied by itself, about half a second after the last keystroke: the tab bar shows “Saving…”, then “Saved.”.",
+              "Chaque modification est enregistrée et appliquée toute seule, environ une demi-seconde après la dernière frappe : la barre des onglets affiche « Enregistrement… », puis « Enregistré. ».",
+              "Jede Änderung wird etwa eine halbe Sekunde nach dem letzten Tastendruck von selbst gespeichert und angewendet: Die Registerkartenleiste zeigt „Wird gespeichert…“, dann „Gespeichert.“.",
+            ),
+            tr(
+              "Se un valore non va bene (per esempio un file PEM che non esiste), compare il suo errore e il valore resta sullo schermo: il kit riprova alla modifica successiva.",
+              "If a value is not valid (for example a PEM file that does not exist), its error appears and the value stays on screen: the kit tries again at the next change.",
+              "Si une valeur n'est pas valable (par exemple un fichier PEM qui n'existe pas), son erreur apparaît et la valeur reste à l'écran : le kit réessaie à la modification suivante.",
+              "Wenn ein Wert nicht gültig ist (zum Beispiel eine PEM-Datei, die es nicht gibt), erscheint sein Fehler und der Wert bleibt auf dem Bildschirm: Das Kit versucht es bei der nächsten Änderung erneut.",
+            ),
+            tr(
+              "Anche le istruzioni dei framework si salvano da sole, poco meno di un secondo dopo l'ultima modifica.",
+              "The framework instructions save themselves too, a little under a second after the last edit.",
+              "Les instructions des frameworks s'enregistrent elles aussi toutes seules, un peu moins d'une seconde après la dernière modification.",
+              "Auch die Anweisungen der Frameworks speichern sich von selbst, knapp eine Sekunde nach der letzten Änderung.",
+            ),
+            tr(
+              "Se l'editor è aperto e cambi lingua, rete o temporanei dei programmi, compare «Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.»: le altre impostazioni non lo richiedono. Il tema arriva subito anche all'editor e ai suoi terminali.",
+              "If the editor is open and you change the language, the network or the programs' temporary files, “Restart the editor so that its terminals use the new settings.” appears: the other settings do not need it. The theme reaches the editor and its terminals at once.",
+              "Si l'éditeur est ouvert et que vous changez la langue, le réseau ou les fichiers temporaires des programmes, « Redémarrez l'éditeur pour que ses terminaux utilisent les nouveaux paramètres. » apparaît : les autres paramètres ne le demandent pas. Le thème atteint tout de suite l'éditeur et ses terminaux.",
+              "Wenn der Editor geöffnet ist und du die Sprache, das Netzwerk oder die temporären Dateien der Programme änderst, erscheint „Starte den Editor neu, damit seine Terminals die neuen Einstellungen verwenden.“: Die anderen Einstellungen brauchen das nicht. Das Design erreicht den Editor und seine Terminals sofort.",
+            ),
+          ]}
+        />
+      </Section>
 
       <Section title={tr("Generale", "General", "Général", "Allgemein")}>
         <Table
@@ -333,10 +417,19 @@ export const SETTINGS: TopicTexts = {
             [
               tr("Lingua", "Language", "Langue", "Sprache"),
               tr(
-                "La lingua di Atollo: quella del sistema («Lingua di Windows»), italiano, inglese, francese o tedesco. Cambia subito.",
-                "The language of Atollo: the system's (“Windows language”), Italian, English, French or German. It changes at once.",
-                "La langue d'Atollo : celle du système (« Langue de Windows »), italien, anglais, français ou allemand. Elle change tout de suite.",
-                "Die Sprache von Atollo: die des Systems („Windows-Sprache“), Italienisch, Englisch, Französisch oder Deutsch. Sie ändert sich sofort.",
+                "La lingua di Atollo: quella del sistema («Lingua del sistema»), italiano, inglese, francese o tedesco. Cambia subito.",
+                "The language of Atollo: the system's (“System language”), Italian, English, French or German. It changes at once.",
+                "La langue d'Atollo : celle du système (« Langue du système »), italien, anglais, français ou allemand. Elle change tout de suite.",
+                "Die Sprache von Atollo: die des Systems („Systemsprache“), Italienisch, Englisch, Französisch oder Deutsch. Sie ändert sich sofort.",
+              ),
+            ],
+            [
+              tr("Tema", "Theme", "Thème", "Design"),
+              tr(
+                "Chiaro o scuro: «Come il sistema» (di base), «Chiaro» o «Scuro». Vale subito per tutte le finestre: Atollo, l'editor integrato e i suoi terminali, senza riavviare l'editor.",
+                "Light or dark: “Same as the system” (the default), “Light” or “Dark”. It applies at once to every window: Atollo, the integrated editor and its terminals, without restarting the editor.",
+                "Clair ou sombre : « Comme le système » (par défaut), « Clair » ou « Sombre ». Il s'applique tout de suite à toutes les fenêtres : Atollo, l'éditeur intégré et ses terminaux, sans redémarrer l'éditeur.",
+                "Hell oder dunkel: „Wie das System“ (Standard), „Hell“ oder „Dunkel“. Es gilt sofort für alle Fenster: Atollo, den integrierten Editor und seine Terminals, ohne den Editor neu zu starten.",
               ),
             ],
             [
@@ -356,10 +449,10 @@ export const SETTINGS: TopicTexts = {
             [
               tr("Aggiornamento automatico", "Automatic update", "Mise à jour automatique", "Automatisches Update"),
               tr(
-                "«Scarica da solo le nuove versioni di Atollo»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base.",
-                "“Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default.",
-                "« Télécharger automatiquement les nouvelles versions d'Atollo » : la nouvelle version remplace l'actuelle quand vous fermez l'application. Activé par défaut.",
-                "„Neue Versionen von Atollo automatisch herunterladen“: Die neue Version ersetzt die aktuelle, wenn du die App schließt. Standardmäßig aktiv.",
+                "«Scarica da solo le nuove versioni di Atollo»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base. Vale subito: attivarlo avvia un controllo all'istante; spegnerlo prima del controllo dei 20 secondi dopo l'avvio ferma quel controllo.",
+                "“Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default. It applies at once: turning it on starts a check right away; turning it off before the check 20 seconds after start stops that check.",
+                "« Télécharger automatiquement les nouvelles versions d'Atollo » : la nouvelle version remplace l'actuelle quand vous fermez l'application. Activé par défaut. Il s'applique tout de suite : l'activer lance aussitôt une vérification ; le désactiver avant la vérification des 20 secondes après le démarrage annule cette vérification.",
+                "„Neue Versionen von Atollo automatisch herunterladen“: Die neue Version ersetzt die aktuelle, wenn du die App schließt. Standardmäßig aktiv. Es gilt sofort: Einschalten startet sofort eine Prüfung; Ausschalten vor der Prüfung 20 Sekunden nach dem Start stoppt diese Prüfung.",
               ),
             ],
             [
@@ -394,6 +487,25 @@ export const SETTINGS: TopicTexts = {
             "Programme schreiben und löschen ständig temporäre Dateien: Auf einem USB-Stick verlangsamt das alles und nutzt ihn ab. Auf der Festplatte des PCs geht das viel schneller, und das Kit löscht sie, wenn du die App schließt.",
           )}
         </Callout>
+        <Callout
+          tone="info"
+          title={tr(
+            "Versioni e compilatore di Rust",
+            "Versions and Rust compiler",
+            "Versions et compilateur Rust",
+            "Versionen und Rust-Compiler",
+          )}
+        >
+          {rich(
+            tr(
+              "Le Impostazioni non scelgono più le versioni di Python e PHP: una nuova installazione prende la linea più recente, le altre linee si scaricano dal menu delle versioni di ogni strumento in Strumenti e ogni progetto sceglie la sua ({0}). I valori pythonVersion e phpVersion di un vecchio settings.json vengono ignorati. Il «Compilatore di Rust» è nella pagina di Rust in Strumenti, sezione «Dettagli».",
+              "Settings no longer chooses the Python and PHP versions: a new installation takes the newest line, the other lines are downloaded from each tool's versions menu in Tools, and each project chooses its own ({0}). The pythonVersion and phpVersion values of an older settings.json are ignored. The “Rust compiler” is on Rust's page in Tools, “Details” section.",
+              "Les Paramètres ne choisissent plus les versions de Python et de PHP : une nouvelle installation prend la ligne la plus récente, les autres lignes se téléchargent depuis le menu des versions de chaque outil dans Outils, et chaque projet choisit la sienne ({0}). Les valeurs pythonVersion et phpVersion d'un ancien settings.json sont ignorées. Le « Compilateur Rust » se trouve dans la page de Rust dans Outils, section « Détails ».",
+              "Die Einstellungen wählen die Versionen von Python und PHP nicht mehr: Eine neue Installation nimmt die neueste Linie, die anderen Linien lädst du über das Versionsmenü jedes Werkzeugs unter Werkzeuge herunter, und jedes Projekt wählt seine eigene ({0}). Die Werte pythonVersion und phpVersion einer älteren settings.json werden ignoriert. Der „Rust-Compiler“ steht auf der Seite von Rust unter Werkzeuge, Abschnitt „Details“.",
+            ),
+            <See key="v" id="tools-versions" />,
+          )}
+        </Callout>
       </Section>
 
       <Section title={tr("Rete", "Network", "Réseau", "Netzwerk")}>
@@ -413,61 +525,12 @@ export const SETTINGS: TopicTexts = {
       <Section title={tr("Agenti", "Agents", "Agents", "Agenten")}>
         <P>
           {tr(
-            "«Chiave API di Gemini (Antigravity senza account Google)»: incolla la chiave e premi «Salva». Il campo poi mostra «salvata: scrivi per sostituirla» e la chiave non viene più mostrata; «Togli la chiave» la cancella al prossimo salvataggio. Antigravity mostrerà «accesso con chiave API». La chiave è salvata in chiaro in data\\app\\settings.json e passata ai programmi del kit come GEMINI_API_KEY.",
-            "“Gemini API key (Antigravity without a Google account)”: paste the key and press “Save”. The field then shows “saved: type to replace it” and the key is no longer shown; “Remove the key” deletes it at the next save. Antigravity will show “signed in with an API key”. The key is saved in plain text in data\\app\\settings.json and passed to the kit's programs as GEMINI_API_KEY.",
-            "« Clé API Gemini (Antigravity sans compte Google) » : collez la clé et appuyez sur « Enregistrer ». Le champ affiche ensuite « enregistrée : saisissez-en une autre pour la remplacer » et la clé n'est plus affichée ; « Supprimer la clé » l'efface au prochain enregistrement. Antigravity affichera « connecté avec une clé API ». La clé est enregistrée en clair dans data\\app\\settings.json et transmise aux programmes du kit comme GEMINI_API_KEY.",
-            "„Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“: Füge den Schlüssel ein und klicke auf „Speichern“. Das Feld zeigt dann „gespeichert: zum Ersetzen neu eingeben“ und der Schlüssel wird nicht mehr angezeigt; „Schlüssel entfernen“ löscht ihn beim nächsten Speichern. Antigravity zeigt dann „mit API-Schlüssel angemeldet“. Der Schlüssel wird im Klartext in data\\app\\settings.json gespeichert und den Programmen des Kits als GEMINI_API_KEY übergeben.",
+            "«Chiave API di Gemini (Antigravity senza account Google)»: incolla la chiave e passa ad altro (un clic fuori dal campo o Tab). La chiave si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata: scrivi per sostituirla»: la chiave non viene più mostrata. «Togli la chiave» la cancella subito. Antigravity mostrerà «accesso con chiave API». La chiave è salvata a parte, in data\\app\\secrets\\gemini-api-key, leggibile solo dal tuo utente dove il disco ha i permessi, e passata ai programmi del kit come GEMINI_API_KEY.",
+            "“Gemini API key (Antigravity without a Google account)”: paste the key and move on (a click outside the field, or Tab). The key is saved when the field loses focus, then the field empties and shows “saved: type to replace it”: the key is no longer shown. “Remove the key” deletes it at once. Antigravity will show “signed in with an API key”. The key is saved on its own, in data\\app\\secrets\\gemini-api-key, readable by your user only where the disk has permissions, and passed to the kit's programs as GEMINI_API_KEY.",
+            "« Clé API Gemini (Antigravity sans compte Google) » : collez la clé et passez à autre chose (un clic hors du champ, ou Tab). La clé est enregistrée quand le champ perd le focus, puis le champ se vide et affiche « enregistrée : saisissez-en une autre pour la remplacer » : la clé n'est plus affichée. « Supprimer la clé » l'efface tout de suite. Antigravity affichera « connecté avec une clé API ». La clé est enregistrée à part, dans data\\app\\secrets\\gemini-api-key, lisible par votre seul utilisateur là où le disque gère les permissions, et transmise aux programmes du kit comme GEMINI_API_KEY.",
+            "„Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“: Füge den Schlüssel ein und mach woanders weiter (ein Klick außerhalb des Felds oder Tab). Der Schlüssel wird gespeichert, wenn das Feld den Fokus verliert; dann leert sich das Feld und zeigt „gespeichert: zum Ersetzen neu eingeben“: Der Schlüssel wird nicht mehr angezeigt. „Schlüssel entfernen“ löscht ihn sofort. Antigravity zeigt dann „mit API-Schlüssel angemeldet“. Der Schlüssel wird getrennt in data\\app\\secrets\\gemini-api-key gespeichert, nur für deinen Benutzer lesbar, wo das Laufwerk Berechtigungen kennt, und den Programmen des Kits als GEMINI_API_KEY übergeben.",
           )}
         </P>
-      </Section>
-
-      <Section title={tr("Versioni", "Versions", "Versions", "Versionen")}>
-        <Table
-          columns={[
-            tr("Impostazione", "Setting", "Paramètre", "Einstellung"),
-            tr("Che cosa fa", "What it does", "Ce qu'il fait", "Was sie bewirkt"),
-          ]}
-          rows={[
-            [
-              tr("Python", "Python", "Python", "Python"),
-              tr(
-                "La versione di Python da installare (per esempio 3.13). Vuoto: la più recente.",
-                "The Python version to install (for example 3.13). Empty: the latest.",
-                "La version de Python à installer (par exemple 3.13). Vide : la plus récente.",
-                "Die zu installierende Python-Version (zum Beispiel 3.13). Leer: die neueste.",
-              ),
-            ],
-            [
-              tr("PHP", "PHP", "PHP", "PHP"),
-              tr(
-                "La versione di PHP da installare (per esempio 8.4). Vuoto: la più recente.",
-                "The PHP version to install (for example 8.4). Empty: the latest.",
-                "La version de PHP à installer (par exemple 8.4). Vide : la plus récente.",
-                "Die zu installierende PHP-Version (zum Beispiel 8.4). Leer: die neueste.",
-              ),
-            ],
-            [
-              tr("Compilatore di Rust", "Rust compiler", "Compilateur Rust", "Rust-Compiler"),
-              tr(
-                "GNU (tutto nel kit, la scelta di base) oppure MSVC, che richiede Visual Studio Build Tools installato nel PC.",
-                "GNU (all in the kit, the default choice) or MSVC, which requires Visual Studio Build Tools installed on the PC.",
-                "GNU (tout dans le kit, le choix par défaut) ou MSVC, qui nécessite Visual Studio Build Tools installé sur le PC.",
-                "GNU (alles im Kit, die Standardwahl) oder MSVC, das auf dem PC installierte Visual Studio Build Tools erfordert.",
-              ),
-            ],
-          ]}
-        />
-        <Callout tone="info">
-          {rich(
-            tr(
-              "Valgono dalla prossima installazione o aggiornamento in Strumenti. Non scelgono la versione che il kit usa (sempre la più recente su disco): per tenere più versioni vedi {0}.",
-              "They apply from the next installation or update in Tools. They do not choose the version the kit uses (always the latest on disk): to keep several versions see {0}.",
-              "Ils s'appliquent à partir de la prochaine installation ou mise à jour dans Outils. Ils ne choisissent pas la version que le kit utilise (toujours la plus récente sur le disque) : pour garder plusieurs versions, voyez {0}.",
-              "Sie gelten ab der nächsten Installation oder Aktualisierung unter Werkzeuge. Sie wählen nicht die Version, die das Kit verwendet (immer die neueste auf dem Datenträger): Um mehrere Versionen zu behalten, siehe {0}.",
-            ),
-            <See key="v" id="tools-versions" />,
-          )}
-        </Callout>
       </Section>
 
       <Section title={tr("Aggiornamenti", "Updates", "Mises à jour", "Updates")}>
@@ -494,6 +557,33 @@ export const SETTINGS: TopicTexts = {
               "Die GitHub-Anmeldung für das ganze Kit: {0}.",
             ),
             <See key="g" id="github" />,
+          )}
+        </P>
+        <P>
+          {tr(
+            "Sotto l'account, «Chi firma i commit» ha i campi «Nome» ed «E-mail» dei commit fatti con il Git del kit; ognuno si salva quando il campo perde il focus.",
+            "Below the account, “Who signs the commits” has the “Name” and “Email” fields of the commits made with the kit's Git; each one is saved when the field loses focus.",
+            "Sous le compte, « Qui signe les commits » a les champs « Nom » et « E-mail » des commits faits avec le Git du kit ; chacun s'enregistre quand le champ perd le focus.",
+            "Unter dem Konto hat „Wer die Commits signiert“ die Felder „Name“ und „E-Mail“ der Commits, die mit dem Git des Kits gemacht werden; jedes wird gespeichert, wenn das Feld den Fokus verliert.",
+          )}
+        </P>
+      </Section>
+
+      <Section title={tr("Privacy", "Privacy", "Confidentialité", "Datenschutz")}>
+        <P>
+          {tr(
+            "«Cosa fa Atollo con i tuoi dati», in breve: nessuna telemetria e nessun account; impostazioni, chiavi e accessi restano nella cartella del kit. Atollo contatta GitHub per i suoi aggiornamenti (se l'aggiornamento automatico è attivo), le fonti ufficiali di linguaggi e strumenti quando li installi o aggiorni e, una volta al giorno, per leggere le versioni disponibili (anche questo si spegne con ATOLLO_NO_UPDATE), e Open VSX per le estensioni dell'editor. Agenti, GitHub e registri dei pacchetti parlano direttamente con i loro servizi, con le loro regole.",
+            "“What Atollo does with your data”, in short: no telemetry and no account; settings, keys and sign-ins stay in the kit's folder. Atollo contacts GitHub for its own updates (if automatic updates are on), the official sources of languages and tools when you install or update them and, once a day, to read the available versions (ATOLLO_NO_UPDATE turns this off too), and Open VSX for the editor's extensions. Agents, GitHub and package registries talk directly to their own services, under their own rules.",
+            "« Ce qu'Atollo fait de vos données », en bref : aucune télémétrie et aucun compte ; paramètres, clés et connexions restent dans le dossier du kit. Atollo contacte GitHub pour ses propres mises à jour (si la mise à jour automatique est activée), les sources officielles des langages et des outils quand vous les installez ou les mettez à jour et, une fois par jour, pour lire les versions disponibles (ATOLLO_NO_UPDATE désactive cela aussi), et Open VSX pour les extensions de l'éditeur. Agents, GitHub et registres de paquets parlent directement à leurs propres services, selon leurs propres règles.",
+            "„Was Atollo mit deinen Daten macht“, kurz gesagt: keine Telemetrie und kein Konto; Einstellungen, Schlüssel und Anmeldungen bleiben im Ordner des Kits. Atollo kontaktiert GitHub für die eigenen Updates (wenn das automatische Update aktiv ist), die offiziellen Quellen der Sprachen und Werkzeuge, wenn du sie installierst oder aktualisierst, und einmal am Tag, um die verfügbaren Versionen zu lesen (auch das schaltet ATOLLO_NO_UPDATE ab), sowie Open VSX für die Erweiterungen des Editors. Agenten, GitHub und Paket-Registries sprechen direkt mit ihren eigenen Diensten, nach ihren eigenen Regeln.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "«Leggi l'informativa sulla privacy» apre nel browser l'informativa completa (docs/PRIVACY.md su GitHub), nella lingua dell'app.",
+            "“Read the privacy policy” opens the full policy in the browser (docs/PRIVACY.md on GitHub), in the app's language.",
+            "« Lire la politique de confidentialité » ouvre la politique complète dans le navigateur (docs/PRIVACY.md sur GitHub), dans la langue de l'application.",
+            "„Datenschutzerklärung lesen“ öffnet die vollständige Erklärung im Browser (docs/PRIVACY.md auf GitHub), in der Sprache der App.",
           )}
         </P>
       </Section>
@@ -528,16 +618,22 @@ export const SETTINGS: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Le impostazioni sono in data\\app\\settings.json. Ogni salvataggio controlla i valori, scrive il file in modo sicuro (prima una copia, poi la sostituzione) e ricostruisce l'ambiente del kit.",
-              "The settings are in data\\app\\settings.json. Every save checks the values, writes the file safely (first a copy, then the replacement) and rebuilds the kit's environment.",
-              "Les paramètres sont dans data\\app\\settings.json. Chaque enregistrement contrôle les valeurs, écrit le fichier de façon sûre (d'abord une copie, puis le remplacement) et reconstruit l'environnement du kit.",
-              "Die Einstellungen liegen in data\\app\\settings.json. Jedes Speichern prüft die Werte, schreibt die Datei sicher (zuerst eine Kopie, dann das Ersetzen) und baut die Umgebung des Kits neu auf.",
+              "Le impostazioni sono in data\\app\\settings.json. Ogni salvataggio rilegge il file, controlla i valori, lo scrive in modo sicuro (prima una copia, poi la sostituzione) e ricostruisce l'ambiente del kit. I salvataggi passano uno alla volta, sempre con i valori più recenti.",
+              "The settings are in data\\app\\settings.json. Every save reads the file again, checks the values, writes it safely (first a copy, then the replacement) and rebuilds the kit's environment. Saves go through one at a time, always with the latest values.",
+              "Les paramètres sont dans data\\app\\settings.json. Chaque enregistrement relit le fichier, contrôle les valeurs, l'écrit de façon sûre (d'abord une copie, puis le remplacement) et reconstruit l'environnement du kit. Les enregistrements passent un par un, toujours avec les valeurs les plus récentes.",
+              "Die Einstellungen liegen in data\\app\\settings.json. Jedes Speichern liest die Datei neu, prüft die Werte, schreibt sie sicher (zuerst eine Kopie, dann das Ersetzen) und baut die Umgebung des Kits neu auf. Gespeichert wird immer nur einmal gleichzeitig, stets mit den neuesten Werten.",
             ),
             tr(
-              "Se il file non si può leggere, l'app usa i valori di base e non lo sovrascrive: «Le impostazioni in … non sono leggibili: uso quelle predefinite e non modifico il file.»",
-              "If the file cannot be read, the app uses the default values and does not overwrite it: “The settings in … cannot be read: using the defaults and leaving the file as it is.”",
-              "Si le fichier ne peut pas être lu, l'application utilise les valeurs par défaut et ne l'écrase pas : « Les paramètres de … sont illisibles : les valeurs par défaut sont utilisées et le fichier n'est pas modifié. »",
-              "Wenn die Datei nicht gelesen werden kann, verwendet die App die Standardwerte und überschreibt sie nicht: „Die Einstellungen in … sind nicht lesbar: Es werden die Standardwerte verwendet, die Datei bleibt unverändert.“",
+              "Il tema è la voce theme di settings.json. Atollo lo passa alle finestre (Tauri set_theme): le loro pagine lo vedono come prefers-color-scheme. L'editor integrato lo segue grazie a window.autoDetectColorScheme, e i terminali con lui.",
+              "The theme is the theme entry of settings.json. Atollo passes it to the windows (Tauri set_theme): their pages see it as prefers-color-scheme. The integrated editor follows it thanks to window.autoDetectColorScheme, and the terminals with it.",
+              "Le thème est l'entrée theme de settings.json. Atollo le transmet aux fenêtres (Tauri set_theme) : leurs pages le voient comme prefers-color-scheme. L'éditeur intégré le suit grâce à window.autoDetectColorScheme, et les terminaux avec lui.",
+              "Das Design ist der Eintrag theme in settings.json. Atollo gibt es an die Fenster weiter (Tauri set_theme): Ihre Seiten sehen es als prefers-color-scheme. Der integrierte Editor folgt ihm dank window.autoDetectColorScheme, und die Terminals mit ihm.",
+            ),
+            tr(
+              "Se il file non si può leggere, l'app usa i valori predefiniti e lo riscrive alla prima modifica: «Le impostazioni in … non sono leggibili: uso quelle predefinite. Il file verrà riscritto alla prima modifica.» Le voci scritte da una versione più recente di Atollo, che questa non conosce, restano nel file.",
+              "If the file cannot be read, the app uses the default values and rewrites it at the first change: “The settings in … cannot be read: using the defaults. The file will be rewritten at the first change.” Entries written by a newer version of Atollo, which this one does not know, stay in the file.",
+              "Si le fichier ne peut pas être lu, l'application utilise les valeurs par défaut et le réécrit à la première modification : « Les paramètres de … sont illisibles : les valeurs par défaut sont utilisées. Le fichier sera réécrit à la première modification. » Les entrées écrites par une version plus récente d'Atollo, que celle-ci ne connaît pas, restent dans le fichier.",
+              "Wenn die Datei nicht gelesen werden kann, verwendet die App die Standardwerte und schreibt sie bei der ersten Änderung neu: „Die Einstellungen in … sind nicht lesbar: Es gelten die Standardwerte. Die Datei wird bei der ersten Änderung neu geschrieben.“ Einträge, die eine neuere Version von Atollo geschrieben hat und die diese nicht kennt, bleiben in der Datei.",
             ),
             tr(
               "La casella di ricerca delle Impostazioni cerca anche tra le basi e le aggiunte dei framework.",
@@ -654,16 +750,16 @@ export const SETTINGS: TopicTexts = {
         <Steps
           steps={[
             tr(
-              "Apri Impostazioni › «Rete» e compila i campi che ti servono.",
-              "Open Settings › “Network” and fill in the fields you need.",
-              "Ouvrez Paramètres › « Réseau » et remplissez les champs dont vous avez besoin.",
-              "Öffne Einstellungen › „Netzwerk“ und fülle die Felder aus, die du brauchst.",
+              "Apri Impostazioni › «Rete» (al primo avvio, il gruppo «Rete» della pagina «Benvenuto in Atollo») e compila i campi che ti servono.",
+              "Open Settings › “Network” (at the first start, the “Network” group of the “Welcome to Atollo” page) and fill in the fields you need.",
+              "Ouvrez Paramètres › « Réseau » (au premier démarrage, le groupe « Réseau » de la page « Bienvenue dans Atollo ») et remplissez les champs dont vous avez besoin.",
+              "Öffne Einstellungen › „Netzwerk“ (beim ersten Start die Gruppe „Netzwerk“ der Seite „Willkommen bei Atollo“) und fülle die Felder aus, die du brauchst.",
             ),
             tr(
-              "Premi «Salva». Se l'editor è aperto, premi anche «Riavvia l'editor».",
-              "Press “Save”. If the editor is open, also press “Restart the editor”.",
-              "Appuyez sur « Enregistrer ». Si l'éditeur est ouvert, appuyez aussi sur « Redémarrer l'éditeur ».",
-              "Klicke auf „Speichern“. Wenn der Editor geöffnet ist, klicke auch auf „Editor neu starten“.",
+              "Non serve premere nulla: i valori si salvano da soli mentre scrivi. Se l'editor è aperto, premi «Riavvia l'editor» nell'avviso che compare.",
+              "There is nothing to press: the values save themselves as you type. If the editor is open, press “Restart the editor” in the notice that appears.",
+              "Il n'y a rien à appuyer : les valeurs s'enregistrent toutes seules pendant que vous écrivez. Si l'éditeur est ouvert, appuyez sur « Redémarrer l'éditeur » dans l'avis qui apparaît.",
+              "Du musst nichts drücken: Die Werte speichern sich beim Tippen von selbst. Wenn der Editor geöffnet ist, klicke im erscheinenden Hinweis auf „Editor neu starten“.",
             ),
             tr(
               "Torna in Strumenti e riprova il download che non riusciva.",
@@ -682,10 +778,10 @@ export const SETTINGS: TopicTexts = {
               "Der Proxy muss mit http:// oder https:// beginnen und darf keine Leerzeichen enthalten; wenn ein Benutzer nötig ist: http://benutzer:passwort@host:port.",
             ),
             tr(
-              "Il file PEM deve esistere: il kit controlla il percorso al salvataggio.",
-              "The PEM file must exist: the kit checks the path when you save.",
-              "Le fichier PEM doit exister : le kit contrôle le chemin à l'enregistrement.",
-              "Die PEM-Datei muss existieren: Das Kit prüft den Pfad beim Speichern.",
+              "Il file PEM deve esistere: il kit controlla il percorso a ogni salvataggio. Finché il valore non va bene compare il suo errore e il campo non viene salvato; il kit riprova alla modifica successiva.",
+              "The PEM file must exist: the kit checks the path at every save. As long as the value is not valid its error appears and the field is not saved; the kit tries again at the next change.",
+              "Le fichier PEM doit exister : le kit contrôle le chemin à chaque enregistrement. Tant que la valeur n'est pas valable, son erreur apparaît et le champ n'est pas enregistré ; le kit réessaie à la modification suivante.",
+              "Die PEM-Datei muss existieren: Das Kit prüft den Pfad bei jedem Speichern. Solange der Wert nicht gültig ist, erscheint sein Fehler und das Feld wird nicht gespeichert; das Kit versucht es bei der nächsten Änderung erneut.",
             ),
           ]}
         />
@@ -714,16 +810,16 @@ export const SETTINGS: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "I valori finiscono nelle variabili HTTPS_PROXY, HTTP_PROXY, NO_PROXY e NODE_EXTRA_CA_CERTS di tutti i programmi del kit.",
-              "The values end up in the HTTPS_PROXY, HTTP_PROXY, NO_PROXY and NODE_EXTRA_CA_CERTS variables of all the kit's programs.",
-              "Les valeurs vont dans les variables HTTPS_PROXY, HTTP_PROXY, NO_PROXY et NODE_EXTRA_CA_CERTS de tous les programmes du kit.",
-              "Die Werte landen in den Variablen HTTPS_PROXY, HTTP_PROXY, NO_PROXY und NODE_EXTRA_CA_CERTS aller Programme des Kits.",
+              "I valori finiscono nelle variabili HTTPS_PROXY, HTTP_PROXY, NO_PROXY e NODE_EXTRA_CA_CERTS di tutti i programmi del kit. Con un file PEM, data\\app\\ca-bundle.pem riunisce i certificati del sistema e i suoi, per gli strumenti che leggono un solo file (SSL_CERT_FILE, REQUESTS_CA_BUNDLE, PIP_CERT, CURL_CA_BUNDLE, GIT_SSL_CAINFO, CARGO_HTTP_CAINFO). Un file PEM dentro il kit è salvato relativo al kit: lo segue se cambia disco o cartella.",
+              "The values end up in the HTTPS_PROXY, HTTP_PROXY, NO_PROXY and NODE_EXTRA_CA_CERTS variables of all the kit's programs. With a PEM file, data\\app\\ca-bundle.pem joins the system's certificates and its own, for the tools that read a single file (SSL_CERT_FILE, REQUESTS_CA_BUNDLE, PIP_CERT, CURL_CA_BUNDLE, GIT_SSL_CAINFO, CARGO_HTTP_CAINFO). A PEM file inside the kit is saved relative to the kit: it follows it to another drive or folder.",
+              "Les valeurs vont dans les variables HTTPS_PROXY, HTTP_PROXY, NO_PROXY et NODE_EXTRA_CA_CERTS de tous les programmes du kit. Avec un fichier PEM, data\\app\\ca-bundle.pem réunit les certificats du système et les siens, pour les outils qui lisent un seul fichier (SSL_CERT_FILE, REQUESTS_CA_BUNDLE, PIP_CERT, CURL_CA_BUNDLE, GIT_SSL_CAINFO, CARGO_HTTP_CAINFO). Un fichier PEM dans le kit est enregistré relativement au kit : il le suit s'il change de disque ou de dossier.",
+              "Die Werte landen in den Variablen HTTPS_PROXY, HTTP_PROXY, NO_PROXY und NODE_EXTRA_CA_CERTS aller Programme des Kits. Mit einer PEM-Datei fasst data\\app\\ca-bundle.pem die Zertifikate des Systems und ihre eigenen zusammen, für die Werkzeuge, die nur eine Datei lesen (SSL_CERT_FILE, REQUESTS_CA_BUNDLE, PIP_CERT, CURL_CA_BUNDLE, GIT_SSL_CAINFO, CARGO_HTTP_CAINFO). Eine PEM-Datei im Kit wird relativ zum Kit gespeichert: Sie folgt ihm auf ein anderes Laufwerk oder in einen anderen Ordner.",
             ),
             tr(
-              "I download di Atollo usano il «Proxy HTTPS» (o, se vuoto, le variabili del PC o il proxy di sistema) e i certificati del sistema: per questo l'ispezione HTTPS aziendale funziona già, se il certificato aziendale è installato nel PC. Il file PEM serve a Node.js e agli strumenti che leggono NODE_EXTRA_CA_CERTS.",
-              "Atollo's downloads use the “HTTPS proxy” (or, if empty, the PC's variables or the system proxy) and the system's certificates: that is why company HTTPS inspection already works, if the company certificate is installed on the PC. The PEM file is for Node.js and the tools that read NODE_EXTRA_CA_CERTS.",
-              "Les téléchargements d'Atollo utilisent le « Proxy HTTPS » (ou, s'il est vide, les variables du PC ou le proxy du système) et les certificats du système : c'est pourquoi l'inspection HTTPS de l'entreprise fonctionne déjà, si le certificat de l'entreprise est installé sur le PC. Le fichier PEM sert à Node.js et aux outils qui lisent NODE_EXTRA_CA_CERTS.",
-              "Die Downloads von Atollo verwenden den „HTTPS-Proxy“ (oder, wenn leer, die Variablen des PCs oder den System-Proxy) und die Zertifikate des Systems: Deshalb funktioniert die HTTPS-Untersuchung der Firma bereits, wenn das Firmenzertifikat auf dem PC installiert ist. Die PEM-Datei ist für Node.js und die Werkzeuge, die NODE_EXTRA_CA_CERTS lesen.",
+              "Anche i download di Atollo usano queste impostazioni: il «Proxy HTTPS» (se vuoto il «Proxy HTTP», altrimenti le variabili del PC o il proxy di sistema), gli host di «Senza proxy per» raggiunti direttamente, e i certificati del sistema più quelli del file PEM. Se il certificato aziendale è già installato nel PC, il file PEM non serve. Un file senza certificati PEM viene rifiutato.",
+              "Atollo's own downloads use these settings too: the “HTTPS proxy” (if empty the “HTTP proxy”, otherwise the PC's variables or the system proxy), the “No proxy for” hosts reached directly, and the system's certificates plus those of the PEM file. If the company certificate is already installed on the PC, the PEM file is not needed. A file with no PEM certificate is refused.",
+              "Les téléchargements d'Atollo utilisent aussi ces paramètres : le « Proxy HTTPS » (s'il est vide le « Proxy HTTP », sinon les variables du PC ou le proxy du système), les hôtes de « Pas de proxy pour » joints directement, et les certificats du système plus ceux du fichier PEM. Si le certificat de l'entreprise est déjà installé sur le PC, le fichier PEM n'est pas nécessaire. Un fichier sans certificat PEM est refusé.",
+              "Auch die Downloads von Atollo verwenden diese Einstellungen: den „HTTPS-Proxy“ (wenn leer den „HTTP-Proxy“, sonst die Variablen des PCs oder den System-Proxy), die Hosts von „Kein Proxy für“ direkt, und die Zertifikate des Systems plus die der PEM-Datei. Ist das Firmenzertifikat schon auf dem PC installiert, braucht es die PEM-Datei nicht. Eine Datei ohne PEM-Zertifikat wird abgelehnt.",
             ),
             tr(
               "I file PAC (configurazione automatica del proxy) non sono supportati: chiedi l'indirizzo del proxy.",
@@ -968,10 +1064,10 @@ export const SETTINGS: TopicTexts = {
               "Wähle im Baum eine Basis oder eine Ergänzung und bearbeite die Felder.",
             ),
             tr(
-              "Premi «Salva» sulla barra delle schede. Una ricetta ufficiale cambiata mostra «Modificata».",
-              "Press “Save” on the tab bar. A changed official recipe shows “Modified”.",
-              "Appuyez sur « Enregistrer » dans la barre des onglets. Une recette officielle modifiée affiche « Modifiée ».",
-              "Klicke in der Registerkartenleiste auf „Speichern“. Ein geändertes offizielles Rezept zeigt „Geändert“.",
+              "Le istruzioni si salvano da sole poco meno di un secondo dopo l'ultima modifica: la barra delle schede mostra «Salvataggio…», poi «Salvato.». Una ricetta ufficiale cambiata mostra «Modificata».",
+              "The instructions save themselves a little under a second after the last edit: the tab bar shows “Saving…”, then “Saved.”. A changed official recipe shows “Modified”.",
+              "Les instructions s'enregistrent toutes seules un peu moins d'une seconde après la dernière modification : la barre des onglets affiche « Enregistrement… », puis « Enregistré. ». Une recette officielle modifiée affiche « Modifiée ».",
+              "Die Anweisungen speichern sich knapp eine Sekunde nach der letzten Änderung von selbst: Die Registerkartenleiste zeigt „Wird gespeichert…“, dann „Gespeichert.“. Ein geändertes offizielles Rezept zeigt „Geändert“.",
             ),
             tr(
               "Per tornare alla versione originale usa «Ripristina le istruzioni ufficiali»; una ricetta tua si toglie con «Togli».",
@@ -988,10 +1084,10 @@ export const SETTINGS: TopicTexts = {
       >
         <P>
           {tr(
-            "Scegli una base e delle aggiunte: la scheda mostra il piano completo che la procedura eseguirebbe (strumenti, comandi, database, .env, azioni), con le istruzioni come sono adesso, anche se non le hai ancora salvate. Non esegue niente.",
-            "Choose a base and some additions: the tab shows the complete plan the wizard would run (tools, commands, database, .env, actions), with the instructions as they are now, even if you have not saved them yet. It runs nothing.",
-            "Choisissez une base et des ajouts : l'onglet montre le plan complet que l'assistant exécuterait (outils, commandes, base de données, .env, actions), avec les instructions telles qu'elles sont maintenant, même si vous ne les avez pas encore enregistrées. Il n'exécute rien.",
-            "Wähle eine Basis und Ergänzungen: Die Registerkarte zeigt den vollständigen Plan, den der Assistent ausführen würde (Werkzeuge, Befehle, Datenbank, .env, Aktionen), mit den Anweisungen, wie sie jetzt sind, auch wenn du sie noch nicht gespeichert hast. Sie führt nichts aus.",
+            "Scegli una base e delle aggiunte: la scheda mostra il piano completo che la procedura eseguirebbe (strumenti, comandi, database, .env, azioni), con le istruzioni come sono adesso, anche se l'ultima modifica non è ancora salvata. Non esegue niente.",
+            "Choose a base and some additions: the tab shows the complete plan the wizard would run (tools, commands, database, .env, actions), with the instructions as they are now, even if the last edit is not saved yet. It runs nothing.",
+            "Choisissez une base et des ajouts : l'onglet montre le plan complet que l'assistant exécuterait (outils, commandes, base de données, .env, actions), avec les instructions telles qu'elles sont maintenant, même si la dernière modification n'est pas encore enregistrée. Il n'exécute rien.",
+            "Wähle eine Basis und Ergänzungen: Die Registerkarte zeigt den vollständigen Plan, den der Assistent ausführen würde (Werkzeuge, Befehle, Datenbank, .env, Aktionen), mit den Anweisungen, wie sie jetzt sind, auch wenn die letzte Änderung noch nicht gespeichert ist. Sie führt nichts aus.",
           )}
         </P>
       </Section>

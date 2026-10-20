@@ -74,14 +74,22 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
     })
 }
 
-/// The kit environment from `settings` and what is installed now, given to
-/// the app, the editor and the preparation task. Returns the language.
-pub(super) fn apply_env(state: &AppState, settings: Settings) -> &'static str {
+/// The kit environment from the saved settings and what is installed now,
+/// given to the app, the editor and the preparation task. Returns the
+/// language. One at a time, reading the file inside: an apply that started
+/// before a save cannot put back the old environment after it.
+pub(super) fn apply_env(state: &AppState) -> &'static str {
+    static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _one = ONE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let settings = Settings::load(&state.kit).settings;
     let lang = crate::i18n::resolve(
         settings.lang.as_deref(),
         state.host.get("ATOLLO_LANG"),
         crate::i18n::windows_locale().as_deref(),
     );
+    crate::net::ca::refresh(&state.kit, &settings);
     let env = KitEnv::build(&state.kit, &settings, lang, &state.host);
     if let Err(e) = env.create_dirs() {
         crate::log::warn(&format!("creating kit folders: {e}"));
@@ -137,6 +145,18 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> CmdResult<()> {
     open_in_browser(&url)
 }
 
+/// Opens Atollo's privacy policy (`docs/PRIVACY.md`, in the app's
+/// language) on github.com in the PC's browser.
+#[tauri::command]
+pub fn privacy_open<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let file = match state.lang() {
+        "en" => "PRIVACY.md".to_owned(),
+        lang => format!("PRIVACY.{lang}.md"),
+    };
+    crate::github::open_web(&format!("nabre/atollo/blob/main/docs/{file}")).or_fail_chain("browser")
+}
+
 /// The PC's browser.
 pub(super) fn open_in_browser(url: &str) -> CmdResult<()> {
     crate::os::jobs::open_url(url).or_fail_chain("browser")
@@ -189,31 +209,25 @@ pub fn settings_get<R: Runtime>(
 
 /// Saves the settings and applies them: the kit's environment is rebuilt
 /// for consoles, agents, installations and the next start of the editor.
-/// `gemini`: `None` keeps the saved key, `Some("")` removes it.
+/// The page calls it for each change (D-137). `gemini`: `None` keeps the
+/// saved key, `Some("")` removes it. The Tools page's «Piattaforma» and the
+/// keys of a newer version stay as they are on disk.
 #[tauri::command]
 pub fn settings_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-    mut settings: Settings,
+    updater: State<'_, Arc<Updater>>,
+    settings: Settings,
     gemini: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = &state.kit;
-    settings.gemini_api_key = match gemini {
-        None => Settings::load(kit).settings.gemini_api_key,
-        Some(k) if k.trim().is_empty() => None,
-        Some(k) => Some(k.trim().to_owned()),
-    };
-    // The Tools page's own choice (`tools_target_set`), not this page's.
-    settings.tools_target = Settings::load(kit).settings.tools_target;
+    let mut settings = settings;
     for v in [
         &mut settings.lang,
         &mut settings.network.https_proxy,
         &mut settings.network.http_proxy,
         &mut settings.network.no_proxy,
         &mut settings.network.extra_ca_certs,
-        &mut settings.python_version,
-        &mut settings.php_version,
         &mut settings.rust_toolchain,
     ] {
         *v = v
@@ -221,11 +235,48 @@ pub fn settings_set<R: Runtime>(
             .map(|s| s.trim().to_owned())
             .filter(|s| !s.is_empty());
     }
-    if let Err((source, arg)) = settings.validate() {
-        return Err(tr(&state, source, &[&arg]).into());
+    // A PEM file written relative to the kit's folder.
+    if let Some(ca) = &mut settings.network.extra_ca_certs {
+        if std::path::Path::new(ca.as_str()).is_relative() {
+            *ca = crate::fsx::join_rel(state.kit.root(), ca)
+                .display()
+                .to_string();
+        }
     }
-    settings.save(kit).or_fail_chain("settings")?;
-    let lang = apply_env(&state, settings);
+    // Automatic updates turned on: the check runs now, not at the next start.
+    let mut update_now = false;
+    Settings::update(&state.kit, |saved, _problem| {
+        update_now = settings.auto_update && !saved.auto_update;
+        settings.gemini_api_key = match gemini {
+            None => saved.gemini_api_key.take(),
+            Some(k) if k.trim().is_empty() => None,
+            Some(k) => Some(k.trim().to_owned()),
+        };
+        settings.tools_target = saved.tools_target.take();
+        settings.other = std::mem::take(&mut saved.other);
+        settings.network.other = std::mem::take(&mut saved.network.other);
+        if let Err((source, arg)) = settings.validate() {
+            return Err(CmdError::from(tr(&state, source, &[&arg])));
+        }
+        *saved = settings;
+        Ok(())
+    })?;
+    if update_now && state.host.get("ATOLLO_NO_UPDATE").is_none() {
+        let (kit, token, updater) = (
+            state.kit.clone(),
+            github_token(&state.host),
+            Arc::clone(&updater),
+        );
+        std::thread::spawn(move || {
+            if let Ok(net) = crate::net::Net::new(&Settings::load(&kit).settings, token) {
+                updater.check(&net);
+            }
+        });
+    }
+    let lang = apply_env(&state);
+    // Every window, the editor's too, light or dark at once.
+    tauri::Manager::app_handle(&webview)
+        .set_theme(Settings::load(&state.kit).settings.theme.window());
     crate::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
 }

@@ -239,7 +239,7 @@ fn git_is_staged_where_its_target_cannot_run() {
     // `should_stage` on this host, for a kit of every target.
     let tmp = crate::kit::tests::TempDir::new("git-stage");
     let git = crate::setup::catalog::Catalog::get().find("git").unwrap();
-    let net = crate::net::Net::new(&Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
     let env = crate::env::KitEnv::default();
     let cancel = std::sync::atomic::AtomicBool::new(false);
     for target in Target::ALL {

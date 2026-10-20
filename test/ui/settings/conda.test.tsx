@@ -21,11 +21,11 @@ const SETTINGS: Settings = {
   network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
   geminiApiKey: null,
   autoUpdate: true,
-  pythonVersion: null,
-  phpVersion: null,
   rustToolchain: null,
   programTemp: "auto",
+  theme: "system",
   keepCondaPackages: true,
+  toolsTarget: null,
 };
 
 const KEPT: CondaKept = { applies: true, bytes: 412 * 1024 * 1024, lists: ["r@4.5", "ruby@3.4"] };

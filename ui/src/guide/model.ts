@@ -572,7 +572,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: VscLibrary,
     keywords:
-      "versioni linee multi-versione aggiungi versione bloccata più recente composer versions lines multi-version add pinned latest versions lignes plusieurs versions ajouter verrouillée plus récente versionen linien mehrere versionen hinzufügen gesperrt neueste",
+      "versioni linee multi-versione aggiungi versione bloccata più recente composer versions lines multi-version add pinned latest versions lignes plusieurs versions ajouter verrouillée plus récente versionen linien mehrere versionen hinzufügen gesperrt neueste python php rust compilatore compiler compilateur msvc gnu",
     targetPage: "components",
   },
   {
@@ -618,7 +618,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: VscGithub,
     keywords:
-      "github account accesso login gh codice dispositivo repository clona permesso delete_repo github account sign in device code permission compte connexion code appareil autorisation konto anmeldung gerätecode berechtigung",
+      "github account accesso login gh codice dispositivo repository clona permesso delete_repo github account sign in device code permission compte connexion code appareil autorisation konto anmeldung gerätecode berechtigung git identity identità user.name user.email noreply firma commit signs safe.directory",
     targetPage: "settings",
   },
   {
@@ -633,14 +633,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Lingua, file temporanei, aggiornamento automatico, chiave di Gemini, versioni da installare e le informazioni sul kit.",
-        "Language, temporary files, automatic updates, Gemini key, versions to install and the information about the kit.",
-        "Langue, fichiers temporaires, mise à jour automatique, clé Gemini, versions à installer et les informations sur le kit.",
-        "Sprache, temporäre Dateien, automatische Aktualisierung, Gemini-Schlüssel, zu installierende Versionen und die Informationen zum Kit.",
+        "Salvataggio automatico, lingua, file temporanei, aggiornamento automatico, chiave di Gemini, versioni da installare, privacy e le informazioni sul kit.",
+        "Automatic saving, language, temporary files, automatic updates, Gemini key, versions to install, privacy and the information about the kit.",
+        "Enregistrement automatique, langue, fichiers temporaires, mise à jour automatique, clé Gemini, versions à installer, confidentialité et les informations sur le kit.",
+        "Automatisches Speichern, Sprache, temporäre Dateien, automatische Aktualisierung, Gemini-Schlüssel, zu installierende Versionen, Datenschutz und die Informationen zum Kit.",
       ),
     icon: VscSettingsGear,
     keywords:
-      "impostazioni lingua temporanei aggiornamento gemini versioni python php rust il kit settings language temporary update paramètres langue temporaires mise à jour einstellungen sprache temporär aktualisierung",
+      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento gemini il kit privacy telemetria salvataggio settings language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
   },
   {

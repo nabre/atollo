@@ -24,7 +24,6 @@ use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::hash_in_list;
 use crate::net::verify::Expect;
-use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
 /// A progress sink that only logs, for steps that run inside hooks.
@@ -693,31 +692,13 @@ impl Installer for Php {
     }
 
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        // The newest line; others come from the Tools page (D-80, D-137).
         let target = target_of(ctx, component);
-        let branch = Settings::load(ctx.kit).settings.php_version;
         if !target.is_windows() {
-            // The line of the settings when it has a build with a fixed hash
-            // here (a kit prepared on Windows may name one that has none).
-            let pinned = unix_php_versions(php_build_pins(), catalog_pins(), target);
-            let line = branch
-                .as_deref()
-                .filter(|b| pinned.iter().any(|(l, _)| l == b));
-            if let (Some(b), None) = (branch.as_deref(), line) {
-                crate::log::warn(&format!(
-                    "PHP {b} has no build for {target}: the newest one is installed"
-                ));
-            }
-            return unix_php_release(ctx, target, line);
+            return unix_php_release(ctx, target, None);
         }
         let releases: Value = ctx.net.json(&format!("{PHP_RELEASES}/releases.json"))?;
-        let (version, path, sha) = match pick_php(&releases, branch.as_deref()) {
-            Ok(found) => found,
-            Err(e) => branch
-                .as_deref()
-                .and_then(|b| PHP_ARCHIVES.iter().find(|(l, _, _, _)| *l == b))
-                .map(|(_, v, p, s)| ((*v).to_owned(), (*p).to_owned(), (*s).to_owned()))
-                .ok_or(e)?,
-        };
+        let (version, path, sha) = pick_php(&releases, None)?;
         php_release(ctx, version, path, sha)
     }
 

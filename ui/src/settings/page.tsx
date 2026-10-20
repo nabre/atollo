@@ -2,10 +2,11 @@
 // out as the Projects page: the side bar lists the sections (language,
 // network, Gemini key, versions of Python, PHP and Rust, the app's updates,
 // the GitHub account, where the kit is) and the tree of the new-project
-// wizard's frameworks (frameworks/); each opens in a tab of the editor,
-// Save is on the tab bar. The search on top shows every setting that
-// matches. Replaces nabre/dev-kit's proxy.cmd.
-import { useCallback, useEffect, useState, type ReactNode, type SyntheticEvent } from "react";
+// wizard's frameworks (frameworks/); each opens in a tab of the editor.
+// Every change is saved and applied as it is made, with no Save button
+// (D-137): the tab bar says when. The search on top shows every setting
+// that matches. Replaces nabre/dev-kit's proxy.cmd.
+import { useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   VscAdd,
@@ -20,10 +21,10 @@ import {
   VscNewFolder,
   VscPackage,
   VscSettings,
-  VscVersions,
+  VscShield,
 } from "react-icons/vsc";
-import { editorRestart, settingsGet, settingsSet, type Settings, type SettingsView, type AppInfo } from "../api";
-import { GithubAccount } from "../github";
+import { editorRestart, type AppInfo } from "../api";
+import { GithubAccount, GitIdentitySetting } from "../github";
 import type { GuideTopicId } from "../guide";
 import { BrandSymbol } from "../brand";
 import { useAction } from "../hooks";
@@ -41,7 +42,6 @@ import {
 } from "../frameworks";
 import { t } from "../i18n";
 import {
-  Button,
   EditorTabs,
   IconButton,
   Link,
@@ -60,19 +60,23 @@ import {
   Watermark,
   type Tab,
 } from "../workbench";
-import { KitInfo, Updates } from "./about";
-import { AgentSettings, GeneralSettings, NetworkSettings, VersionSettings } from "./sections";
+import { KitInfo, Privacy, Updates } from "./about";
+import { useSettingsAutosave } from "./autosave";
+import { AgentSettings, GeneralSettings, NetworkSettings } from "./sections";
 
-type SectionId = "general" | "network" | "agents" | "langs" | "update" | "github" | "kit";
+/** The wait after an edit of the frameworks before saving it. */
+const FRAMEWORKS_DELAY = 800;
+
+type SectionId = "general" | "network" | "agents" | "update" | "github" | "privacy" | "kit";
 
 function sections(): { id: SectionId; label: string; icon: IconType }[] {
   return [
     { id: "general", label: t("Generale"), icon: VscSettings },
     { id: "network", label: t("Rete"), icon: VscGlobe },
     { id: "agents", label: t("Agenti"), icon: VscHubot },
-    { id: "langs", label: t("Versioni"), icon: VscVersions },
     { id: "update", label: t("Aggiornamenti"), icon: VscCloudDownload },
     { id: "github", label: t("Account GitHub"), icon: VscGithub },
+    { id: "privacy", label: t("Privacy"), icon: VscShield },
     { id: "kit", label: t("Il kit"), icon: VscInfo },
   ];
 }
@@ -90,13 +94,18 @@ export function SettingsPage({
   info: AppInfo | null;
   onGuide?: (topic: GuideTopicId) => void;
 }) {
-  const [view, setView] = useState<SettingsView | null>(null);
-  const [s, setS] = useState<Settings | null>(null);
-  const [gemini, setGemini] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const {
+    view,
+    s,
+    loadError,
+    error: saveError,
+    status,
+    needsRestart,
+    set,
+    net,
+    setGemini,
+  } = useSettingsAutosave(onSaved);
   const [search, setSearch] = useState("");
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["settings", "frameworks"]));
   const tabs = useTabs(["general"]);
   const { busy, error, run } = useAction();
@@ -104,21 +113,17 @@ export function SettingsPage({
   const loadFrameworks = fw.load;
   useEffect(loadFrameworks, [loadFrameworks]);
 
-  const load = useCallback(() => {
-    settingsGet().then(
-      (v) => {
-        setView(v);
-        setS(v.settings);
-        setGemini(null);
-        setDirty(false);
-        setLoadError(null);
-      },
-      (e: unknown) => {
-        setLoadError(String(e));
-      },
-    );
-  }, []);
-  useEffect(load, [load]);
+  // The frameworks saved a moment after the last edit.
+  const saveFrameworks = fw.save;
+  useEffect(() => {
+    if (!fw.dirty) return;
+    const timer = window.setTimeout(() => {
+      run("frameworks", saveFrameworks);
+    }, FRAMEWORKS_DELAY);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [fw.dirty, saveFrameworks, run]);
 
   const toggle = (id: PaneId) => {
     setPanes((current) => {
@@ -132,26 +137,6 @@ export function SettingsPage({
     tabs.show(tab);
     setSearch("");
   };
-  const set = (patch: Partial<Settings>) => {
-    if (!s) return;
-    setSaved(false);
-    setDirty(true);
-    setS({ ...s, ...patch });
-  };
-  const net = (patch: Partial<Settings["network"]>) => {
-    if (s) set({ network: { ...s.network, ...patch } });
-  };
-  const submit = (e: SyntheticEvent) => {
-    e.preventDefault();
-    run("save", async () => {
-      if (s && (dirty || gemini !== null)) await settingsSet(s, gemini);
-      await fw.save();
-      setSaved(true);
-      load();
-      onSaved();
-    });
-  };
-
   const all = sections();
 
   /** A section of the settings as its group (a tab, or a search result). */
@@ -159,28 +144,11 @@ export function SettingsPage({
     if (!s || !view) return null;
     switch (id) {
       case "general":
-        return <GeneralSettings key={id} s={s} set={set} />;
+        return <GeneralSettings key={id} s={s} set={set} platform={info?.platform} />;
       case "network":
-        return <NetworkSettings key={id} s={s} net={net} />;
+        return <NetworkSettings key={id} s={s} net={net} platform={info?.platform} />;
       case "agents":
-        return (
-          <AgentSettings
-            key={id}
-            view={view}
-            gemini={gemini}
-            onGemini={(key) => {
-              setSaved(false);
-              setDirty(true);
-              setGemini(key);
-            }}
-            onRemoveKey={() => {
-              setSaved(false);
-              setGemini("");
-            }}
-          />
-        );
-      case "langs":
-        return <VersionSettings key={id} s={s} set={set} />;
+        return <AgentSettings key={id} view={view} onGemini={setGemini} />;
       case "update":
         return <Updates key={id} />;
       case "github":
@@ -189,8 +157,11 @@ export function SettingsPage({
             <SettingItem title={t("Account GitHub del kit")} keywords="github git gh login">
               <GithubAccount />
             </SettingItem>
+            <GitIdentitySetting />
           </SettingsGroup>
         );
+      case "privacy":
+        return <Privacy key={id} />;
       case "kit":
         return info ? <KitInfo key={id} info={info} /> : null;
     }
@@ -329,42 +300,36 @@ export function SettingsPage({
     </>
   );
 
-  const unsaved = dirty || gemini !== null || fw.dirty;
+  const saving = status === "saving" || busy === "frameworks" || fw.dirty;
   return (
     <ViewContainer id="settings" side={side}>
-      <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         <EditorTabs
           tabs={tabs.open.map(tabOf)}
           active={search ? null : tabs.active}
           onSelect={open}
           onClose={tabs.close}
           actions={
-            <>
-              {saved && !unsaved && (
-                <span role="status" className="px-1 text-vsc-success">
-                  {t("Salvato.")}
-                </span>
-              )}
-              <Button variant="primary" small submit busy={busy === "save"} disabled={!unsaved}>
-                {t("Salva")}
-              </Button>
-            </>
+            <span role="status" className={`px-2 ${saving ? "text-vsc-desc" : "text-vsc-success"}`}>
+              {saving ? t("Salvataggio…") : status === "saved" ? t("Salvato.") : ""}
+            </span>
           }
         />
         <div className="min-h-0 flex-1 overflow-y-auto pb-10">
-          {(loadError ?? view?.problem ?? error ?? (saved && editorRunning)) && (
+          {(loadError ?? view?.problem ?? saveError ?? error ?? (needsRestart && editorRunning)) && (
             <div className="space-y-2 px-[14px] pt-3">
               <ErrorLine error={loadError} />
               {view?.problem && (
                 <ErrorLine
                   error={t(
-                    "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.",
+                    "Le impostazioni in {0} non sono leggibili: uso quelle predefinite. Il file verrà riscritto alla prima modifica.",
                     view.problem,
                   )}
                 />
               )}
+              <ErrorLine error={saveError} />
               <ErrorLine error={error} />
-              {saved && editorRunning && (
+              {needsRestart && editorRunning && (
                 <Notice tone="info">
                   {t("Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.")}{" "}
                   <Link
@@ -405,7 +370,7 @@ export function SettingsPage({
             )}
           </SettingsSearch>
         </div>
-      </form>
+      </div>
     </ViewContainer>
   );
 }

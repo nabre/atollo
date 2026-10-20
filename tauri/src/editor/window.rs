@@ -665,6 +665,13 @@ pub fn open<R: Runtime>(
             &crate::editor::ext::hidden_of(&app.state::<crate::commands::AppState>().kit, folder),
         ))
         .data_directory(data_dir.to_path_buf())
+        // Light or dark as the settings say (D-137); VSCodium follows it.
+        .theme(
+            crate::settings::Settings::load(&app.state::<crate::commands::AppState>().kit)
+                .settings
+                .theme
+                .window(),
+        )
         .zoom_hotkeys_enabled(false)
         .on_navigation(move |u| {
             if same_origin(u, port) {

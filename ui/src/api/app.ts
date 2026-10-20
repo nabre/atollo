@@ -70,6 +70,17 @@ export function urlOpen(url: string): Promise<void> {
   return act("url_open", { url });
 }
 
+/** Rust's compiler on Windows (Tools › Rust, D-137): "msvc", or null for
+ * the default (GNU). From the next install or update of Rust. */
+export function rustToolchainSet(toolchain: "msvc" | null): Promise<void> {
+  return act("rust_toolchain_set", { toolchain });
+}
+
+/** Atollo's privacy policy, in the app's language, in the PC's browser. */
+export function privacyOpen(): Promise<void> {
+  return act("privacy_open");
+}
+
 export interface Settings {
   lang: "it" | "en" | "fr" | "de" | null;
   network: {
@@ -82,23 +93,24 @@ export interface Settings {
   /** Never sent to the interface: see `geminiKeySet`. */
   geminiApiKey: string | null;
   autoUpdate: boolean;
-  pythonVersion: string | null;
-  phpVersion: string | null;
   rustToolchain: "gnu" | "msvc" | null;
   /** `TEMP` of the programs; applies to the consoles opened after saving. */
   programTemp: "auto" | "kit" | "system";
+  /** Light or dark for every window, the editor's too (D-137). */
+  theme: "system" | "light" | "dark";
   /** Keeps the packages of the conda environments to reinstall them
    * without the network after a move (D-118). */
   keepCondaPackages: boolean;
   /** «Piattaforma» of the Tools page (D-121): kept by `settings_set`,
    * written only by `tools_target_set`. */
-  toolsTarget?: string | null;
+  toolsTarget: string | null;
 }
 
 export interface SettingsView {
   settings: Settings;
   geminiKeySet: boolean;
-  /** The file could not be read: defaults shown. */
+  /** The file could not be read: defaults shown, the file rewritten at the
+   * first change. */
   problem: string | null;
 }
 
@@ -108,11 +120,11 @@ const SAMPLE_SETTINGS: SettingsView = {
     network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
     geminiApiKey: null,
     autoUpdate: true,
-    pythonVersion: null,
-    phpVersion: null,
     rustToolchain: null,
     programTemp: "auto",
+    theme: "system",
     keepCondaPackages: true,
+    toolsTarget: null,
   },
   geminiKeySet: false,
   problem: null,
@@ -122,7 +134,8 @@ export function settingsGet(): Promise<SettingsView> {
   return query<SettingsView>("settings_get", SAMPLE_SETTINGS);
 }
 
-/** `gemini`: null keeps the saved key, "" removes it. */
+/** Saves and applies: the Settings page calls it for each change (D-137).
+ * `gemini`: null keeps the saved key, "" removes it. */
 export function settingsSet(settings: Settings, gemini: string | null): Promise<void> {
   return act("settings_set", { settings, gemini });
 }
