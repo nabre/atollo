@@ -500,17 +500,20 @@ LAYOUT = {
 # App measure token -> value: the height or width VSCodium gives that part
 # in the modern UI, as a VSCodium variable where it has one. The others are
 # written in its CSS or code:
-# - titlebar: TitlebarPart.minimumHeight with the command center (30px
-#   without), the .window-appicon's width;
+# - titlebar: TitlebarPart.minimumHeight without the command center, as
+#   Atollo's title bar (35px with it, the .window-appicon's width);
 # - window-control: .window-controls-container>.window-icon;
 # - title: .modern-ui.monaco-workbench .part>.title (35px in the classic UI),
 #   the side bar's and the panel's title with its tabs;
 # - row: the lists' and trees' row (sidebarSize22 in workbench.js);
 # - tabs: the editor's tab bar, EDITOR_TAB_HEIGHT.modernUI (35px classic),
 #   a tab of --editor-group-tab-height and 4px above and below;
-# - statusbar: .monaco-workbench .part.statusbar.
+# - statusbar: .monaco-workbench .part.statusbar, to which the floating
+#   parts add 6px below (StatusbarPart.FLOATING_BOTTOM_PADDING);
+# - statusbar-item-margin, statusbar-item-padding: .statusbar-item-label's
+#   margin and padding beside the text.
 SIZE_TOKENS = {
-    "titlebar": "35px",
+    "titlebar": "30px",
     "window-control": "46px",
     "activitybar": "var(--activity-bar-width)",
     "activitybar-action": "var(--activity-bar-action-height)",
@@ -522,6 +525,8 @@ SIZE_TOKENS = {
     "tabs": "32px",
     "tab": "var(--editor-group-tab-height)",
     "statusbar": "22px",
+    "statusbar-item-margin": "3px",
+    "statusbar-item-padding": "5px",
 }
 
 
