@@ -3,6 +3,9 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, previewLang, query } from "./core";
+// The preview's version is the app's (ui/package.json, as tauri/Cargo.toml):
+// the real app reads its own from Tauri.
+import { version as PREVIEW_VERSION } from "../../package.json";
 
 export interface AppInfo {
   version: string;
@@ -34,7 +37,7 @@ export interface AppInfo {
 }
 
 const SAMPLE_INFO: AppInfo = {
-  version: "0.1.0",
+  version: PREVIEW_VERSION,
   root: "E:\\Atollo",
   data: "E:\\Atollo\\data",
   projects: "E:\\Atollo\\projects",
@@ -154,7 +157,7 @@ export interface UpdateStatus {
 
 export function updateStatus(): Promise<UpdateStatus> {
   return query<UpdateStatus>("update_status", {
-    current: "0.1.0",
+    current: PREVIEW_VERSION,
     latest: null,
     staged: null,
     checking: false,

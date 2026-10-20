@@ -182,7 +182,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("layout-sidebar-left"),
     keywords:
-      "window finestra barra attività stato pannello schede layout interfaccia ctrl+p activity bar status bar sidebar tabs panel fenêtre barre d'activité barre d'état panneau onglets fenster aktivitätsleiste statusleiste seitenleiste tabs bereich",
+      "window finestra barra attività stato pannello schede layout interfaccia ctrl+p activity bar status bar sidebar tabs panel fenêtre barre d'activité barre d'état panneau onglets fenster aktivitätsleiste statusleiste seitenleiste tabs bereich mostra nascondi pannello show hide panel afficher masquer panneau anzeigen ausblenden",
   },
   {
     id: "first-project",
@@ -405,12 +405,12 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       tr(
         "Servire una cartella come sito: file statici, PHP, Caddy o Apache. I server condivisi della pagina «Server Web», i domini .localhost e gli alias.",
         "Serving a folder as a website: static files, PHP, Caddy or Apache. The shared servers of the “Web Servers” page, .localhost domains and aliases.",
-        "Servir un dossier comme site : fichiers statiques, PHP, Caddy ou Apache. Les serveurs partagés de la page « Serveurs Web », les domaines .localhost et les alias.",
+        "Servir un dossier comme site : fichiers statiques, PHP, Caddy ou Apache. Les serveurs partagés de la page « Serveurs web », les domaines .localhost et les alias.",
         "Einen Ordner als Website bereitstellen: statische Dateien, PHP, Caddy oder Apache. Die gemeinsamen Server der Seite „Webserver“, die .localhost-Domains und die Aliasse.",
       ),
     icon: codicon("globe"),
     keywords:
-      "sito web server caddy apache pool profilo localhost dominio alias php lan rete locale website web server domain local network site web serveur domaine réseau local website webserver domain lokales netzwerk",
+      "sito web server caddy apache pool profilo localhost dominio alias php lan rete locale website web server domain local network site web serveur domaine réseau local website webserver domain lokales netzwerk conf.d",
     targetPage: "servers",
   },
   {
@@ -595,10 +595,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Salvataggio automatico, lingua, file temporanei, aggiornamento automatico, chiave di Gemini, versioni da installare, privacy e le informazioni sul kit.",
-        "Automatic saving, language, temporary files, automatic updates, Gemini key, versions to install, privacy and the information about the kit.",
-        "Enregistrement automatique, langue, fichiers temporaires, mise à jour automatique, clé Gemini, versions à installer, confidentialité et les informations sur le kit.",
-        "Automatisches Speichern, Sprache, temporäre Dateien, automatische Aktualisierung, Gemini-Schlüssel, zu installierende Versionen, Datenschutz und die Informationen zum Kit.",
+        "Salvataggio automatico e le sette sezioni: lingua e tema, file temporanei, rete, chiave di Gemini, aggiornamento automatico, chi firma i commit, privacy e le informazioni sul kit.",
+        "Automatic saving and the seven sections: language and theme, temporary files, network, Gemini key, automatic updates, who signs the commits, privacy and the information about the kit.",
+        "Enregistrement automatique et les sept sections : langue et thème, fichiers temporaires, réseau, clé Gemini, mise à jour automatique, qui signe les commits, confidentialité et les informations sur le kit.",
+        "Automatisches Speichern und die sieben Abschnitte: Sprache und Design, temporäre Dateien, Netzwerk, Gemini-Schlüssel, automatische Aktualisierung, wer die Commits signiert, Datenschutz und die Informationen zum Kit.",
       ),
     icon: codicon("settings-gear"),
     keywords:
