@@ -37,6 +37,7 @@ import {
   EditorHeader,
   EditorSection,
   IconButton,
+  InlineConfirm,
   List,
   ListItem,
   Notice,
@@ -102,6 +103,8 @@ function PoolDetails({
   onRemove?: (() => void) | undefined;
   onOptions?: ((keepAlive: boolean, autostart: boolean) => void) | undefined;
 }) {
+  // "Elimina profilo" asks first (UX-V5-02).
+  const [confirmRemove, setConfirmRemove] = useState(false);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
@@ -134,11 +137,50 @@ function PoolDetails({
             {!pool.orphan && (
               <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
             )}
-            {onRemove && <ActionButton icon={VscTrash} label={t("Elimina profilo")} busy={busy} onClick={onRemove} />}
+            {onRemove && (
+              <ActionButton
+                icon={VscTrash}
+                label={t("Elimina profilo")}
+                busy={busy}
+                onClick={() => {
+                  setConfirmRemove(true);
+                }}
+              />
+            )}
           </>
         }
       />
       <EditorBody>
+        {onRemove && confirmRemove && (
+          <InlineConfirm
+            row
+            question={t("Eliminare il profilo «{0}»?", pool.name)}
+            onCancel={() => {
+              setConfirmRemove(false);
+            }}
+            actions={
+              <>
+                <ActionButton
+                  icon={VscTrash}
+                  label={t("Elimina profilo")}
+                  primary
+                  busy={busy}
+                  onClick={() => {
+                    setConfirmRemove(false);
+                    onRemove();
+                  }}
+                />
+                <Button
+                  onClick={() => {
+                    setConfirmRemove(false);
+                  }}
+                >
+                  {t("Annulla")}
+                </Button>
+              </>
+            }
+          />
+        )}
         {pool.orphan && (
           <Notice tone="warning">
             {t("Questo pool è ancora acceso ma non corrisponde più ai progetti e ai profili: fermalo.")}

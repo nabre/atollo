@@ -1,7 +1,7 @@
 // The Server Web page (R3-4): two web actions of one project in the same
 // pool are two VirtualHosts, each with its own row (key project:action).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { WebServersView } from "../../ui/src/api/servers";
 import { ServersPage } from "../../ui/src/servers";
 
@@ -153,6 +153,31 @@ describe("ServersPage", () => {
     expect(screen.getByText(/non corrisponde più ai progetti/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Ricarica configurazione" })).toBeNull();
     expect(screen.getAllByRole("button", { name: "Ferma" }).length).toBeGreaterThan(0);
+  });
+
+  it("asks before deleting a profile (UX-V5-02)", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(VIEW);
+      if (cmd === "server_remove") return Promise.resolve(null);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Elimina profilo" }));
+    expect(invoke).not.toHaveBeenCalledWith("server_remove", expect.anything());
+    // Esc keeps the profile
+    const ask = screen.getByRole("alertdialog", { name: "Eliminare il profilo «Legacy»?" });
+    fireEvent.keyDown(ask, { key: "Escape" });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Elimina profilo" }));
+    const confirm = within(screen.getByRole("alertdialog"));
+    await act(async () => {
+      fireEvent.click(confirm.getByRole("button", { name: "Elimina profilo" }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(invoke).toHaveBeenCalledWith("server_remove", { id: "legacy" });
   });
 
   it("shows a Caddy pool as Caddy", async () => {

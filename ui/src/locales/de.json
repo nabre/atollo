@@ -427,7 +427,7 @@
   "Limiti e consumi": "Limits und Verbrauch",
   "Chiudi il pannello": "Panel schließen",
   "Cerca nelle impostazioni": "Einstellungen durchsuchen",
-  "Attività: progetti avviati, database, installazioni": "Aktivität: gestartete Projekte, Datenbanken, Installationen",
+  "Attività: progetti avviati, database, server web, installazioni": "Aktivität: gestartete Projekte, Datenbanken, Webserver, Installationen",
   "Aggiornamenti": "Updates",
   "Condiviso fra gli agenti": "Von den Agenten geteilt",
   "Apre {0} nel progetto {1}": "Öffnet {0} im Projekt {1}",
@@ -912,5 +912,9 @@
   "Sempre installati: l'editor, la shell del kit, GitHub CLI e Git.": "Immer installiert: der Editor, die Shell des Kits, GitHub CLI und Git.",
   "Sistema ed editor": "System und Editor",
   "Strumenti di sviluppo": "Entwicklungswerkzeuge",
-  "Tutti i tipi": "Alle Typen"
+  "Tutti i tipi": "Alle Typen",
+  "In esecuzione: {0}": "Läuft: {0}",
+  "Ferma tutto": "Alle beenden",
+  "Fermare le azioni dei progetti, i database e i server web in esecuzione?": "Die laufenden Projektaktionen, Datenbanken und Webserver beenden?",
+  "Eliminare il profilo «{0}»?": "Profil „{0}“ löschen?"
 }
