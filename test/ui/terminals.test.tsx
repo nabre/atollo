@@ -20,6 +20,7 @@ const VIEW: TerminalsView = {
       tools: { php: "7.4" },
       builtin: false,
       missing: [],
+      replaced: [],
     },
   ],
   tools: [{ id: "php", name: "PHP", group: "languages", lines: ["8.4", "7.4"], versions: {} }],
