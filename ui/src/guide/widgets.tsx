@@ -4,25 +4,11 @@
 // tables and quick folder openers.
 import { createContext, useContext, useId, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
-import {
-  VscArrowRight,
-  VscCheck,
-  VscChevronRight,
-  VscClose,
-  VscCopy,
-  VscFileCode,
-  VscFolderOpened,
-  VscInfo,
-  VscLightbulb,
-  VscScreenFull,
-  VscTools,
-  VscWarning,
-} from "react-icons/vsc";
 import { folderOpen, type AppInfo, type ComponentInfo } from "../api";
 import { useCopy } from "../hooks";
 import { lang, t } from "../i18n";
 import { Tag } from "../tags";
-import { Button, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
+import { Button, Codicon, codicon, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
 import { sectionCode, topicOf, tr, type AppPageTarget, type GuideTopicId } from "./model";
 
 /** A screenshot of the app from /guide/<lang>/*.webp (taken in the browser preview,
@@ -58,7 +44,7 @@ export function GuideShot({
             }}
           >
             <span className="inline-flex items-center gap-1">
-              <VscScreenFull size={12} aria-hidden="true" />
+              <Codicon name="screen-full" size={12} />
               {tr("Ingrandisci", "Zoom", "Agrandir", "Vergrößern")}
             </span>
           </Button>
@@ -88,7 +74,7 @@ export function GuideShot({
           {example && (
             <div className="rounded border-l-2 border-l-vsc-focus bg-vsc-bg/70 px-3 py-2 text-vsc-fg">
               <div className="mb-0.5 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
-                <VscInfo size={14} aria-hidden="true" className="text-vsc-info" />
+                <Codicon name="info" size={14} className="text-vsc-info" />
                 <span>
                   {tr(
                     "Esempio pratico nello screenshot",
@@ -158,7 +144,7 @@ function ZoomDialog({
             <span className="truncate font-semibold text-vsc-settings-header">{title}</span>
             <Tag>{scenario}</Tag>
           </div>
-          <IconButton icon={VscClose} label={t("Chiudi")} onClick={onClose} />
+          <IconButton icon={codicon("close")} label={t("Chiudi")} onClick={onClose} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto bg-black/40 p-2">
           <img src={`/guide/${lang()}/${src}`} alt={title} className="mx-auto block max-w-full rounded" />
@@ -176,7 +162,7 @@ export function GuideCode({ title, path, code }: { title: string; path?: string;
     <div className="overflow-hidden rounded border border-vsc-border bg-vsc-sidebar/60">
       <div className="flex items-center justify-between gap-2 border-b border-vsc-border bg-vsc-sidebar px-3 py-1 text-[12px]">
         <div className="flex min-w-0 items-center gap-2">
-          <VscFileCode size={14} aria-hidden="true" className="shrink-0 text-vsc-desc" />
+          <Codicon name="file-code" size={14} className="shrink-0 text-vsc-desc" />
           <span className="truncate font-semibold text-vsc-settings-header">{title}</span>
           {path && <code className="truncate font-mono text-[11px] text-vsc-desc">{path}</code>}
         </div>
@@ -188,7 +174,7 @@ export function GuideCode({ title, path, code }: { title: string; path?: string;
           }}
         >
           <span className="inline-flex items-center gap-1">
-            {copied ? <VscCheck size={12} aria-hidden="true" /> : <VscCopy size={12} aria-hidden="true" />}
+            {copied ? <Codicon name="check" size={12} /> : <Codicon name="copy" size={12} />}
             {copied ? t("Copiata") : t("Copia")}
           </span>
         </Button>
@@ -233,7 +219,7 @@ export function GuideCard({
           <Button small variant="secondary" onClick={onAction}>
             <span className="inline-flex items-center gap-1">
               {actionLabel}
-              <VscArrowRight size={12} aria-hidden="true" />
+              <Codicon name="arrow-right" size={12} />
             </span>
           </Button>
         </div>
@@ -248,7 +234,7 @@ export function InBrief({ points }: { points: ReactNode[] }) {
   return (
     <div className="rounded-md border border-vsc-focus/50 bg-vsc-badge/10 px-3.5 py-2.5 text-[12px]">
       <div className="mb-1 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
-        <VscLightbulb size={14} aria-hidden="true" className="text-vsc-focus" />
+        <Codicon name="lightbulb" size={14} className="text-vsc-focus" />
         {tr("In breve", "In short", "En bref", "Kurz gesagt")}
       </div>
       <ul className="m-0 list-disc space-y-1 pl-5 leading-relaxed">
@@ -288,9 +274,9 @@ export function Bullets({ items }: { items: ReactNode[] }) {
 }
 
 const CALLOUT = {
-  tip: { icon: VscLightbulb, color: "text-vsc-success", border: "border-l-vsc-success" },
-  info: { icon: VscInfo, color: "text-vsc-info", border: "border-l-vsc-info" },
-  warn: { icon: VscWarning, color: "text-vsc-warning", border: "border-l-vsc-warning" },
+  tip: { icon: codicon("lightbulb"), color: "text-vsc-success", border: "border-l-vsc-success" },
+  info: { icon: codicon("info"), color: "text-vsc-info", border: "border-l-vsc-info" },
+  warn: { icon: codicon("warning"), color: "text-vsc-warning", border: "border-l-vsc-warning" },
 } as const;
 
 /** A tip, a note or a warning beside the text. */
@@ -325,8 +311,8 @@ export function Under({ title, children }: { title?: string; children: ReactNode
   return (
     <details className="group rounded-md border border-vsc-border bg-vsc-sidebar/35 text-[12px]">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 font-semibold text-vsc-settings-header select-none">
-        <VscChevronRight size={14} aria-hidden="true" className="transition-transform group-open:rotate-90" />
-        <VscTools size={14} aria-hidden="true" className="text-vsc-desc" />
+        <Codicon name="chevron-right" size={14} className="transition-transform group-open:rotate-90" />
+        <Codicon name="tools" size={14} className="text-vsc-desc" />
         {title ?? tr("Sotto il cofano", "Under the hood", "Sous le capot", "Unter der Haube")}
       </summary>
       <div className="space-y-2 border-t border-vsc-border px-3.5 py-2.5 leading-relaxed">{children}</div>
@@ -412,7 +398,7 @@ export function Related({ ids }: { ids: GuideTopicId[] }) {
       <ul className="m-0 list-none space-y-0.5 p-0">
         {ids.map((id) => (
           <li key={id} className="flex items-center gap-1.5">
-            <VscArrowRight size={12} aria-hidden="true" className="text-vsc-desc" />
+            <Codicon name="arrow-right" size={12} className="text-vsc-desc" />
             <See id={id} />
           </li>
         ))}
@@ -434,7 +420,7 @@ export function Go({ page, children }: { page: AppPageTarget; children: ReactNod
     >
       <span className="inline-flex items-center gap-1">
         {children}
-        <VscArrowRight size={12} aria-hidden="true" />
+        <Codicon name="arrow-right" size={12} />
       </span>
     </Button>
   );
@@ -456,7 +442,7 @@ export function Flow({ steps }: { steps: { title: string; text: string }[] }) {
             <div className="leading-snug text-vsc-desc">{s.text}</div>
           </div>
           {i < steps.length - 1 && (
-            <VscArrowRight size={14} aria-hidden="true" className="shrink-0 self-center text-vsc-desc" />
+            <Codicon name="arrow-right" size={14} className="shrink-0 self-center text-vsc-desc" />
           )}
         </li>
       ))}
@@ -539,7 +525,7 @@ export function KitFoldersBar() {
           }}
         >
           <span className="inline-flex items-center gap-1">
-            <VscFolderOpened size={12} aria-hidden="true" />
+            <Codicon name="folder-opened" size={12} />
             <span>{x.label}</span>
             <code className="font-mono text-[11px] opacity-75">{x.path}</code>
           </span>

@@ -6,7 +6,6 @@
 // here and opens the project. A tab of the Projects editor, beside the
 // projects' pages (explorer.tsx); the instructions are in Settings.
 import { useEffect, useRef, useState } from "react";
-import { VscAdd, VscClose, VscWand } from "react-icons/vsc";
 import {
   frameworksCancel,
   frameworksCreate,
@@ -32,6 +31,8 @@ import { useLoad, useSubscription } from "../hooks";
 import { t } from "../i18n";
 import {
   Button,
+  Codicon,
+  codicon,
   EditorBody,
   EditorHeader,
   EditorSection,
@@ -96,7 +97,7 @@ function EnvRows({
             className={`min-w-0 flex-1 ${SMALL}`}
           />
           <IconButton
-            icon={VscClose}
+            icon={codicon("close")}
             label={t("Togli {0}", r.key || t("Variabile"))}
             disabled={disabled}
             onClick={() => {
@@ -107,7 +108,7 @@ function EnvRows({
       ))}
       <Button small disabled={disabled} onClick={onAdd}>
         <span className="inline-flex items-center gap-1">
-          <VscAdd size={12} aria-hidden="true" />
+          <Codicon name="add" size={12} />
           {t("Aggiungi una variabile")}
         </span>
       </Button>
@@ -224,7 +225,7 @@ export function NewProjectWizard({
     <div className="flex min-h-0 flex-1 flex-col">
       <ProgressBar active={running} />
       <EditorHeader
-        icon={<VscWand size={56} aria-hidden="true" className="text-vsc-icon opacity-80" />}
+        icon={<Codicon name="wand" size={56} className="text-vsc-icon opacity-80" />}
         title={t("Nuovo progetto")}
         meta={[<span key="what">{t("Da framework o CMS")}</span>]}
         description={

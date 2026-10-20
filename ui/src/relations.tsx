@@ -4,7 +4,6 @@
 // (in the list of versions), and the whole matrix with the versions the
 // projects declare and what to choose or download for them.
 import { useCallback, useEffect, useState } from "react";
-import { VscCheck, VscCloudDownload, VscRefresh, VscServerEnvironment, VscWarning } from "react-icons/vsc";
 import {
   projectVersionsSet,
   projectDbLine,
@@ -21,7 +20,7 @@ import { ComponentLogo } from "./logos";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
 import { Tag } from "./tags";
-import { DataTable } from "./workbench";
+import { Codicon, codicon, DataTable } from "./workbench";
 
 /** The matrix, read again when the preparation finishes a step or `key`
  * (the components on disk) changes; the backend rebuilds it only when what
@@ -58,7 +57,7 @@ export function LinkProblems({ id, links }: { id: string; links: RelationLink[] 
           tone="warning"
           className="ml-2"
           title={l.note ?? undefined}
-          icon={<VscWarning size={11} aria-hidden="true" />}
+          icon={<Codicon name="warning" size={11} />}
         >
           {l.status === "missing"
             ? t("{0} richiede {1}", l.fromName, l.toName)
@@ -96,7 +95,7 @@ export function RuntimeRows({ runtimes }: { runtimes: RelationRuntime[] }) {
           >
             <span className="w-[18px] shrink-0" />
             <span className="flex w-5 shrink-0 justify-center text-vsc-desc">
-              <VscServerEnvironment size={18} aria-hidden="true" />
+              <Codicon name="server-environment" size={18} />
             </span>
             <span className="min-w-0 flex-1 leading-[18px]">
               <span className="font-semibold text-vsc-settings-header">{r.name}</span>
@@ -111,7 +110,7 @@ export function RuntimeRows({ runtimes }: { runtimes: RelationRuntime[] }) {
             <span className="w-40 shrink-0 truncate text-right text-[12px]" title={r.detail ?? undefined}>
               {r.present ? (
                 <span className="text-vsc-success">
-                  <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+                  <Codicon name="check" className="mr-1" size={12} />
                   {r.detail ?? t("presente")}
                 </span>
               ) : needed ? (
@@ -178,7 +177,7 @@ function NeedAction({
   if (!line || (need.status !== "choose" && need.status !== "download")) return null;
   return (
     <ActionButton
-      icon={need.status === "download" ? VscCloudDownload : VscCheck}
+      icon={need.status === "download" ? codicon("cloud-download") : codicon("check")}
       label={
         need.status === "download"
           ? need.server
@@ -239,7 +238,7 @@ export function RelationsSection({
           </p>
         </div>
         <ActionButton
-          icon={VscRefresh}
+          icon={codicon("refresh")}
           label={t("Ricalcola le relazioni")}
           compact
           onClick={() => {

@@ -2,7 +2,6 @@
 // tauri/src/stats: every limit as "% used" with the time it resets,
 // tokens of today and of the last 7 days, sessions, last activity.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { VscRefresh, VscWarning } from "react-icons/vsc";
 import {
   agentsStats,
   type AgentStats,
@@ -15,6 +14,7 @@ import {
 import { locale, t } from "../i18n";
 import { ActionButton } from "../common";
 import { Badge } from "../tags";
+import { Codicon, codicon } from "../workbench";
 
 /** Read again every 2 minutes, as often as the app asks the servers. */
 const EVERY = 2 * 60 * 1000;
@@ -213,7 +213,7 @@ export function AgentUsage({ stats: s }: { stats: AgentStats }) {
         </div>
         {l.error && (
           <p className="flex items-center gap-2 text-[12px] text-vsc-desc">
-            <VscWarning size={14} aria-hidden="true" className="shrink-0 text-vsc-warning" />
+            <Codicon name="warning" size={14} className="shrink-0 text-vsc-warning" />
             <span className="select-text">{l.error}</span>
           </p>
         )}
@@ -254,7 +254,7 @@ export function AgentUsage({ stats: s }: { stats: AgentStats }) {
 export function StatsRefresh({ loading, onRefresh }: { loading: boolean; onRefresh: () => void }) {
   return (
     <ActionButton
-      icon={VscRefresh}
+      icon={codicon("refresh")}
       label={t("Aggiorna i consumi")}
       busy={loading}
       title={t("Legge di nuovo limiti e consumi degli agenti")}

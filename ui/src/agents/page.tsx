@@ -4,7 +4,6 @@
 // sign-out. Launch happens only in a project. Instructions, skills and MCP
 // servers are shared by the three (data\agents, aligned by the app).
 import { useState } from "react";
-import { VscBook, VscFolderOpened, VscHubot, VscRefresh, VscSignOut, VscWarning } from "react-icons/vsc";
 import {
   agentLaunch,
   agentSignOut,
@@ -24,6 +23,7 @@ import { TokenLink } from "./token";
 import { useAction, useLoad } from "../hooks";
 import {
   Button,
+  codicon,
   Dot,
   EditorBody,
   EditorHeader,
@@ -99,7 +99,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
         actions={
           <>
             <IconButton
-              icon={VscRefresh}
+              icon={codicon("refresh")}
               label={t("Aggiorna i consumi")}
               title={t("Legge di nuovo limiti e consumi degli agenti")}
               busy={stats.loading}
@@ -107,7 +107,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
               onClick={stats.refresh}
             />
             <IconButton
-              icon={VscFolderOpened}
+              icon={codicon("folder-opened")}
               label={t("Apri la cartella condivisa")}
               onClick={() => {
                 run("folder", () => folderOpen("agents"));
@@ -115,7 +115,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
             />
             {onGuide && (
               <IconButton
-                icon={VscBook}
+                icon={codicon("book")}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
                   onGuide("agents");
@@ -211,7 +211,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                       actions={
                         <>
                           <ActionButton
-                            icon={VscSignOut}
+                            icon={codicon("sign-out")}
                             label={t("Esci")}
                             primary
                             busy={busy === `out:${agent.id}`}
@@ -232,7 +232,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                     />
                   ) : (
                     <ActionButton
-                      icon={VscSignOut}
+                      icon={codicon("sign-out")}
                       label={t("Esci")}
                       disabled={agent.running}
                       title={agent.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
@@ -333,7 +333,7 @@ export function AgentPicker({
         ))}
       </span>
       <ActionButton
-        icon={error ? VscWarning : VscHubot}
+        icon={error ? codicon("warning") : codicon("hubot")}
         label={t("Agente")}
         busy={busy === "launch"}
         title={error ?? t("Apre l'agente scelto nel progetto {0}", project)}
@@ -362,7 +362,7 @@ export function AgentButton({
   const name = installed.find((a) => a.id === agent)?.name ?? agent;
   return (
     <IconButton
-      icon={error ? VscWarning : VscHubot}
+      icon={error ? codicon("warning") : codicon("hubot")}
       label={t("Agente")}
       busy={busy === "launch"}
       title={error ?? t("Apre {0} nel progetto {1}", name, project)}

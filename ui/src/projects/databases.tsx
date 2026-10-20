@@ -1,12 +1,10 @@
 // The Database section of a project's page: its own database and user on
 // the kit's servers, written in .env, and their copies.
 import { useRef, useState } from "react";
-import { VscCloudDownload, VscCode } from "react-icons/vsc";
 import type { ProjectInfo } from "../api";
 import { useAction, useSubscription } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
-import { VscArrowLeft } from "react-icons/vsc";
 import {
   onSetup,
   projectDbCreate,
@@ -22,7 +20,7 @@ import {
 } from "../api";
 import { SecretField } from "../databases";
 import { DatabaseCopies } from "../databases";
-import { DataTable, EditorSection, Notice, Properties, Select } from "../workbench";
+import { codicon, DataTable, EditorSection, Notice, Properties, Select } from "../workbench";
 import { COMPONENT_NAMES } from "./needs";
 
 function EnvPreview({
@@ -42,7 +40,7 @@ function EnvPreview({
     <div className="space-y-2">
       {changes === null ? (
         <ActionButton
-          icon={VscCode}
+          icon={codicon("code")}
           label={t("Scrivi in .env")}
           busy={busy === "preview"}
           onClick={() => {
@@ -76,7 +74,7 @@ function EnvPreview({
           )}
           <div className="flex gap-2">
             <ActionButton
-              icon={VscCode}
+              icon={codicon("code")}
               label={t("Scrivi")}
               primary
               busy={busy === "apply"}
@@ -88,7 +86,7 @@ function EnvPreview({
               }}
             />
             <ActionButton
-              icon={VscArrowLeft}
+              icon={codicon("arrow-left")}
               label={t("Annulla")}
               onClick={() => {
                 setChanges(null);
@@ -155,7 +153,7 @@ function DbVersionSelect({
                   )}
             </p>
             <ActionButton
-              icon={VscCloudDownload}
+              icon={codicon("cloud-download")}
               label={t("Installa {0} {1}", name, missing)}
               small
               busy={busy === "install"}
@@ -254,7 +252,7 @@ export function Databases({
                   {t("Un database e un utente solo per questo progetto, con una password generata dal kit.")}
                 </p>
                 <ActionButton
-                  icon={VscCode}
+                  icon={codicon("code")}
                   label={t("Crea database e utente")}
                   primary={used}
                   busy={busy === engine}

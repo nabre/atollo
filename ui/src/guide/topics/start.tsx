@@ -1,19 +1,9 @@
 // Chapter 1 of the Guide, «Primi passi»: what Atollo is, the first start,
 // the window and a first project from start to finish.
-import {
-  VscBook,
-  VscDatabase,
-  VscDebugDisconnect,
-  VscExtensions,
-  VscFolderLibrary,
-  VscGlobe,
-  VscHubot,
-  VscSettingsGear,
-  VscTerminal,
-} from "react-icons/vsc";
 import { rich } from "../../i18n";
 import { Tag } from "../../tags";
-import { Properties } from "../../workbench";
+import type { IconType } from "react-icons";
+import { codicon, Properties } from "../../workbench";
 import { GUIDE_GROUPS, GUIDE_TOPICS, tr, type AppPageTarget, type GuideTopicId } from "../model";
 import {
   Bullets,
@@ -67,9 +57,9 @@ function ChapterMap() {
 /** The pages of the activity bar, each with a button that opens it. */
 function PageMap() {
   const nav = useContext(GuideNavContext);
-  const pages: { icon: typeof VscBook; name: string; text: string; page?: AppPageTarget; topic: GuideTopicId }[] = [
+  const pages: { icon: IconType; name: string; text: string; page?: AppPageTarget; topic: GuideTopicId }[] = [
     {
-      icon: VscFolderLibrary,
+      icon: codicon("folder-library"),
       name: tr("Progetti", "Projects", "Projets", "Projekte"),
       text: tr(
         "Il centro del lavoro: l'elenco dei progetti, il «Pannello rapido», la creazione di progetti nuovi e la pagina di ogni progetto.",
@@ -81,7 +71,7 @@ function PageMap() {
       topic: "project-page",
     },
     {
-      icon: VscHubot,
+      icon: codicon("hubot"),
       name: tr("Agenti", "Agents", "Agents", "Agenten"),
       text: tr(
         "Gli agenti IA installati: accesso al tuo account, limiti del piano e consumi, cartella condivisa.",
@@ -93,7 +83,7 @@ function PageMap() {
       topic: "agents",
     },
     {
-      icon: VscDatabase,
+      icon: codicon("database"),
       name: tr("Database", "Databases", "Bases de données", "Datenbanken"),
       text: tr(
         "I server MySQL e MongoDB del kit: avvio, password, porte, versioni, phpMyAdmin.",
@@ -105,7 +95,7 @@ function PageMap() {
       topic: "databases",
     },
     {
-      icon: VscGlobe,
+      icon: codicon("globe"),
       name: tr("Server Web", "Web Servers", "Serveurs Web", "Webserver"),
       text: tr(
         "I server Caddy e Apache condivisi fra i progetti e i siti .localhost che servono.",
@@ -117,7 +107,7 @@ function PageMap() {
       topic: "websites",
     },
     {
-      icon: VscTerminal,
+      icon: codicon("terminal"),
       name: tr("Terminali", "Terminals", "Terminaux", "Terminals"),
       text: tr(
         "Console con gli strumenti del kit, in qualsiasi cartella del PC.",
@@ -129,7 +119,7 @@ function PageMap() {
       topic: "terminals",
     },
     {
-      icon: VscExtensions,
+      icon: codicon("extensions"),
       name: tr("Strumenti", "Tools", "Outils", "Werkzeuge"),
       text: tr(
         "Linguaggi, agenti, database e programmi del kit: installare, aggiornare, togliere, più versioni.",
@@ -141,7 +131,7 @@ function PageMap() {
       topic: "tools",
     },
     {
-      icon: VscBook,
+      icon: codicon("book"),
       name: tr("Guida", "Guide", "Guide", "Anleitung"),
       text: tr(
         "Questa guida. Ogni pagina ha anche un'icona a forma di libro che apre l'argomento giusto.",
@@ -152,7 +142,7 @@ function PageMap() {
       topic: "welcome",
     },
     {
-      icon: VscSettingsGear,
+      icon: codicon("settings-gear"),
       name: tr("Impostazioni", "Settings", "Paramètres", "Einstellungen"),
       text: tr(
         "Lingua, tema, rete, account GitHub e chi firma i commit, chiave di Gemini, aggiornamenti, privacy e istruzioni dei framework, salvati da soli.",
@@ -164,7 +154,7 @@ function PageMap() {
       topic: "settings",
     },
     {
-      icon: VscDebugDisconnect,
+      icon: codicon("debug-disconnect"),
       name: tr("Rimuovi l'unità", "Remove drive", "Retirer le lecteur", "Laufwerk entfernen"),
       text: tr(
         "Chiude tutto ciò che il kit ha aperto, prima di staccare la chiavetta.",
@@ -386,7 +376,7 @@ export const START: TopicTexts = {
       >
         <Cards>
           <GuideCard
-            icon={VscFolderLibrary}
+            icon={codicon("folder-library")}
             title={tr(
               "Tutto in una cartella",
               "Everything in one folder",
@@ -402,7 +392,7 @@ export const START: TopicTexts = {
             )}
           </GuideCard>
           <GuideCard
-            icon={VscExtensions}
+            icon={codicon("extensions")}
             title={tr(
               "Il kit pensa agli strumenti",
               "The kit takes care of the tools",
@@ -418,7 +408,7 @@ export const START: TopicTexts = {
             )}
           </GuideCard>
           <GuideCard
-            icon={VscGlobe}
+            icon={codicon("globe")}
             title={tr("Solo su questo PC", "Only on this PC", "Uniquement sur ce PC", "Nur auf diesem PC")}
           >
             {tr(

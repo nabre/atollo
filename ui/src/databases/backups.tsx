@@ -2,12 +2,11 @@
 // data\projects\<project>\private\backups, restore one of them (a file from elsewhere is
 // copied into that folder first: the app has no file picker, D-15).
 import { useCallback, useState } from "react";
-import { VscCloudUpload, VscDiscard, VscFolderOpened } from "react-icons/vsc";
 import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "../api";
 import { locale, t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useLoad } from "../hooks";
-import { InlineConfirm, Notice } from "../workbench";
+import { codicon, InlineConfirm, Notice } from "../workbench";
 
 function size(bytes: number): string {
   const kb = bytes / 1024;
@@ -30,7 +29,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
       <div className="flex flex-wrap items-center gap-2">
         <span className="min-w-0 flex-1 font-semibold">{t("Copie")}</span>
         <ActionButton
-          icon={VscCloudUpload}
+          icon={codicon("cloud-upload")}
           label={t("Esporta")}
           busy={busy === "export"}
           onClick={() => {
@@ -42,7 +41,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
           }}
         />
         <ActionButton
-          icon={VscFolderOpened}
+          icon={codicon("folder-opened")}
           label={t("Apri la cartella delle copie")}
           onClick={() => {
             void folderOpen("backup", project);
@@ -71,7 +70,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
                   actions={
                     <>
                       <ActionButton
-                        icon={VscDiscard}
+                        icon={codicon("discard")}
                         label={t("Ripristina")}
                         primary
                         busy={busy === `restore:${b.file}`}
@@ -85,7 +84,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
                         }}
                       />
                       <ActionButton
-                        icon={VscDiscard}
+                        icon={codicon("discard")}
                         label={t("Annulla")}
                         onClick={() => {
                           setConfirm(null);
@@ -98,7 +97,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
                 </InlineConfirm>
               ) : (
                 <ActionButton
-                  icon={VscDiscard}
+                  icon={codicon("discard")}
                   label={t("Ripristina…")}
                   onClick={() => {
                     setConfirm(b.file);

@@ -4,13 +4,12 @@
 // The column of the system shown by «Piattaforma» is highlighted; the
 // details can make another one the shown system.
 import { useState } from "react";
-import { VscVm } from "react-icons/vsc";
 import type { ComponentInfo, TargetId, TargetProfile, TargetToolStatus } from "../api";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
 import { ComponentLogo } from "../logos";
 import { Tag } from "../tags";
-import { DataTable, Dot, Link } from "../workbench";
+import { codicon, DataTable, Dot, Link } from "../workbench";
 import { groups } from "./model";
 import type { ComponentsState } from "./state";
 import {
@@ -94,7 +93,7 @@ function CellDetail({
       </dl>
       <div className="flex flex-wrap items-center gap-3">
         <Link onClick={onOpen}>{t("Apri {0}", c.name)}</Link>
-        {!shown && <ActionButton icon={VscVm} label={t("Mostra questo sistema")} onClick={onShow} />}
+        {!shown && <ActionButton icon={codicon("vm")} label={t("Mostra questo sistema")} onClick={onShow} />}
       </div>
     </section>
   );

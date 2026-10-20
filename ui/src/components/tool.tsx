@@ -3,7 +3,6 @@
 // at a time (its versions, its details, the projects that use it). The
 // choice is applied with the bar under the page (./applybar.tsx).
 import { useState } from "react";
-import { VscCheck, VscLinkExternal, VscWarning } from "react-icons/vsc";
 import { setupStart, urlOpen, type ComponentInfo, type RelationLink, type SetupSnapshot } from "../api";
 import { t } from "../i18n";
 import { ByHandBox } from "../byhand";
@@ -14,6 +13,8 @@ import { Tag } from "../tags";
 import { ToolInstallLine, ToolVersions, splitVersion, composerOf, type KitVersions } from "../versions";
 import {
   Button,
+  Codicon,
+  codicon,
   Dot,
   EditorBody,
   EditorHeader,
@@ -81,7 +82,7 @@ export function ToolPage({
       label: t("Progetti"),
       mark:
         forProjects.length > 0 && !on ? (
-          <VscWarning size={12} className="text-vsc-warning" aria-label={t("Serve a progetti e non è scelto")} />
+          <Codicon name="warning" size={12} className="text-vsc-warning" label={t("Serve a progetti e non è scelto")} />
         ) : users.length > 0 ? (
           <span className="text-[11px] text-vsc-desc">{users.length}</span>
         ) : undefined,
@@ -99,7 +100,7 @@ export function ToolPage({
             <ItemStatus key="state" state={item} />
           ) : c.installed ? (
             <span key="state" className="flex items-center gap-1 text-vsc-success">
-              <VscCheck size={14} aria-hidden="true" />
+              <Codicon name="check" size={14} />
               {shown ?? t("installato")}
             </span>
           ) : c.bootstrapStaged ? (
@@ -108,7 +109,7 @@ export function ToolPage({
               className="flex items-center gap-1 text-vsc-success"
               title={t("Gli archivi sono già nel kit: l'installazione termina al primo avvio su quel sistema")}
             >
-              <VscCheck size={14} aria-hidden="true" />
+              <Codicon name="check" size={14} />
               {shown ? `${shown} (${t("pre-installato")})` : t("pre-installato")}
             </span>
           ) : c.noArm64 ? (
@@ -171,7 +172,7 @@ export function ToolPage({
               </Button>
             )}
             <IconButton
-              icon={VscLinkExternal}
+              icon={codicon("link-external")}
               label={t("Sito ufficiale")}
               title={c.home}
               onClick={() => {

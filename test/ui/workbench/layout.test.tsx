@@ -168,7 +168,13 @@ describe("EditorHeader", () => {
       expect.arrayContaining(["pt-vsc-size200", "pb-vsc-size120", "px-vsc-size200", "gap-vsc-size120"]),
     );
     const icon = screen.getByTestId("icon").parentElement;
-    expect(classes(icon)).toEqual(expect.arrayContaining(["size-vsc-extension-icon", "[&>svg]:size-full"]));
+    expect(classes(icon)).toEqual(
+      expect.arrayContaining([
+        "size-vsc-extension-icon",
+        "[&>svg]:size-full",
+        "[&>.codicon]:text-(length:--vsc-size-extension-icon)!",
+      ]),
+    );
     expect(classes(screen.getByRole("heading", { name: "PHP" }))).toContain("text-vsc-heading1");
     expect(classes(screen.getByText("Il linguaggio."))).toContain("mt-vsc-size100");
     expect(classes(screen.getByRole("button", { name: "Aggiorna" }).parentElement)).toContain("mt-vsc-size100");

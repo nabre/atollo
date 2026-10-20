@@ -1,12 +1,11 @@
 // Chapter 8 of the Guide, «Come funziona dentro»: isolation, the folders on
 // disk, background processes, download sources and checks, the command line.
 import { useMemo, useState, type ReactNode } from "react";
-import { VscLinkExternal } from "react-icons/vsc";
 import { urlOpen, type ComponentInfo } from "../../api";
 import { rich } from "../../i18n";
 import { ComponentLogo } from "../../logos";
 import { Tag } from "../../tags";
-import { Button, SearchBox } from "../../workbench";
+import { Button, Codicon, SearchBox } from "../../workbench";
 import { tr } from "../model";
 import { sourceCounts, TOOL_SOURCES, type SourceCategory } from "../sources";
 import {
@@ -338,7 +337,7 @@ function SourcesTable({ components }: { components: ComponentInfo[] | null }) {
                   className="inline-flex items-center gap-0.5 text-[11px] text-vsc-link hover:underline"
                 >
                   {tr("Sito", "Website", "Site", "Website")}
-                  <VscLinkExternal size={10} aria-hidden="true" />
+                  <Codicon name="link-external" size={10} />
                 </button>
               </div>
             </div>,

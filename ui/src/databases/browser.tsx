@@ -3,11 +3,10 @@
 // collections on the left, one page of rows of the chosen one on the right.
 // The server's own databases (mysql, admin…) under "Di sistema", closed.
 import { useCallback, useEffect, useState } from "react";
-import { VscChevronLeft, VscChevronRight, VscDatabase, VscEye, VscRefresh, VscTable } from "react-icons/vsc";
 import { DB_PAGE, dbBrowseRows, dbBrowseTree, type DbDatabase, type DbRows, type ServiceInfo } from "../api";
 import { locale, t } from "../i18n";
 import { ErrorLine } from "../common";
-import { DataTable, IconButton, List, ListRow, ProgressBar, Watermark } from "../workbench";
+import { Codicon, codicon, DataTable, IconButton, List, ListRow, ProgressBar, Watermark } from "../workbench";
 
 type Engine = ServiceInfo["id"];
 
@@ -74,7 +73,7 @@ function TableView({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex h-[35px] shrink-0 items-center gap-2 border-b border-vsc-border px-3">
-        <VscTable size={16} aria-hidden="true" className="shrink-0" />
+        <Codicon name="table" size={16} className="shrink-0" />
         <h4 className="min-w-0 truncate font-mono text-[13px] select-text">
           <span className="text-vsc-desc">{database}.</span>
           {table}
@@ -86,7 +85,7 @@ function TableView({
           </span>
         )}
         <IconButton
-          icon={VscChevronLeft}
+          icon={codicon("chevron-left")}
           label={t("Pagina precedente")}
           disabled={offset === 0 || loading}
           onClick={() => {
@@ -94,7 +93,7 @@ function TableView({
           }}
         />
         <IconButton
-          icon={VscChevronRight}
+          icon={codicon("chevron-right")}
           label={t("Pagina successiva")}
           disabled={offset + shown >= total || loading}
           onClick={() => {
@@ -102,7 +101,7 @@ function TableView({
           }}
         />
         <IconButton
-          icon={VscRefresh}
+          icon={codicon("refresh")}
           label={t("Aggiorna")}
           busy={loading}
           onClick={() => {
@@ -200,7 +199,7 @@ export function DbBrowser({ engine, line = null }: { engine: Engine; line?: stri
   const row = (d: DbDatabase, depth: number) => (
     <ListRow
       key={d.name}
-      icon={<VscDatabase size={14} aria-hidden="true" />}
+      icon={<Codicon name="database" size={14} />}
       label={d.name}
       depth={depth}
       twistie={open?.has(d.name) ? "open" : "closed"}
@@ -219,7 +218,7 @@ export function DbBrowser({ engine, line = null }: { engine: Engine; line?: stri
           <ListRow
             key={tb.name}
             depth={depth + 1}
-            icon={tb.view ? <VscEye size={14} aria-hidden="true" /> : <VscTable size={14} aria-hidden="true" />}
+            icon={tb.view ? <Codicon name="eye" size={14} /> : <Codicon name="table" size={14} />}
             label={tb.name}
             title={tb.view ? t("{0} (vista)", tb.name) : tb.name}
             decorations={
@@ -246,7 +245,7 @@ export function DbBrowser({ engine, line = null }: { engine: Engine; line?: stri
       <div className="flex w-64 shrink-0 flex-col border-r border-vsc-border">
         <div className="flex h-[35px] shrink-0 items-center gap-2 pr-1 pl-3">
           <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{t("Database")}</span>
-          <IconButton icon={VscRefresh} label={t("Aggiorna")} busy={loading} onClick={refresh} />
+          <IconButton icon={codicon("refresh")} label={t("Aggiorna")} busy={loading} onClick={refresh} />
         </div>
         <div className="px-3 empty:hidden">
           <ErrorLine error={error} />

@@ -1,7 +1,6 @@
 // The kit's GitHub account in Settings: sign-in with a code shown here,
 // sign-out.
 import { useState } from "react";
-import { VscCheck, VscClose, VscCopy, VscLinkExternal, VscSignIn, VscSignOut } from "react-icons/vsc";
 import {
   githubOpen,
   githubSignIn,
@@ -15,7 +14,7 @@ import { useAction, useCopy, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { useSubscription } from "../hooks";
 import { rich, t } from "../i18n";
-import { InlineConfirm } from "../workbench";
+import { Codicon, codicon, InlineConfirm } from "../workbench";
 
 /** The account's state, kept current by the "github" events of the sign-in. */
 export function useGithub() {
@@ -75,14 +74,14 @@ function Account({
             {status.code && (
               <>
                 <ActionButton
-                  icon={copied ? VscCheck : VscCopy}
+                  icon={copied ? codicon("check") : codicon("copy")}
                   label={copied ? t("Codice copiato") : t("Copia il codice")}
                   onClick={() => {
                     copy(status.code ?? "");
                   }}
                 />
                 <ActionButton
-                  icon={VscLinkExternal}
+                  icon={codicon("link-external")}
                   label={t("Apri la pagina di GitHub")}
                   onClick={() => {
                     run("device", () => githubOpen(null));
@@ -91,7 +90,7 @@ function Account({
               </>
             )}
             <ActionButton
-              icon={VscClose}
+              icon={codicon("close")}
               label={t("Annulla")}
               onClick={() => {
                 run("cancel", githubSignInCancel);
@@ -101,7 +100,7 @@ function Account({
         </div>
       ) : status.signedIn ? (
         <div className="flex flex-wrap items-center gap-2">
-          <VscCheck className="text-vsc-success" size={16} aria-hidden="true" />
+          <Codicon name="check" className="text-vsc-success" size={16} />
           <span>{status.login ? t("Accesso fatto come {0}", `@${status.login}`) : t("accesso fatto")}</span>
           <span className="ml-auto flex flex-wrap items-center gap-2">
             {confirm ? (
@@ -114,7 +113,7 @@ function Account({
                 actions={
                   <>
                     <ActionButton
-                      icon={VscSignOut}
+                      icon={codicon("sign-out")}
                       label={t("Esci")}
                       busy={busy === "out"}
                       onClick={() => {
@@ -123,7 +122,7 @@ function Account({
                       }}
                     />
                     <ActionButton
-                      icon={VscClose}
+                      icon={codicon("close")}
                       label={t("Annulla")}
                       onClick={() => {
                         setConfirm(false);
@@ -134,7 +133,7 @@ function Account({
               />
             ) : (
               <ActionButton
-                icon={VscSignOut}
+                icon={codicon("sign-out")}
                 label={t("Esci")}
                 title={t("Toglie l'accesso salvato nel kit")}
                 onClick={() => {
@@ -147,7 +146,7 @@ function Account({
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <ActionButton
-            icon={VscSignIn}
+            icon={codicon("sign-in")}
             label={t("Accedi a GitHub")}
             primary
             busy={busy === "in"}

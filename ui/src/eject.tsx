@@ -3,12 +3,11 @@
 // then closes the app so the drive can be removed safely. The same list is
 // shown when the window is closed with something open (CloseDialog).
 import { useCallback, useEffect, useState } from "react";
-import { VscBook, VscClose, VscDebugDisconnect, VscRefresh } from "react-icons/vsc";
 
 import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
 import { ActionButton, ErrorLine } from "./common";
 import { useAction } from "./hooks";
-import { ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
+import { Codicon, codicon, ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
 import { t } from "./i18n";
 
 function nothingOpen(o: OpenNow): boolean {
@@ -55,7 +54,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = 
   useEffect(load, [load]);
 
   const title = t("Rimuovi l'unità");
-  const icon = <VscDebugDisconnect size={16} aria-hidden="true" />;
+  const icon = <Codicon name="debug-disconnect" size={16} />;
   if (done) {
     return (
       <SingleEditor title={title} icon={icon}>
@@ -69,7 +68,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = 
           )}
           <p>{t("Ora chiudi Atollo, poi rimuovi l'unità con «Rimozione sicura dell'hardware» di Windows.")}</p>
           <ActionButton
-            icon={VscClose}
+            icon={codicon("close")}
             label={t("Chiudi Atollo")}
             primary
             onClick={() => {
@@ -102,10 +101,10 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = 
           </EditorSection>
         )}
         <div className="flex flex-wrap gap-2">
-          <ActionButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
+          <ActionButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={load} />
           {onGuide && (
             <ActionButton
-              icon={VscBook}
+              icon={codicon("book")}
               label={t("Guida")}
               onClick={() => {
                 onGuide("eject");
@@ -113,7 +112,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = 
             />
           )}
           <ActionButton
-            icon={VscDebugDisconnect}
+            icon={codicon("debug-disconnect")}
             label={t("Chiudi tutto e prepara la rimozione")}
             primary
             busy={busy === "eject"}
@@ -141,7 +140,7 @@ export function CloseDialog({ open, onCancel }: { open: OpenNow; onCancel: () =>
       onCancel={onCancel}
       actions={
         <ActionButton
-          icon={VscClose}
+          icon={codicon("close")}
           label={t("Chiudi tutto")}
           primary
           busy={busy === "quit"}

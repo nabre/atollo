@@ -4,12 +4,11 @@
 // settings but no other data of the kit yet) or deleted with the confirmation of a project's deletion
 // (./delete.tsx). Nothing is deleted by itself.
 import { useCallback, useState } from "react";
-import { VscLink, VscTrash } from "react-icons/vsc";
 import { projectOrphanAdopt, projectsOrphans, type Holdings, type ProjectInfo } from "../api";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useLoad } from "../hooks";
 import { t } from "../i18n";
-import { ConfirmDialog, Select, ViewPane } from "../workbench";
+import { codicon, ConfirmDialog, Select, ViewPane } from "../workbench";
 import { DeleteProjectDialog } from "./delete";
 
 const ENGINE_NAMES: Record<string, string> = { mysql: "MySQL", mongodb: "MongoDB" };
@@ -55,7 +54,7 @@ export function Orphans({ projects, onChanged }: { projects: ProjectInfo[]; onCh
             <div className="text-[12px] text-vsc-desc">{holds(h)}</div>
             <div className="flex flex-wrap gap-2">
               <ActionButton
-                icon={VscLink}
+                icon={codicon("link")}
                 label={t("Collega a…")}
                 small
                 title={`${t("Collega a…")}: ${h.project}`}
@@ -64,7 +63,7 @@ export function Orphans({ projects, onChanged }: { projects: ProjectInfo[]; onCh
                 }}
               />
               <ActionButton
-                icon={VscTrash}
+                icon={codicon("trash")}
                 label={t("Elimina")}
                 small
                 title={`${t("Elimina")}: ${h.project}`}
@@ -120,7 +119,7 @@ function AdoptDialog({
       onCancel={onCancel}
       actions={
         <ActionButton
-          icon={VscLink}
+          icon={codicon("link")}
           label={t("Collega")}
           primary
           busy={busy === "adopt"}

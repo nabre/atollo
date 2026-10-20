@@ -4,12 +4,13 @@
 //   page of the app the topic is about;
 // - the topic's text, then the previous and next topic.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { VscArrowLeft, VscArrowRight, VscBook, VscFolderOpened } from "react-icons/vsc";
 import { componentsList, folderOpen, type AppInfo, type ComponentInfo } from "../api";
 import { t } from "../i18n";
 import { Tag } from "../tags";
 import {
   Button,
+  Codicon,
+  codicon,
   EditorBody,
   EditorHeader,
   EditorTabs,
@@ -104,7 +105,7 @@ export function GuidePage({
               title={t("Guida")}
               actions={
                 <IconButton
-                  icon={VscFolderOpened}
+                  icon={codicon("folder-opened")}
                   label={tr(
                     "Apri cartella progetti",
                     "Open projects folder",
@@ -191,7 +192,7 @@ export function GuidePage({
               {sectionCode(topic)}
             </Tag>,
             <span key="grp" className="inline-flex items-center gap-1 text-vsc-desc">
-              <VscBook size={13} aria-hidden="true" />
+              <Codicon name="book" size={13} />
               {chapterTitle(topic.group)}
             </span>,
           ]}
@@ -212,7 +213,7 @@ export function GuidePage({
                     "Ouvrir cette vue dans l'application",
                     "Diese Ansicht in der App öffnen",
                   )}
-                  <VscArrowRight size={12} aria-hidden="true" />
+                  <Codicon name="arrow-right" size={12} />
                 </span>
               </Button>
             ) : undefined
@@ -235,7 +236,7 @@ export function GuidePage({
                     }}
                   >
                     <span className="inline-flex items-center gap-1.5">
-                      <VscArrowLeft size={13} aria-hidden="true" />
+                      <Codicon name="arrow-left" size={13} />
                       <span>{prev.title()}</span>
                     </span>
                   </Button>
@@ -251,7 +252,7 @@ export function GuidePage({
                   >
                     <span className="inline-flex items-center gap-1.5">
                       <span>{next.title()}</span>
-                      <VscArrowRight size={13} aria-hidden="true" />
+                      <Codicon name="arrow-right" size={13} />
                     </span>
                   </Button>
                 )}

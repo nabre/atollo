@@ -4,16 +4,6 @@
 
 import { useCallback, useState } from "react";
 import {
-  VscAdd,
-  VscBook,
-  VscDebugStart,
-  VscDebugStop,
-  VscGlobe,
-  VscLinkExternal,
-  VscRefresh,
-  VscTrash,
-} from "react-icons/vsc";
-import {
   serverReload,
   serverRemove,
   serverSave,
@@ -32,6 +22,8 @@ import { ComponentLogo } from "./logos";
 import {
   Button,
   CheckboxLabel,
+  Codicon,
+  codicon,
   Dot,
   EditorBody,
   EditorHeader,
@@ -130,16 +122,21 @@ function PoolDetails({
         actions={
           <>
             {pool.running ? (
-              <ActionButton icon={VscDebugStop} label={t("Ferma")} busy={busy} onClick={onStop} />
+              <ActionButton icon={codicon("debug-stop")} label={t("Ferma")} busy={busy} onClick={onStop} />
             ) : (
-              <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
+              <ActionButton icon={codicon("debug-start")} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
             {!pool.orphan && (
-              <ActionButton icon={VscRefresh} label={t("Ricarica configurazione")} busy={busy} onClick={onReload} />
+              <ActionButton
+                icon={codicon("refresh")}
+                label={t("Ricarica configurazione")}
+                busy={busy}
+                onClick={onReload}
+              />
             )}
             {onRemove && (
               <ActionButton
-                icon={VscTrash}
+                icon={codicon("trash")}
                 label={t("Elimina profilo")}
                 busy={busy}
                 onClick={() => {
@@ -161,7 +158,7 @@ function PoolDetails({
             actions={
               <>
                 <ActionButton
-                  icon={VscTrash}
+                  icon={codicon("trash")}
                   label={t("Elimina profilo")}
                   primary
                   busy={busy}
@@ -226,12 +223,12 @@ function PoolDetails({
                           void urlOpen(site.url);
                         }}
                       >
-                        <VscLinkExternal className="mr-1 inline" />
+                        <Codicon name="link-external" size="1em" className="mr-1" />
                         {site.url}
                       </Button>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 text-[12px] text-vsc-desc">
-                      <VscGlobe className="shrink-0" />
+                      <Codicon name="globe" size="1em" className="shrink-0" />
                       <code className="font-mono text-vsc-fg">{site.serverName}</code>
                       {site.domains.map((d) => (
                         <code key={d} className="rounded border border-vsc-border px-1.5 py-0.5 font-mono text-[11px]">
@@ -349,16 +346,16 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
         actions={
           <>
             <IconButton
-              icon={VscAdd}
+              icon={codicon("add")}
               label={t("Nuovo profilo server")}
               onClick={() => {
                 setCreateOpen(true);
               }}
             />
-            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={refreshFresh} />
+            <IconButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={refreshFresh} />
             {onGuide && (
               <IconButton
-                icon={VscBook}
+                icon={codicon("book")}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
                   onGuide("websites");

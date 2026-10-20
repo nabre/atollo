@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { EnvVar, FrameworkAction, FrameworkVariant } from "../api";
 import { t } from "../i18n";
-import { VscAdd } from "react-icons/vsc";
-import { IconButton, Link, Select, TextArea, TextField as InputField } from "../workbench";
+import { codicon, IconButton, Link, Select, TextArea, TextField as InputField } from "../workbench";
 import { useComponents } from "./model";
 import { ToolTag } from "./tags";
 
@@ -155,7 +154,7 @@ export function NeedsField({
           />
         ) : (
           <IconButton
-            icon={VscAdd}
+            icon={codicon("add")}
             label={t("Aggiungi uno strumento del kit")}
             onClick={() => {
               setAdding(true);
