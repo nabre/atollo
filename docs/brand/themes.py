@@ -508,7 +508,15 @@ LAYOUT = {
 # - row: the lists' and trees' row (sidebarSize22 in workbench.js);
 # - tabs: the editor's tab bar, EDITOR_TAB_HEIGHT.modernUI (35px classic),
 #   a tab of --editor-group-tab-height and 4px above and below;
-# - statusbar: .monaco-workbench .part.statusbar.
+# - statusbar: .monaco-workbench .part.statusbar;
+# - extension-icon: the icon of an extension's page, .extension-editor>
+#   .header>.icon-container .extension-icon .icon;
+# - settings-toc: the Settings editor's table of contents,
+#   SettingsEditor2.TOC_RESET_WIDTH;
+# - settings-title: a settings group title's left padding,
+#   .settings-group-title-label;
+# - modified-left, modified-top, modified-bottom: where the bar of a changed
+#   setting stands in its item, .setting-item-modified-indicator.
 SIZE_TOKENS = {
     "titlebar": "35px",
     "window-control": "46px",
@@ -522,6 +530,12 @@ SIZE_TOKENS = {
     "tabs": "32px",
     "tab": "var(--editor-group-tab-height)",
     "statusbar": "22px",
+    "extension-icon": "128px",
+    "settings-toc": "200px",
+    "settings-title": "15px",
+    "modified-left": "5px",
+    "modified-top": "15px",
+    "modified-bottom": "18px",
 }
 
 

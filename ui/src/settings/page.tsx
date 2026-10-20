@@ -315,7 +315,8 @@ export function SettingsPage({
             </span>
           }
         />
-        <div className="min-h-0 flex-1 overflow-y-auto pb-10">
+        {/* The settings' tree, its rows 24px in from the sides as in VSCodium. */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-vsc-size240 pb-vsc-size400">
           {(loadError ?? view?.problem ?? saveError ?? error ?? (needsRestart && editorRunning)) && (
             <div className="space-y-2 px-[14px] pt-3">
               <ErrorLine error={loadError} />
