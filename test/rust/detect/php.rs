@@ -415,6 +415,11 @@ fn php_router_on_the_network() {
 
         let network = status_of(port, "192.168.1.20:8000", "/");
         assert_eq!(network, if lan { 200 } else { 421 }, "lan {lan}");
+        let v6 = status_of(port, "[fe80::1]:8000", "/");
+        assert_eq!(v6, if lan { 200 } else { 421 }, "lan {lan}: IPv6");
+        // A name re-pointed to the PC (DNS rebinding) is refused also in LAN.
+        assert_eq!(status_of(port, "evil.com:8000", "/"), 421, "lan {lan}");
+        assert_eq!(status_of(port, "192.168.1.20.evil.com", "/"), 421);
         assert_eq!(status_of(port, &format!("localhost:{port}"), "/"), 200);
         assert_eq!(status_of(port, "blog.localhost", "/"), 200);
         for target in ["/.env", "/.env.", "/%2eenv", "/.git/config"] {
