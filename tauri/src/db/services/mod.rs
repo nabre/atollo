@@ -19,8 +19,9 @@
 //!   app ends it in any case; `stop` first asks the server to shut down
 //!   (`mysqladmin shutdown`, mongosh `shutdownServer`), so no recovery
 //!   is needed at the next start;
-//! - port and "start with Atollo" of each server, and the ports of its
-//!   other versions, in `data\app\services.json`.
+//! - port and "start with Atollo" of each server, and the port of each of
+//!   its versions, in `data\app\services.json`;
+//! - one start, stop or change of version of a server at a time (BUG-V5-02).
 //!
 //! Here the settings and the life of a server (start, state, stop); the data
 //! folders per version in `data`, the passwords and the projects' databases
@@ -89,9 +90,11 @@ pub struct Setting {
     /// newest on disk (D-81).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub line: Option<String>,
-    /// The ports of the other versions (D-102), version → port:
-    /// stored at their first start or set on the page; one not stored gets
-    /// the first free one after `port` ([`line_ports`]).
+    /// The port of each version (D-102), version → port: stored at its
+    /// start (the version the server runs too) or set on the page, so that
+    /// choosing another version for the server moves none; one not stored
+    /// gets `port` (the version the server runs) or the first free one
+    /// after it ([`line_ports`]).
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub ports: BTreeMap<String, u16>,
 }
@@ -159,6 +162,11 @@ type Key = (DbEngine, String);
 
 pub struct Services {
     kit: Kit,
+    /// One operation at a time on each engine (BUG-V5-02): a start, a stop
+    /// or a change of version holds it from its first check to the end, so
+    /// two starts of the same version run one server and give the same
+    /// port. Taken before `running` and `errors`, never while holding them.
+    ops: BTreeMap<DbEngine, Mutex<()>>,
     running: Mutex<BTreeMap<Key, Server>>,
     errors: Mutex<BTreeMap<Key, String>>,
     phpmyadmin: crate::db::phpmyadmin::PhpMyAdmin,
@@ -188,10 +196,12 @@ pub fn server_lines(kit: &Kit, id: &str) -> Vec<String> {
     lines
 }
 
-/// The port of every version in `lines`: `main` (the version the server
-/// runs) on the server's port, the others on their stored port, or on the
-/// first free one after it (3307, 3308…), in the order of `lines`. A
-/// stored port that another version already has is given again.
+/// The port of every version in `lines` (BUG-V5-02): each on its stored
+/// port; `main` (the version the server runs), when it has none, on the
+/// server's port; the others on the first free one after it (3307,
+/// 3308…), in the order of `lines`. So choosing another version for the
+/// server moves no version that has a port already. A stored port that
+/// another version already has (`main` first) is given again.
 pub fn line_ports(
     setting: &Setting,
     id: &str,
@@ -199,17 +209,30 @@ pub fn line_ports(
     lines: &[String],
 ) -> BTreeMap<String, u16> {
     let port = setting.port.unwrap_or_else(|| default_port(id));
-    let mut taken = vec![port];
+    let mut taken: Vec<u16> = Vec::new();
     let mut out = BTreeMap::new();
-    let others: Vec<&String> = lines.iter().filter(|l| Some(l.as_str()) != main).collect();
-    for line in &others {
+    let all: Vec<&str> = main
+        .into_iter()
+        .chain(
+            lines
+                .iter()
+                .map(String::as_str)
+                .filter(|l| Some(*l) != main),
+        )
+        .collect();
+    for line in &all {
         if let Some(p) = setting.ports.get(*line).filter(|p| !taken.contains(p)) {
             taken.push(*p);
-            out.insert((*line).clone(), *p);
+            out.insert((*line).to_owned(), *p);
         }
     }
+    if let Some(m) = main.filter(|m| !out.contains_key(*m) && !taken.contains(&port)) {
+        out.insert(m.to_owned(), port);
+    }
+    // The server's port is never the first free one of another version.
+    taken.push(port);
     let mut next = port;
-    for line in others {
+    for line in all {
         if out.contains_key(line) {
             continue;
         }
@@ -220,10 +243,7 @@ pub fn line_ports(
             }
         }
         taken.push(next);
-        out.insert(line.clone(), next);
-    }
-    if let Some(m) = main {
-        out.insert(m.to_owned(), port);
+        out.insert(line.to_owned(), next);
     }
     out
 }
@@ -232,13 +252,37 @@ pub fn line_ports(
 pub fn line_port(kit: &Kit, id: &str, line: Option<&str>) -> u16 {
     let setting = load_settings(kit).get(id).cloned().unwrap_or_default();
     let main = server_line(kit, id);
-    match line.filter(|l| Some(*l) != main.as_deref()) {
+    let server = setting.port.unwrap_or_else(|| default_port(id));
+    match line.map(str::to_owned).or(main.clone()) {
         Some(l) => line_ports(&setting, id, main.as_deref(), &server_lines(kit, id))
-            .get(l)
+            .get(&l)
             .copied()
-            .unwrap_or_else(|| setting.port.unwrap_or_else(|| default_port(id))),
-        None => setting.port.unwrap_or_else(|| default_port(id)),
+            .unwrap_or(server),
+        None => server,
     }
+}
+
+/// One turn at a time on `services.json`.
+static SETTINGS_LOCK: Mutex<()> = Mutex::new(());
+
+/// Reads `services.json`, lets `change` modify it and writes it when it
+/// changed, with no other change in between (BUG-V5-02, as
+/// `Settings::update`): two starts storing their port lose neither. An
+/// error from `change` leaves the file as it is.
+fn update_settings<T>(
+    kit: &Kit,
+    change: impl FnOnce(&mut BTreeMap<String, Setting>) -> Result<T>,
+) -> Result<T> {
+    let _one = SETTINGS_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let before = load_settings(kit);
+    let mut all = before.clone();
+    let out = change(&mut all)?;
+    if all != before {
+        crate::fsx::write_json(&settings_path(kit), &all)?;
+    }
+    Ok(out)
 }
 
 /// The version of `engine` the project's database is on: the one chosen
@@ -369,6 +413,7 @@ impl Services {
     pub fn new(kit: Kit) -> Services {
         Services {
             kit,
+            ops: DbEngine::ALL.map(|e| (e, Mutex::new(()))).into(),
             running: Mutex::new(BTreeMap::new()),
             errors: Mutex::new(BTreeMap::new()),
             phpmyadmin: crate::db::phpmyadmin::PhpMyAdmin::default(),
@@ -377,6 +422,14 @@ impl Services {
 
     pub(crate) fn kit(&self) -> &Kit {
         &self.kit
+    }
+
+    /// The turn of `engine` ([`Services::ops`]); not reentrant: what holds
+    /// it calls [`Services::stop_key`], never [`Services::stop_engine`].
+    fn op(&self, engine: DbEngine) -> std::sync::MutexGuard<'_, ()> {
+        self.ops[&engine]
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// The version `line` names, or the one the server runs.
@@ -436,12 +489,10 @@ impl Services {
                 let lines = server_lines(&self.kit, id);
                 let ports = line_ports(&setting, id, line.as_deref(), &lines);
                 let key = Self::key(engine, line.as_deref());
-                let (state, port) = self.state_of(
-                    &mut running,
-                    &mut errors,
-                    &key,
-                    setting.port.unwrap_or_else(|| engine.default_port()),
-                );
+                let server = setting.port.unwrap_or_else(|| engine.default_port());
+                let main = line.as_ref().and_then(|l| ports.get(l)).copied();
+                let (state, port) =
+                    self.state_of(&mut running, &mut errors, &key, main.unwrap_or(server));
                 let others = lines
                     .iter()
                     .filter(|l| Some(l.as_str()) != line.as_deref())
@@ -554,6 +605,9 @@ impl Services {
         env: &KitEnv,
     ) -> Result<u16> {
         let id = engine.id();
+        // To the end: a second start of this version waits for the first,
+        // then finds it running.
+        let _turn = self.op(engine);
         // The version named first: one uninstalled is told as such
         // (`LineMissing`), the interface offers to install it.
         if let Some(l) = line {
@@ -579,10 +633,8 @@ impl Services {
             return Err(PortInUse(port).into());
         }
         let main = line == server_line(&self.kit, id);
-        if !main {
-            if let Some(l) = &line {
-                self.keep_port(id, l, port)?;
-            }
+        if let Some(l) = &line {
+            self.keep_port(id, l, port)?;
         }
         let result = self.launch(engine, line.as_deref(), main, env, port);
         let mut errors = self.errors.lock().unwrap_or_else(|e| e.into_inner());
@@ -597,16 +649,15 @@ impl Services {
         result
     }
 
-    /// The port given to another version at its first start, stored so
-    /// that versions installed later do not move it.
+    /// The port given to a version at its first start, the version the
+    /// server runs too, stored so that versions installed later, or
+    /// another version chosen for the server, do not move it (BUG-V5-02).
     fn keep_port(&self, id: &str, line: &str, port: u16) -> Result<()> {
-        let mut all = load_settings(&self.kit);
-        let entry = all.entry(id.to_owned()).or_default();
-        if entry.ports.get(line) == Some(&port) {
-            return Ok(());
-        }
-        entry.ports.insert(line.to_owned(), port);
-        crate::fsx::write_json(&settings_path(&self.kit), &all)
+        update_settings(&self.kit, |all| {
+            let entry = all.entry(id.to_owned()).or_default();
+            entry.ports.insert(line.to_owned(), port);
+            Ok(())
+        })
     }
 
     fn launch(
@@ -674,7 +725,8 @@ impl Services {
                 bail!("{}", log_tail(&self.kit, id, line));
             }
             if start.elapsed() > READY_WITHIN {
-                self.stop_engine(engine, line);
+                // The turn of `start_engine` is held.
+                self.stop_key(&key);
                 bail!(
                     "no answer on port {port} within {} s",
                     READY_WITHIN.as_secs()
@@ -683,7 +735,7 @@ impl Services {
             std::thread::sleep(Duration::from_millis(250));
         }
         if let Err(e) = self.secure(engine, line, main, env, port, fresh) {
-            self.stop_engine(engine, line);
+            self.stop_key(&key);
             return Err(e);
         }
         if let (Some(from), Some(line)) = (&seeded, line) {
@@ -750,6 +802,7 @@ impl Services {
 
     /// [`Services::stop_line`] of `engine`.
     pub(crate) fn stop_engine(&self, engine: DbEngine, line: Option<&str>) {
+        let _turn = self.op(engine);
         let line = self.resolve(engine, line);
         self.stop_key(&Self::key(engine, line.as_deref()));
     }
@@ -799,7 +852,10 @@ impl Services {
         // Dropping the server closes its job.
     }
 
-    /// Every server and every version of them.
+    /// Every server and every version of them. Without the turns of
+    /// [`Services::ops`]: on closing, a start still waiting for its server
+    /// (up to 90 s) does not hold the app open; that start then finds its
+    /// server gone, and the job ends it in any case.
     pub fn stop_all(&self) {
         self.phpmyadmin.stop();
         let keys: Vec<Key> = self
@@ -814,17 +870,34 @@ impl Services {
         }
     }
 
-    /// Port (None: default) and "start with Atollo" of `id`.
+    /// Port (None: default) and "start with Atollo" of `id`. A new port is
+    /// the one of the version the server runs (its stored one dropped),
+    /// unless another version has it.
     pub fn set(&self, id: &str, port: Option<u16>, autostart: bool) -> Result<()> {
         let engine = DbEngine::parse(id)?;
         if port.is_some_and(|p| p < 1024) {
             bail!("port below 1024");
         }
-        let mut all = load_settings(&self.kit);
-        let entry = all.entry(id.to_owned()).or_default();
-        entry.port = port.filter(|p| *p != engine.default_port());
-        entry.autostart = autostart;
-        crate::fsx::write_json(&settings_path(&self.kit), &all)
+        let main = server_line(&self.kit, id);
+        let lines = server_lines(&self.kit, id);
+        update_settings(&self.kit, |all| {
+            let entry = all.entry(id.to_owned()).or_default();
+            let new = port.unwrap_or_else(|| engine.default_port());
+            if let Some(m) = &main {
+                let ports = line_ports(entry, id, Some(m), &lines);
+                if ports.get(m) != Some(&new) {
+                    if let Some((other, _)) =
+                        entry.ports.iter().find(|(l, q)| **q == new && *l != m)
+                    {
+                        bail!("port {new} is the one of {id} {other}");
+                    }
+                    entry.ports.remove(m);
+                }
+            }
+            entry.port = port.filter(|p| *p != engine.default_port());
+            entry.autostart = autostart;
+            Ok(())
+        })
     }
 
     /// The port of another version of `id` (None: the first free one after
@@ -844,24 +917,29 @@ impl Services {
         if port.is_some_and(|p| p < 1024) {
             bail!("port below 1024");
         }
-        let mut all = load_settings(&self.kit);
-        let entry = all.entry(id.to_owned()).or_default();
-        if let Some(p) = port {
-            let ports = line_ports(entry, id, main.as_deref(), &lines);
-            if let Some((other, _)) = ports.iter().find(|(l, q)| **q == p && *l != line) {
-                bail!("port {p} is the one of {id} {other}");
+        update_settings(&self.kit, |all| {
+            let entry = all.entry(id.to_owned()).or_default();
+            if let Some(p) = port {
+                let ports = line_ports(entry, id, main.as_deref(), &lines);
+                if let Some((other, _)) = ports.iter().find(|(l, q)| **q == p && *l != line) {
+                    bail!("port {p} is the one of {id} {other}");
+                }
+                entry.ports.insert(line.to_owned(), p);
+            } else {
+                entry.ports.remove(line);
             }
-            entry.ports.insert(line.to_owned(), p);
-        } else {
-            entry.ports.remove(line);
-        }
-        crate::fsx::write_json(&settings_path(&self.kit), &all)
+            Ok(())
+        })
     }
 
     /// The version `id` runs (None: the newest on disk), while it is
-    /// stopped: each version has its own data (D-81).
+    /// stopped: each version has its own data (D-81). Every installed
+    /// version keeps the port it has (stored now, BUG-V5-02): the `.env`
+    /// of the projects on them stay right.
     pub fn set_line(&self, id: &str, line: Option<&str>) -> Result<()> {
         let engine = DbEngine::parse(id)?;
+        // No start in between the check and the change.
+        let _turn = self.op(engine);
         if let Some(l) = line {
             check_line(&self.kit, id, l)?;
         }
@@ -871,10 +949,15 @@ impl Services {
         if self.running_server(engine).is_ok() || !self.running_lines(engine).is_empty() {
             bail!("{id} is running: stop it first");
         }
-        let mut all = load_settings(&self.kit);
-        let entry = all.entry(id.to_owned()).or_default();
-        entry.line = line.map(str::to_owned);
-        crate::fsx::write_json(&settings_path(&self.kit), &all)
+        let main = server_line(&self.kit, id);
+        let lines = server_lines(&self.kit, id);
+        update_settings(&self.kit, |all| {
+            let entry = all.entry(id.to_owned()).or_default();
+            let ports = line_ports(entry, id, main.as_deref(), &lines);
+            entry.ports.extend(ports);
+            entry.line = line.map(str::to_owned);
+            Ok(())
+        })
     }
 
     /// The installed servers marked "start with Atollo": the version each
