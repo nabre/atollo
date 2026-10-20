@@ -243,7 +243,7 @@ pub async fn frameworks_create<R: Runtime>(
     let password = crate::projects::frameworks::password_of(
         &crate::editor::random_token().or_fail("frameworks")?,
     );
-    let services = Arc::clone(&state.services);
+    let (services, servers) = (Arc::clone(&state.services), Arc::clone(&state.servers));
     let busy = crate::projects::frameworks::begin()
         .ok_or_else(|| tr(&state, "È già in corso la creazione di un progetto.", &[]))?;
     let name = name.trim().to_owned();
@@ -409,6 +409,8 @@ pub async fn frameworks_create<R: Runtime>(
         }
         crate::versions::pin_newest(&kit, &name);
         settle_project(&app, &task, &kit, lang, &name, &dir);
+        // A new project: the pools are scanned again for its site.
+        servers.invalidate();
         Ok(name)
     })
     .await
