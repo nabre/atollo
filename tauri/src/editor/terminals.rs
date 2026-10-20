@@ -12,7 +12,8 @@
 //!   commands, the tools of the Required group (PowerShell, GitHub CLI) and
 //!   the system folders are always there.
 //! - Only what is on disk: a tool or a line removed meanwhile is left out
-//!   (a line falls back to the newest), never downloaded at the start.
+//!   (a line falls back to the newest, shown on the page as `replaced`),
+//!   never downloaded at the start.
 //! - Every console gets `ATOLLO_TERMINAL` (its name): the kit's profile
 //!   then keeps the terminal's versions in a project folder too, instead of
 //!   the project's (profile.ps1, bashrc).
@@ -71,6 +72,18 @@ pub struct TerminalInfo {
     pub builtin: bool,
     /// Tools it includes that are not on disk (any more): left out.
     pub missing: Vec<String>,
+    /// Lines it keeps that are not on disk (any more): the newest is used
+    /// instead (BUG-V4-13).
+    pub replaced: Vec<LineSwap>,
+}
+
+/// A line of a terminal's tool not on disk, and the one used in its place.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LineSwap {
+    pub id: String,
+    pub saved: String,
+    pub used: String,
 }
 
 /// A tool a terminal can include: installed, with its lines on disk.
@@ -191,13 +204,31 @@ fn default_terminal(kit: &Kit, lang: &str) -> Terminal {
 pub fn list(kit: &Kit, lang: &str) -> TerminalsView {
     let tools = tools(kit);
     let on_disk = |id: &str| tools.iter().any(|t| t.id == id);
+    // A saved line not among those on disk: `choice_env` keeps the newest.
+    let replaced = |t: &Terminal| -> Vec<LineSwap> {
+        t.tools
+            .iter()
+            .filter_map(|(id, line)| {
+                let saved = line.as_ref()?;
+                let lines = &tools.iter().find(|o| o.id == *id)?.lines;
+                let used = lines.first()?;
+                (!lines.contains(saved)).then(|| LineSwap {
+                    id: id.clone(),
+                    saved: saved.clone(),
+                    used: used.clone(),
+                })
+            })
+            .collect()
+    };
     let mut terminals = vec![TerminalInfo {
         terminal: default_terminal(kit, lang),
         builtin: true,
         missing: Vec::new(),
+        replaced: Vec::new(),
     }];
     terminals.extend(load(kit).into_iter().map(|t| TerminalInfo {
         missing: t.tools.keys().filter(|id| !on_disk(id)).cloned().collect(),
+        replaced: replaced(&t),
         terminal: t,
         builtin: false,
     }));
