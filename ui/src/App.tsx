@@ -348,10 +348,12 @@ function ActivityBar({
         </span>
         {shown && (
           // Not vscode-badge: its activity-bar-counter keeps an 18px minimum
-          // and a 1px border, where the editor's badge is 16px high.
+          // and a 1px border, where the editor's badge is 16px high. 3px
+          // from the right and 18px from the top (2px from the bottom), as
+          // the modern UI's .badge-content.
           <span
             aria-label={shown.label}
-            className="pointer-events-none absolute right-vsc-size20 bottom-vsc-size20 flex h-vsc-size160 min-w-vsc-size160 items-center justify-center rounded-vsc-circle bg-vsc-activitybar-badge px-vsc-size40 text-vsc-label3 leading-none font-vsc-regular text-vsc-activitybar-badge-fg"
+            className="pointer-events-none absolute right-[calc(var(--vscode-spacing-size20)+var(--vscode-strokeThickness))] bottom-vsc-size20 flex h-vsc-size160 min-w-vsc-size160 items-center justify-center rounded-vsc-circle bg-vsc-activitybar-badge px-vsc-size40 text-vsc-label3 leading-none font-vsc-regular text-vsc-activitybar-badge-fg"
           >
             {shown.count > 99 ? "99+" : shown.count}
           </span>

@@ -118,26 +118,34 @@ export function ConfirmDialog({
         tabIndex={-1}
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-desc`}
-        // .monaco-dialog-box: 480px wide (at most 90% of the window), 8px
-        // inside, xLarge corners, the xl shadow; the message 12px from the
-        // side, the buttons 20px under it, 8px apart and 4px in.
-        className="w-vsc-dialog max-w-[90vw] rounded-vsc-xlarge border border-vsc-widget-border bg-vsc-widget p-vsc-size80 text-(--vscode-editorWidget-foreground) shadow-vsc-xl"
+        // .monaco-dialog-box in the modern UI (.modern-ui-notifications-
+        // dialogs): 440px wide (at most 90% of the window), 4px inside,
+        // xLarge corners, the xl shadow; the message 16px from the top and
+        // the left, 28px from the right (its row's 8px and its container's
+        // 8px and 20px), the buttons 16px under it, 8px apart and 4px in.
+        className="w-vsc-dialog max-w-[90vw] rounded-vsc-xlarge border border-vsc-widget-border bg-vsc-widget p-vsc-size40 text-(--vscode-editorWidget-foreground) shadow-vsc-xl"
       >
-        <div className="px-vsc-size120 pt-vsc-size40">
-          <h2 id={`${id}-title`} className="mb-vsc-size40 text-[14px] font-vsc-semibold">
+        <div className="pt-vsc-size160 pr-vsc-size280 pl-vsc-size160">
+          {/* .dialog-message: 13px semibold, at least 22px high, 2px above
+              and 12px below. */}
+          <h2
+            id={`${id}-title`}
+            className="mt-vsc-size20 mb-vsc-size120 flex min-h-vsc-row items-center text-vsc-heading3 font-vsc-semibold"
+          >
             {title}
           </h2>
-          <div id={`${id}-desc`} className="space-y-vsc-size80 leading-(--vscode-spacing-size200)">
+          {/* .dialog-message-detail: 20px lines, dimmed. */}
+          <div id={`${id}-desc`} className="space-y-vsc-size80 leading-(--vscode-spacing-size200) text-vsc-desc">
             {children}
           </div>
         </div>
-        <div className="flex justify-end gap-vsc-size80 px-vsc-size40 pt-vsc-size240 pb-vsc-size40">
+        <div className="flex justify-end gap-vsc-size80 px-vsc-size40 pt-vsc-size200 pb-vsc-size40">
           <Button autoFocus onClick={onCancel}>
             {cancelLabel}
           </Button>
           {actions}
         </div>
-        {footer && <div className="px-vsc-size40">{footer}</div>}
+        {footer && <div className="px-vsc-size80">{footer}</div>}
       </div>
     </div>
   );

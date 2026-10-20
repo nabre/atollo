@@ -137,23 +137,33 @@ describe("ConfirmDialog", () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it("measures as VSCodium 1.135's .monaco-dialog-box, with tokens only", () => {
+  it("measures as VSCodium 1.135's .monaco-dialog-box in the modern UI, with tokens only", () => {
     render(
       <ConfirmDialog title="Chiudere?" cancelLabel="Annulla" onCancel={() => undefined} actions={null}>
         <p>Le attività in corso si fermano.</p>
       </ConfirmDialog>,
     );
     const box = screen.getByRole("alertdialog", { name: "Chiudere?" });
-    // min-width 480px (--vsc-size-dialog), padding 8px, xLarge corners, xl shadow.
-    for (const c of ["w-vsc-dialog", "max-w-[90vw]", "p-vsc-size80", "rounded-vsc-xlarge", "shadow-vsc-xl"]) {
-      expect(box.className.split(" ")).toContain(c);
+    const classes = (el: Element | null) => (el?.getAttribute("class") ?? "").split(" ");
+    // min-width 440px (--vsc-size-dialog), padding 4px, xLarge corners, xl shadow.
+    for (const c of ["w-vsc-dialog", "max-w-[90vw]", "p-vsc-size40", "rounded-vsc-xlarge", "shadow-vsc-xl"]) {
+      expect(classes(box)).toContain(c);
     }
-    // No measure in pixels or rems anywhere in the box (the title's 14px,
-    // .dialog-message's, has no token).
-    const classes = [box, ...box.querySelectorAll("*")]
-      .map((el) => el.getAttribute("class") ?? "")
-      .filter((c) => !c.includes("text-[14px]"));
-    expect(classes.join(" ")).not.toMatch(/\d(px|rem)\b/);
+    // The message 16px from the top and the left, 28px from the right; the
+    // title 13px semibold (heading3), 2px above and 12px below; the text dimmed.
+    const title = screen.getByRole("heading", { name: "Chiudere?" });
+    expect(classes(title.parentElement)).toEqual(
+      expect.arrayContaining(["pt-vsc-size160", "pl-vsc-size160", "pr-vsc-size280"]),
+    );
+    expect(classes(title)).toEqual(
+      expect.arrayContaining(["text-vsc-heading3", "font-vsc-semibold", "mt-vsc-size20", "mb-vsc-size120"]),
+    );
+    expect(classes(title.nextElementSibling)).toContain("text-vsc-desc");
+    // The buttons 16px under it, with their 4px.
+    expect(classes(screen.getByText("Annulla").closest("div"))).toContain("pt-vsc-size200");
+    // No measure in pixels or rems anywhere in the box.
+    const all = [box, ...box.querySelectorAll("*")].map((el) => el.getAttribute("class") ?? "");
+    expect(all.join(" ")).not.toMatch(/\d(px|rem)\b/);
   });
 });
 

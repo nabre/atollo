@@ -357,11 +357,9 @@ TOKENS = {
     "border": "sideBar.border",
     "titlebar": "titleBar.activeBackground",
     "titlebar-fg": "titleBar.activeForeground",
-    "titlebar-border": "titleBar.border",
     "activitybar": "activityBar.background",
     "activitybar-fg": "activityBar.foreground",
     "activitybar-inactive": "activityBar.inactiveForeground",
-    "activitybar-border": "activityBar.activeBorder",
     "activitybar-edge": "activityBar.border",
     "activitybar-badge": "activityBarBadge.background",
     "activitybar-badge-fg": "activityBarBadge.foreground",
@@ -376,6 +374,7 @@ TOKENS = {
     "panel-title": "panelTitle.activeForeground",
     "panel-title-inactive": "panelTitle.inactiveForeground",
     "panel-title-border": "panelTitle.activeBorder",
+    "panel-section-border": "panelSection.border",
     "statusbar": "statusBar.background",
     "statusbar-fg": "statusBar.foreground",
     "statusbar-border": "statusBar.border",
@@ -387,14 +386,6 @@ TOKENS = {
     "statusbar-active": "statusBarItem.activeBackground",
     "statusbar-error": "statusBarItem.errorBackground",
     "statusbar-error-fg": "statusBarItem.errorForeground",
-    "tab-border-top": "tab.activeBorderTop",
-    "tab-active": "tab.activeBackground",
-    "tab-active-fg": "tab.activeForeground",
-    "tab-inactive": "tab.inactiveBackground",
-    "tab-inactive-fg": "tab.inactiveForeground",
-    "tab-border": "tab.border",
-    "tabs": "editorGroupHeader.tabsBackground",
-    "tabs-border": "editorGroupHeader.tabsBorder",
     "settings-header": "settings.headerForeground",
     "settings-modified": "settings.modifiedItemIndicator",
     # VSCodium's "modern UI": floating parts on the workbench color, and
@@ -433,12 +424,13 @@ TOKENS = {
     "keybinding-fg": "keybindingLabel.foreground",
     "keybinding-border": "keybindingLabel.border",
     "keybinding-bottom": "keybindingLabel.bottomBorder",
-    # Lists
+    # Lists: a focused row's outline, and a focused row's that is selected
     "list-hover": "list.hoverBackground",
     "list-active": "list.activeSelectionBackground",
     "list-active-fg": "list.activeSelectionForeground",
     "list-inactive": "list.inactiveSelectionBackground",
     "list-focus": "list.focusOutline",
+    "list-focus-selected": "list.focusAndSelectionOutline",
     "list-highlight": "list.highlightForeground",
     # Floating surfaces
     "widget": "editorWidget.background",
@@ -515,12 +507,18 @@ LAYOUT = {
 #   parts add 6px below (StatusbarPart.FLOATING_BOTTOM_PADDING);
 # - statusbar-item-margin, statusbar-item-padding: .statusbar-item-label's
 #   margin and padding beside the text;
-# - dialog: the dialog box's width, .monaco-dialog-box's min-width (its
-#   width is min-content, as wide as that for a text);
+# - dialog: the dialog box's width, its min-width in the modern UI
+#   (.modern-ui-notifications-dialogs .monaco-dialog-box, 480px in the
+#   classic; its width is min-content, as wide as that for a text);
 # - scrollbar: the scroll bars' width and height, which the modern UI sets
 #   in workbench.js (10px, the scrollable element's default, in the classic);
 # - extension-icon: the icon of an extension's page, .extension-editor>
 #   .header>.icon-container .extension-icon .icon;
+# - extension-header: the text size of that page's header, .extension-editor>
+#   .header;
+# - extension-name: the line height of the name, .title>.name;
+# - extension-fact: the space on each side of the bar between two facts,
+#   .subtitle>.subtitle-entry's margin and padding;
 # - settings-toc: the Settings editor's table of contents,
 #   SettingsEditor2.TOC_RESET_WIDTH;
 # - settings-title: a settings group title's left padding,
@@ -544,9 +542,12 @@ SIZE_TOKENS = {
     "statusbar": "22px",
     "statusbar-item-margin": "3px",
     "statusbar-item-padding": "5px",
-    "dialog": "480px",
+    "dialog": "440px",
     "scrollbar": "8px",
     "extension-icon": "128px",
+    "extension-header": "14px",
+    "extension-name": "30px",
+    "extension-fact": "14px",
     "settings-toc": "200px",
     "settings-title": "15px",
     "modified-left": "5px",

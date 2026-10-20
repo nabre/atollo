@@ -11,11 +11,9 @@
   --vsc-border: var(--vscode-sideBar-border);
   --vsc-titlebar: var(--vscode-titleBar-activeBackground);
   --vsc-titlebar-fg: var(--vscode-titleBar-activeForeground);
-  --vsc-titlebar-border: var(--vscode-titleBar-border);
   --vsc-activitybar: var(--vscode-activityBar-background);
   --vsc-activitybar-fg: var(--vscode-activityBar-foreground);
   --vsc-activitybar-inactive: var(--vscode-activityBar-inactiveForeground);
-  --vsc-activitybar-border: var(--vscode-activityBar-activeBorder);
   --vsc-activitybar-edge: var(--vscode-activityBar-border);
   --vsc-activitybar-badge: var(--vscode-activityBarBadge-background);
   --vsc-activitybar-badge-fg: var(--vscode-activityBarBadge-foreground);
@@ -30,6 +28,7 @@
   --vsc-panel-title: var(--vscode-panelTitle-activeForeground);
   --vsc-panel-title-inactive: var(--vscode-panelTitle-inactiveForeground);
   --vsc-panel-title-border: var(--vscode-panelTitle-activeBorder);
+  --vsc-panel-section-border: var(--vscode-panelSection-border);
   --vsc-statusbar: var(--vscode-statusBar-background);
   --vsc-statusbar-fg: var(--vscode-statusBar-foreground);
   --vsc-statusbar-border: var(--vscode-statusBar-border);
@@ -41,14 +40,6 @@
   --vsc-statusbar-active: var(--vscode-statusBarItem-activeBackground);
   --vsc-statusbar-error: var(--vscode-statusBarItem-errorBackground);
   --vsc-statusbar-error-fg: var(--vscode-statusBarItem-errorForeground);
-  --vsc-tab-border-top: var(--vscode-tab-activeBorderTop);
-  --vsc-tab-active: var(--vscode-tab-activeBackground);
-  --vsc-tab-active-fg: var(--vscode-tab-activeForeground);
-  --vsc-tab-inactive: var(--vscode-tab-inactiveBackground);
-  --vsc-tab-inactive-fg: var(--vscode-tab-inactiveForeground);
-  --vsc-tab-border: var(--vscode-tab-border);
-  --vsc-tabs: var(--vscode-editorGroupHeader-tabsBackground);
-  --vsc-tabs-border: var(--vscode-editorGroupHeader-tabsBorder);
   --vsc-settings-header: var(--vscode-settings-headerForeground);
   --vsc-settings-modified: var(--vscode-settings-modifiedItemIndicator);
   --vsc-surface-border: var(--vscode-surface-border);
@@ -89,6 +80,7 @@
   --vsc-list-active-fg: var(--vscode-list-activeSelectionForeground);
   --vsc-list-inactive: var(--vscode-list-inactiveSelectionBackground);
   --vsc-list-focus: var(--vscode-list-focusOutline);
+  --vsc-list-focus-selected: var(--vscode-list-focusAndSelectionOutline);
   --vsc-list-highlight: var(--vscode-list-highlightForeground);
   --vsc-widget: var(--vscode-editorWidget-background);
   --vsc-widget-border: var(--vscode-widget-border);
@@ -130,11 +122,9 @@
   --color-vsc-border: var(--vsc-border);
   --color-vsc-titlebar: var(--vsc-titlebar);
   --color-vsc-titlebar-fg: var(--vsc-titlebar-fg);
-  --color-vsc-titlebar-border: var(--vsc-titlebar-border);
   --color-vsc-activitybar: var(--vsc-activitybar);
   --color-vsc-activitybar-fg: var(--vsc-activitybar-fg);
   --color-vsc-activitybar-inactive: var(--vsc-activitybar-inactive);
-  --color-vsc-activitybar-border: var(--vsc-activitybar-border);
   --color-vsc-activitybar-edge: var(--vsc-activitybar-edge);
   --color-vsc-activitybar-badge: var(--vsc-activitybar-badge);
   --color-vsc-activitybar-badge-fg: var(--vsc-activitybar-badge-fg);
@@ -149,6 +139,7 @@
   --color-vsc-panel-title: var(--vsc-panel-title);
   --color-vsc-panel-title-inactive: var(--vsc-panel-title-inactive);
   --color-vsc-panel-title-border: var(--vsc-panel-title-border);
+  --color-vsc-panel-section-border: var(--vsc-panel-section-border);
   --color-vsc-statusbar: var(--vsc-statusbar);
   --color-vsc-statusbar-fg: var(--vsc-statusbar-fg);
   --color-vsc-statusbar-border: var(--vsc-statusbar-border);
@@ -160,14 +151,6 @@
   --color-vsc-statusbar-active: var(--vsc-statusbar-active);
   --color-vsc-statusbar-error: var(--vsc-statusbar-error);
   --color-vsc-statusbar-error-fg: var(--vsc-statusbar-error-fg);
-  --color-vsc-tab-border-top: var(--vsc-tab-border-top);
-  --color-vsc-tab-active: var(--vsc-tab-active);
-  --color-vsc-tab-active-fg: var(--vsc-tab-active-fg);
-  --color-vsc-tab-inactive: var(--vsc-tab-inactive);
-  --color-vsc-tab-inactive-fg: var(--vsc-tab-inactive-fg);
-  --color-vsc-tab-border: var(--vsc-tab-border);
-  --color-vsc-tabs: var(--vsc-tabs);
-  --color-vsc-tabs-border: var(--vsc-tabs-border);
   --color-vsc-settings-header: var(--vsc-settings-header);
   --color-vsc-settings-modified: var(--vsc-settings-modified);
   --color-vsc-surface-border: var(--vsc-surface-border);
@@ -208,6 +191,7 @@
   --color-vsc-list-active-fg: var(--vsc-list-active-fg);
   --color-vsc-list-inactive: var(--vsc-list-inactive);
   --color-vsc-list-focus: var(--vsc-list-focus);
+  --color-vsc-list-focus-selected: var(--vsc-list-focus-selected);
   --color-vsc-list-highlight: var(--vsc-list-highlight);
   --color-vsc-widget: var(--vsc-widget);
   --color-vsc-widget-border: var(--vsc-widget-border);

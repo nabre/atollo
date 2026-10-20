@@ -48,6 +48,12 @@ export function List({
 const SELECTED =
   "bg-vsc-list-inactive group-focus-within/list:bg-vsc-list-active group-focus-within/list:text-vsc-list-active-fg";
 
+/** The focused row's outline: list.focusOutline, on a selected row
+ * list.focusAndSelectionOutline (VSCodium's list styles fall back to the
+ * first without it). */
+const FOCUSED = "focus-visible:outline-vsc-list-focus";
+const FOCUSED_SELECTED = "focus-visible:outline-vsc-list-focus-selected";
+
 /** The left padding of a row: 8px a level (workbench.tree.indent) and, on
  * a row with no twistie, the twistie's 16px. */
 function indent(depth: number, twistie: boolean) {
@@ -103,7 +109,7 @@ export function ListRow({
           title={title}
           onClick={onSelect}
           style={{ paddingLeft: indent(depth, twistie !== undefined) }}
-          className="flex h-full min-w-0 flex-1 items-center gap-vsc-size60 rounded-vsc-small text-left outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-list-focus"
+          className={`flex h-full min-w-0 flex-1 items-center gap-vsc-size60 rounded-vsc-small text-left outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 ${selected ? FOCUSED_SELECTED : FOCUSED}`}
         >
           {twistie && (
             <Codicon
@@ -176,7 +182,11 @@ export function ListItem({
             aria-current={selected ? "true" : undefined}
             title={title}
             onClick={onSelect}
-            className="flex h-vsc-size200 min-w-0 items-center gap-vsc-size60 text-left outline-none after:absolute after:inset-0 focus-visible:after:outline-1 focus-visible:after:-outline-offset-1 focus-visible:after:rounded-vsc-small focus-visible:after:outline-vsc-list-focus"
+            className={`flex h-vsc-size200 min-w-0 items-center gap-vsc-size60 text-left outline-none after:absolute after:inset-0 focus-visible:after:outline-1 focus-visible:after:-outline-offset-1 focus-visible:after:rounded-vsc-small ${
+              selected
+                ? "focus-visible:after:outline-vsc-list-focus-selected"
+                : "focus-visible:after:outline-vsc-list-focus"
+            }`}
           >
             <span className="truncate font-vsc-semibold">{name}</span>
             {meta && <span className="shrink-0 text-vsc-body-small opacity-70">{meta}</span>}

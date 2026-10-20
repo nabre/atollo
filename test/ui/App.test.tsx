@@ -244,11 +244,15 @@ describe("App", () => {
     invoke.mockImplementation(answers());
     render(<App />);
     const classes = (e: Element | null) => (e?.getAttribute("class") ?? "").split(" ");
-    // Title bar: 30px, window controls 46px.
+    // Title bar: 30px, window controls 46px and as high as the bar, no
+    // border under it (the modern UI sets no titleBar.border).
     const close = screen.getByRole("button", { name: "Chiudi" });
     expect(classes(close.parentElement)).toContain("h-vsc-titlebar");
+    expect(classes(close.parentElement).some((c) => c.startsWith("border"))).toBe(false);
     for (const name of ["Riduci a icona", "Ingrandisci", "Chiudi"]) {
-      expect(classes(screen.getByRole("button", { name }))).toContain("w-vsc-window-control");
+      expect(classes(screen.getByRole("button", { name }))).toEqual(
+        expect.arrayContaining(["w-vsc-window-control", "h-full"]),
+      );
     }
     // Activity bar: on the window's edge, no border, 36px items 8px apart,
     // the active one on a rounded square with no mark on its left.
@@ -860,7 +864,17 @@ describe("App", () => {
     const bar = within(screen.getByRole("contentinfo", { name: "Barra di stato" }));
     expect(await bar.findByLabelText("In esecuzione: 1")).toBeTruthy();
     // The same count on the Projects icon
-    expect(screen.getByTitle("Progetti - In esecuzione: 1")).toBeTruthy();
+    const projects = screen.getByTitle("Progetti - In esecuzione: 1");
+    // 3px from the item's right and 2px from its bottom, as the modern
+    // UI's .badge-content (top 18px of the 36px item, 16px high).
+    const badge = within(projects).getByLabelText("In esecuzione: 1");
+    expect((badge.getAttribute("class") ?? "").split(" ")).toEqual(
+      expect.arrayContaining([
+        "right-[calc(var(--vscode-spacing-size20)+var(--vscode-strokeThickness))]",
+        "bottom-vsc-size20",
+        "h-vsc-size160",
+      ]),
+    );
     cleanup();
 
     invoke.mockImplementation(answers({ services_list: [mysql], servers_list: servers([pool]) }));
