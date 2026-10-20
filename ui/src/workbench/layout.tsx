@@ -2,7 +2,7 @@
 // its title and collapsible panes, the sash between parts, the editor with
 // its tabs, the header and navigation bar of a details editor (as an
 // extension's page), the panel, and the welcome view of an empty view.
-// Parts float 4px apart on the workbench color, as VSCodium 1.140's modern
+// Parts float 4px apart on the workbench color, as VSCodium 1.135's modern
 // layout; the app composes them per page (ViewContainer).
 // Not vscode-elements here: vscode-collapsible and vscode-tabs draw the
 // classic 22px uppercase pane and panel headers, not the modern ones; the
