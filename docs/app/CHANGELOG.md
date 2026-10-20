@@ -1,5 +1,20 @@
 # Novità
 
+## Rilascio 0.5.0 alpha (21/10/2026)
+
+- **Versione 0.5.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.0` pubblica i file per i sei sistemi.
+- **Cosa porta**: i rilievi del report v5 chiusi (lock dei database e porte che restano, D-140; registro comune delle porte e `conf.d` del progetto anche nei pool e nel Caddy del progetto, D-141), l'aspetto del workbench di VSCodium 1.135 con le sue icone (D-142), le schermate del sito e dei README nella lingua della pagina (D-143).
+- **Anche**: la porta automatica di un'azione evita quelle dei pool e dei database; Esc chiude anche la domanda di eliminazione di un repository GitHub; gli stessi termini per le stesse cose in italiano, inglese, francese e tedesco; la Guida, i README, il sito, l'informativa e i documenti tecnici descrivono la 0.5.0; la matrice degli strumenti (`docs/app/TOOLS-MATRIX.html`) è tornata.
+- **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.5.0.
+
+## Documentazione coerente in quattro lingue (21/10/2026)
+
+- **README, sito e informativa**: le stesse sezioni e gli stessi fatti in inglese, italiano, francese e tedesco; le pagine dell'app come sono oggi.
+- **Guida dell'app**: descrive Attività e «Ferma tutto», le porte rifiutate con il loro proprietario, i `conf.d` dei progetti, la rete locale, le versioni dei database; rigenerati `GUIDE.md` e `GUIDE.it.md`.
+- **Documenti tecnici**: architettura (lock, registro delle porte, token, icone, script delle schermate), checklist dei test e catalogo seguono il codice, in inglese e italiano.
+- **Testi dell'app**: termini uniformi nelle quattro lingue («Matrice», «Übernehmen», «vous» in francese, «USB stick»).
+- **Anteprima nel browser**: mostra la versione vera dell'app; tutte le schermate rifatte.
+
 ## L'aspetto di VSCodium 1.135 (20/10/2026)
 
 - **Cornice**: barra del titolo, barra delle attività, barra di stato e schede del pannello con le misure e i colori di VSCodium 1.135, la versione dell'editor del kit (D-142).
