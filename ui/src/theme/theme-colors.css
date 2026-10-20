@@ -51,9 +51,11 @@
   --vsc-tabs-border: var(--vscode-editorGroupHeader-tabsBorder);
   --vsc-settings-header: var(--vscode-settings-headerForeground);
   --vsc-settings-modified: var(--vscode-settings-modifiedItemIndicator);
-  --vsc-surface-border: var(--vscode-modernActivityBar-border);
-  --vsc-activitybar-item-active: var(--vscode-modernActivityBarItem-activeBackground);
-  --vsc-activitybar-item-hover: var(--vscode-modernActivityBarItem-hoverBackground);
+  --vsc-surface-border: var(--vscode-surface-border);
+  --vsc-activitybar-item-active: var(--vscode-modernActivityBar-activeBackground);
+  --vsc-activitybar-item-active-fg: var(--vscode-modernActivityBar-activeForeground);
+  --vsc-activitybar-item-hover: var(--vscode-modernActivityBar-hoverBackground);
+  --vsc-activitybar-item-hover-fg: var(--vscode-modernActivityBar-hoverForeground);
   --vsc-focus: var(--vscode-focusBorder);
   --vsc-button: var(--vscode-button-background);
   --vsc-button-hover: var(--vscode-button-hoverBackground);
@@ -170,7 +172,9 @@
   --color-vsc-settings-modified: var(--vsc-settings-modified);
   --color-vsc-surface-border: var(--vsc-surface-border);
   --color-vsc-activitybar-item-active: var(--vsc-activitybar-item-active);
+  --color-vsc-activitybar-item-active-fg: var(--vsc-activitybar-item-active-fg);
   --color-vsc-activitybar-item-hover: var(--vsc-activitybar-item-hover);
+  --color-vsc-activitybar-item-hover-fg: var(--vsc-activitybar-item-hover-fg);
   --color-vsc-focus: var(--vsc-focus);
   --color-vsc-button: var(--vsc-button);
   --color-vsc-button-hover: var(--vsc-button-hover);

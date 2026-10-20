@@ -1,0 +1,359 @@
+/*!--------------------------------------------------------
+ * Copyright (C) Microsoft Corporation. All rights reserved.
+ *--------------------------------------------------------*/
+/* VSCodium 1.135.06055 (vscodium-reh-web-win32-x64-1.135.06055.tar.gz, SHA-256 579121d3043b94fbd054aee3f1155b53b00dc2786995604a685fda9ba7e2b560),
+   out/vs/code/browser/workbench/workbench.css: the rules Atollo mirrors, unchanged, one per
+   line, and from workbench.js the sizes the workbench registers.
+   Written by scripts/vscodium-css/extract.mjs: do not edit, run the script.
+
+   MIT License
+
+   Copyright (c) 2015 - present Microsoft Corporation
+
+   All rights reserved.
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+*/
+
+/* The sizes VSCodium registers (registerSize), the same in every theme. */
+:root {
+  --vscode-bodyFontSize: 13px;
+  --vscode-bodyFontSize-small: 12px;
+  --vscode-bodyFontSize-xSmall: 11px;
+  --vscode-fontSize-heading1: 26px;
+  --vscode-fontSize-heading2: 18px;
+  --vscode-fontSize-heading3: 13px;
+  --vscode-fontSize-body1: 13px;
+  --vscode-fontSize-body2: 11px;
+  --vscode-fontSize-label1: 12px;
+  --vscode-fontSize-label2: 11px;
+  --vscode-fontSize-label3: 10px;
+  --vscode-fontWeight-regular: 400;
+  --vscode-fontWeight-semiBold: 600;
+  --vscode-codiconFontSize: 16px;
+  --vscode-codiconFontSize-compact: 12px;
+  --vscode-cornerRadius-medium: 6px;
+  --vscode-cornerRadius-xSmall: 2px;
+  --vscode-cornerRadius-small: 4px;
+  --vscode-cornerRadius-large: 8px;
+  --vscode-cornerRadius-xLarge: 12px;
+  --vscode-cornerRadius-circle: 9999px;
+  --vscode-strokeThickness: 1px;
+  --vscode-spacing-sizeNone: 0px;
+  --vscode-spacing-size20: 2px;
+  --vscode-spacing-size40: 4px;
+  --vscode-spacing-size60: 6px;
+  --vscode-spacing-size80: 8px;
+  --vscode-spacing-size100: 10px;
+  --vscode-spacing-size120: 12px;
+  --vscode-spacing-size160: 16px;
+  --vscode-spacing-size200: 20px;
+  --vscode-spacing-size240: 24px;
+  --vscode-spacing-size280: 28px;
+  --vscode-spacing-size320: 32px;
+  --vscode-spacing-size360: 36px;
+  --vscode-spacing-size400: 40px;
+}
+
+/* The --vscode-* keys Atollo reads or sets that VSCodium 1.135.06055 knows:
+   registered in workbench.js or used by workbench.css.
+   --vscode-activityBar-activeBorder
+   --vscode-activityBar-background
+   --vscode-activityBar-border
+   --vscode-activityBar-foreground
+   --vscode-activityBar-inactiveForeground
+   --vscode-activityBarBadge-background
+   --vscode-activityBarBadge-foreground
+   --vscode-badge-background
+   --vscode-badge-foreground
+   --vscode-bodyFontSize
+   --vscode-bodyFontSize-small
+   --vscode-bodyFontSize-xSmall
+   --vscode-button-background
+   --vscode-button-border
+   --vscode-button-foreground
+   --vscode-button-hoverBackground
+   --vscode-button-secondaryBackground
+   --vscode-button-secondaryForeground
+   --vscode-button-secondaryHoverBackground
+   --vscode-charts-orange
+   --vscode-checkbox-background
+   --vscode-checkbox-border
+   --vscode-checkbox-foreground
+   --vscode-codiconFontSize
+   --vscode-codiconFontSize-compact
+   --vscode-cornerRadius-circle
+   --vscode-cornerRadius-large
+   --vscode-cornerRadius-medium
+   --vscode-cornerRadius-small
+   --vscode-cornerRadius-xLarge
+   --vscode-cornerRadius-xSmall
+   --vscode-descriptionForeground
+   --vscode-dropdown-background
+   --vscode-dropdown-border
+   --vscode-dropdown-listBackground
+   --vscode-editor-background
+   --vscode-editor-selectionBackground
+   --vscode-editorGroup-border
+   --vscode-editorGroupHeader-tabsBackground
+   --vscode-editorGroupHeader-tabsBorder
+   --vscode-editorInfo-foreground
+   --vscode-editorWidget-background
+   --vscode-editorWidget-foreground
+   --vscode-focusBorder
+   --vscode-fontSize-body1
+   --vscode-fontSize-body2
+   --vscode-fontSize-heading1
+   --vscode-fontSize-heading2
+   --vscode-fontSize-heading3
+   --vscode-fontSize-label1
+   --vscode-fontSize-label2
+   --vscode-fontSize-label3
+   --vscode-fontWeight-regular
+   --vscode-fontWeight-semiBold
+   --vscode-foreground
+   --vscode-gitDecoration-untrackedResourceForeground
+   --vscode-icon-foreground
+   --vscode-input-background
+   --vscode-input-border
+   --vscode-input-foreground
+   --vscode-input-placeholderForeground
+   --vscode-inputOption-activeBackground
+   --vscode-inputOption-activeBorder
+   --vscode-inputOption-activeForeground
+   --vscode-keybindingLabel-background
+   --vscode-keybindingLabel-border
+   --vscode-keybindingLabel-bottomBorder
+   --vscode-keybindingLabel-foreground
+   --vscode-keybindingTable-headerBackground
+   --vscode-list-activeSelectionBackground
+   --vscode-list-activeSelectionForeground
+   --vscode-list-errorForeground
+   --vscode-list-focusOutline
+   --vscode-list-highlightForeground
+   --vscode-list-hoverBackground
+   --vscode-list-inactiveSelectionBackground
+   --vscode-list-warningForeground
+   --vscode-menu-background
+   --vscode-menu-border
+   --vscode-menu-foreground
+   --vscode-menu-selectionBackground
+   --vscode-menu-selectionForeground
+   --vscode-menu-separatorBackground
+   --vscode-modernActivityBar-activeBackground
+   --vscode-modernActivityBar-activeForeground
+   --vscode-modernActivityBar-hoverBackground
+   --vscode-modernActivityBar-hoverForeground
+   --vscode-notifications-background
+   --vscode-notifications-border
+   --vscode-notifications-foreground
+   --vscode-panel-background
+   --vscode-panel-border
+   --vscode-panelTitle-activeBorder
+   --vscode-panelTitle-activeForeground
+   --vscode-panelTitle-inactiveForeground
+   --vscode-progressBar-background
+   --vscode-quickInput-background
+   --vscode-scrollbarSlider-activeBackground
+   --vscode-scrollbarSlider-background
+   --vscode-scrollbarSlider-hoverBackground
+   --vscode-settings-checkboxBackground
+   --vscode-settings-checkboxBorder
+   --vscode-settings-checkboxForeground
+   --vscode-settings-headerForeground
+   --vscode-settings-modifiedItemIndicator
+   --vscode-settings-rowHoverBackground
+   --vscode-shadow-active-tab
+   --vscode-shadow-depth-x
+   --vscode-shadow-depth-y
+   --vscode-shadow-lg
+   --vscode-shadow-md
+   --vscode-shadow-sm
+   --vscode-shadow-xl
+   --vscode-sideBar-background
+   --vscode-sideBar-border
+   --vscode-sideBar-foreground
+   --vscode-sideBarSectionHeader-background
+   --vscode-sideBarSectionHeader-border
+   --vscode-sideBarSectionHeader-foreground
+   --vscode-sideBarTitle-foreground
+   --vscode-spacing-size100
+   --vscode-spacing-size120
+   --vscode-spacing-size160
+   --vscode-spacing-size20
+   --vscode-spacing-size200
+   --vscode-spacing-size240
+   --vscode-spacing-size280
+   --vscode-spacing-size320
+   --vscode-spacing-size360
+   --vscode-spacing-size40
+   --vscode-spacing-size400
+   --vscode-spacing-size60
+   --vscode-spacing-size80
+   --vscode-spacing-sizeNone
+   --vscode-statusBar-background
+   --vscode-statusBar-border
+   --vscode-statusBar-foreground
+   --vscode-statusBarItem-activeBackground
+   --vscode-statusBarItem-errorBackground
+   --vscode-statusBarItem-errorForeground
+   --vscode-statusBarItem-hoverBackground
+   --vscode-statusBarItem-hoverForeground
+   --vscode-statusBarItem-remoteBackground
+   --vscode-statusBarItem-remoteForeground
+   --vscode-statusBarItem-remoteHoverBackground
+   --vscode-strokeThickness
+   --vscode-surface-border
+   --vscode-tab-activeBackground
+   --vscode-tab-activeBorderTop
+   --vscode-tab-activeForeground
+   --vscode-tab-border
+   --vscode-tab-inactiveBackground
+   --vscode-tab-inactiveForeground
+   --vscode-textBlockQuote-background
+   --vscode-textBlockQuote-border
+   --vscode-textCodeBlock-background
+   --vscode-textLink-activeForeground
+   --vscode-textLink-foreground
+   --vscode-textPreformat-background
+   --vscode-textPreformat-foreground
+   --vscode-titleBar-activeBackground
+   --vscode-titleBar-activeForeground
+   --vscode-titleBar-border
+   --vscode-toolbar-activeBackground
+   --vscode-toolbar-hoverBackground
+   --vscode-widget-border
+   --vscode-widget-shadow
+*/
+
+/* Workbench: shadows, the modern UI's floating parts */
+.monaco-workbench.floating-panels .part.sidebar,.monaco-workbench.floating-panels .part.auxiliarybar{margin:var(--vscode-spacing-sizeNone) var(--vscode-spacing-sizeNone) var(--vscode-spacing-size40) var(--vscode-spacing-size40);border:1px solid var(--vscode-surface-border, var(--vscode-widget-border, transparent))!important;border-radius:var(--vscode-cornerRadius-large);background-color:var(--vscode-surface-background)!important;color:var(--vscode-surface-foreground)}
+.monaco-workbench.floating-panels .part.panel{margin:var(--vscode-spacing-sizeNone) var(--vscode-spacing-sizeNone) var(--vscode-spacing-size40) var(--vscode-spacing-size40);border:1px solid var(--vscode-surface-border, var(--vscode-widget-border, transparent))!important;border-radius:var(--vscode-cornerRadius-large);background-color:var(--vscode-panel-background)!important;color:var(--vscode-surface-foreground)}
+.monaco-workbench.floating-panels .part.auxiliarybar{background-color:var(--vscode-sideBar-background)!important}
+.monaco-workbench.modern-ui.floating-panels .part.editor{border-color:var(--vscode-editor-border, var(--vscode-surface-border, var(--vscode-widget-border, transparent)))!important}
+.modern-ui.monaco-workbench{font-size:var(--vscode-fontSize-body1)}
+.modern-ui.monaco-workbench{--vscode-shadow-active-tab: 0 0 0 0 transparent;--vscode-shadow-depth-x: 0 0 0 0 transparent;--vscode-shadow-depth-y: 0 0 0 0 transparent;--vscode-shadow-sm: 0 0 0 0 transparent}
+.monaco-workbench{font-size:13px;line-height:1.4em;position:relative;inset:0;z-index:1;overflow:hidden;color:var(--vscode-foreground);font-family:var(--vscode-workbench-font-family, var(--monaco-font));font-size:var(--vscode-workbench-font-size, 13px);--vscode-shadow-sm: 0 0 4px rgba(0, 0, 0, .08);--vscode-shadow-md: 0 0 6px rgba(0, 0, 0, .08);--vscode-shadow-lg: 0 0 12px rgba(0, 0, 0, .14);--vscode-shadow-xl: 0 0 20px rgba(0, 0, 0, .15);--vscode-shadow-active-tab: 0 8px 12px rgba(0, 0, 0, .02);--vscode-shadow-depth-x: 5px 0 10px -4px rgba(0, 0, 0, .05);--vscode-shadow-depth-y: 0 5px 10px -4px rgba(0, 0, 0, .04)}
+.monaco-workbench.no-shadows{--vscode-shadow-active-tab: 0 0 0 0 transparent;--vscode-shadow-depth-x: 0 0 0 0 transparent;--vscode-shadow-depth-y: 0 0 0 0 transparent;--vscode-shadow-sm: 0 0 0 0 transparent}
+
+/* Title bar */
+.monaco-workbench .part.titlebar{display:flex;flex-direction:row;box-shadow:var(--vscode-shadow-md)}
+.monaco-workbench .part.titlebar>.titlebar-container{box-sizing:border-box;overflow:hidden;flex-shrink:1;flex-grow:1;align-items:center;justify-content:space-between;user-select:none;-webkit-user-select:none;display:flex;height:100%;width:100%}
+.monaco-workbench .part.titlebar>.titlebar-container>.titlebar-left>.window-appicon{width:35px;height:100%;position:relative;z-index:2500;flex-shrink:0;order:1}
+.monaco-workbench .part.titlebar>.titlebar-container>.titlebar-left>.window-appicon.codicon{line-height:30px}
+.monaco-workbench .part.titlebar .window-controls-container{display:flex;flex-grow:0;flex-shrink:0;text-align:center;z-index:3000;-webkit-app-region:no-drag;width:0px;height:100%}
+.monaco-workbench.web .part.titlebar .titlebar-right .window-controls-container{width:calc(100vw - env(titlebar-area-width,100vw) - env(titlebar-area-x,0px));height:env(titlebar-area-height,35px)}
+.monaco-workbench:not(.web):not(.mac) .part.titlebar .window-controls-container{width:calc(138px / var(--zoom-factor, 1))}
+.monaco-workbench .part.titlebar .window-controls-container>.window-icon{display:flex;justify-content:center;align-items:center;height:100%;width:46px;font-size:16px;color:var(--vscode-titleBar-activeForeground)}
+.monaco-workbench .part.titlebar .window-controls-container>.window-icon:hover{background-color:#ffffff1a}
+.monaco-workbench .part.titlebar.light .window-controls-container>.window-icon:hover{background-color:#0000001a}
+.monaco-workbench .part.titlebar .window-controls-container>.window-icon.window-close:hover{background-color:#e81123e6}
+
+/* Activity bar */
+.monaco-workbench.floating-panels .part.activitybar{margin:var(--vscode-spacing-sizeNone) var(--vscode-spacing-size40) var(--vscode-spacing-size40);width:calc(var(--activity-bar-width, 48px) + var(--vscode-spacing-size40));height:calc(100% - var(--vscode-spacing-size40));border-radius:var(--vscode-cornerRadius-medium);overflow:hidden}
+.monaco-workbench.floating-panels .part.activitybar.left{margin-left:0;margin-right:0;padding-left:var(--vscode-spacing-size60);padding-right:var(--vscode-spacing-size20);width:calc(var(--activity-bar-width, 48px) + var(--vscode-spacing-size80));border-radius:0 var(--vscode-cornerRadius-medium) var(--vscode-cornerRadius-medium) 0}
+.monaco-workbench.floating-panels .part.activitybar.right{margin-left:var(--vscode-spacing-size40);margin-right:0;padding-left:var(--vscode-spacing-size20);padding-right:var(--vscode-spacing-size60);width:calc(var(--activity-bar-width, 48px) + var(--vscode-spacing-size80));border-radius:var(--vscode-cornerRadius-medium) 0 0 var(--vscode-cornerRadius-medium)}
+.monaco-workbench.floating-panels .part.activitybar.bordered:before{display:none}
+.monaco-workbench.floating-panels .part.activitybar>.content .monaco-action-bar .action-item+.action-item{margin-top:var(--activity-bar-action-gap, 0px)}
+.monaco-workbench .part.activitybar{width:var(--activity-bar-width, 48px);height:100%;font-family:var(--vscode-workbench-activitybar-font-family, inherit);font-size:var(--vscode-workbench-activitybar-font-size)}
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label{position:relative;z-index:1;display:flex;overflow:hidden;width:var(--activity-bar-width, 48px);height:var(--activity-bar-action-height, 48px);margin-right:0;box-sizing:border-box}
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon{font-size:var(--activity-bar-icon-size, 24px);align-items:center;justify-content:center}
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label{width:var(--activity-bar-width, calc(var(--vscode-workbench-activitybar-font-size) * 3));height:var(--activity-bar-action-height, calc(var(--vscode-workbench-activitybar-font-size) * 3))}
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon{font-size:var(--activity-bar-icon-size, calc(var(--vscode-workbench-activitybar-font-size) * 1.5))}
+.modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator:before{border-left:none!important}
+.modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator,.modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .active-item-indicator{z-index:0;top:0;left:calc((var(--activity-bar-width, 36px) - var(--activity-bar-action-height, 36px) + 4px) / 2);width:calc(var(--activity-bar-action-height, 36px) - 4px);height:calc(var(--activity-bar-action-height, 36px) - 4px);border-radius:var(--vscode-cornerRadius-small)}
+.modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator{background-color:var(--vscode-modernActivityBar-activeBackground)}
+.modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .action-label.codicon{color:var(--vscode-modernActivityBar-activeForeground)!important}
+.modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .action-label.uri-icon{background-color:var(--vscode-modernActivityBar-activeForeground)!important}
+.modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .active-item-indicator{background-color:var(--vscode-modernActivityBar-hoverBackground)}
+.modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .action-label.codicon{color:var(--vscode-modernActivityBar-hoverForeground)!important}
+.modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .action-label.uri-icon{background-color:var(--vscode-modernActivityBar-hoverForeground)!important}
+.modern-ui .activitybar.compact>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator,.modern-ui .activitybar.compact>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .active-item-indicator{width:calc(var(--activity-bar-action-height, 28px) - 4px);height:calc(var(--activity-bar-action-height, 28px) - 4px)}
+
+/* Status bar */
+.monaco-workbench.floating-panels .part.statusbar{padding-left:var(--vscode-spacing-size60);padding-right:var(--vscode-spacing-size60);padding-top:var(--vscode-spacing-size20);padding-bottom:var(--vscode-spacing-size20)}
+.monaco-workbench .part.statusbar{box-sizing:border-box;cursor:default;width:100%;height:22px;font-size:12px;font-family:var(--vscode-workbench-statusbar-font-family, inherit);display:flex;overflow:hidden}
+.monaco-workbench .part.statusbar>.items-container>.statusbar-item{display:inline-block;line-height:22px;height:100%;vertical-align:top;max-width:40vw;font-variant-numeric:tabular-nums}
+.monaco-workbench .part.statusbar>.items-container>.statusbar-item>.statusbar-item-label{cursor:pointer;display:flex;height:100%;margin-right:3px;margin-left:3px;padding:0 5px;white-space:pre;align-items:center;text-overflow:ellipsis;overflow:hidden;outline-width:0px}
+.monaco-workbench .part.statusbar{height:calc(var(--vscode-workbench-statusbar-font-size) * 1.833333);font-size:calc(var(--vscode-workbench-statusbar-font-size) * 1)}
+.monaco-workbench .part.statusbar>.items-container>.statusbar-item{line-height:calc(var(--vscode-workbench-statusbar-font-size) * 1.833333)}
+.monaco-workbench .part.statusbar>.items-container>.statusbar-item>.statusbar-item-label{margin-right:calc(var(--vscode-workbench-statusbar-font-size) * .25);margin-left:calc(var(--vscode-workbench-statusbar-font-size) * .25);padding:0 calc(var(--vscode-workbench-statusbar-font-size) * .416667);outline-width:calc(var(--vscode-workbench-statusbar-font-size) * 0)}
+.modern-ui .part.statusbar>.items-container>.statusbar-item,.modern-ui .part.statusbar>.items-container>.statusbar-item>.statusbar-item-label{border-radius:var(--vscode-cornerRadius-small)}
+.modern-ui .part.statusbar>.items-container>.statusbar-item.left.first-visible-item>.statusbar-item-label,.modern-ui .part.statusbar>.items-container>.statusbar-item.right.last-visible-item>.statusbar-item-label{padding:0 var(--vscode-spacing-size60)}
+
+/* Part titles and the panel's tabs */
+.monaco-workbench .part>.title,.monaco-workbench .part>.header-or-footer{display:none}
+.monaco-workbench .part>.title,.monaco-workbench .part>.header-or-footer{height:35px;display:flex;box-sizing:border-box;overflow:hidden}
+.monaco-workbench .part>.title{padding-left:8px;padding-right:8px}
+.monaco-workbench .part>.title>.title-label{line-height:35px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.monaco-workbench .part>.title>.title-label{padding-left:12px}
+.monaco-workbench .pane-composite-part .part.panel>.title>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item .active-item-indicator,.monaco-workbench .pane-composite-part .part.panel>.header-or-footer>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item .active-item-indicator{top:calc(var(--vscode-workbench-bottompane-font-size) * -.307692);left:calc(var(--vscode-workbench-bottompane-font-size) * .769231);width:calc(100% - calc(var(--vscode-workbench-bottompane-font-size) * 1.538462))}
+.monaco-workbench .pane-composite-part .part.panel>.title>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item.checked .active-item-indicator:before,.monaco-workbench .pane-composite-part .part.panel>.title>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item:focus .active-item-indicator:before,.monaco-workbench .pane-composite-part .part.panel>.header-or-footer.header>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item.checked .active-item-indicator:before,.monaco-workbench .pane-composite-part .part.panel>.header-or-footer.header>.composite-bar-container>.composite-bar>.monaco-action-bar .action-item:focus .active-item-indicator:before{bottom:calc(var(--vscode-workbench-bottompane-font-size) * .153846)}
+.modern-ui.monaco-workbench .part>.title,.modern-ui.monaco-workbench .part>.header-or-footer{height:32px;padding-left:var(--vscode-spacing-size20)}
+.modern-ui.monaco-workbench .part>.title{padding-left:var(--vscode-spacing-size40);padding-right:var(--vscode-spacing-size40)}
+.modern-ui.monaco-workbench .part.basepanel:is(.bottom,.top,.left,.right) .composite.title{padding-right:var(--vscode-spacing-size40);padding-left:var(--vscode-spacing-size20);overflow:visible}
+
+/* Lists, view headers, scroll bars */
+.monaco-scrollable-element>.scrollbar{background:var(--vscode-scrollbar-background)}
+.monaco-scrollable-element>.scrollbar>.slider{background:var(--vscode-scrollbarSlider-background)}
+.monaco-scrollable-element>.scrollbar>.slider:hover{background:var(--vscode-scrollbarSlider-hoverBackground)}
+.monaco-scrollable-element>.scrollbar>.slider.active{background:var(--vscode-scrollbarSlider-activeBackground)}
+.monaco-list-row{position:absolute;box-sizing:border-box;overflow:hidden;width:100%}
+.monaco-pane-view .pane>.pane-header{position:relative}
+.monaco-pane-view{width:100%;height:100%;--pane-header-size: 22px}
+.monaco-pane-view .pane>.pane-header{height:var(--pane-header-size);line-height:var(--pane-header-size);font-size:11px;font-weight:700;overflow:hidden;display:flex;cursor:pointer;align-items:center;box-sizing:border-box}
+.modern-ui .monaco-pane-view .pane:not(.chat-viewpane-container)>.pane-header{padding-left:var(--vscode-spacing-size40);padding-right:0;margin:0 var(--vscode-spacing-size40)}
+.modern-ui .monaco-pane-view .pane-body:not(.chat-viewpane) .monaco-list-row{left:var(--vscode-spacing-size40);right:var(--vscode-spacing-size40);width:auto}
+.modern-ui .monaco-pane-view .pane>.pane-header{border:none!important}
+.modern-ui .monaco-pane-view .pane>.pane-header:before{content:"";position:absolute;top:0;left:var(--vscode-spacing-size40);right:var(--vscode-spacing-size40);height:var(--vscode-strokeThickness);pointer-events:none}
+.modern-ui .monaco-pane-view .pane>.pane-header{border-radius:var(--vscode-cornerRadius-small)}
+.modern-ui :is(.part.sidebar,.part.auxiliarybar) .monaco-pane-view .pane>.pane-header{background-color:var(--vscode-sideBar-background)!important}
+.modern-ui .monaco-pane-view{--pane-header-size: 28px}
+.modern-ui .monaco-pane-view .pane>.pane-header:hover{background-color:var(--vscode-list-hoverBackground)!important}
+.modern-ui .monaco-scrollable-element>.scrollbar>.slider{border-radius:var(--vscode-cornerRadius-small)}
+
+/* Buttons, inputs, select boxes, dialogs */
+.monaco-select-box{width:100%;cursor:pointer;border-radius:var(--vscode-cornerRadius-small)}
+.monaco-action-bar .action-item .monaco-select-box{cursor:pointer;min-width:100px;min-height:18px;padding:2px 23px 2px 8px}
+.monaco-text-button{box-sizing:border-box;display:flex;width:100%;padding:4px 8px;border-radius:4px;text-align:center;cursor:pointer;justify-content:center;align-items:center;border:1px solid var(--vscode-button-border, transparent);line-height:16px;font-size:12px;overflow-wrap:normal}
+.monaco-text-button.small{line-height:14px;font-size:11px;padding:3px 6px}
+.monaco-inputbox{position:relative;display:block;padding:0;box-sizing:border-box;border-radius:4px;font-size:inherit}
+.monaco-dialog-modal-block{position:fixed;height:100%;width:100%;left:0;top:0;z-index:2575;display:flex;justify-content:center;align-items:center}
+.monaco-dialog-box{display:flex;flex-direction:column-reverse;width:min-content;min-width:480px;max-width:90vw;max-height:90vh;min-height:75px;padding:8px;transform:translateZ(0);border-radius:var(--vscode-cornerRadius-xLarge);box-shadow:var(--vscode-shadow-xl)}
+
+/* Editor tabs, extension header, settings editor */
+.monaco-workbench .part.editor>.content .editor-group-container>.title .tabs-container>.tab{position:relative;display:flex;white-space:nowrap;cursor:pointer;height:var(--editor-group-tab-height);box-sizing:border-box;padding-left:10px;outline-offset:-2px}
+.monaco-workbench .part.editor>.content .editor-group-container>.title .tabs-container>.tab{background-color:var(--vscode-tab-unfocusedInactiveBackground)}
+.monaco-workbench .part.editor>.content .editor-group-container.active>.title .tabs-container>.tab{background-color:var(--vscode-tab-inactiveBackground)}
+.monaco-workbench .part.editor>.content .editor-group-container>.title .tabs-container>.tab{color:var(--vscode-tab-unfocusedInactiveForeground)}
+.monaco-workbench .part.editor>.content .editor-group-container.active>.title .tabs-container>.tab{color:var(--vscode-tab-inactiveForeground)}
+.settings-editor>.settings-body .settings-toc-container,.settings-editor>.settings-body .settings-tree-container{height:100%}
+.settings-editor>.settings-body .settings-toc-container{width:100%;pointer-events:none;z-index:10;position:absolute;box-shadow:var(--vscode-shadow-sm)}
+.settings-editor>.settings-body .settings-tree-container .setting-item-contents .setting-item-modified-indicator{display:none;border-color:var(--vscode-settings-modifiedItemIndicator)}
+.settings-editor>.settings-body .settings-tree-container .setting-item-contents.is-configured .setting-item-modified-indicator{display:block;content:" ";position:absolute;width:6px;border-left-width:2px;border-left-style:solid;left:5px;top:15px;bottom:18px}
+.extension-editor>.header{display:flex;padding-top:20px;padding-bottom:12px;padding-left:20px;overflow:hidden;font-size:14px}
+.extension-editor>.header>.icon-container .extension-icon .icon{height:128px;width:128px}
+.modern-ui-tabs.monaco-workbench .part.editor>.content .editor-group-container>.title.tabs{background-color:transparent!important;cursor:default;--editor-group-tab-height: 24px !important}
+.modern-ui-tabs.monaco-workbench .part.editor .tabs-and-actions-container:not(.wrapping) .tabs-container,.modern-ui-tabs.monaco-workbench .part.editor .tabs-and-actions-container:not(.wrapping) .tabs-container>.tab{min-height:calc(var(--editor-group-tab-height) + var(--vscode-spacing-size40) * 2)}
+.modern-ui-tabs.monaco-workbench .part.editor .tabs-and-actions-container:not(.wrapping) .tabs-container>.tab{border-block:var(--vscode-spacing-size40) solid transparent}
+
+/* Codicons */
+@font-face{font-family:codicon;font-display:block;src:url(../../../../media/codicon.ttf) format("truetype")}
+.codicon[class*=codicon-]{font: 16px/1 codicon;display:inline-block;text-decoration:none;text-rendering:auto;text-align:center;text-transform:none;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;user-select:none;-webkit-user-select:none}
+.monaco-workbench .codicon[class*=codicon-]{font-size:16px}
