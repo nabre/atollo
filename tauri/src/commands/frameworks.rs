@@ -118,6 +118,29 @@ pub(super) fn plan_needs(plan: &crate::projects::frameworks::Plan) -> Vec<&str> 
     out
 }
 
+/// Writes the wizard's variables in the project's `.env`, then the
+/// connection to its new database: the generated credentials win over a
+/// `DB_*` of the base, even an empty one (BUG-V4-10). Returns the keys the
+/// database set.
+pub(super) fn write_env(
+    dir: &std::path::Path,
+    vars: &[(String, String)],
+    db: Option<&crate::db::auth::ProjectDb>,
+) -> anyhow::Result<Vec<String>> {
+    if !vars.is_empty() {
+        crate::db::auth::env_set(dir, vars)?;
+    }
+    let Some(db) = db else {
+        return Ok(Vec::new());
+    };
+    let keys = crate::db::auth::env_wanted(&crate::db::auth::env_source(dir), db)
+        .into_iter()
+        .map(|(k, _)| k)
+        .collect();
+    crate::db::auth::env_apply(dir, db)?;
+    Ok(keys)
+}
+
 /// The connection to the project's database for the commands of a
 /// creation, by name, whatever the framework calls it (TYPO3's and
 /// Drupal's installers take it as options).
@@ -322,15 +345,16 @@ pub async fn frameworks_create<R: Runtime>(
             // What the steps get in their environment: the database's
             // connection (`ATOLLO_DB_*`) and the variables of `.env`.
             let mut step_vars: Vec<(String, String)> = Vec::new();
+            let mut db = None;
             if let Some(engine) = &plan.database {
                 let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);
                 emit(plan.create.len(), None, Some(text));
-                let db = services
+                let made = services
                     .start_for(&name, engine, &env)
                     .and_then(|_port| services.project_db_create(&name, engine))
                     .or_fail_chain("database")?;
-                crate::db::auth::env_apply(&dir, &db).or_fail_chain(".env")?;
-                step_vars.extend(db_vars(&db));
+                step_vars.extend(db_vars(&made));
+                db = Some(made);
             }
             let vars: Vec<(String, String)> = wanted_env
                 .iter()
@@ -352,8 +376,10 @@ pub async fn frameworks_create<R: Runtime>(
                 let keys: Vec<&str> = vars.iter().map(|(k, _)| k.as_str()).collect();
                 let text = crate::i18n::t(lang, "Scrivo nel file .env: {0}", &[&keys.join(", ")]);
                 emit(plan.create.len(), None, Some(text));
-                crate::db::auth::env_set(&dir, &vars).or_fail_chain(".env")?;
             }
+            let db_keys = write_env(&dir, &vars, db.as_ref()).or_fail_chain(".env")?;
+            // The steps read those keys from `.env`, not a value of the base.
+            step_vars.retain(|(k, _)| !db_keys.contains(k));
             for (i, line) in plan.steps.iter().enumerate() {
                 run(plan.create.len() + i + 1, line, &dir, &step_vars)?;
             }
