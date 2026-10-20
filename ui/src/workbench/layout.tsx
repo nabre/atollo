@@ -291,15 +291,21 @@ export interface Tab {
 }
 
 /** The tab bar of the modern UI: 32px, on the editor color, no border. */
-const TAB_BAR = "flex h-8 shrink-0 pl-0.5";
+const TAB_BAR = "flex h-vsc-tabs shrink-0 pl-vsc-size20";
 
 /** A tab: its fill is a 24px pill 2px in from the sides, rounded; the active
- * one on the list's selection color, the others on hover (modern UI). */
+ * one on the list's selection color, the others transparent
+ * (modernEditorTab.inactiveBackground) and on the list's hover color under
+ * the pointer, the active one too. Text 13px, the inactive tabs' at half the
+ * foreground. */
 const TAB =
-  "group/tab relative flex h-full max-w-60 min-w-0 shrink-0 items-center before:absolute before:inset-x-0.5 before:inset-y-1 before:rounded";
+  "group/tab relative flex h-full max-w-60 min-w-0 shrink-0 items-center text-vsc-body1 before:absolute before:inset-x-vsc-size20 before:inset-y-vsc-size40 before:rounded-vsc-small";
+const TAB_ACTIVE = "text-vsc-fg before:bg-vsc-list-inactive";
+const TAB_INACTIVE = "text-vsc-fg/50 hover:text-vsc-fg";
 
-/** The editor's tabs (modern UI): pills, the active one filled; close on
- * hover and on the active tab. */
+/** The editor's tabs (modern UI): pills, the active one filled; the close
+ * button over the tab's right end (.tab-actions, 24px), on its fill with a
+ * fade before it, shown on hover or focus only, the active tab's too. */
 export function EditorTabs({
   tabs,
   active,
@@ -324,14 +330,7 @@ export function EditorTabs({
           const on = tab.id === active;
           const close = tab.pinned ? undefined : onClose;
           return (
-            <div
-              key={tab.id}
-              className={`${TAB} ${
-                on
-                  ? "text-vsc-tab-active-fg before:bg-vsc-list-inactive"
-                  : "text-vsc-tab-inactive-fg hover:before:bg-vsc-list-hover"
-              }`}
-            >
+            <div key={tab.id} className={`${TAB} ${on ? TAB_ACTIVE : TAB_INACTIVE} hover:before:bg-vsc-list-hover`}>
               <button
                 type="button"
                 role="tab"
@@ -343,26 +342,32 @@ export function EditorTabs({
                 onAuxClick={(e) => {
                   if (e.button === 1 && close) close(tab.id);
                 }}
-                className={`relative flex h-full min-w-0 items-center gap-1.5 pl-1.5 outline-none focus-visible:outline-1 focus-visible:-outline-offset-4 focus-visible:outline-vsc-focus ${close ? "pr-1" : "pr-2"}`}
+                className="relative flex h-full min-w-0 items-center gap-vsc-size60 pr-vsc-size80 pl-vsc-size60 outline-none focus-visible:outline-1 focus-visible:-outline-offset-4 focus-visible:outline-vsc-focus"
               >
-                {tab.icon && <span className="flex w-4 shrink-0 justify-center">{tab.icon}</span>}
+                {tab.icon && <span className="flex w-vsc-size160 shrink-0 justify-center">{tab.icon}</span>}
                 <span className="truncate">{tab.label}</span>
-                {tab.description && <span className="truncate text-[12px] opacity-70">{tab.description}</span>}
+                {tab.description && <span className="truncate text-vsc-body-small opacity-70">{tab.description}</span>}
               </button>
               {close && (
-                <button
-                  type="button"
-                  aria-label={t("Chiudi {0}", tab.label)}
-                  title={t("Chiudi")}
-                  onClick={() => {
-                    close(tab.id);
-                  }}
-                  className={`relative mr-1 flex size-5 items-center justify-center rounded hover:bg-vsc-toolbar-hover ${
-                    on ? "" : "invisible group-hover/tab:visible focus-visible:visible"
+                <span
+                  className={`pointer-events-none absolute inset-y-vsc-size40 right-vsc-size20 flex w-vsc-size240 items-center justify-center rounded-r-vsc-small opacity-0 group-hover/tab:pointer-events-auto group-hover/tab:opacity-100 before:pointer-events-none before:absolute before:inset-y-0 before:right-full before:w-vsc-size160 before:bg-linear-to-r before:from-transparent focus-within:pointer-events-auto focus-within:opacity-100 ${
+                    on
+                      ? "bg-vsc-list-inactive group-hover/tab:bg-vsc-list-hover before:to-vsc-list-inactive group-hover/tab:before:to-vsc-list-hover"
+                      : "bg-vsc-list-hover before:to-vsc-list-hover"
                   }`}
                 >
-                  <VscClose size={16} aria-hidden="true" />
-                </button>
+                  <button
+                    type="button"
+                    aria-label={t("Chiudi {0}", tab.label)}
+                    title={t("Chiudi")}
+                    onClick={() => {
+                      close(tab.id);
+                    }}
+                    className="flex size-vsc-size200 items-center justify-center rounded-vsc-small text-vsc-fg outline-none hover:bg-vsc-toolbar-hover focus-visible:outline-1 focus-visible:outline-vsc-focus"
+                  >
+                    <VscClose size={16} aria-hidden="true" />
+                  </button>
+                </span>
               )}
             </div>
           );
@@ -379,9 +384,9 @@ export function SingleEditor({ title, icon, children }: { title: string; icon: R
   return (
     <ViewContainer id={title}>
       <div className={TAB_BAR}>
-        <div className={`${TAB} gap-1.5 pr-2 pl-1.5 text-vsc-tab-active-fg before:bg-vsc-list-inactive`}>
-          <span className="relative flex w-4 justify-center">{icon}</span>
-          <h1 className="relative text-[13px] font-normal">{title}</h1>
+        <div className={`${TAB} ${TAB_ACTIVE} gap-vsc-size60 pr-vsc-size80 pl-vsc-size60`}>
+          <span className="relative flex w-vsc-size160 justify-center">{icon}</span>
+          <h1 className="relative text-vsc-body1 font-normal">{title}</h1>
         </div>
       </div>
       {children}
@@ -389,8 +394,10 @@ export function SingleEditor({ title, icon, children }: { title: string; icon: R
   );
 }
 
-/** The header of a details editor, as an extension's page: a big icon, the
- * name, a line of facts, a description, the buttons. */
+/** The header of a details editor, as an extension's page
+ * (.extension-editor>.header): a 128px icon, 20px from the top and the left,
+ * 12px above the bar; the name, a line of facts 6px under it, a description
+ * and the buttons 10px apart. The icon given is drawn at the full 128px. */
 export function EditorHeader({
   icon,
   title,
@@ -409,26 +416,31 @@ export function EditorHeader({
 }) {
   const facts = (meta ?? []).filter(Boolean);
   return (
-    <header className="flex shrink-0 gap-5 px-5 pt-5 pb-3">
-      <span className="flex size-16 shrink-0 items-center justify-center">{icon}</span>
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <h2 id={titleId} className="truncate text-[26px] leading-8 font-semibold text-vsc-settings-header select-text">
+    <header className="flex shrink-0 gap-vsc-size120 px-vsc-size200 pt-vsc-size200 pb-vsc-size120">
+      <span className="flex size-vsc-extension-icon shrink-0 items-center justify-center [&>svg]:size-full">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2
+          id={titleId}
+          className="truncate text-vsc-heading1 leading-8 font-semibold text-vsc-settings-header select-text"
+        >
           {title}
         </h2>
         {facts.length > 0 && (
-          <div className="flex flex-wrap items-center text-[13px]">
+          <div className="flex flex-wrap items-center pt-vsc-size60 text-vsc-body leading-5">
             {facts.map((f, i) => (
               <span
                 key={i}
-                className={`flex items-center gap-1.5 ${i > 0 ? "ml-2.5 border-l border-vsc-border pl-2.5" : ""}`}
+                className={`flex items-center gap-vsc-size60 ${i > 0 ? "ml-vsc-size100 border-l border-vsc-border pl-vsc-size100" : ""}`}
               >
                 {f}
               </span>
             ))}
           </div>
         )}
-        {description && <div className="text-vsc-desc">{description}</div>}
-        {actions && <div className="flex flex-wrap items-center gap-1.5 pt-1">{actions}</div>}
+        {description && <div className="mt-vsc-size100 text-vsc-desc">{description}</div>}
+        {actions && <div className="mt-vsc-size100 flex flex-wrap items-center gap-vsc-size60">{actions}</div>}
       </div>
     </header>
   );
@@ -442,8 +454,9 @@ export interface NavItem<T extends string> {
   mark?: ReactNode;
 }
 
-/** The navigation bar of a details editor (Details, Features, Changelog):
- * the active item underlined. */
+/** The navigation bar of a details editor (Details, Features, Changelog),
+ * as .extension-editor>.body>.navbar: 36px, 20px in, 11px uppercase items
+ * 10px wide on each side, the active one underlined. */
 export function NavBar<T extends string>({
   label,
   items,
@@ -456,20 +469,20 @@ export function NavBar<T extends string>({
   onSelect: (id: T) => void;
 }) {
   return (
-    <nav aria-label={label} className="shrink-0 border-b border-vsc-border px-5">
-      <ul className="m-0 flex list-none flex-wrap gap-x-5 p-0">
+    <nav aria-label={label} className="h-vsc-size360 shrink-0 border-b border-vsc-border pl-vsc-size200">
+      <ul className="m-0 flex h-full list-none overflow-x-auto p-0 [scrollbar-width:none]">
         {items.map((x) => {
           const on = x.id === active;
           const Icon = x.icon;
           return (
-            <li key={x.id}>
+            <li key={x.id} className="shrink-0">
               <button
                 type="button"
                 aria-current={on ? "page" : undefined}
                 onClick={() => {
                   onSelect(x.id);
                 }}
-                className={`relative flex h-[30px] items-center gap-1.5 outline-none focus-visible:outline-1 focus-visible:outline-vsc-focus ${
+                className={`relative flex h-full items-center gap-vsc-size60 px-vsc-size100 text-vsc-body-xsmall font-normal uppercase outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-focus ${
                   on
                     ? "text-vsc-panel-title after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-vsc-panel-title-border"
                     : "text-vsc-panel-title-inactive hover:text-vsc-panel-title"

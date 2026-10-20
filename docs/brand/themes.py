@@ -515,7 +515,15 @@ LAYOUT = {
 # - dialog: the dialog box's width, .monaco-dialog-box's min-width (its
 #   width is min-content, as wide as that for a text);
 # - scrollbar: the scroll bars' width and height, which the modern UI sets
-#   in workbench.js (10px, the scrollable element's default, in the classic).
+#   in workbench.js (10px, the scrollable element's default, in the classic);
+# - extension-icon: the icon of an extension's page, .extension-editor>
+#   .header>.icon-container .extension-icon .icon;
+# - settings-toc: the Settings editor's table of contents,
+#   SettingsEditor2.TOC_RESET_WIDTH;
+# - settings-title: a settings group title's left padding,
+#   .settings-group-title-label;
+# - modified-left, modified-top, modified-bottom: where the bar of a changed
+#   setting stands in its item, .setting-item-modified-indicator.
 SIZE_TOKENS = {
     "titlebar": "35px",
     "window-control": "46px",
@@ -533,6 +541,12 @@ SIZE_TOKENS = {
     "statusbar": "22px",
     "dialog": "480px",
     "scrollbar": "8px",
+    "extension-icon": "128px",
+    "settings-toc": "200px",
+    "settings-title": "15px",
+    "modified-left": "5px",
+    "modified-top": "15px",
+    "modified-bottom": "18px",
 }
 
 

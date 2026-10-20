@@ -152,6 +152,16 @@ describe("theme-sizes.css", () => {
         "height",
       ),
     );
+    // An extension's icon and the bar of a changed setting.
+    expect(sizes.get("--vsc-size-extension-icon")).toBe(
+      referenceValue(".extension-editor>.header>.icon-container .extension-icon .icon", "width"),
+    );
+    const modified =
+      ".settings-editor>.settings-body .settings-tree-container .setting-item-contents.is-configured .setting-item-modified-indicator";
+    for (const side of ["left", "top", "bottom"]) {
+      expect(sizes.get(`--vsc-size-modified-${side}`)).toBe(referenceValue(modified, side));
+    }
+    expect(referenceValue(modified, "border-left-width")).toBe(sizes.get("--vscode-spacing-size20"));
   });
 });
 
