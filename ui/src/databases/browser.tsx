@@ -7,7 +7,7 @@ import { VscChevronLeft, VscChevronRight, VscDatabase, VscEye, VscRefresh, VscTa
 import { DB_PAGE, dbBrowseRows, dbBrowseTree, type DbDatabase, type DbRows, type ServiceInfo } from "../api";
 import { locale, t } from "../i18n";
 import { ErrorLine } from "../common";
-import { DataTable, IconButton, List, ListRow, ProgressBar } from "../workbench";
+import { DataTable, IconButton, List, ListRow, ProgressBar, Watermark } from "../workbench";
 
 type Engine = ServiceInfo["id"];
 
@@ -282,11 +282,13 @@ export function DbBrowser({ engine, line = null }: { engine: Engine; line?: stri
           table={chosen.table}
         />
       ) : (
-        <div className="flex flex-1 items-center justify-center p-6 text-center text-vsc-desc">
-          {engine === "mongodb"
-            ? t("Scegli una collezione per vederne i documenti, in sola lettura.")
-            : t("Scegli una tabella per vederne le righe, in sola lettura.")}
-        </div>
+        <Watermark>
+          <p className="text-vsc-desc">
+            {engine === "mongodb"
+              ? t("Scegli una collezione per vederne i documenti, in sola lettura.")
+              : t("Scegli una tabella per vederne le righe, in sola lettura.")}
+          </p>
+        </Watermark>
       )}
     </div>
   );
