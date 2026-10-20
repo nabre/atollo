@@ -1,5 +1,9 @@
 # Novità
 
+## Sviluppo: il server dell'interfaccia si chiude con l'app (20/10/2026)
+
+- **`npm run dev`**: chiudendo l'app si ferma anche Vite, così la porta 5173 resta libera per la volta dopo; se è occupata, dice da chi e come fermarlo (D-138).
+
 ## Impostazioni senza «Salva», primo avvio, privacy (20/10/2026)
 
 - **Impostazioni**: ogni modifica si salva e si applica da sola, senza «Salva»; anche le istruzioni dei framework. La chiave di Gemini si salva quando lasci il campo (D-137).

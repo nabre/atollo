@@ -5,7 +5,7 @@
   "identifier": "io.github.nabre.atollo",
   "build": {
     "beforeDevCommand": {
-      "script": "npm run dev",
+      "script": "node ../scripts/dev-ui.mjs",
       "cwd": "../ui"
     },
     "devUrl": "http://127.0.0.1:5173",
