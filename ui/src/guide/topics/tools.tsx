@@ -93,10 +93,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Riquadro «Componenti»", "“Components” box", "Panneau « Composants »", "Bereich „Komponenten“"),
               tr(
-                "Un albero con i cinque gruppi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente.",
-                "A tree with the five groups and their components, with how many are installed. A click opens the component's tab.",
-                "Une arborescence avec les cinq groupes et leurs composants, avec le nombre d'installés. Un clic ouvre l'onglet du composant.",
-                "Ein Baum mit den fünf Gruppen und ihren Komponenten, mit der Anzahl der installierten. Ein Klick öffnet die Registerkarte der Komponente.",
+                "Un albero con i sei tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente.",
+                "A tree with the six kinds and their components, with how many are installed. A click opens the component's tab.",
+                "Une arborescence avec les six types et leurs composants, avec le nombre d'installés. Un clic ouvre l'onglet du composant.",
+                "Ein Baum mit den sechs Arten und ihren Komponenten, mit der Anzahl der installierten. Ein Klick öffnet die Registerkarte der Komponente.",
               ),
             ],
             [
@@ -138,21 +138,21 @@ export const TOOLS: TopicTexts = {
         />
         <Table
           columns={[
-            tr("Gruppo", "Group", "Groupe", "Gruppe"),
+            tr("Tipo", "Type", "Type", "Typ"),
             tr("Che cosa contiene", "What it contains", "Ce qu'elle contient", "Was er enthält"),
           ]}
           rows={[
             [
-              tr("Obbligatori", "Required", "Obligatoires", "Erforderlich"),
+              tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor"),
               tr(
-                "Editor, PowerShell 7, GitHub CLI: sempre installati.",
-                "Editor, PowerShell 7, GitHub CLI: always installed.",
-                "Éditeur, PowerShell 7, GitHub CLI : toujours installés.",
-                "Editor, PowerShell 7, GitHub CLI: immer installiert.",
+                "Editor, PowerShell 7, GitHub CLI, Git: sempre installati.",
+                "Editor, PowerShell 7, GitHub CLI, Git: always installed.",
+                "Éditeur, PowerShell 7, GitHub CLI, Git : toujours installés.",
+                "Editor, PowerShell 7, GitHub CLI, Git: immer installiert.",
               ),
             ],
             [
-              tr("Agenti", "Agents", "Agents", "Agenten"),
+              tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
                 "Claude Code, Codex, Antigravity: facoltativi, sempre all'ultima versione.",
                 "Claude Code, Codex, Antigravity: optional, always at the latest version.",
@@ -163,19 +163,28 @@ export const TOOLS: TopicTexts = {
             [
               tr("Linguaggi", "Languages", "Langages", "Sprachen"),
               tr(
-                "Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R: possono avere più versioni una accanto all'altra.",
-                "Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R: they can have several versions side by side.",
-                "Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R : ils peuvent avoir plusieurs versions côte à côte.",
-                "Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R: Sie können mehrere Versionen nebeneinander haben.",
+                "Tutti i linguaggi e i runtime: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Python, Node.js, PHP, Go e Java possono avere più versioni una accanto all'altra; gli altri restano all'ultima versione.",
+                "All languages and runtimes: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Python, Node.js, PHP, Go and Java can have several versions side by side; the others stay at the latest version.",
+                "Tous les langages et environnements d'exécution : Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Python, Node.js, PHP, Go et Java peuvent avoir plusieurs versions côte à côte ; les autres restent à la dernière version.",
+                "Alle Sprachen und Laufzeiten: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Python, Node.js, PHP, Go und Java können mehrere Versionen nebeneinander haben; die anderen bleiben auf der neuesten Version.",
               ),
             ],
             [
-              tr("Strumenti", "Tools", "Outils", "Werkzeuge"),
+              tr("Strumenti di sviluppo", "Development tools", "Outils de développement", "Entwicklungswerkzeuge"),
               tr(
-                "Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++: una sola versione, sempre l'ultima; quelli che servono si installano da soli.",
-                "Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++: a single version, always the latest; the ones that are needed install themselves.",
-                "Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++ : une seule version, toujours la dernière ; ceux qui sont nécessaires s'installent tout seuls.",
-                "Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++: eine einzige Version, immer die neueste; die benötigten installieren sich von selbst.",
+                "uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: una sola versione, sempre l'ultima; quelli che servono si installano da soli.",
+                "uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest; the ones that are needed install themselves.",
+                "uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX : une seule version, toujours la dernière ; ceux qui sont nécessaires s'installent tout seuls.",
+                "uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: eine einzige Version, immer die neueste; die benötigten installieren sich von selbst.",
+              ),
+            ],
+            [
+              tr("Server web", "Web server", "Serveur web", "Webserver"),
+              tr(
+                "Apache e Caddy, per i siti dei progetti e i Server Web condivisi.",
+                "Apache and Caddy, for the projects' sites and the shared Web Servers.",
+                "Apache et Caddy, pour les sites des projets et les serveurs web partagés.",
+                "Apache und Caddy, für die Websites der Projekte und die gemeinsamen Webserver.",
               ),
             ],
             [
@@ -204,10 +213,18 @@ export const TOOLS: TopicTexts = {
       >
         <P>
           {tr(
-            "Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Gruppo» e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, gruppo, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.",
-            "Above the table are the filters: the search, “Platform”, “Group” and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, group, version, versions on disk, size, status, projects that use it, what it requires and the actions.",
-            "Au-dessus du tableau se trouvent les filtres : la recherche, « Plateforme », « Groupe » et « État » (Tous, Installés, Non installés, À appliquer, Utilisés par les projets), plus les boutons « Développer » et « Vérifier ». Les colonnes : nom, groupe, version, versions sur le disque, taille, état, projets qui l'utilisent, ce qu'il requiert et les actions.",
-            "Über der Tabelle stehen die Filter: die Suche, „Plattform“, „Gruppe“ und „Status“ (Alle, Installiert, Nicht installiert, Anzuwenden, Von Projekten verwendet), dazu die Schaltflächen „Erweitern“ und „Prüfen“. Die Spalten: Name, Gruppe, Version, Versionen auf dem Datenträger, Größe, Status, Projekte, die es verwenden, was es benötigt, und die Aktionen.",
+            "Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Tipo» («Tutti i tipi» o uno dei sei) e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.",
+            "Above the table are the filters: the search, “Platform”, “Type” (“All kinds” or one of the six) and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, version, versions on disk, size, status, projects that use it, what it requires and the actions.",
+            "Au-dessus du tableau se trouvent les filtres : la recherche, « Plateforme », « Type » (« Tous les types » ou l'un des six) et « État » (Tous, Installés, Non installés, À appliquer, Utilisés par les projets), plus les boutons « Développer » et « Vérifier ». Les colonnes : nom, version, versions sur le disque, taille, état, projets qui l'utilisent, ce qu'il requiert et les actions.",
+            "Über der Tabelle stehen die Filter: die Suche, „Plattform“, „Typ“ („Alle Typen“ oder eine der sechs) und „Status“ (Alle, Installiert, Nicht installiert, Anzuwenden, Von Projekten verwendet), dazu die Schaltflächen „Erweitern“ und „Prüfen“. Die Spalten: Name, Version, Versionen auf dem Datenträger, Größe, Status, Projekte, die es verwenden, was es benötigt, und die Aktionen.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "Le righe sono divise per tipo. Ogni tipo ha una riga di titolo: la freccia per chiuderlo o riaprirlo, il nome, quanti componenti contiene («3», oppure «2 di 5» quando un filtro ne nasconde qualcuno), la sua descrizione e una casella «Scegli tutti: …» che sceglie tutti i suoi componenti che si possono scegliere. Un clic sull'intestazione di una colonna ordina le righe dentro ogni tipo (all'inizio per nome).",
+            "The rows are divided by kind. Each kind has a title row: the arrow to fold or unfold it, its name, how many components it holds (“3”, or “2 of 5” when a filter hides some), its description and a “Choose all: …” checkbox that chooses all its components that can be chosen. A click on a column header sorts the rows inside each kind (by name at first).",
+            "Les lignes sont réparties par type. Chaque type a une ligne de titre : la flèche pour le replier ou le déplier, son nom, le nombre de composants qu'il contient (« 3 », ou « 2 sur 5 » quand un filtre en masque certains), sa description et une case « Tout choisir : … » qui choisit tous ses composants qui peuvent être choisis. Un clic sur l'en-tête d'une colonne trie les lignes à l'intérieur de chaque type (par nom au départ).",
+            "Die Zeilen sind nach Art aufgeteilt. Jede Art hat eine Titelzeile: den Pfeil zum Ein- und Ausklappen, ihren Namen, wie viele Komponenten sie enthält („3“ oder „2 von 5“, wenn ein Filter einige ausblendet), ihre Beschreibung und ein Kästchen „Alle wählen: …“, das alle ihre wählbaren Komponenten wählt. Ein Klick auf eine Spaltenüberschrift sortiert die Zeilen innerhalb jeder Art (zu Beginn nach Name).",
           )}
         </P>
         <Table
@@ -370,10 +387,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Casella", "Checkbox", "Case à cocher", "Kontrollkästchen"),
               tr(
-                "Ogni riga non obbligatoria",
-                "Every row that is not required",
-                "Chaque ligne non obligatoire",
-                "Jede nicht erforderliche Zeile",
+                "Ogni riga tranne quelle sempre installate; «Scegli tutti: …» nella riga del tipo",
+                "Every row except those always installed; “Choose all: …” in the kind's row",
+                "Chaque ligne sauf celles toujours installées ; « Tout choisir : … » dans la ligne du type",
+                "Jede Zeile außer den immer installierten; „Alle wählen: …“ in der Zeile der Art",
               ),
               tr(
                 "Segna il componente da installare o da togliere, in attesa di «Applica».",
@@ -480,10 +497,10 @@ export const TOOLS: TopicTexts = {
       >
         <P>
           {tr(
-            "Un clic sul nome apre la scheda: in alto logo, descrizione, gruppo, stato, dimensione e i pulsanti «Installa»/«Mantieni» e «Rimuovi»/«Non installare» (scelte da applicare), più «Sito ufficiale». Sotto, tre sezioni:",
-            "A click on the name opens the tab: at the top the logo, description, group, status, size and the buttons “Install”/“Keep” and “Remove”/“Do not install” (choices to apply), plus “Official site”. Below, three sections:",
-            "Un clic sur le nom ouvre l'onglet : en haut le logo, la description, le groupe, l'état, la taille et les boutons « Installer »/« Conserver » et « Supprimer »/« Ne pas installer » (choix à appliquer), plus « Site officiel ». En dessous, trois sections :",
-            "Ein Klick auf den Namen öffnet die Registerkarte: oben Logo, Beschreibung, Gruppe, Status, Größe und die Schaltflächen „Installieren“/„Behalten“ und „Entfernen“/„Nicht installieren“ (zu übernehmende Auswahl), dazu „Offizielle Website“. Darunter drei Abschnitte:",
+            "Un clic sul nome apre la scheda: in alto logo, descrizione, tipo, stato, dimensione e i pulsanti «Installa»/«Mantieni» e «Rimuovi»/«Non installare» (scelte da applicare), più «Sito ufficiale». Sotto, tre sezioni:",
+            "A click on the name opens the tab: at the top the logo, description, kind, status, size and the buttons “Install”/“Keep” and “Remove”/“Do not install” (choices to apply), plus “Official site”. Below, three sections:",
+            "Un clic sur le nom ouvre l'onglet : en haut le logo, la description, le type, l'état, la taille et les boutons « Installer »/« Conserver » et « Supprimer »/« Ne pas installer » (choix à appliquer), plus « Site officiel ». En dessous, trois sections :",
+            "Ein Klick auf den Namen öffnet die Registerkarte: oben Logo, Beschreibung, Art, Status, Größe und die Schaltflächen „Installieren“/„Behalten“ und „Entfernen“/„Nicht installieren“ (zu übernehmende Auswahl), dazu „Offizielle Website“. Darunter drei Abschnitte:",
           )}
         </P>
         <Table
@@ -507,10 +524,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Dettagli", "Details", "Détails", "Details"),
               tr(
-                "Gruppo, versione, dimensione, che cosa richiede, a chi serve, sito.",
-                "Group, version, size, what it requires, what needs it, site.",
-                "Groupe, version, taille, ce qu'il requiert, à qui il sert, site.",
-                "Gruppe, Version, Größe, was es benötigt, wer es braucht, Website.",
+                "Tipo, versione, dimensione, che cosa richiede, a chi serve, sito.",
+                "Kind, version, size, what it requires, what needs it, site.",
+                "Type, version, taille, ce qu'il requiert, à qui il sert, site.",
+                "Typ, Version, Größe, was es benötigt, wer es braucht, Website.",
               ),
             ],
             [
@@ -832,10 +849,10 @@ export const TOOLS: TopicTexts = {
       <Section title={tr("Matrice", "Grid", "Grille", "Matrix")}>
         <P>
           {tr(
-            "Una tabella con un componente per riga e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
-            "A table with one component per row and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
-            "Un tableau avec un composant par ligne et les six systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ≈ en émulation (la version x64 sur un PC ARM64), ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
-            "Eine Tabelle mit einer Komponente pro Zeile und den sechs Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ≈ in Emulation (die x64-Version auf einem ARM64-PC), ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
+            "Una tabella con un componente per riga, divisa negli stessi sei tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
+            "A table with one component per row, split into the same six kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
+            "Un tableau avec un composant par ligne, réparti dans les mêmes six types que le tableau « Tous les outils », et les six systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ≈ en émulation (la version x64 sur un PC ARM64), ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
+            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben sechs Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den sechs Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ≈ in Emulation (die x64-Version auf einem ARM64-PC), ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
           )}
         </P>
         <Callout tone="info">

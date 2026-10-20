@@ -119,7 +119,7 @@ export function ComponentsPage({
                 />
               ))}
               {/* What the PC must provide, with the required components. */}
-              {g.id === "required" && <RuntimeRows runtimes={relations.matrix?.runtimes ?? []} />}
+              {g.id === "system" && <RuntimeRows runtimes={relations.matrix?.runtimes ?? []} />}
             </SettingsGroup>
           );
         })}

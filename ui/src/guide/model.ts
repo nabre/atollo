@@ -543,14 +543,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     title: () => tr("La pagina Strumenti", "The Tools page", "La page Outils", "Die Seite Werkzeuge"),
     subtitle: () =>
       tr(
-        "La tabella di tutti gli strumenti, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».",
-        "The table of all the tools, the five states, installing and updating right away or choosing first and then “Apply”.",
-        "Le tableau de tous les outils, les cinq états, installer et mettre à jour tout de suite ou choisir puis « Appliquer ».",
-        "Die Tabelle aller Werkzeuge, die fünf Zustände, sofort installieren und aktualisieren oder erst auswählen und dann „Übernehmen“.",
+        "La tabella di tutti gli strumenti divisa nei sei tipi, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».",
+        "The table of all the tools split into the six kinds, the five states, installing and updating right away or choosing first and then “Apply”.",
+        "Le tableau de tous les outils réparti en six types, les cinq états, installer et mettre à jour tout de suite ou choisir puis « Appliquer ».",
+        "Die Tabelle aller Werkzeuge, nach den sechs Arten aufgeteilt, die fünf Zustände, sofort installieren und aktualisieren oder erst auswählen und dann „Übernehmen“.",
       ),
     icon: VscExtensions,
     keywords:
-      "strumenti componenti tabella stati installa aggiorna rimuovi applica aggiorna tutto pre-installato tools components table states install update remove apply outils composants tableau états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle zustände installieren aktualisieren entfernen übernehmen",
+      "strumenti componenti tabella tipi sistema ed editor agenti ai linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
     targetPage: "components",
   },
   {

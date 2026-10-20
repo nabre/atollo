@@ -133,10 +133,10 @@ export const AGENTS: TopicTexts = {
         />
         <P>
           {tr(
-            "Gli agenti si installano dalla pagina Strumenti, gruppo «Agenti» (il primo avvio li propone già). Seguono sempre l'ultima versione e portano con sé ciò che serve: Claude Code, per esempio, porta Git.",
-            "Agents are installed from the Tools page, “Agents” group (the first start already suggests them). They always follow the latest version and bring along what they need: Claude Code, for example, brings Git.",
-            "Les agents s'installent depuis la page Outils, groupe « Agents » (le premier démarrage les propose déjà). Ils suivent toujours la dernière version et apportent ce dont ils ont besoin : Claude Code, par exemple, apporte Git.",
-            "Die Agenten werden auf der Seite Werkzeuge in der Gruppe „Agenten“ installiert (der erste Start schlägt sie bereits vor). Sie folgen immer der neuesten Version und bringen mit, was sie brauchen: Claude Code zum Beispiel bringt Git mit.",
+            "Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio li propone già). Seguono sempre l'ultima versione e portano con sé ciò che serve; Git, che usano tutti, è già tra i componenti sempre installati.",
+            "Agents are installed from the Tools page, “AI agents” kind (the first start already suggests them). They always follow the latest version and bring along what they need; Git, which they all use, is already among the components that are always installed.",
+            "Les agents s'installent depuis la page Outils, type « Agents IA » (le premier démarrage les propose déjà). Ils suivent toujours la dernière version et apportent ce dont ils ont besoin ; Git, qu'ils utilisent tous, fait déjà partie des composants toujours installés.",
+            "Die Agenten werden auf der Seite Werkzeuge in der Art „KI-Agenten“ installiert (der erste Start schlägt sie bereits vor). Sie folgen immer der neuesten Version und bringen mit, was sie brauchen; Git, das sie alle verwenden, gehört schon zu den immer installierten Komponenten.",
           )}
         </P>
       </Section>
