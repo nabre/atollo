@@ -66,7 +66,7 @@ Il lavoro aperto è nelle [segnalazioni](https://github.com/nabre/atollo/issues)
 
 ## Come si usa
 
-1. Copia l'exe di Atollo (per esempio `Atollo-0.3.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
+1. Copia l'exe di Atollo (per esempio `Atollo-0.4.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
 2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma).
 3. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti si aprono sempre nella cartella di un progetto, mai altrove.
 
@@ -98,14 +98,14 @@ La console di Atollo è la console classica di Windows con PowerShell 7 integrat
 
 ## C'è ancora da fare
 
-Atollo è in alpha (versione 0.3.0). Windows x64 è il sistema provato di più, anche con installazioni reali in CI; macOS, Linux e Windows ARM64 sono costruiti e provati solo in CI. La checklist completa è in [docs/app/TESTING.it.md](app/TESTING.it.md).
+Atollo è in alpha (versione 0.4.0). Windows x64 è il sistema provato di più, anche con installazioni reali in CI; macOS, Linux e Windows ARM64 sono costruiti e provati solo in CI. La checklist completa è in [docs/app/TESTING.it.md](app/TESTING.it.md).
 
-- **L'alpha, da provare.** [La 0.3.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.3.0) è su GitHub per Windows, macOS e Linux, ognuno su x64 e ARM64. I file pubblicati sono costruiti e provati in CI: ora vanno scaricati e avviati su macchine pulite.
+- **L'alpha, da provare.** [La 0.4.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.4.0) è su GitHub per Windows, macOS e Linux, ognuno su x64 e ARM64. I file pubblicati sono costruiti e provati in CI: ora vanno scaricati e avviati su macchine pulite.
 - **Alpha test.** Servono persone che usino Atollo su progetti veri e su PC diversi, e che segnalino cosa non va: installazione dei componenti, progetti, database, agenti.
 - **macOS su Mac veri** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon e Intel sono costruiti e avviati in CI, mai su un Mac pulito: lo zip scaricato con il browser, quarantena e Gatekeeper, App Translocation, il kit su una chiavetta exFAT, gli accessi degli agenti portati da un Mac all'altro.
 - **Linux su macchine vere** ([#5](https://github.com/nabre/atollo/issues/5)). x64 e ARM64 su Ubuntu 24.04, Fedora 42 e Debian 13: AppImage con e senza FUSE, il `tar.gz` con WebKitGTK 4.1, chiavette exFAT o montate `noexec`, accessi con GNOME, KeePassXC o KWallet.
 - **Aggiornamenti e build del kit fuori da Windows.** L'aggiornamento dell'app da una versione all'altra su macOS e Linux non è ancora provato. L'Apache del kit (2.4.69, D-116) è nel catalogo ma provato solo in CI; anche il PHP del kit con `pdo_sqlite` (8.4.26 e 8.5.11, D-133), che l'app usa dalla 0.3.0.
-- **Firma del codice.** Su macOS solo una firma ad hoc, senza notarizzazione di Apple: serve `xattr -dr com.apple.quarantine`. Su Windows la 0.3.0 esce senza firma: la firma con SignPath è ancora da attivare, e fino ad allora SmartScreen può avvisare al primo avvio.
+- **Firma del codice.** Su macOS solo una firma ad hoc, senza notarizzazione di Apple: serve `xattr -dr com.apple.quarantine`. Su Windows la 0.4.0 esce senza firma: la firma con SignPath è ancora da attivare, e fino ad allora SmartScreen può avvisare al primo avvio.
 
 Hai un Mac, un PC Linux o un PC con Windows ARM64? Prova Atollo e raccontaci com'è andata: [apri una segnalazione su GitHub](https://github.com/nabre/atollo/issues).
 

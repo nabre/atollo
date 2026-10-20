@@ -1,5 +1,12 @@
 # Novità
 
+## Rilascio 0.4.0 alpha (20/10/2026)
+
+- **Versione 0.4.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.4.0` pubblica i file per i sei sistemi.
+- **Cosa porta**: impostazioni salvate da sole e scelte al primo avvio prima di ogni download (D-137), informativa sulla privacy, tema chiaro/scuro, chi firma i commit, Git limitato alla cartella del kit, proxy e certificati anche per i download dell'app, strumenti divisi per tipo come nel sito (D-139), il logo di MySQL, il server di sviluppo che si chiude con l'app (D-138).
+- **Report v5** in `docs/reports/v5`: valutazione `95,8/100`, 958 test, rilievi aperti e piano per la 0.5.0 alpha.
+- **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.4.0.
+
 ## Strumenti divisi per tipo (20/10/2026)
 
 - **«Tutti gli strumenti»** è diviso in Sistema ed editor, Agenti AI, Linguaggi, Strumenti di sviluppo, Server web e Database, come nel sito: ogni blocco ha titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic (D-139).
