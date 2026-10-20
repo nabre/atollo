@@ -105,13 +105,13 @@ I colori del brand riflettono naturalmente gli elementi fisici di un **Atollo oc
 | **Deep Lagoon (Forest)** | `FOREST` | `#0F3D2E` | Colore primario profondo, wordmark su sfondo chiaro, badge *remote* della statusbar (`statusBarItem.remoteBackground`), testo su superfici Mint. |
 | **Abyssal Tile Gradient** | `APP_TILE_DEFS` | `#14503C` → `#082419` | Gradiente diagonale dello sfondo dell'icona app (`symbol.svg`) e hover del badge remoto (`#14503C`). |
 | **Deep Trench Ink** | — (`themes.py`) | `#04140D` | Testo ad alto contrasto (WCAG > 7:1) sopra i pulsanti e la statusbar `#10B981` in tema scuro. |
-| **Atoll Emerald (Dark Accent)** | `EMERALD` | `#10B981` | **Accento primario nel Tema Scuro**: `button.background`, `statusBar.background`, `focusBorder`, `activityBar.activeBorder`, `progressBar.background`, `tab.activeBorderTop`. |
+| **Atoll Emerald (Dark Accent)** | `EMERALD` | `#10B981` | **Accento primario nel Tema Scuro**: `button.background`, `statusBar.background`, `focusBorder`, `progressBar.background`, `tab.activeBorderTop`, `activityBarBadge.background`; al 20% (`#10B98133`) la voce attiva della barra delle attività, `modernActivityBar.activeBackground` (la chiave che legge VSCodium 1.135, D-142; `activityBar.activeBorder` resta solo per la barra classica dell'editor). |
 | **Atoll Emerald Hover (Dark)** | — (`themes.py`) | `#0EA572` | Hover dei pulsanti primari nel Tema Scuro (`button.hoverBackground`). |
 | **Reef Emerald (Light Accent)** | — (`themes.py`) | `#047857` | **Accento primario nel Tema Chiaro** (più scuro per garantire contrasto WCAG ≥ 4.5:1 con testo bianco `#FFFFFF`): pulsanti, statusbar, focus, link e bordi attivi. |
 | **Reef Emerald Hover (Light)** | — (`themes.py`) | `#065F46` | Hover dei pulsanti primari nel Tema Chiaro (`button.hoverBackground`). |
 | **Surf Glow (Highlight)** | — (`make.py` / `themes.py`) | `#34D399` | Link e testo evidenziato su tema scuro (`textLink.foreground`, `list.highlightForeground`), bordo tab selezionato su tema chiaro. |
 | **Crest Mint** | — (`themes.py`) | `#6EE7B7` | Bordo superiore del tab selezionato in tema scuro (`tab.selectedBorderTop`). |
-| **Shallow Mint (Soft Surface)** | `MINT` | `#D1F0E0` | Superficie morbida di accento, `inputOption.activeBackground` e `modernActivityBar.activeBackground` in tema chiaro, testo su `FOREST`. |
+| **Shallow Mint (Soft Surface)** | `MINT` | `#D1F0E0` | Superficie morbida di accento, `inputOption.activeBackground` e `modernActivityBar.activeBackground` (la voce attiva della barra delle attività) in tema chiaro, testo su `FOREST`. |
 | **Coral Orange (Dark Action)** | `ORANGE` | `#F97316` | **Accento secondario / Attenzione (Tema Scuro):** `charts.orange`, `statusBar.debuggingBackground`, isolotto a sud-est del simbolo e della `O` finale del wordmark, vertice caldo del simbolo. |
 | **Deep Coral (Light Action)** | — (`themes.py`) | `#C2410C` | **Accento secondario / Attenzione (Tema Chiaro):** `charts.orange`, `statusBar.debuggingBackground` (contrasto pieno con `#FFFFFF`). |
 | **Sun Amber** | `AMBER` | `#FBBF24` | Transizione centrale del gradiente caldo nel simbolo e negli sfondi hero (`#10B981` → `#FBBF24` → `#F97316`). |
@@ -148,6 +148,15 @@ Per garantire che il sito web, la documentazione HTML, i componenti UI React (`-
 | **Info / Catalogo (`○`)** | `--vscode-editorInfo-foreground` / `charts-blue` | `#3794FF` | `#1A85FF` | Informazione, build disponibile upstream da collegare |
 | **Substitute / Special (`⇄`)** | `--vscode-charts-purple` | `#B180D7` | `#652D90` | Sostituto consigliato (es. Caddy, MySQL), funzionalità avanzata AI |
 
+### 5.4 Aspetto dell'Interfaccia (VSCodium 1.135)
+
+L'app ha l'aspetto del workbench dell'editor che il kit installa, **VSCodium 1.135** con la UI moderna a pannelli flottanti (DECISIONS.md D-142): chi apre Atollo e poi l'editor non vede un cambio di stile.
+
+* **Misure dal workbench, mai inventate:** barra del titolo di 30 px, barra delle attività di 36 px, schede dell'editor di 24 px in una barra di 32, righe delle liste rientrate di 4 px con raggio 4, schede del pannello a pillola, dialoghi con raggio 12. Vengono da [`vscodium-1.135/workbench-ref.css`](vscodium-1.135/workbench-ref.css) (estratto da `scripts/vscodium-css/extract.mjs`) e diventano i token di `ui/src/theme/theme-sizes.css`.
+* **Icone:** solo i **codicon** di VSCodium, dal loro font (`@vscode/codicons`); i loghi di marchi e linguaggi (Simple Icons) restano solo dove si parla di quel prodotto.
+* **Colori delle voci della barra delle attività:** le chiavi `modernActivityBar.*` di VSCodium 1.135, nell'app come nel tema dell'editor.
+* **Nei materiali promozionali** l'interfaccia si mostra sempre con schermate vere dell'app (Sezione 9), mai con mockup ridisegnati: un mockup che non segue queste misure smentisce la promessa «stesso aspetto dell'editor».
+
 ---
 
 ## 6. Tipografia e Geometria Visiva
@@ -164,11 +173,11 @@ Per garantire che il sito web, la documentazione HTML, i componenti UI React (`-
    * App: pacchetti npm `@fontsource-variable/geist` e `@fontsource-variable/geist-mono` (`ui/src/main.tsx`).
    * Sito: `site/assets/fonts/` (latin, latin-ext e, per Geist Mono, i caratteri di riquadro degli alberi di cartelle), `@font-face` con `font-display: swap`, preload del solo Geist latin.
    * Editor integrato (VSCodium): gli stessi file del sito, inclusi nell'eseguibile e registrati dallo script della finestra con l'API `FontFace` (`tauri/src/editor/window.rs`); `editor.fontFamily` e `terminal.integrated.fontFamily` in `Machine\settings.json` (`tauri/src/editor/cfg.rs`), solo se l'utente non ne ha già scelto uno.
-3. **Logo nelle intestazioni:**
+4. **Logo nelle intestazioni:**
    * In header, barre di navigazione e firme si usa il wordmark (`wordmark-dark.svg` / `wordmark-light.svg`). Non esiste un lockup separato: la `O` finale di ATOLLO **è** il simbolo intero (l'atollo visto dall'alto: barriera ad anello, tre isolotti, laguna turchese e le due onde, che scendono sotto la linea di base), quindi il wordmark non va mai affiancato al simbolo. La `A` resta una lettera piena, senza accenti.
    * Su sfondo chiaro barriera e onde della `O` sono smeraldo, su sfondo scuro menta. Il file è 514 × 129: le maiuscole occupano 100, le O sporgono di 1,5 sopra e sotto come ogni lettera tonda, le onde scendono sotto la linea di base per i restanti 27,5. La O finale è disegnata nelle unità delle lettere, non rimpicciolita dall'icona: isolotti spessi quanto un'asta, barriera a un terzo d'asta perché la O si legga chiusa.
    * Il simbolo da solo resta per favicon, icona dell'app e immagini hero.
-4. **Uso dei Tag Tecnici:**
+5. **Uso dei Tag Tecnici:**
    * Tutti i nomi di target (`win32-x64`, `darwin-arm64`, `linux-x64`…), i percorsi (`projects/`, `data/apps/`), i comandi CLI (`atollo check`, `atollo sync`) e i formati di archivio (`.tar.gz`, `.zip`, `.AppImage`) vanno sempre resi in **monospace** con bordo sottile `1px solid var(--vsc-border)`.
 
 ---
@@ -232,7 +241,7 @@ Quando un agente prepara materiali per il lancio pubblico, deve dare priorità a
 * **Scuole, Università, Bootcamp e Formazione IT:**
   * Proporre **Atollo** come soluzione definitiva al *"Laboratorio bloccato"*: gli studenti tengono `Atollo` sulla propria chiavetta USB o cartella profilo, lavorano in aula senza chiedere la password di amministratore al tecnico IT e continuano a casa sullo stesso identico ambiente.
 * **Community AI & Developer (`r/ClaudeAI`, `r/LocalLLaMA`, `r/rust`, `r/webdev`, X/Twitter):**
-  * Mostrare screenshot reali della pagina **Agenti** (con i consumi di oggi/7 giorni e la sincronizzazione MCP/skill tra i 3 agenti) e della matrice **Strumenti** multipiattaforma.
+  * Mostrare screenshot reali della pagina **Agenti** (con i consumi di oggi/7 giorni e la sincronizzazione MCP/skill tra i 3 agenti) e della matrice **Strumenti** multipiattaforma, nella lingua del pubblico: `site/shots/<lingua>/` ha le stesse sei schermate in `en`, `it`, `fr`, `de` (D-143). Per un link condiviso basta la social card `docs/brand/social.png`, in inglese.
 
 ---
 
@@ -242,9 +251,10 @@ Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel co
 
 1. **Generatori del Brand e dei Temi (Fonte primaria):**
    * [`docs/brand/make.py`](make.py): genera i file SVG (`symbol*.svg`, `wordmark-*.svg`, `hero-*.svg`), i PNG (`logo-32.png`, `logo-256.png`, `symbol-512.png`, `ui/public/favicon.png`) e tutte le icone di `tauri/icons/` (`icon.ico`, `icon.icns`, `icon.png`, `32x32.png`, `128x128*.png`). Fino a 48 px si usa `symbol-small.svg`: isolotti più grossi, niente barriera sommersa, un'onda sola e spessa, perché a quelle dimensioni i dettagli si impastano. Gli sfondi `hero-*.svg` riprendono il simbolo: l'atollo in alto a destra e file di onde che sfumano verso sinistra, dove sta il contenuto.
-   * [`docs/brand/themes.py`](themes.py): legge [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json) e [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json) insieme a `vscodium-themes/`, applica la mappa colori `BRAND` e genera:
+   * [`docs/brand/themes.py`](themes.py): legge [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json) e [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json) insieme a `vscodium-themes/` (con le chiavi rinominate come le legge VSCodium 1.135, `RENAMED`) e alle misure di [`vscodium-1.135/workbench-ref.css`](vscodium-1.135/workbench-ref.css), applica la mappa colori `BRAND` e genera:
      * [`tauri/editor-theme/package.json`](../../tauri/editor-theme/package.json) e `themes/{dark,light}.json` (il tema installato in VSCodium);
-     * [`ui/src/theme/theme-vscode.css`](../../ui/src/theme/theme-vscode.css) e [`ui/src/theme/theme-colors.css`](../../ui/src/theme/theme-colors.css).
+     * [`ui/src/theme/theme-vscode.css`](../../ui/src/theme/theme-vscode.css), [`ui/src/theme/theme-colors.css`](../../ui/src/theme/theme-colors.css) e [`ui/src/theme/theme-sizes.css`](../../ui/src/theme/theme-sizes.css) (le misure, Sezione 5.4).
+   * [`scripts/vscodium-css/extract.mjs`](../../scripts/vscodium-css/extract.mjs): estrae dal VSCodium fissato nel catalogo le regole che l'app imita, in `vscodium-1.135/workbench-ref.css` (licenza MIT di Code-OSS); si rilancia quando il catalogo fissa un altro editor, poi `themes.py`.
 2. **Interfaccia Utente e Configurazione Tauri:**
    * [`ui/src/brand.tsx`](../../ui/src/brand.tsx) e [`ui/index.html`](../../ui/index.html)
    * [`tauri/tauri.conf.json`](../../tauri/tauri.conf.json) (`productName`, `mainBinaryName`, `identifier`, titolo finestra)
@@ -254,4 +264,4 @@ Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel co
    * [`ui/src/locales/en.json`](../../ui/src/locales/en.json), [`fr.json`](../../ui/src/locales/fr.json), [`de.json`](../../ui/src/locales/de.json) e testi italiani nei componenti `ui/src/**`
    * [`README.md`](../../README.md) (inglese, la pagina principale), `docs/README.{it,fr,de}.md`, [`docs/app/GUIDE.md`](../app/GUIDE.md) e [`GUIDE.it.md`](../app/GUIDE.it.md), [`docs/app/ARCHITECTURE.md`](../app/ARCHITECTURE.md) e [`ARCHITECTURE.it.md`](../app/ARCHITECTURE.it.md), [`docs/app/CATALOG.md`](../app/CATALOG.md) e [`docs/app/TESTING.md`](../app/TESTING.md) con le loro copie `.it.md`, la matrice [`docs/app/TOOLS-MATRIX.html`](../app/TOOLS-MATRIX.html) (generata da `scripts/matrix/gen_matrix.py`, solo in inglese)
 4. **Sito (`https://nabre.github.io/atollo/`):**
-   * [`site/strings/`](../../site/strings/) (`it`, `en`, `fr`, `de`, stesse chiavi: la build si ferma se una manca), [`site/template.html`](../../site/template.html), [`site/assets/site.css`](../../site/assets/site.css) (i colori della Sezione 5); l'hero e la chiusura usano `hero-dark.svg` / `hero-light.svg` secondo il tema; le schermate di `site/shots` (fatte da `site/shots/make.mjs`, in inglese) si mostrano ritagliate (`.crop`: via la barra del titolo e quella di stato) dentro una cornice del sito; la social card `docs/brand/social.png` (1280×640, da `site/shots/social.mjs`) è l'`og:image` del sito e l'anteprima del repository su GitHub; la tabella «Strumenti per sistema» si genera da `tauri/catalog/components.json` in [`site/matrix.mjs`](../../site/matrix.mjs) (generi in `KIND_OF`), mai a mano; compilato da [`site/build.mjs`](../../site/build.mjs) e pubblicato da `.github/workflows/site.yml` (DECISIONS.md D-126).
+   * [`site/strings/`](../../site/strings/) (`it`, `en`, `fr`, `de`, stesse chiavi: la build si ferma se una manca), [`site/template.html`](../../site/template.html), [`site/assets/site.css`](../../site/assets/site.css) (i colori della Sezione 5); l'hero e la chiusura usano `hero-dark.svg` / `hero-light.svg` secondo il tema; le schermate di `site/shots/<lingua>/` (fatte da `site/shots/make.mjs` nelle quattro lingue, D-143; ogni pagina e ogni README usa quelle della sua lingua, anche nel JSON-LD) si mostrano ritagliate (`.crop`: via la barra del titolo e quella di stato, 60 e 56 px a 2×) dentro una cornice del sito; la social card `docs/brand/social.png` (1280×640, da `site/shots/social.mjs`, in inglese per tutte le lingue) è l'`og:image` del sito e l'anteprima del repository su GitHub; le schermate della Guida (`ui/public/guide/<lingua>/`) vengono da `scripts/guide-shots/make.mjs`; la tabella «Strumenti per sistema» si genera da `tauri/catalog/components.json` in [`site/matrix.mjs`](../../site/matrix.mjs) (generi in `KIND_OF`), mai a mano; compilato da [`site/build.mjs`](../../site/build.mjs) e pubblicato da `.github/workflows/site.yml` (DECISIONS.md D-126).

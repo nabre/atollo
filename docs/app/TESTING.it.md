@@ -16,6 +16,8 @@ Tutte le prove stanno in `test\`, con la struttura dei sorgenti:
 - `test\rust\<percorso>.rs`: le prove di `tauri\src\<percorso>.rs`. Restano un modulo figlio di quel file, che le dichiara in fondo con `#[cfg(test)] #[path = "…/test/rust/<percorso>.rs"] mod tests;`: vedono le sue funzioni private (`use super::*`), come prima. Una prova nuova va nel file di `test\rust` del modulo; un modulo che non ne ha ancora aggiunge le tre righe.
 - `test\ui\<percorso>.test.ts(x)`: le prove di `ui\src\<percorso>`, che importano da `../../ui/src/…`; `test\ui\setup.ts` prepara jsdom (Vitest, `ui\vite.config.ts`).
 
+Filtri: `cargo test ports::` o `cargo test db::services` (solo le prove Rust il cui percorso corrisponde); `npm -w ui test -- activity` (solo i file di prova dell'interfaccia il cui nome corrisponde).
+
 Le prove dal vivo sulle fonti delle versioni (rete, ignorate di solito): `cargo test live_lines -- --ignored --nocapture` (con `GITHUB_TOKEN`), vedi CATALOG.it.md §2.
 
 Coprono, fra l'altro:
@@ -32,12 +34,36 @@ Coprono, fra l'altro:
 - allineamento degli agenti e accesso di Antigravity con Gestione credenziali reale;
 - rilevamento dei progetti su esempi (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, statico, progetti composti, `panel.json` e `pannello.json`);
 - porte ricordate e bloccate, avvio e arresto di un'azione attraverso il suo job;
-- server di file: host, file nascosti, `..`, collegamenti;
+- il registro delle porte (`test\rust\ports.rs`, D-141): ogni proprietario letto dal suo file; una porta di un pool, di una versione di un database, di un'azione o dell'editor rifiutata agli altri, con il proprietario nominato (`servers::`, `db::services::data`, `projects::run`), e mai data a un pool nuovo;
+- server di database (D-140): le operazioni su un server si danno il turno (`operations_on_a_server_take_turns`), `keep_port` non perde voci, le porte restano quando il server cambia versione, i file di login sono diversi per ogni esecuzione;
+- il `conf.d` del progetto in un pool Apache e Caddy e nel Caddy proprio del progetto (`apache_pool_includes_the_project_conf_d`, `caddy_pool_imports_the_project_conf_d`, `project_conf_d_imported_in_the_site`);
+- server di file: host (`*.localhost`, un IP solo con la rete locale), file nascosti, `..`, collegamenti;
 - scambio dell'exe in aggiornamento;
 - DPAPI di `keyring-before.json`;
 - cataloghi delle quattro lingue (Rust e interfaccia), completi e con gli stessi segnaposto;
 - `useLoad` (`test\ui\hooks.test.ts`): prima lettura, le tre politiche d'errore, nuova lettura quando cambiano `load` o `key` ma non la politica, `enabled`, lettura periodica fermata allo smontaggio, `setData`;
-- controlli dell'interfaccia su `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili, codicon; ogni variabile `--vscode-*` letta dai componenti definita nei due temi (`test\ui\theme.test.ts`).
+- controlli dell'interfaccia su `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili; i codicon (`codicon.test.tsx`): glifi del font incluso, misure dai token, nessun `react-icons/vsc` rimasto;
+- il tema (`test\ui\theme\theme.test.ts`): ogni variabile `--vscode-*` letta dai componenti definita nei due temi, ogni misura dichiarata una volta con la sua classe, le misure di `docs\brand\vscodium-1.135\workbench-ref.css`, nessun token della UI classica, ogni chiave `--vscode-*` letta da Atollo nota a VSCodium 1.135;
+- il pannello Attività (`test\ui\activity.test.tsx`): una versione secondaria di un database e un pool elencati e contati, «Ferma tutto» che ferma ogni cosa dopo la conferma; la pagina Terminali (`test\ui\terminals.test.tsx`): Esc chiude la domanda di rimozione;
+- i documenti della Guida: `node scripts/guide-docs.cjs --check` (nel job `Lint and test`) fallisce se `docs\app\GUIDE.md` o `GUIDE.it.md` è rimasto indietro rispetto alla Guida dell'app.
+
+## File generati e schermate
+
+Nessuno di questi gira in `npm test`; ognuno si esegue a mano dopo la modifica che lo richiede, e la sua uscita va nel commit.
+
+| Comando | Quando | Scrive |
+| --- | --- | --- |
+| `python docs/brand/themes.py` | è cambiato un colore (`BRAND`) o una misura (`LAYOUT`) | `ui\src\theme\theme-vscode.css`, `theme-colors.css`, `theme-sizes.css`, `tauri\editor-theme\` |
+| `node scripts/vscodium-css/extract.mjs [archivio o workbench.css]` | il catalogo fissa un altro editor, o l'app legge una chiave `--vscode-*` nuova | `docs\brand\vscodium-1.135\workbench-ref.css` (poi `themes.py`); fallisce su una chiave che VSCodium non conosce |
+| `node scripts/guide-docs.cjs` | è cambiato il testo della Guida | `docs\app\GUIDE.md`, `GUIDE.it.md` |
+| `python -I scripts/matrix/gen_matrix.py` | è cambiato il catalogo | `docs\app\TOOLS-MATRIX.html` |
+| `node site/shots/make.mjs` | sono cambiate le pagine delle schermate | `site\shots\<lingua>\shot-{projects,agents,tools}-{dark,light}.png` per en, it, fr, de |
+| `node site/shots/social.mjs` | dopo `make.mjs` | `docs\brand\social.png` (da `en\shot-projects-dark.png`) |
+| `node scripts/guide-shots/make.mjs` | sono cambiate le pagine della Guida | `ui\public\guide\<lingua>\*.webp` (52 file; Python con Pillow) |
+
+Gli script delle schermate leggono l'anteprima nel browser: prima `npm -w ui run dev` (`127.0.0.1:5173`), con `playwright-core` installato accanto allo script o in una cartella sua ed Edge o Chrome del sistema (`SHOTS_BROWSER=msedge|chrome`, nessun download). `SHOTS_LANGS=en,it` (sito) e `GUIDE_SHOTS_LANGS=en,it` (Guida) limitano le lingue; `SHOTS_URL=http://127.0.0.1:5199` prende l'anteprima da un altro indirizzo, per tutti e due. Prima del commit si guarda ogni lingua: le etichette vengono da `ui\src\locales`, i testi del motore da `engineText`.
+
+`npm run dev` esegue `scripts/dev-ui.mjs`: chiudendo l'app la porta 5173 deve liberarsi (D-138); con la porta occupata dice chi la tiene e non ferma nulla.
 
 ## Linux, macOS e Windows ARM64
 
@@ -46,7 +72,7 @@ Coprono, fra l'altro:
 - **bundle**: il pacchetto e il codice che avvia l'app (`tauri/Cargo.toml`, `build.rs`, `tauri.conf.json`, `Info.plist`, `entitlements.plist`, `windows-app.manifest`, `icons/`; in `tauri/src`: `main.rs`, `cli.rs`, `kit.rs`, `log.rs`, `env.rs`, `settings.rs`, `fsx.rs`, `i18n.rs`, `os/`, `setup/`). Partono `Bundle *` e `Release smoke *`, più tutto quello sotto.
 - **kit**: ciò che `prepare` e le prove `real_` usano su un kit vero (`tauri/src/install/`, `net/`, `editor/`, `runtime/`, `tauri/catalog/components.json`). Partono `Build …` con l'exe, l'installazione reale e le prove reali, più tutto quello sotto.
 - **rust**: il resto del codice e dei dati dell'app (`tauri/src` negli altri moduli, gli altri cataloghi, `i18n/`, `editor-theme/`, `capabilities/`, `permissions/`, `site/assets/fonts/`) e i test Rust (`test/rust/`, `scripts/matrix/sources.json`, `scripts/test-linux.sh`, `rustfmt.toml`). Partono `Lint and test`, `Test *` e `Test win32-arm64` con `clippy` e `cargo test` su ogni sistema.
-- **ui**: l'interfaccia (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, anche `components.json`, che i test dell'interfaccia importano). Partono lint, Vitest e build in `Lint and test` (più `cargo fmt`) e il solo Vitest in `Test linux-x64`.
+- **ui**: l'interfaccia (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, anche `components.json`, che i test dell'interfaccia importano, e `docs/app/GUIDE.md`, `GUIDE.it.md` e `scripts/guide-docs.cjs`, che `--check` confronta). Partono lint, Vitest, i documenti della Guida e build in `Lint and test` (più `cargo fmt`) e il solo Vitest in `Test linux-x64`.
 
 `Cargo.toml`, `Cargo.lock`, `package*.json`, `.gitattributes` e `app.yml` avviano tutto. Non avviano altro che `Changes` i file generati (`tauri/gen/`), i documenti, il sito, gli script di Apache e PHP (con i loro workflow) e `scripts/cross-check/`. Un percorso che l'elenco non conosce avvia tutto, e il riepilogo lo nomina: va aggiunto all'elenco. Il giro completo parte sempre anche con un tag `app-v*`, con un avvio a mano (`gh workflow run app.yml`) e quando il confronto non riesce (per esempio dopo un force push). Il riepilogo del job `Changes` mostra i livelli scelti.
 
@@ -139,7 +165,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 
 ### Installazione e portabilità
 - [ ] **Kit nuovo su chiavetta.** Doppio clic, primo avvio: PowerShell 7, GitHub CLI (con Git) e l'editor si installano da soli; poi installazione dei predefiniti, editor aperto su un progetto.
-- [ ] **Editor alla versione del rilascio.** Con un kit preparato da un'altra versione dell'app (o con un numero diverso in `data\app\versions\vscodium-server.txt`), all'avvio l'editor viene installato di nuovo alla versione fissata, anche se era rimasto aperto, senza «Aggiorna tutto». Se un programma del PC tiene aperta la cartella dell'editor, l'aggiornamento finisce «in uso», ma Editor, Terminale e gli agenti si aprono lo stesso con l'editor già presente. In Linguaggi e strumenti l'editor è tra gli obbligatori, spuntato e non modificabile.
+- [ ] **Editor alla versione del rilascio.** Con un kit preparato da un'altra versione dell'app (o con un numero diverso in `data\app\versions\vscodium-server.txt`), all'avvio l'editor viene installato di nuovo alla versione fissata, anche se era rimasto aperto, senza «Aggiorna tutto». Se un programma del PC tiene aperta la cartella dell'editor, l'aggiornamento finisce «in uso», ma Editor, Terminale e gli agenti si aprono lo stesso con l'editor già presente. In Strumenti l'editor è tra gli obbligatori, spuntato e non modificabile.
 - [ ] **Nessuna traccia fuori dal kit.** Dopo una sessione completa (editor, terminale, un agente, un progetto avviato) non c'è nessun file nuovo in `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` e nel registro. Confronto prima/dopo con Process Monitor o con un'istantanea delle cartelle. Eccezioni documentate: le credenziali di Antigravity, che restano in Windows solo per la durata di `agy` e con persistenza di sessione (D-41); i file di passaggio in `%TEMP%\Atollo\<id>\`, che a fine sessione sono spariti (D-90).
 - [ ] **Kit spostato.** Su un'altra lettera di unità e in una cartella con spazi tutto funziona, lo stato dell'editor resta e Claude ritrova la cronologia.
 - [ ] **PC senza WebView2** (Windows 10 LTSC o macchina virtuale). Il messaggio è chiaro e l'app funziona con il runtime fisso nel kit.
@@ -154,10 +180,12 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 ### Progetti
 - [ ] **Nuovo progetto** «prova 1»: la cartella compare, ha il pulsante «Elimina la cartella vuota» e l'eliminazione funziona.
 - [ ] **Clona** `nabre/atollo` (o un repository privato con `gh auth login` fatto nel terminale del kit): la cartella ha il nome giusto. Su un kit senza Git, Git si installa prima del clone. Con un indirizzo non valido (`-x/y`, `ssh://…`) l'errore si legge.
-- [ ] **Progetto Vite.** «Avvia», poi la porta 7100-7999 compare nell'output. Lo stato passa a «in ascolto» e il pulsante con l'indirizzo apre il browser del PC. Un secondo avvio riusa la stessa porta. Su un kit senza Node.js, «Avvia» installa prima Node.js (avanzamento in Home e nella barra di stato) e poi parte; Node.js risulta scelto in Linguaggi e strumenti.
-- [ ] **Rete locale.** Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete», un altro PC apre il progetto avviato con l'indirizzo IP di questo PC; senza, no.
+- [ ] **Progetto Vite.** «Avvia», poi la porta 7100-7999 compare nell'output. Lo stato passa a «in ascolto» e il pulsante con l'indirizzo apre il browser del PC. Un secondo avvio riusa la stessa porta. Su un kit senza Node.js, «Avvia» installa prima Node.js (avanzamento nel pannello Attività e nella barra di stato) e poi parte; Node.js risulta scelto in Strumenti.
+- [ ] **Rete locale.** Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete», un altro PC apre il progetto avviato con l'indirizzo IP di questo PC; senza, no. Lo stesso per un progetto PHP semplice avviato con `php -S`: `http://<IP del PC>:<porta>/` risponde da un altro dispositivo, `curl -H "Host: evil.com"` riceve ancora 421.
 - [ ] **Porta occupata.** Scelta a mano una porta già usata da un altro programma, l'avvio dà un errore chiaro e la porta non cambia da sola.
-- [ ] **Sito statico.** Una cartella con solo `index.html`: il server di file del kit lo serve. Un file `.env` non è raggiungibile (403).
+- [ ] **Porta di un'altra parte di Atollo** (D-141). La porta di un'azione scelta a mano che è quella di un pool di server web, di una versione di un database (per esempio 3306) o nella 7000-7099 dell'editor: rifiutata, e il messaggio nomina il proprietario («La porta 3306 è già del database MySQL 9.7: scegline un'altra.»). Lo stesso per la porta di un profilo di pool e per la porta di un server di database o di una sua versione; un pool nuovo non ne riceve mai una.
+- [ ] **Sito statico.** Una cartella con solo `index.html`: il server di file del kit lo serve, a `http://localhost:<porta>` e a `http://<progetto>.localhost:<porta>`. Un file `.env` non è raggiungibile (403).
+- [ ] **Attività e «Ferma tutto».** Con un'azione, una versione secondaria di MySQL e un pool in esecuzione: la barra di stato, il badge di Progetti e il pannello Attività contano tutti e tre e il pannello li elenca; «Ferma tutto» chiede prima, «Annulla» non cambia nulla, la conferma li ferma tutti e tre.
 - [ ] **«Servi come sito web».** Con la cartella `public` e PHP: `panel.json` contiene l'azione `site` e le altre chiavi del file restano.
 - [ ] **«Ferma»** su `npm run dev`: in Gestione attività non resta nessun `node.exe`/`esbuild.exe` del progetto.
 - [ ] **Electron o Tauri.** L'app apre la sua finestra e l'output arriva nella pagina.
@@ -172,6 +200,9 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Avvia con Atollo** (D-101). Profilo con «Avvia con Atollo»: chiusa e riaperta l'app, il pool è acceso senza nessun progetto avviato. Un `servers.json` di prima (senza i due campi) si legge con «Mantieni attivo» spuntato.
 - [ ] **Due azioni web di un progetto nello stesso pool** (BUG-V3-02). `http://<progetto>.localhost:<porta>` e `http://<azione>.<progetto>.localhost:<porta>` servono le due cartelle.
 - [ ] **Due versioni di MySQL insieme** (D-102). Con 8.4 e 9.7 installati: Database › «Altre versioni» avvia 8.4 su una porta sua mentre 9.7 resta sulla 3306; `mysql -uroot -h127.0.0.1 -P<porta> -e "select version()"` dà le due versioni. Progetto con «Versione del server» 8.4: «Crea» crea database e utente su 8.4; un programma del progetto vede `DB_PORT` di 8.4; con un `.env` che ha `DB_PORT=3310` vale quello. Cambiare la versione principale mentre 8.4 gira è rifiutato; chiusa l'app, nessun `mysqld` resta.
+- [ ] **Un avvio alla volta** (D-140). Due progetti che vogliono la stessa versione di MySQL avviati insieme (o «Avvia» due volte di fila nella pagina Database): un solo `mysqld`, e tutti e due ricevono la stessa porta. Cambiando la versione del server con 8.4 e 9.7 installati: ogni versione tiene la sua porta, e le stringhe di connessione dei progetti puntano ancora alla loro versione. Due backup avviati insieme finiscono tutti e due.
+- [ ] **Il `conf.d` del progetto** (D-141, BUG-V5-06). Un `.conf` in `data\projects\<p>\apache\conf.d\` e un `.caddy` in `caddy\conf.d\` (per esempio un'intestazione aggiunta): il sito ce l'ha su Apache dedicato, su Caddy dedicato, in un pool Apache e in un pool Caddy. Con `caddy\conf.d\` vuota Caddy parte lo stesso.
+- [ ] **«Elimina profilo»** di un pool chiede prima.
 - [ ] **Prove con kit reale.** `ATOLLO_TEST_KIT=<kit con Apache e PHP> cargo test -- start_reports_syntax_error apache_pool_reload_twice apache_pool_two_php_sites_alias_and_reload --test-threads=1` passa.
 
 ### macOS, Linux e Windows ARM64 (D-105, D-108…D-115)
@@ -256,16 +287,24 @@ Kit preparato su Windows per un altro sistema (a ogni rilascio):
 - [ ] **Fiducia nell'editor.** Alla prima apertura di un progetto l'editor chiede se fidarsi. Con «No» compare la barra «Restricted Mode» e le attività non partono; con «Sì» non chiede più alla riapertura, anche dopo aver riavviato l'app (D-67).
 - [ ] **dev-settings.json.** Dopo aver aperto Codex in un progetto, `data\projects\<progetto>\dev-settings.json` ha `"agent": "codex"` e la scelta dell'agente propone Codex. Eliminando dall'app un progetto vuoto la sua cartella in `data\projects\` sparisce (D-89).
 
-### Linguaggi e strumenti
+### Strumenti
+- [ ] **Tipi** (D-139). «Tutti gli strumenti» ha i blocchi Sistema ed editor, Agenti AI, Linguaggi, Strumenti di sviluppo, Server web, Database, ognuno con titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic; gli stessi tipi nell'albero della barra laterale, nella matrice e al primo avvio.
 - [ ] **Loghi.** Ogni componente ha il suo logo, leggibile nel tema chiaro e in quello scuro; i progetti mostrano le etichette dei linguaggi.
 - [ ] **Dipendenze.** Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code». Togliendo PHP si toglie anche Apache.
 - [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre la console del kit con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
 
+### Terminali
+- [ ] **Versione sostituita.** Un terminale salvato con PHP 8.2, poi 8.2 tolto: la pagina Terminali dice quale usa al suo posto («PHP 8.2 → 8.4») e il terminale si apre con la 8.4.
+- [ ] **Eliminazione.** «Elimina il terminale» chiede prima; Esc chiude la domanda e il terminale resta.
+
 ### Impostazioni
-- [ ] **Lingua.** Passando a English, Français e Deutsch, tutta l'interfaccia cambia subito. Con «Lingua di Windows» vale quella del sistema.
-- [ ] **Chiave di Gemini.** Salvata, il campo mostra «salvata». Non compare mai in chiaro (né nell'interfaccia, né in `data\app\logs`). «Togli la chiave» la rimuove.
-- [ ] **Valore non valido** (proxy `proxy:8080`, Python `3.x`): l'errore si legge e il file non cambia.
-- [ ] **Editor in esecuzione.** Dopo il salvataggio l'app chiede di riavviare l'editor, e dopo il riavvio i terminali dell'editor vedono le variabili nuove.
+- [ ] **Niente «Salva»** (D-137). Una modifica si salva e si applica da sola mezzo secondo dopo l'ultimo tasto: la barra delle schede dice «Salvataggio…», poi «Salvato.»; `data\app\settings.json` ha il valore nuovo.
+- [ ] **Lingua.** Passando a English, Français e Deutsch, tutta l'interfaccia cambia subito. Con «Lingua del sistema» vale quella del sistema.
+- [ ] **Tema.** «Come il sistema», «Chiaro» e «Scuro» cambiano subito l'app, l'editor e i terminali, senza riavvio.
+- [ ] **Chiave di Gemini.** Si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata»; sta in `data\app\secrets\gemini-api-key`, mai in `settings.json`. Non compare mai in chiaro (né nell'interfaccia, né in `data\app\logs`). «Togli la chiave» la rimuove.
+- [ ] **Valore non valido** (proxy `proxy:8080`, un file PEM senza certificati): l'errore si legge, il valore resta sullo schermo e il file non cambia.
+- [ ] **Editor in esecuzione.** Dopo una modifica di lingua, rete o temporanei dei programmi l'app chiede di riavviare l'editor, e dopo il riavvio i terminali dell'editor vedono le variabili nuove.
+- [ ] **Privacy.** La sezione la riassume e «Leggi l'informativa sulla privacy» la apre nella lingua dell'app.
 - [ ] **Aggiornamento.** Con una release `app-v*` più recente pubblicata, «Cerca aggiornamenti» scarica l'exe. Alla chiusura `Atollo.exe` è quello nuovo e `Atollo.old.exe` sparisce al riavvio. Con `ATOLLO_NO_UPDATE=1` all'avvio non parte nessun controllo.
 
 ### Chiusura, altre copie, rimozione dell'unità
@@ -287,7 +326,7 @@ Kit preparato su Windows per un altro sistema (a ogni rilascio):
 
 ### Accessibilità
 - [ ] **Solo tastiera.** Tutte le pagine si usano: Tab mostra sempre il contorno di focus, «Vai al contenuto» è il primo elemento, il dialogo di chiusura riceve il focus.
-- [ ] **Conferme nella pagina** (D-106). Uscita da un agente, da GitHub, ripristino di un database e «Applica» in Linguaggi e strumenti: l'Assistente vocale legge la domanda, il focus è su «Annulla», Esc chiude e il focus torna al pulsante di partenza. Lo zoom di una schermata della Guida tiene Tab dentro e si chiude con Esc.
+- [ ] **Conferme nella pagina** (D-106). Uscita da un agente, da GitHub, ripristino di un database e «Applica» in Strumenti: l'Assistente vocale legge la domanda, il focus è su «Annulla», Esc chiude e il focus torna al pulsante di partenza. Lo zoom di una schermata della Guida tiene Tab dentro e si chiude con Esc.
 - [ ] **Assistente vocale.** Le pagine hanno titoli e le icone hanno un nome. Errori e stati sono annunciati (`role="alert"` e `role="status"`).
-- [ ] **Stesso aspetto dell'editor** (D-88). App ed editor affiancati, in tema scuro e in chiaro: stessi colori di sfondo, testo, focus, pulsanti, campi e menu a tendina; select, campi e caselle si usano con mouse e tastiera; le icone codicon si vedono (nessun quadratino).
-- [ ] **Tema e animazioni.** Il tema chiaro e quello scuro seguono Windows. Con «Effetti di animazione» spenti in Windows, nessuna icona gira.
+- [ ] **Stesso aspetto dell'editor** (D-88, D-142). App ed editor affiancati, in tema scuro e in chiaro: stessi colori di sfondo, testo, focus, pulsanti, campi e menu a tendina; le stesse misure della UI moderna di VSCodium 1.135 (barra del titolo di 30 px, barra delle attività di 36 px, schede dell'editor di 24 px in una barra di 32 con la chiusura al passaggio, schede del pannello a pillola, righe delle liste rientrate di 4 px con raggio di 4, barre di scorrimento di 8 px, dialoghi con raggio di 12); select, campi e caselle si usano con mouse e tastiera; le icone codicon si vedono (nessun quadratino).
+- [ ] **Tema e animazioni.** Con il tema su «Come il sistema» l'app segue il chiaro e lo scuro del sistema. Con «Effetti di animazione» spenti in Windows, nessuna icona gira.
