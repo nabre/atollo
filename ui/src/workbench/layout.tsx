@@ -11,9 +11,9 @@
 // editor's tabs, and the details editor's bar is navigation, not tabs.
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
-import { VscChevronRight, VscClose } from "react-icons/vsc";
 import { t } from "../i18n";
 import { ActionBar, CountBadge } from "./controls";
+import { Codicon } from "./codicon";
 
 /** A floating part: rounded, its own border, its own background. */
 export function Part({
@@ -254,9 +254,9 @@ export function ViewPane({
           onClick={onToggle}
           className="flex h-full min-w-0 flex-1 items-center rounded-vsc-small pl-vsc-size40 text-left text-vsc-label1 font-vsc-semibold outline-none focus-visible:outline-1 focus-visible:-outline-offset-2 focus-visible:outline-vsc-focus"
         >
-          <VscChevronRight
+          <Codicon
+            name="chevron-right"
             size={16}
-            aria-hidden="true"
             className={`mx-vsc-size20 shrink-0 transition-transform duration-100 ${expanded ? "rotate-90" : ""}`}
           />
           <span className="truncate">{title}</span>
@@ -365,7 +365,7 @@ export function EditorTabs({
                     }}
                     className="flex size-vsc-size200 items-center justify-center rounded-vsc-small text-vsc-fg outline-none hover:bg-vsc-toolbar-hover focus-visible:outline-1 focus-visible:outline-vsc-focus"
                   >
-                    <VscClose size={16} aria-hidden="true" />
+                    <Codicon name="close" size={16} />
                   </button>
                 </span>
               )}
@@ -397,7 +397,8 @@ export function SingleEditor({ title, icon, children }: { title: string; icon: R
 /** The header of a details editor, as an extension's page
  * (.extension-editor>.header): a 128px icon, 20px from the top and the left,
  * 12px above the bar; the name, a line of facts 6px under it, a description
- * and the buttons 10px apart. The icon given is drawn at the full 128px. */
+ * and the buttons 10px apart. The icon given (a logo, a codicon) is drawn
+ * at the full 128px. */
 export function EditorHeader({
   icon,
   title,
@@ -417,7 +418,7 @@ export function EditorHeader({
   const facts = (meta ?? []).filter(Boolean);
   return (
     <header className="flex shrink-0 gap-vsc-size120 px-vsc-size200 pt-vsc-size200 pb-vsc-size120">
-      <span className="flex size-vsc-extension-icon shrink-0 items-center justify-center [&>svg]:size-full">
+      <span className="flex size-vsc-extension-icon shrink-0 items-center justify-center [&>.codicon]:text-(length:--vsc-size-extension-icon)! [&>svg]:size-full">
         {icon}
       </span>
       <div className="min-w-0 flex-1">

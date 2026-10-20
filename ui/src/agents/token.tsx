@@ -5,13 +5,12 @@
 // (Rust: tauri/src/agents/claude_token.rs). If it is not recognized, it can
 // be pasted here. "Esci" on the page deletes it.
 import { useState } from "react";
-import { VscKey } from "react-icons/vsc";
 import { act } from "../api/core";
 import type { AgentInfo } from "../api";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction } from "../hooks";
-import { Button, Notice, TextField } from "../workbench";
+import { Button, codicon, Notice, TextField } from "../workbench";
 
 /** Offered for Claude Code on macOS (Rust `AgentInfo::token_link`). */
 export function tokenOffered(agent: AgentInfo): boolean {
@@ -45,7 +44,7 @@ export function TokenLink({ agent, onDone }: { agent: AgentInfo; onDone: () => v
       </Notice>
       <div className="flex flex-wrap items-center gap-1.5">
         <ActionButton
-          icon={VscKey}
+          icon={codicon("key")}
           label={t("Collega con un token")}
           primary
           busy={busy === "link"}

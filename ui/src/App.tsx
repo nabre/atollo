@@ -8,22 +8,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
-  VscBook,
-  VscCode,
-  VscDatabase,
-  VscDebugDisconnect,
-  VscError,
-  VscExtensions,
-  VscFolderLibrary,
-  VscGlobe,
-  VscHubot,
-  VscLayoutPanel,
-  VscPlay,
-  VscRemote,
-  VscSettingsGear,
-  VscTerminal,
-} from "react-icons/vsc";
-import {
   appInfo,
   editorStatus,
   onEditorStatus,
@@ -49,7 +33,7 @@ import { ServersPage } from "./servers";
 import { TerminalsPage } from "./terminals";
 import { tauriPty, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
-import { Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
+import { Codicon, codicon, Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
 import { LoadError } from "./common";
 
@@ -71,15 +55,15 @@ interface Page {
 
 function pages(): Page[] {
   return [
-    { id: "projects", label: t("Progetti"), icon: VscFolderLibrary },
-    { id: "agents", label: t("Agenti"), icon: VscHubot },
-    { id: "databases", label: t("Database"), icon: VscDatabase },
-    { id: "servers", label: t("Server Web"), icon: VscGlobe },
-    { id: "terminals", label: t("Terminali"), icon: VscTerminal },
-    { id: "components", label: t("Strumenti"), icon: VscExtensions },
-    { id: "guide", label: t("Guida"), icon: VscBook },
-    { id: "settings", label: t("Impostazioni"), icon: VscSettingsGear },
-    { id: "eject", label: t("Rimuovi l'unità"), icon: VscDebugDisconnect },
+    { id: "projects", label: t("Progetti"), icon: codicon("folder-library") },
+    { id: "agents", label: t("Agenti"), icon: codicon("hubot") },
+    { id: "databases", label: t("Database"), icon: codicon("database") },
+    { id: "servers", label: t("Server Web"), icon: codicon("globe") },
+    { id: "terminals", label: t("Terminali"), icon: codicon("terminal") },
+    { id: "components", label: t("Strumenti"), icon: codicon("extensions") },
+    { id: "guide", label: t("Guida"), icon: codicon("book") },
+    { id: "settings", label: t("Impostazioni"), icon: codicon("settings-gear") },
+    { id: "eject", label: t("Rimuovi l'unità"), icon: codicon("debug-disconnect") },
   ];
 }
 
@@ -359,7 +343,8 @@ function ActivityBar({
             active ? "bg-vsc-activitybar-item-active" : "group-hover:bg-vsc-activitybar-item-hover",
           ].join(" ")}
         >
-          <Glyph aria-hidden="true" className="size-vsc-activitybar-icon" />
+          {/* The workbench's 24px codicon (.action-label.codicon). */}
+          <Glyph size="var(--vsc-size-activitybar-icon)" aria-hidden="true" />
         </span>
         {shown && (
           // Not vscode-badge: its activity-bar-counter keeps an 18px minimum
@@ -528,7 +513,7 @@ function StatusBar({
         title={info ? `Atollo - ${info.root}` : "Atollo"}
         className="ml-vsc-size40 flex h-full items-center gap-vsc-size60 rounded-vsc-small bg-vsc-statusbar-remote pr-vsc-size60 pl-vsc-size40 font-semibold tracking-wide text-vsc-statusbar-remote-fg"
       >
-        <VscRemote size={16} aria-hidden="true" />
+        <Codicon name="remote" size={16} />
         <span aria-hidden="true">Atollo</span>
       </span>
       <StatusItem
@@ -540,9 +525,9 @@ function StatusBar({
         className="ml-[calc(var(--vscode-spacing-size40)+var(--vsc-size-statusbar-item-margin))]"
       >
         <span className="sr-only">{t("Attività")}</span>
-        <VscPlay size={14} aria-hidden="true" />
+        <Codicon name="play" size={14} />
         <span aria-label={t("In esecuzione: {0}", String(live))}>{live}</span>
-        <VscError size={14} aria-hidden="true" className="ml-1" />
+        <Codicon name="error" size={14} className="ml-1" />
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
       {installing && (
@@ -562,7 +547,7 @@ function StatusBar({
           pressed={terminals.shown}
         >
           <span className="sr-only">{terminalsLabel}</span>
-          <VscTerminal size={14} aria-hidden="true" />
+          <Codicon name="terminal" size={14} />
           <span aria-label={t("Terminali aperti: {0}", String(sessions))}>{sessions}</span>
         </StatusItem>
       )}
@@ -570,7 +555,7 @@ function StatusBar({
         <>
           {editor?.running && (
             <StatusItem title={t("Server dell'editor su 127.0.0.1:{0}", String(editor.port))}>
-              <VscCode size={14} aria-hidden="true" />
+              <Codicon name="code" size={14} />
               {t("Editor attivo")}
             </StatusItem>
           )}
@@ -580,7 +565,7 @@ function StatusBar({
       )}
       <StatusItem title={panelLabel} onClick={onPanel} pressed={panelOpen} last>
         <span className="sr-only">{panelLabel}</span>
-        <VscLayoutPanel size={14} aria-hidden="true" />
+        <Codicon name="layout-panel" size={14} />
       </StatusItem>
     </footer>
   );

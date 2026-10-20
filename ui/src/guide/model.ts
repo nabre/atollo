@@ -5,46 +5,8 @@
 // daily work, services, agents, tools, settings, carrying the kit, how it
 // works inside, and help when something goes wrong.
 import type { IconType } from "react-icons";
-import {
-  VscAccount,
-  VscBook,
-  VscCloudDownload,
-  VscDatabase,
-  VscDebugDisconnect,
-  VscDebugStart,
-  VscExtensions,
-  VscFolderLibrary,
-  VscGitMerge,
-  VscGithub,
-  VscGlobe,
-  VscGraph,
-  VscHome,
-  VscHubot,
-  VscKey,
-  VscLayers,
-  VscLayoutSidebarLeft,
-  VscLibrary,
-  VscLock,
-  VscNewFolder,
-  VscPulse,
-  VscQuestion,
-  VscRocket,
-  VscServerProcess,
-  VscSettingsGear,
-  VscShield,
-  VscSymbolKeyword,
-  VscSync,
-  VscTable,
-  VscTerminal,
-  VscTools,
-  VscTrash,
-  VscVersions,
-  VscWand,
-  VscWarning,
-  VscCode,
-  VscRemote,
-} from "react-icons/vsc";
 import { lang } from "../i18n";
+import { codicon } from "../workbench";
 
 /** Localized string helper for rich guide content: the Italian source and
  * its English, French and German, all required (no silent fallback). */
@@ -186,7 +148,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qu'est Atollo, ce que vous y trouvez et comment ce guide est organisé. Le point de départ si c'est votre première fois.",
         "Was Atollo ist, was du darin findest und wie diese Anleitung aufgebaut ist. Der Ausgangspunkt, wenn du zum ersten Mal hier bist.",
       ),
-    icon: VscHome,
+    icon: codicon("home"),
     keywords:
       "welcome start overview introduzione cos'è portabile chiavetta usb kit introduction portable usb stick bienvenue introduction clé portable willkommen einführung portabel usb-stick",
   },
@@ -201,7 +163,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Où placer le kit, la page « Bienvenue », quels composants choisir et ce qui se passe pendant leur téléchargement.",
         "Wohin das Kit gehört, die Seite „Willkommen“, welche Komponenten du wählst und was passiert, während sie heruntergeladen werden.",
       ),
-    icon: VscRocket,
+    icon: codicon("rocket"),
     keywords:
       "first run benvenuto installa componenti scaricare download primo avvio setup first start install components welcome premier lancement installer composants télécharger erster start installieren komponenten herunterladen",
     targetPage: "components",
@@ -218,7 +180,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Barre d'activité, barre latérale, onglets, barre d'état et panneau « Activité » : où se trouvent les choses et à quoi elles servent.",
         "Aktivitätsleiste, Seitenleiste, Tabs, Statusleiste und Bereich „Aktivität“: wo sich alles befindet und wozu es dient.",
       ),
-    icon: VscLayoutSidebarLeft,
+    icon: codicon("layout-sidebar-left"),
     keywords:
       "window finestra barra attività stato pannello schede layout interfaccia ctrl+p activity bar status bar sidebar tabs panel fenêtre barre d'activité barre d'état panneau onglets fenster aktivitätsleiste statusleiste seitenleiste tabs bereich",
   },
@@ -239,7 +201,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Un parcours complet en dix minutes : créer un projet, le démarrer, le voir dans le navigateur et l'ouvrir dans l'éditeur.",
         "Ein vollständiger Durchgang in zehn Minuten: ein Projekt erstellen, starten, im Browser ansehen und im Editor öffnen.",
       ),
-    icon: VscDebugStart,
+    icon: codicon("debug-start"),
     keywords:
       "tutorial esempio primo progetto passo passo vite laravel avviare browser example first project step by step start exemple premier projet pas à pas démarrer beispiel erstes projekt schritt für schritt starten",
     targetPage: "new",
@@ -257,7 +219,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les trois voies : un dossier vide, un dépôt Git, ou une base de framework ou de CMS avec ses ajouts. Plus vos dépôts GitHub.",
         "Die drei Wege: ein leerer Ordner, ein Git-Repository oder eine Framework- oder CMS-Basis mit ihren Ergänzungen. Dazu deine GitHub-Repositorys.",
       ),
-    icon: VscNewFolder,
+    icon: codicon("new-folder"),
     keywords:
       "nuovo progetto wizard framework cms clona git vuoto base aggiunte laravel vite django wordpress new project clone empty base additions nouveau projet cloner vide base ajouts neues projekt klonen leer basis ergänzungen",
     targetPage: "new",
@@ -279,7 +241,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "La liste des projets, le « Panneau rapide » avec les favoris et les récents, l'ouverture rapide avec Ctrl+P et les sept sections d'un projet.",
         "Die Liste der Projekte, die „Schnellübersicht“ mit Favoriten und zuletzt verwendeten, das schnelle Öffnen mit Ctrl+P und die sieben Abschnitte eines Projekts.",
       ),
-    icon: VscFolderLibrary,
+    icon: codicon("folder-library"),
     keywords:
       "progetti pannello rapido preferiti recenti quick open ctrl+p sezioni scheda progetto projects quick panel favorites recent sections projets panneau rapide favoris récents sections projekte schnellübersicht favoriten zuletzt abschnitte",
     targetPage: "projects",
@@ -301,7 +263,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qu'est une action, comment la démarrer et l'arrêter, la sortie, le port, l'action par défaut et comment ajouter les vôtres dans le fichier panel.json.",
         "Was eine Aktion ist, wie man sie startet und beendet, die Ausgabe, der Port, die Standardaktion und wie du eigene in der Datei panel.json hinzufügst.",
       ),
-    icon: VscDebugStart,
+    icon: codicon("debug-start"),
     keywords:
       "avvio azioni porta output predefinita panel.json avvia ferma comando npm run dev start actions port default stop command démarrer actions port par défaut arrêter commande starten aktionen port standard beenden befehl",
     targetPage: "projects",
@@ -323,7 +285,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les outils dont un projet a besoin, la version de chaque langage choisie pour lui seul et comment le kit la reconnaît à partir des fichiers du projet.",
         "Die Werkzeuge, die ein Projekt braucht, die nur für es gewählte Version jeder Sprache und wie das Kit sie an den Dateien des Projekts erkennt.",
       ),
-    icon: VscVersions,
+    icon: codicon("versions"),
     keywords:
       "versioni componenti linguaggi node php python progetto dev-settings.json nvmrc versions components languages project versions composants langages projet versionen komponenten sprachen projekt",
     targetPage: "projects",
@@ -345,7 +307,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ouvrir le projet dans l'éditeur ou dans une console du kit, choisir les extensions, les paramètres de l'éditeur et les serveurs MCP du projet.",
         "Das Projekt im Editor oder in einer Konsole des Kits öffnen, die Erweiterungen wählen, die Editor-Einstellungen und die MCP-Server des Projekts.",
       ),
-    icon: VscCode,
+    icon: codicon("code"),
     keywords:
       "editor vscodium terminale console estensioni open vsx impostazioni mcp progetto editor terminal extensions settings éditeur terminal extensions paramètres editor terminal erweiterungen einstellungen",
     targetPage: "projects",
@@ -361,7 +323,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce que montre la section « Git », où faire les commits et les push, et pourquoi le kit lit l'état sans exécuter Git.",
         "Was der Abschnitt „Git“ zeigt, wo Commits und Pushes gemacht werden und warum das Kit den Status liest, ohne Git auszuführen.",
       ),
-    icon: VscGitMerge,
+    icon: codicon("git-merge"),
     keywords:
       "git ramo branch remoto commit push sincronizzato repository branch remote sync branche dépôt distant synchronisé branch remote synchron",
     targetPage: "projects",
@@ -383,7 +345,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qui est supprimé et ce qui reste, et comment relier ou nettoyer les données d'un projet renommé ou supprimé en dehors de l'application.",
         "Was gelöscht wird und was bleibt, und wie du die Daten eines außerhalb der App umbenannten oder gelöschten Projekts wieder verknüpfst oder aufräumst.",
       ),
-    icon: VscTrash,
+    icon: codicon("trash"),
     keywords:
       "elimina progetto dati senza progetto orfani collega pulizia rinominato delete project orphan data link cleanup renamed supprimer projet données sans projet lier nettoyage renommé löschen projekt daten ohne projekt verknüpfen aufräumen umbenannt",
     targetPage: "projects",
@@ -402,7 +364,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "MySQL et MongoDB du kit : les démarrer, les mots de passe, les ports, plusieurs versions ensemble, phpMyAdmin et l'explorateur de données.",
         "MySQL und MongoDB des Kits: sie starten, die Passwörter, die Ports, mehrere Versionen gleichzeitig, phpMyAdmin und der Daten-Explorer.",
       ),
-    icon: VscDatabase,
+    icon: codicon("database"),
     keywords:
       "database mysql mongodb phpmyadmin porta password versione server dati database server port password version bases de données serveur port mot de passe version datenbank server port passwort version",
     targetPage: "databases",
@@ -424,7 +386,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Une base de données et un utilisateur rien que pour le projet, la connexion écrite dans le fichier .env, les sauvegardes et la restauration.",
         "Eine Datenbank und ein Benutzer nur für das Projekt, die in die Datei .env geschriebene Verbindung, Sicherungskopien und Wiederherstellung.",
       ),
-    icon: VscKey,
+    icon: codicon("key"),
     keywords:
       "database progetto utente password .env database_url db_host copie backup ripristino sqlite project database user password backup restore base de données projet utilisateur mot de passe sauvegarde restauration projektdatenbank benutzer passwort sicherung wiederherstellung",
     targetPage: "projects",
@@ -446,7 +408,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Servir un dossier comme site : fichiers statiques, PHP, Caddy ou Apache. Les serveurs partagés de la page « Serveurs Web », les domaines .localhost et les alias.",
         "Einen Ordner als Website bereitstellen: statische Dateien, PHP, Caddy oder Apache. Die gemeinsamen Server der Seite „Webserver“, die .localhost-Domains und die Aliasse.",
       ),
-    icon: VscGlobe,
+    icon: codicon("globe"),
     keywords:
       "sito web server caddy apache pool profilo localhost dominio alias php lan rete locale website web server domain local network site web serveur domaine réseau local website webserver domain lokales netzwerk",
     targetPage: "servers",
@@ -462,7 +424,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Des consoles avec les outils du kit dans n'importe quel dossier du PC, et vos propres terminaux avec les outils et versions de votre choix.",
         "Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs und eigene Terminals mit Werkzeugen und Versionen deiner Wahl.",
       ),
-    icon: VscTerminal,
+    icon: codicon("terminal"),
     keywords:
       "terminali console powershell bash prompt strumenti versioni path terminals console tools versions terminaux console outils versions terminals konsole werkzeuge versionen",
     targetPage: "terminals",
@@ -486,7 +448,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qu'ils sont, comment les installer, comment les ouvrir dans un projet, la connexion à votre compte et la déconnexion.",
         "Was sie sind, wie man sie installiert, wie man sie in einem Projekt öffnet, die Anmeldung bei deinem Konto und die Abmeldung.",
       ),
-    icon: VscHubot,
+    icon: codicon("hubot"),
     keywords:
       "agenti claude code codex antigravity gemini accesso login token chiave api agents sign in login api key agents connexion clé api agenten anmeldung api-schlüssel",
     targetPage: "agents",
@@ -508,7 +470,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Un seul dossier pour instruire les trois agents ensemble : AGENTS.md, les skills, les serveurs MCP du kit et ceux d'un projet.",
         "Ein einziger Ordner, um alle drei Agenten gemeinsam anzuleiten: AGENTS.md, die Skills, die MCP-Server des Kits und die eines Projekts.",
       ),
-    icon: VscSync,
+    icon: codicon("sync"),
     keywords:
       "agents.md claude.md skill mcp mcp.json sincronizzazione condiviso istruzioni conflitti shared instructions skills sync conflicts instructions partagées synchronisation conflits gemeinsame anweisungen synchronisierung konflikte",
     targetPage: "agents",
@@ -530,7 +492,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Quelle part de votre forfait vous avez utilisée, quand elle se réinitialise, et les tokens et sessions d'aujourd'hui et des sept derniers jours.",
         "Wie viel deines Plans du verbraucht hast, wann er zurückgesetzt wird, und die Tokens und Sitzungen von heute und den letzten sieben Tagen.",
       ),
-    icon: VscGraph,
+    icon: codicon("graph"),
     keywords:
       "limiti quote consumi token sessioni piano 5 ore settimana statistiche limits quota usage tokens sessions plan week limites quota consommation tokens sessions forfait semaine limits kontingent verbrauch tokens sitzungen plan woche",
     targetPage: "agents",
@@ -548,7 +510,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Le tableau de tous les outils réparti en six types, les cinq états, installer et mettre à jour tout de suite ou choisir puis « Appliquer ».",
         "Die Tabelle aller Werkzeuge, nach den sechs Arten aufgeteilt, die fünf Zustände, sofort installieren und aktualisieren oder erst auswählen und dann „Übernehmen“.",
       ),
-    icon: VscExtensions,
+    icon: codicon("extensions"),
     keywords:
       "strumenti componenti tabella tipi sistema ed editor agenti ai linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
     targetPage: "components",
@@ -570,7 +532,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Garder PHP 8.3 et 8.4 ou Node 20 et 24 côte à côte : ajouter, retirer, versions verrouillées et laquelle le kit utilise.",
         "PHP 8.3 und 8.4 oder Node 20 und 24 nebeneinander behalten: hinzufügen, entfernen, gesperrte Versionen und welche das Kit verwendet.",
       ),
-    icon: VscLibrary,
+    icon: codicon("library"),
     keywords:
       "versioni linee multi-versione aggiungi versione bloccata più recente composer versions lines multi-version add pinned latest versions lignes plusieurs versions ajouter verrouillée plus récente versionen linien mehrere versionen hinzufügen gesperrt neueste python php rust compilatore compiler compilateur msvc gnu",
     targetPage: "components",
@@ -592,7 +554,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les vues d'ensemble de la page Outils : les six systèmes, qui requiert qui, les extensions par langage et ce dont le PC a besoin.",
         "Die Gesamtansichten der Seite Werkzeuge: die sechs Systeme, wer wen benötigt, die Erweiterungen je Sprache und was der PC braucht.",
       ),
-    icon: VscTable,
+    icon: codicon("table"),
     keywords:
       "matrice relazioni estensioni requisiti pc piattaforma sistemi windows macos linux arm64 matrix relations extensions requirements platform systems matrice relations extensions prérequis plateforme systèmes matrix beziehungen erweiterungen anforderungen plattform systeme",
     targetPage: "components",
@@ -616,7 +578,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Pourquoi le connecter, comment se connecter, ce qu'il débloque (dépôts, Git, GitHub CLI) et ce qui fonctionne aussi sans lui.",
         "Warum du es verbinden solltest, wie du dich anmeldest, was es freischaltet (Repositorys, Git, GitHub CLI) und was auch ohne es funktioniert.",
       ),
-    icon: VscGithub,
+    icon: codicon("github"),
     keywords:
       "github account accesso login gh codice dispositivo repository clona permesso delete_repo github account sign in device code permission compte connexion code appareil autorisation konto anmeldung gerätecode berechtigung git identity identità user.name user.email noreply firma commit signs safe.directory",
     targetPage: "settings",
@@ -638,7 +600,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Enregistrement automatique, langue, fichiers temporaires, mise à jour automatique, clé Gemini, versions à installer, confidentialité et les informations sur le kit.",
         "Automatisches Speichern, Sprache, temporäre Dateien, automatische Aktualisierung, Gemini-Schlüssel, zu installierende Versionen, Datenschutz und die Informationen zum Kit.",
       ),
-    icon: VscSettingsGear,
+    icon: codicon("settings-gear"),
     keywords:
       "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento gemini il kit privacy telemetria salvataggio settings language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
@@ -660,7 +622,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Quand ils sont nécessaires, comment les remplir et à quoi ils s'appliquent. Plus comment rendre vos sites visibles aux autres PC du réseau.",
         "Wann du sie brauchst, wie du sie ausfüllst und wofür sie gelten. Dazu, wie andere PCs im Netzwerk deine Websites sehen können.",
       ),
-    icon: VscRemote,
+    icon: codicon("remote"),
     keywords:
       "rete proxy https http certificati pem ca aziendale lan rete locale no_proxy network proxy certificates company local network réseau proxy certificats entreprise réseau local netzwerk proxy zertifikate firma lokales netzwerk",
     targetPage: "settings",
@@ -682,7 +644,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Modifier les recettes de « Nouveau projet » : bases, ajouts, commandes, variables .env, actions. Et essayer une combinaison avant de l'utiliser.",
         "Die Rezepte von „Neues Projekt“ bearbeiten: Basen, Ergänzungen, Befehle, .env-Variablen, Aktionen. Und eine Kombination ausprobieren, bevor du sie verwendest.",
       ),
-    icon: VscWand,
+    icon: codicon("wand"),
     keywords:
       "framework ricette istruzioni basi aggiunte prova una combinazione frameworks.json framework recipes instructions bases additions try combination recettes instructions bases ajouts essayer combinaison rezepte anweisungen basen ergänzungen ausprobieren kombination",
     targetPage: "settings",
@@ -706,7 +668,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Fermer tout ce que le kit a ouvert avant de débrancher la clé ou le disque, sans perdre de données.",
         "Alles schließen, was das Kit geöffnet hat, bevor du den USB-Stick oder die Festplatte abziehst, ohne Daten zu verlieren.",
       ),
-    icon: VscDebugDisconnect,
+    icon: codicon("debug-disconnect"),
     keywords:
       "rimuovi unità espelli chiavetta usb sicura chiudi tutto remove drive eject usb stick safe close all retirer lecteur éjecter clé usb sécurité fermer tout laufwerk entfernen auswerfen usb-stick sicher alles schließen",
     targetPage: "eject",
@@ -728,7 +690,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qui se passe quand le kit change de place, et comment il se comporte sur le même disque ouvert depuis Windows, macOS et Linux.",
         "Was passiert, wenn das Kit seinen Ort wechselt, und wie es sich auf derselben Festplatte verhält, die unter Windows, macOS und Linux geöffnet wird.",
       ),
-    icon: VscLayers,
+    icon: codicon("layers"),
     keywords:
       "spostare kit altro pc lettera unità cartella rilocazione macos linux windows stesso disco move kit another pc drive letter folder relocation same disk déplacer kit autre pc lettre lecteur dossier même disque verschieben kit anderer pc laufwerksbuchstabe ordner gleiche festplatte",
   },
@@ -749,7 +711,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Mettre à jour Atollo et ses outils, et ce qu'il faut copier pour avoir une sauvegarde complète de votre travail.",
         "Atollo und seine Werkzeuge aktualisieren, und was du kopieren musst, um eine vollständige Sicherung deiner Arbeit zu haben.",
       ),
-    icon: VscCloudDownload,
+    icon: codicon("cloud-download"),
     keywords:
       "aggiornamenti aggiorna atollo release backup copia sicurezza updates update backup copy mises à jour mettre à jour sauvegarde copie aktualisierungen aktualisieren sicherung kopie",
     targetPage: "settings",
@@ -773,7 +735,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Pourquoi le kit ne s'installe pas, ne demande pas de droits d'administrateur et ne touche pas au PC qui l'héberge. Et les exceptions.",
         "Warum sich das Kit nicht installiert, keine Administratorrechte verlangt und den PC, auf dem es läuft, nicht verändert. Und die Ausnahmen.",
       ),
-    icon: VscShield,
+    icon: codicon("shield"),
     keywords:
       "portabile isolamento variabili ambiente registro amministratore tracce env portable isolation environment variables registry administrator traces portable isolement variables d'environnement registre administrateur traces portabel isolierung umgebungsvariablen registrierung administrator spuren",
   },
@@ -794,7 +756,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "projects et data : ce qu'il y a dans chaque dossier, quels fichiers sont à vous, lesquels sont au kit et lesquels sont protégés.",
         "projects und data: was in jedem Ordner liegt, welche Dateien dir gehören, welche dem Kit und welche geschützt sind.",
       ),
-    icon: VscFolderLibrary,
+    icon: codicon("folder-library"),
     keywords:
       "cartelle disco projects data apps home settings.json components.txt struttura folders disk structure dossiers disque structure ordner festplatte struktur",
   },
@@ -810,7 +772,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qui démarre avec l'application, ce qui s'arrête quand vous la fermez, et pourquoi aucun programme ne reste allumé à votre insu.",
         "Was mit der App startet, was beim Schließen beendet wird und warum keine Programme ohne dein Wissen weiterlaufen.",
       ),
-    icon: VscPulse,
+    icon: codicon("pulse"),
     keywords:
       "processi background job avvio chiusura istanza singola server demoni processes background startup shutdown single instance daemons processus arrière-plan démarrage fermeture instance unique prozesse hintergrund start beenden einzelinstanz",
   },
@@ -831,7 +793,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les sources officielles de chaque composant, les vérifications cryptographiques, le téléchargement à la main et le tableau complet des sources.",
         "Die offiziellen Quellen jeder Komponente, die kryptografischen Prüfungen, der Download von Hand und die vollständige Tabelle der Quellen.",
       ),
-    icon: VscLock,
+    icon: codicon("lock"),
     keywords:
       "fonti download verifica sha-256 hash firma sicurezza tabella fonti a mano by hand sources download verification signature security sources téléchargement vérification signature sécurité quellen download prüfung signatur sicherheit",
     targetPage: "components",
@@ -847,7 +809,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les commandes de l'exécutable d'Atollo pour préparer, vérifier et synchroniser le kit sans ouvrir la fenêtre.",
         "Die Befehle der Atollo-Programmdatei, um das Kit vorzubereiten, zu prüfen und zu synchronisieren, ohne das Fenster zu öffnen.",
       ),
-    icon: VscSymbolKeyword,
+    icon: codicon("symbol-keyword"),
     keywords:
       "cli riga di comando prepare check components versions env sync powershell command line ligne de commande kommandozeile befehlszeile",
   },
@@ -870,7 +832,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées.",
         "Die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen.",
       ),
-    icon: VscWarning,
+    icon: codicon("warning"),
     keywords:
       "problemi errori risoluzione porta occupata download fallito non parte errore problems errors troubleshooting port in use download failed problèmes erreurs dépannage port occupé téléchargement échoué probleme fehler fehlerbehebung port belegt download fehlgeschlagen",
   },
@@ -885,7 +847,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Des réponses courtes aux questions qui reviennent le plus souvent.",
         "Kurze Antworten auf die Fragen, die am häufigsten gestellt werden.",
       ),
-    icon: VscQuestion,
+    icon: codicon("question"),
     keywords:
       "faq domande frequenti risposte frequently asked questions answers questions fréquentes réponses häufige fragen antworten",
   },
@@ -900,7 +862,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les mots du guide expliqués simplement, de A à Z.",
         "Die Begriffe der Anleitung einfach erklärt, von A bis Z.",
       ),
-    icon: VscBook,
+    icon: codicon("book"),
     keywords:
       "glossario parole termini definizioni glossary words terms definitions glossaire mots termes définitions glossar begriffe definitionen",
   },
@@ -919,7 +881,3 @@ export function sectionCode(topic: GuideTopic): string {
   const n = GUIDE_TOPICS.filter((x) => x.group === topic.group).indexOf(topic) + 1;
   return `${String(g)}.${String(n)}`;
 }
-
-// Icons the topics use besides the ones above, kept here so the topic files
-// import them from one place.
-export { VscAccount, VscServerProcess, VscTools };

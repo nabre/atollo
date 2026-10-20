@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { VscAdd } from "react-icons/vsc";
+import { codicon } from "../../../ui/src/workbench/codicon";
 import {
   Button,
   Checkbox,
@@ -360,12 +360,16 @@ describe("workbench controls", () => {
   });
 
   it("says that an icon action opens a menu, and which one while it is open", () => {
-    const { rerender } = render(<IconButton icon={VscAdd} label="Aggiungi" onClick={() => undefined} />);
+    const { rerender } = render(<IconButton icon={codicon("add")} label="Aggiungi" onClick={() => undefined} />);
     const plain = screen.getByRole("button", { name: "Aggiungi" });
+    // Its glyph, the 16px codicon, hidden: the label names the button.
+    const glyph = plain.querySelector(".codicon.codicon-add");
+    expect(glyph?.classList.contains("text-vsc-codicon")).toBe(true);
+    expect(glyph?.getAttribute("aria-hidden")).toBe("true");
     expect(plain.hasAttribute("aria-haspopup")).toBe(false);
     expect(plain.hasAttribute("aria-expanded")).toBe(false);
     const draw = (open: boolean) => (
-      <IconButton icon={VscAdd} label="Aggiungi" menu={{ open, id: "m" }} onClick={() => undefined} />
+      <IconButton icon={codicon("add")} label="Aggiungi" menu={{ open, id: "m" }} onClick={() => undefined} />
     );
     rerender(draw(false));
     const button = screen.getByRole("button", { name: "Aggiungi" });

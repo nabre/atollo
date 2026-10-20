@@ -1,12 +1,11 @@
 // The Sito web section of a project's page: a folder of it served on its
 // own port or attached to a pooled Caddy/Apache VirtualHost.
 import { useState, type SyntheticEvent } from "react";
-import { VscAdd, VscGlobe, VscTrash } from "react-icons/vsc";
 import { projectSite, serversList, type ProjectInfo, type SiteKind } from "../api";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useLoad } from "../hooks";
 import { t } from "../i18n";
-import { Select, TextField } from "../workbench";
+import { codicon, Select, TextField } from "../workbench";
 
 interface AliasRow {
   url: string;
@@ -128,10 +127,16 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
             />
           </label>
         )}
-        <ActionButton icon={VscGlobe} label={t("Salva")} busy={busy === "site"} onClick={() => undefined} submit />
+        <ActionButton
+          icon={codicon("globe")}
+          label={t("Salva")}
+          busy={busy === "site"}
+          onClick={() => undefined}
+          submit
+        />
         {site && (
           <ActionButton
-            icon={VscGlobe}
+            icon={codicon("globe")}
             label={t("Togli il sito")}
             busy={busy === "none"}
             onClick={() => {
@@ -163,7 +168,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
                 {t("Alias di percorso portabili (es. /media → storage/uploads o @altro-progetto/public)")}
               </span>
               <ActionButton
-                icon={VscAdd}
+                icon={codicon("add")}
                 label={t("Aggiungi alias")}
                 onClick={() => {
                   setAliases((prev) => [...prev, { url: "/media", target: "storage" }]);
@@ -194,7 +199,7 @@ export function SiteForm({ project, onChanged }: { project: ProjectInfo; onChang
                   className="w-64"
                 />
                 <ActionButton
-                  icon={VscTrash}
+                  icon={codicon("trash")}
                   label={t("Rimuovi")}
                   onClick={() => {
                     setAliases((prev) => prev.filter((_, i) => i !== idx));

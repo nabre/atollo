@@ -10,6 +10,8 @@ describe("vscode-elements", () => {
     const links = document.querySelectorAll<HTMLLinkElement>("link#vscode-codicon-stylesheet");
     expect(links).toHaveLength(1);
     expect(links[0]?.rel).toBe("stylesheet");
+    // Only for the shadow roots: the page has codicon.css in its base layer.
+    expect(links[0]?.disabled).toBe(true);
   });
 
   it("renders a vscode-button with its name, class and clicks", async () => {

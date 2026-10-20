@@ -3,7 +3,6 @@
 // project in its panel: those of its languages, ticked unless removed, and
 // those added by hand. Installed extensions work in the whole editor.
 import { useCallback, useMemo, useState, type ReactNode, type SyntheticEvent } from "react";
-import { VscAdd, VscCheck, VscTools } from "react-icons/vsc";
 import {
   extensionsMatrix,
   projectExtensions,
@@ -16,7 +15,7 @@ import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
 import { ActionButton, ErrorLine, LoadError } from "./common";
 import { useAction, useLoad } from "./hooks";
-import { Checkbox, DataTable } from "./workbench";
+import { Checkbox, Codicon, codicon, DataTable } from "./workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({
@@ -134,7 +133,7 @@ export function ExtensionsMatrixSection({
                   <td className="pl-3 whitespace-nowrap">
                     {e.installed && (
                       <span className="text-vsc-success" title={t("installata")}>
-                        <VscCheck size={12} aria-hidden="true" />
+                        <Codicon name="check" size={12} />
                         <span className="sr-only">{t("installata")}</span>
                       </span>
                     )}
@@ -179,10 +178,20 @@ function groups(p: ProjectInfo, matrix: ExtensionsMatrix | null): ExtGroup[] {
     .filter((l) => byLanguage.has(l))
     .map((l) => ({ key: `l:${l}`, title: l, icon: <LanguageLogo name={l} />, items: byLanguage.get(l) ?? [] }));
   if (tools.length > 0) {
-    out.push({ key: "tools", title: t("Strumenti"), icon: <VscTools size={14} aria-hidden="true" />, items: tools });
+    out.push({
+      key: "tools",
+      title: t("Strumenti"),
+      icon: <Codicon name="tools" size={14} />,
+      items: tools,
+    });
   }
   if (added.length > 0) {
-    out.push({ key: "added", title: t("Aggiunte da te"), icon: <VscAdd size={14} aria-hidden="true" />, items: added });
+    out.push({
+      key: "added",
+      title: t("Aggiunte da te"),
+      icon: <Codicon name="add" size={14} />,
+      items: added,
+    });
   }
   return out;
 }
@@ -276,7 +285,7 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
                       <span className="text-vsc-desc">{t("disattivata")}</span>
                     ) : x.installed ? (
                       <span className="flex items-center gap-1 text-vsc-success">
-                        <VscCheck size={12} aria-hidden="true" />
+                        <Codicon name="check" size={12} />
                         {t("installata")}
                       </span>
                     ) : (
@@ -324,7 +333,7 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
             ))}
           </datalist>
           <ActionButton
-            icon={VscAdd}
+            icon={codicon("add")}
             label={t("Aggiungi")}
             busy={busy === "add"}
             disabled={adding.trim() === ""}

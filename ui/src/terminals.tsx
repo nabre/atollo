@@ -4,7 +4,6 @@
 // one on disk (tauri/src/terminals.rs).
 
 import { useCallback, useState } from "react";
-import { VscAdd, VscBook, VscCopy, VscFolderOpened, VscRefresh, VscSave, VscTerminal, VscTrash } from "react-icons/vsc";
 import {
   terminalDirPick,
   terminalLaunch,
@@ -24,6 +23,8 @@ import { ComponentLogo } from "./logos";
 import {
   Button,
   Checkbox,
+  Codicon,
+  codicon,
   EditorBody,
   EditorHeader,
   EditorSection,
@@ -187,7 +188,7 @@ function TerminalEditor({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
-        icon={<VscTerminal size={48} aria-hidden="true" className="text-vsc-desc" />}
+        icon={<Codicon name="terminal" size={48} className="text-vsc-desc" />}
         title={draft.name.trim() || t("Nuovo terminale")}
         titleId="terminal-title"
         meta={[
@@ -206,7 +207,7 @@ function TerminalEditor({
         actions={
           <>
             <ActionButton
-              icon={VscTerminal}
+              icon={codicon("terminal")}
               label={dirty ? t("Salva e apri") : t("Apri")}
               primary
               busy={busy === "open"}
@@ -216,7 +217,7 @@ function TerminalEditor({
               }}
             />
             <ActionButton
-              icon={VscFolderOpened}
+              icon={codicon("folder-opened")}
               label={t("Apri in…")}
               busy={busy === "open-in"}
               disabled={busy !== null || draft.name.trim() === ""}
@@ -226,7 +227,7 @@ function TerminalEditor({
             />
             {!isNew && (
               <ActionButton
-                icon={VscCopy}
+                icon={codicon("copy")}
                 label={t("Duplica")}
                 disabled={busy !== null}
                 onClick={() => {
@@ -243,7 +244,7 @@ function TerminalEditor({
             )}
             {!readOnly && !isNew && (
               <ActionButton
-                icon={VscTrash}
+                icon={codicon("trash")}
                 label={t("Elimina")}
                 disabled={busy !== null}
                 onClick={() => {
@@ -264,7 +265,7 @@ function TerminalEditor({
             actions={
               <>
                 <ActionButton
-                  icon={VscTrash}
+                  icon={codicon("trash")}
                   label={t("Elimina")}
                   primary
                   busy={busy === "remove"}
@@ -276,7 +277,7 @@ function TerminalEditor({
                   }}
                 />
                 <ActionButton
-                  icon={VscRefresh}
+                  icon={codicon("refresh")}
                   label={t("Annulla")}
                   onClick={() => {
                     setConfirmRemove(false);
@@ -430,7 +431,7 @@ function TerminalEditor({
             {t("Modifiche non salvate")}
           </span>
           <ActionButton
-            icon={VscSave}
+            icon={codicon("save")}
             label={t("Salva")}
             primary
             busy={busy === "save"}
@@ -442,7 +443,7 @@ function TerminalEditor({
             }}
           />
           <ActionButton
-            icon={VscRefresh}
+            icon={codicon("refresh")}
             label={t("Annulla")}
             disabled={busy !== null}
             onClick={() => {
@@ -455,7 +456,7 @@ function TerminalEditor({
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-vsc-border px-5 py-2">
           <span className="min-w-0 flex-1" />
           <ActionButton
-            icon={VscSave}
+            icon={codicon("save")}
             label={t("Crea terminale")}
             primary
             busy={busy === "save"}
@@ -511,11 +512,11 @@ export function TerminalsPage({
         title={t("Terminali")}
         actions={
           <>
-            <IconButton icon={VscAdd} label={t("Nuovo terminale")} onClick={startNew} />
-            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={reload} />
+            <IconButton icon={codicon("add")} label={t("Nuovo terminale")} onClick={startNew} />
+            <IconButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={reload} />
             {onGuide && (
               <IconButton
-                icon={VscBook}
+                icon={codicon("book")}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
                   onGuide("terminals");
@@ -542,7 +543,7 @@ export function TerminalsPage({
               {terminals.map((x) => (
                 <ListItem
                   key={x.id}
-                  icon={<VscTerminal size={28} aria-hidden="true" className="text-vsc-desc" />}
+                  icon={<Codicon name="terminal" size={28} className="text-vsc-desc" />}
                   name={x.name}
                   meta={x.builtin ? t("predefinito") : undefined}
                   description={summary(x)}

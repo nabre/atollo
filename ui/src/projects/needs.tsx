@@ -4,8 +4,7 @@ import type { ProjectInfo } from "../api";
 import { useAction } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
-import { List, ListRow } from "../workbench";
-import { VscDebugStart } from "react-icons/vsc";
+import { codicon, List, ListRow } from "../workbench";
 import { projectInstallMissing } from "../api";
 import { ComponentLogo } from "../logos";
 import { EditorSection, Notice } from "../workbench";
@@ -59,7 +58,7 @@ export function Needs({ p, onChanged }: { p: ProjectInfo; onChanged: () => void 
         actions={
           p.missing.length > 0 && (
             <ActionButton
-              icon={VscDebugStart}
+              icon={codicon("debug-start")}
               label={t("Installa ciò che manca")}
               primary
               busy={busy === "install"}

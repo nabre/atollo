@@ -6,7 +6,6 @@
 // data\projects\<id>\dev-settings.json, never in it. Deleting an empty
 // project asks first, with what goes with it (./delete.tsx).
 import { useCallback, useState } from "react";
-import { VscAdd, VscFolderOpened, VscRefresh, VscWarning } from "react-icons/vsc";
 import {
   editorOpen,
   folderOpen,
@@ -21,8 +20,7 @@ import {
 import { useAction, useLoad } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Button, Dot, IconButton } from "../workbench";
-import { VscGithub, VscTrash } from "react-icons/vsc";
+import { Button, Codicon, codicon, Dot, IconButton } from "../workbench";
 import { projectDatabases, projectStatus, type ProjectDatabases, type ProjectStatus } from "../api";
 import { AgentPicker } from "../agents";
 import { ProjectExtensions } from "../extensions";
@@ -120,7 +118,7 @@ export function ProjectPage({
       label: t("Componenti"),
       mark:
         p.missing.length > 0 ? (
-          <VscWarning size={12} className="text-vsc-warning" aria-label={t("Mancano componenti")} />
+          <Codicon name="warning" size={12} className="text-vsc-warning" label={t("Mancano componenti")} />
         ) : undefined,
     },
     { id: "databases", label: t("Database") },
@@ -141,7 +139,7 @@ export function ProjectPage({
           p.languages.length > 0 ? <LanguageIcons key="langs" names={p.languages} /> : null,
           status?.git ? (
             <span key="git" className="flex items-center gap-1" title={t("Ramo")}>
-              <VscGithub size={14} aria-hidden="true" />
+              <Codicon name="github" size={14} />
               <span className="font-mono">{status.git.branch ?? t("nessun ramo")}</span>
             </span>
           ) : null,
@@ -160,7 +158,7 @@ export function ProjectPage({
                 setSection("components");
               }}
             >
-              <VscWarning size={14} aria-hidden="true" />
+              <Codicon name="warning" size={14} />
               {t("Mancano: {0}", p.missing.map((m) => COMPONENT_NAMES[m] ?? m).join(", "))}
             </button>
           ) : null,
@@ -211,13 +209,13 @@ export function ProjectPage({
             <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
             <ActionBar className="ml-1">
               <IconButton
-                icon={VscFolderOpened}
+                icon={codicon("folder-opened")}
                 label={t("Apri la cartella")}
                 onClick={() => {
                   run("folder", () => folderOpen("projects", p.id));
                 }}
               />
-              <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={changed} />
+              <IconButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={changed} />
             </ActionBar>
           </>
         }
@@ -249,7 +247,7 @@ export function ProjectPage({
               actions={
                 !adding && (
                   <ActionButton
-                    icon={VscAdd}
+                    icon={codicon("add")}
                     label={t("Nuova azione")}
                     small
                     onClick={() => {
@@ -285,7 +283,7 @@ export function ProjectPage({
             </EditorSection>
             {p.empty && (
               <ActionButton
-                icon={VscTrash}
+                icon={codicon("trash")}
                 label={t("Elimina la cartella vuota")}
                 onClick={() => {
                   setDeleting(true);

@@ -2,7 +2,6 @@
 // another one, split into two zones (languages active in the project vs
 // languages not present in the project).
 import { useCallback, useState } from "react";
-import { VscChevronRight } from "react-icons/vsc";
 import {
   projectVersions,
   projectVersionsSet,
@@ -18,7 +17,7 @@ import { ComponentLogo } from "../logos";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { useSetup } from "../setup";
-import { EditorSection, Link, Notice } from "../workbench";
+import { Codicon, EditorSection, Link, Notice } from "../workbench";
 import { isPresent, useOffers, useReloadOnSteps } from "./model";
 import { LineSelect, LineState, RefreshLines } from "./lines";
 
@@ -174,9 +173,9 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
               }}
               className="flex w-full items-center gap-1.5 text-left text-[12px] font-semibold text-vsc-settings-header outline-none focus-visible:outline-1 focus-visible:outline-vsc-focus"
             >
-              <VscChevronRight
+              <Codicon
+                name="chevron-right"
                 size={15}
-                aria-hidden="true"
                 className={`shrink-0 transition-transform duration-100 ${activeOpen ? "rotate-90" : ""}`}
               />
               <span>{t("Linguaggi attivi nel progetto ({0})", activeTools.length)}</span>
@@ -204,9 +203,9 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
                 }}
                 className="flex w-full items-center gap-1.5 text-left text-[12px] font-semibold text-vsc-desc hover:text-vsc-fg outline-none focus-visible:outline-1 focus-visible:outline-vsc-focus"
               >
-                <VscChevronRight
+                <Codicon
+                  name="chevron-right"
                   size={15}
-                  aria-hidden="true"
                   className={`shrink-0 transition-transform duration-100 ${inactiveOpen ? "rotate-90" : ""}`}
                 />
                 <span>{t("Linguaggi non presenti nel progetto ({0})", inactiveTools.length)}</span>

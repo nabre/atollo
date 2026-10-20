@@ -2,10 +2,9 @@
 // window, a project found by its name, platform or languages, Enter opens its
 // page, Shift+Enter starts it; under the projects, the ways to make a new one.
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { VscNewFolder, VscRepoClone, VscWand } from "react-icons/vsc";
 import type { ProjectInfo, RunInfo } from "../api";
 import { t } from "../i18n";
-import { TextField, useModalFocus } from "../workbench";
+import { codicon, TextField, useModalFocus } from "../workbench";
 import { mainAction } from "./home";
 import { KIND_ICON, ProjectState } from "./kind";
 import { wayLabel, type NewWay } from "./new";
@@ -73,9 +72,9 @@ export function QuickOpen({
       }),
     ...(
       [
-        ["empty", VscNewFolder],
-        ["git", VscRepoClone],
-        ["framework", VscWand],
+        ["empty", codicon("new-folder")],
+        ["git", codicon("repo-clone")],
+        ["framework", codicon("wand")],
       ] as const
     )
       .filter(([way]) => words.every((w) => `${t("Nuovo progetto")} ${wayLabel(way)}`.toLowerCase().includes(w)))

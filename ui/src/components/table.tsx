@@ -8,18 +8,6 @@
 // update.
 import { Fragment, useMemo, useState } from "react";
 import {
-  VscArrowDown,
-  VscArrowUp,
-  VscCheck,
-  VscChevronDown,
-  VscChevronRight,
-  VscCloudDownload,
-  VscFold,
-  VscSync,
-  VscUnfold,
-  VscWarning,
-} from "react-icons/vsc";
-import {
   TARGETS,
   componentsInstall,
   setupStart,
@@ -35,7 +23,7 @@ import { ComponentLogo } from "../logos";
 import { itemState } from "../setup";
 import { Tag } from "../tags";
 import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } from "../versions";
-import { Checkbox, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
+import { Checkbox, Codicon, codicon, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
 import { groups, linesOf, matches, sizeText } from "./model";
 import type { ComponentsState } from "./state";
 import { TOOL_STATES, ToolStateIcon, otherStatus, shownStatus, toolStateLabel } from "./status";
@@ -60,7 +48,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
     return (
       <span className="flex items-center gap-1">
         <IconButton
-          icon={VscCloudDownload}
+          icon={codicon("cloud-download")}
           label={t("Installa {0}", c.name)}
           title={t("Installa {0} all'ultima versione, subito", c.name)}
           busy={busy === `install:${c.id}`}
@@ -99,7 +87,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
   return (
     <span className="flex items-center gap-1">
       <IconButton
-        icon={VscSync}
+        icon={codicon("sync")}
         label={t("Aggiorna {0}", c.name)}
         title={t("Scarica la versione nuova di {0}, se c'è", c.name)}
         busy={busy === `update:${c.id}`}
@@ -226,8 +214,7 @@ export function ToolsTable({
         }`}
       >
         {label}
-        {sort.by === by &&
-          (sort.up ? <VscArrowUp size={12} aria-hidden="true" /> : <VscArrowDown size={12} aria-hidden="true" />)}
+        {sort.by === by && (sort.up ? <Codicon name="arrow-up" size={12} /> : <Codicon name="arrow-down" size={12} />)}
       </button>
     </th>
   );
@@ -292,9 +279,9 @@ export function ToolsTable({
                 {here &&
                   check &&
                   (check.ok ? (
-                    <VscCheck size={12} aria-hidden="true" className="text-vsc-focus" />
+                    <Codicon name="check" size={12} className="text-vsc-focus" />
                   ) : (
-                    <VscWarning size={12} aria-hidden="true" className="text-vsc-warning" />
+                    <Codicon name="warning" size={12} className="text-vsc-warning" />
                   ))}
               </span>
             </td>
@@ -302,10 +289,11 @@ export function ToolsTable({
         })}
         <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
           {needed.length > 0 && !on && (
-            <VscWarning
+            <Codicon
+              name="warning"
               size={12}
-              className="mr-1 inline text-vsc-warning"
-              aria-label={t("Serve a progetti e non è scelto")}
+              className="mr-1 text-vsc-warning"
+              label={t("Serve a progetti e non è scelto")}
             />
           )}
           {needed.join(", ")}
@@ -351,7 +339,7 @@ export function ToolsTable({
           ]}
         />
         <ActionButton
-          icon={expanded ? VscFold : VscUnfold}
+          icon={expanded ? codicon("fold") : codicon("unfold")}
           label={expanded ? t("Riduci") : t("Espandi")}
           title={
             expanded
@@ -364,7 +352,7 @@ export function ToolsTable({
           }}
         />
         <ActionButton
-          icon={VscCheck}
+          icon={codicon("check")}
           label={t("Verifica")}
           busy={checking}
           disabled={running || checking}
@@ -441,7 +429,7 @@ export function ToolsTable({
             const open = !folded.has(g.id);
             const choosable = freeOf(items);
             const groupOn = choosable.length > 0 && choosable.every((c) => chosen.has(c.id));
-            const Chevron = open ? VscChevronDown : VscChevronRight;
+            const Chevron = open ? codicon("chevron-down") : codicon("chevron-right");
             return (
               <tbody key={g.id} aria-label={g.title}>
                 <tr>

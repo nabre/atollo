@@ -6,11 +6,10 @@
 // is downloaded before «Installa».
 import { useState } from "react";
 import { BrandSymbol } from "../brand";
-import { VscExtensions } from "react-icons/vsc";
 import type { SetupSnapshot } from "../api";
 import { rich, t } from "../i18n";
 import { ErrorLine } from "../common";
-import { SettingsEditor, SettingsGroup, SingleEditor } from "../workbench";
+import { Codicon, SettingsEditor, SettingsGroup, SingleEditor } from "../workbench";
 import { useKitVersions } from "../versions";
 import { RuntimeRows, useRelations } from "../relations";
 import { groups, matches } from "./model";
@@ -40,7 +39,7 @@ export function ComponentsPage({
   const links = relations.matrix?.links ?? [];
 
   const title = t("Benvenuto");
-  const icon = <VscExtensions size={16} aria-hidden="true" />;
+  const icon = <Codicon name="extensions" size={16} />;
   if (error) {
     return (
       <SingleEditor title={title} icon={icon}>

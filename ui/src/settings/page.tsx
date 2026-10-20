@@ -8,21 +8,6 @@
 // that matches. Replaces nabre/atollo's proxy.cmd.
 import { useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
-import {
-  VscAdd,
-  VscBeaker,
-  VscBook,
-  VscCloudDownload,
-  VscExtensions,
-  VscGithub,
-  VscGlobe,
-  VscHubot,
-  VscInfo,
-  VscNewFolder,
-  VscPackage,
-  VscSettings,
-  VscShield,
-} from "react-icons/vsc";
 import { editorRestart, type AppInfo } from "../api";
 import { GithubAccount, GitIdentitySetting } from "../github";
 import type { GuideTopicId } from "../guide";
@@ -42,6 +27,8 @@ import {
 } from "../frameworks";
 import { t } from "../i18n";
 import {
+  Codicon,
+  codicon,
   EditorTabs,
   IconButton,
   Link,
@@ -71,13 +58,13 @@ type SectionId = "general" | "network" | "agents" | "update" | "github" | "priva
 
 function sections(): { id: SectionId; label: string; icon: IconType }[] {
   return [
-    { id: "general", label: t("Generale"), icon: VscSettings },
-    { id: "network", label: t("Rete"), icon: VscGlobe },
-    { id: "agents", label: t("Agenti"), icon: VscHubot },
-    { id: "update", label: t("Aggiornamenti"), icon: VscCloudDownload },
-    { id: "github", label: t("Account GitHub"), icon: VscGithub },
-    { id: "privacy", label: t("Privacy"), icon: VscShield },
-    { id: "kit", label: t("Il kit"), icon: VscInfo },
+    { id: "general", label: t("Generale"), icon: codicon("settings") },
+    { id: "network", label: t("Rete"), icon: codicon("globe") },
+    { id: "agents", label: t("Agenti"), icon: codicon("hubot") },
+    { id: "update", label: t("Aggiornamenti"), icon: codicon("cloud-download") },
+    { id: "github", label: t("Account GitHub"), icon: codicon("github") },
+    { id: "privacy", label: t("Privacy"), icon: codicon("shield") },
+    { id: "kit", label: t("Il kit"), icon: codicon("info") },
   ];
 }
 
@@ -206,7 +193,7 @@ export function SettingsPage({
       return { id, label: section.label, icon: <Icon size={16} aria-hidden="true" /> };
     }
     if (id === TRY_TAB) {
-      return { id, label: t("Prova una combinazione"), icon: <VscBeaker size={16} aria-hidden="true" /> };
+      return { id, label: t("Prova una combinazione"), icon: <Codicon name="beaker" size={16} /> };
     }
     const integration = parseIntegrationTab(id);
     if (integration) {
@@ -216,11 +203,11 @@ export function SettingsPage({
         id,
         label: addon?.name ?? integration.addon,
         description: base?.name ?? integration.base,
-        icon: <VscExtensions size={16} aria-hidden="true" />,
+        icon: <Codicon name="extensions" size={16} />,
       };
     }
     const piece = fw.pieces.find((p) => pieceTab(p.id) === id);
-    const Icon = piece?.kind === "addon" ? VscExtensions : VscPackage;
+    const Icon = piece?.kind === "addon" ? codicon("extensions") : codicon("package");
     return { id, label: piece?.name ?? id, icon: <Icon size={16} aria-hidden="true" /> };
   };
 
@@ -231,7 +218,7 @@ export function SettingsPage({
         actions={
           onGuide ? (
             <IconButton
-              icon={VscBook}
+              icon={codicon("book")}
               label={t("Apri la guida di questa pagina")}
               onClick={() => {
                 onGuide(tabs.active === "github" ? "github" : tabs.active === "network" ? "network" : "settings");
@@ -278,14 +265,14 @@ export function SettingsPage({
           actions={
             <>
               <IconButton
-                icon={VscNewFolder}
+                icon={codicon("new-folder")}
                 label={t("Aggiungi una base")}
                 onClick={() => {
                   open(pieceTab(addPiece(fw, "base")));
                 }}
               />
               <IconButton
-                icon={VscAdd}
+                icon={codicon("add")}
                 label={t("Aggiungi un'aggiunta")}
                 onClick={() => {
                   open(pieceTab(addPiece(fw, "addon")));
