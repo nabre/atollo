@@ -71,6 +71,7 @@
   --vsc-size-tabs: 32px;
   --vsc-size-tab: var(--editor-group-tab-height);
   --vsc-size-statusbar: 22px;
+  --vsc-size-dialog: 480px;
 }
 
 /* Tailwind utilities: h-vsc-row, w-vsc-activitybar, p-vsc-size40,
@@ -129,4 +130,5 @@
   --spacing-vsc-tabs: var(--vsc-size-tabs);
   --spacing-vsc-tab: var(--vsc-size-tab);
   --spacing-vsc-statusbar: var(--vsc-size-statusbar);
+  --spacing-vsc-dialog: var(--vsc-size-dialog);
 }

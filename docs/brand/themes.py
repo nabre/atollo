@@ -508,7 +508,9 @@ LAYOUT = {
 # - row: the lists' and trees' row (sidebarSize22 in workbench.js);
 # - tabs: the editor's tab bar, EDITOR_TAB_HEIGHT.modernUI (35px classic),
 #   a tab of --editor-group-tab-height and 4px above and below;
-# - statusbar: .monaco-workbench .part.statusbar.
+# - statusbar: .monaco-workbench .part.statusbar;
+# - dialog: the dialog box's width, .monaco-dialog-box's min-width (its
+#   width is min-content, as wide as that for a text).
 SIZE_TOKENS = {
     "titlebar": "35px",
     "window-control": "46px",
@@ -522,6 +524,7 @@ SIZE_TOKENS = {
     "tabs": "32px",
     "tab": "var(--editor-group-tab-height)",
     "statusbar": "22px",
+    "dialog": "480px",
 }
 
 

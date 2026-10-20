@@ -17,6 +17,40 @@ if (!document.getElementById("vscode-codicon-stylesheet")) {
   document.head.append(link);
 }
 
+/** A component class as Lit keeps its styles: the shadow root of each new
+ * element takes `elementStyles`, which `finalizeStyles` fills from a sheet
+ * (as itself where the browser adopts sheets, as text where it doesn't). */
+interface Styled {
+  elementStyles: unknown[];
+  finalizeStyles(styles: CSSStyleSheet): unknown[];
+}
+
+/** Adds rules to a component's own, inside its shadow root, where no
+ * ::part reaches: they come after its own, for every element drawn from
+ * now on. */
+function restyle(tag: VscTag, rules: string) {
+  const ctor = customElements.get(tag) as unknown as Styled | undefined;
+  if (!ctor) return;
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(rules);
+  ctor.elementStyles.push(...ctor.finalizeStyles(sheet));
+}
+
+// VSCodium 1.135's input box and select box (.monaco-inputbox: 4px 6px
+// around the text, 26px high with its border; .monaco-select-box in the
+// Settings editor, 26px; its dropdown, the large corners and the lg
+// shadow). The radius of both stays the components' 4px, cornerRadius-small.
+const FIELD = `padding: var(--vscode-spacing-size40) var(--vscode-spacing-size60);
+  line-height: var(--vscode-spacing-size160);`;
+restyle("vscode-textfield", `input:not([type="file"]) { ${FIELD} }`);
+restyle("vscode-textarea", `textarea { padding: var(--vscode-spacing-size40) var(--vscode-spacing-size60); }`);
+restyle(
+  "vscode-single-select",
+  `.select-face { ${FIELD} }
+  .select-face .text { height: var(--vscode-spacing-size160); }
+  .dropdown { overflow: hidden; border-radius: var(--vscode-cornerRadius-large); box-shadow: var(--vscode-shadow-lg); }`,
+);
+
 // JSX for the raw <vscode-*> tags (as vscode-elements/examples, react-vite):
 // their properties, plus `class` and `for`, which a custom element takes
 // instead of className and htmlFor. Fields and selects dispatch a "change"
