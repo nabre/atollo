@@ -36,9 +36,12 @@
 /* The colors of VSCodium's Dark Modern and Light Modern with the brand
    emphasis, as the --vscode-* variables of a webview (read by the
    vscode-elements components) and the app's --vsc-* aliases of them
-   (generated: docs/brand/themes.py). */
+   (generated: docs/brand/themes.py). Beside them VSCodium's sizes and the
+   app's measure tokens (--vsc-size-*, h-vsc-row, rounded-vsc-small...),
+   the same in every theme: the measures are read from there only. */
 @import "./theme-vscode.css";
 @import "./theme-colors.css";
+@import "./theme-sizes.css";
 
 /* The brand covers (docs/brand/make.py). */
 :root,

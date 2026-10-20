@@ -111,7 +111,7 @@ I colori del brand riflettono naturalmente gli elementi fisici di un **Atollo oc
 | **Reef Emerald Hover (Light)** | — (`themes.py`) | `#065F46` | Hover dei pulsanti primari nel Tema Chiaro (`button.hoverBackground`). |
 | **Surf Glow (Highlight)** | — (`make.py` / `themes.py`) | `#34D399` | Link e testo evidenziato su tema scuro (`textLink.foreground`, `list.highlightForeground`), bordo tab selezionato su tema chiaro. |
 | **Crest Mint** | — (`themes.py`) | `#6EE7B7` | Bordo superiore del tab selezionato in tema scuro (`tab.selectedBorderTop`). |
-| **Shallow Mint (Soft Surface)** | `MINT` | `#D1F0E0` | Superficie morbida di accento, `inputOption.activeBackground` e `modernActivityBarItem.activeBackground` in tema chiaro, testo su `FOREST`. |
+| **Shallow Mint (Soft Surface)** | `MINT` | `#D1F0E0` | Superficie morbida di accento, `inputOption.activeBackground` e `modernActivityBar.activeBackground` in tema chiaro, testo su `FOREST`. |
 | **Coral Orange (Dark Action)** | `ORANGE` | `#F97316` | **Accento secondario / Attenzione (Tema Scuro):** `charts.orange`, `statusBar.debuggingBackground`, isolotto a sud-est del simbolo e della `O` finale del wordmark, vertice caldo del simbolo. |
 | **Deep Coral (Light Action)** | — (`themes.py`) | `#C2410C` | **Accento secondario / Attenzione (Tema Chiaro):** `charts.orange`, `statusBar.debuggingBackground` (contrasto pieno con `#FFFFFF`). |
 | **Sun Amber** | `AMBER` | `#FBBF24` | Transizione centrale del gradiente caldo nel simbolo e negli sfondi hero (`#10B981` → `#FBBF24` → `#F97316`). |
