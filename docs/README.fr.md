@@ -28,7 +28,8 @@
   <a href="https://nabre.github.io/atollo/fr/"><b>Site</b></a> ·
   <a href="https://github.com/nabre/atollo/releases/latest"><b>Télécharger</b></a> ·
   <a href="app/GUIDE.md"><b>Guide (en anglais)</b></a> ·
-  <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a>
+  <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a> ·
+  <a href="PRIVACY.fr.md"><b>Confidentialité</b></a>
 </p>
 
 <p align="center"><a href="../README.md">English</a> · <a href="README.it.md">Italiano</a> · Français · <a href="README.de.md">Deutsch</a></p>
@@ -200,12 +201,12 @@ Free code signing on Windows provided by [SignPath.io](https://signpath.io/), ce
 
 ## Privacy policy
 
-Atollo (`Atollo.exe`) respecte pleinement la vie privée de l'utilisateur :
+Le texte complet, avec chaque connexion réseau et chaque fichier que l'application conserve, se trouve dans **[Politique de confidentialité et conditions d'utilisation](PRIVACY.fr.md)**. En bref :
 
 - **Aucune télémétrie ni collecte de données :** l'application ne collecte aucune donnée personnelle, statistique d'utilisation, télémétrie ou rapport de plantage, et ne contacte aucun serveur géré par l'auteur du projet. Elle désactive également la télémétrie intégrée des composants gérés (tels que PowerShell 7 et le serveur VSCodium).
-- **Stockage local :** les paramètres, projets, bases de données locales, journaux et identifiants sont enregistrés exclusivement en local dans le dossier `data\` (et `projects\`) d'Atollo sur l'appareil de l'utilisateur.
-- **Connexions réseau :** l'application n'effectue des requêtes réseau que vers les sources amont officielles pour vérifier les mises à jour et télécharger les composants demandés par l'utilisateur (`api.github.com`, miroirs officiels des langages/outils, registre Open VSX pour les extensions de l'éditeur) et, lorsque l'utilisateur configure et utilise l'intégration GitHub, les agents IA (**Claude Code**, **Codex**, **Antigravity**) ou une clé API Gemini, directement vers les API des fournisseurs respectifs selon leurs propres politiques de confidentialité.
+- **Stockage local :** les paramètres, projets, bases de données locales, journaux et identifiants sont enregistrés en local dans le dossier `data\` (et `projects\`) d'Atollo sur l'appareil de l'utilisateur ; les quelques exceptions (fichiers temporaires, la connexion d'Antigravity pendant son exécution) sont listées dans la politique.
+- **Connexions réseau :** l'application ne se connecte qu'à GitHub pour rechercher ses propres mises à jour (Paramètres › Général › Mise à jour automatique, ou `ATOLLO_NO_UPDATE`), aux sources officielles des composants qu'elle télécharge, au registre Open VSX pour les extensions de l'éditeur et, lorsque l'utilisateur se sert de la page GitHub ou de la page Agents, à GitHub et aux fournisseurs des agents (**Claude Code**, **Codex**, **Antigravity**) selon leurs propres politiques de confidentialité.
 
 ## Licence
 
-MIT.
+MIT : fourni « tel quel », sans garantie. Voir [LICENSE](../LICENSE) et les [conditions d'utilisation](PRIVACY.fr.md#8-conditions-dutilisation).
