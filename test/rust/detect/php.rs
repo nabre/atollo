@@ -325,6 +325,114 @@ fn php_server_router() {
     assert!(router.contains("return require $_SERVER['DOCUMENT_ROOT']"));
 }
 
+/// A `php -S` with the kit's router, ended on drop.
+struct PhpServer(std::process::Child);
+
+impl Drop for PhpServer {
+    fn drop(&mut self) {
+        let _ = self.0.kill();
+        let _ = self.0.wait();
+    }
+}
+
+/// The status of `GET target` with `Host: host` from the server on `port`,
+/// retried while it starts, or when the connection is reset before the
+/// answer (Windows, with the machine busy).
+fn status_of(port: u16, host: &str, target: &str) -> u16 {
+    use std::io::{Read, Write};
+    let started = std::time::Instant::now();
+    loop {
+        let mut answer = Vec::new();
+        if let Ok(mut stream) = std::net::TcpStream::connect(("127.0.0.1", port)) {
+            let request =
+                format!("GET {target} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n");
+            if stream.write_all(request.as_bytes()).is_ok() {
+                // What came before a reset is enough.
+                let mut buf = [0u8; 1024];
+                while let Ok(n) = stream.read(&mut buf) {
+                    if n == 0 {
+                        break;
+                    }
+                    answer.extend_from_slice(&buf[..n]);
+                }
+            }
+        }
+        let answer = String::from_utf8_lossy(&answer);
+        if let Some(status) = answer.split(' ').nth(1).and_then(|s| s.parse().ok()) {
+            return status;
+        }
+        assert!(
+            started.elapsed().as_secs() < 10,
+            "php -S on {port}, {target}: no status in {answer:?}"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+}
+
+/// BUG-V5-01: the router's 421 for a `Host` that is not local only outside
+/// the local network; with `ATOLLO_ALLOW_LAN=1` a phone asking for the PC's
+/// address gets the page, and hidden files stay refused either way. Needs
+/// `php` on PATH (skipped otherwise).
+#[test]
+fn php_router_on_the_network() {
+    let php_found = std::process::Command::new("php")
+        .arg("-v")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .is_ok_and(|s| s.success());
+    if !php_found {
+        eprintln!("php not on PATH: skipped");
+        return;
+    }
+    let tmp = crate::kit::tests::TempDir::new("php-router-lan");
+    let root = tmp.0.join("public");
+    std::fs::create_dir_all(&root).unwrap();
+    std::fs::write(root.join("index.php"), "<?php echo 'ok';").unwrap();
+    std::fs::write(root.join(".env"), "SECRET=1").unwrap();
+    let router = tmp.0.join("php-router.php");
+    std::fs::write(&router, include_str!("../../../runtime/php-router.php")).unwrap();
+
+    for lan in [false, true] {
+        let port = {
+            let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+            l.local_addr().unwrap().port()
+        };
+        let mut cmd = std::process::Command::new("php");
+        cmd.arg("-S")
+            .arg(format!("127.0.0.1:{port}"))
+            .arg("-t")
+            .arg(&root)
+            .arg(&router)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+        if lan {
+            cmd.env("ATOLLO_ALLOW_LAN", "1");
+        } else {
+            cmd.env_remove("ATOLLO_ALLOW_LAN");
+        }
+        let _server = PhpServer(cmd.spawn().unwrap());
+
+        let network = status_of(port, "192.168.1.20:8000", "/");
+        assert_eq!(network, if lan { 200 } else { 421 }, "lan {lan}");
+        let v6 = status_of(port, "[fe80::1]:8000", "/");
+        assert_eq!(v6, if lan { 200 } else { 421 }, "lan {lan}: IPv6");
+        // A name re-pointed to the PC (DNS rebinding) is refused also in LAN.
+        assert_eq!(status_of(port, "evil.com:8000", "/"), 421, "lan {lan}");
+        assert_eq!(status_of(port, "192.168.1.20.evil.com", "/"), 421);
+        assert_eq!(status_of(port, &format!("localhost:{port}"), "/"), 200);
+        assert_eq!(status_of(port, "blog.localhost", "/"), 200);
+        for target in ["/.env", "/.env.", "/%2eenv", "/.git/config"] {
+            let host = if lan {
+                "192.168.1.20:8000"
+            } else {
+                "localhost"
+            };
+            assert_eq!(status_of(port, host, target), 403, "lan {lan}: {target}");
+        }
+    }
+}
+
 /// The CMS of the wizard, made with Composer: the public folder is a
 /// subfolder, `.env` stays out of the site.
 #[test]
