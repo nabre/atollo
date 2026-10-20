@@ -1,12 +1,18 @@
-// Every tool in one table, the default tab of the Tools page: filters by
-// group and state, sortable columns, the choice of each row (or of all
-// those shown) applied with "Apply" as on the tool's own page, and the
-// actions done at once: install (at a chosen version), add a version, update.
+// Every tool in one table, the default tab of the Tools page, in the
+// site's kinds (system and editor, AI agents, languages, development tools,
+// web servers, databases: model.ts), each under its title with what to know
+// about it, its count and a box that chooses all of it, folded by a click.
+// Filters by kind and state, sortable columns (inside each kind), the
+// choice of each row applied with "Apply" as on the tool's own page, and
+// the actions done at once: install (at a chosen version), add a version,
+// update.
 import { Fragment, useMemo, useState } from "react";
 import {
   VscArrowDown,
   VscArrowUp,
   VscCheck,
+  VscChevronDown,
+  VscChevronRight,
   VscCloudDownload,
   VscFold,
   VscSync,
@@ -35,7 +41,7 @@ import type { ComponentsState } from "./state";
 import { TOOL_STATES, ToolStateIcon, otherStatus, shownStatus, toolStateLabel } from "./status";
 import { targetLabel, targetName } from "./targets";
 
-type Sort = "name" | "group" | "version" | "size" | "state";
+type Sort = "name" | "version" | "size" | "state";
 type Show = "all" | "installed" | "missing" | "pending" | "needed";
 
 /** What a row can do now, without "Apply": install it (at its latest
@@ -142,9 +148,18 @@ export function ToolsTable({
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState("all");
   const [show, setShow] = useState<Show>("all");
-  const [sort, setSort] = useState<{ by: Sort; up: boolean }>({ by: "group", up: true });
+  const [sort, setSort] = useState<{ by: Sort; up: boolean }>({ by: "name", up: true });
+  const [folded, setFolded] = useState<Set<string>>(new Set());
 
   const groupOf = (c: ComponentInfo) => all.findIndex((g) => g.has(c));
+  const fold = (id: string) => {
+    setFolded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const rows = useMemo(() => {
     const shown = list.filter((c) => {
       const on = chosen.has(c.id);
@@ -168,8 +183,6 @@ export function ToolsTable({
       switch (sort.by) {
         case "name":
           return c.name.toLowerCase();
-        case "group":
-          return groupOf(c);
         case "version":
           return c.version ?? "";
         case "size":
@@ -191,7 +204,9 @@ export function ToolsTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list, chosen, search, group, show, sort, neededBy, grid, activeTarget, setup]);
 
-  const free = rows.filter((c) => !c.locked && (c.available || chosen.has(c.id)));
+  /** The rows a box can choose: not required, installable or chosen. */
+  const freeOf = (of: ComponentInfo[]) => of.filter((c) => !c.locked && (c.available || chosen.has(c.id)));
+  const free = freeOf(rows);
   const allOn = free.length > 0 && free.every((c) => chosen.has(c.id));
   const someOn = free.some((c) => chosen.has(c.id));
   const header = (by: Sort, label: string, align: "left" | "right" | "center" = "left", extra = "", title?: string) => (
@@ -217,6 +232,94 @@ export function ToolsTable({
     </th>
   );
 
+  const row = (c: ComponentInfo) => {
+    const on = chosen.has(c.id);
+    const pending = on !== (c.chosen || c.locked);
+    const item = itemState(setup, c.id, c.name);
+    const needed = neededBy.get(c.id) ?? [];
+    const lines = linesOf(kit.byId.get(c.id));
+    const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
+    const check = checks.get(c.id);
+    const cell = "h-[26px] border-b border-vsc-border px-2";
+    return (
+      <tr key={c.id} className={`hover:bg-vsc-list-hover ${pending ? "bg-vsc-settings-modified/5" : ""}`}>
+        <td className={cell}>
+          <Checkbox
+            label={t("Scegli {0}", c.name)}
+            checked={on}
+            disabled={c.locked || running || c.noArm64 || c.unavailableReason !== null || (!c.available && !on)}
+            onChange={(v) => {
+              choose(c.id, v);
+            }}
+          />
+        </td>
+        <td className={cell}>
+          <span className="flex items-center gap-2 whitespace-nowrap">
+            <ComponentLogo id={c.id} size={16} />
+            <Link
+              onClick={() => {
+                onOpen(c.id);
+              }}
+            >
+              {c.name}
+            </Link>
+            {c.locked && <Tag>{t("obbligatorio")}</Tag>}
+          </span>
+        </td>
+        <td className={`${cell} font-mono whitespace-nowrap select-text`}>{version ?? "—"}</td>
+        <td className={`${cell} font-mono whitespace-nowrap`}>
+          {lines.length > 0 ? (
+            lines.join(", ")
+          ) : c.versioned ? (
+            "—"
+          ) : (
+            <span className="font-sans text-vsc-desc">{t("sempre l'ultima")}</span>
+          )}
+        </td>
+        <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>{sizeText(c.mb)}</td>
+        {columns.map((id) => {
+          const here = id === activeTarget;
+          const s = status(c.id, id);
+          const st = here ? shownStatus(c, s, on, item, id) : s ? otherStatus(s, id) : null;
+          if (!st) return <td key={id} className={cell} />;
+          const parts = [toolStateLabel(st.state), st.detail];
+          if (here && check) parts.push(`${t("Verifica")}: ${check.answer}`);
+          const label = `${c.name}, ${targetName(id)}: ${parts.filter(Boolean).join(" — ")}`;
+          return (
+            <td key={id} className={`${cell} text-center whitespace-nowrap ${here ? "bg-vsc-focus/10" : ""}`}>
+              <span role="img" aria-label={label} title={label} className="inline-flex items-center gap-1">
+                <ToolStateIcon state={st.state} />
+                {here &&
+                  check &&
+                  (check.ok ? (
+                    <VscCheck size={12} aria-hidden="true" className="text-vsc-focus" />
+                  ) : (
+                    <VscWarning size={12} aria-hidden="true" className="text-vsc-warning" />
+                  ))}
+              </span>
+            </td>
+          );
+        })}
+        <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
+          {needed.length > 0 && !on && (
+            <VscWarning
+              size={12}
+              className="mr-1 inline text-vsc-warning"
+              aria-label={t("Serve a progetti e non è scelto")}
+            />
+          )}
+          {needed.join(", ")}
+        </td>
+        <td className={`${cell} whitespace-nowrap text-vsc-desc`}>
+          {c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", ")}
+        </td>
+        <td className={cell}>
+          <RowActions c={c} kit={kit} setup={setup} />
+        </td>
+      </tr>
+    );
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 flex-wrap items-center gap-2 px-5 pt-4 pb-2">
@@ -230,10 +333,10 @@ export function ToolsTable({
           options={TARGETS.map((id) => ({ value: id, label: targetLabel(id, grid?.profiles ?? []) }))}
         />
         <Select
-          label={t("Gruppo")}
+          label={t("Tipo")}
           value={group}
           onChange={setGroup}
-          options={[{ value: "all", label: t("Tutti i gruppi") }, ...all.map((g) => ({ value: g.id, label: g.title }))]}
+          options={[{ value: "all", label: t("Tutti i tipi") }, ...all.map((g) => ({ value: g.id, label: g.title }))]}
         />
         <Select<Show>
           label={t("Stato")}
@@ -281,6 +384,7 @@ export function ToolsTable({
       <div className="min-h-0 flex-1 overflow-auto px-5 pb-4">
         <DataTable
           caption={t("Strumenti")}
+          groups
           stickyHead
           className="w-full border-separate border-spacing-0 text-[12px]"
           head={
@@ -297,7 +401,6 @@ export function ToolsTable({
                 />
               </th>
               {header("name", t("Nome"))}
-              {header("group", t("Gruppo"))}
               {header("version", t("Versione"))}
               <th scope="col" className="px-2 py-[5px] text-left font-bold whitespace-nowrap">
                 {t("Versioni su disco")}
@@ -331,92 +434,54 @@ export function ToolsTable({
             </>
           }
         >
-          {rows.map((c) => {
-            const on = chosen.has(c.id);
-            const pending = on !== (c.chosen || c.locked);
-            const item = itemState(setup, c.id, c.name);
-            const needed = neededBy.get(c.id) ?? [];
-            const lines = linesOf(kit.byId.get(c.id));
-            const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
-            const check = checks.get(c.id);
-            const cell = "h-[26px] border-b border-vsc-border px-2";
+          {all.map((g) => {
+            const items = rows.filter((c) => g.has(c));
+            if (items.length === 0) return null;
+            const total = list.filter((c) => g.has(c)).length;
+            const open = !folded.has(g.id);
+            const choosable = freeOf(items);
+            const groupOn = choosable.length > 0 && choosable.every((c) => chosen.has(c.id));
+            const Chevron = open ? VscChevronDown : VscChevronRight;
             return (
-              <tr key={c.id} className={`hover:bg-vsc-list-hover ${pending ? "bg-vsc-settings-modified/5" : ""}`}>
-                <td className={cell}>
-                  <Checkbox
-                    label={t("Scegli {0}", c.name)}
-                    checked={on}
-                    disabled={c.locked || running || c.noArm64 || c.unavailableReason !== null || (!c.available && !on)}
-                    onChange={(v) => {
-                      choose(c.id, v);
-                    }}
-                  />
-                </td>
-                <td className={cell}>
-                  <span className="flex items-center gap-2 whitespace-nowrap">
-                    <ComponentLogo id={c.id} size={16} />
-                    <Link
+              <tbody key={g.id} aria-label={g.title}>
+                <tr>
+                  <th scope="col" className="border-b border-vsc-border bg-vsc-sidebar px-2 pt-3 pb-1 align-top">
+                    {choosable.length > 0 && (
+                      <Checkbox
+                        label={t("Scegli tutti: {0}", g.title)}
+                        checked={groupOn}
+                        disabled={running}
+                        className={!groupOn && choosable.some((c) => chosen.has(c.id)) ? "opacity-60" : ""}
+                        onChange={(v) => {
+                          for (const c of choosable) choose(c.id, v);
+                        }}
+                      />
+                    )}
+                  </th>
+                  <th
+                    scope="colgroup"
+                    colSpan={8 + columns.length - 1}
+                    className="border-b border-vsc-border bg-vsc-sidebar px-2 pt-2 pb-1.5 text-left font-normal"
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={open}
                       onClick={() => {
-                        onOpen(c.id);
+                        fold(g.id);
                       }}
+                      className="flex items-center gap-1.5 text-[13px] font-semibold text-vsc-fg"
                     >
-                      {c.name}
-                    </Link>
-                    {c.locked && <Tag>{t("obbligatorio")}</Tag>}
-                  </span>
-                </td>
-                <td className={`${cell} whitespace-nowrap text-vsc-desc`}>{all[groupOf(c)]?.title ?? c.group}</td>
-                <td className={`${cell} font-mono whitespace-nowrap select-text`}>{version ?? "—"}</td>
-                <td className={`${cell} font-mono whitespace-nowrap`}>
-                  {lines.length > 0 ? (
-                    lines.join(", ")
-                  ) : c.versioned ? (
-                    "—"
-                  ) : (
-                    <span className="font-sans text-vsc-desc">{t("sempre l'ultima")}</span>
-                  )}
-                </td>
-                <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>{sizeText(c.mb)}</td>
-                {columns.map((id) => {
-                  const here = id === activeTarget;
-                  const s = status(c.id, id);
-                  const st = here ? shownStatus(c, s, on, item, id) : s ? otherStatus(s, id) : null;
-                  if (!st) return <td key={id} className={cell} />;
-                  const parts = [toolStateLabel(st.state), st.detail];
-                  if (here && check) parts.push(`${t("Verifica")}: ${check.answer}`);
-                  const label = `${c.name}, ${targetName(id)}: ${parts.filter(Boolean).join(" — ")}`;
-                  return (
-                    <td key={id} className={`${cell} text-center whitespace-nowrap ${here ? "bg-vsc-focus/10" : ""}`}>
-                      <span role="img" aria-label={label} title={label} className="inline-flex items-center gap-1">
-                        <ToolStateIcon state={st.state} />
-                        {here &&
-                          check &&
-                          (check.ok ? (
-                            <VscCheck size={12} aria-hidden="true" className="text-vsc-focus" />
-                          ) : (
-                            <VscWarning size={12} aria-hidden="true" className="text-vsc-warning" />
-                          ))}
+                      <Chevron size={16} aria-hidden="true" />
+                      {g.title}
+                      <span className="font-normal text-vsc-desc tabular-nums">
+                        {items.length === total ? total : t("{0} di {1}", items.length, total)}
                       </span>
-                    </td>
-                  );
-                })}
-                <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
-                  {needed.length > 0 && !on && (
-                    <VscWarning
-                      size={12}
-                      className="mr-1 inline text-vsc-warning"
-                      aria-label={t("Serve a progetti e non è scelto")}
-                    />
-                  )}
-                  {needed.join(", ")}
-                </td>
-                <td className={`${cell} whitespace-nowrap text-vsc-desc`}>
-                  {c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", ")}
-                </td>
-                <td className={cell}>
-                  <RowActions c={c} kit={kit} setup={setup} />
-                </td>
-              </tr>
+                    </button>
+                    {open && <p className="mt-0.5 max-w-[60rem] pl-[22px] text-[12px] text-vsc-desc">{g.hint}</p>}
+                  </th>
+                </tr>
+                {open && items.map(row)}
+              </tbody>
             );
           })}
         </DataTable>

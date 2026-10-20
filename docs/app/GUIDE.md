@@ -153,17 +153,18 @@ The Settings › “The kit” page shows the disk the kit is on: file system an
 
 At the first start, instead of the usual pages, the “Welcome to Atollo” tab appears. It explains that agents and languages will be downloaded from the official sources, checked and placed in the kit's data folder, with no installation and no administrator rights.
 
-Below is the list of components, split into five groups, with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.
+Below is the list of components, split into six kinds (each with its description), with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.
 
-| Group | What it contains | What to choose |
+| Type | What it contains | What to choose |
 | --- | --- | --- |
-| Required | The editor, PowerShell 7 (the kit's console) and GitHub CLI. Below, the PC requirements. | They are always installed: the checkboxes are locked. |
-| Agents | Claude Code, Codex and Antigravity. | Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. |
-| Languages | Python, Node.js, PHP, Java, .NET, Go, Ruby and the others that can have several versions, plus the Apache and Caddy web servers. | The ones you use. Others can be added when needed. |
-| Tools | Git, uv, Rust, Android SDK, CMake, C/C++ compiler, pnpm and the like: a single version, always the latest. | Usually nothing: the kit installs them by itself when a project or an agent asks for them. |
+| System and editor | The editor, PowerShell 7 (the kit's console), GitHub CLI and Git. Below, the PC requirements. | They are always installed: the checkboxes are locked. |
+| AI agents | Claude Code, Codex and Antigravity. | Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. |
+| Languages | All languages and runtimes: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, the C/C++ compiler and the others. Python, Node.js, PHP, Go and Java can have several versions; the others stay at the latest. | The ones you use. Others can be added when needed. |
+| Development tools | uv, pnpm and yarn, CMake and Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest. | Usually nothing: the kit installs them by itself when a project or an agent asks for them. |
+| Web server | Apache and Caddy, for the projects' sites and the shared Web Servers. | The one your projects use; Apache is already in the suggested choice. |
 | Databases | MySQL, MongoDB, phpMyAdmin, SQLite. | Only if you need them. MySQL is also installed the first time the server starts. |
 
-The suggested choice includes the three agents, Python, PHP with Apache and the required components; Git comes along with Claude Code. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
+The suggested choice includes the three agents, Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
 
 1. Untick what does not interest you and add what you use.
 2. Press “Install” at the bottom. There is no confirmation: the choice is saved and the download starts right away.
@@ -1203,7 +1204,7 @@ An agent is a command-line program that talks with an artificial intelligence mo
 | Codex | OpenAI | ChatGPT account or API key OPENAI_API_KEY. |
 | Antigravity | Google | Google account or a Gemini API key, to enter in Settings › Agents. |
 
-Agents are installed from the Tools page, “Agents” group (the first start already suggests them). They always follow the latest version and bring along what they need: Claude Code, for example, brings Git.
+Agents are installed from the Tools page, “AI agents” kind (the first start already suggests them). They always follow the latest version and bring along what they need; Git, which they all use, is already among the components that are always installed.
 
 #### Opening an agent in a project
 
@@ -1414,7 +1415,7 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 
 ### 5.1 The Tools page
 
-*The table of all the tools, the five states, installing and updating right away or choosing first and then “Apply”.*
+*The table of all the tools split into the six kinds, the five states, installing and updating right away or choosing first and then “Apply”.*
 
 > **In short**
 >
@@ -1432,22 +1433,25 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 | Part | What it contains |
 | --- | --- |
 | Search tools | Searches the name, the description and the identifier. |
-| “Components” box | A tree with the five groups and their components, with how many are installed. A click opens the component's tab. |
+| “Components” box | A tree with the six kinds and their components, with how many are installed. A click opens the component's tab. |
 | “Overview” box | The overall views: “All tools”, “Grid”, “Editor extensions”, “Relations”, “PC requirements” ([5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)). |
 | “All tools” tab | The first tab, always open: the table of all components. |
 | “Apply” bar | At the bottom, always visible: the pending changes, “Update all”, “Apply”. |
 
-| Group | What it contains |
+| Type | What it contains |
 | --- | --- |
-| Required | Editor, PowerShell 7, GitHub CLI: always installed. |
-| Agents | Claude Code, Codex, Antigravity: optional, always at the latest version. |
-| Languages | Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R: they can have several versions side by side. |
-| Tools | Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++: a single version, always the latest; the ones that are needed install themselves. |
+| System and editor | Editor, PowerShell 7, GitHub CLI, Git: always installed. |
+| AI agents | Claude Code, Codex, Antigravity: optional, always at the latest version. |
+| Languages | All languages and runtimes: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Python, Node.js, PHP, Go and Java can have several versions side by side; the others stay at the latest version. |
+| Development tools | uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest; the ones that are needed install themselves. |
+| Web server | Apache and Caddy, for the projects' sites and the shared Web Servers. |
 | Databases | MySQL, MongoDB (several versions), phpMyAdmin, SQLite. |
 
 #### The “All tools” table
 
-Above the table are the filters: the search, “Platform”, “Group” and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, group, version, versions on disk, size, status, projects that use it, what it requires and the actions.
+Above the table are the filters: the search, “Platform”, “Type” (“All kinds” or one of the six) and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, version, versions on disk, size, status, projects that use it, what it requires and the actions.
+
+The rows are divided by kind. Each kind has a title row: the arrow to fold or unfold it, its name, how many components it holds (“3”, or “2 of 5” when a filter hides some), its description and a “Choose all: …” checkbox that chooses all its components that can be chosen. A click on a column header sorts the rows inside each kind (by name at first).
 
 | Status | Icon | Meaning |
 | --- | --- | --- |
@@ -1472,7 +1476,7 @@ While work is in progress, four more states appear, only on the system shown: �
 | Install a version (+) | Row of a language that is not installed | Installs it right away in the version you choose from the menu. |
 | Update | Row of an installed component | Downloads the new version right away, if there is one. |
 | Add a version (+) | Row of an installed language | Downloads another version alongside the ones you have. |
-| Checkbox | Every row that is not required | Marks the component to install or remove, waiting for “Apply”. |
+| Checkbox | Every row except those always installed; “Choose all: …” in the kind's row | Marks the component to install or remove, waiting for “Apply”. |
 | Apply | Bar at the bottom | Shows the summary and, with “Confirm”, installs and removes what you marked. |
 | Update all | Bar at the bottom | Brings every installed component to the latest version and every version to the latest patch. |
 
@@ -1493,12 +1497,12 @@ While work is in progress, four more states appear, only on the system shown: �
 
 #### A component's tab
 
-A click on the name opens the tab: at the top the logo, description, group, status, size and the buttons “Install”/“Keep” and “Remove”/“Do not install” (choices to apply), plus “Official site”. Below, three sections:
+A click on the name opens the tab: at the top the logo, description, kind, status, size and the buttons “Install”/“Keep” and “Remove”/“Do not install” (choices to apply), plus “Official site”. Below, three sections:
 
 | Section | What it contains |
 | --- | --- |
 | Versions | Only for languages: the versions on disk and the ones to download ([5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool)). |
-| Details | Group, version, size, what it requires, what needs it, site. |
+| Details | Kind, version, size, what it requires, what needs it, site. |
 | Projects | The projects that use it and, for languages, the version each one chose. |
 
 #### “Platform”, “Expand” and “Verify”
@@ -1581,7 +1585,7 @@ Related topics: [2.4 Components and versions of a project](#24-components-and-ve
 
 #### Grid
 
-A table with one component per row and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
+A table with one component per row, split into the same six kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
 
 > [!NOTE]
 > **Good to know**

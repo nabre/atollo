@@ -19,6 +19,7 @@ export function DataTable({
   stickyHead = false,
   className = "",
   children,
+  groups = false,
 }: {
   /** Hidden (screen readers only) unless `captionVisible`. */
   caption?: string;
@@ -32,8 +33,10 @@ export function DataTable({
   /** The header stays on top while the rows scroll. */
   stickyHead?: boolean;
   className?: string;
-  /** The body rows. */
+  /** The body rows; with `groups`, the caller's own `<tbody>` elements
+   * (one per group, its title row first). */
   children: ReactNode;
+  groups?: boolean;
 }) {
   const headClass = `border-b border-(--vscode-editorGroup-border) ${stickyHead ? "sticky top-0 z-10" : ""}`;
   const headStyle = stickyHead ? STICKY : PLAIN;
@@ -63,7 +66,7 @@ export function DataTable({
           </thead>
         )
       )}
-      <tbody>{children}</tbody>
+      {groups ? children : <tbody>{children}</tbody>}
     </table>
   );
 }

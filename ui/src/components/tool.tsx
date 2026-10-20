@@ -224,7 +224,7 @@ export function ToolPage({
         {section === "details" && (
           <EditorSection id="details" title={t("Dettagli")}>
             <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1.5">
-              <dt className="text-vsc-desc">{t("Gruppo")}</dt>
+              <dt className="text-vsc-desc">{t("Tipo")}</dt>
               <dd>{group?.title ?? c.group}</dd>
               <dt className="text-vsc-desc">{t("Versione")}</dt>
               <dd className="font-mono select-text">
