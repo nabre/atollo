@@ -45,7 +45,7 @@ export function groups(): { id: Kind; title: string; hint: string; has: (c: Comp
     languages: [
       t("Linguaggi"),
       t(
-        "Linguaggi e runtime. Python, Node.js, PHP, Go e Java tengono più versioni una accanto all'altra, una per versione minore: il kit usa la più recente, ogni progetto la sua. Gli altri restano all'ultima versione.",
+        "Linguaggi e runtime. Ognuno tiene più versioni una accanto all'altra, una per versione minore, tranne Rust e C/C++ che restano all'ultima: il kit usa la più recente, ogni progetto la sua.",
       ),
     ],
     tools: [

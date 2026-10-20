@@ -152,6 +152,9 @@ export function RepoDetails({
       {mode === "delete" && (
         <InlineConfirm
           label={t("Eliminare {0} da GitHub?", r.fullName)}
+          onCancel={() => {
+            setMode(null);
+          }}
           actions={
             <>
               <ActionButton icon={codicon("trash")} label={t("Elimina")} busy={busy === "delete"} onClick={remove} />

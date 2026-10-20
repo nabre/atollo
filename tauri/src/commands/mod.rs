@@ -221,7 +221,7 @@ fn ensure<R: Runtime>(
         .unwrap_or_default();
     Err(crate::i18n::t(
         lang,
-        "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.",
+        "Componenti del kit non installati: {0}{1}. Riprova da Strumenti.",
         &[&still.join(", "), &why],
     )
     .into())
