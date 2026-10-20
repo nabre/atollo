@@ -1,17 +1,113 @@
 // The Activity panel (D-76): at the bottom of every page, as VSCodium's
 // panel, what is running or installing in the kit (projects' actions,
-// database servers, the setup) and its output or error. The status bar's
-// Activity item opens and closes it.
+// database servers, web server pools, the setup) and its output or error.
+// The status bar's Activity item opens and closes it. `useRunning` is what
+// the status bar, the Projects badge and the panel count (UX-V5-01).
 import { useEffect, useRef, useState } from "react";
-import { VscClearAll, VscClose, VscDebugStop, VscGlobe } from "react-icons/vsc";
-import { servicesList, serviceStop, urlOpen, type RunInfo, type ServiceInfo, type SetupSnapshot } from "./api";
+import { VscClearAll, VscClose, VscDebugStop, VscGlobe, VscStopCircle } from "react-icons/vsc";
+import {
+  serversList,
+  serverStop,
+  servicesList,
+  serviceStop,
+  urlOpen,
+  type RunInfo,
+  type ServiceInfo,
+  type ServiceState,
+  type SetupSnapshot,
+  type WebServerPool,
+} from "./api";
 import { t } from "./i18n";
 import { alive, stateText } from "./projects";
 import { SetupProgress, setupStatusText } from "./setup";
-import { ActionBar, Dot, IconButton, List, ListRow, Panel } from "./workbench";
+import { ActionBar, Button, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "./workbench";
+import { ActionButton } from "./common";
 import { useLoad } from "./hooks";
 
-type Selected = { kind: "run"; key: string } | { kind: "service"; id: string } | { kind: "setup" } | null;
+/** A version of a database server that is not stopped: the one it runs, or
+ * another one on its own port (`line` set, D-102). */
+export interface LiveLine {
+  key: string;
+  id: ServiceInfo["id"];
+  line?: string;
+  name: string;
+  state: ServiceState;
+  port: number;
+  log: string;
+  message: string | null;
+}
+
+/** The versions of the servers that are not stopped, the main one first. */
+export function liveLines(services: ServiceInfo[]): LiveLine[] {
+  return services.flatMap((s) => {
+    const main: LiveLine[] =
+      s.state === "stopped"
+        ? []
+        : [
+            {
+              key: s.id,
+              id: s.id,
+              name: s.line ? `${s.name} ${s.line}` : s.name,
+              state: s.state,
+              port: s.port,
+              log: s.log,
+              message: s.message,
+            },
+          ];
+    const others = s.others
+      .filter((o) => o.state !== "stopped")
+      .map((o) => ({
+        key: `${s.id}:${o.line}`,
+        id: s.id,
+        line: o.line,
+        name: `${s.name} ${o.line}`,
+        state: o.state,
+        port: o.port,
+        log: o.log,
+        message: o.message,
+      }));
+    return [...main, ...others];
+  });
+}
+
+const readPools = () => serversList().then((v) => v.pools);
+
+/** What runs in the kit, read every few seconds: the projects' live
+ * actions, the database versions not stopped (each line, D-102) and the
+ * web server pools on; `count` is how many, for the status bar and the
+ * Projects badge. */
+export function useRunning(runs: Record<string, RunInfo>) {
+  const {
+    data: services,
+    setData: setServices,
+    reload: reloadServices,
+  } = useLoad<ServiceInfo[]>(servicesList, [], { onError: "keep", every: 4000 });
+  const { data: allPools, reload: reloadPools } = useLoad<WebServerPool[]>(readPools, [], {
+    onError: "keep",
+    every: 4000,
+  });
+  const liveRuns = Object.values(runs).filter((r) => alive(r.state));
+  const lines = liveLines(services);
+  const pools = allPools.filter((p) => p.running);
+  return {
+    liveRuns,
+    lines,
+    pools,
+    count: liveRuns.length + lines.length + pools.length,
+    setServices,
+    reloadServices,
+    reloadPools,
+  };
+}
+
+export type Running = ReturnType<typeof useRunning>;
+
+type Selected =
+  | { kind: "run"; key: string }
+  | { kind: "service"; key: string }
+  | { kind: "pool"; id: string }
+  | { kind: "setup" }
+  | null;
 
 function runTone(r: RunInfo): "ok" | "warn" | "err" | "off" {
   if (r.state === "error") return "err";
@@ -22,6 +118,7 @@ function runTone(r: RunInfo): "ok" | "warn" | "err" | "off" {
 export function ActivityPanel({
   height,
   runs,
+  running,
   logs,
   loadLog,
   onStop,
@@ -31,25 +128,25 @@ export function ActivityPanel({
 }: {
   height: number;
   runs: Record<string, RunInfo>;
+  running: Running;
   logs: Record<string, string[]>;
   loadLog: (key: string) => void;
-  onStop: (key: string) => void;
+  onStop: (key: string) => Promise<void>;
   onForget: (key: string) => void;
   setup: SetupSnapshot | null;
   onClose: () => void;
 }) {
   const [selected, setSelected] = useState<Selected>(null);
-  const { data: services, setData: setServices } = useLoad<ServiceInfo[]>(servicesList, [], {
-    onError: "keep",
-    every: 4000,
-  });
+  const [confirmStop, setConfirmStop] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const { liveRuns, lines: liveServices, pools, setServices, reloadServices, reloadPools } = running;
   const logRef = useRef<HTMLPreElement>(null);
 
   const list = Object.values(runs).sort((a, b) => b.start - a.start);
-  const liveServices = services.filter((s) => s.state !== "stopped");
   const installing = setupStatusText(setup);
 
-  // Nothing chosen: the installation, else the newest action, else a database.
+  // Nothing chosen: the installation, else the newest action, else a
+  // database, else a pool.
   const current: Selected =
     selected ??
     (installing
@@ -57,10 +154,13 @@ export function ActivityPanel({
       : list[0]
         ? { kind: "run", key: list[0].key }
         : liveServices[0]
-          ? { kind: "service", id: liveServices[0].id }
-          : null);
+          ? { kind: "service", key: liveServices[0].key }
+          : pools[0]
+            ? { kind: "pool", id: pools[0].id }
+            : null);
   const currentRun = current?.kind === "run" ? runs[current.key] : undefined;
-  const currentService = current?.kind === "service" ? services.find((s) => s.id === current.id) : undefined;
+  const currentService = current?.kind === "service" ? liveServices.find((s) => s.key === current.key) : undefined;
+  const currentPool = current?.kind === "pool" ? pools.find((p) => p.id === current.id) : undefined;
   const lines = currentRun ? (logs[currentRun.key] ?? []) : [];
 
   useEffect(() => {
@@ -71,8 +171,25 @@ export function ActivityPanel({
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
 
-  const nothing = list.length === 0 && liveServices.length === 0 && !installing;
-  const count = list.length + liveServices.length;
+  const nothing = list.length === 0 && liveServices.length === 0 && pools.length === 0 && !installing;
+  const count = list.length + liveServices.length + pools.length;
+  const anyLive = liveRuns.length + liveServices.length + pools.length > 0;
+
+  /** Stops the actions, the pools and the database versions, then reads
+   * them again (the actions come back through their events). */
+  const stopAll = () => {
+    setConfirmStop(false);
+    setStopping(true);
+    void Promise.allSettled([
+      ...liveRuns.map((r) => onStop(r.key)),
+      ...pools.map((p) => serverStop(p.id)),
+      ...liveServices.map((s) => serviceStop(s.id, s.line)),
+    ]).then(() => {
+      setStopping(false);
+      reloadServices();
+      reloadPools();
+    });
+  };
 
   return (
     <Panel
@@ -80,132 +197,205 @@ export function ActivityPanel({
       tabs={[{ id: "activity", label: t("Attività"), badge: count > 0 ? count : undefined }]}
       active="activity"
       onSelect={() => undefined}
-      actions={<IconButton icon={VscClose} label={t("Chiudi il pannello")} onClick={onClose} />}
+      actions={
+        <>
+          {anyLive && (
+            <IconButton
+              icon={VscStopCircle}
+              label={t("Ferma tutto")}
+              busy={stopping}
+              onClick={() => {
+                setConfirmStop(true);
+              }}
+            />
+          )}
+          <IconButton icon={VscClose} label={t("Chiudi il pannello")} onClick={onClose} />
+        </>
+      }
     >
       {nothing ? (
         <p className="px-5 py-1 text-vsc-desc">{t("niente in corso")}</p>
       ) : (
-        <>
-          <div className="w-[260px] shrink-0 overflow-auto border-r border-vsc-border">
-            <List label={t("Attività")}>
-              {installing && (
-                <ListRow
-                  icon={<Dot tone="warn" />}
-                  label={t("Installazione")}
-                  selected={current?.kind === "setup"}
-                  onSelect={() => {
-                    setSelected({ kind: "setup" });
-                  }}
-                />
+        <div className="flex min-w-0 flex-1 flex-col">
+          {confirmStop && (
+            <InlineConfirm
+              row
+              question={t("Fermare le azioni dei progetti, i database e i server web in esecuzione?")}
+              className="shrink-0 border-b border-vsc-border px-3 py-1"
+              onCancel={() => {
+                setConfirmStop(false);
+              }}
+              actions={
+                <>
+                  <ActionButton icon={VscStopCircle} label={t("Ferma tutto")} primary small onClick={stopAll} />
+                  <Button
+                    small
+                    onClick={() => {
+                      setConfirmStop(false);
+                    }}
+                  >
+                    {t("Annulla")}
+                  </Button>
+                </>
+              }
+            />
+          )}
+          <div className="flex min-h-0 flex-1">
+            <div className="w-[260px] shrink-0 overflow-auto border-r border-vsc-border">
+              <List label={t("Attività")}>
+                {installing && (
+                  <ListRow
+                    icon={<Dot tone="warn" />}
+                    label={t("Installazione")}
+                    selected={current?.kind === "setup"}
+                    onSelect={() => {
+                      setSelected({ kind: "setup" });
+                    }}
+                  />
+                )}
+                {liveServices.map((s) => (
+                  <ListRow
+                    key={s.key}
+                    icon={<Dot tone={s.state === "error" ? "err" : s.state === "running" ? "ok" : "warn"} />}
+                    label={s.name}
+                    description={`127.0.0.1:${String(s.port)}`}
+                    selected={current?.kind === "service" && current.key === s.key}
+                    onSelect={() => {
+                      setSelected({ kind: "service", key: s.key });
+                    }}
+                  />
+                ))}
+                {pools.map((p) => (
+                  <ListRow
+                    key={p.id}
+                    icon={<Dot tone="ok" />}
+                    label={p.name}
+                    description={`127.0.0.1:${String(p.port)}`}
+                    selected={current?.kind === "pool" && current.id === p.id}
+                    onSelect={() => {
+                      setSelected({ kind: "pool", id: p.id });
+                    }}
+                  />
+                ))}
+                {list.map((r) => (
+                  <ListRow
+                    key={r.key}
+                    icon={<Dot tone={runTone(r)} />}
+                    label={`${r.project}: ${r.label}`}
+                    description={stateText(r)}
+                    selected={current?.kind === "run" && current.key === r.key}
+                    onSelect={() => {
+                      setSelected({ kind: "run", key: r.key });
+                      loadLog(r.key);
+                    }}
+                  />
+                ))}
+              </List>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              {currentRun && (
+                <>
+                  <div className="flex h-[30px] shrink-0 items-center gap-2 pr-2 pl-3 text-[12px]">
+                    <span className="min-w-0 flex-1 truncate text-vsc-desc">
+                      {currentRun.project}: {currentRun.label} · {stateText(currentRun)}
+                      {currentRun.url && currentRun.state === "running" && ` · ${currentRun.url}`}
+                    </span>
+                    <ActionBar>
+                      {currentRun.url && currentRun.state === "running" && (
+                        <IconButton
+                          icon={VscGlobe}
+                          label={t("Apri nel browser")}
+                          onClick={() => {
+                            void urlOpen(currentRun.url ?? "");
+                          }}
+                        />
+                      )}
+                      {alive(currentRun.state) ? (
+                        <IconButton
+                          icon={VscDebugStop}
+                          label={t("Ferma")}
+                          onClick={() => {
+                            void onStop(currentRun.key);
+                          }}
+                        />
+                      ) : (
+                        <IconButton
+                          icon={VscClearAll}
+                          label={t("Togli")}
+                          onClick={() => {
+                            setSelected(null);
+                            onForget(currentRun.key);
+                          }}
+                        />
+                      )}
+                    </ActionBar>
+                  </div>
+                  <pre
+                    ref={logRef}
+                    tabIndex={0}
+                    aria-label={t("Output di {0}", `${currentRun.project}: ${currentRun.label}`)}
+                    className="m-0 min-h-0 flex-1 overflow-auto px-3 pb-2 font-mono text-[12px] leading-[18px] whitespace-pre-wrap select-text"
+                  >
+                    {lines.join("\n")}
+                  </pre>
+                </>
               )}
-              {liveServices.map((s) => (
-                <ListRow
-                  key={s.id}
-                  icon={<Dot tone={s.state === "error" ? "err" : s.state === "running" ? "ok" : "warn"} />}
-                  label={s.name}
-                  description={`127.0.0.1:${String(s.port)}`}
-                  selected={current?.kind === "service" && current.id === s.id}
-                  onSelect={() => {
-                    setSelected({ kind: "service", id: s.id });
-                  }}
-                />
-              ))}
-              {list.map((r) => (
-                <ListRow
-                  key={r.key}
-                  icon={<Dot tone={runTone(r)} />}
-                  label={`${r.project}: ${r.label}`}
-                  description={stateText(r)}
-                  selected={current?.kind === "run" && current.key === r.key}
-                  onSelect={() => {
-                    setSelected({ kind: "run", key: r.key });
-                    loadLog(r.key);
-                  }}
-                />
-              ))}
-            </List>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col">
-            {currentRun && (
-              <>
-                <div className="flex h-[30px] shrink-0 items-center gap-2 pr-2 pl-3 text-[12px]">
-                  <span className="min-w-0 flex-1 truncate text-vsc-desc">
-                    {currentRun.project}: {currentRun.label} · {stateText(currentRun)}
-                    {currentRun.url && currentRun.state === "running" && ` · ${currentRun.url}`}
-                  </span>
-                  <ActionBar>
-                    {currentRun.url && currentRun.state === "running" && (
-                      <IconButton
-                        icon={VscGlobe}
-                        label={t("Apri nel browser")}
-                        onClick={() => {
-                          void urlOpen(currentRun.url ?? "");
-                        }}
-                      />
-                    )}
-                    {alive(currentRun.state) ? (
+              {currentService && (
+                <div className="space-y-2 overflow-auto px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="flex-1">
+                      {currentService.name} · 127.0.0.1:{String(currentService.port)}
+                    </span>
+                    {currentService.state === "running" && (
                       <IconButton
                         icon={VscDebugStop}
                         label={t("Ferma")}
                         onClick={() => {
-                          onStop(currentRun.key);
-                        }}
-                      />
-                    ) : (
-                      <IconButton
-                        icon={VscClearAll}
-                        label={t("Togli")}
-                        onClick={() => {
-                          setSelected(null);
-                          onForget(currentRun.key);
+                          serviceStop(currentService.id, currentService.line).then(setServices, () => undefined);
                         }}
                       />
                     )}
-                  </ActionBar>
+                  </div>
+                  {currentService.message && (
+                    <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap text-vsc-error">
+                      {currentService.message}
+                    </pre>
+                  )}
+                  <p className="text-[12px] text-vsc-desc">
+                    {t("Log")}: <span className="font-mono select-text">{currentService.log}</span>
+                  </p>
                 </div>
-                <pre
-                  ref={logRef}
-                  tabIndex={0}
-                  aria-label={t("Output di {0}", `${currentRun.project}: ${currentRun.label}`)}
-                  className="m-0 min-h-0 flex-1 overflow-auto px-3 pb-2 font-mono text-[12px] leading-[18px] whitespace-pre-wrap select-text"
-                >
-                  {lines.join("\n")}
-                </pre>
-              </>
-            )}
-            {currentService && (
-              <div className="space-y-2 overflow-auto px-3 py-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="flex-1">
-                    {currentService.name} · 127.0.0.1:{String(currentService.port)}
-                  </span>
-                  {currentService.state === "running" && (
+              )}
+              {currentPool && (
+                <div className="space-y-2 overflow-auto px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="flex-1">
+                      {currentPool.name} · 127.0.0.1:{String(currentPool.port)}
+                    </span>
                     <IconButton
                       icon={VscDebugStop}
                       label={t("Ferma")}
                       onClick={() => {
-                        serviceStop(currentService.id).then(setServices, () => undefined);
+                        serverStop(currentPool.id).then(reloadPools, () => undefined);
                       }}
                     />
-                  )}
+                  </div>
+                  <p className="text-[12px] text-vsc-desc">
+                    {t("VirtualHost collegati")}:{" "}
+                    {currentPool.sites.length === 0
+                      ? t("nessuno")
+                      : currentPool.sites.map((s) => s.serverName).join(", ")}
+                  </p>
                 </div>
-                {currentService.message && (
-                  <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap text-vsc-error">
-                    {currentService.message}
-                  </pre>
-                )}
-                <p className="text-[12px] text-vsc-desc">
-                  {t("Log")}: <span className="font-mono select-text">{currentService.log}</span>
-                </p>
-              </div>
-            )}
-            {current?.kind === "setup" && setup && (
-              <div className="overflow-auto">
-                <SetupProgress snapshot={setup} />
-              </div>
-            )}
+              )}
+              {current?.kind === "setup" && setup && (
+                <div className="overflow-auto">
+                  <SetupProgress snapshot={setup} />
+                </div>
+              )}
+            </div>
           </div>
-        </>
+        </div>
       )}
     </Panel>
   );

@@ -35,8 +35,8 @@ import {
   type RunInfo,
   type SetupSnapshot,
 } from "./api";
-import { alive, ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
-import { ActivityPanel } from "./activity";
+import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
+import { ActivityPanel, useRunning, type Running } from "./activity";
 import { TitleBar } from "./titlebar";
 import { ComponentsPage, ToolsPage } from "./components";
 import { AgentsPage, useAgents } from "./agents";
@@ -101,7 +101,9 @@ export function App() {
   const setup = useSetup();
   const { agents } = useAgents();
   const { runs, logs, loadLog, forget } = useRuns();
-  const live = Object.values(runs).filter((r) => alive(r.state)).length;
+  // Actions, database versions and web server pools (UX-V5-01).
+  const running = useRunning(runs);
+  const live = running.count;
 
   const {
     data: editor,
@@ -172,7 +174,7 @@ export function App() {
           pages={all}
           page={page}
           onSelect={setPage}
-          badges={{ projects: { count: live, label: t("Progetti avviati: {0}", String(live)) } }}
+          badges={{ projects: { count: live, label: t("In esecuzione: {0}", String(live)) } }}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {info?.firstRun ? (
@@ -259,11 +261,10 @@ export function App() {
               <ActivityPanel
                 height={panelHeight}
                 runs={runs}
+                running={running}
                 logs={logs}
                 loadLog={loadLog}
-                onStop={(key) => {
-                  void runStop(key);
-                }}
+                onStop={runStop}
                 onForget={forget}
                 setup={setup}
                 onClose={() => {
@@ -279,6 +280,7 @@ export function App() {
         editor={editor}
         setup={setup}
         runs={runs}
+        running={running}
         panelOpen={panelOpen}
         onPanel={() => {
           setPanelOpen(!panelOpen);
@@ -485,6 +487,7 @@ function StatusBar({
   editor,
   setup,
   runs,
+  running,
   panelOpen,
   onPanel,
   terminals,
@@ -493,6 +496,8 @@ function StatusBar({
   editor: EditorStatus | null;
   setup: SetupSnapshot | null;
   runs: Record<string, RunInfo>;
+  /** What runs in the kit, counted by the Activity item. */
+  running: Running;
   panelOpen: boolean;
   onPanel: () => void;
   /** The app's terminal sessions (macOS and Linux; none on Windows). */
@@ -501,9 +506,8 @@ function StatusBar({
   const sessions = terminals.sessions.length;
   const terminalsLabel = terminals.shown ? t("Nascondi i terminali") : t("Mostra i terminali");
   const installing = setupStatusText(setup);
-  const list = Object.values(runs);
-  const live = list.filter((r) => alive(r.state)).length;
-  const errors = list.filter((r) => r.state === "error").length;
+  const live = running.count;
+  const errors = Object.values(runs).filter((r) => r.state === "error").length;
   const panelLabel = panelOpen ? t("Nascondi il pannello") : t("Mostra il pannello");
   return (
     <footer
@@ -521,7 +525,7 @@ function StatusBar({
         <span aria-hidden="true">Atollo</span>
       </span>
       <StatusItem
-        title={t("Attività: progetti avviati, database, installazioni")}
+        title={t("Attività: progetti avviati, database, server web, installazioni")}
         onClick={onPanel}
         pressed={panelOpen}
         tone={errors > 0 ? "error" : undefined}
@@ -529,7 +533,7 @@ function StatusBar({
       >
         <span className="sr-only">{t("Attività")}</span>
         <VscPlay size={14} aria-hidden="true" />
-        <span aria-label={t("Progetti avviati: {0}", String(live))}>{live}</span>
+        <span aria-label={t("In esecuzione: {0}", String(live))}>{live}</span>
         <VscError size={14} aria-hidden="true" className="ml-1" />
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>

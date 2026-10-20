@@ -234,11 +234,11 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | Part | What it contains |
 | --- | --- |
 | 1 · Title bar | The name Atollo and the open page; on the right minimize, maximize and close. Drag it to move the window, double-click to maximize it. |
-| 2 · Activity bar | The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many projects are running. |
+| 2 · Activity bar | The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions and web server pools. |
 | 3 · Sidebar | The page title with its icons (including the book “Open the guide for this page”), often a search box, and panes that open and close with a click on their title. |
 | 4 · Tab area | What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools. |
-| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database servers and the project actions, each with its output. |
-| 6 · Status bar | On the left the counter of running projects and errors; on the right the editor status, the system (for example win32-x64) and the Atollo version. |
+| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools and the project actions, each with its output; “Stop all” stops them all after a confirmation. |
+| 6 · Status bar | On the left the counter of what is running and of the errors; on the right the editor status, the system (for example win32-x64) and the Atollo version. |
 
 #### The pages
 
@@ -265,14 +265,14 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | Item | What it says | What a click does |
 | --- | --- | --- |
 | Atollo (on the left) | Hovering over it shows the kit folder. | — |
-| ▶ number · ⨯ number | How many project actions are running and how many stopped with an error. It turns red if there is at least one error. Databases are not counted here. | Opens or closes the “Activity” panel. |
+| ▶ number · ⨯ number | How many things are running (project actions, database versions, web server pools) and how many actions stopped with an error. It turns red if there is at least one error. | Opens or closes the “Activity” panel. |
 | Spinner with text | A component installation in progress and the step it is on. | Opens the panel. |
 | Editor running | The editor server is on (hovering over it shows its address). | — |
 | Open terminals (macOS and Linux) | How many sessions the app's terminal panel has. | Shows or hides the terminals. |
 | win32-x64, darwin-arm64… | The system and the processor the kit runs on. | — |
 | v0.x.y | The Atollo version. | — |
 
-In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
+In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks for a confirmation and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
 
 #### Useful shortcuts and habits
 
