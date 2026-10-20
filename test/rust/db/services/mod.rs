@@ -9,8 +9,8 @@ fn settings_round_trip_and_defaults() {
     let s = Services::new(kit.clone());
     assert_eq!(line_port(&kit, "mysql", None), 3306);
     assert_eq!(line_port(&kit, "mongodb", None), 27017);
-    s.set("mysql", Some(3307), true).unwrap();
-    s.set("mongodb", Some(27017), false).unwrap();
+    s.set("mysql", Some(3307), true, "it").unwrap();
+    s.set("mongodb", Some(27017), false, "it").unwrap();
     let all = load_settings(&kit);
     assert_eq!(
         all["mysql"],
@@ -21,9 +21,9 @@ fn settings_round_trip_and_defaults() {
         }
     );
     assert_eq!(all["mongodb"].port, None, "the default port is not stored");
-    assert!(s.set("mysql", Some(80), false).is_err());
-    assert!(s.set("redis", None, false).is_err());
-    s.set("mysql", Some(3308), false).unwrap();
+    assert!(s.set("mysql", Some(80), false, "it").is_err());
+    assert!(s.set("redis", None, false, "it").is_err());
+    s.set("mysql", Some(3308), false, "it").unwrap();
     let list = s.list();
     let ids: Vec<&str> = list.iter().map(|i| i.id.as_str()).collect();
     assert_eq!(ids, ["mysql", "mongodb"]);
@@ -62,7 +62,7 @@ fn keep_port_loses_no_entry() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let s = Services::new(kit.clone());
-    s.set("mysql", None, true).unwrap();
+    s.set("mysql", None, true, "it").unwrap();
     std::thread::scope(|scope| {
         for i in 0..16u16 {
             let s = &s;
@@ -234,7 +234,7 @@ fn real_databases_start_and_stop() {
         let project = format!("Prova {id}");
         let database = format!("prova_{id}");
         let before = load_settings(&kit).get(id).cloned().unwrap_or_default();
-        s.set(id, Some(port), false).unwrap();
+        s.set(id, Some(port), false, "it").unwrap();
         assert_eq!(s.start(id, &env).unwrap(), port, "{id}");
         assert!(responds(port), "{id} answers");
         eprintln!("{id}: started on {port}");
@@ -425,7 +425,7 @@ fn real_databases_start_and_stop() {
             assert!(ureq::get(&url).call().is_err(), "phpMyAdmin stopped");
         }
         assert_eq!(s.running(), 0);
-        s.set(id, before.port, before.autostart).unwrap();
+        s.set(id, before.port, before.autostart, "it").unwrap();
         eprintln!("{id}: dropped and stopped");
     }
 }

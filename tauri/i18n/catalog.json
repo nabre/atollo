@@ -69,6 +69,16 @@
     "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",
     "de": "Port {0} gehört bereits zum Server {1}: Wähle einen anderen."
   },
+  "La porta {0} è già del database {1}: scegline un'altra.": {
+    "en": "Port {0} already belongs to database {1}: choose another one.",
+    "fr": "Le port {0} appartient déjà à la base de données {1} : choisissez-en un autre.",
+    "de": "Port {0} gehört bereits zur Datenbank {1}: Wähle einen anderen."
+  },
+  "La porta {0} è già del progetto {1}: scegline un'altra.": {
+    "en": "Port {0} already belongs to project {1}: choose another one.",
+    "fr": "Le port {0} appartient déjà au projet {1} : choisissez-en un autre.",
+    "de": "Port {0} gehört bereits zum Projekt {1}: Wähle einen anderen."
+  },
   "database SQL del kit: server e client MySQL": {
     "en": "the kit's SQL database: MySQL server and client",
     "fr": "base de données SQL du kit : serveur et client MySQL",
