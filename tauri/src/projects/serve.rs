@@ -52,7 +52,9 @@ fn mime(path: &Path) -> &'static str {
     }
 }
 
-/// `localhost`, `127.0.0.1`, `[::1]`, with or without a port.
+/// `localhost`, `*.localhost`, `127.0.0.1`, `[::1]`, with or without a port
+/// and a final dot, in any case: the names `php -S`'s router, Caddy and
+/// Apache take as local (SEC-V5-01).
 pub fn is_local_host_header(host: &str) -> bool {
     let host = host.trim().to_ascii_lowercase();
     let name = if let Some(rest) = host.strip_prefix('[') {
@@ -63,7 +65,8 @@ pub fn is_local_host_header(host: &str) -> bool {
     } else {
         host.split(':').next().unwrap_or_default().to_owned()
     };
-    matches!(name.as_str(), "localhost" | "127.0.0.1" | "[::1]")
+    let name = name.trim_end_matches('.');
+    matches!(name, "localhost" | "127.0.0.1" | "[::1]") || name.ends_with(".localhost")
 }
 
 fn percent_decode(s: &str) -> Option<String> {
