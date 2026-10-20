@@ -1,4 +1,4 @@
-//! Nginx is no longer in the kit (D-119): its pools and sites become
+//! Nginx is no longer in the kit (D-120): its pools and sites become
 //! Caddy's, at start before anything reads them.
 //!
 //! ```text
