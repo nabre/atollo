@@ -211,24 +211,46 @@ pub(crate) fn safe_pattern(root: &std::path::Path) -> String {
     format!("{}/*", root.trim_end_matches('/'))
 }
 
-/// A value of `safe.directory` written by a kit: `*` (before D-137) or the
-/// folder of a kit, here or where it was before (it has `data/app`, or it
-/// is not there any more). The user's own values stay.
-pub(crate) fn kit_safe_value(value: &str) -> bool {
+/// The `safe.directory` value this kit wrote last
+/// (`data/app/safe-directory.txt`): after a move it names the old folder,
+/// the one to replace.
+fn safe_marker(kit: &Kit) -> PathBuf {
+    kit.app_dir().join("safe-directory.txt")
+}
+
+/// Remembers `value` as the kit's own `safe.directory`.
+pub(crate) fn remember_safe_value(kit: &Kit, value: &str) {
+    if let Err(e) = crate::fsx::write_atomic(&safe_marker(kit), value.as_bytes()) {
+        crate::log::warn(&format!("github: safe.directory marker: {e}"));
+    }
+}
+
+/// A value of `safe.directory` written by a kit: `*` (before D-137), the
+/// one this kit wrote last (`previous`, where it was before a move), or the
+/// folder of a kit that is there now (it has `data/app`). The user's own
+/// values stay, also those of a drive not plugged in now (BUG-V5-03).
+pub(crate) fn kit_safe_value(value: &str, previous: Option<&str>) -> bool {
     value == "*"
-        || value.strip_suffix("/*").is_some_and(|dir| {
-            let dir = std::path::Path::new(dir);
-            !dir.exists() || dir.join("data").join("app").is_dir()
-        })
+        || previous == Some(value)
+        || value
+            .strip_suffix("/*")
+            .is_some_and(|dir| std::path::Path::new(dir).join("data").join("app").is_dir())
 }
 
 fn sync_safe_directory(kit: &Kit, env: &KitEnv) -> Result<()> {
     let want = safe_pattern(kit.root());
     let current = git_values(kit, env, "safe.directory");
     if current == [want.clone()] {
+        remember_safe_value(kit, &want);
         return Ok(());
     }
-    let keep: Vec<&String> = current.iter().filter(|v| !kit_safe_value(v)).collect();
+    let previous = fs::read_to_string(safe_marker(kit))
+        .ok()
+        .map(|t| t.trim().to_owned());
+    let keep: Vec<&String> = current
+        .iter()
+        .filter(|v| !kit_safe_value(v, previous.as_deref()))
+        .collect();
     // Exit 5 when there was nothing to remove.
     git_config(kit, env, &["--unset-all", "safe.directory"])?;
     for value in keep.into_iter().chain([&want]) {
@@ -236,6 +258,7 @@ fn sync_safe_directory(kit: &Kit, env: &KitEnv) -> Result<()> {
             bail!("git config --global --add safe.directory");
         }
     }
+    remember_safe_value(kit, &want);
     Ok(())
 }
 
