@@ -11,6 +11,14 @@ fn host_header() {
     assert!(!is_local_host_header("evil.example:7100"));
     assert!(!is_local_host_header("localhost.evil.example"));
     assert!(!is_local_host_header(""));
+    // SEC-V5-01: `<project>.localhost` as with `php -S`, Caddy and Apache.
+    assert!(is_local_host_header("a.localhost"));
+    assert!(is_local_host_header("a.localhost:8000"));
+    assert!(is_local_host_header("A.LOCALHOST."));
+    assert!(is_local_host_header("localhost.:8000"));
+    assert!(!is_local_host_header("localhost.evil.com"));
+    assert!(!is_local_host_header("evil.com"));
+    assert!(!is_local_host_header("evillocalhost"));
 
     // With the local network allowed: IP addresses, never names.
     assert!(is_ip_host_header("192.168.1.20:7100"));
