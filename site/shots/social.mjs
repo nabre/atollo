@@ -3,7 +3,7 @@
 // background, the wordmark alone (MARKETING.md, «Logo nelle intestazioni»),
 // the category, one line of what Atollo is, and the Projects screenshot.
 //
-//   node site/shots/social.mjs   (after make.mjs: it uses shot-projects-dark.png;
+//   node site/shots/social.mjs   (after make.mjs: it uses en/shot-projects-dark.png;
 //                                 playwright-core and the browser as make.mjs)
 import { chromium } from "playwright-core";
 import { readFileSync } from "node:fs";
@@ -43,7 +43,7 @@ p { margin-top: 22px; font-size: 21px; line-height: 1.45; color: #b8b8b8; }
   <p>Editor, 20+ languages, local databases and the Claude Code, Codex and Antigravity agents. Zero install, zero admin rights.</p>
 </div>
 <div class="targets">Windows · macOS · Linux — x64 &amp; ARM64 · MIT</div>
-<div class="shot"><img src="${url("site", "shots", "shot-projects-dark.png")}"></div>
+<div class="shot"><img src="${url("site", "shots", "en", "shot-projects-dark.png")}"></div>
 </body></html>`;
 
 const channel = process.env.SHOTS_BROWSER ?? (process.platform === "win32" ? "msedge" : "chrome");
