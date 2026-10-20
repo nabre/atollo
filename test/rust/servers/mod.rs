@@ -983,6 +983,68 @@ fn ports_are_unique_among_pools() {
     );
 }
 
+/// BUG-V5-05: a pool is never saved on the port of a database version,
+/// of a project's action or the editor's, and the owner is named; a
+/// database version is never set on a pool's.
+#[test]
+fn pool_ports_are_not_those_of_databases_projects_or_editor() {
+    let tmp = TempDir::new("servers-ports-taken");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fs::write(
+        kit.app_dir().join("services.json"),
+        r#"{ "mysql": { "ports": { "8.4": 3307, "8.0": 8081 } } }"#,
+    )
+    .unwrap();
+    let shop = kit.project_data().join("shop");
+    fs::create_dir_all(&shop).unwrap();
+    fs::write(shop.join("ports.json"), r#"{ "ports": { "site": 7150 } }"#).unwrap();
+    let servers = WebServers::new(kit.clone());
+    let profile = |port: u16| WebServerProfileInput {
+        id: "legacy".into(),
+        name: "Legacy".into(),
+        engine: WebServerEngine::Caddy,
+        server_line: None,
+        php_line: None,
+        port: Some(port),
+        keep_alive: true,
+        autostart: false,
+    };
+    let refused = |port: u16| {
+        servers
+            .save_profile(profile(port), "en")
+            .unwrap_err()
+            .to_string()
+    };
+    assert_eq!(
+        refused(3307),
+        "Port 3307 already belongs to database MySQL 8.4: choose another one."
+    );
+    assert_eq!(refused(7010), "Ports 7000 to 7099 belong to the editor");
+    assert_eq!(
+        refused(7150),
+        "Port 7150 already belongs to project shop → site: choose another one."
+    );
+    assert!(load_store(&kit).profiles.is_empty(), "nothing saved");
+
+    servers.save_profile(profile(8095), "en").unwrap();
+    servers.save_profile(profile(8095), "en").unwrap();
+    let taken = crate::ports::ports_taken(&kit);
+    assert_eq!(taken[&8095], crate::ports::Owner::Pool("legacy".into()));
+    // A new pool's port is none of theirs either.
+    let (mut store, mut dirty) = (load_store(&kit), false);
+    let auto = servers.assign_or_get_port(&mut store, &mut dirty, "auto", None);
+    assert!(auto != 8081 && auto != 8095, "{auto}");
+
+    // The other way round: the database version on the pool's port.
+    let services = crate::db::services::Services::new(kit.clone());
+    let err = services.set("mysql", Some(8095), false, "en").unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "Port 8095 already belongs to server legacy: choose another one."
+    );
+}
+
 /// Defect 4: a pool whose server or PHP line is not installed does not
 /// start (never the default line in its place), with an error naming it.
 #[test]

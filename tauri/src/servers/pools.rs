@@ -39,6 +39,12 @@ pub(super) fn load_store(kit: &Kit) -> StoredServers {
     read_json(&store_path(kit)).unwrap_or_default()
 }
 
+/// The port of every pool, by id, as `servers.json` keeps them (read
+/// without `store_lock`, for [`crate::ports`]).
+pub(crate) fn pool_ports(kit: &Kit) -> BTreeMap<String, u16> {
+    load_store(kit).ports
+}
+
 pub(super) fn save_store(kit: &Kit, store: &StoredServers) -> Result<()> {
     write_json(&store_path(kit), store)
 }
@@ -284,7 +290,13 @@ impl WebServers {
                 return p;
             }
         }
-        let used: BTreeSet<u16> = store.ports.values().copied().collect();
+        // Nor one of a database version or of a project (BUG-V5-05).
+        let used: BTreeSet<u16> = store
+            .ports
+            .values()
+            .copied()
+            .chain(crate::ports::ports_taken(&self.kit).into_keys())
+            .collect();
         // A free port no other pool has; failing that (every one taken by
         // other programs), one no other pool has, which the start reports
         // as busy: never the port of another pool (defect 6).
@@ -552,17 +564,15 @@ impl WebServers {
         let mut store = load_store(&self.kit);
         if let Some(p) = input.port {
             // One port per pool (defect 6): two pools on one port, the
-            // second never starts and its sites answer from the first.
-            if let Some((other, _)) = store.ports.iter().find(|(o, q)| **q == p && **o != id) {
-                bail!(
-                    "{}",
-                    crate::i18n::t(
-                        lang,
-                        "La porta {0} è già del server {1}: scegline un'altra.",
-                        &[&p.to_string(), other]
-                    )
-                );
-            }
+            // second never starts and its sites answer from the first. Nor
+            // one of a database version, of a project or of the editor
+            // (BUG-V5-05): the pool, or that one, would not start.
+            crate::ports::refuse_taken(
+                &self.kit,
+                p,
+                |o| matches!(o, crate::ports::Owner::Pool(o) if *o == id),
+                lang,
+            )?;
             store.ports.insert(id.clone(), p);
         }
         if let Some(existing) = store.profiles.iter_mut().find(|p| p.id == id) {
