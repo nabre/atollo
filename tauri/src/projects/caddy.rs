@@ -72,6 +72,18 @@ pub fn dir(kit: &Kit, project: &str) -> Result<PathBuf> {
         .ok_or_else(|| anyhow!("not a project name: {project}"))
 }
 
+/// `dir` holds a `.caddy` file: only then is it imported (`import` of a
+/// pattern that matches nothing stops Caddy).
+pub fn has_snippets(dir: &Path) -> bool {
+    fs::read_dir(dir).is_ok_and(|entries| {
+        entries.flatten().any(|e| {
+            e.path()
+                .extension()
+                .is_some_and(|x| x.eq_ignore_ascii_case("caddy"))
+        })
+    })
+}
+
 /// A path as a Caddyfile token: with `/`, in double quotes. `None` when it
 /// holds a character Caddy would read as something else (`"`, `\`, `{` and
 /// `}` of a placeholder, a line break): such a folder is not served.
@@ -584,7 +596,9 @@ pub fn site_names(
 /// The complete `Caddyfile` of a project's own Caddy: no admin endpoint
 /// (it restarts with its action, never reloads); in LAN mode the site
 /// answers any `Host` (an IP of the PC included), else only its names and
-/// the local ones, every other `Host` refused with 421.
+/// the local ones, every other `Host` refused with 421; the `*.caddy` of
+/// `conf_d` (the project's `caddy\conf.d`, when it has some) in the site,
+/// as in a pool (BUG-V5-06).
 #[allow(clippy::too_many_arguments)]
 pub fn project_conf(
     project: Option<&str>,
@@ -595,13 +609,23 @@ pub fn project_conf(
     lan: bool,
     domains: &[String],
     aliases: &[SiteAlias],
+    conf_d: Option<&Path>,
 ) -> Result<String> {
-    let routes = site_routes(doc_root, aliases, fcgi, "\t").ok_or_else(|| {
+    let mut routes = site_routes(doc_root, aliases, fcgi, "\t").ok_or_else(|| {
         anyhow!(
             "{}: this folder cannot be served by Caddy (its path holds \" \\ {{ or }})",
             doc_root.display()
         )
     })?;
+    if let Some(dir) = conf_d {
+        match quoted_path(&dir.join("*.caddy")) {
+            Some(glob) => routes.insert(0, format!("\timport {glob}")),
+            None => crate::log::warn(&format!(
+                "{}: not imported, it cannot be written in a Caddyfile",
+                dir.display()
+            )),
+        }
+    }
     let mut lines =
         vec!["# --- Atollo: this project's Caddy (written at every start) ---".to_owned()];
     lines.extend(global_options(None, run_dir)?);
@@ -800,7 +824,9 @@ pub fn command(
         bail!("Caddy is not installed (Strumenti > Caddy)");
     }
     let run_dir = dir(kit, project)?;
-    fs::create_dir_all(&run_dir)?;
+    // Where the user's own `.caddy` go, as `apache\conf.d` for Apache.
+    let conf_d = run_dir.join("conf.d");
+    fs::create_dir_all(&conf_d)?;
     let conf = run_dir.join("Caddyfile");
     let content = project_conf(
         Some(project),
@@ -811,6 +837,9 @@ pub fn command(
         lan,
         domains,
         &resolve_aliases(project_root, &kit.projects(), aliases),
+        Some(&conf_d)
+            .filter(|d| has_snippets(d))
+            .map(PathBuf::as_path),
     )?;
     write_atomic(&conf, content.as_bytes())?;
     let mut cmd = caddy_command(&exe, &run_dir, env);

@@ -50,6 +50,7 @@ fn project_caddyfile_with_php_and_aliases() {
         false,
         &["api.shop.localhost".into(), "x;y.localhost".into()],
         &aliases,
+        None,
     )
     .unwrap();
     let start = "{\n\tadmin off\n\tauto_https off\n\tpersist_config off\n\tstorage file_system \"D:/kit/data/projects/shop/caddy/storage\"\n}\n";
@@ -134,12 +135,68 @@ fn aliases_run_no_php() {
 fn lan_mode_answers_any_host() {
     let doc = Path::new("/kit/projects/shop/public");
     let run = Path::new("/kit/data/projects/shop/caddy");
-    let conf = project_conf(Some("shop"), doc, run, 7113, None, true, &[], &[]).unwrap();
+    let conf = project_conf(Some("shop"), doc, run, 7113, None, true, &[], &[], None).unwrap();
     assert!(conf.contains("http://:7113 {\n\troute {\n"), "{conf}");
     assert!(
         !conf.contains("bind ") && !conf.contains("respond 421"),
         "{conf}"
     );
+}
+
+/// The project's own `caddy\conf.d` is imported in its site, before the
+/// routes, as in a pool, and only when it holds a `.caddy` (BUG-V5-06).
+#[test]
+fn project_conf_d_imported_in_the_site() {
+    let tmp = TempDir::new("caddy-project-conf-d");
+    let conf_d = tmp.0.join("caddy").join("conf.d");
+    fs::create_dir_all(&conf_d).unwrap();
+    assert!(!has_snippets(&conf_d));
+    fs::write(conf_d.join("notes.txt"), "").unwrap();
+    assert!(!has_snippets(&conf_d));
+    fs::write(
+        conf_d.join("cors.CADDY"),
+        "header Access-Control-Allow-Origin *\n",
+    )
+    .unwrap();
+    assert!(has_snippets(&conf_d));
+
+    let doc = Path::new("/kit/projects/shop/public");
+    let run = Path::new("/kit/data/projects/shop/caddy");
+    let conf_d = Path::new("/kit/data/projects/shop/caddy/conf.d");
+    let conf = project_conf(
+        Some("shop"),
+        doc,
+        run,
+        7114,
+        None,
+        false,
+        &[],
+        &[],
+        Some(conf_d),
+    )
+    .unwrap();
+    assert!(
+        conf.contains("\tbind 127.0.0.1\n\timport \"/kit/data/projects/shop/caddy/conf.d/*.caddy\"\n\troute {\n"),
+        "{conf}"
+    );
+    // Once, in the site: not in the block that refuses the other names.
+    assert_eq!(conf.matches("import ").count(), 1, "{conf}");
+    let without = project_conf(Some("shop"), doc, run, 7114, None, false, &[], &[], None).unwrap();
+    assert!(!without.contains("import "), "{without}");
+    // A folder Caddy cannot read is left out, the site still served.
+    let odd = project_conf(
+        Some("shop"),
+        doc,
+        run,
+        7114,
+        None,
+        false,
+        &[],
+        &[],
+        Some(Path::new("/kit/{x}")),
+    )
+    .unwrap();
+    assert!(!odd.contains("import ") && odd.contains("route {"), "{odd}");
 }
 
 /// A folder Caddy would read as something else (a placeholder, a quote) is
@@ -163,6 +220,7 @@ fn paths_caddy_cannot_take() {
         false,
         &[],
         &[],
+        None,
     );
     assert!(err.is_err());
 }
