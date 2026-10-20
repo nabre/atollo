@@ -27,8 +27,8 @@ export default defineConfig(({ mode }) => ({
     include: ["**/*.test.tsx", "**/*.test.ts"],
     // What jsdom lacks for the vscode-elements components.
     setupFiles: ["../test/ui/setup.ts"],
-    // The theme's generated CSS, read as text by theme.test.ts.
-    css: { include: [/theme-(vscode|colors)\.css/] },
+    // The theme's CSS and VSCodium's reference, read as text by theme.test.ts.
+    css: { include: [/[\\/]theme[\\/]theme(-\w+)?\.css/, /workbench-ref\.css/] },
     // Resolved by Vite (with the conditions above), not by Node.
     server: { deps: { inline: [/[\\/]@vscode-elements[\\/]/, /[\\/]@lit[\\/]/, /[\\/]lit(-html|-element)?[\\/]/] } },
   },

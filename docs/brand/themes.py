@@ -12,7 +12,15 @@ colors (make.py, brand.png) and writes:
 - ui/src/theme/theme-vscode.css: the same colors as the `--vscode-*` variables
   that VS Code gives a webview, which @vscode-elements/elements reads;
 - ui/src/theme/theme-colors.css: the app's short tokens (`--vsc-*`), each an
-  alias of one of those variables, and their Tailwind utilities.
+  alias of one of those variables, and their Tailwind utilities;
+- ui/src/theme/theme-sizes.css: VSCodium's sizes (`--vscode-spacing-*`,
+  `--vscode-cornerRadius-*`, shadows, `--pane-header-size`...), the app's
+  measure tokens (`--vsc-size-*`) and their Tailwind utilities.
+
+The theme files are newer than the editor Atollo ships, VSCodium 1.135:
+RENAMED gives their keys the names it reads. The sizes come from
+vscodium-1.135/workbench-ref.css, the part of that VSCodium's workbench CSS
+the app mirrors, written by scripts/vscodium-css/extract.mjs.
 
 The colors a theme leaves to VS Code's defaults come from vscode-defaults/,
 the "Dark Modern" and "Light Modern" variables of a VS Code webview as
@@ -67,6 +75,10 @@ BUILTIN = {
         "keybindingLabel.bottomBorder": "#44444499",
         "statusBarItem.errorBackground": "#C72E0F",
         "statusBarItem.errorForeground": "#FFFFFF",
+        # list.inactiveSelectionForeground, else foreground: Dark Modern
+        # sets neither, so the registry's foreground.
+        "modernActivityBar.activeForeground": "#CCCCCC",
+        "modernActivityBar.hoverForeground": "#CCCCCC",
     },
     "light": {
         "list.activeSelectionBackground": "#0060C0",
@@ -94,6 +106,18 @@ BUILTIN = {
         "keybindingLabel.bottomBorder": "#BBBBBB66",
         "statusBarItem.errorForeground": "#FFFFFF",
     },
+}
+
+# Keys of the theme files that VSCodium 1.135, the editor Atollo ships
+# (tauri/catalog/components.json), reads under another name: the activity
+# bar's items, and the floating parts' border, which its themes give as
+# surface.border (kept where a theme has it).
+RENAMED = {
+    "modernActivityBarItem.activeBackground": "modernActivityBar.activeBackground",
+    "modernActivityBarItem.activeForeground": "modernActivityBar.activeForeground",
+    "modernActivityBarItem.hoverBackground": "modernActivityBar.hoverBackground",
+    "modernActivityBarItem.hoverForeground": "modernActivityBar.hoverForeground",
+    "modernActivityBar.border": "surface.border",
 }
 
 # The brand emphasis: every blue of the themes, in emerald. On dark the
@@ -149,7 +173,7 @@ BRAND = {
         "editorGutter.modifiedBackground": "#10B981",
         "editor.selectionBackground": "#10B9814D",
         "charts.orange": "#F97316",
-        "modernActivityBarItem.activeBackground": "#10B98133",
+        "modernActivityBar.activeBackground": "#10B98133",
     },
     "light": {
         "focusBorder": "#047857",
@@ -198,7 +222,7 @@ BRAND = {
         "editorGutter.modifiedBackground": "#047857",
         "editor.selectionBackground": "#A7E3C6",
         "charts.orange": "#C2410C",
-        "modernActivityBarItem.activeBackground": "#D1F0E0",
+        "modernActivityBar.activeBackground": "#D1F0E0",
     },
 }
 
@@ -373,10 +397,13 @@ TOKENS = {
     "tabs-border": "editorGroupHeader.tabsBorder",
     "settings-header": "settings.headerForeground",
     "settings-modified": "settings.modifiedItemIndicator",
-    # VSCodium 1.140's "modern UI": floating parts on the workbench color
-    "surface-border": "modernActivityBar.border",
-    "activitybar-item-active": "modernActivityBarItem.activeBackground",
-    "activitybar-item-hover": "modernActivityBarItem.hoverBackground",
+    # VSCodium's "modern UI": floating parts on the workbench color, and
+    # the activity bar's item under the pointer and of the page shown
+    "surface-border": "surface.border",
+    "activitybar-item-active": "modernActivityBar.activeBackground",
+    "activitybar-item-active-fg": "modernActivityBar.activeForeground",
+    "activitybar-item-hover": "modernActivityBar.hoverBackground",
+    "activitybar-item-hover-fg": "modernActivityBar.hoverForeground",
     # Controls
     "focus": "focusBorder",
     "button": "button.background",
@@ -448,6 +475,53 @@ TOKENS = {
     "scrollbar": "scrollbarSlider.background",
     "scrollbar-hover": "scrollbarSlider.hoverBackground",
     "scrollbar-active": "scrollbarSlider.activeBackground",
+}
+
+# VSCodium 1.135's workbench as vendored by scripts/vscodium-css/extract.mjs:
+# the sizes its registry declares (the :root block) and the rules Atollo
+# mirrors, one per line.
+REFERENCE = Path(__file__).with_name("vscodium-1.135") / "workbench-ref.css"
+
+# The modern UI's measures (workbench.experimental.modernUI: the floating
+# parts Atollo imitates) under VSCodium's own variables. The activity bar's
+# are set by workbench.js with the floating parts on (ActivitybarPart:
+# baseWidth, actionHeight, actionGap and the icon size, 48px, 48px, 0 and
+# 24px without them); the others come from the reference's rules
+# (.modern-ui .monaco-pane-view, .modern-ui-tabs ... .title.tabs).
+LAYOUT = {
+    "--activity-bar-width": "36px",
+    "--activity-bar-action-height": "36px",
+    "--activity-bar-action-gap": "8px",
+    "--activity-bar-icon-size": "24px",
+    "--pane-header-size": "28px",
+    "--editor-group-tab-height": "24px",
+}
+
+# App measure token -> value: the height or width VSCodium gives that part
+# in the modern UI, as a VSCodium variable where it has one. The others are
+# written in its CSS or code:
+# - titlebar: TitlebarPart.minimumHeight with the command center (30px
+#   without), the .window-appicon's width;
+# - window-control: .window-controls-container>.window-icon;
+# - title: .modern-ui.monaco-workbench .part>.title (35px in the classic UI),
+#   the side bar's and the panel's title with its tabs;
+# - row: the lists' and trees' row (sidebarSize22 in workbench.js);
+# - tabs: the editor's tab bar, EDITOR_TAB_HEIGHT.modernUI (35px classic),
+#   a tab of --editor-group-tab-height and 4px above and below;
+# - statusbar: .monaco-workbench .part.statusbar.
+SIZE_TOKENS = {
+    "titlebar": "35px",
+    "window-control": "46px",
+    "activitybar": "var(--activity-bar-width)",
+    "activitybar-action": "var(--activity-bar-action-height)",
+    "activitybar-gap": "var(--activity-bar-action-gap)",
+    "activitybar-icon": "var(--activity-bar-icon-size)",
+    "title": "32px",
+    "pane-header": "var(--pane-header-size)",
+    "row": "22px",
+    "tabs": "32px",
+    "tab": "var(--editor-group-tab-height)",
+    "statusbar": "22px",
 }
 
 
@@ -599,6 +673,9 @@ LABELS = {"dark": "Atollo Dark", "light": "Atollo Light"}
 
 def editor_theme(kind):
     theme = chain(f"{kind}_modern.json")
+    for old, new in RENAMED.items():
+        if old in theme["colors"]:
+            theme["colors"].setdefault(new, theme["colors"].pop(old))
     theme["colors"].update(BRAND[kind])
     return {
         "$schema": "vscode://schemas/color-theme",
@@ -708,9 +785,81 @@ def write_tokens_css(dark, light):
     write(ROOT / "ui" / "src" / "theme" / "theme-colors.css", css)
 
 
+def reference_sizes():
+    """The registry's sizes and the modern UI's shadows, from REFERENCE:
+    the :root block, then the shadows of .monaco-workbench with the ones
+    .modern-ui.monaco-workbench turns off."""
+    text = REFERENCE.read_text(encoding="utf-8")
+    root = re.search(r"^:root \{\n(.*?)^\}", text, re.S | re.M)
+    if not root:
+        raise SystemExit(f"{REFERENCE.name}: no :root block")
+    sizes = dict(re.findall(r"^  (--vscode-[\w-]+): ([^;]+);", root[1], re.M))
+    for selector in (".monaco-workbench", ".modern-ui.monaco-workbench"):
+        for line in re.findall(rf"^{re.escape(selector)}\{{([^}}]*)\}}$", text, re.M):
+            for name, value in re.findall(r"(--vscode-shadow-[\w-]+):\s*([^;]+)", line):
+                sizes[name] = value.strip()
+    if not any(n.startswith("--vscode-shadow-") for n in sizes):
+        raise SystemExit(f"{REFERENCE.name}: no shadows")
+    # Prettier's numbers, as ui/ keeps its CSS: 0.08, not .08.
+    return {n: re.sub(r"(?<![\d.])\.(\d)", r"0.\1", v) for n, v in sizes.items()}
+
+
+def tailwind_name(name):
+    """The Tailwind theme variable of a VSCodium size, or None: spacing
+    (p-vsc-size40), radius (rounded-vsc-small), text (text-vsc-body-small,
+    text-vsc-label1, text-vsc-codicon), font weight (font-vsc-semibold),
+    shadow (shadow-vsc-md)."""
+    rules = [
+        (r"--vscode-spacing-(size\d+)", "--spacing-vsc-{}"),
+        (r"--vscode-cornerRadius-(\w+)", "--radius-vsc-{}"),
+        (r"--vscode-bodyFontSize(-\w+)?", "--text-vsc-body{}"),
+        (r"--vscode-fontSize-(\w+)", "--text-vsc-{}"),
+        (r"--vscode-codiconFontSize(-\w+)?", "--text-vsc-codicon{}"),
+        (r"--vscode-fontWeight-(\w+)", "--font-weight-vsc-{}"),
+        (r"--vscode-shadow-([\w-]+)", "--shadow-vsc-{}"),
+    ]
+    for pattern, out in rules:
+        m = re.fullmatch(pattern, name)
+        if m:
+            return out.format((m[1] or "").lower())
+    return None
+
+
+def write_sizes_css():
+    sizes = reference_sizes()
+    root = var_lines(sizes | LAYOUT, "  ")
+    tokens = "\n".join(f"  --vsc-size-{t}: {v};" for t, v in SIZE_TOKENS.items())
+    utilities = [f"  {tailwind_name(n)}: var({n});" for n in sizes if tailwind_name(n)]
+    utilities += [f"  --spacing-vsc-{t}: var(--vsc-size-{t});" for t in SIZE_TOKENS]
+    css = f"""/* Generated by docs/brand/themes.py from VSCodium 1.135's workbench
+   (docs/brand/vscodium-1.135/workbench-ref.css): do not edit, run the script. */
+
+/* VSCodium's sizes, the same in every theme: its registry's (spacing,
+   corner radius, font sizes), the modern UI's shadows and the workbench's
+   own measures. */
+:root {{
+{root}
+}}
+
+/* The app's measure tokens: each part's height or width in VSCodium's
+   modern UI. */
+:root {{
+{tokens}
+}}
+
+/* Tailwind utilities: h-vsc-row, w-vsc-activitybar, p-vsc-size40,
+   rounded-vsc-small, shadow-vsc-xl, text-vsc-body-small... */
+@theme inline {{
+{chr(10).join(utilities)}
+}}
+"""
+    write(ROOT / "ui" / "src" / "theme" / "theme-sizes.css", css)
+
+
 def main():
     if sys.argv[1:2] == ["--vendor"]:
         vendor(sys.argv[2])
+    write_sizes_css()
     write_tokens_css(*write_vscode_css())
     write_extension()
     print("ok")
