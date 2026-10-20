@@ -10,7 +10,7 @@ Diese Seite erklärt, was die Desktop-App Atollo (`Atollo.exe`, die macOS-`.app`
 
 - Atollo hat **keine Telemetrie, keine Nutzungsstatistiken und keine Absturzberichte**. Es gibt kein Konto und keinen eigenen Server.
 - Alles, was Atollo speichert, bleibt **im Atollo-Ordner** auf deinem Gerät (`data/` und `projects/`), mit den wenigen Ausnahmen aus Abschnitt 4.
-- Atollo verbindet sich nur mit dem Netz, um **nach eigenen Updates zu suchen**, um **die Werkzeuge, die du nutzt, von ihren offiziellen Quellen herunterzuladen**, und um **mit GitHub und den Anbietern der KI-Agenten zu sprechen, wenn du diese Funktionen nutzt**. Die Tabelle in Abschnitt 3 listet jede Verbindung und wie man sie abschaltet.
+- Atollo verbindet sich nur mit dem Netz, um **nach eigenen Updates zu suchen**, um **die Werkzeuge, die du nutzt, von ihren offiziellen Quellen herunterzuladen**, und um **mit GitHub und den Anbietern der KI-Agenten zu sprechen, wenn du diese Funktionen nutzt**. Die Tabelle in Abschnitt 3 listet jede Verbindung und wie du sie abschaltest.
 - Die Werkzeuge und KI-Agenten, die du in Atollo startest (Claude Code, Codex, Antigravity, Git, npm…), sind Programme Dritter mit eigenen Datenschutzerklärungen.
 
 ## 2. Was Atollo nicht erhebt
@@ -30,16 +30,16 @@ Atollo schaltet außerdem in seiner eigenen Umgebung die Telemetrie und Update-P
 
 Jede Anfrage, die die App selbst stellt, trägt einen `User-Agent` der Form `Atollo/<Version> (+https://github.com/nabre/atollo)` und gibt, wie jede Internetverbindung, deine IP-Adresse an den kontaktierten Server preis. Die Anfragen nutzen den Proxy aus den Einstellungen, sonst `HTTPS_PROXY`/`HTTP_PROXY`, sonst den Proxy des Systems.
 
-| Wann | An wen | Was gesendet wird | Wie man sie abschaltet |
+| Wann | An wen | Was gesendet wird | Wie du sie abschaltest |
 |---|---|---|---|
-| Etwa 20 Sekunden nach dem Start und wenn du „Nach Updates suchen" drückst | GitHub (`api.github.com`, dann der Release-Download von `github.com`) | Die Abfrage der Release-Liste von `nabre/atollo`; gibt es eine neuere Version, deren Download. Ist auf dem Computer eine Variable `GITHUB_TOKEN` oder `GH_TOKEN` gesetzt, wird sie nur an `api.github.com` gesendet (gegen GitHubs Anfragelimit). | Einstellungen › Allgemein › **Automatisches Update** aus, oder die Variable `ATOLLO_NO_UPDATE` auf dem Computer setzen. Der Knopf funktioniert weiterhin auf Anfrage. |
+| Etwa 20 Sekunden nach dem Start und wenn du „Nach Updates suchen“ drückst | GitHub (`api.github.com`, dann der Release-Download von `github.com`) | Die Abfrage der Release-Liste von `nabre/atollo`; gibt es eine neuere Version, deren Download. Ist auf dem Computer eine Variable `GITHUB_TOKEN` oder `GH_TOKEN` gesetzt, wird sie nur an `api.github.com` gesendet (gegen GitHubs Anfragelimit). | Einstellungen › Allgemein › **Automatisches Update** aus, oder die Variable `ATOLLO_NO_UPDATE` auf dem Computer setzen. Der Knopf funktioniert weiterhin auf Anfrage. |
 | Etwa 10 Sekunden nach dem Start, höchstens einmal am Tag pro Werkzeug | Die offizielle Quelle jedes Werkzeugs mit mehreren Versionen (zum Beispiel `nodejs.org`, `go.dev`, `api.adoptium.net`, `api.github.com`) | Die Abfrage der verfügbaren Versionen. Nur an `api.github.com`: das Token oben oder das deines GitHub-Kontos, wenn du angemeldet bist (Abschnitt 4). | Die Variable `ATOLLO_NO_UPDATE`. |
 | Beim ersten Start, wenn du die Startseite bestätigst (nach der Wahl von Sprache und Netzwerk); danach automatisch, wenn eine erforderliche Komponente fehlt oder ein App-Update neuere braucht | Offizielle Quellen von PowerShell 7, GitHub CLI und dem Editor (Releases auf GitHub) | Download-Anfragen. | Kein Schalter: Diese Komponenten sind erforderlich. Sonst wird nichts ohne dein Zutun installiert. |
 | Wenn du ein Werkzeug installierst oder aktualisierst (Seite Werkzeuge) oder eine Aktion eines braucht (zum Beispiel Node.js für `npm`) | Die offizielle Quelle des Werkzeugs, zum Beispiel `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `dl.google.com`, Googles Update-Server für Antigravity, Releases auf GitHub | Download-Anfragen; Prüfsummen werden lokal geprüft. | Das Werkzeug nicht installieren. |
 | Im Hintergrund nach dem Start des Editors und beim Öffnen eines Projekts | Die Erweiterungsgalerie des Editors (Open VSX); CodeLLDB aus seinem GitHub-Release | Die Anfragen der Erweiterungen, die das Kit und deine Projekte nutzen. | Den Editor nicht öffnen oder die Erweiterungen im Editor entfernen. |
-| Nur wenn du die GitHub-Seite nutzt | GitHub (`github.com`, `api.github.com`), über GitHub CLI | Die Anmeldung (ein Einmalcode, den du auf `github.com/login/device` eingibst), dann das Token deines Kontos mit den Anfragen zum Auflisten, Klonen, Umbenennen oder Löschen deiner Repositorys. | Nicht anmelden oder auf der GitHub-Seite abmelden. |
+| Nur wenn du dich bei GitHub anmeldest (Einstellungen › GitHub-Konto) und deine Repositorys nutzt (Projekte › „Aus deinen GitHub-Repositories“) | GitHub (`github.com`, `api.github.com`), über GitHub CLI | Die Anmeldung (ein Einmalcode, den du auf `github.com/login/device` eingibst), dann das Token deines Kontos mit den Anfragen zum Auflisten, Klonen, Umbenennen oder Löschen deiner Repositorys. | Nicht anmelden oder in Einstellungen › GitHub-Konto abmelden. |
 | Einmal, bei der Anmeldung oder einem Start mit Anmeldung, nur wenn Name und E-Mail der Commits leer sind | GitHub (`api.github.com/user`), über GitHub CLI | Das Token deines Kontos, um Name, Login und Nummer des Kontos zu lesen: Sie werden der Name deiner Commits und die private `noreply`-Adresse von GitHub. | Einstellungen › GitHub-Konto › „Wer die Commits signiert“ ausfüllen, oder nicht anmelden. |
-| Nur solange die Seite Agenten angezeigt wird (beim Öffnen, dann alle 2 Minuten), für jeden Agenten, bei dem du angemeldet bist | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | Das Anmeldetoken des Agenten, nur an dessen Anbieter gesendet, um die Nutzungslimits deines Tarifs zu lesen. Das Token wird nur gelesen, nie erneuert und nie ins Protokoll geschrieben. | Die Seite Agenten nicht öffnen oder sich beim Agenten nicht anmelden. |
+| Nur solange die Seite Agenten angezeigt wird (beim Öffnen, dann alle 2 Minuten), für jeden Agenten, bei dem du angemeldet bist | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | Das Anmeldetoken des Agenten, nur an dessen Anbieter gesendet, um die Nutzungslimits deines Tarifs zu lesen. Das Token wird nur gelesen, nie erneuert und nie ins Protokoll geschrieben. | Die Seite Agenten nicht öffnen oder dich beim Agenten nicht anmelden. |
 
 **Keine** Verbindungen von Atollo selbst sind:
 
@@ -54,7 +54,8 @@ Atollo ist portabel: Es hält seine Daten neben der ausführbaren Datei im Ordne
 
 | Was | Wo (im Atollo-Ordner) |
 |---|---|
-| Einstellungen: Sprache, Proxy, Zertifikate, automatisches Update, Versionen | `data/app/settings.json` |
+| Einstellungen: Sprache, Design, Proxy, Zertifikate, automatisches Update, Rust-Compiler | `data/app/settings.json` |
+| Die Einstellungen von Git, mit dem Namen und der E-Mail, die deine Commits signieren | `data/home/.gitconfig` |
 | Der **Gemini-API-Schlüssel**, falls du einen einträgst (nur für deinen Benutzer lesbar, siehe unten) | `data/app/secrets/gemini-api-key` |
 | Die Stammzertifikate des Systems plus deine zusätzliche PEM-Datei, nur wenn du eine festlegst | `data/app/ca-bundle.pem` |
 | Protokolle der App (Geheimnisse maskiert), rotiert ab 1 MB | `data/app/logs/` |
@@ -65,7 +66,7 @@ Atollo ist portabel: Es hält seine Daten neben der ausführbaren Datei im Ordne
 | Git-Anmeldedaten für andere Hosts (Git Credential Manager, mit Windows-DPAPI für deinen Benutzer verschlüsselt) | `data/home/.gcm/` (Windows) |
 | Anmeldungen und Sitzungen der KI-Agenten, von den Agenten selbst geschrieben | `data/home/.claude/`, `data/home/.codex/`, `data/home/.gemini/` |
 | Antigravitys Google-Anmeldung, nach jedem Lauf aus dem Anmeldespeicher des Systems entfernt | `data/antigravity/keyring.json` |
-| Das langlebige Token von Claude Code, wenn du „Mit einem Token verbinden" nutzt (macOS) | `data/agents/claude/oauth-token` |
+| Das langlebige Token von Claude Code, wenn du „Mit einem Token verbinden“ nutzt (macOS) | `data/agents/claude/oauth-token` |
 | Datenbank-Passwörter (zufällig, von Atollo erzeugt) | `data/app/db/secrets.json`, `data/app/db/mysql.cnf`, `data/projects/<Projekt>/private/db.json` |
 | Daten des Editor-Servers und sein Zugriffstoken pro Sitzung | `data/vscodium-server/` |
 | Deine Projekte | `projects/` |
@@ -74,9 +75,9 @@ Die Datenbank-Passwörter, der Gemini-API-Schlüssel und die Datei des Claude-To
 
 Ausnahmen, außerhalb des Atollo-Ordners:
 
-- **Temporäre Dateien**: Dateien in Bewegung landen in `<System-Temp>/Atollo/`; je nach Einstellungen › Allgemein › **Temporärer Ordner der Programme** können auch die Programme den temporären Ordner des Systems nutzen (standardmäßig, wenn das Kit auf einem USB-Stick, einem Netzlaufwerk oder unter FAT32/exFAT liegt).
+- **Temporäre Dateien**: Dateien in Bewegung landen in `<System-Temp>/Atollo/`; je nach Einstellungen › Allgemein › **Temporäre Dateien der Programme** können auch die Programme den temporären Ordner des Systems nutzen (standardmäßig, wenn das Kit auf einem USB-Stick, einem Netzlaufwerk oder unter FAT32/exFAT liegt).
 - **Anmeldung von Antigravity**: Während Antigravity läuft, liegt seine Anmeldung im Anmeldespeicher des Systems (unter Windows nur für die Anmeldesitzung), danach kommt sie zurück ins Kit und wird dort entfernt. Anmeldedaten, die schon auf dem Computer waren, werden wiederhergestellt; eine versiegelte Notiz (`keyring-before.json`, nur auf diesem Computer lesbar) bleibt bis zur nächsten Sicherung im Kit.
-- **Claude Code unter macOS** hält seine Anmeldung im Schlüsselbund, außer du nutzt „Mit einem Token verbinden".
+- **Claude Code unter macOS** hält seine Anmeldung im Schlüsselbund, außer du nutzt „Mit einem Token verbinden“.
 - **Web-View unter macOS**: Unter macOS speichert die System-Web-View ihre Daten dort, wo macOS es festlegt (in der Library deines Benutzers).
 - **rustup** schreibt bei jeder Installation einen Eintrag in die Windows-Registry; Atollo entfernt ihn.
 
@@ -109,7 +110,7 @@ Atollo ist ein Werkzeug für Entwickler und richtet sich nicht an Kinder. Es erh
 
 ## 8. Nutzungsbedingungen
 
-Atollo ist freie Software unter der [MIT-Lizenz](../LICENSE). Es wird **„wie besehen", ohne jegliche Gewährleistung** bereitgestellt, weder ausdrücklich noch stillschweigend; die Autoren haften nicht für Ansprüche, Schäden oder sonstige Verpflichtungen aus seiner Nutzung. Du bist dafür verantwortlich, wie du es nutzt, und für die Einhaltung der Lizenzen und Bedingungen der Werkzeuge und Dienste Dritter, die es installiert oder mit denen es sich verbindet (Abschnitt 5).
+Atollo ist freie Software unter der [MIT-Lizenz](../LICENSE). Es wird **„wie besehen“, ohne jegliche Gewährleistung** bereitgestellt, weder ausdrücklich noch stillschweigend; die Autoren haften nicht für Ansprüche, Schäden oder sonstige Verpflichtungen aus seiner Nutzung. Du bist dafür verantwortlich, wie du es nutzt, und für die Einhaltung der Lizenzen und Bedingungen der Werkzeuge und Dienste Dritter, die es installiert oder mit denen es sich verbindet (Abschnitt 5).
 
 ## 9. Änderungen
 

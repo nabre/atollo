@@ -45,9 +45,9 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 
 ## Features
 
-- **Isolated editor and terminals.** Built-in VSCodium with the Atollo dark and light themes. Terminals see only the kit's `PATH` and variables: programs on the host PC don't interfere, and the PC stays clean.
+- **Isolated editor and terminals.** Built-in VSCodium with the Atollo dark and light themes, in a window measured on VSCodium 1.135's own workbench: the same sizes, colors and codicon icons. Terminals see only the kit's `PATH` and variables: programs on the host PC don't interfere, and the PC stays clean.
 - **Languages and tools on demand.** 20+ languages and tools (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), downloaded when needed and verified by SHA-256 checksum or signature. Side-by-side versions, one per project.
-- **Local databases and web servers.** MySQL with phpMyAdmin, MongoDB and SQLite, started and stopped with one click, with a database, user and password for each project. Caddy and Apache for sites, on every system. No system services.
+- **Local databases and web servers.** MySQL with phpMyAdmin, MongoDB and SQLite, started and stopped with one click, with a database, user and password for each project; several versions side by side, each keeping its own port. Caddy and Apache for sites at `<project>.localhost`, on every system, on their own or in a server shared by several projects. A port already in use is refused, naming whoever holds it. No system services.
 - **Three AI agents, one configuration.** Claude Code, Codex and Antigravity: install, sign in and start. Write instructions, skills and MCP servers once in `data/agents` and `atollo sync` keeps all three aligned. Plan limits and usage for today and the last 7 days.
 - **One folder for six systems.** The same folder, or the same external SSD, moves from Windows to macOS to Linux with projects, databases and agent settings intact: each machine runs the native programs of its system. "Remove drive" closes everything Atollo opened and lets you eject the disk.
 
@@ -68,7 +68,7 @@ Open work is tracked in the [issues](https://github.com/nabre/atollo/issues).
 
 1. Copy Atollo's exe (for example `Atollo-0.4.0-win32-x64.exe`) into an empty folder: a USB stick, an external drive or a folder in your profile (spaces, brackets or `&` in the name are fine).
 2. Double-click it: the app creates `projects\` and `data\`. On first start choose agents, languages and tools: the app downloads and verifies them (checksum or signature).
-3. Create or clone a project on the **Projects** page. The editor, the terminal and the agents always open in a project's folder, never anywhere else.
+3. Create or clone a project on the **Projects** page. A project's editor, terminal and agents always open in its folder.
 
 From the [releases page](https://github.com/nabre/atollo/releases): `Atollo-<version>-win32-x64.exe` or `Atollo-<version>-win32-arm64.exe` for Windows, `Atollo-<version>-darwin-arm64.app.zip` (Apple Silicon) or `Atollo-<version>-darwin-x64.app.zip` (Intel) for macOS, `Atollo-<version>-linux-x64` or `Atollo-<version>-linux-arm64` (`.AppImage` and `.tar.gz`) for Linux; each file has its `.sha256`. The name tells the version: when the app updates itself, the exe and the AppImage take the new version's name. In the examples below `Atollo.exe` stands for your exe.
 
@@ -85,16 +85,19 @@ Without step 2 macOS starts the app from a temporary copy (App Translocation) an
 
 | Page | What it has |
 | --- | --- |
-| **Projects** | the **quick panel** (what is running, favourite and recent projects with Run, Editor, Terminal and agent, what needs fixing), the project list with ▶ on every row, Ctrl+P to open one by name; **New project**, a tab beside the projects: empty, from your GitHub repositories (with clone, rename and delete on GitHub), from a Git URL or from one of 63 grouped bases (Laravel, Next.js, Django, WordPress, Astro, Tauri…); notices about the workspace. Each project has its own page: **Summary** (the main action with its output, languages, databases, agent, Git), **Resources** (components, the project's database with user and password, editor extensions), **Advanced** (actions, ports, static site, Git, agent instructions) |
+| **Projects** | the **quick panel** (what is running, favourite and recent projects with Run, Editor, Terminal and agent, what needs fixing), the project list with ▶ on every row, Ctrl+P to open one by name; **New project**, a tab beside the projects: empty, from your GitHub repositories (with clone, rename and delete on GitHub), from a Git URL or from one of 63 grouped bases (Laravel, Next.js, Django, WordPress, Astro, Tauri…); notices about the workspace. Each project has its own page, with Start, Editor, Terminal and agent at the top and seven sections: **Run** (actions, ports and their output), **Website**, **Components** (with the versions), **Databases** (the project's database with user and password, backups), **Extensions**, **Editor** (settings and MCP servers), **Git** |
 | **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
-| **Databases** | Atollo's MySQL (with phpMyAdmin) and MongoDB servers: start and stop, administrator password, port, data in `data\db`, on this PC only; SQLite without a server |
-| **Tools** | languages and tools with their logo, dependencies and disk space; install, update and remove; the editor extensions matrix |
-| **Settings** | language, terminal, network (proxy, certificates, local network), Gemini key, Python and PHP versions, Rust compiler (GNU or MSVC), app updates; Atollo's **GitHub account**, one for everything (app, Git, editor, consoles, agents, GitHub CLI); where the workspace folder is |
+| **Databases** | Atollo's MySQL (with phpMyAdmin) and MongoDB servers: start and stop, administrator password, port, several versions side by side each on its own port, data in `data\db`, on this PC only; SQLite without a server |
+| **Web Servers** | the Caddy and Apache servers shared by the projects (pools) and your own profiles, with the `<project>.localhost` sites they serve; on this PC only, or on the local network if Settings allow it |
+| **Terminals** | consoles with the kit's tools in any folder of the PC: "All tools" and terminals of your own, with the tools and versions you choose |
+| **Tools** | languages and tools by kind (system and editor, AI agents, languages, development tools, web servers, databases), with their logo, dependencies and disk space; install, update and remove, several versions; the Rust compiler (GNU or MSVC) on Rust's page; the editor extensions matrix |
+| **Guide** | the user guide inside the app, in nine chapters; every page opens its own topic |
+| **Settings** | saved as you change them: language, theme, network (proxy, certificates, local network), Gemini key, app updates, privacy; Atollo's **GitHub account**, one for everything (app, Git, editor, consoles, agents, GitHub CLI), and who signs the commits; where the workspace folder is; the frameworks' instructions |
 | **Remove drive** | closes everything Atollo opened, brings Antigravity's sign-in back into `data\` and lets you eject the drive |
 
-At the bottom of every page, the **Activity** panel: what is running or installing (projects, databases, components), with output and errors in one place.
+At the bottom of every page, the **Activity** panel: what is running or installing (project actions, every database version, web server pools, components), with output and errors in one place; "Stop all" stops everything after a confirmation. The status bar counts the same things.
 
-Atollo's console is the classic Windows console with integrated PowerShell 7 and only Atollo's isolated environment: programs installed on the host PC do not interfere.
+On Windows Atollo's console is the classic Windows console with the kit's PowerShell 7, on macOS and Linux a tab of the app's terminal panel; either way it has only Atollo's isolated environment: programs installed on the host PC do not interfere. If a terminal's saved version has been removed, it says which one it uses instead (for example PHP 8.2 → 8.4).
 
 ## Still to do
 
@@ -203,7 +206,7 @@ The full text, with every network connection and every file the app keeps, is in
 
 - **No telemetry or data collection:** the application does not collect personal data, usage statistics, telemetry, or crash reports, and never contacts any server operated by the project author. It also disables built-in telemetry in managed components (such as PowerShell 7 and the VSCodium server).
 - **Local storage:** settings, projects, local databases, logs, and credentials are stored locally inside Atollo's `data\` (and `projects\`) folder on the user's device; the few exceptions (temporary files, Antigravity's sign-in while it runs) are listed in the policy.
-- **Network connections:** the application only connects to GitHub to check for its own updates (Settings › General › Automatic update, or `ATOLLO_NO_UPDATE`), to the official sources of the components it downloads, to the Open VSX registry for editor extensions and, when the user uses the GitHub page or the Agents page, to GitHub and to the agents' providers (**Claude Code**, **Codex**, **Antigravity**) under their own privacy policies.
+- **Network connections:** the application only connects to GitHub to check for its own updates (Settings › General › Automatic update, or `ATOLLO_NO_UPDATE`), to the official sources of the components it downloads, to the Open VSX registry for editor extensions and, when the user signs in to GitHub (Settings › GitHub account) or opens the Agents page, to GitHub and to the agents' providers (**Claude Code**, **Codex**, **Antigravity**) under their own privacy policies.
 
 ## License
 

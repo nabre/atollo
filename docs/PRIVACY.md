@@ -37,7 +37,7 @@ Every request the app makes itself carries a `User-Agent` of the form `Atollo/<v
 | At first start, when you confirm the first-start page (after choosing language and network); later, automatically, when a required component is missing or an app update needs newer ones | Official sources of PowerShell 7, GitHub CLI and the editor (GitHub releases) | Download requests. | No switch: these components are required. Nothing else is installed without your action. |
 | When you install or update a tool (Tools page) or an action needs one (for example Node.js for `npm`) | The tool's official source, for example `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `dl.google.com`, Google's Antigravity update server, GitHub releases | Download requests; checksums are verified locally. | Do not install the tool. |
 | In the background after the editor starts, and when a project is opened | The editor's extension gallery (Open VSX); CodeLLDB from its GitHub release | Requests for the extensions the kit and your projects use. | Do not open the editor, or remove the extensions from it. |
-| Only when you use the GitHub page | GitHub (`github.com`, `api.github.com`), through GitHub CLI | The sign-in (a one-time code you type at `github.com/login/device`), then your account's token with requests to list, clone, rename or delete your repositories. | Do not sign in, or sign out on the GitHub page. |
+| Only when you sign in to GitHub (Settings › GitHub account) and use your repositories (Projects › “From your GitHub repositories”) | GitHub (`github.com`, `api.github.com`), through GitHub CLI | The sign-in (a one-time code you type at `github.com/login/device`), then your account's token with requests to list, clone, rename or delete your repositories. | Do not sign in, or sign out in Settings › GitHub account. |
 | Once, at sign-in or at a start while signed in, only if the commit name and email are empty | GitHub (`api.github.com/user`), through GitHub CLI | Your account's token, to read the account's name, login and number: they become the name of your commits and GitHub's private `noreply` address. | Fill in Settings › GitHub account › “Who signs the commits”, or do not sign in. |
 | Only while the Agents page is shown (on opening, then every 2 minutes), for each agent you are signed in to | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | The agent's own login token, sent only to that agent's provider, to read your plan's usage limits. The token is only read, never refreshed, and never written to the log. | Do not open the Agents page, or do not sign in to the agent. |
 
@@ -54,7 +54,8 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 
 | What | Where (inside the Atollo folder) |
 |---|---|
-| Settings: language, proxy, certificates, automatic update, versions | `data/app/settings.json` |
+| Settings: language, theme, proxy, certificates, automatic update, Rust compiler | `data/app/settings.json` |
+| Git's settings, with the name and e-mail that sign your commits | `data/home/.gitconfig` |
 | The **Gemini API key**, if you enter one (readable by your user only, see below) | `data/app/secrets/gemini-api-key` |
 | The system's root certificates plus your extra PEM file, only when you set one | `data/app/ca-bundle.pem` |
 | App logs (secrets masked), rotated past 1 MB | `data/app/logs/` |
@@ -74,7 +75,7 @@ The database passwords, the Gemini API key and the Claude token file are created
 
 Exceptions, outside the Atollo folder:
 
-- **Temporary files**: files in transit go to `<system temp>/Atollo/`; depending on Settings › General › **Temporary folder of programs**, programs may also use the system's temporary folder (by default when the kit is on a USB stick, a network drive or FAT32/exFAT).
+- **Temporary files**: files in transit go to `<system temp>/Atollo/`; depending on Settings › General › **Temporary files of programs**, programs may also use the system's temporary folder (by default when the kit is on a USB stick, a network drive or FAT32/exFAT).
 - **Antigravity sign-in**: while Antigravity runs, its login is placed in the system's credential store (on Windows for the logon session only), then moved back into the kit and removed. Credentials that were already on the computer are put back as they were; a sealed note of them (`keyring-before.json`, readable only on that computer) stays in the kit until the next save.
 - **Claude Code on macOS** keeps its own login in the Keychain, unless you use "Connect with a token".
 - **macOS web view**: on macOS the system web view keeps its data where macOS decides (in your user Library).
