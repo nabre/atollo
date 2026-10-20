@@ -988,10 +988,10 @@ export const START: TopicTexts = {
             [
               tr("2 · Barra delle attività", "2 · Activity bar", "2 · Barre d'activité", "2 · Aktivitätsleiste"),
               tr(
-                "Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quanti progetti sono avviati.",
-                "The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many projects are running.",
-                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Bases de données, Serveurs Web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de projets sont démarrés.",
-                "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, Agenten, Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Projekte gestartet sind.",
+                "Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database e pool dei server web.",
+                "The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions and web server pools.",
+                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Bases de données, Serveurs Web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données et pools de serveurs web.",
+                "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, Agenten, Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Dinge laufen: Projektaktionen, Datenbankversionen und Webserver-Pools.",
               ),
             ],
             [
@@ -1020,19 +1020,19 @@ export const START: TopicTexts = {
                 "5 · Bereich „Aktivität“",
               ),
               tr(
-                "Si apre dalla barra di stato. Elenca l'installazione in corso, i server di database accesi e le azioni dei progetti, ognuna con il suo output.",
-                "It opens from the status bar. It lists the installation in progress, the running database servers and the project actions, each with its output.",
-                "Il s'ouvre depuis la barre d'état. Il liste l'installation en cours, les serveurs de bases de données allumés et les actions des projets, chacune avec sa sortie.",
-                "Er öffnet sich über die Statusleiste. Er listet die laufende Installation, die eingeschalteten Datenbankserver und die Aktionen der Projekte auf, jede mit ihrer Ausgabe.",
+                "Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma.",
+                "It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools and the project actions, each with its output; “Stop all” stops them all after a confirmation.",
+                "Il s'ouvre depuis la barre d'état. Il liste l'installation en cours, les versions des bases de données allumées, les pools de serveurs web allumés et les actions des projets, chacune avec sa sortie ; « Tout arrêter » les arrête toutes après une confirmation.",
+                "Er öffnet sich über die Statusleiste. Er listet die laufende Installation, die eingeschalteten Datenbankversionen, die eingeschalteten Webserver-Pools und die Aktionen der Projekte auf, jede mit ihrer Ausgabe; „Alle beenden“ beendet sie alle nach einer Bestätigung.",
               ),
             ],
             [
               tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste"),
               tr(
-                "A sinistra il contatore dei progetti avviati e degli errori; a destra lo stato dell'editor, il sistema (per esempio win32-x64) e la versione di Atollo.",
-                "On the left the counter of running projects and errors; on the right the editor status, the system (for example win32-x64) and the Atollo version.",
-                "À gauche, le compteur des projets démarrés et des erreurs ; à droite, l'état de l'éditeur, le système (par exemple win32-x64) et la version d'Atollo.",
-                "Links der Zähler der gestarteten Projekte und der Fehler; rechts der Status des Editors, das System (zum Beispiel win32-x64) und die Atollo-Version.",
+                "A sinistra il contatore di ciò che è in esecuzione e degli errori; a destra lo stato dell'editor, il sistema (per esempio win32-x64) e la versione di Atollo.",
+                "On the left the counter of what is running and of the errors; on the right the editor status, the system (for example win32-x64) and the Atollo version.",
+                "À gauche, le compteur de ce qui est en cours d'exécution et des erreurs ; à droite, l'état de l'éditeur, le système (par exemple win32-x64) et la version d'Atollo.",
+                "Links der Zähler dessen, was läuft, und der Fehler; rechts der Status des Editors, das System (zum Beispiel win32-x64) und die Atollo-Version.",
               ),
             ],
           ]}
@@ -1071,10 +1071,10 @@ export const START: TopicTexts = {
             [
               tr("▶ numero · ⨯ numero", "▶ number · ⨯ number", "▶ nombre · ⨯ nombre", "▶ Zahl · ⨯ Zahl"),
               tr(
-                "Quante azioni di progetto sono avviate e quante si sono fermate con un errore. Diventa rosso se c'è almeno un errore. I database non sono contati qui.",
-                "How many project actions are running and how many stopped with an error. It turns red if there is at least one error. Databases are not counted here.",
-                "Combien d'actions de projet sont démarrées et combien se sont arrêtées sur une erreur. Il devient rouge s'il y a au moins une erreur. Les bases de données ne sont pas comptées ici.",
-                "Wie viele Projektaktionen gestartet sind und wie viele mit einem Fehler beendet wurden. Es wird rot, wenn es mindestens einen Fehler gibt. Datenbanken werden hier nicht gezählt.",
+                "Quante cose sono in esecuzione (azioni dei progetti, versioni dei database, pool dei server web) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore.",
+                "How many things are running (project actions, database versions, web server pools) and how many actions stopped with an error. It turns red if there is at least one error.",
+                "Combien de choses sont en cours d'exécution (actions de projet, versions des bases de données, pools de serveurs web) et combien d'actions se sont arrêtées sur une erreur. Il devient rouge s'il y a au moins une erreur.",
+                "Wie viele Dinge laufen (Projektaktionen, Datenbankversionen, Webserver-Pools) und wie viele Aktionen mit einem Fehler beendet wurden. Es wird rot, wenn es mindestens einen Fehler gibt.",
               ),
               tr(
                 "Apre o chiude il pannello «Attività».",
@@ -1147,10 +1147,10 @@ export const START: TopicTexts = {
         />
         <P>
           {tr(
-            "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma». Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
-            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
-            "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter ». S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
-            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
+            "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma». «Ferma tutto», in alto, chiede conferma e poi ferma azioni, database e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
+            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks for a confirmation and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
+            "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter » ; pour un pool de serveurs web, l'adresse, les VirtualHosts rattachés et « Arrêter ». « Tout arrêter », en haut, demande une confirmation puis arrête actions, bases de données et pools. S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
+            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“. „Alle beenden“ oben fragt nach einer Bestätigung und beendet dann Aktionen, Datenbanken und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
           )}
         </P>
       </Section>

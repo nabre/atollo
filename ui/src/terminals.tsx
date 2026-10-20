@@ -257,6 +257,9 @@ function TerminalEditor({
         {confirmRemove && (
           <InlineConfirm
             label={t("Elimina il terminale")}
+            onCancel={() => {
+              setConfirmRemove(false);
+            }}
             actions={
               <>
                 <ActionButton
