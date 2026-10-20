@@ -305,7 +305,25 @@ export const SERVICES: TopicTexts = {
               "Un progetto sceglie la versione del server nella sua sezione «Database»; la porta gli arriva come DB_PORT.",
               "A project chooses the server version in its “Databases” section; it receives the port as DB_PORT.",
               "Un projet choisit la version du serveur dans sa section « Bases de données » ; le port lui arrive sous la forme DB_PORT.",
-              "Ein Projekt wählt die Server-Version in seinem Abschnitt „Datenbanken“; den Port erhält es als DB_PORT.",
+              "Ein Projekt wählt die Serverversion in seinem Abschnitt „Datenbanken“; den Port erhält es als DB_PORT.",
+            ),
+            tr(
+              "Ogni versione tiene la sua porta: cambiare la «Versione» del server non sposta nessuna porta, e le connessioni dei progetti restano giuste.",
+              "Each version keeps its own port: changing the server's “Version” moves no port, and the projects' connections stay right.",
+              "Chaque version garde son port : changer la « Version » du serveur ne déplace aucun port, et les connexions des projets restent justes.",
+              "Jede Version behält ihren Port: Wenn du die „Version“ des Servers wechselst, verschiebt sich kein Port, und die Verbindungen der Projekte bleiben richtig.",
+            ),
+            tr(
+              "Una porta che ha già un'altra versione, un pool dei server web o un'azione di un progetto, o una fra 7000 e 7099 (dell'editor), viene rifiutata: il messaggio dice di chi è.",
+              "A port that another version, a web server pool or a project action already has, or one between 7000 and 7099 (the editor's), is refused: the message says whose it is.",
+              "Un port qu'a déjà une autre version, un pool de serveurs web ou une action d'un projet, ou un port entre 7000 et 7099 (ceux de l'éditeur), est refusé : le message dit à qui il appartient.",
+              "Ein Port, den schon eine andere Version, ein Webserver-Pool oder eine Projektaktion hat, oder einer zwischen 7000 und 7099 (die des Editors), wird abgelehnt: Die Meldung sagt, wem er gehört.",
+            ),
+            tr(
+              "Due avvii insieme della stessa versione (dalla pagina e da un progetto, per esempio) accendono un solo server, sulla stessa porta.",
+              "Two starts of the same version at once (from the page and from a project, for example) turn on a single server, on the same port.",
+              "Deux démarrages simultanés de la même version (depuis la page et depuis un projet, par exemple) allument un seul serveur, sur le même port.",
+              "Zwei gleichzeitige Starts derselben Version (zum Beispiel von der Seite und aus einem Projekt) schalten einen einzigen Server ein, auf demselben Port.",
             ),
           ]}
         />
@@ -398,9 +416,9 @@ export const SERVICES: TopicTexts = {
         src="project-db.webp"
         title={tr(
           "La sezione «Database» di un progetto",
-          "A project's “Database” section",
-          "La section « Base de données » d'un projet",
-          "Der Bereich „Datenbank“ eines Projekts",
+          "A project's “Databases” section",
+          "La section « Bases de données » d'un projet",
+          "Der Abschnitt „Datenbanken“ eines Projekts",
         )}
         caption={tr(
           "Database, utente, password e indirizzo del progetto, «Scrivi in .env» e le copie, con «Esporta» e «Ripristina…».",
@@ -606,7 +624,7 @@ export const SERVICES: TopicTexts = {
           "Cambiare la versione del server",
           "Changing the server version",
           "Changer la version du serveur",
-          "Die Server-Version wechseln",
+          "Die Serverversion wechseln",
         )}
       >
         <P>
@@ -614,7 +632,7 @@ export const SERVICES: TopicTexts = {
             "Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie su quale gira il database del progetto. Cambiandola, database e utente si creano anche sulla nuova versione, vuoti: i dati si portano con una copia (Esporta sulla vecchia, Ripristina sulla nuova). Se la versione scelta non è installata, compare «Installa …».",
             "If you have several versions of MySQL or MongoDB, the “Server version” menu chooses which one the project's database runs on. When you change it, the database and user are also created on the new version, empty: you carry the data over with a copy (Export on the old one, Restore on the new one). If the chosen version is not installed, “Install …” appears.",
             "Si vous avez plusieurs versions de MySQL ou MongoDB, le menu « Version du serveur » choisit sur laquelle tourne la base de données du projet. Quand vous la changez, la base et l'utilisateur sont créés aussi sur la nouvelle version, vides : les données se transfèrent avec une copie (Exporter sur l'ancienne, Restaurer sur la nouvelle). Si la version choisie n'est pas installée, « Installer … » apparaît.",
-            "Wenn du mehrere Versionen von MySQL oder MongoDB hast, wählt das Menü „Server-Version“, auf welcher die Datenbank des Projekts läuft. Wenn du sie wechselst, werden Datenbank und Benutzer auch auf der neuen Version angelegt, leer: Die Daten überträgst du mit einer Kopie (Exportieren auf der alten, Wiederherstellen auf der neuen). Ist die gewählte Version nicht installiert, erscheint „… installieren“.",
+            "Wenn du mehrere Versionen von MySQL oder MongoDB hast, wählt das Menü „Serverversion“, auf welcher die Datenbank des Projekts läuft. Wenn du sie wechselst, werden Datenbank und Benutzer auch auf der neuen Version angelegt, leer: Die Daten überträgst du mit einer Kopie (Exportieren auf der alten, Wiederherstellen auf der neuen). Ist die gewählte Version nicht installiert, erscheint „… installieren“.",
           )}
         </P>
       </Section>
@@ -673,7 +691,7 @@ export const SERVICES: TopicTexts = {
           tr(
             "La pagina «Server Web» mostra questi server condivisi (pool) e permette di crearne di tuoi (profili).",
             "The “Web Servers” page shows these shared servers (pools) and lets you create your own (profiles).",
-            "La page « Serveurs Web » montre ces serveurs partagés (pools) et permet d'en créer à vous (profils).",
+            "La page « Serveurs web » montre ces serveurs partagés (pools) et permet d'en créer à vous (profils).",
             "Die Seite „Webserver“ zeigt diese gemeinsamen Server (Pools) und lässt dich eigene erstellen (Profile).",
           ),
           tr(
@@ -691,7 +709,7 @@ export const SERVICES: TopicTexts = {
           "La sezione «Sito web» di un progetto",
           "A project's “Website” section",
           "La section « Site web » d'un projet",
-          "Der Bereich „Website“ eines Projekts",
+          "Der Abschnitt „Website“ eines Projekts",
         )}
         caption={tr(
           "La cartella da servire, il modo (file statici, PHP, Caddy, Apache) e, per Caddy e Apache, profilo, domini e alias.",
@@ -703,7 +721,7 @@ export const SERVICES: TopicTexts = {
 
       <GuideShot
         src="servers.webp"
-        title={tr("La pagina Server Web", "The Web Servers page", "La page Serveurs Web", "Die Seite Webserver")}
+        title={tr("La pagina Server Web", "The Web Servers page", "La page Serveurs web", "Die Seite Webserver")}
         caption={tr(
           "I pool e i profili a sinistra; a destra i siti collegati, i dettagli e le opzioni di avvio del pool scelto.",
           "Pools and profiles on the left; on the right the linked sites, the details and the start options of the chosen pool.",
@@ -763,10 +781,10 @@ export const SERVICES: TopicTexts = {
             [
               tr("file statici", "static files", "fichiers statiques", "statische Dateien"),
               tr(
-                "HTML, CSS, JavaScript già pronti. È la scelta iniziale. Il kit usa il suo piccolo server di file.",
-                "Ready-made HTML, CSS, JavaScript. It is the initial choice. The kit uses its small file server.",
-                "HTML, CSS, JavaScript déjà prêts. C'est le choix initial. Le kit utilise son petit serveur de fichiers.",
-                "Fertiges HTML, CSS, JavaScript. Das ist die Anfangseinstellung. Das Kit verwendet seinen kleinen Dateiserver.",
+                "HTML, CSS, JavaScript già pronti. È la scelta iniziale. Il kit usa il suo piccolo server di file, che risponde anche come <progetto>.localhost.",
+                "Ready-made HTML, CSS, JavaScript. It is the initial choice. The kit uses its small file server, which also answers as <project>.localhost.",
+                "HTML, CSS, JavaScript déjà prêts. C'est le choix initial. Le kit utilise son petit serveur de fichiers, qui répond aussi en tant que <projet>.localhost.",
+                "Fertiges HTML, CSS, JavaScript. Das ist die Anfangseinstellung. Das Kit verwendet seinen kleinen Dateiserver, der auch als <Projekt>.localhost antwortet.",
               ),
             ],
             [
@@ -849,10 +867,10 @@ export const SERVICES: TopicTexts = {
                 "Eigener Server (Port des Projekts)",
               ),
               tr(
-                "Un Caddy o un Apache solo per questo progetto, sulla porta del progetto. Con Apache la configurazione è in data\\projects\\<progetto>\\apache e le tue direttive vanno nella sottocartella conf.d.",
-                "A Caddy or an Apache just for this project, on the project's port. With Apache the configuration is in data\\projects\\<project>\\apache and your directives go in the conf.d subfolder.",
-                "Un Caddy ou un Apache rien que pour ce projet, sur le port du projet. Avec Apache, la configuration est dans data\\projects\\<projet>\\apache et vos directives vont dans le sous-dossier conf.d.",
-                "Ein Caddy oder Apache nur für dieses Projekt, auf dem Port des Projekts. Bei Apache liegt die Konfiguration in data\\projects\\<Projekt>\\apache, und deine Direktiven gehören in den Unterordner conf.d.",
+                "Un Caddy o un Apache solo per questo progetto, sulla porta del progetto. La configurazione è in data\\projects\\<progetto>\\apache o \\caddy, e le tue direttive vanno nella sottocartella conf.d (file .conf per Apache, .caddy per Caddy).",
+                "A Caddy or an Apache just for this project, on the project's port. The configuration is in data\\projects\\<project>\\apache or \\caddy, and your directives go in the conf.d subfolder (.conf files for Apache, .caddy for Caddy).",
+                "Un Caddy ou un Apache rien que pour ce projet, sur le port du projet. La configuration est dans data\\projects\\<projet>\\apache ou \\caddy, et vos directives vont dans le sous-dossier conf.d (fichiers .conf pour Apache, .caddy pour Caddy).",
+                "Ein Caddy oder Apache nur für dieses Projekt, auf dem Port des Projekts. Die Konfiguration liegt in data\\projects\\<Projekt>\\apache oder \\caddy, und deine Direktiven gehören in den Unterordner conf.d (.conf-Dateien für Apache, .caddy für Caddy).",
               ),
             ],
             [
@@ -860,7 +878,7 @@ export const SERVICES: TopicTexts = {
               tr(
                 "Uno dei profili creati nella pagina Server Web, per esempio con una versione di PHP precisa.",
                 "One of the profiles created on the Web Servers page, for example with a specific PHP version.",
-                "Un des profils créés dans la page Serveurs Web, par exemple avec une version précise de PHP.",
+                "Un des profils créés dans la page Serveurs web, par exemple avec une version précise de PHP.",
                 "Eines der auf der Seite Webserver erstellten Profile, zum Beispiel mit einer bestimmten PHP-Version.",
               ),
             ],
@@ -911,7 +929,7 @@ export const SERVICES: TopicTexts = {
             tr(
               "«Ferma» sgancia il sito dal pool. Un pool acceso dai progetti si spegne con l'ultimo progetto, a meno che tu non l'abbia avviato dalla pagina Server Web o che il suo profilo dica «Mantieni attivo anche senza progetti».",
               "“Stop” detaches the site from the pool. A pool turned on by projects shuts down with the last project, unless you started it from the Web Servers page or its profile says “Keep running even without projects”.",
-              "« Arrêter » détache le site du pool. Un pool allumé par les projets s'éteint avec le dernier projet, sauf si vous l'avez démarré depuis la page Serveurs Web ou si son profil indique « Garder actif même sans projets ».",
+              "« Arrêter » détache le site du pool. Un pool allumé par les projets s'éteint avec le dernier projet, sauf si vous l'avez démarré depuis la page Serveurs web ou si son profil indique « Garder actif même sans projets ».",
               "„Beenden“ trennt die Website vom Pool. Ein von Projekten eingeschalteter Pool geht mit dem letzten Projekt aus, es sei denn, du hast ihn auf der Seite Webserver gestartet oder sein Profil sagt „Auch ohne Projekte aktiv lassen“.",
             ),
             tr(
@@ -919,6 +937,12 @@ export const SERVICES: TopicTexts = {
               "If the automatic pool fails to start, the site uses its own server and the output says so: “The shared server … did not start (…): the site uses its own server.”",
               "Si le pool automatique ne parvient pas à démarrer, le site utilise son propre serveur et la sortie l'indique : « Le serveur partagé … n'a pas démarré (…) : le site utilise son propre serveur. »",
               "Kann der automatische Pool nicht starten, verwendet die Website einen eigenen Server, und die Ausgabe sagt es: „Der gemeinsame Server … ist nicht gestartet (…): Die Website verwendet einen eigenen Server.“",
+            ),
+            tr(
+              "Nel pool il sito tiene le tue direttive, come con un server tutto suo: Apache include i file .conf di data\\projects\\<progetto>\\apache\\conf.d, Caddy importa i .caddy di data\\projects\\<progetto>\\caddy\\conf.d.",
+              "In the pool the site keeps your directives, as with its own server: Apache includes the .conf files of data\\projects\\<project>\\apache\\conf.d, Caddy imports the .caddy files of data\\projects\\<project>\\caddy\\conf.d.",
+              "Dans le pool, le site garde vos directives, comme avec son propre serveur : Apache inclut les fichiers .conf de data\\projects\\<projet>\\apache\\conf.d, Caddy importe les fichiers .caddy de data\\projects\\<projet>\\caddy\\conf.d.",
+              "Im Pool behält die Website deine Direktiven, wie mit einem eigenen Server: Apache bindet die .conf-Dateien aus data\\projects\\<Projekt>\\apache\\conf.d ein, Caddy importiert die .caddy-Dateien aus data\\projects\\<Projekt>\\caddy\\conf.d.",
             ),
           ]}
         />
@@ -993,7 +1017,7 @@ export const SERVICES: TopicTexts = {
         title={tr(
           "La pagina «Server Web»",
           "The “Web Servers” page",
-          "La page « Serveurs Web »",
+          "La page « Serveurs web »",
           "Die Seite „Webserver“",
         )}
       >
@@ -1017,7 +1041,7 @@ export const SERVICES: TopicTexts = {
                 "I siti del pool: progetto, cartella, indirizzo cliccabile, nomi e alias. «Sganciato: il progetto è fermo» se il progetto è stato fermato.",
                 "The pool's sites: project, folder, clickable address, names and aliases. “Detached: the project is stopped” if the project has been stopped.",
                 "Les sites du pool : projet, dossier, adresse cliquable, noms et alias. « Détaché : le projet est arrêté » si le projet a été arrêté.",
-                "Die Websites des Pools: Projekt, Ordner, anklickbare Adresse, Namen und Aliase. „Getrennt: das Projekt ist angehalten“, wenn das Projekt gestoppt wurde.",
+                "Die Websites des Pools: Projekt, Ordner, anklickbare Adresse, Namen und Aliase. „Getrennt: Das Projekt ist gestoppt“, wenn das Projekt gestoppt wurde.",
               ),
             ],
             [
@@ -1026,7 +1050,7 @@ export const SERVICES: TopicTexts = {
                 "Motore, versione del server, versione di PHP, porta, tipo (pool automatico o profilo manuale), cartella della configurazione.",
                 "Engine, server version, PHP version, port, type (automatic pool or manual profile), configuration folder.",
                 "Moteur, version du serveur, version de PHP, port, type (pool automatique ou profil manuel), dossier de la configuration.",
-                "Engine, Server-Version, PHP-Version, Port, Typ (automatischer Pool oder manuelles Profil), Konfigurationsordner.",
+                "Engine, Serverversion, PHP-Version, Port, Typ (automatischer Pool oder manuelles Profil), Konfigurationsordner.",
               ),
             ],
             [
@@ -1042,10 +1066,10 @@ export const SERVICES: TopicTexts = {
         />
         <P>
           {tr(
-            "I pulsanti in alto: «Avvia» o «Ferma», «Ricarica configurazione» e, per i profili, «Elimina profilo». Un pool ancora acceso ma non più legato a progetti o profili mostra un avviso: fermalo.",
-            "The buttons at the top: “Start” or “Stop”, “Reload configuration” and, for profiles, “Delete profile”. A pool still on but no longer tied to projects or profiles shows a warning: stop it.",
-            "Les boutons en haut : « Démarrer » ou « Arrêter », « Recharger la configuration » et, pour les profils, « Supprimer le profil ». Un pool encore allumé mais qui n'est plus lié à des projets ou à des profils affiche un avertissement : arrêtez-le.",
-            "Die Schaltflächen oben: „Starten“ oder „Beenden“, „Konfiguration neu laden“ und bei Profilen „Profil löschen“. Ein Pool, der noch läuft, aber an keine Projekte oder Profile mehr gebunden ist, zeigt eine Warnung: Stoppe ihn.",
+            "I pulsanti in alto: «Avvia» o «Ferma», «Ricarica configurazione» e, per i profili, «Elimina profilo», che chiede prima conferma. Un pool ancora acceso ma non più legato a progetti o profili mostra un avviso: fermalo. Un progetto creato, clonato o eliminato compare o sparisce subito dalla pagina.",
+            "The buttons at the top: “Start” or “Stop”, “Reload configuration” and, for profiles, “Delete profile”, which asks for a confirmation first. A pool still on but no longer tied to projects or profiles shows a warning: stop it. A project created, cloned or deleted appears on the page or disappears from it at once.",
+            "Les boutons en haut : « Démarrer » ou « Arrêter », « Recharger la configuration » et, pour les profils, « Supprimer le profil », qui demande d'abord une confirmation. Un pool encore allumé mais qui n'est plus lié à des projets ou à des profils affiche un avertissement : arrêtez-le. Un projet créé, cloné ou supprimé apparaît dans la page ou en disparaît aussitôt.",
+            "Die Schaltflächen oben: „Starten“ oder „Beenden“, „Konfiguration neu laden“ und bei Profilen „Profil löschen“, das zuerst nach einer Bestätigung fragt. Ein Pool, der noch läuft, aber an keine Projekte oder Profile mehr gebunden ist, zeigt eine Warnung: Stoppe ihn. Ein erstelltes, geklontes oder gelöschtes Projekt erscheint sofort auf der Seite oder verschwindet von ihr.",
           )}
         </P>
         <Steps
@@ -1057,10 +1081,10 @@ export const SERVICES: TopicTexts = {
               "Um ein Profil zu erstellen, drück „Neues Serverprofil“ oben in der Seitenleiste.",
             ),
             tr(
-              "Compila «Nome del profilo», «Server web» (Caddy o Apache httpd), «Versione server», «Versione PHP» e, se vuoi, «Porta» (altrimenti il kit ne sceglie una tra 8081 e 8999).",
-              "Fill in “Profile name”, “Web server” (Caddy or Apache httpd), “Server version”, “PHP version” and, if you want, “Port” (otherwise the kit picks one between 8081 and 8999).",
-              "Remplissez « Nom du profil », « Serveur web » (Caddy ou Apache httpd), « Version du serveur », « Version de PHP » et, si vous voulez, « Port » (sinon le kit en choisit un entre 8081 et 8999).",
-              "Füll „Profilname“, „Webserver“ (Caddy oder Apache httpd), „Serverversion“, „PHP-Version“ und, wenn du möchtest, „Port“ aus (sonst wählt das Kit einen zwischen 8081 und 8999).",
+              "Compila «Nome del profilo», «Server web» (Caddy o Apache httpd), «Versione server», «Versione PHP» e, se vuoi, «Porta» (altrimenti il kit ne sceglie una libera tra 8081 e 8999). Una porta che ha già un altro pool, una versione di un database o un'azione di un progetto, o una fra 7000 e 7099 (dell'editor), viene rifiutata: il messaggio dice di chi è.",
+              "Fill in “Profile name”, “Web server” (Caddy or Apache httpd), “Server version”, “PHP version” and, if you want, “Port” (otherwise the kit picks a free one between 8081 and 8999). A port that another pool, a database version or a project action already has, or one between 7000 and 7099 (the editor's), is refused: the message says whose it is.",
+              "Remplissez « Nom du profil », « Serveur web » (Caddy ou Apache httpd), « Version du serveur », « Version de PHP » et, si vous voulez, « Port » (sinon le kit en choisit un libre entre 8081 et 8999). Un port qu'a déjà un autre pool, une version d'une base de données ou une action d'un projet, ou un port entre 7000 et 7099 (ceux de l'éditeur), est refusé : le message dit à qui il appartient.",
+              "Füll „Profilname“, „Webserver“ (Caddy oder Apache httpd), „Serverversion“, „PHP-Version“ und, wenn du möchtest, „Port“ aus (sonst wählt das Kit einen freien zwischen 8081 und 8999). Ein Port, den schon ein anderer Pool, eine Datenbankversion oder eine Projektaktion hat, oder einer zwischen 7000 und 7099 (die des Editors), wird abgelehnt: Die Meldung sagt, wem er gehört.",
             ),
             tr(
               "Scegli se tenerlo acceso anche senza progetti e se avviarlo con Atollo, poi premi «Crea profilo».",
@@ -1080,7 +1104,7 @@ export const SERVICES: TopicTexts = {
           {tr(
             "Apri la pagina Server Web",
             "Open the Web Servers page",
-            "Ouvrir la page Serveurs Web",
+            "Ouvrir la page Serveurs web",
             "Seite Webserver öffnen",
           )}
         </Go>
@@ -1097,10 +1121,10 @@ export const SERVICES: TopicTexts = {
         <P>
           {rich(
             tr(
-              "Di norma i siti rispondono solo a questo PC. Per provarli da un telefono o da un altro computer della stessa rete, attiva «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» in Impostazioni › Rete: {0}. Gli altri dispositivi usano l'indirizzo IP di questo PC e la porta; i nomi .localhost funzionano solo qui. Database e phpMyAdmin restano comunque chiusi alla rete.",
-              "Normally the sites respond only to this PC. To try them from a phone or another computer on the same network, turn on “Let other PCs on the network reach the project servers” in Settings › Network: {0}. The other devices use this PC's IP address and the port; .localhost names work only here. Databases and phpMyAdmin stay closed to the network in any case.",
-              "Normalement, les sites ne répondent qu'à ce PC. Pour les essayer depuis un téléphone ou un autre ordinateur du même réseau, activez « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » dans Paramètres › Réseau : {0}. Les autres appareils utilisent l'adresse IP de ce PC et le port ; les noms .localhost ne fonctionnent qu'ici. Les bases de données et phpMyAdmin restent de toute façon fermés au réseau.",
-              "Normalerweise antworten die Websites nur diesem PC. Um sie von einem Telefon oder einem anderen Computer im selben Netzwerk auszuprobieren, aktiviere „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ unter Einstellungen › Netzwerk: {0}. Die anderen Geräte verwenden die IP-Adresse dieses PCs und den Port; .localhost-Namen funktionieren nur hier. Datenbanken und phpMyAdmin bleiben für das Netzwerk in jedem Fall gesperrt.",
+              "Di norma i siti rispondono solo a questo PC. Per provarli da un telefono o da un altro computer della stessa rete, attiva «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» in Impostazioni › Rete: {0}. Gli altri dispositivi usano l'indirizzo IP di questo PC e la porta, anche con il server integrato di PHP; i nomi .localhost funzionano solo qui. Database e phpMyAdmin restano comunque chiusi alla rete.",
+              "Normally the sites respond only to this PC. To try them from a phone or another computer on the same network, turn on “Let other PCs on the network reach the project servers” in Settings › Network: {0}. The other devices use this PC's IP address and the port, with PHP's built-in server too; .localhost names work only here. Databases and phpMyAdmin stay closed to the network in any case.",
+              "Normalement, les sites ne répondent qu'à ce PC. Pour les essayer depuis un téléphone ou un autre ordinateur du même réseau, activez « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » dans Paramètres › Réseau : {0}. Les autres appareils utilisent l'adresse IP de ce PC et le port, aussi avec le serveur intégré de PHP ; les noms .localhost ne fonctionnent qu'ici. Les bases de données et phpMyAdmin restent de toute façon fermés au réseau.",
+              "Normalerweise antworten die Websites nur diesem PC. Um sie von einem Telefon oder einem anderen Computer im selben Netzwerk auszuprobieren, aktiviere „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ unter Einstellungen › Netzwerk: {0}. Die anderen Geräte verwenden die IP-Adresse dieses PCs und den Port, auch beim integrierten Server von PHP; .localhost-Namen funktionieren nur hier. Datenbanken und phpMyAdmin bleiben für das Netzwerk in jedem Fall gesperrt.",
             ),
             <See key="n" id="network" />,
           )}
@@ -1123,10 +1147,10 @@ export const SERVICES: TopicTexts = {
               "Die Konfiguration der Pools wird bei jedem Start und Neuladen in data\\servers\\<Pool> neu erzeugt (httpd.conf oder Caddyfile, ein Ordner vhosts mit einer Datei pro Website, die Protokolle), nie im Projekt.",
             ),
             tr(
-              "I pool automatici hanno un nome come apache-2.4_php-8.4 o caddy-2.11 e una porta tra 8081 e 8999 ricordata fra un avvio e l'altro.",
-              "Automatic pools have a name like apache-2.4_php-8.4 or caddy-2.11 and a port between 8081 and 8999 that is remembered from one start to the next.",
-              "Les pools automatiques ont un nom comme apache-2.4_php-8.4 ou caddy-2.11 et un port entre 8081 et 8999 mémorisé d'un démarrage à l'autre.",
-              "Automatische Pools haben einen Namen wie apache-2.4_php-8.4 oder caddy-2.11 und einen Port zwischen 8081 und 8999, der von einem Start zum nächsten gespeichert bleibt.",
+              "I pool automatici hanno un nome come apache-2.4_php-8.4 o caddy-2.11 e una porta tra 8081 e 8999 ricordata fra un avvio e l'altro, scelta fuori dalle porte che hanno già gli altri pool, i database e le azioni dei progetti.",
+              "Automatic pools have a name like apache-2.4_php-8.4 or caddy-2.11 and a port between 8081 and 8999 that is remembered from one start to the next, chosen outside the ports the other pools, the databases and the project actions already have.",
+              "Les pools automatiques ont un nom comme apache-2.4_php-8.4 ou caddy-2.11 et un port entre 8081 et 8999 mémorisé d'un démarrage à l'autre, choisi en dehors des ports qu'ont déjà les autres pools, les bases de données et les actions des projets.",
+              "Automatische Pools haben einen Namen wie apache-2.4_php-8.4 oder caddy-2.11 und einen Port zwischen 8081 und 8999, der von einem Start zum nächsten gespeichert bleibt und außerhalb der Ports gewählt wird, die die anderen Pools, die Datenbanken und die Projektaktionen schon haben.",
             ),
             tr(
               "Solo HTTP, niente HTTPS. Il PHP gira come FastCGI (php-cgi con Caddy su Windows, php-fpm su macOS e Linux).",
@@ -1188,7 +1212,7 @@ export const SERVICES: TopicTexts = {
         <P>
           {tr(
             "Il riquadro «Terminali» elenca il terminale predefinito «Tutti gli strumenti» («Ogni strumento alla versione più recente») e quelli che hai creato tu. «Apri» su una riga apre la console nella sua cartella di partenza.",
-            "The “Terminals” box lists the default “All tools” terminal (“Every tool at its newest version”) and the ones you created. “Open” on a row opens the console in its starting folder.",
+            "The “Terminals” box lists the default “All tools” terminal (“Every tool at its latest version”) and the ones you created. “Open” on a row opens the console in its starting folder.",
             "Le panneau « Terminaux » liste le terminal par défaut « Tous les outils » (« Chaque outil à sa version la plus récente ») et ceux que vous avez créés. « Ouvrir » sur une ligne ouvre la console dans son dossier de départ.",
             "Der Bereich „Terminals“ listet das Standardterminal „Alle Werkzeuge“ („Jedes Werkzeug in der neuesten Version“) und die von dir erstellten auf. „Öffnen“ in einer Zeile öffnet die Konsole in ihrem Startordner.",
           )}
@@ -1257,7 +1281,7 @@ export const SERVICES: TopicTexts = {
             ),
             tr(
               "In «Strumenti e versioni» spunta gli strumenti (gruppi Agenti, Linguaggi, Database; «Tutti» e «Nessuno» per fare in fretta) e per ciascuno la versione, o «La più recente».",
-              "In “Tools and versions” tick the tools (groups Agents, Languages, Databases; “All” and “None” to go quickly) and for each one the version, or “The newest”.",
+              "In “Tools and versions” tick the tools (groups Agents, Languages, Databases; “All” and “None” to go quickly) and for each one the version, or “The latest”.",
               "Dans « Outils et versions », cochez les outils (groupes Agents, Langages, Bases de données ; « Tous » et « Aucun » pour aller vite) et pour chacun la version, ou « La plus récente ».",
               "Hak unter „Werkzeuge und Versionen“ die Werkzeuge an (Gruppen Agenten, Sprachen, Datenbanken; „Alle“ und „Keiner“ für den schnellen Weg) und für jedes die Version oder „Die neueste“.",
             ),
@@ -1290,10 +1314,16 @@ export const SERVICES: TopicTexts = {
               "Wenn du ein Datenbankwerkzeug wählst, kommt sein Client in den PATH (zum Beispiel mysql), aber der Server startet nicht: Den startest du auf der Seite Datenbanken.",
             ),
             tr(
-              "Il terminale predefinito non si modifica: duplicalo per crearne uno tuo. «Elimina» toglie solo il terminale, non gli strumenti.",
-              "The default terminal cannot be changed: duplicate it to create your own. “Delete” removes only the terminal, not the tools.",
-              "Le terminal par défaut ne se modifie pas : dupliquez-le pour créer le vôtre. « Supprimer » retire uniquement le terminal, pas les outils.",
-              "Das Standardterminal lässt sich nicht ändern: Dupliziere es, um ein eigenes zu erstellen. „Löschen“ entfernt nur das Terminal, nicht die Werkzeuge.",
+              "Il terminale predefinito non si modifica: duplicalo per crearne uno tuo. «Elimina» chiede conferma (Esc chiude la domanda) e toglie solo il terminale, non gli strumenti.",
+              "The default terminal cannot be changed: duplicate it to create your own. “Delete” asks for a confirmation (Esc closes the question) and removes only the terminal, not the tools.",
+              "Le terminal par défaut ne se modifie pas : dupliquez-le pour créer le vôtre. « Supprimer » demande une confirmation (Échap ferme la question) et retire uniquement le terminal, pas les outils.",
+              "Das Standardterminal lässt sich nicht ändern: Dupliziere es, um ein eigenes zu erstellen. „Löschen“ fragt nach einer Bestätigung (Esc schließt die Frage) und entfernt nur das Terminal, nicht die Werkzeuge.",
+            ),
+            tr(
+              "Se una versione scelta non è più installata, il terminale usa la più recente e lo dice, per esempio «PHP 8.2 → 8.4»; uno strumento tolto del tutto resta fuori.",
+              "If a chosen version is no longer installed, the terminal uses the newest one and says so, for example “PHP 8.2 → 8.4”; a tool removed altogether stays out.",
+              "Si une version choisie n'est plus installée, le terminal utilise la plus récente et l'indique, par exemple « PHP 8.2 → 8.4 » ; un outil retiré complètement reste exclu.",
+              "Ist eine gewählte Version nicht mehr installiert, verwendet das Terminal die neueste und sagt es, zum Beispiel „PHP 8.2 → 8.4“; ein ganz entferntes Werkzeug bleibt draußen.",
             ),
           ]}
         />

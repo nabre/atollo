@@ -2,7 +2,8 @@
 // component and part (verified by test/ui/guide/sources.test.ts).
 import { tr } from "./model";
 
-export type SourceCategory = "required" | "app" | "agents" | "languages" | "tools" | "databases" | "part";
+/** The kinds of the Tools page (components/model.ts, D-139), plus the parts. */
+export type SourceCategory = "system" | "agents" | "languages" | "tools" | "web" | "databases" | "part";
 
 export interface ToolSourceRow {
   id: string;
@@ -79,7 +80,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "pwsh",
     logoId: "pwsh",
     name: "PowerShell 7 (pwsh)",
-    group: "required",
+    group: "system",
     home: "https://github.com/PowerShell/PowerShell",
     metaSource: "api.github.com/repos/PowerShell/PowerShell/releases/latest",
     binarySource: "PowerShell-<v>-win-(x64|arm64).zip",
@@ -91,7 +92,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "gh",
     logoId: "gh",
     name: "GitHub CLI (gh)",
-    group: "required",
+    group: "system",
     home: "https://cli.github.com",
     metaSource: "api.github.com/repos/cli/cli/releases/latest",
     binarySource: "gh_<v>_windows_(amd64|arm64).zip",
@@ -103,7 +104,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "vscodium-server",
     logoId: "vscodium-server",
     name: "Editor (VSCodium Reh Web)",
-    group: "app",
+    group: "system",
     home: "https://vscodium.com",
     metaSource: () =>
       tr(
@@ -213,7 +214,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "git",
     logoId: "git",
     name: "Git + Git Bash (PortableGit)",
-    group: "tools",
+    group: "system",
     home: "https://git-scm.com",
     metaSource: "api.github.com/repos/git-for-windows/git/releases/latest",
     unix: () =>
@@ -414,7 +415,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "apache",
     logoId: "apache",
     name: "Apache httpd",
-    group: "languages",
+    group: "web",
     home: "https://httpd.apache.org",
     metaSource: () =>
       tr(
@@ -426,10 +427,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "apachelounge.com/download/VS<nn>/binaries/httpd-<v>-Win64-VS<nn>.zip",
     unix: () =>
       tr(
-        "macOS e Linux: non ancora offerto; l'installatore della build del kit (httpd-v<v>, php-fpm) attende il primo rilascio fissato nel catalogo (D-116)",
-        "macOS and Linux: not offered yet; the installer of the kit's build (httpd-v<v>, php-fpm) waits for the first release pinned in the catalog (D-116)",
-        "macOS et Linux : pas encore proposé ; l'installateur du build du kit (httpd-v<v>, php-fpm) attend la première version fixée dans le catalogue (D-116)",
-        "macOS und Linux: noch nicht angeboten; der Installer des Kit-Builds (httpd-v<v>, php-fpm) wartet auf das erste im Katalog festgelegte Release (D-116)",
+        "macOS e Linux: build del kit, github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz, SHA-256 fissato per target nel catalogo, PHP con php-fpm (D-116)",
+        "macOS and Linux: the kit's build, github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz, SHA-256 pinned per target in the catalog, PHP through php-fpm (D-116)",
+        "macOS et Linux : build du kit, github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz, SHA-256 fixé par cible dans le catalogue, PHP via php-fpm (D-116)",
+        "macOS und Linux: Build des Kits, github.com/nabre/atollo/releases/download/httpd-v<v>/httpd-<v>-<target>.tar.gz, SHA-256 pro Ziel im Katalog festgelegt, PHP über php-fpm (D-116)",
       ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
@@ -445,7 +446,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "caddy",
     logoId: "caddy",
     name: "Caddy",
-    group: "languages",
+    group: "web",
     home: "https://caddyserver.com",
     metaSource: "api.github.com/repos/caddyserver/caddy/releases?per_page=100",
     binarySource: () =>
@@ -469,16 +470,16 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "rust",
     logoId: "rust",
     name: "Rust (rustup, cargo, clippy)",
-    group: "tools",
+    group: "languages",
     home: "https://www.rust-lang.org",
     metaSource: "static.rust-lang.org/dist/channel-rust-stable.toml ([pkg.rustc])",
     binarySource: "static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe",
     unix: () =>
       tr(
-        "Host gnu su Windows x64, gnullvm su Windows ARM64 (con C/C++), msvc dalla pagina di Rust in Strumenti; macOS e Linux: rustup con l'host nativo",
-        "Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Rust's page in Tools; macOS and Linux: rustup with the native host",
-        "Hôte gnu sur Windows x64, gnullvm sur Windows ARM64 (avec C/C++), msvc depuis la page de Rust dans Outils ; macOS et Linux : rustup avec l'hôte natif",
-        "Host gnu auf Windows x64, gnullvm auf Windows ARM64 (mit C/C++), msvc über die Seite von Rust unter Werkzeuge; macOS und Linux: rustup mit nativem Host",
+        "Host gnu su Windows x64, gnullvm su Windows ARM64 (con C/C++), msvc dalla pagina di Rust in Strumenti («Dettagli»); macOS e Linux: rustup con l'host nativo",
+        "Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Rust's page in Tools (“Details”); macOS and Linux: rustup with the native host",
+        "Hôte gnu sur Windows x64, gnullvm sur Windows ARM64 (avec C/C++), msvc depuis la page de Rust dans Outils (« Détails ») ; macOS et Linux : rustup avec l'hôte natif",
+        "Host gnu auf Windows x64, gnullvm auf Windows ARM64 (mit C/C++), msvc über die Seite von Rust unter Werkzeuge („Details“); macOS und Linux: rustup mit nativem Host",
       ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
@@ -764,7 +765,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "typst",
     logoId: "typst",
     name: "Typst",
-    group: "languages",
+    group: "tools",
     home: "https://typst.app",
     metaSource: "api.github.com/repos/typst/typst/releases",
     binarySource: "Asset typst-(x86_64|aarch64)-pc-windows-msvc.zip",
@@ -873,7 +874,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     id: "cc",
     logoId: "cc",
     name: "C/C++ (llvm-mingw)",
-    group: "tools",
+    group: "languages",
     home: "https://github.com/mstorsjo/llvm-mingw",
     metaSource: "api.github.com/repos/mstorsjo/llvm-mingw/releases/latest",
     binarySource: "Asset llvm-mingw-*-ucrt-(x86_64|aarch64).zip",

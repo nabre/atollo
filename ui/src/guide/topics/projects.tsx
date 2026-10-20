@@ -137,6 +137,14 @@ export const PROJECTS: TopicTexts = {
             ),
           ]}
         />
+        <P>
+          {tr(
+            "Un progetto creato o clonato compare subito anche nella pagina «Server Web».",
+            "A created or cloned project also appears at once on the “Web Servers” page.",
+            "Un projet créé ou cloné apparaît aussitôt aussi dans la page « Serveurs web ».",
+            "Ein erstelltes oder geklontes Projekt erscheint sofort auch auf der Seite „Webserver“.",
+          )}
+        </P>
         <Go page="new">
           {tr("Apri «Nuovo progetto»", "Open “New project”", "Ouvrir « Nouveau projet »", "„Neues Projekt“ öffnen")}
         </Go>
@@ -403,15 +411,15 @@ export const PROJECTS: TopicTexts = {
               ),
               tr(
                 "Se usi un progetto esistente con dei file, il framework viene generato in una cartella temporanea del sistema e poi spostato nel progetto: i file che ci sono già restano, e nell'avanzamento compare «Già nel progetto, lasciato com'è».",
-                "If you use an existing project with files, the framework is generated in a temporary system folder and then moved into the project: the files already there stay, and the progress shows “Already in the project, left as is”.",
+                "If you use an existing project with files, the framework is generated in a temporary system folder and then moved into the project: the files already there stay, and the progress shows “Already in the project, left as it is”.",
                 "Si vous utilisez un projet existant avec des fichiers, le framework est généré dans un dossier temporaire du système puis déplacé dans le projet : les fichiers déjà présents restent, et la progression affiche « Déjà dans le projet, laissé tel quel ».",
-                "Wenn du ein bestehendes Projekt mit Dateien verwendest, wird das Framework in einem temporären Ordner des Systems erzeugt und dann ins Projekt verschoben: Die vorhandenen Dateien bleiben, und im Fortschritt erscheint „Bereits im Projekt, unverändert gelassen“.",
+                "Wenn du ein bestehendes Projekt mit Dateien verwendest, wird das Framework in einem temporären Ordner des Systems erzeugt und dann ins Projekt verschoben: Die vorhandenen Dateien bleiben, und im Fortschritt erscheint „Schon im Projekt, unverändert gelassen“.",
               ),
               tr(
-                "Se il piano prevede MySQL o MongoDB, il kit avvia il server, crea database e utente del progetto e passa ai comandi le variabili ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD e ATOLLO_DB_URL.",
-                "If the plan includes MySQL or MongoDB, the kit starts the server, creates the project's database and user and passes the variables ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD and ATOLLO_DB_URL to the commands.",
-                "Si le plan prévoit MySQL ou MongoDB, le kit démarre le serveur, crée la base de données et l'utilisateur du projet et passe aux commandes les variables ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD et ATOLLO_DB_URL.",
-                "Wenn der Plan MySQL oder MongoDB vorsieht, startet das Kit den Server, erstellt Datenbank und Benutzer des Projekts und übergibt den Befehlen die Variablen ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD und ATOLLO_DB_URL.",
+                "Se il piano prevede MySQL o MongoDB, il kit avvia il server, crea database e utente del progetto e passa ai comandi le variabili ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD e ATOLLO_DB_URL. La password generata dal kit prende il posto di una vuota che arriva dalla base (per esempio DB_PASSWORD= nel suo .env.example).",
+                "If the plan includes MySQL or MongoDB, the kit starts the server, creates the project's database and user and passes the variables ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD and ATOLLO_DB_URL to the commands. The password the kit generates takes the place of an empty one that comes from the base (for example DB_PASSWORD= in its .env.example).",
+                "Si le plan prévoit MySQL ou MongoDB, le kit démarre le serveur, crée la base de données et l'utilisateur du projet et passe aux commandes les variables ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD et ATOLLO_DB_URL. Le mot de passe généré par le kit prend la place d'un mot de passe vide venu de la base (par exemple DB_PASSWORD= dans son .env.example).",
+                "Wenn der Plan MySQL oder MongoDB vorsieht, startet das Kit den Server, erstellt Datenbank und Benutzer des Projekts und übergibt den Befehlen die Variablen ATOLLO_DB_HOST, ATOLLO_DB_PORT, ATOLLO_DB_NAME, ATOLLO_DB_USER, ATOLLO_DB_PASSWORD und ATOLLO_DB_URL. Das vom Kit erzeugte Passwort tritt an die Stelle eines leeren, das aus der Basis kommt (zum Beispiel DB_PASSWORD= in ihrer .env.example).",
               ),
               tr(
                 "Alla fine, se c'è un file .env che Git prenderebbe, il kit aggiunge /.env al file .gitignore.",
@@ -449,7 +457,7 @@ export const PROJECTS: TopicTexts = {
             "Se hai collegato l'account GitHub, il riquadro «Dai tuoi repository GitHub» della barra laterale elenca i tuoi repository e quelli delle organizzazioni di cui fai parte, raggruppati per proprietario, con una casella «Cerca nei repository».",
             "If you have connected the GitHub account, the “From your GitHub repositories” pane of the sidebar lists your repositories and those of the organizations you belong to, grouped by owner, with a “Search the repositories” box.",
             "Si vous avez connecté le compte GitHub, le volet « Depuis vos dépôts GitHub » de la barre latérale liste vos dépôts et ceux des organisations dont vous faites partie, regroupés par propriétaire, avec un champ « Rechercher dans les dépôts ».",
-            "Wenn du das GitHub-Konto verbunden hast, listet der Bereich „Aus deinen GitHub-Repositories“ der Seitenleiste deine Repositorys und die der Organisationen auf, denen du angehörst, nach Eigentümer gruppiert, mit einem Feld „Repositorys durchsuchen“.",
+            "Wenn du das GitHub-Konto verbunden hast, listet der Bereich „Aus deinen GitHub-Repositorys“ der Seitenleiste deine Repositorys und die der Organisationen auf, denen du angehörst, nach Eigentümer gruppiert, mit einem Feld „Repositorys durchsuchen“.",
           )}
         </P>
         <Bullets
@@ -577,7 +585,7 @@ export const PROJECTS: TopicTexts = {
                 "Dai tuoi repository GitHub",
                 "From your GitHub repositories",
                 "Depuis vos dépôts GitHub",
-                "Aus deinen GitHub-Repositories",
+                "Aus deinen GitHub-Repositorys",
               ),
               tr(
                 "I repository del tuo account, da clonare.",
@@ -863,7 +871,7 @@ export const PROJECTS: TopicTexts = {
         >
           {tr(
             "Il kit guarda i file della cartella: package.json vuol dire Node.js (e con dentro vite o next, un sito web), composer.json PHP, artisan Laravel, pyproject.toml Python, Cargo.toml Rust, go.mod Go e così via. Da lì ricava il tipo, la piattaforma, i linguaggi, i componenti che servono e le azioni. La sezione «Componenti» › «Come è stato riconosciuto» dice da quali file è partito. Il riconoscimento si può correggere con il file panel.json.",
-            "The kit looks at the files in the folder: package.json means Node.js (and with vite or next inside, a website), composer.json PHP, artisan Laravel, pyproject.toml Python, Cargo.toml Rust, go.mod Go and so on. From there it works out the type, the platform, the languages, the components needed and the actions. The “Components” › “How it was recognised” section says which files it started from. The recognition can be corrected with the panel.json file.",
+            "The kit looks at the files in the folder: package.json means Node.js (and with vite or next inside, a website), composer.json PHP, artisan Laravel, pyproject.toml Python, Cargo.toml Rust, go.mod Go and so on. From there it works out the type, the platform, the languages, the components needed and the actions. The “Components” › “How it was recognized” section says which files it started from. The recognition can be corrected with the panel.json file.",
             "Le kit examine les fichiers du dossier : package.json veut dire Node.js (et avec vite ou next dedans, un site web), composer.json PHP, artisan Laravel, pyproject.toml Python, Cargo.toml Rust, go.mod Go, et ainsi de suite. Il en déduit le type, la plateforme, les langages, les composants nécessaires et les actions. La section « Composants » › « Comment il a été reconnu » indique de quels fichiers il est parti. La reconnaissance peut être corrigée avec le fichier panel.json.",
             "Das Kit sieht sich die Dateien im Ordner an: package.json bedeutet Node.js (und mit vite oder next darin eine Website), composer.json PHP, artisan Laravel, pyproject.toml Python, Cargo.toml Rust, go.mod Go und so weiter. Daraus leitet es den Typ, die Plattform, die Sprachen, die benötigten Komponenten und die Aktionen ab. Der Abschnitt „Komponenten“ › „Wie es erkannt wurde“ sagt, von welchen Dateien es ausgegangen ist. Die Erkennung lässt sich mit der Datei panel.json korrigieren.",
           )}
@@ -1082,10 +1090,10 @@ export const PROJECTS: TopicTexts = {
               "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn du Atollo schließt, werden alle Aktionen beendet.",
             ),
             tr(
-              "Le azioni avviate compaiono anche nel pannello «Attività» e nel contatore della barra di stato.",
-              "Running actions also appear in the “Activity” panel and in the status bar counter.",
-              "Les actions démarrées apparaissent aussi dans le panneau « Activité » et dans le compteur de la barre d'état.",
-              "Gestartete Aktionen erscheinen auch im Bereich „Aktivität“ und im Zähler der Statusleiste.",
+              "Le azioni avviate compaiono anche nel pannello «Attività» e nel contatore della barra di stato; nel pannello «Ferma tutto», dopo una conferma, le ferma insieme ai database e ai server web in esecuzione.",
+              "Running actions also appear in the “Activity” panel and in the status bar counter; in the panel “Stop all”, after a confirmation, stops them together with the running databases and web servers.",
+              "Les actions démarrées apparaissent aussi dans le panneau « Activité » et dans le compteur de la barre d'état ; dans le panneau, « Tout arrêter », après une confirmation, les arrête avec les bases de données et les serveurs web en cours d'exécution.",
+              "Gestartete Aktionen erscheinen auch im Bereich „Aktivität“ und im Zähler der Statusleiste; im Bereich beendet „Alle beenden“ sie nach einer Bestätigung zusammen mit den laufenden Datenbanken und Webservern.",
             ),
           ]}
         />
@@ -1109,16 +1117,22 @@ export const PROJECTS: TopicTexts = {
               "Der Port muss zwischen 1024 und 65535 liegen.",
             ),
             tr(
-              "Le porte da 7000 a 7099 sono riservate all'editor.",
-              "Ports 7000 to 7099 are reserved for the editor.",
-              "Les ports de 7000 à 7099 sont réservés à l'éditeur.",
-              "Die Ports 7000 bis 7099 sind für den Editor reserviert.",
+              "Le porte da 7000 a 7099 sono dell'editor: una di queste viene rifiutata con «Le porte da 7000 a 7099 sono dell'editor».",
+              "Ports 7000 to 7099 belong to the editor: one of them is refused with “Ports 7000 to 7099 belong to the editor”.",
+              "Les ports de 7000 à 7099 sont réservés à l'éditeur : l'un d'eux est refusé avec « Les ports 7000 à 7099 sont réservés à l'éditeur ».",
+              "Die Ports 7000 bis 7099 gehören dem Editor: Einer davon wird mit „Die Ports 7000 bis 7099 gehören dem Editor“ abgelehnt.",
             ),
             tr(
-              "Una porta già usata da un'altra azione viene rifiutata con «Porta già assegnata a …».",
-              "A port already used by another action is refused with “Port already assigned to …”.",
-              "Un port déjà utilisé par une autre action est refusé avec « Port déjà attribué à … ».",
-              "Ein bereits von einer anderen Aktion verwendeter Port wird mit „Port bereits zugewiesen an …“ abgelehnt.",
+              "Una porta già usata da un'altra azione viene rifiutata con «Porta già assegnata a …», seguito da progetto → azione.",
+              "A port already used by another action is refused with “Port already assigned to …”, followed by project → action.",
+              "Un port déjà utilisé par une autre action est refusé avec « Port déjà attribué à … », suivi de projet → action.",
+              "Ein bereits von einer anderen Aktion verwendeter Port wird mit „Port bereits … zugewiesen“ abgelehnt, mit Projekt → Aktion.",
+            ),
+            tr(
+              "Viene rifiutata anche una porta che ha già un pool dei server web o una versione di un database, e il messaggio dice di chi è: «La porta … è già del server …: scegline un'altra.» oppure «La porta … è già del database …: scegline un'altra.» (per esempio MySQL 8.4).",
+              "A port that a web server pool or a database version already has is refused too, and the message names its owner: “Port … already belongs to server …: choose another one.” or “Port … already belongs to database …: choose another one.” (for example MySQL 8.4).",
+              "Un port qu'a déjà un pool de serveurs web ou une version d'une base de données est refusé aussi, et le message dit à qui il est : « Le port … appartient déjà au serveur … : choisissez-en un autre. » ou « Le port … appartient déjà à la base de données … : choisissez-en un autre. » (par exemple MySQL 8.4).",
+              "Auch ein Port, den schon ein Pool der Webserver oder eine Version einer Datenbank hat, wird abgelehnt, und die Meldung nennt den Besitzer: „Port … gehört bereits zum Server …: Wähle einen anderen.“ oder „Port … gehört bereits zur Datenbank …: Wähle einen anderen.“ (zum Beispiel MySQL 8.4).",
             ),
           ]}
         />
@@ -1154,7 +1168,7 @@ export const PROJECTS: TopicTexts = {
             tr(
               "Compila «Nome», «Tipo» («Sito o server web», «App con finestra» o «Comando») e «Comando»; se serve, «Cartella» (relativa al progetto), «Indirizzo» (solo per un sito) e «Variabili», una NOME=valore per riga. Nel comando, {port} diventa la porta dell'azione.",
               "Fill in “Name”, “Type” (“Website or web server”, “Windowed app” or “Command”) and “Command”; if needed, “Folder” (relative to the project), “Address” (websites only) and “Variables”, one NAME=value per line. In the command, {port} becomes the action's port.",
-              "Remplissez « Nom », « Type » (« Site ou serveur web », « App avec fenêtre » ou « Commande ») et « Commande » ; si besoin, « Dossier » (relatif au projet), « Adresse » (sites seulement) et « Variables », une NOM=valeur par ligne. Dans la commande, {port} devient le port de l'action.",
+              "Remplissez « Nom », « Type » (« Site ou serveur web », « Application avec fenêtre » ou « Commande ») et « Commande » ; si besoin, « Dossier » (relatif au projet), « Adresse » (sites seulement) et « Variables », une NOM=valeur par ligne. Dans la commande, {port} devient le port de l'action.",
               "Fülle „Name“, „Typ“ („Website oder Webserver“, „App mit Fenster“ oder „Befehl“) und „Befehl“ aus; bei Bedarf „Ordner“ (relativ zum Projekt), „Adresse“ (nur für Websites) und „Variablen“, eine NAME=Wert pro Zeile. Im Befehl wird {port} zum Port der Aktion.",
             ),
             tr(
@@ -1295,7 +1309,7 @@ export const PROJECTS: TopicTexts = {
         <Callout tone="info">
           {tr(
             "Un'azione con lo stesso id di una riconosciuta la sostituisce. Se il file non è un JSON valido, il kit lo ignora e lo dice in «Componenti» › «Come è stato riconosciuto»; correggilo prima di usare stella, sito web o «Nuova azione», che scrivono nello stesso file.",
-            "An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognised”; fix it before using the star, the website or “New action”, which write to the same file.",
+            "An action with the same id as a recognized one replaces it. If the file is not valid JSON, the kit ignores it and says so in “Components” › “How it was recognized”; fix it before using the star, the website or “New action”, which write to the same file.",
             "Une action avec le même id qu'une action reconnue la remplace. Si le fichier n'est pas un JSON valide, le kit l'ignore et le signale dans « Composants » › « Comment il a été reconnu » ; corrigez-le avant d'utiliser l'étoile, le site web ou « Nouvelle action », qui écrivent dans le même fichier.",
             "Eine Aktion mit derselben id wie eine erkannte ersetzt diese. Ist die Datei kein gültiges JSON, ignoriert das Kit sie und meldet das unter „Komponenten“ › „Wie es erkannt wurde“; korrigiere sie, bevor du Stern, Website oder „Neue Aktion“ verwendest, die in dieselbe Datei schreiben.",
           )}
@@ -1395,7 +1409,7 @@ export const PROJECTS: TopicTexts = {
         <P>
           {tr(
             "La parte «Componenti» elenca gli strumenti del kit di cui il progetto ha bisogno, ciascuno «installato» o «da installare». Se manca qualcosa, «Installa ciò che manca» li installa e aspetta che abbiano finito. La parte «Come è stato riconosciuto» spiega da quali file il kit ha capito il tipo di progetto, con eventuali avvisi (per esempio «Dipendenze non installate: esegui prima npm install»).",
-            "The “Components” part lists the kit tools the project needs, each “installed” or “to install”. If something is missing, “Install what is missing” installs them and waits for them to finish. The “How it was recognised” part explains from which files the kit worked out the project type, with any warnings (for example “Dependencies not installed: run npm install first”).",
+            "The “Components” part lists the kit tools the project needs, each “installed” or “to install”. If something is missing, “Install what is missing” installs them and waits for them to finish. The “How it was recognized” part explains from which files the kit worked out the project type, with any warnings (for example “Dependencies not installed: run npm install first”).",
             "La partie « Composants » liste les outils du kit dont le projet a besoin, chacun « installé » ou « à installer ». S'il manque quelque chose, « Installer ce qui manque » les installe et attend qu'ils aient terminé. La partie « Comment il a été reconnu » explique à partir de quels fichiers le kit a compris le type de projet, avec d'éventuels avertissements (par exemple « Dépendances non installées : exécutez d'abord npm install »).",
             "Der Teil „Komponenten“ listet die Werkzeuge des Kits auf, die das Projekt braucht, jedes „installiert“ oder „zu installieren“. Fehlt etwas, installiert „Fehlendes installieren“ sie und wartet, bis sie fertig sind. Der Teil „Wie es erkannt wurde“ erklärt, aus welchen Dateien das Kit den Projekttyp abgeleitet hat, mit eventuellen Warnungen (zum Beispiel „Abhängigkeiten nicht installiert: Führe zuerst npm install aus“).",
           )}
@@ -1436,7 +1450,7 @@ export const PROJECTS: TopicTexts = {
             ),
             tr(
               "La prima voce, «La più recente (…)», lascia decidere al kit: userà sempre la versione più recente presente su disco.",
-              "The first entry, “The newest (…)”, lets the kit decide: it will always use the newest version on disk.",
+              "The first entry, “The latest (…)”, lets the kit decide: it will always use the newest version on disk.",
               "La première entrée, « La plus récente (…) », laisse le kit décider : il utilisera toujours la version la plus récente présente sur le disque.",
               "Der erste Eintrag, „Die neueste (…)“, überlässt die Entscheidung dem Kit: Es verwendet immer die neueste Version auf der Festplatte.",
             ),
@@ -1998,10 +2012,10 @@ export const PROJECTS: TopicTexts = {
         </P>
         <P>
           {tr(
-            "La finestra «Eliminare …?» elenca che cosa sparirà:",
-            "The “Delete …?” window lists what will disappear:",
-            "La fenêtre « Supprimer … ? » liste ce qui va disparaître :",
-            "Das Fenster „… löschen?“ listet auf, was verschwinden wird:",
+            "La finestra «Eliminare …?» elenca che cosa sparirà (il progetto sparisce subito anche dalla pagina «Server Web»):",
+            "The “Delete …?” window lists what will disappear (the project also disappears at once from the “Web Servers” page):",
+            "La fenêtre « Supprimer … ? » liste ce qui va disparaître (le projet disparaît aussitôt aussi de la page « Serveurs web ») :",
+            "Das Fenster „… löschen?“ listet auf, was verschwinden wird (das Projekt verschwindet sofort auch von der Seite „Webserver“):",
           )}
         </P>
         <Bullets

@@ -76,10 +76,10 @@ function problems(): { title: string; items: Problem[] }[] {
             "Eine Komponente ist „zu aktualisieren“ (gelbes Dreieck).",
           ),
           a: tr(
-            "Su macOS e Linux, dopo uno spostamento del kit, alcuni componenti vanno reinstallati: il kit lo fa da solo all'avvio. Se resta così, premi «Aggiorna» sulla riga.",
-            "On macOS and Linux, after the kit is moved, some components must be reinstalled: the kit does it by itself at start. If it stays that way, press “Refresh” on the row.",
-            "Sur macOS et Linux, après un déplacement du kit, certains composants doivent être réinstallés : le kit le fait tout seul au démarrage. Si cela reste ainsi, appuyez sur « Actualiser » sur la ligne.",
-            "Unter macOS und Linux müssen nach dem Verschieben des Kits einige Komponenten neu installiert werden: Das Kit erledigt das beim Start selbst. Wenn es so bleibt, klicke in der Zeile auf „Aktualisieren“.",
+            "Su macOS e Linux, dopo uno spostamento del kit, alcuni componenti vanno reinstallati: il kit lo fa da solo all'avvio. Se resta così, premi «Aggiorna tutto» in fondo alla pagina Strumenti.",
+            "On macOS and Linux, after the kit is moved, some components must be reinstalled: the kit does it by itself at start. If it stays that way, press “Update all” at the bottom of the Tools page.",
+            "Sur macOS et Linux, après un déplacement du kit, certains composants doivent être réinstallés : le kit le fait tout seul au démarrage. Si cela reste ainsi, appuyez sur « Tout mettre à jour » en bas de la page Outils.",
+            "Unter macOS und Linux müssen nach dem Verschieben des Kits einige Komponenten neu installiert werden: Das Kit erledigt das beim Start selbst. Wenn es so bleibt, klicke unten auf der Seite Werkzeuge auf „Alle aktualisieren“.",
           ),
           see: "move",
         },
@@ -90,16 +90,16 @@ function problems(): { title: string; items: Problem[] }[] {
       items: [
         {
           q: tr(
-            "«Porta già assegnata a …» o un programma che dice che la porta è occupata.",
-            "“Port already assigned to …” or a program saying the port is taken.",
-            "« Port déjà attribué à … » ou un programme qui dit que le port est occupé.",
-            "„Port bereits … zugewiesen“ oder ein Programm, das meldet, dass der Port belegt ist.",
+            "«Porta già assegnata a …», «La porta … è già del server/database/progetto …: scegline un'altra.», «Le porte da 7000 a 7099 sono dell'editor» o un programma che dice che la porta è occupata.",
+            "“Port already assigned to …”, “Port … already belongs to server/database/project …: choose another one.”, “Ports 7000 to 7099 belong to the editor” or a program saying the port is taken.",
+            "« Port déjà attribué à … », « Le port … appartient déjà au serveur/à la base de données/au projet … : choisissez-en un autre. », « Les ports 7000 à 7099 sont réservés à l'éditeur » ou un programme qui dit que le port est occupé.",
+            "„Port bereits … zugewiesen“, „Port … gehört bereits zum Server/zur Datenbank/zum Projekt …: Wähle einen anderen.“, „Die Ports 7000 bis 7099 gehören dem Editor“ oder ein Programm, das meldet, dass der Port belegt ist.",
           ),
           a: tr(
-            "Un'altra azione usa quella porta, oppure un programma del PC. Svuota il campo «Porta» per tornare alla porta automatica o scegline un'altra tra 1024 e 65535 (non 7000-7099).",
-            "Another action uses that port, or a program on the PC does. Empty the “Port” field to go back to the automatic port or choose another one between 1024 and 65535 (not 7000-7099).",
-            "Une autre action utilise ce port, ou bien un programme du PC. Videz le champ « Port » pour revenir au port automatique ou choisissez-en un autre entre 1024 et 65535 (pas 7000-7099).",
-            "Eine andere Aktion verwendet diesen Port, oder ein Programm des PCs. Leere das Feld „Port“, um zum automatischen Port zurückzukehren, oder wähle einen anderen zwischen 1024 und 65535 (nicht 7000-7099).",
+            "Una porta è di una cosa sola: un'azione di un progetto, un pool della pagina Server Web, una versione di un database o l'editor (7000-7099). Il messaggio dice chi ce l'ha già: «Porta già assegnata a …» un'altra azione, «già del server …» un pool, «già del database …» una versione di MySQL o MongoDB, «già del progetto …» un'azione. Vale per la porta di un'azione, di un pool e di una versione del database. Se invece la porta è di un programma del PC, lo dice quel programma. Per un'azione svuota il campo «Porta» per tornare alla porta automatica; altrimenti scegline un'altra tra 1024 e 65535.",
+            "A port belongs to one thing only: an action of a project, a pool of the Web Servers page, a version of a database or the editor (7000-7099). The message says who already has it: “Port already assigned to …” another action, “already belongs to server …” a pool, “already belongs to database …” a version of MySQL or MongoDB, “already belongs to project …” an action. It applies to the port of an action, of a pool and of a database version. If instead a program on the PC has the port, that program says so. For an action, empty the “Port” field to go back to the automatic port; otherwise choose another one between 1024 and 65535.",
+            "Un port n'appartient qu'à une seule chose : une action d'un projet, un pool de la page Serveurs web, une version d'une base de données ou l'éditeur (7000-7099). Le message dit qui l'a déjà : « Port déjà attribué à … » une autre action, « appartient déjà au serveur … » un pool, « appartient déjà à la base de données … » une version de MySQL ou MongoDB, « appartient déjà au projet … » une action. Cela vaut pour le port d'une action, d'un pool et d'une version de la base de données. Si c'est un programme du PC qui a le port, c'est ce programme qui le dit. Pour une action, videz le champ « Port » pour revenir au port automatique ; sinon choisissez-en un autre entre 1024 et 65535.",
+            "Ein Port gehört nur einem: einer Aktion eines Projekts, einem Pool der Seite Webserver, einer Version einer Datenbank oder dem Editor (7000-7099). Die Meldung sagt, wer ihn schon hat: „Port bereits … zugewiesen“ eine andere Aktion, „gehört bereits zum Server …“ ein Pool, „gehört bereits zur Datenbank …“ eine Version von MySQL oder MongoDB, „gehört bereits zum Projekt …“ eine Aktion. Das gilt für den Port einer Aktion, eines Pools und einer Datenbankversion. Hat dagegen ein Programm des PCs den Port, meldet es das selbst. Leere bei einer Aktion das Feld „Port“, um zum automatischen Port zurückzukehren; sonst wähle einen anderen zwischen 1024 und 65535.",
           ),
           see: "project-run",
         },
@@ -151,13 +151,13 @@ function problems(): { title: string; items: Problem[] }[] {
           q: tr(
             "«Il server condiviso … non è partito: guarda la pagina Server Web.»",
             "“The shared server … did not start: see the Web Servers page.”",
-            "« Le serveur partagé … n'a pas démarré : voyez la page Serveurs Web. »",
+            "« Le serveur partagé … n'a pas démarré : voyez la page Serveurs web. »",
             "„Der gemeinsame Server … ist nicht gestartet: siehe die Seite Webserver.“",
           ),
           a: tr(
             "Apri la pagina Server Web, scegli il pool e guarda l'errore. Spesso la porta è occupata: cambia porta al profilo, oppure scegli «Server tutto suo» nella sezione «Sito web» del progetto.",
             "Open the Web Servers page, choose the pool and look at the error. Often the port is taken: change the profile's port, or choose “Its own server” in the project's “Website” section.",
-            "Ouvrez la page Serveurs Web, choisissez le pool et regardez l'erreur. Souvent le port est occupé : changez le port du profil, ou choisissez « Son propre serveur » dans la section « Site web » du projet.",
+            "Ouvrez la page Serveurs web, choisissez le pool et regardez l'erreur. Souvent le port est occupé : changez le port du profil, ou choisissez « Son propre serveur » dans la section « Site web » du projet.",
             "Öffne die Seite Webserver, wähle den Pool und sieh dir den Fehler an. Oft ist der Port belegt: Ändere den Port des Profils, oder wähle „Eigener Server“ im Abschnitt „Website“ des Projekts.",
           ),
           see: "websites",
@@ -507,10 +507,10 @@ function glossary(): [string, string][] {
     [
       tr("Console (terminale)", "Console (terminal)", "Console (terminal)", "Konsole (Terminal)"),
       tr(
-        "Una finestra in cui si scrivono comandi. Quella del kit è PowerShell 7 con gli strumenti del kit.",
-        "A window where you type commands. The kit's one is PowerShell 7 with the kit's tools.",
-        "Une fenêtre dans laquelle on tape des commandes. Celle du kit est PowerShell 7 avec les outils du kit.",
-        "Ein Fenster, in das man Befehle eingibt. Die des Kits ist PowerShell 7 mit den Werkzeugen des Kits.",
+        "Una finestra in cui si scrivono comandi. Quella del kit è PowerShell 7 con gli strumenti del kit; su macOS e Linux, se PowerShell non è installato, è bash.",
+        "A window where you type commands. The kit's one is PowerShell 7 with the kit's tools; on macOS and Linux, if PowerShell is not installed, it is bash.",
+        "Une fenêtre dans laquelle on tape des commandes. Celle du kit est PowerShell 7 avec les outils du kit ; sur macOS et Linux, si PowerShell n'est pas installé, c'est bash.",
+        "Ein Fenster, in das man Befehle eingibt. Die des Kits ist PowerShell 7 mit den Werkzeugen des Kits; unter macOS und Linux ist es bash, wenn PowerShell nicht installiert ist.",
       ),
     ],
     [
@@ -624,19 +624,19 @@ function glossary(): [string, string][] {
     [
       tr("Pool", "Pool", "Pool", "Pool"),
       tr(
-        "Un server web (Caddy o Apache) condiviso da più progetti, ognuno con il suo nome .localhost.",
-        "A web server (Caddy or Apache) shared by several projects, each with its own .localhost name.",
-        "Un serveur web (Caddy ou Apache) partagé par plusieurs projets, chacun avec son nom .localhost.",
-        "Ein Webserver (Caddy oder Apache), den mehrere Projekte gemeinsam nutzen, jedes mit seinem eigenen .localhost-Namen.",
+        "Un server web (Caddy o Apache) condiviso da più progetti, ognuno con il suo nome .localhost e la sua cartella conf.d.",
+        "A web server (Caddy or Apache) shared by several projects, each with its own .localhost name and its own conf.d folder.",
+        "Un serveur web (Caddy ou Apache) partagé par plusieurs projets, chacun avec son nom .localhost et son dossier conf.d.",
+        "Ein Webserver (Caddy oder Apache), den mehrere Projekte gemeinsam nutzen, jedes mit seinem eigenen .localhost-Namen und seinem Ordner conf.d.",
       ),
     ],
     [
       tr("Porta", "Port", "Port", "Port"),
       tr(
-        "Un numero che distingue i servizi sullo stesso computer: http://localhost:7100 e http://localhost:7101 sono due siti diversi.",
-        "A number that tells services apart on the same computer: http://localhost:7100 and http://localhost:7101 are two different sites.",
-        "Un numéro qui distingue les services sur un même ordinateur : http://localhost:7100 et http://localhost:7101 sont deux sites différents.",
-        "Eine Nummer, die Dienste auf demselben Computer unterscheidet: http://localhost:7100 und http://localhost:7101 sind zwei verschiedene Websites.",
+        "Un numero che distingue i servizi sullo stesso computer: http://localhost:7100 e http://localhost:7101 sono due siti diversi. Nel kit ogni porta è di una cosa sola (un'azione, un pool, una versione di un database); 7000-7099 sono dell'editor.",
+        "A number that tells services apart on the same computer: http://localhost:7100 and http://localhost:7101 are two different sites. In the kit each port belongs to one thing only (an action, a pool, a version of a database); 7000-7099 belong to the editor.",
+        "Un numéro qui distingue les services sur un même ordinateur : http://localhost:7100 et http://localhost:7101 sont deux sites différents. Dans le kit, chaque port n'appartient qu'à une seule chose (une action, un pool, une version d'une base de données) ; 7000-7099 sont réservés à l'éditeur.",
+        "Eine Nummer, die Dienste auf demselben Computer unterscheidet: http://localhost:7100 und http://localhost:7101 sind zwei verschiedene Websites. Im Kit gehört jeder Port nur einem (einer Aktion, einem Pool, einer Version einer Datenbank); 7000-7099 gehören dem Editor.",
       ),
     ],
     [
@@ -644,7 +644,7 @@ function glossary(): [string, string][] {
       tr(
         "Un pool creato da te nella pagina Server Web, con le versioni e la porta che scegli.",
         "A pool you create on the Web Servers page, with the versions and port you choose.",
-        "Un pool que vous créez dans la page Serveurs Web, avec les versions et le port que vous choisissez.",
+        "Un pool que vous créez dans la page Serveurs web, avec les versions et le port que vous choisissez.",
         "Ein Pool, den du auf der Seite Webserver anlegst, mit den Versionen und dem Port deiner Wahl.",
       ),
     ],
