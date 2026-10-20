@@ -72,7 +72,7 @@ const SAMPLE_TOOLS: TerminalTool[] = [
     name: "PHP",
     group: "languages",
     lines: ["8.4", "7.4"],
-    versions: { "8.4": "8.4.13", "7.4": "7.4.33" },
+    versions: { "8.4": "8.4.12", "7.4": "7.4.33" },
   },
   {
     id: "mysql",

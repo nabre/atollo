@@ -185,19 +185,19 @@ export const PORTABLE: TopicTexts = {
             {
               title: tr("Editor", "Editor", "Éditeur", "Editor"),
               text: tr(
-                "Le finestre e poi il server dell'editor.",
-                "The windows and then the editor server.",
-                "Les fenêtres puis le serveur de l'éditeur.",
-                "Die Fenster und dann der Server des Editors.",
+                "Le finestre; il server dell'editor si ferma subito dopo i database.",
+                "The windows; the editor server stops right after the databases.",
+                "Les fenêtres ; le serveur de l'éditeur s'arrête juste après les bases de données.",
+                "Die Fenster; der Server des Editors stoppt direkt nach den Datenbanken.",
               ),
             },
             {
               title: tr("Database", "Databases", "Bases de données", "Datenbanken"),
               text: tr(
-                "Arresto ordinato di MySQL e MongoDB.",
-                "Orderly shutdown of MySQL and MongoDB.",
-                "Arrêt propre de MySQL et MongoDB.",
-                "Geordnetes Herunterfahren von MySQL und MongoDB.",
+                "Arresto ordinato di MySQL e MongoDB, ogni versione avviata.",
+                "Orderly shutdown of MySQL and MongoDB, every running version.",
+                "Arrêt propre de MySQL et MongoDB, chaque version démarrée.",
+                "Geordnetes Herunterfahren von MySQL und MongoDB, jeder gestarteten Version.",
               ),
             },
             {
@@ -296,10 +296,16 @@ export const PORTABLE: TopicTexts = {
               "Die Konfigurationen der Webserver werden bei jedem Start neu erzeugt und verwenden relative Pfade.",
             ),
             tr(
-              "Nel .gitconfig del kit, safe.directory (le cartelle di cui Git si fida) viene riscritto a ogni avvio con la cartella attuale del kit, per esempio D:/Atollo/*.",
-              "In the kit's .gitconfig, safe.directory (the folders Git trusts) is rewritten at every start with the kit's current folder, for example D:/Atollo/*.",
-              "Dans le .gitconfig du kit, safe.directory (les dossiers auxquels Git fait confiance) est réécrit à chaque démarrage avec le dossier actuel du kit, par exemple D:/Atollo/*.",
-              "In der .gitconfig des Kits wird safe.directory (die Ordner, denen Git vertraut) bei jedem Start mit dem aktuellen Ordner des Kits neu geschrieben, zum Beispiel D:/Atollo/*.",
+              "Nel .gitconfig del kit, safe.directory (le cartelle di cui Git si fida) viene riscritto a ogni avvio con la cartella attuale del kit, per esempio D:/Atollo/*. Il kit toglie solo il valore che aveva scritto prima (lo ricorda in data\\app\\safe-directory.txt): le cartelle che hai aggiunto tu restano.",
+              "In the kit's .gitconfig, safe.directory (the folders Git trusts) is rewritten at every start with the kit's current folder, for example D:/Atollo/*. The kit removes only the value it wrote before (it remembers it in data\\app\\safe-directory.txt): the folders you added yourself stay.",
+              "Dans le .gitconfig du kit, safe.directory (les dossiers auxquels Git fait confiance) est réécrit à chaque démarrage avec le dossier actuel du kit, par exemple D:/Atollo/*. Le kit ne retire que la valeur qu'il avait écrite avant (il la garde dans data\\app\\safe-directory.txt) : les dossiers que vous avez ajoutés vous-même restent.",
+              "In der .gitconfig des Kits wird safe.directory (die Ordner, denen Git vertraut) bei jedem Start mit dem aktuellen Ordner des Kits neu geschrieben, zum Beispiel D:/Atollo/*. Das Kit entfernt nur den Wert, den es vorher geschrieben hat (es merkt ihn sich in data\\app\\safe-directory.txt): Ordner, die du selbst hinzugefügt hast, bleiben.",
+            ),
+            tr(
+              "Il file PEM dei certificati (Impostazioni › Rete) e la cartella di un terminale, se sono dentro il kit, sono salvati relativi al kit: seguono lo spostamento.",
+              "The certificates' PEM file (Settings › Network) and a terminal's folder, when they are inside the kit, are saved relative to the kit: they follow the move.",
+              "Le fichier PEM des certificats (Paramètres › Réseau) et le dossier d'un terminal, s'ils sont dans le kit, sont enregistrés relativement au kit : ils suivent le déplacement.",
+              "Die PEM-Datei der Zertifikate (Einstellungen › Netzwerk) und der Ordner eines Terminals werden, wenn sie im Kit liegen, relativ zum Kit gespeichert: Sie folgen dem Verschieben.",
             ),
             tr(
               "Accessi, impostazioni, progetti e database sono nella cartella: viaggiano con lei.",
@@ -359,10 +365,10 @@ export const PORTABLE: TopicTexts = {
         />
         <Callout tone="warn">
           {tr(
-            "Un database usato da più sistemi va sempre spento prima di cambiare PC (usa «Rimuovi l'unità»). Su macOS e Linux alcuni componenti (R, Ruby, MongoDB e SQLite su Linux, make) vanno reinstallati quando il kit cambia cartella: compaiono come «da aggiornare» e il kit li reinstalla da solo, senza rete se hai attivato «Pacchetti per reinstallare senza rete».",
-            "A database used from several systems must always be shut down before changing PC (use “Remove drive”). On macOS and Linux some components (R, Ruby, MongoDB and SQLite on Linux, make) must be reinstalled when the kit changes folder: they show as “to update” and the kit reinstalls them by itself, without the network if you turned on “Packages to reinstall without the network”.",
-            "Une base de données utilisée par plusieurs systèmes doit toujours être arrêtée avant de changer de PC (utilisez « Retirer le lecteur »). Sur macOS et Linux, certains composants (R, Ruby, MongoDB et SQLite sur Linux, make) doivent être réinstallés quand le kit change de dossier : ils apparaissent comme « à mettre à jour » et le kit les réinstalle tout seul, sans réseau si vous avez activé « Paquets pour réinstaller sans réseau ».",
-            "Eine Datenbank, die von mehreren Systemen genutzt wird, muss vor dem PC-Wechsel immer heruntergefahren werden (verwende „Laufwerk entfernen“). Unter macOS und Linux müssen einige Komponenten (R, Ruby, MongoDB und SQLite unter Linux, make) neu installiert werden, wenn das Kit den Ordner wechselt: Sie erscheinen als „zu aktualisieren“ und das Kit installiert sie selbst neu, ohne Netzwerk, wenn du „Pakete zum Neuinstallieren ohne Netzwerk“ aktiviert hast.",
+            "Un database usato da più sistemi va sempre spento prima di cambiare PC (usa «Rimuovi l'unità»). Su macOS e Linux alcuni componenti (R, Ruby, MongoDB su Linux, SQLite su Linux ARM64, make) vanno reinstallati quando il kit cambia cartella: compaiono come «da aggiornare» e il kit li reinstalla da solo, senza rete se hai attivato «Pacchetti per reinstallare senza rete».",
+            "A database used from several systems must always be shut down before changing PC (use “Remove drive”). On macOS and Linux some components (R, Ruby, MongoDB on Linux, SQLite on Linux ARM64, make) must be reinstalled when the kit changes folder: they show as “to update” and the kit reinstalls them by itself, without the network if you turned on “Packages to reinstall without the network”.",
+            "Une base de données utilisée par plusieurs systèmes doit toujours être arrêtée avant de changer de PC (utilisez « Retirer le lecteur »). Sur macOS et Linux, certains composants (R, Ruby, MongoDB sur Linux, SQLite sur Linux ARM64, make) doivent être réinstallés quand le kit change de dossier : ils apparaissent comme « à mettre à jour » et le kit les réinstalle tout seul, sans réseau si vous avez activé « Paquets pour réinstaller sans réseau ».",
+            "Eine Datenbank, die von mehreren Systemen genutzt wird, muss vor dem PC-Wechsel immer heruntergefahren werden (verwende „Laufwerk entfernen“). Unter macOS und Linux müssen einige Komponenten (R, Ruby, MongoDB unter Linux, SQLite unter Linux ARM64, make) neu installiert werden, wenn das Kit den Ordner wechselt: Sie erscheinen als „zu aktualisieren“ und das Kit installiert sie selbst neu, ohne Netzwerk, wenn du „Pakete zum Neuinstallieren ohne Netzwerk“ aktiviert hast.",
           )}
         </Callout>
         <Under>
@@ -412,10 +418,10 @@ export const PORTABLE: TopicTexts = {
             "Atollo aktualisiert sich selbst: Es lädt die neue Version herunter und setzt sie an die Stelle der alten, wenn du die App schließt.",
           ),
           tr(
-            "Gli strumenti si aggiornano dalla pagina Strumenti, con «Aggiorna» su una riga o «Aggiorna tutto».",
-            "The tools are updated from the Tools page, with “Refresh” on a row or “Update all”.",
-            "Les outils se mettent à jour depuis la page Outils, avec « Actualiser » sur une ligne ou « Tout mettre à jour ».",
-            "Die Werkzeuge werden auf der Seite Werkzeuge aktualisiert, mit „Aktualisieren“ in einer Zeile oder „Alle aktualisieren“.",
+            "Gli strumenti si aggiornano dalla pagina Strumenti, con «Aggiorna <nome>» su una riga o «Aggiorna tutto».",
+            "The tools are updated from the Tools page, with “Update <name>” on a row or “Update all”.",
+            "Les outils se mettent à jour depuis la page Outils, avec « Mettre à jour <nom> » sur une ligne ou « Tout mettre à jour ».",
+            "Die Werkzeuge werden auf der Seite Werkzeuge aktualisiert, mit „<Name> aktualisieren“ in einer Zeile oder „Alle aktualisieren“.",
           ),
           tr(
             "Per una copia di sicurezza completa basta copiare projects e data (senza i programmi, che si riscaricano).",
@@ -467,10 +473,10 @@ export const PORTABLE: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "«Aggiorna» sulla riga di un componente scarica subito la sua versione nuova, se c'è.",
-              "“Refresh” on a component's row downloads its new version right away, if there is one.",
-              "« Actualiser » sur la ligne d'un composant télécharge tout de suite sa nouvelle version, s'il y en a une.",
-              "„Aktualisieren“ in der Zeile einer Komponente lädt sofort deren neue Version herunter, falls es eine gibt.",
+              "«Aggiorna <nome>» (l'icona con le due frecce) sulla riga di un componente scarica subito la sua versione nuova, se c'è.",
+              "“Update <name>” (the icon with the two arrows) on a component's row downloads its new version right away, if there is one.",
+              "« Mettre à jour <nom> » (l'icône aux deux flèches) sur la ligne d'un composant télécharge tout de suite sa nouvelle version, s'il y en a une.",
+              "„<Name> aktualisieren“ (das Symbol mit den zwei Pfeilen) in der Zeile einer Komponente lädt sofort deren neue Version herunter, falls es eine gibt.",
             ),
             tr(
               "«Aggiorna tutto», in fondo alla pagina Strumenti, aggiorna ogni componente installato e porta ogni versione all'ultima correzione (per esempio PHP 8.4.1 → 8.4.3), senza aggiungere né togliere versioni.",
@@ -479,10 +485,10 @@ export const PORTABLE: TopicTexts = {
               "„Alle aktualisieren“, unten auf der Seite Werkzeuge, aktualisiert jede installierte Komponente und bringt jede Version auf die letzte Korrektur (zum Beispiel PHP 8.4.1 → 8.4.3), ohne Versionen hinzuzufügen oder zu entfernen.",
             ),
             tr(
-              "Gli agenti seguono sempre l'ultima versione e non si aggiornano da soli mentre lavori: lo fa il kit con «Aggiorna».",
-              "The agents always follow the latest version and do not update themselves while you work: the kit does it with “Refresh”.",
-              "Les agents suivent toujours la dernière version et ne se mettent pas à jour tout seuls pendant que vous travaillez : c'est le kit qui le fait avec « Actualiser ».",
-              "Die Agenten folgen immer der neuesten Version und aktualisieren sich nicht selbst, während du arbeitest: Das macht das Kit mit „Aktualisieren“.",
+              "Gli agenti seguono sempre l'ultima versione e non si aggiornano da soli mentre lavori: lo fa il kit con «Aggiorna <nome>» o «Aggiorna tutto».",
+              "The agents always follow the latest version and do not update themselves while you work: the kit does it with “Update <name>” or “Update all”.",
+              "Les agents suivent toujours la dernière version et ne se mettent pas à jour tout seuls pendant que vous travaillez : c'est le kit qui le fait avec « Mettre à jour <nom> » ou « Tout mettre à jour ».",
+              "Die Agenten folgen immer der neuesten Version und aktualisieren sich nicht selbst, während du arbeitest: Das macht das Kit mit „<Name> aktualisieren“ oder „Alle aktualisieren“.",
             ),
           ]}
         />
@@ -560,10 +566,10 @@ export const PORTABLE: TopicTexts = {
               "Unter Windows wartet die neue Version in data\\app\\update; die ersetzte Kopie bleibt bis zum nächsten Start als Atollo.old.exe erhalten.",
             ),
             tr(
-              "La variabile ATOLLO_NO_UPDATE, impostata nel PC, spegne il controllo automatico.",
-              "The ATOLLO_NO_UPDATE variable, set on the PC, turns off the automatic check.",
-              "La variable ATOLLO_NO_UPDATE, définie sur le PC, désactive la vérification automatique.",
-              "Die Variable ATOLLO_NO_UPDATE, auf dem PC gesetzt, schaltet die automatische Prüfung aus.",
+              "La variabile ATOLLO_NO_UPDATE, impostata nel PC, spegne il controllo automatico e anche la lettura giornaliera delle versioni offerte dalle fonti.",
+              "The ATOLLO_NO_UPDATE variable, set on the PC, turns off the automatic check and also the daily reading of the versions the sources offer.",
+              "La variable ATOLLO_NO_UPDATE, définie sur le PC, désactive la vérification automatique et aussi la lecture quotidienne des versions proposées par les sources.",
+              "Die Variable ATOLLO_NO_UPDATE, auf dem PC gesetzt, schaltet die automatische Prüfung aus und auch das tägliche Lesen der Versionen, die die Quellen anbieten.",
             ),
           ]}
         />

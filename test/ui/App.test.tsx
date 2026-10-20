@@ -354,6 +354,10 @@ describe("App", () => {
     expect(await screen.findByText("me/app2 clonato in projects\\app2.")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("github_clone", { fullName: "me/app2" });
     fireEvent.click(screen.getByRole("button", { name: /^sito/ }));
+    // Esc answers no, as in the other confirmations
+    fireEvent.click(screen.getByRole("button", { name: "Elimina da GitHub" }));
+    fireEvent.keyDown(screen.getByRole("alertdialog"), { key: "Escape" });
+    expect(screen.queryByRole("alertdialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Elimina da GitHub" }));
     fireEvent.click(screen.getByRole("button", { name: "Elimina" }));
     expect(await screen.findByRole("button", { name: "Concedi il permesso" })).toBeTruthy();

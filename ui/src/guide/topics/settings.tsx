@@ -166,10 +166,10 @@ export const SETTINGS: TopicTexts = {
         />
         <P>
           {tr(
-            "«Esci» toglie l'accesso dal kit dopo la conferma «Uscire da GitHub? Anche Git, l'editor e gli agenti del kit perdono l'accesso.»",
-            "“Sign out” removes the sign-in from the kit after the confirmation “Sign out of GitHub? Git, the editor and the kit's agents lose the access too.”",
-            "« Se déconnecter » retire la connexion du kit après la confirmation « Se déconnecter de GitHub ? Git, l'éditeur et les agents du kit perdent aussi l'accès. »",
-            "„Abmelden“ entfernt die Anmeldung aus dem Kit nach der Bestätigung „Von GitHub abmelden? Auch Git, der Editor und die Agenten des Kits verlieren den Zugang.“",
+            "«Esci» toglie l'accesso dal kit dopo la conferma «Uscire da GitHub? Anche Git, l'editor e gli agenti del kit perdono l'accesso.»; «Annulla» o Esc chiudono la domanda.",
+            "“Sign out” removes the sign-in from the kit after the confirmation “Sign out of GitHub? Git, the editor and the kit's agents lose the access too.”; “Cancel” or Esc closes the question.",
+            "« Se déconnecter » retire la connexion du kit après la confirmation « Se déconnecter de GitHub ? Git, l'éditeur et les agents du kit perdent aussi l'accès. » ; « Annuler » ou Échap ferme la question.",
+            "„Abmelden“ entfernt die Anmeldung aus dem Kit nach der Bestätigung „Von GitHub abmelden? Auch Git, der Editor und die Agenten des Kits verlieren den Zugang.“; „Abbrechen“ oder Esc schließt die Frage.",
           )}
         </P>
         <Callout tone="warn">
@@ -365,7 +365,7 @@ export const SETTINGS: TopicTexts = {
           "Le sezioni a sinistra, sotto le istruzioni dei framework; lo stato del salvataggio sulla barra delle schede.",
           "The sections on the left, the framework instructions below them; the saving status on the tab bar.",
           "Les sections à gauche, les instructions des frameworks en dessous ; l'état de l'enregistrement sur la barre des onglets.",
-          "Die Bereiche links, darunter die Framework-Anleitungen; der Speicherstatus in der Registerleiste.",
+          "Die Abschnitte links, darunter die Anweisungen der Frameworks; der Speicherstatus in der Registerkartenleiste.",
         )}
       />
 
@@ -396,6 +396,12 @@ export const SETTINGS: TopicTexts = {
               "The framework instructions save themselves too, a little under a second after the last edit.",
               "Les instructions des frameworks s'enregistrent elles aussi toutes seules, un peu moins d'une seconde après la dernière modification.",
               "Auch die Anweisungen der Frameworks speichern sich von selbst, knapp eine Sekunde nach der letzten Änderung.",
+            ),
+            tr(
+              "Come nell'editor, un'impostazione cambiata rispetto al valore di base ha una barra colorata sul bordo sinistro.",
+              "As in the editor, a setting changed from its default value has a colored bar on its left edge.",
+              "Comme dans l'éditeur, un paramètre modifié par rapport à sa valeur par défaut a une barre colorée sur le bord gauche.",
+              "Wie im Editor hat eine Einstellung, die vom Standardwert abweicht, einen farbigen Balken am linken Rand.",
             ),
             tr(
               "Se l'editor è aperto e cambi lingua, rete o temporanei dei programmi, compare «Riavvia l'editor perché i suoi terminali usino le nuove impostazioni.»: le altre impostazioni non lo richiedono. Il tema arriva subito anche all'editor e ai suoi terminali.",
@@ -449,10 +455,10 @@ export const SETTINGS: TopicTexts = {
             [
               tr("Aggiornamento automatico", "Automatic update", "Mise à jour automatique", "Automatisches Update"),
               tr(
-                "«Scarica da solo le nuove versioni di Atollo»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base. Vale subito: attivarlo avvia un controllo all'istante; spegnerlo prima del controllo dei 20 secondi dopo l'avvio ferma quel controllo.",
-                "“Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default. It applies at once: turning it on starts a check right away; turning it off before the check 20 seconds after start stops that check.",
-                "« Télécharger automatiquement les nouvelles versions d'Atollo » : la nouvelle version remplace l'actuelle quand vous fermez l'application. Activé par défaut. Il s'applique tout de suite : l'activer lance aussitôt une vérification ; le désactiver avant la vérification des 20 secondes après le démarrage annule cette vérification.",
-                "„Neue Versionen von Atollo automatisch herunterladen“: Die neue Version ersetzt die aktuelle, wenn du die App schließt. Standardmäßig aktiv. Es gilt sofort: Einschalten startet sofort eine Prüfung; Ausschalten vor der Prüfung 20 Sekunden nach dem Start stoppt diese Prüfung.",
+                "«Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base. Vale subito: attivarlo avvia un controllo all'istante; spegnerlo prima del controllo dei 20 secondi dopo l'avvio ferma quel controllo.",
+                "“Download new versions of Atollo automatically (they replace the exe on close)”: the new version replaces the current one when you close the app. On by default. It applies at once: turning it on starts a check right away; turning it off before the check 20 seconds after start stops that check.",
+                "« Télécharger automatiquement les nouvelles versions d'Atollo (elles remplacent l'exe à la fermeture) » : la nouvelle version remplace l'actuelle quand vous fermez l'application. Activé par défaut. Il s'applique tout de suite : l'activer lance aussitôt une vérification ; le désactiver avant la vérification des 20 secondes après le démarrage annule cette vérification.",
+                "„Neue Versionen von Atollo automatisch herunterladen (sie ersetzen die EXE beim Schließen)“: Die neue Version ersetzt die aktuelle, wenn du die App schließt. Standardmäßig aktiv. Es gilt sofort: Einschalten startet sofort eine Prüfung; Ausschalten vor der Prüfung 20 Sekunden nach dem Start stoppt diese Prüfung.",
               ),
             ],
             [
@@ -750,10 +756,10 @@ export const SETTINGS: TopicTexts = {
         <Steps
           steps={[
             tr(
-              "Apri Impostazioni › «Rete» (al primo avvio, il gruppo «Rete» della pagina «Benvenuto in Atollo») e compila i campi che ti servono.",
-              "Open Settings › “Network” (at the first start, the “Network” group of the “Welcome to Atollo” page) and fill in the fields you need.",
-              "Ouvrez Paramètres › « Réseau » (au premier démarrage, le groupe « Réseau » de la page « Bienvenue dans Atollo ») et remplissez les champs dont vous avez besoin.",
-              "Öffne Einstellungen › „Netzwerk“ (beim ersten Start die Gruppe „Netzwerk“ der Seite „Willkommen bei Atollo“) und fülle die Felder aus, die du brauchst.",
+              "Apri Impostazioni › «Rete» (al primo avvio, il gruppo «Rete» della pagina «Benvenuto in Atollo»: niente si scarica prima di «Installa») e compila i campi che ti servono.",
+              "Open Settings › “Network” (at the first start, the “Network” group of the “Welcome to Atollo” page: nothing downloads before “Install”) and fill in the fields you need.",
+              "Ouvrez Paramètres › « Réseau » (au premier démarrage, le groupe « Réseau » de la page « Bienvenue dans Atollo » : rien ne se télécharge avant « Installer ») et remplissez les champs dont vous avez besoin.",
+              "Öffne Einstellungen › „Netzwerk“ (beim ersten Start die Gruppe „Netzwerk“ der Seite „Willkommen bei Atollo“: Vor „Installieren“ wird nichts heruntergeladen) und fülle die Felder aus, die du brauchst.",
             ),
             tr(
               "Non serve premere nulla: i valori si salvano da soli mentre scrivi. Se l'editor è aperto, premi «Riavvia l'editor» nell'avviso che compare.",
@@ -790,16 +796,32 @@ export const SETTINGS: TopicTexts = {
       <Section title={tr("Rete locale", "Local network", "Réseau local", "Lokales Netzwerk")}>
         <P>
           {tr(
-            "La casella «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» apre i siti dei progetti alla rete: utile per provare un sito dal telefono. Dagli altri dispositivi si usa l'indirizzo IP di questo PC con la porta del sito. Database e phpMyAdmin restano raggiungibili solo da questo PC.",
-            "The “Let other PCs on the network reach the project servers” checkbox opens the projects' sites to the network: useful to try a site from your phone. From the other devices you use this PC's IP address with the site's port. Databases and phpMyAdmin stay reachable only from this PC.",
-            "La case « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » ouvre les sites des projets au réseau : pratique pour essayer un site depuis le téléphone. Depuis les autres appareils, on utilise l'adresse IP de ce PC avec le port du site. Les bases de données et phpMyAdmin restent accessibles uniquement depuis ce PC.",
-            "Das Kästchen „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ öffnet die Websites der Projekte für das Netzwerk: praktisch, um eine Website auf dem Telefon auszuprobieren. Von den anderen Geräten aus verwendest du die IP-Adresse dieses PCs mit dem Port der Website. Datenbanken und phpMyAdmin bleiben nur von diesem PC aus erreichbar.",
+            "La casella «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» apre i siti dei progetti alla rete: utile per provare un sito dal telefono. Dagli altri dispositivi si usa l'indirizzo IP di questo PC con la porta del sito (per esempio http://192.168.1.20:8000). Database e phpMyAdmin restano raggiungibili solo da questo PC.",
+            "The “Let other PCs on the network reach the project servers” checkbox opens the projects' sites to the network: useful to try a site from your phone. From the other devices you use this PC's IP address with the site's port (for example http://192.168.1.20:8000). Databases and phpMyAdmin stay reachable only from this PC.",
+            "La case « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » ouvre les sites des projets au réseau : pratique pour essayer un site depuis le téléphone. Depuis les autres appareils, on utilise l'adresse IP de ce PC avec le port du site (par exemple http://192.168.1.20:8000). Les bases de données et phpMyAdmin restent accessibles uniquement depuis ce PC.",
+            "Das Kästchen „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ öffnet die Websites der Projekte für das Netzwerk: praktisch, um eine Website auf dem Telefon auszuprobieren. Von den anderen Geräten aus verwendest du die IP-Adresse dieses PCs mit dem Port der Website (zum Beispiel http://192.168.1.20:8000). Datenbanken und phpMyAdmin bleiben nur von diesem PC aus erreichbar.",
           )}
         </P>
+        <Bullets
+          items={[
+            tr(
+              "Il server PHP integrato (php -S) e il server di file dei siti statici rispondono a chi li chiama con l'indirizzo IP del PC; con qualsiasi altro nome la richiesta resta rifiutata.",
+              "PHP's built-in server (php -S) and the file server of static sites answer whoever calls them by the PC's IP address; with any other name the request stays refused.",
+              "Le serveur intégré de PHP (php -S) et le serveur de fichiers des sites statiques répondent à qui les appelle par l'adresse IP du PC ; avec tout autre nom, la requête reste refusée.",
+              "Der eingebaute Server von PHP (php -S) und der Dateiserver der statischen Websites antworten jedem, der sie über die IP-Adresse des PCs aufruft; mit jedem anderen Namen bleibt die Anfrage abgelehnt.",
+            ),
+            tr(
+              "Su questo PC un sito statico risponde anche a http://<progetto>.localhost:<porta>, oltre che a localhost e 127.0.0.1, con la casella accesa o spenta.",
+              "On this PC a static site also answers at http://<project>.localhost:<port>, besides localhost and 127.0.0.1, with the checkbox on or off.",
+              "Sur ce PC, un site statique répond aussi à http://<projet>.localhost:<port>, en plus de localhost et 127.0.0.1, la case cochée ou non.",
+              "Auf diesem PC antwortet eine statische Website auch unter http://<Projekt>.localhost:<Port>, neben localhost und 127.0.0.1, ob das Kästchen an ist oder nicht.",
+            ),
+          ]}
+        />
         <Callout tone="warn">
           {tr(
             "Chiunque sia sulla stessa rete potrà vedere i tuoi siti di prova. Attivala su reti di cui ti fidi e spegnila quando hai finito. Windows può chiedere il permesso del firewall la prima volta.",
-            "Anyone on the same network will be able to see your test sites. Turn it on only on networks you trust and turn it off when you are done. Windows may ask for the firewall permission the first time.",
+            "Anyone on the same network will be able to see your test sites. Turn it on on networks you trust and turn it off when you are done. Windows may ask for the firewall permission the first time.",
             "Toute personne sur le même réseau pourra voir vos sites de test. Activez-la sur des réseaux de confiance et désactivez-la quand vous avez fini. Windows peut demander l'autorisation du pare-feu la première fois.",
             "Jeder im selben Netzwerk kann deine Testseiten sehen. Aktiviere die Option in Netzwerken, denen du vertraust, und schalte sie aus, wenn du fertig bist. Windows kann beim ersten Mal nach der Erlaubnis der Firewall fragen.",
           )}
@@ -828,10 +850,10 @@ export const SETTINGS: TopicTexts = {
               "PAC-Dateien (automatische Proxy-Konfiguration) werden nicht unterstützt: Frag nach der Adresse des Proxys.",
             ),
             tr(
-              "«Rete locale» imposta ATOLLO_ALLOW_LAN=1: i comandi dei progetti ascoltano su tutte le interfacce, e così il server di file e i pool di Caddy e Apache.",
-              "“Local network” sets ATOLLO_ALLOW_LAN=1: the projects' commands listen on all interfaces, and so do the file server and the Caddy and Apache pools.",
-              "« Réseau local » définit ATOLLO_ALLOW_LAN=1 : les commandes des projets écoutent sur toutes les interfaces, tout comme le serveur de fichiers et les pools de Caddy et Apache.",
-              "„Lokales Netzwerk“ setzt ATOLLO_ALLOW_LAN=1: Die Befehle der Projekte lauschen auf allen Schnittstellen, ebenso der Dateiserver und die Pools von Caddy und Apache.",
+              "«Rete locale» imposta ATOLLO_ALLOW_LAN=1: i comandi dei progetti ascoltano su tutte le interfacce (127.0.0.1 nel comando diventa 0.0.0.0), e così il server di file e i pool di Caddy e Apache. Il router di php -S e il server di file accettano allora come Host anche un indirizzo IP; a ogni altro nome che non sia localhost, *.localhost, 127.0.0.1 o [::1] rispondono 421.",
+              "“Local network” sets ATOLLO_ALLOW_LAN=1: the projects' commands listen on all interfaces (127.0.0.1 in the command becomes 0.0.0.0), and so do the file server and the Caddy and Apache pools. The php -S router and the file server then also accept an IP address as Host; to any other name that is not localhost, *.localhost, 127.0.0.1 or [::1] they answer 421.",
+              "« Réseau local » définit ATOLLO_ALLOW_LAN=1 : les commandes des projets écoutent sur toutes les interfaces (127.0.0.1 dans la commande devient 0.0.0.0), tout comme le serveur de fichiers et les pools de Caddy et Apache. Le routeur de php -S et le serveur de fichiers acceptent alors aussi une adresse IP comme Host ; à tout autre nom que localhost, *.localhost, 127.0.0.1 ou [::1], ils répondent 421.",
+              "„Lokales Netzwerk“ setzt ATOLLO_ALLOW_LAN=1: Die Befehle der Projekte lauschen auf allen Schnittstellen (127.0.0.1 im Befehl wird zu 0.0.0.0), ebenso der Dateiserver und die Pools von Caddy und Apache. Der Router von php -S und der Dateiserver akzeptieren dann als Host auch eine IP-Adresse; auf jeden anderen Namen als localhost, *.localhost, 127.0.0.1 oder [::1] antworten sie mit 421.",
             ),
           ]}
         />
@@ -1011,10 +1033,10 @@ export const SETTINGS: TopicTexts = {
                 "Datenbank des Kits für das Projekt",
               ),
               tr(
-                "Nessuno, MySQL o MongoDB.",
-                "None, MySQL or MongoDB.",
-                "Aucune, MySQL ou MongoDB.",
-                "Keine, MySQL oder MongoDB.",
+                "Nessuno, MySQL o MongoDB. La password che la procedura genera per il database vince su una vuota della base (per esempio DB_PASSWORD= in .env.example).",
+                "None, MySQL or MongoDB. The password the wizard generates for the database wins over an empty one from the base (for example DB_PASSWORD= in .env.example).",
+                "Aucune, MySQL ou MongoDB. Le mot de passe que l'assistant génère pour la base de données l'emporte sur un mot de passe vide de la base (par exemple DB_PASSWORD= dans .env.example).",
+                "Keine, MySQL oder MongoDB. Das Passwort, das der Assistent für die Datenbank erzeugt, hat Vorrang vor einem leeren aus der Basis (zum Beispiel DB_PASSWORD= in .env.example).",
               ),
             ],
             [

@@ -62,7 +62,7 @@
   "Questo pool non corrisponde più ai progetti e ai profili: fermalo.": {
     "en": "This pool no longer matches the projects and the profiles: stop it.",
     "fr": "Ce pool ne correspond plus aux projets ni aux profils : arrêtez-le.",
-    "de": "Dieser Pool passt nicht mehr zu den Projekten und Profilen: Halte ihn an."
+    "de": "Dieser Pool passt nicht mehr zu den Projekten und Profilen: Beende ihn."
   },
   "La porta {0} è già del server {1}: scegline un'altra.": {
     "en": "Port {0} already belongs to server {1}: choose another one.",
@@ -326,7 +326,7 @@
   },
   "Il server condiviso {0} non è partito: guarda la pagina Server Web.": {
     "en": "The shared server {0} did not start: see the Web Servers page.",
-    "fr": "Le serveur partagé {0} n'a pas démarré : voyez la page Serveurs Web.",
+    "fr": "Le serveur partagé {0} n'a pas démarré : voyez la page Serveurs web.",
     "de": "Der gemeinsame Server {0} ist nicht gestartet: siehe die Seite Webserver."
   },
   "Il server condiviso {0} non è partito ({1}): il sito usa un server tutto suo.": {
@@ -398,11 +398,6 @@
     "en": "No PEM certificate in the file: {0}",
     "fr": "Aucun certificat PEM dans le fichier : {0}",
     "de": "Kein PEM-Zertifikat in der Datei: {0}"
-  },
-  "Versione non valida: {0}": {
-    "en": "Invalid version: {0}",
-    "fr": "Version non valide : {0}",
-    "de": "Ungültige Version: {0}"
   },
   "Il programma deve leggere la porta dalla variabile PORT.": {
     "en": "The program must read the port from the PORT variable.",
@@ -697,7 +692,7 @@
   "VSCodium integrato nella finestra di Atollo": {
     "en": "VSCodium integrated in the Atollo window",
     "fr": "VSCodium intégré à la fenêtre d'Atollo",
-    "de": "VSCodium im Fenster von Atollo"
+    "de": "VSCodium, integriert im Fenster von Atollo"
   },
   "C'è già un'installazione in corso.": {
     "en": "An installation is already running.",
@@ -719,10 +714,10 @@
     "fr": "{0} n'est pas installé.",
     "de": "{0} ist nicht installiert."
   },
-  "Componenti del kit non installati: {0}{1}. Riprova da Linguaggi e strumenti.": {
-    "en": "Kit components not installed: {0}{1}. Try again from Languages and tools.",
-    "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Langages et outils.",
-    "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuche es erneut unter Sprachen und Werkzeuge."
+  "Componenti del kit non installati: {0}{1}. Riprova da Strumenti.": {
+    "en": "Kit components not installed: {0}{1}. Try again from Tools.",
+    "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Outils.",
+    "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuche es erneut unter Werkzeuge."
   },
   "{0} non è disponibile sui PC ARM64.": {
     "en": "{0} is not available on ARM64 PCs.",
@@ -795,7 +790,7 @@
     "de": "Anmeldung abgelaufen: Claude Code öffnen, um sie zu erneuern"
   },
   "accesso scaduto: le quote tornano dopo il prossimo avvio di Antigravity": {
-    "en": "sign-in expired: the quotas come back after Antigravity next starts",
+    "en": "sign-in expired: the quotas come back the next time Antigravity starts",
     "fr": "connexion expirée : les quotas reviennent au prochain démarrage d'Antigravity",
     "de": "Anmeldung abgelaufen: die Kontingente erscheinen nach dem nächsten Start von Antigravity wieder"
   },
@@ -909,11 +904,6 @@
     "fr": "Composer 2.3 et suivants ; pour un PHP plus ancien le kit choisit la 2.2 LTS",
     "de": "Composer 2.3 und neuer; für ältere PHP-Versionen wählt das Kit 2.2 LTS"
   },
-  "modulo php8apache2_4.dll, PHP Thread Safe x64": {
-    "en": "php8apache2_4.dll module, PHP Thread Safe x64",
-    "fr": "module php8apache2_4.dll, PHP Thread Safe x64",
-    "de": "Modul php8apache2_4.dll, PHP Thread Safe x64"
-  },
   "Maven 3.9; Maven 4 vorrà Java 17": {
     "en": "Maven 3.9; Maven 4 will want Java 17",
     "fr": "Maven 3.9 ; Maven 4 demandera Java 17",
@@ -936,7 +926,7 @@
   },
   "senza un Python adatto uv ne scarica uno suo": {
     "en": "without a suitable Python, uv downloads its own",
-    "fr": "sans Python adapté, uv en télécharge un à lui",
+    "fr": "sans Python adapté, uv en télécharge un lui-même",
     "de": "ohne passendes Python lädt uv ein eigenes herunter"
   },
   "serve un compilatore C/C++ per compilare": {
@@ -990,7 +980,7 @@
     "de": "yarn läuft über corepack, das Node.js 22.22, 24.15 oder 26 und neuer verlangt; pnpm ist ein eigenes Programm"
   },
   "Gradle 9 parte con la JDK più recente del kit (dal 17 al 27); il progetto compila con la sua": {
-    "en": "Gradle 9 starts on the kit's newest JDK (17 to 27); the project compiles with its own",
+    "en": "Gradle 9 starts on the kit's latest JDK (17 to 27); the project compiles with its own",
     "fr": "Gradle 9 démarre sur le JDK le plus récent du kit (17 à 27) ; le projet compile avec le sien",
     "de": "Gradle 9 startet auf dem neuesten JDK des Kits (17 bis 27); das Projekt kompiliert mit seinem eigenen"
   },
@@ -1012,7 +1002,7 @@
   "Pannello in /wp/wp-admin, con ADMIN_USER e ADMIN_PASSWORD del file .env. Il sito risponde all'indirizzo con cui lo apri, su qualsiasi porta.": {
     "en": "Dashboard at /wp/wp-admin, with ADMIN_USER and ADMIN_PASSWORD from the .env file. The site answers at the address you open it with, on any port.",
     "fr": "Tableau de bord dans /wp/wp-admin, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env. Le site répond à l'adresse avec laquelle vous l'ouvrez, sur n'importe quel port.",
-    "de": "Dashboard unter /wp/wp-admin, mit ADMIN_USER und ADMIN_PASSWORD aus der .env-Datei. Die Website antwortet unter der Adresse, mit der du sie öffnest, auf jedem Port."
+    "de": "Dashboard unter /wp/wp-admin, mit ADMIN_USER und ADMIN_PASSWORD aus der Datei .env. Die Website antwortet unter der Adresse, mit der du sie öffnest, auf jedem Port."
   },
   "CMS TYPO3 per siti grandi e multilingua": {
     "en": "TYPO3 CMS for large and multilingual sites",
@@ -1022,7 +1012,7 @@
   "Pannello in /typo3, con ADMIN_USER e ADMIN_PASSWORD del file .env. Una password scritta a mano vuole maiuscole, minuscole, cifre e un segno.": {
     "en": "Backend at /typo3, with ADMIN_USER and ADMIN_PASSWORD from the .env file. A password typed by hand needs upper and lower case letters, digits and a symbol.",
     "fr": "Interface d'administration dans /typo3, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env. Un mot de passe saisi à la main demande des majuscules, des minuscules, des chiffres et un symbole.",
-    "de": "Backend unter /typo3, mit ADMIN_USER und ADMIN_PASSWORD aus der .env-Datei. Ein von Hand eingegebenes Passwort braucht Groß- und Kleinbuchstaben, Ziffern und ein Sonderzeichen."
+    "de": "Backend unter /typo3, mit ADMIN_USER und ADMIN_PASSWORD aus der Datei .env. Ein von Hand eingegebenes Passwort braucht Groß- und Kleinbuchstaben, Ziffern und ein Sonderzeichen."
   },
   "CMS Drupal con Drush, per siti e portali strutturati": {
     "en": "Drupal CMS with Drush, for structured sites and portals",
@@ -1032,7 +1022,7 @@
   "Accesso in /user/login, con ADMIN_USER e ADMIN_PASSWORD del file .env.": {
     "en": "Log in at /user/login, with ADMIN_USER and ADMIN_PASSWORD from the .env file.",
     "fr": "Connexion dans /user/login, avec ADMIN_USER et ADMIN_PASSWORD du fichier .env.",
-    "de": "Anmeldung unter /user/login, mit ADMIN_USER und ADMIN_PASSWORD aus der .env-Datei."
+    "de": "Anmeldung unter /user/login, mit ADMIN_USER und ADMIN_PASSWORD aus der Datei .env."
   },
   "CMS su Laravel con i contenuti in file, senza database": {
     "en": "CMS on Laravel with the content in files, without a database",
@@ -1042,7 +1032,7 @@
   "Pannello in /cp: si entra con ADMIN_EMAIL e ADMIN_PASSWORD del file .env.": {
     "en": "Control panel at /cp: log in with ADMIN_EMAIL and ADMIN_PASSWORD from the .env file.",
     "fr": "Panneau de contrôle dans /cp : connectez-vous avec ADMIN_EMAIL et ADMIN_PASSWORD du fichier .env.",
-    "de": "Control Panel unter /cp: Anmeldung mit ADMIN_EMAIL und ADMIN_PASSWORD aus der .env-Datei."
+    "de": "Control Panel unter /cp: Anmeldung mit ADMIN_EMAIL und ADMIN_PASSWORD aus der Datei .env."
   },
   "Sito o applicazione web in TypeScript": {
     "en": "Website or web application in TypeScript",
@@ -1302,7 +1292,7 @@
   "DB_CONNECTION=mariadb nel file .env: il server SQL del kit è MySQL. Usa DB_CONNECTION=mysql: il driver mariadb di Laravel scrive tipi che MySQL non ha.": {
     "en": "DB_CONNECTION=mariadb in the .env file: the kit's SQL server is MySQL. Use DB_CONNECTION=mysql: Laravel's mariadb driver writes types MySQL does not have.",
     "fr": "DB_CONNECTION=mariadb dans le fichier .env : le serveur SQL du kit est MySQL. Utilisez DB_CONNECTION=mysql : le pilote mariadb de Laravel écrit des types que MySQL n'a pas.",
-    "de": "DB_CONNECTION=mariadb in der .env-Datei: Der SQL-Server des Kits ist MySQL. Verwende DB_CONNECTION=mysql: Laravels mariadb-Treiber schreibt Typen, die MySQL nicht kennt."
+    "de": "DB_CONNECTION=mariadb in der Datei .env: Der SQL-Server des Kits ist MySQL. Verwende DB_CONNECTION=mysql: Laravels mariadb-Treiber schreibt Typen, die MySQL nicht kennt."
   },
   "Il kit crea il database del progetto e scrive la connessione nel file .env.": {
     "en": "The kit creates the project's database and writes the connection in the .env file.",
@@ -1466,8 +1456,8 @@
   },
   "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.": {
     "en": "Quit Atollo, open Terminal in the kit's folder and run: xattr -dr com.apple.quarantine {0}. Then open the app again from the kit's folder.",
-    "fr": "Quittez Atollo, ouvrez le Terminal dans le dossier du kit et exécutez : xattr -dr com.apple.quarantine {0}. Puis rouvrez l'app depuis le dossier du kit.",
-    "de": "Beend'Atollo, öffne das Terminal im Ordner des Kits und führe aus: xattr -dr com.apple.quarantine {0}. Öffne die App dann erneut aus dem Ordner des Kits."
+    "fr": "Quittez Atollo, ouvrez le Terminal dans le dossier du kit et exécutez : xattr -dr com.apple.quarantine {0}. Puis rouvrez l'application depuis le dossier du kit.",
+    "de": "Beende Atollo, öffne das Terminal im Ordner des Kits und führe aus: xattr -dr com.apple.quarantine {0}. Öffne die App dann erneut aus dem Ordner des Kits."
   },
   "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.": {
     "en": "The kit's disk is read-only: cannot write to the folder {0}.",
@@ -1581,7 +1571,7 @@
   },
   "Senza terminale le domande del generatore valgono no: niente Tailwind né impostazioni di VS Code, se non scelti come aggiunte.": {
     "en": "Without a terminal the generator's questions count as no: no Tailwind and no VS Code settings unless chosen as additions.",
-    "fr": "Sans terminal, les questions du générateur valent non : ni Tailwind ni réglages VS Code, sauf s'ils sont choisis comme ajouts.",
+    "fr": "Sans terminal, les questions du générateur valent non : ni Tailwind ni paramètres VS Code, sauf s'ils sont choisis comme ajouts.",
     "de": "Ohne Terminal gelten die Fragen des Generators als Nein: kein Tailwind und keine VS-Code-Einstellungen, außer als Ergänzung gewählt."
   },
   "Modello minimo di create-elysia: il server è in main.ts.": {
@@ -1642,7 +1632,7 @@
   "Pannello in /admin, con DJANGO_SUPERUSER_USERNAME e DJANGO_SUPERUSER_PASSWORD del file .env.": {
     "en": "Admin panel at /admin, with DJANGO_SUPERUSER_USERNAME and DJANGO_SUPERUSER_PASSWORD from the .env file.",
     "fr": "Panneau dans /admin, avec DJANGO_SUPERUSER_USERNAME et DJANGO_SUPERUSER_PASSWORD du fichier .env.",
-    "de": "Admin-Oberfläche unter /admin, mit DJANGO_SUPERUSER_USERNAME und DJANGO_SUPERUSER_PASSWORD aus der .env-Datei."
+    "de": "Admin-Oberfläche unter /admin, mit DJANGO_SUPERUSER_USERNAME und DJANGO_SUPERUSER_PASSWORD aus der Datei .env."
   },
   "API web in Python, con la documentazione generata da sola": {
     "en": "Python web API, with documentation generated automatically",
@@ -1722,7 +1712,7 @@
   "Il kit crea il database del progetto e scrive DATABASE_URL nel file .env, che Django legge con dj-database-url.": {
     "en": "The kit creates the project's database and writes DATABASE_URL in the .env file, which Django reads with dj-database-url.",
     "fr": "Le kit crée la base de données du projet et écrit DATABASE_URL dans le fichier .env, que Django lit avec dj-database-url.",
-    "de": "Das Kit legt die Datenbank des Projekts an und schreibt DATABASE_URL in die .env-Datei, die Django mit dj-database-url liest."
+    "de": "Das Kit legt die Datenbank des Projekts an und schreibt DATABASE_URL in die Datei .env, die Django mit dj-database-url liest."
   },
   "Già incluso nel modello Blazor.": {
     "en": "Already included in the Blazor template.",
@@ -1792,17 +1782,17 @@
   "Sito di documentazione in React, pagine in Markdown e MDX": {
     "en": "Documentation site in React, pages in Markdown and MDX",
     "fr": "Site de documentation en React, pages en Markdown et MDX",
-    "de": "Dokumentationsseite in React, Seiten in Markdown und MDX"
+    "de": "Dokumentations-Website in React, Seiten in Markdown und MDX"
   },
   "Sito di documentazione con Astro Starlight, pagine in Markdown": {
     "en": "Documentation site with Astro Starlight, pages in Markdown",
     "fr": "Site de documentation avec Astro Starlight, pages en Markdown",
-    "de": "Dokumentationsseite mit Astro Starlight, Seiten in Markdown"
+    "de": "Dokumentations-Website mit Astro Starlight, Seiten in Markdown"
   },
   "Sito di documentazione veloce con Vue e Vite, pagine in Markdown": {
     "en": "Fast documentation site with Vue and Vite, pages in Markdown",
     "fr": "Site de documentation rapide avec Vue et Vite, pages en Markdown",
-    "de": "Schnelle Dokumentationsseite mit Vue und Vite, Seiten in Markdown"
+    "de": "Schnelle Dokumentations-Website mit Vue und Vite, Seiten in Markdown"
   },
   "Generatore di siti statici semplice, da Markdown e modelli": {
     "en": "Simple static site generator, from Markdown and templates",
@@ -1892,7 +1882,7 @@
   "Documento LaTeX compilato con latexmk": {
     "en": "LaTeX document built with latexmk",
     "fr": "Document LaTeX compilé avec latexmk",
-    "de": "LaTeX-Dokument, mit latexmk übersetzt"
+    "de": "LaTeX-Dokument, mit latexmk kompiliert"
   },
   "I pacchetti LaTeX che mancano si aggiungono con tlmgr install <nome>.": {
     "en": "Add missing LaTeX packages with tlmgr install <name>.",

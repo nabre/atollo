@@ -96,7 +96,7 @@ function PageMap() {
     },
     {
       icon: codicon("globe"),
-      name: tr("Server Web", "Web Servers", "Serveurs Web", "Webserver"),
+      name: tr("Server Web", "Web Servers", "Serveurs web", "Webserver"),
       text: tr(
         "I server Caddy e Apache condivisi fra i progetti e i siti .localhost che servono.",
         "The Caddy and Apache servers shared among projects and the .localhost websites they serve.",
@@ -315,7 +315,7 @@ export const START: TopicTexts = {
                 "Caddy et Apache pour voir vos sites à des adresses comme mio-sito.localhost.",
                 "Caddy und Apache, um deine Websites unter Adressen wie mio-sito.localhost zu sehen.",
               ),
-              tr("Server Web", "Web Servers", "Serveurs Web", "Webserver"),
+              tr("Server Web", "Web Servers", "Serveurs web", "Webserver"),
             ],
             [
               tr("Editor", "Editor", "Éditeur", "Editor"),
@@ -615,10 +615,10 @@ export const START: TopicTexts = {
       >
         <P>
           {tr(
-            "Al primo avvio, al posto delle solite pagine, compare la scheda «Benvenuto in Atollo». Spiega che agenti e linguaggi verranno scaricati dalle fonti ufficiali, verificati e messi nella cartella data del kit, senza installazione e senza diritti di amministratore.",
-            "At the first start, instead of the usual pages, the “Welcome to Atollo” tab appears. It explains that agents and languages will be downloaded from the official sources, checked and placed in the kit's data folder, with no installation and no administrator rights.",
-            "Au premier lancement, à la place des pages habituelles, l'onglet « Bienvenue dans Atollo » apparaît. Il explique que les agents et les langages seront téléchargés depuis les sources officielles, vérifiés et placés dans le dossier data du kit, sans installation et sans droits d'administrateur.",
-            "Beim ersten Start erscheint statt der üblichen Seiten der Tab „Willkommen bei Atollo“. Er erklärt, dass Agenten und Sprachen von den offiziellen Quellen heruntergeladen, geprüft und im Ordner data des Kits abgelegt werden, ohne Installation und ohne Administratorrechte.",
+            "Al primo avvio, al posto delle solite pagine, compare la scheda «Benvenuto», con il titolo «Benvenuto in Atollo». Spiega che agenti e linguaggi verranno scaricati dalle fonti ufficiali, verificati e messi nella cartella data del kit, senza installazione e senza diritti di amministratore.",
+            "At the first start, instead of the usual pages, the “Welcome” tab appears, with the title “Welcome to Atollo”. It explains that agents and languages will be downloaded from the official sources, checked and placed in the kit's data folder, with no installation and no administrator rights.",
+            "Au premier lancement, à la place des pages habituelles, l'onglet « Bienvenue » apparaît, avec le titre « Bienvenue dans Atollo ». Il explique que les agents et les langages seront téléchargés depuis les sources officielles, vérifiés et placés dans le dossier data du kit, sans installation et sans droits d'administrateur.",
+            "Beim ersten Start erscheint statt der üblichen Seiten der Tab „Willkommen“ mit dem Titel „Willkommen bei Atollo“. Er erklärt, dass Agenten und Sprachen von den offiziellen Quellen heruntergeladen, geprüft und im Ordner data des Kits abgelegt werden, ohne Installation und ohne Administratorrechte.",
           )}
         </P>
         <P>
@@ -980,7 +980,7 @@ export const START: TopicTexts = {
               tr(
                 "Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database e pool dei server web.",
                 "The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions and web server pools.",
-                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Bases de données, Serveurs Web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données et pools de serveurs web.",
+                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Bases de données, Serveurs web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données et pools de serveurs web.",
                 "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, Agenten, Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Dinge laufen: Projektaktionen, Datenbankversionen und Webserver-Pools.",
               ),
             ],
@@ -1019,10 +1019,10 @@ export const START: TopicTexts = {
             [
               tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste"),
               tr(
-                "A sinistra il contatore di ciò che è in esecuzione e degli errori; a destra lo stato dell'editor, il sistema (per esempio win32-x64) e la versione di Atollo.",
-                "On the left the counter of what is running and of the errors; on the right the editor status, the system (for example win32-x64) and the Atollo version.",
-                "À gauche, le compteur de ce qui est en cours d'exécution et des erreurs ; à droite, l'état de l'éditeur, le système (par exemple win32-x64) et la version d'Atollo.",
-                "Links der Zähler dessen, was läuft, und der Fehler; rechts der Status des Editors, das System (zum Beispiel win32-x64) und die Atollo-Version.",
+                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti (macOS e Linux), lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello.",
+                "On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals (macOS and Linux), the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel.",
+                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs ; à droite, les terminaux ouverts (macOS et Linux), l'état de l'éditeur, le système (par exemple win32-x64), la version d'Atollo et, en dernier, l'icône qui affiche ou masque le panneau.",
+                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler; rechts die geöffneten Terminals (macOS und Linux), der Status des Editors, das System (zum Beispiel win32-x64), die Atollo-Version und als Letztes das Symbol, das den Bereich ein- oder ausblendet.",
               ),
             ],
           ]}
@@ -1061,10 +1061,10 @@ export const START: TopicTexts = {
             [
               tr("▶ numero · ⨯ numero", "▶ number · ⨯ number", "▶ nombre · ⨯ nombre", "▶ Zahl · ⨯ Zahl"),
               tr(
-                "Quante cose sono in esecuzione (azioni dei progetti, versioni dei database, pool dei server web) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore.",
-                "How many things are running (project actions, database versions, web server pools) and how many actions stopped with an error. It turns red if there is at least one error.",
-                "Combien de choses sont en cours d'exécution (actions de projet, versions des bases de données, pools de serveurs web) et combien d'actions se sont arrêtées sur une erreur. Il devient rouge s'il y a au moins une erreur.",
-                "Wie viele Dinge laufen (Projektaktionen, Datenbankversionen, Webserver-Pools) und wie viele Aktionen mit einem Fehler beendet wurden. Es wird rot, wenn es mindestens einen Fehler gibt.",
+                "Quante cose sono in esecuzione (azioni dei progetti, ogni versione dei database accesa, anche più d'una dello stesso database, e i pool dei server web accesi) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore.",
+                "How many things are running (project actions, every running database version, even several of the same database, and the running web server pools) and how many actions stopped with an error. It turns red if there is at least one error.",
+                "Combien de choses sont en cours d'exécution (actions de projet, chaque version de base de données allumée, même plusieurs de la même base, et les pools de serveurs web allumés) et combien d'actions se sont arrêtées sur une erreur. Il devient rouge s'il y a au moins une erreur.",
+                "Wie viele Dinge laufen (Projektaktionen, jede eingeschaltete Datenbankversion, auch mehrere derselben Datenbank, und die eingeschalteten Webserver-Pools) und wie viele Aktionen mit einem Fehler beendet wurden. Es wird rot, wenn es mindestens einen Fehler gibt.",
               ),
               tr(
                 "Apre o chiude il pannello «Attività».",
@@ -1082,16 +1082,6 @@ export const START: TopicTexts = {
                 "Eine laufende Installation von Komponenten und der Schritt, den sie gerade ausführt.",
               ),
               tr("Apre il pannello.", "Opens the panel.", "Ouvre le panneau.", "Öffnet den Bereich."),
-            ],
-            [
-              tr("Editor attivo", "Editor running", "Éditeur actif", "Editor aktiv"),
-              tr(
-                "Il server dell'editor è acceso (passandoci sopra, il suo indirizzo).",
-                "The editor server is on (hovering over it shows its address).",
-                "Le serveur de l'éditeur est allumé (au survol, son adresse).",
-                "Der Server des Editors läuft (beim Darüberfahren seine Adresse).",
-              ),
-              tr("—", "—", "—", "—"),
             ],
             [
               tr(
@@ -1114,6 +1104,16 @@ export const START: TopicTexts = {
               ),
             ],
             [
+              tr("Editor attivo", "Editor running", "Éditeur actif", "Editor aktiv"),
+              tr(
+                "Il server dell'editor è acceso (passandoci sopra, il suo indirizzo).",
+                "The editor server is on (hovering over it shows its address).",
+                "Le serveur de l'éditeur est allumé (au survol, son adresse).",
+                "Der Server des Editors läuft (beim Darüberfahren seine Adresse).",
+              ),
+              tr("—", "—", "—", "—"),
+            ],
+            [
               tr(
                 "win32-x64, darwin-arm64…",
                 "win32-x64, darwin-arm64…",
@@ -1133,14 +1133,34 @@ export const START: TopicTexts = {
               tr("La versione di Atollo.", "The Atollo version.", "La version d'Atollo.", "Die Atollo-Version."),
               tr("—", "—", "—", "—"),
             ],
+            [
+              tr(
+                "Icona del pannello (l'ultima a destra)",
+                "Panel icon (the last on the right)",
+                "Icône du panneau (la dernière à droite)",
+                "Symbol des Bereichs (das letzte rechts)",
+              ),
+              tr(
+                "Passandoci sopra dice «Mostra il pannello» o «Nascondi il pannello».",
+                "Hovering over it says “Show the panel” or “Hide the panel”.",
+                "Au survol, il indique « Afficher le panneau » ou « Masquer le panneau ».",
+                "Beim Darüberfahren zeigt es „Panel anzeigen“ oder „Panel ausblenden“.",
+              ),
+              tr(
+                "Apre o chiude il pannello «Attività».",
+                "Opens or closes the “Activity” panel.",
+                "Ouvre ou ferme le panneau « Activité ».",
+                "Öffnet oder schließt den Bereich „Aktivität“.",
+              ),
+            ],
           ]}
         />
         <P>
           {tr(
-            "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma». «Ferma tutto», in alto, chiede conferma e poi ferma azioni, database e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
-            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks for a confirmation and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
-            "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter » ; pour un pool de serveurs web, l'adresse, les VirtualHosts rattachés et « Arrêter ». « Tout arrêter », en haut, demande une confirmation puis arrête actions, bases de données et pools. S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
-            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“. „Alle beenden“ oben fragt nach einer Bestätigung und beendet dann Aktionen, Datenbanken und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
+            "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database e i server web in esecuzione?» e poi ferma azioni, database e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
+            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks “Stop the running project actions, databases and web servers?” and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
+            "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter » ; pour un pool de serveurs web, l'adresse, les VirtualHosts rattachés et « Arrêter ». « Tout arrêter », en haut, demande « Arrêter les actions des projets, les bases de données et les serveurs web en cours d'exécution ? » puis arrête actions, bases de données et pools. S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
+            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“. „Alle beenden“ oben fragt „Die laufenden Projektaktionen, Datenbanken und Webserver beenden?“ und beendet dann Aktionen, Datenbanken und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
           )}
         </P>
       </Section>
@@ -1171,10 +1191,10 @@ export const START: TopicTexts = {
             [
               <Key key="e">Esc</Key>,
               tr(
-                "Chiude le finestre di conferma e lo zoom delle immagini.",
-                "Closes confirmation dialogs and image zoom.",
-                "Ferme les fenêtres de confirmation et le zoom des images.",
-                "Schließt Bestätigungsdialoge und die Bildvergrößerung.",
+                "Chiude le finestre di conferma e lo zoom delle immagini, e annulla le domande nella pagina (per esempio quella di «Ferma tutto» o della rimozione di un terminale).",
+                "Closes confirmation dialogs and image zoom, and cancels the questions in the page (for example the one of “Stop all” or of removing a terminal).",
+                "Ferme les fenêtres de confirmation et le zoom des images, et annule les questions dans la page (par exemple celle de « Tout arrêter » ou de la suppression d'un terminal).",
+                "Schließt Bestätigungsdialoge und die Bildvergrößerung und bricht die Fragen in der Seite ab (zum Beispiel die von „Alle beenden“ oder beim Entfernen eines Terminals).",
               ),
             ],
           ]}

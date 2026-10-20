@@ -73,10 +73,10 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       path: "app\\",
       depth: 2,
       text: tr(
-        "Lo stato dell'app: settings.json (Impostazioni), components.txt (componenti scelti), versions\\ (versioni installate), logs\\, services.json e servers.json (database e server web), terminals.json, frameworks.json, root.txt (ultima cartella del kit).",
-        "The app's state: settings.json (Settings), components.txt (chosen components), versions\\ (installed versions), logs\\, services.json and servers.json (databases and web servers), terminals.json, frameworks.json, root.txt (last kit folder).",
-        "L'état de l'application : settings.json (Paramètres), components.txt (composants choisis), versions\\ (versions installées), logs\\, services.json et servers.json (bases de données et serveurs web), terminals.json, frameworks.json, root.txt (dernier dossier du kit).",
-        "Der Zustand der App: settings.json (Einstellungen), components.txt (gewählte Komponenten), versions\\ (installierte Versionen), logs\\, services.json und servers.json (Datenbanken und Webserver), terminals.json, frameworks.json, root.txt (letzter Kit-Ordner).",
+        "Lo stato dell'app: settings.json (Impostazioni), secrets\\ (la chiave di Gemini, protetta), ca-bundle.pem (i certificati, se le Impostazioni hanno un file PEM), components.txt (componenti scelti), versions\\ (versioni installate), logs\\, services.json e servers.json (database e server web, con le porte di ogni versione e di ogni pool), terminals.json, frameworks.json, root.txt (ultima cartella del kit), safe-directory.txt (l'ultimo safe.directory scritto dal kit).",
+        "The app's state: settings.json (Settings), secrets\\ (the Gemini key, protected), ca-bundle.pem (the certificates, when Settings has a PEM file), components.txt (chosen components), versions\\ (installed versions), logs\\, services.json and servers.json (databases and web servers, with the ports of every version and every pool), terminals.json, frameworks.json, root.txt (last kit folder), safe-directory.txt (the last safe.directory the kit wrote).",
+        "L'état de l'application : settings.json (Paramètres), secrets\\ (la clé de Gemini, protégé), ca-bundle.pem (les certificats, si les Paramètres ont un fichier PEM), components.txt (composants choisis), versions\\ (versions installées), logs\\, services.json et servers.json (bases de données et serveurs web, avec les ports de chaque version et de chaque pool), terminals.json, frameworks.json, root.txt (dernier dossier du kit), safe-directory.txt (le dernier safe.directory écrit par le kit).",
+        "Der Zustand der App: settings.json (Einstellungen), secrets\\ (der Gemini-Schlüssel, geschützt), ca-bundle.pem (die Zertifikate, wenn die Einstellungen eine PEM-Datei haben), components.txt (gewählte Komponenten), versions\\ (installierte Versionen), logs\\, services.json und servers.json (Datenbanken und Webserver, mit den Ports jeder Version und jedes Pools), terminals.json, frameworks.json, root.txt (letzter Kit-Ordner), safe-directory.txt (das letzte vom Kit geschriebene safe.directory).",
       ),
     },
     {
@@ -103,10 +103,10 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       path: tr("projects\\<progetto>\\", "projects\\<project>\\", "projects\\<projet>\\", "projects\\<Projekt>\\"),
       depth: 2,
       text: tr(
-        "I dati del kit per ogni progetto: dev-settings.json (versioni, estensioni, preferiti), ports.json, configurazioni di Apache e Caddy, private\\ (password e copie dei database, protetta).",
-        "The kit's data for each project: dev-settings.json (versions, extensions, favorites), ports.json, Apache and Caddy configurations, private\\ (database passwords and backups, protected).",
-        "Les données du kit pour chaque projet : dev-settings.json (versions, extensions, favoris), ports.json, configurations d'Apache et Caddy, private\\ (mots de passe et copies des bases de données, protégé).",
-        "Die Daten des Kits für jedes Projekt: dev-settings.json (Versionen, Erweiterungen, Favoriten), ports.json, Konfigurationen von Apache und Caddy, private\\ (Passwörter und Sicherungen der Datenbanken, geschützt).",
+        "I dati del kit per ogni progetto: dev-settings.json (versioni, estensioni, preferiti), ports.json (le porte delle sue azioni), configurazioni di Apache e Caddy (le tue direttive in apache\\conf.d\\*.conf e caddy\\conf.d\\*.caddy valgono sia per il server tutto suo sia in un pool), private\\ (password e copie dei database, protetta).",
+        "The kit's data for each project: dev-settings.json (versions, extensions, favorites), ports.json (the ports of its actions), Apache and Caddy configurations (your directives in apache\\conf.d\\*.conf and caddy\\conf.d\\*.caddy apply both to its own server and in a pool), private\\ (database passwords and backups, protected).",
+        "Les données du kit pour chaque projet : dev-settings.json (versions, extensions, favoris), ports.json (les ports de ses actions), configurations d'Apache et Caddy (vos directives dans apache\\conf.d\\*.conf et caddy\\conf.d\\*.caddy valent aussi bien pour son propre serveur que dans un pool), private\\ (mots de passe et copies des bases de données, protégé).",
+        "Die Daten des Kits für jedes Projekt: dev-settings.json (Versionen, Erweiterungen, Favoriten), ports.json (die Ports seiner Aktionen), Konfigurationen von Apache und Caddy (deine Direktiven in apache\\conf.d\\*.conf und caddy\\conf.d\\*.caddy gelten für seinen eigenen Server wie auch in einem Pool), private\\ (Passwörter und Sicherungen der Datenbanken, geschützt).",
       ),
     },
     {
@@ -255,12 +255,16 @@ function SourcesTable({ components }: { components: ComponentInfo[] | null }) {
   }, [query, cat]);
   const cats: { id: "all" | SourceCategory; label: string }[] = [
     { id: "all", label: `${tr("Tutti", "All", "Tous", "Alle")} (${String(TOOL_SOURCES.length)})` },
-    { id: "agents", label: tr("Agenti", "Agents", "Agents", "Agenten") },
+    { id: "system", label: tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor") },
+    { id: "agents", label: tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten") },
     { id: "languages", label: tr("Linguaggi", "Languages", "Langages", "Sprachen") },
+    {
+      id: "tools",
+      label: tr("Strumenti di sviluppo", "Development tools", "Outils de développement", "Entwicklungswerkzeuge"),
+    },
+    { id: "web", label: tr("Server web", "Web servers", "Serveurs web", "Webserver") },
     { id: "databases", label: tr("Database", "Databases", "Bases de données", "Datenbanken") },
-    { id: "tools", label: tr("Strumenti", "Tools", "Outils", "Werkzeuge") },
     { id: "part", label: tr("Parti", "Parts", "Parties", "Teile") },
-    { id: "app", label: tr("App ed editor", "App and editor", "Application et éditeur", "App und Editor") },
   ];
   return (
     <>
@@ -482,6 +486,19 @@ export const INSIDE: TopicTexts = {
                 "The folders of the kit's programs, at the versions in use",
                 "Les dossiers des programmes du kit, aux versions utilisées",
                 "Die Ordner der Programme des Kits, in den verwendeten Versionen",
+              ),
+            ],
+            [
+              tr("Certificati", "Certificates", "Certificats", "Zertifikate"),
+              <Code key="o">
+                SSL_CERT_FILE, REQUESTS_CA_BUNDLE, PIP_CERT, CURL_CA_BUNDLE, GIT_SSL_CAINFO, CARGO_HTTP_CAINFO,
+                NODE_EXTRA_CA_CERTS
+              </Code>,
+              tr(
+                "Solo con un file PEM in Impostazioni › Rete: data\\app\\ca-bundle.pem (i certificati del sistema più quelli del file); Node.js riceve il file PEM",
+                "Only with a PEM file in Settings › Network: data\\app\\ca-bundle.pem (the system's certificates plus those of the file); Node.js gets the PEM file",
+                "Seulement avec un fichier PEM dans Paramètres › Réseau : data\\app\\ca-bundle.pem (les certificats du système plus ceux du fichier) ; Node.js reçoit le fichier PEM",
+                "Nur mit einer PEM-Datei unter Einstellungen › Netzwerk: data\\app\\ca-bundle.pem (die Zertifikate des Systems plus die der Datei); Node.js erhält die PEM-Datei",
               ),
             ],
             [
@@ -731,10 +748,10 @@ export const INSIDE: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Cartelle protette (solo il tuo utente, su NTFS; permessi 700 su macOS e Linux): data\\app\\db, data\\projects\\<progetto>\\private, data\\agents\\claude, data\\tmp quando è la cartella temporanea di Claude.",
-              "Protected folders (only your user, on NTFS; permissions 700 on macOS and Linux): data\\app\\db, data\\projects\\<project>\\private, data\\agents\\claude, data\\tmp when it is Claude's temporary folder.",
-              "Dossiers protégés (seulement votre utilisateur, sur NTFS ; permissions 700 sur macOS et Linux) : data\\app\\db, data\\projects\\<projet>\\private, data\\agents\\claude, data\\tmp quand c'est le dossier temporaire de Claude.",
-              "Geschützte Ordner (nur dein Benutzer, auf NTFS; Berechtigungen 700 unter macOS und Linux): data\\app\\db, data\\projects\\<Projekt>\\private, data\\agents\\claude, data\\tmp, wenn es der temporäre Ordner von Claude ist.",
+              "Cartelle protette (solo il tuo utente, su NTFS; permessi 700 su macOS e Linux): data\\app\\db, data\\app\\secrets, data\\projects\\<progetto>\\private, data\\agents\\claude, data\\tmp quando è la cartella temporanea di Claude.",
+              "Protected folders (only your user, on NTFS; permissions 700 on macOS and Linux): data\\app\\db, data\\app\\secrets, data\\projects\\<project>\\private, data\\agents\\claude, data\\tmp when it is Claude's temporary folder.",
+              "Dossiers protégés (seulement votre utilisateur, sur NTFS ; permissions 700 sur macOS et Linux) : data\\app\\db, data\\app\\secrets, data\\projects\\<projet>\\private, data\\agents\\claude, data\\tmp quand c'est le dossier temporaire de Claude.",
+              "Geschützte Ordner (nur dein Benutzer, auf NTFS; Berechtigungen 700 unter macOS und Linux): data\\app\\db, data\\app\\secrets, data\\projects\\<Projekt>\\private, data\\agents\\claude, data\\tmp, wenn es der temporäre Ordner von Claude ist.",
             ),
             tr(
               "Su exFAT e FAT32 i permessi non esistono: il kit funziona, ma quelle cartelle non sono protette.",
@@ -829,10 +846,10 @@ export const INSIDE: TopicTexts = {
             {
               title: tr("Sottofondo", "Background", "Arrière-plan", "Hintergrund"),
               text: tr(
-                "Avvia ciò che è segnato «Avvia con Atollo», allinea gli agenti, controlla aggiornamenti.",
-                "Starts what is marked “Start with Atollo”, syncs the agents, checks for updates.",
-                "Lance ce qui est marqué « Démarrer avec Atollo », aligne les agents, vérifie les mises à jour.",
-                "Startet, was mit „Mit Atollo starten“ markiert ist, gleicht die Agenten ab, sucht nach Updates.",
+                "Avvia ciò che è segnato «Avvia con Atollo», allinea gli agenti e Git, controlla aggiornamenti.",
+                "Starts what is marked “Start with Atollo”, syncs the agents and Git, checks for updates.",
+                "Lance ce qui est marqué « Démarrer avec Atollo », aligne les agents et Git, vérifie les mises à jour.",
+                "Startet, was mit „Mit Atollo starten“ markiert ist, gleicht die Agenten und Git ab, sucht nach Updates.",
               ),
             },
           ]}
@@ -856,6 +873,18 @@ export const INSIDE: TopicTexts = {
               "The agents' instructions, skills and MCP servers are synced; if the kit has been moved, the paths are updated.",
               "Les instructions, skills et serveurs MCP des agents sont alignés ; si le kit a été déplacé, les chemins sont mis à jour.",
               "Anweisungen, Skills und MCP-Server der Agenten werden abgeglichen; wenn das Kit verschoben wurde, werden die Pfade aktualisiert.",
+            ),
+            tr(
+              "Git segue la cartella del kit (safe.directory) e l'account GitHub: se «Chi firma i commit» è vuoto, nome e indirizzo privato vengono dall'account.",
+              "Git follows the kit folder (safe.directory) and the GitHub account: if “Who signs the commits” is empty, the name and private address come from the account.",
+              "Git suit le dossier du kit (safe.directory) et le compte GitHub : si « Qui signe les commits » est vide, le nom et l'adresse privée viennent du compte.",
+              "Git folgt dem Kit-Ordner (safe.directory) und dem GitHub-Konto: Wenn „Wer die Commits signiert“ leer ist, kommen Name und private Adresse vom Konto.",
+            ),
+            tr(
+              "Dopo 10 secondi, le versioni offerte da ogni fonte, per i menu che ne scaricano una (al massimo una volta al giorno).",
+              "After 10 seconds, the versions each source offers, for the menus that download one (at most once a day).",
+              "Après 10 secondes, les versions proposées par chaque source, pour les menus qui en téléchargent une (au plus une fois par jour).",
+              "Nach 10 Sekunden die Versionen, die jede Quelle anbietet, für die Menüs, die eine herunterladen (höchstens einmal am Tag).",
             ),
             tr(
               "Dopo 20 secondi, se attivo, il controllo degli aggiornamenti di Atollo (spegnere «Aggiornamento automatico» prima lo ferma).",
@@ -896,16 +925,16 @@ export const INSIDE: TopicTexts = {
             [
               tr("Server web condivisi", "Shared web servers", "Serveurs web partagés", "Gemeinsame Webserver"),
               tr(
-                "Con il primo progetto che li usa, o dalla pagina Server Web",
-                "With the first project that uses them, or from the Web Servers page",
-                "Avec le premier projet qui les utilise, ou depuis la page Serveurs Web",
-                "Mit dem ersten Projekt, das sie nutzt, oder über die Seite Webserver",
+                "Con il primo progetto che li usa, dalla pagina Server Web o con «Avvia con Atollo»",
+                "With the first project that uses them, from the Web Servers page or with “Start with Atollo”",
+                "Avec le premier projet qui les utilise, depuis la page Serveurs web ou avec « Démarrer avec Atollo »",
+                "Mit dem ersten Projekt, das sie nutzt, über die Seite Webserver oder mit „Mit Atollo starten“",
               ),
               tr(
-                "Con l'ultimo progetto, salvo «Mantieni attivo»; alla chiusura",
-                "With the last project, unless “Keep running”; on closing",
-                "Avec le dernier projet, sauf « Garder actif » ; à la fermeture",
-                "Mit dem letzten Projekt, außer bei „Aktiv lassen“; beim Schließen",
+                "Con l'ultimo progetto, salvo se avviati dalla pagina Server Web o con «Mantieni attivo anche senza progetti»; con «Ferma»; alla chiusura",
+                "With the last project, unless started from the Web Servers page or with “Keep running even without projects”; with “Stop”; on closing",
+                "Avec le dernier projet, sauf s'ils ont été démarrés depuis la page Serveurs web ou avec « Garder actif même sans projets » ; avec « Arrêter » ; à la fermeture",
+                "Mit dem letzten Projekt, außer wenn über die Seite Webserver gestartet oder mit „Auch ohne Projekte aktiv lassen“; mit „Beenden“; beim Schließen",
               ),
             ],
             [
@@ -957,10 +986,10 @@ export const INSIDE: TopicTexts = {
         />
         <P>
           {tr(
-            "Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app.",
-            "Closing a console does not shut down the databases: they stay on until you stop them or close the app.",
-            "Fermer une console n'arrête pas les bases de données : elles restent allumées jusqu'à ce que vous les arrêtiez ou fermiez l'application.",
-            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt.",
+            "Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata e i pool attivi; «Ferma tutto» li ferma dopo una conferma.",
+            "Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version and the active pools; “Stop all” stops them after a confirmation.",
+            "Fermer une console n'arrête pas les bases de données : elles restent allumées jusqu'à ce que vous les arrêtiez ou fermiez l'application. Le panneau Activité (depuis la barre d'état) liste les actions des projets, chaque version de base de données démarrée et les pools actifs ; « Tout arrêter » les arrête après une confirmation.",
+            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt. Das Panel Aktivität (über die Statusleiste) listet die Aktionen der Projekte, jede gestartete Datenbankversion und die aktiven Pools auf; „Alle beenden“ stoppt sie nach einer Bestätigung.",
           )}
         </P>
       </Section>
@@ -999,6 +1028,18 @@ export const INSIDE: TopicTexts = {
               "The single instance uses an identifier derived from the kit folder (a mutex on Windows, a lock on macOS and Linux): two different kits do not get in each other's way.",
               "L'instance unique utilise un identifiant tiré du dossier du kit (un mutex sur Windows, un verrou sur macOS et Linux) : deux kits différents ne se gênent pas.",
               "Die Einzelinstanz verwendet eine aus dem Kit-Ordner abgeleitete Kennung (ein Mutex unter Windows, ein Lock unter macOS und Linux): Zwei verschiedene Kits stören sich nicht.",
+            ),
+            tr(
+              "Ogni porta ha un solo proprietario: un pool (di base da 8081 a 8999), una versione di database, un'azione di un progetto (di base da 7100 a 7999); da 7000 a 7099 sono dell'editor. Una porta già presa viene rifiutata con il nome di chi la tiene (per esempio «La porta 3306 è già del database MySQL 8.4: scegline un'altra.»), e la porta automatica di un nuovo pool le evita tutte.",
+              "Every port has only one owner: a pool (by default 8081 to 8999), a database version, a project action (by default 7100 to 7999); 7000 to 7099 belong to the editor. A port already taken is refused with the name of whoever holds it (for example “Port 3306 already belongs to database MySQL 8.4: choose another one.”), and a new pool's automatic port avoids them all.",
+              "Chaque port n'a qu'un seul propriétaire : un pool (par défaut de 8081 à 8999), une version de base de données, une action d'un projet (par défaut de 7100 à 7999) ; de 7000 à 7099, ils sont à l'éditeur. Un port déjà pris est refusé avec le nom de celui qui le tient (par exemple « Le port 3306 appartient déjà à la base de données MySQL 8.4 : choisissez-en un autre. »), et le port automatique d'un nouveau pool les évite tous.",
+              "Jeder Port hat nur einen Besitzer: einen Pool (standardmäßig 8081 bis 8999), eine Datenbankversion, eine Aktion eines Projekts (standardmäßig 7100 bis 7999); 7000 bis 7099 gehören dem Editor. Ein bereits vergebener Port wird mit dem Namen dessen abgelehnt, der ihn hält (zum Beispiel „Port 3306 gehört bereits zur Datenbank MySQL 8.4: Wähle einen anderen.“), und der automatische Port eines neuen Pools meidet sie alle.",
+            ),
+            tr(
+              "Ogni versione di un database tiene la sua porta, anche quando cambi la versione del server; due avvii della stessa versione fanno partire un solo server, sulla stessa porta.",
+              "Every version of a database keeps its own port, also when you change the server's version; two starts of the same version run only one server, on the same port.",
+              "Chaque version d'une base de données garde son propre port, même quand vous changez la version du serveur ; deux démarrages de la même version ne lancent qu'un seul serveur, sur le même port.",
+              "Jede Version einer Datenbank behält ihren eigenen Port, auch wenn du die Version des Servers wechselst; zwei Starts derselben Version starten nur einen Server, auf demselben Port.",
             ),
             tr(
               "Browser ed Esplora file vengono aperti fuori dal Job: restano aperti anche dopo la chiusura di Atollo.",
@@ -1281,10 +1322,10 @@ export const INSIDE: TopicTexts = {
             [
               <Code key="c">api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com</Code>,
               tr(
-                "I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura.",
-                "The limits of the agents' plans, with the saved sign-in, read-only.",
-                "Les limites des forfaits des agents, avec la connexion enregistrée, en lecture seule.",
-                "Die Limits der Tarife der Agenten, mit der gespeicherten Anmeldung, nur lesend.",
+                "I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura e solo con la pagina Agenti aperta.",
+                "The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open.",
+                "Les limites des forfaits des agents, avec la connexion enregistrée, en lecture seule et seulement avec la page Agents ouverte.",
+                "Die Limits der Tarife der Agenten, mit der gespeicherten Anmeldung, nur lesend und nur bei geöffneter Seite Agenten.",
               ),
             ],
             [
@@ -1337,10 +1378,10 @@ export const INSIDE: TopicTexts = {
               "Drei Versuche im Abstand von 5 und 10 Sekunden; der Download beginnt bei jedem Versuch von vorn.",
             ),
             tr(
-              "Connessioni con i certificati del sistema: l'ispezione HTTPS aziendale funziona se il suo certificato è installato nel PC.",
-              "Connections use the system's certificates: company HTTPS inspection works if its certificate is installed on the PC.",
-              "Connexions avec les certificats du système : l'inspection HTTPS de l'entreprise fonctionne si son certificat est installé sur le PC.",
-              "Verbindungen mit den Zertifikaten des Systems: Die HTTPS-Untersuchung der Firma funktioniert, wenn ihr Zertifikat auf dem PC installiert ist.",
+              "Connessioni con il proxy delle Impostazioni e con i certificati del sistema più quelli di «Certificati aggiuntivi (file PEM)»: l'ispezione HTTPS di un firewall funziona se il suo certificato è installato nel PC o è in quel file.",
+              "Connections use the proxy of Settings and the system's certificates plus those of “Additional certificates (PEM file)”: a firewall's HTTPS inspection works if its certificate is installed on the PC or is in that file.",
+              "Connexions avec le proxy des Paramètres et les certificats du système plus ceux de « Certificats supplémentaires (fichier PEM) » : l'inspection HTTPS d'un pare-feu fonctionne si son certificat est installé sur le PC ou se trouve dans ce fichier.",
+              "Verbindungen mit dem Proxy der Einstellungen und den Zertifikaten des Systems plus denen von „Zusätzliche Zertifikate (PEM-Datei)“: Die HTTPS-Untersuchung einer Firewall funktioniert, wenn ihr Zertifikat auf dem PC installiert ist oder in dieser Datei steht.",
             ),
             tr(
               "La versione installata viene scritta in data\\app\\versions\\<sistema>\\<componente>.txt.",
