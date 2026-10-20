@@ -770,6 +770,68 @@ describe("App", () => {
     expect(screen.getByText("installato 2.56")).toBeTruthy();
   });
 
+  it("counts a database version running beside a stopped main one, and an active pool (UX-V5-01)", async () => {
+    const mysql = {
+      id: "mysql",
+      name: "MySQL",
+      installed: true,
+      state: "stopped",
+      port: 3306,
+      autostart: false,
+      dataDir: "E:\\My Atollo\\data\\db\\mysql\\9.7",
+      log: "E:\\My Atollo\\data\\app\\logs\\mysql.log",
+      url: "mysql://root@127.0.0.1:3306/",
+      user: "root",
+      password: null,
+      message: null,
+      line: "9.7",
+      lines: ["9.7", "8.4"],
+      others: [
+        {
+          line: "8.4",
+          state: "running",
+          port: 3307,
+          dataDir: "E:\\My Atollo\\data\\db\\mysql\\8.4",
+          log: "E:\\My Atollo\\data\\app\\logs\\mysql-8.4.log",
+          url: "mysql://root@127.0.0.1:3307/",
+          message: null,
+        },
+      ],
+    };
+    const pool = {
+      id: "caddy-2.11",
+      name: "Caddy 2.11",
+      engine: "caddy",
+      serverLine: "2.11",
+      phpLine: null,
+      port: 8090,
+      running: true,
+      pid: 42,
+      manual: false,
+      sites: [],
+      confDir: "data\\servers\\caddy-2.11",
+      orphan: false,
+      profile: null,
+    };
+    const servers = (pools: unknown[]) => ({ pools, apacheLines: [], caddyLines: [], phpLines: [] });
+    invoke.mockImplementation(answers({ services_list: [mysql], servers_list: servers([]) }));
+    render(<App />);
+    const bar = within(screen.getByRole("contentinfo", { name: "Barra di stato" }));
+    expect(await bar.findByLabelText("In esecuzione: 1")).toBeTruthy();
+    // The same count on the Projects icon
+    expect(screen.getByTitle("Progetti - In esecuzione: 1")).toBeTruthy();
+    cleanup();
+
+    invoke.mockImplementation(answers({ services_list: [mysql], servers_list: servers([pool]) }));
+    render(<App />);
+    const again = within(screen.getByRole("contentinfo", { name: "Barra di stato" }));
+    expect(await again.findByLabelText("In esecuzione: 2")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
+    const list = within(screen.getByRole("list", { name: "Attività" }));
+    expect(list.getByText("MySQL 8.4")).toBeTruthy();
+    expect(list.getByText("Caddy 2.11")).toBeTruthy();
+  });
+
   it("shows the first-start choice and applies it", async () => {
     const comps = [
       {
