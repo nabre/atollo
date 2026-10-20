@@ -1,6 +1,9 @@
 // What jsdom lacks for the Lit components of @vscode-elements/elements;
-// the app's WebView2 has all of it. Lit itself falls back from
-// adoptedStyleSheets to <style> elements on its own.
+// the app's WebView2 has all of it. Lit adopts its styles, it adds no
+// <style> elements: jsdom builds constructed style sheets (CSSStyleSheet,
+// replaceSync) and, with document.adoptedStyleSheets below, Lit finds
+// adoptedStyleSheets supported when it loads, after this file. A shadow
+// root keeps the list it is given and applies none of it (no layout here).
 
 // Form-associated custom elements: jsdom's ElementInternals has the ARIA
 // part only. The form part, as a browser gives it to an element that
