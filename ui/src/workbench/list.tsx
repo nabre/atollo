@@ -1,8 +1,10 @@
-// VSCodium's lists and trees (monaco-list): 22px rows, rounded 4px, with a twistie, an
-// icon, the label and its description, decorations on the right and inline
-// actions that show on hover, on focus and on the selected row. The arrows
-// move between rows, as in the editor. ListItem is the taller row of the
-// Extensions view: a big icon, name, description and a footer.
+// VSCodium's lists and trees (monaco-list): 22px rows with the modern UI's
+// small radius, a twistie, an icon, the label and its description,
+// decorations on the right and inline actions that show on hover, on focus
+// and on the selected row. A row fills its list: in a pane, the pane's body
+// sets it 4px in from the sides (ViewPane). The arrows move between rows,
+// as in the editor. ListItem is the taller row of the Extensions view: a
+// big icon, name, description and a footer.
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { VscChevronRight } from "react-icons/vsc";
 
@@ -46,6 +48,13 @@ export function List({
 const SELECTED =
   "bg-vsc-list-inactive group-focus-within/list:bg-vsc-list-active group-focus-within/list:text-vsc-list-active-fg";
 
+/** The left padding of a row: 8px a level (workbench.tree.indent) and, on
+ * a row with no twistie, the twistie's 16px. */
+function indent(depth: number, twistie: boolean) {
+  const level = `${String(depth + 1)} * var(--vscode-spacing-size80)`;
+  return `calc(${twistie ? level : `${level} + var(--vscode-spacing-size160)`})`;
+}
+
 export function ListRow({
   icon,
   label,
@@ -81,11 +90,10 @@ export function ListRow({
   /** Shown under the row when the twistie is open. */
   children?: ReactNode;
 }) {
-  const indent = 8 + depth * 8 + (twistie ? 0 : 16);
   return (
     <li>
       <div
-        className={`group/row flex h-[22px] items-center rounded pr-1 ${selected ? SELECTED : "hover:bg-vsc-list-hover"} ${className}`}
+        className={`group/row flex h-vsc-row items-center rounded-vsc-small pr-vsc-size40 ${selected ? SELECTED : "hover:bg-vsc-list-hover"} ${className}`}
       >
         <button
           type="button"
@@ -94,23 +102,23 @@ export function ListRow({
           aria-expanded={twistie ? twistie === "open" : undefined}
           title={title}
           onClick={onSelect}
-          style={{ paddingLeft: indent }}
-          className="flex h-full min-w-0 flex-1 items-center gap-1.5 text-left outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-list-focus"
+          style={{ paddingLeft: indent(depth, twistie !== undefined) }}
+          className="flex h-full min-w-0 flex-1 items-center gap-vsc-size60 rounded-vsc-small text-left outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-list-focus"
         >
           {twistie && (
             <VscChevronRight
               size={16}
               aria-hidden="true"
-              className={`-mr-1 shrink-0 transition-transform duration-100 ${twistie === "open" ? "rotate-90" : ""}`}
+              className={`-mr-vsc-size40 shrink-0 transition-transform duration-100 ${twistie === "open" ? "rotate-90" : ""}`}
             />
           )}
-          {icon && <span className="flex w-4 shrink-0 items-center justify-center">{icon}</span>}
+          {icon && <span className="flex w-vsc-size160 shrink-0 items-center justify-center">{icon}</span>}
           <span className="min-w-0 truncate">{label}</span>
-          {description && <span className="min-w-0 shrink truncate text-[12px] opacity-70">{description}</span>}
+          {description && <span className="min-w-0 shrink truncate text-vsc-body-small opacity-70">{description}</span>}
         </button>
         {actions && (
           <span
-            className={`flex shrink-0 items-center gap-0.5 pl-1 ${
+            className={`flex shrink-0 items-center gap-vsc-size20 pl-vsc-size40 ${
               selected ? "" : "invisible group-focus-within/row:visible group-hover/row:visible"
             }`}
           >
@@ -118,7 +126,9 @@ export function ListRow({
           </span>
         )}
         {decorations && (
-          <span className="flex shrink-0 items-center gap-1.5 pr-1 pl-1.5 text-[12px]">{decorations}</span>
+          <span className="flex shrink-0 items-center gap-vsc-size60 pr-vsc-size40 pl-vsc-size60 text-vsc-body-small">
+            {decorations}
+          </span>
         )}
       </div>
       {twistie === "open" && children}
@@ -126,8 +136,9 @@ export function ListRow({
   );
 }
 
-/** A taller row, as the Extensions view's: a 42px icon, the name with its
- * version, a description line and a footer with small buttons. */
+/** A taller row, as the Extensions view's: 62px, 16px in, a 36px icon and
+ * 16px after it, the name with its version on a 20px line, a description
+ * line and a 24px footer with small buttons. */
 export function ListItem({
   icon,
   name,
@@ -155,27 +166,27 @@ export function ListItem({
   return (
     <li>
       <div
-        className={`group/row relative flex h-[62px] items-center gap-2.5 rounded pr-3 pl-4 ${selected ? SELECTED : "hover:bg-vsc-list-hover"}`}
+        className={`group/row relative flex h-vsc-row-extension items-center gap-vsc-size160 rounded-vsc-small pr-vsc-size100 pl-vsc-size160 ${selected ? SELECTED : "hover:bg-vsc-list-hover"}`}
       >
-        <span className="flex size-[42px] shrink-0 items-center justify-center">{icon}</span>
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 leading-[17px]">
+        <span className="flex size-vsc-size360 shrink-0 items-center justify-center">{icon}</span>
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
           <button
             type="button"
             data-row-main
             aria-current={selected ? "true" : undefined}
             title={title}
             onClick={onSelect}
-            className="flex min-w-0 items-baseline gap-1.5 text-left outline-none after:absolute after:inset-0 focus-visible:after:outline-1 focus-visible:after:-outline-offset-1 focus-visible:after:outline-vsc-list-focus"
+            className="flex h-vsc-size200 min-w-0 items-center gap-vsc-size60 text-left outline-none after:absolute after:inset-0 focus-visible:after:outline-1 focus-visible:after:-outline-offset-1 focus-visible:after:rounded-vsc-small focus-visible:after:outline-vsc-list-focus"
           >
-            <span className="truncate font-semibold">{name}</span>
-            {meta && <span className="shrink-0 text-[12px] opacity-70">{meta}</span>}
+            <span className="truncate font-vsc-semibold">{name}</span>
+            {meta && <span className="shrink-0 text-vsc-body-small opacity-70">{meta}</span>}
           </button>
-          {description && <span className="truncate text-[12px] opacity-90">{description}</span>}
+          {description && <span className="truncate text-vsc-body-small opacity-90">{description}</span>}
           {(footer ?? actions) && (
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="min-w-0 flex-1 truncate text-[12px] opacity-70">{footer}</span>
+            <span className="flex h-vsc-size240 min-w-0 items-center gap-vsc-size60 pt-vsc-size20">
+              <span className="min-w-0 flex-1 truncate text-vsc-body-small opacity-70">{footer}</span>
               {/* Above the row's button, so they keep their own clicks. */}
-              {actions && <span className="relative z-10 flex shrink-0 items-center gap-1">{actions}</span>}
+              {actions && <span className="relative z-10 flex shrink-0 items-center gap-vsc-size40">{actions}</span>}
             </span>
           )}
         </div>
