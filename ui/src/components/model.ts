@@ -3,48 +3,69 @@
 import type { ComponentInfo, Group, VersionedTool } from "../api";
 import { locale, t } from "../i18n";
 
-/** The sections of the page. The catalog's "languages" are split: those
- * with one folder per minor version, side by side, and the tools that are
- * always at their latest version. */
-export function groups(): { id: string; title: string; hint: string; has: (c: ComponentInfo) => boolean }[] {
-  const of = (group: Group) => (c: ComponentInfo) => c.group === group;
-  return [
-    {
-      id: "required",
-      title: t("Obbligatori"),
-      hint: t("Sempre installati: l'editor, la shell del kit e GitHub CLI."),
-      // The editor (part of the app) is listed with the required ones.
-      has: (c) => c.group === "required" || c.group === "app",
-    },
-    {
-      id: "agents",
-      title: t("Agenti"),
-      hint: t("Facoltativi: il kit funziona anche senza. Sempre all'ultima versione."),
-      has: of("agents"),
-    },
-    {
-      id: "languages",
-      title: t("Linguaggi"),
-      hint: t(
-        "Più versioni una accanto all'altra, una per versione minore: «Aggiorna tutto» porta ognuna all'ultima patch, una versione minore nuova si aggiunge senza togliere le altre. Il kit usa la più recente; un progetto tiene quella che c'era quando è stato creato (o quella che chiede il suo codice) e può cambiarla nella sua pagina.",
+/** The kinds of tool, as the site's matrix (site/matrix.mjs, KINDS and
+ * KIND_OF: a test keeps them equal). The catalog's groups are coarser:
+ * "languages" holds almost everything. */
+export const KINDS = ["system", "agents", "languages", "tools", "web", "databases"] as const;
+export type Kind = (typeof KINDS)[number];
+
+/** A component's kind when it is not its group's. */
+export const KIND_OF: Record<string, Kind> = {
+  pwsh: "system",
+  gh: "system",
+  git: "system",
+  "vscodium-server": "system",
+  uv: "tools",
+  pnpm: "tools",
+  cmake: "tools",
+  android: "tools",
+  typst: "tools",
+  tinytex: "tools",
+  apache: "web",
+  caddy: "web",
+};
+export const KIND_OF_GROUP: Record<Group, Kind> = {
+  required: "system",
+  app: "system",
+  agents: "agents",
+  languages: "languages",
+  databases: "databases",
+};
+
+export function kindOf(c: { id: string; group: Group }): Kind {
+  return KIND_OF[c.id] ?? KIND_OF_GROUP[c.group];
+}
+
+/** The sections of the Tools page, the first-start page and the matrix:
+ * the site's kinds, each with its title and what to know about it. */
+export function groups(): { id: Kind; title: string; hint: string; has: (c: ComponentInfo) => boolean }[] {
+  const text: Record<Kind, [string, string]> = {
+    system: [t("Sistema ed editor"), t("Sempre installati: l'editor, la shell del kit, GitHub CLI e Git.")],
+    agents: [t("Agenti AI"), t("Facoltativi: il kit funziona anche senza. Sempre all'ultima versione.")],
+    languages: [
+      t("Linguaggi"),
+      t(
+        "Linguaggi e runtime. Python, Node.js, PHP, Go e Java tengono più versioni una accanto all'altra, una per versione minore: il kit usa la più recente, ogni progetto la sua. Gli altri restano all'ultima versione.",
       ),
-      has: (c) => c.group === "languages" && c.versioned,
-    },
-    {
-      id: "tools",
-      title: t("Strumenti"),
-      hint: t(
-        "Una sola versione, sempre l'ultima: «Aggiorna tutto» la sostituisce. Quelli che servono a un agente o a un progetto si installano da soli.",
+    ],
+    tools: [
+      t("Strumenti di sviluppo"),
+      t(
+        "Gestori di pacchetti, build e documenti, sempre all'ultima versione. Quelli che servono a un agente o a un progetto si installano da soli.",
       ),
-      has: (c) => c.group === "languages" && !c.versioned,
-    },
-    {
-      id: "databases",
-      title: t("Database"),
-      hint: t("Server avviati dalla pagina Database, solo su questo PC (127.0.0.1); i dati restano in data\\db."),
-      has: of("databases"),
-    },
-  ];
+    ],
+    web: [t("Server web"), t("Apache e Caddy, per i siti dei progetti e i Server Web condivisi.")],
+    databases: [
+      t("Database"),
+      t("Server avviati dalla pagina Database, solo su questo PC (127.0.0.1); i dati restano in data\\db."),
+    ],
+  };
+  return KINDS.map((id) => ({
+    id,
+    title: text[id][0],
+    hint: text[id][1],
+    has: (c: ComponentInfo) => kindOf(c) === id,
+  }));
 }
 
 /** `c` has every word of `search` in its name, description or id. */

@@ -1,5 +1,10 @@
 # Novità
 
+## Strumenti divisi per tipo (20/10/2026)
+
+- **«Tutti gli strumenti»** è diviso in Sistema ed editor, Agenti AI, Linguaggi, Strumenti di sviluppo, Server web e Database, come nel sito: ogni blocco ha titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic (D-139).
+- Gli stessi tipi nell'albero di Strumenti, nella Matrice e al primo avvio.
+
 ## Sviluppo: il server dell'interfaccia si chiude con l'app (20/10/2026)
 
 - **`npm run dev`**: chiudendo l'app si ferma anche Vite, così la porta 5173 resta libera per la volta dopo; se è occupata, dice da chi e come fermarlo (D-138).
