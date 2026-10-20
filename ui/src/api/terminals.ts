@@ -21,6 +21,15 @@ export interface TerminalInfo extends Terminal {
   builtin: boolean;
   /** Tools it includes that are not on disk (any more): left out. */
   missing: string[];
+  /** Lines it keeps that are not on disk (any more): the newest is used. */
+  replaced: LineSwap[];
+}
+
+/** A line of a terminal's tool not on disk, and the one used in its place. */
+export interface LineSwap {
+  id: string;
+  saved: string;
+  used: string;
 }
 
 /** A tool a terminal can include: installed, with its lines on disk. */
@@ -83,6 +92,7 @@ const SAMPLE_TERMINALS: TerminalsView = {
       tools: Object.fromEntries(SAMPLE_TOOLS.map((x) => [x.id, null])),
       builtin: true,
       missing: [],
+      replaced: [],
     },
     {
       id: "legacy-php",
@@ -91,6 +101,7 @@ const SAMPLE_TERMINALS: TerminalsView = {
       tools: { git: null, php: "7.4", mysql: null },
       builtin: false,
       missing: [],
+      replaced: [],
     },
   ],
   tools: SAMPLE_TOOLS,

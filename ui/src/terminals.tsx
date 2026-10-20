@@ -236,6 +236,7 @@ function TerminalEditor({
                     name: t("{0} (copia)", draft.name),
                     builtin: false,
                     missing: [],
+                    replaced: [],
                   });
                 }}
               />
@@ -378,6 +379,14 @@ function TerminalEditor({
               )}
             </Notice>
           )}
+          {saved.replaced.length > 0 && (
+            <Notice tone="warning">
+              {t(
+                "Versioni non più installate, al loro posto la più recente: {0}.",
+                saved.replaced.map((r) => `${toolText(byId.get(r.id), r.id, r.saved)} → ${r.used}`).join(", "),
+              )}
+            </Notice>
+          )}
           {view.tools.length === 0 ? (
             <Notice tone="info">{t("Nessuno strumento installato.")}</Notice>
           ) : (
@@ -482,7 +491,7 @@ export function TerminalsPage({
   const toolsById = new Map((view?.tools ?? []).map((x) => [x.id, x]));
 
   const startNew = useCallback(() => {
-    setDraft({ id: "", name: "", dir: null, tools: {}, builtin: false, missing: [] });
+    setDraft({ id: "", name: "", dir: null, tools: {}, builtin: false, missing: [], replaced: [] });
   }, []);
 
   const summary = (x: TerminalInfo) => {
