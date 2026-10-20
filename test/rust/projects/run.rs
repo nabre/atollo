@@ -109,6 +109,29 @@ fn set_port_refuses_ports_of_pools_databases_and_editor() {
     assert!(r.set_port("q|site", Some(7150), "en").is_err());
 }
 
+/// An automatic port skips those of the pools and of the database versions,
+/// also when nothing listens there now (BUG-V5-07).
+#[test]
+fn automatic_port_skips_pools_and_databases() {
+    let tmp = TempDir::new("run-auto-port");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    std::fs::write(
+        kit.app_dir().join("servers.json"),
+        r#"{ "ports": { "legacy": 7100 } }"#,
+    )
+    .unwrap();
+    std::fs::write(
+        kit.app_dir().join("services.json"),
+        r#"{ "mysql": { "ports": { "8.4": 7101 } } }"#,
+    )
+    .unwrap();
+    let r = Runner::new(kit, Arc::new(|_| {}));
+    let p = r.assign_port("p|site", "en").unwrap();
+    assert!((PORT_FROM + 2..=PORT_TO).contains(&p), "{p}");
+    assert_eq!(r.ports().ports.get("p|site"), Some(&p));
+}
+
 #[test]
 fn ports_per_project_file() {
     let tmp = TempDir::new("run-ports-files");
