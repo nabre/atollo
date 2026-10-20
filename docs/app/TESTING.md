@@ -16,6 +16,8 @@ All the tests live in `test\`, with the same structure as the sources:
 - `test\rust\<path>.rs`: the tests of `tauri\src\<path>.rs`. They remain a child module of that file, which declares them at the bottom with `#[cfg(test)] #[path = "…/test/rust/<path>.rs"] mod tests;`: they see its private functions (`use super::*`), as before. A new test goes in the module's file in `test\rust`; a module that does not have one yet adds the three lines.
 - `test\ui\<path>.test.ts(x)`: the tests of `ui\src\<path>`, which import from `../../ui/src/…`; `test\ui\setup.ts` sets up jsdom (Vitest, `ui\vite.config.ts`).
 
+Filters: `cargo test ports::` or `cargo test db::services` (only the Rust tests whose path matches); `npm -w ui test -- activity` (only the interface's test files whose name matches).
+
 The live tests on the version sources (network, usually ignored): `cargo test live_lines -- --ignored --nocapture` (with `GITHUB_TOKEN`), see CATALOG.md §2.
 
 They cover, among other things:
@@ -32,12 +34,36 @@ They cover, among other things:
 - agent alignment and Antigravity sign-in with the real Credential Manager;
 - project detection on samples (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, static, composite projects, `panel.json` and `pannello.json`);
 - remembered and locked ports, starting and stopping an action through its job;
-- file server: host, hidden files, `..`, links;
+- the port registry (`test\rust\ports.rs`, D-141): every owner read from its file; a port of a pool, of a database version, of an action or of the editor refused to the others, with the owner named (`servers::`, `db::services::data`, `projects::run`), and never given to a new pool;
+- database servers (D-140): operations on one server take turns (`operations_on_a_server_take_turns`), `keep_port` loses no entry, the ports stay when the server changes version, the login files differ per run;
+- the project's `conf.d` in an Apache and a Caddy pool and in the project's own Caddy (`apache_pool_includes_the_project_conf_d`, `caddy_pool_imports_the_project_conf_d`, `project_conf_d_imported_in_the_site`);
+- file server: host (`*.localhost`, an IP only with the local network), hidden files, `..`, links;
 - exe swap during an update;
 - DPAPI of `keyring-before.json`;
 - catalogs of the four languages (Rust and interface), complete and with the same placeholders;
 - `useLoad` (`test\ui\hooks.test.ts`): first load, the three error policies, a new load when `load` or `key` change but not the policy, `enabled`, periodic loading stopped on unmount, `setData`;
-- interface controls on `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): events that really fire, controlled values, Enter in forms, accessible names, codicons; every `--vscode-*` variable read by the components defined in both themes (`test\ui\theme.test.ts`).
+- interface controls on `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): events that really fire, controlled values, Enter in forms, accessible names; the codicons (`codicon.test.tsx`): glyphs of the bundled font, token sizes, no `react-icons/vsc` left;
+- the theme (`test\ui\theme\theme.test.ts`): every `--vscode-*` variable read by the components defined in both themes, every size declared once with its utility, the sizes of `docs\brand\vscodium-1.135\workbench-ref.css`, no token of the classic UI, every `--vscode-*` key Atollo reads known to VSCodium 1.135;
+- the Activity panel (`test\ui\activity.test.tsx`): a secondary database version and a pool listed and counted, "Stop all" stopping everything once confirmed; the Terminals page (`test\ui\terminals.test.tsx`): Esc closes the removal question;
+- the Guide's documents: `node scripts/guide-docs.cjs --check` (in the `Lint and test` job) fails if `docs\app\GUIDE.md` or `GUIDE.it.md` is behind the in-app Guide.
+
+## Generated files and screenshots
+
+None of these runs in `npm test`; each one is run by hand after the change it follows, and its output is committed.
+
+| Command | When | Writes |
+| --- | --- | --- |
+| `python docs/brand/themes.py` | a color (`BRAND`) or a measure (`LAYOUT`) changed | `ui\src\theme\theme-vscode.css`, `theme-colors.css`, `theme-sizes.css`, `tauri\editor-theme\` |
+| `node scripts/vscodium-css/extract.mjs [archive or workbench.css]` | the catalog pins another editor, or the app reads a new `--vscode-*` key | `docs\brand\vscodium-1.135\workbench-ref.css` (then `themes.py`); it fails on a key VSCodium does not know |
+| `node scripts/guide-docs.cjs` | the Guide's text changed | `docs\app\GUIDE.md`, `GUIDE.it.md` |
+| `python -I scripts/matrix/gen_matrix.py` | the catalog changed | `docs\app\TOOLS-MATRIX.html` |
+| `node site/shots/make.mjs` | the pages in the screenshots changed | `site\shots\<lang>\shot-{projects,agents,tools}-{dark,light}.png` for en, it, fr, de |
+| `node site/shots/social.mjs` | after `make.mjs` | `docs\brand\social.png` (from `en\shot-projects-dark.png`) |
+| `node scripts/guide-shots/make.mjs` | the pages in the Guide changed | `ui\public\guide\<lang>\*.webp` (52 files; Python with Pillow) |
+
+The screenshot scripts read the browser preview: first `npm -w ui run dev` (`127.0.0.1:5173`), with `playwright-core` installed next to the script or in a folder of its own and the system's Edge or Chrome (`SHOTS_BROWSER=msedge|chrome`, no download). `SHOTS_LANGS=en,it` (site) and `GUIDE_SHOTS_LANGS=en,it` (Guide) limit the languages; `SHOTS_URL=http://127.0.0.1:5199` takes the preview from another address, for both. Before committing, look at each language: the labels come from `ui\src\locales`, the engine's texts from `engineText`.
+
+`npm run dev` runs `scripts/dev-ui.mjs`: closing the app must free port 5173 (D-138); with the port taken it says who has it and stops nothing.
 
 ## Linux, macOS and Windows ARM64
 
@@ -46,7 +72,7 @@ They cover, among other things:
 - **bundle**: the package and the code that starts the app (`tauri/Cargo.toml`, `build.rs`, `tauri.conf.json`, `Info.plist`, `entitlements.plist`, `windows-app.manifest`, `icons/`; in `tauri/src`: `main.rs`, `cli.rs`, `kit.rs`, `log.rs`, `env.rs`, `settings.rs`, `fsx.rs`, `i18n.rs`, `os/`, `setup/`). `Bundle *` and `Release smoke *` run, plus everything below.
 - **kit**: what `prepare` and the `real_` tests use on a real kit (`tauri/src/install/`, `net/`, `editor/`, `runtime/`, `tauri/catalog/components.json`). `Build …` runs with the exe, the real installation and the real tests, plus everything below.
 - **rust**: the rest of the app's code and data (`tauri/src` in the other modules, the other catalogs, `i18n/`, `editor-theme/`, `capabilities/`, `permissions/`, `site/assets/fonts/`) and the Rust tests (`test/rust/`, `scripts/matrix/sources.json`, `scripts/test-linux.sh`, `rustfmt.toml`). `Lint and test`, `Test *` and `Test win32-arm64` run, with `clippy` and `cargo test` on every system.
-- **ui**: the interface (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, and also `components.json`, which the interface tests import). Lint, Vitest and build run in `Lint and test` (plus `cargo fmt`), and Vitest alone in `Test linux-x64`.
+- **ui**: the interface (`ui/`, `test/ui/`, `eslint.config.mjs`, `.prettierrc.json`, and also `components.json`, which the interface tests import, and `docs/app/GUIDE.md`, `GUIDE.it.md` and `scripts/guide-docs.cjs`, which `--check` compares). Lint, Vitest, the Guide's documents and build run in `Lint and test` (plus `cargo fmt`), and Vitest alone in `Test linux-x64`.
 
 `Cargo.toml`, `Cargo.lock`, `package*.json`, `.gitattributes` and `app.yml` start everything. Generated files (`tauri/gen/`), documents, the site, the Apache and PHP scripts (with their workflows) and `scripts/cross-check/` start nothing but `Changes`. A path the list does not know starts everything, and the summary names it: it must be added to the list. The full run also always starts with an `app-v*` tag, with a manual start (`gh workflow run app.yml`) and when the comparison fails (for example after a force push). The summary of the `Changes` job shows the chosen levels.
 
@@ -139,7 +165,7 @@ To be run before every release, with the release exe (`npm run build`), on a PC 
 
 ### Installation and portability
 - [ ] **New kit on a USB stick.** Double-click, first start: PowerShell 7, GitHub CLI (with Git) and the editor install on their own; then installation of the defaults, editor open on a project.
-- [ ] **Editor at the release version.** With a kit prepared by another version of the app (or with a different number in `data\app\versions\vscodium-server.txt`), at startup the editor is installed again at the pinned version, even if it had been left open, without “Update all”. If a program on the PC keeps the editor folder open, the update ends “in use”, but Editor, Terminal and the agents open anyway with the editor already present. In Languages and tools the editor is among the required ones, checked and not editable.
+- [ ] **Editor at the release version.** With a kit prepared by another version of the app (or with a different number in `data\app\versions\vscodium-server.txt`), at startup the editor is installed again at the pinned version, even if it had been left open, without “Update all”. If a program on the PC keeps the editor folder open, the update ends “in use”, but Editor, Terminal and the agents open anyway with the editor already present. In Tools the editor is among the required ones, checked and not editable.
 - [ ] **No trace outside the kit.** After a full session (editor, terminal, an agent, a started project) there is no new file in `%APPDATA%`, `%LOCALAPPDATA%`, `%TEMP%` or in the registry. Before/after comparison with Process Monitor or with a snapshot of the folders. Documented exceptions: Antigravity's credentials, which stay in Windows only for the lifetime of `agy` and with session persistence (D-41); the transit files in `%TEMP%\Atollo\<id>\`, which are gone at the end of the session (D-90).
 - [ ] **Moved kit.** On another drive letter and in a folder with spaces everything works, the editor's state remains and Claude finds its history again.
 - [ ] **PC without WebView2** (Windows 10 LTSC or a virtual machine). The message is clear and the app works with the fixed runtime in the kit.
@@ -154,10 +180,12 @@ To be run before every release, with the release exe (`npm run build`), on a PC 
 ### Projects
 - [ ] **New project** “test 1”: the folder appears, has the “Delete the empty folder” button and the deletion works.
 - [ ] **Clone** `nabre/atollo` (or a private repository with `gh auth login` done in the kit's terminal): the folder has the right name. On a kit without Git, Git is installed before the clone. With an invalid address (`-x/y`, `ssh://…`) the error is readable.
-- [ ] **Vite project.** “Start”, then the port 7100-7999 appears in the output. The state changes to “listening” and the button with the address opens the PC's browser. A second start reuses the same port. On a kit without Node.js, “Start” first installs Node.js (progress in Home and in the status bar) and then starts; Node.js shows as chosen in Languages and tools.
-- [ ] **Local network.** With “Let other PCs on the network reach the project servers”, another PC opens the started project with this PC's IP address; without it, it does not.
+- [ ] **Vite project.** “Start”, then the port 7100-7999 appears in the output. The state changes to “listening” and the button with the address opens the PC's browser. A second start reuses the same port. On a kit without Node.js, “Start” first installs Node.js (progress in the Activity panel and in the status bar) and then starts; Node.js shows as chosen in Tools.
+- [ ] **Local network.** With “Let other PCs on the network reach the project servers”, another PC opens the started project with this PC's IP address; without it, it does not. The same for a simple PHP project started with `php -S`: `http://<IP of the PC>:<port>/` answers from another device, `curl -H "Host: evil.com"` still gets 421.
 - [ ] **Port in use.** With a port chosen by hand that is already used by another program, the start gives a clear error and the port does not change on its own.
-- [ ] **Static site.** A folder with only `index.html`: the kit's file server serves it. A `.env` file is not reachable (403).
+- [ ] **Port of another part of Atollo** (D-141). An action's port chosen by hand that is the port of a web server pool, of a database version (for example 3306) or in the editor's 7000-7099: refused, and the message names the owner (“Port 3306 already belongs to database MySQL 9.7: choose another one.”). The same for the port of a pool profile and for the port of a database server or of one of its versions; a new pool never gets one of them.
+- [ ] **Static site.** A folder with only `index.html`: the kit's file server serves it, at `http://localhost:<port>` and at `http://<project>.localhost:<port>`. A `.env` file is not reachable (403).
+- [ ] **Activity and “Stop all”.** With an action, a secondary MySQL version and a pool running: the status bar, the Projects badge and the Activity panel count the three and the panel lists them; “Stop all” asks first, “Cancel” changes nothing, the confirmation stops all three.
 - [ ] **“Serve as a website”.** With the `public` folder and PHP: `panel.json` contains the `site` action and the other keys of the file remain.
 - [ ] **“Stop”** on `npm run dev`: in Task Manager no `node.exe`/`esbuild.exe` of the project is left.
 - [ ] **Electron or Tauri.** The app opens its window and the output reaches the page.
@@ -172,6 +200,9 @@ To be run before every release, with the release exe (`npm run build`), on a PC 
 - [ ] **Start with Atollo** (D-101). Profile with “Start with Atollo”: with the app closed and reopened, the pool is on with no project started. A `servers.json` from before (without the two fields) is read with “Keep running” checked.
 - [ ] **Two web actions of a project in the same pool** (BUG-V3-02). `http://<project>.localhost:<port>` and `http://<action>.<project>.localhost:<port>` serve the two folders.
 - [ ] **Two MySQL versions together** (D-102). With 8.4 and 9.7 installed: Databases › “Other versions” starts 8.4 on its own port while 9.7 stays on 3306; `mysql -uroot -h127.0.0.1 -P<port> -e "select version()"` gives the two versions. Project with “Server version” 8.4: “Create” creates database and user on 8.4; a program of the project sees the `DB_PORT` of 8.4; with a `.env` that has `DB_PORT=3310`, that one applies. Changing the main version while 8.4 is running is refused; with the app closed, no `mysqld` is left.
+- [ ] **One start at a time** (D-140). Two projects that need the same MySQL version started together (or “Start” twice in a row on the Databases page): one `mysqld`, and both get the same port. Changing the server's version with 8.4 and 9.7 installed: each version keeps its port, and the projects' connection strings still point to their version. Two backups started together both finish.
+- [ ] **The project's `conf.d`** (D-141, BUG-V5-06). A `.conf` in `data\projects\<p>\apache\conf.d\` and a `.caddy` in `caddy\conf.d\` (for example a header added): the site has it on the dedicated Apache, on the dedicated Caddy, in an Apache pool and in a Caddy pool. With an empty `caddy\conf.d\` Caddy still starts.
+- [ ] **“Delete profile”** of a pool asks first.
 - [ ] **Tests with a real kit.** `ATOLLO_TEST_KIT=<kit with Apache and PHP> cargo test -- start_reports_syntax_error apache_pool_reload_twice apache_pool_two_php_sites_alias_and_reload --test-threads=1` passes.
 
 ### macOS, Linux and Windows ARM64 (D-105, D-108…D-115)
@@ -256,16 +287,24 @@ Kit prepared on Windows for another system (at every release):
 - [ ] **Trust in the editor.** The first time a project is opened, the editor asks whether to trust it. With “No” the “Restricted Mode” bar appears and tasks do not start; with “Yes” it no longer asks when reopening, even after restarting the app (D-67).
 - [ ] **dev-settings.json.** After opening Codex in a project, `data\projects\<project>\dev-settings.json` has `"agent": "codex"` and the agent choice suggests Codex. Deleting an empty project from the app makes its folder in `data\projects\` disappear (D-89).
 
-### Languages and tools
+### Tools
+- [ ] **Kinds** (D-139). “All tools” has the blocks System and editor, AI agents, Languages, Development tools, Web server, Databases, each with its title, count, description and a box to choose them all, and closes with a click; the same kinds in the side bar's tree, in the matrix and at the first start.
 - [ ] **Logos.** Every component has its logo, readable in the light theme and in the dark one; the projects show the language labels.
 - [ ] **Dependencies.** Apache shows the “PHP” dependency; with Claude Code chosen, Git shows “for Claude Code”. Removing PHP also removes Apache.
 - [ ] **PATH after an installation.** After installing a language from this page, Home › Terminal opens the kit console with the kit's PowerShell 7 and the new program is in the PATH, without restarting the app.
 
+### Terminals
+- [ ] **Replaced version.** A terminal saved with PHP 8.2, then 8.2 removed: the Terminals page says which one it uses instead (“PHP 8.2 → 8.4”) and the terminal opens with 8.4.
+- [ ] **Deletion.** “Delete the terminal” asks first; Esc closes the question and the terminal stays.
+
 ### Settings
-- [ ] **Language.** Switching to English, Français and Deutsch, the whole interface changes immediately. With “Windows language” the system's language applies.
-- [ ] **Gemini key.** Once saved, the field shows “saved”. It never appears in plain text (neither in the interface nor in `data\app\logs`). “Remove the key” removes it.
-- [ ] **Invalid value** (proxy `proxy:8080`, Python `3.x`): the error is readable and the file does not change.
-- [ ] **Editor running.** After saving, the app asks to restart the editor, and after the restart the editor's terminals see the new variables.
+- [ ] **No Save** (D-137). A change is saved and applied on its own half a second after the last key: the tab bar says “Saving…”, then “Saved.”; `data\app\settings.json` has the new value.
+- [ ] **Language.** Switching to English, Français and Deutsch, the whole interface changes immediately. With “System language” the system's language applies.
+- [ ] **Theme.** “Same as the system”, “Light” and “Dark” change the app, the editor and the terminals at once, without a restart.
+- [ ] **Gemini key.** It is saved when the field loses the focus, then the field empties and shows “saved”; it is in `data\app\secrets\gemini-api-key`, never in `settings.json`. It never appears in plain text (neither in the interface nor in `data\app\logs`). “Remove the key” removes it.
+- [ ] **Invalid value** (proxy `proxy:8080`, a PEM file without certificates): the error is readable, the value stays on screen and the file does not change.
+- [ ] **Editor running.** After a change of language, network or temporary files of programs, the app asks to restart the editor, and after the restart the editor's terminals see the new variables.
+- [ ] **Privacy.** The section summarizes it and “Read the privacy policy” opens it in the app's language.
 - [ ] **Update.** With a newer `app-v*` release published, “Check for updates” downloads the exe. On closing, `Atollo.exe` is the new one and `Atollo.old.exe` disappears on restart. With `ATOLLO_NO_UPDATE=1` no check runs at startup.
 
 ### Closing, other copies, removing the drive
@@ -287,7 +326,7 @@ Kit prepared on Windows for another system (at every release):
 
 ### Accessibility
 - [ ] **Keyboard only.** Every page can be used: Tab always shows the focus outline, “Skip to content” is the first element, the closing dialog receives the focus.
-- [ ] **In-page confirmations** (D-106). Signing out of an agent, of GitHub, restoring a database and “Apply” in Languages and tools: Narrator reads the question, the focus is on “Cancel”, Esc closes and the focus goes back to the button you started from. The zoom of a Guide screenshot keeps Tab inside and closes with Esc.
+- [ ] **In-page confirmations** (D-106). Signing out of an agent, of GitHub, restoring a database and “Apply” in Tools: Narrator reads the question, the focus is on “Cancel”, Esc closes and the focus goes back to the button you started from. The zoom of a Guide screenshot keeps Tab inside and closes with Esc.
 - [ ] **Narrator.** The pages have headings and the icons have a name. Errors and states are announced (`role="alert"` and `role="status"`).
-- [ ] **Same look as the editor** (D-88). App and editor side by side, in the dark and in the light theme: same colors for background, text, focus, buttons, fields and drop-down menus; selects, fields and checkboxes can be used with mouse and keyboard; the codicon icons show (no little squares).
-- [ ] **Theme and animations.** The light and dark themes follow Windows. With “Animation effects” turned off in Windows, no icon spins.
+- [ ] **Same look as the editor** (D-88, D-142). App and editor side by side, in the dark and in the light theme: same colors for background, text, focus, buttons, fields and drop-down menus; the same measures as VSCodium 1.135's modern UI (title bar 30 px, activity bar 36 px, editor tabs 24 px in a 32 px bar with the close button on hover, pill-shaped panel tabs, list rows set in 4 px with a radius of 4, 8 px scroll bars, dialogs with a radius of 12); selects, fields and checkboxes can be used with mouse and keyboard; the codicon icons show (no little squares).
+- [ ] **Theme and animations.** With the theme on “Same as the system” the app follows the system's light and dark. With “Animation effects” turned off in Windows, no icon spins.
