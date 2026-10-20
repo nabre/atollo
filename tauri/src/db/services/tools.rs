@@ -3,6 +3,7 @@
 
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Result};
@@ -102,6 +103,15 @@ pub(super) fn run_logged(mut cmd: Command, log: &std::path::Path, limit: Duratio
     }
 }
 
+/// A login file of the private folder for one run of `exe`:
+/// `<exe>-<pid>-<seq>.<ext>`, never the one of a tool still running
+/// (BUG-V5-04: two dumps or restores at once, as `fsx::write_atomic`).
+pub(super) fn login_file(kit: &crate::kit::Kit, exe: &str, ext: &str) -> PathBuf {
+    static LOGIN_SEQ: AtomicU64 = AtomicU64::new(0);
+    let seq = LOGIN_SEQ.fetch_add(1, Ordering::Relaxed);
+    auth::dir(kit).join(format!("{exe}-{}-{seq}.{ext}", std::process::id()))
+}
+
 /// The text of a project's own MySQL login (only for its tool, then
 /// removed): LF ends and TCP.
 pub(super) fn project_login_text(user: &str, password: &str, port: u16) -> String {
@@ -172,7 +182,7 @@ impl Services {
             );
         };
         let exe = exe_name(self.kit.os(), stem);
-        let login = auth::dir(&self.kit).join(format!("{exe}-{}.cnf", std::process::id()));
+        let login = login_file(&self.kit, &exe, "cnf");
         auth::write_private_text(&login, &project_login_text(user, password, port))?;
         let mut cmd = jobs::kit_command(program, env);
         // It must be the first option.
@@ -194,7 +204,7 @@ impl Services {
             .mongodb_admin
             .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
         let exe = exe_name(self.kit.os(), stem);
-        let config = auth::dir(&self.kit).join(format!("{exe}-{}.yaml", std::process::id()));
+        let config = login_file(&self.kit, &exe, "yaml");
         auth::write_private_text(&config, &format!("password: {admin}\n"))?;
         let tools = DbEngine::MongoDb.tools_component();
         let mut cmd = jobs::kit_command(bin_at(&self.kit, tools, None, stem), env);
