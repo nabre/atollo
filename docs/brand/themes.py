@@ -506,9 +506,14 @@ LAYOUT = {
 # - title: .modern-ui.monaco-workbench .part>.title (35px in the classic UI),
 #   the side bar's and the panel's title with its tabs;
 # - row: the lists' and trees' row (sidebarSize22 in workbench.js);
+# - row-extension: the Extensions view's row (sidebarSize62);
+# - table-header: the Keyboard Shortcuts editor's table header,
+#   headerRowHeight in workbench.js;
 # - tabs: the editor's tab bar, EDITOR_TAB_HEIGHT.modernUI (35px classic),
 #   a tab of --editor-group-tab-height and 4px above and below;
-# - statusbar: .monaco-workbench .part.statusbar.
+# - statusbar: .monaco-workbench .part.statusbar;
+# - scrollbar: the scroll bars' width and height, which the modern UI sets
+#   in workbench.js (10px, the scrollable element's default, in the classic).
 SIZE_TOKENS = {
     "titlebar": "35px",
     "window-control": "46px",
@@ -519,9 +524,12 @@ SIZE_TOKENS = {
     "title": "32px",
     "pane-header": "var(--pane-header-size)",
     "row": "22px",
+    "row-extension": "62px",
+    "table-header": "30px",
     "tabs": "32px",
     "tab": "var(--editor-group-tab-height)",
     "statusbar": "22px",
+    "scrollbar": "8px",
 }
 
 

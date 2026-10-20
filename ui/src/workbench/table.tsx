@@ -1,6 +1,6 @@
 // A table of data at 12px, as the matrices and the grids of the pages: an
 // optional caption, a header row, the body rows from the caller. Drawn as
-// vscode-table (the Keyboard Shortcuts editor's table): the header on
+// vscode-table (the Keyboard Shortcuts editor's table): the 30px header on
 // keybindingTable.headerBackground in bold, a line under it. A native
 // <table>: vscode-table has no caption nor row headers, and gives every
 // column the same share instead of fitting its content.
@@ -43,16 +43,24 @@ export function DataTable({
   return (
     <table className={className}>
       {caption !== undefined && (
-        <caption className={captionVisible ? "pb-1 text-left text-[12px] font-semibold" : "sr-only"}>{caption}</caption>
+        <caption
+          className={captionVisible ? "pb-vsc-size40 text-left text-vsc-body-small font-vsc-semibold" : "sr-only"}
+        >
+          {caption}
+        </caption>
       )}
       {columns ? (
         <thead className={headClass} style={headStyle}>
           <tr>
             {columns.map((c, i) =>
               c === null ? (
-                <th key={i} scope="col" className="px-2 py-[5px]" />
+                <th key={i} scope="col" className="h-vsc-table-header px-vsc-size80" />
               ) : (
-                <th key={i} scope="col" className="px-2 py-[5px] text-left leading-5 font-bold whitespace-nowrap">
+                <th
+                  key={i}
+                  scope="col"
+                  className="h-vsc-table-header px-vsc-size80 text-left font-bold whitespace-nowrap"
+                >
                   {c}
                 </th>
               ),
