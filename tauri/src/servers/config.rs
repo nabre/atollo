@@ -30,13 +30,16 @@ pub(super) fn component_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf 
     kit.apps().join(id)
 }
 
-/// Generates Apache VirtualHost file content for one attached project in a pool.
+/// Generates Apache VirtualHost file content for one attached project in a
+/// pool; `conf_d`, the project's own `apache\conf.d` when it is there, is
+/// included inside it, as its dedicated server does (BUG-V5-05).
 pub(super) fn apache_vhost_conf(
     port: u16,
     project_root: &Path,
     projects_root: &Path,
     doc_root: &Path,
     site: &AttachedSite,
+    conf_d: Option<&Path>,
 ) -> String {
     let doc_fwd = fwd(doc_root);
     let mut aliases_list = vec![site.server_name.clone()];
@@ -67,6 +70,9 @@ pub(super) fn apache_vhost_conf(
         &alias::resolve(project_root, projects_root, &site.aliases),
         "    ",
     ));
+    if let Some(dir) = conf_d {
+        lines.push(format!("    IncludeOptional \"{}/*.conf\"", fwd(dir)));
+    }
     lines.push("</VirtualHost>".to_owned());
     lines.push(String::new());
     lines.join("\r\n")
@@ -163,10 +169,23 @@ pub(super) fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<
     }
 }
 
+/// `dir` holds a `.caddy` file: only then is it imported (`import` of a
+/// pattern that matches nothing stops Caddy).
+pub(super) fn has_caddy_snippets(dir: &Path) -> bool {
+    fs::read_dir(dir).is_ok_and(|entries| {
+        entries.flatten().any(|e| {
+            e.path()
+                .extension()
+                .is_some_and(|x| x.eq_ignore_ascii_case("caddy"))
+        })
+    })
+}
+
 /// The site block of `site` in a Caddy pool on `port`: its own name and
 /// its domains, the document root `doc_root`, its checked aliases, PHP
-/// when the pool has it. `None` (in the log) when its folder cannot be
-/// written in a Caddyfile.
+/// when the pool has it, the `*.caddy` of `conf_d` (the project's own
+/// `caddy\conf.d`, when it has some; BUG-V5-05). `None` (in the log) when
+/// its folder cannot be written in a Caddyfile.
 pub(super) fn caddy_site_conf(
     port: u16,
     lan: bool,
@@ -174,6 +193,7 @@ pub(super) fn caddy_site_conf(
     aliases: &[alias::SiteAlias],
     fcgi: Option<&FastCgi>,
     site: &AttachedSite,
+    conf_d: Option<&Path>,
 ) -> Option<Vec<String>> {
     // The site's own ServerName first, then its domains (BUG-V3-02).
     let mut names = vec![site.server_name.clone()];
@@ -190,7 +210,18 @@ pub(super) fn caddy_site_conf(
         ));
         return None;
     };
-    Some(caddy::site_block(port, lan, &names, &routes))
+    let mut body = Vec::new();
+    if let Some(dir) = conf_d {
+        match caddy::quoted_path(&dir.join("*.caddy")) {
+            Some(glob) => body.push(format!("\timport {glob}")),
+            None => crate::log::warn(&format!(
+                "{}: not imported, it cannot be written in a Caddyfile",
+                dir.display()
+            )),
+        }
+    }
+    body.extend(routes);
+    Some(caddy::site_block(port, lan, &names, &body))
 }
 
 impl WebServers {
@@ -254,12 +285,19 @@ impl WebServers {
                     let Some(doc_root) = site_doc_root(&proj_root, site) else {
                         continue;
                     };
+                    // Only when it is there: never created for a project
+                    // that has no directives of its own.
+                    let conf_d = apache::dir(&self.kit, &site.project)
+                        .ok()
+                        .map(|d| d.join("conf.d"))
+                        .filter(|d| d.is_dir());
                     let vhost = apache_vhost_conf(
                         pool.port,
                         &proj_root,
                         &self.kit.projects(),
                         &doc_root,
                         site,
+                        conf_d.as_deref(),
                     );
                     write_atomic(&vhosts_dir.join(vhost_file(site)), vhost.as_bytes())?;
                 }
@@ -280,17 +318,21 @@ impl WebServers {
                     };
                     let aliases =
                         caddy::resolve_aliases(&proj_root, &self.kit.projects(), &site.aliases);
+                    let conf_d = caddy::dir(&self.kit, &site.project)
+                        .ok()
+                        .map(|d| d.join("conf.d"))
+                        .filter(|d| has_caddy_snippets(d));
                     sites.extend(caddy_site_conf(
-                        pool.port, lan, &doc_root, &aliases, fcgi, site,
+                        pool.port,
+                        lan,
+                        &doc_root,
+                        &aliases,
+                        fcgi,
+                        site,
+                        conf_d.as_deref(),
                     ));
                 }
-                let user_snippets = fs::read_dir(&conf_d_dir).is_ok_and(|entries| {
-                    entries.flatten().any(|e| {
-                        e.path()
-                            .extension()
-                            .is_some_and(|x| x.eq_ignore_ascii_case("caddy"))
-                    })
-                });
+                let user_snippets = has_caddy_snippets(&conf_d_dir);
                 let main_conf =
                     caddy::pool_conf(&pool_dir, pool.port, admin, lan, &sites, user_snippets)?;
                 let conf_path = pool_dir.join("Caddyfile");
