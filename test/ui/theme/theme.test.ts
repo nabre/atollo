@@ -142,6 +142,7 @@ describe("theme-sizes.css", () => {
       ),
     );
     expect(sizes.get("--vsc-size-statusbar")).toBe(referenceValue(".monaco-workbench .part.statusbar", "height"));
+    expect(sizes.get("--vsc-size-dialog")).toBe(referenceValue(".monaco-dialog-box", "min-width"));
     expect(sizes.get("--vsc-size-window-control")).toBe(
       referenceValue(".monaco-workbench .part.titlebar .window-controls-container>.window-icon", "width"),
     );

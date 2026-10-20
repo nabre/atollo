@@ -118,21 +118,26 @@ export function ConfirmDialog({
         tabIndex={-1}
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-desc`}
-        className="w-[min(32rem,90vw)] space-y-2 rounded border border-vsc-widget-border bg-vsc-widget p-3 text-(--vscode-editorWidget-foreground) shadow-[0_0_8px_2px_var(--vsc-shadow)]"
+        // .monaco-dialog-box: 480px wide (at most 90% of the window), 8px
+        // inside, xLarge corners, the xl shadow; the message 12px from the
+        // side, the buttons 20px under it, 8px apart and 4px in.
+        className="w-vsc-dialog max-w-[90vw] rounded-vsc-xlarge border border-vsc-widget-border bg-vsc-widget p-vsc-size80 text-(--vscode-editorWidget-foreground) shadow-vsc-xl"
       >
-        <h2 id={`${id}-title`} className="text-[14px] font-semibold">
-          {title}
-        </h2>
-        <div id={`${id}-desc`} className="space-y-2">
-          {children}
+        <div className="px-vsc-size120 pt-vsc-size40">
+          <h2 id={`${id}-title`} className="mb-vsc-size40 text-[14px] font-vsc-semibold">
+            {title}
+          </h2>
+          <div id={`${id}-desc`} className="space-y-vsc-size80 leading-(--vscode-spacing-size200)">
+            {children}
+          </div>
         </div>
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-vsc-size80 px-vsc-size40 pt-vsc-size240 pb-vsc-size40">
           <Button autoFocus onClick={onCancel}>
             {cancelLabel}
           </Button>
           {actions}
         </div>
-        {footer}
+        {footer && <div className="px-vsc-size40">{footer}</div>}
       </div>
     </div>
   );
@@ -215,7 +220,7 @@ export function InlineConfirm({
         e.stopPropagation();
         onCancel();
       }}
-      className={`${row ? "flex flex-wrap items-center gap-2" : "space-y-2"} ${className}`}
+      className={`${row ? "flex flex-wrap items-center gap-vsc-size80" : "space-y-vsc-size80"} ${className}`}
     >
       {question && (
         <Text id={`${id}-q`} className={described ? "" : textClassName}>
@@ -227,7 +232,7 @@ export function InlineConfirm({
           {children}
         </Text>
       )}
-      <div ref={answers} className="flex flex-wrap gap-2">
+      <div ref={answers} className="flex flex-wrap gap-vsc-size80">
         {actions}
       </div>
     </div>
