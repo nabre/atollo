@@ -1,5 +1,9 @@
 # Novità
 
+## Sviluppo: il server dell'interfaccia si chiude con l'app (20/10/2026)
+
+- **`npm run dev`**: chiudendo l'app si ferma anche Vite, così la porta 5173 resta libera per la volta dopo; se è occupata, dice da chi e come fermarlo (D-138).
+
 ## Rilascio 0.3.0 alpha (20/10/2026)
 
 - **Versione 0.3.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.3.0` pubblica i file per i sei sistemi.
