@@ -396,9 +396,10 @@ export function SingleEditor({ title, icon, children }: { title: string; icon: R
 
 /** The header of a details editor, as an extension's page
  * (.extension-editor>.header): a 128px icon, 20px from the top and the left,
- * 12px above the bar; the name, a line of facts 6px under it, a description
- * and the buttons 10px apart. The icon given (a logo, a codicon) is drawn
- * at the full 128px. */
+ * 12px above the bar, its text 14px; the name on a 30px line, a line of
+ * facts 6px under it with a bar 14px from each, a description and the
+ * buttons 10px apart. The icon given (a logo, a codicon) is drawn at the
+ * full 128px. */
 export function EditorHeader({
   icon,
   title,
@@ -417,23 +418,25 @@ export function EditorHeader({
 }) {
   const facts = (meta ?? []).filter(Boolean);
   return (
-    <header className="flex shrink-0 gap-vsc-size120 px-vsc-size200 pt-vsc-size200 pb-vsc-size120">
+    <header className="flex shrink-0 gap-vsc-size120 px-vsc-size200 pt-vsc-size200 pb-vsc-size120 text-(length:--vsc-size-extension-header)">
       <span className="flex size-vsc-extension-icon shrink-0 items-center justify-center [&>.codicon]:text-(length:--vsc-size-extension-icon)! [&>svg]:size-full">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
         <h2
           id={titleId}
-          className="truncate text-vsc-heading1 leading-8 font-semibold text-vsc-settings-header select-text"
+          className="truncate text-vsc-heading1 leading-(--vsc-size-extension-name) font-semibold text-vsc-settings-header select-text"
         >
           {title}
         </h2>
         {facts.length > 0 && (
-          <div className="flex flex-wrap items-center pt-vsc-size60 text-vsc-body leading-5">
+          <div className="flex flex-wrap items-center pt-vsc-size60 leading-5">
             {facts.map((f, i) => (
               <span
                 key={i}
-                className={`flex items-center gap-vsc-size60 ${i > 0 ? "ml-vsc-size100 border-l border-vsc-border pl-vsc-size100" : ""}`}
+                // The bar's color is fixed in VSCodium's CSS (.subtitle-entry),
+                // not a theme color.
+                className={`flex items-center gap-vsc-size60 ${i > 0 ? "ml-vsc-extension-fact border-l border-[rgba(128,128,128,0.7)] pl-vsc-extension-fact" : ""}`}
               >
                 {f}
               </span>
@@ -456,8 +459,9 @@ export interface NavItem<T extends string> {
 }
 
 /** The navigation bar of a details editor (Details, Features, Changelog),
- * as .extension-editor>.body>.navbar: 36px, 20px in, 11px uppercase items
- * 10px wide on each side, the active one underlined. */
+ * as .extension-editor>.body>.navbar: 36px, 20px in, a panelSection.border
+ * line under it, 11px uppercase items 10px wide on each side, the active one
+ * underlined. */
 export function NavBar<T extends string>({
   label,
   items,
@@ -470,7 +474,7 @@ export function NavBar<T extends string>({
   onSelect: (id: T) => void;
 }) {
   return (
-    <nav aria-label={label} className="h-vsc-size360 shrink-0 border-b border-vsc-border pl-vsc-size200">
+    <nav aria-label={label} className="h-vsc-size360 shrink-0 border-b border-vsc-panel-section-border pl-vsc-size200">
       <ul className="m-0 flex h-full list-none overflow-x-auto p-0 [scrollbar-width:none]">
         {items.map((x) => {
           const on = x.id === active;

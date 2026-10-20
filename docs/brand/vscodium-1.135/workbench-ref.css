@@ -73,7 +73,6 @@
 
 /* The --vscode-* keys Atollo reads or sets that VSCodium 1.135.06055 knows:
    registered in workbench.js or used by workbench.css.
-   --vscode-activityBar-activeBorder
    --vscode-activityBar-background
    --vscode-activityBar-border
    --vscode-activityBar-foreground
@@ -111,8 +110,6 @@
    --vscode-editor-background
    --vscode-editor-selectionBackground
    --vscode-editorGroup-border
-   --vscode-editorGroupHeader-tabsBackground
-   --vscode-editorGroupHeader-tabsBorder
    --vscode-editorInfo-foreground
    --vscode-editorWidget-background
    --vscode-editorWidget-foreground
@@ -145,6 +142,7 @@
    --vscode-list-activeSelectionBackground
    --vscode-list-activeSelectionForeground
    --vscode-list-errorForeground
+   --vscode-list-focusAndSelectionOutline
    --vscode-list-focusOutline
    --vscode-list-highlightForeground
    --vscode-list-hoverBackground
@@ -165,6 +163,7 @@
    --vscode-notifications-foreground
    --vscode-panel-background
    --vscode-panel-border
+   --vscode-panelSection-border
    --vscode-panelTitle-activeBorder
    --vscode-panelTitle-activeForeground
    --vscode-panelTitle-inactiveForeground
@@ -220,12 +219,6 @@
    --vscode-statusBarItem-remoteHoverBackground
    --vscode-strokeThickness
    --vscode-surface-border
-   --vscode-tab-activeBackground
-   --vscode-tab-activeBorderTop
-   --vscode-tab-activeForeground
-   --vscode-tab-border
-   --vscode-tab-inactiveBackground
-   --vscode-tab-inactiveForeground
    --vscode-textBlockQuote-background
    --vscode-textBlockQuote-border
    --vscode-textCodeBlock-background
@@ -235,7 +228,6 @@
    --vscode-textPreformat-foreground
    --vscode-titleBar-activeBackground
    --vscode-titleBar-activeForeground
-   --vscode-titleBar-border
    --vscode-toolbar-activeBackground
    --vscode-toolbar-hoverBackground
    --vscode-widget-border
@@ -274,8 +266,10 @@
 .monaco-workbench .part.activitybar{width:var(--activity-bar-width, 48px);height:100%;font-family:var(--vscode-workbench-activitybar-font-family, inherit);font-size:var(--vscode-workbench-activitybar-font-size)}
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label{position:relative;z-index:1;display:flex;overflow:hidden;width:var(--activity-bar-width, 48px);height:var(--activity-bar-action-height, 48px);margin-right:0;box-sizing:border-box}
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon{font-size:var(--activity-bar-icon-size, 24px);align-items:center;justify-content:center}
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .badge .badge-content{position:absolute;top:24px;right:8px;font-size:9px;font-weight:600;min-width:8px;height:16px;line-height:16px;padding:0 4px;border-radius:20px;text-align:center}
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label{width:var(--activity-bar-width, calc(var(--vscode-workbench-activitybar-font-size) * 3));height:var(--activity-bar-action-height, calc(var(--vscode-workbench-activitybar-font-size) * 3))}
 .monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-label.codicon{font-size:var(--activity-bar-icon-size, calc(var(--vscode-workbench-activitybar-font-size) * 1.5))}
+.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .badge .badge-content{top:calc(var(--vscode-workbench-activitybar-font-size) * 1.5);right:calc(var(--vscode-workbench-activitybar-font-size) * .5);font-size:calc(var(--vscode-workbench-activitybar-font-size) * .5625);min-width:calc(var(--vscode-workbench-activitybar-font-size) * .5);height:calc(var(--vscode-workbench-activitybar-font-size) * 1);line-height:calc(var(--vscode-workbench-activitybar-font-size) * 1);padding:0 calc(var(--vscode-workbench-activitybar-font-size) * .25)}
 .modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator:before{border-left:none!important}
 .modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator,.modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .active-item-indicator{z-index:0;top:0;left:calc((var(--activity-bar-width, 36px) - var(--activity-bar-action-height, 36px) + 4px) / 2);width:calc(var(--activity-bar-action-height, 36px) - 4px);height:calc(var(--activity-bar-action-height, 36px) - 4px);border-radius:var(--vscode-cornerRadius-small)}
 .modern-ui .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator{background-color:var(--vscode-modernActivityBar-activeBackground)}
@@ -285,6 +279,8 @@
 .modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .action-label.codicon{color:var(--vscode-modernActivityBar-hoverForeground)!important}
 .modern-ui .activitybar>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .action-label.uri-icon{background-color:var(--vscode-modernActivityBar-hoverForeground)!important}
 .modern-ui .activitybar.compact>.content :not(.monaco-menu)>.monaco-action-bar .action-item.checked .active-item-indicator,.modern-ui .activitybar.compact>.content:not(.dragged-over):not(.dragged-over-head):not(.dragged-over-tail) :not(.monaco-menu)>.monaco-action-bar .action-item:not(.checked):hover .active-item-indicator{width:calc(var(--activity-bar-action-height, 28px) - 4px);height:calc(var(--activity-bar-action-height, 28px) - 4px)}
+.modern-ui.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .badge .badge-content{top:18px;right:3px}
+.modern-ui.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .badge .badge-content{font-weight:var(--vscode-fontWeight-regular)}
 
 /* Status bar */
 .monaco-workbench.floating-panels .part.statusbar{padding-left:var(--vscode-spacing-size60);padding-right:var(--vscode-spacing-size60);padding-top:var(--vscode-spacing-size20);padding-bottom:var(--vscode-spacing-size20)}
@@ -341,7 +337,18 @@
 .monaco-inputbox>.ibwrapper>.input{display:inline-block;box-sizing:border-box;width:100%;height:100%;line-height:inherit;border:none;font-family:inherit;font-size:inherit;resize:none;color:inherit}
 .monaco-dialog-modal-block{position:fixed;height:100%;width:100%;left:0;top:0;z-index:2575;display:flex;justify-content:center;align-items:center}
 .monaco-dialog-box{display:flex;flex-direction:column-reverse;width:min-content;min-width:480px;max-width:90vw;max-height:90vh;min-height:75px;padding:8px;transform:translateZ(0);border-radius:var(--vscode-cornerRadius-xLarge);box-shadow:var(--vscode-shadow-xl)}
+.monaco-dialog-box .dialog-message-row .dialog-message-container .dialog-message{font-size:14px;font-weight:600;flex-grow:1;white-space:normal;word-wrap:break-word;min-height:22px;margin-bottom:4px;display:flex;align-items:center}
+.monaco-dialog-box .dialog-message-row .dialog-message-container .dialog-message-detail{line-height:20px;flex:1;white-space:pre-wrap}
+.monaco-dialog-box>.dialog-buttons-row{display:flex;align-items:center;overflow:hidden;white-space:nowrap;padding:20px 0 0}
 .settings-editor>.settings-body .settings-tree-container .setting-item-contents .monaco-select-box{width:initial;font:inherit;height:26px;padding:2px 6px}
+.modern-ui-notifications-dialogs .monaco-dialog-box{padding:var(--vscode-spacing-size40);min-width:440px}
+.modern-ui-notifications-dialogs .monaco-dialog-box:not(.align-vertical) .dialog-message-row .dialog-message-container{padding-left:var(--vscode-spacing-size80);padding-right:var(--vscode-spacing-size200)}
+.modern-ui-notifications-dialogs .monaco-dialog-box .dialog-message-row .dialog-message-container .dialog-message{margin:var(--vscode-spacing-size20) 0 var(--vscode-spacing-size120) 0;font-size:var(--vscode-fontSize-heading3);font-weight:var(--vscode-fontWeight-semiBold)}
+.modern-ui-notifications-dialogs .monaco-dialog-box .dialog-message-row .dialog-message-container .dialog-message-detail{color:var(--vscode-descriptionForeground)}
+.modern-ui-notifications-dialogs .monaco-dialog-box .dialog-toolbar-row{position:absolute;top:var(--vscode-spacing-size80);right:var(--vscode-spacing-size80)}
+.modern-ui-notifications-dialogs .monaco-dialog-box .dialog-footer-row{padding:0 var(--vscode-spacing-size80)}
+.modern-ui-notifications-dialogs .monaco-dialog-box .dialog-message-row{padding:var(--vscode-spacing-size160) var(--vscode-spacing-size80) 0}
+.modern-ui-notifications-dialogs .monaco-dialog-box>.dialog-buttons-row{padding:var(--vscode-spacing-size160) 0 0}
 
 /* Editor tabs, extension header, settings editor */
 .monaco-workbench .part.editor>.content .editor-group-container>.title .tabs-container>.tab{position:relative;display:flex;white-space:nowrap;cursor:pointer;height:var(--editor-group-tab-height);box-sizing:border-box;padding-left:10px;outline-offset:-2px}
@@ -355,6 +362,9 @@
 .settings-editor>.settings-body .settings-tree-container .setting-item-contents.is-configured .setting-item-modified-indicator{display:block;content:" ";position:absolute;width:6px;border-left-width:2px;border-left-style:solid;left:5px;top:15px;bottom:18px}
 .extension-editor>.header{display:flex;padding-top:20px;padding-bottom:12px;padding-left:20px;overflow:hidden;font-size:14px}
 .extension-editor>.header>.icon-container .extension-icon .icon{height:128px;width:128px}
+.extension-editor>.header>.details>.title>.name{flex:0;font-size:26px;line-height:30px;font-weight:600;white-space:nowrap}
+.extension-editor>.header>.details>.subtitle>.subtitle-entry:not(:empty):not(.last-non-empty){border-right:1px solid rgba(128,128,128,.7);margin-right:14px;padding-right:14px}
+.extension-editor>.body>.navbar{height:36px;font-weight:700;font-size:14px;line-height:36px;padding-left:20px;border-bottom:1px solid var(--vscode-panelSection-border)}
 .modern-ui-tabs.monaco-workbench .part.editor>.content .editor-group-container>.title.tabs{background-color:transparent!important;cursor:default;--editor-group-tab-height: 24px !important}
 .modern-ui-tabs.monaco-workbench .part.editor .tabs-and-actions-container:not(.wrapping) .tabs-container,.modern-ui-tabs.monaco-workbench .part.editor .tabs-and-actions-container:not(.wrapping) .tabs-container>.tab{min-height:calc(var(--editor-group-tab-height) + var(--vscode-spacing-size40) * 2)}
 .modern-ui-tabs.monaco-workbench .part.editor .tabs-and-actions-container:not(.wrapping) .tabs-container>.tab{border-block:var(--vscode-spacing-size40) solid transparent}
