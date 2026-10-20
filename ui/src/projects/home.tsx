@@ -3,27 +3,11 @@
 // ways to make a new one. Each project starts, stops and opens from here
 // without its page.
 import type { ReactNode } from "react";
-import {
-  VscBook,
-  VscCode,
-  VscDebugStop,
-  VscError,
-  VscFolderOpened,
-  VscGlobe,
-  VscNewFolder,
-  VscOutput,
-  VscRepoClone,
-  VscStarEmpty,
-  VscStarFull,
-  VscTerminal,
-  VscWand,
-  VscWarning,
-} from "react-icons/vsc";
 import { urlOpen, type AgentInfo, type EditorStatus, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
 import { AgentButton } from "../agents";
 import { basesByCategory, PieceLogo, type Frameworks } from "../frameworks";
 import { t } from "../i18n";
-import { ActionBar, Button, Dot, EditorBody, EditorSection, IconButton, Link } from "../workbench";
+import { ActionBar, Button, Codicon, codicon, Dot, EditorBody, EditorSection, IconButton, Link } from "../workbench";
 import { KIND_ICON, LanguageIcons, ProjectState } from "./kind";
 import { COMPONENT_NAMES } from "./needs";
 import { wayLabel, type NewWay } from "./new";
@@ -126,7 +110,7 @@ export function ProjectsHome({
             <ul className="m-0 list-none space-y-1 p-0">
               {failed.map((r) => (
                 <li key={r.key} className="flex flex-wrap items-center gap-2">
-                  <VscError size={14} aria-hidden="true" className="shrink-0 text-vsc-error" />
+                  <Codicon name="error" size={14} className="shrink-0 text-vsc-error" />
                   <span>
                     {t("{0}: «{1}» si è fermato con un errore", byId.get(r.project)?.name ?? r.project, r.label)}
                     {r.code !== null && ` (${t("codice {0}", r.code)})`}
@@ -142,7 +126,7 @@ export function ProjectsHome({
               ))}
               {missing.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-center gap-2">
-                  <VscWarning size={14} aria-hidden="true" className="shrink-0 text-vsc-warning" />
+                  <Codicon name="warning" size={14} className="shrink-0 text-vsc-warning" />
                   <span>{t("{0}: mancano {1}", p.name, p.missing.map((m) => COMPONENT_NAMES[m] ?? m).join(", "))}</span>
                   <Link
                     onClick={() => {
@@ -160,7 +144,7 @@ export function ProjectsHome({
         <EditorSection id="home-new" title={t("Nuovo progetto")}>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
             <WayTile
-              icon={<VscNewFolder size={20} aria-hidden="true" />}
+              icon={<Codicon name="new-folder" size={20} />}
               title={wayLabel("empty")}
               text={t("Una cartella nuova e vuota in projects.")}
               onClick={() => {
@@ -168,7 +152,7 @@ export function ProjectsHome({
               }}
             />
             <WayTile
-              icon={<VscRepoClone size={20} aria-hidden="true" />}
+              icon={<Codicon name="repo-clone" size={20} />}
               title={wayLabel("git")}
               text={t("Il repository si clona in una cartella di projects.")}
               onClick={() => {
@@ -176,7 +160,7 @@ export function ProjectsHome({
               }}
             />
             <WayTile
-              icon={<VscWand size={20} aria-hidden="true" />}
+              icon={<Codicon name="wand" size={20} />}
               title={wayLabel("framework")}
               text={t("Una base e le sue aggiunte, con i comandi ufficiali.")}
               onClick={() => {
@@ -206,16 +190,16 @@ export function ProjectsHome({
           </div>
           <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 pt-1">
             <li className="flex items-center gap-1.5">
-              <VscRepoClone size={14} aria-hidden="true" className="text-vsc-link" />
+              <Codicon name="repo-clone" size={14} className="text-vsc-link" />
               <Link onClick={handlers.onGithub}>{t("Clona dai tuoi repository GitHub…")}</Link>
             </li>
             <li className="flex items-center gap-1.5">
-              <VscFolderOpened size={14} aria-hidden="true" className="text-vsc-link" />
+              <Codicon name="folder-opened" size={14} className="text-vsc-link" />
               <Link onClick={handlers.onFolder}>{t("Apri la cartella dei progetti")}</Link>
             </li>
             {handlers.onGuide && (
               <li className="flex items-center gap-1.5">
-                <VscBook size={14} aria-hidden="true" className="text-vsc-link" />
+                <Codicon name="book" size={14} className="text-vsc-link" />
                 <Link onClick={handlers.onGuide}>{t("Guida")}</Link>
               </li>
             )}
@@ -274,7 +258,7 @@ function ProjectCard({
         </button>
         <ProjectState p={p} runs={runs} />
         <IconButton
-          icon={pinned ? VscStarFull : VscStarEmpty}
+          icon={pinned ? codicon("star-full") : codicon("star-empty")}
           label={pinned ? t("Togli {0} dai preferiti", p.name) : t("Aggiungi {0} ai preferiti", p.name)}
           checked={pinned}
           onClick={() => {
@@ -313,7 +297,7 @@ function ProjectCard({
           ))}
         <ActionBar>
           <IconButton
-            icon={VscCode}
+            icon={codicon("code")}
             label={t("Editor")}
             title={t("Apre {0} nell'editor", p.name)}
             busy={busy === `editor:${p.id}`}
@@ -323,7 +307,7 @@ function ProjectCard({
             }}
           />
           <IconButton
-            icon={VscTerminal}
+            icon={codicon("terminal")}
             label={t("Terminale")}
             title={t("Console del kit in {0}", p.name)}
             busy={busy === `terminal:${p.id}`}
@@ -364,7 +348,7 @@ function RunningRow({
       <ActionBar>
         {run.url && run.state === "running" && (
           <IconButton
-            icon={VscGlobe}
+            icon={codicon("globe")}
             label={t("Apri nel browser")}
             onClick={() => {
               void urlOpen(run.url ?? "");
@@ -372,14 +356,14 @@ function RunningRow({
           />
         )}
         <IconButton
-          icon={VscOutput}
+          icon={codicon("output")}
           label={t("Vedi l'output")}
           onClick={() => {
             handlers.onOpen(run.project, { action: run.action });
           }}
         />
         <IconButton
-          icon={VscDebugStop}
+          icon={codicon("debug-stop")}
           label={t("Ferma")}
           busy={busy === `stop:${run.key}`}
           onClick={() => {

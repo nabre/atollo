@@ -2,10 +2,9 @@
 // the logo of a base or addition.
 import type { ComponentInfo, FrameworkPiece } from "../api";
 import { t } from "../i18n";
-import { VscClose, VscExtensions, VscPackage } from "react-icons/vsc";
 import { ComponentLogo, FrameworkLogo } from "../logos";
 import { Tag } from "../tags";
-import { IconButton } from "../workbench";
+import { Codicon, codicon, IconButton } from "../workbench";
 
 /** A tool of the kit as a tag: its logo and its name in the catalog. */
 export function ToolTag({
@@ -24,10 +23,10 @@ export function ToolTag({
       {onRemove && (
         // The toolbar button's look, at the tag's height (16px, a 12px glyph).
         <IconButton
-          icon={VscClose}
+          icon={codicon("close")}
           label={t("Togli {0}", name)}
           onClick={onRemove}
-          className="-mr-1 size-4! [&>svg]:size-3"
+          className="-mr-1 size-4! [&>.codicon]:text-vsc-codicon-compact"
         />
       )}
     </Tag>
@@ -36,6 +35,6 @@ export function ToolTag({
 
 /** The logo of a base or addition; a generic icon for those without one. */
 export function PieceLogo({ piece, size = 16 }: { piece: FrameworkPiece; size?: number }) {
-  const Fallback = piece.kind === "base" ? VscPackage : VscExtensions;
-  return <FrameworkLogo id={piece.id} size={size} fallback={<Fallback size={size} aria-hidden="true" />} />;
+  const fallback = piece.kind === "base" ? "package" : "extensions";
+  return <FrameworkLogo id={piece.id} size={size} fallback={<Codicon name={fallback} size={size} />} />;
 }

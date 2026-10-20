@@ -1,9 +1,8 @@
 // The Git section of a project's page: its state, read from .git.
 import { ActionButton } from "../common";
 import { t } from "../i18n";
-import { VscGithub } from "react-icons/vsc";
 import { urlOpen, type ProjectStatus } from "../api";
-import { EditorSection, Properties } from "../workbench";
+import { codicon, EditorSection, Properties } from "../workbench";
 
 export function Git({ status }: { status: ProjectStatus | null }) {
   const git = status?.git;
@@ -17,7 +16,7 @@ export function Git({ status }: { status: ProjectStatus | null }) {
       actions={
         web?.startsWith("https://") && (
           <ActionButton
-            icon={VscGithub}
+            icon={codicon("github")}
             label={t("Apri sul web")}
             onClick={() => {
               void urlOpen(web);

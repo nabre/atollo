@@ -6,21 +6,11 @@
 // shown it adds what the page knows only there: the preparation under way
 // (queued, download) and the choice waiting for "Apply".
 import type { IconType } from "react-icons";
-import {
-  VscCircleLarge,
-  VscCloudDownload,
-  VscError,
-  VscHistory,
-  VscLoading,
-  VscPackage,
-  VscPassFilled,
-  VscTrash,
-  VscWarning,
-} from "react-icons/vsc";
 import type { ComponentInfo, TargetToolStatus } from "../api";
 import { t } from "../i18n";
 import type { ItemState } from "../setup";
 import { cellReason } from "./targets";
+import { codicon } from "../workbench";
 
 /** The states, in the order of the sort. */
 export const TOOL_STATES = [
@@ -38,15 +28,15 @@ export const TOOL_STATES = [
 export type ToolState = (typeof TOOL_STATES)[number];
 
 const LOOK: Record<ToolState, { icon: IconType; tone: string; spin?: boolean }> = {
-  running: { icon: VscLoading, tone: "text-vsc-link", spin: true },
-  queued: { icon: VscHistory, tone: "text-vsc-desc" },
-  toInstall: { icon: VscCloudDownload, tone: "text-vsc-settings-modified" },
-  toRemove: { icon: VscTrash, tone: "text-vsc-settings-modified" },
-  error: { icon: VscError, tone: "text-vsc-error" },
-  update: { icon: VscWarning, tone: "text-vsc-warning" },
-  installed: { icon: VscPassFilled, tone: "text-vsc-success" },
-  staged: { icon: VscPackage, tone: "text-vsc-success" },
-  missing: { icon: VscCircleLarge, tone: "text-vsc-desc" },
+  running: { icon: codicon("loading"), tone: "text-vsc-link", spin: true },
+  queued: { icon: codicon("history"), tone: "text-vsc-desc" },
+  toInstall: { icon: codicon("cloud-download"), tone: "text-vsc-settings-modified" },
+  toRemove: { icon: codicon("trash"), tone: "text-vsc-settings-modified" },
+  error: { icon: codicon("error"), tone: "text-vsc-error" },
+  update: { icon: codicon("warning"), tone: "text-vsc-warning" },
+  installed: { icon: codicon("pass-filled"), tone: "text-vsc-success" },
+  staged: { icon: codicon("package"), tone: "text-vsc-success" },
+  missing: { icon: codicon("circle-large"), tone: "text-vsc-desc" },
 };
 
 export function toolStateLabel(state: ToolState): string {
@@ -120,7 +110,5 @@ export function otherStatus(s: TargetToolStatus, target: string): ToolStatus {
 export function ToolStateIcon({ state }: { state: ToolState }) {
   const look = LOOK[state];
   const Icon = look.icon;
-  return (
-    <Icon size={14} aria-hidden="true" className={`inline shrink-0 ${look.tone} ${look.spin ? "animate-spin" : ""}`} />
-  );
+  return <Icon size={14} aria-hidden="true" className={`shrink-0 ${look.tone} ${look.spin ? "animate-spin" : ""}`} />;
 }

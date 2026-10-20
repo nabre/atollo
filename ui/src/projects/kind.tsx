@@ -1,12 +1,11 @@
 // What a project is (how it starts, its languages) and its state, as the
 // icons and marks of its row and of its page.
-import { VscGlobe, VscTerminal, VscWarning, VscWindow } from "react-icons/vsc";
 import type { IconType } from "react-icons";
 import type { ProjectAction, ProjectInfo, RunInfo } from "../api";
 import { t } from "../i18n";
 import { LanguageIcon } from "../logos";
 import { Mark } from "../tags";
-import { Dot } from "../workbench";
+import { Codicon, codicon, Dot } from "../workbench";
 import { alive } from "./runs";
 
 export function kindText(k: ProjectAction["type"]): string {
@@ -14,9 +13,9 @@ export function kindText(k: ProjectAction["type"]): string {
 }
 
 export const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
-  web: VscGlobe,
-  desktop: VscWindow,
-  command: VscTerminal,
+  web: codicon("globe"),
+  desktop: codicon("window"),
+  command: codicon("terminal"),
 };
 
 /** How the project starts (site, app with a window, command) and what it
@@ -57,7 +56,7 @@ export function ProjectState({ p, runs }: { p: ProjectInfo; runs: Record<string,
   if (p.missing.length > 0) {
     return (
       <Mark label={t("Mancano componenti: {0}", p.missing.join(", "))} className="text-vsc-warning">
-        <VscWarning size={14} aria-hidden="true" />
+        <Codicon name="warning" size={14} />
       </Mark>
     );
   }

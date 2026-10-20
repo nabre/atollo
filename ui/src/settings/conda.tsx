@@ -3,12 +3,11 @@
 // network after the kit moves (DECISIONS.md D-118): the setting, the space
 // they take and «Libera». Only on a system where some component cannot
 // follow the kit.
-import { VscTrash } from "react-icons/vsc";
 import { condaKept, condaKeptFree, type CondaKept, type Settings } from "../api";
 import { locale, t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useLoad } from "../hooks";
-import { CheckboxLabel, SettingItem } from "../workbench";
+import { CheckboxLabel, codicon, SettingItem } from "../workbench";
 
 function megabytes(bytes: number): string {
   return new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(Math.ceil(bytes / 1024 / 1024));
@@ -49,7 +48,7 @@ export function CondaSettings({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span className="flex-1">{t("Copia per reinstallare senza rete: {0} MB", megabytes(data.bytes))}</span>
           <ActionButton
-            icon={VscTrash}
+            icon={codicon("trash")}
             label={t("Libera")}
             small
             busy={busy === "free"}

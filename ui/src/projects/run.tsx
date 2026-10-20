@@ -1,22 +1,23 @@
 // The Avvio section of a project's page: its actions, the chosen one with
 // its port and its output.
 import { useEffect, useRef, useState } from "react";
-import { VscGlobe } from "react-icons/vsc";
 import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { CheckboxLabel, Dot, IconButton, InlineConfirm, Link, List, ListRow, Notice, TextField } from "../workbench";
 import {
-  VscClose,
-  VscDebugStart,
-  VscDebugStop,
-  VscEdit,
-  VscRemove,
-  VscStarEmpty,
-  VscStarFull,
-  VscTrash,
-} from "react-icons/vsc";
+  CheckboxLabel,
+  Codicon,
+  codicon,
+  Dot,
+  IconButton,
+  InlineConfirm,
+  Link,
+  List,
+  ListRow,
+  Notice,
+  TextField,
+} from "../workbench";
 import { projectActionDefault, projectActionRemove, urlOpen } from "../api";
 import { ActionButton } from "../common";
 import { ActionBar, EditorSection, Properties } from "../workbench";
@@ -71,7 +72,7 @@ export function ActionsList({
               <>
                 {p.default === a.id && (
                   <span role="img" aria-label={t("predefinita")} title={t("predefinita")} className="opacity-70">
-                    <VscStarFull size={12} aria-hidden="true" />
+                    <Codicon name="star-full" size={12} />
                   </span>
                 )}
                 {r && <Dot tone={r.state === "error" ? "err" : alive(r.state) ? "ok" : "off"} label={stateText(r)} />}
@@ -80,7 +81,7 @@ export function ActionsList({
             actions={
               alive(r?.state) ? (
                 <IconButton
-                  icon={VscDebugStop}
+                  icon={codicon("debug-stop")}
                   label={t("Ferma")}
                   busy={busy === `stop:${key}`}
                   onClick={() => {
@@ -89,7 +90,7 @@ export function ActionsList({
                 />
               ) : (
                 <IconButton
-                  icon={VscDebugStart}
+                  icon={codicon("debug-start")}
                   label={t("Avvia")}
                   busy={busy === `run:${key}`}
                   onClick={() => {
@@ -187,7 +188,7 @@ export function ActionDetail({
         <ActionBar>
           {/* The default action: the project's Avvia starts it. */}
           <IconButton
-            icon={isDefault ? VscStarFull : VscStarEmpty}
+            icon={isDefault ? codicon("star-full") : codicon("star-empty")}
             label={t("Predefinita")}
             title={t("La avvia il pulsante Avvia del progetto")}
             checked={isDefault}
@@ -198,7 +199,7 @@ export function ActionDetail({
           />
           {r?.url && r.state === "running" && (
             <IconButton
-              icon={VscGlobe}
+              icon={codicon("globe")}
               label={t("Apri nel browser")}
               onClick={() => {
                 void urlOpen(r.url ?? "");
@@ -207,7 +208,7 @@ export function ActionDetail({
           )}
           {r && !alive(r.state) && (
             <IconButton
-              icon={VscTrash}
+              icon={codicon("trash")}
               label={t("Togli l'output")}
               onClick={() => {
                 onForget(key);
@@ -216,7 +217,7 @@ export function ActionDetail({
           )}
           {editable && (
             <IconButton
-              icon={VscEdit}
+              icon={codicon("edit")}
               label={t("Modifica")}
               title={a.custom ? undefined : t("Modifica: la tua versione va in panel.json")}
               checked={editing === a.id}
@@ -228,7 +229,7 @@ export function ActionDetail({
           )}
           {a.custom && (
             <IconButton
-              icon={VscRemove}
+              icon={codicon("remove")}
               label={t("Togli")}
               title={t("Togli da panel.json")}
               busy={removal.busy === "remove"}
@@ -252,7 +253,7 @@ export function ActionDetail({
           actions={
             <>
               <ActionButton
-                icon={VscRemove}
+                icon={codicon("remove")}
                 label={t("Togli")}
                 primary
                 busy={removal.busy === "remove"}
@@ -261,7 +262,7 @@ export function ActionDetail({
                 }}
               />
               <ActionButton
-                icon={VscClose}
+                icon={codicon("close")}
                 label={t("Annulla")}
                 onClick={() => {
                   setRemoving(null);

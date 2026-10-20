@@ -1,9 +1,8 @@
 // The rows of the Tools page: a component with its checkbox, its tags and
 // state and its versions; Composer under PHP.
-import { VscCheck, VscFolderLibrary, VscReferences, VscTypeHierarchySub, VscWarning } from "react-icons/vsc";
 import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, type VersionedTool } from "../api";
 import { t } from "../i18n";
-import { Checkbox } from "../workbench";
+import { Checkbox, Codicon } from "../workbench";
 import { ItemBar, ItemStatus, itemState, type ItemState } from "../setup";
 import { composerOf, splitVersion, ToolInstallLine, ToolVersions, type KitVersions } from "../versions";
 import { ByHandBox } from "../byhand";
@@ -21,7 +20,7 @@ export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
       tone="focus"
       className="ml-2"
       title={t("Serve ai progetti: {0}.", list)}
-      icon={<VscFolderLibrary size={11} aria-hidden="true" />}
+      icon={<Codicon name="folder-library" size={11} />}
     >
       <span className="sr-only">{t("serve ai progetti")} </span>
       {list}
@@ -31,7 +30,7 @@ export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {
       tone="warning"
       className="ml-2"
       title={t("Serve ai progetti: {0}. Non è scelto: sceglilo perché funzionino.", list)}
-      icon={<VscWarning size={11} aria-hidden="true" />}
+      icon={<Codicon name="warning" size={11} />}
     >
       <span className="sr-only">{t("attenzione: non scelto, serve ai progetti")} </span>
       {list}
@@ -50,7 +49,7 @@ export function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: Comp
           key={n}
           className="ml-2"
           title={t("Richiede {0}: si installa insieme.", name(n))}
-          icon={<VscTypeHierarchySub size={11} aria-hidden="true" />}
+          icon={<Codicon name="type-hierarchy-sub" size={11} />}
         >
           <span className="sr-only">{t("richiede")} </span>
           {name(n)}
@@ -61,7 +60,7 @@ export function Dependencies({ c, list, chosen }: { c: ComponentInfo; list: Comp
           dashed
           className="ml-2"
           title={t("Serve a {0}: resta installato finché serve.", usedBy.join(", "))}
-          icon={<VscReferences size={11} aria-hidden="true" />}
+          icon={<Codicon name="references" size={11} />}
         >
           {t("per {0}", usedBy.join(", "))}
         </Tag>
@@ -105,7 +104,7 @@ export function ComposerRow({
           <span className="ml-2 text-vsc-desc">
             {t("pacchetti PHP, uno per ogni versione di PHP e compatibile con quella")}
           </span>
-          <Tag dashed className="ml-2" icon={<VscReferences size={11} aria-hidden="true" />}>
+          <Tag dashed className="ml-2" icon={<Codicon name="references" size={11} />}>
             {t("con {0}", php.name)}
           </Tag>
         </label>
@@ -115,7 +114,7 @@ export function ComposerRow({
             <ItemStatus state={state} />
           ) : all.length > 1 ? null /* its versions are in the list below */ : kit ? (
             <span className="text-vsc-success">
-              <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+              <Codicon name="check" className="mr-1" size={12} />
               {kit.composer}
             </span>
           ) : (
@@ -230,7 +229,7 @@ export function ComponentRow({
               <ItemStatus state={state} />
             ) : versions ? null /* its versions are in the list below */ : c.installed ? (
               <span className="text-vsc-success">
-                <VscCheck className="mr-1 inline" size={12} aria-hidden="true" />
+                <Codicon name="check" className="mr-1" size={12} />
                 {shown ?? t("installato")}
               </span>
             ) : c.noArm64 ? (

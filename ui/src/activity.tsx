@@ -4,7 +4,6 @@
 // The status bar's Activity item opens and closes it. `useRunning` is what
 // the status bar, the Projects badge and the panel count (UX-V5-01).
 import { useEffect, useRef, useState } from "react";
-import { VscClearAll, VscClose, VscDebugStop, VscGlobe, VscStopCircle } from "react-icons/vsc";
 import {
   serversList,
   serverStop,
@@ -20,7 +19,7 @@ import {
 import { t } from "./i18n";
 import { alive, stateText } from "./projects";
 import { SetupProgress, setupStatusText } from "./setup";
-import { ActionBar, Button, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "./workbench";
+import { ActionBar, Button, codicon, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "./workbench";
 import { ActionButton } from "./common";
 import { useLoad } from "./hooks";
 
@@ -201,7 +200,7 @@ export function ActivityPanel({
         <>
           {anyLive && (
             <IconButton
-              icon={VscStopCircle}
+              icon={codicon("stop-circle")}
               label={t("Ferma tutto")}
               busy={stopping}
               onClick={() => {
@@ -209,7 +208,7 @@ export function ActivityPanel({
               }}
             />
           )}
-          <IconButton icon={VscClose} label={t("Chiudi il pannello")} onClick={onClose} />
+          <IconButton icon={codicon("close")} label={t("Chiudi il pannello")} onClick={onClose} />
         </>
       }
     >
@@ -227,7 +226,13 @@ export function ActivityPanel({
               }}
               actions={
                 <>
-                  <ActionButton icon={VscStopCircle} label={t("Ferma tutto")} primary small onClick={stopAll} />
+                  <ActionButton
+                    icon={codicon("stop-circle")}
+                    label={t("Ferma tutto")}
+                    primary
+                    small
+                    onClick={stopAll}
+                  />
                   <Button
                     small
                     onClick={() => {
@@ -303,7 +308,7 @@ export function ActivityPanel({
                     <ActionBar>
                       {currentRun.url && currentRun.state === "running" && (
                         <IconButton
-                          icon={VscGlobe}
+                          icon={codicon("globe")}
                           label={t("Apri nel browser")}
                           onClick={() => {
                             void urlOpen(currentRun.url ?? "");
@@ -312,7 +317,7 @@ export function ActivityPanel({
                       )}
                       {alive(currentRun.state) ? (
                         <IconButton
-                          icon={VscDebugStop}
+                          icon={codicon("debug-stop")}
                           label={t("Ferma")}
                           onClick={() => {
                             void onStop(currentRun.key);
@@ -320,7 +325,7 @@ export function ActivityPanel({
                         />
                       ) : (
                         <IconButton
-                          icon={VscClearAll}
+                          icon={codicon("clear-all")}
                           label={t("Togli")}
                           onClick={() => {
                             setSelected(null);
@@ -348,7 +353,7 @@ export function ActivityPanel({
                     </span>
                     {currentService.state === "running" && (
                       <IconButton
-                        icon={VscDebugStop}
+                        icon={codicon("debug-stop")}
                         label={t("Ferma")}
                         onClick={() => {
                           serviceStop(currentService.id, currentService.line).then(setServices, () => undefined);
@@ -373,7 +378,7 @@ export function ActivityPanel({
                       {currentPool.name} · 127.0.0.1:{String(currentPool.port)}
                     </span>
                     <IconButton
-                      icon={VscDebugStop}
+                      icon={codicon("debug-stop")}
                       label={t("Ferma")}
                       onClick={() => {
                         serverStop(currentPool.id).then(reloadPools, () => undefined);

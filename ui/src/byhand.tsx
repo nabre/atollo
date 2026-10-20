@@ -3,10 +3,9 @@
 // file is dropped or picked. The app keeps it in the host's temp folder
 // (data\downloads is still accepted: moved there on use) and tries again; the file is used only with the checksum the source publishes.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { VscCloudDownload } from "react-icons/vsc";
 import { downloadsAdd, downloadsPick, onFileDrag, setupByHandOpen, type ByHand } from "./api";
 import { t } from "./i18n";
-import { Link } from "./workbench";
+import { Codicon, Link } from "./workbench";
 import { useSubscription } from "./hooks";
 
 export function ByHandBox({
@@ -71,7 +70,7 @@ export function ByHandBox({
       }`}
     >
       <p>
-        <VscCloudDownload className="mr-1 inline" size={14} aria-hidden="true" />
+        <Codicon name="cloud-download" className="mr-1" size={14} />
         {t("Scaricalo dal browser:")}{" "}
         <Link
           onClick={() => {

@@ -1,7 +1,6 @@
 // The versions of a tool in its row of the Tools page: the kit's line, the
 // lines on disk with who uses them, the menu to download another.
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { VscAdd, VscCloudDownload, VscLock, VscTrash } from "react-icons/vsc";
 import {
   versionsAdd,
   versionsInstall,
@@ -18,6 +17,7 @@ import { ByHandBox } from "../byhand";
 import { Tag } from "../tags";
 import { isPresent, lineText, offered, splitVersion, useOffers, useReloadOnSteps } from "./model";
 import { LineState, RefreshLines } from "./lines";
+import { Codicon, codicon } from "../workbench";
 
 /** The lines on disk of a tool, with who uses them. Each can go while
  * another stays (the newest left becomes the default); the last goes with
@@ -82,7 +82,7 @@ function DiskLines({
               ) : (
                 rows.length > 1 && (
                   <ActionButton
-                    icon={VscTrash}
+                    icon={codicon("trash")}
                     label={t("Rimuovi {0} {1}", tool.name, r.line)}
                     compact
                     busy={busy === `remove:${tool.id}:${r.line}`}
@@ -217,7 +217,7 @@ function Locked({ projects, label }: { projects: string[]; label: string }) {
         }}
         className="inline-flex h-[22px] items-center gap-1 rounded-[5px] px-1 text-[11px] text-vsc-desc hover:bg-vsc-toolbar-hover hover:text-vsc-fg"
       >
-        <VscLock size={12} aria-hidden="true" />
+        <Codicon name="lock" size={12} />
         {t("bloccata")}
       </button>
       {open && (
@@ -272,7 +272,7 @@ export function AddLine({
   return (
     <div ref={box} className="relative">
       <ActionButton
-        icon={VscAdd}
+        icon={codicon("add")}
         label={label}
         compact
         busy={busy}
@@ -304,7 +304,7 @@ export function AddLine({
                       }}
                       className={`${MENU_ITEM} w-[calc(100%-8px)] text-left font-mono hover:bg-vsc-menu-selection hover:text-vsc-menu-selection-fg focus:bg-vsc-menu-selection focus:text-vsc-menu-selection-fg focus:outline-none`}
                     >
-                      <VscCloudDownload size={12} aria-hidden="true" />
+                      <Codicon name="cloud-download" size={12} />
                       {tool.name} {l}
                       {tool.available[0] === l && (
                         <Tag tone="focus" className="ml-auto">

@@ -2,12 +2,11 @@
 // in the project's panel.json. A detected action saved with its own id is
 // corrected by it (the one in panel.json takes its place).
 import { useState, type SyntheticEvent } from "react";
-import { VscClose, VscSave } from "react-icons/vsc";
 import { projectActionSave, type ActionEdit, type ActionKind, type ProjectAction, type ProjectInfo } from "../api";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction } from "../hooks";
 import { t } from "../i18n";
-import { Select, TextArea, TextField } from "../workbench";
+import { codicon, Select, TextArea, TextField } from "../workbench";
 
 /** The id of a new action from its name, as `valid_id` (detect/overrides.rs)
  * accepts it: lowercase letters, digits and `-_:.`, a letter or a digit
@@ -184,7 +183,7 @@ export function ActionForm({
       {!action && label.trim() !== "" && <p className="text-[12px] text-vsc-desc">{t("Id: {0}", id)}</p>}
       <div className="flex gap-2">
         <ActionButton
-          icon={VscSave}
+          icon={codicon("save")}
           label={t("Salva")}
           primary
           submit
@@ -192,7 +191,7 @@ export function ActionForm({
           busy={busy === "save"}
           onClick={() => undefined}
         />
-        <ActionButton icon={VscClose} label={t("Annulla")} onClick={onCancel} />
+        <ActionButton icon={codicon("close")} label={t("Annulla")} onClick={onCancel} />
       </div>
       <ErrorLine error={invalid ?? error} />
     </form>

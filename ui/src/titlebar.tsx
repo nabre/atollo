@@ -6,12 +6,12 @@
 // permissions they use (capabilities/main.json). Its measures are VSCodium's
 // without the command center: 30px high, window controls 46px wide.
 import { useEffect, useState } from "react";
-import { VscChromeClose, VscChromeMaximize, VscChromeMinimize, VscChromeRestore } from "react-icons/vsc";
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { browserPreview } from "./api";
 import { t } from "./i18n";
 import { BrandWordmark } from "./brand";
 import { Badge } from "./tags";
+import { Codicon } from "./workbench";
 
 /** The window, or null in the browser preview and in the tests. */
 function current(): Window | null {
@@ -82,7 +82,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
           act((w) => w.minimize());
         }}
       >
-        <VscChromeMinimize size={16} aria-hidden="true" />
+        <Codicon name="chrome-minimize" size={16} />
       </button>
       <button
         type="button"
@@ -93,11 +93,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
           act((w) => w.toggleMaximize());
         }}
       >
-        {maximized ? (
-          <VscChromeRestore size={16} aria-hidden="true" />
-        ) : (
-          <VscChromeMaximize size={16} aria-hidden="true" />
-        )}
+        {maximized ? <Codicon name="chrome-restore" size={16} /> : <Codicon name="chrome-maximize" size={16} />}
       </button>
       <button
         type="button"
@@ -110,7 +106,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
           act((w) => w.close());
         }}
       >
-        <VscChromeClose size={16} aria-hidden="true" />
+        <Codicon name="chrome-close" size={16} />
       </button>
     </div>
   );

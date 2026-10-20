@@ -3,13 +3,12 @@
 // by group: web with PHP, CMS, desktop…), each opening its procedure in the
 // «Nuovo progetto» tab of the editor.
 import { useState, type ReactNode, type SyntheticEvent } from "react";
-import { VscCloudDownload, VscNewFolder, VscRepoClone, VscWand } from "react-icons/vsc";
 import { projectClone, projectCreate } from "../api";
 import { bases, basesByCategory, PieceLogo, textOf, type Frameworks } from "../frameworks";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
-import { Button, EditorBody, EditorHeader, List, ListRow, TextField } from "../workbench";
+import { Button, Codicon, EditorBody, EditorHeader, List, ListRow, TextField } from "../workbench";
 
 /** The procedure shown in the «Nuovo progetto» tab. */
 export type NewWay = "empty" | "git" | "framework";
@@ -38,7 +37,7 @@ export function NewProjectTree({
   return (
     <List label={t("Nuovo progetto")}>
       <ListRow
-        icon={<VscNewFolder size={16} aria-hidden="true" />}
+        icon={<Codicon name="new-folder" size={16} />}
         label={wayLabel("empty")}
         selected={way === "empty"}
         current="page"
@@ -47,7 +46,7 @@ export function NewProjectTree({
         }}
       />
       <ListRow
-        icon={<VscRepoClone size={16} aria-hidden="true" />}
+        icon={<Codicon name="repo-clone" size={16} />}
         label={wayLabel("git")}
         selected={way === "git"}
         current="page"
@@ -57,7 +56,7 @@ export function NewProjectTree({
       />
       <ListRow
         twistie={list.length > 0 ? (open ? "open" : "closed") : undefined}
-        icon={<VscWand size={16} aria-hidden="true" />}
+        icon={<Codicon name="wand" size={16} />}
         label={wayLabel("framework")}
         description={list.length > 0 ? String(list.length) : undefined}
         selected={way === "framework" && !open}
@@ -145,7 +144,7 @@ export function EmptyProjectEditor({ onDone, focus }: { onDone: (name: string) =
   return (
     <WayEditor
       way="empty"
-      icon={<VscNewFolder size={56} aria-hidden="true" className={BIG} />}
+      icon={<Codicon name="new-folder" size={56} className={BIG} />}
       description={t("Una cartella nuova e vuota in projects.")}
     >
       <NewProject onDone={onDone} focus={focus} />
@@ -157,7 +156,7 @@ export function GitProjectEditor({ onDone }: { onDone: (name: string) => void })
   return (
     <WayEditor
       way="git"
-      icon={<VscRepoClone size={56} aria-hidden="true" className={BIG} />}
+      icon={<Codicon name="repo-clone" size={56} className={BIG} />}
       description={t("Il repository si clona in una cartella di projects.")}
     >
       <CloneProject onDone={onDone} />
@@ -231,7 +230,7 @@ export function CloneProject({ onDone }: { onDone: (name: string) => void }) {
       </label>
       <Button wide submit disabled={source === ""} busy={busy === "clone"}>
         <span className="inline-flex items-center gap-1">
-          <VscCloudDownload size={14} aria-hidden="true" />
+          <Codicon name="cloud-download" size={14} />
           {t("Clona")}
         </span>
       </Button>

@@ -97,8 +97,8 @@ import {
   SiWordpress,
   SiZig,
 } from "react-icons/si";
-import { VscTerminalPowershell } from "react-icons/vsc";
 import { Mark, Tag } from "./tags";
+import { codicon } from "./workbench";
 
 /** Antigravity's logo: an arch in Google's colours, red at the top to blue
  * at the feet. */
@@ -147,7 +147,7 @@ const C: Logo = { icon: SiC, color: "#A8B9CC" };
 
 const COMPONENTS: Record<string, Logo> = {
   gh: { icon: SiGithub },
-  pwsh: { icon: VscTerminalPowershell, color: "#5391FE" },
+  pwsh: { icon: codicon("terminal-powershell"), color: "#5391FE" },
   "vscodium-server": { icon: SiVscodium, color: "#2F80ED" },
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },
@@ -211,7 +211,7 @@ const LANGUAGES: Record<string, Logo> = {
   "C++": { icon: SiCplusplus, color: "#00599C" },
   LaTeX: { icon: SiLatex, color: "#008080" },
   Typst: { icon: SiTypst, color: "#239DAD" },
-  PowerShell: { icon: VscTerminalPowershell, color: "#5391FE" },
+  PowerShell: { icon: codicon("terminal-powershell"), color: "#5391FE" },
   Shell: { icon: SiGnubash, color: "#4EAA25" },
 };
 

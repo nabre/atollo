@@ -1,10 +1,9 @@
 // The pieces of the Tools page and of the project page: the list of a
 // tool's lines, the button that asks for more, the state of a chosen one.
-import { VscRefresh } from "react-icons/vsc";
 import type { SetupSnapshot, VersionedTool } from "../api";
 import { t } from "../i18n";
 import { ActionButton } from "../common";
-import { Link, Notice, Select } from "../workbench";
+import { codicon, Link, Notice, Select } from "../workbench";
 import { isPresent, offered, present, stepOf } from "./model";
 
 /** The list of a tool's lines: those on disk, then those to download by
@@ -70,7 +69,7 @@ export function RefreshLines({
       : t("Elenco delle versioni del {0}.", new Date(tool.checked * 1000).toLocaleString());
   return (
     <ActionButton
-      icon={VscRefresh}
+      icon={codicon("refresh")}
       label={t("Cerca altre versioni di {0}", tool.name)}
       title={`${t("Cerca altre versioni di {0}", tool.name)}. ${when}`}
       compact

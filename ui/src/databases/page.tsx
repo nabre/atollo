@@ -6,17 +6,6 @@
 
 import { useState } from "react";
 import {
-  VscBook,
-  VscCopy,
-  VscDebugStart,
-  VscDebugStop,
-  VscEye,
-  VscEyeClosed,
-  VscFolderOpened,
-  VscLinkExternal,
-  VscRefresh,
-} from "react-icons/vsc";
-import {
   dbAdminOpen,
   folderOpen,
   serviceLine,
@@ -37,6 +26,7 @@ import { useAction, useCopy, useLoad } from "../hooks";
 import {
   Button,
   CheckboxLabel,
+  codicon,
   Dot,
   EditorBody,
   EditorHeader,
@@ -101,7 +91,7 @@ export function SecretField({ value, label }: { value: string; label: string }) 
     <span className="flex min-w-0 items-center gap-2">
       <code className="truncate font-mono text-vsc-fg">{shown ? value : "••••••••••••"}</code>
       <IconButton
-        icon={shown ? VscEyeClosed : VscEye}
+        icon={shown ? codicon("eye-closed") : codicon("eye")}
         label={shown ? t("Nascondi {0}", label) : t("Mostra {0}", label)}
         title={shown ? t("Nascondi") : t("Mostra")}
         checked={shown}
@@ -110,7 +100,7 @@ export function SecretField({ value, label }: { value: string; label: string }) 
         }}
       />
       <IconButton
-        icon={VscCopy}
+        icon={codicon("copy")}
         label={t("Copia {0}", label)}
         title={t("Copia")}
         onClick={() => {
@@ -157,13 +147,25 @@ function OtherLine({
         </span>
         <span className="flex-1" />
         {on ? (
-          <ActionButton icon={VscDebugStop} label={t("Ferma {0}", o.line)} small busy={busy} onClick={onStop} />
+          <ActionButton
+            icon={codicon("debug-stop")}
+            label={t("Ferma {0}", o.line)}
+            small
+            busy={busy}
+            onClick={onStop}
+          />
         ) : (
-          <ActionButton icon={VscDebugStart} label={t("Avvia {0}", o.line)} small busy={busy} onClick={onStart} />
+          <ActionButton
+            icon={codicon("debug-start")}
+            label={t("Avvia {0}", o.line)}
+            small
+            busy={busy}
+            onClick={onStart}
+          />
         )}
         {onPhpMyAdmin && (
           <ActionButton
-            icon={VscLinkExternal}
+            icon={codicon("link-external")}
             label={t("phpMyAdmin su {0}", o.line)}
             title={t("Questa versione nel browser; il server si avvia se è fermo")}
             small
@@ -277,13 +279,13 @@ function ServiceDetails({
         actions={
           <>
             {on ? (
-              <ActionButton icon={VscDebugStop} label={t("Ferma")} busy={busy} onClick={onStop} />
+              <ActionButton icon={codicon("debug-stop")} label={t("Ferma")} busy={busy} onClick={onStop} />
             ) : (
-              <ActionButton icon={VscDebugStart} label={t("Avvia")} primary busy={busy} onClick={onStart} />
+              <ActionButton icon={codicon("debug-start")} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
             {onPhpMyAdmin && (
               <ActionButton
-                icon={VscLinkExternal}
+                icon={codicon("link-external")}
                 label={t("Apri phpMyAdmin")}
                 title={t("MySQL nel browser; al primo uso si installa e il server si avvia")}
                 busy={busy}
@@ -332,7 +334,7 @@ function ServiceDetails({
             <p className="text-vsc-desc">{t("Avvia il server per vederne il contenuto.")}</p>
             {!browsedOn && (
               <ActionButton
-                icon={VscDebugStart}
+                icon={codicon("debug-start")}
                 label={browseLine === null ? t("Avvia") : t("Avvia {0}", browseLine)}
                 primary
                 busy={browseLine === null ? busy : lineBusy(browseLine)}
@@ -522,9 +524,9 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => v
         title={t("Database")}
         actions={
           <>
-            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={refresh} />
+            <IconButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={refresh} />
             <IconButton
-              icon={VscFolderOpened}
+              icon={codicon("folder-opened")}
               label={t("Apri la cartella dei dati")}
               onClick={() => {
                 void folderOpen("db");
@@ -532,7 +534,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => v
             />
             {onGuide && (
               <IconButton
-                icon={VscBook}
+                icon={codicon("book")}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
                   onGuide("databases");

@@ -1,20 +1,6 @@
 // The account's repositories in the side bar of Projects, to clone one as a
 // new project.
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  VscAccount,
-  VscArchive,
-  VscCheck,
-  VscCloudDownload,
-  VscCode,
-  VscRepo,
-  VscGlobe,
-  VscLinkExternal,
-  VscLock,
-  VscOrganization,
-  VscRefresh,
-  VscRepoForked,
-} from "react-icons/vsc";
 import type { IconType } from "react-icons";
 import {
   editorOpen,
@@ -30,7 +16,7 @@ import { useAction } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { Mark } from "../tags";
 import { t } from "../i18n";
-import { List, ListRow, SearchBox } from "../workbench";
+import { Codicon, codicon, List, ListRow, SearchBox } from "../workbench";
 import { useGithub } from "./account";
 import { RepoDetails } from "./details";
 
@@ -170,12 +156,12 @@ function Repositories({
           placeholder={t("Cerca nei repository")}
           className="min-w-0 flex-1"
         />
-        <ActionButton icon={VscRefresh} label={t("Aggiorna")} compact busy={loading} onClick={onReload} />
+        <ActionButton icon={codicon("refresh")} label={t("Aggiorna")} compact busy={loading} onClick={onReload} />
       </div>
       <ErrorLine error={error ?? actionError} />
       {note && (
         <p role="status" className="flex items-start gap-2">
-          <VscCheck className="mt-0.5 shrink-0 text-vsc-success" size={16} aria-hidden="true" />
+          <Codicon name="check" className="mt-0.5 shrink-0 text-vsc-success" size={16} />
           <span className="select-text">{note}</span>
         </p>
       )}
@@ -191,9 +177,9 @@ function Repositories({
             {groups.length > 1 || g.owner !== repos.login ? (
               <h3 className="flex items-center gap-2 text-[12px] text-vsc-desc">
                 {g.owner === repos.login ? (
-                  <VscAccount size={14} aria-hidden="true" />
+                  <Codicon name="account" size={14} />
                 ) : (
-                  <VscOrganization size={14} aria-hidden="true" />
+                  <Codicon name="organization" size={14} />
                 )}
                 {g.owner} · {g.repos.length}
               </h3>
@@ -224,7 +210,7 @@ function Repositories({
                       <span className="flex items-center gap-0.5">
                         {r.local ? (
                           <ActionButton
-                            icon={VscCode}
+                            icon={codicon("code")}
                             label={t("Editor")}
                             ghost
                             compact
@@ -241,7 +227,7 @@ function Repositories({
                           />
                         ) : (
                           <ActionButton
-                            icon={VscCloudDownload}
+                            icon={codicon("cloud-download")}
                             label={t("Clona")}
                             ghost
                             compact
@@ -253,7 +239,7 @@ function Repositories({
                           />
                         )}
                         <ActionButton
-                          icon={VscLinkExternal}
+                          icon={codicon("link-external")}
                           label="GitHub"
                           compact
                           ghost
@@ -318,7 +304,7 @@ function Repositories({
 
 /** A repository, or a fork; green when it is cloned in projects. */
 function RepoIcon({ repo }: { repo: GithubRepo }) {
-  const Icon = repo.fork ? VscRepoForked : VscRepo;
+  const icon = repo.fork ? "repo-forked" : "repo";
   const label = repo.fork ? t("fork") : undefined;
   return (
     <span
@@ -327,7 +313,7 @@ function RepoIcon({ repo }: { repo: GithubRepo }) {
       title={label}
       className={`inline-flex shrink-0 ${repo.local ? "text-vsc-success" : "text-vsc-desc"}`}
     >
-      <Icon size={16} aria-hidden="true" />
+      <Codicon name={icon} size={16} />
     </span>
   );
 }
@@ -335,8 +321,8 @@ function RepoIcon({ repo }: { repo: GithubRepo }) {
 /** Private or public, and archived: small marks after the name. */
 function RepoFlags({ repo }: { repo: GithubRepo }) {
   const flags: { icon: IconType; label: string }[] = [
-    repo.private ? { icon: VscLock, label: t("privato") } : { icon: VscGlobe, label: t("pubblico") },
-    ...(repo.archived ? [{ icon: VscArchive, label: t("archiviato") }] : []),
+    repo.private ? { icon: codicon("lock"), label: t("privato") } : { icon: codicon("globe"), label: t("pubblico") },
+    ...(repo.archived ? [{ icon: codicon("archive"), label: t("archiviato") }] : []),
   ];
   return (
     <>
