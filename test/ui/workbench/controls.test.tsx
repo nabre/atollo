@@ -16,6 +16,8 @@ import {
   Select,
   TextField,
 } from "../../../ui/src/workbench";
+// VSCodium 1.135's workbench, vendored by scripts/vscodium-css/extract.mjs.
+import referenceCss from "../../../docs/brand/vscodium-1.135/workbench-ref.css?raw";
 
 afterEach(cleanup);
 
@@ -387,5 +389,104 @@ describe("workbench controls", () => {
     const second = document.querySelector("vscode-textfield");
     expect(second).not.toBe(first);
     expect(second?.autocomplete).toBe("off");
+  });
+});
+
+/** A property of a selector in VSCodium's reference (one rule per line). */
+function reference(selector: string, property: string) {
+  const pattern = new RegExp(`[{;]${property}:([^;}]+)`);
+  for (const line of referenceCss.split("\n")) {
+    const value = line.startsWith(`${selector}{`) ? pattern.exec(line)?.[1] : undefined;
+    if (value !== undefined) return value.trim();
+  }
+  return undefined;
+}
+
+/** The CSS a component's shadow root has: the sheets Lit adopts. */
+async function shadowCss(el: Element | null) {
+  const host = el as HTMLElementTagNameMap["vscode-textfield"] | null;
+  await host?.updateComplete;
+  const sheets = host?.shadowRoot?.adoptedStyleSheets ?? [];
+  return sheets.flatMap((s) => [...s.cssRules].map((r) => r.cssText)).join("\n");
+}
+
+/** Spacing utilities and VSCodium variables only: no measure in pixels. */
+const ONLY_TOKENS = /\d+px|-\[\d/;
+
+describe("VSCodium 1.135's measures", () => {
+  it("draws a text button as .monaco-text-button, and the small one as .small", async () => {
+    expect(reference(".monaco-text-button", "padding")).toBe("4px 8px");
+    expect(reference(".monaco-text-button", "line-height")).toBe("16px");
+    expect(reference(".monaco-text-button", "font-size")).toBe("12px");
+    expect(reference(".monaco-text-button.small", "padding")).toBe("3px 6px");
+    render(
+      <>
+        <Button>Apri</Button>
+        <Button small>Aggiungi</Button>
+      </>,
+    );
+    const text = screen.getByRole("button", { name: "Apri" }).className;
+    for (const c of ["px-vsc-size80", "py-vsc-size40", "text-vsc-body-small", "rounded-vsc-small"]) {
+      expect(text).toContain(`[&::part(base)]:${c}`);
+    }
+    expect(text).toContain("[&::part(base)]:leading-(--vscode-spacing-size160)");
+    const small = screen.getByRole("button", { name: "Aggiungi" }).className;
+    for (const c of ["px-vsc-size60", "py-vsc-size20", "text-vsc-body-xsmall"]) {
+      expect(small).toContain(`[&::part(base)]:${c}`);
+    }
+    for (const name of [text, small]) {
+      expect(name).not.toMatch(ONLY_TOKENS);
+      // The component's own focus ring (1px focusBorder, 2px out, as
+      // VSCodium's) stays: no class draws another.
+      expect(name).not.toContain("outline");
+    }
+    expect(reference(".monaco-text-button:focus", "outline-offset")).toBe("2px!important");
+    const own = await shadowCss(screen.getByRole("button", { name: "Apri" }));
+    expect(own).toMatch(
+      /:host\(:focus\) \.base \{[^}]*outline: 1px solid var\(--vscode-focusBorder[^}]*outline-offset: 2px/,
+    );
+  });
+
+  it("gives fields and dropdowns the input box's padding, and the dropdown its corners and shadow", async () => {
+    expect(reference(".monaco-inputbox>.ibwrapper>.input,.monaco-inputbox>.ibwrapper>.mirror", "padding")).toBe(
+      "4px 6px",
+    );
+    expect(reference(".monaco-select-box", "border-radius")).toBe("var(--vscode-cornerRadius-small)");
+    expect(
+      reference(
+        ".settings-editor>.settings-body .settings-tree-container .setting-item-contents .monaco-select-box",
+        "height",
+      ),
+    ).toBe("26px");
+    expect(reference(".monaco-select-box-dropdown-container", "box-shadow")).toBe("var(--vscode-shadow-lg)");
+    expect(reference(".monaco-select-box-dropdown-container", "border-radius")).toBe(
+      "var(--vscode-cornerRadius-large)",
+    );
+    render(
+      <>
+        <TextField label="Nome" value="" onChange={() => undefined} />
+        <Select
+          label="Linea"
+          value="a"
+          onChange={() => undefined}
+          options={[
+            { value: "a", label: "A" },
+            { value: "b", label: "B" },
+          ]}
+        />
+      </>,
+    );
+    const field = await shadowCss(document.querySelector("vscode-textfield"));
+    expect(field).toMatch(
+      /input:not\(\[type="file"\]\) \{\s*padding: var\(--vscode-spacing-size40\) var\(--vscode-spacing-size60\);/,
+    );
+    const select = await shadowCss(document.querySelector("vscode-single-select"));
+    expect(select).toMatch(
+      /\.select-face \{\s*padding: var\(--vscode-spacing-size40\) var\(--vscode-spacing-size60\);/,
+    );
+    expect(select).toMatch(/\.dropdown \{[^}]*border-radius: var\(--vscode-cornerRadius-large\)/);
+    expect(select).toMatch(/\.dropdown \{[^}]*box-shadow: var\(--vscode-shadow-lg\)/);
+    // The focus still turns the border to focusBorder, the component's own.
+    expect(field).toContain("border-color: var(--vscode-focusBorder");
   });
 });
