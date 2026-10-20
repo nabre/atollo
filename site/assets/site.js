@@ -43,9 +43,20 @@
     });
   }
 
-  // The language menu closes on a click outside it and on Escape.
+  // The language menu closes on a click outside it and on Escape. A language
+  // picked in it is kept: the root page then stops following the system's
+  // (the <head> of the English page).
   const langMenu = document.querySelector(".lang-menu");
   if (langMenu) {
+    langMenu.querySelectorAll("a[hreflang]").forEach((a) =>
+      a.addEventListener("click", () => {
+        try {
+          localStorage.setItem("atollo-lang", a.hreflang);
+        } catch (e) {
+          // Storage blocked: the root page goes on following the system.
+        }
+      }),
+    );
     document.addEventListener("click", (e) => {
       if (langMenu.open && !langMenu.contains(e.target)) langMenu.open = false;
     });

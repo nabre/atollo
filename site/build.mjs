@@ -148,6 +148,17 @@ const jsonLd = (lang) =>
     keywords,
   }).replaceAll("<", "\\u003c");
 
+// The root page (English, x-default) follows the system's language: the
+// first of navigator.languages the site speaks, English if none, unless a
+// language was picked in the menu (site.js keeps it in localStorage). Only
+// the root page moves: the others are asked for by their address.
+const langDetect =
+  `<script>try{var l=localStorage.getItem("atollo-lang");if(!l){var s=${JSON.stringify(langs)};` +
+  `var n=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||""];` +
+  `for(var i=0;i<n.length&&!l;i++){var p=String(n[i]).toLowerCase().split("-")[0];if(s.indexOf(p)>=0)l=p}}` +
+  `if(l&&l!=="en"&&${JSON.stringify(langs.filter((l) => l !== "en"))}.indexOf(l)>=0)` +
+  `location.replace(new URL(l+"/"+location.search+location.hash,location.href))}catch(e){}</script>`;
+
 for (const lang of langs) {
   const root = lang === "en" ? "" : "../";
   const alternates = langs
@@ -177,6 +188,7 @@ for (const lang of langs) {
     keywords: escape(keywords),
     jsonLd: jsonLd(lang),
     langLinks,
+    langDetect: lang === "en" ? langDetect : "",
     ...icons,
     toolsMatrix: matrixHtml(catalog, lang, strings[lang]),
     componentCount: String(catalog.components.length),
