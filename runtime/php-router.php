@@ -6,9 +6,10 @@
 // - 421 for a `Host` that is not local (`localhost`, `*.localhost`,
 //   `127.0.0.1`, `[::1]`): a page of another site whose name was re-pointed
 //   to 127.0.0.1 (DNS rebinding) must not read the project (SEC-V3-03);
-//   not with the local network allowed (`ATOLLO_ALLOW_LAN=1`, Settings):
-//   `php -S` listens on every interface then, and a phone on the network
-//   asks for `192.168.1.20:8000`, as Caddy and Apache let it (BUG-V5-01);
+//   with the local network allowed (`ATOLLO_ALLOW_LAN=1`, Settings) an IP
+//   address too: `php -S` listens on every interface then, and a phone on
+//   the network asks for `192.168.1.20:8000`, as Caddy and Apache let it
+//   (BUG-V5-01); any other name still gets 421, as in the static server;
 // - 403 for a hidden file or folder (`.env`, `.git/config`, `.htaccess`),
 //   except `.well-known`, and for the files Apache and Caddy never serve or
 //   run as PHP (`.inc`, `.php3`..`.php8`, `.phtml`, `.phar`): the built-in
@@ -24,12 +25,16 @@
 
 (static function () {
     $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-    if ($host !== '' && getenv('ATOLLO_ALLOW_LAN') !== '1') {
+    if ($host !== '') {
         // Without the port: `[::1]:8000` keeps its brackets, `name:8000` not.
         $host = preg_replace('~^(\[[^\]]*\]|[^:]*)(:\d*)?$~', '$1', $host);
         $host = rtrim($host, '.');
+        $ip = substr($host, 0, 1) === '[' && substr($host, -1) === ']'
+            ? filter_var(substr($host, 1, -1), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+            : filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
         if ($host !== 'localhost' && $host !== '127.0.0.1' && $host !== '[::1]'
-            && substr($host, -10) !== '.localhost') {
+            && substr($host, -10) !== '.localhost'
+            && !($ip !== false && getenv('ATOLLO_ALLOW_LAN') === '1')) {
             http_response_code(421);
             exit;
         }
