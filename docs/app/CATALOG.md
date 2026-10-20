@@ -21,7 +21,7 @@ Real tests: the CI (x64 job) installs `pwsh`, `node`, `git` and the editor; all 
 | | `python` | Python + pip | yes | 70 | | the latest stable minor line, unless `pythonVersion` is set in Settings (D-81) |
 | | `node` | Node.js LTS + npm | no | 110 | | when needed: actions with `npm`, MCP servers with `npx` (D-59) |
 | | `uv` | uv, uvx | no | 35 | | when needed: actions with `uv`, MCP servers with `uvx` (D-59) |
-| | `php` | PHP + Composer | yes | 100 | | Windows: with local VC++, x64 under emulation on Windows ARM64; macOS and Linux: static-php-cli (D-112) |
+| | `php` | PHP + Composer | yes | 100 | | Windows: with local VC++, x64 under emulation on Windows ARM64; macOS and Linux: the kit's build (`php-v<version>-<build>`, with `pdo_sqlite`, SHA-256 pinned in `sha256ByLine`, D-133); a line the kit does not pin: static-php-cli (D-112) |
 | | `apache` | Apache | yes | 45 | `php` | Windows: Apache Lounge with the PHP module, x64 under emulation on Windows ARM64; macOS and Linux: the kit's build (`httpd-v<version>`, SHA-256 pinned in `sha256ByLine`) with `php-fpm` (D-116) |
 | | `caddy` | Caddy | no | 45 | | **new** (D-111); web server of the pools and sites on all systems; replaces Nginx, removed with the migration of its pools and sites at startup (D-120) |
 | | `rust` | Rust | no | 920 | `cc` on Windows ARM64 | `gnu` host on Windows x64, `gnullvm` on Windows ARM64 (linked by the llvm-mingw of `cc`), `msvc` from Settings; native on macOS and Linux |
@@ -47,7 +47,7 @@ Real tests: the CI (x64 job) installs `pwsh`, `node`, `git` and the editor; all 
 | | `phpmyadmin` | phpMyAdmin | no | 60 | `php`, `mysql` | **new** (D-107, replacing the Adminer of D-85); MySQL in the browser, on all six targets (D-117) |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **new** (D-73); on Linux ARM64 from conda-forge, not relocatable |
 
-The groups, defaults and sizes are those of `components.json`. First-run proposal: required, editor, three agents, Python, PHP, Apache, plus Git that comes with Claude Code: about 1.8 GB (1845 MB, of which 250 for the editor). On macOS and Linux Apache is not there: 1800 MB.
+The groups, defaults and sizes are those of `components.json`. First-run proposal: required, editor, three agents, Python, PHP, Apache, plus Git that is always installed: about 1.8 GB (1845 MB, of which 250 for the editor), on every system (Apache too since D-116).
 
 Removed from the catalog on 14/10/2026: Windows Terminal (`terminal`), because the consoles were the classic Windows console (DECISIONS.md D-57), then back the same day as the consoles' default terminal (D-68) and removed again on 16/10/2026 (D-95), along with the `os` group that contained only it; VSCodium desktop (`vscodium`), because the editor is built in. The `conpty` component proposed in D-47 was not added.
 
@@ -65,8 +65,8 @@ Catalog fields beyond those of Atollo: `keys` (the other parts of a component: M
 | `needsByTarget` | extra needs on a target, beyond `needs`; `components.txt` saves only those valid everywhere | `cc`: `zig` on macOS and Linux; `rust`: `cc` on `win32-arm64` |
 | `removeUnix` | the owned files on macOS and Linux, instead of `remove` | pnpm: `bin/pnpm`, `lib/node_modules/corepack` |
 | `sha256ByTarget` | SHA-256 per target, with `version`, where the vendor does not publish a hash | editor |
-| `sha256ByFile` | SHA-256 per file name | PHP: the static-php-cli archives |
-| `sha256ByLine` | line → `{ version, sha256ByTarget }`: only the pinned lines are offered | MySQL 8.4 and 9.7, Apache 2.4 on macOS and Linux |
+| `sha256ByFile` | SHA-256 per file name | PHP: the static-php-cli archives, for a line the kit does not pin (D-133) |
+| `sha256ByLine` | line → `{ version, sha256ByTarget }`: only the pinned lines are offered | MySQL 8.4 and 9.7, Apache 2.4 and PHP 8.4/8.5 on macOS and Linux |
 
 A component not available for the system is shown as "not available for `<target>`" with the reason, never with a binary of another architecture; "not available on ARM64 PCs" remains only for Windows ARM64 (BUG-24c). `Atollo components --target <id>` shows the catalog of another target.
 
@@ -75,7 +75,7 @@ A component not available for the system is shown as "not available for `<target
 | Component | macOS | Linux | Check |
 | --- | --- | --- | --- |
 | Git | `desktop/dugite-native` (`macOS-arm64`, `macOS-x64`) | dugite-native (`ubuntu-x64`, `ubuntu-arm64`) | the asset's `.sha256`; relocatable |
-| PHP | static-php-cli "bulk", `php-<v>-{cli,fpm}-macos-{aarch64,x86_64}.tar.gz` | same, `linux-{x86_64,aarch64}` | pinned SHA-256 (`sha256ByFile`) |
+| PHP | the kit's build (`scripts/build-php`, D-133), release `php-v<v>-<build>` of this repository, `php-<v>-<build>-darwin-{arm64,x64}.tar.gz`; a line not pinned: static-php-cli "bulk" | `php-<v>-<build>-linux-{x64,arm64}.tar.gz` (static, musl) | pinned SHA-256 (`sha256ByLine`; `sha256ByFile` for "bulk") |
 | C, C++ | shims over the kit's `zig cc`, GNU make from conda-forge | as macOS | Zig index; micromamba |
 | Ruby | conda-forge `ruby` (3.2 and later) | as macOS | micromamba; not relocatable |
 | MongoDB | vendor build | server from conda-forge; generic mongosh; Database Tools per distribution | micromamba, vendor JSON |

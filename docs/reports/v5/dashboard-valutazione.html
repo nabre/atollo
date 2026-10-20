@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atollo — Dashboard di Valutazione Tecnica v5 (HEAD a8aad6c)</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-alt: #1c2128;
+      --border: #30363d;
+      --grid: #21262d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --green-strong: #238636;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #a371f7;
+      --blue: #388bfd;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    h1 { margin: 0; font-size: 22px; font-weight: 700; }
+    .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .score-pill {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(63, 185, 80, 0.12);
+      border: 1px solid var(--green);
+      border-radius: 10px;
+      padding: 10px 18px;
+    }
+    .score-pill .big { font-size: 28px; font-weight: 800; color: var(--green); font-family: var(--mono); }
+    .container { max-width: 1440px; margin: 0 auto; padding: 24px 32px 64px; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .kpi-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .kpi-card .k-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-card .k-val { font-size: 24px; font-weight: 700; margin: 6px 0 2px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .kpi-card .k-delta { font-size: 12px; color: var(--green); }
+    .kpi-card .k-delta.warn { color: var(--yellow); }
+    .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn {
+      background: transparent; color: var(--muted);
+      border: 1px solid transparent; border-bottom: none;
+      padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+      border-radius: 8px 8px 0 0; font-family: inherit;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { background: var(--panel); color: var(--text); border-color: var(--border); }
+    .tab-btn:focus-visible, .filter-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin-bottom: 20px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; min-width: 0; }
+    .card h2 { margin-top: 0; font-size: 17px; }
+    .card p.note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; background: var(--panel-alt); }
+    td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; font-family: var(--mono); white-space: nowrap;
+    }
+    .b-crit { background: rgba(248,81,73,0.2); color: #ff7b72; border: 1px solid var(--red); }
+    .b-high { background: rgba(210,153,34,0.2); color: #e3b341; border: 1px solid var(--yellow); }
+    .b-med  { background: rgba(88,166,255,0.18); color: var(--accent); border: 1px solid var(--accent); }
+    .b-low  { background: rgba(139,148,158,0.2); color: var(--muted); border: 1px solid var(--border); }
+    .b-ok   { background: rgba(63,185,80,0.2); color: var(--green); border: 1px solid var(--green); }
+    .b-plan { background: rgba(163,113,247,0.18); color: var(--purple); border: 1px solid var(--purple); }
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .filter-btn {
+      background: var(--panel-alt); color: var(--text); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: inherit;
+    }
+    .filter-btn.active { border-color: var(--accent); color: var(--accent); }
+    code { font-family: var(--mono); font-size: 12px; background: rgba(110,118,129,0.2); padding: 2px 5px; border-radius: 4px; }
+    svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .chart { width: 100%; height: auto; display: block; }
+    .legend-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+    .timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+    .milestone { background: var(--panel-alt); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .milestone.now { border-color: var(--green); }
+    .milestone.next { border-color: var(--purple); }
+    .milestone h3 { margin: 0 0 4px; font-size: 15px; }
+    .milestone .when { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .milestone ul { margin: 0; padding-left: 18px; font-size: 13px; }
+    .mx td { text-align: center; font-family: var(--mono); }
+    .mx td:first-child { text-align: left; font-family: inherit; }
+    .c-ok { color: var(--green); }
+    .c-warn { color: var(--yellow); }
+    @media (max-width: 640px) {
+      header { padding: 18px 16px; }
+      .container { padding: 18px 16px 48px; }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>Atollo — Dashboard Tecnica Integrale (Revisione v5)</h1>
+        <div class="sub">Commit: <code>HEAD a8aad6c</code> (20 Ottobre 2026) · Baseline <code>v4 18698f9</code> · 364 commit, 674 file (+85.686 / −17.597) · Decisioni <code>D-01..D-139</code> · Rilascio <code>app-v0.3.0</code></div>
+      </div>
+      <div class="score-pill">
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Indice Globale v5</div>
+          <div style="font-size:12px;color:var(--accent);">v4: 92,8 → Target post-v5: 98,6</div>
+        </div>
+        <div class="big">95,8 / 100</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="kpi-grid" aria-label="Indicatori principali">
+      <div class="kpi-card">
+        <div class="k-label">Backend Rust (tauri/src)</div>
+        <div class="k-val">55.504 righe</div>
+        <div class="k-delta">156 file .rs · +36,0% vs v4 (40.823)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Frontend UI (ui/src)</div>
+        <div class="k-val">36.183 righe</div>
+        <div class="k-delta">128 file .ts/.tsx · +54,0% vs v4</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Test superati</div>
+        <div class="k-val">958</div>
+        <div class="k-delta">780 Rust + 178 Vitest · +78,7% vs 536</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Catalogo × 6 sistemi</div>
+        <div class="k-val">209 / 210</div>
+        <div class="k-delta">35 componenti · manca solo Android su Linux ARM64</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">CI</div>
+        <div class="k-val">4 workflow</div>
+        <div class="k-delta">15 job (app 9, httpd 2, php 2, site 2) · v4: 1</div>
+      </div>
+      <div class="kpi-card">
+        <div class="k-label">Rilievi v4 (31)</div>
+        <div class="k-val">20 / 5 / 6</div>
+        <div class="k-delta warn">risolti / parziali / aperti · critici tutti chiusi</div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true" data-tab="overview">1. Scorecard</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="v4">2. Stato rilievi v4</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="v5">3. Rilievi v5</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="matrix">4. Matrice 35 × 6</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="vscodium">5. Allineamento VSCodium</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="roadmap">6. Roadmap</button>
+    </div>
+
+    <!-- TAB 1: SCORECARD -->
+    <section id="tab-overview" class="tab-panel active" role="tabpanel">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Radar sulle 9 Dimensioni (v4 → v5 → target)</h2>
+          <svg class="chart" viewBox="0 0 460 420" role="img" aria-label="Radar delle 9 dimensioni: v4, v5 e target post-v5, scala da 50 a 100">
+            <g fill="none" stroke="#21262d" stroke-width="1">
+              <polygon points="230.0,185.0 249.3,192.0 259.5,209.8 256.0,230.0 240.3,243.2 219.7,243.2 204.0,230.0 200.5,209.8 210.7,192.0"/>
+              <polygon points="230.0,155.0 268.6,169.0 289.1,204.6 282.0,245.0 250.5,271.4 209.5,271.4 178.0,245.0 170.9,204.6 191.4,169.0"/>
+              <polygon points="230.0,125.0 287.9,146.1 318.6,199.4 307.9,260.0 260.8,299.6 199.2,299.6 152.1,260.0 141.4,199.4 172.1,146.1"/>
+              <polygon points="230.0,95.0 307.1,123.1 348.2,194.2 333.9,275.0 271.0,327.8 189.0,327.8 126.1,275.0 111.8,194.2 152.9,123.1"/>
+              <polygon points="230.0,65.0 326.4,100.1 377.7,189.0 359.9,290.0 281.3,356.0 178.7,356.0 100.1,290.0 82.3,189.0 133.6,100.1" stroke="#30363d"/>
+              <line x1="230" y1="215" x2="230.0" y2="65.0"/>
+              <line x1="230" y1="215" x2="326.4" y2="100.1"/>
+              <line x1="230" y1="215" x2="377.7" y2="189.0"/>
+              <line x1="230" y1="215" x2="359.9" y2="290.0"/>
+              <line x1="230" y1="215" x2="281.3" y2="356.0"/>
+              <line x1="230" y1="215" x2="178.7" y2="356.0"/>
+              <line x1="230" y1="215" x2="100.1" y2="290.0"/>
+              <line x1="230" y1="215" x2="82.3" y2="189.0"/>
+              <line x1="230" y1="215" x2="133.6" y2="100.1"/>
+            </g>
+            <g font-size="9" fill="#6e7681" text-anchor="start">
+              <text x="234" y="183">60</text><text x="234" y="153">70</text><text x="234" y="123">80</text><text x="234" y="93">90</text>
+            </g>
+            <polygon points="230.0,68.0 326.4,100.1 374.8,189.5 354.7,287.0 279.3,350.3 179.7,353.1 105.3,287.0 88.2,190.0 139.4,107.0" fill="none" stroke="#a371f7" stroke-width="1.5" stroke-dasharray="5 4"/>
+            <polygon points="230.0,77.0 322.6,104.7 357.0,192.6 336.5,276.5 274.1,336.2 182.8,344.7 120.9,278.0 97.1,191.6 170.2,143.8" fill="rgba(139,148,158,0.12)" stroke="#8b949e" stroke-width="1.5"/>
+            <polygon points="230.0,74.0 322.6,104.7 368.9,190.5 346.9,282.5 276.2,341.9 181.8,347.5 118.3,279.5 91.1,190.5 150.9,120.8" fill="rgba(63,185,80,0.18)" stroke="#3fb950" stroke-width="2"/>
+            <g font-size="11" fill="#c9d1d9">
+              <text x="230" y="30" text-anchor="middle">Architettura 97</text>
+              <text x="346" y="74" text-anchor="start">Isolamento 98</text>
+              <text x="388" y="186" text-anchor="start">Rilocazione</text>
+              <text x="388" y="199" text-anchor="start">97</text>
+              <text x="370" y="308" text-anchor="start">Sicurezza 95</text>
+              <text x="292" y="384" text-anchor="start">UX 95</text>
+              <text x="168" y="384" text-anchor="end">AI 97</text>
+              <text x="90" y="308" text-anchor="end">Dati/DB 93</text>
+              <text x="72" y="186" text-anchor="end">Qualità</text>
+              <text x="72" y="199" text-anchor="end">97</text>
+              <text x="114" y="74" text-anchor="end">Multi-OS 91</text>
+            </g>
+          </svg>
+          <div class="legend-row">
+            <span><span class="sw" style="background:#3fb950"></span>v5 (95,8)</span>
+            <span><span class="sw" style="background:#8b949e"></span>v4 (92,8)</span>
+            <span><span class="sw" style="background:#a371f7"></span>Target post-v5 (98,6)</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Test automatici e rilievi v4</h2>
+          <svg class="chart" viewBox="0 0 460 300" role="img" aria-label="Test superati: v4 536, v5 958. Rilievi v4: 20 risolti, 5 parziali, 6 aperti">
+            <text x="0" y="16" font-size="12" fill="#8b949e">Test superati (Rust + Vitest)</text>
+            <!-- scale: 958 -> 360px; 1px = 2.661 test -->
+            <text x="0" y="50" font-size="12" fill="#c9d1d9">v4</text>
+            <rect x="40" y="34" width="161.2" height="24" rx="3" fill="#238636"/>
+            <rect x="201.2" y="34" width="40.2" height="24" rx="0" fill="#58a6ff"/>
+            <text x="248" y="51" font-size="12" font-weight="700" fill="#e6edf3">536</text>
+            <text x="0" y="90" font-size="12" fill="#c9d1d9">v5</text>
+            <rect x="40" y="74" width="293.1" height="24" rx="3" fill="#238636"/>
+            <rect x="333.1" y="74" width="66.9" height="24" fill="#58a6ff"/>
+            <text x="406" y="91" font-size="12" font-weight="700" fill="#e6edf3">958</text>
+            <text x="40" y="118" font-size="11" fill="#8b949e">v4: 429 Rust + 107 Vitest · v5: 780 Rust + 178 Vitest (+78,7%)</text>
+
+            <text x="0" y="168" font-size="12" fill="#8b949e">Esito dei 31 rilievi v4 (25 + 6 UX)</text>
+            <!-- 31 -> 400px; 12.9px each -->
+            <rect x="0" y="182" width="258.1" height="28" fill="#238636"/>
+            <rect x="258.1" y="182" width="64.5" height="28" fill="#d29922"/>
+            <rect x="322.6" y="182" width="77.4" height="28" fill="#f85149"/>
+            <text x="129" y="201" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">20 risolti</text>
+            <text x="290.3" y="201" font-size="12" font-weight="700" fill="#0d1117" text-anchor="middle">5 parz.</text>
+            <text x="361.3" y="201" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">6 aperti</text>
+            <text x="0" y="234" font-size="11" fill="#8b949e">Tutti i critici (PORT-V4-01..04) e tutti i PORT-V4 chiusi.</text>
+            <text x="0" y="252" font-size="11" fill="#8b949e">Aperti: SEC-V4-03, BUG-V4-02, 04, 05, 08, UX-V4-01.</text>
+            <text x="0" y="270" font-size="11" fill="#8b949e">Parziali: SEC-V4-02, BUG-V4-03, 11, 13, UX-V4-06.</text>
+          </svg>
+          <div class="legend-row">
+            <span><span class="sw" style="background:#238636"></span>Rust / Risolti</span>
+            <span><span class="sw" style="background:#58a6ff"></span>Vitest</span>
+            <span><span class="sw" style="background:#d29922"></span>Parziali</span>
+            <span><span class="sw" style="background:#f85149"></span>Aperti</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Le 9 Dimensioni: v4 → v5 → Target post-v5</h2>
+        <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Dimensione</th><th class="num">Peso</th><th class="num">v4</th><th class="num">v5</th><th class="num">Delta</th><th class="num">Target</th><th>Sintesi v5</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td><strong>Architettura &amp; Modularità</strong></td><td class="num">15%</td><td class="num">96</td><td class="num"><strong>97</strong></td><td class="num">+1</td><td class="num">99</td><td>Router multi-target (<code>router/</code>, D-114), <code>DbEngine</code> esaustivo (D-110), FastCGI comune, <code>site_mode</code> allineato alla scansione (BUG-V4-01 risolto).</td></tr>
+            <tr><td>2</td><td><strong>Isolamento &amp; Zero Residui</strong></td><td class="num">15%</td><td class="num">98</td><td class="num"><strong>98</strong></td><td class="num">0</td><td class="num">100</td><td><code>git config --global</code> nell'HOME del kit, <code>safe.directory</code> limitato a <code>&lt;kit&gt;/*</code>, lanciatori <code>kit-bin</code> per conda (D-125).</td></tr>
+            <tr><td>3</td><td><strong>Rilocazione &amp; USB</strong></td><td class="num">12%</td><td class="num">93</td><td class="num"><strong>97</strong></td><td class="num">+4</td><td class="num">99</td><td>Symlink preservati, rilocazione Unix, conda offline (D-118), PEM e terminali relativi al kit, <code>settings.json</code>/<code>terminals.json</code> nel rilocatore.</td></tr>
+            <tr><td>4</td><td><strong>Sicurezza Locale</strong></td><td class="num">12%</td><td class="num">91</td><td class="num"><strong>95</strong></td><td class="num">+4</td><td class="num">98</td><td>SEC-V4-01 e 04 chiusi (alias non eseguibili, <code>FCGI_WEB_SERVER_ADDRS</code>, chiave FastCGI); chiave Gemini in file privato; socket admin di Caddy mai TCP.</td></tr>
+            <tr><td>5</td><td><strong>UX &amp; Accessibilità</strong></td><td class="num">10%</td><td class="num">93</td><td class="num"><strong>95</strong></td><td class="num">+2</td><td class="num">98</td><td>Impostazioni senza «Salva», primo avvio, Guida in 9 capitoli, pannello rapido, 63 basi del wizard; restano UX-V5-01/02.</td></tr>
+            <tr><td>6</td><td><strong>Ecosistema AI</strong></td><td class="num">8%</td><td class="num">96</td><td class="num"><strong>97</strong></td><td class="num">+1</td><td class="num">99</td><td>Agenti su sei sistemi, accessi portabili su macOS e Linux (D-115), terminale PTY con agenti (D-109).</td></tr>
+            <tr><td>7</td><td><strong>Dati &amp; DB</strong></td><td class="num">8%</td><td class="num">92</td><td class="num"><strong>93</strong></td><td class="num">+1</td><td class="num">98</td><td>Solo MySQL (D-117), phpMyAdmin per versione (D-107), <code>drop_db</code> su ogni linea; restano lock e porte (BUG-V5-02, Alta).</td></tr>
+            <tr><td>8</td><td><strong>Qualità &amp; Test</strong></td><td class="num">10%</td><td class="num">95</td><td class="num"><strong>97</strong></td><td class="num">+2</td><td class="num">98</td><td>958 test superati, 0 falliti; test Unix su 4 target e Windows ARM64; test sui separatori di percorso in tutto il crate.</td></tr>
+            <tr><td>9</td><td><strong>Readiness Multi-OS</strong></td><td class="num">10%</td><td class="num">81</td><td class="num"><strong>91</strong></td><td class="num">+10</td><td class="num">97</td><td>PORT-V4-01..08 chiusi, 0.3.0 per sei sistemi; manca la prova su macchine reali fuori da Windows x64 (#5, #6).</td></tr>
+            <tr><td></td><td><strong>Totale pesato</strong></td><td class="num">100%</td><td class="num">92,8</td><td class="num"><strong>95,8</strong></td><td class="num">+3,0</td><td class="num">98,6</td><td></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: V4 FINDINGS STATUS -->
+    <section id="tab-v4" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <h2>Stato dei 31 Rilievi v4</h2>
+        <div class="filter-bar" data-table="v4-table">
+          <button class="filter-btn active" data-filter="ALL">Tutti (31)</button>
+          <button class="filter-btn" data-filter="OK">Risolti (20)</button>
+          <button class="filter-btn" data-filter="PART">Parziali (5)</button>
+          <button class="filter-btn" data-filter="OPEN">Aperti (6)</button>
+        </div>
+        <div class="table-wrap">
+        <table id="v4-table">
+          <thead><tr><th>ID</th><th>Stato</th><th>Evidenza a <code>a8aad6c</code></th></tr></thead>
+          <tbody>
+            <tr data-k="OK"><td><code>SEC-V4-01</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Alias senza esecuzione PHP: <code>ALIAS_NO_RUN</code> (<code>projects/apache.rs:273</code>), Caddy <code>@script</code> → 404 (<code>projects/caddy.rs:509-510</code>).</td></tr>
+            <tr data-k="PART"><td><code>SEC-V4-02</code></td><td><span class="badge b-high">PARZIALE</span></td><td>Router di progetto dopo i controlli del kit; in LAN <code>php -S</code> risponde ancora 421 (→ BUG-V5-01).</td></tr>
+            <tr data-k="OPEN"><td><code>SEC-V4-03</code></td><td><span class="badge b-crit">APERTO</span></td><td><code>serve.rs:56-67</code> rifiuta ancora <code>*.localhost</code> (→ SEC-V5-01).</td></tr>
+            <tr data-k="OK"><td><code>SEC-V4-04</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>FCGI_WEB_SERVER_ADDRS</code> + chiave per avvio (<code>fastcgi.rs:167-182</code>); vHost <code>refused.invalid</code> nei pool.</td></tr>
+            <tr data-k="OK"><td><code>BUG-V4-01</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>SiteMode::Auto</code> (<code>run.rs:124-138</code>), <code>pool_of</code> da scansione nuova.</td></tr>
+            <tr data-k="OPEN"><td><code>BUG-V4-02</code></td><td><span class="badge b-crit">APERTO</span></td><td>Pool senza <code>conf.d</code> del progetto (<code>servers/config.rs:49-72, 166-189</code>) (→ BUG-V5-05).</td></tr>
+            <tr data-k="PART"><td><code>BUG-V4-03</code></td><td><span class="badge b-high">PARZIALE</span></td><td><code>php.ini</code> per linea/target; porte dei pool non controllate contro DB, progetti ed editor.</td></tr>
+            <tr data-k="OPEN"><td><code>BUG-V4-04</code></td><td><span class="badge b-crit">APERTO</span></td><td>Nessun lock per avvio della stessa linea e per <code>services.json</code> (→ BUG-V5-02).</td></tr>
+            <tr data-k="OPEN"><td><code>BUG-V4-05</code></td><td><span class="badge b-crit">APERTO</span></td><td>Scambio porte MySQL al cambio di linea predefinita (→ BUG-V5-02).</td></tr>
+            <tr data-k="OK"><td><code>BUG-V4-06</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>drop_db</code> su ogni linea installata (<code>db/services/mod.rs:951-971</code>).</td></tr>
+            <tr data-k="OK"><td><code>BUG-V4-07</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>running_at</code> / <code>sql_tool_at</code> per linea (<code>db/browse.rs:155-181</code>).</td></tr>
+            <tr data-k="OPEN"><td><code>BUG-V4-08</code></td><td><span class="badge b-crit">APERTO</span></td><td>File <code>&lt;exe&gt;-&lt;pid&gt;.cnf</code>/<code>.yaml</code> (<code>tools.rs:175, 196</code>) (→ BUG-V5-04).</td></tr>
+            <tr data-k="OK"><td><code>BUG-V4-09</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Apache solo con <code>.htaccess</code> con regole proprie (<code>detect/mod.rs:571-578</code>).</td></tr>
+            <tr data-k="OK"><td><code>BUG-V4-10</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>env_apply</code> non tronca più <code>.env</code> (<code>db/auth.rs:843-901</code>); residuo teorico per basi utente.</td></tr>
+            <tr data-k="PART"><td><code>BUG-V4-11</code></td><td><span class="badge b-high">PARZIALE</span></td><td><code>invalidate()</code> solo su 3 comandi; ritardo massimo <code>LIST_TTL = 15 s</code>.</td></tr>
+            <tr data-k="OK"><td><code>BUG-V4-12</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Tag immagine dall'ultimo segmento (<code>detect/container.rs:57-58</code>).</td></tr>
+            <tr data-k="PART"><td><code>BUG-V4-13</code></td><td><span class="badge b-high">PARZIALE</span></td><td>Ripiego sulla linea più recente (<code>editor/terminals.rs:430-449</code>), senza segnalare la linea sostituita.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-01</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Symlink ricreati su Unix (<code>net/archive.rs:852-887</code>).</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-02</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>old-root-{darwin,linux}.txt</code> (<code>kit.rs:569-571</code>); maiuscola solo con lettera di unità.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-03</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>bin/agy</code> eseguibile, <code>runtime/bin/agy</code> sceglie il binario, <code>bashrc</code> compatibile Bash 3.2.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-04</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Profili terminale per sistema (<code>editor/cfg.rs:274</code>).</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-05</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>translate_rel</code> (<code>setup/catalog.rs:262-292</code>), nomi da <code>DbEngine</code>.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-06</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Test sui separatori su tutto il crate (<code>test/rust/paths.rs</code>).</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-07</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Julia <code>x64Only</code>, Bun <code>aarch64</code>, <code>RunLock</code> con <code>flock</code>, <code>tauri = "=2.12.1"</code>.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-08</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>dugite-native, conda offline, Apache e PHP del kit, Caddy, phpMyAdmin sui 6 target.</td></tr>
+            <tr data-k="OPEN"><td><code>UX-V4-01</code></td><td><span class="badge b-crit">APERTO</span></td><td>Pool e linee MySQL secondarie assenti da barra di stato e Attività (→ UX-V5-01).</td></tr>
+            <tr data-k="OK"><td><code>UX-V4-02</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Stato <code>detached</code> e nome del server (<code>ui/src/servers.tsx:160-193</code>).</td></tr>
+            <tr data-k="OK"><td><code>UX-V4-03</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Nome dal pool con ripiego <code>&lt;label&gt;.localhost</code>.</td></tr>
+            <tr data-k="OK"><td><code>UX-V4-04</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>DbVersionSelect</code> visibile quando serve (<code>databases.tsx:133</code>).</td></tr>
+            <tr data-k="OK"><td><code>UX-V4-05</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>Project.lines</code> esposto (<code>ui/src/api/projects.ts:50</code>).</td></tr>
+            <tr data-k="PART"><td><code>UX-V4-06</code></td><td><span class="badge b-high">PARZIALE</span></td><td>Escape non chiude una conferma; profilo di pool eliminato senza conferma (→ UX-V5-02).</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: V5 FINDINGS -->
+    <section id="tab-v5" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <h2>Nuovi Rilievi v5 (9, verificati nel codice, non provati a runtime)</h2>
+        <div class="filter-bar" data-table="v5-table">
+          <button class="filter-btn active" data-filter="ALL">Tutti (9)</button>
+          <button class="filter-btn" data-filter="HIGH">Alti (1)</button>
+          <button class="filter-btn" data-filter="MED">Medi (3)</button>
+          <button class="filter-btn" data-filter="LOW">Bassi (5)</button>
+        </div>
+        <div class="table-wrap">
+        <table id="v5-table">
+          <thead><tr><th>ID</th><th>Severità</th><th>Dove</th><th>Problema e correzione</th></tr></thead>
+          <tbody>
+            <tr data-k="HIGH"><td><code>BUG-V5-02</code></td><td><span class="badge b-high">ALTA</span></td><td><code>db/services/mod.rs:162-163, 545-610, 195-230</code></td><td>Nessun lock per le operazioni dei DB: due avvii della stessa linea MySQL possono lanciare due <code>mysqld</code> sulla stessa cartella dati; <code>keep_port</code> senza lock; scambio porte. Correzione: <code>op_lock</code> per motore, RMW sotto lock di <code>services.json</code>, porta salvata anche per la linea principale.</td></tr>
+            <tr data-k="MED"><td><code>BUG-V5-01</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>runtime/php-router.php:23-32</code>, <code>projects/run.rs:485-487</code></td><td>In LAN <code>php -S</code> ascolta su 0.0.0.0 ma il router risponde 421 agli Host IP. Correzione: saltare il controllo con <code>ATOLLO_ALLOW_LAN=1</code> (già nell'ambiente, <code>env.rs:876</code>) e un test.</td></tr>
+            <tr data-k="MED"><td><code>BUG-V5-05</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>servers/config.rs:49-72, 166-189</code>; <code>servers/pools.rs:533-566</code></td><td>Siti nei pool senza <code>conf.d</code> del progetto; porte dei pool non controllate contro DB, progetti ed editor. Correzione: <code>IncludeOptional</code>/<code>import</code> e una funzione comune <code>ports_taken(kit)</code>.</td></tr>
+            <tr data-k="MED"><td><code>UX-V5-01</code></td><td><span class="badge b-med">MEDIA</span></td><td><code>ui/src/App.tsx:104</code>; <code>ui/src/activity.tsx:49</code></td><td>Pool web attivi e linee MySQL secondarie invisibili nel conteggio e in Attività. Correzione: includere <code>s.others</code> attivi e i pool in <code>liveServices</code>.</td></tr>
+            <tr data-k="LOW"><td><code>SEC-V5-01</code></td><td><span class="badge b-low">BASSA</span></td><td><code>projects/serve.rs:56-67</code></td><td>Il server statico rifiuta <code>&lt;progetto&gt;.localhost</code> con 403. Correzione: <code>|| name.ends_with(".localhost")</code>.</td></tr>
+            <tr data-k="LOW"><td><code>BUG-V5-03</code></td><td><span class="badge b-low">BASSA</span> <span class="badge b-ok">0.4.0</span></td><td><code>github/mod.rs:217-223, 225-241</code></td><td><code>kit_safe_value</code> cancella a ogni avvio un <code>safe.directory</code> dell'utente per un disco non montato. Corretto nella 0.4.0 alpha.</td></tr>
+            <tr data-k="LOW"><td><code>BUG-V5-04</code></td><td><span class="badge b-low">BASSA</span></td><td><code>db/services/tools.rs:175, 196</code></td><td>File di login temporanei con il solo PID: dump/ripristini paralleli si sovrascrivono. Correzione: contatore atomico come <code>TMP_SEQ</code> (<code>fsx.rs:80</code>).</td></tr>
+            <tr data-k="LOW"><td><code>UX-V5-02</code></td><td><span class="badge b-low">BASSA</span></td><td><code>ui/src/terminals.tsx:258</code>; <code>ui/src/servers.tsx:137, 524-528</code></td><td>Escape non chiude la conferma del terminale; profilo di pool eliminato al primo clic. Correzione: <code>onCancel</code> e <code>InlineConfirm</code>.</td></tr>
+            <tr data-k="LOW"><td><code>PORT-V5-01</code></td><td><span class="badge b-low">BASSA</span></td><td><code>scripts/dev-ui.mjs:103-114</code></td><td>Solo sviluppo: su Windows un PID del genitore riusato può lasciare vivo Vite. Accettabile; in alternativa la chiusura di stdin del genitore.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="note">Controllati e senza rilievi: <code>settings_set</code> sotto <code>Settings::update</code>, PEM relativo, <code>git config --global</code> nell'HOME del kit, permessi <code>pty_*</code> solo alla finestra <code>main</code>, CSP invariata, socket admin di Caddy privati.</p>
+      </div>
+    </section>
+
+    <!-- TAB 4: MATRIX -->
+    <section id="tab-matrix" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <h2>Catalogo per Tipo × Sistema (da <code>components.json</code>, regola di <code>site/matrix.mjs</code>)</h2>
+        <div class="table-wrap">
+        <table class="mx">
+          <thead>
+            <tr><th>Tipo</th><th class="num">Comp.</th><th>Win x64</th><th>Win ARM64</th><th>macOS ARM64</th><th>macOS x64</th><th>Linux x64</th><th>Linux ARM64</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Sistema</td><td class="num">4</td><td class="c-ok">4</td><td class="c-ok">3 + 1 emu</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td></tr>
+            <tr><td>Agenti</td><td class="num">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td></tr>
+            <tr><td>Linguaggi</td><td class="num">16</td><td class="c-ok">16</td><td class="c-ok">13 + 3 emu</td><td class="c-ok">16</td><td class="c-ok">16</td><td class="c-ok">16</td><td class="c-ok">16</td></tr>
+            <tr><td>Strumenti</td><td class="num">6</td><td class="c-ok">6</td><td class="c-ok">4 + 2 emu</td><td class="c-ok">6</td><td class="c-ok">6</td><td class="c-ok">6</td><td class="c-warn">5 (no Android)</td></tr>
+            <tr><td>Web</td><td class="num">2</td><td class="c-ok">2</td><td class="c-ok">1 + 1 emu</td><td class="c-ok">2</td><td class="c-ok">2</td><td class="c-ok">2</td><td class="c-ok">2</td></tr>
+            <tr><td>Database</td><td class="num">4</td><td class="c-ok">4</td><td class="c-ok">2 + 2 emu</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td></tr>
+            <tr><td><strong>Totale</strong></td><td class="num"><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>34</strong></td></tr>
+            <tr><td>v4</td><td class="num">35</td><td>35</td><td>33</td><td>31</td><td>31</td><td>31</td><td>—</td></tr>
+            <tr><td>Verifica</td><td></td><td class="c-ok">campo</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="note">Emulazione x64 su Windows ARM64: editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX, R. Su Linux l'app richiede glibc ≥ 2.35 (controllo <code>glibc floor</code> in CI): RHEL/Alma 8-9, NixOS e Alpine restano fuori. Dettaglio in <code>06-MATRICE-STRUMENTI-PER-DISTRIBUZIONE-OS.md</code>.</p>
+      </div>
+    </section>
+
+    <!-- TAB 5: VSCODIUM -->
+    <section id="tab-vscodium" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <h2>Allineamento a VSCodium 1.135 — piano approvato, fasi 0-5 <span class="badge b-plan">PIANIFICATO · 0.5.0</span></h2>
+        <p class="note" style="margin:0 0 14px">Confronto del CSS del workbench di VSCodium 1.135 con <code>ui/src/theme/*.css</code> e <code>ui/src/workbench/*</code>. Sono lavoro pianificato, non rilievi aperti. Fasi (dettaglio in <code>07-PIANO-ESECUTIVO-V5.md</code>): V-0 token e fondamenta, V-1 cornice, V-2 liste e scorrimento, V-3 controlli e dialoghi, V-4 schede ed editor speciali, V-5 icone codicon.</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th class="num">#</th><th>Fase</th><th>Area</th><th>Atollo oggi</th><th>VSCodium</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td><span class="badge b-plan">V-4</span></td><td>Schede del pannello</td><td>pillola</td><td>testo con sottolineatura della scheda attiva</td></tr>
+            <tr><td class="num">2</td><td><span class="badge b-plan">V-0, V-1</span></td><td>Barra delle attività</td><td>forma, bordo, spaziatura diversi; chiavi <code>modernActivityBar*</code></td><td>chiavi <code>activityBar-*</code></td></tr>
+            <tr><td class="num">3</td><td><span class="badge b-plan">V-2</span></td><td>Righe di liste e alberi</td><td>arrotondate e rientrate</td><td>a tutta larghezza, squadrate</td></tr>
+            <tr><td class="num">4</td><td><span class="badge b-plan">V-2</span></td><td>Intestazioni dei pannelli laterali</td><td>hover e raggio diversi</td><td>stile del workbench</td></tr>
+            <tr><td class="num">5</td><td><span class="badge b-plan">V-2</span></td><td>Barre di scorrimento</td><td>native del browser</td><td>personalizzate del workbench</td></tr>
+            <tr><td class="num">6</td><td><span class="badge b-plan">V-3</span></td><td>Pulsanti</td><td>dimensioni diverse</td><td>misure del workbench</td></tr>
+            <tr><td class="num">7</td><td><span class="badge b-plan">V-4</span></td><td>Intestazione delle estensioni</td><td>64 px</td><td>128 px con barra di navigazione</td></tr>
+            <tr><td class="num">8</td><td><span class="badge b-plan">V-4</span></td><td>Editor delle impostazioni</td><td>senza indice e barra del valore modificato</td><td>TOC, titoli, barra del valore modificato</td></tr>
+            <tr><td class="num">9</td><td><span class="badge b-plan">V-1</span></td><td>Barra del titolo</td><td>44 px, sovrapposizione 35 px</td><td>46 px dei pulsanti finestra, 30 px</td></tr>
+            <tr><td class="num">10</td><td><span class="badge b-plan">V-4</span></td><td>Schede dell'editor</td><td>colore inattiva, posizione della chiusura</td><td>stile del workbench</td></tr>
+            <tr><td class="num">11</td><td><span class="badge b-plan">V-3</span></td><td>Finestre di dialogo</td><td>raggio e ombra diversi</td><td>stile del workbench</td></tr>
+            <tr><td class="num">12</td><td><span class="badge b-plan">V-1</span></td><td>Barra di stato</td><td>padding degli elementi</td><td>misure del workbench</td></tr>
+            <tr><td class="num">13</td><td><span class="badge b-plan">V-3</span></td><td>Campi e menu a tendina</td><td>stile proprio</td><td>controlli del workbench</td></tr>
+            <tr><td class="num">14</td><td><span class="badge b-plan">V-5</span></td><td>Icone</td><td><code>react-icons/vsc</code> (64 file)</td><td>font codicons</td></tr>
+            <tr><td class="num">15</td><td><span class="badge b-plan">V-0</span></td><td>Token di dimensione</td><td>solo token di colore</td><td>altezze di righe, schede, intestazioni</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: ROADMAP -->
+    <section id="tab-roadmap" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <h2>Roadmap dopo il v5</h2>
+        <div class="timeline">
+          <div class="milestone">
+            <h3>0.3.0 alpha</h3>
+            <div class="when">20/10/2026 · tag <code>app-v0.3.0</code></div>
+            <ul>
+              <li>Sei sistemi, asset <code>Atollo-&lt;ver&gt;-&lt;target&gt;</code> con <code>.sha256</code> (D-119, D-129)</li>
+              <li>PHP del kit su macOS/Linux (D-133)</li>
+            </ul>
+          </div>
+          <div class="milestone now">
+            <h3>0.4.0 alpha <span class="badge b-ok">SUBITO DOPO IL v5</span></h3>
+            <div class="when">codice di <code>a8aad6c</code> + correzione di BUG-V5-03</div>
+            <ul>
+              <li><code>safe.directory</code> dell'utente non più cancellato</li>
+              <li>Indice di partenza: 95,8</li>
+            </ul>
+          </div>
+          <div class="milestone next">
+            <h3>0.5.0 alpha <span class="badge b-plan">PROSSIMA TAPPA</span></h3>
+            <div class="when">target post-v5: 98,6</div>
+            <ul>
+              <li>Rilievi aperti e parziali: BUG-V5-02 (Alta), BUG-V5-01, BUG-V5-05, UX-V5-01, SEC-V5-01, BUG-V5-04, UX-V5-02, PORT-V5-01, residui BUG-V4-10, 11, 13 (piano nel 07)</li>
+              <li>Allineamento a VSCodium, fasi 0-5 (15 differenze)</li>
+            </ul>
+          </div>
+          <div class="milestone">
+            <h3>In parallelo</h3>
+            <div class="when">README «Still to do»</div>
+            <ul>
+              <li>Prove su Mac reali (#5, #6) e PC Linux (Ubuntu 24.04, Fedora 42, Debian 13)</li>
+              <li>Aggiornamento dell'app fra versioni su macOS/Linux</li>
+              <li>Notarizzazione macOS, firma SignPath su Windows</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Target per Dimensione (post-v5)</h2>
+        <svg class="chart" viewBox="0 0 640 300" role="img" aria-label="Barre v5 e target per ciascuna delle 9 dimensioni">
+          <!-- x scale: 80..100 over 380px starting at x=200 -->
+          <g font-size="10" fill="#6e7681" text-anchor="middle">
+            <text x="200" y="292">80</text><text x="295" y="292">85</text><text x="390" y="292">90</text><text x="485" y="292">95</text><text x="580" y="292">100</text>
+          </g>
+          <g stroke="#21262d"><line x1="295" y1="6" x2="295" y2="280"/><line x1="390" y1="6" x2="390" y2="280"/><line x1="485" y1="6" x2="485" y2="280"/><line x1="580" y1="6" x2="580" y2="280"/></g>
+          <g font-size="12" fill="#c9d1d9" text-anchor="end">
+            <text x="190" y="22">Architettura</text><text x="190" y="52">Isolamento</text><text x="190" y="82">Rilocazione</text><text x="190" y="112">Sicurezza</text><text x="190" y="142">UX</text><text x="190" y="172">Ecosistema AI</text><text x="190" y="202">Dati/DB</text><text x="190" y="232">Qualità/Test</text><text x="190" y="262">Multi-OS</text>
+          </g>
+          <!-- v5 bars: width = (v-80)*19 ; target ticks at 200+(t-80)*19 -->
+          <g fill="#238636">
+            <rect x="200" y="10" width="323" height="16" rx="2"/>
+            <rect x="200" y="40" width="342" height="16" rx="2"/>
+            <rect x="200" y="70" width="323" height="16" rx="2"/>
+            <rect x="200" y="100" width="285" height="16" rx="2"/>
+            <rect x="200" y="130" width="285" height="16" rx="2"/>
+            <rect x="200" y="160" width="323" height="16" rx="2"/>
+            <rect x="200" y="190" width="247" height="16" rx="2"/>
+            <rect x="200" y="220" width="323" height="16" rx="2"/>
+            <rect x="200" y="250" width="209" height="16" rx="2"/>
+          </g>
+          <g stroke="#a371f7" stroke-width="3">
+            <line x1="561" y1="6" x2="561" y2="30"/>
+            <line x1="580" y1="36" x2="580" y2="60"/>
+            <line x1="561" y1="66" x2="561" y2="90"/>
+            <line x1="542" y1="96" x2="542" y2="120"/>
+            <line x1="542" y1="126" x2="542" y2="150"/>
+            <line x1="561" y1="156" x2="561" y2="180"/>
+            <line x1="542" y1="186" x2="542" y2="210"/>
+            <line x1="542" y1="216" x2="542" y2="240"/>
+            <line x1="523" y1="246" x2="523" y2="270"/>
+          </g>
+          <g font-size="11" font-weight="700" fill="#e6edf3">
+            <text x="589" y="22">97→99</text><text x="589" y="52">98→100</text><text x="589" y="82">97→99</text><text x="589" y="112">95→98</text><text x="589" y="142">95→98</text><text x="589" y="172">97→99</text><text x="589" y="202">93→98</text><text x="589" y="232">97→98</text><text x="589" y="262">91→97</text>
+          </g>
+        </svg>
+        <div class="legend-row">
+          <span><span class="sw" style="background:#238636"></span>v5</span>
+          <span><span class="sw" style="background:#a371f7"></span>Target post-v5</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+        document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+      });
+    });
+    document.querySelectorAll('.filter-bar').forEach(function (bar) {
+      var table = document.getElementById(bar.dataset.table);
+      bar.querySelectorAll('.filter-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          bar.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          var f = btn.dataset.filter;
+          table.querySelectorAll('tbody tr').forEach(function (row) {
+            row.style.display = (f === 'ALL' || row.dataset.k === f) ? '' : 'none';
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>
