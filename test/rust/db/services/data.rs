@@ -328,14 +328,60 @@ fn line_ports_skip_the_taken_ones() {
     let mut setting = Setting::default();
     setting.ports.insert("8.0".into(), 3307);
     setting.ports.insert("8.4".into(), 3306);
+    setting.ports.insert("9.3".into(), 3307);
     let ports = line_ports(&setting, "mysql", Some("9.7"), &lines);
-    assert_eq!(ports["9.7"], 3306);
-    assert_eq!(ports["8.0"], 3307, "stored");
-    assert_eq!(ports["9.3"], 3308, "first free after the server's");
+    assert_eq!(ports["8.4"], 3306, "stored, also on the server's port");
+    assert_eq!(ports["9.3"], 3307, "stored, first in order");
     assert_eq!(
-        ports["8.4"], 3309,
-        "stored on the server's port: given again"
+        ports["9.7"], 3308,
+        "the server's port taken: the first free"
     );
+    assert_eq!(ports["8.0"], 3309, "stored on another's port: given again");
     let values: std::collections::BTreeSet<u16> = ports.values().copied().collect();
     assert_eq!(values.len(), 4, "one port each");
+}
+
+/// BUG-V5-02: another version chosen for the server moves no port, of a
+/// version started (stored at its start) or not.
+#[test]
+fn ports_stay_when_the_server_changes_version() {
+    let lines: Vec<String> = ["9.7", "8.4"].iter().map(|s| (*s).to_owned()).collect();
+    let mut setting = Setting::default();
+    setting.ports.insert("9.7".into(), 3306);
+    setting.ports.insert("8.4".into(), 3307);
+    let before = line_ports(&setting, "mysql", Some("9.7"), &lines);
+    let after = line_ports(&setting, "mysql", Some("8.4"), &lines);
+    assert_eq!(before, after);
+    assert_eq!((after["9.7"], after["8.4"]), (3306, 3307));
+
+    let tmp = TempDir::new("services-main-ports");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "mysql", "9.3.1");
+    let c = Catalog::get().find("mysql").unwrap();
+    fake_mysql_line(&kit, &crate::versions::saved_dir(&kit, c, "8.0"));
+    let s = Services::new(kit.clone());
+    let ports = |kit: &Kit| {
+        (
+            line_port(kit, "mysql", Some("9.3")),
+            line_port(kit, "mysql", Some("8.0")),
+        )
+    };
+    assert_eq!(ports(&kit), (3306, 3307));
+    // Never started: the change stores them.
+    s.set_line("mysql", Some("8.0")).unwrap();
+    assert_eq!(server_line(&kit, "mysql").as_deref(), Some("8.0"));
+    assert_eq!(ports(&kit), (3306, 3307));
+    assert_eq!(line_port(&kit, "mysql", None), 3307, "the server's version");
+    assert_eq!(s.list()[0].port, 3307);
+    s.set_line("mysql", None).unwrap();
+    assert_eq!(ports(&kit), (3306, 3307));
+
+    // A new port of the server is the one of the version it runs, unless
+    // another version has it.
+    assert!(s.set("mysql", Some(3307), false).is_err());
+    s.set("mysql", Some(3310), false).unwrap();
+    assert_eq!(ports(&kit), (3310, 3307));
+    s.set("mysql", Some(3310), true).unwrap();
+    assert_eq!(ports(&kit), (3310, 3307), "the same port: nothing moves");
 }

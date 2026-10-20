@@ -55,6 +55,80 @@ fn settings_round_trip_and_defaults() {
     assert_eq!(s.running(), 0);
 }
 
+/// BUG-V5-02: ports stored by starts at the same time are all kept.
+#[test]
+fn keep_port_loses_no_entry() {
+    let tmp = TempDir::new("services-keep-port");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit.clone());
+    s.set("mysql", None, true).unwrap();
+    std::thread::scope(|scope| {
+        for i in 0..16u16 {
+            let s = &s;
+            scope.spawn(move || s.keep_port("mysql", &format!("8.{i}"), 3307 + i).unwrap());
+        }
+    });
+    let all = load_settings(&kit);
+    assert_eq!(all["mysql"].ports.len(), 16, "{:?}", all["mysql"].ports);
+    assert_eq!(all["mysql"].ports["8.15"], 3322);
+    assert!(all["mysql"].autostart, "the rest of the file kept");
+}
+
+/// BUG-V5-02: a start, a stop or a change of version of a server waits for
+/// the one in progress (here a turn held by the test), so the check of
+/// what runs and the start happen in the same turn.
+#[test]
+fn operations_on_a_server_take_turns() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let tmp = TempDir::new("services-turns");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit);
+    let done = AtomicUsize::new(0);
+    std::thread::scope(|scope| {
+        let turn = s.op(DbEngine::MySql);
+        let (s, done) = (&s, &done);
+        let start = scope.spawn(move || {
+            let r = s.start("mysql", &KitEnv::default());
+            done.fetch_add(1, Ordering::SeqCst);
+            r
+        });
+        scope.spawn(move || {
+            s.stop("mysql");
+            done.fetch_add(1, Ordering::SeqCst);
+        });
+        scope.spawn(move || {
+            let _ = s.set_line("mysql", None);
+            done.fetch_add(1, Ordering::SeqCst);
+        });
+        // Another engine has its own turn.
+        s.stop("mongodb");
+        std::thread::sleep(Duration::from_millis(300));
+        assert_eq!(done.load(Ordering::SeqCst), 0, "all wait for the turn");
+        drop(turn);
+        let err = start.join().unwrap().unwrap_err();
+        assert!(format!("{err:#}").contains("not installed"), "{err:#}");
+    });
+    assert_eq!(done.load(Ordering::SeqCst), 3);
+}
+
+/// BUG-V5-04: each run of a tool has a login file of its own.
+#[test]
+fn login_files_differ_per_run() {
+    let tmp = TempDir::new("services-login-files");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let a = tools::login_file(&kit, "mysql.exe", "cnf");
+    let b = tools::login_file(&kit, "mysql.exe", "cnf");
+    assert_ne!(a, b);
+    assert_eq!(a.parent(), Some(auth::dir(&kit).as_path()));
+    let name = a.file_name().unwrap().to_string_lossy().into_owned();
+    assert!(
+        name.starts_with(&format!("mysql.exe-{}-", std::process::id())) && name.ends_with(".cnf"),
+        "{name}"
+    );
+}
+
 /// Deleting a project drops its database from every version it was created
 /// on (`used`), then the one it is on now, each once; a `db.json` of before
 /// has only the one it is on.
