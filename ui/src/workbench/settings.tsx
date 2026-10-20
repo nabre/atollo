@@ -59,12 +59,20 @@ export function SettingsEditor({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center gap-2 px-5 pt-3 pb-2.5">
+      {/* .settings-header: 11px + 3px from the top, 24px from the sides. */}
+      <div className="mt-vsc-size100 flex shrink-0 items-center gap-vsc-size80 px-vsc-size240 pt-vsc-size40">
         <SearchBox value={search} onChange={onSearch} placeholder={placeholder} large className="flex-1" />
         {actions}
       </div>
-      <div className="flex min-h-0 flex-1 border-t border-vsc-border">
-        <nav aria-label={placeholder} className="hidden w-[180px] shrink-0 overflow-y-auto py-2 md:block">
+      {/* .settings-body, 14px under the header, no line between (modern UI). */}
+      <div className="mt-vsc-size100 flex min-h-0 flex-1 pt-vsc-size40">
+        {/* .settings-toc-wrapper: 200px with 24px in; rows of 22px, the
+            others at 90% of the foreground, the current one bold in the
+            header color, the hovered one in the header's at 70%. */}
+        <nav
+          aria-label={placeholder}
+          className="hidden w-vsc-settings-toc shrink-0 overflow-y-auto pl-vsc-size240 md:block"
+        >
           <ul className="m-0 list-none p-0">
             {toc.map((entry) => {
               const on = entry.id === current;
@@ -78,8 +86,8 @@ export function SettingsEditor({
                       setCurrent(entry.id);
                     }}
                     title={entry.label}
-                    className={`flex h-[22px] w-full items-center pr-2 pl-5 text-left ${
-                      on ? "font-semibold text-vsc-settings-header" : "text-vsc-desc hover:text-vsc-fg"
+                    className={`flex h-vsc-row w-full items-center pr-vsc-size80 text-left outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-focus ${
+                      on ? "font-bold text-vsc-settings-header" : "text-vsc-fg/90 hover:text-vsc-settings-header/70"
                     }`}
                   >
                     <span className="truncate">{entry.label}</span>
@@ -89,7 +97,8 @@ export function SettingsEditor({
             })}
           </ul>
         </nav>
-        <div ref={body} className="min-h-0 flex-1 overflow-y-auto pb-10">
+        {/* The tree: its rows 24px in from the sides. */}
+        <div ref={body} className="min-h-0 flex-1 overflow-y-auto px-vsc-size240 pb-vsc-size400">
           <Query.Provider value={words}>{children}</Query.Provider>
         </div>
       </div>
@@ -104,7 +113,9 @@ export function SettingsSearch({ search, children }: { search: string; children:
   return <Query.Provider value={words}>{children}</Query.Provider>;
 }
 
-/** A group of settings with its title; hidden when the search leaves it empty. */
+/** A group of settings with its title; hidden when the search leaves it
+ * empty. The title as a first level's .settings-group-title-label: 26px
+ * semibold, 10px around it and 15px on the left. */
 export function SettingsGroup({
   id,
   title,
@@ -117,14 +128,14 @@ export function SettingsGroup({
   children: ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-0 pt-2 [&:not(:has([data-setting]))]:hidden">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-0 [&:not(:has([data-setting]))]:hidden">
       <h2
         id={`${id}-title`}
-        className="px-[14px] pt-2 pb-1 text-[20px] leading-7 font-semibold text-vsc-settings-header"
+        className="truncate p-vsc-size100 pl-vsc-settings-title text-vsc-heading1 font-semibold text-vsc-settings-header"
       >
         {title}
       </h2>
-      {description && <p className="px-[14px] pb-1 text-vsc-desc">{description}</p>}
+      {description && <p className="px-vsc-settings-title pb-vsc-size40 text-vsc-desc">{description}</p>}
       {children}
     </section>
   );
@@ -157,14 +168,16 @@ export function SettingItem({
   const text = `${category ?? ""} ${title} ${typeof description === "string" ? description : ""} ${keywords}`;
   if (words.length > 0 && !matches(words, text)) return null;
   return (
-    <div
-      data-setting
-      className={`relative rounded-md border-l-2 hover:bg-(--vscode-settings-rowHoverBackground) ${
-        modified ? "border-l-vsc-settings-modified" : "border-l-transparent"
-      }`}
-    >
-      {/* The bar takes 2px of the group's 14px on the left. */}
-      <vscode-form-group variant="settings-group" className="max-w-none pl-3">
+    <div data-setting className="relative rounded-vsc-medium hover:bg-(--vscode-settings-rowHoverBackground)">
+      {/* .setting-item-modified-indicator: 2px, 5px in, from 15px under
+          the top to 18px over the bottom, in the item's 14px on the left. */}
+      {modified && (
+        <span
+          aria-hidden="true"
+          className="absolute top-vsc-modified-top bottom-vsc-modified-bottom left-vsc-modified-left w-vsc-size20 bg-vsc-settings-modified"
+        />
+      )}
+      <vscode-form-group variant="settings-group" className="max-w-none">
         {/* The title in the header color, "Category:" lightened. */}
         <vscode-label className="[--vscode-foreground:var(--vscode-settings-headerForeground)]">
           {category && <span className="normal lightened">{category}: </span>}

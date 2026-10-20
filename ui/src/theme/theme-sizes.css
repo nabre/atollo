@@ -71,6 +71,12 @@
   --vsc-size-tabs: 32px;
   --vsc-size-tab: var(--editor-group-tab-height);
   --vsc-size-statusbar: 22px;
+  --vsc-size-extension-icon: 128px;
+  --vsc-size-settings-toc: 200px;
+  --vsc-size-settings-title: 15px;
+  --vsc-size-modified-left: 5px;
+  --vsc-size-modified-top: 15px;
+  --vsc-size-modified-bottom: 18px;
 }
 
 /* Tailwind utilities: h-vsc-row, w-vsc-activitybar, p-vsc-size40,
@@ -129,4 +135,10 @@
   --spacing-vsc-tabs: var(--vsc-size-tabs);
   --spacing-vsc-tab: var(--vsc-size-tab);
   --spacing-vsc-statusbar: var(--vsc-size-statusbar);
+  --spacing-vsc-extension-icon: var(--vsc-size-extension-icon);
+  --spacing-vsc-settings-toc: var(--vsc-size-settings-toc);
+  --spacing-vsc-settings-title: var(--vsc-size-settings-title);
+  --spacing-vsc-modified-left: var(--vsc-size-modified-left);
+  --spacing-vsc-modified-top: var(--vsc-size-modified-top);
+  --spacing-vsc-modified-bottom: var(--vsc-size-modified-bottom);
 }
