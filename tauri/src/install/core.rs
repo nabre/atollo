@@ -15,7 +15,6 @@ use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::net::{github_digest, hash_in_list};
 use crate::os::jobs;
-use crate::settings::Settings;
 use crate::setup::catalog::Component;
 
 /// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux
@@ -265,10 +264,13 @@ impl Installer for Git {
         let gitconfig = ctx.kit.home().join(".gitconfig");
         if !gitconfig.exists() {
             fs::create_dir_all(ctx.kit.home())?;
-            write_atomic(
-                &gitconfig,
-                b"[init]\n\tdefaultBranch = main\n[safe]\n\tdirectory = *\n",
-            )?;
+            // Git trusts the repositories inside the kit only (D-137);
+            // github::sync_git rewrites it at every start as the kit moves.
+            let text = format!(
+                "[init]\n\tdefaultBranch = main\n[safe]\n\tdirectory = {}\n",
+                crate::github::safe_pattern(ctx.kit.root())
+            );
+            write_atomic(&gitconfig, text.as_bytes())?;
         }
         Ok(())
     }
@@ -281,12 +283,9 @@ pub const PYTHON_DEFAULT: &str = "3.13";
 /// pip and venv), the newest patch of the chosen minor version.
 pub struct Python;
 
-fn python_minor(ctx: &Ctx) -> String {
-    Settings::load(ctx.kit)
-        .settings
-        .python_version
-        .filter(|v| pattern(r"^3\.\d+$").is_ok_and(|re| re.is_match(v)))
-        .unwrap_or_else(|| PYTHON_DEFAULT.to_owned())
+/// The line assumed when the files of a Python do not tell theirs.
+fn python_minor(_ctx: &Ctx) -> String {
+    PYTHON_DEFAULT.to_owned()
 }
 
 /// The minor line of the Python in `tree` (`3.14`), read from its files:
@@ -378,26 +377,18 @@ impl Python {
 }
 
 impl Installer for Python {
-    /// The newest minor (the line marked "latest"), unless one is chosen in
-    /// the settings: a ticked versioned language installs its newest line
-    /// (D-81), so a fresh kit gets 3.15 once python-build-standalone has
-    /// it. `PYTHON_DEFAULT` is only the fallback when no line is listed.
+    /// The newest minor (the line marked "latest"): a ticked versioned
+    /// language installs its newest line (D-81), so a fresh kit gets 3.15
+    /// once python-build-standalone has it; other lines come from the
+    /// Tools page (D-80, D-137). `PYTHON_DEFAULT` is only the fallback when
+    /// no line is listed.
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
-        let chosen = Settings::load(ctx.kit)
-            .settings
-            .python_version
-            .filter(|v| pattern(r"^3\.\d+$").is_ok_and(|re| re.is_match(v)));
-        let minor = match chosen {
-            Some(m) => m,
-            None => {
-                let (_, sums) = python_sums(ctx)?;
-                let triple = target_of(ctx, component).rust_triple();
-                python_lines(&sums, triple)
-                    .into_iter()
-                    .next()
-                    .unwrap_or_else(|| PYTHON_DEFAULT.to_owned())
-            }
-        };
+        let (_, sums) = python_sums(ctx)?;
+        let triple = target_of(ctx, component).rust_triple();
+        let minor = python_lines(&sums, triple)
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| PYTHON_DEFAULT.to_owned());
         Python::release(ctx, component, &minor)
     }
 

@@ -7,13 +7,16 @@
 //!
 //! TLS is Windows' own (SChannel through native-tls) with the Windows
 //! certificate store, so corporate SSL inspection works as it does for the
-//! browser. Proxy: the one in Settings, else `HTTPS_PROXY`/`HTTP_PROXY`, else
+//! browser, plus the extra PEM file of the Settings when there is one
+//! (`ca`). Proxy: the HTTPS one in Settings (else its HTTP one, with the
+//! «Senza proxy per» hosts reached directly), else `HTTPS_PROXY`/`HTTP_PROXY`, else
 //! the system's setting, read only: Windows', macOS `scutil --proxy`, or
 //! GNOME's on Linux, with their exceptions (read once per run, no PAC).
 //! Every download goes to `<file>.part`
 //! and is renamed only when complete; 3 attempts, waiting 5 s then 10 s.
 
 pub mod archive;
+pub mod ca;
 /// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
 #[cfg(windows)]
 pub mod signature;
@@ -23,6 +26,7 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -118,21 +122,35 @@ pub struct GithubLimit;
 
 impl Net {
     pub fn new(settings: &Settings, github_token: Option<String>) -> Result<Net> {
-        let proxy = match settings
-            .network
-            .https_proxy
-            .as_deref()
-            .filter(|p| !p.is_empty())
-        {
-            Some(url) => Some(Proxy::new(url).with_context(|| format!("proxy {url}"))?),
+        let n = &settings.network;
+        let set = |v: &Option<String>| {
+            v.as_deref()
+                .map(str::trim)
+                .filter(|v| !v.is_empty())
+                .map(str::to_owned)
+        };
+        let proxy = match set(&n.https_proxy).or_else(|| set(&n.http_proxy)) {
+            Some(url) => {
+                let proxy = Proxy::new(&url).with_context(|| format!("proxy {url}"))?;
+                Some(with_exceptions(
+                    proxy,
+                    &no_proxy_hosts(n.no_proxy.as_deref()),
+                ))
+            }
             #[cfg(windows)]
             None => Proxy::try_from_env(),
             #[cfg(unix)]
             None => Proxy::try_from_env().or_else(system_proxy),
         };
+        let roots = match set(&n.extra_ca_certs) {
+            Some(file) => RootCerts::Specific(Arc::new(
+                ca::roots_with(Path::new(&file)).with_context(|| format!("certificates {file}"))?,
+            )),
+            None => RootCerts::PlatformVerifier,
+        };
         let tls = TlsConfig::builder()
             .provider(TlsProvider::NativeTls)
-            .root_certs(RootCerts::PlatformVerifier)
+            .root_certs(roots)
             .build();
         let config = Agent::config_builder()
             .tls_config(tls)
@@ -809,9 +827,20 @@ pub(crate) fn gsettings_list(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// `proxy` with the system's exceptions (`*.local`, `localhost`): the
-/// hosts reached directly. A rebuilt proxy that fails keeps `proxy`.
-#[cfg(any(unix, test))]
+/// The hosts of «Senza proxy per» (`localhost,127.0.0.1,.example.com`),
+/// separated by commas, semicolons or spaces as in `NO_PROXY`.
+pub(crate) fn no_proxy_hosts(list: Option<&str>) -> Vec<String> {
+    list.unwrap_or_default()
+        .split([',', ';', ' '])
+        .map(str::trim)
+        .filter(|h| !h.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+/// `proxy` with the exceptions (the system's `*.local`, `localhost`, or
+/// those of the Settings): the hosts reached directly. A rebuilt proxy that
+/// fails keeps `proxy`.
 pub(crate) fn with_exceptions(proxy: Proxy, hosts: &[String]) -> Proxy {
     if hosts.is_empty() {
         return proxy;

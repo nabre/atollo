@@ -130,6 +130,25 @@ export function githubOpen(fullName: string | null): Promise<void> {
   return act("github_open", { fullName });
 }
 
+/** Who signs the commits of the kit's Git (D-137); empty: not set. */
+export interface GitIdentity {
+  name: string;
+  email: string;
+}
+
+/** `null`: Git is not in the kit. */
+export function gitIdentityGet(): Promise<GitIdentity | null> {
+  return query<GitIdentity | null>("git_identity_get", {
+    name: "Ada Lovelace",
+    email: "583231+ada@users.noreply.github.com",
+  });
+}
+
+/** Saves it (an empty value is removed); answers with it as saved. */
+export function gitIdentitySet(identity: GitIdentity): Promise<GitIdentity> {
+  return query<GitIdentity>("git_identity_set", identity, { identity });
+}
+
 /** The sign-in got its code or ended. */
 export function onGithub(handler: (s: GithubStatus) => void): Promise<() => void> {
   return subscribe<GithubStatus>("github", handler);

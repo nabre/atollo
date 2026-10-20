@@ -197,7 +197,7 @@ pub fn versions_remove<R: Runtime>(
         }
     })?;
     if kit.target() == state.kit.target() {
-        apply_env(&state, Settings::load(&state.kit).settings);
+        apply_env(&state);
     }
     Ok(crate::versions::tools(&kit))
 }

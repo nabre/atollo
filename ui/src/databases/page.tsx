@@ -53,6 +53,7 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
+  Watermark,
 } from "../workbench";
 
 function stateLabel(state: ServiceState): string {
@@ -327,8 +328,8 @@ function ServiceDetails({
         (browsable ? (
           <DbBrowser key={browseLine ?? ""} engine={s.id} line={browseLine} />
         ) : (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-vsc-desc">
-            <p>{t("Avvia il server per vederne il contenuto.")}</p>
+          <Watermark>
+            <p className="text-vsc-desc">{t("Avvia il server per vederne il contenuto.")}</p>
             {!browsedOn && (
               <ActionButton
                 icon={VscDebugStart}
@@ -341,7 +342,7 @@ function ServiceDetails({
                 }}
               />
             )}
-          </div>
+          </Watermark>
         ))}
       {section === "details" && (
         <EditorBody>

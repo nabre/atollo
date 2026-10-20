@@ -1,6 +1,6 @@
 // The instructions as data: the names of the slots, bases and additions,
 // the state of the edited ones, the combination chosen and its plan.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   componentsList,
   frameworksGet,
@@ -155,12 +155,15 @@ export function cleaned(p: FrameworkPiece): string {
   ]);
 }
 
-/** The instructions as loaded and as edited, saved with the settings. */
+/** The instructions as loaded and as edited, saved as they change with the
+ * settings (D-137). */
 export function useFrameworks() {
   const [view, setView] = useState<FrameworksView | null>(null);
   const [pieces, setPieces] = useState<FrameworkPiece[]>([]);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Counts the edits: a save that ends after another edit leaves it unsaved.
+  const edits = useRef(0);
   const load = useCallback(() => {
     frameworksGet().then(
       (v) => {
@@ -175,13 +178,15 @@ export function useFrameworks() {
     );
   }, []);
   const change = useCallback((next: FrameworkPiece[]) => {
+    edits.current += 1;
     setPieces(next);
     setDirty(true);
   }, []);
   const save = useCallback(async () => {
     if (!dirty) return;
+    const at = edits.current;
     await frameworksSet(pieces);
-    load();
+    if (edits.current === at) load();
   }, [dirty, pieces, load]);
   return { view, pieces, dirty, error, load, change, save };
 }

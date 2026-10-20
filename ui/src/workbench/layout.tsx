@@ -526,9 +526,14 @@ export function Properties({ rows }: { rows: [string, ReactNode][] }) {
   );
 }
 
-/** The editor's empty state: the brand watermark and the next steps. */
+/** The editor's empty state: the next steps on the brand cover
+ * (hero-{dark,light}.svg), filling the editor. */
 export function Watermark({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-6 p-6">{children}</div>;
+  return (
+    <div className="bg-hero flex min-h-full flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
+      {children}
+    </div>
+  );
 }
 
 /** The panel at the bottom (Problems, Output, Terminal): its 32px title bar

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-git-identity-get"
+description = "Enables the git_identity_get command without any pre-configured scope."
+commands.allow = ["git_identity_get"]
+
+[[permission]]
+identifier = "deny-git-identity-get"
+description = "Denies the git_identity_get command without any pre-configured scope."
+commands.deny = ["git_identity_get"]

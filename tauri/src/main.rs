@@ -121,6 +121,7 @@ fn run() -> i32 {
     versions::side_by_side::refresh(&kit);
     setup::self_update::remove_old(&exe);
     setup::self_update::record_version(&kit);
+    settings::move_secrets(&kit);
     let loaded = Settings::load(&kit);
     let lang = i18n::resolve(
         loaded.settings.lang.as_deref(),
@@ -137,6 +138,7 @@ fn run() -> i32 {
     if let Some(problem) = &loaded.problem {
         log::warn(&i18n::t("en", "Le impostazioni in {0} non sono leggibili: uso quelle predefinite e non modifico il file.", &[problem]));
     }
+    net::ca::refresh(&kit, &loaded.settings);
     let kit_env = KitEnv::build(&kit, &loaded.settings, lang, &host);
     if let Err(e) = kit_env.create_dirs() {
         log::warn(&format!("creating kit folders: {e}"));
@@ -589,7 +591,11 @@ fn build_app<R: tauri::Runtime>(
             }
         })
         .setup(move |app| {
-            open_main_window(app.handle(), &kit.webview_data())?;
+            open_main_window(
+                app.handle(),
+                &kit.webview_data(),
+                Settings::load(&kit).settings.theme.window(),
+            )?;
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Atollo" (D-73).
@@ -629,19 +635,23 @@ fn build_app<R: tauri::Runtime>(
             app.manage(std::sync::Arc::new(github::Login::default()));
             let updater = std::sync::Arc::new(setup::self_update::Updater::new(kit.clone()));
             app.manage(std::sync::Arc::clone(&updater));
-            let settings = Settings::load(&kit).settings;
             // ATOLLO_NO_UPDATE: no automatic check (as for the kit's scripts).
-            if settings.auto_update
-                && app
-                    .state::<AppState>()
-                    .host
-                    .get("ATOLLO_NO_UPDATE")
-                    .is_none()
+            if app
+                .state::<AppState>()
+                .host
+                .get("ATOLLO_NO_UPDATE")
+                .is_none()
             {
-                let token = github_token(&app.state::<AppState>().host);
+                let (token, update_kit) =
+                    (github_token(&app.state::<AppState>().host), kit.clone());
                 std::thread::spawn(move || {
-                    // After the start, not competing with it.
+                    // After the start, not competing with it; the setting
+                    // as it is then (turned off meanwhile: no check).
                     std::thread::sleep(std::time::Duration::from_secs(20));
+                    let settings = Settings::load(&update_kit).settings;
+                    if !settings.auto_update {
+                        return;
+                    }
                     if let Ok(net) = net::Net::new(&settings, token) {
                         updater.check(&net);
                     }
@@ -695,10 +705,17 @@ fn build_app<R: tauri::Runtime>(
         })
 }
 
-/// First start, a required component deleted, or the editor of another
-/// release: install what is missing without asking; the "Linguaggi e
-/// strumenti" page shows the progress.
+/// A required component deleted, or the editor of another release: install
+/// what is missing without asking; the "Linguaggi e strumenti" page shows
+/// the progress. Not on the first start (no choice saved yet): the
+/// first-start page asks language and network first (a proxy, the
+/// certificates of an inspecting firewall), and its «Installa» brings the
+/// required components too (D-137).
 fn start_missing_required<R: tauri::Runtime>(app: &tauri::AppHandle<R>, kit: &Kit) {
+    let catalog = setup::catalog::Catalog::get();
+    if setup::catalog::Choice::read(kit, catalog).is_none() {
+        return;
+    }
     let mut missing = setup::task::missing_required(kit);
     missing.extend(setup::task::outdated_app(kit));
     if missing.is_empty() {
@@ -720,6 +737,7 @@ fn start_missing_required<R: tauri::Runtime>(app: &tauri::AppHandle<R>, kit: &Ki
 fn open_main_window<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     data_dir: &Path,
+    theme: Option<tauri::Theme>,
 ) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App("index.html".into()))
         .title("Atollo")
@@ -729,6 +747,7 @@ fn open_main_window<R: tauri::Runtime>(
         .decorations(false)
         .shadow(true)
         .data_directory(data_dir.to_path_buf())
+        .theme(theme)
         .build()?;
     Ok(())
 }

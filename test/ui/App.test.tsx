@@ -95,11 +95,11 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
         network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
         geminiApiKey: null,
         autoUpdate: true,
-        pythonVersion: null,
-        phpVersion: null,
         rustToolchain: null,
         programTemp: "auto",
+        theme: "system",
         keepCondaPackages: true,
+        toolsTarget: null,
       },
       geminiKeySet: true,
       problem: null,
@@ -471,20 +471,72 @@ describe("App", () => {
     expect(invoke).toHaveBeenCalledWith("url_open", { url: "http://localhost:7100/" });
   });
 
-  it("saves the settings without sending the hidden Gemini key", async () => {
+  it("saves a setting as it changes, without sending the hidden Gemini key", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     fireEvent.click(await screen.findByRole("button", { name: "Rete" }));
     const proxy = await screen.findByLabelText("Proxy HTTPS");
     fireEvent.change(proxy, { target: { value: " http://proxy:8080 " } });
-    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
+    // No Save button: the change is saved a moment later (D-137).
+    expect(screen.queryByRole("button", { name: "Salva" })).toBeNull();
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("settings_set", expect.objectContaining({ gemini: null }));
     });
     const call = invoke.mock.calls.find((c) => c[0] === "settings_set");
     expect(JSON.stringify(call?.[1])).toContain('"httpsProxy":"http://proxy:8080"');
     expect(await screen.findByText("Salvato.")).toBeTruthy();
+  });
+
+  it("saves a Gemini key typed when the field loses the focus", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    const sections = within(await screen.findByRole("list", { name: "Impostazioni" }));
+    fireEvent.click(sections.getByRole("button", { name: "Agenti" }));
+    const key = await screen.findByLabelText("Chiave API di Gemini (Antigravity senza account Google)");
+    fireEvent.change(key, { target: { value: "AIza-key" } });
+    expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
+    fireEvent.blur(key);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("settings_set", expect.objectContaining({ gemini: "AIza-key" }));
+    });
+  });
+
+  it("changes the theme at once, with no Save", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    const theme = await screen.findByLabelText("Tema");
+    fireEvent.change(theme, { target: { value: "dark" } });
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("settings_set", expect.objectContaining({ gemini: null }));
+    });
+    const call = invoke.mock.calls.find((c) => c[0] === "settings_set");
+    expect(JSON.stringify(call?.[1])).toContain('"theme":"dark"');
+  });
+
+  it("saves who signs the commits when a field loses the focus", async () => {
+    invoke.mockImplementation(
+      answers({
+        git_identity_get: { name: "", email: "" },
+        git_identity_set: { name: "Ada", email: "ada@example.org" },
+        github_status: { installed: true, signedIn: false, login: null, signingIn: false, code: null, error: null },
+      }),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    const sections = within(await screen.findByRole("list", { name: "Impostazioni" }));
+    fireEvent.click(sections.getByRole("button", { name: "Account GitHub" }));
+    const name = await screen.findByLabelText("Nome");
+    fireEvent.change(name, { target: { value: "Ada" } });
+    fireEvent.change(screen.getByLabelText("E-mail"), { target: { value: "ada@example.org" } });
+    fireEvent.blur(name);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("git_identity_set", {
+        identity: { name: "Ada", email: "ada@example.org" },
+      });
+    });
   });
 
   it("finds a setting with the search of the side bar", async () => {
@@ -512,7 +564,6 @@ describe("App", () => {
     expect(screen.getByRole("tab", { name: /React/, selected: true })).toBeTruthy();
     const create = screen.getByLabelText("Crea il progetto al posto della base (facoltativo)");
     fireEvent.change(create, { target: { value: "npm create vite@9 {name} -- --template react-swc-ts" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("frameworks_set", expect.anything());
     });
@@ -527,7 +578,6 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Laravel" }));
     const steps = await screen.findByLabelText("Poi, nella cartella del progetto");
     fireEvent.change(steps, { target: { value: "npm install\nnpm run build" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salva" }));
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("frameworks_set", expect.anything());
     });

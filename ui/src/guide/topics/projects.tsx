@@ -1619,10 +1619,10 @@ export const PROJECTS: TopicTexts = {
         />
         <Callout tone="info">
           {tr(
-            "Dopo aver cambiato le Impostazioni (per esempio il proxy) l'app propone «Riavvia l'editor», perché i terminali dell'editor usino i nuovi valori.",
-            "After changing the Settings (for example the proxy) the app suggests “Restart the editor”, so that the editor's terminals use the new values.",
-            "Après une modification des Paramètres (par exemple le proxy), l'application propose « Redémarrer l'éditeur », pour que les terminaux de l'éditeur utilisent les nouvelles valeurs.",
-            "Nach einer Änderung der Einstellungen (zum Beispiel des Proxys) schlägt die App „Editor neu starten“ vor, damit die Terminals des Editors die neuen Werte verwenden.",
+            "Se con l'editor aperto cambi nelle Impostazioni la lingua, la rete (per esempio il proxy) o i temporanei dei programmi, l'app propone «Riavvia l'editor», perché i terminali dell'editor usino i nuovi valori.",
+            "If, with the editor open, you change the language, the network (for example the proxy) or the programs' temporary files in Settings, the app suggests “Restart the editor”, so that the editor's terminals use the new values.",
+            "Si, avec l'éditeur ouvert, vous changez dans les Paramètres la langue, le réseau (par exemple le proxy) ou les fichiers temporaires des programmes, l'application propose « Redémarrer l'éditeur », pour que les terminaux de l'éditeur utilisent les nouvelles valeurs.",
+            "Wenn du bei geöffnetem Editor in den Einstellungen die Sprache, das Netzwerk (zum Beispiel den Proxy) oder die temporären Dateien der Programme änderst, schlägt die App „Editor neu starten“ vor, damit die Terminals des Editors die neuen Werte verwenden.",
           )}
         </Callout>
       </Section>
@@ -1892,10 +1892,10 @@ export const PROJECTS: TopicTexts = {
           )}
         >
           {tr(
-            'Il kit non imposta il tuo nome e la tua email per i commit. Una volta sola, in un terminale del kit, scrivi: git config --global user.name "Nome Cognome" e git config --global user.email "tu@esempio.it". Vengono salvati nel file .gitconfig del kit e ti seguono su ogni PC.',
-            'The kit does not set your name and email for commits. Once only, in a kit terminal, type: git config --global user.name "Jane Doe" and git config --global user.email "you@example.com". They are saved in the kit\'s .gitconfig file and follow you on every PC.',
-            'Le kit ne règle pas votre nom et votre e-mail pour les commits. Une seule fois, dans un terminal du kit, tapez : git config --global user.name "Prénom Nom" et git config --global user.email "vous@exemple.fr". Ils sont enregistrés dans le fichier .gitconfig du kit et vous suivent sur chaque PC.',
-            'Das Kit legt deinen Namen und deine E-Mail für Commits nicht fest. Gib einmalig in einem Terminal des Kits ein: git config --global user.name "Vorname Nachname" und git config --global user.email "sie@beispiel.de". Sie werden in der Datei .gitconfig des Kits gespeichert und begleiten dich auf jeden PC.',
+            "Git vuole un nome e un'e-mail per i commit. Se il kit ha accesso a GitHub li prende dall'account (con l'indirizzo noreply di GitHub); altrimenti scrivili in Impostazioni › «Account GitHub» › «Chi firma i commit». Vengono salvati nel file .gitconfig del kit e ti seguono su ogni PC.",
+            "Git needs a name and an email for commits. If the kit is signed in to GitHub it takes them from the account (with GitHub's noreply address); otherwise type them in Settings › “GitHub account” › “Who signs the commits”. They are saved in the kit's .gitconfig file and follow you on every PC.",
+            "Git a besoin d'un nom et d'une adresse e-mail pour les commits. Si le kit est connecté à GitHub, il les prend du compte (avec l'adresse noreply de GitHub) ; sinon, saisissez-les dans Paramètres › « Compte GitHub » › « Qui signe les commits ». Ils sont enregistrés dans le fichier .gitconfig du kit et vous suivent sur chaque PC.",
+            "Git braucht einen Namen und eine E-Mail für Commits. Wenn das Kit bei GitHub angemeldet ist, nimmt es sie aus dem Konto (mit der noreply-Adresse von GitHub); sonst gib sie unter Einstellungen › „GitHub-Konto“ › „Wer die Commits signiert“ ein. Sie werden in der Datei .gitconfig des Kits gespeichert und begleiten dich auf jeden PC.",
           )}
         </Callout>
         <Under>
