@@ -240,6 +240,47 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Agenti" }).getAttribute("aria-current")).toBe("page");
   });
 
+  it("measures its frame with VSCodium's size tokens", async () => {
+    invoke.mockImplementation(answers());
+    render(<App />);
+    const classes = (e: Element | null) => (e?.getAttribute("class") ?? "").split(" ");
+    // Title bar: 30px, window controls 46px.
+    const close = screen.getByRole("button", { name: "Chiudi" });
+    expect(classes(close.parentElement)).toContain("h-vsc-titlebar");
+    for (const name of ["Riduci a icona", "Ingrandisci", "Chiudi"]) {
+      expect(classes(screen.getByRole("button", { name }))).toContain("w-vsc-window-control");
+    }
+    // Activity bar: on the window's edge, no border, 36px items 8px apart,
+    // the active one on a rounded square with no mark on its left.
+    const nav = screen.getByRole("navigation", { name: "Pagine" });
+    expect(classes(nav)).toEqual(expect.arrayContaining(["gap-vsc-activitybar-gap", "rounded-r-vsc-medium"]));
+    expect(classes(nav).some((c) => c === "border" || c.startsWith("border-"))).toBe(false);
+    expect(classes(nav.parentElement)).not.toContain("px-1");
+    const projects = within(nav).getByRole("button", { name: "Progetti" });
+    expect(projects.getAttribute("aria-current")).toBe("page");
+    expect(classes(projects)).toEqual(
+      expect.arrayContaining(["size-vsc-activitybar-action", "text-vsc-activitybar-item-active-fg"]),
+    );
+    expect(projects.children).toHaveLength(1);
+    expect(classes(projects.firstElementChild)).toEqual(
+      expect.arrayContaining(["rounded-vsc-small", "bg-vsc-activitybar-item-active"]),
+    );
+    // Status bar: labels as VSCodium's, the bar's height, rounded.
+    const bar = screen.getByRole("contentinfo", { name: "Barra di stato" });
+    expect(classes(bar)).toEqual(expect.arrayContaining(["px-vsc-size60", "py-vsc-size20"]));
+    const item = await within(bar).findByText("win32-x64");
+    expect(classes(item)).toEqual(
+      expect.arrayContaining([
+        "h-full",
+        "rounded-vsc-small",
+        "mx-vsc-statusbar-item-margin",
+        "px-vsc-statusbar-item-padding",
+      ]),
+    );
+    const toggle = within(bar).getAllByRole("button").at(-1);
+    expect(classes(toggle ?? null)).toEqual(expect.arrayContaining(["mr-vsc-size20", "px-vsc-size60"]));
+  });
+
   it("signs in to GitHub with the one-time code", async () => {
     let status = {
       installed: true,

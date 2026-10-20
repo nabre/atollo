@@ -555,7 +555,9 @@ export function Watermark({ children }: { children: ReactNode }) {
 }
 
 /** The panel at the bottom (Problems, Output, Terminal): its 32px title bar
- * with the tabs, the active one underlined, and its actions. */
+ * with the tabs and its actions. The tabs are VSCodium's modern ones
+ * (modern-ui-tabs, on with the modern UI): 10px beside the label, the
+ * active one on a 24px pill 2px in from its sides, as the editor's tabs. */
 export function Panel({
   tabs,
   active,
@@ -578,8 +580,8 @@ export function Panel({
       className="shrink-0 bg-vsc-panel"
       style={{ height }}
     >
-      <div className="flex h-8 shrink-0 items-center pr-1 pl-0.5">
-        <div role="tablist" className="flex min-w-0 flex-1 items-center gap-1">
+      <div className="flex h-vsc-title shrink-0 items-center pr-vsc-size40 pl-vsc-size20">
+        <div role="tablist" className="flex min-w-0 flex-1 items-center self-stretch">
           {tabs.map((x) => {
             const on = x.id === active;
             return (
@@ -591,10 +593,10 @@ export function Panel({
                 onClick={() => {
                   onSelect(x.id);
                 }}
-                className={`relative flex h-8 items-center gap-1 px-2 text-[12px] ${
+                className={`relative isolate flex h-full items-center gap-vsc-size40 px-vsc-size100 text-vsc-body1 outline-hidden before:absolute before:inset-x-vsc-size20 before:inset-y-vsc-size40 before:-z-10 before:rounded-vsc-small focus-visible:before:outline-1 focus-visible:before:-outline-offset-1 focus-visible:before:outline-vsc-focus ${
                   on
-                    ? "text-vsc-panel-title after:absolute after:inset-x-2 after:bottom-1.5 after:h-px after:bg-vsc-panel-title-border"
-                    : "text-vsc-panel-title-inactive hover:text-vsc-panel-title"
+                    ? "text-vsc-panel-title before:bg-vsc-list-inactive"
+                    : "text-vsc-panel-title-inactive hover:text-vsc-panel-title hover:before:bg-vsc-list-hover"
                 }`}
               >
                 {x.label}

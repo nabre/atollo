@@ -59,7 +59,7 @@
 /* The app's measure tokens: each part's height or width in VSCodium's
    modern UI. */
 :root {
-  --vsc-size-titlebar: 35px;
+  --vsc-size-titlebar: 30px;
   --vsc-size-window-control: 46px;
   --vsc-size-activitybar: var(--activity-bar-width);
   --vsc-size-activitybar-action: var(--activity-bar-action-height);
@@ -73,6 +73,8 @@
   --vsc-size-tabs: 32px;
   --vsc-size-tab: var(--editor-group-tab-height);
   --vsc-size-statusbar: 22px;
+  --vsc-size-statusbar-item-margin: 3px;
+  --vsc-size-statusbar-item-padding: 5px;
   --vsc-size-dialog: 480px;
   --vsc-size-scrollbar: 8px;
   --vsc-size-extension-icon: 128px;
@@ -141,6 +143,8 @@
   --spacing-vsc-tabs: var(--vsc-size-tabs);
   --spacing-vsc-tab: var(--vsc-size-tab);
   --spacing-vsc-statusbar: var(--vsc-size-statusbar);
+  --spacing-vsc-statusbar-item-margin: var(--vsc-size-statusbar-item-margin);
+  --spacing-vsc-statusbar-item-padding: var(--vsc-size-statusbar-item-padding);
   --spacing-vsc-dialog: var(--vsc-size-dialog);
   --spacing-vsc-scrollbar: var(--vsc-size-scrollbar);
   --spacing-vsc-extension-icon: var(--vsc-size-extension-icon);
