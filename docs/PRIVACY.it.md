@@ -37,7 +37,7 @@ Ogni richiesta che l'app fa da sé porta uno `User-Agent` della forma `Atollo/<v
 | Al primo avvio, quando confermi la pagina del primo avvio (dopo aver scelto lingua e rete); in seguito, da solo, quando manca un componente necessario o un aggiornamento dell'app ne richiede di più recenti | Fonti ufficiali di PowerShell 7, GitHub CLI e dell'editor (release su GitHub) | Richieste di download. | Nessun interruttore: questi componenti sono necessari. Nient'altro viene installato senza una tua azione. |
 | Quando installi o aggiorni uno strumento (pagina Strumenti) o un'azione ne richiede uno (per esempio Node.js per `npm`) | La fonte ufficiale dello strumento, per esempio `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `dl.google.com`, il server di aggiornamento di Antigravity di Google, le release su GitHub | Richieste di download; i checksum vengono verificati in locale. | Non installare lo strumento. |
 | In background dopo l'avvio dell'editor, e quando si apre un progetto | La galleria delle estensioni dell'editor (Open VSX); CodeLLDB dalla sua release su GitHub | Le richieste delle estensioni usate dal kit e dai tuoi progetti. | Non aprire l'editor, oppure rimuovere le estensioni dall'editor. |
-| Solo quando usi la pagina GitHub | GitHub (`github.com`, `api.github.com`), tramite GitHub CLI | L'accesso (un codice monouso da digitare su `github.com/login/device`), poi il token del tuo account con le richieste per elencare, clonare, rinominare o eliminare i tuoi repository. | Non fare l'accesso, oppure esci dalla pagina GitHub. |
+| Solo quando fai l'accesso a GitHub (Impostazioni › Account GitHub) e usi i tuoi repository (Progetti › «Dai tuoi repository GitHub») | GitHub (`github.com`, `api.github.com`), tramite GitHub CLI | L'accesso (un codice monouso da digitare su `github.com/login/device`), poi il token del tuo account con le richieste per elencare, clonare, rinominare o eliminare i tuoi repository. | Non fare l'accesso, oppure esci in Impostazioni › Account GitHub. |
 | Una volta, all'accesso o a un avvio con l'accesso fatto, solo se nome ed e-mail dei commit sono vuoti | GitHub (`api.github.com/user`), tramite GitHub CLI | Il token del tuo account, per leggere nome, login e numero dell'account: diventano il nome dei tuoi commit e l'indirizzo privato `noreply` di GitHub. | Compila Impostazioni › Account GitHub › «Chi firma i commit», oppure non fare l'accesso. |
 | Solo mentre è aperta la pagina Agenti (all'apertura, poi ogni 2 minuti), per ogni agente in cui hai fatto l'accesso | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | Il token di accesso dell'agente, inviato solo al fornitore di quell'agente, per leggere i limiti d'uso del tuo piano. Il token viene solo letto, mai rinnovato, e mai scritto nel log. | Non aprire la pagina Agenti, oppure non fare l'accesso all'agente. |
 
@@ -54,7 +54,8 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 
 | Che cosa | Dove (dentro la cartella di Atollo) |
 |---|---|
-| Impostazioni: lingua, proxy, certificati, aggiornamento automatico, versioni | `data/app/settings.json` |
+| Impostazioni: lingua, tema, proxy, certificati, aggiornamento automatico, compilatore di Rust | `data/app/settings.json` |
+| Le impostazioni di Git, con il nome e l'e-mail che firmano i tuoi commit | `data/home/.gitconfig` |
 | La **chiave API di Gemini**, se la inserisci (leggibile solo dal tuo utente, vedi sotto) | `data/app/secrets/gemini-api-key` |
 | I certificati radice del sistema più il tuo file PEM aggiuntivo, solo se ne imposti uno | `data/app/ca-bundle.pem` |
 | Log dell'app (segreti mascherati), ruotati oltre 1 MB | `data/app/logs/` |
@@ -74,7 +75,7 @@ Le password dei database, la chiave API di Gemini e il file del token di Claude 
 
 Eccezioni, fuori dalla cartella di Atollo:
 
-- **File temporanei**: i file in transito vanno in `<temp del sistema>/Atollo/`; secondo Impostazioni › Generale › **Cartella temporanea dei programmi**, anche i programmi possono usare la cartella temporanea del sistema (per impostazione predefinita quando il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT).
+- **File temporanei**: i file in transito vanno in `<temp del sistema>/Atollo/`; secondo Impostazioni › Generale › **Temporanei dei programmi**, anche i programmi possono usare la cartella temporanea del sistema (per impostazione predefinita quando il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT).
 - **Accesso di Antigravity**: mentre Antigravity è in esecuzione, il suo accesso sta nell'archivio credenziali del sistema (su Windows solo per la sessione di accesso), poi torna nel kit e viene rimosso. Le credenziali già presenti sul computer vengono rimesse com'erano; una nota sigillata (`keyring-before.json`, leggibile solo su quel computer) resta nel kit fino al salvataggio successivo.
 - **Claude Code su macOS** tiene il proprio accesso nel Portachiavi, a meno che tu non usi "Collega con un token".
 - **Web view di macOS**: su macOS la web view del sistema tiene i suoi dati dove decide macOS (nella Libreria del tuo utente).
