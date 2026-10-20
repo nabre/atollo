@@ -1292,3 +1292,10 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
   - **«pre-installato»** in tabella, albero, scheda e Matrice (prima albero, scheda e Matrice dicevano «pre-scaricato»).
   - **Documenti generati.** `scripts/guide-docs.cjs` scrive `GUIDE.md` e `GUIDE.it.md` dalla Guida dell'app; `test/ui/guide/docs.test.ts` fallisce se restano indietro.
   - **Controllo in CI.** `node scripts/guide-docs.cjs --check` rigenera i due documenti in memoria e fallisce, con la prima riga diversa, se non sono quelli nel repository; il job «Lint and test» lo esegue al livello `ui` (D-134), a cui ora appartengono anche `docs/app/GUIDE.md`, `GUIDE.it.md` e lo script: un documento corretto a mano senza la Guida non passa.
+
+## D-138 Il server di sviluppo si chiude con l'app
+
+- **Richiesta dell'utente** (20/10/2026). `npm run dev` non ripartiva: «Port 5173 is already in use»; le sessioni vanno chiuse con la chiusura delle finestre.
+- **Causa.** `tauri dev` avvia `beforeDevCommand` con una shell (cmd su Windows) e alla chiusura dell'app ferma solo quella: il Vite partito sotto (`npm run dev` → cmd → node) restava vivo e teneva 127.0.0.1:5173.
+- **Come.** `beforeDevCommand` è `node ../scripts/dev-ui.mjs`: Vite gira nello stesso processo (API `createServer`, con `ui/vite.config.ts`) e il processo finisce quando la shell che l'ha avviato non c'è più (controllo ogni secondo; su macOS e Linux il genitore cambia) o con SIGINT/SIGTERM/SIGHUP. Una porta già occupata viene segnalata con PID, comando e il modo di fermarlo, senza fermare nulla da sé: un `tauri dev` ancora aperto la tiene anche lui. `npm -w ui run dev` (l'anteprima nel browser, le schermate della guida) resta Vite da solo.
+- **Prova.** Avviato `cmd /c node ../scripts/dev-ui.mjs`, fermato il `cmd`: la porta 5173 si libera entro due secondi.
