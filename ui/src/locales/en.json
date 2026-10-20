@@ -746,6 +746,7 @@
   "Modifiche non salvate": "Unsaved changes",
   "Nessuno strumento installato.": "No tool installed.",
   "Non più installati, lasciati fuori: {0}.": "No longer installed, left out: {0}.",
+  "Versioni non più installate, al loro posto la più recente: {0}.": "Versions no longer installed, the newest used instead: {0}.",
   "Ogni strumento alla versione più recente": "Every tool at its newest version",
   "Qualsiasi cartella del PC. «Apri in…» la sceglie solo per una volta.": "Any folder of the PC. “Open in…” chooses one for this time only.",
   "Scegli…": "Choose…",

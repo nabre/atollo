@@ -248,6 +248,52 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     assert!(start_dir(&kit, &only_py, Some("relative"), "it").is_err());
 }
 
+/// BUG-V4-13: a terminal on PHP 8.2 with only 8.4 on disk gets the newest,
+/// and the page is told which line took the place of which.
+#[test]
+fn a_line_no_longer_on_disk_is_reported_with_the_one_used() {
+    let (_tmp, kit) = kit("terminals-replaced");
+    let php = Catalog::get().find("php").unwrap();
+    let dir = install_dir(&kit, php, "8.4.13");
+    install_fake(&kit, php, &dir);
+    php.save_version(&kit, "8.4.13").unwrap();
+    // Composer too: PHP is installed with all its parts.
+    for part in php.key_paths(&kit) {
+        fs::create_dir_all(part.parent().unwrap()).unwrap();
+        fs::write(part, b"").unwrap();
+    }
+    let id = save(
+        &kit,
+        Terminal {
+            name: "Old PHP".into(),
+            tools: BTreeMap::from([("php".to_owned(), Some("8.2".to_owned()))]),
+            ..Terminal::default()
+        },
+        "it",
+    )
+    .unwrap();
+    let view = list(&kit, "it");
+    let info = view.terminals.iter().find(|t| t.terminal.id == id).unwrap();
+    assert!(info.missing.is_empty(), "{:?}", info.missing);
+    assert_eq!(
+        info.replaced,
+        [LineSwap {
+            id: "php".into(),
+            saved: "8.2".into(),
+            used: "8.4".into(),
+        }]
+    );
+    // The line on disk, or none chosen: nothing replaced.
+    for line in [Some("8.4".to_owned()), None] {
+        let mut t = find(&kit, &id, "it").unwrap();
+        t.tools.insert("php".into(), line);
+        save(&kit, t, "it").unwrap();
+        let view = list(&kit, "it");
+        assert!(view.terminals[1].replaced.is_empty());
+    }
+    assert!(view.terminals[0].replaced.is_empty(), "the default one");
+}
+
 /// A folder inside the kit is saved relative to it: it follows the kit to
 /// another drive or folder (D-137); one outside stays as it is.
 #[test]

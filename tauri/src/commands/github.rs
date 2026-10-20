@@ -143,6 +143,7 @@ pub async fn github_clone<R: Runtime>(
     ensure_main(&webview)?;
     check_full_name(&full_name)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let servers = Arc::clone(&state.servers);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &["git"])?;
         let token = crate::github::token(&kit, &env);
@@ -151,6 +152,8 @@ pub async fn github_clone<R: Runtime>(
         if cloned.new {
             let dir = kit.projects().join(&cloned.project);
             settle_project(&app, &task, &kit, lang, &cloned.project, &dir);
+            // A new project: the pools are scanned again for its site.
+            servers.invalidate();
         }
         Ok(cloned.project)
     })
