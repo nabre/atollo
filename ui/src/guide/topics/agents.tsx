@@ -326,10 +326,10 @@ export const AGENTS: TopicTexts = {
         />
         <P>
           {tr(
-            "L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi rifarlo. «Esci» toglie l'accesso salvato nel kit (con l'agente chiuso: mentre è aperto il pulsante dice «Chiudi prima l'agente»).",
-            "The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit (with the agent closed: while it is open the button says “Close the agent first”).",
-            "La connexion reste dans le dossier du kit : en emportant le kit sur un autre PC, vous n'avez pas à la refaire. « Se déconnecter » retire la connexion enregistrée dans le kit (avec l'agent fermé : tant qu'il est ouvert, le bouton indique « Fermez d'abord l'agent »).",
-            "Die Anmeldung bleibt im Ordner des Kits: Wenn du das Kit auf einen anderen PC mitnimmst, musst du dich nicht erneut anmelden. „Abmelden“ entfernt die im Kit gespeicherte Anmeldung (bei geschlossenem Agenten: Solange er geöffnet ist, zeigt die Schaltfläche „Schließe zuerst den Agenten“).",
+            "L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi rifarlo. «Esci» toglie l'accesso salvato nel kit dopo una domanda («Togliere l'accesso salvato nel kit?», Esc annulla), con l'agente chiuso: mentre è aperto il pulsante dice «Chiudi prima l'agente». Con una chiave API «Esci» non c'è.",
+            "The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit after a question (“Remove the sign-in saved in the kit?”, Esc cancels), with the agent closed: while it is open the button says “Close the agent first”. With an API key there is no “Sign out”.",
+            "La connexion reste dans le dossier du kit : en emportant le kit sur un autre PC, vous n'avez pas à la refaire. « Se déconnecter » retire la connexion enregistrée dans le kit après une question (« Supprimer la connexion enregistrée dans le kit ? », Échap annule), avec l'agent fermé : tant qu'il est ouvert, le bouton indique « Fermez d'abord l'agent ». Avec une clé API, il n'y a pas de « Se déconnecter ».",
+            "Die Anmeldung bleibt im Ordner des Kits: Wenn du das Kit auf einen anderen PC mitnimmst, musst du dich nicht erneut anmelden. „Abmelden“ entfernt die im Kit gespeicherte Anmeldung nach einer Frage („Die im Kit gespeicherte Anmeldung entfernen?“, Esc bricht ab), bei geschlossenem Agenten: Solange er geöffnet ist, zeigt die Schaltfläche „Schließe zuerst den Agenten“. Mit einem API-Schlüssel gibt es kein „Abmelden“.",
           )}
         </P>
         <Callout
@@ -733,7 +733,7 @@ export const AGENTS: TopicTexts = {
                 "accesso non fatto: apri … per vedere limiti e consumi",
                 "not signed in: open … to see limits and usage",
                 "non connecté : ouvrez … pour voir les limites et la consommation",
-                "nicht angemeldet: Öffne …, um Limits und Verbrauch zu sehen",
+                "nicht angemeldet: … öffnen, um Limits und Verbrauch zu sehen",
               ),
               tr(
                 "Apri l'agente in un progetto e fai l'accesso.",
@@ -747,7 +747,7 @@ export const AGENTS: TopicTexts = {
                 "accesso scaduto: apri Claude Code per rinnovarlo",
                 "sign-in expired: open Claude Code to renew it",
                 "connexion expirée : ouvrez Claude Code pour la renouveler",
-                "Anmeldung abgelaufen: Öffne Claude Code, um sie zu erneuern",
+                "Anmeldung abgelaufen: Claude Code öffnen, um sie zu erneuern",
               ),
               tr(
                 "Apri l'agente: rinnova l'accesso da solo.",
@@ -773,9 +773,9 @@ export const AGENTS: TopicTexts = {
             [
               tr(
                 "nessun dato ancora: i limiti arrivano con la prossima risposta di Codex",
-                "no data yet: the limits arrive with Codex's next response",
-                "aucune donnée pour l'instant : les limites arrivent avec la prochaine réponse de Codex",
-                "noch keine Daten: Die Limits kommen mit der nächsten Antwort von Codex",
+                "no data yet: the limits arrive with Codex's next reply",
+                "pas encore de données : les limites arrivent avec la prochaine réponse de Codex",
+                "noch keine Daten: die Limits kommen mit der nächsten Antwort von Codex",
               ),
               tr(
                 "Usa Codex una volta: i limiti arrivano con la risposta.",
