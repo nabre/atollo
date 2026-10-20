@@ -93,3 +93,37 @@ fn database_for_the_steps() {
         Some("mysql://site:pw@127.0.0.1:3307/site")
     );
 }
+
+/// BUG-V4-10: a base whose `.env.example` and wizard variables have an
+/// empty `DB_PASSWORD` still gets the generated password in `.env`.
+#[test]
+fn generated_db_credentials_win_over_the_base() {
+    let tmp = TempDir::new("writeenv");
+    let dir = tmp.0.join("site");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join(".env.example"),
+        "APP_NAME=site\nDB_CONNECTION=mysql\nDB_PASSWORD=\n",
+    )
+    .unwrap();
+    let db = crate::db::auth::project_db("mysql", "site", "s3cret", 3307);
+    let vars = vec![
+        ("DB_PASSWORD".to_owned(), String::new()),
+        ("APP_KEY".to_owned(), "k".to_owned()),
+    ];
+    let keys = super::write_env(&dir, &vars, Some(&db)).unwrap();
+    let text = fs::read_to_string(dir.join(".env")).unwrap();
+    assert!(text.contains("DB_PASSWORD=s3cret\n"), "{text}");
+    assert!(!text.contains("DB_PASSWORD=\n"), "{text}");
+    assert!(text.contains("APP_KEY=k\n"), "{text}");
+    assert!(text.contains("DB_PORT=3307\n"), "{text}");
+    assert!(keys.iter().any(|k| k == "DB_PASSWORD"), "{keys:?}");
+    // Without a database only the variables are written.
+    let other = tmp.0.join("plain");
+    fs::create_dir_all(&other).unwrap();
+    assert!(super::write_env(&other, &vars, None).unwrap().is_empty());
+    assert_eq!(
+        fs::read_to_string(other.join(".env")).unwrap(),
+        "DB_PASSWORD=\nAPP_KEY=k\n"
+    );
+}
