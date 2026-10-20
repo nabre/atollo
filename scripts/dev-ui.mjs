@@ -8,14 +8,14 @@
 // next `npm run dev` failed with "Port 5173 is already in use". Here:
 // - Vite runs in this process, started with its API;
 // - the process ends when the shell that started it is gone (polled every
-//   second; on macOS and Linux the parent becomes another process) or on
-//   SIGINT/SIGTERM/SIGHUP;
+//   second; on macOS and Linux the parent becomes another process), when
+//   the stdin pipe Tauri hands down closes, or on SIGINT/SIGTERM/SIGHUP;
 // - a port already taken is reported with who has it and how to stop it,
 //   never stopped from here.
 //
 //   node ../scripts/dev-ui.mjs        (cwd: ui, as Tauri runs it)
 import { execFileSync } from "node:child_process";
-import { createServer as createNetServer } from "node:net";
+import { createServer as createNetServer, Socket } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
@@ -113,3 +113,12 @@ setInterval(() => {
   }
   if (!alive) void stop("the command that started it ended");
 }, 1000).unref();
+// Windows keeps `process.ppid` after the parent ends, and the pid can go to
+// another process meanwhile; Tauri hands its shell a stdin pipe that closes
+// when Tauri ends, however it ends (PORT-V5-01). Only a pipe: a terminal,
+// a file or no stdin at all (run by hand) ends nothing.
+if (process.stdin instanceof Socket && !process.stdin.isTTY) {
+  for (const event of ["end", "close"]) process.stdin.on(event, () => void stop("its stdin closed"));
+  process.stdin.on("error", () => undefined);
+  process.stdin.resume();
+}
