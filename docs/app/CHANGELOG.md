@@ -1,5 +1,14 @@
 # Novità
 
+## L'aspetto di VSCodium 1.135 (20/10/2026)
+
+- **Cornice**: barra del titolo, barra delle attività, barra di stato e schede del pannello con le misure e i colori di VSCodium 1.135, la versione dell'editor del kit (D-142).
+- **Liste e pannelli**: righe, intestazioni dei pannelli laterali e barre di scorrimento sottili come nel workbench.
+- **Controlli**: pulsanti, campi, menu a tendina e finestre di dialogo delle stesse misure di VSCodium.
+- **Editor**: schede con la chiusura che compare al passaggio, pagine degli strumenti con l'icona grande e la barra delle sezioni, impostazioni con indice e barra del valore modificato come in VSCodium.
+- **Icone**: quelle di VSCodium, dal font codicon.
+- **Guida**: schermate rifatte nelle quattro lingue.
+
 ## Rilievi del report v5, priorità 1-4 (20/10/2026)
 
 - **Database**: due avvii insieme della stessa versione di MySQL fanno partire un solo server; cambiando la versione del server nessuna porta si sposta, e le stringhe di connessione dei progetti restano giuste (D-140). Due backup avviati insieme non si rubano più il file di login.
