@@ -1,10 +1,10 @@
 // The sizes dragged with a sash: clamped at once, written to the browser's
-// storage once the drag pauses, not at every pointer move. The editor's
-// tabs and a details editor's header and bar, measured as in VSCodium
-// 1.135's modern UI with the size tokens.
+// storage once the drag pauses, not at every pointer move. The panel's and
+// the editor's tabs and a details editor's header and bar, measured as in
+// VSCodium 1.135's modern UI with the size tokens.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { EditorHeader, EditorTabs, NavBar, useStoredSize } from "../../../ui/src/workbench/layout";
+import { EditorHeader, EditorTabs, NavBar, Panel, useStoredSize } from "../../../ui/src/workbench/layout";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -201,5 +201,48 @@ describe("NavBar", () => {
     expect(classes(off)).toContain("text-vsc-panel-title-inactive");
     fireEvent.click(off);
     expect(onSelect).toHaveBeenCalledWith("b");
+  });
+});
+
+describe("Panel", () => {
+  it("draws its tabs as VSCodium's modern ones, with the size tokens", () => {
+    const onSelect = vi.fn();
+    render(
+      <Panel
+        tabs={[
+          { id: "activity", label: "Attività" },
+          { id: "output", label: "Output" },
+        ]}
+        active="activity"
+        onSelect={onSelect}
+        height={200}
+      >
+        <p>content</p>
+      </Panel>,
+    );
+    const list = screen.getByRole("tablist");
+    expect(classes(list.parentElement)).toEqual(
+      expect.arrayContaining(["h-vsc-title", "pl-vsc-size20", "pr-vsc-size40"]),
+    );
+    const on = screen.getByRole("tab", { name: "Attività" });
+    const off = screen.getByRole("tab", { name: "Output" });
+    expect(on.getAttribute("aria-selected")).toBe("true");
+    // 10px beside the label; the fill a 24px pill 2px in from the sides.
+    for (const tab of [on, off]) {
+      expect(classes(tab)).toEqual(
+        expect.arrayContaining([
+          "px-vsc-size100",
+          "before:inset-x-vsc-size20",
+          "before:inset-y-vsc-size40",
+          "before:rounded-vsc-small",
+        ]),
+      );
+    }
+    expect(classes(on)).toContain("before:bg-vsc-list-inactive");
+    expect(classes(off)).toContain("hover:before:bg-vsc-list-hover");
+    // No underline: the modern tabs drop the panelTitle.activeBorder.
+    expect(classes(on).some((c) => c.startsWith("after:"))).toBe(false);
+    fireEvent.click(off);
+    expect(onSelect).toHaveBeenCalledWith("output");
   });
 });

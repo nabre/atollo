@@ -500,8 +500,8 @@ LAYOUT = {
 # App measure token -> value: the height or width VSCodium gives that part
 # in the modern UI, as a VSCodium variable where it has one. The others are
 # written in its CSS or code:
-# - titlebar: TitlebarPart.minimumHeight with the command center (30px
-#   without), the .window-appicon's width;
+# - titlebar: TitlebarPart.minimumHeight without the command center, as
+#   Atollo's title bar (35px with it, the .window-appicon's width);
 # - window-control: .window-controls-container>.window-icon;
 # - title: .modern-ui.monaco-workbench .part>.title (35px in the classic UI),
 #   the side bar's and the panel's title with its tabs;
@@ -511,7 +511,10 @@ LAYOUT = {
 #   headerRowHeight in workbench.js;
 # - tabs: the editor's tab bar, EDITOR_TAB_HEIGHT.modernUI (35px classic),
 #   a tab of --editor-group-tab-height and 4px above and below;
-# - statusbar: .monaco-workbench .part.statusbar;
+# - statusbar: .monaco-workbench .part.statusbar, to which the floating
+#   parts add 6px below (StatusbarPart.FLOATING_BOTTOM_PADDING);
+# - statusbar-item-margin, statusbar-item-padding: .statusbar-item-label's
+#   margin and padding beside the text;
 # - dialog: the dialog box's width, .monaco-dialog-box's min-width (its
 #   width is min-content, as wide as that for a text);
 # - scrollbar: the scroll bars' width and height, which the modern UI sets
@@ -525,7 +528,7 @@ LAYOUT = {
 # - modified-left, modified-top, modified-bottom: where the bar of a changed
 #   setting stands in its item, .setting-item-modified-indicator.
 SIZE_TOKENS = {
-    "titlebar": "35px",
+    "titlebar": "30px",
     "window-control": "46px",
     "activitybar": "var(--activity-bar-width)",
     "activitybar-action": "var(--activity-bar-action-height)",
@@ -539,6 +542,8 @@ SIZE_TOKENS = {
     "tabs": "32px",
     "tab": "var(--editor-group-tab-height)",
     "statusbar": "22px",
+    "statusbar-item-margin": "3px",
+    "statusbar-item-padding": "5px",
     "dialog": "480px",
     "scrollbar": "8px",
     "extension-icon": "128px",

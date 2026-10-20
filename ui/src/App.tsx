@@ -168,8 +168,9 @@ export function App() {
       </a>
       <TitleBar title={current?.label} />
       <Banner info={info} error={error} onRetry={readInfo} />
-      {/* VSCodium's floating parts: 4px apart on the workbench color. */}
-      <div className="flex min-h-0 flex-1 gap-1 px-1 pb-1">
+      {/* VSCodium's floating parts: 4px apart on the workbench color, the
+          activity bar on the window's edge. */}
+      <div className="flex min-h-0 flex-1 gap-vsc-size40 pr-vsc-size40 pb-vsc-size40">
         <ActivityBar
           pages={all}
           page={page}
@@ -302,10 +303,10 @@ export function App() {
 /** Pages at the bottom of the bar, as VSCodium's Accounts and Manage. */
 const BOTTOM: PageId[] = ["guide", "settings", "eject"];
 
-/** VSCodium's activity bar (modern layout): 36px items with a rounded mark
- * on the active one and the brand's bar on its left edge, a badge with what
- * runs, the kit's own pages at the bottom. Arrow keys move between items,
- * as in the editor. */
+/** VSCodium's activity bar (modern layout): on the window's left edge, 36px
+ * items 8px apart, the active one and the hovered one on a rounded square
+ * 4px smaller, a badge with what runs, the kit's own pages at the bottom.
+ * Arrow keys move between items, as in the editor. */
 function ActivityBar({
   pages: list,
   page,
@@ -344,30 +345,28 @@ function ActivityBar({
           onSelect(id);
         }}
         className={[
-          "group relative flex size-9 items-center justify-center focus-visible:outline-none",
-          active ? "text-vsc-activitybar-fg" : "text-vsc-activitybar-inactive hover:text-vsc-activitybar-fg",
+          "group relative flex size-vsc-activitybar-action shrink-0 items-center justify-center focus-visible:outline-none",
+          active
+            ? "text-vsc-activitybar-item-active-fg"
+            : "text-vsc-activitybar-inactive hover:text-vsc-activitybar-item-hover-fg",
         ].join(" ")}
       >
-        {/* The brand's mark on the left edge, as the editor's
+        {/* No mark on the left edge: the modern UI drops the
             activityBar.activeBorder. */}
         <span
-          aria-hidden="true"
-          className={`absolute top-2 bottom-2 -left-px w-[3px] rounded-full bg-vsc-activitybar-border transition-opacity ${active ? "opacity-100" : "opacity-0"}`}
-        />
-        <span
           className={[
-            "flex size-8 items-center justify-center rounded group-focus-visible:outline group-focus-visible:outline-1 group-focus-visible:outline-vsc-focus",
+            "flex size-[calc(var(--vsc-size-activitybar-action)-var(--vscode-spacing-size40))] items-center justify-center rounded-vsc-small group-focus-visible:outline group-focus-visible:outline-1 group-focus-visible:outline-vsc-focus",
             active ? "bg-vsc-activitybar-item-active" : "group-hover:bg-vsc-activitybar-item-hover",
           ].join(" ")}
         >
-          <Glyph size={24} aria-hidden="true" />
+          <Glyph aria-hidden="true" className="size-vsc-activitybar-icon" />
         </span>
         {shown && (
           // Not vscode-badge: its activity-bar-counter keeps an 18px minimum
           // and a 1px border, where the editor's badge is 16px high.
           <span
             aria-label={shown.label}
-            className="pointer-events-none absolute right-0.5 bottom-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-vsc-activitybar-badge px-1 text-[11px] leading-none font-semibold text-vsc-activitybar-badge-fg"
+            className="pointer-events-none absolute right-vsc-size20 bottom-vsc-size20 flex h-vsc-size160 min-w-vsc-size160 items-center justify-center rounded-vsc-circle bg-vsc-activitybar-badge px-vsc-size40 text-vsc-label3 leading-none font-vsc-regular text-vsc-activitybar-badge-fg"
           >
             {shown.count > 99 ? "99+" : shown.count}
           </span>
@@ -379,7 +378,8 @@ function ActivityBar({
     <nav
       aria-label={t("Pagine")}
       onKeyDown={move}
-      className="flex w-11 shrink-0 flex-col items-center rounded-lg border border-vsc-surface-border bg-vsc-activitybar py-1"
+      // 3px above and below, as VSCodium's composite bar and global actions.
+      className="flex w-[calc(var(--vsc-size-activitybar)+var(--vscode-spacing-size80))] shrink-0 flex-col gap-vsc-activitybar-gap rounded-r-vsc-medium bg-vsc-activitybar py-[calc(var(--vscode-spacing-size20)+var(--vscode-strokeThickness))] pr-vsc-size20 pl-vsc-size60"
     >
       {list.filter((p) => !BOTTOM.includes(p.id)).map(item)}
       <span className="flex-1" />
@@ -437,9 +437,10 @@ function Banner({
   );
 }
 
-/** A status bar entry, as VSCodium's: 24px, rounded, a hover and a
- * pressed state; a button when it acts. `tone` paints it as the editor's
- * error items. */
+/** A status bar entry, as VSCodium's label: the bar's height, 5px beside
+ * the text and 3px apart, rounded, a hover and a pressed state; a button
+ * when it acts. `last` is the right edge's item, 6px beside the text and 2px
+ * from the edge. `tone` paints it as the editor's error items. */
 function StatusItem({
   children,
   title,
@@ -447,6 +448,7 @@ function StatusItem({
   className = "",
   pressed,
   tone,
+  last = false,
 }: {
   children: ReactNode;
   title?: string;
@@ -454,9 +456,11 @@ function StatusItem({
   className?: string;
   pressed?: boolean;
   tone?: "error" | undefined;
+  last?: boolean;
 }) {
   const color = tone === "error" ? "bg-vsc-statusbar-error text-vsc-statusbar-error-fg" : "";
-  const look = `flex h-6 items-center gap-1 rounded px-1.5 whitespace-nowrap ${color} ${className}`;
+  const space = last ? "mr-vsc-size20 px-vsc-size60" : "mx-vsc-statusbar-item-margin px-vsc-statusbar-item-padding";
+  const look = `flex h-full items-center gap-vsc-size40 rounded-vsc-small whitespace-nowrap ${space} ${color} ${className}`;
   return onClick ? (
     <button
       type="button"
@@ -512,14 +516,17 @@ function StatusBar({
   return (
     <footer
       aria-label={t("Barra di stato")}
-      className="flex h-7 shrink-0 items-center gap-0.5 bg-vsc-statusbar px-1.5 pb-1 text-[12px] leading-none text-vsc-statusbar-fg"
+      // VSCodium's 22px and the 6px the floating parts add below, 2px above
+      // and below the items.
+      className="flex h-[calc(var(--vsc-size-statusbar)+var(--vscode-spacing-size60))] shrink-0 items-center bg-vsc-statusbar px-vsc-size60 py-vsc-size20 text-vsc-body-small leading-none text-vsc-statusbar-fg"
     >
-      {/* First, as VSCodium's remote indicator. */}
+      {/* First, as VSCodium's remote indicator: 4px from the bar's edge,
+          4px and 6px beside the text. */}
       <span
         role="img"
         aria-label="Atollo"
         title={info ? `Atollo - ${info.root}` : "Atollo"}
-        className="flex h-6 items-center gap-1.5 rounded bg-vsc-statusbar-remote px-2 font-semibold tracking-wide text-vsc-statusbar-remote-fg"
+        className="ml-vsc-size40 flex h-full items-center gap-vsc-size60 rounded-vsc-small bg-vsc-statusbar-remote pr-vsc-size60 pl-vsc-size40 font-semibold tracking-wide text-vsc-statusbar-remote-fg"
       >
         <VscRemote size={16} aria-hidden="true" />
         <span aria-hidden="true">Atollo</span>
@@ -529,7 +536,8 @@ function StatusBar({
         onClick={onPanel}
         pressed={panelOpen}
         tone={errors > 0 ? "error" : undefined}
-        className="ml-1"
+        // 4px more beside a colored item, as VSCodium's.
+        className="ml-[calc(var(--vscode-spacing-size40)+var(--vsc-size-statusbar-item-margin))]"
       >
         <span className="sr-only">{t("Attività")}</span>
         <VscPlay size={14} aria-hidden="true" />
@@ -570,7 +578,7 @@ function StatusBar({
           <StatusItem>v{info.version}</StatusItem>
         </>
       )}
-      <StatusItem title={panelLabel} onClick={onPanel} pressed={panelOpen}>
+      <StatusItem title={panelLabel} onClick={onPanel} pressed={panelOpen} last>
         <span className="sr-only">{panelLabel}</span>
         <VscLayoutPanel size={14} aria-hidden="true" />
       </StatusItem>

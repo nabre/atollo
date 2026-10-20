@@ -143,6 +143,9 @@ describe("theme-sizes.css", () => {
     );
     expect(sizes.get("--vsc-size-statusbar")).toBe(referenceValue(".monaco-workbench .part.statusbar", "height"));
     expect(sizes.get("--vsc-size-dialog")).toBe(referenceValue(".monaco-dialog-box", "min-width"));
+    const label = ".monaco-workbench .part.statusbar>.items-container>.statusbar-item>.statusbar-item-label";
+    expect(sizes.get("--vsc-size-statusbar-item-margin")).toBe(referenceValue(label, "margin-left"));
+    expect(sizes.get("--vsc-size-statusbar-item-padding")).toBe(referenceValue(label, "padding").replace(/^0 /, ""));
     expect(sizes.get("--vsc-size-window-control")).toBe(
       referenceValue(".monaco-workbench .part.titlebar .window-controls-container>.window-icon", "width"),
     );
