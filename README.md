@@ -39,8 +39,8 @@
 On first start the app downloads the system components by itself: PowerShell 7, GitHub CLI and the editor. Everything else is chosen on the "Tools" page, or arrives when needed: Node.js with an `npm` action, uv with a `uvx` MCP server, and so on.
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="site/shots/shot-projects-light.png">
-  <img src="site/shots/shot-projects-dark.png" alt="Atollo's Projects page: quick panel and activity" width="100%">
+  <source media="(prefers-color-scheme: light)" srcset="site/shots/en/shot-projects-light.png">
+  <img src="site/shots/en/shot-projects-dark.png" alt="Atollo's Projects page: quick panel and activity" width="100%">
 </picture>
 
 ## Features

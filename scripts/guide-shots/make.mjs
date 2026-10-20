@@ -10,7 +10,8 @@
 //                                         Edge or Chrome from the system;
 //                                         Python with Pillow for the webp)
 //
-// GUIDE_SHOTS_LANGS=en,it limits the languages.
+// GUIDE_SHOTS_LANGS=en,it limits the languages, SHOTS_URL=http://127.0.0.1:5199
+// takes the preview from another address.
 import { chromium } from "playwright-core";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -20,6 +21,7 @@ import { fileURLToPath } from "node:url";
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const langs = (process.env.GUIDE_SHOTS_LANGS ?? "it,en,fr,de").split(",");
+const preview = process.env.SHOTS_URL ?? "http://127.0.0.1:5173";
 const channel = process.env.SHOTS_BROWSER ?? (process.platform === "win32" ? "msedge" : "chrome");
 const browser = await chromium.launch({ channel });
 const png = mkdtempSync(join(tmpdir(), "guide-shots-"));
@@ -34,7 +36,7 @@ async function shoot(lang) {
     deviceScaleFactor: 1.25,
     colorScheme: "light",
   });
-  await page.goto(`http://127.0.0.1:5173/?lang=${lang}`, { waitUntil: "networkidle" });
+  await page.goto(`${preview}/?lang=${lang}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   await page.getByText(tr("Anteprima nel browser: dati di esempio"), { exact: true }).evaluate((el) => {
     el.style.visibility = "hidden";
