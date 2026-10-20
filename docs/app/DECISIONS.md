@@ -1292,3 +1292,9 @@ Superata il 16/10/2026 da D-95: Windows Terminal non è più nel kit e le consol
   - **«pre-installato»** in tabella, albero, scheda e Matrice (prima albero, scheda e Matrice dicevano «pre-scaricato»).
   - **Documenti generati.** `scripts/guide-docs.cjs` scrive `GUIDE.md` e `GUIDE.it.md` dalla Guida dell'app; `test/ui/guide/docs.test.ts` fallisce se restano indietro.
   - **Controllo in CI.** `node scripts/guide-docs.cjs --check` rigenera i due documenti in memoria e fallisce, con la prima riga diversa, se non sono quelli nel repository; il job «Lint and test» lo esegue al livello `ui` (D-134), a cui ora appartengono anche `docs/app/GUIDE.md`, `GUIDE.it.md` e lo script: un documento corretto a mano senza la Guida non passa.
+
+## D-139 Gli strumenti divisi per tipo, come nel sito
+
+- **Richiesta dell'utente** (20/10/2026). «Come nella pagina del sito, gli strumenti hanno una gerarchia e dei titoletti»: sviluppare e migliorare «Tutti gli strumenti».
+- **Tipi.** Quelli della matrice del sito (`site/matrix.mjs`): Sistema ed editor, Agenti AI, Linguaggi, Strumenti di sviluppo, Server web, Database, con le stesse eccezioni ai gruppi del catalogo (Git e GitHub CLI con il sistema; uv, pnpm, CMake, Android, Typst, TinyTeX fra gli strumenti; Apache e Caddy server web). Valgono per la tabella, l'albero della barra laterale di Strumenti, la Matrice e la pagina del primo avvio (`components/model.ts`, `groups()`); un test li confronta con quelli del sito. Prima i linguaggi erano divisi fra «Linguaggi» (con più versioni) e «Strumenti» (all'ultima versione): Rust o Ruby finivano fra gli strumenti, Apache con i linguaggi.
+- **Tabella.** Un blocco per tipo (`<tbody>` con la sua riga di titolo): freccia per chiuderlo, titolo, numero (o «2 di 5» con un filtro), descrizione, casella «Scegli tutti» per gli strumenti sceglibili del tipo. La colonna «Gruppo» è tolta; l'ordinamento per colonna vale dentro ogni tipo (di base per nome). Il filtro si chiama «Tipo».

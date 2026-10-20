@@ -2,8 +2,9 @@
 // kit's target (C and C++ need Zig on macOS and Linux only), and the Xcode
 // notice is read from the row of C and C++.
 import { describe, expect, it } from "vitest";
-import type { ComponentInfo } from "../../../ui/src/api";
-import { toggle, xcodeMissing } from "../../../ui/src/components/model";
+import catalog from "../../../tauri/catalog/components.json";
+import type { ComponentInfo, Group } from "../../../ui/src/api";
+import { KIND_OF, KIND_OF_GROUP, KINDS, groups, kindOf, toggle, xcodeMissing } from "../../../ui/src/components/model";
 
 function row(id: string, needs: string[] = [], more: Partial<ComponentInfo> = {}): ComponentInfo {
   return {
@@ -48,5 +49,35 @@ describe("xcodeMissing", () => {
     expect(xcodeMissing(row("cc"))).toBe(false);
     expect(xcodeMissing({ ...row("cc"), xcodeMissing: false })).toBe(false);
     expect(xcodeMissing({ ...row("cc"), xcodeMissing: true })).toBe(true);
+  });
+});
+
+// The Tools page, the first-start page and the matrix group the tools as
+// the site does (site/matrix.mjs): same kinds, same exceptions.
+describe("kinds", () => {
+  it("are the site's", async () => {
+    // @ts-expect-error -- the site's plain JavaScript module, typed by the cast.
+    const site = (await import("../../../site/matrix.mjs")) as {
+      KINDS: string[];
+      KIND_OF: Record<string, string>;
+      KIND_OF_GROUP: Record<string, string>;
+    };
+    expect([...KINDS]).toEqual(site.KINDS);
+    expect(KIND_OF).toEqual(site.KIND_OF);
+    expect(KIND_OF_GROUP).toEqual(site.KIND_OF_GROUP);
+  });
+
+  it("put every catalog component in exactly one section", () => {
+    const sections = groups();
+    for (const c of catalog.components) {
+      const info = { ...c, group: c.group as Group } as unknown as ComponentInfo;
+      expect(
+        sections.filter((g) => g.has(info)).map((g) => g.id),
+        c.id,
+      ).toHaveLength(1);
+    }
+    expect(kindOf({ id: "git", group: "languages" })).toBe("system");
+    expect(kindOf({ id: "caddy", group: "languages" })).toBe("web");
+    expect(kindOf({ id: "rust", group: "languages" })).toBe("languages");
   });
 });

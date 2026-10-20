@@ -633,26 +633,26 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Sotto c'è l'elenco dei componenti, diviso in cinque gruppi, con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.",
-            "Below is the list of components, split into five groups, with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.",
-            "En dessous se trouve la liste des composants, divisée en cinq groupes, avec un champ de recherche et un index à gauche. Chaque ligne a une case à cocher, le logo, le nom, une description, la taille et des étiquettes qui disent de quoi il a besoin ou à quoi il sert.",
-            "Darunter steht die Liste der Komponenten, in fünf Gruppen aufgeteilt, mit einem Suchfeld und einem Index links. Jede Zeile hat ein Kontrollkästchen, das Logo, den Namen, eine Beschreibung, die Größe und Etiketten, die sagen, was sie braucht oder wozu sie dient.",
+            "Sotto c'è l'elenco dei componenti, diviso in sei tipi (ognuno con la sua descrizione), con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.",
+            "Below is the list of components, split into six kinds (each with its description), with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.",
+            "En dessous se trouve la liste des composants, divisée en six types (chacun avec sa description), avec un champ de recherche et un index à gauche. Chaque ligne a une case à cocher, le logo, le nom, une description, la taille et des étiquettes qui disent de quoi il a besoin ou à quoi il sert.",
+            "Darunter steht die Liste der Komponenten, in sechs Arten aufgeteilt (jede mit ihrer Beschreibung), mit einem Suchfeld und einem Index links. Jede Zeile hat ein Kontrollkästchen, das Logo, den Namen, eine Beschreibung, die Größe und Etiketten, die sagen, was sie braucht oder wozu sie dient.",
           )}
         </P>
         <Table
           columns={[
-            tr("Gruppo", "Group", "Groupe", "Gruppe"),
+            tr("Tipo", "Type", "Type", "Typ"),
             tr("Che cosa contiene", "What it contains", "Ce qu'il contient", "Was es enthält"),
             tr("Cosa scegliere", "What to choose", "Quoi choisir", "Was du wählen solltest"),
           ]}
           rows={[
             [
-              tr("Obbligatori", "Required", "Obligatoires", "Erforderlich"),
+              tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor"),
               tr(
-                "L'editor, PowerShell 7 (la console del kit) e GitHub CLI. Sotto, i requisiti del PC.",
-                "The editor, PowerShell 7 (the kit's console) and GitHub CLI. Below, the PC requirements.",
-                "L'éditeur, PowerShell 7 (la console du kit) et GitHub CLI. En dessous, les prérequis du PC.",
-                "Der Editor, PowerShell 7 (die Konsole des Kits) und GitHub CLI. Darunter die Anforderungen an den PC.",
+                "L'editor, PowerShell 7 (la console del kit), GitHub CLI e Git. Sotto, i requisiti del PC.",
+                "The editor, PowerShell 7 (the kit's console), GitHub CLI and Git. Below, the PC requirements.",
+                "L'éditeur, PowerShell 7 (la console du kit), GitHub CLI et Git. En dessous, les prérequis du PC.",
+                "Der Editor, PowerShell 7 (die Konsole des Kits), GitHub CLI und Git. Darunter die Anforderungen an den PC.",
               ),
               tr(
                 "Sono sempre installati: le caselle sono bloccate.",
@@ -662,7 +662,7 @@ export const START: TopicTexts = {
               ),
             ],
             [
-              tr("Agenti", "Agents", "Agents", "Agenten"),
+              tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
                 "Claude Code, Codex e Antigravity.",
                 "Claude Code, Codex and Antigravity.",
@@ -679,10 +679,10 @@ export const START: TopicTexts = {
             [
               tr("Linguaggi", "Languages", "Langages", "Sprachen"),
               tr(
-                "Python, Node.js, PHP, Java, .NET, Go, Ruby e gli altri che possono avere più versioni, più i server web Apache e Caddy.",
-                "Python, Node.js, PHP, Java, .NET, Go, Ruby and the others that can have several versions, plus the Apache and Caddy web servers.",
-                "Python, Node.js, PHP, Java, .NET, Go, Ruby et les autres qui peuvent avoir plusieurs versions, plus les serveurs web Apache et Caddy.",
-                "Python, Node.js, PHP, Java, .NET, Go, Ruby und die anderen, die mehrere Versionen haben können, dazu die Webserver Apache und Caddy.",
+                "Tutti i linguaggi e i runtime: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, il compilatore C/C++ e gli altri. Python, Node.js, PHP, Go e Java possono avere più versioni; gli altri restano all'ultima.",
+                "All languages and runtimes: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, the C/C++ compiler and the others. Python, Node.js, PHP, Go and Java can have several versions; the others stay at the latest.",
+                "Tous les langages et environnements d'exécution : Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, le compilateur C/C++ et les autres. Python, Node.js, PHP, Go et Java peuvent avoir plusieurs versions ; les autres restent à la dernière.",
+                "Alle Sprachen und Laufzeiten: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, der C/C++-Compiler und die anderen. Python, Node.js, PHP, Go und Java können mehrere Versionen haben; die anderen bleiben auf der neuesten.",
               ),
               tr(
                 "Quelli che usi. Altri si aggiungono quando servono.",
@@ -692,18 +692,33 @@ export const START: TopicTexts = {
               ),
             ],
             [
-              tr("Strumenti", "Tools", "Outils", "Werkzeuge"),
+              tr("Strumenti di sviluppo", "Development tools", "Outils de développement", "Entwicklungswerkzeuge"),
               tr(
-                "Git, uv, Rust, Android SDK, CMake, compilatore C/C++, pnpm e simili: una sola versione, sempre l'ultima.",
-                "Git, uv, Rust, Android SDK, CMake, C/C++ compiler, pnpm and the like: a single version, always the latest.",
-                "Git, uv, Rust, Android SDK, CMake, compilateur C/C++, pnpm et similaires : une seule version, toujours la dernière.",
-                "Git, uv, Rust, Android SDK, CMake, C/C++-Compiler, pnpm und Ähnliches: eine einzige Version, immer die neueste.",
+                "uv, pnpm e yarn, CMake e Ninja, Android SDK, Typst, TinyTeX: una sola versione, sempre l'ultima.",
+                "uv, pnpm and yarn, CMake and Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest.",
+                "uv, pnpm et yarn, CMake et Ninja, Android SDK, Typst, TinyTeX : une seule version, toujours la dernière.",
+                "uv, pnpm und yarn, CMake und Ninja, Android SDK, Typst, TinyTeX: eine einzige Version, immer die neueste.",
               ),
               tr(
                 "Di solito niente: il kit li installa da solo quando un progetto o un agente li chiede.",
                 "Usually nothing: the kit installs them by itself when a project or an agent asks for them.",
                 "En général rien : le kit les installe tout seul quand un projet ou un agent les demande.",
                 "Normalerweise nichts: Das Kit installiert sie selbst, wenn ein Projekt oder ein Agent sie anfordert.",
+              ),
+            ],
+            [
+              tr("Server web", "Web server", "Serveur web", "Webserver"),
+              tr(
+                "Apache e Caddy, per i siti dei progetti e i Server Web condivisi.",
+                "Apache and Caddy, for the projects' sites and the shared Web Servers.",
+                "Apache et Caddy, pour les sites des projets et les serveurs web partagés.",
+                "Apache und Caddy, für die Websites der Projekte und die gemeinsamen Webserver.",
+              ),
+              tr(
+                "Quello che usano i tuoi progetti; Apache è già nella scelta proposta.",
+                "The one your projects use; Apache is already in the suggested choice.",
+                "Celui qu'utilisent vos projets ; Apache est déjà dans le choix proposé.",
+                "Den, den deine Projekte verwenden; Apache ist schon in der vorgeschlagenen Auswahl.",
               ),
             ],
             [
@@ -725,10 +740,10 @@ export const START: TopicTexts = {
         />
         <P>
           {tr(
-            "La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti obbligatori; Git arriva insieme a Claude Code. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
-            "The suggested choice includes the three agents, Python, PHP with Apache and the required components; Git comes along with Claude Code. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
-            "Le choix proposé comprend les trois agents, Python, PHP avec Apache et les composants obligatoires ; Git arrive avec Claude Code. En tout, environ 1,8 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
-            "Die vorgeschlagene Auswahl umfasst die drei Agenten, Python, PHP mit Apache und die erforderlichen Komponenten; Git kommt zusammen mit Claude Code. Insgesamt etwa 1,8 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
+            "La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
+            "The suggested choice includes the three agents, Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
+            "Le choix proposé comprend les trois agents, Python, PHP avec Apache et les composants de « Système et éditeur », Git compris. En tout, environ 1,8 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
+            "Die vorgeschlagene Auswahl umfasst die drei Agenten, Python, PHP mit Apache und die Komponenten von „System und Editor“, Git inklusive. Insgesamt etwa 1,8 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
           )}
         </P>
         <Steps

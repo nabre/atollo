@@ -153,17 +153,18 @@ La pagina Impostazioni › «Il kit» mostra il disco su cui si trova il kit: fi
 
 Al primo avvio, al posto delle solite pagine, compare la scheda «Benvenuto in Atollo». Spiega che agenti e linguaggi verranno scaricati dalle fonti ufficiali, verificati e messi nella cartella data del kit, senza installazione e senza diritti di amministratore.
 
-Sotto c'è l'elenco dei componenti, diviso in cinque gruppi, con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.
+Sotto c'è l'elenco dei componenti, diviso in sei tipi (ognuno con la sua descrizione), con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.
 
-| Gruppo | Che cosa contiene | Cosa scegliere |
+| Tipo | Che cosa contiene | Cosa scegliere |
 | --- | --- | --- |
-| Obbligatori | L'editor, PowerShell 7 (la console del kit) e GitHub CLI. Sotto, i requisiti del PC. | Sono sempre installati: le caselle sono bloccate. |
-| Agenti | Claude Code, Codex e Antigravity. | Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore. |
-| Linguaggi | Python, Node.js, PHP, Java, .NET, Go, Ruby e gli altri che possono avere più versioni, più i server web Apache e Caddy. | Quelli che usi. Altri si aggiungono quando servono. |
-| Strumenti | Git, uv, Rust, Android SDK, CMake, compilatore C/C++, pnpm e simili: una sola versione, sempre l'ultima. | Di solito niente: il kit li installa da solo quando un progetto o un agente li chiede. |
+| Sistema ed editor | L'editor, PowerShell 7 (la console del kit), GitHub CLI e Git. Sotto, i requisiti del PC. | Sono sempre installati: le caselle sono bloccate. |
+| Agenti AI | Claude Code, Codex e Antigravity. | Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore. |
+| Linguaggi | Tutti i linguaggi e i runtime: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, il compilatore C/C++ e gli altri. Python, Node.js, PHP, Go e Java possono avere più versioni; gli altri restano all'ultima. | Quelli che usi. Altri si aggiungono quando servono. |
+| Strumenti di sviluppo | uv, pnpm e yarn, CMake e Ninja, Android SDK, Typst, TinyTeX: una sola versione, sempre l'ultima. | Di solito niente: il kit li installa da solo quando un progetto o un agente li chiede. |
+| Server web | Apache e Caddy, per i siti dei progetti e i Server Web condivisi. | Quello che usano i tuoi progetti; Apache è già nella scelta proposta. |
 | Database | MySQL, MongoDB, phpMyAdmin, SQLite. | Solo se ti servono. MySQL si installa anche al primo avvio del server. |
 
-La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti obbligatori; Git arriva insieme a Claude Code. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).
+La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).
 
 1. Togli la spunta a ciò che non ti interessa e aggiungi ciò che usi.
 2. Premi «Installa» in basso. Non c'è una conferma: la scelta viene salvata e lo scaricamento parte subito.
@@ -1203,7 +1204,7 @@ Un agente è un programma a riga di comando che dialoga con un modello di intell
 | Codex | OpenAI | Account ChatGPT oppure chiave API OPENAI_API_KEY. |
 | Antigravity | Google | Account Google oppure chiave API di Gemini, da scrivere in Impostazioni › Agenti. |
 
-Gli agenti si installano dalla pagina Strumenti, gruppo «Agenti» (il primo avvio li propone già). Seguono sempre l'ultima versione e portano con sé ciò che serve: Claude Code, per esempio, porta Git.
+Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio li propone già). Seguono sempre l'ultima versione e portano con sé ciò che serve; Git, che usano tutti, è già tra i componenti sempre installati.
 
 #### Aprire un agente in un progetto
 
@@ -1414,7 +1415,7 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-a
 
 ### 5.1 La pagina Strumenti
 
-*La tabella di tutti gli strumenti, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».*
+*La tabella di tutti gli strumenti divisa nei sei tipi, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».*
 
 > **In breve**
 >
@@ -1432,22 +1433,25 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-a
 | Parte | Che cosa contiene |
 | --- | --- |
 | Cerca negli strumenti | Cerca nel nome, nella descrizione e nell'identificativo. |
-| Riquadro «Componenti» | Un albero con i cinque gruppi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente. |
+| Riquadro «Componenti» | Un albero con i sei tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente. |
 | Riquadro «Panoramica» | Le viste d'insieme: «Tutti gli strumenti», «Matrice», «Estensioni dell'editor», «Relazioni», «Requisiti del PC» ([5.3 Panoramiche: matrice, relazioni, estensioni, requisiti](#53-panoramiche-matrice-relazioni-estensioni-requisiti)). |
 | Scheda «Tutti gli strumenti» | La prima scheda, sempre aperta: la tabella di tutti i componenti. |
 | Barra «Applica» | In fondo, sempre visibile: le modifiche in attesa, «Aggiorna tutto», «Applica». |
 
-| Gruppo | Che cosa contiene |
+| Tipo | Che cosa contiene |
 | --- | --- |
-| Obbligatori | Editor, PowerShell 7, GitHub CLI: sempre installati. |
-| Agenti | Claude Code, Codex, Antigravity: facoltativi, sempre all'ultima versione. |
-| Linguaggi | Python, Node.js, PHP, Apache, Caddy, Go, Java, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, Typst, Ruby, R: possono avere più versioni una accanto all'altra. |
-| Strumenti | Git, uv, Rust, Android SDK, TinyTeX, pnpm/yarn, CMake/Ninja, C/C++: una sola versione, sempre l'ultima; quelli che servono si installano da soli. |
+| Sistema ed editor | Editor, PowerShell 7, GitHub CLI, Git: sempre installati. |
+| Agenti AI | Claude Code, Codex, Antigravity: facoltativi, sempre all'ultima versione. |
+| Linguaggi | Tutti i linguaggi e i runtime: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Python, Node.js, PHP, Go e Java possono avere più versioni una accanto all'altra; gli altri restano all'ultima versione. |
+| Strumenti di sviluppo | uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: una sola versione, sempre l'ultima; quelli che servono si installano da soli. |
+| Server web | Apache e Caddy, per i siti dei progetti e i Server Web condivisi. |
 | Database | MySQL, MongoDB (più versioni), phpMyAdmin, SQLite. |
 
 #### La tabella «Tutti gli strumenti»
 
-Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Gruppo» e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, gruppo, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.
+Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Tipo» («Tutti i tipi» o uno dei sei) e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.
+
+Le righe sono divise per tipo. Ogni tipo ha una riga di titolo: la freccia per chiuderlo o riaprirlo, il nome, quanti componenti contiene («3», oppure «2 di 5» quando un filtro ne nasconde qualcuno), la sua descrizione e una casella «Scegli tutti: …» che sceglie tutti i suoi componenti che si possono scegliere. Un clic sull'intestazione di una colonna ordina le righe dentro ogni tipo (all'inizio per nome).
 
 | Stato | Icona | Significato |
 | --- | --- | --- |
@@ -1472,7 +1476,7 @@ Durante il lavoro compaiono altri quattro stati, solo sul sistema mostrato: «in
 | Installa una versione (+) | Riga di un linguaggio non installato | Lo installa subito nella versione che scegli dal menu. |
 | Aggiorna | Riga di un componente installato | Scarica subito la versione nuova, se c'è. |
 | Aggiungi una versione (+) | Riga di un linguaggio installato | Scarica un'altra versione accanto a quelle che hai. |
-| Casella | Ogni riga non obbligatoria | Segna il componente da installare o da togliere, in attesa di «Applica». |
+| Casella | Ogni riga tranne quelle sempre installate; «Scegli tutti: …» nella riga del tipo | Segna il componente da installare o da togliere, in attesa di «Applica». |
 | Applica | Barra in fondo | Mostra il riepilogo e, con «Conferma», installa e toglie ciò che hai segnato. |
 | Aggiorna tutto | Barra in fondo | Porta ogni componente installato all'ultima versione e ogni versione all'ultima correzione. |
 
@@ -1493,12 +1497,12 @@ Durante il lavoro compaiono altri quattro stati, solo sul sistema mostrato: «in
 
 #### La scheda di un componente
 
-Un clic sul nome apre la scheda: in alto logo, descrizione, gruppo, stato, dimensione e i pulsanti «Installa»/«Mantieni» e «Rimuovi»/«Non installare» (scelte da applicare), più «Sito ufficiale». Sotto, tre sezioni:
+Un clic sul nome apre la scheda: in alto logo, descrizione, tipo, stato, dimensione e i pulsanti «Installa»/«Mantieni» e «Rimuovi»/«Non installare» (scelte da applicare), più «Sito ufficiale». Sotto, tre sezioni:
 
 | Sezione | Che cosa contiene |
 | --- | --- |
 | Versioni | Solo per i linguaggi: le versioni su disco e quelle da scaricare ([5.2 Più versioni dello stesso strumento](#52-più-versioni-dello-stesso-strumento)). |
-| Dettagli | Gruppo, versione, dimensione, che cosa richiede, a chi serve, sito. |
+| Dettagli | Tipo, versione, dimensione, che cosa richiede, a chi serve, sito. |
 | Progetti | I progetti che lo usano e, per i linguaggi, la versione scelta da ciascuno. |
 
 #### «Piattaforma», «Espandi» e «Verifica»
@@ -1581,7 +1585,7 @@ Argomenti collegati: [2.4 Componenti e versioni di un progetto](#24-componenti-e
 
 #### Matrice
 
-Una tabella con un componente per riga e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».
+Una tabella con un componente per riga, divisa negli stessi sei tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».
 
 > [!NOTE]
 > **Da sapere**

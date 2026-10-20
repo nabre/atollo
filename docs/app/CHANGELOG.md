@@ -1,5 +1,10 @@
 # Novità
 
+## Strumenti divisi per tipo (20/10/2026)
+
+- **«Tutti gli strumenti»** è diviso in Sistema ed editor, Agenti AI, Linguaggi, Strumenti di sviluppo, Server web e Database, come nel sito: ogni blocco ha titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic (D-139).
+- Gli stessi tipi nell'albero di Strumenti, nella Matrice e al primo avvio.
+
 ## Rilascio 0.3.0 alpha (20/10/2026)
 
 - **Versione 0.3.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.3.0` pubblica i file per i sei sistemi.

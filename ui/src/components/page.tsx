@@ -95,7 +95,7 @@ export function ComponentsPage({ setup, onDone }: { setup: SetupSnapshot | null;
                 />
               ))}
               {/* What the PC must provide, with the required components. */}
-              {g.id === "required" && <RuntimeRows runtimes={relations.matrix?.runtimes ?? []} />}
+              {g.id === "system" && <RuntimeRows runtimes={relations.matrix?.runtimes ?? []} />}
             </SettingsGroup>
           );
         })}
