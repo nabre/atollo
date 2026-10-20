@@ -64,7 +64,7 @@ pub async fn project_delete<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let (kit, lang, env) = (state.kit.clone(), state.lang(), state.env());
-    let services = Arc::clone(&state.services);
+    let (services, servers) = (Arc::clone(&state.services), Arc::clone(&state.servers));
     tauri::async_runtime::spawn_blocking(move || {
         let dbs = crate::db::services::ProjectDrops {
             services: &services,
@@ -72,7 +72,10 @@ pub async fn project_delete<R: Runtime>(
             project: project.clone(),
         };
         crate::projects::delete(&kit, &project, lang, &dbs, force_without_db == Some(true))
-            .or_fail_chain("project delete")
+            .or_fail_chain("project delete")?;
+        // Its site leaves the pools' list now, not after `LIST_TTL`.
+        servers.invalidate();
+        Ok(())
     })
     .await
     .or_fail("project delete")?
@@ -89,6 +92,7 @@ pub async fn project_clone<R: Runtime>(
 ) -> CmdResult<String> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let servers = Arc::clone(&state.servers);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &["git"])?;
         let token = crate::github::token(&kit, &env);
@@ -100,6 +104,8 @@ pub async fn project_clone<R: Runtime>(
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
         settle_project(&app, &task, &kit, lang, &project, &dir);
+        // A new project: the pools are scanned again for its site.
+        servers.invalidate();
         Ok(project)
     })
     .await
