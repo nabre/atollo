@@ -7,25 +7,31 @@
 //                                      it or in a folder of its own; Edge or
 //                                      Chrome from the system, no download)
 //
-// Writes shot-<page>-<dark|light>.png here; site/build.mjs copies them and
-// the READMEs show the Projects one. The app speaks English in them, as the
-// documentation (D-135): SHOTS_LANG=it|fr|de for another language.
+// Writes <lang>/shot-<page>-<dark|light>.png here, the app speaking each of
+// the site's four languages (D-143); site/build.mjs copies them for the page
+// of that language and each README shows the Projects one of its own.
+// SHOTS_LANGS=en,it limits the languages, SHOTS_URL=http://127.0.0.1:5199
+// takes the preview from another address.
 import { chromium } from "playwright-core";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const out = dirname(fileURLToPath(import.meta.url));
-const lang = process.env.SHOTS_LANG ?? "en";
-// The app's labels in that language (ui/src/locales: Italian key -> text).
-const catalog = lang === "it" ? {} : JSON.parse(readFileSync(join(out, "..", "..", "ui", "src", "locales", `${lang}.json`), "utf8"));
-const tr = (it) => catalog[it] ?? it;
+const here = dirname(fileURLToPath(import.meta.url));
+const langs = (process.env.SHOTS_LANGS ?? "en,it,fr,de").split(",");
+const preview = process.env.SHOTS_URL ?? "http://127.0.0.1:5173";
 const channel = process.env.SHOTS_BROWSER ?? (process.platform === "win32" ? "msedge" : "chrome");
 const browser = await chromium.launch({ channel });
 
-async function shoot(scheme) {
+async function shoot(lang, scheme) {
+  // The app's labels in that language (ui/src/locales: Italian key -> text).
+  const catalog =
+    lang === "it" ? {} : JSON.parse(readFileSync(join(here, "..", "..", "ui", "src", "locales", `${lang}.json`), "utf8"));
+  const tr = (it) => catalog[it] ?? it;
+  const out = join(here, lang);
+  mkdirSync(out, { recursive: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 820 }, deviceScaleFactor: 2, colorScheme: scheme });
-  await page.goto(`http://127.0.0.1:5173/?lang=${lang}`, { waitUntil: "networkidle" });
+  await page.goto(`${preview}/?lang=${lang}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(800);
   const nav = (name) => page.getByRole("navigation", { name: tr("Pagine") }).getByRole("button", { name: tr(name), exact: true });
   const settle = () => page.waitForTimeout(700);
@@ -52,5 +58,9 @@ async function shoot(scheme) {
   await page.close();
 }
 
-for (const scheme of ["dark", "light"]) await shoot(scheme);
-await browser.close();
+try {
+  for (const lang of langs) for (const scheme of ["dark", "light"]) await shoot(lang, scheme);
+} finally {
+  await browser.close();
+}
+console.log(`site/shots: ${langs.join(", ")}`);
