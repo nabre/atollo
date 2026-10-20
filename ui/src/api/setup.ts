@@ -207,7 +207,7 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("vscodium-server", "Editor", "app", "VSCodium nel browser", 180, {
     ...ON,
     locked: true,
-    version: "1.140.0",
+    version: "1.135.06055",
   }),
   sampleComponent("git", "Git", "languages", "controllo di versione", 350, { ...ON, version: "2.56.0" }),
   sampleComponent("gh", "GitHub CLI", "required", "GitHub dal terminale", 40, {
@@ -221,7 +221,7 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
     needs: ["git"],
   }),
   sampleComponent("codex", "Codex", "agents", "agente di OpenAI", 120),
-  sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.3.0" }),
+  sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.11.0" }),
   sampleComponent("python", "Python", "languages", "con uv", 120),
   sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
   sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"], x64Only: true }),
