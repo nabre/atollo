@@ -9,10 +9,13 @@ import codiconHref from "@vscode/codicons/dist/codicon.css?url";
 // vscode-icon looks this link up by id and copies its href (and nonce) into
 // each icon's shadow root, where the Codicon font must be loaded again. The
 // file is served by the app itself, as the CSP wants (style-src 'self').
+// Disabled in the page, which has the same rules in its base layer
+// (theme.css): unlayered, its 16px would win over every size utility.
 if (!document.getElementById("vscode-codicon-stylesheet")) {
   const link = document.createElement("link");
   link.id = "vscode-codicon-stylesheet";
   link.rel = "stylesheet";
+  link.disabled = true;
   link.href = codiconHref;
   document.head.append(link);
 }

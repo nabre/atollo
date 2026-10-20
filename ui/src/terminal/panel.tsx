@@ -5,13 +5,12 @@
 // Windows no session opens (the consoles are windows of their own), so
 // the panel and xterm.js are never loaded there.
 import { useState } from "react";
-import { VscChromeMinimize, VscClose } from "react-icons/vsc";
 import type { PtyBackend, PtyInfo } from "./api";
 import type { Terminals } from "./state";
 import { TerminalView } from "./view";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
-import { ConfirmDialog, IconButton, Panel } from "../workbench";
+import { codicon, ConfirmDialog, IconButton, Panel } from "../workbench";
 
 export function TerminalPanel({
   terminals,
@@ -64,7 +63,7 @@ export function TerminalPanel({
           <>
             {current && (
               <IconButton
-                icon={VscClose}
+                icon={codicon("close")}
                 label={t("Chiudi il terminale")}
                 onClick={() => {
                   ask(current);
@@ -72,7 +71,7 @@ export function TerminalPanel({
               />
             )}
             <IconButton
-              icon={VscChromeMinimize}
+              icon={codicon("chrome-minimize")}
               label={t("Nascondi i terminali")}
               onClick={() => {
                 setShown(false);
@@ -106,7 +105,7 @@ export function TerminalPanel({
           }}
           actions={
             <ActionButton
-              icon={VscClose}
+              icon={codicon("close")}
               label={t("Chiudi il terminale")}
               primary
               busy={busy}

@@ -4,18 +4,6 @@
 // its own tab (./tool.tsx). Choosing and removing wait for "Apply", in the
 // bar under the editor (./applybar.tsx).
 import { useState, type ReactNode } from "react";
-import {
-  VscAdd,
-  VscBook,
-  VscClose,
-  VscExtensions,
-  VscReferences,
-  VscRefresh,
-  VscServerProcess,
-  VscTable,
-  VscVm,
-  VscWarning,
-} from "react-icons/vsc";
 import type { ComponentInfo, SetupSnapshot } from "../api";
 import type { GuideTopicId } from "../guide";
 import { t } from "../i18n";
@@ -26,6 +14,8 @@ import { RelationsSection, RuntimeRows, useRelations } from "../relations";
 import { ItemStatus, itemState } from "../setup";
 import { composerOf, splitVersion, useKitVersions } from "../versions";
 import {
+  Codicon,
+  codicon,
   Dot,
   EditorBody,
   EditorTabs,
@@ -63,11 +53,11 @@ function overviewOf(id: string): Overview | null {
 }
 
 const OVERVIEW_ICON: Record<Overview, ReactNode> = {
-  "overview:table": <VscTable size={16} aria-hidden="true" />,
-  "overview:matrix": <VscVm size={16} aria-hidden="true" />,
-  "overview:extensions": <VscExtensions size={16} aria-hidden="true" />,
-  "overview:relations": <VscReferences size={16} aria-hidden="true" />,
-  "overview:system": <VscServerProcess size={16} aria-hidden="true" />,
+  "overview:table": <Codicon name="table" size={16} />,
+  "overview:matrix": <Codicon name="vm" size={16} />,
+  "overview:extensions": <Codicon name="extensions" size={16} />,
+  "overview:relations": <Codicon name="references" size={16} />,
+  "overview:system": <Codicon name="server-process" size={16} />,
 };
 
 function overviewTitle(id: Overview): string {
@@ -142,7 +132,7 @@ export function ToolsPage({
         actions={
           c.locked ? undefined : on ? (
             <IconButton
-              icon={VscClose}
+              icon={codicon("close")}
               label={ready ? t("Rimuovi {0}", c.name) : t("Non installare {0}", c.name)}
               disabled={running}
               onClick={() => {
@@ -151,7 +141,7 @@ export function ToolsPage({
             />
           ) : (
             <IconButton
-              icon={VscAdd}
+              icon={codicon("add")}
               label={t("Installa {0}", c.name)}
               disabled={running || !c.available}
               onClick={() => {
@@ -166,7 +156,12 @@ export function ToolsPage({
           ) : (
             <>
               {missing && (
-                <VscWarning size={14} className="text-vsc-warning" aria-label={t("Serve a progetti e non è scelto")} />
+                <Codicon
+                  name="warning"
+                  size={14}
+                  className="text-vsc-warning"
+                  label={t("Serve a progetti e non è scelto")}
+                />
               )}
               {pending ? (
                 <Dot tone="warn" label={on ? t("da installare") : t("da rimuovere")} />
@@ -189,7 +184,7 @@ export function ToolsPage({
         actions={
           <>
             <IconButton
-              icon={VscRefresh}
+              icon={codicon("refresh")}
               label={t("Aggiorna")}
               onClick={() => {
                 load();
@@ -199,7 +194,7 @@ export function ToolsPage({
             />
             {onGuide && (
               <IconButton
-                icon={VscBook}
+                icon={codicon("book")}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
                   onGuide("tools");

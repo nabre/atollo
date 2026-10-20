@@ -1,6 +1,6 @@
 /*
  * Atollo look for every window of the app (user request, 14/10/2026):
- * VSCodium's layout and Codicons (react-icons/vsc), the neutral grays of its
+ * VSCodium's layout and Codicons (their font), the neutral grays of its
  * classic themes "Dark Modern" and "Light Modern" (chosen from the Windows
  * light/dark setting), and the brand board's colors (brand.png, docs/brand/)
  * only for the emphasis: focus, buttons, selection, links, the active page,
@@ -42,6 +42,17 @@
 @import "./theme-vscode.css";
 @import "./theme-colors.css";
 @import "./theme-sizes.css";
+
+/* VSCodium's icons, the Codicon font and its classes (codicon codicon-NAME,
+   workbench/codicon.tsx), bundled with the app: its glyphs are 16px
+   (codiconFontSize), and in the base layer the utilities give the other
+   sizes, colors and turns. Middle-aligned in a line of text. */
+@import "@vscode/codicons/dist/codicon.css" layer(base);
+@layer base {
+  .codicon {
+    vertical-align: middle;
+  }
+}
 
 /* The brand covers (docs/brand/make.py). */
 :root,
@@ -110,7 +121,7 @@ body {
 }
 
 /* A native disclosure with VSCodium's twistie (the Codicon chevron of
-   codicon.css, linked by workbench/elements.ts), not the browser's
+   codicon.css, imported above), not the browser's
    triangle; it turns down when open. */
 @layer base {
   summary {

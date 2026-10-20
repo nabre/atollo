@@ -17,10 +17,10 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import type { IconType } from "react-icons";
-import { VscCheck, VscError, VscInfo, VscSearch, VscWarning } from "react-icons/vsc";
 import { VscodeOption, VscodeSingleSelect, VscodeTextarea, VscodeTextfield } from "@vscode-elements/react-elements";
 import { t } from "../i18n";
 import { useHost } from "./elements";
+import { Codicon, codicon } from "./codicon";
 
 type TextElement = HTMLElementTagNameMap["vscode-textfield" | "vscode-textarea"];
 type FieldElement = TextElement | HTMLElementTagNameMap["vscode-single-select"];
@@ -290,7 +290,7 @@ export function SearchBox({
         slot="content-before"
         className={`flex items-center pl-[5px] text-vsc-placeholder ${large ? "h-[26px]" : ""}`}
       >
-        <VscSearch size={14} aria-hidden="true" />
+        <Codicon name="search" size={14} />
       </span>
       {count && (
         <span slot="content-after" className="pr-1">
@@ -603,9 +603,9 @@ export function Checkbox({
         }}
         className={`${BOX} rounded-[3px]`}
       />
-      <VscCheck
+      <Codicon
+        name="check"
         size={16}
-        aria-hidden="true"
         className="pointer-events-none absolute top-px left-px hidden text-(--vscode-settings-checkboxForeground) peer-checked:block"
       />
     </span>
@@ -701,8 +701,9 @@ export function Divider({ className = "" }: { className?: string }) {
   return <vscode-divider ref={ref} className={className} />;
 }
 
-/** A Codicon by name (vscode-icon), for the glyphs react-icons lacks or a
- * spinning one; with `label` it is an image with that name, else hidden. */
+/** A Codicon by name in its own component (vscode-icon), for a spinning
+ * one; with `label` it is an image with that name, else hidden. The others
+ * are Codicon's (codicon.tsx), in the page. */
 export function Icon({
   name,
   size = 16,
@@ -730,10 +731,10 @@ export function Icon({
 }
 
 const NOTICE = {
-  info: { icon: VscInfo, color: "text-vsc-info" },
-  warning: { icon: VscWarning, color: "text-vsc-warning" },
-  error: { icon: VscError, color: "text-vsc-error" },
-  success: { icon: VscCheck, color: "text-vsc-success" },
+  info: { icon: codicon("info"), color: "text-vsc-info" },
+  warning: { icon: codicon("warning"), color: "text-vsc-warning" },
+  error: { icon: codicon("error"), color: "text-vsc-error" },
+  success: { icon: codicon("check"), color: "text-vsc-success" },
 } as const;
 
 /** A message with its severity icon, as in the editor's hovers and the

@@ -5,12 +5,11 @@
 // then "Elimina senza i database" deletes the folders and leaves the
 // databases on the servers (named in the log).
 import { useCallback, useState } from "react";
-import { VscFolderOpened, VscTrash } from "react-icons/vsc";
 import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan, type PlannedDb } from "../api";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useLoad } from "../hooks";
 import { locale, t } from "../i18n";
-import { ConfirmDialog } from "../workbench";
+import { codicon, ConfirmDialog } from "../workbench";
 
 const ENGINE_NAMES: Record<PlannedDb["engine"], string> = { mysql: "MySQL", mongodb: "MongoDB" };
 
@@ -55,7 +54,7 @@ export function DeleteProjectDialog({
         <>
           {offerForce && (
             <ActionButton
-              icon={VscTrash}
+              icon={codicon("trash")}
               label={t("Elimina senza i database")}
               busy={busy === "force"}
               disabled={busy !== null}
@@ -65,7 +64,7 @@ export function DeleteProjectDialog({
             />
           )}
           <ActionButton
-            icon={VscTrash}
+            icon={codicon("trash")}
             label={t("Elimina")}
             primary
             busy={busy === "delete"}
@@ -108,7 +107,7 @@ export function DeleteProjectDialog({
             <span className="flex flex-wrap items-center gap-2">
               {t("Copie dei database: {0} ({1})", plan.backups, size(plan.backupsSize))}
               <ActionButton
-                icon={VscFolderOpened}
+                icon={codicon("folder-opened")}
                 label={t("Apri la cartella delle copie")}
                 small
                 onClick={() => {

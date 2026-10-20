@@ -5,8 +5,7 @@
 import { useState, type ReactNode } from "react";
 import type { FrameworkPiece } from "../api";
 import { t } from "../i18n";
-import { VscBeaker } from "react-icons/vsc";
-import { List, ListRow } from "../workbench";
+import { Codicon, List, ListRow } from "../workbench";
 import {
   basesByCategory,
   cleaned,
@@ -178,7 +177,7 @@ export function FrameworksTree({
         }),
       )}
       <ListRow
-        icon={<VscBeaker size={16} aria-hidden="true" />}
+        icon={<Codicon name="beaker" size={16} />}
         label={t("Prova una combinazione")}
         selected={selected === TRY_TAB}
         current="page"

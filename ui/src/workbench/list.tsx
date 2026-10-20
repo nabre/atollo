@@ -6,7 +6,7 @@
 // as in the editor. ListItem is the taller row of the Extensions view: a
 // big icon, name, description and a footer.
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
-import { VscChevronRight } from "react-icons/vsc";
+import { Codicon } from "./codicon";
 
 /** Moves the focus between the rows' main buttons with the arrows. */
 function onListKeys(e: KeyboardEvent<HTMLUListElement>) {
@@ -106,9 +106,9 @@ export function ListRow({
           className="flex h-full min-w-0 flex-1 items-center gap-vsc-size60 rounded-vsc-small text-left outline-none focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-list-focus"
         >
           {twistie && (
-            <VscChevronRight
+            <Codicon
+              name="chevron-right"
               size={16}
-              aria-hidden="true"
               className={`-mr-vsc-size40 shrink-0 transition-transform duration-100 ${twistie === "open" ? "rotate-90" : ""}`}
             />
           )}

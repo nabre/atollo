@@ -1,12 +1,11 @@
 // A repository opened in the list: its facts, its address, rename and
 // delete on GitHub.
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
-import { VscCheck, VscClose, VscCopy, VscEdit, VscKey, VscTrash } from "react-icons/vsc";
 import { githubDelete, githubRename, type GithubRepo } from "../api";
 import { useAction, useCopy } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { locale, t } from "../i18n";
-import { InlineConfirm, TextField } from "../workbench";
+import { codicon, InlineConfirm, TextField } from "../workbench";
 
 export function RepoDetails({
   repo: r,
@@ -84,7 +83,7 @@ export function RepoDetails({
       </p>
       <div className="flex flex-wrap gap-2">
         <ActionButton
-          icon={copied ? VscCheck : VscCopy}
+          icon={copied ? codicon("check") : codicon("copy")}
           label={copied ? t("Indirizzo copiato") : t("Copia l'indirizzo per Git")}
           onClick={() => {
             copy(`${r.htmlUrl}.git`);
@@ -93,7 +92,7 @@ export function RepoDetails({
         {r.admin && (
           <>
             <ActionButton
-              icon={VscEdit}
+              icon={codicon("edit")}
               label={t("Rinomina")}
               onClick={() => {
                 setName(r.name);
@@ -101,7 +100,7 @@ export function RepoDetails({
               }}
             />
             <ActionButton
-              icon={VscTrash}
+              icon={codicon("trash")}
               label={t("Elimina da GitHub")}
               onClick={() => {
                 setMode(mode === "delete" ? null : "delete");
@@ -129,7 +128,7 @@ export function RepoDetails({
             />
           </label>
           <ActionButton
-            icon={VscEdit}
+            icon={codicon("edit")}
             label={t("Rinomina")}
             primary
             submit
@@ -137,7 +136,7 @@ export function RepoDetails({
             onClick={() => undefined}
           />
           <ActionButton
-            icon={VscClose}
+            icon={codicon("close")}
             label={t("Annulla")}
             onClick={() => {
               setMode(null);
@@ -155,9 +154,9 @@ export function RepoDetails({
           label={t("Eliminare {0} da GitHub?", r.fullName)}
           actions={
             <>
-              <ActionButton icon={VscTrash} label={t("Elimina")} busy={busy === "delete"} onClick={remove} />
+              <ActionButton icon={codicon("trash")} label={t("Elimina")} busy={busy === "delete"} onClick={remove} />
               <ActionButton
-                icon={VscClose}
+                icon={codicon("close")}
                 label={t("Annulla")}
                 onClick={() => {
                   setMode(null);
@@ -183,7 +182,7 @@ export function RepoDetails({
             )}
           </p>
           <ActionButton
-            icon={VscKey}
+            icon={codicon("key")}
             label={t("Concedi il permesso")}
             primary
             busy={busy === "grant"}

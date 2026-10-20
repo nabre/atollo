@@ -2,12 +2,11 @@
 // Claude Code, copied to .codex\config.toml for Codex; Antigravity has only
 // the kit's servers.
 import { useCallback, useState, type SyntheticEvent } from "react";
-import { VscAdd, VscClose, VscSave, VscTrash } from "react-icons/vsc";
 import { projectMcp, projectMcpSet, type McpServer, type McpView } from "../api";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine, LoadError } from "../common";
 import { useAction, useLoad } from "../hooks";
-import { Select, TextArea, TextField } from "../workbench";
+import { codicon, Select, TextArea, TextField } from "../workbench";
 
 function describe(s: McpServer): string {
   return s.kind === "http" ? (s.url ?? "") : [s.command ?? "", ...s.args].join(" ");
@@ -83,14 +82,14 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
       )}
       <div className="flex gap-2">
         <ActionButton
-          icon={VscSave}
+          icon={codicon("save")}
           label={t("Aggiungi")}
           primary
           submit
           disabled={!complete}
           onClick={() => undefined}
         />
-        <ActionButton icon={VscClose} label={t("Annulla")} onClick={onCancel} />
+        <ActionButton icon={codicon("close")} label={t("Annulla")} onClick={onCancel} />
       </div>
     </form>
   );
@@ -129,7 +128,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
                 <span className="font-semibold">{s.name}</span>
                 <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-vsc-desc">{describe(s)}</span>
                 <ActionButton
-                  icon={VscTrash}
+                  icon={codicon("trash")}
                   label={t("Togli")}
                   busy={busy === "save"}
                   onClick={() => {
@@ -152,7 +151,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
           ) : (
             <div className="px-3 py-2">
               <ActionButton
-                icon={VscAdd}
+                icon={codicon("add")}
                 label={t("Aggiungi un server")}
                 onClick={() => {
                   setAdding(true);

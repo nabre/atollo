@@ -8,20 +8,6 @@
 // port and open in the browser.
 import { useCallback, useEffect, useState } from "react";
 import {
-  VscBook,
-  VscCode,
-  VscDebugStart,
-  VscDebugStop,
-  VscFolderOpened,
-  VscGlobe,
-  VscHome,
-  VscNewFolder,
-  VscRefresh,
-  VscSearch,
-  VscTerminal,
-  VscWand,
-} from "react-icons/vsc";
-import {
   editorOpen,
   folderOpen,
   projectPin,
@@ -46,6 +32,8 @@ import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import {
   Button,
+  Codicon,
+  codicon,
   EditorTabs,
   IconButton,
   List,
@@ -233,29 +221,29 @@ export function ProjectsPage({
         actions={
           <>
             <IconButton
-              icon={VscNewFolder}
+              icon={codicon("new-folder")}
               label={t("Nuovo progetto")}
               onClick={() => {
                 openNew("empty");
               }}
             />
             <IconButton
-              icon={VscWand}
+              icon={codicon("wand")}
               label={t("Nuovo progetto da framework o CMS")}
               onClick={() => {
                 openNew("framework");
               }}
             />
             <IconButton
-              icon={VscSearch}
+              icon={codicon("search")}
               label={t("Apri un progetto (Ctrl+P)")}
               onClick={() => {
                 onQuickOpen?.(true);
               }}
             />
-            <IconButton icon={VscRefresh} label={t("Aggiorna")} onClick={load} />
+            <IconButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={load} />
             <IconButton
-              icon={VscFolderOpened}
+              icon={codicon("folder-opened")}
               label={t("Apri la cartella")}
               onClick={() => {
                 run("folder", () => folderOpen("projects"));
@@ -263,7 +251,7 @@ export function ProjectsPage({
             />
             {onGuide && (
               <IconButton
-                icon={VscBook}
+                icon={codicon("book")}
                 label={t("Apri la guida di questa pagina")}
                 onClick={() => {
                   onGuide("project-page");
@@ -327,7 +315,7 @@ export function ProjectsPage({
                       <>
                         <StartStop p={p} runs={runs} busy={busy} onStart={start} onStop={stop} />
                         <IconButton
-                          icon={VscCode}
+                          icon={codicon("code")}
                           label={t("Editor")}
                           busy={busy === `editor:${p.id}`}
                           disabled={status?.installed === false}
@@ -337,7 +325,7 @@ export function ProjectsPage({
                           }}
                         />
                         <IconButton
-                          icon={VscTerminal}
+                          icon={codicon("terminal")}
                           label={t("Terminale")}
                           busy={busy === `terminal:${p.id}`}
                           title={t("Console del kit in {0}", p.name)}
@@ -385,19 +373,24 @@ export function ProjectsPage({
     <ViewContainer id="projects" side={side}>
       <EditorTabs
         tabs={[
-          { id: HOME_TAB, label: t("Pannello rapido"), icon: <VscHome size={16} aria-hidden="true" />, pinned: true },
+          {
+            id: HOME_TAB,
+            label: t("Pannello rapido"),
+            icon: <Codicon name="home" size={16} />,
+            pinned: true,
+          },
           ...tabs.open.map((id) => {
             if (id === WIZARD_TAB) {
               return {
                 id,
                 label: t("Nuovo progetto"),
                 description: wayLabel(way),
-                icon: <VscWand size={16} aria-hidden="true" />,
+                icon: <Codicon name="wand" size={16} />,
                 pinned: wizardRunning,
               };
             }
             const p = byId(id);
-            const Icon = p ? KIND_ICON[p.type] : VscGlobe;
+            const Icon = p ? KIND_ICON[p.type] : codicon("globe");
             return { id, label: p?.name ?? id, icon: <Icon size={16} aria-hidden="true" /> };
           }),
         ]}
@@ -498,7 +491,7 @@ function StartStop({
   const key = `${p.id}|${main.id}`;
   return alive(runs[key]?.state) ? (
     <IconButton
-      icon={VscDebugStop}
+      icon={codicon("debug-stop")}
       label={t("Ferma")}
       title={t("Ferma {0}", main.label)}
       busy={busy === `stop:${key}`}
@@ -508,7 +501,7 @@ function StartStop({
     />
   ) : (
     <IconButton
-      icon={VscDebugStart}
+      icon={codicon("debug-start")}
       label={t("Avvia")}
       title={t("Avvia {0}", main.label)}
       busy={busy === `run:${key}`}

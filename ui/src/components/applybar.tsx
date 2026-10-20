@@ -2,12 +2,11 @@
 // change: what Apply installs and removes, the installation running, "Update
 // all"; Apply asks first what it will do.
 import { useState } from "react";
-import { VscCheck, VscCircleSlash, VscCloudDownload, VscRefresh, VscTrash } from "react-icons/vsc";
 import { setupCancel, type SetupSnapshot } from "../api";
 import { t } from "../i18n";
 import { ActionButton } from "../common";
 import { setupStatusText } from "../setup";
-import { InlineConfirm } from "../workbench";
+import { codicon, InlineConfirm } from "../workbench";
 import type { KitVersions } from "../versions";
 import { linesOf, sizeText } from "./model";
 import type { ComponentsState } from "./state";
@@ -46,7 +45,7 @@ export function ApplyBar({
           actions={
             <>
               <ActionButton
-                icon={VscCheck}
+                icon={codicon("check")}
                 label={t("Conferma")}
                 primary
                 onClick={() => {
@@ -54,7 +53,7 @@ export function ApplyBar({
                 }}
               />
               <ActionButton
-                icon={VscRefresh}
+                icon={codicon("refresh")}
                 label={t("Indietro")}
                 onClick={() => {
                   setConfirm(false);
@@ -97,7 +96,7 @@ export function ApplyBar({
           </span>
           {running && (
             <ActionButton
-              icon={VscCircleSlash}
+              icon={codicon("circle-slash")}
               label={setup?.cancelling ? t("Annullamento…") : t("Annulla")}
               disabled={setup?.cancelling ?? false}
               onClick={() => {
@@ -110,7 +109,7 @@ export function ApplyBar({
           )}
           {!firstRun && (
             <ActionButton
-              icon={VscRefresh}
+              icon={codicon("refresh")}
               label={t("Aggiorna tutto")}
               disabled={running}
               title={
@@ -125,7 +124,11 @@ export function ApplyBar({
           )}
           <ActionButton
             icon={
-              firstRun ? VscCloudDownload : plan.remove.length > 0 && plan.install.length === 0 ? VscTrash : VscCheck
+              firstRun
+                ? codicon("cloud-download")
+                : plan.remove.length > 0 && plan.install.length === 0
+                  ? codicon("trash")
+                  : codicon("check")
             }
             label={firstRun ? t("Installa") : t("Applica")}
             primary

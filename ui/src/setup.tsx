@@ -1,12 +1,11 @@
 // Progress of the preparation (installing, updating, removing components),
 // shared by the status bar, the Activity panel and the Tools page.
 import { useEffect, useState } from "react";
-import { VscCheck, VscCircleSlash, VscError, VscHistory, VscLoading, VscWarning } from "react-icons/vsc";
 import { onSetup, setupCancel, setupState, type ByHand, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
 import { t } from "./i18n";
 import { ComponentLogo } from "./logos";
 import { useSubscription } from "./hooks";
-import { Button } from "./workbench";
+import { Button, Codicon } from "./workbench";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {
@@ -102,7 +101,7 @@ export function ItemStatus({ state }: { state: ItemState }) {
   if (state.kind === "queued") {
     return (
       <span className="text-vsc-desc">
-        <VscHistory className="mr-1 inline" size={12} aria-hidden="true" />
+        <Codicon name="history" className="mr-1" size={12} />
         {t("in coda")}
       </span>
     );
@@ -110,14 +109,14 @@ export function ItemStatus({ state }: { state: ItemState }) {
   if (state.kind === "running") {
     return (
       <span className="text-vsc-link" title={state.note ?? undefined}>
-        <VscLoading className="mr-1 inline animate-spin" size={12} aria-hidden="true" />
+        <Codicon name="loading" className="mr-1 animate-spin" size={12} />
         {state.percent !== null ? t("download {0}%", state.percent) : (state.note ?? t("in corso"))}
       </span>
     );
   }
   return (
     <span className="text-vsc-error" title={state.text}>
-      <VscError className="mr-1 inline" size={12} aria-hidden="true" />
+      <Codicon name="error" className="mr-1" size={12} />
       {t("non riuscito")}
     </span>
   );
@@ -151,15 +150,16 @@ function StepIcon({ step, running }: { step: SetupStep; running: boolean }) {
   const o = step.outcome;
   if (!o) {
     return running ? (
-      <VscLoading className="animate-spin text-vsc-link" size={16} aria-label={t("in corso")} />
+      <Codicon name="loading" className="animate-spin text-vsc-link" size={16} label={t("in corso")} />
     ) : (
-      <VscCircleSlash className="text-vsc-desc" size={16} aria-label={t("interrotto")} />
+      <Codicon name="circle-slash" className="text-vsc-desc" size={16} label={t("interrotto")} />
     );
   }
-  if (o.kind === "failed") return <VscError className="text-vsc-error" size={16} aria-label={t("errore")} />;
-  if (isProblem(o)) return <VscWarning className="text-vsc-warning" size={16} aria-label={t("attenzione")} />;
-  if (o.kind === "cancelled") return <VscCircleSlash className="text-vsc-desc" size={16} aria-label={t("annullato")} />;
-  return <VscCheck className="text-vsc-success" size={16} aria-label={t("fatto")} />;
+  if (o.kind === "failed") return <Codicon name="error" className="text-vsc-error" size={16} label={t("errore")} />;
+  if (isProblem(o)) return <Codicon name="warning" className="text-vsc-warning" size={16} label={t("attenzione")} />;
+  if (o.kind === "cancelled")
+    return <Codicon name="circle-slash" className="text-vsc-desc" size={16} label={t("annullato")} />;
+  return <Codicon name="check" className="text-vsc-success" size={16} label={t("fatto")} />;
 }
 
 /** Steps of the current (or last) preparation, with cancel. */
