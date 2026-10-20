@@ -23,6 +23,7 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 
 use crate::kit::Kit;
+pub(crate) use pools::pool_ports;
 use process::{end_dead, take_dead, RunningPool};
 
 /// How long `list` reuses the scan of the projects (D-71 style): the 3 s

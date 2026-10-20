@@ -119,10 +119,10 @@ pub async fn service_line_port<R: Runtime>(
     port: Option<u16>,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
-    let services = Arc::clone(&state.services);
+    let (services, lang) = (Arc::clone(&state.services), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         services
-            .set_line_port(&id, &line, port)
+            .set_line_port(&id, &line, port, lang)
             .or_fail_chain("service")?;
         Ok(services.list())
     })
@@ -139,10 +139,10 @@ pub async fn service_set<R: Runtime>(
     autostart: bool,
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
-    let services = Arc::clone(&state.services);
+    let (services, lang) = (Arc::clone(&state.services), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         services
-            .set(&id, port, autostart)
+            .set(&id, port, autostart, lang)
             .or_fail_chain("service")?;
         Ok(services.list())
     })

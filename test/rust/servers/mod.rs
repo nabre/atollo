@@ -78,6 +78,7 @@ fn profile_crud_and_vhost_generation() {
         &projects,
         &portale.join("public"),
         &site,
+        None,
     );
     assert!(vhost.contains("<VirtualHost *:8095>"));
     assert!(vhost.contains("ServerName portale.localhost"));
@@ -90,6 +91,28 @@ fn profile_crud_and_vhost_generation() {
     let at = vhost.find(deny).unwrap_or_else(|| panic!("{vhost}"));
     assert!(at < vhost.find("</VirtualHost>").unwrap());
     assert!(vhost.contains("    <FilesMatch \"^\\.(?!well-known$)\">"));
+
+    // BUG-V5-05: the project's own conf.d inside its VirtualHost, as its
+    // dedicated server includes it.
+    let conf_d = kit
+        .project_data()
+        .join("portale")
+        .join("apache")
+        .join("conf.d");
+    let with = apache_vhost_conf(
+        8095,
+        &projects.join("portale"),
+        &projects,
+        &portale.join("public"),
+        &site,
+        Some(&conf_d),
+    );
+    let include = format!(
+        "    IncludeOptional \"{}/*.conf\"\r\n</VirtualHost>",
+        crate::projects::apache::fwd(&conf_d)
+    );
+    assert!(with.contains(&include) && !include.contains('\\'), "{with}");
+    assert_eq!(with.matches("Include").count(), 1, "{with}");
 
     servers.remove_profile("legacy-apache-5.6").unwrap();
     assert!(servers.list("it", false).pools.is_empty());
@@ -957,6 +980,68 @@ fn ports_are_unique_among_pools() {
     assert_eq!(
         servers.assign_or_get_port(&mut store, &mut dirty, "one", Some(8085)),
         8085
+    );
+}
+
+/// BUG-V5-05: a pool is never saved on the port of a database version,
+/// of a project's action or the editor's, and the owner is named; a
+/// database version is never set on a pool's.
+#[test]
+fn pool_ports_are_not_those_of_databases_projects_or_editor() {
+    let tmp = TempDir::new("servers-ports-taken");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fs::write(
+        kit.app_dir().join("services.json"),
+        r#"{ "mysql": { "ports": { "8.4": 3307, "8.0": 8081 } } }"#,
+    )
+    .unwrap();
+    let shop = kit.project_data().join("shop");
+    fs::create_dir_all(&shop).unwrap();
+    fs::write(shop.join("ports.json"), r#"{ "ports": { "site": 7150 } }"#).unwrap();
+    let servers = WebServers::new(kit.clone());
+    let profile = |port: u16| WebServerProfileInput {
+        id: "legacy".into(),
+        name: "Legacy".into(),
+        engine: WebServerEngine::Caddy,
+        server_line: None,
+        php_line: None,
+        port: Some(port),
+        keep_alive: true,
+        autostart: false,
+    };
+    let refused = |port: u16| {
+        servers
+            .save_profile(profile(port), "en")
+            .unwrap_err()
+            .to_string()
+    };
+    assert_eq!(
+        refused(3307),
+        "Port 3307 already belongs to database MySQL 8.4: choose another one."
+    );
+    assert_eq!(refused(7010), "Ports 7000 to 7099 belong to the editor");
+    assert_eq!(
+        refused(7150),
+        "Port 7150 already belongs to project shop → site: choose another one."
+    );
+    assert!(load_store(&kit).profiles.is_empty(), "nothing saved");
+
+    servers.save_profile(profile(8095), "en").unwrap();
+    servers.save_profile(profile(8095), "en").unwrap();
+    let taken = crate::ports::ports_taken(&kit);
+    assert_eq!(taken[&8095], crate::ports::Owner::Pool("legacy".into()));
+    // A new pool's port is none of theirs either.
+    let (mut store, mut dirty) = (load_store(&kit), false);
+    let auto = servers.assign_or_get_port(&mut store, &mut dirty, "auto", None);
+    assert!(auto != 8081 && auto != 8095, "{auto}");
+
+    // The other way round: the database version on the pool's port.
+    let services = crate::db::services::Services::new(kit.clone());
+    let err = services.set("mysql", Some(8095), false, "en").unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "Port 8095 already belongs to server legacy: choose another one."
     );
 }
 
@@ -1957,7 +2042,7 @@ fn caddy_site_block_of_a_pool() {
     let aliases = crate::projects::caddy::resolve_aliases(&projs.join("shop"), &projs, &s.aliases);
     let fcgi = FastCgi::tcp(9333, "k".repeat(64));
     let doc = projs.join("shop").join("public");
-    let block = super::config::caddy_site_conf(8090, false, &doc, &aliases, Some(&fcgi), &s)
+    let block = super::config::caddy_site_conf(8090, false, &doc, &aliases, Some(&fcgi), &s, None)
         .unwrap()
         .join("\n");
     assert!(
@@ -1982,7 +2067,7 @@ fn caddy_site_block_of_a_pool() {
     }
     // A folder Caddy cannot take is not served at all.
     let bad = Path::new("/kit/{x}/public");
-    assert!(super::config::caddy_site_conf(8090, false, bad, &[], None, &s).is_none());
+    assert!(super::config::caddy_site_conf(8090, false, bad, &[], None, &s, None).is_none());
 }
 
 /// A Caddy pool's files: one Caddyfile with the sites it serves, the PHP
@@ -2028,6 +2113,82 @@ fn caddy_pool_writes_one_caddyfile() {
         "{text}"
     );
     assert!(text.contains("respond @php 503"));
+}
+
+/// BUG-V5-05: a project's own `caddy\conf.d` is imported in its site block
+/// of the pool once it holds a `.caddy` file, not before, and only there.
+#[test]
+fn caddy_pool_imports_the_project_conf_d() {
+    let tmp = TempDir::new("servers-caddy-project-conf-d");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    for p in ["shop", "blog"] {
+        fs::create_dir_all(kit.projects().join(p).join("public")).unwrap();
+    }
+    let pool = caddy_pool(
+        "caddy-conf-d",
+        8092,
+        vec![site("shop", "public", 8092), site("blog", "public", 8092)],
+    );
+    let conf_d = kit.project_data().join("shop").join("caddy").join("conf.d");
+    fs::create_dir_all(&conf_d).unwrap();
+    fs::write(conf_d.join("notes.txt"), "").unwrap();
+    let text = fs::read_to_string(servers.write_pool_configs(&pool, None, false).unwrap()).unwrap();
+    assert!(!text.contains("import "), "{text}");
+
+    fs::write(
+        conf_d.join("cors.caddy"),
+        "header Access-Control-Allow-Origin *",
+    )
+    .unwrap();
+    let text = fs::read_to_string(servers.write_pool_configs(&pool, None, false).unwrap()).unwrap();
+    let import = format!(
+        "http://shop.localhost:8092 {{\n\tbind 127.0.0.1\n\timport \"{}/*.caddy\"\n\troute {{",
+        crate::projects::apache::fwd(&conf_d)
+    );
+    assert!(text.contains(&import) && !import.contains('\\'), "{text}");
+    assert_eq!(text.matches("import ").count(), 1, "{text}");
+}
+
+/// BUG-V5-05: an Apache pool's VirtualHost of a site includes the
+/// project's own `apache\conf.d` once it is there.
+#[test]
+fn apache_pool_includes_the_project_conf_d() {
+    let tmp = TempDir::new("servers-apache-project-conf-d");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let conf = super::config::component_dir(&kit, "apache", None).join("conf");
+    fs::create_dir_all(&conf).unwrap();
+    fs::write(conf.join("httpd.conf"), "Define SRVROOT \"x\"\r\n").unwrap();
+    fs::create_dir_all(kit.projects().join("shop").join("public")).unwrap();
+    let mut pool = caddy_pool("apache-conf-d", 8093, vec![site("shop", "public", 8093)]);
+    pool.engine = WebServerEngine::Apache;
+    let vhost = kit
+        .data()
+        .join("servers")
+        .join(&pool.id)
+        .join("vhosts")
+        .join(super::pools::vhost_file(&pool.sites[0]));
+
+    servers.write_pool_configs(&pool, None, false).unwrap();
+    let text = fs::read_to_string(&vhost).unwrap();
+    assert!(!text.contains("Include"), "{text}");
+
+    let conf_d = kit
+        .project_data()
+        .join("shop")
+        .join("apache")
+        .join("conf.d");
+    fs::create_dir_all(&conf_d).unwrap();
+    servers.write_pool_configs(&pool, None, false).unwrap();
+    let text = fs::read_to_string(&vhost).unwrap();
+    let include = format!(
+        "    IncludeOptional \"{}/*.conf\"\r\n</VirtualHost>",
+        crate::projects::apache::fwd(&conf_d)
+    );
+    assert!(text.contains(&include), "{text}");
 }
 
 /// D-101: a site marked `dedicated` keeps its own server (in no

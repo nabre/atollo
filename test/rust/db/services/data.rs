@@ -152,21 +152,21 @@ fn versions_side_by_side() {
     let s = Services::new(kit.clone());
 
     // Ports of the other versions: stored, never the server's nor another's.
-    s.set_line_port("mysql", "8.0", Some(3316)).unwrap();
+    s.set_line_port("mysql", "8.0", Some(3316), "it").unwrap();
     assert_eq!(line_port(&kit, "mysql", Some("8.0")), 3316);
-    assert!(s.set_line_port("mysql", "8.0", Some(3306)).is_err());
-    assert!(s.set_line_port("mysql", "8.0", Some(80)).is_err());
-    assert!(s.set_line_port("mysql", "9.3", Some(3320)).is_err());
-    assert!(s.set_line_port("mysql", "9.0", Some(3320)).is_err());
-    s.set("mysql", Some(3310), true).unwrap();
+    assert!(s.set_line_port("mysql", "8.0", Some(3306), "it").is_err());
+    assert!(s.set_line_port("mysql", "8.0", Some(80), "it").is_err());
+    assert!(s.set_line_port("mysql", "9.3", Some(3320), "it").is_err());
+    assert!(s.set_line_port("mysql", "9.0", Some(3320), "it").is_err());
+    s.set("mysql", Some(3310), true, "it").unwrap();
     assert_eq!(
         load_settings(&kit)["mysql"].ports["8.0"],
         3316,
         "the server's settings keep the other ports"
     );
-    s.set_line_port("mysql", "8.0", None).unwrap();
+    s.set_line_port("mysql", "8.0", None, "it").unwrap();
     assert_eq!(line_port(&kit, "mysql", Some("8.0")), 3311);
-    s.set("mysql", None, false).unwrap();
+    s.set("mysql", None, false, "it").unwrap();
     assert!(s
         .start_line("mysql", Some("9.0"), &KitEnv::default())
         .is_err());
@@ -202,6 +202,52 @@ fn versions_side_by_side() {
     let old = &load_settings(&kit)["mysql"];
     assert!(old.autostart && old.ports.is_empty());
     assert_eq!(line_port(&kit, "mysql", Some("8.0")), 3309);
+}
+
+/// BUG-V5-05: a server or a version of it is never set on the port of a
+/// pool, of a project's action or the editor's, and the owner is named;
+/// a port it already has stays its own.
+#[test]
+fn ports_of_pools_projects_and_editor_refused() {
+    let tmp = TempDir::new("services-ports-taken");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fake_server(&kit, "mysql", "9.3.1");
+    let c = Catalog::get().find("mysql").unwrap();
+    fake_mysql_line(&kit, &crate::versions::saved_dir(&kit, c, "8.0"));
+    fs::write(
+        kit.app_dir().join("servers.json"),
+        r#"{ "ports": { "legacy": 3320 } }"#,
+    )
+    .unwrap();
+    let shop = kit.project_data().join("shop");
+    fs::create_dir_all(&shop).unwrap();
+    fs::write(shop.join("ports.json"), r#"{ "ports": { "site": 7150 } }"#).unwrap();
+    let s = Services::new(kit.clone());
+
+    let refused = |r: Result<()>| format!("{:#}", r.unwrap_err());
+    let pool = "Port 3320 already belongs to server legacy: choose another one.";
+    assert_eq!(refused(s.set("mysql", Some(3320), false, "en")), pool);
+    assert_eq!(
+        refused(s.set_line_port("mysql", "8.0", Some(3320), "en")),
+        pool
+    );
+    assert_eq!(
+        refused(s.set_line_port("mysql", "8.0", Some(7150), "en")),
+        "Port 7150 already belongs to project shop → site: choose another one."
+    );
+    assert_eq!(
+        refused(s.set("mongodb", Some(7010), false, "en")),
+        "Ports 7000 to 7099 belong to the editor"
+    );
+    assert!(load_settings(&kit).is_empty(), "nothing stored");
+
+    // Its own ports, and those of the versions of the same server (which
+    // its own checks move or refuse), are no other owner's.
+    s.set("mysql", None, true, "en").unwrap();
+    s.set_line_port("mysql", "8.0", Some(3307), "en").unwrap();
+    s.set("mysql", Some(3310), true, "en").unwrap();
+    assert_eq!(line_port(&kit, "mysql", None), 3310);
 }
 
 /// The automatic start starts, beside the server, the other installed
@@ -379,9 +425,9 @@ fn ports_stay_when_the_server_changes_version() {
 
     // A new port of the server is the one of the version it runs, unless
     // another version has it.
-    assert!(s.set("mysql", Some(3307), false).is_err());
-    s.set("mysql", Some(3310), false).unwrap();
+    assert!(s.set("mysql", Some(3307), false, "it").is_err());
+    s.set("mysql", Some(3310), false, "it").unwrap();
     assert_eq!(ports(&kit), (3310, 3307));
-    s.set("mysql", Some(3310), true).unwrap();
+    s.set("mysql", Some(3310), true, "it").unwrap();
     assert_eq!(ports(&kit), (3310, 3307), "the same port: nothing moves");
 }

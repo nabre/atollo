@@ -200,6 +200,12 @@ fn load_ports(kit: &Kit) -> (Ports, BTreeMap<String, ProjectPorts>) {
     (ports, saved)
 }
 
+/// The ports of the projects' actions as their `ports.json` keep them,
+/// under `project|action` keys (for [`crate::ports`]).
+pub(crate) fn saved_ports(kit: &Kit) -> BTreeMap<String, u16> {
+    load_ports(kit).0.ports
+}
+
 /// `project|action` keys split by project: `(project, action)`.
 fn split_key(key: &str) -> Option<(&str, &str)> {
     key.split_once('|')
@@ -417,6 +423,19 @@ impl Runner {
         if !key.contains('|') {
             bail!("invalid key");
         }
+        if let Some(n) = port {
+            if n < 1024 {
+                bail!("{}", tr(lang, "Porta tra {0} e {1}", &["1024", "65535"]));
+            }
+            // Not the port of a pool, of a database version or the editor's
+            // (BUG-V5-05); the projects' own below, from memory.
+            crate::ports::refuse_taken(
+                &self.kit,
+                n,
+                |o| matches!(o, crate::ports::Owner::Project { .. }),
+                lang,
+            )?;
+        }
         let mut ports = self.ports.lock().unwrap_or_else(PoisonError::into_inner);
         ports.locked.retain(|k| k != key);
         match port {
@@ -424,20 +443,6 @@ impl Runner {
                 ports.ports.remove(key);
             }
             Some(n) => {
-                if n < 1024 {
-                    bail!("{}", tr(lang, "Porta tra {0} e {1}", &["1024", "65535"]));
-                }
-                if crate::editor::PORTS.contains(&n) {
-                    let (from, to) = (crate::editor::PORTS.start(), crate::editor::PORTS.end());
-                    bail!(
-                        "{}",
-                        tr(
-                            lang,
-                            "Le porte da {0} a {1} sono dell'editor",
-                            &[&from.to_string(), &to.to_string()]
-                        )
-                    );
-                }
                 if let Some((other, _)) = ports.ports.iter().find(|(k, v)| **v == n && *k != key) {
                     bail!(
                         "{}",
