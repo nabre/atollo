@@ -68,10 +68,13 @@
   --vsc-size-title: 32px;
   --vsc-size-pane-header: var(--pane-header-size);
   --vsc-size-row: 22px;
+  --vsc-size-row-extension: 62px;
+  --vsc-size-table-header: 30px;
   --vsc-size-tabs: 32px;
   --vsc-size-tab: var(--editor-group-tab-height);
   --vsc-size-statusbar: 22px;
   --vsc-size-dialog: 480px;
+  --vsc-size-scrollbar: 8px;
 }
 
 /* Tailwind utilities: h-vsc-row, w-vsc-activitybar, p-vsc-size40,
@@ -127,8 +130,11 @@
   --spacing-vsc-title: var(--vsc-size-title);
   --spacing-vsc-pane-header: var(--vsc-size-pane-header);
   --spacing-vsc-row: var(--vsc-size-row);
+  --spacing-vsc-row-extension: var(--vsc-size-row-extension);
+  --spacing-vsc-table-header: var(--vsc-size-table-header);
   --spacing-vsc-tabs: var(--vsc-size-tabs);
   --spacing-vsc-tab: var(--vsc-size-tab);
   --spacing-vsc-statusbar: var(--vsc-size-statusbar);
   --spacing-vsc-dialog: var(--vsc-size-dialog);
+  --spacing-vsc-scrollbar: var(--vsc-size-scrollbar);
 }

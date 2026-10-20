@@ -120,7 +120,7 @@ export function GuidePage({
             <div className="shrink-0 px-3 pt-1 pb-1.5">
               <SearchBox value={search} onChange={setSearch} placeholder={t("Cerca nella guida")} />
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-1 pb-1">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-vsc-size40">
               {GUIDE_GROUPS.map((g, i) => {
                 const items = found.filter((x) => x.group === g.id);
                 if (searching && items.length === 0) return null;
