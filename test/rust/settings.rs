@@ -34,8 +34,6 @@ fn program_temp_default_and_unknown() {
 fn validation() {
     let ok = Settings {
         lang: Some("de".into()),
-        python_version: Some("3.13".into()),
-        php_version: Some("8.4".into()),
         rust_toolchain: Some("msvc".into()),
         ..Settings::default()
     };
@@ -50,8 +48,6 @@ fn validation() {
     assert!(bad(
         |s| s.network.extra_ca_certs = Some(r"Z:\none.pem".into())
     ));
-    assert!(bad(|s| s.python_version = Some("3.13 & x".into())));
-    assert!(bad(|s| s.php_version = Some("7.4".into())));
     assert!(bad(|s| s.rust_toolchain = Some("x".into())));
     assert!(bad(|s| s.gemini_api_key = Some("a b".into())));
 }
@@ -86,4 +82,129 @@ fn broken_file_is_reported_not_replaced() {
     let loaded = Settings::load_from(&path);
     assert!(loaded.problem.is_some());
     assert_eq!(fs::read_to_string(&path).unwrap(), "{ \"lang\": ");
+}
+
+#[test]
+fn keys_of_a_newer_version_are_kept() {
+    let tmp = TempDir::new("settings-other");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fs::write(
+        kit.settings_file(),
+        r#"{"lang":"it","theme":"dark","network":{"allowLan":true,"pac":"http://wpad/"}}"#,
+    )
+    .unwrap();
+    let saved = Settings::update(&kit, |s, problem| {
+        assert!(problem.is_none());
+        s.auto_update = false;
+        Ok::<(), anyhow::Error>(())
+    })
+    .unwrap();
+    assert!(!saved.auto_update);
+    let text = fs::read_to_string(kit.settings_file()).unwrap();
+    assert!(text.contains("\"theme\": \"dark\""), "{text}");
+    assert!(text.contains("\"pac\": \"http://wpad/\""), "{text}");
+    assert!(text.contains("\"allowLan\": true"), "{text}");
+}
+
+#[test]
+fn update_refused_leaves_the_file() {
+    let tmp = TempDir::new("settings-refused");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fs::write(kit.settings_file(), "{\"lang\":\"de\"}").unwrap();
+    let refused = Settings::update(&kit, |s, _| {
+        s.lang = Some("es".into());
+        anyhow::bail!("no")
+    });
+    assert!(refused.is_err());
+    assert_eq!(
+        fs::read_to_string(kit.settings_file()).unwrap(),
+        "{\"lang\":\"de\"}"
+    );
+}
+
+#[test]
+fn gemini_key_lives_in_its_own_file() {
+    let tmp = TempDir::new("settings-gemini");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Settings {
+        gemini_api_key: Some("AIza-secret".into()),
+        ..Settings::default()
+    };
+    s.save(&kit).unwrap();
+    let json = fs::read_to_string(kit.settings_file()).unwrap();
+    assert!(!json.contains("AIza-secret"), "{json}");
+    assert_eq!(
+        fs::read_to_string(gemini_file(&kit)).unwrap(),
+        "AIza-secret"
+    );
+    assert_eq!(
+        Settings::load(&kit).settings.gemini_api_key.as_deref(),
+        Some("AIza-secret")
+    );
+    Settings::default().save(&kit).unwrap();
+    assert!(!gemini_file(&kit).exists(), "no key, no file");
+}
+
+#[test]
+fn gemini_key_of_an_older_version_moves() {
+    let tmp = TempDir::new("settings-gemini-old");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    fs::write(
+        kit.settings_file(),
+        "{\"lang\":\"fr\",\"geminiApiKey\":\"AIza-old\"}",
+    )
+    .unwrap();
+    move_secrets(&kit);
+    let json = fs::read_to_string(kit.settings_file()).unwrap();
+    assert!(!json.contains("AIza-old"), "{json}");
+    assert!(json.contains("\"lang\": \"fr\""), "{json}");
+    assert_eq!(
+        Settings::load(&kit).settings.gemini_api_key.as_deref(),
+        Some("AIza-old")
+    );
+}
+
+#[test]
+fn pem_file_in_the_kit_is_saved_relative() {
+    let tmp = TempDir::new("settings-pem");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let pem = kit.data().join("certs").join("company.pem");
+    let mut s = Settings::default();
+    s.network.extra_ca_certs = Some(pem.display().to_string());
+    s.save(&kit).unwrap();
+    let json = fs::read_to_string(kit.settings_file()).unwrap();
+    assert!(
+        json.contains("\"extraCaCerts\": \"data/certs/company.pem\""),
+        "{json}"
+    );
+    assert_eq!(
+        Settings::load(&kit)
+            .settings
+            .network
+            .extra_ca_certs
+            .map(std::path::PathBuf::from),
+        Some(pem)
+    );
+}
+
+#[test]
+fn theme_default_and_unknown() {
+    assert_eq!(Settings::default().theme, Theme::System);
+    assert_eq!(Theme::System.window(), None);
+    assert_eq!(Theme::Dark.window(), Some(tauri::Theme::Dark));
+    let read = |json: &str| {
+        let tmp = TempDir::new("settings-theme");
+        let path = tmp.0.join("settings.json");
+        fs::write(&path, json).unwrap();
+        Settings::load_from(&path).settings.theme
+    };
+    assert_eq!(read("{\"theme\":\"light\"}"), Theme::Light);
+    assert_eq!(read("{\"theme\":\"Dark\"}"), Theme::Dark);
+    assert_eq!(read("{\"theme\":\"sepia\"}"), Theme::System);
+    assert_eq!(serde_json::to_string(&Theme::Light).unwrap(), "\"light\"");
 }

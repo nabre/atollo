@@ -1,7 +1,9 @@
 // The first-start page: which agents, languages and tools the kit gets,
 // before anything optional is installed. Same rules as the Tools page
 // (./explorer.tsx): required components always on, dependencies follow both
-// ways (Apache with PHP, Kotlin with Java).
+// ways (Apache with PHP, Kotlin with Java). First the choices for the whole
+// kit (language, updates, network: FirstRunSettings, D-137), since nothing
+// is downloaded before «Installa».
 import { useState } from "react";
 import { BrandSymbol } from "../brand";
 import { VscExtensions } from "react-icons/vsc";
@@ -15,8 +17,21 @@ import { groups, matches } from "./model";
 import { ComponentRow } from "./rows";
 import { useComponents } from "./state";
 import { ApplyBar } from "./applybar";
+import { FirstRunSettings } from "../settings";
 
-export function ComponentsPage({ setup, onDone }: { setup: SetupSnapshot | null; onDone?: () => void }) {
+export function ComponentsPage({
+  setup,
+  onDone,
+  platform,
+  onSettings,
+}: {
+  setup: SetupSnapshot | null;
+  onDone?: () => void;
+  /** This PC's system (AppInfo), for the examples of the network fields. */
+  platform?: string | undefined;
+  /** A first-start choice was saved (the language changes the page). */
+  onSettings?: () => void;
+}) {
   const state = useComponents(setup, true, onDone);
   const { list, chosen, choose, error, neededBy } = state;
   const [search, setSearch] = useState("");
@@ -67,13 +82,22 @@ export function ComponentsPage({ setup, onDone }: { setup: SetupSnapshot | null;
         </p>
       </div>
       <SettingsEditor
-        toc={all
-          .filter((g) => list.some((c) => g.has(c) && matches(c, search)))
-          .map((g) => ({ id: `group-${g.id}`, label: g.title }))}
+        toc={[
+          ...(searching
+            ? []
+            : [
+                { id: "group-start", label: t("Prima di iniziare") },
+                { id: "s-network", label: t("Rete") },
+              ]),
+          ...all
+            .filter((g) => list.some((c) => g.has(c) && matches(c, search)))
+            .map((g) => ({ id: `group-${g.id}`, label: g.title })),
+        ]}
         search={search}
         onSearch={setSearch}
         placeholder={t("Cerca negli strumenti")}
       >
+        {!searching && <FirstRunSettings platform={platform} onSaved={onSettings} />}
         {all.map((g) => {
           const items = list.filter((c) => g.has(c) && matches(c, search));
           if (items.length === 0 && searching) return null;

@@ -754,10 +754,16 @@ export const TOOLS: TopicTexts = {
               "MySQL und MongoDB: Jede Version hat ihre eigenen Daten und ihren eigenen Port; siehe die Seite Datenbanken.",
             ),
             tr(
-              "In Impostazioni › «Versioni» si sceglie quale versione di Python e di PHP installare quando il componente si installa o si aggiorna, e il compilatore di Rust: non cambia la versione usata dal kit.",
-              "In Settings › “Versions” you choose which version of Python and PHP to install when the component is installed or updated, and the Rust compiler: this does not change the version used by the kit.",
-              "Dans Paramètres › « Versions », vous choisissez quelle version de Python et de PHP installer quand le composant s'installe ou se met à jour, et le compilateur de Rust : cela ne change pas la version utilisée par le kit.",
-              "Unter Einstellungen › „Versionen“ wählst du, welche Version von Python und PHP installiert wird, wenn die Komponente installiert oder aktualisiert wird, sowie den Compiler von Rust: Das ändert nicht die vom Kit verwendete Version.",
+              "Python e PHP: una nuova installazione prende la linea più recente; le altre linee si scaricano da questo menu e ogni progetto sceglie la sua. Le Impostazioni non hanno più una scelta di versione (i valori pythonVersion e phpVersion di un vecchio settings.json vengono ignorati).",
+              "Python and PHP: a new installation takes the newest line; the other lines are downloaded from this menu and each project chooses its own. Settings no longer has a version choice (the pythonVersion and phpVersion values of an older settings.json are ignored).",
+              "Python et PHP : une nouvelle installation prend la ligne la plus récente ; les autres lignes se téléchargent depuis ce menu et chaque projet choisit la sienne. Les Paramètres n'ont plus de choix de version (les valeurs pythonVersion et phpVersion d'un ancien settings.json sont ignorées).",
+              "Python und PHP: Eine neue Installation nimmt die neueste Linie; die anderen Linien lädst du über dieses Menü herunter, und jedes Projekt wählt seine eigene. Die Einstellungen haben keine Versionswahl mehr (die Werte pythonVersion und phpVersion einer älteren settings.json werden ignoriert).",
+            ),
+            tr(
+              "Rust, solo su Windows: nella sua pagina, sezione «Dettagli», «Compilatore di Rust» sceglie GNU (predefinito, tutto nel kit) oppure MSVC, che richiede Visual Studio Build Tools nel PC. Vale dalla prossima installazione o aggiornamento di Rust. Su macOS e Linux Rust ha un solo compilatore e la voce non compare.",
+              "Rust, only on Windows: on its page, “Details” section, “Rust compiler” chooses GNU (default, all in the kit) or MSVC, which requires Visual Studio Build Tools on the PC. It applies from the next install or update of Rust. On macOS and Linux Rust has a single compiler and the setting does not appear.",
+              "Rust, uniquement sur Windows : dans sa page, section « Détails », « Compilateur Rust » choisit GNU (par défaut, tout dans le kit) ou MSVC, qui nécessite Visual Studio Build Tools sur le PC. Il s'applique à partir de la prochaine installation ou mise à jour de Rust. Sur macOS et Linux, Rust n'a qu'un compilateur et le paramètre n'apparaît pas.",
+              "Rust, nur unter Windows: Auf seiner Seite, Abschnitt „Details“, wählt „Rust-Compiler“ GNU (Standard, alles im Kit) oder MSVC, das Visual Studio Build Tools auf dem PC erfordert. Es gilt ab der nächsten Installation oder Aktualisierung von Rust. Unter macOS und Linux hat Rust nur einen Compiler, und die Einstellung erscheint nicht.",
             ),
           ]}
         />

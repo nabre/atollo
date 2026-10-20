@@ -26,6 +26,7 @@ import {
 } from "../workbench";
 import { groups, sizeText, xcodeMissing } from "./model";
 import { ComposerRow, Dependencies } from "./rows";
+import { RustToolchain } from "./rust";
 import type { ComponentsState } from "./state";
 
 type Section = "versions" | "details" | "projects";
@@ -286,6 +287,7 @@ export function ToolPage({
               <Dependencies c={c} list={list} chosen={chosen} />
               <LinkProblems id={c.id} links={links} />
             </div>
+            {c.id === "rust" && <RustToolchain platform={state.target ?? state.host} />}
           </EditorSection>
         )}
         {section === "projects" && (

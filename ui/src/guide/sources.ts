@@ -475,10 +475,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe",
     unix: () =>
       tr(
-        "Host gnu su Windows x64, gnullvm su Windows ARM64 (con C/C++), msvc dalle Impostazioni; macOS e Linux: rustup con l'host nativo",
-        "Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Settings; macOS and Linux: rustup with the native host",
-        "Hôte gnu sur Windows x64, gnullvm sur Windows ARM64 (avec C/C++), msvc depuis les Paramètres ; macOS et Linux : rustup avec l'hôte natif",
-        "Host gnu auf Windows x64, gnullvm auf Windows ARM64 (mit C/C++), msvc aus den Einstellungen; macOS und Linux: rustup mit nativem Host",
+        "Host gnu su Windows x64, gnullvm su Windows ARM64 (con C/C++), msvc dalla pagina di Rust in Strumenti; macOS e Linux: rustup con l'host nativo",
+        "Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Rust's page in Tools; macOS and Linux: rustup with the native host",
+        "Hôte gnu sur Windows x64, gnullvm sur Windows ARM64 (avec C/C++), msvc depuis la page de Rust dans Outils ; macOS et Linux : rustup avec l'hôte natif",
+        "Host gnu auf Windows x64, gnullvm auf Windows ARM64 (mit C/C++), msvc über die Seite von Rust unter Werkzeuge; macOS und Linux: rustup mit nativem Host",
       ),
     verifyKind: "SHA-256",
     verifyDetail: () =>

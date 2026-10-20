@@ -247,3 +247,44 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     );
     assert!(start_dir(&kit, &only_py, Some("relative"), "it").is_err());
 }
+
+/// A folder inside the kit is saved relative to it: it follows the kit to
+/// another drive or folder (D-137); one outside stays as it is.
+#[test]
+fn a_folder_in_the_kit_follows_it() {
+    let (tmp, kit) = kit("terminals-relative");
+    let inside = kit.projects().join("shop");
+    fs::create_dir_all(&inside).unwrap();
+    let id = save(
+        &kit,
+        Terminal {
+            name: "Shop".into(),
+            dir: Some(inside.display().to_string()),
+            ..Terminal::default()
+        },
+        "it",
+    )
+    .unwrap();
+    let text = fs::read_to_string(file(&kit)).unwrap();
+    assert!(text.contains("\"projects/shop\""), "{text}");
+    assert_eq!(
+        find(&kit, &id, "it")
+            .unwrap()
+            .dir
+            .map(std::path::PathBuf::from),
+        Some(inside)
+    );
+
+    // The kit moved: the same file, read from the new folder.
+    let moved = Kit::at(tmp.0.join("moved"), Arch::X64);
+    moved.prepare().unwrap();
+    fs::create_dir_all(moved.projects().join("shop")).unwrap();
+    fs::copy(file(&kit), file(&moved)).unwrap();
+    assert_eq!(
+        find(&moved, &id, "it")
+            .unwrap()
+            .dir
+            .map(std::path::PathBuf::from),
+        Some(moved.projects().join("shop"))
+    );
+}

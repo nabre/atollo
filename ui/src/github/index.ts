@@ -4,3 +4,4 @@
 // in data\gh (tauri/src/github/, DECISIONS.md D-70).
 export { GithubAccount } from "./account";
 export { GithubRepositories } from "./repos";
+export { GitIdentitySetting } from "./identity";

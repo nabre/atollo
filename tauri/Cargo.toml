@@ -37,6 +37,10 @@ sevenz-rust2 = "0.23.0"
 lzma-rust2 = { version = "0.21", default-features = false, features = ["std", "optimization", "xz", "encoder"] }
 base64 = "0.23.1"
 regex = "1.13.1"
+# The system's root certificates, written with the extra PEM file of the
+# settings into data/app/ca-bundle.pem for the app's downloads and the kit's
+# tools (D-137).
+rustls-native-certs = "0.8.5"
 
 # Win32 APIs, WebView2, junctions and the system proxy: Windows only, so the
 # same crate also builds for macOS and Linux (B7 / N-A1).

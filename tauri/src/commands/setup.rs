@@ -73,7 +73,7 @@ pub fn components_sync<R: Runtime>(
     }
     let off = crate::versions::sync_with_disk(&kit).or_fail_chain("components")?;
     if !off.is_empty() {
-        apply_env(&state, Settings::load(&state.kit).settings);
+        apply_env(&state);
     }
     Ok(off)
 }
@@ -148,6 +148,31 @@ pub(super) fn target_grid(kit: &Kit, lang: &str) -> TargetGrid {
     }
 }
 
+/// Rust's compiler on Windows, chosen on Rust's page in Tools (D-137):
+/// `msvc`, or `None` for the default (GNU, everything in the kit). It
+/// applies from the next install or update of Rust.
+#[tauri::command]
+pub fn rust_toolchain_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    toolchain: Option<String>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let toolchain = toolchain.filter(|t| !t.is_empty() && t != "gnu");
+    if let Some(t) = toolchain.as_deref().filter(|t| *t != "msvc") {
+        return Err(tr(&state, "Valore non valido: {0}", &[t]).into());
+    }
+    Settings::update(&state.kit, |settings, problem| {
+        if let Some(problem) = problem {
+            anyhow::bail!("{problem}");
+        }
+        settings.rust_toolchain = toolchain;
+        Ok(())
+    })
+    .map(drop)
+    .or_fail_chain("settings")
+}
+
 /// «Piattaforma» of the Tools page, remembered between sessions in
 /// settings.json (`None`: this PC's system again). Only that value
 /// changes: the kit's environment is not rebuilt.
@@ -174,16 +199,14 @@ pub(super) fn save_tools_target(kit: &Kit, target: Option<&str>) -> anyhow::Resu
                 .to_owned(),
         ),
     };
-    let loaded = Settings::load(kit);
-    if let Some(problem) = loaded.problem {
-        anyhow::bail!("{problem}");
-    }
-    let mut settings = loaded.settings;
-    if settings.tools_target == target {
-        return Ok(());
-    }
-    settings.tools_target = target;
-    settings.save(kit)
+    Settings::update(kit, |settings, problem| {
+        if let Some(problem) = problem {
+            anyhow::bail!("{problem}");
+        }
+        settings.tools_target = target;
+        Ok(())
+    })
+    .map(drop)
 }
 
 /// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
@@ -291,7 +314,7 @@ pub fn setup_notify<R: Runtime>(app: AppHandle<R>) -> Notify {
         if !snapshot.running && !snapshot.steps.is_empty() {
             use tauri::Manager;
             if let Some(state) = app.try_state::<AppState>() {
-                apply_env(&state, Settings::load(&state.kit).settings);
+                apply_env(&state);
             }
         }
         let _ = app.emit_to(MAIN, "setup", snapshot);

@@ -14,7 +14,15 @@
 //! - The page: the repositories of the account (API with the account's
 //!   token), clone into `projects\`, rename and delete on GitHub.
 //!
-//! Here the account, the sign-in and Git's helper; the repositories in
+//! - Who signs the commits (`user.name`, `user.email`): empty, they come
+//!   from the account at sign-in and at start, with GitHub's `noreply`
+//!   address so the real one stays private; the Settings change them
+//!   (D-137).
+//! - Git trusts the repositories inside the kit's folder only
+//!   (`safe.directory = <kit>/*`, rewritten at every start as the kit
+//!   moves), not every repository of the PC as with `*` before (D-137).
+//!
+//! Here the account, the sign-in and Git's settings; the repositories in
 //! `repos`.
 
 pub(crate) mod repos;
@@ -30,7 +38,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{bail, Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::env::KitEnv;
 use crate::kit::Kit;
@@ -154,6 +162,14 @@ pub fn sync_git(kit: &Kit, env: &KitEnv, signed_in: bool) -> Result<()> {
     if !git_exe(kit).is_file() {
         return Ok(());
     }
+    if let Err(e) = sync_safe_directory(kit, env) {
+        crate::log::warn(&format!("github: safe.directory: {e:#}"));
+    }
+    if signed_in {
+        if let Err(e) = fill_identity(kit, env) {
+            crate::log::warn(&format!("github: git identity: {e:#}"));
+        }
+    }
     for host in HELPER_HOSTS {
         let key = format!("credential.{host}.helper");
         let current = git_values(kit, env, &key);
@@ -164,16 +180,7 @@ pub fn sync_git(kit: &Kit, env: &KitEnv, signed_in: bool) -> Result<()> {
         if !current.is_empty() && !current.iter().any(|v| is_gh_helper(v)) {
             continue;
         }
-        let git = |args: &[&str]| {
-            jobs::kit_command(git_exe(kit), env)
-                .args(["config", "--global"])
-                .args(args)
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .context("git config --global")
-        };
+        let git = |args: &[&str]| git_config(kit, env, args);
         // Exit 5 when there was nothing to remove.
         git(&["--unset-all", &key])?;
         for value in want {
@@ -183,6 +190,154 @@ pub fn sync_git(kit: &Kit, env: &KitEnv, signed_in: bool) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// `git config --global` with the kit's Git, its output not wanted.
+fn git_config(kit: &Kit, env: &KitEnv, args: &[&str]) -> Result<std::process::ExitStatus> {
+    jobs::kit_command(git_exe(kit), env)
+        .args(["config", "--global"])
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .context("git config --global")
+}
+
+/// `safe.directory` for the kit's folder: `D:/kit/*` (Git 2.46 and later
+/// read a trailing `/*` as "everything inside").
+pub(crate) fn safe_pattern(root: &std::path::Path) -> String {
+    let root = root.display().to_string().replace('\\', "/");
+    format!("{}/*", root.trim_end_matches('/'))
+}
+
+/// A value of `safe.directory` written by a kit: `*` (before D-137) or the
+/// folder of a kit, here or where it was before (it has `data/app`, or it
+/// is not there any more). The user's own values stay.
+pub(crate) fn kit_safe_value(value: &str) -> bool {
+    value == "*"
+        || value.strip_suffix("/*").is_some_and(|dir| {
+            let dir = std::path::Path::new(dir);
+            !dir.exists() || dir.join("data").join("app").is_dir()
+        })
+}
+
+fn sync_safe_directory(kit: &Kit, env: &KitEnv) -> Result<()> {
+    let want = safe_pattern(kit.root());
+    let current = git_values(kit, env, "safe.directory");
+    if current == [want.clone()] {
+        return Ok(());
+    }
+    let keep: Vec<&String> = current.iter().filter(|v| !kit_safe_value(v)).collect();
+    // Exit 5 when there was nothing to remove.
+    git_config(kit, env, &["--unset-all", "safe.directory"])?;
+    for value in keep.into_iter().chain([&want]) {
+        if !git_config(kit, env, &["--add", "safe.directory", value])?.success() {
+            bail!("git config --global --add safe.directory");
+        }
+    }
+    Ok(())
+}
+
+// --- Git: who signs the commits ----------------------------------------------
+
+/// `user.name` and `user.email` of the kit's Git (empty: not set).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Identity {
+    pub name: String,
+    pub email: String,
+}
+
+/// GitHub's private address of an account: commits show the account
+/// without the real address.
+pub(crate) fn noreply(id: u64, login: &str) -> String {
+    format!("{id}+{login}@users.noreply.github.com")
+}
+
+/// The identity as saved, or the Italian source of what is wrong.
+pub(crate) fn clean_identity(input: &Identity) -> std::result::Result<Identity, &'static str> {
+    let name = input.name.trim().to_owned();
+    let email = input.email.trim().to_owned();
+    if name.chars().any(char::is_control) || name.chars().count() > 100 {
+        return Err("Nome non valido.");
+    }
+    let bad_email = !email.is_empty()
+        && (email
+            .chars()
+            .any(|c| c.is_whitespace() || c.is_control() || c == '<' || c == '>')
+            || !email
+                .split_once('@')
+                .is_some_and(|(user, host)| !user.is_empty() && host.contains('.')));
+    if bad_email {
+        return Err("Indirizzo e-mail non valido.");
+    }
+    Ok(Identity { name, email })
+}
+
+/// The identity of the kit's Git; `None` when Git is not in the kit.
+pub fn identity(kit: &Kit, env: &KitEnv) -> Option<Identity> {
+    if !git_exe(kit).is_file() {
+        return None;
+    }
+    let one = |key: &str| git_values(kit, env, key).pop().unwrap_or_default();
+    Some(Identity {
+        name: one("user.name"),
+        email: one("user.email"),
+    })
+}
+
+/// Saves `id` (an empty value is removed); returns it as saved.
+pub fn set_identity(kit: &Kit, env: &KitEnv, id: &Identity, lang: &str) -> Result<Identity> {
+    let id = clean_identity(id).map_err(|source| anyhow::anyhow!(tr(lang, source, &[])))?;
+    if !git_exe(kit).is_file() {
+        bail!("{}", tr(lang, "Git non è nel kit.", &[]));
+    }
+    for (key, value) in [("user.name", &id.name), ("user.email", &id.email)] {
+        git_config(kit, env, &["--unset-all", key])?;
+        if !value.is_empty() && !git_config(kit, env, &[key, value])?.success() {
+            bail!("git config --global {key}");
+        }
+    }
+    Ok(id)
+}
+
+#[derive(Deserialize)]
+struct AccountUser {
+    login: String,
+    id: u64,
+    #[serde(default)]
+    name: Option<String>,
+}
+
+/// Name and `noreply` address of the signed-in account, when neither is
+/// set: one call to GitHub's API (`gh api user`), then never again.
+fn fill_identity(kit: &Kit, env: &KitEnv) -> Result<()> {
+    let Some(current) = identity(kit, env) else {
+        return Ok(());
+    };
+    if !current.name.is_empty() || !current.email.is_empty() || !gh_exe(kit).is_file() {
+        return Ok(());
+    }
+    let out = gh(kit, env)
+        .args(["api", "user"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+        .context("gh api user")?;
+    if !out.status.success() {
+        bail!("gh api user failed");
+    }
+    let user: AccountUser = serde_json::from_slice(&out.stdout).context("gh api user")?;
+    let name = user
+        .name
+        .filter(|n| !n.trim().is_empty())
+        .unwrap_or_else(|| user.login.clone());
+    let id = Identity {
+        name,
+        email: noreply(user.id, &user.login),
+    };
+    set_identity(kit, env, &id, "en").map(drop)
 }
 
 // --- Sign-in ----------------------------------------------------------------

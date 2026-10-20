@@ -13,11 +13,11 @@ const SETTINGS: Settings = {
   network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
   geminiApiKey: null,
   autoUpdate: true,
-  pythonVersion: null,
-  phpVersion: null,
   rustToolchain: null,
   programTemp: "auto",
+  theme: "system",
   keepCondaPackages: true,
+  toolsTarget: null,
 };
 
 describe("program temp setting", () => {

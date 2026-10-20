@@ -375,6 +375,18 @@
           "markdownDescription": "Enables the frameworks_targets command without any pre-configured scope."
         },
         {
+          "description": "Enables the git_identity_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-git-identity-get",
+          "markdownDescription": "Enables the git_identity_get command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the git_identity_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-git-identity-set",
+          "markdownDescription": "Enables the git_identity_set command without any pre-configured scope."
+        },
+        {
           "description": "Enables the github_clone command without any pre-configured scope.",
           "type": "string",
           "const": "allow-github-clone",
@@ -427,6 +439,12 @@
           "type": "string",
           "const": "allow-github-status",
           "markdownDescription": "Enables the github_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the privacy_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-privacy-open",
+          "markdownDescription": "Enables the privacy_open command without any pre-configured scope."
         },
         {
           "description": "Enables the project_action_default command without any pre-configured scope.",
@@ -655,6 +673,12 @@
           "type": "string",
           "const": "allow-run-stop",
           "markdownDescription": "Enables the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the rust_toolchain_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-rust-toolchain-set",
+          "markdownDescription": "Enables the rust_toolchain_set command without any pre-configured scope."
         },
         {
           "description": "Enables the server_assign_project command without any pre-configured scope.",
@@ -1065,6 +1089,18 @@
           "markdownDescription": "Denies the frameworks_targets command without any pre-configured scope."
         },
         {
+          "description": "Denies the git_identity_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-git-identity-get",
+          "markdownDescription": "Denies the git_identity_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the git_identity_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-git-identity-set",
+          "markdownDescription": "Denies the git_identity_set command without any pre-configured scope."
+        },
+        {
           "description": "Denies the github_clone command without any pre-configured scope.",
           "type": "string",
           "const": "deny-github-clone",
@@ -1117,6 +1153,12 @@
           "type": "string",
           "const": "deny-github-status",
           "markdownDescription": "Denies the github_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the privacy_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-privacy-open",
+          "markdownDescription": "Denies the privacy_open command without any pre-configured scope."
         },
         {
           "description": "Denies the project_action_default command without any pre-configured scope.",
@@ -1339,6 +1381,12 @@
           "type": "string",
           "const": "deny-run-stop",
           "markdownDescription": "Denies the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the rust_toolchain_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-rust-toolchain-set",
+          "markdownDescription": "Denies the rust_toolchain_set command without any pre-configured scope."
         },
         {
           "description": "Denies the server_assign_project command without any pre-configured scope.",

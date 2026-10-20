@@ -106,7 +106,7 @@ pub fn agent_token_save<R: Runtime>(
 /// again, so that terminals and editor opened from now on get it, or no
 /// longer get it (D-115).
 fn token_changed(state: &AppState) {
-    apply_env(state, Settings::load(&state.kit).settings);
+    apply_env(state);
 }
 
 #[tauri::command]

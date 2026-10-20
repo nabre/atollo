@@ -268,10 +268,10 @@ function problems(): { title: string; items: Problem[] }[] {
             "Git meldet „Please tell me who you are“ beim ersten Commit.",
           ),
           a: tr(
-            "Imposta nome ed email con git config --global user.name e user.email in un terminale del kit.",
-            "Set your name and email with git config --global user.name and user.email in a kit terminal.",
-            "Définissez votre nom et votre e-mail avec git config --global user.name et user.email dans un terminal du kit.",
-            "Leg Name und E-Mail mit git config --global user.name und user.email in einem Terminal des Kits fest.",
+            "Scrivi nome ed e-mail in Impostazioni › «Account GitHub» › «Chi firma i commit», oppure accedi a GitHub: se sono vuoti, li riempie l'account. In un terminale del kit funziona anche git config --global user.name e user.email.",
+            "Type your name and email in Settings › “GitHub account” › “Who signs the commits”, or sign in to GitHub: if they are empty, the account fills them. In a kit terminal git config --global user.name and user.email work too.",
+            "Saisissez votre nom et votre e-mail dans Paramètres › « Compte GitHub » › « Qui signe les commits », ou connectez-vous à GitHub : s'ils sont vides, le compte les remplit. Dans un terminal du kit, git config --global user.name et user.email fonctionnent aussi.",
+            "Gib Name und E-Mail unter Einstellungen › „GitHub-Konto“ › „Wer die Commits signiert“ ein oder melde dich bei GitHub an: Wenn sie leer sind, füllt das Konto sie aus. In einem Terminal des Kits funktionieren auch git config --global user.name und user.email.",
           ),
           see: "github",
         },
@@ -852,10 +852,10 @@ export const HELP: TopicTexts = {
         >
           <P>
             {tr(
-              "Il kit non manda niente: niente telemetria, e gli strumenti hanno la telemetria spenta. Quando usi un agente IA, però, il codice che gli fai leggere viene inviato al fornitore del modello (Anthropic, OpenAI, Google), secondo le sue condizioni.",
-              "The kit sends nothing: no telemetry, and the tools have telemetry turned off. When you use an AI agent, however, the code you have it read is sent to the model's provider (Anthropic, OpenAI, Google), under its terms.",
-              "Le kit n'envoie rien : pas de télémétrie, et les outils ont la télémétrie désactivée. Quand vous utilisez un agent IA, en revanche, le code que vous lui faites lire est envoyé au fournisseur du modèle (Anthropic, OpenAI, Google), selon ses conditions.",
-              "Das Kit sendet nichts: keine Telemetrie, und bei den Werkzeugen ist die Telemetrie ausgeschaltet. Wenn du einen KI-Agenten verwendest, wird der Code, den du ihn lesen lässt, allerdings an den Anbieter des Modells gesendet (Anthropic, OpenAI, Google), gemäß dessen Bedingungen.",
+              "Il kit non manda niente: niente telemetria, e gli strumenti hanno la telemetria spenta. Quando usi un agente IA, però, il codice che gli fai leggere viene inviato al fornitore del modello (Anthropic, OpenAI, Google), secondo le sue condizioni. Il riassunto è in Impostazioni › «Privacy», con il link «Leggi l'informativa sulla privacy».",
+              "The kit sends nothing: no telemetry, and the tools have telemetry turned off. When you use an AI agent, however, the code you have it read is sent to the model's provider (Anthropic, OpenAI, Google), under its terms. The summary is in Settings › “Privacy”, with the link “Read the privacy policy”.",
+              "Le kit n'envoie rien : pas de télémétrie, et les outils ont la télémétrie désactivée. Quand vous utilisez un agent IA, en revanche, le code que vous lui faites lire est envoyé au fournisseur du modèle (Anthropic, OpenAI, Google), selon ses conditions. Le résumé se trouve dans Paramètres › « Confidentialité », avec le lien « Lire la politique de confidentialité ».",
+              "Das Kit sendet nichts: keine Telemetrie, und bei den Werkzeugen ist die Telemetrie ausgeschaltet. Wenn du einen KI-Agenten verwendest, wird der Code, den du ihn lesen lässt, allerdings an den Anbieter des Modells gesendet (Anthropic, OpenAI, Google), gemäß dessen Bedingungen. Die Zusammenfassung steht unter Einstellungen › „Datenschutz“, mit dem Link „Datenschutzerklärung lesen“.",
             )}
           </P>
         </QA>
