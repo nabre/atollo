@@ -136,6 +136,25 @@ describe("ConfirmDialog", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
+
+  it("measures as VSCodium 1.135's .monaco-dialog-box, with tokens only", () => {
+    render(
+      <ConfirmDialog title="Chiudere?" cancelLabel="Annulla" onCancel={() => undefined} actions={null}>
+        <p>Le attività in corso si fermano.</p>
+      </ConfirmDialog>,
+    );
+    const box = screen.getByRole("alertdialog", { name: "Chiudere?" });
+    // min-width 480px (--vsc-size-dialog), padding 8px, xLarge corners, xl shadow.
+    for (const c of ["w-vsc-dialog", "max-w-[90vw]", "p-vsc-size80", "rounded-vsc-xlarge", "shadow-vsc-xl"]) {
+      expect(box.className.split(" ")).toContain(c);
+    }
+    // No measure in pixels or rems anywhere in the box (the title's 14px,
+    // .dialog-message's, has no token).
+    const classes = [box, ...box.querySelectorAll("*")]
+      .map((el) => el.getAttribute("class") ?? "")
+      .filter((c) => !c.includes("text-[14px]"));
+    expect(classes.join(" ")).not.toMatch(/\d(px|rem)\b/);
+  });
 });
 
 describe("InlineConfirm", () => {

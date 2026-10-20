@@ -1,6 +1,7 @@
 // VSCodium's controls. Text buttons, fields, dropdowns, badges, the progress
 // bar, dividers and icons are the vscode-elements components (elements.ts),
-// with their sizes and --vscode-* colors. Icon actions, checkboxes and radios
+// with their --vscode-* colors and VSCodium 1.135's sizes (the fields' in
+// elements.ts, the buttons' here). Icon actions, checkboxes and radios
 // stay native elements drawn as those components: their role and name must
 // be in the page (light DOM), where the pages' <label for> reach them.
 import {
@@ -91,8 +92,18 @@ function guardEnter(e: KeyboardEvent<HTMLElement>) {
   if (e.nativeEvent.isComposing || (form && defaultButton(form)?.disabled)) e.stopPropagation();
 }
 
-/** A text button (vscode-button): primary, secondary, or the small one of the
- * Extensions list rows. */
+/** VSCodium 1.135's .monaco-text-button on the component's base: 4px 8px
+ * around a 16px line of 12px text, 26px high with its border, 4px corners
+ * (cornerRadius-small); as wide as its container (block) without the
+ * component's 28px. */
+const TEXT_BUTTON =
+  "[&::part(base)]:min-h-0 [&::part(base)]:rounded-vsc-small [&::part(base)]:px-vsc-size80 [&::part(base)]:py-vsc-size40 [&::part(base)]:text-vsc-body-small [&::part(base)]:leading-(--vscode-spacing-size160)";
+/** Its .small: 22px high, 6px at the sides, 11px text (3px above and below
+ * a 14px line there; 2px around a 16px one here, the same height). */
+const SMALL_BUTTON =
+  "[&::part(base)]:min-h-0 [&::part(base)]:rounded-vsc-small [&::part(base)]:px-vsc-size60 [&::part(base)]:py-vsc-size20 [&::part(base)]:text-vsc-body-xsmall [&::part(base)]:leading-(--vscode-spacing-size160)";
+
+/** A text button (vscode-button): primary, secondary, or the small one. */
 export function Button({
   children,
   onClick,
@@ -109,7 +120,7 @@ export function Button({
   children: ReactNode;
   onClick?: () => void;
   variant?: "primary" | "secondary";
-  /** 11px, 18px high, as "Install" in the Extensions view. */
+  /** 11px, 22px high (.monaco-text-button.small). */
   small?: boolean;
   busy?: boolean;
   disabled?: boolean;
@@ -157,13 +168,7 @@ export function Button({
             e.stopPropagation();
           }
         }}
-        className={[
-          "shrink-0",
-          small
-            ? "[&::part(base)]:h-[18px] [&::part(base)]:px-[5px] [&::part(base)]:py-0 [&::part(base)]:text-[11px] [&::part(base)]:leading-4"
-            : "",
-          className,
-        ].join(" ")}
+        className={["shrink-0", small ? SMALL_BUTTON : TEXT_BUTTON, className].join(" ")}
       >
         {busy ? <span className="animate-pulse">{children}</span> : children}
       </vscode-button>

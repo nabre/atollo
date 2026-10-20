@@ -116,10 +116,13 @@ const RULES = [
   [
     "Buttons, inputs, select boxes, dialogs",
     [
-      /^\.monaco-text-button(\.small)?$/,
+      /^\.monaco-text-button(\.small|:focus)?$/,
       /^\.monaco-inputbox$/,
+      /^\.monaco-inputbox>\.ibwrapper>\.input$/,
       /^\.monaco-select-box$/,
       /^\.monaco-action-bar \.action-item \.monaco-select-box$/,
+      /^\.settings-editor>\.settings-body \.settings-tree-container \.setting-item-contents \.monaco-select-box$/,
+      /^\.monaco-select-box-dropdown-container$/,
       /^\.monaco-dialog-modal-block$/,
       /^\.monaco-dialog-box$/,
     ],
