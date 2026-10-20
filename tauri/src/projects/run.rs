@@ -379,6 +379,14 @@ impl Runner {
         }
         let mut used: HashSet<u16> = ports.ports.values().copied().collect();
         used.extend(self.entries().values().filter_map(|e| e.info.port));
+        // Nor the port of a pool or a database version, even one not
+        // running now (BUG-V5-07): the projects' own are those above.
+        used.extend(
+            crate::ports::ports_taken(&self.kit)
+                .into_iter()
+                .filter(|(_, o)| !matches!(o, crate::ports::Owner::Project { .. }))
+                .map(|(p, _)| p),
+        );
         for n in PORT_FROM..=PORT_TO {
             if used.contains(&n) {
                 continue;
