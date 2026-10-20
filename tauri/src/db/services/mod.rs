@@ -285,6 +285,19 @@ fn update_settings<T>(
     Ok(out)
 }
 
+/// An error naming the owner of `port` when a pool, a project, the editor
+/// or another server has it (BUG-V5-05); the versions of `engine` itself
+/// are checked by the caller, which may move them. Called before
+/// [`update_settings`], never inside it.
+fn refuse_other_owner(kit: &Kit, engine: DbEngine, port: u16, lang: &str) -> Result<()> {
+    crate::ports::refuse_taken(
+        kit,
+        port,
+        |o| matches!(o, crate::ports::Owner::Db { engine: e, .. } if *e == engine),
+        lang,
+    )
+}
+
 /// The version of `engine` the project's database is on: the one chosen
 /// for it (`lines` of its `db.json`), otherwise the one the server runs.
 pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Option<String> {
@@ -872,17 +885,21 @@ impl Services {
 
     /// Port (None: default) and "start with Atollo" of `id`. A new port is
     /// the one of the version the server runs (its stored one dropped),
-    /// unless another version has it.
-    pub fn set(&self, id: &str, port: Option<u16>, autostart: bool) -> Result<()> {
+    /// unless another version has it, or a pool, a project or the editor
+    /// (BUG-V5-05, in `lang`).
+    pub fn set(&self, id: &str, port: Option<u16>, autostart: bool, lang: &str) -> Result<()> {
         let engine = DbEngine::parse(id)?;
         if port.is_some_and(|p| p < 1024) {
             bail!("port below 1024");
         }
         let main = server_line(&self.kit, id);
         let lines = server_lines(&self.kit, id);
+        let new = port.unwrap_or_else(|| engine.default_port());
+        if new != line_port(&self.kit, id, None) {
+            refuse_other_owner(&self.kit, engine, new, lang)?;
+        }
         update_settings(&self.kit, |all| {
             let entry = all.entry(id.to_owned()).or_default();
-            let new = port.unwrap_or_else(|| engine.default_port());
             if let Some(m) = &main {
                 let ports = line_ports(entry, id, Some(m), &lines);
                 if ports.get(m) != Some(&new) {
@@ -903,9 +920,10 @@ impl Services {
     /// The port of another version of `id` (None: the first free one after
     /// the server's), from its next start. Not the version the server runs
     /// (its port is the server's, [`Services::set`]) nor a port another
-    /// version has.
-    pub fn set_line_port(&self, id: &str, line: &str, port: Option<u16>) -> Result<()> {
-        DbEngine::parse(id)?;
+    /// version has, nor one of a pool, a project or the editor (BUG-V5-05,
+    /// in `lang`).
+    pub fn set_line_port(&self, id: &str, line: &str, port: Option<u16>, lang: &str) -> Result<()> {
+        let engine = DbEngine::parse(id)?;
         let lines = server_lines(&self.kit, id);
         if !lines.iter().any(|x| x == line) {
             bail!("{id} {line} is not installed");
@@ -916,6 +934,9 @@ impl Services {
         }
         if port.is_some_and(|p| p < 1024) {
             bail!("port below 1024");
+        }
+        if let Some(p) = port.filter(|p| *p != line_port(&self.kit, id, Some(line))) {
+            refuse_other_owner(&self.kit, engine, p, lang)?;
         }
         update_settings(&self.kit, |all| {
             let entry = all.entry(id.to_owned()).or_default();

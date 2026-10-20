@@ -70,6 +70,45 @@ fn ports_are_kept_and_locked() {
     assert!(!r2.ports().ports.contains_key("p|c"));
 }
 
+/// BUG-V5-05: an action's port is never one of a pool, of a database
+/// version or the editor's, and the owner is named.
+#[test]
+fn set_port_refuses_ports_of_pools_databases_and_editor() {
+    let tmp = TempDir::new("run-ports-taken");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    std::fs::write(
+        kit.app_dir().join("servers.json"),
+        r#"{ "ports": { "legacy": 8095 } }"#,
+    )
+    .unwrap();
+    std::fs::write(
+        kit.app_dir().join("services.json"),
+        r#"{ "mysql": { "ports": { "8.4": 3307 } } }"#,
+    )
+    .unwrap();
+    let r = Runner::new(kit, Arc::new(|_| {}));
+    let refused = |port: u16| {
+        r.set_port("p|site", Some(port), "en")
+            .unwrap_err()
+            .to_string()
+    };
+    assert_eq!(
+        refused(8095),
+        "Port 8095 already belongs to server legacy: choose another one."
+    );
+    assert_eq!(
+        refused(3307),
+        "Port 3307 already belongs to database MySQL 8.4: choose another one."
+    );
+    assert_eq!(refused(7010), "Ports 7000 to 7099 belong to the editor");
+    assert!(r.ports().ports.is_empty() && r.ports().locked.is_empty());
+    // Its own port saved again, and another project's taken from memory.
+    r.set_port("p|site", Some(7150), "en").unwrap();
+    r.set_port("p|site", Some(7150), "en").unwrap();
+    assert!(r.set_port("q|site", Some(7150), "en").is_err());
+}
+
 #[test]
 fn ports_per_project_file() {
     let tmp = TempDir::new("run-ports-files");
