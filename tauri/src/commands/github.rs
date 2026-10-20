@@ -235,3 +235,34 @@ pub fn github_open<R: Runtime>(webview: Webview<R>, full_name: Option<String>) -
     };
     crate::github::open_web(&path).or_fail_chain("browser")
 }
+
+/// Who signs the commits of the kit's Git (`None`: Git is not in the kit).
+#[tauri::command]
+pub async fn git_identity_get<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<Option<crate::github::Identity>> {
+    ensure_main(&webview)?;
+    let (kit, env) = (state.kit.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || crate::github::identity(&kit, &env))
+        .await
+        .or_fail("git")
+}
+
+/// Saves who signs the commits; an empty value is removed (the account's
+/// come back at the next start while signed in to GitHub).
+#[tauri::command]
+pub async fn git_identity_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    identity: crate::github::Identity,
+) -> CmdResult<crate::github::Identity> {
+    ensure_main(&webview)?;
+    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::github::set_identity(&kit, &env, &identity, lang)
+    })
+    .await
+    .or_fail("git")?
+    .map_err(|e| CmdError::from(format!("{e:#}")))
+}

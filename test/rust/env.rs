@@ -1122,3 +1122,34 @@ fn conda_environments_give_only_their_programs() {
     );
     assert!(has("r/4.6/bin"), "R without launchers yet: {entries:?}");
 }
+
+/// Atollo started from a kit console: what that console got from the
+/// settings is not the PC's (D-137).
+#[test]
+fn settings_of_a_kit_console_are_not_the_hosts() {
+    let (_tmp, kit) = fake_kit("env-settings-vars", &[]);
+    let s = Settings {
+        lang: Some("de".into()),
+        ..Settings::default()
+    };
+    let env = KitEnv::build(&kit, &s, "de", &host());
+    let marker = env.get(SETTINGS_VARS).unwrap();
+    assert!(marker.split(';').any(|n| n == "ATOLLO_LANG"), "{marker}");
+    // The PC's own proxy is not the settings'.
+    assert!(!marker.split(';').any(|n| n == "HTTPS_PROXY"), "{marker}");
+
+    let mut console = Host::from_pairs(
+        env.iter()
+            .map(|(k, v)| (k.to_owned().into(), v.to_owned().into())),
+    );
+    let gone = console.forget_kit_settings();
+    assert!(gone.iter().any(|n| n == "ATOLLO_LANG"));
+    assert!(console.get("ATOLLO_LANG").is_none());
+    assert!(console.get(SETTINGS_VARS).is_none());
+    assert_eq!(console.get("HTTPS_PROXY"), Some("http://proxy:8080"));
+    // A setting emptied since: the language is the system's again.
+    assert_eq!(
+        crate::i18n::resolve(None, console.get("ATOLLO_LANG"), Some("it-IT")),
+        "it"
+    );
+}

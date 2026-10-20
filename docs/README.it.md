@@ -28,7 +28,8 @@
   <a href="https://nabre.github.io/atollo/it/"><b>Sito</b></a> ·
   <a href="https://github.com/nabre/atollo/releases/latest"><b>Download</b></a> ·
   <a href="app/GUIDE.it.md"><b>Guida</b></a> ·
-  <a href="https://github.com/nabre/atollo/issues"><b>Segnalazioni</b></a>
+  <a href="https://github.com/nabre/atollo/issues"><b>Segnalazioni</b></a> ·
+  <a href="PRIVACY.it.md"><b>Privacy</b></a>
 </p>
 
 <p align="center"><a href="../README.md">English</a> · Italiano · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a></p>
@@ -198,12 +199,12 @@ Free code signing on Windows provided by [SignPath.io](https://signpath.io/), ce
 
 ## Privacy policy
 
-Atollo (`Atollo.exe`) rispetta pienamente la riservatezza dell'utente:
+Il testo completo, con ogni connessione di rete e ogni file che l'app conserva, è in **[Informativa sulla privacy e condizioni d'uso](PRIVACY.it.md)**. In breve:
 
 - **Nessuna telemetria o raccolta dati:** l'applicazione non raccoglie dati personali, statistiche d'uso, telemetria o report di crash, e non contatta alcun server gestito dall'autore del progetto. Disattiva inoltre la telemetria predefinita dei componenti gestiti (come PowerShell 7 e il server di VSCodium).
-- **Archiviazione locale:** impostazioni, progetti, database locali, log e credenziali sono salvati esclusivamente in locale nella cartella `data\` (e `projects\`) di Atollo sul dispositivo dell'utente.
-- **Connessioni di rete:** l'applicazione effettua richieste di rete solo verso le fonti ufficiali upstream per verificare gli aggiornamenti e scaricare i componenti richiesti dall'utente (`api.github.com`, mirror ufficiali dei linguaggi/strumenti, registro Open VSX per le estensioni dell'editor) e, quando l'utente configura e utilizza l'integrazione GitHub o gli agenti AI (**Claude Code**, **Codex**, **Antigravity**) o la chiave API Gemini, direttamente verso le rispettive API dei fornitori secondo le loro informative sulla privacy.
+- **Archiviazione locale:** impostazioni, progetti, database locali, log e credenziali sono salvati in locale nella cartella `data\` (e `projects\`) di Atollo sul dispositivo dell'utente; le poche eccezioni (file temporanei, l'accesso di Antigravity mentre è in esecuzione) sono elencate nell'informativa.
+- **Connessioni di rete:** l'applicazione si collega solo a GitHub per cercare i propri aggiornamenti (Impostazioni › Generale › Aggiornamento automatico, oppure `ATOLLO_NO_UPDATE`), alle fonti ufficiali dei componenti che scarica, al registro Open VSX per le estensioni dell'editor e, quando l'utente usa la pagina GitHub o la pagina Agenti, a GitHub e ai fornitori degli agenti (**Claude Code**, **Codex**, **Antigravity**) secondo le loro informative sulla privacy.
 
 ## Licenza
 
-MIT.
+MIT: fornito "così com'è", senza garanzie. Vedi [LICENSE](../LICENSE) e le [condizioni d'uso](PRIVACY.it.md#8-condizioni-duso).

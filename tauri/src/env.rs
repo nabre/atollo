@@ -86,11 +86,41 @@ pub struct Host {
     vars: BTreeMap<String, String>,
 }
 
+/// The names of the variables a kit environment took from the settings
+/// (`HTTPS_PROXY;ATOLLO_LANG`…).
+pub const SETTINGS_VARS: &str = "ATOLLO_SETTINGS_VARS";
+
 impl Host {
     /// Snapshot of the current process environment. Taken once at start,
     /// before `apply_to_current_process` redirects the profile folders.
+    /// Started from a kit console, the variables that console got from the
+    /// settings (a proxy, the language, the certificates) are not the PC's:
+    /// they leave the snapshot and this process, so a setting emptied since
+    /// does not come back from them (D-137).
     pub fn capture() -> Host {
-        Host::from_pairs(std::env::vars_os())
+        let mut host = Host::from_pairs(std::env::vars_os());
+        for name in host.forget_kit_settings() {
+            std::env::remove_var(name);
+        }
+        host
+    }
+
+    /// Removes the variables listed in `ATOLLO_SETTINGS_VARS`, and that
+    /// variable; returns their names.
+    pub fn forget_kit_settings(&mut self) -> Vec<String> {
+        let Some(list) = self.get(SETTINGS_VARS).map(str::to_owned) else {
+            return Vec::new();
+        };
+        let names: Vec<String> = list
+            .split(';')
+            .map(str::trim)
+            .filter(|n| !n.is_empty())
+            .chain([SETTINGS_VARS])
+            .map(str::to_owned)
+            .collect();
+        self.vars
+            .retain(|k, _| !names.iter().any(|n| n.eq_ignore_ascii_case(k)));
+        names
     }
 
     pub fn from_pairs(pairs: impl IntoIterator<Item = (OsString, OsString)>) -> Host {
@@ -819,6 +849,7 @@ impl KitEnv {
 
         // Settings (replace data\proxy.cmd, _env.cmd:270-273)
         let net = &settings.network;
+        let mut from_settings: Vec<&str> = Vec::new();
         for (name, value) in [
             ("HTTPS_PROXY", &net.https_proxy),
             ("HTTP_PROXY", &net.http_proxy),
@@ -829,10 +860,26 @@ impl KitEnv {
         ] {
             if let Some(value) = value.as_deref().filter(|v| !v.is_empty()) {
                 env.set(name, value);
+                from_settings.push(name);
+            }
+        }
+        // The system's roots plus the extra PEM file, for the tools that
+        // read one bundle (net/ca.rs); written before the environment.
+        let bundle = crate::net::ca::bundle_file(kit);
+        if net.extra_ca_certs.as_deref().is_some_and(|v| !v.is_empty()) && bundle.is_file() {
+            for name in crate::net::ca::BUNDLE_VARS {
+                env.set_path(name, bundle.clone());
+                from_settings.push(name);
             }
         }
         if net.allow_lan {
             env.set("ATOLLO_ALLOW_LAN", "1");
+            from_settings.push("ATOLLO_ALLOW_LAN");
+        }
+        // Which of them come from the settings: Atollo started from a kit
+        // console must not take them for the PC's own (Host::capture).
+        if !from_settings.is_empty() {
+            env.set(SETTINGS_VARS, from_settings.join(";"));
         }
         // Claude Code's token saved in the kit (D-115): every program of
         // the kit gets it, terminals and editor too.

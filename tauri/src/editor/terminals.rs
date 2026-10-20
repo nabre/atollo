@@ -99,10 +99,32 @@ fn file(kit: &Kit) -> PathBuf {
     kit.app_dir().join("terminals.json")
 }
 
+/// The terminals with their folders as full paths: a folder inside the kit
+/// is saved relative to it, so it follows the kit when it moves (D-137).
 fn load(kit: &Kit) -> Vec<Terminal> {
-    read_json::<Stored>(&file(kit))
+    let mut all = read_json::<Stored>(&file(kit))
         .unwrap_or_default()
-        .terminals
+        .terminals;
+    for t in &mut all {
+        if let Some(d) = &mut t.dir {
+            if std::path::Path::new(d.as_str()).is_relative() {
+                *d = crate::fsx::join_rel(kit.root(), d).display().to_string();
+            }
+        }
+    }
+    all
+}
+
+/// Writes `all`, a folder inside the kit relative to it.
+fn store(kit: &Kit, mut all: Vec<Terminal>) -> Result<()> {
+    for t in &mut all {
+        if let Some(d) = &mut t.dir {
+            if let Ok(rel) = std::path::Path::new(d.as_str()).strip_prefix(kit.root()) {
+                *d = rel.to_string_lossy().replace('\\', "/");
+            }
+        }
+    }
+    write_json(&file(kit), &Stored { terminals: all })
 }
 
 /// The components a terminal can leave out or include: agents, languages
@@ -303,7 +325,7 @@ pub fn save(kit: &Kit, input: Terminal, lang: &str) -> Result<String> {
         };
         *existing = terminal.clone();
     }
-    write_json(&file(kit), &Stored { terminals: all })?;
+    store(kit, all)?;
     Ok(terminal.id)
 }
 
@@ -315,7 +337,7 @@ pub fn remove(kit: &Kit, id: &str) -> Result<()> {
     let before = all.len();
     all.retain(|t| t.id != id);
     if all.len() != before {
-        write_json(&file(kit), &Stored { terminals: all })?;
+        store(kit, all)?;
     }
     Ok(())
 }

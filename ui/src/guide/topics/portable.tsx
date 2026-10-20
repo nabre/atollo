@@ -296,6 +296,12 @@ export const PORTABLE: TopicTexts = {
               "Die Konfigurationen der Webserver werden bei jedem Start neu erzeugt und verwenden relative Pfade.",
             ),
             tr(
+              "Nel .gitconfig del kit, safe.directory (le cartelle di cui Git si fida) viene riscritto a ogni avvio con la cartella attuale del kit, per esempio D:/Atollo/*.",
+              "In the kit's .gitconfig, safe.directory (the folders Git trusts) is rewritten at every start with the kit's current folder, for example D:/Atollo/*.",
+              "Dans le .gitconfig du kit, safe.directory (les dossiers auxquels Git fait confiance) est réécrit à chaque démarrage avec le dossier actuel du kit, par exemple D:/Atollo/*.",
+              "In der .gitconfig des Kits wird safe.directory (die Ordner, denen Git vertraut) bei jedem Start mit dem aktuellen Ordner des Kits neu geschrieben, zum Beispiel D:/Atollo/*.",
+            ),
+            tr(
               "Accessi, impostazioni, progetti e database sono nella cartella: viaggiano con lei.",
               "Sign-ins, settings, projects and databases are in the folder: they travel with it.",
               "Connexions, paramètres, projets et bases de données sont dans le dossier : ils voyagent avec lui.",
@@ -423,10 +429,10 @@ export const PORTABLE: TopicTexts = {
       <Section title={tr("Aggiornare Atollo", "Updating Atollo", "Mettre à jour Atollo", "Atollo aktualisieren")}>
         <P>
           {tr(
-            "Con «Aggiornamento automatico» attivo (Impostazioni › Generale), venti secondi dopo l'avvio il kit controlla se c'è una nuova versione, la scarica, ne verifica l'impronta e la prepara. Quando chiudi l'app, la nuova versione prende il posto della vecchia; al successivo avvio la vecchia copia viene cancellata.",
-            "With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted.",
-            "Avec « Mise à jour automatique » activée (Paramètres › Général), vingt secondes après le démarrage le kit vérifie s'il y a une nouvelle version, la télécharge, en vérifie l'empreinte et la prépare. Quand vous fermez l'application, la nouvelle version prend la place de l'ancienne ; au démarrage suivant, l'ancienne copie est supprimée.",
-            "Mit aktivem „Automatisches Update“ (Einstellungen › Allgemein) prüft das Kit zwanzig Sekunden nach dem Start, ob es eine neue Version gibt, lädt sie herunter, prüft ihren Hash und bereitet sie vor. Wenn du die App schließt, tritt die neue Version an die Stelle der alten; beim nächsten Start wird die alte Kopie gelöscht.",
+            "Con «Aggiornamento automatico» attivo (Impostazioni › Generale), venti secondi dopo l'avvio il kit controlla se c'è una nuova versione, la scarica, ne verifica l'impronta e la prepara. Quando chiudi l'app, la nuova versione prende il posto della vecchia; al successivo avvio la vecchia copia viene cancellata. L'interruttore vale subito: attivarlo avvia un controllo all'istante, spegnerlo prima dei venti secondi ferma quel controllo.",
+            "With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted. The switch applies at once: turning it on starts a check right away, turning it off before the twenty seconds stops that check.",
+            "Avec « Mise à jour automatique » activée (Paramètres › Général), vingt secondes après le démarrage le kit vérifie s'il y a une nouvelle version, la télécharge, en vérifie l'empreinte et la prépare. Quand vous fermez l'application, la nouvelle version prend la place de l'ancienne ; au démarrage suivant, l'ancienne copie est supprimée. L'interrupteur s'applique tout de suite : l'activer lance aussitôt une vérification, le désactiver avant les vingt secondes annule cette vérification.",
+            "Mit aktivem „Automatisches Update“ (Einstellungen › Allgemein) prüft das Kit zwanzig Sekunden nach dem Start, ob es eine neue Version gibt, lädt sie herunter, prüft ihren Hash und bereitet sie vor. Wenn du die App schließt, tritt die neue Version an die Stelle der alten; beim nächsten Start wird die alte Kopie gelöscht. Der Schalter gilt sofort: Einschalten startet sofort eine Prüfung, Ausschalten vor den zwanzig Sekunden stoppt diese Prüfung.",
           )}
         </P>
         <P>

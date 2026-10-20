@@ -122,7 +122,7 @@ Related topics: [1.2 The first start](#12-the-first-start), [1.3 Getting to know
 > **In short**
 >
 > - Put the Atollo program in an empty folder, where you want to keep the kit, and open it.
-> - The first time, the “Welcome” page appears: choose agents and languages and press “Install”.
+> - The first time, the “Welcome” page appears: choose the language and, if needed, proxy and certificates, then agents and languages, and press “Install”. Nothing is downloaded before “Install”.
 > - The components download in the background from the official sources: you can already use the app while they arrive.
 > - Nothing is final: everything can be added or removed later from the Tools page.
 
@@ -153,11 +153,13 @@ The Settings › “The kit” page shows the disk the kit is on: file system an
 
 At the first start, instead of the usual pages, the “Welcome to Atollo” tab appears. It explains that agents and languages will be downloaded from the official sources, checked and placed in the kit's data folder, with no installation and no administrator rights.
 
+At the top there are two groups of settings, saved by themselves as you change them (as on the Settings page, where you will find them again): “Before you start”, with “Language”, “Theme” and “Automatic update”, and “Network”, with proxy, additional certificates and local network. Fill in “Network” only if your network goes through a proxy or inspects HTTPS traffic: since nothing is downloaded before “Install”, the very first downloads will use them too.
+
 Below is the list of components, split into five groups, with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.
 
 | Group | What it contains | What to choose |
 | --- | --- | --- |
-| Required | The editor, PowerShell 7 (the kit's console) and GitHub CLI. Below, the PC requirements. | They are always installed: the checkboxes are locked. |
+| Required | The editor, PowerShell 7 (the kit's console) and GitHub CLI. Below, the PC requirements. | They are always installed, together with the others, when you press “Install”: the checkboxes are locked. |
 | Agents | Claude Code, Codex and Antigravity. | Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. |
 | Languages | Python, Node.js, PHP, Java, .NET, Go, Ruby and the others that can have several versions, plus the Apache and Caddy web servers. | The ones you use. Others can be added when needed. |
 | Tools | Git, uv, Rust, Android SDK, CMake, C/C++ compiler, pnpm and the like: a single version, always the latest. | Usually nothing: the kit installs them by itself when a project or an agent asks for them. |
@@ -165,9 +167,10 @@ Below is the list of components, split into five groups, with a search box and a
 
 The suggested choice includes the three agents, Python, PHP with Apache and the required components; Git comes along with Claude Code. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
 
-1. Untick what does not interest you and add what you use.
-2. Press “Install” at the bottom. There is no confirmation: the choice is saved and the download starts right away.
-3. The app leaves the “Welcome” page and shows the normal pages. The download continues in the background: you see it in the status bar at the bottom and in the “Activity” panel.
+1. In “Before you start” choose the language and, if you like, the theme; if you are behind a company proxy, also fill in “Network”.
+2. Untick what does not interest you and add what you use.
+3. Press “Install” at the bottom. There is no confirmation: the choice is saved and the download starts right away.
+4. The app leaves the “Welcome” page and shows the normal pages. The download continues in the background: you see it in the status bar at the bottom and in the “Activity” panel.
 
 > [!TIP]
 > **Tip**
@@ -194,7 +197,7 @@ The details on sources and checks are in [8.4 Where the tools come from](#84-whe
 <summary>Under the hood</summary>
 
 - The choice of components is saved in `data\app\components.txt`, one line per component (id=1 chosen, id=0 not).
-- At every start the kit checks that the required components are there and reinstalls them by itself if they are missing, without asking.
+- At the first start nothing is downloaded, not even the required components, until you press “Install”: this way the proxy and certificates chosen on the page already apply to the first downloads. From the following starts the kit checks that the required components are there and reinstalls them by itself if they are missing, without asking.
 - If the first start is interrupted, the “Welcome” page does not come back on reopening if the choice has already been saved: you pick up from Tools, where the rows not downloaded show the state “not present” or “error”.
 
 </details>
@@ -252,7 +255,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 
 **Guide** — This guide. Every page also has a book-shaped icon that opens the right topic. [How it works](#11-welcome-to-atollo)
 
-**Settings** — Language, network, GitHub account, Gemini key, updates and framework instructions. [How it works](#62-the-settings-one-by-one)
+**Settings** — Language, theme, network, GitHub account and who signs the commits, Gemini key, updates, privacy and framework instructions, saved by themselves. [How it works](#62-the-settings-one-by-one)
 
 **Remove drive** — Closes everything the kit has opened, before you unplug the USB stick. [How it works](#71-safely-removing-the-drive)
 
@@ -278,7 +281,7 @@ In the “Activity” panel you select each item to see its details: for a proje
 | <kbd>Esc</kbd> | Closes confirmation dialogs and image zoom. |
 
 - Hover the mouse over icons, dots and tags: almost everything has a tooltip that explains what it is or what it does.
-- The light or dark theme follows the operating system's. The language is changed in Settings › General › “Language”.
+- The language and the theme are changed in Settings › General › “Language” and “Theme”: by default the light or dark theme follows the operating system's, and it applies to the editor and the terminals too.
 - The book-shaped icon in the sidebar of every page opens the guide topic that explains it.
 
 Related topics: [2.2 The Projects page and the “Quick panel”](#22-the-projects-page-and-the-quick-panel), [8.3 Background processes](#83-background-processes), [1.4 The first project, step by step](#14-the-first-project-step-by-step)
@@ -718,7 +721,7 @@ The kit's editor is VSCodium, the free version of Visual Studio Code. The “Edi
 > [!NOTE]
 > **Good to know**
 >
-> After changing the Settings (for example the proxy) the app suggests “Restart the editor”, so that the editor's terminals use the new values.
+> If, with the editor open, you change the language, the network (for example the proxy) or the programs' temporary files in Settings, the app suggests “Restart the editor”, so that the editor's terminals use the new values.
 
 #### The project terminal
 
@@ -784,7 +787,7 @@ Related topics: [3.4 The kit's terminals](#34-the-kits-terminals), [4.2 Shared i
 > [!WARNING]
 > **Before the first commit**
 >
-> The kit does not set your name and email for commits. Once only, in a kit terminal, type: git config --global user.name "Jane Doe" and git config --global user.email "you@example.com". They are saved in the kit's .gitconfig file and follow you on every PC.
+> Git needs a name and an email for commits. If the kit is signed in to GitHub it takes them from the account (with GitHub's noreply address); otherwise type them in Settings › “GitHub account” › “Who signs the commits”. They are saved in the kit's .gitconfig file and follow you on every PC.
 
 <details>
 <summary>Under the hood</summary>
@@ -1555,7 +1558,8 @@ In the tab's “Versions” section (or under the row, in the table) there is a 
 - Composer follows PHP: there is one copy for each PHP version, compatible with it; it is installed, updated and removed with PHP.
 - Maven and Gradle follow Java and appear as labels on the version's row.
 - MySQL and MongoDB: each version has its own data and its own port; see the Databases page.
-- In Settings › “Versions” you choose which version of Python and PHP to install when the component is installed or updated, and the Rust compiler: this does not change the version used by the kit.
+- Python and PHP: a new installation takes the newest line; the other lines are downloaded from this menu and each project chooses its own. Settings no longer has a version choice (the pythonVersion and phpVersion values of an older settings.json are ignored).
+- Rust, only on Windows: on its page, “Details” section, “Rust compiler” chooses GNU (default, all in the kit) or MSVC, which requires Visual Studio Build Tools on the PC. It applies from the next install or update of Rust. On macOS and Linux Rust has a single compiler and the setting does not appear.
 
 <details>
 <summary>Under the hood</summary>
@@ -1628,6 +1632,7 @@ Related topics: [5.1 The Tools page](#51-the-tools-page), [2.4 Components and ve
 > - You do it in Settings › “GitHub account” with “Sign in to GitHub” and a code to type in the browser.
 > - Without an account the kit works all the same: you clone public repositories and work locally.
 > - The sign-in stays in the kit: on another PC you are already signed in.
+> - With the sign-in, the commits' name and email are filled from the account, with GitHub's noreply address; you change them in “Who signs the commits”.
 
 #### What it unlocks
 
@@ -1664,7 +1669,13 @@ The normal sign-in does not include the permission to delete repositories. The f
 
 #### Your name in commits
 
-The sign-in is for reading and writing on GitHub; it does not tell Git who signs the commits. Set your name and email once, in a kit terminal:
+In Settings › “GitHub account”, below the account, “Who signs the commits” has two fields, “Name” and “Email”: they are the name and email of the commits made with the kit's Git. Each one is saved when the field loses focus.
+
+- If both are empty and the kit is signed in to GitHub, Atollo fills them by itself, at sign-in and at every start: the account's name (or login) and GitHub's private address, id+login@users.noreply.github.com. That way your real email stays private.
+- You can type another name and email whenever you like. If you empty both, they are removed; at the next start, if the kit is still signed in to GitHub, the account's come back.
+- A value that is not valid shows “Invalid name.” or “Invalid email address.”. If Git is not in the kit yet, “Git is not in the kit yet: it is installed with GitHub CLI.” appears.
+
+They are Git's user.name and user.email values: in a kit terminal git config --global works too.
 
 **Name and email for commits**
 
@@ -1673,14 +1684,15 @@ git config --global user.name "Nome Cognome"
 git config --global user.email "tu@esempio.it"
 ```
 
-To keep your email private you can use the noreply address GitHub gives you (you find it in the Email settings of your account).
-
 <details>
 <summary>Under the hood</summary>
 
 - The sign-in runs gh auth login --web --insecure-storage --scopes workflow: besides the standard GitHub CLI permissions (repo, read:org, gist) it asks for workflow; delete_repo only with “Grant the permission”.
 - The token is in `data\gh\hosts.yml` (GH_CONFIG_DIR points there), never in the Windows Credential Manager.
 - Git uses the same account through a credential helper (gh auth git-credential) written in the file `data\home\.gitconfig` for github.com and gist.github.com, without absolute paths: it survives moving the kit. At every start the kit aligns it with the state of gh; a helper you wrote yourself for those addresses stays as it is.
+- “Who signs the commits” reads and writes git config --global user.name and user.email, that is the kit's `data\home\.gitconfig` file. Filling them from the account takes one gh api user call.
+- Git trusts only the repositories in the kit's folder: the kit's .gitconfig has safe.directory = \<kit folder\>/\* (for example D:/Atollo/\*), rewritten at every start so it follows the kit when it changes folder; values you added stay. Before it was safe.directory = \*, that is every repository on the PC, even other users'.
+- For a repository outside the kit that belongs to another user, Git again warns about “dubious ownership”. If you trust it, in a kit terminal: git config --global --add safe.directory \<folder\>.
 - To clone a private repository the token is passed to Git only for that operation, never on the command line nor in the `.git\config` file.
 - For downloads the kit first uses the PC's GITHUB_TOKEN or GH_TOKEN, if present, then the kit's account. The API responses are kept in `data\cache\github`.
 - The editor's “Accounts” menu does not see the kit's account; push and pull in the editor work anyway, through Git.
@@ -1691,25 +1703,33 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.6 A project
 
 ### 6.2 The Settings, one by one
 
-*Language, temporary files, automatic updates, Gemini key, versions to install and the information about the kit.*
+*Automatic saving, language, temporary files, automatic updates, Gemini key, versions to install, privacy and the information about the kit.*
 
 > **In short**
 >
-> - Settings has seven sections in the sidebar and, below them, the framework instructions.
-> - Changes are saved with “Save” on the tab bar.
+> - Settings has seven sections in the sidebar (General, Network, Agents, Updates, GitHub account, Privacy, The kit) and, below them, the framework instructions.
+> - There is no “Save” button: every change saves itself half a second later, and the tab bar shows “Saving…” and then “Saved.”.
 > - They apply at once to the app, the consoles and the agents; to the editor's terminals after “Restart the editor”.
 
 ![The Settings page](../../ui/public/guide/en/settings.webp)
 
-*The sections on the left, the framework instructions below them; “Save” on the tab bar.*
+*The sections on the left, the framework instructions below them; the saving status on the tab bar.*
+
+#### How changes are saved
+
+- Every change is saved and applied by itself, about half a second after the last keystroke: the tab bar shows “Saving…”, then “Saved.”.
+- If a value is not valid (for example a PEM file that does not exist), its error appears and the value stays on screen: the kit tries again at the next change.
+- The framework instructions save themselves too, a little under a second after the last edit.
+- If the editor is open and you change the language, the network or the programs' temporary files, “Restart the editor so that its terminals use the new settings.” appears: the other settings do not need it. The theme reaches the editor and its terminals at once.
 
 #### General
 
 | Setting | What it does |
 | --- | --- |
-| Language | The language of Atollo: the system's (“Windows language”), Italian, English, French or German. It changes at once. |
+| Language | The language of Atollo: the system's (“System language”), Italian, English, French or German. It changes at once. |
+| Theme | Light or dark: “Same as the system” (the default), “Light” or “Dark”. It applies at once to every window: Atollo, the integrated editor and its terminals, without restarting the editor. |
 | Temporary files of programs | Where the kit's programs put their temporary files. “Automatic” uses the system's temporary folder if the kit is on a USB stick, a network drive or a FAT32/exFAT drive, otherwise `data\tmp`. “In the kit” always `data\tmp`; “In the system” always the system's folder (the files stay on the PC until you close the app). |
-| Automatic update | “Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default. |
+| Automatic update | “Download new versions of Atollo automatically”: the new version replaces the current one when you close the app. On by default. It applies at once: turning it on starts a check right away; turning it off before the check 20 seconds after start stops that check. |
 | Packages to reinstall without the network | Only on macOS and Linux: keeps in the kit the packages of the components that must be reinstalled when the kit changes folder (R, Ruby, MongoDB, SQLite, make), so the network is not needed. “Free” deletes them. |
 
 > [!TIP]
@@ -1717,26 +1737,18 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.6 A project
 >
 > Programs constantly write and delete temporary files: on a USB stick this slows everything down and wears it out. On the PC's disk they are much faster, and the kit deletes them when you close the app.
 
+> [!NOTE]
+> **Versions and Rust compiler**
+>
+> Settings no longer chooses the Python and PHP versions: a new installation takes the newest line, the other lines are downloaded from each tool's versions menu in Tools, and each project chooses its own ([5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool)). The pythonVersion and phpVersion values of an older settings.json are ignored. The “Rust compiler” is on Rust's page in Tools, “Details” section.
+
 #### Network
 
 Proxy, additional certificates and local network: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network).
 
 #### Agents
 
-“Gemini API key (Antigravity without a Google account)”: paste the key and press “Save”. The field then shows “saved: type to replace it” and the key is no longer shown; “Remove the key” deletes it at the next save. Antigravity will show “signed in with an API key”. The key is saved in plain text in `data\app\settings.json` and passed to the kit's programs as GEMINI_API_KEY.
-
-#### Versions
-
-| Setting | What it does |
-| --- | --- |
-| Python | The Python version to install (for example 3.13). Empty: the latest. |
-| PHP | The PHP version to install (for example 8.4). Empty: the latest. |
-| Rust compiler | GNU (all in the kit, the default choice) or MSVC, which requires Visual Studio Build Tools installed on the PC. |
-
-> [!NOTE]
-> **Good to know**
->
-> They apply from the next installation or update in Tools. They do not choose the version the kit uses (always the latest on disk): to keep several versions see [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool).
+“Gemini API key (Antigravity without a Google account)”: paste the key and move on (a click outside the field, or Tab). The key is saved when the field loses focus, then the field empties and shows “saved: type to replace it”: the key is no longer shown. “Remove the key” deletes it at once. Antigravity will show “signed in with an API key”. The key is saved on its own, in `data\app\secrets\gemini-api-key`, readable by your user only where the disk has permissions, and passed to the kit's programs as GEMINI_API_KEY.
 
 #### Updates
 
@@ -1745,6 +1757,14 @@ The state of Atollo's updates and the “Check for updates” button: [7.3 Updat
 #### GitHub account
 
 The GitHub sign-in for the whole kit: [6.1 The kit's GitHub account](#61-the-kits-github-account).
+
+Below the account, “Who signs the commits” has the “Name” and “Email” fields of the commits made with the kit's Git; each one is saved when the field loses focus.
+
+#### Privacy
+
+“What Atollo does with your data”, in short: no telemetry and no account; settings, keys and sign-ins stay in the kit's folder. Atollo contacts GitHub for its own updates (if automatic updates are on), the official sources of languages and tools when you install or update them and, once a day, to read the available versions (ATOLLO_NO_UPDATE turns this off too), and Open VSX for the editor's extensions. Agents, GitHub and package registries talk directly to their own services, under their own rules.
+
+“Read the privacy policy” opens the full policy in the browser (docs/PRIVACY.md on GitHub), in the app's language.
 
 #### The kit
 
@@ -1757,8 +1777,9 @@ The instructions of “New project”: [6.4 The framework instructions](#64-the-
 <details>
 <summary>Under the hood</summary>
 
-- The settings are in `data\app\settings.json`. Every save checks the values, writes the file safely (first a copy, then the replacement) and rebuilds the kit's environment.
-- If the file cannot be read, the app uses the default values and does not overwrite it: “The settings in … cannot be read: using the defaults and leaving the file as it is.”
+- The settings are in `data\app\settings.json`. Every save reads the file again, checks the values, writes it safely (first a copy, then the replacement) and rebuilds the kit's environment. Saves go through one at a time, always with the latest values.
+- The theme is the theme entry of settings.json. Atollo passes it to the windows (Tauri set_theme): their pages see it as prefers-color-scheme. The integrated editor follows it thanks to window.autoDetectColorScheme, and the terminals with it.
+- If the file cannot be read, the app uses the default values and rewrites it at the first change: “The settings in … cannot be read: using the defaults. The file will be rewritten at the first change.” Entries written by a newer version of Atollo, which this one does not know, stay in the file.
 - The Settings search box also searches the framework bases and additions.
 
 </details>
@@ -1788,12 +1809,12 @@ If everything downloads at home but at the office downloads fail with connection
 | No proxy for | `localhost,127.0.0.1,.azienda.it` | Addresses to reach directly, separated by commas. |
 | Additional certificates (PEM file) | `E:\certificati\azienda.pem` | The company's certificate, for programs like Node.js that do not use the system's ones. |
 
-1. Open Settings › “Network” and fill in the fields you need.
-2. Press “Save”. If the editor is open, also press “Restart the editor”.
+1. Open Settings › “Network” (at the first start, the “Network” group of the “Welcome to Atollo” page) and fill in the fields you need.
+2. There is nothing to press: the values save themselves as you type. If the editor is open, press “Restart the editor” in the notice that appears.
 3. Go back to Tools and retry the download that was failing.
 
 - The proxy must start with http:// or https:// and have no spaces; if a user is needed: http://user:password@host:port.
-- The PEM file must exist: the kit checks the path when you save.
+- The PEM file must exist: the kit checks the path at every save. As long as the value is not valid its error appears and the field is not saved; the kit tries again at the next change.
 
 #### Local network
 
@@ -1807,8 +1828,8 @@ The “Let other PCs on the network reach the project servers” checkbox opens 
 <details>
 <summary>Under the hood</summary>
 
-- The values end up in the HTTPS_PROXY, HTTP_PROXY, NO_PROXY and NODE_EXTRA_CA_CERTS variables of all the kit's programs.
-- Atollo's downloads use the “HTTPS proxy” (or, if empty, the PC's variables or the system proxy) and the system's certificates: that is why company HTTPS inspection already works, if the company certificate is installed on the PC. The PEM file is for Node.js and the tools that read NODE_EXTRA_CA_CERTS.
+- The values end up in the HTTPS_PROXY, HTTP_PROXY, NO_PROXY and NODE_EXTRA_CA_CERTS variables of all the kit's programs. With a PEM file, `data\app\ca-bundle.pem` joins the system's certificates and its own, for the tools that read a single file (SSL_CERT_FILE, REQUESTS_CA_BUNDLE, PIP_CERT, CURL_CA_BUNDLE, GIT_SSL_CAINFO, CARGO_HTTP_CAINFO). A PEM file inside the kit is saved relative to the kit: it follows it to another drive or folder.
+- Atollo's own downloads use these settings too: the “HTTPS proxy” (if empty the “HTTP proxy”, otherwise the PC's variables or the system proxy), the “No proxy for” hosts reached directly, and the system's certificates plus those of the PEM file. If the company certificate is already installed on the PC, the PEM file is not needed. A file with no PEM certificate is refused.
 - PAC files (automatic proxy configuration) are not supported: ask for the proxy address.
 - “Local network” sets ATOLLO_ALLOW_LAN=1: the projects' commands listen on all interfaces, and so do the file server and the Caddy and Apache pools.
 
@@ -1853,12 +1874,12 @@ The tree has the “Bases”, divided by group, and under each base the addition
 An addition also has the “Group” (two additions of the same group do not go together), “Use it also with” for the compatible bases and, for each base, the commands to add or “Create the project instead of the base”.
 
 1. Choose a base or an addition in the tree and edit the fields.
-2. Press “Save” on the tab bar. A changed official recipe shows “Modified”.
+2. The instructions save themselves a little under a second after the last edit: the tab bar shows “Saving…”, then “Saved.”. A changed official recipe shows “Modified”.
 3. To go back to the original version use “Restore the official instructions”; a recipe of your own is removed with “Remove”.
 
 #### Try a combination
 
-Choose a base and some additions: the tab shows the complete plan the wizard would run (tools, commands, database, .env, actions), with the instructions as they are now, even if you have not saved them yet. It runs nothing.
+Choose a base and some additions: the tab shows the complete plan the wizard would run (tools, commands, database, .env, actions), with the instructions as they are now, even if the last edit is not saved yet. It runs nothing.
 
 <details>
 <summary>Under the hood</summary>
@@ -1944,6 +1965,7 @@ On another PC the USB stick might become E: instead of D:. You do not have to do
 - The programs' environment (PATH and variables) is rebuilt at every start from the current folder.
 - The paths written in the agents' and the editor's files are rewritten with the new path.
 - The web servers' configurations are regenerated at every start and use relative paths.
+- In the kit's .gitconfig, safe.directory (the folders Git trusts) is rewritten at every start with the kit's current folder, for example D:/Atollo/\*.
 - Sign-ins, settings, projects and databases are in the folder: they travel with it.
 
 > [!NOTE]
@@ -1988,7 +2010,7 @@ Related topics: [7.1 Safely removing the drive](#71-safely-removing-the-drive), 
 
 #### Updating Atollo
 
-With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted.
+With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted. The switch applies at once: turning it on starts a check right away, turning it off before the twenty seconds stops that check.
 
 In Settings › “Updates” you see the state (“Atollo … is the latest version.”, “Version … is ready: it replaces this one when Atollo closes.”) and the “Check for updates” button, which checks and downloads right away even with automatic update off.
 
@@ -2179,9 +2201,9 @@ Related topics: [8.1 Portable and isolated: what it means](#81-portable-and-isol
 5. **Background** — Starts what is marked “Start with Atollo”, syncs the agents, checks for updates.
 
 - Database servers and web server profiles with “Start with Atollo” start right after opening.
-- Missing required components and those to reinstall are installed automatically.
+- Missing required components and those to reinstall are installed automatically; not at the first start: there everything is downloaded only with “Install” on the “Welcome” page.
 - The agents' instructions, skills and MCP servers are synced; if the kit has been moved, the paths are updated.
-- After 20 seconds, if turned on, the check for Atollo updates.
+- After 20 seconds, if turned on, the check for Atollo updates (turning “Automatic update” off before then stops it).
 
 > [!NOTE]
 > **Good to know**
@@ -2292,7 +2314,7 @@ For each component: where the kit reads the versions from, where it downloads th
 | [↳ Part: Visual C++ Runtime](https://learn.microsoft.com) | Extracted from CAB `vcRuntimeMinimum_amd64\cab1.cab` if missing | aka.ms/vc14/vc_redist.x64.exe<br>Windows only | Authenticode + SHA — Authenticode signature O=Microsoft Corporation on exe and vcruntime140.dll | `tools\vcruntime\ (copied into PHP, Apache, MongoDB)` |
 | [Apache httpd](https://httpd.apache.org) | apachelounge.com/download/ (version and checksum scraping) | apachelounge.com/download/VS\<nn\>/binaries/httpd-\<v\>-Win64-VS\<nn\>.zip<br>macOS and Linux: not offered yet; the installer of the kit's build (httpd-v\<v\>, php-fpm) waits for the first release pinned in the catalog (D-116) | SHA-256 — SHA-256 from \<url\>.txt (SHA256-Checksum for:) | `apache\<line>\bin\httpd.exe` |
 | [Caddy](https://caddyserver.com) | api.github.com/repos/caddyserver/caddy/releases?per_page=100 | caddy_\<v\>_windows_amd64.zip asset from the official GitHub release | SHA-256 — GitHub Release asset.digest (from 2.10.1), otherwise SHA-512 from caddy_\<v\>_checksums.txt | `caddy\<line>\caddy.exe` |
-| [Rust (rustup, cargo, clippy)](https://www.rust-lang.org) | static.rust-lang.org/dist/channel-rust-stable.toml (\[pkg.rustc\]) | static.rust-lang.org/rustup/dist/\<triple\>/rustup-init.exe<br>Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Settings; macOS and Linux: rustup with the native host | SHA-256 — SHA-256 from \<url\>.sha256 | `rust\cargo\bin\rustc.exe and rustup.exe` |
+| [Rust (rustup, cargo, clippy)](https://www.rust-lang.org) | static.rust-lang.org/dist/channel-rust-stable.toml (\[pkg.rustc\]) | static.rust-lang.org/rustup/dist/\<triple\>/rustup-init.exe<br>Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Rust's page in Tools; macOS and Linux: rustup with the native host | SHA-256 — SHA-256 from \<url\>.sha256 | `rust\cargo\bin\rustc.exe and rustup.exe` |
 | [Go SDK](https://go.dev) | go.dev/dl/?mode=json (&include=all) | go.dev/dl/go\<v\>.windows-(amd64\|arm64).zip | SHA-256 — SHA-256 from the sha256 field of the official JSON | `go\<line>\bin\go.exe` |
 | [Java JDK (Eclipse Temurin)](https://adoptium.net) | api.adoptium.net/v3/info/available_releases + /v3/assets/latest/\<major\>/hotspot | .zip package returned by the Adoptium API | SHA-256 — SHA-256 from binary.package.checksum | `java\<line>\bin\java.exe` |
 | [↳ Part: Apache Maven](https://maven.apache.org) | repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml | apache-maven-\<v\>-bin.zip | SHA-512 — SHA-512 from \<url\>.sha512 | `maven\bin\mvn.cmd` |
@@ -2500,7 +2522,7 @@ Learn more: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-cla
 
 **Git says “Please tell me who you are” at the first commit.**
 
-Set your name and email with git config --global user.name and user.email in a kit terminal.
+Type your name and email in Settings › “GitHub account” › “Who signs the commits”, or sign in to GitHub: if they are empty, the account fills them. In a kit terminal git config --global user.name and user.email work too.
 
 Learn more: [6.1 The kit's GitHub account](#61-the-kits-github-account)
 
@@ -2563,7 +2585,7 @@ Atollo is free and open source (MIT license), like the components it downloads. 
 
 **Does my code go anywhere?**
 
-The kit sends nothing: no telemetry, and the tools have telemetry turned off. When you use an AI agent, however, the code you have it read is sent to the model's provider (Anthropic, OpenAI, Google), under its terms.
+The kit sends nothing: no telemetry, and the tools have telemetry turned off. When you use an AI agent, however, the code you have it read is sent to the model's provider (Anthropic, OpenAI, Google), under its terms. The summary is in Settings › “Privacy”, with the link “Read the privacy policy”.
 
 **How do I uninstall Atollo?**
 

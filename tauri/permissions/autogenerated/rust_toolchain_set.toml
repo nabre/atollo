@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-rust-toolchain-set"
+description = "Enables the rust_toolchain_set command without any pre-configured scope."
+commands.allow = ["rust_toolchain_set"]
+
+[[permission]]
+identifier = "deny-rust-toolchain-set"
+description = "Denies the rust_toolchain_set command without any pre-configured scope."
+commands.deny = ["rust_toolchain_set"]

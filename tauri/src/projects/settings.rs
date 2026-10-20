@@ -69,12 +69,18 @@ pub fn load(kit: &Kit, project: &str) -> ProjectSettings {
         .unwrap_or_default()
 }
 
-/// Changes the settings of `project` and saves them; a failure only goes to
-/// the log (the settings help, they never stop an action).
+/// Changes the settings of `project` and saves them, one change at a time
+/// (pinning, the agent opened, extensions and versions can come together);
+/// a failure only goes to the log (the settings help, they never stop an
+/// action).
 pub fn update(kit: &Kit, project: &str, change: impl FnOnce(&mut ProjectSettings)) {
+    static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let Some(state) = ProjectState::of(kit, project) else {
         return;
     };
+    let _one = ONE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut s = load(kit, project);
     change(&mut s);
     if let Err(e) = crate::fsx::write_json(&state.settings_file(), &s) {

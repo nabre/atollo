@@ -450,6 +450,10 @@ fn venv_files(venv: &Path) -> Vec<PathBuf> {
 fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     let data = kit.data();
     let mut out = vec![
+        // The app's own: the PEM file of the settings written before it was
+        // saved relative to the kit, the terminals' folders (D-137).
+        kit.settings_file(),
+        kit.app_dir().join("terminals.json"),
         p.claude.join("settings.json"),
         p.mcp_file(),
         p.codex.join("config.toml"),

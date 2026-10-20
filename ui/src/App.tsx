@@ -176,7 +176,7 @@ export function App() {
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {info?.firstRun ? (
-            <ComponentsPage setup={setup} onDone={loadInfo} />
+            <ComponentsPage setup={setup} onDone={loadInfo} platform={info.platform} onSettings={loadInfo} />
           ) : page === "projects" ? (
             <ProjectsPage
               tabs={projectTabs}

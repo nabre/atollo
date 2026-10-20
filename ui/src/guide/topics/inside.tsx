@@ -847,10 +847,10 @@ export const INSIDE: TopicTexts = {
               "Datenbankserver und Webserver-Profile mit „Mit Atollo starten“ starten direkt nach dem Öffnen.",
             ),
             tr(
-              "I componenti obbligatori mancanti e quelli da reinstallare vengono installati da soli.",
-              "Missing required components and those to reinstall are installed automatically.",
-              "Les composants obligatoires manquants et ceux à réinstaller sont installés automatiquement.",
-              "Fehlende Pflichtkomponenten und solche, die neu installiert werden müssen, werden automatisch installiert.",
+              "I componenti obbligatori mancanti e quelli da reinstallare vengono installati da soli; al primo avvio no: lì si scarica tutto solo con «Installa» della pagina «Benvenuto».",
+              "Missing required components and those to reinstall are installed automatically; not at the first start: there everything is downloaded only with “Install” on the “Welcome” page.",
+              "Les composants obligatoires manquants et ceux à réinstaller sont installés automatiquement ; pas au premier lancement : là, tout n'est téléchargé qu'avec « Installer » de la page « Bienvenue ».",
+              "Fehlende Pflichtkomponenten und solche, die neu installiert werden müssen, werden automatisch installiert; beim ersten Start nicht: Dort wird alles erst mit „Installieren“ auf der Seite „Willkommen“ heruntergeladen.",
             ),
             tr(
               "Istruzioni, skill e server MCP degli agenti vengono allineati; se il kit è stato spostato, i percorsi vengono aggiornati.",
@@ -859,10 +859,10 @@ export const INSIDE: TopicTexts = {
               "Anweisungen, Skills und MCP-Server der Agenten werden abgeglichen; wenn das Kit verschoben wurde, werden die Pfade aktualisiert.",
             ),
             tr(
-              "Dopo 20 secondi, se attivo, il controllo degli aggiornamenti di Atollo.",
-              "After 20 seconds, if turned on, the check for Atollo updates.",
-              "Après 20 secondes, si elle est activée, la vérification des mises à jour d'Atollo.",
-              "Nach 20 Sekunden, falls aktiviert, die Prüfung auf Updates von Atollo.",
+              "Dopo 20 secondi, se attivo, il controllo degli aggiornamenti di Atollo (spegnere «Aggiornamento automatico» prima lo ferma).",
+              "After 20 seconds, if turned on, the check for Atollo updates (turning “Automatic update” off before then stops it).",
+              "Après 20 secondes, si elle est activée, la vérification des mises à jour d'Atollo (désactiver « Mise à jour automatique » avant l'annule).",
+              "Nach 20 Sekunden, falls aktiviert, die Prüfung auf Updates von Atollo (wenn du „Automatisches Update“ vorher ausschaltest, wird sie gestoppt).",
             ),
           ]}
         />

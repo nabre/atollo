@@ -369,6 +369,26 @@
     "fr": "Fichier de certificats introuvable : {0}",
     "de": "Zertifikatsdatei nicht gefunden: {0}"
   },
+  "Nome non valido.": {
+    "en": "Invalid name.",
+    "fr": "Nom non valide.",
+    "de": "Ungültiger Name."
+  },
+  "Indirizzo e-mail non valido.": {
+    "en": "Invalid email address.",
+    "fr": "Adresse e-mail non valide.",
+    "de": "Ungültige E-Mail-Adresse."
+  },
+  "Git non è nel kit.": {
+    "en": "Git is not in the kit.",
+    "fr": "Git n'est pas dans le kit.",
+    "de": "Git ist nicht im Kit."
+  },
+  "Nessun certificato PEM nel file: {0}": {
+    "en": "No PEM certificate in the file: {0}",
+    "fr": "Aucun certificat PEM dans le fichier : {0}",
+    "de": "Kein PEM-Zertifikat in der Datei: {0}"
+  },
   "Versione non valida: {0}": {
     "en": "Invalid version: {0}",
     "fr": "Version non valide : {0}",

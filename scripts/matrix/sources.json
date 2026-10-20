@@ -12,7 +12,7 @@
     "php": { "windows": "windows.php.net Thread Safe x64 + local VC++", "unix": "static-php-cli bulk (cli + fpm), 8.4 and 8.5 pinned in sha256ByFile" },
     "apache": { "windows": "Apache Lounge 2.4 (PHP module)", "unix": "the kit's own build httpd-v<v> (php-fpm), SHA-256 pinned in sha256ByLine" },
     "caddy": { "windows": "GitHub caddyserver/caddy", "unix": "GitHub caddyserver/caddy" },
-    "rust": { "windows": "rustup: gnu host on x64, gnullvm on ARM64 (the C/C++ linker), msvc from Settings", "unix": "rustup, native host" },
+    "rust": { "windows": "rustup: gnu host on x64, gnullvm on ARM64 (the C/C++ linker), msvc from Rust's page in Tools", "unix": "rustup, native host" },
     "go": { "windows": "go.dev", "unix": "go.dev" },
     "java": { "windows": "Adoptium Temurin + Maven + Gradle", "unix": "Adoptium Temurin + Maven + Gradle" },
     "kotlin": { "windows": "GitHub JetBrains/kotlin", "unix": "GitHub JetBrains/kotlin" },
