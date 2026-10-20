@@ -169,18 +169,6 @@ pub(super) fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<
     }
 }
 
-/// `dir` holds a `.caddy` file: only then is it imported (`import` of a
-/// pattern that matches nothing stops Caddy).
-pub(super) fn has_caddy_snippets(dir: &Path) -> bool {
-    fs::read_dir(dir).is_ok_and(|entries| {
-        entries.flatten().any(|e| {
-            e.path()
-                .extension()
-                .is_some_and(|x| x.eq_ignore_ascii_case("caddy"))
-        })
-    })
-}
-
 /// The site block of `site` in a Caddy pool on `port`: its own name and
 /// its domains, the document root `doc_root`, its checked aliases, PHP
 /// when the pool has it, the `*.caddy` of `conf_d` (the project's own
@@ -321,7 +309,7 @@ impl WebServers {
                     let conf_d = caddy::dir(&self.kit, &site.project)
                         .ok()
                         .map(|d| d.join("conf.d"))
-                        .filter(|d| has_caddy_snippets(d));
+                        .filter(|d| caddy::has_snippets(d));
                     sites.extend(caddy_site_conf(
                         pool.port,
                         lan,
@@ -332,7 +320,7 @@ impl WebServers {
                         conf_d.as_deref(),
                     ));
                 }
-                let user_snippets = has_caddy_snippets(&conf_d_dir);
+                let user_snippets = caddy::has_snippets(&conf_d_dir);
                 let main_conf =
                     caddy::pool_conf(&pool_dir, pool.port, admin, lan, &sites, user_snippets)?;
                 let conf_path = pool_dir.join("Caddyfile");
