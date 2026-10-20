@@ -142,7 +142,11 @@ describe("theme-sizes.css", () => {
       ),
     );
     expect(sizes.get("--vsc-size-statusbar")).toBe(referenceValue(".monaco-workbench .part.statusbar", "height"));
-    expect(sizes.get("--vsc-size-dialog")).toBe(referenceValue(".monaco-dialog-box", "min-width"));
+    // The dialog box of the modern UI, 480px in the classic one.
+    expect(sizes.get("--vsc-size-dialog")).toBe(
+      referenceValue(".modern-ui-notifications-dialogs .monaco-dialog-box", "min-width"),
+    );
+    expect(referenceValue(".monaco-dialog-box", "min-width")).toBe("480px");
     const label = ".monaco-workbench .part.statusbar>.items-container>.statusbar-item>.statusbar-item-label";
     expect(sizes.get("--vsc-size-statusbar-item-margin")).toBe(referenceValue(label, "margin-left"));
     expect(sizes.get("--vsc-size-statusbar-item-padding")).toBe(referenceValue(label, "padding").replace(/^0 /, ""));
@@ -159,12 +163,54 @@ describe("theme-sizes.css", () => {
     expect(sizes.get("--vsc-size-extension-icon")).toBe(
       referenceValue(".extension-editor>.header>.icon-container .extension-icon .icon", "width"),
     );
+    // Its header's text, the name's line and the space beside a fact's bar.
+    expect(sizes.get("--vsc-size-extension-header")).toBe(referenceValue(".extension-editor>.header", "font-size"));
+    expect(sizes.get("--vsc-size-extension-name")).toBe(
+      referenceValue(".extension-editor>.header>.details>.title>.name", "line-height"),
+    );
+    const fact = ".extension-editor>.header>.details>.subtitle>.subtitle-entry:not(:empty):not(.last-non-empty)";
+    expect(sizes.get("--vsc-size-extension-fact")).toBe(referenceValue(fact, "margin-right"));
+    expect(sizes.get("--vsc-size-extension-fact")).toBe(referenceValue(fact, "padding-right"));
+    // The activity bar's badge, 3px from the right: two spacing tokens
+    // (App.tsx), no token of its own.
+    const badge =
+      ".modern-ui.monaco-workbench .activitybar>.content :not(.monaco-menu)>.monaco-action-bar .badge .badge-content";
+    const px = (name: string) => parseFloat(sizes.get(name) ?? "");
+    expect(`${String(px("--vscode-spacing-size20") + px("--vscode-strokeThickness"))}px`).toBe(
+      referenceValue(badge, "right"),
+    );
     const modified =
       ".settings-editor>.settings-body .settings-tree-container .setting-item-contents.is-configured .setting-item-modified-indicator";
     for (const side of ["left", "top", "bottom"]) {
       expect(sizes.get(`--vsc-size-modified-${side}`)).toBe(referenceValue(modified, side));
     }
     expect(referenceValue(modified, "border-left-width")).toBe(sizes.get("--vscode-spacing-size20"));
+  });
+});
+
+describe("theme-colors.css", () => {
+  const tokens = declared(tokensCss);
+
+  it("aliases the keys VSCodium's rules read", () => {
+    // A focused row that is selected; the navigation bar of an extension.
+    expect(tokens.get("--vsc-list-focus-selected")).toBe("var(--vscode-list-focusAndSelectionOutline)");
+    expect(tokens.get("--vsc-panel-section-border")).toBe("var(--vscode-panelSection-border)");
+    expect(referenceValue(".extension-editor>.body>.navbar", "border-bottom")).toBe(
+      "1px solid var(--vscode-panelSection-border)",
+    );
+    // Both in the brand's emphasis, as the focus outline.
+    for (const values of Object.values(themes)) {
+      expect(values.get("--vscode-list-focusAndSelectionOutline")).toBe(values.get("--vscode-list-focusOutline"));
+    }
+  });
+
+  it("has no token of the classic UI's parts the app no longer draws", () => {
+    // The classic UI's: the title bar's border and the activity bar's mark
+    // (the modern UI drops both), the editor tabs' colors (pills on the
+    // list's colors now).
+    for (const name of ["titlebar-border", "activitybar-border", "tab-active-fg", "tab-inactive-fg", "tabs"]) {
+      expect(tokens.has(`--vsc-${name}`)).toBe(false);
+    }
   });
 });
 

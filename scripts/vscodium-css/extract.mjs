@@ -77,6 +77,8 @@ const RULES = [
       /^\.monaco-workbench\.floating-panels \.part\.activitybar/,
       /^\.monaco-workbench \.activitybar>\.content :not\(\.monaco-menu\)>\.monaco-action-bar \.action-label(\.codicon)?$/,
       /^\.modern-ui \.activitybar(\.compact)?>\.content/,
+      /^\.monaco-workbench \.activitybar>\.content :not\(\.monaco-menu\)>\.monaco-action-bar \.badge \.badge-content$/,
+      /^\.modern-ui\.monaco-workbench \.activitybar>\.content :not\(\.monaco-menu\)>\.monaco-action-bar \.badge \.badge-content$/,
     ],
   ],
   [
@@ -125,6 +127,9 @@ const RULES = [
       /^\.monaco-select-box-dropdown-container$/,
       /^\.monaco-dialog-modal-block$/,
       /^\.monaco-dialog-box$/,
+      /^\.monaco-dialog-box \.dialog-message-row \.dialog-message-container \.dialog-message(-detail)?$/,
+      /^\.monaco-dialog-box>\.dialog-buttons-row$/,
+      /^\.modern-ui-notifications-dialogs \.monaco-dialog-box/,
     ],
   ],
   [
@@ -136,6 +141,9 @@ const RULES = [
       /^\.modern-ui-tabs\.monaco-workbench \.part\.editor \.tabs-and-actions-container:not\(\.wrapping\) \.tabs-container>\.tab$/,
       /^\.extension-editor>\.header$/,
       /^\.extension-editor>\.header>\.icon-container \.extension-icon \.icon$/,
+      /^\.extension-editor>\.header>\.details>\.title>\.name$/,
+      /^\.extension-editor>\.header>\.details>\.subtitle>\.subtitle-entry:not\(:empty\):not\(\.last-non-empty\)$/,
+      /^\.extension-editor>\.body>\.navbar$/,
       /^\.settings-editor>\.settings-body \.settings-toc-container$/,
       /^\.settings-editor>\.settings-body \.settings-tree-container \.setting-item-contents(\.is-configured)? \.setting-item-modified-indicator$/,
     ],

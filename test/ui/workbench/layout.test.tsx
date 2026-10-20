@@ -175,7 +175,16 @@ describe("EditorHeader", () => {
         "[&>.codicon]:text-(length:--vsc-size-extension-icon)!",
       ]),
     );
-    expect(classes(screen.getByRole("heading", { name: "PHP" }))).toContain("text-vsc-heading1");
+    // The header's text 14px, the name on a 30px line, the facts' bars 14px
+    // from each side.
+    expect(classes(screen.getByRole("banner"))).toContain("text-(length:--vsc-size-extension-header)");
+    expect(classes(screen.getByRole("heading", { name: "PHP" }))).toEqual(
+      expect.arrayContaining(["text-vsc-heading1", "leading-(--vsc-size-extension-name)"]),
+    );
+    expect(classes(screen.getByText("8.4"))).not.toContain("border-l");
+    expect(classes(screen.getByText("Installato"))).toEqual(
+      expect.arrayContaining(["border-l", "ml-vsc-extension-fact", "pl-vsc-extension-fact"]),
+    );
     expect(classes(screen.getByText("Il linguaggio."))).toContain("mt-vsc-size100");
     expect(classes(screen.getByRole("button", { name: "Aggiorna" }).parentElement)).toContain("mt-vsc-size100");
   });
@@ -196,7 +205,10 @@ describe("NavBar", () => {
       />,
     );
     const nav = screen.getByRole("navigation", { name: "Sezioni" });
-    expect(classes(nav)).toEqual(expect.arrayContaining(["h-vsc-size360", "pl-vsc-size200"]));
+    // A panelSection.border line under it, as .navbar's.
+    expect(classes(nav)).toEqual(
+      expect.arrayContaining(["h-vsc-size360", "pl-vsc-size200", "border-b", "border-vsc-panel-section-border"]),
+    );
     const on = screen.getByRole("button", { name: "Panoramica" });
     const off = screen.getByRole("button", { name: "Versioni" });
     for (const item of [on, off]) {

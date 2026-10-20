@@ -4,7 +4,10 @@
 // the three buttons are those of Windows, native buttons as VSCodium's
 // window controls (no vscode-elements component draws them). Only the main window has the
 // permissions they use (capabilities/main.json). Its measures are VSCodium's
-// without the command center: 30px high, window controls 46px wide.
+// without the command center: 30px high, window controls 46px wide and as
+// high as the bar. No border under it: with the modern UI VSCodium sets no
+// titleBar.border (TitlebarPart.updateStyles), the bar is one with the
+// workbench's color.
 import { useEffect, useState } from "react";
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
 import { browserPreview } from "./api";
@@ -61,7 +64,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-vsc-titlebar shrink-0 items-center border-b border-vsc-titlebar-border bg-vsc-titlebar text-vsc-titlebar-fg select-none"
+      className="flex h-vsc-titlebar shrink-0 items-center bg-vsc-titlebar text-vsc-titlebar-fg select-none"
     >
       <span data-tauri-drag-region className="flex items-center gap-vsc-size80 pl-vsc-size120 text-vsc-body-small">
         <BrandWordmark height={14} />

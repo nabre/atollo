@@ -37,6 +37,25 @@ describe("ListRow", () => {
     expect(selected).not.toContain("hover:bg-vsc-list-hover");
   });
 
+  it("outlines a focused row in list.focusOutline, a focused selected one in list.focusAndSelectionOutline", () => {
+    render(
+      <List label="Files">
+        <ListRow label="a.txt" />
+        <ListRow label="b.txt" selected />
+        <ListItem icon={<span />} name="c" />
+        <ListItem icon={<span />} name="d" selected />
+      </List>,
+    );
+    const button = (name: string) => classes(screen.getByRole("button", { name }));
+    expect(button("a.txt")).toContain("focus-visible:outline-vsc-list-focus");
+    expect(button("a.txt")).not.toContain("focus-visible:outline-vsc-list-focus-selected");
+    expect(button("b.txt")).toContain("focus-visible:outline-vsc-list-focus-selected");
+    expect(button("b.txt")).not.toContain("focus-visible:outline-vsc-list-focus");
+    expect(button("c")).toContain("focus-visible:after:outline-vsc-list-focus");
+    expect(button("d")).toContain("focus-visible:after:outline-vsc-list-focus-selected");
+    expect(button("d")).not.toContain("focus-visible:after:outline-vsc-list-focus");
+  });
+
   it("indents 8px a level, with the twistie's room on a leaf", () => {
     render(
       <List label="Tree">
