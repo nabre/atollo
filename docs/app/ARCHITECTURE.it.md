@@ -20,7 +20,7 @@ Dal prompt iniziale (13-14/10/2026), validi per ogni modifica; ognuno ha una pro
 
 ## Avvio
 
-`main.rs`: riga di comando letta → radice del kit → creazione di `data\`, controllo di scrittura, spostamento del kit (`root.txt`) → log, pulizia della copia vecchia dell'exe, versione dell'app → impostazioni → ambiente del kit, applicato al processo → file in `data\kit\` → se c'è un comando, lo esegue ed esce → istanza singola (D-08) → migrazione dei dati dei progetti e pulizia del temp → WebView2 (o WebKitGTK su Linux) → Job Object, o guardiano su macOS e Linux → finestra `main` → installazione degli obbligatori e dell'editor mancanti; in background accesso di Antigravity in sospeso, allineamento degli agenti, sorvegliante degli agenti; controllo degli aggiornamenti dopo 20 s.
+`main.rs`: riga di comando letta → radice del kit → creazione di `data\`, controllo di scrittura, spostamento del kit (`root.txt`) → log, una cartella per versione (`versions::migrate`), versioni fianco a fianco, pulizia della copia vecchia dell'exe, versione dell'app → chiave di Gemini fuori da `settings.json` (`settings::move_secrets`) → impostazioni → disco che non esegue programmi: arresto (D-105) → raccolta dei certificati (`net::ca::refresh`) → ambiente del kit, applicato al processo → file in `data\kit\` → se c'è un comando, lo esegue ed esce → istanza singola (D-08) → migrazione dei dati dei progetti, pool e siti Nginx passati a Caddy (`servers::migrate`, D-120), pulizia del temp, pacchetti conda conservati (`install::conda::sweep`) → WebView2 (o WebKitGTK su Linux) → Job Object, o guardiano su macOS e Linux → finestra `main` con il tema delle impostazioni → in background i database e i pool segnati «Avvia con Atollo»; installazione degli obbligatori mancanti e dell'editor di un altro rilascio (non prima della scelta del primo avvio, D-137); accesso di Antigravity in sospeso, helper e identità di Git (`github::sync_git`), allineamento degli agenti, sorvegliante degli agenti; elenchi delle versioni dopo 10 s e controllo degli aggiornamenti dopo 20 s (nessuno dei due con `ATOLLO_NO_UPDATE`).
 
 ## Repository
 
@@ -37,10 +37,15 @@ tauri\
   build.rs                    elenco dei comandi (COMMANDS) e manifesto asInvoker
 ui\src\                       interfaccia React + TypeScript (sotto)
 test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src
-runtime\                      file scritti in data\kit\ (profile.ps1, loopback.js, phpmyadmin.php, bin\…)
-docs\app\                     decisioni, architettura, catalogo, prove, novità, guida
-docs\brand\                   logo, temi, script che li generano; brand.png (la tavola del brand)
-docs\reports\                 rapporti di analisi v1-v4
+runtime\                      file scritti in data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
+                              fcgi-guard.php, phpmyadmin.php, bin\…)
+scripts\                      dev-ui.mjs (npm run dev), guide-docs.cjs, guide-shots\, vscodium-css\, matrix\,
+                              test-linux.sh, cross-check\, build-httpd\, build-php\
+site\                         il sito (build.mjs, strings\, template.html); shots\ (schermate per lingua)
+docs\app\                     decisioni, architettura, catalogo, prove, novità, guida, TOOLS-MATRIX.html
+docs\brand\                   logo, temi, script che li generano; vscodium-1.135\ (il riferimento del
+                              workbench); social.png (la social card), brand.png (la tavola del brand)
+docs\reports\                 rapporti di analisi v1-v5
 ```
 
 Nella radice restano solo i file di configurazione (workspace, lint, formattazione, CI) e il README.
@@ -54,7 +59,7 @@ Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`cli.
 | Avvio | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
 | Comandi | `commands\` | l'unico ingresso dell'interfaccia: controllano la finestra, traducono gli errori, chiamano il dominio |
 | Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, database, server web, GitHub |
-| Infrastruttura | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, ambiente, impostazioni, log, lingue, rete e controlli, processi, sistemi operativi di destinazione |
+| Infrastruttura | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, ambiente, impostazioni, log, lingue, chi ha ogni porta, rete e controlli, processi, sistemi operativi di destinazione |
 
 ```
 tauri\src\
@@ -62,15 +67,17 @@ tauri\src\
   kit.rs                      radice, percorsi, primo avvio, spostamento, nomi validi
   env.rs                      ambiente del kit e PATH
   fsx.rs                      file del kit: lettura, JSON, scrittura atomica (sotto)
-  settings.rs                 data\app\settings.json
+  settings.rs                 data\app\settings.json (una modifica alla volta, `Settings::update`), file della chiave di Gemini
   log.rs  i18n.rs             log con segreti mascherati; lingua e cataloghi
+  ports.rs                    chi ha ogni porta: pool, versioni dei database, azioni, editor (D-141, sotto)
   commands\                   comandi Tauri (sotto)
   setup\                      componenti e installazione
     catalog  needs            catalogo incorporato, components.txt; cosa serve ad agenti, clone, azioni (D-59)
     runner  task              piano e passi di una preparazione; la preparazione avviata dalla finestra
     checkup  downloads        verifica finale (D-39); file scaricati a mano (D-82)
     kit_files  self_update    file scritti in data\kit\; nuova versione dell'exe
-  install\                    un installatore per famiglia: core, agents, web, caddy, native, editor, db, android
+  install\                    un installatore per famiglia: core, agents, web, caddy, native, editor, db, android;
+                              conda (pacchetti conservati per reinstallare senza rete, D-118)
     lang\                     un file per linguaggio o famiglia: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
   versions\                   versioni salvate (D-80)
@@ -86,32 +93,39 @@ tauri\src\
     run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
     caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner
-  detect\                     tipo, linguaggi e azioni di un progetto
+  detect\                     tipo, linguaggi e azioni di un progetto: mod, node, php, python, rust, go,
+                              site, container, overrides (panel.json)
   editor\                     editor e console
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema Atollo
     picker                    selettori di file e cartelle (D-109)
     terminal                  console del kit: console classica di Windows (D-57, D-95)
     pty                       terminale nell'app su macOS e Linux, sessioni PTY per xterm.js (D-109)
-    terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e versioni propri
+    terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e
+                              versioni propri; una linea salvata non più installata passa alla più nuova (`replaced`)
   servers\                    pagina Server web: pool Caddy/Apache condivisi dai progetti
-    mod                       tipi, elenco della pagina (con cache), WebServers
-    pools  config  process    servers.json e pool automatici, scansione; configurazione generata in
-                              data\servers\<pool>\; avvio, arresto, ricarica, siti collegati dai progetti
+    mod                       tipi, elenco della pagina (con cache), WebServers, ordine dei lock
+    pools  config  process    servers.json e pool automatici, scansione, porte; configurazione generata in
+                              data\servers\<pool>\ (con il conf.d del progetto); avvio, arresto, ricarica, siti
+                              collegati dai progetti
+    migrate                   pool e siti Nginx diventano di Caddy, all'avvio (D-120)
   agents\                     agenti: stato, avvio, uscita, sorvegliante
     sync\                     istruzioni, skill, MCP, regole, cartelle attendibili
-    stats\                    limiti d'uso e consumi (D-61)
-    keyring  relocate         accesso di Antigravity (D-115); percorsi riscritti dopo uno spostamento
+    stats\                    limiti d'uso e consumi (D-61): claude, codex, antigravity
+    keyring  relocate         accesso di Antigravity (D-115; keyring\portable: le parti provate su ogni sistema);
+                              percorsi riscritti dopo uno spostamento
     claude_token              token di Claude Code su macOS (D-115)
   db\                         database
     engine                    DbEngine: MySQL, MongoDB (D-110)
-    services\                 server del kit (D-73): mod (impostazioni, avvio, arresto), data (cartelle per
-                              versione), access (password e database dei progetti), backups (D-78), tools,
-                              mysql (inizializzazione, my.cnf, libaio: D-110)
+    services\                 server del kit (D-73): mod (impostazioni, avvio, arresto, un'operazione alla volta
+                              per motore: D-140), data (cartelle e porte per versione), access (password e
+                              database dei progetti), backups (D-78), tools (file di login), mysql
+                              (inizializzazione, my.cnf, libaio: D-110)
     auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
-  net\                        rete: mod (HTTPS, proxy, API di GitHub), verify (SHA), signature (Authenticode),
+  net\                        rete: mod (HTTPS, proxy ed eccezioni, API di GitHub), ca (il file PEM delle
+                              impostazioni, data\app\ca-bundle.pem: D-137), verify (SHA), signature (Authenticode),
                               archive (estrazione, scambio cartelle)
   os\                         Windows e processi: jobs (Job Object, D-07), processes, sessions («Rimuovi
                               l'unità», altre copie), instance (D-08), webview (D-05), safe_path (D-77),
@@ -120,21 +134,30 @@ tauri\src\
                               guard (guardiano dei processi su macOS e Linux, D-105)
   router\                     destinazioni (Windows, macOS, Linux × x64, ARM64): target, bins (programmi e lanciatori
                               per sistema), probe (cosa c'è su disco, salute), fs (file privati ed eseguibili), bootstrap
-                              (preparazione per un altro sistema, D-114)
+                              (preparazione per un altro sistema, D-114), availability (perché un componente non
+                              si installa su un target)
 ```
 
 ### Dati del kit (`data\`)
 
 ```
 data\
-  apps\win32-<arch>\          programmi installati
+  apps\<target>\              programmi installati (win32-x64, darwin-arm64, linux-x64…)
   app\                        stato del kit: settings.json, services.json, components.txt, versions\,
-                              frameworks.json, servers.json, logs\, layout.txt (2 = dati per progetto)
+                              frameworks.json, servers.json, terminals.json, logs\, layout.txt (2 = dati per
+                              progetto), ca-bundle.pem (D-137), safe-directory.txt (il safe.directory del kit)
+    secrets\                  gemini-api-key, leggibile solo dal proprietario (D-137)
+    conda\<target>\           pacchetti ed elenchi per ricreare gli ambienti conda senza rete (D-118)
     db\                       secrets.json (solo root e admin), my.ini; la cartella ha il DACL del proprietario
     pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
     pre-caddy\                copia di servers.json e dei panel.json prima del passaggio da Nginx a Caddy (D-120)
+  db\<motore>\<versione>\     dati di ogni versione dei server di database (D-81, D-102)
+  home\                       HOME dei programmi: .gitconfig e simili
+  kit\                        file scritti da runtime\ a ogni avvio
   projects\<progetto>\        tutto ciò che il kit tiene per un progetto (D-89)
-    dev-settings.json  ports.json  apache\  caddy\
+    dev-settings.json  ports.json
+    apache\  caddy\           il server proprio del progetto; conf.d\ tiene i file .conf / .caddy dell'utente,
+                              inclusi sia dal server dedicato sia da un pool (D-141)
     private\                  DACL del proprietario prima di ogni scrittura
       db.json                 password e nomi dei database del progetto
       backups\                copie dei database (D-78)
@@ -149,7 +172,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`), `projects\run.rs` (una macchina a stati, 1143 righe) ed `editor\ext.rs` restano interi. Gli altri file restano sotto le 900 righe; oggi la superano di poco `db\auth.rs`, `db\services\mod.rs` e `install\web.rs` (sotto, «Opportunità»).
+- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`, 1278 righe), `projects\run.rs` (una macchina a stati, 1189 righe) ed `editor\ext.rs` restano interi. Gli altri file dovrebbero restare sotto le 900 righe; oggi nove le superano (sotto, «Opportunità»).
 
 ### Comandi Tauri (`commands\`)
 
@@ -172,7 +195,7 @@ Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\
 | `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin |
 | `services.rs` | server di database del kit |
 | `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato |
-| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella |
+| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella; le sessioni del terminale nell'app su macOS e Linux |
 | `runs.rs` | azioni avviate: avvio, arresto, output, porte |
 
 Per aggiungere un comando:
@@ -195,6 +218,39 @@ Ogni modulo segue le stesse regole per i suoi file in `data\`:
 - **file di altri programmi** (impostazioni dell'editor, file degli agenti, `.mcp.json`) come `serde_json::Value`, con le regole del loro modulo: un file con commenti o non valido non si sovrascrive;
 - **dentro un progetto** solo con `os::safe_path` (nessun collegamento seguito, D-77).
 
+### Una modifica alla volta (lock)
+
+Un file che più thread modificano si legge, si modifica e si scrive sotto un solo lock, così nessuna modifica si perde; un'operazione lenta ha il suo lock, preso prima di quello del file, mai al contrario.
+
+| Cosa | Lock | Copre |
+| --- | --- | --- |
+| `settings.json` | `Settings::update` (D-137) | la pagina Impostazioni, «Piattaforma» di Strumenti, le installazioni; `apply_env` ricostruisce l'ambiente sotto un lock suo, dal file com'è in quel momento |
+| `dev-settings.json` di un progetto | `projects::settings::update` | |
+| `services.json` | `update_settings` in `db\services\mod.rs` (D-140) | ogni lettura-modifica-scrittura: `keep_port`, `set`, `set_line_port`, `set_line` |
+| un server di database | `Services::op(engine)`, uno per motore (D-140) | avvio, arresto e cambio di versione: due avvii della stessa versione fanno partire un solo server e danno la stessa porta; due versioni di un motore si avviano a turno. `stop_all`, alla chiusura, non lo prende. Ordine: operazione → `running`/`errors` → `services.json` |
+| `servers.json` e i pool | `WebServers`: `op_lock` → `store_lock` → `running` (`servers\mod.rs`) | avvio, arresto e ricarica; ogni modifica di `servers.json` (porte, profili) |
+| `terminals.json` | `STORE` in `editor\terminals.rs` | |
+
+I login degli strumenti dei database (dump e ripristini) sono file con nome `<exe>-<pid>-<seq>` (`db\services\tools.rs`): due backup insieme non si cancellano mai il file a vicenda.
+
+### Porte
+
+`ports.rs` (D-141) dice chi ha ogni porta, leggendo solo i file e senza prendere lock, così chi tiene già il suo può chiederlo:
+
+| Proprietario (`Owner`) | Da | Intervallo |
+| --- | --- | --- |
+| `Pool` | `servers.json` (`servers::pool_ports`) | automatica, o quella del profilo |
+| `Db` (motore e versione) | `services.json`: la porta del server, `line_ports` delle versioni installate, le porte tenute per quelle disinstallate | 3306, 27017 e le successive |
+| `Project` (progetto → azione) | il `ports.json` di ogni progetto (`projects::run::saved_ports`) | 7100-7999 |
+| `Editor` | `editor::PORTS` | 7000-7099 |
+
+`ports_taken` dà la mappa intera; `refuse_taken(kit, porta, own, lingua)` fallisce nominando il proprietario («La porta {0} è già del …») tranne quando il proprietario è la voce che si sta salvando. La chiamano `WebServers::save_profile` (la porta di un profilo), `Runner::set_port` (la porta di un'azione scelta a mano), `Services::set` e `Services::set_line_port` (la porta di un server o di una versione, prima di `update_settings`); `assign_or_get_port` non dà a un pool nuovo nessuna delle porte prese. Ogni versione di un database tiene la sua porta: si salva al suo avvio e, per tutte le versioni installate, quando cambia la versione del server (D-140).
+
+### Host locali e `conf.d` del progetto
+
+- Il server di file statici (`projects\serve.rs`, `is_local_host_header`) e `php -S` (`runtime\php-router.php`) rispondono a `localhost`, `*.localhost`, `127.0.0.1` e `[::1]`; con «Rete locale» (`ATOLLO_ALLOW_LAN=1`) anche a un indirizzo IP scritto per esteso, così gli altri dispositivi della rete li raggiungono con l'IP del PC. Ogni altro nome riceve 403 dal server di file e 421 da `php -S` (il DNS rebinding non legge il progetto).
+- `data\projects\<p>\apache\conf.d\*.conf` e `caddy\conf.d\*.caddy` tengono le direttive dell'utente. L'Apache dedicato le include (`IncludeOptional`), e così il vHost del sito in un pool Apache (`servers\config.rs`); il Caddy proprio del progetto (`projects::caddy::project_conf`) e un pool Caddy le importano solo quando la cartella ha un file `.caddy` (`caddy::has_snippets`: un `import` che non trova nulla ferma Caddy).
+
 ### Processi
 
 Tutti i programmi del kit partono nel Job Object dell'app con l'ambiente del kit (`os\jobs.rs`, D-07). Fuori dal job solo browser ed Esplora risorse: `jobs::open_with_explorer` apre un indirizzo o una cartella, `jobs::system_root` dà la cartella di Windows. Nessun `Command::new` con una riga di comando unita: argomenti sempre a vettore.
@@ -212,28 +268,30 @@ Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispond
 | Parte | File | Cosa contiene |
 | --- | --- | --- |
 | Ingresso | `main.tsx`, `App.tsx` | finestra in stile VSCodium: barra delle attività, pagina, pannello Attività, barra di stato |
-| Verso Rust | `api\` | un file per area, come `commands\` (sopra); `index.ts` li riesporta, le pagine importano da `./api` |
+| Verso Rust | `api\` | un file per area, come `commands\` (sopra); `index.ts` li riesporta, le pagine importano da `./api`; `preview-runs.ts` fa girare le azioni nell'anteprima del browser |
 | Hook comuni | `hooks.ts` | `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (sotto) |
 | Pezzi comuni | `common.tsx` | `ActionButton`, `ErrorLine`, `editorHint` |
-| Componenti di base | `workbench\` | i controlli di VSCodium (`@vscode-elements/elements`) e le parti del workbench (sotto); dal resto dell'app importa solo `i18n` |
-| Tema | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css` | font e note del brand; `--vsc-*` per Tailwind; tutte le variabili `--vscode-*` di VS Code, generate (sotto) |
-| Pagine grandi | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `guide\` | una cartella per pagina, con `index.ts` che esporta solo ciò che usano le altre pagine |
-| Altre pagine | `wizard.tsx`, `servers.tsx`, `terminals.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, `setup.tsx`, … | una pagina o una sezione per file |
-| Pezzi della finestra e del brand | `titlebar.tsx`, `activity.tsx`, `brand.tsx`, `logos.tsx`, `tags.tsx`, `byhand.tsx` | usati da più cartelle, quindi nella radice di `ui\src` |
+| Componenti di base | `workbench\` | i controlli di VSCodium (`@vscode-elements/elements`), i codicon e le parti del workbench (sotto); dal resto dell'app importa solo `i18n` |
+| Tema | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | font, il font dei codicon e note del brand; i colori `--vsc-*` per Tailwind; tutte le variabili `--vscode-*` di VS Code; le misure di VSCodium 1.135 e le misure `--vsc-size-*` (gli ultimi tre generati, sotto) |
+| Pagine grandi | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `terminal\`, `guide\` | una cartella per pagina o parte, con `index.ts` che esporta solo ciò che usano le altre pagine |
+| Altre pagine | `servers.tsx`, `terminals.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, `setup.tsx` | una pagina o una sezione per file |
+| Pezzi della finestra e del brand | `titlebar.tsx`, `activity.tsx`, `brand.tsx`, `logos.tsx`, `tags.tsx`, `byhand.tsx`, `freeze.ts` | usati da più cartelle, quindi nella radice di `ui\src`; `activity.tsx` ha il pannello Attività e `useRunning`, l'unico conteggio di ciò che gira (azioni, versioni dei database, pool) per la barra di stato, il badge di Progetti e il pannello, con «Ferma tutto» dopo una conferma; `freeze.ts` congela i prototipi della sola finestra principale |
 | Testi | `i18n.ts`, `locales\*.json` | `t("frase italiana")`; il test controlla le quattro lingue |
 
 Le cartelle delle pagine:
 
 | Cartella | File |
 | --- | --- |
-| `projects\` | `explorer.tsx` (pagina Progetti), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `site.tsx`, `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx`, `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx` |
+| `projects\` | `explorer.tsx` (pagina Progetti), `home.tsx` (ciò che gira, preferiti e recenti), `quickopen.tsx` (Ctrl+P), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `wizard.tsx` (nuovo progetto da un framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx` (con `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx` |
 | `databases\` | `page.tsx` (pagina Database, `SecretField`), `browser.tsx` (contenuto in sola lettura), `backups.tsx` (copie dei database di un progetto) |
-| `agents\` | `page.tsx` (pagina Agenti, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limiti e consumi) |
+| `agents\` | `page.tsx` (pagina Agenti, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limiti e consumi), `token.tsx` (il token di Claude Code su macOS) |
 | `frameworks\` | `model.ts` (dati e hook), `fields.tsx` (campi delle istruzioni), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (versioni del kit), `project.tsx` (versioni di un progetto), `lines.tsx` (scelta della riga) |
-| `github\` | `account.tsx`, `repos.tsx`, `details.tsx` |
-| `settings\` | `page.tsx`, `sections.tsx` (Generali, Rete, Agenti, Versioni), `about.tsx` (kit e aggiornamenti) |
-| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx`, `rows.tsx`, `tool.tsx`, `applybar.tsx`, `model.ts`, `state.ts` |
+| `github\` | `account.tsx`, `identity.tsx` (chi firma i commit), `repos.tsx`, `details.tsx` |
+| `settings\` | `page.tsx` (sette sezioni: Generale, Rete, Agenti, Aggiornamenti, Account GitHub, Privacy, Il kit), `sections.tsx`, `autosave.ts` (salvate mentre cambiano, D-137), `firstrun.tsx` (le scelte del primo avvio), `conda.tsx` (pacchetti conservati), `about.tsx` (kit e aggiornamenti) |
+| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (un blocco per tipo, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (il compilatore di Rust su Windows), `matrix.tsx` (la matrice, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
+| `terminal\` | il terminale nell'app di macOS e Linux (D-109): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `api.ts` |
+| `guide\` | `model.ts` (capitoli, argomenti, parole di ricerca), `topics\` (il testo, un file per capitolo), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
 
 Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `common.tsx` se lo usano più cartelle.
 
@@ -262,36 +320,55 @@ I controlli sono quelli di VSCodium: `@vscode-elements/elements` (D-88), registr
 | `Button` | `vscode-button` (secondario, largo, piccolo); con `submit` un `<button type=submit>` nascosto accanto resta il pulsante predefinito del modulo, così Invio in un campo invia |
 | `TextField`, `TextArea`, `SearchBox` | `VscodeTextfield`, `VscodeTextarea` (wrapper di `@vscode-elements/react-elements`); valore controllato con `useControlled` |
 | `Select` | `VscodeSingleSelect` + `VscodeOption`; i gruppi diventano un'opzione d'intestazione spenta |
-| `CountBadge`, `ProgressBar`, `Divider`, `Icon` | `vscode-badge`, `vscode-progress-bar`, `vscode-divider`, `vscode-icon` (codicon) |
+| `CountBadge`, `ProgressBar`, `Divider` | `vscode-badge`, `vscode-progress-bar`, `vscode-divider` |
+| `Codicon`, `codicon(name)` | il font Codicon di `@vscode/codicons` nella pagina, come lo disegna il workbench (`<span class="codicon codicon-NOME">`, 16 px o i 12 px compatti dai token); `codicon(name)` ne fa un componente icona dove un controllo ne vuole uno (`IconButton`, `ActionButton`, liste, pagine) |
+| `Icon` | `vscode-icon`, solo per un codicon che gira |
 | `SettingItem` | `vscode-form-group` con la variante «settings-group» |
 | `IconButton`, `Checkbox`, `CheckboxLabel`, `Radio` | nativi, disegnati come `vscode-toolbar-button`, `vscode-checkbox`, `vscode-radio` con le loro variabili: nei componenti il pulsante o la casella stanno nello shadow root, dove `<label for>`, il clic sull'etichetta e i ruoli cercati dai test non arrivano, e `vscode-toolbar-button` non ha lo stato spento |
 | `DataTable` | `<table>` nativa, disegnata come `vscode-table`: il componente non ha didascalia né intestazioni di riga e divide le colonne in parti uguali |
 | `ConfirmDialog`, `InlineConfirm` | dialogo proprio, pulsanti `vscode-button` |
-| parti (`layout.tsx`: riquadri, schede, barra dei dettagli, pannello) | proprie: `vscode-collapsible` e `vscode-tabs` disegnano le intestazioni classiche, non quelle moderne di VSCodium 1.140, e tengono ruoli e `tablist` nello shadow root |
+| parti (`layout.tsx`: riquadri, schede, barra dei dettagli, pannello), liste (`list.tsx`), editor delle impostazioni (`settings.tsx`) | proprie: `vscode-collapsible` e `vscode-tabs` disegnano le intestazioni classiche, non quelle moderne di VSCodium 1.135, e tengono ruoli e `tablist` nello shadow root |
 
 Regole per chi aggiunge un controllo:
 - campi e select mandano un `change` che non risale: `onChange` di React su un tag `<vscode-*>` scritto a mano non scatta mai. Si usano i wrapper (`VscodeTextfield`…) o un primitivo di `workbench\`;
 - su un tag `<vscode-*>` scritto a mano si scrive `class` e `for`, non `className` e `htmlFor`; i tipi JSX sono in `elements.ts`;
-- `vscode-icon` vuole il CSS dei codicon con l'id `vscode-codicon-stylesheet` (lo aggiunge `elements.ts`) e prende il colore da `--vscode-icon-foreground`: per il colore del testo intorno, `[--vscode-icon-foreground:currentColor]`;
-- un colore viene sempre da una variabile del tema (`--vscode-*` o un token `vsc-*`), mai scritto a mano; fanno eccezione i valori fissi di VSCodium (il rosso del pulsante Chiudi) e i colori dei loghi.
+- un'icona è un codicon (`Codicon` o `codicon(name)`); `react-icons` dà solo i loghi dei marchi (`logos.tsx`, Simple Icons) e il tipo `IconType`, e nessuno importa `react-icons/vsc` (un test lo controlla);
+- `vscode-icon` vuole il CSS dei codicon con l'id `vscode-codicon-stylesheet` (lo aggiunge `elements.ts`, spento nella pagina) e prende il colore da `--vscode-icon-foreground`: per il colore del testo intorno, `[--vscode-icon-foreground:currentColor]`;
+- un colore viene sempre da una variabile del tema (`--vscode-*` o un token `vsc-*`), mai scritto a mano; fanno eccezione i valori fissi di VSCodium (il rosso del pulsante Chiudi) e i colori dei loghi;
+- una misura (altezza, larghezza, spaziatura, raggio, ombra) viene sempre da `theme-sizes.css`: una misura `--vscode-*` del registro di VSCodium o un token `--vsc-size-*` con la sua classe (`h-vsc-*`, `w-vsc-*`, `size-vsc-*`), mai un numero scritto in un componente (D-142).
 
-Restano nativi, con il perché nel file: i pulsanti della finestra (`titlebar.tsx`), barra delle attività e barra di stato (`App.tsx`), la scelta dell'agente con i loghi (`agents.tsx`, ruolo `radio`), il misuratore dei limiti (`stats.tsx`, ruolo `meter`), il campo con suggerimenti di `extensions.tsx` (`<datalist>`, che non attraversa lo shadow root), il pulsante del menu bloccato di `versions\kit.tsx`, le scelte a pulsante della procedura guidata (`wizard.tsx`, `aria-pressed`).
+Restano nativi, con il perché nel file: i pulsanti della finestra (`titlebar.tsx`), barra delle attività e barra di stato (`App.tsx`), la scelta dell'agente con i loghi (`agents\page.tsx`, ruolo `radio`), il misuratore dei limiti (`agents\stats.tsx`, ruolo `meter`), il campo con suggerimenti di `extensions.tsx` (`<datalist>`, che non attraversa lo shadow root), il pulsante del menu bloccato di `versions\kit.tsx`, le scelte a pulsante della procedura guidata (`projects\wizard.tsx`, `aria-pressed`).
 
-Prove: `test\ui\workbench\controls.test.tsx` (eventi che scattano davvero, valori controllati, Invio, nomi accessibili), `test\ui\workbench\elements.test.tsx` (registrazione, codicon). jsdom non ha `adoptedStyleSheets`: `test\ui\setup.ts` ne dà una versione vuota, che non disegna nulla.
+Prove: `test\ui\workbench\controls.test.tsx` (eventi che scattano davvero, valori controllati, Invio, nomi accessibili), `elements.test.tsx` (registrazione), `codicon.test.tsx` (glifi del font incluso, misure, nessun `react-icons/vsc`), `layout.test.tsx`, `list.test.tsx`, `dialog.test.tsx`, `settings.test.tsx`. jsdom non ha `adoptedStyleSheets`: `test\ui\setup.ts` ne dà una versione vuota, che non disegna nulla.
 
 ### Tema
 
-Una sola fonte: `docs\brand\themes.py` risolve Dark Modern e Light Modern di VSCodium con l'enfasi Atollo e scrive tre file.
+Una sola fonte: `docs\brand\themes.py` risolve Dark Modern e Light Modern di VSCodium (`docs\brand\vscodium-themes\`) con l'enfasi Atollo e scrive quattro uscite.
 
 - `tauri\editor-theme\`: i temi «Atollo Dark» e «Atollo Light» dell'editor;
-- `ui\src\theme-vscode.css`: per ciascun tema circa 800 variabili `--vscode-*`, come VS Code le dà alle sue webview, con i font di Windows. I valori, dal più debole al più forte: le tabelle di `docs\brand\vscode-defaults\` (da `@vscode-elements/webview-playground` 1.9.0, licenza MIT), `BUILTIN`, `DERIVED` (i colori che VS Code calcola da una chiave cambiata dal brand, controllati sulle tabelle), il tema dell'editor intero. Nome come nelle webview: solo il primo punto diventa `-`;
-- `ui\src\theme-colors.css`: i token `--vsc-*` per Tailwind, ciascuno un `var(--vscode-…)`.
+- `ui\src\theme\theme-vscode.css`: per ciascun tema circa 800 variabili `--vscode-*`, come VS Code le dà alle sue webview, con i font di Windows. I valori, dal più debole al più forte: le tabelle di `docs\brand\vscode-defaults\` (da `@vscode-elements/webview-playground` 1.9.0, licenza MIT), `BUILTIN`, `DERIVED` (i colori che VS Code calcola da una chiave cambiata dal brand, controllati sulle tabelle), il tema dell'editor intero. Nome come nelle webview: solo il primo punto diventa `-`;
+- `ui\src\theme\theme-colors.css`: i token di colore `--vsc-*` per Tailwind, ciascuno un `var(--vscode-…)`;
+- `ui\src\theme\theme-sizes.css`: le misure del registro di VSCodium (`--vscode-spacing-size*`, `--vscode-cornerRadius-*`, corpi e pesi, le ombre della UI moderna), le misure proprie del workbench (`--pane-header-size`…) e le misure `--vsc-size-*` dell'app con le loro classi Tailwind, uguali in ogni tema.
 
-Così app ed editor hanno gli stessi colori, chiave per chiave. Un colore si cambia in `themes.py` (in `BRAND`), poi `python docs/brand/themes.py`. Un test controlla che ogni variabile letta dai componenti di `@vscode-elements/elements` sia definita in tutti e due i temi.
+I file dei temi vengono da un VSCodium più nuovo di quello che il kit installa: `RENAMED` dà alle loro chiavi i nomi che legge la 1.135, così i colori delle voci della barra delle attività sono `modernActivityBar.*`, nell'app come nel tema dell'editor. Le misure vengono da `docs\brand\vscodium-1.135\workbench-ref.css`, la parte del CSS del workbench di VSCodium 1.135 che l'app imita (D-142), con la licenza MIT di Code-OSS: `node scripts/vscodium-css/extract.mjs` lo scrive dall'archivio dell'editor fissato in `components.json` (scaricato e controllato con il suo SHA-256, oppure il percorso di un archivio o di un `workbench.css` già estratto) e fallisce su una chiave `--vscode-*` letta dall'app che questo VSCodium non conosce.
+
+Così app ed editor hanno gli stessi colori e le stesse misure, chiave per chiave. Un colore si cambia in `themes.py` (in `BRAND`), una misura in `LAYOUT`, poi `python docs/brand/themes.py`; quando il catalogo fissa un altro editor, prima `extract.mjs`. `test\ui\theme\theme.test.ts` controlla che ogni variabile letta dai componenti sia definita nei due temi, che ogni misura sia dichiarata una volta con la sua classe, che le misure siano quelle di `workbench-ref.css`, che non resti nessun token delle parti della UI classica e che VSCodium conosca ogni chiave `--vscode-*` letta da Atollo.
+
+### Schermate e server di sviluppo
+
+Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0.0.1:5173`) sui suoi dati di esempio, con `playwright-core` ed Edge o Chrome del sistema (`SHOTS_BROWSER`); `?lang=en|fr|de` sceglie la lingua dell'anteprima, e i testi che il motore manda già tradotti passano da `engineText` (`api\core.ts`) con la loro traduzione accanto (D-135). `SHOTS_URL` prende l'anteprima da un altro indirizzo.
+
+| Script | Scrive |
+| --- | --- |
+| `site/shots/make.mjs` | le sei schermate del sito (Progetti con Attività, Agenti, Matrice degli strumenti; scuro e chiaro; 1280×820 a 2×) in `site/shots/<lingua>/` per en, it, fr, de (`SHOTS_LANGS` le limita, D-143); `site/build.mjs` le copia in `assets/shots/<lingua>/` per la pagina di quella lingua, e ogni README mostra le sue |
+| `site/shots/social.mjs` | `docs/brand/social.png` (1280×640), la social card, da `en/shot-projects-dark.png`: resta in inglese |
+| `scripts/guide-shots/make.mjs` | le 52 schermate della Guida, `ui/public/guide/<lingua>/*.webp` (tema chiaro, 1280×800 a 1,25×, senza il badge dell'anteprima; webp con Pillow; `GUIDE_SHOTS_LANGS` limita le lingue), che `docs/app/GUIDE*.md` riusano |
+
+`npm run dev` (`tauri dev`) avvia `scripts/dev-ui.mjs` come `beforeDevCommand`: Vite gira in quel processo e il processo finisce quando la shell che l'ha avviato non c'è più, quando si chiude la pipe dello stdin che Tauri gli passa, o con SIGINT/SIGTERM/SIGHUP, così chiudendo l'app la porta 5173 si libera (D-138). Una porta già occupata viene segnalata con chi la tiene, mai fermata.
 
 ## Opportunità individuate, non ancora fatte
 
-Dall'analisi del 15/10/2026. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88). Restano:
+Dall'analisi del 15/10/2026, ricontrollata il 20/10. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88); le misure di VSCodium 1.135 come token e i codicon dal loro font (D-142). Restano:
 
 1. **Errore di lettura che resta sullo schermo**: in `App.tsx` (informazioni), `eject.tsx`, `settings\page.tsx` e `databases\page.tsx` un errore di lettura resta anche dopo una lettura riuscita. Va deciso se è voluto; se no, quelle letture passano a `useLoad` con `"show"`.
 2. ~~**Conferme nella pagina senza `alertdialog`**~~: fatto il 17/10/2026 (D-106), le quattro conferme usano `InlineConfirm`.
@@ -300,5 +377,5 @@ Dall'analisi del 15/10/2026. Fatte: comandi per area e regole dei file (D-86); c
 5. **Pacchetto dell'interfaccia**: la build avvisa che il file principale supera 500 kB (circa 1 MB, 300 kB compresso, da quando registra tutti i componenti di `vscode-elements`); si possono registrare solo i componenti usati e caricare quando servono le pagine meno usate (Impostazioni, procedura guidata, matrice).
 6. **Controlli ancora nativi** (sopra, «Restano nativi»): servirebbero un `TextField` con suggerimenti, un pulsante con `aria-pressed` e testo, un misuratore con valore.
 7. ~~**`projectmcp.tsx`** non importato~~: era già usato dalla pagina del progetto; dal 17/10/2026 è `projects\mcp.tsx`.
-8. **File sopra le 900 righe**: `install\web.rs` (959), `db\services\mod.rs` (956), `db\auth.rs` (925). Si dividono come `servers\` (un `impl` per file).
-9. **`ui\src\guide\`**: `sections.tsx` (3062 righe) e `model.ts` (1731) sono testi della Guida più che codice; si possono dividere per sezione.
+8. **File sopra le 900 righe**: `install\web.rs` (1423), `db\services\mod.rs` (1120), `net\archive.rs` (1110), `agents\keyring.rs` (1081), `install\native.rs` (988), `install\conda.rs` (980), `install\db.rs` (967), `net\mod.rs` (944), `db\auth.rs` (921). Si dividono come `servers\` (un `impl` per file).
+9. ~~**`ui\src\guide\`**: `sections.tsx` e `model.ts` sono testi della Guida più che codice~~: fatto il 19/10/2026 (D-136), il testo sta in `topics\`, un file per capitolo; i più lunghi (`topics\projects.tsx`, 2118 righe) sono testo.
