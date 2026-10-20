@@ -143,7 +143,7 @@ const jsonLd = (lang) =>
     isAccessibleForFree: true,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     image: `${base}assets/social.png`,
-    screenshot: `${base}assets/shot-projects-dark.png`,
+    screenshot: `${base}assets/shots/${lang}/shot-projects-dark.png`,
     author: { "@type": "Person", name: "nabre", url: "https://github.com/nabre" },
     keywords,
   }).replaceAll("<", "\\u003c");
@@ -218,8 +218,13 @@ for (const f of [
   "hero-light.svg",
 ])
   cpSync(join(brand, f), join(out, "assets", f));
-const shots = join(site, "shots");
-for (const f of readdirSync(shots).filter((f) => f.endsWith(".png"))) cpSync(join(shots, f), join(out, "assets", f));
+// The gallery's screenshots, in the page's language (D-143).
+for (const l of langs) {
+  const shots = join(site, "shots", l);
+  mkdirSync(join(out, "assets", "shots", l), { recursive: true });
+  for (const f of readdirSync(shots).filter((f) => f.endsWith(".png")))
+    cpSync(join(shots, f), join(out, "assets", "shots", l, f));
+}
 
 // The English page lived in en/ until it moved to the root: old links land
 // there, and search engines learn the new address.

@@ -39,8 +39,8 @@
 Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI e l'editor. Il resto si sceglie nella pagina «Strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="../site/shots/shot-projects-light.png">
-  <img src="../site/shots/shot-projects-dark.png" alt="La pagina Progetti di Atollo: pannello rapido e attività" width="100%">
+  <source media="(prefers-color-scheme: light)" srcset="../site/shots/it/shot-projects-light.png">
+  <img src="../site/shots/it/shot-projects-dark.png" alt="La pagina Progetti di Atollo: pannello rapido e attività" width="100%">
 </picture>
 
 ## Funzionalità
