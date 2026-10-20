@@ -28,7 +28,8 @@
   <a href="https://nabre.github.io/atollo/"><b>Website</b></a> ·
   <a href="https://github.com/nabre/atollo/releases/latest"><b>Download</b></a> ·
   <a href="docs/app/GUIDE.md"><b>User guide</b></a> ·
-  <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a>
+  <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a> ·
+  <a href="docs/PRIVACY.md"><b>Privacy</b></a>
 </p>
 
 <p align="center">English · <a href="docs/README.it.md">Italiano</a> · <a href="docs/README.fr.md">Français</a> · <a href="docs/README.de.md">Deutsch</a></p>
@@ -198,12 +199,12 @@ Free code signing on Windows provided by [SignPath.io](https://signpath.io/), ce
 
 ## Privacy policy
 
-Atollo (`Atollo.exe`) fully respects user privacy:
+The full text, with every network connection and every file the app keeps, is in **[Privacy policy and terms of use](docs/PRIVACY.md)**. In short:
 
 - **No telemetry or data collection:** the application does not collect personal data, usage statistics, telemetry, or crash reports, and never contacts any server operated by the project author. It also disables built-in telemetry in managed components (such as PowerShell 7 and the VSCodium server).
-- **Local storage:** all settings, projects, local databases, logs, and credentials are stored exclusively locally inside Atollo's `data\` (and `projects\`) folder on the user's device.
-- **Network connections:** the application only makes network requests to official upstream sources to check for updates and download user-requested components (`api.github.com`, official language/tool vendor mirrors, Open VSX registry for editor extensions) and, when the user configures and uses the GitHub integration, AI agents (**Claude Code**, **Codex**, **Antigravity**), or a Gemini API key, directly to the respective provider APIs under their own privacy policies.
+- **Local storage:** settings, projects, local databases, logs, and credentials are stored locally inside Atollo's `data\` (and `projects\`) folder on the user's device; the few exceptions (temporary files, Antigravity's sign-in while it runs) are listed in the policy.
+- **Network connections:** the application only connects to GitHub to check for its own updates (Settings › General › Automatic update, or `ATOLLO_NO_UPDATE`), to the official sources of the components it downloads, to the Open VSX registry for editor extensions and, when the user uses the GitHub page or the Agents page, to GitHub and to the agents' providers (**Claude Code**, **Codex**, **Antigravity**) under their own privacy policies.
 
 ## License
 
-MIT.
+MIT: provided "as is", without warranty. See [LICENSE](LICENSE) and the [terms of use](docs/PRIVACY.md#8-terms-of-use).

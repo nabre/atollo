@@ -1,0 +1,120 @@
+# Atollo Privacy Policy and Terms of Use
+
+English · [Italiano](PRIVACY.it.md) · [Français](PRIVACY.fr.md) · [Deutsch](PRIVACY.de.md)
+
+Effective date: 20 October 2026
+
+This page explains what the Atollo desktop app (`Atollo.exe`, the macOS `.app` and the Linux AppImage) and its website do with your data. Atollo is open source: everything written here can be checked in the code of this repository.
+
+## 1. Summary
+
+- Atollo has **no telemetry, no analytics and no crash reporting**. It has no account and no server of its own.
+- Everything Atollo stores stays **in the Atollo folder** on your device (`data/` and `projects/`), with the few exceptions listed in section 4.
+- Atollo connects to the network only to **check for its own updates**, to **download the tools you use from their official sources**, and to talk to **GitHub and the AI agents' providers when you use those features**. The table in section 3 lists every connection, with how to turn it off.
+- The tools and AI agents you run inside Atollo (Claude Code, Codex, Antigravity, Git, npm…) are third-party programs with their own privacy policies.
+
+## 2. What Atollo does not collect
+
+Atollo does not collect, send or sell:
+
+- personal data, names, e-mail addresses or device identifiers;
+- usage statistics, clicks, page views or feature usage;
+- crash reports or logs;
+- the content of your projects, files, databases or conversations with AI agents.
+
+Nobody running the Atollo project receives any data from the app. The project does not operate servers: updates and releases are hosted on GitHub.
+
+Atollo also turns off the telemetry and self-update checks of several programs it manages, inside its own environment: the integrated editor (VSCodium) runs with telemetry off and extension auto-update off; the environment sets `GOTELEMETRY=off`, `DOTNET_CLI_TELEMETRY_OPTOUT=1`, `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`, `PIP_DISABLE_PIP_VERSION_CHECK=1`, `GH_NO_UPDATE_NOTIFIER=1` (for the app's GitHub CLI calls), `DISABLE_UPDATES=1` (Claude Code) and `AGY_CLI_DISABLE_AUTO_UPDATE=true` (Antigravity). Other programs keep their own defaults.
+
+## 3. Network connections the app makes
+
+Every request the app makes itself carries a `User-Agent` of the form `Atollo/<version> (+https://github.com/nabre/atollo)` and, like any Internet connection, reveals your IP address to the server contacted. Requests follow the proxy set in Settings, otherwise `HTTPS_PROXY`/`HTTP_PROXY`, otherwise the system's proxy setting.
+
+| When | To whom | What is sent | How to turn it off |
+|---|---|---|---|
+| About 20 seconds after start, and when you press "Check for updates" | GitHub (`api.github.com`, then the release download from `github.com`) | A request for the list of releases of `nabre/atollo`; if a newer version exists, its download. If a `GITHUB_TOKEN` or `GH_TOKEN` variable is set on the computer, it is sent to `api.github.com` only (to avoid GitHub's rate limit). | Settings › General › **Automatic update** off, or set the `ATOLLO_NO_UPDATE` variable on the computer. The button still works on demand. |
+| About 10 seconds after start, at most once a day per tool | The official source of each tool that offers several versions (for example `nodejs.org`, `go.dev`, `api.adoptium.net`, `api.github.com`) | A request for the list of available versions. To `api.github.com` only: the token above, or your GitHub account's token if you signed in (section 4). | Set the `ATOLLO_NO_UPDATE` variable. |
+| At first start, when you confirm the first-start page (after choosing language and network); later, automatically, when a required component is missing or an app update needs newer ones | Official sources of PowerShell 7, GitHub CLI and the editor (GitHub releases) | Download requests. | No switch: these components are required. Nothing else is installed without your action. |
+| When you install or update a tool (Tools page) or an action needs one (for example Node.js for `npm`) | The tool's official source, for example `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `dl.google.com`, Google's Antigravity update server, GitHub releases | Download requests; checksums are verified locally. | Do not install the tool. |
+| In the background after the editor starts, and when a project is opened | The editor's extension gallery (Open VSX); CodeLLDB from its GitHub release | Requests for the extensions the kit and your projects use. | Do not open the editor, or remove the extensions from it. |
+| Only when you use the GitHub page | GitHub (`github.com`, `api.github.com`), through GitHub CLI | The sign-in (a one-time code you type at `github.com/login/device`), then your account's token with requests to list, clone, rename or delete your repositories. | Do not sign in, or sign out on the GitHub page. |
+| Once, at sign-in or at a start while signed in, only if the commit name and email are empty | GitHub (`api.github.com/user`), through GitHub CLI | Your account's token, to read the account's name, login and number: they become the name of your commits and GitHub's private `noreply` address. | Fill in Settings › GitHub account › “Who signs the commits”, or do not sign in. |
+| Only while the Agents page is shown (on opening, then every 2 minutes), for each agent you are signed in to | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | The agent's own login token, sent only to that agent's provider, to read your plan's usage limits. The token is only read, never refreshed, and never written to the log. | Do not open the Agents page, or do not sign in to the agent. |
+
+Things that are **not** connections made by Atollo itself:
+
+- programs you run in the editor, in the consoles or through actions (`git`, `npm`, `pip`, `cargo`, the AI agents…) connect wherever they are designed to;
+- links you click open in your own browser.
+
+Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers.
+
+## 4. Data stored on your device
+
+Atollo is portable: it keeps its data next to the executable, in the `data/` folder, and your projects in `projects/`. Nothing is uploaded. Deleting the Atollo folder deletes all of it.
+
+| What | Where (inside the Atollo folder) |
+|---|---|
+| Settings: language, proxy, certificates, automatic update, versions | `data/app/settings.json` |
+| The **Gemini API key**, if you enter one (readable by your user only, see below) | `data/app/secrets/gemini-api-key` |
+| The system's root certificates plus your extra PEM file, only when you set one | `data/app/ca-bundle.pem` |
+| App logs (secrets masked), rotated past 1 MB | `data/app/logs/` |
+| Installed tools and their versions | `data/apps/`, `data/app/versions/` |
+| Cached answers of the GitHub API | `data/cache/github/` |
+| The interface's own storage (window layout) and web view cache | `data/webview2/` (Windows and Linux) |
+| GitHub account (GitHub CLI token, stored as a file so it travels with the kit) | `data/gh/` |
+| Git credentials for other hosts (Git Credential Manager, encrypted with Windows DPAPI for your Windows user) | `data/home/.gcm/` (Windows) |
+| AI agents' logins and sessions, written by the agents themselves | `data/home/.claude/`, `data/home/.codex/`, `data/home/.gemini/` |
+| Antigravity's Google sign-in, moved out of the system's credential store after each run | `data/antigravity/keyring.json` |
+| Claude Code's long-lived token, if you use "Connect with a token" (macOS) | `data/agents/claude/oauth-token` |
+| Database passwords (random, generated by Atollo) | `data/app/db/secrets.json`, `data/app/db/mysql.cnf`, `data/projects/<project>/private/db.json` |
+| Editor server data and its per-session access token | `data/vscodium-server/` |
+| Your projects | `projects/` |
+
+The database passwords, the Gemini API key and the Claude token file are created readable by your user only, where the disk supports permissions (NTFS, APFS, ext4…). The other files, `settings.json` included, are ordinary files. On USB sticks formatted FAT32 or exFAT there are no permissions at all: **anyone with the stick can read every file above**. Keep the stick safe, or use a disk with permissions.
+
+Exceptions, outside the Atollo folder:
+
+- **Temporary files**: files in transit go to `<system temp>/Atollo/`; depending on Settings › General › **Temporary folder of programs**, programs may also use the system's temporary folder (by default when the kit is on a USB stick, a network drive or FAT32/exFAT).
+- **Antigravity sign-in**: while Antigravity runs, its login is placed in the system's credential store (on Windows for the logon session only), then moved back into the kit and removed. Credentials that were already on the computer are put back as they were; a sealed note of them (`keyring-before.json`, readable only on that computer) stays in the kit until the next save.
+- **Claude Code on macOS** keeps its own login in the Keychain, unless you use "Connect with a token".
+- **macOS web view**: on macOS the system web view keeps its data where macOS decides (in your user Library).
+- **rustup** writes a Windows registry entry at each install; Atollo removes it.
+
+## 5. Third-party tools and AI agents
+
+Atollo installs and starts programs made by others. When you use them, they talk directly to their own services and **their own privacy policies and terms apply**. Atollo does not proxy, read or store that traffic, except the sessions and logins those programs themselves write to the kit's folder (section 4).
+
+- **Claude Code** (Anthropic): [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
+- **Codex** (OpenAI): [openai.com/policies/privacy-policy](https://openai.com/policies/privacy-policy/)
+- **Antigravity** and the Gemini API (Google): [policies.google.com/privacy](https://policies.google.com/privacy)
+- **GitHub** and GitHub CLI: [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
+- **VSCodium** and Open VSX: [open-vsx.org](https://open-vsx.org/)
+- Package registries (npm, PyPI, crates.io, Maven Central, NuGet…) and the download sites of each tool, under their own policies.
+
+The AI agents send your prompts and the files they read to their providers: that is how they work. Choose what you open with them.
+
+## 6. Website
+
+The website [nabre.github.io/atollo](https://nabre.github.io/atollo/) is a static page hosted on GitHub Pages.
+
+- No analytics, no tracking, no cookies, no advertising. Fonts and images are served from the site itself.
+- The site remembers your theme and language choice in your browser's `localStorage` (`atollo-theme`, `atollo-lang`); it never leaves your browser.
+- To point the download button at the right file, your browser asks `api.github.com` for the list of Atollo releases.
+- GitHub, as the host, may log technical data such as IP addresses: see the [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
+- The site is verified in Google Search Console with a verification file; this adds no tracking for visitors.
+
+## 7. Children
+
+Atollo is a developer tool and is not aimed at children. It collects no data from anyone, children included.
+
+## 8. Terms of use
+
+Atollo is free software released under the [MIT License](../LICENSE). It is provided **"as is", without warranty of any kind**, express or implied; the authors are not liable for any claim, damage or other liability arising from its use. You are responsible for how you use it and for respecting the licenses and terms of the third-party tools and services it installs or connects to (section 5).
+
+## 9. Changes
+
+When this policy changes, the new version is published in this file with a new effective date; earlier versions remain in the repository's history.
+
+## 10. Contact
+
+Questions or concerns: open an issue at [github.com/nabre/atollo/issues](https://github.com/nabre/atollo/issues).

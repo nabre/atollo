@@ -109,7 +109,7 @@
   "signingLink": "Code signing policy",
   "signingHref": "https://github.com/nabre/atollo#code-signing-policy",
   "privacyLink": "Privacy policy",
-  "privacyHref": "https://github.com/nabre/atollo#privacy-policy",
+  "privacyHref": "https://github.com/nabre/atollo/blob/main/docs/PRIVACY.md",
   "themeLabel": "Theme",
   "themeSystem": "Match system",
   "themeLight": "Light",
