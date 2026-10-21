@@ -24,6 +24,7 @@ import {
   TRY_TAB,
   TryGroup,
   useFrameworks,
+  useFrameworksAutosave,
 } from "../frameworks";
 import { t } from "../i18n";
 import {
@@ -50,9 +51,6 @@ import {
 import { KitInfo, Privacy, Updates } from "./about";
 import { useSettingsAutosave } from "./autosave";
 import { AgentSettings, GeneralSettings, NetworkSettings } from "./sections";
-
-/** The wait after an edit of the frameworks before saving it. */
-const FRAMEWORKS_DELAY = 800;
 
 type SectionId = "general" | "network" | "agents" | "update" | "github" | "privacy" | "kit";
 
@@ -100,17 +98,7 @@ export function SettingsPage({
   const loadFrameworks = fw.load;
   useEffect(loadFrameworks, [loadFrameworks]);
 
-  // The frameworks saved a moment after the last edit.
-  const saveFrameworks = fw.save;
-  useEffect(() => {
-    if (!fw.dirty) return;
-    const timer = window.setTimeout(() => {
-      run("frameworks", saveFrameworks);
-    }, FRAMEWORKS_DELAY);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [fw.dirty, saveFrameworks, run]);
+  useFrameworksAutosave(fw, run);
 
   const toggle = (id: PaneId) => {
     setPanes((current) => {
