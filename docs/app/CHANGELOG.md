@@ -1,5 +1,9 @@
 # Novità
 
+## L'intestazione del terminale (21/10/2026)
+
+- **«ATOLLO» in grande** all'apertura del terminale del kit (PowerShell e Bash, su ogni sistema): lettere a blocchi nel colore del terminale, l'ultima O è l'atollo del wordmark (smeraldo, ambra e corallo con l'isolotto, la laguna e le onde). Sotto, il nome del terminale e gli strumenti trovati. `ATOLLO_QUIET` la toglie, come prima.
+
 ## Il terminale dell'editor resta quello del kit (21/10/2026)
 
 - **Profili lasciati da un kit precedente**: con un nome che il kit non usa più, puntavano a una cartella di PowerShell o Git con la versione; dopo un aggiornamento il terminale predefinito dell'editor mancava e VSCodium apriva la shell del PC. Ora quei profili si tolgono e il predefinito torna a «Atollo».
