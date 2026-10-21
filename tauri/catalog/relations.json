@@ -1,5 +1,5 @@
 {
-  "_doc": "Relations between the components (docs/app/DECISIONS.md D-81). links: from needs/uses to, with the versions of `to` it runs on (`range`, npm syntax); parts are named `component/part`. runtimes: what the PC must provide for some components. projects: files of a project that declare the version of a component. Read by relations.rs, which builds the matrix in data\\app\\relations.json.",
+  "_doc": "Relations between the components (docs/app/DECISIONS.md D-81). links: from needs/uses to, with the versions of `to` it runs on (`range`, npm syntax); parts are named `component/part`. runtimes: what the PC must provide for some components. projects: files of a project that declare the version of a component. Read by versions/relations/, which builds the matrix in data\\app\\relations.json.",
   "links": [
     { "from": "php/composer", "to": "php", "kind": "runs-on", "range": ">=7.2.5", "kit": true, "note": "Composer 2.3 e successivi; per PHP più vecchi il kit sceglie il 2.2 LTS" },
     { "from": "apache", "to": "php", "kind": "loads", "range": ">=5.6 <9", "note": "modulo php8apache2_4.dll / php7apache2_4.dll / php5apache2_4.dll, PHP Thread Safe x64" },
