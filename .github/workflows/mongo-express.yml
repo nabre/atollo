@@ -1,0 +1,149 @@
+name: mongo-express
+
+# The kit's mongo-express (DECISIONS.md D-147), built by
+# scripts/build-mongo-express from upstream's source at the tag and commit
+# pinned in sources.txt: the npm package lacks the webpack build and does
+# not start. Pure JavaScript: one zip for every system, run by the kit's
+# Node.js. Pull requests that touch the build only build and test it (the
+# newest version of sources.txt); a tag
+# mongo-express-v<version>-<build> (mongo-express-v1.1.0-rc.4-1) builds
+# that version and publishes the zip and its .sha256 as a GitHub release,
+# whose SHA-256 the catalog pins (mongoExpressBuild of mongo-express in
+# components.json).
+on:
+  push:
+    tags: ['mongo-express-v*']
+  pull_request:
+    paths:
+      - scripts/build-mongo-express/**
+      - runtime/mongo-express.js
+      - .github/workflows/mongo-express.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mongo-express-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      name: ${{ steps.v.outputs.name }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      # Version and build number from the tag on a release; otherwise the
+      # last version of sources.txt and build 0 (a test build never
+      # mistaken for a published one).
+      - name: Version
+        id: v
+        run: |
+          build=0
+          version=$(awk '$1 == "mongo-express" { print $2 }' scripts/build-mongo-express/sources.txt | tail -n 1)
+          if [[ "$GITHUB_REF" == refs/tags/mongo-express-v* ]]; then
+            tag=${GITHUB_REF#refs/tags/mongo-express-v}
+            [[ "$tag" =~ ^([0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?)-([0-9]+)$ ]] || { echo "tag mongo-express-v$tag is not mongo-express-v<version>-<build>" >&2; exit 1; }
+            version=${BASH_REMATCH[1]}
+            build=${BASH_REMATCH[3]}
+            awk -v v="$version" '$1 == "mongo-express" && $2 == v { found = 1 } END { exit !found }' scripts/build-mongo-express/sources.txt \
+              || { echo "mongo-express $version is not in scripts/build-mongo-express/sources.txt" >&2; exit 1; }
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "name=mongo-express-$version-$build" >> "$GITHUB_OUTPUT"
+      - name: Build
+        env:
+          WORK: ${{ runner.temp }}/mongo-express-work
+        run: bash scripts/build-mongo-express/build.sh ${{ steps.v.outputs.version }} ${{ steps.v.outputs.build }} out
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mongo-express
+          path: out/*
+          if-no-files-found: error
+
+  # The archive on a real MongoDB of each major the kit offers that has an
+  # official image, with authentication, through the kit's own starter
+  # (runtime/mongo-express.js).
+  test:
+    name: Test on MongoDB ${{ matrix.mongo }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        mongo: ['7.0', '8.0']
+    services:
+      mongo:
+        image: mongo:${{ matrix.mongo }}
+        env:
+          MONGO_INITDB_ROOT_USERNAME: admin
+          # A throwaway server of this job only.
+          MONGO_INITDB_ROOT_PASSWORD: ci-only-password
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - uses: actions/download-artifact@v7
+        with:
+          name: mongo-express
+          path: out
+      - name: Test
+        env:
+          MONGO_PASSWORD: ci-only-password
+          MONGO_PORT: '27017'
+        run: |
+          (cd out && sha256sum -c ./*.sha256)
+          bash scripts/build-mongo-express/test.sh "out/${{ needs.build.outputs.name }}.zip"
+
+  release:
+    name: Release
+    needs: [build, test]
+    if: startsWith(github.ref, 'refs/tags/mongo-express-v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: mongo-express
+          path: artifacts
+      - name: One archive
+        run: |
+          ls -l artifacts
+          name=${{ needs.build.outputs.name }}
+          [ "mongo-express-v${name#mongo-express-}" = "$GITHUB_REF_NAME" ] || { echo "$name does not match $GITHUB_REF_NAME" >&2; exit 1; }
+          # Only the zip and its .sha256 go in the release.
+          extra=$(find artifacts -type f ! -name "$name.zip" ! -name "$name.zip.sha256")
+          [ -z "$extra" ] || { echo "unexpected files: $extra" >&2; exit 1; }
+          (cd artifacts && sha256sum -c ./*.sha256)
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag=$GITHUB_REF_NAME
+          # Never the repository's latest release: that is the app's (app.yml).
+          gh release create "$tag" artifacts/* --verify-tag --latest=false --title "mongo-express ${tag#mongo-express-v}" \
+            --notes "mongo-express for the kit's MongoDB, built from upstream's source at the commit pinned in scripts/build-mongo-express/sources.txt: webpack build and production dependencies only, pure JavaScript for every system (see BUILDINFO.txt in the zip)."

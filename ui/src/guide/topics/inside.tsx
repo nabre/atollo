@@ -264,6 +264,15 @@ function SourcesTable({ components }: { components: ComponentInfo[] | null }) {
     },
     { id: "web", label: tr("Server web", "Web servers", "Serveurs web", "Webserver") },
     { id: "databases", label: tr("Database", "Databases", "Bases de données", "Datenbanken") },
+    {
+      id: "dbviewers",
+      label: tr(
+        "Visualizzazione database",
+        "Database viewers",
+        "Visualisation des bases de données",
+        "Datenbank-Ansicht",
+      ),
+    },
     { id: "part", label: tr("Parti", "Parts", "Parties", "Teile") },
   ];
   return (

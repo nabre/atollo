@@ -359,14 +359,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       tr("I server di database", "The database servers", "Les serveurs de bases de données", "Die Datenbankserver"),
     subtitle: () =>
       tr(
-        "MySQL e MongoDB del kit: avviarli, le password, le porte, più versioni insieme, phpMyAdmin e l'esploratore dei dati.",
-        "The kit's MySQL and MongoDB: starting them, passwords, ports, several versions side by side, phpMyAdmin and the data explorer.",
-        "MySQL et MongoDB du kit : les démarrer, les mots de passe, les ports, plusieurs versions ensemble, phpMyAdmin et l'explorateur de données.",
-        "MySQL und MongoDB des Kits: sie starten, die Passwörter, die Ports, mehrere Versionen gleichzeitig, phpMyAdmin und der Daten-Explorer.",
+        "MySQL e MongoDB del kit: avviarli, le password, le porte, più versioni insieme, phpMyAdmin, mongo-express e l'esploratore dei dati.",
+        "The kit's MySQL and MongoDB: starting them, passwords, ports, several versions side by side, phpMyAdmin, mongo-express and the data explorer.",
+        "MySQL et MongoDB du kit : les démarrer, les mots de passe, les ports, plusieurs versions ensemble, phpMyAdmin, mongo-express et l'explorateur de données.",
+        "MySQL und MongoDB des Kits: sie starten, die Passwörter, die Ports, mehrere Versionen gleichzeitig, phpMyAdmin, mongo-express und der Daten-Explorer.",
       ),
     icon: codicon("database"),
     keywords:
-      "database mysql mongodb phpmyadmin porta password versione server dati database server port password version bases de données serveur port mot de passe version datenbank server port passwort version",
+      "database mysql mongodb phpmyadmin mongo-express porta password versione server dati database server port password version bases de données serveur port mot de passe version datenbank server port passwort version",
     targetPage: "databases",
   },
   {

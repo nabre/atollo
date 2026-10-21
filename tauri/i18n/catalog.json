@@ -99,6 +99,11 @@
     "fr": "MySQL dans le navigateur : bases de données, tables, lignes, requêtes SQL, utilisateurs, import et export",
     "de": "MySQL im Browser: Datenbanken, Tabellen, Zeilen, SQL-Abfragen, Benutzer, Import und Export"
   },
+  "MongoDB nel browser: database, collezioni, documenti, indici, importazione ed esportazione": {
+    "en": "MongoDB in the browser: databases, collections, documents, indexes, import and export",
+    "fr": "MongoDB dans le navigateur : bases de données, collections, documents, index, import et export",
+    "de": "MongoDB im Browser: Datenbanken, Sammlungen, Dokumente, Indizes, Import und Export"
+  },
   "database in un file: riga di comando sqlite3": {
     "en": "database in a file: the sqlite3 command line",
     "fr": "base de données dans un fichier : ligne de commande sqlite3",

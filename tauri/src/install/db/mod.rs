@@ -6,8 +6,9 @@
 //! swap), `mysql` (Oracle's builds pinned in the catalog), `mongodb` (the
 //! server, mongosh, conda-forge on Linux), `mongodb_tools` (the Database
 //! Tools of each Linux distribution), `sqlite` (sqlite.org, conda-forge on
-//! Linux ARM64), `phpmyadmin`.
+//! Linux ARM64), `phpmyadmin`, `mongo_express` (the kit's build, D-147).
 
+mod mongo_express;
 mod mongodb;
 mod mongodb_tools;
 mod mysql;
@@ -19,6 +20,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
+pub use mongo_express::MongoExpress;
 pub use mongodb::MongoDb;
 pub use mysql::{mysql_lines_for, MySql, MysqlPin};
 pub use phpmyadmin::PhpMyAdmin;
