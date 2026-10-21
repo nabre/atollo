@@ -598,10 +598,10 @@ export const PROJECTS: TopicTexts = {
         />
         <P>
           {tr(
-            "Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per un sito web, una finestra per un'app con finestra, un terminale per un programma a riga di comando. Un pallino verde vuol dire che qualcosa è avviato; un triangolo giallo che mancano dei componenti. Passando il mouse sulla riga compaiono i pulsanti ▶ «Avvia» (o ■ «Ferma»), «Editor», «Terminale» e «Agente».",
-            "Each project row has an icon that says what kind of project it is: a globe for a website, a window for an app with a window, a terminal for a command-line program. A green dot means something is running; a yellow triangle that components are missing. Hovering over the row shows the buttons ▶ “Start” (or ■ “Stop”), “Editor”, “Terminal” and “Agent”.",
-            "Chaque ligne de projet a une icône qui indique de quel type de projet il s'agit : un globe pour un site web, une fenêtre pour une application avec fenêtre, un terminal pour un programme en ligne de commande. Une pastille verte veut dire que quelque chose est démarré ; un triangle jaune qu'il manque des composants. Au survol de la ligne apparaissent les boutons ▶ « Démarrer » (ou ■ « Arrêter »), « Éditeur », « Terminal » et « Agent ».",
-            "Jede Projektzeile hat ein Symbol, das zeigt, welche Art von Projekt es ist: ein Globus für eine Website, ein Fenster für eine App mit Fenster, ein Terminal für ein Kommandozeilenprogramm. Ein grüner Punkt bedeutet, dass etwas gestartet ist; ein gelbes Dreieck, dass Komponenten fehlen. Beim Darüberfahren erscheinen die Schaltflächen ▶ „Starten“ (oder ■ „Beenden“), „Editor“, „Terminal“ und „Agent“.",
+            "Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per un sito web, una finestra per un'app con finestra, un terminale per un programma a riga di comando. Un pallino verde vuol dire che qualcosa è avviato; un triangolo giallo che mancano dei componenti. Passando il mouse sulla riga compaiono i pulsanti ▶ «Avvia» (o ■ «Ferma»), «Editor», «Terminale» e uno per ogni agente installato, con il suo logo.",
+            "Each project row has an icon that says what kind of project it is: a globe for a website, a window for an app with a window, a terminal for a command-line program. A green dot means something is running; a yellow triangle that components are missing. Hovering over the row shows the buttons ▶ “Start” (or ■ “Stop”), “Editor”, “Terminal” and one for each installed agent, with its logo.",
+            "Chaque ligne de projet a une icône qui indique de quel type de projet il s'agit : un globe pour un site web, une fenêtre pour une application avec fenêtre, un terminal pour un programme en ligne de commande. Une pastille verte veut dire que quelque chose est démarré ; un triangle jaune qu'il manque des composants. Au survol de la ligne apparaissent les boutons ▶ « Démarrer » (ou ■ « Arrêter »), « Éditeur », « Terminal » et un par agent installé, avec son logo.",
+            "Jede Projektzeile hat ein Symbol, das zeigt, welche Art von Projekt es ist: ein Globus für eine Website, ein Fenster für eine App mit Fenster, ein Terminal für ein Kommandozeilenprogramm. Ein grüner Punkt bedeutet, dass etwas gestartet ist; ein gelbes Dreieck, dass Komponenten fehlen. Beim Darüberfahren erscheinen die Schaltflächen ▶ „Starten“ (oder ■ „Beenden“), „Editor“, „Terminal“ und eine für jeden installierten Agenten, mit seinem Logo.",
           )}
         </P>
       </Section>
@@ -740,17 +740,12 @@ export const PROJECTS: TopicTexts = {
               ),
             ],
             [
+              tr("Loghi degli agenti", "Agent logos", "Logos des agents", "Logos der Agenten"),
               tr(
-                "Loghi degli agenti e «Agente»",
-                "Agent logos and “Agent”",
-                "Logos des agents et « Agent »",
-                "Logos der Agenten und „Agent“",
-              ),
-              tr(
-                "Scegli un agente con il suo logo e aprilo nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto.",
-                "Choose an agent by its logo and open it in the project. From then on Claude Code and Codex trust the project's folder.",
-                "Choisissez un agent par son logo et ouvrez-le dans le projet. Dès lors, Claude Code et Codex considèrent le dossier du projet comme fiable.",
-                "Wähle einen Agenten über sein Logo und öffne ihn im Projekt. Ab dann vertrauen Claude Code und Codex dem Projektordner.",
+                "Un pulsante per ogni agente installato: il clic sul logo apre quell'agente nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto.",
+                "One button for each installed agent: a click on its logo opens that agent in the project. From then on Claude Code and Codex trust the project's folder.",
+                "Un bouton par agent installé : un clic sur son logo ouvre cet agent dans le projet. Dès lors, Claude Code et Codex considèrent le dossier du projet comme fiable.",
+                "Eine Schaltfläche für jeden installierten Agenten: Ein Klick auf sein Logo öffnet diesen Agenten im Projekt. Ab dann vertrauen Claude Code und Codex dem Projektordner.",
               ),
             ],
             [

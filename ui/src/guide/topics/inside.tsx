@@ -970,10 +970,10 @@ export const INSIDE: TopicTexts = {
             [
               tr("Console e agenti", "Consoles and agents", "Consoles et agents", "Konsolen und Agenten"),
               tr(
-                "Con «Terminale», «Apri», «Agente»",
-                "With “Terminal”, “Open”, “Agent”",
-                "Avec « Terminal », « Ouvrir », « Agent »",
-                "Mit „Terminal“, „Öffnen“, „Agent“",
+                "Con «Terminale», «Apri», i loghi degli agenti",
+                "With “Terminal”, “Open”, the agent logos",
+                "Avec « Terminal », « Ouvrir », les logos des agents",
+                "Mit „Terminal“, „Öffnen“, den Logos der Agenten",
               ),
               tr(
                 "Quando le chiudi, o alla chiusura dell'app",

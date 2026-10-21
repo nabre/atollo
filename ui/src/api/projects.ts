@@ -54,6 +54,8 @@ export interface ProjectInfo {
   default: string | null;
   /** The kit's settings of the project (data\projects\<id>\dev-settings.json). */
   settings: {
+    /** The agent last opened in it: recorded only, every installed agent
+     * has its own button (D-146). */
     agent?: string;
     lastOpened?: number;
     /** Among the favorites of the Projects home. */

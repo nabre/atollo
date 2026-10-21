@@ -5,6 +5,11 @@
 - **Profili lasciati da un kit precedente**: con un nome che il kit non usa più, puntavano a una cartella di PowerShell o Git con la versione; dopo un aggiornamento il terminale predefinito dell'editor mancava e VSCodium apriva la shell del PC. Ora quei profili si tolgono e il predefinito torna a «Atollo».
 - **Nessun nome di prima**: tolti dal codice e dai documenti anche i riferimenti al progetto da cui Atollo è nato.
 
+## Un clic sul logo apre l'agente (21/10/2026)
+
+- **Un pulsante per agente** nella pagina del progetto, nella sua riga della barra laterale e nel «Pannello rapido»: il logo di Claude Code, Codex o Antigravity apre subito quell'agente nel progetto. Non si sceglie più l'agente prima di premere «Agente» (D-146).
+- **Solo gli agenti installati** hanno il loro pulsante; l'errore di un avvio compare sul pulsante di quell'agente.
+
 ## «Apri nel browser» sui siti dei pool (21/10/2026)
 
 - **«Apri nel browser»** apre anche i siti serviti da un pool (`http://<progetto>.localhost:<porta>/`): prima l'app accettava solo `localhost` e `127.0.0.1`, e il pulsante non faceva nulla.

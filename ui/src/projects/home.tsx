@@ -4,7 +4,7 @@
 // without its page.
 import type { ReactNode } from "react";
 import { urlOpen, type AgentInfo, type EditorStatus, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
-import { AgentButton } from "../agents";
+import { AgentButtons } from "../agents";
 import { basesByCategory, PieceLogo, type Frameworks } from "../frameworks";
 import { t } from "../i18n";
 import { ActionBar, Button, Codicon, codicon, Dot, EditorBody, EditorSection, IconButton, Link } from "../workbench";
@@ -315,7 +315,7 @@ function ProjectCard({
               handlers.onTerminal(p);
             }}
           />
-          <AgentButton agents={agents} project={p.id} preferred={p.settings.agent} />
+          <AgentButtons agents={agents} project={p.id} />
         </ActionBar>
       </div>
     </li>
