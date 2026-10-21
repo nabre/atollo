@@ -7,8 +7,9 @@
 //!
 //! - signed in: Claude `.claude\.credentials.json` (OAuth token), the
 //!   token of `claude setup-token` in `data/agents/claude/oauth-token`
-//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`) or
-//!   `ANTHROPIC_API_KEY`; Codex `.codex\auth.json` (token or API key);
+//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`); Codex
+//!   `.codex\auth.json` (token, or the API key of `codex login
+//!   --with-api-key`);
 //!   Antigravity a login saved in the kit (`agents/keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/atollo `core/stats/*.js`);
 //! - launch: the agents are aligned first, the agent opens in a console
@@ -59,7 +60,8 @@ pub struct AgentInfo {
     pub installed: bool,
     pub version: Option<String>,
     pub signed_in: bool,
-    /// How: "account", "api key".
+    /// How: "account", "token" (Claude Code on macOS) or "api key" (Codex's
+    /// auth.json, Antigravity's Gemini key).
     pub sign_in_kind: Option<String>,
     pub running: bool,
     /// "Collega con un token" is offered (Claude Code on macOS).
@@ -84,8 +86,6 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
                 Some("account")
             } else if claude_token::read(kit).is_some() {
                 Some("token")
-            } else if has(env.get("ANTHROPIC_API_KEY")) {
-                Some("api key")
             } else {
                 None
             }
@@ -102,8 +102,8 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
                 .as_ref()
                 .and_then(|a| a.get("OPENAI_API_KEY"))
                 .and_then(Value::as_str))
-                || has(env.get("OPENAI_API_KEY"))
             {
+                // `codex login --with-api-key`: the key in auth.json.
                 Some("api key")
             } else {
                 None

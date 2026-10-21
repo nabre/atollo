@@ -189,7 +189,7 @@ pub struct Ctx {
 
 impl Ctx {
     pub fn new(kit: &Kit, env: &KitEnv, lang: &'static str, net: Option<Net>) -> Ctx {
-        let keys = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY"];
+        let keys = ["GEMINI_API_KEY"];
         Ctx {
             home: kit.home(),
             data: kit.data(),
@@ -423,7 +423,7 @@ pub fn collect(kit: &Kit, env: &KitEnv, lang: &'static str, force: bool) -> Repo
         let claude = installed("claude").then(|| {
             s.spawn(move || {
                 let limits = cached_online("claude", force, cx.now, || claude::limits(cx));
-                let login = claude::read_login(&cx.claude_dir(), cx.has_env("ANTHROPIC_API_KEY"));
+                let login = claude::read_login(&cx.claude_dir());
                 AgentStats {
                     account: account(login.as_ref(), cx.now),
                     limits,
