@@ -94,7 +94,7 @@ Sans l'étape 2, macOS lance l'application depuis une copie temporaire (App Tran
 | **Terminaux** | des consoles avec les outils du kit dans n'importe quel dossier du PC : « Tous les outils » et vos propres terminaux, avec les outils et les versions que vous choisissez |
 | **Outils** | langages et outils par type (système et éditeur, agents IA, langages, outils de développement, serveurs web, bases de données), avec leur logo, leurs dépendances et l'espace disque ; installer, mettre à jour, supprimer, plusieurs versions ; le compilateur Rust (GNU ou MSVC) dans la page de Rust ; la matrice des extensions de l'éditeur |
 | **Guide** | le guide de l'application, en neuf chapitres ; chaque page ouvre son propre sujet |
-| **Paramètres** | enregistrés dès que vous les changez : langue, thème, réseau (proxy, certificats, réseau local), clé Gemini, mises à jour de l'application, confidentialité ; le **compte GitHub** d'Atollo, un seul pour tout (application, Git, éditeur, consoles, agents, GitHub CLI), et qui signe les commits ; où se trouve le dossier d'Atollo ; les instructions des frameworks |
+| **Paramètres** | enregistrés dès que vous les changez : langue, thème, les fichiers temporaires des programmes, les paquets gardés pour réinstaller sans réseau, réseau (proxy, certificats, réseau local), clé Gemini, mises à jour de l'application, confidentialité ; le **compte GitHub** d'Atollo, un seul pour tout (application, Git, éditeur, consoles, agents, GitHub CLI), et qui signe les commits ; où se trouve le dossier d'Atollo ; les instructions des frameworks ; **Le kit**, en lecture seule : ses dossiers, son disque, la plateforme et les versions |
 | **Retirer le lecteur** | ferme tout ce qu'Atollo a ouvert, ramène la connexion d'Antigravity dans `data\` et permet d'éjecter le lecteur |
 
 En bas de chaque page, le panneau **Activité** : ce qui tourne ou s'installe (actions des projets, chaque version des bases de données, pools des serveurs web, composants), avec la sortie et les erreurs au même endroit ; « Tout arrêter » arrête tout après une confirmation. La barre d'état compte les mêmes choses.
@@ -116,11 +116,11 @@ Vous avez un Mac, un PC Linux ou un PC Windows ARM64 ? Essayez Atollo et raconte
 
 ## Limites connues
 
-- Sur Windows 10 et 11 (`x64` et `ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX et R tournent en émulation x64 ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/atollo/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [docs/app/CATALOG.md](app/CATALOG.md) (en anglais), la matrice composant × système dans [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html). Apache sur macOS et Linux est un build du kit (D-116), avec PHP via `php-fpm`.
+- Sur Windows 10 et 11 (`x64`), Windows 11 (`ARM64`), macOS (Apple Silicon et Intel) et Linux (`x64` et `ARM64`). Sur Windows ARM64 l'éditeur, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX et R tournent en émulation x64 ; sur Linux ARM64 Android manque. Les versions publiées pour macOS et Linux sont essayées en CI mais pas encore sur des machines propres ([#5](https://github.com/nabre/atollo/issues/5)), et la connexion des agents reste à essayer sur un Mac ([#6](https://github.com/nabre/atollo/issues/6)) ; composants et sources par système dans [docs/app/CATALOG.md](app/CATALOG.md) (en anglais), la matrice composant × système dans [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html). Apache sur macOS et Linux est un build du kit (D-116), avec PHP via `php-fpm`.
 - Sous Linux, MySQL a besoin de deux bibliothèques du système, `libaio` et `libnuma` : sur Ubuntu 24.04 et Debian 13 `sudo apt install libaio1t64 libnuma1` (sur les versions précédentes `libaio1`), sur Fedora et RHEL `sudo dnf install libaio numactl-libs`. Si elles manquent, Atollo le dit avec la commande à exécuter.
 - Sur macOS et Linux, un dossier Atollo sur exFAT ou FAT (une clé formatée pour Windows) fonctionne, mais ces systèmes de fichiers n'ont pas de liens : là où un programme en apporte, Atollo copie les fichiers (par exemple les 142 liens internes de Git), ce qui prend plus de place. Sur une clé utilisée seulement avec un Mac ou Linux, mieux vaut APFS ou ext4.
-- Hors du dossier d'Atollo, il ne reste que les traces de Windows, les fichiers temporaires de transit dans le dossier temporaire du système (supprimés automatiquement à la fermeture), la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans `data\gh`) et celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement).
-- Les dossiers de `projects\` sont considérés comme fiables par Claude Code et Codex : n'ouvrez que des projets de confiance. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
+- Hors du dossier d'Atollo, il ne reste que les traces de Windows, les fichiers temporaires de transit dans le dossier temporaire du système (supprimés automatiquement à la fermeture ; avec Paramètres › Général › Fichiers temporaires des programmes, les programmes peuvent aussi l'utiliser pendant qu'ils tournent), la connexion de GitHub CLI dans le Gestionnaire d'identification si vous la faites dans une console avec `gh auth login` (celle faite dans les Paramètres reste dans `data\gh`), celle d'Antigravity pendant qu'`agy` est ouvert (pour la session seulement), sur macOS la connexion de Claude Code dans le Trousseau (sauf si vous vous connectez avec un jeton) et les données de la vue web dans votre Bibliothèque, et l'entrée de registre que rustup écrit sous Windows, qu'Atollo supprime. La liste complète est dans [PRIVACY §4](PRIVACY.fr.md#4-les-données-enregistrées-sur-votre-appareil).
+- Le dossier d'un projet devient fiable pour Claude Code et Codex quand vous y ouvrez un agent depuis Atollo (les autres dossiers de `projects\` non) : n'ouvrez un agent que dans des projets de confiance. Les jetons des agents (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) ne vont qu'aux agents lancés par Atollo, ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur. L'éditeur, lui, demande à la première ouverture de chaque projet et ouvre en « mode restreint » ceux auxquels vous ne faites pas confiance.
 - Les limites d'utilisation des agents viennent d'interfaces non documentées des fournisseurs et peuvent cesser de fonctionner après une de leurs mises à jour.
 - « Retirer le lecteur » ne voit pas les programmes du PC qui gardent seulement un fichier du dossier d'Atollo ouvert.
 
@@ -148,14 +148,21 @@ Atollo n'utilise pas d'installateur, n'enregistre aucun service système ni tâc
 
 ```
 Atollo.exe                           ouvre la fenêtre
-Atollo.exe env                       affiche l'environnement que reçoivent les programmes d'Atollo
-Atollo.exe components                liste les langages et outils, avec ceux installés
+Atollo.exe env [--project <nom>]     affiche l'environnement que reçoivent les programmes d'Atollo
+                                     (avec un projet, avec ses versions)
+Atollo.exe components [--target <système>]
+                                     liste les langages et outils, avec ceux installés
+Atollo.exe versions [<id>]           les versions sur le disque ; avec un id, celles à télécharger
 Atollo.exe check                     vérifie que les programmes installés répondent
-Atollo.exe prepare [options]         installe, met à jour et supprime les composants choisis
-    --only a,b                       seulement ceux-ci (et ce dont ils ont besoin)
+Atollo.exe prepare [options]         installe et met à jour les composants choisis
+                                     et supprime ceux qui ne le sont pas
+    --only a,b                       seulement ceux-ci (et ce dont ils ont besoin), ne supprime rien
     --skip a,b                       pas ceux-ci
     --update-all                     met aussi à jour ceux déjà installés
     --force                          télécharge à nouveau
+    --line id=x.y                    ajoute cette version à côté des autres (répétable)
+    --target <système>               prépare pour un autre système : win32-x64, win32-arm64,
+                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <dossier>] [--verbose]
                                      aligne instructions, skills et MCP des trois agents
 Atollo.exe keyring restore|save      connexion d'Antigravity (utilisée par agy.cmd)

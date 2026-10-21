@@ -148,12 +148,22 @@ data\
                               progetto), ca-bundle.pem (D-137), safe-directory.txt (il safe.directory del kit)
     secrets\                  gemini-api-key, leggibile solo dal proprietario (D-137)
     conda\<target>\           pacchetti ed elenchi per ricreare gli ambienti conda senza rete (D-118)
-    db\                       secrets.json (solo root e admin), my.ini; la cartella ha il DACL del proprietario
+    db\                       secrets.json (solo root e admin), mysql.cnf e mysql-lines\<linea>\mysql.cnf
+                              (gli accessi del client mysql); la cartella ha il DACL del proprietario
     pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
     pre-caddy\                copia di servers.json e dei panel.json prima del passaggio da Nginx a Caddy (D-120)
-  db\<motore>\<versione>\     dati di ogni versione dei server di database (D-81, D-102)
+  agents\                     ciò che i tre agenti condividono: AGENTS.md, skills\, mcp.json, lo stato dell'allineamento in .sync\
+  antigravity\                l'accesso di Antigravity tenuto nel kit (keyring.json)
+  apache\                     kit.conf e htdocs\ del sito dell'Apache del kit
+  cache\                      cache dei gestori di pacchetti (npm, pip, uv, Composer, Go, NuGet…) e delle
+                              risposte di GitHub; si può cancellare
+  db\<motore>\<versione>\     dati di ogni versione dei server di database, con il my.cnf del server (D-81, D-102)
+  gh\                         l'accesso di GitHub CLI (hosts.yml)
   home\                       HOME dei programmi: .gitconfig e simili
   kit\                        file scritti da runtime\ a ogni avvio
+  npm-global\  python-user\  composer\  go\  gradle\…
+                              pacchetti e strumenti installati globalmente con npm, pip, Composer, Go e gli altri
+  php\<linea>\                il php.ini di ogni linea di PHP (macOS e Linux: php/<target>/<linea>/)
   projects\<progetto>\        tutto ciò che il kit tiene per un progetto (D-89)
     dev-settings.json  ports.json
     apache\  caddy\           il server proprio del progetto; conf.d\ tiene i file .conf / .caddy dell'utente,
@@ -163,6 +173,8 @@ data\
       backups\                copie dei database (D-78)
   servers\<pool>\             configurazioni generate dei pool Caddy/Apache
   tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
+  vscodium-server\            impostazioni ed estensioni del server dell'editor
+  webview2\                   i dati della finestra dell'app
 ```
 
 Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
@@ -172,7 +184,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`, 1278 righe), `projects\run.rs` (una macchina a stati, 1189 righe) ed `editor\ext.rs` restano interi. Gli altri file dovrebbero restare sotto le 900 righe; oggi nove le superano (sotto, «Opportunità»).
+- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`), `projects\run.rs` (una macchina a stati) ed `editor\ext.rs` restano interi. Gli altri file dovrebbero restare sotto le 900 righe; oggi nove le superano (sotto, «Opportunità»).
 
 ### Comandi Tauri (`commands\`)
 
@@ -377,5 +389,5 @@ Dall'analisi del 15/10/2026, ricontrollata il 20/10. Fatte: comandi per area e r
 5. **Pacchetto dell'interfaccia**: la build avvisa che il file principale supera 500 kB (circa 1 MB, 300 kB compresso, da quando registra tutti i componenti di `vscode-elements`); si possono registrare solo i componenti usati e caricare quando servono le pagine meno usate (Impostazioni, procedura guidata, matrice).
 6. **Controlli ancora nativi** (sopra, «Restano nativi»): servirebbero un `TextField` con suggerimenti, un pulsante con `aria-pressed` e testo, un misuratore con valore.
 7. ~~**`projectmcp.tsx`** non importato~~: era già usato dalla pagina del progetto; dal 17/10/2026 è `projects\mcp.tsx`.
-8. **File sopra le 900 righe**: `install\web.rs` (1423), `db\services\mod.rs` (1120), `net\archive.rs` (1110), `agents\keyring.rs` (1081), `install\native.rs` (988), `install\conda.rs` (980), `install\db.rs` (967), `net\mod.rs` (944), `db\auth.rs` (921). Si dividono come `servers\` (un `impl` per file).
-9. ~~**`ui\src\guide\`**: `sections.tsx` e `model.ts` sono testi della Guida più che codice~~: fatto il 19/10/2026 (D-136), il testo sta in `topics\`, un file per capitolo; i più lunghi (`topics\projects.tsx`, 2118 righe) sono testo.
+8. **File sopra le 900 righe**: `install\web.rs`, `db\services\mod.rs`, `net\archive.rs`, `agents\keyring.rs`, `install\native.rs`, `install\conda.rs`, `install\db.rs`, `net\mod.rs`, `db\auth.rs`, dal più lungo. Si dividono come `servers\` (un `impl` per file).
+9. ~~**`ui\src\guide\`**: `sections.tsx` e `model.ts` sono testi della Guida più che codice~~: fatto il 19/10/2026 (D-136), il testo sta in `topics\`, un file per capitolo; i più lunghi (`topics\projects.tsx`) sono testo.
