@@ -77,11 +77,23 @@ pub fn load_json<T: DeserializeOwned + Default>(path: &Path) -> (T, Option<Strin
 /// Writes through a temporary file in the same folder, then renames it over
 /// the target, so a crash never leaves a half-written file.
 pub fn write_atomic(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    use std::io::Write;
     static TMP_SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let seq = TMP_SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("file");
     let tmp = path.with_file_name(format!("{name}.tmp-{}-{seq}", std::process::id()));
-    fs::write(&tmp, bytes)?;
+    // On the disk before the rename (BUG-V6-27): otherwise a stick pulled
+    // out, or the power gone, right after may leave the new name on a file
+    // of length zero (exFAT/FAT keep no journal of the data), the old
+    // content lost as well.
+    let written = fs::File::create(&tmp).and_then(|mut f| {
+        f.write_all(bytes)?;
+        f.sync_all()
+    });
+    if let Err(e) = written {
+        let _ = fs::remove_file(&tmp);
+        return Err(e);
+    }
     // Two threads of the kit never rename over the same file at once: on
     // Windows one of them would wait for the other's "access denied", and
     // many at once outlast `rename_over`'s second (seen under the whole
