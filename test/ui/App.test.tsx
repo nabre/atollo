@@ -780,6 +780,21 @@ describe("App", () => {
     expect(nav.getByRole("button", { name: "Progetti" }).getAttribute("aria-current")).toBe("page");
   });
 
+  it("reads the list again for a project of the tray menu it does not know yet", async () => {
+    const before = answers({ projects_list: [project("negozio")] });
+    const after = answers({ projects_list: [project("negozio"), project("nuovo")] });
+    let reads = 0;
+    invoke.mockImplementation((cmd) => (cmd === "projects_list" && reads++ > 0 ? after : before)(cmd));
+    render(<App />);
+    expect((await screen.findAllByText("negozio")).length).toBeGreaterThan(0);
+    act(() => {
+      openProjectListener?.({ payload: "nuovo" });
+    });
+    expect(await screen.findByRole("heading", { name: "nuovo" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /nuovo/, selected: true })).toBeTruthy();
+    expect(reads).toBe(2);
+  });
+
   it("prepares the drive for removal", async () => {
     const open = {
       processes: [{ pid: 42, name: "node.exe", program: "data\apps\win32-x64\node\node.exe" }],
