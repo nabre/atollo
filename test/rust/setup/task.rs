@@ -82,6 +82,55 @@ fn component_marked_after_a_move_is_reinstalled_at_start() {
     assert!(!git.needs_reinstall(&kit));
 }
 
+/// A panic in the run's thread (here in its first event) ends the run with
+/// an error: the next one is not refused as "already running".
+#[test]
+fn a_panic_in_the_run_does_not_leave_it_running() {
+    let tmp = TempDir::new("task-panic");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let catalog = Catalog::get();
+    for c in catalog.all().iter().filter(|c| catalog.is_locked(&c.id)) {
+        for key in c.key_paths(&kit) {
+            fs::create_dir_all(key.parent().unwrap()).unwrap();
+            fs::write(&key, b"").unwrap();
+        }
+        c.save_version(&kit, c.version.as_deref().unwrap_or("1.0"))
+            .unwrap();
+    }
+    let task = Arc::new(SetupTask::new(
+        kit,
+        KitEnv::default(),
+        Settings::default(),
+        None,
+    ));
+    let calls = std::sync::atomic::AtomicUsize::new(0);
+    // The first call is the start's, in this thread; the second panics.
+    let notify: Notify = Box::new(move |_| {
+        if calls.fetch_add(1, Ordering::SeqCst) == 1 {
+            panic!("installer bug");
+        }
+    });
+    let opts = Options {
+        skip: catalog.all().iter().map(|c| c.id.clone()).collect(),
+        ..Options::default()
+    };
+    task.start(opts.clone(), false, notify).unwrap();
+    let deadline = std::time::Instant::now() + Duration::from_secs(30);
+    while task.snapshot().running {
+        assert!(std::time::Instant::now() < deadline, "still running");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let error = task.snapshot().error.unwrap_or_default();
+    assert!(error.contains("installer bug"), "{error}");
+    let (tx, rx) = mpsc::channel();
+    let notify: Notify = Box::new(move |s| {
+        let _ = tx.send(s.running);
+    });
+    assert!(task.start(opts, false, notify).is_ok());
+    while rx.recv_timeout(Duration::from_secs(30)).unwrap() {}
+}
+
 /// No network: every required component is already installed.
 #[test]
 fn run_reports_steps_and_ends() {
