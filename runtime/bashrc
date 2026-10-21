@@ -75,6 +75,45 @@ unset -f __atollo_versions
 
 PS1='\[\e[38;5;75m\]Atollo\[\e[0m\] \[\e[38;5;180m\]\w\[\e[0m\]\$ '
 
+# ATOLLO in block letters, in the terminal's own colour; the last O is the
+# atoll of the wordmark: emerald on the left, amber and coral on the right
+# with the islet, the lagoon inside, the waves under it. Same banner as
+# profile.ps1. Bash 3.2 (macOS) included.
+__atollo_banner() {
+    local e=$'\e' i j c text out
+    local A=('  ███  ' ' ██ ██ ' '██   ██' '███████' '██   ██')
+    local T=('████████' '   ██   ' '   ██   ' '   ██   ' '   ██   ')
+    local O=(' █████ ' '██   ██' '██   ██' '██   ██' ' █████ ')
+    local L=('██     ' '██     ' '██     ' '██     ' '███████')
+    local atoll=(' sgaao ' 'ssllloo' 'ssllloo' 'gglll o' ' ggloo ' ' mmmmm ')
+    printf '\n'
+    for i in 0 1 2 3 4 5; do
+        if [ "$i" -lt 5 ]; then
+            text="${A[i]}  ${T[i]}  ${O[i]}  ${L[i]}  ${L[i]}"
+        else
+            text=$(printf '%44s' '')
+        fi
+        out=''
+        for ((j = 0; j < 7; j++)); do
+            c=${atoll[i]:j:1}
+            case "$c" in
+                g) out+="$e[38;2;16;185;129m█" ;;
+                s) out+="$e[38;2;52;211;153m█" ;;
+                a) out+="$e[38;2;251;191;36m█" ;;
+                o) out+="$e[38;2;249;115;22m█" ;;
+                l) out+="$e[38;2;94;234;212m░" ;;
+                m) out+="$e[38;2;209;240;224m~" ;;
+                *) out+=' ' ;;
+            esac
+        done
+        printf '  %s[1m%s%s[0m  %s%s[0m\n' "$e" "$text" "$e" "$out" "$e"
+    done
+    [ -n "$ATOLLO_TERMINAL" ] && printf '  %s[36m%s%s[0m\n' "$e" "$ATOLLO_TERMINAL" "$e"
+    printf '\n'
+}
+[ -z "$ATOLLO_QUIET" ] && __atollo_banner
+unset -f __atollo_banner
+
 if [ -f "$HOME/.bashrc" ]; then
     . "$HOME/.bashrc"
 fi

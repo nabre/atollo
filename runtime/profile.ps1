@@ -83,7 +83,30 @@ if (-not $env:ATOLLO_QUIET) {
     $found = foreach ($name in $tools) {
         if (Get-Command -Name $name -CommandType Application -ErrorAction Ignore) { $name }
     }
-    Write-Host "Atollo" -ForegroundColor Cyan -NoNewline
-    if ($env:ATOLLO_TERMINAL) { Write-Host " · $env:ATOLLO_TERMINAL" -ForegroundColor Cyan -NoNewline }
-    Write-Host ("  " + ($found -join '  ')) -ForegroundColor DarkGray
+    # ATOLLO in block letters, in the terminal's own colour; the last O is
+    # the atoll of the wordmark (docs/brand/wordmark-dark.svg): emerald on
+    # the left, amber and coral on the right with the islet, the lagoon
+    # inside, the waves under it. Same banner as bashrc.
+    $esc = [char]27
+    $glyphs = @(
+        @('  ███  ', ' ██ ██ ', '██   ██', '███████', '██   ██'),
+        @('████████', '   ██   ', '   ██   ', '   ██   ', '   ██   '),
+        @(' █████ ', '██   ██', '██   ██', '██   ██', ' █████ '),
+        @('██     ', '██     ', '██     ', '██     ', '███████'),
+        @('██     ', '██     ', '██     ', '██     ', '███████')
+    )
+    $atoll = ' sgaao ', 'ssllloo', 'ssllloo', 'gglll o', ' ggloo ', ' mmmmm '
+    $rgb = @{ g = '16;185;129'; s = '52;211;153'; a = '251;191;36'; o = '249;115;22'; l = '94;234;212'; m = '209;240;224' }
+    Write-Host
+    for ($row = 0; $row -lt $atoll.Count; $row++) {
+        $text = if ($row -lt 5) { ($glyphs | ForEach-Object { $_[$row] }) -join '  ' } else { ' ' * 44 }
+        $o = foreach ($c in $atoll[$row].ToCharArray()) {
+            $mark = switch ($c) { ' ' { ' ' } 'l' { '░' } 'm' { '~' } default { '█' } }
+            if ($c -eq ' ') { $mark } else { "$esc[38;2;$($rgb[[string]$c])m$mark" }
+        }
+        Write-Host "  $esc[1m$text$esc[0m  $($o -join '')$esc[0m"
+    }
+    $title = if ($env:ATOLLO_TERMINAL) { "$env:ATOLLO_TERMINAL  " } else { '' }
+    Write-Host "  $title" -ForegroundColor Cyan -NoNewline
+    Write-Host ($found -join '  ') -ForegroundColor DarkGray
 }
