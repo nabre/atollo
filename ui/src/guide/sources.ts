@@ -958,7 +958,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "Lignes LTS 8.4 et 9.7 fixées dans le catalogue (sha256ByLine)",
         "LTS-Linien 8.4 und 9.7 im Katalog festgelegt (sha256ByLine)",
       ),
-    binarySource: "cdn.mysql.com/Downloads/MySQL-<linea>/mysql-<v>-winx64.zip",
+    binarySource: () => `cdn.mysql.com/Downloads/MySQL-${lLine()}/mysql-<v>-winx64.zip`,
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
