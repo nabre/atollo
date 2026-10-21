@@ -243,13 +243,14 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         let exe = app(rel);
         if exe.is_file() {
             // Antigravity through the kit's agy.cmd (agy, sh, on macOS and
-            // Linux): it carries the login.
-            let path = if name == "Antigravity" {
-                kit.kit_files()
-                    .join("bin")
-                    .join(crate::router::bins::cmd_name(os, "agy"))
-            } else {
-                exe
+            // Linux): it carries the login and the Gemini key. Claude Code
+            // on macOS through the kit's `claude` (sh): it gives the token
+            // saved in the kit to Claude Code only (SEC-V6-02).
+            let bin = kit.kit_files().join("bin");
+            let path = match name {
+                "Antigravity" => bin.join(crate::router::bins::cmd_name(os, "agy")),
+                "Claude Code" if crate::agents::claude_token::offered(os) => bin.join("claude"),
+                _ => exe,
             };
             out.insert(name.into(), profile(&path, &[], icon));
         }

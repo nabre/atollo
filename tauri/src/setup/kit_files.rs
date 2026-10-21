@@ -27,6 +27,7 @@ const FILES: &[(&str, &str)] = &[
     ("bashrc", include_str!("../../../runtime/bashrc")),
     ("bin/agy.cmd", include_str!("../../../runtime/bin/agy.cmd")),
     ("bin/agy", include_str!("../../../runtime/bin/agy")),
+    ("bin/claude", include_str!("../../../runtime/bin/claude")),
     (
         "bin/gradle.cmd",
         include_str!("../../../runtime/bin/gradle.cmd"),
