@@ -69,7 +69,7 @@ Atollo è un ambiente di sviluppo completo che vive in una sola cartella: su una
 
 Immagina uno zaino da lavoro già pronto: dentro c'è tutto ciò che serve per scrivere programmi e siti, ordinato e funzionante. Lo porti con te, lo apri su qualsiasi computer e lavori, senza installare niente e senza lasciare disordine sul PC che ti ospita. Quando hai finito, lo chiudi e lo porti via.
 
-Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64.
+Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64 (su ARM64 serve Windows 11).
 
 > [!NOTE]
 > **A chi serve**

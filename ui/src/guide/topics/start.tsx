@@ -241,10 +241,10 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64.",
-            "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors.",
-            "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64.",
-            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren.",
+            "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64 (su ARM64 serve Windows 11).",
+            "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors (on ARM64 Windows 11 is needed).",
+            "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64 (sur ARM64, Windows 11 est nécessaire).",
+            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren (auf ARM64 braucht es Windows 11).",
           )}
         </P>
         <Callout tone="info" title={tr("A chi serve", "Who it is for", "À qui il s'adresse", "Für wen es gedacht ist")}>
