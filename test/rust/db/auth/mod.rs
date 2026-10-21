@@ -3,6 +3,7 @@ use super::lock::KitLock;
 use super::names::{legacy_db_name, name_used_by};
 use super::project::ProjectSecrets;
 use super::*;
+#[cfg(windows)]
 use crate::projects::state::ProjectState;
 use std::fs;
 
