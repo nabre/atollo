@@ -148,10 +148,11 @@ data\
                               project), ca-bundle.pem (D-137), safe-directory.txt (the kit's safe.directory)
     secrets\                  gemini-api-key, readable by the owner only (D-137)
     conda\<target>\           packages and lists to recreate the conda environments without the network (D-118)
-    db\                       secrets.json (root and admin only), my.ini; the folder has the owner's DACL
+    db\                       secrets.json (root and admin only), mysql.cnf and mysql-lines\<line>\mysql.cnf
+                              (the mysql client's logins); the folder has the owner's DACL
     pre-v2\                   copy of ports.json and secrets.json before the migration (D-89)
     pre-caddy\                copy of servers.json and of the panel.json files before the switch from Nginx to Caddy (D-120)
-  db\<engine>\<version>\      data of each database server version (D-81, D-102)
+  db\<engine>\<version>\      data of each database server version, with the server's my.cnf (D-81, D-102)
   home\                       HOME of the programs: .gitconfig and the like
   kit\                        files written from runtime\ at every start
   projects\<project>\         everything the kit keeps for a project (D-89)
