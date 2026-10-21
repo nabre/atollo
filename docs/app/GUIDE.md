@@ -164,7 +164,7 @@ Below is the list of components, split into six kinds (each with its description
 | Languages | All languages and runtimes: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, the C/C++ compiler and the others. Python, Node.js, PHP, Go and Java can have several versions; the others stay at the latest. | The ones you use. Others can be added when needed. |
 | Development tools | uv, pnpm and yarn, CMake and Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest. | Usually nothing: the kit installs them by itself when a project or an agent asks for them. |
 | Web server | Apache and Caddy, for the projects' sites and the shared Web Servers. | The one your projects use; Apache is already in the suggested choice. |
-| Databases | MySQL, MongoDB, phpMyAdmin, SQLite. | Only if you need them. MySQL is also installed the first time the server starts. |
+| Databases | MySQL, MongoDB, SQLite; in the browser phpMyAdmin and mongo-express. | Only if you need them. MySQL is also installed the first time the server starts. |
 
 The suggested choice includes the three agents, Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
 
@@ -246,7 +246,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 
 **Agents** — The installed AI agents: signing in to your account, plan limits and usage, shared folder. [How it works](#41-the-agents-claude-code-codex-antigravity)
 
-**Databases** — The kit's MySQL and MongoDB servers: starting, passwords, ports, versions, phpMyAdmin. [How it works](#31-the-database-servers)
+**Databases** — The kit's MySQL and MongoDB servers: starting, passwords, ports, versions, phpMyAdmin and mongo-express. [How it works](#31-the-database-servers)
 
 **Web Servers** — The Caddy and Apache servers shared among projects and the .localhost websites they serve. [How it works](#33-websites-and-localhost-addresses)
 
@@ -862,14 +862,14 @@ Related topics: [3.2 A project's database](#32-a-projects-database), [8.2 The ki
 
 ### 3.1 The database servers
 
-*The kit's MySQL and MongoDB: starting them, passwords, ports, several versions side by side, phpMyAdmin and the data explorer.*
+*The kit's MySQL and MongoDB: starting them, passwords, ports, several versions side by side, phpMyAdmin, mongo-express and the data explorer.*
 
 > **In short**
 >
 > - The kit has a MySQL server and a MongoDB server, shared by all projects and reachable only from this PC.
 > - “Start” installs the server if it is missing, turns it on and generates the administrator password.
 > - Each project then has its own database and its own user, which you create from the project's page.
-> - You browse MySQL with phpMyAdmin; MongoDB with the “Content” tab, read-only.
+> - You browse and edit MySQL with phpMyAdmin and MongoDB with mongo-express, both in the browser; MongoDB can also be read in the “Content” tab.
 
 ![The Databases page, MySQL server](../../ui/public/guide/en/databases.webp)
 
@@ -889,7 +889,7 @@ In the sidebar, the “Servers” box lists MySQL and MongoDB with their port, s
 
 #### A server's page
 
-At the top: the status, the address 127.0.0.1:\<port\>, the version and the “Start” or “Stop” buttons; for MySQL also “Open phpMyAdmin”.
+At the top: the status, the address 127.0.0.1:\<port\>, the version and the “Start” or “Stop” buttons; for MySQL also “Open phpMyAdmin”, for MongoDB “Open mongo-express”.
 
 | Part | What it contains |
 | --- | --- |
@@ -908,12 +908,14 @@ At the top: the status, the address 127.0.0.1:\<port\>, the version and the “S
 | Server | How you see the data |
 | --- | --- |
 | MySQL | “Open phpMyAdmin”. The first time, the kit installs phpMyAdmin (and PHP if it is missing), turns MySQL on if it is off and opens phpMyAdmin in the browser, already connected as root. For another version there is “phpMyAdmin on …” in the “Other versions” part. |
-| MongoDB | The “Content” tab: on the left the databases with their collections and an estimate of the documents (the system ones under “System”); on the right the documents of the chosen collection, 100 per page, read-only, with “Previous page”, “Next page” and “Refresh”. |
+| MongoDB | “Open mongo-express”. The first time, the kit installs mongo-express (and Node.js if it is missing), turns MongoDB on if it is off and opens mongo-express in the browser, already connected as admin: databases, collections, documents, indexes, import and export. For another version there is “mongo-express on …”. Read-only, in the page: the “Content” tab, on the left the databases with their collections and an estimate of the documents (the system ones under “System”), on the right the documents of the chosen collection, 100 per page, with “Previous page”, “Next page” and “Refresh”. |
 
 <details>
-<summary>Under the hood: phpMyAdmin</summary>
+<summary>Under the hood: phpMyAdmin and mongo-express</summary>
 
 phpMyAdmin runs with the kit's built-in PHP server on a random loopback address (127.x.y.z, not 127.0.0.1) and on a port chosen by the system, with a new token at every start: without the token it responds 403. Only one is open at a time; it stops with the MySQL version it is connected to or with the app. Its language is Atollo's.
+
+mongo-express is a build of Atollo's: compiled in CI from mongo-express's code at a pinned commit, published in Atollo's releases and checked with its SHA-256 before it is installed. It runs with the kit's Node.js, the same way as phpMyAdmin: a loopback address of its own, a port no other part of Atollo uses, a new token at every start, 403 without it. MongoDB's admin password reaches it only in its environment, never on the command line or in the browser. mongo-express's interface is in English.
 
 </details>
 
@@ -1457,7 +1459,8 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 | Languages | All languages and runtimes: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. All of them can have several versions side by side, except Rust and C/C++, which stay at the latest version. |
 | Development tools | uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest (only Typst can keep more than one); the ones that are needed install themselves. |
 | Web server | Apache and Caddy, for the projects' sites and the shared Web Servers. |
-| Databases | MySQL, MongoDB (several versions), phpMyAdmin, SQLite. |
+| Databases | The servers: MySQL and MongoDB (several versions), SQLite. |
+| Database viewers | The databases in the browser: phpMyAdmin for MySQL, mongo-express for MongoDB. They open from the Databases page, which installs them the first time. |
 
 #### The “All tools” table
 
@@ -2317,7 +2320,7 @@ Many components are published on GitHub. Without a sign-in, the GitHub API allow
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open. |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Only when the commands of projects and frameworks ask for it. |
 
-#### Complete table of sources (35 components and 5 parts)
+#### Complete table of sources (36 components and 5 parts)
 
 For each component: where the kit reads the versions from, where it downloads the file from, how it verifies it and where it puts it. The columns describe Windows; where macOS and Linux use another source, it is written under the address.
 
@@ -2362,6 +2365,7 @@ For each component: where the kit reads the versions from, where it downloads th
 | [MySQL Community Server](https://www.mysql.com) | 8.4 and 9.7 LTS lines pinned in the catalog (sha256ByLine) | cdn.mysql.com/Downloads/MySQL-\<line\>/mysql-\<v\>-winx64.zip | SHA-256 — SHA-256 pinned per line and target after Oracle's GPG signature | `mysql\<line>\bin\mysqld.exe and mysql.exe` |
 | [MongoDB + mongosh + Database Tools](https://www.mongodb.com) | downloads.mongodb.org/current.json, GitHub mongodb-js/mongosh, tools/db/release.json | Windows x64 .zip archives of mongod, mongosh and mongodump/mongorestore<br>macOS: vendor archives; Linux: server from conda-forge (not relocatable), generic mongosh, Database Tools per distribution | SHA-256 — SHA-256 from MongoDB JSONs + GitHub asset.digest for mongosh | `mongodb\<line>\bin\mongod.exe, mongosh\, mongodb-tools\` |
 | [phpMyAdmin (for MySQL)](https://www.phpmyadmin.net) | www.phpmyadmin.net/home_page/version.json | files.phpmyadmin.net/phpMyAdmin/\<v\>/phpMyAdmin-\<v\>-all-languages.zip | SHA-256 — SHA-256 from the official .sha256 file + php -l syntax check | `phpmyadmin\<line>\index.php` |
+| [mongo-express (for MongoDB)](https://github.com/mongo-express/mongo-express) | version pinned in Atollo's catalog (the kit's build, D-147) | github.com/nabre/atollo/releases/download/mongo-express-v\<v\>/mongo-express-\<v\>.zip | SHA-256 — SHA-256 pinned in the catalog (or the .sha256 of the kit's release); built in CI from mongo-express's pinned commit | `mongo-express\<line>\app.js` |
 | [SQLite CLI](https://sqlite.org) | sqlite.org/download.html (PRODUCT,... CSV rows) | sqlite.org/\<year\>/sqlite-tools-win-(x64\|arm64)-\<v\>.zip<br>Linux ARM64: conda-forge sqlite (sqlite.org publishes no tools), not relocatable; Windows ARM64: the x64 zip when there is no arm64 one | SHA3-256 — SHA3-256 published in the PRODUCT row of the official page | `sqlite\<line>\sqlite3.exe` |
 
 <details>

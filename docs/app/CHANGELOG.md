@@ -1,5 +1,12 @@
 # Novità
 
+## mongo-express: MongoDB nel browser (21/10/2026)
+
+- **«Apri mongo-express»** nella pagina di MongoDB in Database, al posto e con l'aspetto di «Apri phpMyAdmin» per MySQL: la prima volta installa mongo-express (e Node.js se manca) mostrando l'avanzamento, accende MongoDB se è spento e apre nel browser database, collezioni, documenti, indici, importazione ed esportazione, già collegato come admin. Per un'altra versione c'è «mongo-express su …» (D-147).
+- **Una build di Atollo**: il pacchetto npm di mongo-express non parte (manca la parte compilata dell'interfaccia), quindi un workflow lo compila dal suo codice a un commit fissato, lo prova su un MongoDB vero e lo pubblica nelle release di Atollo; il kit lo scarica da lì e lo controlla col suo SHA-256.
+- **Stessa protezione di phpMyAdmin**: indirizzo di loopback suo, porta che nessun'altra parte di Atollo usa, gettone nuovo a ogni avvio, 403 senza; la password di admin solo nell'ambiente del processo. Si ferma con la sua versione di MongoDB, con «Ferma tutto», «Rimuovi l'unità» e la chiusura dell'app.
+- **Strumenti**: «Database» elenca solo i server (MySQL, MongoDB, SQLite); subito dopo la nuova sezione «Visualizzazione database» con phpMyAdmin e mongo-express, nella barra laterale, nella tabella «Tutti gli strumenti», nella matrice del sito e nella tabella delle fonti della Guida.
+
 ## Il terminale dell'editor resta quello del kit (21/10/2026)
 
 - **Profili lasciati da un kit precedente**: con un nome che il kit non usa più, puntavano a una cartella di PowerShell o Git con la versione; dopo un aggiornamento il terminale predefinito dell'editor mancava e VSCodium apriva la shell del PC. Ora quei profili si tolgono e il predefinito torna a «Atollo».

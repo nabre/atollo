@@ -60,10 +60,10 @@ export const SERVICES: TopicTexts = {
             "Jedes Projekt hat dann eine eigene Datenbank und einen eigenen Benutzer, die du auf der Seite des Projekts erstellst.",
           ),
           tr(
-            "MySQL si esplora con phpMyAdmin; MongoDB con la scheda «Contenuto», in sola lettura.",
-            "You browse MySQL with phpMyAdmin; MongoDB with the “Content” tab, read-only.",
-            "MySQL s'explore avec phpMyAdmin ; MongoDB avec l'onglet « Contenu », en lecture seule.",
-            "MySQL durchsuchst du mit phpMyAdmin, MongoDB mit der Registerkarte „Inhalt“, nur lesend.",
+            "MySQL si esplora e si modifica con phpMyAdmin, MongoDB con mongo-express, entrambi nel browser; MongoDB si legge anche nella scheda «Contenuto».",
+            "You browse and edit MySQL with phpMyAdmin and MongoDB with mongo-express, both in the browser; MongoDB can also be read in the “Content” tab.",
+            "MySQL s'explore et se modifie avec phpMyAdmin, MongoDB avec mongo-express, tous deux dans le navigateur ; MongoDB se lit aussi dans l'onglet « Contenu ».",
+            "MySQL durchsuchst und bearbeitest du mit phpMyAdmin, MongoDB mit mongo-express, beide im Browser; MongoDB lässt sich auch in der Registerkarte „Inhalt“ lesen.",
           ),
         ]}
       />
@@ -168,10 +168,10 @@ export const SERVICES: TopicTexts = {
       >
         <P>
           {tr(
-            "In alto lo stato, l'indirizzo 127.0.0.1:<porta>, la versione e i pulsanti «Avvia» o «Ferma»; per MySQL anche «Apri phpMyAdmin».",
-            "At the top: the status, the address 127.0.0.1:<port>, the version and the “Start” or “Stop” buttons; for MySQL also “Open phpMyAdmin”.",
-            "En haut : l'état, l'adresse 127.0.0.1:<port>, la version et les boutons « Démarrer » ou « Arrêter » ; pour MySQL aussi « Ouvrir phpMyAdmin ».",
-            "Oben: der Status, die Adresse 127.0.0.1:<Port>, die Version und die Schaltflächen „Starten“ oder „Beenden“; bei MySQL auch „phpMyAdmin öffnen“.",
+            "In alto lo stato, l'indirizzo 127.0.0.1:<porta>, la versione e i pulsanti «Avvia» o «Ferma»; per MySQL anche «Apri phpMyAdmin», per MongoDB «Apri mongo-express».",
+            "At the top: the status, the address 127.0.0.1:<port>, the version and the “Start” or “Stop” buttons; for MySQL also “Open phpMyAdmin”, for MongoDB “Open mongo-express”.",
+            "En haut : l'état, l'adresse 127.0.0.1:<port>, la version et les boutons « Démarrer » ou « Arrêter » ; pour MySQL aussi « Ouvrir phpMyAdmin », pour MongoDB « Ouvrir mongo-express ».",
+            "Oben: der Status, die Adresse 127.0.0.1:<Port>, die Version und die Schaltflächen „Starten“ oder „Beenden“; bei MySQL auch „phpMyAdmin öffnen“, bei MongoDB „mongo-express öffnen“.",
           )}
         </P>
         <Table
@@ -255,20 +255,20 @@ export const SERVICES: TopicTexts = {
             [
               tr("MongoDB", "MongoDB", "MongoDB", "MongoDB"),
               tr(
-                "La scheda «Contenuto»: a sinistra i database con le loro collezioni e una stima dei documenti (quelli di sistema sotto «Di sistema»); a destra i documenti della collezione scelta, 100 per pagina, in sola lettura, con «Pagina precedente», «Pagina successiva» e «Aggiorna».",
-                "The “Content” tab: on the left the databases with their collections and an estimate of the documents (the system ones under “System”); on the right the documents of the chosen collection, 100 per page, read-only, with “Previous page”, “Next page” and “Refresh”.",
-                "L'onglet « Contenu » : à gauche les bases de données avec leurs collections et une estimation du nombre de documents (celles du système sous « Système ») ; à droite les documents de la collection choisie, 100 par page, en lecture seule, avec « Page précédente », « Page suivante » et « Actualiser ».",
-                "Die Registerkarte „Inhalt“: links die Datenbanken mit ihren Collections und einer Schätzung der Dokumente (die des Systems unter „System“); rechts die Dokumente der gewählten Collection, 100 pro Seite, nur lesend, mit „Vorherige Seite“, „Nächste Seite“ und „Aktualisieren“.",
+                "«Apri mongo-express». La prima volta il kit installa mongo-express (e Node.js se manca), accende MongoDB se è spento e apre mongo-express nel browser, già collegato come admin: database, collezioni, documenti, indici, importazione ed esportazione. Per un'altra versione c'è «mongo-express su …». In sola lettura, nella pagina: la scheda «Contenuto», a sinistra i database con le loro collezioni e una stima dei documenti (quelli di sistema sotto «Di sistema»), a destra i documenti della collezione scelta, 100 per pagina, con «Pagina precedente», «Pagina successiva» e «Aggiorna».",
+                "“Open mongo-express”. The first time, the kit installs mongo-express (and Node.js if it is missing), turns MongoDB on if it is off and opens mongo-express in the browser, already connected as admin: databases, collections, documents, indexes, import and export. For another version there is “mongo-express on …”. Read-only, in the page: the “Content” tab, on the left the databases with their collections and an estimate of the documents (the system ones under “System”), on the right the documents of the chosen collection, 100 per page, with “Previous page”, “Next page” and “Refresh”.",
+                "« Ouvrir mongo-express ». La première fois, le kit installe mongo-express (et Node.js s'il manque), allume MongoDB s'il est éteint et ouvre mongo-express dans le navigateur, déjà connecté en tant qu'admin : bases de données, collections, documents, index, import et export. Pour une autre version, il y a « mongo-express sur … ». En lecture seule, dans la page : l'onglet « Contenu », à gauche les bases de données avec leurs collections et une estimation du nombre de documents (celles du système sous « Système »), à droite les documents de la collection choisie, 100 par page, avec « Page précédente », « Page suivante » et « Actualiser ».",
+                "„mongo-express öffnen“. Beim ersten Mal installiert das Kit mongo-express (und Node.js, falls es fehlt), schaltet MongoDB ein, falls es aus ist, und öffnet mongo-express im Browser, bereits als admin verbunden: Datenbanken, Collections, Dokumente, Indizes, Import und Export. Für eine andere Version gibt es „mongo-express auf …“. Nur lesend, in der Seite: die Registerkarte „Inhalt“, links die Datenbanken mit ihren Collections und einer Schätzung der Dokumente (die des Systems unter „System“), rechts die Dokumente der gewählten Collection, 100 pro Seite, mit „Vorherige Seite“, „Nächste Seite“ und „Aktualisieren“.",
               ),
             ],
           ]}
         />
         <Under
           title={tr(
-            "Sotto il cofano: phpMyAdmin",
-            "Under the hood: phpMyAdmin",
-            "Sous le capot : phpMyAdmin",
-            "Unter der Haube: phpMyAdmin",
+            "Sotto il cofano: phpMyAdmin e mongo-express",
+            "Under the hood: phpMyAdmin and mongo-express",
+            "Sous le capot : phpMyAdmin et mongo-express",
+            "Unter der Haube: phpMyAdmin und mongo-express",
           )}
         >
           <P>
@@ -277,6 +277,14 @@ export const SERVICES: TopicTexts = {
               "phpMyAdmin runs with the kit's built-in PHP server on a random loopback address (127.x.y.z, not 127.0.0.1) and on a port chosen by the system, with a new token at every start: without the token it responds 403. Only one is open at a time; it stops with the MySQL version it is connected to or with the app. Its language is Atollo's.",
               "phpMyAdmin tourne avec le serveur PHP intégré du kit sur une adresse de loopback aléatoire (127.x.y.z, pas 127.0.0.1) et sur un port choisi par le système, avec un nouveau jeton à chaque démarrage : sans le jeton, il répond 403. Un seul s'ouvre à la fois ; il s'arrête avec la version de MySQL à laquelle il est connecté ou avec l'application. Sa langue est celle d'Atollo.",
               "phpMyAdmin läuft mit dem integrierten PHP-Server des Kits auf einer zufälligen Loopback-Adresse (127.x.y.z, nicht 127.0.0.1) und auf einem vom System gewählten Port, mit einem neuen Token bei jedem Start: Ohne Token antwortet es mit 403. Es ist immer nur eines geöffnet; es stoppt mit der MySQL-Version, mit der es verbunden ist, oder mit der App. Seine Sprache ist die von Atollo.",
+            )}
+          </P>
+          <P>
+            {tr(
+              "mongo-express è una build di Atollo: compilata in CI dal codice di mongo-express a un commit fissato, pubblicata nelle release di Atollo e controllata col suo SHA-256 prima dell'installazione. Gira col Node.js del kit, allo stesso modo di phpMyAdmin: indirizzo di loopback suo, porta che nessun'altra parte di Atollo usa, gettone nuovo a ogni avvio, 403 senza. La password di admin di MongoDB gli arriva solo nel suo ambiente, mai sulla riga di comando o nel browser. L'interfaccia di mongo-express è in inglese.",
+              "mongo-express is a build of Atollo's: compiled in CI from mongo-express's code at a pinned commit, published in Atollo's releases and checked with its SHA-256 before it is installed. It runs with the kit's Node.js, the same way as phpMyAdmin: a loopback address of its own, a port no other part of Atollo uses, a new token at every start, 403 without it. MongoDB's admin password reaches it only in its environment, never on the command line or in the browser. mongo-express's interface is in English.",
+              "mongo-express est une build d'Atollo : compilée en CI depuis le code de mongo-express à un commit fixé, publiée dans les releases d'Atollo et vérifiée avec son SHA-256 avant l'installation. Il tourne avec le Node.js du kit, comme phpMyAdmin : une adresse de loopback à lui, un port qu'aucune autre partie d'Atollo n'utilise, un nouveau jeton à chaque démarrage, 403 sans lui. Le mot de passe admin de MongoDB ne lui parvient que dans son environnement, jamais sur la ligne de commande ni dans le navigateur. L'interface de mongo-express est en anglais.",
+              "mongo-express ist ein Build von Atollo: in der CI aus dem Code von mongo-express bei einem festgelegten Commit gebaut, in den Releases von Atollo veröffentlicht und vor der Installation mit seinem SHA-256 geprüft. Es läuft mit dem Node.js des Kits, genauso wie phpMyAdmin: eigene Loopback-Adresse, ein Port, den kein anderer Teil von Atollo nutzt, ein neues Token bei jedem Start, 403 ohne. Das admin-Passwort von MongoDB erreicht es nur in seiner Umgebung, nie auf der Befehlszeile oder im Browser. Die Oberfläche von mongo-express ist auf Englisch.",
             )}
           </P>
         </Under>
