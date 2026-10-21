@@ -263,11 +263,34 @@ fn trust_claude(p: &Paths) -> Result<()> {
     write_json(&file, &fresh)
 }
 
+/// How often the holder of the lock shows it is still at work.
+#[cfg(not(test))]
+const BEAT: Duration = Duration::from_secs(15);
+#[cfg(test)]
+const BEAT: Duration = Duration::from_millis(50);
+
 /// One sync at a time per kit: a lock folder with the pid inside (created
-/// atomically); a stale one (holder gone, or older than 2 minutes) is taken.
-struct Lock(PathBuf);
+/// atomically); a stale one (holder gone, or silent for 2 minutes) is
+/// taken. While the lock is held a thread rewrites `beat` in it every
+/// [`BEAT`], and the silence is measured on that file: a long sync (a slow
+/// USB drive) is never taken for a dead one (BUG-V6-18).
+struct Lock {
+    dir: PathBuf,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    beat: Option<std::thread::JoinHandle<()>>,
+}
 
 impl Lock {
+    /// Time since the holder last showed it is alive: its last beat, or
+    /// the lock's own time before the first one.
+    fn silence(lock: &Path) -> Duration {
+        [lock.join("beat"), lock.join("pid"), lock.to_path_buf()]
+            .iter()
+            .find_map(|f| fs::metadata(f).and_then(|m| m.modified()).ok())
+            .and_then(|t| t.elapsed().ok())
+            .unwrap_or(Duration::MAX)
+    }
+
     fn take(state: &Path) -> Result<Lock> {
         fs::create_dir_all(state)?;
         let lock = state.join("lock");
@@ -277,14 +300,10 @@ impl Lock {
             match fs::create_dir(&lock) {
                 Ok(()) => {
                     fs::write(&pid_file, me.to_string())?;
-                    return Ok(Lock(lock));
+                    return Ok(Lock::beating(lock));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                    let age = fs::metadata(&lock)
-                        .and_then(|m| m.modified())
-                        .ok()
-                        .and_then(|t| t.elapsed().ok())
-                        .unwrap_or(Duration::MAX);
+                    let age = Self::silence(&lock);
                     let holder: u32 = fs::read_to_string(&pid_file)
                         .ok()
                         .and_then(|s| s.trim().parse().ok())
@@ -306,19 +325,54 @@ impl Lock {
         bail!("another sync is still running: skipped")
     }
 
+    /// The lock just taken, with its heartbeat started.
+    fn beating(dir: PathBuf) -> Lock {
+        use std::sync::atomic::Ordering;
+        let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (flag, at) = (std::sync::Arc::clone(&stop), dir.clone());
+        Self::beat_in(&at);
+        let beat = std::thread::Builder::new()
+            .name("agents-sync-lock".into())
+            .spawn(move || {
+                let mut last = std::time::Instant::now();
+                while !flag.load(Ordering::Relaxed) {
+                    std::thread::sleep(Duration::from_millis(10).min(BEAT));
+                    if last.elapsed() >= BEAT {
+                        Self::beat_in(&at);
+                        last = std::time::Instant::now();
+                    }
+                }
+            })
+            .ok();
+        Lock { dir, stop, beat }
+    }
+
+    /// A new time on `beat`, only while the lock is still this process's
+    /// (never on one another process took after judging this one dead).
+    fn beat_in(dir: &Path) {
+        let me = std::process::id().to_string();
+        if fs::read_to_string(dir.join("pid")).is_ok_and(|s| s.trim() == me) {
+            let _ = fs::write(dir.join("beat"), std::process::id().to_string());
+        }
+    }
+
     fn touch(&self) {
-        let _ = fs::write(self.0.join("pid"), std::process::id().to_string());
+        Self::beat_in(&self.dir);
     }
 }
 
 impl Drop for Lock {
     fn drop(&mut self) {
-        let mine = fs::read_to_string(self.0.join("pid"))
+        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(t) = self.beat.take() {
+            let _ = t.join();
+        }
+        let mine = fs::read_to_string(self.dir.join("pid"))
             .ok()
             .and_then(|s| s.trim().parse::<u32>().ok())
             == Some(std::process::id());
         if mine {
-            let _ = fs::remove_dir_all(&self.0);
+            let _ = fs::remove_dir_all(&self.dir);
         }
     }
 }
