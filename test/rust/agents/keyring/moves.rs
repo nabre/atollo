@@ -1,152 +1,15 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Os};
+#[cfg(unix)]
+use crate::agents::keyring::files::files_in;
+#[cfg(unix)]
+use crate::agents::keyring::machine_tag;
+use crate::agents::keyring::tests::{item, kit, T};
+use crate::agents::keyring::{
+    has_login, known_target, login_collection, pending, restore_with, save_after_run_with,
+    save_with, NO_LOGIN_COLLECTION,
+};
+use crate::kit::Os;
 use std::cell::{Cell, RefCell};
-
-#[cfg(windows)]
-#[test]
-fn dpapi_roundtrip() {
-    let blob = base64::engine::general_purpose::STANDARD.encode(b"secret of the PC");
-    let sealed = protect(&blob).unwrap();
-    assert!(sealed.starts_with(DPAPI) && !sealed.contains(&blob));
-    assert_eq!(unprotect(&sealed).unwrap(), blob);
-    assert_eq!(unprotect(&blob).unwrap(), blob);
-}
-
-#[test]
-fn names() {
-    assert!(is_antigravity("gemini:antigravity"));
-    assert!(is_antigravity("jetski-auth:user"));
-    assert!(is_antigravity("Antigravity:x"));
-    assert!(!is_antigravity("git:https://github.com"));
-    assert!(!is_antigravity("myantigravity:x"));
-    assert!(!is_antigravity("antigravity"), "no colon: not go-keyring");
-}
-
-/// The pairs looked up on macOS and Linux are the ones agy writes on
-/// Windows, so keyring.json is the same file on every system.
-#[test]
-fn known_names_match_windows_targets() {
-    assert!(KNOWN.contains(&("gemini", "antigravity")));
-    for (service, user) in KNOWN {
-        let target = format!("{service}:{user}");
-        assert!(is_antigravity(&target));
-        assert_eq!(split_target(&target), Some((*service, *user)));
-    }
-    assert_eq!(split_target("gemini"), None);
-    assert_eq!(split_target(":antigravity"), None);
-    assert_eq!(split_target("gemini:"), None);
-}
-
-/// go-keyring on macOS stores `go-keyring-base64:<base64>` and reads also
-/// the hex form and a value without a prefix.
-#[test]
-fn keychain_values_as_go_keyring() {
-    let raw = br#"{"token":"ya29.a0","refresh":"1//x"}"#;
-    let stored = mac_encode(raw);
-    assert!(stored.starts_with("go-keyring-base64:"));
-    assert_eq!(mac_decode(&stored).unwrap(), raw);
-    assert_eq!(
-        mac_decode(&format!("{stored}\n")).unwrap(),
-        raw,
-        "security -w ends with a newline"
-    );
-    assert_eq!(mac_decode("go-keyring-encoded:6869").unwrap(), b"hi");
-    assert!(mac_decode("go-keyring-encoded:686").is_err());
-    assert_eq!(mac_decode("plain").unwrap(), b"plain");
-    assert!(mac_decode("go-keyring-base64:@@").is_err());
-}
-
-/// The secret goes through stdin, never among the arguments; names that
-/// `security -i` would split or interpret are refused.
-#[test]
-fn keychain_add_command() {
-    let line = mac_add_command("gemini", "antigravity", b"s3cret").unwrap();
-    assert_eq!(
-        line,
-        format!(
-            "add-generic-password -U -s gemini -a antigravity -w {}\n",
-            mac_encode(b"s3cret")
-        )
-    );
-    assert!(mac_add_command("gem ini", "antigravity", b"x").is_err());
-    assert!(mac_add_command("gemini", "a;rm", b"x").is_err());
-    assert!(mac_add_command("gemini", "a\"b", b"x").is_err());
-    assert!(mac_add_command("", "antigravity", b"x").is_err());
-    // Any secret is fine: base64 has only plain characters.
-    assert!(mac_add_command("gemini", "antigravity", "è \n'\"$".as_bytes()).is_ok());
-}
-
-#[test]
-fn unix_items_and_fingerprints() {
-    let a = unix_item("gemini", "antigravity", b"one");
-    assert_eq!(a.target, "gemini:antigravity");
-    assert_eq!(a.user.as_deref(), Some("antigravity"));
-    assert_eq!(
-        a.blob.as_deref(),
-        Some(
-            base64::engine::general_purpose::STANDARD
-                .encode(b"one")
-                .as_str()
-        )
-    );
-    let b = unix_item("gemini", "antigravity", b"two");
-    assert_ne!(a.written, b.written, "a changed secret looks rewritten");
-    assert_eq!(
-        a.written,
-        unix_item("gemini", "antigravity", b"one").written
-    );
-    assert!(
-        !format!("{a:?}").contains(a.blob.as_deref().unwrap()),
-        "no secret in Debug"
-    );
-}
-
-#[test]
-fn sealing_round_trip() {
-    let key = [7u8; 32];
-    let nonce = [3u8; NONCE];
-    let secret = b"secret of this computer, longer than one block of 32 bytes";
-    let blob = base64::engine::general_purpose::STANDARD.encode(secret);
-    let sealed = seal(&key, &nonce, &blob).unwrap();
-    assert!(sealed.starts_with(SEALED));
-    assert!(!sealed.contains(&blob));
-    assert_eq!(open_sealed(&key, &sealed).unwrap(), blob);
-    // Another key, an altered byte, a cut value: refused.
-    assert!(open_sealed(&[8u8; 32], &sealed).is_err());
-    let mut raw = base64::engine::general_purpose::STANDARD
-        .decode(&sealed[SEALED.len()..])
-        .unwrap();
-    raw[NONCE] ^= 1;
-    let altered = format!(
-        "{SEALED}{}",
-        base64::engine::general_purpose::STANDARD.encode(&raw)
-    );
-    assert!(open_sealed(&key, &altered).is_err());
-    assert!(open_sealed(&key, "kc1:AAAA").is_err());
-    assert!(open_sealed(&key, &blob).is_err(), "not sealed");
-    // Another nonce, another value for the same secret.
-    assert_ne!(seal(&key, &[4u8; NONCE], &blob).unwrap(), sealed);
-    // Empty secret.
-    let empty = seal(&key, &nonce, "").unwrap();
-    assert_eq!(open_sealed(&key, &empty).unwrap(), "");
-}
-
-#[test]
-fn files_of_a_run_per_computer() {
-    let dir = Path::new("kit").join("data").join("antigravity");
-    let win = files_in(&dir, None);
-    assert_eq!(win.store, dir.join("keyring.json"));
-    assert_eq!(win.seen, dir.join("keyring-before.json"));
-    assert_eq!(win.starting, dir.join("keyring-starting"));
-    let mac = files_in(&dir, Some("MacBook-Pro"));
-    assert_eq!(mac.store, dir.join("keyring.json"), "the login is shared");
-    assert_eq!(mac.seen, dir.join("keyring-before-MacBook-Pro.json"));
-    assert_eq!(mac.starting, dir.join("keyring-starting-MacBook-Pro"));
-    assert_eq!(host_tag("my mac.local"), "my-mac-local");
-    assert_eq!(host_tag("../x"), "---x");
-    assert_eq!(host_tag("  "), "host");
-    assert_eq!(host_tag(&"a".repeat(300)).len(), 64);
-}
 
 /// A store in memory: `written` is a counter, as a last-write time.
 #[derive(Default)]
@@ -396,49 +259,6 @@ fn sealing_key_gone_drops_the_pending_file() {
     assert_eq!(gone.forgot.get(), 1);
 }
 
-/// The name of the sealing key comes from the kit, not from its folder: a
-/// kit moved keeps it; without the saved id, the kit's id as before.
-#[test]
-fn sealing_key_name_survives_a_move() {
-    assert_eq!(
-        seal_id(Some("0a1b2c3d4e5f6071\n"), "ffff"),
-        "0a1b2c3d4e5f6071"
-    );
-    assert_eq!(seal_id(None, "ffff"), "ffff");
-    for bad in ["", "  ", "../x", "a b", &"a".repeat(65)] {
-        assert_eq!(seal_id(Some(bad), "ffff"), "ffff", "{bad:?}");
-    }
-    let (_tmp, kit) = kit();
-    let system = System::of(&kit);
-    assert_eq!(system.seal_user, format!("antigravity-before-{}", kit.id()));
-    let saved = kit.data().join("antigravity").join(SEAL_ID_FILE);
-    fs::create_dir_all(saved.parent().unwrap()).unwrap();
-    fs::write(&saved, "00112233aabbccdd").unwrap();
-    assert_eq!(
-        System::of(&kit).seal_user,
-        "antigravity-before-00112233aabbccdd"
-    );
-}
-
-/// The tag of a run's files: the machine and the account, never the host
-/// name (which changes with the network and repeats between Macs).
-#[test]
-fn run_files_tagged_by_machine_and_account() {
-    let mac = "4C4C4544-0042-3510-8051-B4C04F4D4C31";
-    let a = machine_tag(mac, 501);
-    assert_eq!(a, machine_tag(&mac.to_ascii_lowercase(), 501), "stable");
-    assert_eq!(a, machine_tag(&format!("{mac}\n"), 501));
-    assert_ne!(a, machine_tag(mac, 502), "another account");
-    assert_ne!(a, machine_tag("4C4C4544-0042-3510-8051-B4C04F4D4C32", 501));
-    assert_eq!(a.len(), 17);
-    assert!(a.starts_with('m') && a[1..].bytes().all(|b| b.is_ascii_hexdigit()));
-    assert!(
-        !a.to_ascii_uppercase().contains("4C4C4544"),
-        "the id is not written"
-    );
-    assert_eq!(host_tag(&a), a, "usable in a file name");
-}
-
 /// Two Macs with the same name (or the name changed between a crash and
 /// the next start): the other computer's "before" file is never read.
 #[cfg(unix)]
@@ -461,26 +281,6 @@ fn another_computers_before_file_is_ignored() {
         "this Mac's login never copied into the kit"
     );
     assert!(theirs.seen.exists(), "left for its own computer");
-}
-
-const T: &str = "gemini:antigravity";
-
-fn item(target: &str, secret: &str) -> Item {
-    Item {
-        target: target.into(),
-        user: Some("antigravity".into()),
-        blob: Some(secret.into()),
-        written: None,
-        persist: None,
-        kit: None,
-    }
-}
-
-fn kit() -> (TempDir, Kit) {
-    let tmp = TempDir::new("keyring-fake");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    (tmp, kit)
 }
 
 /// agy ended: its "starting" mark is gone (as `save_after_run`).
@@ -698,49 +498,6 @@ fn locked_store_fails_closed() {
     assert!(!pending(&kit) && !f.starting.exists());
 }
 
-/// The collection agy's sign-in goes into: `login` by its object path,
-/// whatever `default` is and wherever it sits; never another one.
-#[test]
-fn secret_service_login_collection_only() {
-    const BASE: &str = "/org/freedesktop/secrets/collection/";
-    assert_eq!(LOGIN_COLLECTION, format!("{BASE}login"));
-    // GNOME: `login` (also the `default` alias), `session`.
-    assert_eq!(
-        login_collection([
-            "/org/freedesktop/secrets/collection/session",
-            "/org/freedesktop/secrets/collection/login",
-        ])
-        .unwrap(),
-        1
-    );
-    // KWallet with a `login` collection next to the default `kdewallet`.
-    assert_eq!(
-        login_collection([
-            "/org/freedesktop/secrets/collection/kdewallet",
-            "/org/freedesktop/secrets/collection/login",
-        ])
-        .unwrap(),
-        1
-    );
-    // KeePassXC (a database `Passwords` as `default`), or nothing at all:
-    // fail closed, never `default` nor a collection named like login.
-    for paths in [
-        &[
-            "/org/freedesktop/secrets/collection/Passwords",
-            "/org/freedesktop/secrets/aliases/default",
-        ][..],
-        &[
-            "/org/freedesktop/secrets/collection/login2",
-            "/org/freedesktop/secrets/collection/Login",
-            "/org/freedesktop/secrets/collection/login/x",
-        ][..],
-        &[][..],
-    ] {
-        let e = login_collection(paths.iter().copied()).unwrap_err();
-        assert_eq!(e.to_string(), NO_LOGIN_COLLECTION);
-    }
-}
-
 /// A Secret Service without a `login` collection: the restore fails with
 /// the warning, the kit's sign-in stays in the kit and nothing of this
 /// computer is sealed into it.
@@ -809,19 +566,6 @@ fn no_sealing_key_fails_closed() {
     assert_eq!(empty.secret_of("jetski:other").as_deref(), Some("kit"));
 }
 
-/// `security find-generic-password`: only 44 is "no such item"; 36
-/// (interaction not allowed), 128 (unlock cancelled) or a kill are errors,
-/// never an empty Keychain.
-#[test]
-fn keychain_read_failures_are_errors() {
-    assert!(mac_found(Some(0)).unwrap());
-    assert!(!mac_found(Some(44)).unwrap());
-    for code in [Some(36), Some(128), Some(1), Some(51), None] {
-        assert!(mac_found(code).is_err(), "{code:?}");
-    }
-    assert!(format!("{:#}", mac_found(Some(36)).unwrap_err()).contains("36"));
-}
-
 /// The store becomes unreadable between the start and the end of agy: the
 /// save stops before touching anything (the kit's login kept, the
 /// "before" file kept to retry), and the next save cleans up.
@@ -874,22 +618,6 @@ fn failed_restore_forgets_the_sealing_key() {
     assert_eq!(store.secret_of(T).as_deref(), Some("own"));
 }
 
-#[test]
-fn missing_secret_service_recognized() {
-    let real = "Secret Service: Platform secure storage failure: DBus error: The name org.freedesktop.secrets was not provided by any .service files";
-    assert!(no_secret_service(real));
-    assert!(no_secret_service(
-        "org.freedesktop.DBus.Error.ServiceUnknown: x"
-    ));
-    assert!(no_secret_service(
-        "Unable to autolaunch a dbus-daemon without a $DISPLAY"
-    ));
-    assert!(!no_secret_service(
-        "Secret Service: Couldn't access platform secure storage: collection is locked"
-    ));
-    assert!(!no_secret_service("prompt dismissed"));
-}
-
 /// The kit's copy is owner-only on macOS and Linux.
 #[cfg(unix)]
 #[test]
@@ -900,115 +628,4 @@ fn kit_copy_is_private() {
     save_file(&f.store, &[item(T, "kit")]).unwrap();
     let mode = fs::metadata(&f.store).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode, 0o600);
-}
-
-/// The real Secret Service of Linux (`--ignored`, TESTING.md). With a
-/// `login` collection agy's sign-in is written there, as go-keyring reads
-/// it, listed back and deleted; without one nothing is written anywhere.
-/// Refuses to run where agy is signed in already.
-#[cfg(all(unix, not(target_os = "macos")))]
-#[test]
-#[ignore = "needs a Secret Service (TESTING.md)"]
-fn real_secret_service_login_collection() {
-    use dbus_secret_service::{EncryptionType, SecretService};
-    let (_tmp, kit) = kit();
-    let store = System::of(&kit);
-    assert!(store.list().unwrap().is_empty(), "agy signed in here");
-    let blob = base64::engine::general_purpose::STANDARD.encode(b"kit-secret");
-    let item = Item {
-        blob: Some(blob.clone()),
-        ..item(T, "")
-    };
-    let ss = SecretService::connect(EncryptionType::Plain).unwrap();
-    let all = ss.get_all_collections().unwrap();
-    let paths: Vec<&str> = all.iter().map(|c| &*c.path).collect();
-    eprintln!("collections: {paths:?}");
-    let Ok(at) = login_collection(paths.iter().copied()) else {
-        let e = store.write(&item, PERSIST_SESSION).unwrap_err();
-        assert_eq!(format!("{e:#}"), NO_LOGIN_COLLECTION);
-        assert!(store.list().unwrap().is_empty(), "nothing written");
-        return;
-    };
-    store.write(&item, PERSIST_SESSION).unwrap();
-    let found = all[at]
-        .search_items(std::collections::HashMap::from([
-            ("service", "gemini"),
-            ("username", "antigravity"),
-        ]))
-        .unwrap();
-    assert_eq!(found.len(), 1, "one item, in login");
-    assert_eq!(found[0].get_secret().unwrap(), b"kit-secret");
-    let listed = store.list().unwrap();
-    assert_eq!(listed.len(), 1);
-    assert_eq!(listed[0].blob.as_deref(), Some(blob.as_str()));
-    store.delete(T);
-    assert!(store.list().unwrap().is_empty());
-}
-
-/// The real Credential Manager, with a test-only name: restore puts the
-/// kit's login in Windows (session only), save takes it back.
-#[cfg(windows)]
-#[test]
-fn restore_and_save_round_trip() {
-    let tmp = TempDir::new("keyring");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    let target = format!("antigravity-atollo-test-{}:user", std::process::id());
-    let f = files(&kit);
-    let blob = base64::engine::general_purpose::STANDARD.encode(b"token-1");
-    save_file(
-        &f.store,
-        &[Item {
-            target: target.clone(),
-            user: Some("u".into()),
-            blob: Some(blob),
-            written: None,
-            persist: None,
-            kit: None,
-        }],
-    )
-    .unwrap();
-
-    restore(&kit).unwrap();
-    let in_windows = list()
-        .into_iter()
-        .find(|c| c.target == target)
-        .expect("restored");
-    assert_eq!(
-        in_windows.persist,
-        Some(CRED_PERSIST_SESSION.0),
-        "never on disk"
-    );
-    assert!(f.seen.exists());
-
-    // agy refreshes the token meanwhile.
-    std::thread::sleep(Duration::from_millis(50));
-    let new_blob = base64::engine::general_purpose::STANDARD.encode(b"token-2");
-    write(
-        &Item {
-            target: target.clone(),
-            user: Some("u".into()),
-            blob: Some(new_blob.clone()),
-            written: None,
-            persist: None,
-            kit: None,
-        },
-        CRED_PERSIST_SESSION.0,
-    )
-    .unwrap();
-    let _ = fs::remove_file(&f.starting);
-    save(&kit).unwrap();
-    assert!(
-        list().iter().all(|c| c.target != target),
-        "gone from Windows"
-    );
-    assert!(!f.seen.exists());
-    let stored = read(&f.store);
-    assert_eq!(stored.len(), 1);
-    assert_eq!(
-        stored[0].blob.as_deref(),
-        Some(new_blob.as_str()),
-        "new token kept in the kit"
-    );
-    delete(&target);
 }
