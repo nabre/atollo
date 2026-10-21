@@ -97,10 +97,22 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
              stop {id} {from} first"
         );
     }
+    // Copied beside, then renamed (BUG-V6-09): a copy cut short (a full or
+    // pulled out stick) is never a data folder, whose `mysql.ibd` would
+    // skip the copy at the next start and open what is half there. What a
+    // cut copy left goes first.
+    let partial = root.join(format!("{line}.partial"));
+    if partial.exists() {
+        crate::net::archive::remove_dir(&partial)?;
+    }
     if target.exists() {
         crate::net::archive::remove_dir(&target)?;
     }
-    copy_dir(&root.join(&from), &target)?;
+    if let Err(e) = copy_dir(&root.join(&from), &partial) {
+        let _ = crate::net::archive::remove_dir(&partial);
+        return Err(e.context(format!("{id} {line}: the copy of the data of {from}")));
+    }
+    fs::rename(&partial, &target).with_context(|| target.display().to_string())?;
     crate::log::info(&format!("{id}: data of {from} copied for {line}"));
     Ok(Some(from))
 }
