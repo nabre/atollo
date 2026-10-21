@@ -22,6 +22,19 @@ fn gradle_finds_the_kit_jdks_only() {
     assert!(xml.contains("<version>11</version>") && xml.contains(KIT_MARK));
 }
 
+/// A kit in `D:\R&D`: the toolchains file is still well-formed XML.
+#[test]
+fn maven_toolchains_escape_the_jdk_folder() {
+    let xml = maven_toolchains(&[(
+        "21.0".into(),
+        PathBuf::from(r#"D:\R&D <a> "b" 'c'\java\21.0"#),
+    )]);
+    assert!(xml.contains(
+        r"<jdkHome>D:\R&amp;D &lt;a&gt; &quot;b&quot; &apos;c&apos;\java\21.0</jdkHome>"
+    ));
+    assert!(!xml.contains("R&D"));
+}
+
 #[test]
 fn dotnet_roots_share_their_versions() {
     let tmp = TempDir::new("dotnet-sbs");
