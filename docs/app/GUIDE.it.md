@@ -238,7 +238,7 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 | 3 · Barra laterale | Il titolo della pagina con le sue icone (tra cui il libro «Apri la guida di questa pagina»), spesso una casella di ricerca, e dei riquadri che si aprono e si chiudono con un clic sul titolo. |
 | 4 · Area delle schede | Ciò che hai scelto nella barra laterale si apre in una scheda. La prima scheda di alcune pagine è fissa: il «Pannello rapido» in Progetti, «Tutti gli strumenti» in Strumenti. |
 | 5 · Pannello «Attività» | Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma. |
-| 6 · Barra di stato | A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello. |
+| 6 · Barra di stato | A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori, che mostra o nasconde il pannello «Attività»; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64) e, per ultima, la versione di Atollo: un clic cerca gli aggiornamenti, e accanto compare l'esito (un segno di spunta, la versione nuova o un avviso). |
 
 #### Le pagine
 
@@ -2038,7 +2038,7 @@ Argomenti collegati: [7.1 Rimuovere l'unità in sicurezza](#71-rimuovere-lunità
 
 Con «Aggiornamento automatico» attivo (Impostazioni › Generale), venti secondi dopo l'avvio il kit controlla se c'è una nuova versione, la scarica, ne verifica l'impronta e la prepara. Quando chiudi l'app, la nuova versione prende il posto della vecchia; al successivo avvio la vecchia copia viene cancellata. L'interruttore vale subito: attivarlo avvia un controllo all'istante, spegnerlo prima dei venti secondi ferma quel controllo.
 
-In Impostazioni › «Aggiornamenti» vedi lo stato («Atollo … è la versione più recente.», «La versione … è pronta: sostituisce questa alla chiusura di Atollo.») e il pulsante «Cerca aggiornamenti», che controlla e scarica subito anche con l'aggiornamento automatico spento.
+In Impostazioni › «Aggiornamenti» vedi lo stato («Atollo … è la versione più recente.», «La versione … è pronta: sostituisce questa alla chiusura di Atollo.») e il pulsante «Cerca aggiornamenti», che controlla e scarica subito anche con l'aggiornamento automatico spento. Lo stesso fa un clic sulla versione, l'ultima voce della barra di stato: accanto compare l'esito, e passandoci sopra lo leggi per intero.
 
 > [!NOTE]
 > **Da sapere**

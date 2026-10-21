@@ -5,6 +5,7 @@ import { BrandSymbol } from "../brand";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
+import { updateText } from "../update";
 import { Button, Link, Properties, SettingItem, SettingsGroup } from "../workbench";
 
 /** Where the kit is (was on the Home, D-76). */
@@ -53,13 +54,7 @@ export function Updates() {
   const { data: st, setData: setSt } = useLoad<UpdateStatus | null>(updateStatus, null, { onError: "keep" });
   const { busy, error, run } = useAction();
   if (!st) return null;
-  let text: string;
-  if (st.staged) text = t("La versione {0} è pronta: sostituisce questa alla chiusura di Atollo.", st.staged);
-  else if (st.manual && st.latest)
-    text = t("La versione {0} è disponibile: scaricala dalla pagina della release.", st.latest);
-  else if (st.error) text = t("Controllo non riuscito: {0}", st.error);
-  else if (st.latest && st.latest === st.current) text = t("Atollo {0} è la versione più recente.", st.current);
-  else text = t("Versione installata: {0}", st.current);
+  const text = updateText(st);
   return (
     <SettingsGroup id="s-update" title={t("Aggiornamenti")}>
       <SettingItem title={t("Aggiornamenti di Atollo")} description={text}>

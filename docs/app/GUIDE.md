@@ -238,7 +238,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | 3 · Sidebar | The page title with its icons (including the book “Open the guide for this page”), often a search box, and panes that open and close with a click on their title. |
 | 4 · Tab area | What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools. |
 | 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools and the project actions, each with its output; “Stop all” stops them all after a confirmation. |
-| 6 · Status bar | On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals, the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel. |
+| 6 · Status bar | On the left the Atollo item and the counter of what is running and of the errors, which shows or hides the “Activity” panel; on the right the open terminals, the editor status, the system (for example win32-x64) and, last, the Atollo version: a click checks for updates, and the result appears beside it (a check mark, the new version or a warning). |
 
 #### The pages
 
@@ -2038,7 +2038,7 @@ Related topics: [7.1 Safely removing the drive](#71-safely-removing-the-drive), 
 
 With “Automatic update” on (Settings › General), twenty seconds after start the kit checks whether there is a new version, downloads it, verifies its hash and prepares it. When you close the app, the new version takes the place of the old one; at the next start the old copy is deleted. The switch applies at once: turning it on starts a check right away, turning it off before the twenty seconds stops that check.
 
-In Settings › “Updates” you see the state (“Atollo … is the latest version.”, “Version … is ready: it replaces this one when Atollo closes.”) and the “Check for updates” button, which checks and downloads right away even with automatic update off.
+In Settings › “Updates” you see the state (“Atollo … is the latest version.”, “Version … is ready: it replaces this one when Atollo closes.”) and the “Check for updates” button, which checks and downloads right away even with automatic update off. A click on the version, the last item of the status bar, does the same: the result appears beside it, and hovering over it shows it in full.
 
 > [!NOTE]
 > **Good to know**
