@@ -22,6 +22,19 @@ fn gradle_finds_the_kit_jdks_only() {
     assert!(xml.contains("<version>11</version>") && xml.contains(KIT_MARK));
 }
 
+/// Gradle reads `gradle.properties` in ISO-8859-1: a JDK under
+/// `C:\Users\Müller` is written with `\u` escapes, the file stays ASCII.
+#[test]
+fn gradle_paths_outside_ascii_are_escaped() {
+    let jdks = [PathBuf::from(r"C:\Users\Müller\kit\java\21.0")];
+    let out = gradle_properties("", &jdks);
+    assert!(out.contains(r"paths=C:/Users/M\u00FCller/kit/java/21.0"));
+    assert!(out.is_ascii());
+    assert_eq!(gradle_properties(&out, &jdks), out, "stable");
+    // Outside the BMP: a UTF-16 pair, as Java reads it.
+    assert_eq!(properties_escape("a😀"), r"a\uD83D\uDE00");
+}
+
 /// A kit in `D:\R&D`: the toolchains file is still well-formed XML.
 #[test]
 fn maven_toolchains_escape_the_jdk_folder() {
