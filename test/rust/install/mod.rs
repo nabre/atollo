@@ -233,6 +233,9 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
         cancel: &cancel,
     };
     assert!(install(&ctx, php, &release, &mut Quiet).is_err());
+    // The file added by hand is still there for the next attempt
+    // (BUG-V6-14).
+    assert!(cli.is_file(), "the failed installation consumed it");
 
     assert_eq!(fs::read(old.join("bin").join("php")).unwrap(), b"old php");
     assert_eq!(
@@ -248,4 +251,39 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
         fs::read_to_string(old.join(".atollo-version")).unwrap(),
         "8.4.22"
     );
+}
+
+/// A file added by hand that `fetch` took goes only with an installation
+/// that succeeds; outside an installation, at once (BUG-V6-14).
+#[test]
+fn taken_files_go_only_when_the_installation_succeeds() {
+    let tmp = TempDir::new("taken");
+    let kit = Kit::at(tmp.0.join("kit"), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    let downloads = crate::setup::downloads::dir(&kit);
+    fs::create_dir_all(&downloads).unwrap();
+    let file = downloads.join("tool.zip");
+    fs::write(&file, b"tool").unwrap();
+    let expect = Expect::Sha256(verify::sha256_hex(&file).unwrap());
+    let take = || Taken::ByHand(file.clone(), expect.clone());
+
+    let failed = keeping_taken(&kit, || -> Result<()> {
+        taken(&kit, take());
+        bail!("extraction failed")
+    });
+    assert!(failed.is_err());
+    assert!(file.is_file(), "kept for the next attempt");
+
+    keeping_taken(&kit, || {
+        // An inner installation that fails keeps only its own files.
+        let _ = keeping_taken(&kit, || -> Result<()> { bail!("inner") });
+        taken(&kit, take());
+        Ok(())
+    })
+    .unwrap();
+    assert!(!file.exists(), "used by the installation");
+
+    fs::write(&file, b"tool").unwrap();
+    taken(&kit, take());
+    assert!(!file.exists(), "outside an installation");
 }

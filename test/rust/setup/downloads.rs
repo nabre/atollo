@@ -36,10 +36,18 @@ fn added_files_are_used_by_checksum() {
     let work = tmp.0.join("work");
     fs::create_dir_all(&work).unwrap();
     let dest = work.join("tool.zip");
-    assert!(!take(&kit, "tool.zip", &sha256(b"missing"), &dest).unwrap());
-    assert!(take(&kit, "tool.zip", &sha256(b"tool"), &dest).unwrap());
+    assert!(take(&kit, "tool.zip", &sha256(b"missing"), &dest)
+        .unwrap()
+        .is_none());
+    let file = take(&kit, "tool.zip", &sha256(b"tool"), &dest)
+        .unwrap()
+        .unwrap();
     assert_eq!(fs::read(&dest).unwrap(), b"tool");
-    assert!(!dir(&kit).join("tool (1).zip").exists(), "used once");
+    // Copied: an installation that fails finds it again (BUG-V6-14).
+    assert_eq!(file, dir(&kit).join("tool (1).zip"));
+    assert!(file.is_file(), "kept until the installation succeeds");
+    used(&kit, &file, &sha256(b"tool"));
+    assert!(!file.exists(), "used once");
     assert!(dir(&kit).join("other.zip").exists(), "another file is kept");
 }
 
@@ -68,8 +76,11 @@ fn kept_in_the_host_temp_folder() {
     assert!(!old.join("other.zip").exists(), "nothing new in the kit");
 
     let dest = tmp.0.join("tool.zip");
-    assert!(take(&kit, "tool.zip", &sha256(b"tool"), &dest).unwrap());
+    let file = take(&kit, "tool.zip", &sha256(b"tool"), &dest)
+        .unwrap()
+        .unwrap();
     assert_eq!(fs::read(&dest).unwrap(), b"tool");
+    used(&kit, &file, &sha256(b"tool"));
     assert!(!here.join("tool.zip").exists(), "used once");
 }
 
@@ -146,10 +157,16 @@ fn files_added_for_a_component_go_with_it() {
 
     // Used by an installation: nobody waits for it any more.
     let dest = tmp.0.join("both.zip");
-    assert!(take(&kit, "both.zip", &sha256(b"both"), &dest).unwrap());
+    let file = take(&kit, "both.zip", &sha256(b"both"), &dest)
+        .unwrap()
+        .unwrap();
+    assert_eq!(read_wanted(&dir).len(), 2, "waited for until used");
+    used(&kit, &file, &sha256(b"both"));
     assert_eq!(read_wanted(&dir).len(), 1);
     assert!(
-        !take(&kit, WANTED, &sha256(b"none"), &dest).unwrap(),
+        take(&kit, WANTED, &sha256(b"none"), &dest)
+            .unwrap()
+            .is_none(),
         "the notes are never a candidate"
     );
 }
