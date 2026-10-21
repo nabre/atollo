@@ -161,6 +161,10 @@ impl Net {
             ))
             .timeout_connect(Some(Duration::from_secs(30)))
             .timeout_recv_response(Some(Duration::from_secs(60)))
+            // Texts and API answers (at most 32 MB): a body that stalls after
+            // the headers ends here instead of at the system's TCP timeout.
+            // Downloads have no total limit, only `STALL` (`copy_body`).
+            .timeout_recv_body(Some(TEXT_BODY))
             .build();
         Ok(Net {
             agent: config.new_agent(),
@@ -249,6 +253,12 @@ impl Net {
     }
 
     fn get(&self, url: &str) -> Result<ureq::http::Response<ureq::Body>> {
+        self.request(url)
+            .call()
+            .with_context(|| format!("GET {url}"))
+    }
+
+    fn request(&self, url: &str) -> ureq::RequestBuilder<ureq::typestate::WithoutBody> {
         let mut request = self.agent.get(url);
         // The token (CI only) goes to the GitHub API and nowhere else.
         if let Some(token) = self
@@ -261,7 +271,7 @@ impl Net {
         if url.starts_with("https://api.github.com/") {
             request = request.header("Accept", "application/vnd.github+json");
         }
-        request.call().with_context(|| format!("GET {url}"))
+        request
     }
 
     pub fn text(&self, url: &str) -> Result<String> {
@@ -541,30 +551,24 @@ impl Net {
             if cancel.load(Ordering::Relaxed) {
                 return Err(Cancelled.into());
             }
-            let response = self.get(url)?;
+            let response = self
+                .request(url)
+                .config()
+                .timeout_recv_body(None)
+                .build()
+                .call()
+                .with_context(|| format!("GET {url}"))?;
             let total = response
                 .headers()
                 .get("content-length")
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.parse().ok());
-            let mut body = response.into_body().into_reader();
+            let body = response.into_body().into_reader();
             let mut file = File::create(&part).with_context(|| part.display().to_string())?;
-            let mut buf = vec![0u8; 256 * 1024];
-            let mut done = 0u64;
-            loop {
-                if cancel.load(Ordering::Relaxed) {
-                    return Err(Cancelled.into());
-                }
-                let n = body
-                    .read(&mut buf)
-                    .with_context(|| format!("downloading {url}"))?;
-                if n == 0 {
-                    break;
-                }
-                file.write_all(&buf[..n])?;
-                done += n as u64;
-                progress(done, total);
-            }
+            let done = copy_body(body, &mut file, cancel, STALL, &mut |done| {
+                progress(done, total)
+            })
+            .with_context(|| format!("downloading {url}"))?;
             file.flush()?;
             if let Some(total) = total {
                 if done != total {
@@ -579,6 +583,64 @@ impl Net {
                 let _ = fs::remove_file(&part);
                 Err(e)
             }
+        }
+    }
+}
+
+/// The longest wait for the body of a text or an API answer.
+const TEXT_BODY: Duration = Duration::from_secs(300);
+
+/// A download that receives nothing for this long has stalled (a proxy
+/// that stops sending after the headers) and is given up.
+const STALL: Duration = Duration::from_secs(60);
+
+/// Copies `body` to `file` and gives the bytes copied; `progress(done)`
+/// after each read. The reads happen in a thread of their own, so a read
+/// that never returns does not hold the download: Cancel stops it at once
+/// and `stall` without a byte is an error, instead of waiting for the
+/// system's TCP timeout. The thread ends at its next read, or when the
+/// connection closes.
+pub(crate) fn copy_body(
+    mut body: impl Read + Send + 'static,
+    file: &mut impl Write,
+    cancel: &AtomicBool,
+    stall: Duration,
+    progress: &mut dyn FnMut(u64),
+) -> Result<u64> {
+    use std::sync::mpsc::{sync_channel, RecvTimeoutError};
+    // A few reads ahead of the disk at most.
+    let (tx, rx) = sync_channel::<std::io::Result<Vec<u8>>>(4);
+    std::thread::spawn(move || loop {
+        let mut buf = vec![0u8; 256 * 1024];
+        let read = body.read(&mut buf).map(|n| {
+            buf.truncate(n);
+            buf
+        });
+        let end = !matches!(&read, Ok(b) if !b.is_empty());
+        if tx.send(read).is_err() || end {
+            break;
+        }
+    });
+    let mut done = 0u64;
+    let mut last = std::time::Instant::now();
+    loop {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Cancelled.into());
+        }
+        match rx.recv_timeout(Duration::from_millis(200)) {
+            Ok(Ok(chunk)) if chunk.is_empty() => return Ok(done),
+            Ok(Ok(chunk)) => {
+                file.write_all(&chunk)?;
+                done += chunk.len() as u64;
+                last = std::time::Instant::now();
+                progress(done);
+            }
+            Ok(Err(e)) => return Err(e.into()),
+            Err(RecvTimeoutError::Timeout) if last.elapsed() >= stall => {
+                bail!("no data for {stall:?} after {done} bytes")
+            }
+            Err(RecvTimeoutError::Timeout) => {}
+            Err(RecvTimeoutError::Disconnected) => bail!("the download stopped"),
         }
     }
 }
