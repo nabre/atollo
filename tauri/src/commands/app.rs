@@ -162,14 +162,21 @@ pub(super) fn open_in_browser(url: &str) -> CmdResult<()> {
     crate::os::jobs::open_url(url).or_fail_chain("browser")
 }
 
-/// `http://localhost:<port>/…` or `http://127.0.0.1:<port>/…` only.
+/// `http://localhost:<port>/…`, `http://127.0.0.1:<port>/…` or a name under
+/// `localhost` (`http://<project>.localhost:<port>/`, the sites of a pool,
+/// D-101), which every browser resolves to the PC itself.
 pub(super) fn is_local_url(url: &str) -> bool {
     let Some(rest) = url.strip_prefix("http://") else {
         return false;
     };
     let host = rest.split(['/', '?', '#']).next().unwrap_or_default();
     let (name, port) = host.rsplit_once(':').unwrap_or((host, "80"));
-    matches!(name, "localhost" | "127.0.0.1")
+    let under_localhost = name.strip_suffix(".localhost").is_some_and(|labels| {
+        labels
+            .split('.')
+            .all(|l| !l.is_empty() && l.chars().all(|c| c.is_ascii_alphanumeric() || c == '-'))
+    });
+    (matches!(name, "localhost" | "127.0.0.1") || under_localhost)
         && port.parse::<u16>().is_ok()
         && !url
             .chars()
