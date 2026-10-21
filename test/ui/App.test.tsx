@@ -291,15 +291,46 @@ describe("App", () => {
     expect(list.queryByRole("img", { name: "TypeScript" })).toBeNull();
     fireEvent.click(list.getByRole("button", { name: "Terminale" }));
     expect(invoke).toHaveBeenCalledWith("terminal_open", { project: "app & co" });
-    // the row's agent is the one last used in the project
-    fireEvent.click(await list.findByTitle("Apre Codex nel progetto app & co"));
-    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
+    // one button per installed agent, whatever was used last: one click
+    // opens that agent (D-146); none for an agent not installed
+    expect(list.getByRole("button", { name: "Apri Codex" }).title).toBe("Apre Codex nel progetto app & co");
+    expect(list.queryByRole("button", { name: "Apri Antigravity" })).toBeNull();
+    fireEvent.click(await list.findByRole("button", { name: "Apri Claude Code" }));
+    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "claude", project: "app & co" });
     expect(invoke).not.toHaveBeenCalledWith("terminal_open", { project: null });
-    // on the project's page, the same agent is the one chosen
+    // on the project's page, the same buttons, no choice to make first
     fireEvent.click(list.getByTitle("Apre la pagina di app & co"));
+    const header = within(await screen.findByRole("toolbar", { name: "Agenti" }));
+    expect(screen.queryByRole("radio", { name: "Codex" })).toBeNull();
+    fireEvent.click(header.getByRole("button", { name: "Apri Codex" }));
+    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "codex", project: "app & co" });
+  });
+
+  it("shows the error of a launch on that agent's button", async () => {
+    const base = answers({ projects_list: [project("app")], agents_status: SAMPLE_AGENTS });
+    invoke.mockImplementation((cmd) =>
+      cmd === "agent_launch" ? Promise.reject(new Error("Codex non parte")) : base(cmd),
+    );
+    render(<App />);
+    const list = within(await screen.findByRole("list", { name: "Progetti" }));
+    fireEvent.click(await list.findByRole("button", { name: "Apri Codex" }));
     await waitFor(() => {
-      expect(screen.getByRole("radio", { name: "Codex" }).getAttribute("aria-checked")).toBe("true");
+      expect(list.getByRole("button", { name: "Apri Codex" }).title).toMatch(/Codex non parte/);
     });
+    expect(list.getByRole("button", { name: "Apri Claude Code" }).title).toBe("Apre Claude Code nel progetto app");
+  });
+
+  it("offers no agent button when no agent is installed", async () => {
+    invoke.mockImplementation(
+      answers({
+        projects_list: [project("app")],
+        agents_status: SAMPLE_AGENTS.map((a) => ({ ...a, installed: false })),
+      }),
+    );
+    render(<App />);
+    const list = within(await screen.findByRole("list", { name: "Progetti" }));
+    expect(await list.findByRole("button", { name: "Terminale" })).toBeTruthy();
+    expect(list.queryByRole("button", { name: /^Apri (Claude Code|Codex|Antigravity)$/ })).toBeNull();
   });
 
   it("opens a project's page with its sections and creates its database", async () => {

@@ -319,6 +319,31 @@ export function LanguageTag({ name }: { name: string }) {
   );
 }
 
+const ICONS = new Map<string, IconType>();
+
+/** The logo of a component as an icon of `IconButton` (its colour kept,
+ * the button's busy pulse passed on); the same function for the same id. */
+export function componentIcon(id: string): IconType {
+  let icon = ICONS.get(id);
+  if (!icon) {
+    const logo = COMPONENTS[id];
+    icon = function ComponentIcon({ size = 16, className }: IconBaseProps) {
+      if (!logo) return null;
+      const Icon = logo.icon;
+      return (
+        <Icon
+          size={size}
+          aria-hidden="true"
+          className={className ? `shrink-0 ${className}` : "shrink-0"}
+          style={logo.color ? { color: logo.color } : undefined}
+        />
+      );
+    };
+    ICONS.set(id, icon);
+  }
+  return icon;
+}
+
 export const hasLogo = (id: string): boolean => id in COMPONENTS;
 
 /** The logo of a framework of the wizard, or `fallback` when it has none. */

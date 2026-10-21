@@ -284,9 +284,18 @@ export function ToggleButton({
 }
 
 /** A row of icon actions (monaco-action-bar). */
-export function ActionBar({ children, className = "" }: { children: ReactNode; className?: string }) {
+export function ActionBar({
+  children,
+  className = "",
+  label,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** The toolbar's accessible name, when a page has more than one. */
+  label?: string;
+}) {
   return (
-    <div role="toolbar" className={`flex shrink-0 items-center gap-0.5 ${className}`}>
+    <div role="toolbar" aria-label={label} className={`flex shrink-0 items-center gap-0.5 ${className}`}>
       {children}
     </div>
   );

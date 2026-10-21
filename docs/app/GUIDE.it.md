@@ -471,7 +471,7 @@ In cima, le icone: «Nuovo progetto», «Nuovo progetto da framework o CMS», «
 | Nuovo progetto | L'albero delle tre strade per creare un progetto, con le basi dei framework. |
 | Dai tuoi repository GitHub | I repository del tuo account, da clonare. |
 
-Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per un sito web, una finestra per un'app con finestra, un terminale per un programma a riga di comando. Un pallino verde vuol dire che qualcosa è avviato; un triangolo giallo che mancano dei componenti. Passando il mouse sulla riga compaiono i pulsanti ▶ «Avvia» (o ■ «Ferma»), «Editor», «Terminale» e «Agente».
+Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per un sito web, una finestra per un'app con finestra, un terminale per un programma a riga di comando. Un pallino verde vuol dire che qualcosa è avviato; un triangolo giallo che mancano dei componenti. Passando il mouse sulla riga compaiono i pulsanti ▶ «Avvia» (o ■ «Ferma»), «Editor», «Terminale» e uno per ogni agente installato, con il suo logo.
 
 #### Il «Pannello rapido»
 
@@ -498,7 +498,7 @@ In alto ci sono il nome, il tipo e la piattaforma riconosciuta (per esempio «La
 | Avvia / Ferma | Avvia l'azione predefinita del progetto, o la ferma se è in corso. |
 | Editor | Apre il progetto nell'editor, in una finestra di Atollo. |
 | Terminale | Apre una console del kit nella cartella del progetto, con le sue versioni. |
-| Loghi degli agenti e «Agente» | Scegli un agente con il suo logo e aprilo nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto. |
+| Loghi degli agenti | Un pulsante per ogni agente installato: il clic sul logo apre quell'agente nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto. |
 | Apri la cartella | Apre la cartella del progetto in Esplora file (o Finder). |
 | Aggiorna | Rilegge il progetto: utile dopo aver cambiato a mano panel.json o i file del progetto. |
 
@@ -1199,7 +1199,7 @@ Argomenti collegati: [2.5 Editor, terminale ed estensioni](#25-editor-terminale-
 >
 > - Un agente IA è un assistente che lavora nella cartella del progetto: legge il codice, lo modifica, esegue comandi.
 > - Il kit ne offre tre: Claude Code (Anthropic), Codex (OpenAI) e Antigravity (Google). Si installano da Strumenti.
-> - Si aprono sempre dentro un progetto, dalla pagina Progetti, con il pulsante «Agente».
+> - Si aprono sempre dentro un progetto, dalla pagina Progetti, con il pulsante che porta il logo dell'agente.
 > - L'accesso al tuo account si fa al primo avvio dell'agente e resta nel kit, anche su un altro PC.
 
 ![La pagina Agenti](../../ui/public/guide/it/agents.webp)
@@ -1223,15 +1223,15 @@ Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo av
 La pagina Agenti non avvia gli agenti: un agente lavora sempre nella cartella di un progetto, quindi si apre dalla pagina Progetti.
 
 1. Apri il progetto.
-2. In alto, accanto a «Editor» e «Terminale», fai clic sul logo dell'agente che vuoi usare.
-3. Premi «Agente». Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.
+2. In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Antigravity»). Fai clic su quello dell'agente che vuoi usare.
+3. L'agente parte subito. Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.
 
-Più in fretta: il pulsante «Agente» nella riga del progetto (barra laterale o «Pannello rapido») apre l'ultimo agente usato in quel progetto, o il primo installato.
+Gli stessi pulsanti sono nella riga del progetto (barra laterale o «Pannello rapido»): un clic sul logo apre quell'agente nel progetto. Un agente non installato non ha il suo pulsante; se non ne è installato nessuno, non ci sono pulsanti degli agenti.
 
 <details>
 <summary>Sotto il cofano</summary>
 
-- L'agente scelto viene ricordato nel file dev-settings.json del progetto.
+- L'ultimo agente aperto viene annotato nel file dev-settings.json del progetto.
 - Prima dell'avvio il kit installa ciò che manca (l'agente, le sue dipendenze, i programmi dei server MCP come Node.js o uv), applica le versioni del progetto e allinea istruzioni, skill e server MCP. Quando l'agente termina, li allinea di nuovo.
 - Antigravity parte attraverso un piccolo programma del kit (agy) che rimette il tuo accesso nel sistema prima dell'avvio e lo riporta nel kit alla fine.
 
@@ -2241,7 +2241,7 @@ Argomenti collegati: [8.1 Portabile e isolato: che cosa vuol dire](#81-portabile
 | Server web condivisi | Con il primo progetto che li usa, dalla pagina Server Web o con «Avvia con Atollo» | Con l'ultimo progetto, salvo se avviati dalla pagina Server Web o con «Mantieni attivo anche senza progetti»; con «Ferma»; alla chiusura |
 | Database | Con «Avvia», «Avvia con Atollo» o quando un progetto li chiede | Con «Ferma», o alla chiusura (arresto ordinato) |
 | Editor | Con il primo «Editor» | Alla chiusura dell'app |
-| Console e agenti | Con «Terminale», «Apri», «Agente» | Quando le chiudi, o alla chiusura dell'app |
+| Console e agenti | Con «Terminale», «Apri», i loghi degli agenti | Quando le chiudi, o alla chiusura dell'app |
 
 Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata e i pool attivi; «Ferma tutto» li ferma dopo una conferma.
 
@@ -2646,7 +2646,7 @@ Atollo sì (se lasci attivo l'aggiornamento automatico); i componenti no, li agg
 
 **Perché la pagina Agenti non apre gli agenti?**
 
-Perché un agente lavora sempre in un progetto: si apre dalla pagina Progetti, con il pulsante «Agente». La pagina Agenti serve per accesso, limiti e cartella condivisa.
+Perché un agente lavora sempre in un progetto: si apre dalla pagina Progetti, con il pulsante che porta il logo dell'agente. La pagina Agenti serve per accesso, limiti e cartella condivisa.
 
 > [!TIP]
 > **Consiglio**
