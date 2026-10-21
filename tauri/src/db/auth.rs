@@ -128,7 +128,7 @@ const NAMES: &str = "names";
 /// the processes of the kit the lock of the Antigravity keyring
 /// (`agents/keyring.rs`): `Local\Atollo-db-json-<kit id>` on Windows, an
 /// exclusive `flock` on `data/app/db/db-json.lock` elsewhere.
-fn db_json_lock(kit: &Kit) -> Result<DbJsonLock> {
+pub(crate) fn db_json_lock(kit: &Kit) -> Result<DbJsonLock> {
     static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let process = ONE_AT_A_TIME
         .lock()
@@ -143,7 +143,7 @@ fn db_json_lock(kit: &Kit) -> Result<DbJsonLock> {
 /// (nothing written), never made without the lock.
 const DB_JSON_WAIT: std::time::Duration = std::time::Duration::from_secs(30);
 
-struct DbJsonLock {
+pub(crate) struct DbJsonLock {
     // Released first: the other processes, then this one's threads.
     _kit: KitLock,
     _process: std::sync::MutexGuard<'static, ()>,

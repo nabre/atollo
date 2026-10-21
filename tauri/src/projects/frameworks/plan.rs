@@ -144,9 +144,9 @@ pub fn package_of(name: &str) -> String {
 }
 
 /// A line with `{package}` and `{name}` filled in; the name goes in
-/// PowerShell quotes, so spaces and `$` stay as they are.
+/// PowerShell quotes, so spaces, `$` and `’` stay as they are.
 pub fn fill(line: &str, name: &str) -> String {
-    let quoted = format!("'{}'", name.replace('\'', "''"));
+    let quoted = format!("'{}'", crate::editor::terminal::ps_single_quoted(name));
     line.replace("{package}", &package_of(name))
         .replace("{name}", &quoted)
 }

@@ -171,6 +171,14 @@ fn unreadable_gemini_key_is_not_absent() {
     assert!(fs::read_to_string(kit.settings_file())
         .unwrap()
         .contains("AIza-old"));
+    // Another setting saved meanwhile neither fails nor removes the key.
+    fs::remove_file(kit.settings_file()).unwrap();
+    let saved = Settings::update(&kit, |s, _| {
+        s.auto_update = false;
+        Ok::<(), anyhow::Error>(())
+    })
+    .unwrap();
+    assert!(saved.gemini_unreadable && file.is_dir(), "kept");
 }
 
 #[test]

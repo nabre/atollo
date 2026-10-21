@@ -391,9 +391,12 @@ pub fn components_apply<R: Runtime>(
     if state.setup.snapshot().running {
         return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
     }
-    let text = choice_text(&kit, &chosen);
-    let choice = Choice::parse(&text, catalog);
-    choice.write(&kit, catalog).or_fail_chain("components")?;
+    {
+        let _one = crate::setup::catalog::choice_lock();
+        let text = choice_text(&kit, &chosen);
+        let choice = Choice::parse(&text, catalog);
+        choice.write(&kit, catalog).or_fail_chain("components")?;
+    }
     let opts = Options {
         target: Some(kit.target()),
         update_all,

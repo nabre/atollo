@@ -77,6 +77,7 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
             crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
         }
     }
+    let _one = crate::setup::catalog::choice_lock();
     let Some(mut choice) = crate::setup::catalog::Choice::read(kit, catalog) else {
         return Ok(Vec::new());
     };

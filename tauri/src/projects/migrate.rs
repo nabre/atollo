@@ -310,6 +310,9 @@ fn merge_ports(file: &Path, ports: &Map<String, Value>, locked: &[Value]) -> Res
 /// a password already there kept; `secrets.json` rewritten only after every
 /// project's file was written, with only what could not move.
 fn split_passwords(kit: &Kit) -> Result<()> {
+    // The command line beside the app may change secrets.json meanwhile
+    // (SEC-V6-01).
+    let _one = auth::db_json_lock(kit)?;
     let path = auth::secrets_path(kit);
     let Some(mut secrets) = read_map(&path)? else {
         return Ok(());

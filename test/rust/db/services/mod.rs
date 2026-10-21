@@ -124,20 +124,24 @@ fn mongodb_admin_password_stored_first() {
         Some("known")
     );
     // secrets.json that cannot be written: the server never hears of a
-    // password (the client is not even started)
+    // password (the client is not even started). Held open by another
+    // program that lets it be read only: a read-only flag would not do,
+    // a private file is deleted and written again (PORT-V6-01).
     #[cfg(windows)]
     {
+        use std::os::windows::fs::OpenOptionsExt;
         let path = auth::secrets_path(&kit);
         fs::write(&path, "{}").unwrap();
-        let mut ro = fs::metadata(&path).unwrap().permissions();
-        ro.set_readonly(true);
-        fs::set_permissions(&path, ro.clone()).unwrap();
+        // FILE_SHARE_READ only: no writing, renaming over or deleting it.
+        let held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(&path)
+            .unwrap();
         let e = s
             .secure(DbEngine::MongoDb, None, true, &env, 1, true)
             .unwrap_err();
-        #[allow(clippy::permissions_set_readonly_false)]
-        ro.set_readonly(false);
-        fs::set_permissions(&path, ro).unwrap();
+        drop(held);
         assert!(
             !format!("{e:#}").contains("could not be created"),
             "the server was asked first: {e:#}"

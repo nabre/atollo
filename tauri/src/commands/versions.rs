@@ -126,10 +126,13 @@ pub(super) fn install_now<R: Runtime>(
     if catalog.find(&id).is_none() {
         return Err(format!("unknown component: {id}").into());
     }
-    let mut choice = crate::setup::catalog::Choice::read(&kit, catalog)
-        .unwrap_or_else(|| crate::setup::catalog::Choice::defaults(catalog));
-    choice.set(catalog, &id, true);
-    choice.write(&kit, catalog).or_fail_chain("components")?;
+    {
+        let _one = crate::setup::catalog::choice_lock();
+        let mut choice = crate::setup::catalog::Choice::read(&kit, catalog)
+            .unwrap_or_else(|| crate::setup::catalog::Choice::defaults(catalog));
+        choice.set(catalog, &id, true);
+        choice.write(&kit, catalog).or_fail_chain("components")?;
+    }
     let opts = Options {
         target: Some(kit.target()),
         only: vec![id.clone()],

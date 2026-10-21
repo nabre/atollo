@@ -645,6 +645,14 @@ impl Component {
     }
 }
 
+/// One read-change-write of `components.txt` at a time: held from the read
+/// of the [`Choice`] to its write, by every writer (BUG-V6-33).
+pub fn choice_lock() -> std::sync::MutexGuard<'static, ()> {
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    LOCK.lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
 /// Which components the user wants. `components.txt` is one for the whole
 /// kit, read on every system it runs on: it follows the dependencies that
 /// hold on every target only (`needs`). Those of one target (C and C++
