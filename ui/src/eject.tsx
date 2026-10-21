@@ -2,11 +2,11 @@
 // open from the kit, stops it, puts Antigravity's login back into the kit,
 // then closes the app so the drive can be removed safely. The same list is
 // shown when the window is closed with something open (CloseDialog).
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
 import { ActionButton, ErrorLine } from "./common";
-import { useAction } from "./hooks";
+import { useAction, useLoad } from "./hooks";
 import { Codicon, codicon, ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
 import { t } from "./i18n";
 
@@ -36,22 +36,15 @@ export function OpenList({ open }: { open: OpenNow }) {
 }
 
 export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = {}) {
-  const [open, setOpen] = useState<OpenNow | null>(null);
+  // What is open: a read that works clears the error of the one before.
+  const {
+    data: open,
+    error: loadError,
+    reload: load,
+    setData: setOpen,
+  } = useLoad<OpenNow | null>(ejectList, null, { onError: "show" });
   const [done, setDone] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const { busy, error, run } = useAction();
-  const load = useCallback(() => {
-    ejectList().then(
-      (o) => {
-        setOpen(o);
-        setLoadError(null);
-      },
-      (e: unknown) => {
-        setLoadError(String(e));
-      },
-    );
-  }, []);
-  useEffect(load, [load]);
 
   const title = t("Rimuovi l'unità");
   const icon = <Codicon name="debug-disconnect" size={16} />;
