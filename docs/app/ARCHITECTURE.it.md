@@ -184,7 +184,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`, 1278 righe), `projects\run.rs` (una macchina a stati, 1189 righe) ed `editor\ext.rs` restano interi. Gli altri file dovrebbero restare sotto le 900 righe; oggi nove le superano (sotto, «Opportunità»).
+- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`), `projects\run.rs` (una macchina a stati) ed `editor\ext.rs` restano interi. Gli altri file dovrebbero restare sotto le 900 righe; oggi nove le superano (sotto, «Opportunità»).
 
 ### Comandi Tauri (`commands\`)
 
@@ -389,5 +389,5 @@ Dall'analisi del 15/10/2026, ricontrollata il 20/10. Fatte: comandi per area e r
 5. **Pacchetto dell'interfaccia**: la build avvisa che il file principale supera 500 kB (circa 1 MB, 300 kB compresso, da quando registra tutti i componenti di `vscode-elements`); si possono registrare solo i componenti usati e caricare quando servono le pagine meno usate (Impostazioni, procedura guidata, matrice).
 6. **Controlli ancora nativi** (sopra, «Restano nativi»): servirebbero un `TextField` con suggerimenti, un pulsante con `aria-pressed` e testo, un misuratore con valore.
 7. ~~**`projectmcp.tsx`** non importato~~: era già usato dalla pagina del progetto; dal 17/10/2026 è `projects\mcp.tsx`.
-8. **File sopra le 900 righe**: `install\web.rs` (1423), `db\services\mod.rs` (1120), `net\archive.rs` (1110), `agents\keyring.rs` (1081), `install\native.rs` (988), `install\conda.rs` (980), `install\db.rs` (967), `net\mod.rs` (944), `db\auth.rs` (921). Si dividono come `servers\` (un `impl` per file).
-9. ~~**`ui\src\guide\`**: `sections.tsx` e `model.ts` sono testi della Guida più che codice~~: fatto il 19/10/2026 (D-136), il testo sta in `topics\`, un file per capitolo; i più lunghi (`topics\projects.tsx`, 2118 righe) sono testo.
+8. **File sopra le 900 righe**: `install\web.rs`, `db\services\mod.rs`, `net\archive.rs`, `agents\keyring.rs`, `install\native.rs`, `install\conda.rs`, `install\db.rs`, `net\mod.rs`, `db\auth.rs`, dal più lungo. Si dividono come `servers\` (un `impl` per file).
+9. ~~**`ui\src\guide\`**: `sections.tsx` e `model.ts` sono testi della Guida più che codice~~: fatto il 19/10/2026 (D-136), il testo sta in `topics\`, un file per capitolo; i più lunghi (`topics\projects.tsx`) sono testo.
