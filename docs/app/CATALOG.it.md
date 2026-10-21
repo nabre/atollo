@@ -47,7 +47,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `phpmyadmin` | phpMyAdmin | no | 60 | `php`, `mysql` | **nuovo** (D-107, al posto di Adminer di D-85); MySQL nel browser, sui sei target (D-117) |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **nuovo** (D-73); su Linux ARM64 da conda-forge, non rilocabile |
 
-I gruppi, i predefiniti (`def`) e le dimensioni sono quelli di `components.json` (35 componenti). Proposta del primo avvio: obbligatori, editor, tre agenti, Python, PHP, Apache, più Git, sempre installato: circa 1,8 GB (1845 MB, di cui 250 dell'editor), su ogni sistema (anche Apache, da D-116).
+I gruppi, i predefiniti (`def`) e le dimensioni sono quelli di `components.json` (35 componenti). Proposta del primo avvio: obbligatori, editor, tre agenti, Python, PHP, Apache, più Git, che serve a Claude Code: circa 1,8 GB (1845 MB, di cui 250 dell'editor), su ogni sistema (anche Apache, da D-116).
 
 Le pagine non mostrano i gruppi del catalogo ma i tipi della matrice del sito (D-139; `ui/src/components/model.ts` e `site/matrix.mjs`, che un test tiene uguali): Sistema ed editor (`required`, `app`, più Git), Agenti AI, Linguaggi, Strumenti di sviluppo (uv, pnpm, CMake, Android SDK, Typst, TinyTeX), Server web (Apache, Caddy), Database.
 
