@@ -273,17 +273,28 @@ fn bootstrap_take_verifies_and_consumes_on_host_target() {
     let expect = Expect::Sha256(sha);
 
     let dest = tmp.0.join("work").join("rustup-init");
-    assert!(bootstrap::take(&foreign_kit, "rustup-init", &expect, &dest).unwrap());
+    let staged = bootstrap::take(&foreign_kit, "rustup-init", &expect, &dest)
+        .unwrap()
+        .unwrap();
     assert_eq!(fs::read(&dest).unwrap(), payload);
+    if !target::can_execute_on_host(foreign_kit.target()) {
+        bootstrap::used(&foreign_kit, &staged);
+        assert!(boot_file.exists(), "kept for the first start there");
+    }
 
-    // On the host target itself, consuming the bootstrap removes the staged file.
+    // On the host target itself, the staged file is copied, and consumed
+    // only once the installation succeeds (BUG-V6-14).
     let host_kit = Kit::at_target(tmp.0.join("host"), Target::detect());
     host_kit.prepare().unwrap();
     let host_boot = host_kit.apps().join(".bootstrap").join("rustup-init");
     fs::create_dir_all(host_boot.parent().unwrap()).unwrap();
     fs::write(&host_boot, payload).unwrap();
     let host_dest = tmp.0.join("work-host").join("rustup-init");
-    assert!(bootstrap::take(&host_kit, "rustup-init", &expect, &host_dest).unwrap());
+    let staged = bootstrap::take(&host_kit, "rustup-init", &expect, &host_dest)
+        .unwrap()
+        .unwrap();
+    assert!(host_boot.exists(), "copied, not moved");
+    bootstrap::used(&host_kit, &staged);
     assert!(!host_boot.exists());
 }
 
@@ -319,14 +330,18 @@ fn bootstrap_files_go_with_their_component_only() {
     let expect =
         Expect::Sha256(crate::net::verify::sha256_hex(&r_line.join("micromamba")).unwrap());
     let dest = tmp.0.join("work").join("micromamba");
-    assert!(bootstrap::take(&kit, "micromamba", &expect, &dest).unwrap());
+    assert!(bootstrap::take(&kit, "micromamba", &expect, &dest)
+        .unwrap()
+        .is_some());
     assert_eq!(
         fs::read(&dest).unwrap(),
         b"older",
         "found in a line's folder"
     );
     let other = Expect::Sha256("0".repeat(64));
-    assert!(!bootstrap::take(&kit, "micromamba", &other, &dest).unwrap());
+    assert!(bootstrap::take(&kit, "micromamba", &other, &dest)
+        .unwrap()
+        .is_none());
     assert!(
         r_line.join("micromamba").is_file(),
         "another version of the same name is skipped, not deleted"
