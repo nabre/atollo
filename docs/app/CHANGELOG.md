@@ -1,5 +1,12 @@
 # Novità
 
+## Nuovi progetti in quattro gruppi (21/10/2026)
+
+- **Pannello rapido**: sotto «Nuovo progetto», «Progetto vuoto» e «Da un indirizzo Git» diventano due collegamenti accanto al titolo; lo spazio va a un riquadro per gruppo, «Web», «CMS», «App» e «Altro», con le basi come pulsanti (logo e nome) sotto le loro categorie. Un clic su una base apre la procedura già su quella base; i riquadri stanno affiancati quando c'è spazio, uno sotto l'altro quando è stretto.
+- **Albero della barra laterale**: al posto di «Da framework o CMS» i quattro rami Web, CMS, App e Altro, ciascuno con il numero delle basi; sotto Web, App e Altro le categorie, sotto CMS direttamente le basi. Si apre il ramo della base mostrata; un clic su un gruppo apre la procedura sulla sua prima base.
+- **Gruppi**: Web raccoglie PHP, JavaScript e TypeScript, Python, gli altri linguaggi e i siti statici e la documentazione; App le app desktop e mobile; Altro i dati e documenti, la riga di comando e le basi fatte in Impostazioni senza categoria. La scheda e l'intestazione della procedura dicono il gruppo della base scelta; l'icona della barra laterale diventa «Nuovo progetto da una base».
+- **Riquadri della barra laterale**: con «Nuovo progetto» o «Dai tuoi repository GitHub» aperti, «Progetti» prende solo l'altezza delle sue righe e scorre solo se non ci stanno; il resto va agli altri riquadri, come «Editor aperti» in VSCodium. Da solo, «Progetti» occupa tutta l'altezza come prima.
+
 ## Il terminale dell'editor resta quello del kit (21/10/2026)
 
 - **Profili di prima del nome Atollo**: «Atollo», «Atollo - Git Bash» e gli altri, rimasti nei kit di prima, puntavano a una cartella di PowerShell o Git con la versione; dopo un aggiornamento il terminale predefinito dell'editor mancava e VSCodium apriva la shell del PC. Ora quei profili si tolgono e il predefinito passa al profilo «Atollo» corrispondente.
