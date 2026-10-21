@@ -25,6 +25,39 @@ fn commands() {
     assert_eq!(parse(&args(&["x"])), Cli::Unknown("x".into()));
 }
 
+/// BUG-V6-33: `sync --project` without its value is a usage error, not a
+/// sync of every project.
+#[test]
+fn sync_needs_the_project_value() {
+    assert_eq!(
+        parse(&args(&[
+            "sync",
+            "--project",
+            r"D:\O’Brien\My App {x}",
+            "--verbose"
+        ])),
+        Cli::Sync {
+            project: Some(r"D:\O’Brien\My App {x}".into()),
+            verbose: true
+        }
+    );
+    assert_eq!(
+        parse(&args(&["sync"])),
+        Cli::Sync {
+            project: None,
+            verbose: false
+        }
+    );
+    assert_eq!(
+        parse(&args(&["sync", "--project"])),
+        Cli::Unknown("sync --project".into())
+    );
+    assert_eq!(
+        parse(&args(&["sync", "--verbose", "--project"])),
+        Cli::Unknown("sync --project".into())
+    );
+}
+
 #[test]
 fn components_for_a_target() {
     use crate::kit::Target;
