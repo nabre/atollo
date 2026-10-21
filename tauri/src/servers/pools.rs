@@ -64,7 +64,7 @@ pub(super) fn slug(s: &str) -> String {
 /// A DNS label for a `.localhost` name (`alias::valid_domain`): lowercase
 /// ASCII letters and digits, anything else as one `-`, none at the edges;
 /// `site` when nothing is left.
-pub(super) fn host_label(s: &str) -> String {
+pub(crate) fn host_label(s: &str) -> String {
     let mut out = String::new();
     for ch in s.trim().chars() {
         if ch.is_ascii_alphanumeric() {

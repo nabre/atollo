@@ -21,6 +21,7 @@ use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream};
 use std::path::Path;
 use std::process::{Child, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -99,6 +100,9 @@ struct Entry {
     detected_url: Option<String>,
     /// Served by this shared pool (`servers/mod.rs`): no process of its own.
     pool: Option<String>,
+    /// The run this entry is for: the threads of a run that was replaced
+    /// leave it alone (BUG-V6-10).
+    run: u64,
 }
 
 /// The `server` of a site in `panel.json` that keeps its own httpd/caddy
@@ -164,6 +168,13 @@ pub struct Runner {
     saved: Mutex<BTreeMap<String, ProjectPorts>>,
     /// Ports being probed for a start: two actions started together differ.
     pending: Mutex<HashSet<u16>>,
+    /// Where automatic ports are taken: [`PORT_FROM`]..=[`PORT_TO`], a
+    /// range of their own in the tests (TEST-V6-01).
+    port_range: (u16, u16),
+    /// The id of the last run started.
+    runs: AtomicU64,
+    /// One gate per action: its starts happen one after the other.
+    starts: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     notify: Notify,
 }
 
@@ -267,12 +278,34 @@ impl Runner {
             ports: Mutex::new(ports),
             saved: Mutex::new(saved),
             pending: Mutex::new(HashSet::new()),
+            port_range: (PORT_FROM, PORT_TO),
+            runs: AtomicU64::new(0),
+            starts: Mutex::new(HashMap::new()),
             notify,
         }
     }
 
+    /// The runner with automatic ports in `from..=to`: a test that checks
+    /// a port is kept takes it where no other test takes one (TEST-V6-01).
+    #[cfg(test)]
+    pub fn with_port_range(mut self, from: u16, to: u16) -> Runner {
+        self.port_range = (from, to);
+        self
+    }
+
     fn entries(&self) -> std::sync::MutexGuard<'_, HashMap<String, Entry>> {
         self.entries.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// A new run id, never given before by this runner.
+    fn next_run(&self) -> u64 {
+        self.runs.fetch_add(1, Ordering::Relaxed) + 1
+    }
+
+    /// The gate of the action `key`, held for a whole start.
+    fn start_gate(&self, key: &str) -> Arc<Mutex<()>> {
+        let mut starts = self.starts.lock().unwrap_or_else(PoisonError::into_inner);
+        Arc::clone(starts.entry(key.to_owned()).or_default())
     }
 
     pub fn list(&self) -> Vec<RunInfo> {
@@ -387,7 +420,8 @@ impl Runner {
                 .filter(|(_, o)| !matches!(o, crate::ports::Owner::Project { .. }))
                 .map(|(p, _)| p),
         );
-        for n in PORT_FROM..=PORT_TO {
+        let (from, to) = self.port_range;
+        for n in from..=to {
             if used.contains(&n) {
                 continue;
             }
@@ -420,7 +454,7 @@ impl Runner {
             tr(
                 lang,
                 "Nessuna porta libera tra {0} e {1}",
-                &[&PORT_FROM.to_string(), &PORT_TO.to_string()]
+                &[&from.to_string(), &to.to_string()]
             )
         )
     }
@@ -482,6 +516,11 @@ impl Runner {
         lang: &str,
     ) -> Result<RunInfo> {
         let key = key_of(id, &action.id);
+        // A second start of the action (a double click during
+        // `assign_port`) waits for the first, then finds it running
+        // instead of replacing it (BUG-V6-10).
+        let gate = self.start_gate(&key);
+        let _starting = gate.lock().unwrap_or_else(PoisonError::into_inner);
         if self.alive(&key) {
             return self
                 .entries()
@@ -676,6 +715,7 @@ impl Runner {
         });
         header.push(String::new());
 
+        let run = self.next_run();
         let spawned = jobs::spawn_in(&mut cmd, &job);
         let mut child: Child = match spawned {
             Ok(c) => c,
@@ -696,6 +736,7 @@ impl Runner {
                         actual_port: None,
                         detected_url: None,
                         pool: None,
+                        run,
                     },
                 );
                 (self.notify)(Event::Log {
@@ -717,6 +758,7 @@ impl Runner {
                 actual_port: None,
                 detected_url: None,
                 pool: None,
+                run,
             },
         );
         self.append(&key, header, false);
@@ -737,19 +779,21 @@ impl Runner {
         .flatten()
         {
             let (me, key) = (Arc::clone(self), key.clone());
-            readers.push(std::thread::spawn(move || me.read_stream(&key, stream)));
+            readers.push(std::thread::spawn(move || {
+                me.read_stream(&key, run, stream)
+            }));
         }
         let (me, key2, lang2) = (Arc::clone(self), key.clone(), lang.to_owned());
         std::thread::spawn(move || {
             let _fcgi = fcgi_kept;
             let code = match php {
-                Some(php) => me.wait_with_php(&key2, &mut child, php, &lang2),
+                Some(php) => me.wait_with_php(&key2, run, &mut child, php, &lang2),
                 None => child.wait().ok().and_then(|s| s.code()),
             };
             for r in readers {
                 let _ = r.join();
             }
-            me.finish(&key2, code, &lang2);
+            me.finish(&key2, run, code, &lang2);
         });
         if action.kind == Kind::Web {
             let (me, key3, lang3) = (Arc::clone(self), key.clone(), lang.to_owned());
@@ -804,6 +848,7 @@ impl Runner {
                     actual_port: None,
                     detected_url: None,
                     pool: Some(pool.to_owned()),
+                    run: self.next_run(),
                 },
             );
             info
@@ -821,7 +866,7 @@ impl Runner {
         info
     }
 
-    fn read_stream(&self, key: &str, mut stream: Box<dyn Read + Send>) {
+    fn read_stream(&self, key: &str, run: u64, mut stream: Box<dyn Read + Send>) {
         let mut buf = vec![0u8; 16 * 1024];
         let mut pending: Vec<u8> = Vec::new();
         let mut rest = String::new();
@@ -841,13 +886,13 @@ impl Runner {
             pending.drain(..valid);
             let lines = split_lines(&mut rest, &text);
             if !lines.is_empty() {
-                self.append(key, lines, true);
+                self.append_to(key, Some(run), lines, true);
             }
         }
         let tail = String::from_utf8_lossy(&pending).into_owned() + &rest;
         let tail = tail.trim_end_matches(['\r', '\n']).to_owned();
         if !tail.is_empty() {
-            self.append(key, vec![tail], true);
+            self.append_to(key, Some(run), vec![tail], true);
         }
     }
 
@@ -859,9 +904,18 @@ impl Runner {
     }
 
     fn append(&self, key: &str, lines: Vec<String>, scan: bool) {
+        self.append_to(key, None, lines, scan);
+    }
+
+    /// Like [`Self::append`], only while the entry is still the one of
+    /// `run` (`None`: whichever run it is).
+    fn append_to(&self, key: &str, run: Option<u64>, lines: Vec<String>, scan: bool) {
         {
             let mut entries = self.entries();
-            let Some(e) = entries.get_mut(key) else {
+            let Some(e) = entries
+                .get_mut(key)
+                .filter(|e| run.is_none_or(|r| e.run == r))
+            else {
                 return;
             };
             e.lines.extend(lines.iter().cloned());
@@ -964,6 +1018,7 @@ impl Runner {
     fn wait_with_php(
         &self,
         key: &str,
+        run: u64,
         child: &mut Child,
         mut php: Child,
         lang: &str,
@@ -977,7 +1032,7 @@ impl Runner {
                     let mut entries = self.entries();
                     entries
                         .get_mut(key)
-                        .filter(|e| !e.stopped)
+                        .filter(|e| e.run == run && !e.stopped)
                         .and_then(|e| e.job.take())
                 };
                 // Stopped by the user: the job already ended both.
@@ -987,8 +1042,9 @@ impl Runner {
                 let code = status
                     .code()
                     .map_or_else(|| "?".to_owned(), |c| c.to_string());
-                self.append(
+                self.append_to(
                     key,
+                    Some(run),
                     vec![format!(
                         "[!] {}",
                         tr(
@@ -1008,10 +1064,14 @@ impl Runner {
         }
     }
 
-    fn finish(&self, key: &str, code: Option<i32>, lang: &str) {
+    /// The run `run` of `key` ended with `code`. An entry that is now
+    /// another run's (the action started again, or served by a pool) is
+    /// left as it is: never closed by the end of the run it replaced
+    /// (BUG-V6-10).
+    fn finish(&self, key: &str, run: u64, code: Option<i32>, lang: &str) {
         let info = {
             let mut entries = self.entries();
-            let Some(e) = entries.get_mut(key) else {
+            let Some(e) = entries.get_mut(key).filter(|e| e.run == run) else {
                 return;
             };
             e.job = None;
@@ -1030,7 +1090,7 @@ impl Runner {
             Some(c) => tr(lang, "processo terminato, codice {0}", &[&c.to_string()]),
             None => tr(lang, "processo terminato", &[]),
         };
-        self.append(key, vec![format!("[{line}]")], false);
+        self.append_to(key, Some(run), vec![format!("[{line}]")], false);
         (self.notify)(Event::State(info));
     }
 

@@ -310,6 +310,21 @@ fn run_and_reload_arguments() {
             "unix//tmp/Atollo/k/caddy-1/a.sock"
         ]
     );
+    // BUG-V6-11: the check after a failed reload, never on the instance.
+    let validate: Vec<String> = validate_args(Path::new(r"D:\O’Brien\Atollo\Caddyfile"))
+        .into_iter()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        validate,
+        [
+            "validate",
+            "--config",
+            r"D:\O’Brien\Atollo\Caddyfile",
+            "--adapter",
+            "caddyfile"
+        ]
+    );
 }
 
 /// The admin endpoint is never a TCP port (any local program could read the
@@ -586,4 +601,18 @@ fn names_of_a_site() {
         ]
     );
     assert_eq!(site_names(None, &[], true, true), ["localhost"]);
+}
+
+/// BUG-V6-08: a project name with spaces, braces, `#` or unicode gives a
+/// DNS label, like the pools: no address split on a space, no `{x}`
+/// placeholder in the site block.
+#[test]
+fn hard_project_names_become_labels() {
+    let names = |p| site_names(Some(p), &[], false, false);
+    assert_eq!(names("My App"), ["my-app.localhost"]);
+    assert_eq!(names("{x} #1"), ["x-1.localhost"]);
+    assert_eq!(names("O’Brien Ünï"), ["o-brien-n.localhost"]);
+    assert_eq!(names("{}"), ["site.localhost"]);
+    let block = site_block(7100, false, &names("My {App}"), &[]);
+    assert_eq!(block[0], "http://my-app.localhost:7100 {");
 }

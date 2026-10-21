@@ -134,6 +134,10 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBu
 #[cfg(test)]
 pub(crate) use crate::router::availability::unavailable_msg;
 
+/// One read-change-write of `components.txt` at a time: held from the read
+/// of the [`Choice`] to its write.
+pub(crate) static COMPONENTS: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Installs what an action of the window needs and is missing, with the
 /// app's preparation task, and waits for it: the required components and
 /// the parts of the app (PowerShell 7, GitHub CLI, the editor), plus
@@ -177,6 +181,11 @@ fn ensure<R: Runtime>(
         .into());
     }
     if !wanted.is_empty() {
+        // Two actions at once (an agent and a clone) each add theirs:
+        // neither write drops the other's (BUG-V6-33).
+        let _one = COMPONENTS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut choice = Choice::read_or_defaults(kit, catalog);
         let before = choice.clone();
         for id in wanted {

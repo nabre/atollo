@@ -75,3 +75,43 @@ fn real_console_runs_and_ends() {
     let ran = std::fs::read_to_string(dir.join("ran.txt")).unwrap();
     assert_eq!(ran.trim(), "kit-env", "the kit environment only");
 }
+
+/// BUG-V6-31: PowerShell closes a `'...'` string on ’ and its siblings
+/// too: each is doubled like `'`.
+#[test]
+fn powershell_quotes_typographic_apostrophes() {
+    assert_eq!(ps_single_quoted("D:/O'Brien"), "D:/O''Brien");
+    assert_eq!(
+        ps_single_quoted("D:/O’Brien ‘a’ ‚b‛ {x}"),
+        "D:/O’’Brien ‘‘a’’ ‚‚b‛‛ {x}"
+    );
+    assert_eq!(ps_single_quoted("plain"), "plain");
+}
+
+/// The quoted path of a batch in `D:\…\O’Brien {x}` runs in a real
+/// PowerShell, as the console starts it.
+#[cfg(windows)]
+#[test]
+fn powershell_runs_a_batch_under_a_typographic_apostrophe() {
+    let tmp = TempDir::new("term-quote");
+    let dir = tmp.0.join("O’Brien's {x}");
+    std::fs::create_dir_all(&dir).unwrap();
+    let script = dir.join("go.cmd");
+    std::fs::write(&script, "@exit /b 7\r\n").unwrap();
+    let quoted = ps_single_quoted(&script.display().to_string());
+    let status = std::process::Command::new("powershell.exe")
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+        ])
+        .arg(format!("& '{quoted}'; exit $LASTEXITCODE"))
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .unwrap();
+    assert_eq!(status.code(), Some(7));
+}

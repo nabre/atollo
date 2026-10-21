@@ -141,6 +141,21 @@ pub(super) fn wait_port_released(port: u16, within: Duration) -> bool {
     }
 }
 
+/// Why Caddy (`exe`, with the folders of `pool_dir`) refuses the
+/// `Caddyfile` `conf` (`caddy validate`), `None` when it takes it or the
+/// check could not run: then a failed reload is an instance that does not
+/// answer, and a restart helps (BUG-V6-11).
+fn caddy_rejects(exe: &Path, pool_dir: &Path, conf: &Path, env: &KitEnv) -> Option<String> {
+    let out = caddy::caddy_command(exe, pool_dir, env)
+        .args(caddy::validate_args(conf))
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .output()
+        .ok()?;
+    (!out.status.success()).then(|| caddy::reload_failure(&out.stderr))
+}
+
 /// `addr` takes a connection now: a TCP port of 127.0.0.1, or a Unix
 /// socket (php-fpm on macOS and Linux).
 pub(super) fn fcgi_answers(addr: &FcgiAddr) -> bool {
@@ -678,11 +693,33 @@ impl WebServers {
                             .stderr(Stdio::piped())
                             .output();
                         match &out {
-                            Ok(o) if !o.status.success() => crate::log::warn(&format!(
-                                "server pool {id}: caddy reload failed ({}): {}; the pool is restarted",
-                                o.status,
-                                caddy::reload_failure(&o.stderr)
-                            )),
+                            Ok(o) if !o.status.success() => {
+                                // A configuration Caddy refuses would stop a
+                                // new process too: the running one keeps its
+                                // sites, and the reason is the answer
+                                // (BUG-V6-11). Only an instance that does not
+                                // answer is restarted.
+                                if let Some(why) =
+                                    caddy_rejects(&exe, &pool_dir, &conf_path, base_env)
+                                {
+                                    crate::log::warn(&format!(
+                                        "server pool {id}: caddy rejects the configuration: {why}; the pool keeps the previous one"
+                                    ));
+                                    bail!(
+                                        "{}",
+                                        crate::i18n::t(
+                                            lang,
+                                            "Caddy rifiuta la nuova configurazione del pool {0}: {1}. Il pool resta acceso con quella di prima.",
+                                            &[id, &why]
+                                        )
+                                    );
+                                }
+                                crate::log::warn(&format!(
+                                    "server pool {id}: caddy reload failed ({}): {}; the pool is restarted",
+                                    o.status,
+                                    caddy::reload_failure(&o.stderr)
+                                ));
+                            }
                             Err(e) => crate::log::warn(&format!(
                                 "server pool {id}: caddy reload: {e}; the pool is restarted"
                             )),
