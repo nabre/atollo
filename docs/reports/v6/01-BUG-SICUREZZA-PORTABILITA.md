@@ -32,8 +32,6 @@
 | `SEC-V6-01` | MEDIA | Plausibile | DB, server | File di segreti/stato illeggibile → riscritto vuoto |
 | `SEC-V6-02` | MEDIA | Scelta da rivedere | Agenti | Token a lunga durata in ogni processo del kit, cartelle `projects/` già fidate |
 | `PORT-V6-02` | MEDIA | Plausibile | Agenti | Chiavi di fiducia di Codex in minuscolo su macOS/Linux |
-| `UX-V6-01` | MEDIA | Plausibile | Impostazioni | Chiave Gemini persa dopo un salvataggio fallito |
-| `UX-V6-02` | MEDIA | Plausibile | Impostazioni | Modifiche ai framework perse se si cambia pagina entro il debounce |
 | `BUG-V6-20` | BASSA | Confermato | Setup | Un panic nel thread di setup lascia «in corso» per sempre |
 | `BUG-V6-21` | BASSA | Confermato | Versioni | Il controllo degli intervalli ignora un «no» certo |
 | `BUG-V6-22` | BASSA | Confermato | Router | `bootstrap::take` cancella un file legacy di un altro componente |
@@ -54,10 +52,7 @@
 | `PORT-V6-04` | BASSA | Plausibile | Versioni | `gradle.properties` con percorsi non ASCII |
 | `PORT-V6-05` | BASSA | Plausibile | Rete | `:` nei nomi d'archivio rifiutato anche su Unix |
 | `PORT-V6-06` | BASSA | Plausibile | Agenti | Chiave di sigillo persa dopo crash e spostamento (macOS/Linux) |
-| `UX-V6-03` | BASSA | Confermato | Interfaccia | `useCopy`, `useAction`, salvataggi dei framework sovrapposti, 2 tipi TS |
 | `TEST-V6-01` | BASSA | Confermato | Prove | `ports_are_kept_and_locked` instabile in parallelo |
-| `TEST-V6-02` | BASSA | Confermato | Prove | `npx vitest` dalla radice raccoglie `target/` e `.claude/worktrees/` |
-| `TEST-V6-03` | BASSA | Confermato | Prove | La prova i18n Rust non sorveglia `cx.t`, `label()`, `HELP` |
 
 ---
 
@@ -188,16 +183,6 @@
 - **Scenario**: su Linux/macOS `/home/Me/Kit/projects` diventa `[projects.'/home/me/kit/projects']`; se Codex confronta esatto, chiede la fiducia a ogni avvio.
 - **Correzione**: minuscolo solo con `kit.os().is_windows()`.
 
-### `UX-V6-01` [Plausibile] — Chiave Gemini persa dopo un salvataggio fallito
-- **Dove**: [`ui/src/settings/autosave.ts:62-103`](../../../ui/src/settings/autosave.ts#L62-L103).
-- **Scenario**: il backend rifiuta il salvataggio della chiave; `pending` era già `null`; la modifica successiva di un altro campo manda `gemini: null` («invariata»). La chiave resta sullo schermo ma non arriva mai al backend; l'intestazione del file promette che «la modifica successiva riprova».
-- **Correzione**: conservare la chiave fallita in un ref e fonderla nel prossimo `schedule`; azzerarla a successo.
-
-### `UX-V6-02` [Plausibile] — Modifiche ai framework perse uscendo da Impostazioni
-- **Dove**: [`ui/src/settings/page.tsx:103-113`](../../../ui/src/settings/page.tsx#L103-L113).
-- **Scenario**: si modifica un framework e si cambia pagina entro `FRAMEWORKS_DELAY`: la pulizia dell'effetto cancella il timer e nulla salva. Le altre impostazioni invece salvano allo smontaggio.
-- **Correzione**: allo smontaggio, se `fw.dirty`, `frameworksSet(pieces)` (con ref all'ultimo stato).
-
 ---
 
 ## 4. BASSA
@@ -224,10 +209,7 @@
 | `PORT-V6-04` | [`versions/side_by_side.rs:70-71`](../../../tauri/src/versions/side_by_side.rs#L70-L71) | Gradle legge `gradle.properties` in ISO-8859-1: `C:/Users/Müller/...` diventa illeggibile | escape `\uXXXX` dei caratteri non ASCII |
 | `PORT-V6-05` | [`net/archive.rs:59`](../../../tauri/src/net/archive.rs#L59) | un tar per macOS/Linux con `foo:bar` (valido su Unix) fa fallire l'installazione | rifiutare `:` solo su Windows |
 | `PORT-V6-06` | [`agents/keyring.rs:164-168`](../../../tauri/src/agents/keyring.rs#L164-L168) | dopo crash + spostamento del kit la voce della chiave di sigillo ha il vecchio `kit.id()`: `restore` fallisce a ogni avvio | nome della voce da `machine_tag`, o scartare il file irrecuperabile con un avviso |
-| `UX-V6-03` | [`ui/src/hooks.ts:177`](../../../ui/src/hooks.ts#L177), [`:146`](../../../ui/src/hooks.ts#L146), [`ui/src/frameworks/model.ts:185-190`](../../../ui/src/frameworks/model.ts#L185-L190), [`ui/src/api/app.ts:97`](../../../ui/src/api/app.ts#L97), [`ui/src/api/editing.ts:6`](../../../ui/src/api/editing.ts#L6) | `useCopy` senza `.catch` e timer non azzerato; `useAction` non cattura un `throw` sincrono (`busy` resta acceso); due salvataggi dei framework possono sovrapporsi; `geminiApiKey` dichiarato sempre presente ma mai serializzato; `EditorStatus` senza `extensions` | `.catch` + `clearTimeout`; `Promise.resolve().then(action)`; salvataggi in catena; `geminiApiKey?:` |
 | `TEST-V6-01` | [`test/rust/projects/run.rs:40-49`](../../../test/rust/projects/run.rs#L40-L49) | la prova usa porte reali 7100+; in parallelo un'altra prova occupa 7100 e `assign_port` ne dà un'altra (7102 ≠ 7100). Passa da sola 3/3 | intervallo di porte iniettabile nel `Runner` per le prove, o porta effimera |
-| `TEST-V6-02` | radice del repository | `npx vitest run` dalla radice esegue file sotto `target/debug/data/…` e `.claude/worktrees/` (45 falliti) | `vitest.config` alla radice che rimanda a `ui/` o esclude quelle cartelle |
-| `TEST-V6-03` | [`test/rust/i18n.rs:130`](../../../test/rust/i18n.rs#L130) | la regex vede solo `tr(` e `i18n::t(`: 20 `cx.t(...)` delle statistiche, `label(...)` di [`editor/window.rs:167`](../../../tauri/src/editor/window.rs#L167) e `HELP` non sono sorvegliati (oggi tradotti) | estendere la regex e controllare `HELP` |
 
 ---
 
