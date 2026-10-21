@@ -75,6 +75,25 @@ fn keep_port_loses_no_entry() {
     assert!(all["mysql"].autostart, "the rest of the file kept");
 }
 
+/// A `services.json` that cannot be read is never written again as if
+/// empty (SEC-V6-01): the change is refused, the file stays.
+#[test]
+fn unreadable_settings_are_never_overwritten() {
+    let tmp = TempDir::new("services-damaged");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit.clone());
+    let path = kit.app_dir().join("services.json");
+    fs::write(&path, r#"{"mysql": {"port": 3307,"#).unwrap();
+    let e = s.set("mysql", Some(3308), false, "it").unwrap_err();
+    assert!(format!("{e:#}").contains("services.json"), "{e:#}");
+    assert!(s.keep_port("mysql", "8.4", 3309).is_err());
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        r#"{"mysql": {"port": 3307,"#
+    );
+}
+
 /// BUG-V5-02: a start, a stop or a change of version of a server waits for
 /// the one in progress (here a turn held by the test), so the check of
 /// what runs and the start happen in the same turn.

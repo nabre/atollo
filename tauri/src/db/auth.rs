@@ -23,7 +23,7 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 use super::DbEngine;
-use crate::fsx::{read_json, write_atomic};
+use crate::fsx::{try_read_json, write_atomic};
 use crate::kit::Kit;
 use crate::projects::state::ProjectState;
 
@@ -50,8 +50,36 @@ pub fn secrets_path(kit: &Kit) -> PathBuf {
     dir(kit).join("secrets.json")
 }
 
+/// The administrators' passwords, none when nothing is saved yet. A file
+/// that is there but cannot be read or understood (damaged, held a moment
+/// by an antivirus) is an error, never "no password" (SEC-V6-01): a new
+/// one written over it would lock the kit out of its own data.
+pub fn try_load(kit: &Kit) -> Result<Secrets> {
+    Ok(try_read_json(&secrets_path(kit))?.unwrap_or_default())
+}
+
+/// [`try_load`] for what only shows the passwords or checks for one: a
+/// file that cannot be read gives none. Never the start of a write
+/// ([`update_secrets`]).
 pub fn load(kit: &Kit) -> Secrets {
-    read_json(&secrets_path(kit)).unwrap_or_default()
+    try_load(kit).unwrap_or_default()
+}
+
+/// Reads `secrets.json`, lets `change` modify it and writes it when it
+/// changed, holding the lock of `db.json` ([`db_json_lock`]): the first
+/// starts of MySQL and MongoDB at once (each with its own turn) never write
+/// back what they read and lose the other's password. Refused, nothing
+/// written, when the file is there but cannot be read (SEC-V6-01); an error
+/// from `change` leaves the file as it is.
+pub fn update_secrets<T>(kit: &Kit, change: impl FnOnce(&mut Secrets) -> Result<T>) -> Result<T> {
+    let _one = db_json_lock(kit)?;
+    let before = try_load(kit)?;
+    let mut secrets = before.clone();
+    let out = change(&mut secrets)?;
+    if secrets != before {
+        save(kit, &secrets)?;
+    }
+    Ok(out)
 }
 
 /// Written in a folder made private first, so neither the temporary file of
@@ -92,7 +120,8 @@ pub(crate) type ProjectSecrets = serde_json::Map<String, serde_json::Value>;
 /// The key of the names in `db.json`.
 const NAMES: &str = "names";
 
-/// Held by every read-change-write of a project's `db.json`: two commands
+/// Held by every read-change-write of a project's `db.json` and of
+/// `secrets.json` ([`update_secrets`]): two commands
 /// on blocking threads (a version chosen while a database is created), or
 /// the command line beside the app, would otherwise each write back what
 /// they read, and one change would be lost. In this process a mutex; across
@@ -477,7 +506,7 @@ fn names_mut(secrets: &mut ProjectSecrets) -> Result<&mut ProjectSecrets> {
 pub fn name_used_by(kit: &Kit, project: &str, engine: &str, name: &str) -> Result<Option<String>> {
     // Passwords left in secrets.json by the migration (a conflict, a name
     // that is not a project's): their databases exist, by the rule of before.
-    if let Some(serde_json::Value::Object(left)) = load(kit).other.get("projects") {
+    if let Some(serde_json::Value::Object(left)) = try_load(kit)?.other.get("projects") {
         for (other, engines) in left {
             if !other.eq_ignore_ascii_case(project)
                 && engines

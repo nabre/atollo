@@ -500,6 +500,35 @@ fn save_profile_takes_the_port_of_a_gone_pool() {
     assert_eq!(ports.get("nginx-1.20"), Some(&8126));
 }
 
+/// A `servers.json` that cannot be read is never written again as if
+/// empty (SEC-V6-01): the page shows no profile, saving or removing one is
+/// refused, the file stays as it is.
+#[test]
+fn unreadable_servers_json_is_never_overwritten() {
+    let tmp = TempDir::new("servers-damaged");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let servers = WebServers::new(kit.clone());
+    let damaged = r#"{"profiles": [{"id": "mine", "#;
+    fs::create_dir_all(store_path(&kit).parent().unwrap()).unwrap();
+    fs::write(store_path(&kit), damaged).unwrap();
+    servers.scan("it", true);
+    let input = WebServerProfileInput {
+        id: "other".into(),
+        name: "Other".into(),
+        engine: WebServerEngine::Caddy,
+        server_line: None,
+        php_line: None,
+        port: Some(8124),
+        keep_alive: true,
+        autostart: false,
+    };
+    let e = servers.save_profile(input, "it").unwrap_err();
+    assert!(format!("{e:#}").contains("servers.json"), "{e:#}");
+    assert!(servers.remove_profile("mine").is_err());
+    assert_eq!(fs::read_to_string(store_path(&kit)).unwrap(), damaged);
+}
+
 /// N-S5: a Host no project names (an IP from the LAN) gets Apache's own
 /// page from the first VirtualHost, never the first project.
 #[test]

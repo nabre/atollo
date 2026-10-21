@@ -178,6 +178,63 @@ fn secrets_round_trip_and_gitignore() {
         .contains("DB_PASSWORD=z"));
 }
 
+/// A `secrets.json` that cannot be read is never taken for "no password"
+/// and written over (SEC-V6-01); changes at once, under one lock, keep
+/// each other's password.
+#[test]
+fn unreadable_secrets_are_never_overwritten() {
+    let tmp = crate::kit::tests::TempDir::new("db-auth-secrets-damaged");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    let path = secrets_path(&kit);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, r#"{"mysqlRoot": "kept", "#).unwrap();
+    assert!(try_load(&kit).is_err());
+    assert_eq!(load(&kit), Secrets::default(), "only shown as none");
+    let e = update_secrets(&kit, |s| {
+        s.mongodb_admin = Some("new".into());
+        Ok(())
+    })
+    .unwrap_err();
+    assert!(e.to_string().contains("secrets.json"), "{e}");
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        r#"{"mysqlRoot": "kept", "#
+    );
+    // the other projects' names cannot be checked either
+    assert!(name_used_by(&kit, "shop", "mysql", "shop").is_err());
+
+    // readable: two changes at once both stay
+    fs::remove_file(&path).unwrap();
+    std::thread::scope(|scope| {
+        for engine in ["mysql", "mongodb"] {
+            let kit = &kit;
+            scope.spawn(move || {
+                for _ in 0..20 {
+                    update_secrets(kit, |s| {
+                        match engine {
+                            "mysql" => s.mysql_root.get_or_insert_with(|| "root".into()),
+                            _ => s.mongodb_admin.get_or_insert_with(|| "admin".into()),
+                        };
+                        Ok(())
+                    })
+                    .unwrap();
+                }
+            });
+        }
+    });
+    let s = try_load(&kit).unwrap();
+    assert_eq!(s.mysql_root.as_deref(), Some("root"));
+    assert_eq!(s.mongodb_admin.as_deref(), Some("admin"));
+    // an error from the change writes nothing
+    assert!(update_secrets(&kit, |s| -> Result<()> {
+        s.mysql_root = None;
+        bail!("no")
+    })
+    .is_err());
+    assert_eq!(try_load(&kit).unwrap(), s);
+}
+
 #[cfg(windows)]
 /// The DACL of `path` as SDDL text (`D:P(A;;FA;;;OW)`).
 pub(crate) fn dacl(path: &Path) -> String {

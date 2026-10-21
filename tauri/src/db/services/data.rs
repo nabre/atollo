@@ -202,16 +202,19 @@ impl Services {
                 // root's password, stored before any server hears of it
                 // (every version has the same administrator), set by the
                 // initialization itself: root is never without one.
-                let mut secrets = auth::load(kit);
-                let password = match secrets.mysql_root.clone() {
-                    Some(p) => p,
-                    None => {
-                        let p = auth::new_password()?;
-                        secrets.mysql_root = Some(p.clone());
-                        auth::save(kit, &secrets)?;
-                        p
-                    }
-                };
+                // A `secrets.json` that cannot be read stops here: a new
+                // password over it would lose the other versions' root
+                // (SEC-V6-01).
+                let password = auth::update_secrets(kit, |secrets| {
+                    Ok(match secrets.mysql_root.clone() {
+                        Some(p) => p,
+                        None => {
+                            let p = auth::new_password()?;
+                            secrets.mysql_root = Some(p.clone());
+                            p
+                        }
+                    })
+                })?;
                 let init = auth::dir(kit).join(format!("mysql-init-{}.sql", std::process::id()));
                 auth::write_private_text(&init, &auth::mysql_root_sql(&password))?;
                 let mut cmd = jobs::kit_command(
