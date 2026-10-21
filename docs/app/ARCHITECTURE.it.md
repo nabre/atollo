@@ -152,9 +152,18 @@ data\
                               (gli accessi del client mysql); la cartella ha il DACL del proprietario
     pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
     pre-caddy\                copia di servers.json e dei panel.json prima del passaggio da Nginx a Caddy (D-120)
+  agents\                     ciò che i tre agenti condividono: AGENTS.md, skills\, mcp.json, lo stato dell'allineamento in .sync\
+  antigravity\                l'accesso di Antigravity tenuto nel kit (keyring.json)
+  apache\                     kit.conf e htdocs\ del sito dell'Apache del kit
+  cache\                      cache dei gestori di pacchetti (npm, pip, uv, Composer, Go, NuGet…) e delle
+                              risposte di GitHub; si può cancellare
   db\<motore>\<versione>\     dati di ogni versione dei server di database, con il my.cnf del server (D-81, D-102)
+  gh\                         l'accesso di GitHub CLI (hosts.yml)
   home\                       HOME dei programmi: .gitconfig e simili
   kit\                        file scritti da runtime\ a ogni avvio
+  npm-global\  python-user\  composer\  go\  gradle\…
+                              pacchetti e strumenti installati globalmente con npm, pip, Composer, Go e gli altri
+  php\<linea>\                il php.ini di ogni linea di PHP (macOS e Linux: php/<target>/<linea>/)
   projects\<progetto>\        tutto ciò che il kit tiene per un progetto (D-89)
     dev-settings.json  ports.json
     apache\  caddy\           il server proprio del progetto; conf.d\ tiene i file .conf / .caddy dell'utente,
@@ -164,6 +173,8 @@ data\
       backups\                copie dei database (D-78)
   servers\<pool>\             configurazioni generate dei pool Caddy/Apache
   tmp\                        passaggio nel kit quando il temp del sistema non c'è o non basta; TEMP dei programmi nel kit
+  vscodium-server\            impostazioni ed estensioni del server dell'editor
+  webview2\                   i dati della finestra dell'app
 ```
 
 Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
