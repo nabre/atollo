@@ -24,7 +24,7 @@ use std::path::Path;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::ranges::Range;
+use super::ranges::{Range, Version};
 use crate::kit::Kit;
 use crate::setup::catalog::{Catalog, Component};
 use checks::{links, runtimes};
@@ -223,8 +223,19 @@ fn version_of(have: &Have, line: &str) -> String {
         .unwrap_or_else(|| line.to_owned())
 }
 
+/// `line` in `have` is in the range: its full version when known (a
+/// `>=3.12.4` refuses the kit's 3.12.3), else any patch of the line.
 fn admits(range: &Range, have: &Have, line: &str) -> bool {
-    range.admits_text(&version_of(have, line)) || range.admits_line(line)
+    let full = have
+        .lines
+        .iter()
+        .find(|(l, _)| l == line)
+        .and_then(|(_, v)| v.as_deref())
+        .filter(|v| Version::parse(v).is_some());
+    match full {
+        Some(v) => range.admits_text(v),
+        None => range.admits_line(line),
+    }
 }
 
 /// Everything the matrix is made from, hashed: the app and its knowledge,

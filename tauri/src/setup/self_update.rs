@@ -512,7 +512,10 @@ impl Updater {
             s.checking = true;
             s.error = None;
         }
-        let result = self.check_and_stage(net);
+        // A panic is a failed check: `checking` must not stay set.
+        let result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.check_and_stage(net)))
+                .unwrap_or_else(|p| Err(anyhow!(super::task::panic_text(&*p))));
         self.set(|s| record(s, result));
         self.status()
     }
