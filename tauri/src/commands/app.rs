@@ -279,6 +279,8 @@ pub fn settings_set<R: Runtime>(
     // Every window, the editor's too, light or dark at once.
     tauri::Manager::app_handle(&webview)
         .set_theme(Settings::load(&state.kit).settings.theme.window());
+    // The tray menu in the new language (D-145).
+    crate::tray::refresh(tauri::Manager::app_handle(&webview));
     crate::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
 }

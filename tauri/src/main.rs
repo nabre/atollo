@@ -27,6 +27,7 @@ mod router;
 mod servers;
 mod settings;
 mod setup;
+mod tray;
 mod versions;
 
 use std::path::Path;
@@ -598,6 +599,8 @@ fn build_app<R: tauri::Runtime>(
                 &kit.webview_data(),
                 Settings::load(&kit).settings.theme.window(),
             )?;
+            // The icon in the notification area / menu bar (D-145).
+            tray::create(app.handle());
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Atollo" (D-73).
@@ -697,11 +700,7 @@ fn build_app<R: tauri::Runtime>(
             let handle = app.handle().clone();
             os::instance::listen(&kit, move |message| {
                 if message.trim() == "focus" {
-                    if let Some(window) = handle.get_webview_window(MAIN) {
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    }
+                    tray::show_main(&handle);
                 }
             });
             Ok(())
