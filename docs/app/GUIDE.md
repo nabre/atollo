@@ -1946,6 +1946,8 @@ A database switched off abruptly can lose the last data written, and a program w
 
 If something is open, Atollo asks “Close Atollo?” and lists what will be closed. “Close everything” stops actions and servers, shuts down the databases neatly and exits. This is safe too; the “Remove drive” page also closes the kit programs started outside the app (for example from a console) and tells you if anything is left.
 
+The same goes for “Quit Atollo” in the menu of Atollo's icon, in the Windows notification area, the macOS menu bar or the Linux status area. That menu also has “Show Atollo” and “Projects”, with the most recent projects: a click opens the project's page.
+
 <details>
 <summary>Under the hood</summary>
 
