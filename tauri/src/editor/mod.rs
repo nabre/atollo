@@ -228,10 +228,10 @@ impl Editor {
         fs::create_dir_all(&data_dir)?;
         let token = random_token()?;
         let token_file = data_dir.join("token");
-        fs::write(&token_file, &token).with_context(|| token_file.display().to_string())?;
-        if let Err(e) = restrict_to_owner(&token_file) {
-            crate::log::warn(&format!("token file permissions: {e:#}"));
-        }
+        // A new file each start, owner-only before the token is in it: never
+        // the old one rewritten, which another account's DACL (the kit
+        // used on another PC) would refuse (PORT-V6-01, BUG-V6-33).
+        crate::router::fs::replace_private(&token_file, &token)?;
         let log_path = self.kit.logs().join("editor.log");
 
         let mut last_error = None;

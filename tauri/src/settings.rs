@@ -160,8 +160,10 @@ impl Settings {
     pub fn load(kit: &Kit) -> Loaded {
         let mut loaded = Self::load_from(&kit.settings_file());
         let s = &mut loaded.settings;
-        if let Some(key) = read_secret(&gemini_file(kit)) {
-            s.gemini_api_key = Some(key);
+        match read_secret(&gemini_file(kit)) {
+            Ok(Some(key)) => s.gemini_api_key = Some(key),
+            Ok(None) => {}
+            Err(e) => crate::log::warn(&format!("Gemini key: {e:#}")),
         }
         if let Some(ca) = &mut s.network.extra_ca_certs {
             if Path::new(ca.as_str()).is_relative() {
@@ -269,18 +271,30 @@ pub fn gemini_file(kit: &Kit) -> PathBuf {
     kit.app_dir().join("secrets").join("gemini-api-key")
 }
 
-fn read_secret(path: &Path) -> Option<String> {
-    std::fs::read_to_string(path)
-        .ok()
-        .map(|t| t.trim().to_owned())
-        .filter(|t| !t.is_empty())
+/// The secret in `path`: `Ok(None)` when there is none (no file, or empty),
+/// an error naming the file when it is there but cannot be read (made
+/// private by another account, the kit used on another PC: PORT-V6-01),
+/// never mistaken for "not set".
+fn read_secret(path: &Path) -> anyhow::Result<Option<String>> {
+    match std::fs::read_to_string(path) {
+        Ok(t) => Ok(Some(t.trim().to_owned()).filter(|t| !t.is_empty())),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(crate::router::fs::access_error(path, e)),
+    }
 }
 
 /// A Gemini key left in `settings.json` by an older version goes to its own
 /// file at start; a file that cannot be read stays as it is.
 pub fn move_secrets(kit: &Kit) {
-    if read_secret(&gemini_file(kit)).is_some() {
-        return;
+    match read_secret(&gemini_file(kit)) {
+        Ok(None) => {}
+        Ok(Some(_)) => return,
+        Err(e) => {
+            // Never replaced by an older key: the user decides (the error
+            // says how).
+            crate::log::warn(&format!("Gemini key: {e:#}"));
+            return;
+        }
     }
     let loaded = Settings::load_from(&kit.settings_file());
     if loaded.problem.is_some() || loaded.settings.gemini_api_key.is_none() {
