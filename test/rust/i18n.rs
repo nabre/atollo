@@ -122,15 +122,29 @@ fn relation_notes_are_in_the_catalog() {
     }
 }
 
+/// The string literals `re` captures (group 1) in `code`.
+fn literals<'a>(re: &regex::Regex, code: &'a str) -> Vec<&'a str> {
+    re.captures_iter(code)
+        .filter_map(|c| c.get(1))
+        .map(|m| m.as_str())
+        .collect()
+}
+
 /// Every literal Italian source passed to `tr(lang, "…")`, `i18n::t(lang,
-/// "…")` or `crate::i18n::t(lang, "…")`, and every source returned by
-/// `Settings::validate`, is in the catalog. Calls whose text is not a
-/// literal are skipped; `mod tests` blocks are ignored.
+/// "…")` or `crate::i18n::t(lang, "…")`, to the `t("…", …)` of a value
+/// that knows its language (`cx.t`, `self.t` of the agents' statistics), to
+/// the `label("…")` of the editor window's script, the command line's
+/// `HELP`, and every source returned by `Settings::validate`, is in the
+/// catalog. Calls whose text is not a literal are skipped; `mod tests`
+/// blocks are ignored.
 #[test]
 fn sources_are_in_the_catalog() {
     let calls =
         regex::Regex::new(r#"\b(?:tr|i18n::t)\(\s*(?:"[^"]*"|[^,()"]+),\s*"((?:[^"\\]|\\.)*)""#)
             .unwrap();
+    let methods = regex::Regex::new(r#"\b[a-z_][a-z0-9_]*\.t\(\s*"((?:[^"\\]|\\.)*)""#).unwrap();
+    let labels = regex::Regex::new(r#"\blabel\(\s*"((?:[^"\\]|\\.)*)""#).unwrap();
+    let help = regex::Regex::new(r#"\bconst HELP: &str = "((?:[^"\\]|\\.)*)";"#).unwrap();
     let validate = regex::Regex::new(r#"\bErr\(\(\s*"((?:[^"\\]|\\.)*)""#).unwrap();
     let tests = regex::Regex::new(r"(?m)^#\[cfg\(test\)\]\s*\n\s*mod ").unwrap();
     let mut files = Vec::new();
@@ -143,19 +157,21 @@ fn sources_are_in_the_catalog() {
     for path in &files {
         let code = std::fs::read_to_string(path).expect("source is readable");
         let code = &code[..tests.find(&code).map_or(code.len(), |m| m.start())];
-        let mut sources: Vec<&str> = calls
-            .captures_iter(code)
-            .filter_map(|c| c.get(1))
-            .map(|m| m.as_str())
-            .collect();
+        let mut sources = literals(&calls, code);
+        sources.extend(literals(&methods, code));
         if path.ends_with("settings.rs") || path.components().any(|c| c.as_os_str() == "frameworks")
         {
-            sources.extend(
-                validate
-                    .captures_iter(code)
-                    .filter_map(|c| c.get(1))
-                    .map(|m| m.as_str()),
-            );
+            sources.extend(literals(&validate, code));
+        }
+        if path.ends_with(std::path::Path::new("editor").join("window.rs")) {
+            let found = literals(&labels, code);
+            assert!(found.len() >= 8, "editor window labels: {found:?}");
+            sources.extend(found);
+        }
+        if path.ends_with("main.rs") && path.parent().is_some_and(|p| p.ends_with("src")) {
+            let found = literals(&help, code);
+            assert_eq!(found.len(), 1, "HELP not found in {}", path.display());
+            sources.extend(found);
         }
         for raw in sources {
             found += 1;
