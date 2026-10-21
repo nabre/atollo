@@ -16,7 +16,7 @@ import { groups, matches } from "./model";
 import { ComponentRow } from "./rows";
 import { useComponents } from "./state";
 import { ApplyBar } from "./applybar";
-import { FirstRunSettings } from "../settings";
+import { FirstRunSettings } from "../settings/firstrun";
 
 export function ComponentsPage({
   setup,

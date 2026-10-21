@@ -22,10 +22,8 @@ import {
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./activity";
 import { TitleBar } from "./titlebar";
-import { ComponentsPage, ToolsPage } from "./components";
 import { AgentsPage, useAgents } from "./agents";
 import { setupStatusText, useSetup } from "./setup";
-import { SettingsPage } from "./settings";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
@@ -37,9 +35,22 @@ import { Codicon, codicon, Icon, Notice, Sash, useStoredSize, useTabs } from "./
 import { useLoad, useSubscription } from "./hooks";
 import { LoadError } from "./common";
 
-// The Guide is large and seldom open: its own chunk, read the first time
-// the page is shown.
-const GuidePage = lazy(() => import("./guide").then((m) => ({ default: m.GuidePage })));
+// The pages seldom open (the Guide, large; Settings; Tools, with the
+// first-start page that shares its rows): each its own chunk, read the
+// first time the page is shown, or as soon as the pointer or the focus
+// reaches its item in the activity bar (PRELOAD).
+const loadGuide = () => import("./guide");
+const loadSettings = () => import("./settings/page");
+const loadTools = () => import("./components");
+const GuidePage = lazy(() => loadGuide().then((m) => ({ default: m.GuidePage })));
+const SettingsPage = lazy(() => loadSettings().then((m) => ({ default: m.SettingsPage })));
+const ToolsPage = lazy(() => loadTools().then((m) => ({ default: m.ToolsPage })));
+const ComponentsPage = lazy(() => loadTools().then((m) => ({ default: m.ComponentsPage })));
+const PRELOAD: Partial<Record<PageId, () => Promise<unknown>>> = {
+  guide: loadGuide,
+  settings: loadSettings,
+  components: loadTools,
+};
 // The terminal panel brings xterm.js: read when a session first opens
 // (macOS and Linux), never on Windows.
 const TerminalPanel = lazy(() => import("./terminal/panel").then((m) => ({ default: m.TerminalPanel })));
@@ -162,42 +173,43 @@ export function App() {
           badges={{ projects: { count: live, label: t("In esecuzione: {0}", String(live)) } }}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {info?.firstRun ? (
-            <ComponentsPage setup={setup} onDone={loadInfo} platform={info.platform} onSettings={loadInfo} />
-          ) : page === "projects" ? (
-            <ProjectsPage
-              tabs={projectTabs}
-              status={editor}
-              agents={agents}
-              onChanged={refreshEditor}
-              runs={runs}
-              logs={logs}
-              loadLog={loadLog}
-              forget={forget}
-              onGuide={openGuide}
-              onSettings={() => {
-                setPage("settings");
-              }}
-              quickOpen={quickOpen}
-              onQuickOpen={setQuickOpen}
-            />
-          ) : page === "agents" ? (
-            <AgentsPage onGuide={openGuide} />
-          ) : page === "components" ? (
-            <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
-          ) : page === "databases" ? (
-            <DatabasesPage onGuide={openGuide} />
-          ) : page === "servers" ? (
-            <ServersPage onGuide={openGuide} />
-          ) : page === "terminals" ? (
-            <TerminalsPage
-              onTools={() => {
-                setPage("components");
-              }}
-              onGuide={openGuide}
-            />
-          ) : page === "guide" ? (
-            <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
+          {/* The lazy pages' fallback: the Guide's, as before. */}
+          <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
+            {info?.firstRun ? (
+              <ComponentsPage setup={setup} onDone={loadInfo} platform={info.platform} onSettings={loadInfo} />
+            ) : page === "projects" ? (
+              <ProjectsPage
+                tabs={projectTabs}
+                status={editor}
+                agents={agents}
+                onChanged={refreshEditor}
+                runs={runs}
+                logs={logs}
+                loadLog={loadLog}
+                forget={forget}
+                onGuide={openGuide}
+                onSettings={() => {
+                  setPage("settings");
+                }}
+                quickOpen={quickOpen}
+                onQuickOpen={setQuickOpen}
+              />
+            ) : page === "agents" ? (
+              <AgentsPage onGuide={openGuide} />
+            ) : page === "components" ? (
+              <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
+            ) : page === "databases" ? (
+              <DatabasesPage onGuide={openGuide} />
+            ) : page === "servers" ? (
+              <ServersPage onGuide={openGuide} />
+            ) : page === "terminals" ? (
+              <TerminalsPage
+                onTools={() => {
+                  setPage("components");
+                }}
+                onGuide={openGuide}
+              />
+            ) : page === "guide" ? (
               <GuidePage
                 key={guideTopic}
                 info={info}
@@ -208,12 +220,17 @@ export function App() {
                   setPage(target === "new" ? "projects" : target);
                 }}
               />
-            </Suspense>
-          ) : page === "settings" ? (
-            <SettingsPage onSaved={loadInfo} editorRunning={editor?.running ?? false} info={info} onGuide={openGuide} />
-          ) : (
-            <EjectPage onGuide={openGuide} />
-          )}
+            ) : page === "settings" ? (
+              <SettingsPage
+                onSaved={loadInfo}
+                editorRunning={editor?.running ?? false}
+                info={info}
+                onGuide={openGuide}
+              />
+            ) : (
+              <EjectPage onGuide={openGuide} />
+            )}
+          </Suspense>
           {terminals.shown && (
             <>
               <Sash
@@ -318,6 +335,10 @@ function ActivityBar({
     const active = id === page;
     const badge = badges[id];
     const shown = badge && badge.count > 0 ? badge : null;
+    // A lazy page's chunk, read ahead; a failure shows when the page opens.
+    const preload = () => {
+      PRELOAD[id]?.().catch(() => undefined);
+    };
     return (
       <button
         key={id}
@@ -325,6 +346,8 @@ function ActivityBar({
         title={shown ? `${label} - ${shown.label}` : label}
         aria-label={label}
         aria-current={active ? "page" : undefined}
+        onPointerEnter={preload}
+        onFocus={preload}
         onClick={() => {
           onSelect(id);
         }}
