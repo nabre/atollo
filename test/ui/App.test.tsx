@@ -71,11 +71,13 @@ vi.mock("@tauri-apps/api/core", () => ({
 let setupListener: ((e: { payload: SetupSnapshot }) => void) | null = null;
 let runListener: ((e: { payload: RunEvent }) => void) | null = null;
 let closeListener: ((e: { payload: OpenNow }) => void) | null = null;
+let openProjectListener: ((e: { payload: string }) => void) | null = null;
 vi.mock("@tauri-apps/api/event", () => ({
   listen: (name: string, handler: (e: { payload: unknown }) => void) => {
     if (name === "setup") setupListener = handler;
     if (name === "run") runListener = handler;
     if (name === "close-requested") closeListener = handler;
+    if (name === "open-project") openProjectListener = handler;
     return Promise.resolve(() => undefined);
   },
 }));
@@ -116,6 +118,7 @@ afterEach(() => {
   setupListener = null;
   runListener = null;
   closeListener = null;
+  openProjectListener = null;
 });
 
 describe("App", () => {
@@ -650,6 +653,33 @@ describe("App", () => {
     expect(dialog.textContent).toContain("Kit consoles: 1");
     fireEvent.click(screen.getByRole("button", { name: "Close everything" }));
     expect(invoke).toHaveBeenCalledWith("app_quit", undefined);
+  });
+
+  it("opens the project chosen in the tray menu, from any page", async () => {
+    invoke.mockImplementation(answers({ projects_list: [project("negozio"), project("blog")] }));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
+    act(() => {
+      openProjectListener?.({ payload: "negozio" });
+    });
+    expect(await screen.findByRole("tab", { name: /negozio/, selected: true })).toBeTruthy();
+    const nav = within(screen.getByRole("navigation", { name: "Pagine" }));
+    expect(nav.getByRole("button", { name: "Progetti" }).getAttribute("aria-current")).toBe("page");
+  });
+
+  it("reads the list again for a project of the tray menu it does not know yet", async () => {
+    const before = answers({ projects_list: [project("negozio")] });
+    const after = answers({ projects_list: [project("negozio"), project("nuovo")] });
+    let reads = 0;
+    invoke.mockImplementation((cmd) => (cmd === "projects_list" && reads++ > 0 ? after : before)(cmd));
+    render(<App />);
+    expect((await screen.findAllByText("negozio")).length).toBeGreaterThan(0);
+    act(() => {
+      openProjectListener?.({ payload: "nuovo" });
+    });
+    expect(await screen.findByRole("heading", { name: "nuovo" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: /nuovo/, selected: true })).toBeTruthy();
+    expect(reads).toBe(2);
   });
 
   it("prepares the drive for removal", async () => {
