@@ -112,6 +112,38 @@ export function SecretField({ value, label }: { value: string; label: string }) 
   );
 }
 
+/** The tool that shows a server's database in the browser (D-107, D-147):
+ * phpMyAdmin for MySQL, mongo-express for MongoDB; none for SQLite. */
+export interface DbViewer {
+  engine: "mysql" | "mongodb";
+  /** «Apri phpMyAdmin». */
+  open: string;
+  title: string;
+  /** «phpMyAdmin su 8.4». */
+  onLine: (line: string) => string;
+}
+
+export function dbViewer(id: string): DbViewer | null {
+  switch (id) {
+    case "mysql":
+      return {
+        engine: "mysql",
+        open: t("Apri phpMyAdmin"),
+        title: t("MySQL nel browser; al primo uso si installa e il server si avvia"),
+        onLine: (line) => t("phpMyAdmin su {0}", line),
+      };
+    case "mongodb":
+      return {
+        engine: "mongodb",
+        open: t("Apri mongo-express"),
+        title: t("MongoDB nel browser; al primo uso si installano mongo-express e Node.js e il server si avvia"),
+        onLine: (line) => t("mongo-express su {0}", line),
+      };
+    default:
+      return null;
+  }
+}
+
 /** Another version of a server, on its own port (D-102): state,
  * port and start/stop. */
 function OtherLine({
@@ -121,7 +153,8 @@ function OtherLine({
   onStart,
   onStop,
   onPort,
-  onPhpMyAdmin,
+  viewer,
+  onViewer,
 }: {
   id: string;
   o: LineInfo;
@@ -129,8 +162,9 @@ function OtherLine({
   onStart: () => void;
   onStop: () => void;
   onPort: (port: number) => void;
-  /** MySQL only: phpMyAdmin on this version. */
-  onPhpMyAdmin?: (() => void) | undefined;
+  /** MySQL and MongoDB: their viewer on this version. */
+  viewer?: DbViewer | null;
+  onViewer?: (() => void) | undefined;
 }) {
   const [port, setPort] = useState(String(o.port));
   const on = o.state === "running" || o.state === "starting";
@@ -163,14 +197,14 @@ function OtherLine({
             onClick={onStart}
           />
         )}
-        {onPhpMyAdmin && (
+        {viewer && onViewer && (
           <ActionButton
             icon={codicon("link-external")}
-            label={t("phpMyAdmin su {0}", o.line)}
+            label={viewer.onLine(o.line)}
             title={t("Questa versione nel browser; il server si avvia se è fermo")}
             small
             busy={busy}
-            onClick={onPhpMyAdmin}
+            onClick={onViewer}
           />
         )}
       </div>
@@ -211,21 +245,21 @@ function ServiceDetails({
   onStop,
   onSet,
   onLine,
-  onPhpMyAdmin,
+  onViewer,
   lineBusy,
   onLineStart,
   onLineStop,
   onLinePort,
-  onLinePhpMyAdmin,
+  onLineViewer,
 }: {
   s: ServiceInfo;
   busy: boolean;
   onStart: () => void;
   onStop: () => void;
-  /** MySQL only: phpMyAdmin in the browser. */
-  onPhpMyAdmin?: (() => void) | undefined;
-  /** MySQL only: phpMyAdmin on another version. */
-  onLinePhpMyAdmin?: ((line: string) => void) | undefined;
+  /** MySQL and MongoDB: their viewer in the browser ([`dbViewer`]). */
+  onViewer?: (() => void) | undefined;
+  /** The same on another version. */
+  onLineViewer?: ((line: string) => void) | undefined;
   onSet: (port: number | null, autostart: boolean) => void;
   onLine: (line: string | null) => void;
   /** The other versions (D-102). */
@@ -239,6 +273,7 @@ function ServiceDetails({
   const portValue = Number(port);
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
+  const viewer = dbViewer(s.id);
   // MySQL's content is in phpMyAdmin (D-107): no explorer, only the details.
   const explorer = s.id !== "mysql";
   const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
@@ -283,13 +318,13 @@ function ServiceDetails({
             ) : (
               <ActionButton icon={codicon("debug-start")} label={t("Avvia")} primary busy={busy} onClick={onStart} />
             )}
-            {onPhpMyAdmin && (
+            {viewer && onViewer && (
               <ActionButton
                 icon={codicon("link-external")}
-                label={t("Apri phpMyAdmin")}
-                title={t("MySQL nel browser; al primo uso si installa e il server si avvia")}
+                label={viewer.open}
+                title={viewer.title}
                 busy={busy}
-                onClick={onPhpMyAdmin}
+                onClick={onViewer}
               />
             )}
           </>
@@ -460,10 +495,11 @@ function ServiceDetails({
                     onPort={(port) => {
                       onLinePort(o.line, port);
                     }}
-                    onPhpMyAdmin={
-                      onLinePhpMyAdmin
+                    viewer={viewer}
+                    onViewer={
+                      onLineViewer
                         ? () => {
-                            onLinePhpMyAdmin(o.line);
+                            onLineViewer(o.line);
                           }
                         : undefined
                     }
@@ -516,6 +552,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => v
   };
   const current = chosen ?? list?.[0]?.id;
   const service = list?.find((s) => s.id === current);
+  const viewerOf = service ? dbViewer(service.id) : null;
   const running = (list ?? []).reduce((n, s) => n + [s, ...s.others].filter((x) => x.state === "running").length, 0);
 
   const side = (
@@ -629,17 +666,17 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => v
           onLinePort={(line, port) => {
             act(`${service.id}@${line}`, () => serviceLinePort(service.id, line, port));
           }}
-          onPhpMyAdmin={
-            service.id === "mysql"
+          onViewer={
+            viewerOf
               ? () => {
-                  act(service.id, () => dbAdminOpen(null, "mysql"));
+                  act(service.id, () => dbAdminOpen(null, viewerOf.engine));
                 }
               : undefined
           }
-          onLinePhpMyAdmin={
-            service.id === "mysql"
+          onLineViewer={
+            viewerOf
               ? (line) => {
-                  act(`${service.id}@${line}`, () => dbAdminOpen(line, "mysql"));
+                  act(`${service.id}@${line}`, () => dbAdminOpen(line, viewerOf.engine));
                 }
               : undefined
           }
@@ -649,7 +686,7 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => v
       )}
       <p className="shrink-0 border-t border-vsc-border px-5 py-2 text-[12px] text-vsc-desc">
         {t(
-          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. Nel terminale del kit il comando mysql entra già come root, e «Apri phpMyAdmin» apre MySQL nel browser. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
+          "Un server per tipo, condiviso da tutti i progetti, raggiungibile solo da questo PC (127.0.0.1), con password. Nel terminale del kit il comando mysql entra già come root; «Apri phpMyAdmin» apre MySQL nel browser e «Apri mongo-express» MongoDB. Ogni progetto ha il suo database e il suo utente: si creano dalla pagina del progetto.",
         )}
       </p>
     </ViewContainer>

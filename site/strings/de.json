@@ -74,6 +74,7 @@
   "mxKind_tools": "Entwicklungswerkzeuge",
   "mxKind_web": "Webserver",
   "mxKind_databases": "Datenbanken",
+  "mxKind_dbviewers": "Datenbank-Ansicht",
   "platformsTitle": "Systeme",
   "platformsLead": "Windows 10 und 11 (Windows 11 auf ARM64), macOS 12 oder neuer, Linux mit glibc 2.35 oder neuer (Ubuntu 22.04, Debian 12 und neuer).",
   "pWinX64": "nativ",
