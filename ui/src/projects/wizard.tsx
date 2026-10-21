@@ -42,6 +42,7 @@ import {
   ProgressBar,
   Radio,
   TextField,
+  ToggleButton,
 } from "../workbench";
 
 const MAX_LOG = 600;
@@ -253,23 +254,18 @@ export function NewProjectWizard({
         <EditorSection id="wizard-base" title={t("1. Base")}>
           {groups.length > 1 && (
             <div role="group" aria-label={t("Gruppi di basi")} className="flex flex-wrap gap-1.5">
-              {/* Toggle chips (aria-pressed), drawn as the app's tags. */}
               {groups.map((g) => (
-                <button
+                <ToggleButton
                   key={g.id}
-                  type="button"
                   disabled={running}
-                  aria-pressed={g.id === shownGroup?.id}
+                  pressed={g.id === shownGroup?.id}
                   onClick={() => {
                     setGroup({ id: g.id, base });
                   }}
-                  className={`rounded-sm border px-1.5 text-[12px] leading-5 hover:bg-vsc-list-hover ${
-                    g.id === shownGroup?.id ? "border-vsc-focus" : "border-vsc-border"
-                  }`}
                 >
                   {g.label}
-                  <span className="pl-1 text-vsc-desc">{g.bases.length}</span>
-                </button>
+                  <span className="pl-1 opacity-70">{g.bases.length}</span>
+                </ToggleButton>
               ))}
             </div>
           )}
@@ -332,25 +328,21 @@ export function NewProjectWizard({
           {usable.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-vsc-desc">{t("Oppure usa un progetto esistente:")}</span>
-              {/* Toggle chips (aria-pressed), drawn as the app's tags: no
-                    vscode-elements component has a pressed state. */}
               {usable.map((x) => (
-                <button
+                <ToggleButton
                   key={x.name}
-                  type="button"
                   disabled={running}
-                  aria-pressed={target?.name === x.name}
+                  pressed={target?.name === x.name}
                   title={x.state === "empty" ? t("Cartella vuota") : t("Cartella con file, senza Git")}
                   onClick={() => {
                     setName(x.name);
                   }}
-                  className={`rounded-sm border px-1.5 text-[12px] leading-5 hover:bg-vsc-list-hover ${
-                    target?.name === x.name ? "border-vsc-focus" : "border-vsc-border"
-                  } ${x.state === "files" ? "border-dashed" : ""}`}
+                  // A folder with files: dashed, as it is not empty.
+                  className={x.state === "files" ? "border-dashed" : ""}
                 >
                   {x.name}
-                  <span className="pl-1 text-vsc-desc">{x.state === "empty" ? t("vuoto") : t("con file")}</span>
-                </button>
+                  <span className="pl-1 opacity-70">{x.state === "empty" ? t("vuoto") : t("con file")}</span>
+                </ToggleButton>
               ))}
             </div>
           )}
