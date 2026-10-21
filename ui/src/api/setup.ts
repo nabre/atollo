@@ -149,7 +149,8 @@ export interface ComponentInfo {
   xcodeMissing?: boolean;
 }
 
-const IDLE: SetupSnapshot = {
+/** The browser preview's answer (core.ts): nothing being installed. */
+export const SAMPLE_SETUP: SetupSnapshot = {
   running: false,
   cancelling: false,
   automatic: false,
@@ -161,7 +162,7 @@ const IDLE: SetupSnapshot = {
 };
 
 export function setupState(): Promise<SetupSnapshot> {
-  return query<SetupSnapshot>("setup_state", IDLE);
+  return query<SetupSnapshot>("setup_state", SAMPLE_SETUP);
 }
 
 /** Every change of the preparation; returns the function that stops listening. */

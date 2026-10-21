@@ -163,13 +163,15 @@ const SAMPLE_PIECES: FrameworkPiece[] = [
   },
 ];
 
+export const SAMPLE_FRAMEWORKS: FrameworksView = {
+  pieces: SAMPLE_PIECES,
+  official: SAMPLE_PIECES,
+  texts: {},
+  problem: null,
+};
+
 export function frameworksGet(): Promise<FrameworksView> {
-  return query<FrameworksView>("frameworks_get", {
-    pieces: SAMPLE_PIECES,
-    official: SAMPLE_PIECES,
-    texts: {},
-    problem: null,
-  });
+  return query<FrameworksView>("frameworks_get", SAMPLE_FRAMEWORKS);
 }
 
 /** Saves the instructions; those equal to the official ones are not kept. */
@@ -200,11 +202,13 @@ export function frameworksCreate(base: string, addons: string[], name: string, e
   return query<string>("frameworks_create", name, { base, addons, name, env });
 }
 
+export const SAMPLE_TARGETS: FrameworkTarget[] = [
+  { name: "vuoto", state: "empty" },
+  { name: "appunti", state: "files" },
+];
+
 export function frameworksTargets(): Promise<FrameworkTarget[]> {
-  return query<FrameworkTarget[]>("frameworks_targets", [
-    { name: "vuoto", state: "empty" },
-    { name: "appunti", state: "files" },
-  ]);
+  return query<FrameworkTarget[]>("frameworks_targets", SAMPLE_TARGETS);
 }
 
 export function frameworksCancel(): Promise<void> {

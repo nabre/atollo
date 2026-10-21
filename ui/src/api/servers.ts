@@ -64,7 +64,7 @@ export interface WebServersView {
   phpLines: string[];
 }
 
-const SAMPLE_SERVERS: WebServersView = {
+export const SAMPLE_SERVERS: WebServersView = {
   pools: [
     {
       id: "apache-2.4_php-8.4",

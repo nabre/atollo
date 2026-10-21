@@ -2,23 +2,14 @@
 // facts of the Il kit group (D-90).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { AppInfo, Settings } from "../../../ui/src/api";
+import { SAMPLE_INFO, SAMPLE_SETTINGS, type AppInfo } from "../../../ui/src/api";
 import { KitInfo } from "../../../ui/src/settings/about";
 import { GeneralSettings } from "../../../ui/src/settings/sections";
 
 afterEach(cleanup);
 
-const SETTINGS: Settings = {
-  lang: null,
-  network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
-  geminiApiKey: null,
-  autoUpdate: true,
-  rustToolchain: null,
-  programTemp: "auto",
-  theme: "system",
-  keepCondaPackages: true,
-  toolsTarget: null,
-};
+// The browser preview's settings: «Automatico».
+const SETTINGS = SAMPLE_SETTINGS.settings;
 
 describe("program temp setting", () => {
   it("shows the saved choice with its help and sends the new one", async () => {
@@ -36,19 +27,9 @@ describe("program temp setting", () => {
 });
 
 describe("KitInfo disk facts", () => {
+  // The browser preview's kit, on a removable exFAT disk.
   const info: AppInfo = {
-    version: "0.1.0",
-    root: "E:\\Kit",
-    data: "E:\\Kit\\data",
-    projects: "E:\\Kit\\projects",
-    platform: "win32-x64",
-    lang: "it",
-    movedFrom: null,
-    webview: "x",
-    pathEntries: 0,
-    watcherUnsafeFolder: null,
-    firstRun: false,
-    otherKits: [],
+    ...SAMPLE_INFO,
     diskFs: "exFAT",
     diskKind: "removable",
     diskNoexec: null,

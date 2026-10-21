@@ -1,86 +1,36 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type {
-  AgentInfo,
-  AppInfo,
-  FrameworkPiece,
-  OpenNow,
-  ProjectInfo,
-  RunEvent,
-  RunInfo,
-  SetupSnapshot,
+import {
+  NOTHING_OPEN,
+  SAMPLE_AGENTS,
+  SAMPLE_EDITOR,
+  SAMPLE_FRAMEWORKS,
+  SAMPLE_INFO,
+  SAMPLE_PROJECTS,
+  SAMPLE_SERVERS,
+  SAMPLE_SERVICES,
+  SAMPLE_SETTINGS,
+  SAMPLE_SETUP,
+  SAMPLE_TARGETS,
+  SAMPLE_UPDATE,
+  type OpenNow,
+  type ProjectInfo,
+  type RunEvent,
+  type RunInfo,
+  type ServiceInfo,
+  type SetupSnapshot,
+  type WebServerPool,
 } from "../../ui/src/api";
 
-const info: AppInfo = {
-  version: "0.1.0",
-  root: "E:\\My Atollo",
-  data: "E:\\My Atollo\\data",
-  projects: "E:\\My Atollo\\projects",
-  platform: "win32-x64",
-  lang: "it",
-  movedFrom: null,
-  webview: "system 140.0",
-  pathEntries: 5,
-  watcherUnsafeFolder: null,
-  firstRun: false,
-  otherKits: [],
-  diskFs: "NTFS",
-  diskKind: "fixed",
-  diskNoexec: null,
-  diskNote: null,
-  systemTemp: null,
-};
-
-const idle: SetupSnapshot = {
-  running: false,
-  cancelling: false,
-  automatic: false,
-  total: 0,
-  steps: [],
-  queue: [],
-  error: null,
-};
-
-const PIECES: FrameworkPiece[] = [
-  {
-    id: "laravel",
-    kind: "base",
-    name: "Laravel",
-    category: "web-php",
-    desc: "Framework PHP per applicazioni web",
-    home: "https://laravel.com/docs/13.x/installation",
-    needs: ["php", "node"],
-    create: ["composer create-project laravel/laravel:^13.0 {name} --prefer-dist"],
-    steps: ["npm install"],
-  },
-  {
-    id: "vite",
-    kind: "base",
-    name: "Vite",
-    category: "web-js",
-    desc: "Sito o applicazione web in TypeScript",
-    home: "https://vite.dev/guide/",
-    needs: ["node"],
-    create: ["npm create vite@9 {name} -- --template vanilla-ts"],
-    steps: ["npm install"],
-  },
-  {
-    id: "react",
-    kind: "addon",
-    slot: "frontend",
-    name: "React",
-    desc: "Interfaccia in React con TypeScript",
-    home: "https://react.dev/",
-    on: { vite: { create: ["npm create vite@9 {name} -- --template react-ts"] } },
-  },
-];
+// The answers start from the browser preview's (ui/src/api): a test
+// changes only what it is about.
 
 /** Default answer of every command; tests override single commands. */
 function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Promise<unknown> {
   const base: Record<string, unknown> = {
-    app_info: info,
-    editor_status: { installed: true, running: false, port: null, emulated: false },
-    setup_state: idle,
+    app_info: SAMPLE_INFO,
+    editor_status: SAMPLE_EDITOR,
+    setup_state: SAMPLE_SETUP,
     projects_list: [],
     components_list: [],
     agents_status: [],
@@ -89,23 +39,9 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
     run_list: [],
     run_ports: { ports: {}, locked: [] },
     url_open: null,
-    settings_get: {
-      settings: {
-        lang: null,
-        network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
-        geminiApiKey: null,
-        autoUpdate: true,
-        rustToolchain: null,
-        programTemp: "auto",
-        theme: "system",
-        keepCondaPackages: true,
-        toolsTarget: null,
-      },
-      geminiKeySet: true,
-      problem: null,
-    },
+    settings_get: SAMPLE_SETTINGS,
     settings_set: null,
-    frameworks_get: { pieces: PIECES, official: PIECES, texts: {}, problem: null },
+    frameworks_get: SAMPLE_FRAMEWORKS,
     frameworks_set: null,
     frameworks_plan: {
       needs: ["node"],
@@ -117,12 +53,9 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
       notes: [],
     },
     frameworks_create: "app",
-    frameworks_targets: [
-      { name: "vuoto", state: "empty" },
-      { name: "appunti", state: "files" },
-      { name: "repo", state: "git" },
-    ],
-    update_status: { current: "0.1.0", latest: null, staged: null, checking: false, error: null },
+    frameworks_targets: [...SAMPLE_TARGETS, { name: "repo", state: "git" }],
+    update_status: SAMPLE_UPDATE,
+    eject_list: NOTHING_OPEN,
     app_quit: null,
     ...overrides,
   };
@@ -147,45 +80,20 @@ vi.mock("@tauri-apps/api/event", () => ({
   },
 }));
 
+const [SITE] = SAMPLE_PROJECTS as [ProjectInfo, ...ProjectInfo[]];
+const [MYSQL] = SAMPLE_SERVICES as [ServiceInfo, ...ServiceInfo[]];
+const [POOL] = SAMPLE_SERVERS.pools as [WebServerPool, ...WebServerPool[]];
+
+/** The preview's static site under another name, never opened. */
 function project(name: string): ProjectInfo {
-  return {
-    id: name,
-    name,
-    modified: 1_791_900_000,
-    empty: false,
-    missing: [],
-    platform: "Sito statico",
-    type: "web",
-    reason: "index.html",
-    languages: ["HTML"],
-    requires: [],
-    actions: [
-      {
-        id: "static",
-        label: "sito statico",
-        command: "",
-        type: "web",
-        folder: null,
-        url: null,
-        env: {},
-        static: ".",
-        apache: null,
-        custom: false,
-      },
-    ],
-    warnings: [],
-    settings: {},
-    extensions: [],
-    custom: false,
-    default: "static",
-  };
+  return { ...SITE, id: name, name, settings: {} };
 }
 
 const running: RunInfo = {
   key: "sito (1) & co|static",
   project: "sito (1) & co",
   action: "static",
-  label: "sito statico",
+  label: SITE.actions[0]?.label ?? "",
   type: "web",
   command: "Atollo.exe serve . 7100",
   port: 7100,
@@ -216,18 +124,18 @@ describe("App", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
     fireEvent.click(await screen.findByRole("button", { name: "Il kit" }));
-    expect(await screen.findByText("E:\\My Atollo")).toBeTruthy();
+    expect(await screen.findByText("E:\\Atollo")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("app_info", undefined);
   });
 
   it("warns when the kit was moved", async () => {
-    invoke.mockImplementation(answers({ app_info: { ...info, movedFrom: "F:\\Old" } }));
+    invoke.mockImplementation(answers({ app_info: { ...SAMPLE_INFO, movedFrom: "F:\\Old" } }));
     render(<App />);
     expect(await screen.findByText(/prima era in F:\\Old/)).toBeTruthy();
   });
 
   it("warns about kit folders that break the editor watcher", async () => {
-    invoke.mockImplementation(answers({ app_info: { ...info, watcherUnsafeFolder: "2026" } }));
+    invoke.mockImplementation(answers({ app_info: { ...SAMPLE_INFO, watcherUnsafeFolder: "2026" } }));
     render(<App />);
     expect(await screen.findByText(/La cartella «2026»/)).toBeTruthy();
   });
@@ -365,32 +273,11 @@ describe("App", () => {
   });
 
   it("opens editor, console and agent only in a project from Home", async () => {
-    const agents: AgentInfo[] = [
-      {
-        id: "claude",
-        name: "Claude Code",
-        installed: true,
-        version: "2",
-        signedIn: true,
-        signInKind: "account",
-        running: false,
-        tokenLink: false,
-      },
-      {
-        id: "codex",
-        name: "Codex",
-        installed: true,
-        version: "1",
-        signedIn: false,
-        signInKind: null,
-        running: false,
-        tokenLink: false,
-      },
-    ];
+    // The preview's agents: Claude Code and Codex installed.
     invoke.mockImplementation(
       answers({
         projects_list: [{ ...project("app & co"), languages: ["TypeScript", "CSS"], settings: { agent: "codex" } }],
-        agents_status: agents,
+        agents_status: SAMPLE_AGENTS,
         agent_launch: null,
       }),
     );
@@ -751,12 +638,12 @@ describe("App", () => {
   });
 
   it("asks before closing with something open, and switches language", async () => {
-    invoke.mockImplementation(answers({ app_info: { ...info, lang: "en" } }));
+    invoke.mockImplementation(answers({ app_info: { ...SAMPLE_INFO, lang: "en" } }));
     render(<App />);
     expect((await screen.findAllByRole("button", { name: "Projects" })).length).toBeGreaterThan(0);
     act(() => {
       closeListener?.({
-        payload: { processes: [], editor: true, terminals: 1, actions: 0, setup: false, databases: 0 },
+        payload: { ...NOTHING_OPEN, editor: true, terminals: 1 },
       });
     });
     const dialog = await screen.findByRole("alertdialog");
@@ -767,13 +654,10 @@ describe("App", () => {
 
   it("prepares the drive for removal", async () => {
     const open = {
+      ...NOTHING_OPEN,
       processes: [{ pid: 42, name: "node.exe", program: "data\apps\win32-x64\node\node.exe" }],
-      editor: false,
-      terminals: 0,
-      actions: 0,
-      setup: false,
     };
-    invoke.mockImplementation(answers({ eject_list: open, eject_run: { ...open, processes: [] }, app_quit: null }));
+    invoke.mockImplementation(answers({ eject_list: open, eject_run: NOTHING_OPEN, app_quit: null }));
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Rimuovi l'unità" }));
     expect(await screen.findByText("node.exe")).toBeTruthy();
@@ -786,11 +670,7 @@ describe("App", () => {
   it("clears a failed read of what is open when «Aggiorna» reads it", async () => {
     let fail = true;
     invoke.mockImplementation((cmd) =>
-      cmd === "eject_list" && fail
-        ? Promise.reject(new Error("letto male"))
-        : answers({
-            eject_list: { processes: [], editor: false, terminals: 0, actions: 0, setup: false, databases: 0 },
-          })(cmd),
+      cmd === "eject_list" && fail ? Promise.reject(new Error("letto male")) : answers()(cmd),
     );
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Rimuovi l'unità" }));
@@ -853,49 +733,14 @@ describe("App", () => {
   });
 
   it("counts a database version running beside a stopped main one, and an active pool (UX-V5-01)", async () => {
-    const mysql = {
-      id: "mysql",
-      name: "MySQL",
-      installed: true,
+    // The preview's MySQL the other way round: 9.7 stopped, 8.4 running.
+    const mysql: ServiceInfo = {
+      ...MYSQL,
       state: "stopped",
-      port: 3306,
-      autostart: false,
-      dataDir: "E:\\My Atollo\\data\\db\\mysql\\9.7",
-      log: "E:\\My Atollo\\data\\app\\logs\\mysql.log",
-      url: "mysql://root@127.0.0.1:3306/",
-      user: "root",
-      password: null,
-      message: null,
-      line: "9.7",
-      lines: ["9.7", "8.4"],
-      others: [
-        {
-          line: "8.4",
-          state: "running",
-          port: 3307,
-          dataDir: "E:\\My Atollo\\data\\db\\mysql\\8.4",
-          log: "E:\\My Atollo\\data\\app\\logs\\mysql-8.4.log",
-          url: "mysql://root@127.0.0.1:3307/",
-          message: null,
-        },
-      ],
+      others: MYSQL.others.map((o) => ({ ...o, state: "running" })),
     };
-    const pool = {
-      id: "caddy-2.11",
-      name: "Caddy 2.11",
-      engine: "caddy",
-      serverLine: "2.11",
-      phpLine: null,
-      port: 8090,
-      running: true,
-      pid: 42,
-      manual: false,
-      sites: [],
-      confDir: "data\\servers\\caddy-2.11",
-      orphan: false,
-      profile: null,
-    };
-    const servers = (pools: unknown[]) => ({ pools, apacheLines: [], caddyLines: [], phpLines: [] });
+    const pool: WebServerPool = { ...POOL, running: true };
+    const servers = (pools: WebServerPool[]) => ({ ...SAMPLE_SERVERS, pools });
     invoke.mockImplementation(answers({ services_list: [mysql], servers_list: servers([]) }));
     render(<App />);
     const bar = within(screen.getByRole("contentinfo", { name: "Barra di stato" }));
@@ -921,7 +766,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
     const list = within(screen.getByRole("list", { name: "Attività" }));
     expect(list.getByText("MySQL 8.4")).toBeTruthy();
-    expect(list.getByText("Caddy 2.11")).toBeTruthy();
+    expect(list.getByText(pool.name)).toBeTruthy();
   });
 
   it("shows the first-start choice and applies it", async () => {
@@ -1030,7 +875,7 @@ describe("App", () => {
       },
     ];
     invoke.mockImplementation(
-      answers({ app_info: { ...info, firstRun: true }, components_list: comps, components_apply: null }),
+      answers({ app_info: { ...SAMPLE_INFO, firstRun: true }, components_list: comps, components_apply: null }),
     );
     render(<App />);
     expect(await screen.findByText("Benvenuto in Atollo")).toBeTruthy();
@@ -1056,26 +901,9 @@ describe("App", () => {
   });
 
   it("shows the agents and opens one", async () => {
-    const agents = [
-      {
-        id: "claude",
-        name: "Claude Code",
-        installed: true,
-        version: "2.1.299",
-        signedIn: true,
-        signInKind: "account",
-        running: false,
-      },
-      {
-        id: "codex",
-        name: "Codex",
-        installed: false,
-        version: null,
-        signedIn: false,
-        signInKind: null,
-        running: false,
-      },
-    ];
+    // The preview's agents: Claude Code signed in, Codex not, Antigravity
+    // not installed; none running, so the sign-out is offered.
+    const agents = SAMPLE_AGENTS.map((a) => ({ ...a, running: false }));
     invoke.mockImplementation(answers({ agents_status: agents, agent_launch: null, agent_sign_out: null }));
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
@@ -1083,7 +911,8 @@ describe("App", () => {
     expect(screen.getAllByText("accesso fatto").length).toBeGreaterThan(0);
 
     // only the installed agents, and no launch outside a project
-    expect(screen.queryByText("Codex")).toBeNull();
+    expect(screen.getAllByText("Codex").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Antigravity")).toBeNull();
     expect(screen.queryByRole("button", { name: "Apri" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(screen.getByText("Togliere l'accesso salvato nel kit?")).toBeTruthy();
