@@ -301,8 +301,8 @@ Argomenti collegati: [2.2 La pagina Progetti e il «Pannello rapido»](#22-la-pa
 #### 1. Crea il progetto
 
 1. Apri la pagina «Progetti» dalla barra delle attività.
-2. Nel «Pannello rapido», sotto «Nuovo progetto», fai clic su «Da framework o CMS». Si apre la scheda «Nuovo progetto».
-3. In «1. Base» scegli il gruppo «Web con JavaScript e TypeScript» e la scheda «Vite» («Sito o applicazione web in TypeScript»).
+2. Nel «Pannello rapido», sotto «Nuovo progetto», nel riquadro «Web», fai clic su «Vite» (sotto «Web con JavaScript e TypeScript»). Si apre la scheda «Nuovo progetto».
+3. In «1. Base» la scheda «Vite» («Sito o applicazione web in TypeScript») è già scelta.
 4. In «2. Aggiunte» non serve niente per questa prova.
 5. In «3. Nome» scrivi primo-sito. Il nome diventa la cartella `projects\primo-sito`.
 6. Guarda il «Riepilogo»: vedrai che il kit userà Node.js, eseguirà npm create vite nella cartella projects e poi npm install nel progetto, e salverà le azioni «Avvia» e «Build».
@@ -346,11 +346,11 @@ Argomenti collegati: [2.1 Creare un progetto](#21-creare-un-progetto), [2.3 Avvi
 > **In breve**
 >
 > - Un progetto è semplicemente una cartella dentro projects: il kit la riconosce da sola.
-> - Per crearne uno ci sono tre strade: «Progetto vuoto», «Da un indirizzo Git» e «Da framework o CMS». Più l'elenco dei tuoi repository GitHub.
+> - Per crearne uno ci sono tre strade: «Progetto vuoto», «Da un indirizzo Git» e «Da una base», con le basi di framework e CMS in quattro gruppi: Web, CMS, App e Altro. Più l'elenco dei tuoi repository GitHub.
 > - Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework.
 > - Puoi anche copiare a mano una cartella in projects: compare nell'elenco dopo «Aggiorna».
 
-![La procedura «Da framework o CMS»](../../ui/public/guide/it/project-new.webp)
+![La procedura «Da una base»](../../ui/public/guide/it/project-new.webp)
 
 *Base, aggiunte, nome, file .env e riepilogo, uno sotto l'altro. A sinistra l'albero delle tre strade.*
 
@@ -358,9 +358,9 @@ Argomenti collegati: [2.1 Creare un progetto](#21-creare-un-progetto), [2.3 Avvi
 
 Tutte le strade portano alla scheda «Nuovo progetto» della pagina Progetti, che si apre in uno di questi modi:
 
-- dal «Pannello rapido», con le tre caselle sotto «Nuovo progetto»;
-- dalle icone in cima alla barra laterale: «Nuovo progetto» (cartella con il più) e «Nuovo progetto da framework o CMS» (bacchetta);
-- dal riquadro «Nuovo progetto» della barra laterale, un albero con le tre strade; sotto «Da framework o CMS» ci sono i gruppi e le basi: un clic su una base apre la procedura con quella base già scelta;
+- dal «Pannello rapido», sotto «Nuovo progetto»: in alto a destra i collegamenti «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo (Web, CMS, App, Altro) con le sue basi divise per categoria: un clic su una base apre la procedura con quella base già scelta;
+- dalle icone in cima alla barra laterale: «Nuovo progetto» (cartella con il più) e «Nuovo progetto da una base» (bacchetta);
+- dal riquadro «Nuovo progetto» della barra laterale, un albero: «Progetto vuoto», «Da un indirizzo Git», poi i rami Web, CMS, App e Altro con il numero delle basi. Sotto Web, App e Altro ci sono le categorie e le loro basi, sotto CMS direttamente le basi; un clic su un gruppo apre la procedura sulla sua prima base, un clic su una base la apre con quella base già scelta;
 - da <kbd>Ctrl+P</kbd>, che in fondo all'elenco ha le tre voci «Nuovo progetto».
 
 Un progetto creato o clonato compare subito anche nella pagina «Server Web».
@@ -389,7 +389,7 @@ Dopo la copia il kit guarda i file del progetto, installa i componenti che servo
 >
 > Sono accettati solo indirizzi https://, non ssh. Per un repository privato di GitHub serve l'accesso con l'account GitHub del kit; per i repository pubblici no. Se la copia non riesce, la cartella viene tolta e compare l'ultima riga dell'errore di Git.
 
-#### Strada 3 · «Da framework o CMS»
+#### Strada 3 · «Da una base»
 
 Una procedura guidata che crea un progetto partendo da una base (un framework come Laravel, Django o Vite, un CMS come WordPress, un generatore di siti, un'app desktop o mobile…) e da eventuali aggiunte (Tailwind, React, un database, gli strumenti di prova…). Il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework, gli stessi che troveresti nella sua documentazione.
 
@@ -462,14 +462,16 @@ Argomenti collegati: [1.4 Il primo progetto, passo per passo](#14-il-primo-proge
 
 #### La barra laterale
 
-In cima, le icone: «Nuovo progetto», «Nuovo progetto da framework o CMS», «Apri un progetto (Ctrl+P)», «Aggiorna», «Apri la cartella» (apre projects) e il libro della guida. Sotto, quattro riquadri:
+In cima, le icone: «Nuovo progetto», «Nuovo progetto da una base», «Apri un progetto (Ctrl+P)», «Aggiorna», «Apri la cartella» (apre projects) e il libro della guida. Sotto, quattro riquadri:
 
 | Riquadro | Che cosa contiene |
 | --- | --- |
 | Progetti | Tutti i progetti in ordine alfabetico, con il numero in alto. Le cartelle che iniziano con un punto e i collegamenti non contano. Oltre sei progetti compare la casella «Cerca nei progetti». |
 | Dati senza progetto | Compare solo se il kit ha dati di progetti che non sono più in projects. Vedi [2.7 Eliminare un progetto e i «Dati senza progetto»](#27-eliminare-un-progetto-e-i-dati-senza-progetto). |
-| Nuovo progetto | L'albero delle tre strade per creare un progetto, con le basi dei framework. |
+| Nuovo progetto | L'albero delle strade per creare un progetto: «Progetto vuoto», «Da un indirizzo Git» e le basi nei gruppi Web, CMS, App e Altro. |
 | Dai tuoi repository GitHub | I repository del tuo account, da clonare. |
+
+Un clic sul titolo di un riquadro lo apre o lo chiude. Da solo, «Progetti» occupa tutta l'altezza; se è aperto anche «Nuovo progetto» o «Dai tuoi repository GitHub», «Progetti» prende solo l'altezza delle sue righe (e scorre solo se non ci stanno) e il resto va agli altri riquadri aperti.
 
 Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per un sito web, una finestra per un'app con finestra, un terminale per un programma a riga di comando. Un pallino verde vuol dire che qualcosa è avviato; un triangolo giallo che mancano dei componenti. Passando il mouse sulla riga compaiono i pulsanti ▶ «Avvia» (o ■ «Ferma»), «Editor», «Terminale» e «Agente».
 
@@ -483,7 +485,7 @@ Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per
 | Preferiti | I progetti che hai segnato con la stella («Aggiungi … ai preferiti»), come schede con i loro linguaggi e pulsanti. |
 | Recenti | I sei progetti usati o modificati più di recente, escluso chi è già tra i preferiti. |
 | Da sistemare | Le azioni fermate con un errore («Vedi l'output») e i progetti a cui mancano componenti («Installa», che apre la sezione Componenti del progetto). |
-| Nuovo progetto | Le tre strade per creare un progetto, più i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida. |
+| Nuovo progetto | Accanto al titolo «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo, Web, CMS, App e Altro, con le basi come pulsanti (un clic apre la procedura su quella base); in fondo i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida. |
 
 #### Aprire un progetto per nome
 
@@ -2667,7 +2669,7 @@ Argomenti collegati: [9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va), [
 
 - **.env** — Un file di testo nel progetto con impostazioni e segreti (come la password del database), una riga CHIAVE=valore ciascuna. Non va messo in Git.
 - **Agente IA** — Un assistente a riga di comando che lavora nella cartella del progetto: legge, modifica, esegue comandi. Nel kit: Claude Code, Codex, Antigravity.
-- **Aggiunta** — Nella procedura «Da framework o CMS», un pezzo in più da aggiungere alla base (Tailwind, React, un database, le prove).
+- **Aggiunta** — Nella procedura «Da una base», un pezzo in più da aggiungere alla base (Tailwind, React, un database, le prove).
 - **Alias di percorso** — Un indirizzo del sito che serve una cartella diversa, per esempio /media → storage/uploads.
 - **Azione** — Un comando del progetto con un nome, che si avvia e si ferma dalla sezione «Avvio».
 - **Base** — Il punto di partenza di un progetto creato con un framework o un CMS: Laravel, Vite, Django, WordPress…
