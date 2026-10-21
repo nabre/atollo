@@ -285,7 +285,7 @@ pub fn gemini_file(kit: &Kit) -> PathBuf {
 /// an error naming the file when it is there but cannot be read (made
 /// private by another account, the kit used on another PC: PORT-V6-01),
 /// never mistaken for "not set".
-fn read_secret(path: &Path) -> anyhow::Result<Option<String>> {
+pub(crate) fn read_secret(path: &Path) -> anyhow::Result<Option<String>> {
     match std::fs::read_to_string(path) {
         Ok(t) => Ok(Some(t.trim().to_owned()).filter(|t| !t.is_empty())),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),

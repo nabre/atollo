@@ -1,0 +1,81 @@
+{
+  "about": "Local models offered by Atollo (llm/catalog.rs, D-151): GGUF files from Hugging Face at a fixed commit, each with its SHA-256 (the lfs.oid of the Hugging Face API) and size in bytes. A model in several parts lists all of them, the first one first: the parts of Qwen2.5-Coder 7B stay under 4 GiB and fit a FAT32 drive. ctx: the context window the server gives it; ramGb: the memory it needs with that context, about; tools: it calls tools (the agents need it); desc: Italian, translated by tauri/i18n/catalog.json.",
+  "models": [
+    {
+      "id": "qwen2.5-coder-7b",
+      "name": "Qwen2.5-Coder 7B",
+      "repo": "Qwen/Qwen2.5-Coder-7B-Instruct-GGUF",
+      "commit": "13fb94bfda8c8cf22497dc57b78f391a9acb426a",
+      "files": [
+        { "name": "qwen2.5-coder-7b-instruct-q4_k_m-00001-of-00002.gguf", "sha256": "89f120544682078148c5a86117de9af3a65c339111262f2d3ff01d80d48b14be", "bytes": 3993201376 },
+        { "name": "qwen2.5-coder-7b-instruct-q4_k_m-00002-of-00002.gguf", "sha256": "0183b3c850cfa96c31082c3af0123115300d3f62798c4448fa8f57bd0eac05e0", "bytes": 689872288 }
+      ],
+      "quant": "Q4_K_M",
+      "ctx": 32768,
+      "ramGb": 7,
+      "tools": true,
+      "license": "apache-2.0",
+      "desc": "per il codice, leggero: entra in 8 GB di RAM o di memoria video"
+    },
+    {
+      "id": "qwen3.5-9b",
+      "name": "Qwen3.5 9B",
+      "repo": "unsloth/Qwen3.5-9B-GGUF",
+      "commit": "3885219b6810b007914f3a7950a8d1b469d598a5",
+      "files": [
+        { "name": "Qwen3.5-9B-Q4_K_M.gguf", "sha256": "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8", "bytes": 5680522464 }
+      ],
+      "quant": "Q4_K_M",
+      "ctx": 32768,
+      "ramGb": 8,
+      "tools": true,
+      "license": "apache-2.0",
+      "desc": "generale e per il codice, con ragionamento: per 8-12 GB"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "gpt-oss 20B",
+      "repo": "ggml-org/gpt-oss-20b-GGUF",
+      "commit": "15dcfc7e7c608c6161507211ed43c5b590801b4b",
+      "files": [
+        { "name": "gpt-oss-20b-MXFP4.gguf", "sha256": "27cd6c432c7672cb812a92f611cf3ba7bbc35928262bb1e1253ff4ee6ae35901", "bytes": 12109566624 }
+      ],
+      "quant": "MXFP4",
+      "ctx": 32768,
+      "ramGb": 15,
+      "tools": true,
+      "license": "apache-2.0",
+      "desc": "il modello aperto di OpenAI, con ragionamento e strumenti: per 16-24 GB"
+    },
+    {
+      "id": "devstral-small-2-24b",
+      "name": "Devstral Small 2 24B",
+      "repo": "unsloth/Devstral-Small-2-24B-Instruct-2512-GGUF",
+      "commit": "6e458b8add42681bfd023de5eab93637694aaf82",
+      "files": [
+        { "name": "Devstral-Small-2-24B-Instruct-2512-Q4_K_M.gguf", "sha256": "d14ba9edee1bb4c4996a726deb81e49ae81800a3216f0774634238c380aee496", "bytes": 14334446752 }
+      ],
+      "quant": "Q4_K_M",
+      "ctx": 32768,
+      "ramGb": 18,
+      "tools": true,
+      "license": "apache-2.0",
+      "desc": "di Mistral, fatto per gli agenti di programmazione: per 16-24 GB di memoria video"
+    },
+    {
+      "id": "qwen3-coder-30b-a3b",
+      "name": "Qwen3-Coder 30B-A3B",
+      "repo": "unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF",
+      "commit": "b17cb02dd882d5b6ab62fc777ad2995f19668350",
+      "files": [
+        { "name": "Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf", "sha256": "fadc3e5f8d42bf7e894a785b05082e47daee4df26680389817e2093056f088ad", "bytes": 18556689568 }
+      ],
+      "quant": "Q4_K_M",
+      "ctx": 32768,
+      "ramGb": 22,
+      "tools": true,
+      "license": "apache-2.0",
+      "desc": "per il codice e gli agenti; a esperti (3B attivi), veloce anche sulla CPU con molta RAM: 24 GB e più"
+    }
+  ]
+}

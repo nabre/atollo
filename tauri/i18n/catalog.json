@@ -1998,5 +1998,70 @@
     "en": "local language models (GGUF): the server for the agents and a chat in the browser, on the CPU or the GPU (Vulkan, Metal)",
     "fr": "modèles de langage locaux (GGUF) : le serveur pour les agents et un chat dans le navigateur, sur le CPU ou le GPU (Vulkan, Metal)",
     "de": "lokale Sprachmodelle (GGUF): der Server für die Agenten und ein Chat im Browser, auf CPU oder GPU (Vulkan, Metal)"
+  },
+  "{0} pesa {1} GB: il disco del kit è {2} e non tiene file oltre i 4 GB. Su un disco exFAT o NTFS ci sta, oppure scegli un modello più piccolo.": {
+    "en": "{0} weighs {1} GB: the kit's drive is {2} and holds no file over 4 GB. It fits on an exFAT or NTFS drive, or choose a smaller model.",
+    "fr": "{0} pèse {1} Go : le disque du kit est en {2} et n'accepte pas de fichier de plus de 4 Go. Il tient sur un disque exFAT ou NTFS, sinon choisissez un modèle plus petit.",
+    "de": "{0} ist {1} GB groß: das Laufwerk des Kits ist {2} und nimmt keine Datei über 4 GB auf. Auf einem exFAT- oder NTFS-Laufwerk passt es, oder wähle ein kleineres Modell."
+  },
+  "Spazio insufficiente sul disco del kit: servono {0} GB, liberi {1} GB.": {
+    "en": "Not enough space on the kit's drive: {0} GB needed, {1} GB free.",
+    "fr": "Espace insuffisant sur le disque du kit : {0} Go nécessaires, {1} Go libres.",
+    "de": "Nicht genug Platz auf dem Laufwerk des Kits: {0} GB nötig, {1} GB frei."
+  },
+  "per il codice, leggero: entra in 8 GB di RAM o di memoria video": {
+    "en": "for code, light: fits in 8 GB of RAM or video memory",
+    "fr": "pour le code, léger : tient dans 8 Go de RAM ou de mémoire vidéo",
+    "de": "für Code, leicht: passt in 8 GB RAM oder Grafikspeicher"
+  },
+  "generale e per il codice, con ragionamento: per 8-12 GB": {
+    "en": "general and for code, with reasoning: for 8-12 GB",
+    "fr": "généraliste et pour le code, avec raisonnement : pour 8-12 Go",
+    "de": "allgemein und für Code, mit Reasoning: für 8-12 GB"
+  },
+  "il modello aperto di OpenAI, con ragionamento e strumenti: per 16-24 GB": {
+    "en": "OpenAI's open model, with reasoning and tools: for 16-24 GB",
+    "fr": "le modèle ouvert d'OpenAI, avec raisonnement et outils : pour 16-24 Go",
+    "de": "das offene Modell von OpenAI, mit Reasoning und Werkzeugen: für 16-24 GB"
+  },
+  "di Mistral, fatto per gli agenti di programmazione: per 16-24 GB di memoria video": {
+    "en": "by Mistral, made for coding agents: for 16-24 GB of video memory",
+    "fr": "de Mistral, conçu pour les agents de programmation : pour 16-24 Go de mémoire vidéo",
+    "de": "von Mistral, für Programmier-Agenten gemacht: für 16-24 GB Grafikspeicher"
+  },
+  "per il codice e gli agenti; a esperti (3B attivi), veloce anche sulla CPU con molta RAM: 24 GB e più": {
+    "en": "for code and agents; mixture of experts (3B active), fast on the CPU too with plenty of RAM: 24 GB and more",
+    "fr": "pour le code et les agents ; à experts (3B actifs), rapide même sur le CPU avec beaucoup de RAM : 24 Go et plus",
+    "de": "für Code und Agenten; Mixture of Experts (3B aktiv), auch auf der CPU schnell mit viel RAM: 24 GB und mehr"
+  },
+  "Catalogo di Atollo:": {
+    "en": "Atollo's catalog:",
+    "fr": "Catalogue d'Atollo :",
+    "de": "Katalog von Atollo:"
+  },
+  "Altri modelli nel kit:": {
+    "en": "Other models in the kit:",
+    "fr": "Autres modèles dans le kit :",
+    "de": "Weitere Modelle im Kit:"
+  },
+  "Cartella dei modelli: {0}": {
+    "en": "Models folder: {0}",
+    "fr": "Dossier des modèles : {0}",
+    "de": "Ordner der Modelle: {0}"
+  },
+  "{0}: {1} GB da {2}": {
+    "en": "{0}: {1} GB from {2}",
+    "fr": "{0} : {1} Go depuis {2}",
+    "de": "{0}: {1} GB von {2}"
+  },
+  "{0}: scaricato e verificato": {
+    "en": "{0}: downloaded and checked",
+    "fr": "{0} : téléchargé et vérifié",
+    "de": "{0}: heruntergeladen und geprüft"
+  },
+  "{0}: cancellato": {
+    "en": "{0}: deleted",
+    "fr": "{0} : supprimé",
+    "de": "{0}: gelöscht"
   }
 }

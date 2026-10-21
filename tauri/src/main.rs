@@ -18,6 +18,7 @@ mod github;
 mod i18n;
 mod install;
 mod kit;
+mod llm;
 mod log;
 mod net;
 mod os;
@@ -212,6 +213,7 @@ fn run() -> i32 {
             let kit = target.map_or_else(|| kit.clone(), |t| kit.for_target(t));
             return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0);
         }
+        Cli::Models(cmd) => return models(&kit, &loaded.settings, &host, lang, cmd),
         Cli::Version => {
             let _ = writeln!(cli::output(), "Atollo {}", env!("CARGO_PKG_VERSION"));
             return 0;
@@ -486,6 +488,25 @@ fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
 fn help_text(lang: &str, os: kit::Os, exe: Option<&Path>) -> String {
     let agy = if os.is_windows() { "agy.cmd" } else { "agy" };
     i18n::t(lang, HELP, &[&program_name(os, exe), agy])
+}
+
+/// `models`: the local models, a download, a removal (D-151).
+fn models(kit: &Kit, settings: &Settings, host: &Host, lang: &str, cmd: cli::Models) -> i32 {
+    let mut out = cli::output();
+    let result = match cmd {
+        cli::Models::List => llm::cli::list(kit, lang, &mut *out).map_err(Into::into),
+        cli::Models::Pull(spec) => net::Net::new(settings, github_token(host))
+            .and_then(|net| llm::cli::pull(kit, &net, &spec, lang, &mut *out))
+            .map(drop),
+        cli::Models::Remove(id) => llm::cli::remove(kit, &id, lang, &mut *out),
+    };
+    match result {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            1
+        }
+    }
 }
 
 /// `versions <id>`: the lines of `id` its source offers.

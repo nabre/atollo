@@ -25,6 +25,29 @@ fn commands() {
     assert_eq!(parse(&args(&["x"])), Cli::Unknown("x".into()));
 }
 
+/// `models`: the list, a download by id or by repository, a removal; a
+/// missing or extra value is a usage error.
+#[test]
+fn models_commands() {
+    assert_eq!(parse(&args(&["models"])), Cli::Models(Models::List));
+    assert_eq!(
+        parse(&args(&["models", "pull", "unsloth/Qwen3-8B-GGUF:Q4_K_M"])),
+        Cli::Models(Models::Pull("unsloth/Qwen3-8B-GGUF:Q4_K_M".into()))
+    );
+    assert_eq!(
+        parse(&args(&["models", "rm", "gpt-oss-20b"])),
+        Cli::Models(Models::Remove("gpt-oss-20b".into()))
+    );
+    assert_eq!(
+        parse(&args(&["models", "pull"])),
+        Cli::Unknown("models pull".into())
+    );
+    assert_eq!(
+        parse(&args(&["models", "rm", "a", "b"])),
+        Cli::Unknown("models rm".into())
+    );
+}
+
 /// BUG-V6-33: `sync --project` without its value is a usage error, not a
 /// sync of every project.
 #[test]
