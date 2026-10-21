@@ -227,8 +227,11 @@ pub fn launch<R: tauri::Runtime>(
     // Claude Code's token or the Gemini key, in this agent's environment
     // only (SEC-V6-02).
     let env = launch_env(kit, env, id);
+    // Not aligned again when the console ends because the drive is being
+    // removed (BUG-V6-15).
+    let closing = closing_of(app);
     crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
-        let _ = sync::run(&after, Some(&after_dir));
+        let _ = closing.run(|| sync::run(&after, Some(&after_dir)));
     })
 }
 
@@ -272,9 +275,99 @@ fn remove_if_exists(path: &Path) -> Result<()> {
     }
 }
 
+/// "Rimuovi l'unità" under way (BUG-V6-15): the alignments and saves the
+/// app starts by itself (the watcher, the end of an agent's console) are
+/// skipped from the moment it begins, and it waits for the one already
+/// running, so nothing writes to the drive once the interface says it can
+/// be removed. One per app (`AppState::closing`), shared by clones.
+#[derive(Debug, Default, Clone)]
+pub struct Closing(std::sync::Arc<ClosingState>);
+
+#[derive(Debug, Default)]
+struct ClosingState {
+    /// Background work running now; `closing` is read and set under it.
+    busy: std::sync::Mutex<Busy>,
+    idle: std::sync::Condvar,
+}
+
+#[derive(Debug, Default)]
+struct Busy {
+    running: usize,
+    closing: bool,
+}
+
+/// Counts one background work until dropped (also on a panic).
+struct Running<'a>(&'a ClosingState);
+
+impl Drop for Running<'_> {
+    fn drop(&mut self) {
+        let mut busy = self.0.lock();
+        busy.running -= 1;
+        if busy.running == 0 {
+            self.0.idle.notify_all();
+        }
+    }
+}
+
+impl ClosingState {
+    fn lock(&self) -> std::sync::MutexGuard<'_, Busy> {
+        self.busy
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+}
+
+impl Closing {
+    /// Runs `work` (an alignment, a save of the login) unless the drive is
+    /// being removed; `None` when skipped.
+    pub fn run<T>(&self, work: impl FnOnce() -> T) -> Option<T> {
+        {
+            let mut busy = self.0.lock();
+            if busy.closing {
+                return None;
+            }
+            busy.running += 1;
+        }
+        let _running = Running(&self.0);
+        Some(work())
+    }
+
+    /// From now on background work is skipped.
+    pub fn begin(&self) {
+        self.0.lock().closing = true;
+    }
+
+    /// Waits for the background work already running, at most `limit`;
+    /// `false` if some is still running then.
+    pub fn wait_idle(&self, limit: Duration) -> bool {
+        let busy = self.0.lock();
+        let (busy, _) = self
+            .0
+            .idle
+            .wait_timeout_while(busy, limit, |b| b.running > 0)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        busy.running == 0
+    }
+
+    /// The user goes on working after "Rimuovi l'unità" (an agent started
+    /// again): background work resumes.
+    pub fn reopen(&self) {
+        self.0.lock().closing = false;
+    }
+}
+
+/// The `Closing` of the app, if it runs (`None` in the command line).
+fn closing_of<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Closing {
+    use tauri::Manager;
+    app.try_state::<crate::commands::AppState>()
+        .map(|s| s.closing.clone())
+        .unwrap_or_default()
+}
+
 /// Background: when an agent of the kit ends anywhere, align the agents and
-/// save Antigravity's login left in Windows.
-pub fn watch(kit: Kit) {
+/// save Antigravity's login left in Windows; nothing while the drive is
+/// being removed (`closing`).
+pub fn watch(kit: Kit, closing: Closing) {
     std::thread::spawn(move || {
         let mut before = BTreeSet::new();
         loop {
@@ -283,12 +376,12 @@ pub fn watch(kit: Kit) {
             let ended: Vec<&String> = before.difference(&now).collect();
             if !ended.is_empty() {
                 crate::log::info(&format!("agents ended: {ended:?}"));
-                let _ = sync::run(&kit, None);
+                let _ = closing.run(|| sync::run(&kit, None));
             }
             // Antigravity's login still in Windows and no agy of the kit
             // running: saved now (save waits for a fresh "starting" mark).
             if keyring::pending(&kit) && !now.contains("antigravity") {
-                if let Err(e) = keyring::save(&kit) {
+                if let Some(Err(e)) = closing.run(|| keyring::save(&kit)) {
                     crate::log::warn(&format!("antigravity login: {e:#}"));
                 }
             }

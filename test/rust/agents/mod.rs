@@ -85,3 +85,40 @@ fn gemini_key_for_antigravity_only() {
     );
     assert_eq!(kit_env.get(GEMINI_VAR), None);
 }
+
+/// "Rimuovi l'unità" (BUG-V6-15): background work started after it began
+/// is skipped; the one already running is waited for; an agent started
+/// again resumes it.
+#[test]
+fn closing_skips_and_waits_for_background_work() {
+    use std::sync::mpsc;
+    let closing = Closing::default();
+    assert_eq!(closing.run(|| 1), Some(1));
+    assert!(closing.wait_idle(Duration::ZERO), "nothing running");
+
+    let (started, is_started) = mpsc::channel();
+    let (finish, may_finish) = mpsc::channel::<()>();
+    let worker = {
+        let closing = closing.clone();
+        std::thread::spawn(move || {
+            closing.run(|| {
+                started.send(()).unwrap();
+                may_finish.recv().unwrap();
+                "synced"
+            })
+        })
+    };
+    is_started.recv().unwrap();
+    closing.begin();
+    assert_eq!(closing.run(|| 2), None, "skipped while closing");
+    assert!(
+        !closing.wait_idle(Duration::from_millis(50)),
+        "the running one is not over"
+    );
+    finish.send(()).unwrap();
+    assert!(closing.wait_idle(Duration::from_secs(10)));
+    assert_eq!(worker.join().unwrap(), Some("synced"));
+
+    closing.reopen();
+    assert_eq!(closing.run(|| 3), Some(3));
+}
