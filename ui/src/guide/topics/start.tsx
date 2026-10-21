@@ -1081,7 +1081,7 @@ export const START: TopicTexts = {
                 "Une installation de composants en cours et l'étape en train d'être faite.",
                 "Eine laufende Installation von Komponenten und der Schritt, den sie gerade ausführt.",
               ),
-              tr("Apre il pannello.", "Opens the panel.", "Ouvre le panneau.", "Öffnet den Bereich."),
+              tr("—", "—", "—", "—"),
             ],
             [
               tr("Terminali aperti", "Open terminals", "Terminaux ouverts", "Geöffnete Terminals"),
@@ -1127,26 +1127,6 @@ export const START: TopicTexts = {
               tr("v0.x.y", "v0.x.y", "v0.x.y", "v0.x.y"),
               tr("La versione di Atollo.", "The Atollo version.", "La version d'Atollo.", "Die Atollo-Version."),
               tr("—", "—", "—", "—"),
-            ],
-            [
-              tr(
-                "Icona del pannello (l'ultima a destra)",
-                "Panel icon (the last on the right)",
-                "Icône du panneau (la dernière à droite)",
-                "Symbol des Bereichs (das letzte rechts)",
-              ),
-              tr(
-                "Passandoci sopra dice «Mostra il pannello» o «Nascondi il pannello».",
-                "Hovering over it says “Show the panel” or “Hide the panel”.",
-                "Au survol, il indique « Afficher le panneau » ou « Masquer le panneau ».",
-                "Beim Darüberfahren zeigt es „Panel anzeigen“ oder „Panel ausblenden“.",
-              ),
-              tr(
-                "Apre o chiude il pannello «Attività».",
-                "Opens or closes the “Activity” panel.",
-                "Ouvre ou ferme le panneau « Activité ».",
-                "Öffnet oder schließt den Bereich „Aktivität“.",
-              ),
             ],
           ]}
         />

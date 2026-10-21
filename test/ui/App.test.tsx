@@ -192,8 +192,16 @@ describe("App", () => {
         "px-vsc-statusbar-item-padding",
       ]),
     );
-    const toggle = within(bar).getAllByRole("button").at(-1);
-    expect(classes(toggle ?? null)).toEqual(expect.arrayContaining(["mr-vsc-size20", "px-vsc-size60"]));
+    // The last item keeps the bar's edge.
+    const version = within(bar).getByText(/^v\d/);
+    expect(classes(version)).toEqual(expect.arrayContaining(["mr-vsc-size20", "px-vsc-size60"]));
+    // One item opens and closes the Activity panel: its counter.
+    const buttons = within(bar).getAllByRole("button");
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]?.textContent).toMatch(/^Attività/);
+    expect(buttons[0]?.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(buttons[0] as HTMLElement);
+    expect(buttons[0]?.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("signs in to GitHub with the one-time code", async () => {

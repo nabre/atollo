@@ -497,9 +497,9 @@ function StatusItem({
 }
 
 /** VSCodium's status bar on the brand's band: the kit as the remote item,
- * what runs and what failed (it opens the Activity panel, as the editor's
- * Problems item), the installs; on the right the editor, the kit and the
- * panel's toggle. */
+ * what runs and what failed (the one item that opens and closes the
+ * Activity panel, as the editor's Problems item), the installs; on the
+ * right the terminals, the editor and the kit. */
 function StatusBar({
   info,
   editor,
@@ -526,7 +526,6 @@ function StatusBar({
   const installing = setupStatusText(setup);
   const live = running.count;
   const errors = Object.values(runs).filter((r) => r.state === "error").length;
-  const panelLabel = panelOpen ? t("Nascondi il pannello") : t("Mostra il pannello");
   return (
     <footer
       aria-label={t("Barra di stato")}
@@ -560,7 +559,7 @@ function StatusBar({
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
       {installing && (
-        <StatusItem onClick={onPanel}>
+        <StatusItem>
           {/* The item's color, as the editor's status-bar codicons. */}
           <Icon name="loading" spin size={14} className="[--vscode-icon-foreground:currentColor]" />
           <span role="status">{installing}</span>
@@ -574,6 +573,7 @@ function StatusBar({
             terminals.setShown(!terminals.shown);
           }}
           pressed={terminals.shown}
+          last={!info}
         >
           <span className="sr-only">{terminalsLabel}</span>
           <Codicon name="terminal" size={14} />
@@ -589,13 +589,9 @@ function StatusBar({
             </StatusItem>
           )}
           <StatusItem>{info.platform}</StatusItem>
-          <StatusItem>v{info.version}</StatusItem>
+          <StatusItem last>v{info.version}</StatusItem>
         </>
       )}
-      <StatusItem title={panelLabel} onClick={onPanel} pressed={panelOpen} last>
-        <span className="sr-only">{panelLabel}</span>
-        <Codicon name="layout-panel" size={14} />
-      </StatusItem>
     </footer>
   );
 }

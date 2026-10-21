@@ -266,12 +266,11 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 | --- | --- | --- |
 | Atollo (a sinistra) | Passandoci sopra mostra la cartella del kit. | — |
 | ▶ numero · ⨯ numero | Quante cose sono in esecuzione (azioni dei progetti, ogni versione dei database accesa, anche più d'una dello stesso database, e i pool dei server web accesi) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore. | Apre o chiude il pannello «Attività». |
-| Rotellina con testo | Un'installazione di componenti in corso e il passo che sta facendo. | Apre il pannello. |
+| Rotellina con testo | Un'installazione di componenti in corso e il passo che sta facendo. | — |
 | Terminali aperti | Quante sessioni ha il pannello dei terminali dell'app. | Mostra o nasconde i terminali. |
 | Editor attivo | Il server dell'editor è acceso (passandoci sopra, il suo indirizzo). | — |
 | win32-x64, darwin-arm64… | Il sistema e il processore su cui gira il kit. | — |
 | v0.x.y | La versione di Atollo. | — |
-| Icona del pannello (l'ultima a destra) | Passandoci sopra dice «Mostra il pannello» o «Nascondi il pannello». | Apre o chiude il pannello «Attività». |
 
 Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database e i server web in esecuzione?» e poi ferma azioni, database e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.
 

@@ -266,12 +266,11 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | --- | --- | --- |
 | Atollo (on the left) | Hovering over it shows the kit folder. | — |
 | ▶ number · ⨯ number | How many things are running (project actions, every running database version, even several of the same database, and the running web server pools) and how many actions stopped with an error. It turns red if there is at least one error. | Opens or closes the “Activity” panel. |
-| Spinner with text | A component installation in progress and the step it is on. | Opens the panel. |
+| Spinner with text | A component installation in progress and the step it is on. | — |
 | Open terminals | How many sessions the app's terminal panel has. | Shows or hides the terminals. |
 | Editor running | The editor server is on (hovering over it shows its address). | — |
 | win32-x64, darwin-arm64… | The system and the processor the kit runs on. | — |
 | v0.x.y | The Atollo version. | — |
-| Panel icon (the last on the right) | Hovering over it says “Show the panel” or “Hide the panel”. | Opens or closes the “Activity” panel. |
 
 In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks “Stop the running project actions, databases and web servers?” and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
 
