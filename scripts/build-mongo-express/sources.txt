@@ -1,0 +1,11 @@
+# Source of the kit's mongo-express (DECISIONS.md D-147).
+# name kit-version upstream-version tag commit repository
+#
+# kit-version: the version in the archive's and the release's name
+# (1.1.0-rc.4: upstream's 1.1.0-rc-4 with a dot, so that the kit's build
+# number after the last "-" cannot be mistaken for it).
+# tag, commit: the tag of upstream's repository and the commit it pointed
+# to when checked (git ls-remote, 2026-10-21; the commit of the npm package
+# 1.1.0-rc-4 of 2026-02-23). The build refuses a checkout at any other
+# commit: a tag moved afterwards is never built.
+mongo-express 1.1.0-rc.4 1.1.0-rc-4 v1.1.0-rc-4 a674cf11f0f94f1806c250cd24be6dc74c5e533c https://github.com/mongo-express/mongo-express.git
