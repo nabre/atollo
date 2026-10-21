@@ -542,25 +542,6 @@ pub fn reinstall(
     }
 }
 
-/// `prefix` renamed to `<name>.old-<ms>` next to it, put back by the
-/// caller when the new one fails; `None` when there is none.
-fn set_aside(prefix: &Path) -> Result<Option<PathBuf>> {
-    if !prefix.exists() {
-        return Ok(None);
-    }
-    let name = prefix
-        .file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_default();
-    let ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or(0);
-    let old = prefix.with_file_name(format!("{name}.old-{ms}"));
-    fs::rename(prefix, &old).map_err(|_| crate::net::archive::InUse(prefix.to_path_buf()))?;
-    Ok(Some(old))
-}
-
 #[allow(clippy::too_many_arguments)]
 fn restore(
     ctx: &Ctx,
@@ -618,8 +599,7 @@ fn restore(
     if let Some(parent) = prefix.parent() {
         crate::net::archive::clean_leftovers(parent);
     }
-    let old = set_aside(prefix)?;
-    let created = (|| -> Result<()> {
+    let created = crate::net::archive::rebuild_in_place(prefix, || -> Result<()> {
         let prefix_arg = prefix.display().to_string();
         let list_arg = list_file.display().to_string();
         progress.note(&format!("micromamba --offline: {name}"));
@@ -646,23 +626,9 @@ fn restore(
             crate::versions::write_version(dir, version)?;
         }
         Ok(())
-    })();
+    });
     drop(guard);
-    match created {
-        Ok(()) => {
-            if let Some(old) = old {
-                let _ = fs::remove_dir_all(old);
-            }
-            Ok(Ok(()))
-        }
-        Err(e) => {
-            let _ = fs::remove_dir_all(prefix);
-            if let Some(old) = old {
-                let _ = fs::rename(&old, prefix);
-            }
-            Err(e)
-        }
-    }
+    created.map(Ok)
 }
 
 /// The environment the list `<id>@<line>` was written for is still on
