@@ -239,9 +239,11 @@ pub fn add(kit: &Kit, files: &[PathBuf]) -> Result<Vec<String>> {
     Ok(names)
 }
 
-/// Moves into `dest` the file added by hand with the checksum `expect`:
-/// first the one named `file_name`, then any other. `false` when none.
-pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<bool> {
+/// Copies into `dest` the file added by hand with the checksum `expect`:
+/// first the one named `file_name`, then any other. Returns the file
+/// copied, which stays until the installation that uses it succeeds
+/// ([`used`]); `None` when there is none.
+pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<Option<PathBuf>> {
     let dir = dir(kit);
     let mut candidates = added(&dir);
     // The expected name first; the others only if none matches.
@@ -253,23 +255,33 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
         if !verify::matches(&file, expect).unwrap_or(false) {
             continue;
         }
-        if fs::rename(&file, dest).is_err() {
-            fs::copy(&file, dest).with_context(|| dest.display().to_string())?;
-            let _ = fs::remove_file(&file);
-        }
+        // Copied, not moved: an installation that fails (extraction, an
+        // antivirus, a file in use) deletes its work folder, and the file
+        // must still be here for the next attempt.
+        fs::copy(&file, dest).with_context(|| dest.display().to_string())?;
         crate::log::info(&format!(
             "{file_name}: the file added by hand {}",
             file.display()
         ));
-        // Used: no component waits for it any more.
-        let list = read_wanted(&dir);
-        if list.iter().any(|w| w.expect == *expect) {
-            let left: Vec<Wanted> = list.into_iter().filter(|w| w.expect != *expect).collect();
-            write_wanted(&dir, &left);
-        }
-        return Ok(true);
+        return Ok(Some(file));
     }
-    Ok(false)
+    Ok(None)
+}
+
+/// The installation that took `file` ([`take`]) succeeded: it goes, and no
+/// component waits for its checksum `expect` any more.
+pub fn used(kit: &Kit, file: &Path, expect: &Expect) {
+    if let Err(e) = fs::remove_file(file) {
+        if e.kind() != std::io::ErrorKind::NotFound {
+            crate::log::warn(&format!("{}: {e}", file.display()));
+        }
+    }
+    let dir = dir(kit);
+    let list = read_wanted(&dir);
+    if list.iter().any(|w| w.expect == *expect) {
+        let left: Vec<Wanted> = list.into_iter().filter(|w| w.expect != *expect).collect();
+        write_wanted(&dir, &left);
+    }
 }
 
 /// Windows' "Open" window over `owner` (a window handle), several files,

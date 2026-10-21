@@ -233,6 +233,9 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
         cancel: &cancel,
     };
     assert!(install(&ctx, php, &release, &mut Quiet).is_err());
+    // The file added by hand is still there for the next attempt
+    // (BUG-V6-14).
+    assert!(cli.is_file(), "the failed installation consumed it");
 
     assert_eq!(fs::read(old.join("bin").join("php")).unwrap(), b"old php");
     assert_eq!(
@@ -248,4 +251,94 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
         fs::read_to_string(old.join(".atollo-version")).unwrap(),
         "8.4.22"
     );
+}
+
+/// A download name from remote metadata (`claude-{version}.tgz` with the
+/// version of a manifest) never leaves the work folder (SEC-V6-04).
+#[test]
+fn download_names_stay_in_the_work_folder() {
+    for good in [
+        "claude-2.1.3.tgz",
+        "OpenJDK21U-jdk_x64_windows_hotspot_21.0.5_11.zip",
+        "jdk-21.0.5+11.tar.gz",
+        "..hidden",
+    ] {
+        assert!(is_plain_file_name(good), "{good}");
+    }
+    for bad in [
+        "",
+        ".",
+        "..",
+        "claude-../../x.tgz",
+        "../x",
+        "a/b",
+        "a\\b",
+        "C:x",
+        "x y",
+        "x\0",
+        "é.zip",
+    ] {
+        assert!(!is_plain_file_name(bad), "{bad:?}");
+    }
+
+    let tmp = TempDir::new("fetch-name");
+    let kit = Kit::at(tmp.0.join("kit"), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let env = KitEnv::default();
+    let cancel = AtomicBool::new(true);
+    let ctx = Ctx {
+        kit: &kit,
+        net: &net,
+        env: &env,
+        cancel: &cancel,
+    };
+    let work = tmp.0.join("work").join("setup");
+    fs::create_dir_all(&work).unwrap();
+    let err = fetch(
+        &ctx,
+        "http://127.0.0.1:9/x",
+        "claude-../../escaped.tgz",
+        &Expect::Sha256("0".repeat(64)),
+        &work,
+        &mut Quiet,
+    )
+    .unwrap_err();
+    assert!(err.to_string().contains("refused download name"), "{err:#}");
+    assert!(err.downcast_ref::<crate::net::ByHand>().is_none());
+}
+
+/// A file added by hand that `fetch` took goes only with an installation
+/// that succeeds; outside an installation, at once (BUG-V6-14).
+#[test]
+fn taken_files_go_only_when_the_installation_succeeds() {
+    let tmp = TempDir::new("taken");
+    let kit = Kit::at(tmp.0.join("kit"), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    let downloads = crate::setup::downloads::dir(&kit);
+    fs::create_dir_all(&downloads).unwrap();
+    let file = downloads.join("tool.zip");
+    fs::write(&file, b"tool").unwrap();
+    let expect = Expect::Sha256(verify::sha256_hex(&file).unwrap());
+    let take = || Taken::ByHand(file.clone(), expect.clone());
+
+    let failed = keeping_taken(&kit, || -> Result<()> {
+        taken(&kit, take());
+        bail!("extraction failed")
+    });
+    assert!(failed.is_err());
+    assert!(file.is_file(), "kept for the next attempt");
+
+    keeping_taken(&kit, || {
+        // An inner installation that fails keeps only its own files.
+        let _ = keeping_taken(&kit, || -> Result<()> { bail!("inner") });
+        taken(&kit, take());
+        Ok(())
+    })
+    .unwrap();
+    assert!(!file.exists(), "used by the installation");
+
+    fs::write(&file, b"tool").unwrap();
+    taken(&kit, take());
+    assert!(!file.exists(), "outside an installation");
 }

@@ -11,16 +11,18 @@ fn unsafe_names_are_refused() {
         Some(base.join("a").join("b.txt"))
     );
     assert_eq!(safe_join(base, "./a"), Some(base.join("a")));
-    for bad in [
-        "../evil",
-        "a/../../evil",
-        "/abs",
-        r"C:\abs",
-        "C:rel",
-        r"\\server\share\x",
-        "",
-    ] {
+    for bad in ["../evil", "a/../../evil", "/abs", r"\\server\share\x", ""] {
         assert_eq!(safe_join(base, bad), None, "{bad}");
+    }
+    // A drive or a stream on Windows; an ordinary character elsewhere,
+    // always inside the base (PORT-V6-05).
+    for colon in [r"C:\abs", "C:rel", "file.txt:stream", "man/foo:bar.1"] {
+        if cfg!(windows) {
+            assert_eq!(safe_join(base, colon), None, "{colon}");
+        } else {
+            let joined = safe_join(base, colon).unwrap();
+            assert!(joined.starts_with(base), "{colon}");
+        }
     }
 }
 
@@ -453,6 +455,34 @@ fn replace_file_works_while_in_use() {
         !tmp.0.join("tool.exe.old").exists(),
         "old removed once free"
     );
+}
+
+/// The `.old` of an earlier update still running (it cannot be deleted):
+/// the old file goes to a name of its own instead of stopping the
+/// update; the stamped leftovers of earlier times go (BUG-V6-23).
+#[cfg(windows)]
+#[test]
+fn replace_file_with_the_old_one_still_running() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let tmp = TempDir::new("replold");
+    let dest = tmp.0.join("tool.exe");
+    fs::write(&dest, "1").unwrap();
+    let old = tmp.0.join("tool.exe.old");
+    fs::write(&old, "0").unwrap();
+    fs::write(tmp.0.join("tool.exe.old-123"), "left").unwrap();
+    // Without FILE_SHARE_DELETE: neither deleted nor replaced.
+    let held = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(1)
+        .open(&old)
+        .unwrap();
+    let new = tmp.0.join("new.exe");
+    fs::write(&new, "2").unwrap();
+    replace_file(&new, &dest).unwrap();
+    assert_eq!(fs::read_to_string(&dest).unwrap(), "2");
+    assert_eq!(fs::read_to_string(&old).unwrap(), "0");
+    assert_eq!(names(&tmp.0), ["new.exe", "tool.exe", "tool.exe.old"]);
+    drop(held);
 }
 
 /// A program of the PC keeps a folder of the tree open (as Cloud Code's
@@ -1085,4 +1115,55 @@ fn copy_tree_copies_files_and_folders() {
         fs::read_to_string(to.join("bin").join("lib").join("a.dll")).unwrap(),
         "2"
     );
+}
+
+/// A rebuild that fails halfway (no network, solver, full disk) leaves the
+/// old folder where it was, without what the failed one wrote (BUG-V6-02).
+#[test]
+fn rebuild_in_place_puts_the_old_one_back_on_failure() {
+    let tmp = TempDir::new("rebuildfail");
+    let dest = tmp.0.join("r").join("4.5");
+    tree(&dest, "old");
+    let err = rebuild_in_place(&dest, || -> Result<()> {
+        assert!(!dest.exists(), "the old one is set aside first");
+        fs::create_dir_all(dest.join("conda-meta")).unwrap();
+        fs::write(dest.join("half.txt"), "new").unwrap();
+        bail!("solver failed")
+    })
+    .unwrap_err();
+    assert!(err.to_string().contains("solver failed"), "{err:#}");
+    assert_eq!(
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
+        "old"
+    );
+    assert!(!dest.join("half.txt").exists());
+    assert!(!dest.join("conda-meta").exists());
+    assert_eq!(names(&tmp.0.join("r")), ["4.5"]);
+}
+
+/// A rebuild that works leaves only the new folder; one without an old
+/// folder that fails leaves nothing.
+#[test]
+fn rebuild_in_place_replaces_on_success() {
+    let tmp = TempDir::new("rebuildok");
+    let dest = tmp.0.join("r").join("4.5");
+    tree(&dest, "old");
+    rebuild_in_place(&dest, || {
+        tree(&dest, "new");
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
+        "new"
+    );
+    assert_eq!(names(&tmp.0.join("r")), ["4.5"]);
+
+    let fresh = tmp.0.join("r").join("4.4");
+    rebuild_in_place(&fresh, || -> Result<()> {
+        tree(&fresh, "half");
+        bail!("no network")
+    })
+    .unwrap_err();
+    assert!(!fresh.exists());
 }

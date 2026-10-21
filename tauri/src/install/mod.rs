@@ -82,7 +82,7 @@ pub enum Dest {
 pub struct Sign {
     /// Path of the file in the extracted tree.
     pub file: String,
-    /// Regex the signer subject must match.
+    /// The organization (`O=`) of the signer, exactly.
     pub publisher: &'static str,
     /// The signature is the only check: an unverifiable revocation fails.
     pub required: bool,
@@ -302,6 +302,83 @@ pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<TempWork> {
         .with_context(|| format!("work folder {rel}"))
 }
 
+/// A file [`fetch`] copied in place of a download: pre-downloaded for this
+/// system (`router/bootstrap.rs`) or added by hand (`setup/downloads.rs`).
+enum Taken {
+    Staged(PathBuf),
+    ByHand(PathBuf, Expect),
+}
+
+impl Taken {
+    fn used(self, kit: &Kit) {
+        match self {
+            Taken::Staged(file) => crate::router::bootstrap::used(kit, &file),
+            Taken::ByHand(file, expect) => crate::setup::downloads::used(kit, &file, &expect),
+        }
+    }
+}
+
+thread_local! {
+    /// What `fetch` took for the installation running on this thread
+    /// ([`keeping_taken`]); `None` outside one.
+    static TAKEN: std::cell::RefCell<Option<Vec<Taken>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// `file` was taken by `fetch`: used up when the installation succeeds,
+/// at once outside an installation.
+fn taken(kit: &Kit, file: Taken) {
+    let mut file = Some(file);
+    TAKEN.with(|t| {
+        if let Some(list) = t.borrow_mut().as_mut() {
+            list.extend(file.take());
+        }
+    });
+    if let Some(file) = file {
+        file.used(kit);
+    }
+}
+
+/// Runs the installation `run`: the files `fetch` took in place of a
+/// download are deleted only when it succeeds. One that fails (extraction,
+/// an antivirus, a file in use) finds them again at the next attempt
+/// instead of asking for the download by hand again.
+fn keeping_taken<T>(kit: &Kit, run: impl FnOnce() -> Result<T>) -> Result<T> {
+    /// Puts back the list of an outer installation, also after a panic.
+    struct Scope(Option<Option<Vec<Taken>>>);
+    impl Scope {
+        fn end(mut self) -> Vec<Taken> {
+            let outer = self.0.take().flatten();
+            TAKEN.with(|t| t.replace(outer)).unwrap_or_default()
+        }
+    }
+    impl Drop for Scope {
+        fn drop(&mut self) {
+            if let Some(outer) = self.0.take() {
+                TAKEN.with(|t| t.replace(outer));
+            }
+        }
+    }
+    let scope = Scope(Some(TAKEN.with(|t| t.replace(Some(Vec::new())))));
+    let result = run();
+    let files = scope.end();
+    if result.is_ok() {
+        for file in files {
+            file.used(kit);
+        }
+    }
+    result
+}
+
+/// A file name only (`[A-Za-z0-9._+-]+`, not `.` or `..`): no separator,
+/// drive or other character that would put the download elsewhere.
+pub(crate) fn is_plain_file_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.bytes().any(|b| b != b'.')
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'+' | b'-'))
+}
+
 /// Downloads and verifies one file into `work`; the same file added by hand
 /// (`setup/downloads.rs`) is used instead, and a failed download says where to
 /// get it in the browser (`ByHand`).
@@ -313,13 +390,20 @@ pub fn fetch(
     work: &Path,
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
+    // The name often comes from remote metadata (a version in a manifest,
+    // an asset name): one that could leave `work` is refused.
+    if !is_plain_file_name(file_name) {
+        bail!("refused download name {file_name:?}: only letters, digits and . _ + -");
+    }
     let file = work.join(file_name);
-    if crate::router::bootstrap::take(ctx.kit, file_name, expect, &file)? {
+    if let Some(staged) = crate::router::bootstrap::take(ctx.kit, file_name, expect, &file)? {
         progress.note("bootstrap pre-downloaded, checksum ok");
+        taken(ctx.kit, Taken::Staged(staged));
         return Ok(file);
     }
-    if crate::setup::downloads::take(ctx.kit, file_name, expect, &file)? {
+    if let Some(added) = crate::setup::downloads::take(ctx.kit, file_name, expect, &file)? {
         progress.note("file added by hand, checksum ok");
+        taken(ctx.kit, Taken::ByHand(added, expect.clone()));
         return Ok(file);
     }
     progress.note(&format!("download {url}"));
@@ -347,6 +431,15 @@ pub fn fetch(
 
 /// Installs `release`: every part, then the finishing step and the version.
 pub fn install(
+    ctx: &Ctx,
+    component: &Component,
+    release: &Release,
+    progress: &mut dyn Progress,
+) -> Result<()> {
+    keeping_taken(ctx.kit, || install_now(ctx, component, release, progress))
+}
+
+fn install_now(
     ctx: &Ctx,
     component: &Component,
     release: &Release,
@@ -503,6 +596,17 @@ pub fn install_line(
     release: &Release,
     progress: &mut dyn Progress,
 ) -> Result<String> {
+    keeping_taken(ctx.kit, || {
+        install_line_now(ctx, component, release, progress)
+    })
+}
+
+fn install_line_now(
+    ctx: &Ctx,
+    component: &Component,
+    release: &Release,
+    progress: &mut dyn Progress,
+) -> Result<String> {
     let Some(inst) = installer(&component.id) else {
         bail!("{}: no installer", component.id);
     };
@@ -636,8 +740,7 @@ fn fetch_part(ctx: &Ctx, part: &Part, work: &Path, progress: &mut dyn Progress) 
     if ctx.kit.os().is_windows() {
         if let Some(sign) = &part.sign {
             let file = crate::fsx::join_rel(&tree, &sign.file);
-            let publisher = pattern(sign.publisher)?;
-            match crate::net::signature::check(&file, &publisher, sign.required)? {
+            match crate::net::signature::check(&file, sign.publisher, sign.required)? {
                 crate::net::signature::Verdict::Valid { subject } => {
                     progress.note(&format!("signature ok: {subject}"))
                 }
