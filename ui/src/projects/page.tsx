@@ -22,7 +22,7 @@ import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
 import { Button, Codicon, codicon, Dot, IconButton } from "../workbench";
 import { projectDatabases, projectStatus, type ProjectDatabases, type ProjectStatus } from "../api";
-import { AgentPicker } from "../agents";
+import { AgentButtons } from "../agents";
 import { ProjectExtensions } from "../extensions";
 import { EditorSettingsBox } from "./editorsettings";
 import { ProjectMcpBox } from "./mcp";
@@ -206,7 +206,9 @@ export function ProjectPage({
             >
               {t("Terminale")}
             </Button>
-            <AgentPicker agents={agents} project={p.id} preferred={p.settings.agent} />
+            <ActionBar className="ml-1 empty:hidden" label={t("Agenti")}>
+              <AgentButtons agents={agents} project={p.id} />
+            </ActionBar>
             <ActionBar className="ml-1">
               <IconButton
                 icon={codicon("folder-opened")}

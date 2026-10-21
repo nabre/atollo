@@ -1,4 +1,4 @@
-// Agents page and the agent choice of a project: Claude Code, Codex,
+// Agents page and the agent buttons of a project: Claude Code, Codex,
 // Antigravity, as VSCodium's Extensions view: the installed agents in the
 // side bar, the chosen one's page in the editor with its state, usage and
 // sign-out. Launch happens only in a project. Instructions, skills and MCP
@@ -17,7 +17,7 @@ import {
 import type { GuideTopicId } from "../guide";
 import { rich, t } from "../i18n";
 import { ActionButton, ErrorLine } from "../common";
-import { ComponentLogo } from "../logos";
+import { ComponentLogo, componentIcon } from "../logos";
 import { AgentUsage, useStats } from "./stats";
 import { TokenLink } from "./token";
 import { useAction, useLoad } from "../hooks";
@@ -280,95 +280,33 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
   );
 }
 
-/** The agent last used in a project, else the first installed. */
-function pick(installed: AgentInfo[], chosen: AgentId | "", preferred: string | undefined): AgentId {
-  return chosen || installed.find((a) => a.id === preferred)?.id || installed[0]?.id || "claude";
-}
-
-/** The choice of an agent to open in one project (the project's page). */
-export function AgentPicker({
-  agents,
-  project,
-  preferred,
-}: {
-  agents: AgentInfo[] | null;
-  project: string;
-  /** The agent last opened in the project (its dev-settings.json). */
-  preferred?: string | undefined;
-}) {
+/** One button per installed agent, with its logo: a click opens that agent
+ * in the project (D-146). The project's page, its row in the side bar and
+ * its card on the Home. Nothing when no agent is installed. */
+export function AgentButtons({ agents, project }: { agents: AgentInfo[] | null; project: string }) {
   const installed = (agents ?? []).filter((a) => a.installed);
-  const [chosen, setChosen] = useState<AgentId | "">("");
   const { busy, error, run } = useAction();
+  // The agent of the last launch: its button shows the error, if any.
+  const [last, setLast] = useState<AgentId | null>(null);
   if (installed.length === 0) return null;
-  const agent = pick(installed, chosen, preferred);
   return (
-    <span className="flex items-center gap-1" title={error ?? undefined}>
-      {/* As a split button: the agent's logos, then Agente. */}
-      <span
-        role="radiogroup"
-        aria-label={t("Agente per {0}", project)}
-        className="flex h-[26px] items-center rounded border border-vsc-input-border px-px"
-      >
-        {installed.map((a) => (
-          <button
+    <>
+      {installed.map((a) => {
+        const failed = error !== null && last === a.id;
+        return (
+          <IconButton
             key={a.id}
-            type="button"
-            role="radio"
-            aria-checked={agent === a.id}
-            aria-label={a.name}
-            title={a.name}
+            icon={failed ? codicon("warning") : componentIcon(a.id)}
+            label={t("Apri {0}", a.name)}
+            busy={busy === `agent:${a.id}`}
+            title={failed ? error : t("Apre {0} nel progetto {1}", a.name, project)}
             onClick={() => {
-              setChosen(a.id);
+              setLast(a.id);
+              run(`agent:${a.id}`, () => agentLaunch(a.id, project));
             }}
-            // An input option (the find widget's toggles): its active colors
-            // and border when chosen, the toolbar hover otherwise.
-            className={`flex size-[22px] items-center justify-center rounded-[3px] ${
-              agent === a.id
-                ? "bg-vsc-option-active outline-1 -outline-offset-1 outline-vsc-option-active-border"
-                : "opacity-60 hover:bg-vsc-toolbar-hover hover:opacity-100"
-            }`}
-          >
-            <ComponentLogo id={a.id} size={16} />
-          </button>
-        ))}
-      </span>
-      <ActionButton
-        icon={error ? codicon("warning") : codicon("hubot")}
-        label={t("Agente")}
-        busy={busy === "launch"}
-        title={error ?? t("Apre l'agente scelto nel progetto {0}", project)}
-        onClick={() => {
-          run("launch", () => agentLaunch(agent, project));
-        }}
-      />
-    </span>
-  );
-}
-
-/** The inline action of a project's row: opens the agent last used there. */
-export function AgentButton({
-  agents,
-  project,
-  preferred,
-}: {
-  agents: AgentInfo[] | null;
-  project: string;
-  preferred?: string | undefined;
-}) {
-  const installed = (agents ?? []).filter((a) => a.installed);
-  const { busy, error, run } = useAction();
-  if (installed.length === 0) return null;
-  const agent = pick(installed, "", preferred);
-  const name = installed.find((a) => a.id === agent)?.name ?? agent;
-  return (
-    <IconButton
-      icon={error ? codicon("warning") : codicon("hubot")}
-      label={t("Agente")}
-      busy={busy === "launch"}
-      title={error ?? t("Apre {0} nel progetto {1}", name, project)}
-      onClick={() => {
-        run("launch", () => agentLaunch(agent, project));
-      }}
-    />
+          />
+        );
+      })}
+    </>
   );
 }
