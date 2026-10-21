@@ -33,6 +33,7 @@ use crate::os::jobs;
 use crate::projects::alias::{self, look_inside, valid_domain, Inside, SiteAlias};
 use crate::projects::apache::{fwd, ALIAS_NO_RUN, PHP_NEVER, PHP_RUN};
 use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
+use crate::servers::host_label;
 
 /// The server program of the Caddy in `dir` on `os`: `caddy.exe` on
 /// Windows, `caddy` elsewhere, at the root of its folder (D-111).
@@ -565,7 +566,8 @@ fn refuse_other_hosts(port: u16) -> Vec<String> {
 /// `localhost` and the project's domains out of LAN mode (SEC-V3-03).
 const LOCAL_HOSTS: [&str; 3] = ["127.0.0.1", "[::1]", "*.localhost"];
 
-/// The names a site answers: `<project>.localhost` and its valid domains
+/// The names a site answers: `<label>.localhost` (the project as a DNS
+/// label, [`host_label`], like the pools: BUG-V6-08) and its valid domains
 /// (lowercase, once each); a project's own Caddy (`dedicated`) also
 /// `localhost` and, out of LAN mode, [`LOCAL_HOSTS`].
 pub fn site_names(
@@ -576,7 +578,7 @@ pub fn site_names(
 ) -> Vec<String> {
     let mut names: Vec<String> = Vec::new();
     if let Some(p) = project.filter(|p| !p.is_empty()) {
-        names.push(format!("{p}.localhost"));
+        names.push(format!("{}.localhost", host_label(p)));
     }
     for d in domains {
         let d = d.trim().to_ascii_lowercase();
@@ -759,6 +761,15 @@ pub fn reload_args(conf: &Path, admin: &Path) -> Vec<OsString> {
     args[0] = "reload".into();
     args.push("--address".into());
     args.push(admin_address(admin).into());
+    args
+}
+
+/// `caddy validate` of the `Caddyfile` `conf`: adapted and provisioned,
+/// nothing started. After a failed reload it tells a configuration Caddy
+/// refuses from an instance that does not answer (BUG-V6-11).
+pub fn validate_args(conf: &Path) -> Vec<OsString> {
+    let mut args = run_args(conf);
+    args[0] = "validate".into();
     args
 }
 

@@ -64,6 +64,11 @@
     "fr": "Ce pool ne correspond plus aux projets ni aux profils : arrêtez-le.",
     "de": "Dieser Pool passt nicht mehr zu den Projekten und Profilen: Beende ihn."
   },
+  "Caddy rifiuta la nuova configurazione del pool {0}: {1}. Il pool resta acceso con quella di prima.": {
+    "en": "Caddy rejects the new configuration of pool {0}: {1}. The pool stays on with the previous one.",
+    "fr": "Caddy refuse la nouvelle configuration du pool {0} : {1}. Le pool reste allumé avec la précédente.",
+    "de": "Caddy lehnt die neue Konfiguration des Pools {0} ab: {1}. Der Pool läuft mit der vorherigen weiter."
+  },
   "La porta {0} è già del server {1}: scegline un'altra.": {
     "en": "Port {0} already belongs to server {1}: choose another one.",
     "fr": "Le port {0} appartient déjà au serveur {1} : choisissez-en un autre.",

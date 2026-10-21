@@ -148,6 +148,31 @@ fn gemini_key_lives_in_its_own_file() {
     assert!(!gemini_file(&kit).exists(), "no key, no file");
 }
 
+/// PORT-V6-01: a key file that is there but cannot be read is an error
+/// naming it, never "no key"; an older key does not take its place.
+#[test]
+fn unreadable_gemini_key_is_not_absent() {
+    let tmp = TempDir::new("settings-gemini-unreadable");
+    let kit = Kit::at(tmp.0.join("O’Brien {kit}"), Arch::X64);
+    kit.prepare().unwrap();
+    let file = gemini_file(&kit);
+    assert!(read_secret(&file).unwrap().is_none(), "absent");
+    fs::create_dir_all(file.parent().unwrap()).unwrap();
+    fs::write(&file, " \n").unwrap();
+    assert!(read_secret(&file).unwrap().is_none(), "empty");
+    fs::remove_file(&file).unwrap();
+    // Something there that cannot be read as the key.
+    fs::create_dir_all(&file).unwrap();
+    let e = format!("{:#}", read_secret(&file).unwrap_err());
+    assert!(e.contains("gemini-api-key"), "{e}");
+    fs::write(kit.settings_file(), "{\"geminiApiKey\":\"AIza-old\"}").unwrap();
+    move_secrets(&kit);
+    assert!(file.is_dir(), "left as it is");
+    assert!(fs::read_to_string(kit.settings_file())
+        .unwrap()
+        .contains("AIza-old"));
+}
+
 #[test]
 fn gemini_key_of_an_older_version_moves() {
     let tmp = TempDir::new("settings-gemini-old");

@@ -572,7 +572,13 @@ fn install(
                 .stderr(Stdio::piped()),
         )
         .context("server --install-extension")?;
-        own.assign(&child)?;
+        // Never left running outside the editor's job (BUG-V6-25).
+        if let Err(e) = own.assign(&child) {
+            let mut child = child;
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(e);
+        }
         child
     };
     let out = child

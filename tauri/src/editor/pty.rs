@@ -689,7 +689,7 @@ mod unix {
         if let Some((name, value)) = locale {
             cmd.env(name, value);
         }
-        let child = pair
+        let mut child = pair
             .slave
             .spawn_command(cmd)
             .with_context(|| format!("starting {}", launch.program.display()))?;
@@ -699,18 +699,27 @@ mod unix {
         let pid = child.process_id();
         // The program leads its own group (setsid): the job kills that
         // group when the session lets it go, as for the app's other jobs.
-        let job = Job::new()?;
-        let leader: &dyn Child = &*child;
-        let Some(std_child) = leader.downcast_ref::<std::process::Child>() else {
-            // Never a session outside the job: its group would outlive it.
-            let mut child = child;
-            let _ = child.kill();
-            let _ = child.wait();
-            anyhow::bail!("pty child is not a std::process::Child");
+        let prepared = (|| -> Result<_> {
+            let job = Job::new()?;
+            let leader: &dyn Child = &*child;
+            let std_child = leader
+                .downcast_ref::<std::process::Child>()
+                .context("pty child is not a std::process::Child")?;
+            job.assign(std_child)?;
+            let reader = pair.master.try_clone_reader().context("pty reader")?;
+            let writer = pair.master.take_writer().context("pty writer")?;
+            Ok((job, reader, writer))
+        })();
+        // Never a session outside the job on any error once it started:
+        // its group would outlive it (BUG-V6-25).
+        let (job, reader, mut writer) = match prepared {
+            Ok(p) => p,
+            Err(e) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(e);
+            }
         };
-        job.assign(std_child)?;
-        let reader = pair.master.try_clone_reader().context("pty reader")?;
-        let mut writer = pair.master.take_writer().context("pty writer")?;
         let (tx, rx) = channel::<Vec<u8>>();
         std::thread::spawn(move || {
             for data in rx {

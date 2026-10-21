@@ -128,7 +128,12 @@ pub fn parse(args: &[OsString]) -> Cli {
             let mut rest = args[1..].iter();
             while let Some(arg) = rest.next() {
                 match arg.to_string_lossy().as_ref() {
-                    "--project" => project = rest.next().map(std::path::PathBuf::from),
+                    // Without its value a usage error, never the whole kit
+                    // (BUG-V6-33).
+                    "--project" => match rest.next() {
+                        Some(p) => project = Some(std::path::PathBuf::from(p)),
+                        None => return Cli::Unknown("sync --project".into()),
+                    },
                     "--verbose" => verbose = true,
                     other => return Cli::Unknown(other.to_owned()),
                 }

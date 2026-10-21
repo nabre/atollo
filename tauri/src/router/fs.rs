@@ -74,13 +74,70 @@ pub fn write_private(path: &Path, text: &str) -> Result<()> {
 }
 
 /// Writes `text` atomically in an already-private folder and sets the file's
-/// own owner-only permissions.
+/// own owner-only permissions. A file this account may not replace (made
+/// private by another account, or on another PC: an NTFS disk keeps its
+/// DACL) is deleted and written again; failing that, the error names the
+/// file and what to do (PORT-V6-01).
 pub fn write_in_private(path: &Path, text: &str) -> Result<()> {
-    write_atomic(path, text.as_bytes())?;
+    if let Err(e) = write_atomic(path, text.as_bytes()) {
+        if e.kind() != io::ErrorKind::PermissionDenied {
+            return Err(e).with_context(|| path.display().to_string());
+        }
+        let _ = fs::remove_file(path);
+        write_atomic(path, text.as_bytes()).map_err(|e| access_error(path, e))?;
+    }
     if let Err(e) = restrict_to_owner(path) {
         crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
     }
     Ok(())
+}
+
+/// Replaces `path` with a new owner-only file holding `text`: the old one is
+/// deleted first (never rewritten: one made private by another account
+/// keeps that account's DACL, PORT-V6-01), the new one is created owner-only
+/// before a byte is written (BUG-V6-33). For secrets that live one session.
+pub fn replace_private(path: &Path, text: &str) -> Result<()> {
+    use std::io::Write;
+    match fs::remove_file(path) {
+        Err(e) if e.kind() != io::ErrorKind::NotFound => return Err(access_error(path, e)),
+        _ => {}
+    }
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+    let mut file = options.open(path).map_err(|e| access_error(path, e))?;
+    #[cfg(windows)]
+    if let Err(e) = restrict_to_owner(path) {
+        crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
+    }
+    file.write_all(text.as_bytes())
+        .and_then(|()| file.sync_all())
+        .map_err(|e| access_error(path, e))
+}
+
+/// `e` on `path`, named; "access denied" also says why it happens to a kit
+/// carried to another PC or account and what to do (PORT-V6-01).
+pub fn access_error(path: &Path, e: io::Error) -> anyhow::Error {
+    let shown = path.display();
+    if e.kind() != io::ErrorKind::PermissionDenied {
+        return anyhow::Error::new(e).context(shown.to_string());
+    }
+    #[cfg(windows)]
+    let what = format!(
+        "{shown}: access denied ({e}). It was made private by another Windows account, \
+         perhaps on another PC (an NTFS disk keeps its permissions): delete it, or as \
+         administrator run takeown /f \"{shown}\" and icacls \"{shown}\" /reset"
+    );
+    #[cfg(unix)]
+    let what = format!(
+        "{shown}: permission denied ({e}). It belongs to another user, perhaps on another \
+         computer: delete it, or give it back with chown"
+    );
+    anyhow::anyhow!(what)
 }
 
 /// Ensures extracted Unix binaries (`bin/`, `sbin/`, and root executables)
@@ -129,3 +186,7 @@ fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
     unsafe { LocalFree(Some(HLOCAL(sd.0))) };
     result.ok().context("SetFileSecurityW")
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/router/fs.rs"]
+mod tests;
