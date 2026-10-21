@@ -75,13 +75,7 @@ pub fn has_staged(kit: &Kit, id: &str) -> bool {
 /// [`used`] removes once the installation succeeds.
 pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<Option<PathBuf>> {
     let top = boot_dir(kit);
-    let legacy = top.join(file_name);
-    if legacy.is_file() {
-        if let Err(e) = verify::check(&legacy, expect) {
-            crate::log::warn(&format!("bootstrap {file_name} discarded: {e}"));
-        }
-    }
-    let mut candidates = vec![legacy];
+    let mut candidates = vec![top.join(file_name)];
     candidates.extend(
         fs::read_dir(&top)
             .into_iter()
