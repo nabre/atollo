@@ -2,10 +2,10 @@
 //!
 //! File: `data\vscodium-server\data\Machine\settings.json`, the server-side
 //! settings that VSCodium applies to every window of the server (the user's
-//! own settings stay in the editor). Port of nabre/atollo
-//! `setup/extensions/atollo/kit.js:163-183` and `ext/startup.js:36-51`:
+//! own settings stay in the editor):
 //! - terminal profiles of the kit rewritten each time, PC profiles hidden,
-//!   profiles added by the user kept (DECISIONS.md D-23);
+//!   profiles added by the user kept (DECISIONS.md D-23), those an earlier
+//!   kit left under other names removed (D-126);
 //! - a few defaults set only when missing;
 //! - a file with comments or invalid JSON is left alone and reported.
 
@@ -34,20 +34,6 @@ const HIDDEN: &[&str] = &[
     "Command Prompt",
     "Git Bash",
     "JavaScript Debug Terminal",
-];
-
-/// The kit's profiles before Atollo had its name (D-126), on every system.
-/// They point at a versioned PowerShell or Git: kept, the first update of
-/// one leaves the editor's default on a missing program, and VSCodium falls
-/// back to the PC's shell. They go; a default on one of them moves to its
-/// Atollo twin.
-const RETIRED_PREFIX: &str = "Atollo";
-const RETIRED: &[&str] = &[
-    "Atollo",
-    "Atollo - Git Bash",
-    "Atollo - cmd",
-    "Atollo - Bash",
-    "Atollo - zsh",
 ];
 
 /// The same on macOS and Linux: the system's bash (Git of the kit has no
@@ -280,6 +266,19 @@ pub enum Outcome {
     LeftAlone(String),
 }
 
+/// A profile the kit wrote under a name it no longer uses: one of today's
+/// kit profiles under another name, or, with the kit's `overrideName`, a
+/// program in the kit. Kept, it would point at a versioned PowerShell or
+/// Git folder that an update removes, and a default on it would make
+/// VSCodium open the PC's shell.
+fn left_by_the_kit(profile: &Value, kit: &Kit, today: &Map<String, Value>) -> bool {
+    today.values().any(|p| p == profile)
+        || profile["overrideName"] == json!(true)
+            && profile["path"]
+                .as_str()
+                .is_some_and(|p| Path::new(p).starts_with(kit.data()))
+}
+
 /// Merges the kit's settings into `existing` (the parsed file). The
 /// terminal settings are those of the kit's system (`.windows`, `.osx`,
 /// `.linux`): the same file serves a kit used on several systems, each
@@ -299,7 +298,7 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
         for (name, value) in old {
             if !owned.contains(&name.as_str())
                 && !hidden.contains(&name.as_str())
-                && !RETIRED.contains(&name.as_str())
+                && !left_by_the_kit(value, kit, &kit_profiles)
             {
                 profiles.insert(name.clone(), value.clone());
             }
@@ -310,21 +309,13 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     out.insert(profiles_key, Value::Object(profiles.clone()));
 
     let default_key = key("defaultProfile");
-    let usable = |d: &str| profiles.get(d).is_some_and(|p| !p.is_null());
-    let chosen = match existing.get(&default_key).and_then(Value::as_str) {
-        Some(d) if RETIRED.contains(&d) => Some(d.replacen(RETIRED_PREFIX, DEFAULT_PROFILE, 1)),
-        d => d.map(str::to_owned),
-    }
-    .filter(|d| usable(d));
+    let keep_default = matches!(existing.get(&default_key), Some(Value::String(d)) if profiles.get(d).is_some_and(|p| !p.is_null()));
     // Without the kit's PowerShell, bash on macOS and Linux.
-    let default = chosen.or_else(|| {
-        [DEFAULT_PROFILE]
-            .into_iter()
-            .chain((!os.is_windows()).then_some(DEFAULT_PROFILE_UNIX))
-            .find(|d| names.iter().any(|n| n == d))
-            .map(str::to_owned)
-    });
-    if let Some(default) = default {
+    let default = [DEFAULT_PROFILE]
+        .into_iter()
+        .chain((!os.is_windows()).then_some(DEFAULT_PROFILE_UNIX))
+        .find(|d| names.iter().any(|n| n == d));
+    if let (false, Some(default)) = (keep_default, default) {
         out.insert(default_key, json!(default));
     }
     let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");

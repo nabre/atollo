@@ -1,5 +1,4 @@
-//! Starting and stopping the projects' actions (port of nabre/atollo
-//! `core/processes.js` and `core/panel/ports.js`).
+//! Starting and stopping the projects' actions.
 //!
 //! - every action runs in a job of its own, nested in the app's: stopping it
 //!   ends the whole tree (npm → node → esbuild…), closing the app ends all;

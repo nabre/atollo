@@ -1,9 +1,9 @@
 //! The kit environment given to every program the app starts.
 //!
-//! Port of nabre/atollo `setup/windows/_env.cmd` (commit a61a354), adapted to
-//! the layout `Atollo.exe` + `data\` + `projects\` (DECISIONS.md D-00, D-01):
-//! profile, AppData, temp, caches, agents and language tools all point inside
-//! `data\`. Differences from `_env.cmd`, on purpose:
+//! It follows `_env.cmd`, the environment script of the earlier kits, adapted
+//! to the layout `Atollo.exe` + `data\` + `projects\` (DECISIONS.md D-00,
+//! D-01): profile, AppData, temp, caches, agents and language tools all point
+//! inside `data\`. Differences from `_env.cmd`, on purpose:
 //! - the environment starts from an allow-list of system variables, not from
 //!   the whole user environment, and PATH ends with the three system folders
 //!   only (`_env.cmd:228` appends the PC's whole PATH);

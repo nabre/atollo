@@ -98,52 +98,39 @@ fn user_default_profile_kept_when_valid() {
     );
 }
 
-/// A kit from before the name Atollo (D-126): its profiles, on an old
-/// PowerShell folder, go; the default moves to the Atollo twin, never to
-/// the PC's shell.
+/// Profiles an earlier kit wrote under names it no longer uses go: one on
+/// an old PowerShell folder of the kit, one equal to today's cmd profile.
+/// The default on the first returns to the kit's, never to the PC's shell;
+/// the user's own profiles stay, one on a program of the kit included.
 #[test]
-fn profiles_of_before_the_name_atollo_go() {
-    let (_t, kit) = windows_kit("cfg-retired");
+fn profiles_left_by_an_earlier_kit_go() {
+    let (_t, kit) = windows_kit("cfg-left");
     let path = settings_path(&kit);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
-    let old = r#"{
-        "terminal.integrated.defaultProfile.windows": "Atollo - Git Bash",
+    let old_pwsh = kit.apps().join(r"pwsh\7.5\pwsh.exe");
+    let python = kit.apps().join(r"python\python.exe");
+    let old = json!({
+        "terminal.integrated.defaultProfile.windows": "Old shell",
         "terminal.integrated.profiles.windows": {
-            "Atollo": {"path": "D:\\kit\\data\\apps\\win32-x64\\pwsh\\7.5\\pwsh.exe"},
-            "Atollo - Git Bash": {"path": "D:\\kit\\data\\apps\\win32-x64\\git\\2.50\\bin\\bash.exe"},
-            "Atollo - cmd": {"path": "C:\\Windows\\System32\\cmd.exe"},
-            "Mine": {"path": "C:\\tools\\nu.exe"}
+            "Old shell": {"path": old_pwsh, "args": [], "icon": "terminal-powershell", "overrideName": true},
+            "Old cmd": {"path": r"C:\Windows\System32\cmd.exe", "args": ["/d", "/k"], "icon": "terminal-cmd", "overrideName": true},
+            "Mine": {"path": r"C:\tools\nu.exe"},
+            "My Python": {"path": python}
         }
-    }"#;
-    fs::write(&path, old).unwrap();
+    });
+    fs::write(&path, old.to_string()).unwrap();
     write(&kit, Path::new(r"C:\Windows")).unwrap();
     let s = read(&kit);
     let profiles = s["terminal.integrated.profiles.windows"]
         .as_object()
         .unwrap();
-    for gone in ["Atollo", "Atollo - Git Bash", "Atollo - cmd"] {
+    for gone in ["Old shell", "Old cmd"] {
         assert!(!profiles.contains_key(gone), "{gone}");
     }
-    assert!(profiles.contains_key("Mine"), "user profile kept");
-    assert_eq!(
-        s["terminal.integrated.defaultProfile.windows"],
-        "Atollo - Git Bash"
-    );
-
-    // The twin missing (no Git in the kit): the kit's default.
-    let (_t, kit) = kit_on(
-        "cfg-retired-nogit",
-        crate::kit::Target::WIN32_X64,
-        &["pwsh/pwsh.exe"],
-    );
-    let path = settings_path(&kit);
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::write(&path, old).unwrap();
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
-    assert_eq!(
-        read(&kit)["terminal.integrated.defaultProfile.windows"],
-        "Atollo"
-    );
+    for kept in ["Mine", "My Python"] {
+        assert!(profiles.contains_key(kept), "{kept}");
+    }
+    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
 }
 
 #[test]

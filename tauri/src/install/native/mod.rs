@@ -1,6 +1,5 @@
 //! Installers made of processes: Rust (rustup), pnpm and yarn (npm), R
-//! (micromamba). Port of nabre/atollo `_prepare-rust.ps1` and
-//! `_languages.ps1:254-429`.
+//! (micromamba).
 //!
 //! Files: `mod` (the programs run with their output in the notes), `rust`
 //! (rustup), `pnpm` (pnpm and yarn), `micromamba` (conda-forge versions and

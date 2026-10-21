@@ -2,7 +2,7 @@
 
 [English](CATALOG.md) · Italiano
 
-Fonte: `nabre/atollo` al commit `a61a354` (`setup/components.json` e script di `setup/windows/`). È la specifica che il motore Rust (`setup/catalog.rs`, `install/`) segue; il catalogo dell'app è `tauri/catalog/components.json`. I riferimenti `file:riga` puntano agli script originali.
+È la specifica che il motore Rust (`setup/catalog.rs`, `install/`) segue; il catalogo dell'app è `tauri/catalog/components.json`.
 
 Percorsi nel nuovo kit (D-00, D-114): `A` = `data\apps\<target>\` (`win32-x64`, `win32-arm64`, `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`); versioni in `data\app\versions\<target>\<id>.txt`; aree di lavoro nel temp del sistema, altrimenti in `data\tmp\setup\` (D-90). Le tabelle del §2 descrivono Windows; le fonti degli altri sistemi sono al §1, «Fonti per sistema».
 Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i componenti sono stati installati e rimossi a mano nella fase 4 (CHANGELOG.md).
@@ -150,7 +150,7 @@ Abbreviazioni:
 
 ## 3. Regole trasversali
 
-- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, caddy, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, mysql, mongodb, phpmyadmin, sqlite, pwsh, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente. (In nabre/atollo: `Prepare-Atollo.ps1:250-285`.)
+- **Ordine**: quello di `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, caddy, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, mysql, mongodb, phpmyadmin, sqlite, pwsh, vscodium-server. Prima le rimozioni, poi le installazioni; configurazione Git e sito Apache sono passi finali di quei componenti. Da riga di comando, in fondo a `prepare`, la verifica finale di ciò che è stato installato. Estensioni dell'editor dopo l'avvio dell'editor; allineamento degli agenti all'avvio dell'app e intorno a ogni agente.
 - **Un errore non ferma gli altri**: ogni passo è isolato e finisce nel riepilogo; esito complessivo "con errori" se uno fallisce.
 - **Quando si installa**: file chiave o una parte di `keys` mancante, editor a una versione diversa da quella del rilascio (all'avvio dell'app, o in un `prepare` che lo comprende), oppure "Aggiorna tutto" (`--update-all`) / `--force`. `--only` installa o aggiorna i componenti elencati e ciò che serve loro e manca, obbligatori esclusi, senza rimuovere nulla; `--skip` salta anche ciò che ne dipende e non è ancora installato (mai gli obbligatori).
 - **Quando serve** (D-59): avvio di un agente, clone, azione di un progetto installano prima i componenti che servono e li segnano come scelti in `components.txt`.

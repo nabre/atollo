@@ -1,5 +1,5 @@
 'use strict';
-// From nabre/atollo (setup/node/loopback.js, MIT). Written by Atollo.exe to
+// Written by Atollo.exe to
 // data\kit\loopback.js and loaded into every Node.js of the kit
 // (NODE_OPTIONS=--require, see tauri/src/env.rs). A server that listens on all
 // the network cards (no address, 0.0.0.0 or ::, the default of most dev

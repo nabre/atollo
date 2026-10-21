@@ -1,7 +1,6 @@
 //! The kit's GitHub account: one sign-in for the app, the editor, the
-//! consoles and the agents (DECISIONS.md D-70). Port of nabre/atollo
-//! `setup/extensions/github-repos` (the VSCodium side view) as the app's
-//! GitHub page.
+//! consoles and the agents (DECISIONS.md D-70), and the app's GitHub page
+//! with its repositories.
 //!
 //! - The account is GitHub CLI's, saved in `data\gh` (`--insecure-storage`):
 //!   it travels with the kit and never reaches the Credential Manager.

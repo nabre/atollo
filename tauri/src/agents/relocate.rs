@@ -1,6 +1,6 @@
 //! The kit moved (another drive letter or folder): the old root, written by
 //! the agents, the editor and the Python tools into their files, is replaced
-//! with the current one (port of nabre/atollo `setup/agents/moved.js`).
+//! with the current one.
 //!
 //! `kit.rs` notices the move at start and saves the old root in
 //! `data\app\old-root.txt` (`old-root-<os>.txt` on macOS and Linux,

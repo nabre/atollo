@@ -18,7 +18,7 @@ pub(super) struct Files {
 
 /// The kit's files in `dir` (`data\antigravity`). `host`: the tag of this
 /// computer and account on macOS and Linux ([`machine_tag`]), in the names
-/// of the files of a run (Windows: `None`, the names of nabre/atollo).
+/// of the files of a run (Windows: `None`, the names earlier kits used).
 pub(super) fn files_in(dir: &Path, host: Option<&str>) -> Files {
     let (seen, starting) = match host {
         Some(h) => (

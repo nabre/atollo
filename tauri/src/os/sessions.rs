@@ -1,5 +1,5 @@
 //! Programs of the kit that are open, other copies of the kit, and "Rimuovi
-//! l'unità" (port of nabre/atollo `Eject.ps1` and `Test-Sessions.ps1`).
+//! l'unità".
 //!
 //! A process belongs to the kit when its program lives under the kit root;
 //! only the tops of process trees are listed (a terminal, not every shell

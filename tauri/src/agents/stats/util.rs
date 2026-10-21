@@ -1,6 +1,5 @@
-//! What the statistics of the three agents share (port of nabre/atollo
-//! `core/stats/util.js`): thresholds, times, token counts, session files
-//! and the summary of a period.
+//! What the statistics of the three agents share: thresholds, times, token
+//! counts, session files and the summary of a period.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;

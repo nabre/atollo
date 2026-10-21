@@ -1,5 +1,4 @@
-//! Archives and folder swaps for the installer (port of nabre/atollo
-//! `Expand-Package`, `Replace-Dir` and `Replace-File`).
+//! Archives and folder swaps for the installer.
 //!
 //! Extraction refuses entries that would land outside the target (absolute
 //! paths, `..`, drive prefixes) and entries whose way from the target crosses

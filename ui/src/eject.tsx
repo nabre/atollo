@@ -1,4 +1,4 @@
-// "Rimuovi l'unità" (port of nabre/atollo Eject.ps1): lists what is still
+// "Rimuovi l'unità": lists what is still
 // open from the kit, stops it, puts Antigravity's login back into the kit,
 // then closes the app so the drive can be removed safely. The same list is
 // shown when the window is closed with something open (CloseDialog).

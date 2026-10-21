@@ -1,7 +1,7 @@
 //! Antigravity: model quotas from Google's server with the login the kit
-//! keeps, sessions from its conversation files, which have no token counts
-//! (port of nabre/atollo `core/stats/antigravity.js`). The local language
-//! server of a running Antigravity is not asked (DECISIONS.md D-61).
+//! keeps, sessions from its conversation files, which have no token counts.
+//! The local language server of a running Antigravity is not asked
+//! (DECISIONS.md D-61).
 
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;

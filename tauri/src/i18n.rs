@@ -1,8 +1,8 @@
 //! Texts of the app in Italian (source), English, French and German.
 //!
-//! Source strings are Italian, as in nabre/atollo; `i18n/catalog.json` maps
+//! Source strings are Italian; `i18n/catalog.json` maps
 //! each one to its translations and is embedded in the exe. The test at the
-//! bottom applies the rules of nabre/atollo `setup/lang/build.js`: every text
+//! bottom applies these rules: every text
 //! in every language, same `{n}` placeholders, no empty translation.
 
 use std::collections::BTreeMap;

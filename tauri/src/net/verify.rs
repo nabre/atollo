@@ -1,5 +1,4 @@
-//! Checksums of downloaded files (port of nabre/atollo
-//! `_prepare-helpers.ps1:60-130`): SHA-256, SHA-512, npm `sha512-<base64>`,
+//! Checksums of downloaded files: SHA-256, SHA-512, npm `sha512-<base64>`,
 //! and SHA3-256 (what sqlite.org publishes, D-73).
 //! A file that does not match is deleted, so it can never be installed later.
 //! Authenticode signatures (Claude Code, VC++ runtime) are in `net/signature.rs`.

@@ -1,5 +1,4 @@
-//! Usage statistics of the kit's agents (port of nabre/atollo
-//! `core/stats/*.js`), counted the same way for all three:
+//! Usage statistics of the kit's agents, counted the same way for all three:
 //!
 //! - limits: every plan limit as "% used" (0-100) with the time it resets:
 //!   the 5-hour and weekly windows of Claude and Codex, the per-model quotas
