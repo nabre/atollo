@@ -168,6 +168,9 @@ pub struct Runner {
     saved: Mutex<BTreeMap<String, ProjectPorts>>,
     /// Ports being probed for a start: two actions started together differ.
     pending: Mutex<HashSet<u16>>,
+    /// Where automatic ports are taken: [`PORT_FROM`]..=[`PORT_TO`], a
+    /// range of their own in the tests (TEST-V6-01).
+    port_range: (u16, u16),
     /// The id of the last run started.
     runs: AtomicU64,
     /// One gate per action: its starts happen one after the other.
@@ -275,10 +278,19 @@ impl Runner {
             ports: Mutex::new(ports),
             saved: Mutex::new(saved),
             pending: Mutex::new(HashSet::new()),
+            port_range: (PORT_FROM, PORT_TO),
             runs: AtomicU64::new(0),
             starts: Mutex::new(HashMap::new()),
             notify,
         }
+    }
+
+    /// The runner with automatic ports in `from..=to`: a test that checks
+    /// a port is kept takes it where no other test takes one (TEST-V6-01).
+    #[cfg(test)]
+    pub fn with_port_range(mut self, from: u16, to: u16) -> Runner {
+        self.port_range = (from, to);
+        self
     }
 
     fn entries(&self) -> std::sync::MutexGuard<'_, HashMap<String, Entry>> {
@@ -408,7 +420,8 @@ impl Runner {
                 .filter(|(_, o)| !matches!(o, crate::ports::Owner::Project { .. }))
                 .map(|(p, _)| p),
         );
-        for n in PORT_FROM..=PORT_TO {
+        let (from, to) = self.port_range;
+        for n in from..=to {
             if used.contains(&n) {
                 continue;
             }
@@ -441,7 +454,7 @@ impl Runner {
             tr(
                 lang,
                 "Nessuna porta libera tra {0} e {1}",
-                &[&PORT_FROM.to_string(), &PORT_TO.to_string()]
+                &[&from.to_string(), &to.to_string()]
             )
         )
     }

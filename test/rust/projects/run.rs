@@ -37,15 +37,35 @@ fn lines_and_colours() {
     assert!(rest.is_empty());
 }
 
+/// No free port in the range: an error naming the runner's own range.
+#[test]
+fn no_free_port_names_the_range() {
+    let tmp = TempDir::new("run-ports-none");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let busy = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    let p = busy.local_addr().unwrap().port();
+    let r = Runner::new(kit, Arc::new(|_| {})).with_port_range(p, p);
+    let e = r.assign_port("p|a", "en").unwrap_err().to_string();
+    assert!(e.contains(&p.to_string()), "{e}");
+}
+
 #[test]
 fn ports_are_kept_and_locked() {
     let tmp = TempDir::new("run-ports");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    let r = Runner::new(kit.clone(), Arc::new(|_| {}));
+    // TEST-V6-01: ports no other test takes, so that `a` is still free
+    // when asked again under a parallel `cargo test`.
+    let (from, to) = (7640, 7679);
+    let r = Runner::new(kit.clone(), Arc::new(|_| {})).with_port_range(from, to);
     let a = r.assign_port("p|a", "it").unwrap();
     let b = r.assign_port("p|b", "it").unwrap();
     assert_ne!(a, b);
+    assert!(
+        (from..=to).contains(&a) && (from..=to).contains(&b),
+        "{a} {b}"
+    );
     assert_eq!(r.assign_port("p|a", "it").unwrap(), a);
     // Kept across restarts.
     let r2 = Runner::new(kit, Arc::new(|_| {}));
