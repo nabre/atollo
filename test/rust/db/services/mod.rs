@@ -75,6 +75,77 @@ fn keep_port_loses_no_entry() {
     assert!(all["mysql"].autostart, "the rest of the file kept");
 }
 
+/// A `services.json` that cannot be read is never written again as if
+/// empty (SEC-V6-01): the change is refused, the file stays.
+#[test]
+fn unreadable_settings_are_never_overwritten() {
+    let tmp = TempDir::new("services-damaged");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit.clone());
+    let path = kit.app_dir().join("services.json");
+    fs::write(&path, r#"{"mysql": {"port": 3307,"#).unwrap();
+    let e = s.set("mysql", Some(3308), false, "it").unwrap_err();
+    assert!(format!("{e:#}").contains("services.json"), "{e:#}");
+    assert!(s.keep_port("mysql", "8.4", 3309).is_err());
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        r#"{"mysql": {"port": 3307,"#
+    );
+}
+
+/// MongoDB's administrator: its password is stored before the server hears
+/// of it (BUG-V6-26); a creation that fails leaves no new password behind,
+/// so the next start tries again.
+#[test]
+fn mongodb_admin_password_stored_first() {
+    let tmp = TempDir::new("services-mongo-admin");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit.clone());
+    let env = KitEnv::default();
+    // no mongosh in this kit: the creation fails
+    let e = s
+        .secure(DbEngine::MongoDb, None, true, &env, 1, true)
+        .unwrap_err();
+    assert!(format!("{e:#}").contains("could not be created"), "{e:#}");
+    assert_eq!(auth::try_load(&kit).unwrap().mongodb_admin, None);
+    // a password known before stays
+    auth::update_secrets(&kit, |s| {
+        s.mongodb_admin = Some("known".into());
+        Ok(())
+    })
+    .unwrap();
+    assert!(s
+        .secure(DbEngine::MongoDb, None, true, &env, 1, true)
+        .is_err());
+    assert_eq!(
+        auth::try_load(&kit).unwrap().mongodb_admin.as_deref(),
+        Some("known")
+    );
+    // secrets.json that cannot be written: the server never hears of a
+    // password (the client is not even started)
+    #[cfg(windows)]
+    {
+        let path = auth::secrets_path(&kit);
+        fs::write(&path, "{}").unwrap();
+        let mut ro = fs::metadata(&path).unwrap().permissions();
+        ro.set_readonly(true);
+        fs::set_permissions(&path, ro.clone()).unwrap();
+        let e = s
+            .secure(DbEngine::MongoDb, None, true, &env, 1, true)
+            .unwrap_err();
+        #[allow(clippy::permissions_set_readonly_false)]
+        ro.set_readonly(false);
+        fs::set_permissions(&path, ro).unwrap();
+        assert!(
+            !format!("{e:#}").contains("could not be created"),
+            "the server was asked first: {e:#}"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), "{}");
+    }
+}
+
 /// BUG-V5-02: a start, a stop or a change of version of a server waits for
 /// the one in progress (here a turn held by the test), so the check of
 /// what runs and the start happen in the same turn.
@@ -289,8 +360,13 @@ fn real_databases_start_and_stop() {
                 format!("db.getSiblingDB('{database}').t.drop()"),
             ),
             DbEngine::MySql => (
+                // A view of root's (its dump says `DEFINER=root`, which
+                // the project's user may not restore, BUG-V6-01) and bytes
+                // that are not UTF-8 (BUG-V6-04).
                 format!(
-                    "CREATE TABLE IF NOT EXISTS {database}.t (x INT); INSERT INTO {database}.t VALUES (7);"
+                    "CREATE TABLE IF NOT EXISTS {database}.t (x INT, b BLOB); \
+                     INSERT INTO {database}.t VALUES (7, 0xFFFE00); \
+                     CREATE OR REPLACE VIEW {database}.v AS SELECT x FROM {database}.t;"
                 ),
                 format!("SELECT COUNT(*) FROM {database}.t"),
                 format!("DROP TABLE {database}.t"),
@@ -380,6 +456,10 @@ fn real_databases_start_and_stop() {
                 "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{database}'"
             ));
             assert_eq!(triggers, "1", "{id}: the trigger is back");
+            let view = admin(&format!("SELECT COUNT(*) FROM {database}.v"));
+            assert_eq!(view, n, "{id}: root's view is back");
+            let blob = admin(&format!("SELECT HEX(b) FROM {database}.t LIMIT 1"));
+            assert_eq!(blob, "FFFE00", "{id}: the bytes are back");
         }
         eprintln!("{id}: restored as the project's user, {n} row(s) back");
         assert!(s.restore(&project, r"..\x.sql").is_err());

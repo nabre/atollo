@@ -178,7 +178,7 @@ fn mongosh(
 ) -> Result<Value> {
     let engine = DbEngine::MongoDb;
     let (port, env) = services.running_at(engine, line)?;
-    let admin = auth::load(services.kit())
+    let admin = auth::try_load(services.kit())?
         .mongodb_admin
         .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
     let mut cmd = jobs::kit_command(client_at(services.kit(), engine, None), &env);

@@ -97,10 +97,22 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
              stop {id} {from} first"
         );
     }
+    // Copied beside, then renamed (BUG-V6-09): a copy cut short (a full or
+    // pulled out stick) is never a data folder, whose `mysql.ibd` would
+    // skip the copy at the next start and open what is half there. What a
+    // cut copy left goes first.
+    let partial = root.join(format!("{line}.partial"));
+    if partial.exists() {
+        crate::net::archive::remove_dir(&partial)?;
+    }
     if target.exists() {
         crate::net::archive::remove_dir(&target)?;
     }
-    copy_dir(&root.join(&from), &target)?;
+    if let Err(e) = copy_dir(&root.join(&from), &partial) {
+        let _ = crate::net::archive::remove_dir(&partial);
+        return Err(e.context(format!("{id} {line}: the copy of the data of {from}")));
+    }
+    fs::rename(&partial, &target).with_context(|| target.display().to_string())?;
     crate::log::info(&format!("{id}: data of {from} copied for {line}"));
     Ok(Some(from))
 }
@@ -190,16 +202,19 @@ impl Services {
                 // root's password, stored before any server hears of it
                 // (every version has the same administrator), set by the
                 // initialization itself: root is never without one.
-                let mut secrets = auth::load(kit);
-                let password = match secrets.mysql_root.clone() {
-                    Some(p) => p,
-                    None => {
-                        let p = auth::new_password()?;
-                        secrets.mysql_root = Some(p.clone());
-                        auth::save(kit, &secrets)?;
-                        p
-                    }
-                };
+                // A `secrets.json` that cannot be read stops here: a new
+                // password over it would lose the other versions' root
+                // (SEC-V6-01).
+                let password = auth::update_secrets(kit, |secrets| {
+                    Ok(match secrets.mysql_root.clone() {
+                        Some(p) => p,
+                        None => {
+                            let p = auth::new_password()?;
+                            secrets.mysql_root = Some(p.clone());
+                            p
+                        }
+                    })
+                })?;
                 let init = auth::dir(kit).join(format!("mysql-init-{}.sql", std::process::id()));
                 auth::write_private_text(&init, &auth::mysql_root_sql(&password))?;
                 let mut cmd = jobs::kit_command(
