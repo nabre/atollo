@@ -61,10 +61,40 @@ fn uri_path(p: &str) -> String {
     out
 }
 
+/// A root without its last separators: `E:\` is `E:`, `E:\kit\` is `E:\kit`
+/// (BUG-V6-03: both ends of a move are cut the same way, so the separator
+/// that follows in the text is never doubled).
+pub fn trim_root(root: &str) -> &str {
+    root.trim_end_matches(['\\', '/'])
+}
+
+/// A root that is a whole drive (`E:`, once trimmed) or the Unix `/`: in
+/// the text it is a path only when a separator follows.
+fn bare_root(root: &str) -> bool {
+    let b = root.as_bytes();
+    b.is_empty() || (b.len() == 2 && b[0].is_ascii_alphabetic() && b[1] == b':')
+}
+
+/// One way the old root is written, and the new root written the same way.
+struct Pair {
+    /// What is looked for: the old root, plus `sep` when `with_sep`.
+    find: Vec<u8>,
+    /// The new root in the same spelling, without separator.
+    to: Vec<u8>,
+    /// The separator of this spelling: `\\` in JSON, `\`, or `/`.
+    sep: &'static [u8],
+    /// `find` ends with `sep`: the separator found is written again after
+    /// the new root. Otherwise the old root ended the path there.
+    with_sep: bool,
+}
+
 /// Old and new root in every spelling, longest first.
 pub struct Replacer {
     re: Regex,
-    pairs: Vec<(Vec<u8>, Vec<u8>)>,
+    pairs: Vec<Pair>,
+    /// The new root is a whole drive (`F:\`): where the old root ended a
+    /// path, the new one gets its separator back (`F:\`, not `F:`).
+    to_bare: bool,
     /// Paths of `os` ignore case (Windows): `E:\Kit` is found as `e:\kit`.
     /// Elsewhere only the exact spelling is the old root, as in
     /// [`crate::kit::same_root`]: `/media/u/Kit` and `/media/u/kit` differ.
@@ -72,21 +102,57 @@ pub struct Replacer {
 }
 
 impl Replacer {
+    /// Each spelling of the old root is looked for twice: followed by its
+    /// separator (`E:\kit\`, `E:\\kit\\` in JSON, `E:/kit/`), so the new
+    /// root gets the separator of the text and never a second one; and
+    /// alone, ending a path (`"E:\kit"`). A drive alone (`E:`) is a path
+    /// only with its separator: `E:` followed by anything else is not the
+    /// kit (BUG-V6-03).
     pub fn new(os: Os, from: &str, to: &str) -> Replacer {
         let fold = os.is_windows();
-        let key = |a: &str| if fold { a.to_lowercase() } else { a.to_owned() };
-        let mut pairs: Vec<(String, String)> = vec![
-            (from.to_owned(), to.to_owned()),
-            (uri_path(from), uri_path(to)),
-            (from.replace('\\', "/"), to.replace('\\', "/")),
-            (from.replace('\\', "\\\\"), to.replace('\\', "\\\\")),
+        let (from, to) = (trim_root(from), trim_root(to));
+        let key = |a: &[u8]| {
+            if fold {
+                a.to_ascii_lowercase()
+            } else {
+                a.to_vec()
+            }
+        };
+        let uri = |p: &str| uri_path(p).trim_end_matches('/').to_owned();
+        let spellings: [(String, String, &'static [u8]); 4] = [
+            (
+                from.replace('\\', "\\\\"),
+                to.replace('\\', "\\\\"),
+                b"\\\\",
+            ),
+            (from.to_owned(), to.to_owned(), b"\\"),
+            (from.replace('\\', "/"), to.replace('\\', "/"), b"/"),
+            (uri(from), uri(to), b"/"),
         ];
+        let mut pairs: Vec<Pair> = Vec::new();
+        for with_sep in [true, false] {
+            if !with_sep && bare_root(from) {
+                continue;
+            }
+            for (a, b, sep) in &spellings {
+                let mut find = a.clone().into_bytes();
+                if with_sep {
+                    find.extend_from_slice(sep);
+                }
+                pairs.push(Pair {
+                    find,
+                    to: b.clone().into_bytes(),
+                    sep,
+                    with_sep,
+                });
+            }
+        }
         let mut seen = std::collections::HashSet::new();
-        pairs.retain(|(a, _)| seen.insert(key(a)));
-        pairs.sort_by_key(|(a, _)| std::cmp::Reverse(a.len()));
+        pairs.retain(|p| !p.find.is_empty() && seen.insert(key(&p.find)));
+        pairs.sort_by_key(|p| std::cmp::Reverse(p.find.len()));
         let alts: Vec<String> = pairs
             .iter()
-            .map(|(a, _)| format!("({})", regex::escape(a)))
+            .map(|p| format!("({})", regex::escape(&String::from_utf8_lossy(&p.find))))
             .collect();
         // (?-u) byte mode: files are read as bytes; no look-around in the
         // regex crate, so the boundaries are checked by hand in `replace`.
@@ -95,10 +161,8 @@ impl Replacer {
             .unwrap_or_else(|_| Regex::new("$^").unwrap_or_else(|_| unreachable!()));
         Replacer {
             re,
-            pairs: pairs
-                .into_iter()
-                .map(|(a, b)| (a.into_bytes(), b.into_bytes()))
-                .collect(),
+            pairs,
+            to_bare: bare_root(to),
             fold,
         }
     }
@@ -107,19 +171,30 @@ impl Replacer {
         !b.is_some_and(|c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'.' | b'-'))
     }
 
+    /// The new text of `pair`; `next`: the byte after the match.
+    fn written(&self, pair: &Pair, next: Option<&u8>) -> Vec<u8> {
+        let mut new = pair.to.clone();
+        if pair.with_sep || (self.to_bare && !matches!(next, Some(b'\\' | b'/'))) {
+            new.extend_from_slice(pair.sep);
+        }
+        new
+    }
+
     pub fn replace(&self, text: &[u8]) -> Option<Vec<u8>> {
         let mut out = Vec::with_capacity(text.len());
         let mut last = 0;
         let mut changed = false;
         for caps in self.re.captures_iter(text) {
             let Some(m) = caps.get(0) else { continue };
+            let pair = &self.pairs[Self::index(&caps)];
             if !Self::boundary(m.start().checked_sub(1).and_then(|i| text.get(i)))
-                || !Self::boundary(text.get(m.end()))
+                || (!pair.with_sep && !Self::boundary(text.get(m.end())))
             {
                 continue;
             }
             out.extend_from_slice(&text[last..m.start()]);
-            out.extend_from_slice(&self.substitute(&caps, m.as_bytes()));
+            let new = self.written(pair, text.get(m.end()));
+            out.extend_from_slice(&self.substitute(new, m.as_bytes()));
             last = m.end();
             changed = true;
         }
@@ -130,17 +205,20 @@ impl Replacer {
         Some(out)
     }
 
+    /// The pair whose alternative matched.
+    fn index(caps: &Captures) -> usize {
+        (1..caps.len())
+            .find(|i| caps.get(*i).is_some())
+            .unwrap_or(1)
+            - 1
+    }
+
     /// The new spelling, with the drive letter in the case found where
     /// paths ignore case (Windows; elsewhere the match is exact). Only a
     /// real drive letter (`E:`, or `/e%3A` in a URI) is touched: the first
     /// letter of a Unix path is part of a folder name, so `/home/u/kit`
     /// moved to `/Users/u/kit` stays `/Users` (PORT-V4-02).
-    fn substitute(&self, caps: &Captures, found: &[u8]) -> Vec<u8> {
-        let i = (1..caps.len())
-            .find(|i| caps.get(*i).is_some())
-            .unwrap_or(1)
-            - 1;
-        let mut new = self.pairs[i].1.clone();
+    fn substitute(&self, mut new: Vec<u8>, found: &[u8]) -> Vec<u8> {
         if !self.fold {
             // An exact match: the case found says nothing more.
             return new;
@@ -168,9 +246,10 @@ impl Replacer {
             }
         };
         let text = fold(text);
-        self.pairs.iter().any(|(a, b)| {
-            let a = fold(a);
-            a.len() != b.len() && text.windows(a.len()).any(|w| w == a.as_slice())
+        self.pairs.iter().any(|p| {
+            let a = fold(&p.find);
+            a.len() != self.written(p, None).len()
+                && text.windows(a.len()).any(|w| w == a.as_slice())
         })
     }
 }
@@ -527,12 +606,10 @@ pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
     let Ok(from) = crate::fsx::read_text(&pending) else {
         return Ok(());
     };
-    let from = from
-        .trim()
-        .trim_matches('"')
-        .trim_end_matches(['\\', '/'])
-        .to_owned();
-    let to = kit.root().display().to_string();
+    // Both ends cut the same way: a kit at the root of a drive (`E:\`) is
+    // `E:` on either side (BUG-V6-03).
+    let from = trim_root(from.trim().trim_matches('"')).to_owned();
+    let to = trim_root(&kit.root().display().to_string()).to_owned();
     if !from.is_empty() && !same_root(kit.os(), &from, &to) {
         let p = Paths::of(kit);
         let r = Replacer::new(kit.os(), &from, &to);
