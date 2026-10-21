@@ -54,6 +54,26 @@ fn fwd(p: &Path) -> String {
     p.display().to_string().replace('\\', "/")
 }
 
+/// `text` as a `.properties` value Gradle reads in ISO-8859-1: every
+/// character outside ASCII as `\uXXXX` (UTF-16), so `C:/Users/Müller` stays
+/// that; a `\` (none in [`fwd`]'s paths) doubled.
+fn properties_escape(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        if c == '\\' {
+            out.push_str("\\\\");
+        } else if c.is_ascii() {
+            out.push(c);
+        } else {
+            let mut units = [0u16; 2];
+            for u in c.encode_utf16(&mut units) {
+                out.push_str(&format!("\\u{u:04X}"));
+            }
+        }
+    }
+    out
+}
+
 /// `gradle.properties` with the kit's JDKs as the only local ones (the
 /// user's other lines stay).
 pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
@@ -67,7 +87,7 @@ pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
         .collect();
     if !jdks.is_empty() {
         out.push("# Atollo: the kit's JDKs for toolchains, none of the PC's".into());
-        let list: Vec<String> = jdks.iter().map(|p| fwd(p)).collect();
+        let list: Vec<String> = jdks.iter().map(|p| properties_escape(&fwd(p))).collect();
         out.push(format!("{GRADLE_PATHS}={}", list.join(",")));
         out.push(format!("{GRADLE_DETECT}=false"));
     }
