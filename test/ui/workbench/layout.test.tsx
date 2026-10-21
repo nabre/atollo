@@ -4,7 +4,15 @@
 // VSCodium 1.135's modern UI with the size tokens.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { EditorHeader, EditorTabs, NavBar, Panel, useStoredSize } from "../../../ui/src/workbench/layout";
+import {
+  EditorHeader,
+  EditorTabs,
+  NavBar,
+  Panel,
+  PaneStack,
+  useStoredSize,
+  ViewPane,
+} from "../../../ui/src/workbench/layout";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -262,5 +270,38 @@ describe("Panel", () => {
     expect(classes(on).some((c) => c.startsWith("after:"))).toBe(false);
     fireEvent.click(off);
     expect(onSelect).toHaveBeenCalledWith("output");
+  });
+});
+
+describe("ViewPane", () => {
+  const stack = (fit: boolean, expanded = true) => (
+    <PaneStack>
+      <ViewPane first fill fit={fit} title="Uno" expanded={expanded} onToggle={vi.fn()}>
+        <p>righe</p>
+      </ViewPane>
+      <ViewPane fill title="Due" expanded onToggle={vi.fn()}>
+        <p>altro</p>
+      </ViewPane>
+    </PaneStack>
+  );
+  const pane = (name: string) => screen.getByRole("button", { name }).closest("section");
+
+  it("fills by default, sharing the height with the other fill panes", () => {
+    render(stack(false));
+    expect(pane("Uno")?.hasAttribute("data-fit")).toBe(false);
+    expect(classes(pane("Uno"))).toEqual(expect.arrayContaining(["flex-1", "basis-0"]));
+  });
+
+  it("fits its content when asked, the others keeping a least body", () => {
+    const { rerender } = render(stack(true));
+    expect(pane("Uno")?.hasAttribute("data-fit")).toBe(true);
+    expect(classes(pane("Uno"))).toContain("flex-[0_1_auto]");
+    expect(classes(pane("Uno"))).not.toContain("basis-0");
+    expect(classes(pane("Due"))).toContain(
+      "group-has-[[data-fit]]/panes:min-h-[calc(var(--vsc-size-pane-header)+120px)]",
+    );
+    // Closed, it is a header only, whatever it asks.
+    rerender(stack(true, false));
+    expect(pane("Uno")?.hasAttribute("data-fit")).toBe(false);
   });
 });

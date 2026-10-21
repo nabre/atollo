@@ -18,6 +18,7 @@ import {
 import {
   AddonChoice,
   basesByCategory,
+  groupOf,
   PieceLogo,
   PlanSummary,
   textOf,
@@ -225,7 +226,7 @@ export function NewProjectWizard({
       <EditorHeader
         icon={<Codicon name="wand" size={56} className="text-vsc-icon opacity-80" />}
         title={t("Nuovo progetto")}
-        meta={[<span key="what">{t("Da framework o CMS")}</span>]}
+        meta={[<span key="what">{groupOf(pieces, base)?.label ?? t("Da una base")}</span>]}
         description={
           <>
             {t(

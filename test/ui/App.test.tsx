@@ -559,7 +559,7 @@ describe("App", () => {
   it("creates a project with the wizard", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da framework o CMS" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da una base" }));
     const groups = within(await screen.findByRole("group", { name: "Gruppi di basi" }));
     fireEvent.click(groups.getByRole("button", { name: /JavaScript/ }));
     fireEvent.click(await screen.findByRole("radio", { name: /Vite/ }));
@@ -624,13 +624,30 @@ describe("App", () => {
   it("opens each way of making a project from the side bar's tree", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
+    const projectsPane = () =>
+      screen.getByRole("button", { name: "Progetti", expanded: true }).closest("section") as HTMLElement;
+    // Alone, «Progetti» fills the side bar; beside another open pane it is
+    // as tall as its rows, the rest to the other one.
+    await screen.findByRole("button", { name: "Progetti", expanded: true });
+    expect(projectsPane().hasAttribute("data-fit")).toBe(false);
     fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto", expanded: false }));
     const tree = await screen.findByRole("list", { name: "Nuovo progetto" });
+    expect(projectsPane().hasAttribute("data-fit")).toBe(true);
+    expect(tree.closest("section")?.hasAttribute("data-fit")).toBe(false);
     fireEvent.click(within(tree).getByRole("button", { name: /Progetto vuoto/ }));
     expect(await screen.findByRole("button", { name: "Crea" })).toBeTruthy();
     fireEvent.click(within(tree).getByRole("button", { name: /Da un indirizzo Git/ }));
     expect(await screen.findByRole("button", { name: /Clona/ })).toBeTruthy();
-    // A base under the frameworks: the wizard opens with it chosen.
+    // A group opens the wizard on its first base, its branch open; the tab
+    // names the group.
+    fireEvent.click(await within(tree).findByRole("button", { name: /^Web\s*2$/ }));
+    expect(await screen.findByRole("tab", { name: /Nuovo progetto\s*Web/ })).toBeTruthy();
+    expect(
+      within(tree)
+        .getByRole("button", { name: /^Web\s*2$/ })
+        .getAttribute("aria-expanded"),
+    ).toBe("true");
+    // A base under a category: the wizard opens with it chosen.
     fireEvent.click(await within(tree).findByRole("button", { name: /Web con JavaScript e TypeScript/ }));
     fireEvent.click(await within(tree).findByRole("button", { name: /Vite/ }));
     await waitFor(() => {
@@ -642,7 +659,7 @@ describe("App", () => {
   it("offers the empty projects and those without Git, never a repository", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da framework o CMS" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da una base" }));
     fireEvent.click(await screen.findByRole("button", { name: /appunti/ }));
     expect(await screen.findByText(/contiene già dei file/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^repo/ })).toBeNull();

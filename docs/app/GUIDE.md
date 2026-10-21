@@ -301,8 +301,8 @@ Related topics: [2.2 The Projects page and the “Quick panel”](#22-the-projec
 #### 1. Create the project
 
 1. Open the “Projects” page from the activity bar.
-2. In the “Quick panel”, under “New project”, click “From a framework or CMS”. The “New project” tab opens.
-3. In “1. Base” choose the “Web with JavaScript and TypeScript” group and the “Vite” card (“Website or web application in TypeScript”).
+2. In the “Quick panel”, under “New project”, in the “Web” block, click “Vite” (under “Web with JavaScript and TypeScript”). The “New project” tab opens.
+3. In “1. Base” the “Vite” card (“Website or web application in TypeScript”) is already chosen.
 4. In “2. Additions” nothing is needed for this test.
 5. In “3. Name” type primo-sito. The name becomes the `projects\primo-sito` folder.
 6. Look at the “Summary”: you will see that the kit will use Node.js, run npm create vite in the projects folder and then npm install in the project, and save the “Start” and “Build” actions.
@@ -346,11 +346,11 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.3 Starting 
 > **In short**
 >
 > - A project is simply a folder inside projects: the kit recognizes it by itself.
-> - There are three ways to create one: “Empty project”, “From a Git address” and “From a framework or CMS”. Plus the list of your GitHub repositories.
+> - There are three ways to create one: “Empty project”, “From a Git address” and “From a base”, with the bases of frameworks and CMS in four groups: Web, CMS, App and Other. Plus the list of your GitHub repositories.
 > - With a framework, the kit installs the tools needed and runs the framework's official commands.
 > - You can also copy a folder into projects by hand: it appears in the list after “Refresh”.
 
-![The “From a framework or CMS” procedure](../../ui/public/guide/en/project-new.webp)
+![The “From a base” procedure](../../ui/public/guide/en/project-new.webp)
 
 *Base, add-ons, name, .env file and summary, one below the other. On the left, the tree of the three ways.*
 
@@ -358,9 +358,9 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.3 Starting 
 
 All roads lead to the “New project” tab of the Projects page, which opens in one of these ways:
 
-- from the “Quick panel”, with the three boxes under “New project”;
-- from the icons at the top of the sidebar: “New project” (folder with a plus) and “New project from a framework or CMS” (wand);
-- from the “New project” pane of the sidebar, a tree with the three ways; under “From a framework or CMS” are the groups and the bases: a click on a base opens the wizard with that base already chosen;
+- from the “Quick panel”, under “New project”: at the top right the “Empty project” and “From a Git address” links; below, a block per group (Web, CMS, App, Other) with its bases by category: a click on a base opens the wizard with that base already chosen;
+- from the icons at the top of the sidebar: “New project” (folder with a plus) and “New project from a base” (wand);
+- from the “New project” pane of the sidebar, a tree: “Empty project”, “From a Git address”, then the Web, CMS, App and Other branches with the number of bases. Under Web, App and Other are the categories and their bases, under CMS the bases directly; a click on a group opens the wizard on its first base, a click on a base opens it with that base already chosen;
 - from <kbd>Ctrl+P</kbd>, which has the three “New project” entries at the bottom of the list.
 
 A created or cloned project also appears at once on the “Web Servers” page.
@@ -389,7 +389,7 @@ After the copy the kit looks at the project's files, installs the components nee
 >
 > Only https:// addresses are accepted, not ssh. A private GitHub repository needs you to be signed in with the kit's GitHub account; public repositories do not. If the copy fails, the folder is removed and the last line of Git's error appears.
 
-#### Way 3 · “From a framework or CMS”
+#### Way 3 · “From a base”
 
 A wizard that creates a project starting from a base (a framework like Laravel, Django or Vite, a CMS like WordPress, a site generator, a desktop or mobile app…) and from optional additions (Tailwind, React, a database, testing tools…). The kit installs the tools needed and runs the framework's official commands, the same ones you would find in its documentation.
 
@@ -462,14 +462,16 @@ Related topics: [1.4 The first project, step by step](#14-the-first-project-step
 
 #### The sidebar
 
-At the top, the icons: “New project”, “New project from a framework or CMS”, “Open a project (Ctrl+P)”, “Refresh”, “Open folder” (opens projects) and the guide's book. Below, four panes:
+At the top, the icons: “New project”, “New project from a base”, “Open a project (Ctrl+P)”, “Refresh”, “Open folder” (opens projects) and the guide's book. Below, four panes:
 
 | Pane | What it contains |
 | --- | --- |
 | Projects | All the projects in alphabetical order, with the count at the top. Folders starting with a dot and links do not count. With more than six projects the “Search projects” box appears. |
 | Data without a project | It appears only if the kit has data of projects that are no longer in projects. See [2.7 Deleting a project and the “Data without a project”](#27-deleting-a-project-and-the-data-without-a-project). |
-| New project | The tree of the three ways to create a project, with the framework bases. |
+| New project | The tree of the ways to create a project: “Empty project”, “From a Git address” and the bases in the Web, CMS, App and Other groups. |
 | From your GitHub repositories | The repositories of your account, ready to clone. |
+
+A click on a pane's title opens or closes it. Alone, “Projects” takes the full height; if “New project” or “From your GitHub repositories” is open too, “Projects” takes only the height of its rows (and scrolls only if they do not fit) and the rest goes to the other open panes.
 
 Each project row has an icon that says what kind of project it is: a globe for a website, a window for an app with a window, a terminal for a command-line program. A green dot means something is running; a yellow triangle that components are missing. Hovering over the row shows the buttons ▶ “Start” (or ■ “Stop”), “Editor”, “Terminal” and one for each installed agent, with its logo.
 
@@ -483,7 +485,7 @@ It is the first tab of the page, always there. It only shows the parts that have
 | Favorites | The projects you have marked with the star (“Add … to favorites”), as cards with their languages and buttons. |
 | Recent | The six projects used or changed most recently, excluding those already among the favorites. |
 | Needs attention | The actions stopped with an error (“Show the output”) and the projects missing components (“Install”, which opens the project's Components section). |
-| New project | The three ways to create a project, plus the links to GitHub repositories, the projects folder and the guide. |
+| New project | Beside the title “Empty project” and “From a Git address”; below, a block per group, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide. |
 
 #### Opening a project by name
 
@@ -2667,7 +2669,7 @@ Related topics: [9.1 When something goes wrong](#91-when-something-goes-wrong), 
 
 - **.env** — A text file in the project with settings and secrets (like the database password), one KEY=value line each. It must not go into Git.
 - **Action** — A named project command, started and stopped from the “Run” section.
-- **Addition** — In the “From a framework or CMS” wizard, an extra piece to add to the base (Tailwind, React, a database, tests).
+- **Addition** — In the “From a base” wizard, an extra piece to add to the base (Tailwind, React, a database, tests).
 - **AI agent** — A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity.
 - **API key** — A secret code that lets you use a service (for example an AI model) paying as you go, without a subscription.
 - **Backup** — A file with the whole content of a database, to put it back as it was.

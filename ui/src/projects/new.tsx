@@ -1,10 +1,10 @@
 // The ways to make a new project: a tree in the side bar of Projects (an
-// empty folder, a clone of a Git address, a framework or CMS and its bases
-// by group: web with PHP, CMS, desktop…), each opening its procedure in the
-// «Nuovo progetto» tab of the editor.
+// empty folder, a clone of a Git address, then the bases of frameworks and
+// CMS in four groups, Web, CMS, App and Altro, by category), each opening
+// its procedure in the «Nuovo progetto» tab of the editor.
 import { useState, type ReactNode, type SyntheticEvent } from "react";
-import { projectClone, projectCreate } from "../api";
-import { bases, basesByCategory, PieceLogo, textOf, type Frameworks } from "../frameworks";
+import { projectClone, projectCreate, type FrameworkPiece } from "../api";
+import { basesByGroup, PieceLogo, textOf, type Frameworks, type GroupId } from "../frameworks";
 import { useAction } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
@@ -18,10 +18,19 @@ export type NewWay = "empty" | "git" | "framework";
 export const WIZARD_TAB = "\u0000wizard";
 
 export function wayLabel(way: NewWay): string {
-  return { empty: t("Progetto vuoto"), git: t("Da un indirizzo Git"), framework: t("Da framework o CMS") }[way];
+  return { empty: t("Progetto vuoto"), git: t("Da un indirizzo Git"), framework: t("Da una base") }[way];
 }
 
-/** The side bar's tree of the ways; under the frameworks, their bases. */
+/** The icon of a group of bases. */
+export const GROUP_ICON: Record<GroupId, string> = {
+  web: "globe",
+  cms: "layout",
+  app: "device-desktop",
+  other: "package",
+};
+
+/** The side bar's tree of the ways; then the groups of bases (Web, CMS,
+ * App, Altro), their categories and bases. */
 export function NewProjectTree({
   fw,
   way,
@@ -34,10 +43,29 @@ export function NewProjectTree({
   base: string;
   onSelect: (way: NewWay, base?: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
-  /** Groups opened or closed by hand; the others open while they hold the base shown. */
-  const [groups, setGroups] = useState<Record<string, boolean>>({});
-  const list = bases(fw.pieces);
+  /** Branches opened or closed by hand (`g:` a group, `c:` a category); the
+   * others open while they hold the base shown. */
+  const [branches, setBranches] = useState<Record<string, boolean>>({});
+  const holds = (list: FrameworkPiece[]) => way === "framework" && list.some((b) => b.id === base);
+  const isOpen = (key: string, list: FrameworkPiece[]) => branches[key] ?? holds(list);
+  const flip = (key: string, open: boolean) => {
+    setBranches((all) => ({ ...all, [key]: open }));
+  };
+  const baseRows = (list: FrameworkPiece[], depth: number) =>
+    list.map((b) => (
+      <ListRow
+        key={b.id}
+        depth={depth}
+        icon={<PieceLogo piece={b} />}
+        label={b.name || b.id}
+        title={textOf(fw.view, b.desc)}
+        selected={way === "framework" && base === b.id}
+        current="page"
+        onSelect={() => {
+          onSelect("framework", b.id);
+        }}
+      />
+    ));
   return (
     <List label={t("Nuovo progetto")}>
       <ListRow
@@ -58,59 +86,54 @@ export function NewProjectTree({
           onSelect("git");
         }}
       />
-      <ListRow
-        twistie={list.length > 0 ? (open ? "open" : "closed") : undefined}
-        icon={<Codicon name="wand" size={16} />}
-        label={wayLabel("framework")}
-        description={list.length > 0 ? String(list.length) : undefined}
-        selected={way === "framework" && !open}
-        current="page"
-        onSelect={() => {
-          // Shown already: the branch opens and closes. Else the wizard
-          // opens, the bases under it.
-          if (way === "framework") setOpen(!open);
-          else setOpen(true);
-          onSelect("framework");
-        }}
-      >
-        {list.length > 0 && (
-          <List label={wayLabel("framework")}>
-            {basesByCategory(fw.pieces).map((g) => {
-              const holds = way === "framework" && g.bases.some((b) => b.id === base);
-              const shown = groups[g.id] ?? holds;
-              return (
-                <ListRow
-                  key={g.id}
-                  depth={1}
-                  twistie={shown ? "open" : "closed"}
-                  label={g.label}
-                  description={String(g.bases.length)}
-                  onSelect={() => {
-                    setGroups((all) => ({ ...all, [g.id]: !shown }));
-                  }}
-                >
-                  <List label={g.label}>
-                    {g.bases.map((b) => (
+      {basesByGroup(fw.pieces).map((g) => {
+        const key = `g:${g.id}`;
+        const open = isOpen(key, g.bases);
+        return (
+          <ListRow
+            key={g.id}
+            twistie={open ? "open" : "closed"}
+            icon={<Codicon name={GROUP_ICON[g.id]} size={16} />}
+            label={g.label}
+            description={String(g.bases.length)}
+            selected={holds(g.bases) && !open}
+            current="page"
+            onSelect={() => {
+              // Shown already: the branch opens and closes. Else the wizard
+              // opens on its first base, the branch open.
+              if (holds(g.bases)) {
+                flip(key, !open);
+              } else {
+                flip(key, true);
+                onSelect("framework", g.bases[0]?.id);
+              }
+            }}
+          >
+            <List label={g.label}>
+              {g.categories.length === 1
+                ? baseRows(g.bases, 1)
+                : g.categories.map((c) => {
+                    const ckey = `c:${c.id}`;
+                    const shown = isOpen(ckey, c.bases);
+                    return (
                       <ListRow
-                        key={b.id}
-                        depth={2}
-                        icon={<PieceLogo piece={b} />}
-                        label={b.name || b.id}
-                        title={textOf(fw.view, b.desc)}
-                        selected={way === "framework" && base === b.id}
-                        current="page"
+                        key={c.id}
+                        depth={1}
+                        twistie={shown ? "open" : "closed"}
+                        label={c.label}
+                        description={String(c.bases.length)}
                         onSelect={() => {
-                          onSelect("framework", b.id);
+                          flip(ckey, !shown);
                         }}
-                      />
-                    ))}
-                  </List>
-                </ListRow>
-              );
-            })}
-          </List>
-        )}
-      </ListRow>
+                      >
+                        <List label={c.label}>{baseRows(c.bases, 2)}</List>
+                      </ListRow>
+                    );
+                  })}
+            </List>
+          </ListRow>
+        );
+      })}
     </List>
   );
 }

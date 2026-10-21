@@ -426,10 +426,10 @@ function glossary(): [string, string][] {
     [
       tr("Aggiunta", "Addition", "Ajout", "Ergänzung"),
       tr(
-        "Nella procedura «Da framework o CMS», un pezzo in più da aggiungere alla base (Tailwind, React, un database, le prove).",
-        "In the “From a framework or CMS” wizard, an extra piece to add to the base (Tailwind, React, a database, tests).",
-        "Dans l'assistant « À partir d'un framework ou d'un CMS », un élément en plus à ajouter à la base (Tailwind, React, une base de données, les tests).",
-        "Im Assistenten „Aus Framework oder CMS“ ein zusätzlicher Baustein, der der Basis hinzugefügt wird (Tailwind, React, eine Datenbank, Tests).",
+        "Nella procedura «Da una base», un pezzo in più da aggiungere alla base (Tailwind, React, un database, le prove).",
+        "In the “From a base” wizard, an extra piece to add to the base (Tailwind, React, a database, tests).",
+        "Dans l'assistant « À partir d'une base », un élément en plus à ajouter à la base (Tailwind, React, une base de données, les tests).",
+        "Im Assistenten „Aus einer Basis“ ein zusätzlicher Baustein, der der Basis hinzugefügt wird (Tailwind, React, eine Datenbank, Tests).",
       ),
     ],
     [

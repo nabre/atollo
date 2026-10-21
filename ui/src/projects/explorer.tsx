@@ -24,7 +24,7 @@ import {
   type RunInfo,
 } from "../api";
 import { AgentButtons } from "../agents";
-import { useFrameworks } from "../frameworks";
+import { groupOf, useFrameworks } from "../frameworks";
 import { GithubRepositories } from "../github";
 import type { GuideTopicId } from "../guide";
 import { useAction, useLoad } from "../hooks";
@@ -242,7 +242,7 @@ export function ProjectsPage({
             />
             <IconButton
               icon={codicon("wand")}
-              label={t("Nuovo progetto da framework o CMS")}
+              label={t("Nuovo progetto da una base")}
               onClick={() => {
                 openNew("framework");
               }}
@@ -278,6 +278,7 @@ export function ProjectsPage({
         <ViewPane
           first
           fill
+          fit={panes.has("new") || panes.has("github")}
           title={t("Progetti")}
           badge={projects && projects.length > 0 ? projects.length : undefined}
           expanded={panes.has("projects")}
@@ -358,6 +359,8 @@ export function ProjectsPage({
         </ViewPane>
         <Orphans projects={projects ?? NO_PROJECTS} onChanged={load} />
         <ViewPane
+          fill
+          fit={panes.has("github")}
           title={t("Nuovo progetto")}
           expanded={panes.has("new")}
           onToggle={() => {
@@ -397,7 +400,7 @@ export function ProjectsPage({
               return {
                 id,
                 label: t("Nuovo progetto"),
-                description: wayLabel(way),
+                description: way === "framework" ? (groupOf(fw.pieces, base)?.label ?? wayLabel(way)) : wayLabel(way),
                 icon: <Codicon name="wand" size={16} />,
                 pinned: wizardRunning,
               };

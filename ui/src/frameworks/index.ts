@@ -10,7 +10,10 @@ export {
   addPiece,
   bases,
   basesByCategory,
+  basesByGroup,
   categoryLabel,
+  groupLabel,
+  groupOf,
   CATEGORIES,
   integrationTab,
   parseIntegrationTab,
@@ -22,7 +25,7 @@ export {
   useFrameworksAutosave,
   usePlan,
 } from "./model";
-export type { Frameworks } from "./model";
+export type { BaseGroup, Frameworks, GroupId } from "./model";
 export { PieceLogo } from "./tags";
 export { IntegrationGroup, PieceGroup } from "./editor";
 export { FrameworksTree } from "./tree";
