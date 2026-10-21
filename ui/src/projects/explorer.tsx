@@ -133,6 +133,17 @@ export function ProjectsPage({
     reloadProjects();
     reloadPorts();
   }, [reloadProjects, reloadPorts]);
+  // A tab for a project the list does not have yet (one made outside the
+  // app, opened from the tray menu): the list is read again; still
+  // missing, `keep` closes the tab.
+  const unknown =
+    projects !== null &&
+    tabs.active !== null &&
+    tabs.active !== WIZARD_TAB &&
+    !projects.some((p) => p.id === tabs.active);
+  useEffect(() => {
+    if (unknown) reloadProjects();
+  }, [unknown, reloadProjects]);
 
   const toggle = (id: PaneId, open?: boolean) => {
     setPanes((current) => {
