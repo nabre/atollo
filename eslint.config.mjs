@@ -12,5 +12,5 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks },
     rules: { ...reactHooks.configs.recommended.rules },
   },
-  { files: ["eslint.config.mjs", "ui/vite.config.ts"], ...tseslint.configs.disableTypeChecked },
+  { files: ["eslint.config.mjs", "vitest.config.ts", "ui/vite.config.ts"], ...tseslint.configs.disableTypeChecked },
 );
