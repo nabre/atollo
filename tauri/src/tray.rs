@@ -79,34 +79,64 @@ fn tr(lang: &str, source: &str) -> String {
     crate::i18n::t(lang, source, &[])
 }
 
-/// The menu shown now: rebuilt only when it changes.
-#[derive(Default)]
-struct Shown(Mutex<Option<Spec>>);
+/// The menu of the icon, changed in place: replacing it while it is open
+/// (the right button pressed refreshes it) would close it on Windows.
+struct Shown<R: Runtime> {
+    spec: Mutex<Spec>,
+    show: MenuItem<R>,
+    projects: Submenu<R>,
+    quit: MenuItem<R>,
+}
 
-fn menu<R: Runtime>(app: &AppHandle<R>, spec: &Spec) -> tauri::Result<Menu<R>> {
-    let show = MenuItem::with_id(app, SHOW, &spec.show, true, None::<&str>)?;
-    let projects = Submenu::with_id(app, PROJECTS, &spec.projects, true)?;
+impl<R: Runtime> Shown<R> {
+    fn new(app: &AppHandle<R>, spec: Spec) -> tauri::Result<(Shown<R>, Menu<R>)> {
+        let show = MenuItem::with_id(app, SHOW, &spec.show, true, None::<&str>)?;
+        let projects = Submenu::with_id(app, PROJECTS, &spec.projects, true)?;
+        fill(app, &projects, &spec)?;
+        let separator = PredefinedMenuItem::separator(app)?;
+        let quit = MenuItem::with_id(app, QUIT, &spec.quit, true, None::<&str>)?;
+        let menu = Menu::with_items(app, &[&show, &projects, &separator, &quit])?;
+        let shown = Shown {
+            spec: Mutex::new(spec),
+            show,
+            projects,
+            quit,
+        };
+        Ok((shown, menu))
+    }
+
+    /// From what it shows to `next`.
+    fn update(&self, app: &AppHandle<R>, before: &Spec, next: &Spec) -> tauri::Result<()> {
+        if before.show != next.show {
+            self.show.set_text(&next.show)?;
+        }
+        if before.projects != next.projects {
+            self.projects.set_text(&next.projects)?;
+        }
+        if before.quit != next.quit {
+            self.quit.set_text(&next.quit)?;
+        }
+        if before.entries != next.entries || before.empty != next.empty {
+            for item in self.projects.items()? {
+                self.projects.remove(&item)?;
+            }
+            fill(app, &self.projects, next)?;
+        }
+        Ok(())
+    }
+}
+
+/// The projects' items, or the disabled "no projects".
+fn fill<R: Runtime>(app: &AppHandle<R>, projects: &Submenu<R>, spec: &Spec) -> tauri::Result<()> {
     if spec.entries.is_empty() {
-        projects.append(&MenuItem::with_id(
-            app,
-            NONE,
-            &spec.empty,
-            false,
-            None::<&str>,
-        )?)?;
+        let none = MenuItem::with_id(app, NONE, &spec.empty, false, None::<&str>)?;
+        projects.append(&none)?;
     }
     for (id, label) in &spec.entries {
-        projects.append(&MenuItem::with_id(
-            app,
-            id.as_str(),
-            label,
-            true,
-            None::<&str>,
-        )?)?;
+        let item = MenuItem::with_id(app, id.as_str(), label, true, None::<&str>)?;
+        projects.append(&item)?;
     }
-    let separator = PredefinedMenuItem::separator(app)?;
-    let quit = MenuItem::with_id(app, QUIT, &spec.quit, true, None::<&str>)?;
-    Menu::with_items(app, &[&show, &projects, &separator, &quit])
+    Ok(())
 }
 
 fn current<R: Runtime>(app: &AppHandle<R>) -> Spec {
@@ -121,9 +151,8 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
         crate::log::warn("tray: no AppIndicator library, no icon");
         return;
     }
-    let spec = current(app);
-    let menu = match menu(app, &spec) {
-        Ok(menu) => menu,
+    let (shown, menu) = match Shown::new(app, current(app)) {
+        Ok(made) => made,
         Err(e) => {
             crate::log::warn(&format!("tray: menu: {e}"));
             return;
@@ -142,7 +171,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
     }
     match builder.build(app) {
         Ok(_) => {
-            app.manage(Shown(Mutex::new(Some(spec))));
+            app.manage(shown);
         }
         Err(e) => crate::log::warn(&format!("tray: {e}")),
     }
@@ -150,26 +179,34 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
 
 /// The menu again, if the projects or the language changed: after every
 /// read of the projects' list (the interface reads it after creating,
-/// cloning, renaming or deleting one), after saving the settings and when
-/// the pointer reaches the icon (Windows, macOS).
+/// cloning, renaming or deleting one), after saving the settings, when the
+/// pointer reaches the icon and when the right button is pressed on it
+/// (Windows, macOS).
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
-    let (Some(tray), Some(shown)) = (app.tray_by_id(TRAY), app.try_state::<Shown>()) else {
+    if app.try_state::<Shown<R>>().is_none() {
+        return;
+    }
+    // One change at a time, on the thread that owns the menu.
+    let handle = app.clone();
+    if let Err(e) = app.run_on_main_thread(move || refresh_here(&handle)) {
+        crate::log::warn(&format!("tray: menu: {e}"));
+    }
+}
+
+/// [`refresh`] on the main thread.
+fn refresh_here<R: Runtime>(app: &AppHandle<R>) {
+    let Some(shown) = app.try_state::<Shown<R>>() else {
         return;
     };
-    let spec = current(app);
-    {
-        // Not held while the menu is built: that waits for the main thread,
-        // which may be refreshing too.
-        let mut last = shown.0.lock().unwrap_or_else(PoisonError::into_inner);
-        if last.as_ref() == Some(&spec) {
-            return;
-        }
-        *last = Some(spec.clone());
+    let next = current(app);
+    let mut spec = shown.spec.lock().unwrap_or_else(PoisonError::into_inner);
+    if *spec == next {
+        return;
     }
-    if let Err(e) = menu(app, &spec).and_then(|m| tray.set_menu(Some(m))) {
+    if let Err(e) = shown.update(app, &spec, &next) {
         crate::log::warn(&format!("tray: menu: {e}"));
-        *shown.0.lock().unwrap_or_else(PoisonError::into_inner) = None;
     }
+    *spec = next;
 }
 
 /// The main window shown, restored and in front.
@@ -213,10 +250,14 @@ fn on_icon<R: Runtime>(app: &AppHandle<R>, event: &TrayIconEvent) {
         } => {
             show_main(app);
         }
-        TrayIconEvent::Enter { .. } => {
-            let app = app.clone();
-            std::thread::spawn(move || refresh(&app));
-        }
+        // On Windows the menu opens when the right button goes up: pressed,
+        // the menu is brought up to date first (a few small files).
+        TrayIconEvent::Click {
+            button: MouseButton::Right,
+            button_state: MouseButtonState::Down,
+            ..
+        } => refresh_here(app),
+        TrayIconEvent::Enter { .. } => refresh_here(app),
         _ => {}
     }
 }
