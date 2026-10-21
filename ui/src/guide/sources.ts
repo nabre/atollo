@@ -132,6 +132,38 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     targetPath: "vscodium-server\\",
   }),
   defSource({
+    id: "conpty",
+    logoId: "conpty",
+    name: "ConPTY (conpty.dll + OpenConsole.exe)",
+    group: "system",
+    home: "https://github.com/microsoft/terminal",
+    metaSource: () =>
+      tr(
+        "Catalogo integrato (versione fissata 1.25.260930003, D-148)",
+        "Built-in catalog (pinned version 1.25.260930003, D-148)",
+        "Catalogue intégré (version figée 1.25.260930003, D-148)",
+        "Integrierter Katalog (fixierte Version 1.25.260930003, D-148)",
+      ),
+    binarySource:
+      "api.nuget.org/v3-flatcontainer/microsoft.windows.console.conpty/<v>/microsoft.windows.console.conpty.<v>.nupkg",
+    unix: () =>
+      tr(
+        "Solo Windows: su macOS e Linux il terminale usa il PTY del sistema",
+        "Windows only: on macOS and Linux the terminal uses the system's PTY",
+        "Windows uniquement : sur macOS et Linux le terminal utilise le PTY du système",
+        "Nur Windows: unter macOS und Linux nutzt das Terminal das PTY des Systems",
+      ),
+    verifyKind: "Authenticode + SHA",
+    verifyDetail: () =>
+      tr(
+        "SHA-256 del pacchetto cablato in components.json (SHA-512 di NuGet); conpty.dll e OpenConsole.exe firmati Microsoft Corporation",
+        "Package SHA-256 hardcoded in components.json (NuGet's SHA-512); conpty.dll and OpenConsole.exe signed by Microsoft Corporation",
+        "SHA-256 du paquet intégré dans components.json (SHA-512 de NuGet) ; conpty.dll et OpenConsole.exe signés Microsoft Corporation",
+        "SHA-256 des Pakets fest in components.json (SHA-512 von NuGet); conpty.dll und OpenConsole.exe von Microsoft Corporation signiert",
+      ),
+    targetPath: "conpty\\",
+  }),
+  defSource({
     id: "claude",
     logoId: "claude",
     name: "Claude Code",

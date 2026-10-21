@@ -248,9 +248,13 @@ fn unix_plans_follow_the_unix_catalog() {
                 .filter(|c| !c.is_available_on(target))
                 .collect();
             // Linux ARM64 has no Android SDK; macOS has everything since
-            // Apache came there (D-116).
+            // Apache came there (D-116), but the parts of Windows only (the
+            // kit's ConPTY, D-148).
+            let windows_only = |c: &&Component| {
+                !c.targets.is_empty() && c.targets.iter().all(|t| t.starts_with("win32-"))
+            };
             assert_eq!(
-                missing.is_empty(),
+                missing.iter().all(windows_only),
                 target != Target::LINUX_ARM64,
                 "{}: components without a build",
                 target.as_str()
