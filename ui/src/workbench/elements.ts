@@ -2,9 +2,31 @@
 // their ES modules (never dist/bundled.js: the React wrappers of
 // @vscode-elements/react-elements import the same modules, so each tag is
 // defined once). They read the --vscode-* variables of theme-vscode.css.
+// Only the components the app draws, one module each: the packages' main
+// files register all of them, and a few hundred kB more would be read at
+// start. A tag not imported here has no JSX type either (VscTag), and
+// elements.test.tsx checks every tag the sources name is registered.
 import { useCallback, useRef, type DetailedHTMLProps, type HTMLAttributes } from "react";
-import "@vscode-elements/elements";
+import "@vscode-elements/elements/dist/vscode-badge/index.js";
+import "@vscode-elements/elements/dist/vscode-button/index.js";
+import "@vscode-elements/elements/dist/vscode-divider/index.js";
+import "@vscode-elements/elements/dist/vscode-form-group/index.js";
+import "@vscode-elements/elements/dist/vscode-form-helper/index.js";
+import "@vscode-elements/elements/dist/vscode-icon/index.js";
+import "@vscode-elements/elements/dist/vscode-label/index.js";
+import "@vscode-elements/elements/dist/vscode-option/index.js";
+import "@vscode-elements/elements/dist/vscode-progress-bar/index.js";
+import "@vscode-elements/elements/dist/vscode-single-select/index.js";
+import "@vscode-elements/elements/dist/vscode-textarea/index.js";
+import "@vscode-elements/elements/dist/vscode-textfield/index.js";
 import codiconHref from "@vscode/codicons/dist/codicon.css?url";
+
+// The React wrappers of the fields and the select, each from its own module
+// (the package's main file would import every component with its wrapper).
+export { default as VscodeOption } from "@vscode-elements/react-elements/dist/components/VscodeOption.js";
+export { default as VscodeSingleSelect } from "@vscode-elements/react-elements/dist/components/VscodeSingleSelect.js";
+export { default as VscodeTextarea } from "@vscode-elements/react-elements/dist/components/VscodeTextarea.js";
+export { default as VscodeTextfield } from "@vscode-elements/react-elements/dist/components/VscodeTextfield.js";
 
 // vscode-icon looks this link up by id and copies its href (and nonce) into
 // each icon's shadow root, where the Codicon font must be loaded again. The
