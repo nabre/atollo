@@ -184,7 +184,7 @@ Folder rules:
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `env.rs` (a single algorithm, `KitEnv::build`, 1278 lines), `projects\run.rs` (a state machine, 1189 lines) and `editor\ext.rs` stay whole. The other files should stay under 900 lines; today nine go over (below, "Opportunities").
+- a file is split when it has parts that read on their own; `env.rs` (a single algorithm, `KitEnv::build`), `projects\run.rs` (a state machine) and `editor\ext.rs` stay whole. The other files should stay under 900 lines; today nine go over (below, "Opportunities").
 
 ### Tauri commands (`commands\`)
 
@@ -389,5 +389,5 @@ From the analysis of October 15, 2026, checked again on October 20. Done: comman
 5. **Interface bundle**: the build warns that the main file exceeds 500 kB (about 1 MB, 300 kB compressed, since it registers all the `vscode-elements` components); it is possible to register only the components in use and to load the less used pages (Settings, wizard, matrix) when needed.
 6. **Controls still native** (above, "These stay native"): they would need a `TextField` with suggestions, a button with `aria-pressed` and text, a meter with a value.
 7. ~~**`projectmcp.tsx`** not imported~~: it was already used by the project page; since October 17, 2026 it is `projects\mcp.tsx`.
-8. **Files over 900 lines**: `install\web.rs` (1423), `db\services\mod.rs` (1120), `net\archive.rs` (1110), `agents\keyring.rs` (1081), `install\native.rs` (988), `install\conda.rs` (980), `install\db.rs` (967), `net\mod.rs` (944), `db\auth.rs` (921). They are split like `servers\` (one `impl` per file).
-9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in `topics\`, one file per chapter; the longest ones (`topics\projects.tsx`, 2118 lines) are text.
+8. **Files over 900 lines**: `install\web.rs`, `db\services\mod.rs`, `net\archive.rs`, `agents\keyring.rs`, `install\native.rs`, `install\conda.rs`, `install\db.rs`, `net\mod.rs`, `db\auth.rs`, longest first. They are split like `servers\` (one `impl` per file).
+9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in `topics\`, one file per chapter; the longest ones (`topics\projects.tsx`) are text.
