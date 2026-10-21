@@ -703,9 +703,11 @@ impl Services {
         cmd.stdin(Stdio::null())
             .stdout(Stdio::from(file.try_clone()?))
             .stderr(Stdio::from(file));
-        let child = jobs::spawn(&mut cmd)?;
+        // Started inside its job (BUG-V6-25): a job that cannot be made or
+        // joined never leaves a server running outside it, with its port
+        // and data folder taken.
         let job = Job::new()?;
-        job.assign(&child)?;
+        let child = jobs::spawn_in(&mut cmd, &job)?;
         crate::log::info(&format!(
             "{id} {}: started on 127.0.0.1:{port}",
             line.unwrap_or_default()
