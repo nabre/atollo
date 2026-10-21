@@ -342,3 +342,7 @@ pub fn host_tag(name: &str) -> String {
         tag
     }
 }
+
+#[cfg(test)]
+#[path = "../../../../test/rust/agents/keyring/portable.rs"]
+mod tests;

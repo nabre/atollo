@@ -53,7 +53,7 @@ impl ProjectState {
     }
 
     /// `private\`, created and made owner-only before it is returned, so
-    /// every file written in it is private from the start (as `db/auth.rs`).
+    /// every file written in it is private from the start (as `db/auth/`).
     /// A disk without permissions (FAT32/exFAT) only leaves a warning.
     pub fn private_dir(&self) -> io::Result<PathBuf> {
         let dir = self.dir.join("private");
