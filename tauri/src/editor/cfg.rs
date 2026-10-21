@@ -36,6 +36,20 @@ const HIDDEN: &[&str] = &[
     "JavaScript Debug Terminal",
 ];
 
+/// The kit's profiles before Atollo had its name (D-126), on every system.
+/// They point at a versioned PowerShell or Git: kept, the first update of
+/// one leaves the editor's default on a missing program, and VSCodium falls
+/// back to the PC's shell. They go; a default on one of them moves to its
+/// Atollo twin.
+const RETIRED_PREFIX: &str = "Dev-Kit";
+const RETIRED: &[&str] = &[
+    "Dev-Kit",
+    "Dev-Kit - Git Bash",
+    "Dev-Kit - cmd",
+    "Dev-Kit - Bash",
+    "Dev-Kit - zsh",
+];
+
 /// The same on macOS and Linux: the system's bash (Git of the kit has no
 /// shell there, D-109) and, on macOS, zsh; never cmd.
 pub const KIT_PROFILES_UNIX: &[&str] = &[
@@ -283,7 +297,10 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     let kit_profiles = kit_profiles(kit, system_root);
     if let Some(Value::Object(old)) = existing.get(&profiles_key) {
         for (name, value) in old {
-            if !owned.contains(&name.as_str()) && !hidden.contains(&name.as_str()) {
+            if !owned.contains(&name.as_str())
+                && !hidden.contains(&name.as_str())
+                && !RETIRED.contains(&name.as_str())
+            {
                 profiles.insert(name.clone(), value.clone());
             }
         }
@@ -293,13 +310,21 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     out.insert(profiles_key, Value::Object(profiles.clone()));
 
     let default_key = key("defaultProfile");
-    let keep_default = matches!(existing.get(&default_key), Some(Value::String(d)) if profiles.get(d).is_some_and(|p| !p.is_null()));
+    let usable = |d: &str| profiles.get(d).is_some_and(|p| !p.is_null());
+    let chosen = match existing.get(&default_key).and_then(Value::as_str) {
+        Some(d) if RETIRED.contains(&d) => Some(d.replacen(RETIRED_PREFIX, DEFAULT_PROFILE, 1)),
+        d => d.map(str::to_owned),
+    }
+    .filter(|d| usable(d));
     // Without the kit's PowerShell, bash on macOS and Linux.
-    let default = [DEFAULT_PROFILE]
-        .into_iter()
-        .chain((!os.is_windows()).then_some(DEFAULT_PROFILE_UNIX))
-        .find(|d| names.iter().any(|n| n == d));
-    if let (false, Some(default)) = (keep_default, default) {
+    let default = chosen.or_else(|| {
+        [DEFAULT_PROFILE]
+            .into_iter()
+            .chain((!os.is_windows()).then_some(DEFAULT_PROFILE_UNIX))
+            .find(|d| names.iter().any(|n| n == d))
+            .map(str::to_owned)
+    });
+    if let Some(default) = default {
         out.insert(default_key, json!(default));
     }
     let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
