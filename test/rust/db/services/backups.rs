@@ -90,3 +90,11 @@ fn only_the_projects_own_database() {
     let e = format!("{:#}", s.own_database("shop", "mysql").unwrap_err());
     assert!(e.contains("other"), "{e}");
 }
+
+/// Binary columns go into the copy as hexadecimal (BUG-V6-04): the restore
+/// streams the file to the client, whatever bytes a BLOB held.
+#[test]
+fn binary_columns_are_dumped_as_text() {
+    assert!(DUMP_ARGS.contains(&"--hex-blob"), "{DUMP_ARGS:?}");
+    assert_eq!(DUMP_ARGS[0], "--single-transaction");
+}
