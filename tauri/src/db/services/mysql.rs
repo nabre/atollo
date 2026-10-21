@@ -258,6 +258,106 @@ pub fn ensure_server_libs(os: Os, arch: Arch, basedir: &Path) -> anyhow::Result<
     Ok(())
 }
 
+/// A line of a dump without its `DEFINER=<user>@<host>` clauses
+/// (BUG-V6-01): the dump runs as `root`, the restore as the project's user
+/// (D-78), which may not create a view, trigger, routine or event for
+/// another user (`ERROR 1227`, the client stops halfway). Without the
+/// clause each object is the restoring user's. `/*!50017 DEFINER=… */`
+/// becomes an empty comment; the rows (`INSERT`) are never touched.
+pub fn strip_definer(line: &[u8]) -> std::borrow::Cow<'_, [u8]> {
+    const KEY: &[u8] = b"DEFINER=";
+    if line.starts_with(b"INSERT ") || !line.windows(KEY.len()).any(|w| w == KEY) {
+        return std::borrow::Cow::Borrowed(line);
+    }
+    let mut out = Vec::with_capacity(line.len());
+    let mut i = 0;
+    while i < line.len() {
+        if line[i..].starts_with(KEY) {
+            let user = i + KEY.len();
+            if let Some(at) = account_part(line, user).filter(|&e| line.get(e) == Some(&b'@')) {
+                if let Some(mut end) = account_part(line, at + 1) {
+                    if line.get(end) == Some(&b' ') {
+                        end += 1;
+                    }
+                    i = end;
+                    continue;
+                }
+            }
+        }
+        out.push(line[i]);
+        i += 1;
+    }
+    std::borrow::Cow::Owned(out)
+}
+
+/// The end of the user or host of an account at `from`: a name in
+/// backticks (a doubled one inside), in single quotes (doubled or after a
+/// backslash inside) or bare (letters, digits, `_ $ . % -`).
+fn account_part(line: &[u8], from: usize) -> Option<usize> {
+    match *line.get(from)? {
+        q @ (b'`' | b'\'') => {
+            let mut i = from + 1;
+            while i < line.len() {
+                if q == b'\'' && line[i] == b'\\' {
+                    i += 2;
+                } else if line[i] == q {
+                    if line.get(i + 1) == Some(&q) {
+                        i += 2;
+                    } else {
+                        return Some(i + 1);
+                    }
+                } else {
+                    i += 1;
+                }
+            }
+            None
+        }
+        _ => {
+            let bare = |c: &u8| c.is_ascii_alphanumeric() || b"_$.%-".contains(c);
+            let len = line[from..].iter().take_while(|c| bare(c)).count();
+            (len > 0).then_some(from + len)
+        }
+    }
+}
+
+/// A dump read line by line through [`strip_definer`], as bytes: the
+/// copy is never whole in memory nor read as UTF-8 text (BUG-V6-04).
+pub struct WithoutDefiner<R> {
+    input: R,
+    line: Vec<u8>,
+    at: usize,
+}
+
+impl<R: std::io::BufRead> WithoutDefiner<R> {
+    pub fn new(input: R) -> Self {
+        WithoutDefiner {
+            input,
+            line: Vec::new(),
+            at: 0,
+        }
+    }
+}
+
+impl<R: std::io::BufRead> std::io::Read for WithoutDefiner<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        if self.at == self.line.len() {
+            let mut raw = Vec::new();
+            if self.input.read_until(b'\n', &mut raw)? == 0 {
+                return Ok(0);
+            }
+            self.line = match strip_definer(&raw) {
+                std::borrow::Cow::Borrowed(_) => raw,
+                std::borrow::Cow::Owned(line) => line,
+            };
+            self.at = 0;
+        }
+        let n = buf.len().min(self.line.len() - self.at);
+        buf[..n].copy_from_slice(&self.line[self.at..self.at + n]);
+        self.at += n;
+        Ok(n)
+    }
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/db/services/mysql.rs"]
 mod tests;

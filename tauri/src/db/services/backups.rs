@@ -159,10 +159,12 @@ impl Services {
                 let line = project_line(&self.kit, project, id);
                 let (port, env) = self.running_at(engine, line.as_deref())?;
                 // Streamed, never whole in memory nor read as UTF-8 text
-                // (BUG-V6-04).
-                let sql = std::io::BufReader::new(
+                // (BUG-V6-04), without the `DEFINER` of root's dump: the
+                // views, triggers, routines and events become the project
+                // user's, who may create them (BUG-V6-01).
+                let sql = super::mysql::WithoutDefiner::new(std::io::BufReader::new(
                     fs::File::open(&path).with_context(|| path.display().to_string())?,
-                );
+                ));
                 let (mut cmd, login) = self.sql_as_project(
                     engine,
                     restore,

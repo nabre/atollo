@@ -191,3 +191,71 @@ fn nothing_to_do_off_linux() {
     ensure_server_libs(Os::Win32, Arch::X64, dir).unwrap();
     ensure_server_libs(Os::Darwin, Arch::Arm64, dir).unwrap();
 }
+
+/// The `DEFINER` of root's dump goes, in every form mysqldump writes it
+/// (BUG-V6-01); the rest of each line, and the rows, stay byte for byte.
+#[test]
+fn definers_leave_the_dump() {
+    let strip = |l: &str| String::from_utf8(strip_definer(l.as_bytes()).into_owned()).unwrap();
+    // a view
+    assert_eq!(
+        strip("/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */\n"),
+        "/*!50013 SQL SECURITY DEFINER */\n"
+    );
+    // a trigger, an event (an empty comment left)
+    assert_eq!(
+        strip("/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `t_bi` BEFORE INSERT ON `t` FOR EACH ROW SET NEW.x = NEW.x */;;\n"),
+        "/*!50003 CREATE*/ /*!50017 */ /*!50003 TRIGGER `t_bi` BEFORE INSERT ON `t` FOR EACH ROW SET NEW.x = NEW.x */;;\n"
+    );
+    assert_eq!(
+        strip("/*!50106 CREATE*/ /*!50117 DEFINER=`root`@`127.0.0.1`*/ /*!50106 EVENT `e` ON SCHEDULE EVERY 1 DAY DO SELECT 1 */ ;;"),
+        "/*!50106 CREATE*/ /*!50117 */ /*!50106 EVENT `e` ON SCHEDULE EVERY 1 DAY DO SELECT 1 */ ;;"
+    );
+    // a routine, a quoted host, a backtick inside a name, a bare account
+    assert_eq!(
+        strip("CREATE DEFINER=`ro``ot`@`%` PROCEDURE `p`()\n"),
+        "CREATE PROCEDURE `p`()\n"
+    );
+    assert_eq!(
+        strip("CREATE DEFINER='admin'@'local\\'host' FUNCTION f() RETURNS INT"),
+        "CREATE FUNCTION f() RETURNS INT"
+    );
+    assert_eq!(
+        strip("CREATE DEFINER=shop@localhost VIEW v AS SELECT 1"),
+        "CREATE VIEW v AS SELECT 1"
+    );
+    // untouched: rows, text without an account, a clause cut short
+    for same in [
+        "INSERT INTO `t` VALUES ('DEFINER=`root`@`localhost`');\n",
+        "CREATE TABLE `t` (`x` int) ENGINE=InnoDB;\n",
+        "SQL SECURITY DEFINER",
+        "DEFINER=`root`",
+        "DEFINER=`root`@`unclosed",
+    ] {
+        assert_eq!(strip(same), same);
+    }
+}
+
+/// The filter over a whole copy, read in small pieces: only the clauses go,
+/// bytes that are not UTF-8 (a BLOB of an older dump) pass as they are.
+#[test]
+fn a_dump_streams_through_the_filter() {
+    use std::io::Read;
+    let mut dump = b"/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */\n".to_vec();
+    dump.extend_from_slice(b"INSERT INTO `b` VALUES (_binary '\xff\xfe\x00');\n");
+    dump.extend_from_slice(b"CREATE DEFINER=`root`@`localhost` PROCEDURE `p`()\nBEGIN END");
+    let mut out = Vec::new();
+    let mut filter = WithoutDefiner::new(std::io::BufReader::with_capacity(7, &dump[..]));
+    let mut piece = [0u8; 5];
+    loop {
+        let n = filter.read(&mut piece).unwrap();
+        if n == 0 {
+            break;
+        }
+        out.extend_from_slice(&piece[..n]);
+    }
+    let mut want = b"/*!50013 SQL SECURITY DEFINER */\n".to_vec();
+    want.extend_from_slice(b"INSERT INTO `b` VALUES (_binary '\xff\xfe\x00');\n");
+    want.extend_from_slice(b"CREATE PROCEDURE `p`()\nBEGIN END");
+    assert_eq!(out, want);
+}

@@ -289,8 +289,13 @@ fn real_databases_start_and_stop() {
                 format!("db.getSiblingDB('{database}').t.drop()"),
             ),
             DbEngine::MySql => (
+                // A view of root's (its dump says `DEFINER=root`, which
+                // the project's user may not restore, BUG-V6-01) and bytes
+                // that are not UTF-8 (BUG-V6-04).
                 format!(
-                    "CREATE TABLE IF NOT EXISTS {database}.t (x INT); INSERT INTO {database}.t VALUES (7);"
+                    "CREATE TABLE IF NOT EXISTS {database}.t (x INT, b BLOB); \
+                     INSERT INTO {database}.t VALUES (7, 0xFFFE00); \
+                     CREATE OR REPLACE VIEW {database}.v AS SELECT x FROM {database}.t;"
                 ),
                 format!("SELECT COUNT(*) FROM {database}.t"),
                 format!("DROP TABLE {database}.t"),
@@ -380,6 +385,10 @@ fn real_databases_start_and_stop() {
                 "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{database}'"
             ));
             assert_eq!(triggers, "1", "{id}: the trigger is back");
+            let view = admin(&format!("SELECT COUNT(*) FROM {database}.v"));
+            assert_eq!(view, n, "{id}: root's view is back");
+            let blob = admin(&format!("SELECT HEX(b) FROM {database}.t LIMIT 1"));
+            assert_eq!(blob, "FFFE00", "{id}: the bytes are back");
         }
         eprintln!("{id}: restored as the project's user, {n} row(s) back");
         assert!(s.restore(&project, r"..\x.sql").is_err());
