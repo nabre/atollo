@@ -7,4 +7,5 @@ export * from "./dialog";
 export * from "./layout";
 export * from "./list";
 export * from "./settings";
+export * from "./suggest";
 export * from "./table";
