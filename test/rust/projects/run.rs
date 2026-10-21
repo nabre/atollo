@@ -252,6 +252,55 @@ fn runs_and_stops_commands() {
     );
 }
 
+/// BUG-V6-10: two starts of the same action at once give one process, and
+/// the end of a run that was replaced never closes the run now there.
+#[test]
+fn replaced_run_does_not_end_the_new_one() {
+    let wait = if cfg!(windows) {
+        "ping -n 60 127.0.0.1"
+    } else {
+        "sleep 60"
+    };
+    let tmp = TempDir::new("run-replaced");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let proj = kit.projects().join("My App’s {demo}");
+    std::fs::create_dir_all(&proj).unwrap();
+    let env = KitEnv::build(
+        &kit,
+        &crate::settings::Settings::default(),
+        "it",
+        &crate::env::Host::capture(),
+    );
+    let r = Arc::new(Runner::new(kit, Arc::new(|_| {})));
+    let long = Action::for_test("wait", wait, Kind::Command);
+    let starts: Vec<_> = (0..4)
+        .map(|_| {
+            let (r, proj, env, long) = (Arc::clone(&r), proj.clone(), env.clone(), long.clone());
+            std::thread::spawn(move || {
+                r.start("My App’s {demo}", &proj, &long, &env, "it")
+                    .unwrap()
+            })
+        })
+        .collect();
+    let pids: HashSet<Option<u32>> = starts.into_iter().map(|t| t.join().unwrap().pid).collect();
+    assert_eq!(pids.len(), 1, "{pids:?}");
+    assert_eq!(r.running(), 1);
+    let key = key_of("My App’s {demo}", "wait");
+    let run = r.entries().get(&key).unwrap().run;
+    // The wait thread of an older run ends late: nothing changes.
+    r.finish(&key, run - 1, Some(1), "it");
+    assert_eq!(r.list()[0].state, State::Running);
+    assert_eq!(r.running(), 1);
+    r.stop(&key);
+    let start = std::time::Instant::now();
+    while r.running() > 0 {
+        assert!(start.elapsed() < Duration::from_secs(10));
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    assert_eq!(r.list()[0].state, State::Stopped);
+}
+
 fn site_action(apache: bool, server: Option<&str>) -> Action {
     let mut a = Action::for_test("site", "", Kind::Web);
     if apache {
@@ -414,15 +463,16 @@ fn site_stops_when_its_php_cgi_ends() {
         let job = Job::new().unwrap();
         let mut server = jobs::spawn_in(&mut cmd("ping -n 60 127.0.0.1"), &job).unwrap();
         let php = jobs::spawn_in(&mut cmd("exit 7"), &job).unwrap();
-        {
+        let run = {
             let mut entries = r.entries();
             let e = entries.get_mut(&info.key).unwrap();
             e.pool = None;
             e.stopped = stopped;
             e.job = (!stopped).then_some(job);
-        }
+            e.run
+        };
         let start = std::time::Instant::now();
-        let code = r.wait_with_php(&info.key, &mut server, php, "it");
+        let code = r.wait_with_php(&info.key, run, &mut server, php, "it");
         assert!(start.elapsed() < Duration::from_secs(20));
         (code, r.log(&info.key))
     };
