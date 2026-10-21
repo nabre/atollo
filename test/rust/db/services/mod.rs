@@ -381,26 +381,16 @@ fn real_databases_start_and_stop() {
             n.parse::<u32>().is_ok_and(|n| n > 0),
             "{id}: data written, count {n:?}"
         );
-        // The explorer sees the database, the table and its rows (D-79).
-        let dbs = crate::db::browse::tree(&s, id, None).unwrap();
-        let listed = dbs
-            .iter()
-            .find(|d| d.name == database)
-            .expect("database listed");
-        assert!(
-            listed.tables.iter().any(|t| t.name == "t"),
-            "{id}: table listed"
-        );
-        assert!(
-            dbs.iter().any(|d| d.system),
-            "{id}: system databases listed"
-        );
-        let page = crate::db::browse::rows(&s, id, None, &database, "t", 0).unwrap();
-        assert!(page.total > 0 && !page.rows.is_empty(), "{id}: rows read");
-        assert!(page.columns.iter().any(|c| c.name == "x"), "{id}: column x");
-        if engine.is_sql() {
-            assert!(crate::db::browse::rows(&s, id, None, &database, "no`; DROP", 0).is_err());
-        }
+        // Whether the project's database exists, asked as the administrator.
+        let exists = match engine {
+            DbEngine::MongoDb => format!(
+                "print(db.adminCommand({{listDatabases: 1}}).databases.some(d => d.name === '{database}'))"
+            ),
+            DbEngine::MySql => format!(
+                "SELECT IF(COUNT(*) > 0, 'true', 'false') FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = '{database}'"
+            ),
+        };
+        assert_eq!(admin(&exists), "true", "{id}: database listed");
         // phpMyAdmin logged in with the token only, ended with the server (D-107).
         let pma = (engine.is_sql() && installed(&kit, "phpmyadmin")).then(|| {
             let url = s.phpmyadmin_url(engine, None, "en").unwrap();
@@ -468,13 +458,7 @@ fn real_databases_start_and_stop() {
         s.project_db_drop(&project, id, &env).unwrap();
         assert!(!responds(port), "{id}: stopped again after the drop");
         s.start(id, &env).unwrap();
-        assert!(
-            !crate::db::browse::tree(&s, id, None)
-                .unwrap()
-                .iter()
-                .any(|d| d.name == database),
-            "{id}: database dropped"
-        );
+        assert_eq!(admin(&exists), "false", "{id}: database dropped");
         s.project_db_drop(&project, id, &env).unwrap();
         assert!(responds(port), "{id}: a running server stays running");
         s.stop(id);

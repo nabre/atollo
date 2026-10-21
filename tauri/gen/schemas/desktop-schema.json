@@ -273,18 +273,6 @@
           "markdownDescription": "Enables the db_admin_open command without any pre-configured scope."
         },
         {
-          "description": "Enables the db_browse_rows command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-db-browse-rows",
-          "markdownDescription": "Enables the db_browse_rows command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the db_browse_tree command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-db-browse-tree",
-          "markdownDescription": "Enables the db_browse_tree command without any pre-configured scope."
-        },
-        {
           "description": "Enables the downloads_add command without any pre-configured scope.",
           "type": "string",
           "const": "allow-downloads-add",
@@ -985,18 +973,6 @@
           "type": "string",
           "const": "deny-db-admin-open",
           "markdownDescription": "Denies the db_admin_open command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the db_browse_rows command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-db-browse-rows",
-          "markdownDescription": "Denies the db_browse_rows command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the db_browse_tree command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-db-browse-tree",
-          "markdownDescription": "Denies the db_browse_tree command without any pre-configured scope."
         },
         {
           "description": "Denies the downloads_add command without any pre-configured scope.",

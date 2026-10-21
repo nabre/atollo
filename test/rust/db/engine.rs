@@ -86,14 +86,6 @@ fn reserved_names_per_engine() {
         DbEngine::MongoDb.reserved_names(),
         ["admin", "local", "config"]
     );
-    assert_eq!(
-        DbEngine::MySql.system_databases(),
-        ["information_schema", "mysql", "performance_schema", "sys"]
-    );
-    assert_eq!(
-        DbEngine::MongoDb.system_databases(),
-        ["admin", "config", "local"]
-    );
 }
 
 #[test]

@@ -12,7 +12,7 @@ vi.mock("@tauri-apps/api/core", () => ({
   isTauri: () => true,
 }));
 
-/** Both servers stopped: no database browser to read. */
+/** Both servers stopped. */
 const STOPPED: ServiceInfo[] = SAMPLE_SERVICES.map((s) => ({ ...s, state: "stopped" }));
 const STARTED: ServiceInfo[] = STOPPED.map((s, i) => (i === 0 ? { ...s, state: "running" } : s));
 
@@ -172,7 +172,7 @@ describe("DatabasesPage", () => {
     expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: "7.0", engine: "mongodb" });
   });
 
-  it("browses the version chosen, each on its own port", async () => {
+  it("shows a running MongoDB with its details only", async () => {
     const mongo: ServiceInfo = {
       ...(STOPPED[1] as ServiceInfo),
       installed: true,
@@ -193,18 +193,15 @@ describe("DatabasesPage", () => {
     };
     invoke.mockImplementation((cmd) => {
       if (cmd === "services_list") return Promise.resolve([STOPPED[0], mongo]);
-      if (cmd === "db_browse_tree") return Promise.resolve([]);
       return Promise.reject(new Error(`unexpected ${cmd}`));
     });
     render(<DatabasesPage />);
     await flush();
     fireEvent.click(screen.getByRole("button", { name: /^MongoDB/ }));
     await flush();
-    expect(invoke).toHaveBeenCalledWith("db_browse_tree", { engine: "mongodb", line: null });
-    const version = document.getElementById("browse-line-mongodb") as HTMLElementTagNameMap["vscode-single-select"];
-    expect(version.querySelectorAll("vscode-option")).toHaveLength(2);
-    fireEvent.change(version, { target: { value: "7.0" } });
-    await flush();
-    expect(invoke).toHaveBeenCalledWith("db_browse_tree", { engine: "mongodb", line: "7.0" });
+    // Its content is in mongo-express (D-150): only the details, no tabs.
+    expect(screen.queryByRole("navigation", { name: "Sezioni del server" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Apri mongo-express" })).toBeTruthy();
+    expect(screen.getByText("Connessione")).toBeTruthy();
   });
 });

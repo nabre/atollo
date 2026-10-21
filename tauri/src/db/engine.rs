@@ -169,14 +169,6 @@ impl DbEngine {
         }
     }
 
-    /// The server's own databases, marked in the content explorer (D-79).
-    pub const fn system_databases(self) -> &'static [&'static str] {
-        match self {
-            DbEngine::MySql => &["information_schema", "mysql", "performance_schema", "sys"],
-            DbEngine::MongoDb => &["admin", "config", "local"],
-        }
-    }
-
     /// The administrator's connection string (no password in it).
     pub fn admin_url(self, port: u16) -> String {
         match self {

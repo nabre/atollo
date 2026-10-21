@@ -871,7 +871,7 @@ Related topics: [3.2 A project's database](#32-a-projects-database), [8.2 The ki
 > - The kit has a MySQL server and a MongoDB server, shared by all projects and reachable only from this PC.
 > - “Start” installs the server if it is missing, turns it on and generates the administrator password.
 > - Each project then has its own database and its own user, which you create from the project's page.
-> - You browse and edit MySQL with phpMyAdmin and MongoDB with mongo-express, both in the browser; MongoDB can also be read in the “Content” tab.
+> - You browse and edit MySQL with phpMyAdmin and MongoDB with mongo-express, both in the browser.
 
 ![The Databases page, MySQL server](../../ui/public/guide/en/databases.webp)
 
@@ -910,7 +910,7 @@ At the top: the status, the address 127.0.0.1:\<port\>, the version and the “S
 | Server | How you see the data |
 | --- | --- |
 | MySQL | “Open phpMyAdmin”. The first time, the kit installs phpMyAdmin (and PHP if it is missing), turns MySQL on if it is off and opens phpMyAdmin in the browser, already connected as root. For another version there is “phpMyAdmin on …” in the “Other versions” part. |
-| MongoDB | “Open mongo-express”. The first time, the kit installs mongo-express (and Node.js if it is missing), turns MongoDB on if it is off and opens mongo-express in the browser, already connected as admin: databases, collections, documents, indexes, import and export. For another version there is “mongo-express on …”. Read-only, in the page: the “Content” tab, on the left the databases with their collections and an estimate of the documents (the system ones under “System”), on the right the documents of the chosen collection, 100 per page, with “Previous page”, “Next page” and “Refresh”. |
+| MongoDB | “Open mongo-express”. The first time, the kit installs mongo-express (and Node.js if it is missing), turns MongoDB on if it is off and opens mongo-express in the browser, already connected as admin: databases, collections, documents, indexes, import and export. For another version there is “mongo-express on …”. |
 
 <details>
 <summary>Under the hood: phpMyAdmin and mongo-express</summary>
