@@ -13,6 +13,10 @@ import { Button, Codicon, EditorBody, EditorHeader, List, ListRow, TextField } f
 /** The procedure shown in the «Nuovo progetto» tab. */
 export type NewWay = "empty" | "git" | "framework";
 
+/** The wizard's tab among the projects': no folder name holds a NUL. Here,
+ * not in wizard.tsx, which is read the first time the tab opens. */
+export const WIZARD_TAB = "\u0000wizard";
+
 export function wayLabel(way: NewWay): string {
   return { empty: t("Progetto vuoto"), git: t("Da un indirizzo Git"), framework: t("Da framework o CMS") }[way];
 }

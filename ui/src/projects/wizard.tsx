@@ -46,9 +46,6 @@ import {
 
 const MAX_LOG = 600;
 
-/** The wizard's tab among the projects': no folder name holds a NUL. */
-export const WIZARD_TAB = "\u0000wizard";
-
 /** 12px text in a field (the component reads the variable). */
 const SMALL = "[--vscode-font-size:12px]";
 

@@ -6,7 +6,7 @@
 // (home.tsx): what runs, favorites and recent projects, what needs a hand.
 // Ctrl+P finds a project by name (quickopen.tsx). Web actions get their own
 // port and open in the browser.
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import {
   editorOpen,
   folderOpen,
@@ -50,9 +50,11 @@ import { ProjectPage, type ProjectSection } from "./page";
 import { QuickOpen } from "./quickopen";
 import { alive } from "./runs";
 import { KIND_ICON, ProjectState } from "./kind";
-import { EmptyProjectEditor, GitProjectEditor, NewProjectTree, wayLabel, type NewWay } from "./new";
+import { EmptyProjectEditor, GitProjectEditor, NewProjectTree, wayLabel, WIZARD_TAB, type NewWay } from "./new";
 import { Orphans } from "./orphans";
-import { NewProjectWizard, WIZARD_TAB } from "./wizard";
+
+// The wizard is seldom open: its own chunk, read the first time its tab is.
+const NewProjectWizard = lazy(() => import("./wizard").then((m) => ({ default: m.NewProjectWizard })));
 
 type PaneId = "projects" | "new" | "github";
 
@@ -402,16 +404,18 @@ export function ProjectsPage({
           output stay. */}
       {tabs.open.includes(WIZARD_TAB) && (
         <div className={tabs.active === WIZARD_TAB && way === "framework" ? "flex min-h-0 flex-1 flex-col" : "hidden"}>
-          <NewProjectWizard
-            fw={fw}
-            preset={preset}
-            onBase={setBase}
-            onOpen={tabs.show}
-            onCreated={load}
-            onRunning={setWizardRunning}
-            onSettings={onSettings}
-            onGuide={onGuide}
-          />
+          <Suspense fallback={<p className="p-5 text-vsc-desc">{t("Caricamento…")}</p>}>
+            <NewProjectWizard
+              fw={fw}
+              preset={preset}
+              onBase={setBase}
+              onOpen={tabs.show}
+              onCreated={load}
+              onRunning={setWizardRunning}
+              onSettings={onSettings}
+              onGuide={onGuide}
+            />
+          </Suspense>
         </div>
       )}
       {tabs.active === WIZARD_TAB ? (
