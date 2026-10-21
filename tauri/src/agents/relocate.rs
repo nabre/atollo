@@ -5,7 +5,9 @@
 //! `kit.rs` notices the move at start and saves the old root in
 //! `data\app\old-root.txt` (`old-root-<os>.txt` on macOS and Linux,
 //! `Kit::old_root_file`); it is removed here once the paths are updated,
-//! so a move is never lost if this step does not run at that start.
+//! so a move is never lost if this step does not run at that start. Files
+//! that could not be updated (held by another program) are listed with
+//! their old root in `old-root-failed.json` and tried again at each start.
 //! Spellings replaced: `E:\kit`, `E:\\kit` (JSON), `E:/kit`, and
 //! `file:///e%3A/kit` URIs, only as a whole path, keeping the drive letter's
 //! case. Claude's per-folder data (`.claude\projects\E--kit-...`) is renamed
@@ -21,7 +23,7 @@ use regex::bytes::{Captures, Regex};
 use serde_json::Value;
 
 use super::sync::{read_json, write_json, Paths, Report};
-use crate::fsx::join_rel;
+use crate::fsx::{join_rel, write_atomic};
 use crate::kit::{same_root, Kit, Os};
 
 const TEXT_MAX: u64 = 8 * 1024 * 1024;
@@ -269,17 +271,30 @@ fn has_drive_letter(path: &[u8], at: usize) -> bool {
 struct Moved {
     changed: usize,
     programs: Vec<PathBuf>,
-    failed: Vec<String>,
+    /// What could not be updated, and why: kept for the next start.
+    failed: Vec<(PathBuf, String)>,
+}
+
+impl Moved {
+    fn fail(&mut self, path: &Path, why: impl std::fmt::Display) {
+        self.failed.push((path.to_path_buf(), why.to_string()));
+    }
 }
 
 fn relocate_file(file: &Path, r: &Replacer, report: &mut Moved) {
     let Ok(meta) = fs::metadata(file) else { return };
-    if !meta.is_file() {
+    // The size first: a file larger than any the kit changes is not read.
+    if !meta.is_file() || meta.len() > BINARY_MAX {
         return;
     }
-    let Ok(bytes) = fs::read(file) else { return };
+    let bytes = match fs::read(file) {
+        Ok(b) => b,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+        // Held by another program: tried again at the next start.
+        Err(e) => return report.fail(file, e),
+    };
     let binary = bytes.iter().take(8192).any(|b| *b == 0);
-    if meta.len() > if binary { BINARY_MAX } else { TEXT_MAX } {
+    if !binary && meta.len() > TEXT_MAX {
         return;
     }
     let Some(mut out) = r.replace(&bytes) else {
@@ -300,15 +315,16 @@ fn relocate_file(file: &Path, r: &Replacer, report: &mut Moved) {
             p.set_readonly(false);
             fs::set_permissions(file, p)?;
         }
-        fs::write(file, &out)?;
-        if readonly {
-            fs::set_permissions(file, meta.permissions())?;
-        }
-        Ok(())
+        // Through a temporary file: a crash never leaves half a file. The
+        // new file gets the old one's permissions back (read-only, and the
+        // executable bit of a venv's scripts on macOS and Linux).
+        let written = write_atomic(file, &out);
+        let restored = fs::set_permissions(file, meta.permissions());
+        written.and(restored)
     })();
     match result {
         Ok(()) => report.changed += 1,
-        Err(e) => report.failed.push(format!("{} ({e})", file.display())),
+        Err(e) => report.fail(file, e),
     }
 }
 
@@ -481,7 +497,7 @@ fn relocate_claude_projects(p: &Paths, r: &Replacer, from: &str, to: &str, repor
         };
         match done {
             Ok(()) => report.changed += 1,
-            Err(err) => report.failed.push(format!("{} ({err})", src.display())),
+            Err(err) => report.fail(&src, err),
         }
     }
 }
@@ -600,46 +616,168 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     out
 }
 
-/// Replaces the old root (from [`Kit::old_root_file`]) everywhere.
-pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
+/// Files and folders a move could not update (held by another program),
+/// with the root they still hold: `old-root-failed.json` next to
+/// [`Kit::old_root_file`], tried again at every start until they follow,
+/// also after a further move (BUG-V6-19).
+fn left_file(kit: &Kit) -> PathBuf {
     let pending = kit.old_root_file();
-    let Ok(from) = crate::fsx::read_text(&pending) else {
-        return Ok(());
-    };
-    // Both ends cut the same way: a kit at the root of a drive (`E:\`) is
-    // `E:` on either side (BUG-V6-03).
-    let from = trim_root(from.trim().trim_matches('"')).to_owned();
-    let to = trim_root(&kit.root().display().to_string()).to_owned();
-    if !from.is_empty() && !same_root(kit.os(), &from, &to) {
-        let p = Paths::of(kit);
-        let r = Replacer::new(kit.os(), &from, &to);
-        let mut moved = Moved::default();
+    let stem = pending
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    pending.with_file_name(format!("{stem}-failed.json"))
+}
+
+/// What is left of one move: its old root and the paths, relative to the
+/// kit (with `/`), so that they still name the files if the kit moves on.
+struct Left {
+    from: String,
+    files: Vec<String>,
+}
+
+fn read_left(kit: &Kit) -> Vec<Left> {
+    let list: Vec<Value> = crate::fsx::read_json(&left_file(kit)).unwrap_or_default();
+    list.iter()
+        .filter_map(|e| {
+            let from = e.get("from")?.as_str()?.to_owned();
+            let files = e
+                .get("files")?
+                .as_array()?
+                .iter()
+                .filter_map(|f| f.as_str().map(str::to_owned))
+                .collect();
+            Some(Left { from, files })
+        })
+        .collect()
+}
+
+fn write_left(kit: &Kit, left: &[Left]) -> Result<()> {
+    let file = left_file(kit);
+    if left.is_empty() {
+        return match fs::remove_file(&file) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.into()),
+            _ => Ok(()),
+        };
+    }
+    let list: Vec<Value> = left
+        .iter()
+        .map(|l| serde_json::json!({ "from": l.from, "files": l.files }))
+        .collect();
+    write_json(&file, &Value::Array(list))
+}
+
+/// `path` relative to the kit, with `/` (as it is if outside the kit).
+fn kit_relative(kit: &Kit, path: &Path) -> String {
+    path.strip_prefix(kit.root()).map_or_else(
+        |_| path.display().to_string(),
+        |rel| {
+            rel.components()
+                .map(|c| c.as_os_str().to_string_lossy())
+                .collect::<Vec<_>>()
+                .join("/")
+        },
+    )
+}
+
+/// Replaces `from` with `to` in the kit's files: all of them, or `only`
+/// those (the ones left by an earlier start). The paths that failed are
+/// returned relative to the kit.
+fn move_files(
+    kit: &Kit,
+    from: &str,
+    to: &str,
+    only: Option<&[PathBuf]>,
+    report: &mut Report,
+) -> Vec<String> {
+    let p = Paths::of(kit);
+    let r = Replacer::new(kit.os(), from, to);
+    let wanted = |f: &Path| only.is_none_or(|o| o.iter().any(|x| x == f));
+    let mut moved = Moved::default();
+    if wanted(&p.claude_json()) {
         if let Err(e) = relocate_claude_json(&p, &r, &mut moved) {
-            moved
-                .failed
-                .push(format!("{} ({e:#})", p.claude_json().display()));
+            moved.fail(&p.claude_json(), format!("{e:#}"));
         }
-        relocate_claude_projects(&p, &r, &from, &to, &mut moved);
-        for f in targets(kit, &p) {
+    }
+    let claude_projects = p.claude.join("projects");
+    if only.is_none_or(|o| o.iter().any(|x| x.starts_with(&claude_projects))) {
+        relocate_claude_projects(&p, &r, from, to, &mut moved);
+    }
+    for f in targets(kit, &p) {
+        if wanted(&f) {
             relocate_file(&f, &r, &mut moved);
         }
-        report.note(format!(
-            "kit moved from \"{from}\" to \"{to}\": {} files and folders updated",
-            moved.changed
-        ));
-        for f in &moved.programs {
-            report.warn(format!("{}: holds the old path and cannot be updated (different length): reinstall it or recreate the .venv (uv sync)", f.display()));
-        }
-        for f in &moved.failed {
-            report.warn(format!("{f}: path not updated"));
-        }
-        crate::log::info(&format!(
-            "relocate {from} -> {to}: {} changed, {} programs, {} failed",
-            moved.changed,
-            moved.programs.len(),
-            moved.failed.len()
+    }
+    report.note(format!(
+        "kit moved from \"{from}\" to \"{to}\": {} files and folders updated",
+        moved.changed
+    ));
+    for f in &moved.programs {
+        report.warn(format!("{}: holds the old path and cannot be updated (different length): reinstall it or recreate the .venv (uv sync)", f.display()));
+    }
+    for (f, why) in &moved.failed {
+        report.warn(format!(
+            "{} ({why}): path not updated, tried again at the next start",
+            f.display()
         ));
     }
+    crate::log::info(&format!(
+        "relocate {from} -> {to}: {} changed, {} programs, {} failed",
+        moved.changed,
+        moved.programs.len(),
+        moved.failed.len()
+    ));
+    moved
+        .failed
+        .iter()
+        .map(|(f, _)| kit_relative(kit, f))
+        .collect()
+}
+
+/// Replaces the old root (from [`Kit::old_root_file`]) everywhere, and
+/// tries again the files an earlier move left behind.
+pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
+    // Both ends cut the same way: a kit at the root of a drive (`E:\`) is
+    // `E:` on either side (BUG-V6-03).
+    let to = trim_root(&kit.root().display().to_string()).to_owned();
+    let mut left = Vec::new();
+    for l in read_left(kit) {
+        // Moved back: those files hold the current root already.
+        if l.from.is_empty() || same_root(kit.os(), &l.from, &to) {
+            continue;
+        }
+        let only: Vec<PathBuf> = l
+            .files
+            .iter()
+            .map(|f| {
+                if Path::new(f).is_absolute() {
+                    PathBuf::from(f)
+                } else {
+                    join_rel(kit.root(), f)
+                }
+            })
+            .collect();
+        let files = move_files(kit, &l.from, &to, Some(&only), report);
+        if !files.is_empty() {
+            left.push(Left {
+                from: l.from,
+                files,
+            });
+        }
+    }
+    let pending = kit.old_root_file();
+    if let Ok(from) = crate::fsx::read_text(&pending) {
+        let from = trim_root(from.trim().trim_matches('"')).to_owned();
+        if !from.is_empty() && !same_root(kit.os(), &from, &to) {
+            let files = move_files(kit, &from, &to, None, report);
+            if !files.is_empty() {
+                left.push(Left { from, files });
+            }
+        }
+    }
+    // The list first: the old root goes only once what it still names is
+    // saved.
+    write_left(kit, &left)?;
     let _ = fs::remove_file(&pending);
     Ok(())
 }
