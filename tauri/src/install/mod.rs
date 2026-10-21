@@ -82,7 +82,7 @@ pub enum Dest {
 pub struct Sign {
     /// Path of the file in the extracted tree.
     pub file: String,
-    /// Regex the signer subject must match.
+    /// The organization (`O=`) of the signer, exactly.
     pub publisher: &'static str,
     /// The signature is the only check: an unverifiable revocation fails.
     pub required: bool,
@@ -725,8 +725,7 @@ fn fetch_part(ctx: &Ctx, part: &Part, work: &Path, progress: &mut dyn Progress) 
     if ctx.kit.os().is_windows() {
         if let Some(sign) = &part.sign {
             let file = crate::fsx::join_rel(&tree, &sign.file);
-            let publisher = pattern(sign.publisher)?;
-            match crate::net::signature::check(&file, &publisher, sign.required)? {
+            match crate::net::signature::check(&file, sign.publisher, sign.required)? {
                 crate::net::signature::Verdict::Valid { subject } => {
                     progress.note(&format!("signature ok: {subject}"))
                 }
