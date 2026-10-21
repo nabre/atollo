@@ -471,7 +471,7 @@ At the top, the icons: “New project”, “New project from a framework or CMS
 | New project | The tree of the three ways to create a project, with the framework bases. |
 | From your GitHub repositories | The repositories of your account, ready to clone. |
 
-Each project row has an icon that says what kind of project it is: a globe for a website, a window for an app with a window, a terminal for a command-line program. A green dot means something is running; a yellow triangle that components are missing. Hovering over the row shows the buttons ▶ “Start” (or ■ “Stop”), “Editor”, “Terminal” and “Agent”.
+Each project row has an icon that says what kind of project it is: a globe for a website, a window for an app with a window, a terminal for a command-line program. A green dot means something is running; a yellow triangle that components are missing. Hovering over the row shows the buttons ▶ “Start” (or ■ “Stop”), “Editor”, “Terminal” and one for each installed agent, with its logo.
 
 #### The “Quick panel”
 
@@ -498,7 +498,7 @@ At the top are the name, the type and the recognized platform (for example “La
 | Start / Stop | Starts the project's default action, or stops it if it is running. |
 | Editor | Opens the project in the editor, in an Atollo window. |
 | Terminal | Opens a kit console in the project folder, with its versions. |
-| Agent logos and “Agent” | Choose an agent by its logo and open it in the project. From then on Claude Code and Codex trust the project's folder. |
+| Agent logos | One button for each installed agent: a click on its logo opens that agent in the project. From then on Claude Code and Codex trust the project's folder. |
 | Open folder | Opens the project folder in File Explorer (or Finder). |
 | Refresh | Rereads the project: useful after changing panel.json or the project's files by hand. |
 
@@ -1199,7 +1199,7 @@ Related topics: [2.5 Editor, terminal and extensions](#25-editor-terminal-and-ex
 >
 > - An AI agent is an assistant that works in the project folder: it reads the code, changes it, runs commands.
 > - The kit offers three: Claude Code (Anthropic), Codex (OpenAI) and Antigravity (Google). You install them from Tools.
-> - They always open inside a project, from the Projects page, with the “Agent” button.
+> - They always open inside a project, from the Projects page, with the button that shows the agent's logo.
 > - You sign in to your account the first time the agent starts, and the sign-in stays in the kit, even on another PC.
 
 ![The Agents page](../../ui/public/guide/en/agents.webp)
@@ -1223,15 +1223,15 @@ Agents are installed from the Tools page, “AI agents” kind (the first start 
 The Agents page does not start agents: an agent always works in a project's folder, so you open it from the Projects page.
 
 1. Open the project.
-2. At the top, next to “Editor” and “Terminal”, click the logo of the agent you want to use.
-3. Press “Agent”. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.
+2. At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Antigravity”). Click the one of the agent you want to use.
+3. The agent starts right away. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.
 
-Quicker: the “Agent” button on the project's row (sidebar or “Quick panel”) opens the last agent used in that project, or the first one installed.
+The same buttons are on the project's row (sidebar or “Quick panel”): a click on a logo opens that agent in the project. An agent that is not installed has no button; if none is installed, there are no agent buttons.
 
 <details>
 <summary>Under the hood</summary>
 
-- The chosen agent is remembered in the project's dev-settings.json file.
+- The last agent opened is noted in the project's dev-settings.json file.
 - Before the start, the kit installs what is missing (the agent, its dependencies, the programs of the MCP servers such as Node.js or uv), applies the project's versions and syncs instructions, skills and MCP servers. When the agent ends, it syncs them again.
 - Antigravity starts through a small kit program (agy) that puts your sign-in back into the system before the start and brings it back into the kit at the end.
 
@@ -2241,7 +2241,7 @@ Related topics: [8.1 Portable and isolated: what it means](#81-portable-and-isol
 | Shared web servers | With the first project that uses them, from the Web Servers page or with “Start with Atollo” | With the last project, unless started from the Web Servers page or with “Keep running even without projects”; with “Stop”; on closing |
 | Databases | With “Start”, “Start with Atollo” or when a project asks for them | With “Stop”, or on closing (orderly shutdown) |
 | Editor | With the first “Editor” | When the app closes |
-| Consoles and agents | With “Terminal”, “Open”, “Agent” | When you close them, or when the app closes |
+| Consoles and agents | With “Terminal”, “Open”, the agent logos | When you close them, or when the app closes |
 
 Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version and the active pools; “Stop all” stops them after a confirmation.
 
@@ -2646,7 +2646,7 @@ Atollo does (if you leave automatic update on); the components do not, you updat
 
 **Why doesn't the Agents page open the agents?**
 
-Because an agent always works in a project: you open it from the Projects page, with the “Agent” button. The Agents page is for sign-in, limits and the shared folder.
+Because an agent always works in a project: you open it from the Projects page, with the button that shows the agent's logo. The Agents page is for sign-in, limits and the shared folder.
 
 > [!TIP]
 > **Tip**
