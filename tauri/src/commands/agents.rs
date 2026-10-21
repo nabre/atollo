@@ -46,6 +46,9 @@ pub async fn agent_launch<R: Runtime>(
         return Err(format!("unknown agent: {agent}").into());
     }
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    // Started again after "Rimuovi l'unità": the user goes on, so do the
+    // agents' background alignments.
+    state.closing.reopen();
     crate::projects::settings::update(&state.kit, &project, |s| {
         s.agent = Some(agent.clone());
     });

@@ -73,6 +73,9 @@ pub struct AppState {
     pub services: Arc<crate::db::services::Services>,
     /// Shared Caddy and Apache VirtualHost server pools.
     pub servers: Arc<crate::servers::WebServers>,
+    /// "Rimuovi l'unità" under way: the agents' background alignments and
+    /// saves stop (BUG-V6-15).
+    pub closing: crate::agents::Closing,
 }
 
 impl AppState {
