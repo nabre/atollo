@@ -102,7 +102,7 @@
   "todoHelp": "Vous avez un Mac, un PC Linux ou un PC Windows ARM64 ? Essayez Atollo et racontez-nous comment ça s'est passé :",
   "todoHelpLink": "ouvrez une issue sur GitHub",
   "privacyTitle": "Aucune télémétrie",
-  "privacyText": "Atollo ne collecte aucune donnée et ne contacte aucun serveur de son auteur. Il se connecte seulement à GitHub pour rechercher ses propres mises à jour, aux sources officielles des composants choisis et, si vous les utilisez, aux API de GitHub et des agents.",
+  "privacyText": "Atollo ne collecte aucune donnée et ne contacte aucun serveur de son auteur. Il se connecte seulement à GitHub pour rechercher ses propres mises à jour, aux sources officielles des composants choisis, à Open VSX pour les extensions de l'éditeur et, si vous les utilisez, aux API de GitHub et des agents.",
   "footerLicense": "Licence MIT",
   "footerSigning": "Signature de code Windows offerte par SignPath.io, certificat de la SignPath Foundation.",
   "readmeHref": "https://github.com/nabre/atollo/blob/main/docs/README.fr.md",
