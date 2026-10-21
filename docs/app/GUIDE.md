@@ -181,7 +181,7 @@ The suggested choice includes the three agents, Python, PHP with Apache and the 
 > [!WARNING]
 > **Trust in projects**
 >
-> The folders in projects are considered trusted by Claude Code and Codex, which can therefore run commands in them without asking every time. Put in projects only code you trust.
+> When you open an agent in a project from Atollo, the project's folder becomes trusted by Claude Code and Codex, which can then run commands in it without asking every time. Open an agent only in projects you trust.
 
 #### 3. What happens while it downloads
 
@@ -498,7 +498,7 @@ At the top are the name, the type and the recognized platform (for example “La
 | Start / Stop | Starts the project's default action, or stops it if it is running. |
 | Editor | Opens the project in the editor, in an Atollo window. |
 | Terminal | Opens a kit console in the project folder, with its versions. |
-| Agent logos and “Agent” | Choose an agent by its logo and open it in the project. |
+| Agent logos and “Agent” | Choose an agent by its logo and open it in the project. From then on Claude Code and Codex trust the project's folder. |
 | Open folder | Opens the project folder in File Explorer (or Finder). |
 | Refresh | Rereads the project: useful after changing panel.json or the project's files by hand. |
 
@@ -635,7 +635,7 @@ Your own actions, the star and the website live in the panel.json file in the pr
 <details>
 <summary>Under the hood</summary>
 
-- The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions.
+- The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions. The agents' tokens (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) are not in it: only the agents Atollo launches get them.
 - Web actions get the PORT (and ROCKET_PORT) variables with the port; all of them get BROWSER=none, PYTHONUNBUFFERED=1 and ATOLLO_LANG. If the project has a kit MySQL database and its .env does not name another port, they also get DB_PORT.
 - The assigned ports and the ones you chose are in `data\projects\<project>\ports.json`, outside the project.
 - Each action runs in its own process group (a Job Object on Windows): “Stop” also closes the child processes, for example the server started by npm.
@@ -1212,8 +1212,8 @@ An agent is a command-line program that talks with an artificial intelligence mo
 
 | Agent | Provider | Sign-in |
 | --- | --- | --- |
-| Claude Code | Anthropic | Claude account (subscription) or API key ANTHROPIC_API_KEY. |
-| Codex | OpenAI | ChatGPT account or API key OPENAI_API_KEY. |
+| Claude Code | Anthropic | Claude account (subscription); on macOS also a token from claude setup-token. |
+| Codex | OpenAI | ChatGPT account or an API key saved by Codex with codex login --with-api-key. |
 | Antigravity | Google | Google account or a Gemini API key, to enter in Settings › Agents. |
 
 Agents are installed from the Tools page, “AI agents” kind (the first start already suggests them). They always follow the latest version and bring along what they need; Git, which they all use, is already among the components that are always installed.
@@ -1255,7 +1255,7 @@ At the top of the sidebar: “Refresh usage”, “Open shared folder” (`data\
 | --- | --- |
 | not signed in: you sign in the first time the agent starts | Open the agent in a project and follow its instructions (usually a page in the browser). |
 | signed in | The agent is signed in with your account, saved in the kit. |
-| signed in with an API key | The agent uses an API key: no plan limits, you pay for what you use. |
+| signed in with an API key | Codex with the key saved by codex login --with-api-key, or Antigravity with the Gemini key from Settings: no plan limits, you pay for what you use. |
 | signed in with a token | Only Claude Code on macOS, connected with a token (see below). |
 
 The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit after a question (“Remove the sign-in saved in the kit?”, Esc cancels), with the agent closed: while it is open the button says “Close the agent first”. With an API key there is no “Sign out”.
@@ -1268,7 +1268,7 @@ The sign-in stays in the kit folder: when you take the kit to another PC you do 
 > [!NOTE]
 > **Claude Code on macOS**
 >
-> On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”.
+> On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”. The token reaches, as CLAUDE_CODE_OAUTH_TOKEN, only the Claude Code that Atollo launches: not project actions, scripts, terminals or the editor.
 
 <details>
 <summary>Under the hood</summary>
@@ -1363,7 +1363,7 @@ These servers apply only in that project, in addition to the kit's. Claude Code 
 - The sync state, the conflicts and the deleted skills are in `data\agents\.sync` (conflicts, deleted).
 - Sync warnings end up in the app's log, `data\app\logs\app.log`.
 - You can also run the sync from the command line: `Atollo.exe sync [--project <folder>] [--verbose]`.
-- Claude Code and Codex consider projects and its subfolders trusted: they can run commands there without asking for trust every time.
+- Claude Code and Codex trust a project's folder only after you open an agent in that project from Atollo: from then on they can run commands there without asking for trust every time. The other folders in projects are not trusted in advance.
 - In Codex ${VAR} variables are not expanded: the kit translates them where Codex has a dedicated key, otherwise it copies them as they are with a comment.
 
 </details>
@@ -1762,7 +1762,7 @@ Proxy, additional certificates and local network: [6.3 Company network: proxy, c
 
 #### Agents
 
-“Gemini API key (Antigravity without a Google account)”: paste the key and move on (a click outside the field, or Tab). The key is saved when the field loses focus, then the field empties and shows “saved: type to replace it”: the key is no longer shown. “Remove the key” deletes it at once. Antigravity will show “signed in with an API key”. The key is saved on its own, in `data\app\secrets\gemini-api-key`, readable by your user only where the disk has permissions, and passed to the kit's programs as GEMINI_API_KEY.
+“Gemini API key (Antigravity without a Google account)”: paste the key and move on (a click outside the field, or Tab). The key is saved when the field loses focus, then the field empties and shows “saved: type to replace it”: the key is no longer shown. “Remove the key” deletes it at once. Antigravity will show “signed in with an API key”. The key is saved on its own, in `data\app\secrets\gemini-api-key`, readable by your user only where the disk has permissions, and passed as GEMINI_API_KEY only to the Antigravity that Atollo launches: not to project actions, scripts, terminals or the editor.
 
 #### Updates
 

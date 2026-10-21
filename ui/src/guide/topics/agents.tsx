@@ -103,20 +103,20 @@ export const AGENTS: TopicTexts = {
               tr("Claude Code", "Claude Code", "Claude Code", "Claude Code"),
               tr("Anthropic", "Anthropic", "Anthropic", "Anthropic"),
               tr(
-                "Account Claude (abbonamento) oppure chiave API ANTHROPIC_API_KEY.",
-                "Claude account (subscription) or API key ANTHROPIC_API_KEY.",
-                "Compte Claude (abonnement) ou clé API ANTHROPIC_API_KEY.",
-                "Claude-Konto (Abonnement) oder API-Schlüssel ANTHROPIC_API_KEY.",
+                "Account Claude (abbonamento); su macOS anche un token di claude setup-token.",
+                "Claude account (subscription); on macOS also a token from claude setup-token.",
+                "Compte Claude (abonnement) ; sur macOS aussi un jeton de claude setup-token.",
+                "Claude-Konto (Abonnement); unter macOS auch ein Token von claude setup-token.",
               ),
             ],
             [
               tr("Codex", "Codex", "Codex", "Codex"),
               tr("OpenAI", "OpenAI", "OpenAI", "OpenAI"),
               tr(
-                "Account ChatGPT oppure chiave API OPENAI_API_KEY.",
-                "ChatGPT account or API key OPENAI_API_KEY.",
-                "Compte ChatGPT ou clé API OPENAI_API_KEY.",
-                "ChatGPT-Konto oder API-Schlüssel OPENAI_API_KEY.",
+                "Account ChatGPT oppure chiave API salvata da Codex con codex login --with-api-key.",
+                "ChatGPT account or an API key saved by Codex with codex login --with-api-key.",
+                "Compte ChatGPT ou clé API enregistrée par Codex avec codex login --with-api-key.",
+                "ChatGPT-Konto oder ein API-Schlüssel, den Codex mit codex login --with-api-key speichert.",
               ),
             ],
             [
@@ -302,10 +302,10 @@ export const AGENTS: TopicTexts = {
                 "mit API-Schlüssel angemeldet",
               ),
               tr(
-                "L'agente usa una chiave API: niente limiti di piano, paghi a consumo.",
-                "The agent uses an API key: no plan limits, you pay for what you use.",
-                "L'agent utilise une clé API : pas de limites d'abonnement, vous payez à la consommation.",
-                "Der Agent verwendet einen API-Schlüssel: keine Tariflimits, du zahlst nach Verbrauch.",
+                "Codex con la chiave salvata da codex login --with-api-key, o Antigravity con la chiave di Gemini delle Impostazioni: niente limiti di piano, paghi a consumo.",
+                "Codex with the key saved by codex login --with-api-key, or Antigravity with the Gemini key from Settings: no plan limits, you pay for what you use.",
+                "Codex avec la clé enregistrée par codex login --with-api-key, ou Antigravity avec la clé Gemini des Paramètres : pas de limites d'abonnement, vous payez à la consommation.",
+                "Codex mit dem von codex login --with-api-key gespeicherten Schlüssel oder Antigravity mit dem Gemini-Schlüssel aus den Einstellungen: keine Tariflimits, du zahlst nach Verbrauch.",
               ),
             ],
             [
@@ -353,10 +353,10 @@ export const AGENTS: TopicTexts = {
           title={tr("Claude Code su macOS", "Claude Code on macOS", "Claude Code sur macOS", "Claude Code unter macOS")}
         >
           {tr(
-            "Su macOS Claude Code salverebbe l'accesso nel Portachiavi, che resta su quel Mac. «Collega con un token» apre claude setup-token nel terminale dell'app: completi l'accesso nel browser e il token (valido un anno) viene salvato nel kit, così funziona su ogni Mac. Se non viene riconosciuto, incollalo nel campo «Token di Claude Code» e premi «Salva il token».",
-            "On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”.",
-            "Sur macOS, Claude Code enregistrerait la connexion dans le Trousseau, qui reste sur ce Mac. « Connecter avec un jeton » ouvre claude setup-token dans le terminal de l'application : vous terminez la connexion dans le navigateur et le jeton (valable un an) est enregistré dans le kit, il fonctionne ainsi sur chaque Mac. S'il n'est pas reconnu, collez-le dans le champ « Jeton de Claude Code » et appuyez sur « Enregistrer le jeton ».",
-            "Unter macOS würde Claude Code die Anmeldung im Schlüsselbund speichern, der auf diesem Mac bleibt. „Mit einem Token verbinden“ öffnet claude setup-token im Terminal der App: Du schließt die Anmeldung im Browser ab, und das Token (ein Jahr gültig) wird im Kit gespeichert, sodass es auf jedem Mac funktioniert. Wird es nicht erkannt, füge es in das Feld „Token von Claude Code“ ein und drück „Token speichern“.",
+            "Su macOS Claude Code salverebbe l'accesso nel Portachiavi, che resta su quel Mac. «Collega con un token» apre claude setup-token nel terminale dell'app: completi l'accesso nel browser e il token (valido un anno) viene salvato nel kit, così funziona su ogni Mac. Se non viene riconosciuto, incollalo nel campo «Token di Claude Code» e premi «Salva il token». Il token arriva, come CLAUDE_CODE_OAUTH_TOKEN, solo a Claude Code avviato da Atollo: non alle azioni dei progetti, agli script, ai terminali né all'editor.",
+            "On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”. The token reaches, as CLAUDE_CODE_OAUTH_TOKEN, only the Claude Code that Atollo launches: not project actions, scripts, terminals or the editor.",
+            "Sur macOS, Claude Code enregistrerait la connexion dans le Trousseau, qui reste sur ce Mac. « Connecter avec un jeton » ouvre claude setup-token dans le terminal de l'application : vous terminez la connexion dans le navigateur et le jeton (valable un an) est enregistré dans le kit, il fonctionne ainsi sur chaque Mac. S'il n'est pas reconnu, collez-le dans le champ « Jeton de Claude Code » et appuyez sur « Enregistrer le jeton ». Le jeton n'arrive, comme CLAUDE_CODE_OAUTH_TOKEN, qu'au Claude Code lancé par Atollo : ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur.",
+            "Unter macOS würde Claude Code die Anmeldung im Schlüsselbund speichern, der auf diesem Mac bleibt. „Mit einem Token verbinden“ öffnet claude setup-token im Terminal der App: Du schließt die Anmeldung im Browser ab, und das Token (ein Jahr gültig) wird im Kit gespeichert, sodass es auf jedem Mac funktioniert. Wird es nicht erkannt, füge es in das Feld „Token von Claude Code“ ein und drück „Token speichern“. Das Token erhält, als CLAUDE_CODE_OAUTH_TOKEN, nur das von Atollo gestartete Claude Code: nicht die Aktionen der Projekte, Skripte, Terminals oder der Editor.",
           )}
         </Callout>
         <Under>
@@ -653,10 +653,10 @@ export const AGENTS: TopicTexts = {
               <Code key="s">{`Atollo.exe sync [--project ${tr("<cartella>", "<folder>", "<dossier>", "<Ordner>")}] [--verbose]`}</Code>,
             ),
             tr(
-              "Claude Code e Codex considerano attendibili projects e le sue sottocartelle: possono eseguire comandi lì senza chiedere la fiducia ogni volta.",
-              "Claude Code and Codex consider projects and its subfolders trusted: they can run commands there without asking for trust every time.",
-              "Claude Code et Codex considèrent projects et ses sous-dossiers comme fiables : ils peuvent y exécuter des commandes sans demander la confiance à chaque fois.",
-              "Claude Code und Codex stufen projects und seine Unterordner als vertrauenswürdig ein: Sie können dort Befehle ausführen, ohne jedes Mal nach Vertrauen zu fragen.",
+              "Claude Code e Codex considerano attendibile la cartella di un progetto solo dopo che vi hai aperto un agente da Atollo: da lì possono eseguire comandi senza chiedere la fiducia ogni volta. Le altre cartelle di projects non sono attendibili in anticipo.",
+              "Claude Code and Codex trust a project's folder only after you open an agent in that project from Atollo: from then on they can run commands there without asking for trust every time. The other folders in projects are not trusted in advance.",
+              "Claude Code et Codex ne considèrent le dossier d'un projet comme fiable qu'après que vous y avez ouvert un agent depuis Atollo : dès lors ils peuvent y exécuter des commandes sans demander la confiance à chaque fois. Les autres dossiers de projects ne sont pas fiables d'avance.",
+              "Claude Code und Codex vertrauen dem Ordner eines Projekts erst, nachdem du darin einen Agenten aus Atollo geöffnet hast: Ab dann können sie dort Befehle ausführen, ohne jedes Mal nach Vertrauen zu fragen. Die anderen Ordner in projects gelten nicht im Voraus als vertrauenswürdig.",
             ),
             tr(
               "In Codex le variabili ${VAR} non vengono espanse: il kit le traduce dove Codex ha una chiave apposita, altrimenti le copia così come sono con un commento.",

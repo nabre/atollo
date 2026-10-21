@@ -73,6 +73,8 @@ Atollo ist portabel: Es hält seine Daten neben der ausführbaren Datei im Ordne
 
 Die Datenbank-Passwörter, der Gemini-API-Schlüssel und die Datei des Claude-Tokens werden nur für deinen Benutzer lesbar angelegt, wo das Laufwerk Berechtigungen kennt (NTFS, APFS, ext4…). Die übrigen Dateien, `settings.json` eingeschlossen, sind gewöhnliche Dateien. Auf USB-Sticks mit FAT32 oder exFAT gibt es keine Berechtigungen: **Wer den Stick hat, kann alle oben genannten Dateien lesen**. Bewahre den Stick sicher auf oder nutze ein Laufwerk mit Berechtigungen.
 
+Das Claude-Token und der Gemini-API-Schlüssel werden (als `CLAUDE_CODE_OAUTH_TOKEN` und `GEMINI_API_KEY`) nur den von Atollo gestarteten Agenten übergeben, nicht den Aktionen der Projekte, Skripten, Terminals oder dem Editor.
+
 Ausnahmen, außerhalb des Atollo-Ordners:
 
 - **Temporäre Dateien**: Dateien in Bewegung landen in `<System-Temp>/Atollo/`; je nach Einstellungen › Allgemein › **Temporäre Dateien der Programme** können auch die Programme den temporären Ordner des Systems nutzen (standardmäßig, wenn das Kit auf einem USB-Stick, einem Netzlaufwerk oder unter FAT32/exFAT liegt).

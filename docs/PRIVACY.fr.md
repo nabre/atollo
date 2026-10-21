@@ -73,6 +73,8 @@ Atollo est portable : il garde ses données à côté de l'exécutable, dans le 
 
 Les mots de passe des bases de données, la clé API Gemini et le fichier du jeton Claude sont créés lisibles par votre seul utilisateur, là où le disque gère les permissions (NTFS, APFS, ext4…). Les autres fichiers, `settings.json` compris, sont des fichiers ordinaires. Sur les clés USB formatées en FAT32 ou exFAT, il n'y a aucune permission : **quiconque possède la clé peut lire tous les fichiers ci-dessus**. Gardez la clé en lieu sûr, ou utilisez un disque avec permissions.
 
+Le jeton Claude et la clé API Gemini ne sont transmis (comme `CLAUDE_CODE_OAUTH_TOKEN` et `GEMINI_API_KEY`) qu'aux agents lancés par Atollo, ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur.
+
 Exceptions, hors du dossier d'Atollo :
 
 - **Fichiers temporaires** : les fichiers en transit vont dans `<temp du système>/Atollo/` ; selon Paramètres › Général › **Fichiers temporaires des programmes**, les programmes peuvent aussi utiliser le dossier temporaire du système (par défaut quand le kit est sur une clé USB, un disque réseau ou en FAT32/exFAT).

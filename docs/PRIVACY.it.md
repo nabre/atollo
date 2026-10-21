@@ -73,6 +73,8 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 
 Le password dei database, la chiave API di Gemini e il file del token di Claude vengono creati leggibili solo dal tuo utente, dove il disco supporta i permessi (NTFS, APFS, ext4…). Gli altri file, `settings.json` compreso, sono file normali. Sulle chiavette formattate FAT32 o exFAT non esistono permessi: **chiunque abbia la chiavetta può leggere tutti i file sopra**. Tieni la chiavetta al sicuro, oppure usa un disco con i permessi.
 
+Il token di Claude e la chiave API di Gemini vengono passati (come `CLAUDE_CODE_OAUTH_TOKEN` e `GEMINI_API_KEY`) solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor.
+
 Eccezioni, fuori dalla cartella di Atollo:
 
 - **File temporanei**: i file in transito vanno in `<temp del sistema>/Atollo/`; secondo Impostazioni › Generale › **Temporanei dei programmi**, anche i programmi possono usare la cartella temporanea del sistema (per impostazione predefinita quando il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT).
