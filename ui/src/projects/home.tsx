@@ -177,7 +177,7 @@ export function ProjectsHome({
           {groups.length > 0 && (
             // Columns, not a grid: the blocks keep their height (Web holds
             // the most), side by side when wide, one under the other when narrow.
-            <div className="columns-[17rem] gap-2">
+            <div className="gap-2 [columns:17rem_3]">
               {groups.map((g) => (
                 <GroupBlock
                   key={g.id}
