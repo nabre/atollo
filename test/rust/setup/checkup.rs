@@ -19,6 +19,17 @@ fn every_check_names_an_installed_file() {
     }
 }
 
+/// A program that must not run (OpenConsole.exe) is checked by the
+/// version in its resources.
+#[cfg(windows)]
+#[test]
+fn file_version_reads_the_resources() {
+    let cmd = crate::os::jobs::system_root().join(r"System32\cmd.exe");
+    let v = file_version(&cmd).unwrap();
+    assert!(v.starts_with("10.0."), "{v}");
+    assert!(file_version(std::path::Path::new(r"C:\nope\x.exe")).is_err());
+}
+
 #[test]
 fn php_header_version() {
     let head = "<?php\n/** Adminer\n* @license x\n* @version 6.1.2\n*/namespace\n";

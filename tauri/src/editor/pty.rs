@@ -1,15 +1,16 @@
-//! The kit's terminal inside the app on macOS and Linux (DECISIONS.md
-//! D-109): one PTY per session, shown by the main window with
-//! xterm.js (`ui/src/terminal`). Windows keeps its classic consoles
-//! (`terminal.rs`, D-57, D-95): no session ever opens there.
+//! The kit's terminal inside the app, on every system (DECISIONS.md D-109,
+//! D-148): one pseudo terminal per session, shown by the main window with
+//! xterm.js (`ui/src/terminal`). Never the PC's terminal program.
 //!
-//! - a session runs the kit's PowerShell when installed, else the system's
-//!   `/bin/bash` with the kit's `bashrc`, or an agent; with the kit
-//!   environment only, in the chosen folder;
-//! - its program leads a session and a process group of its own (`setsid`
-//!   of the PTY), put in a job (`os/jobs.rs`): closing the session hangs it
-//!   up, then ends what is left of its tree, its group and its session
-//!   (the jobs of an interactive shell, in groups of their own);
+//! - a session runs the kit's PowerShell (on macOS and Linux, without it,
+//!   the system's `/bin/bash` with the kit's `bashrc`), or an agent; with
+//!   the kit environment only, in the chosen folder;
+//! - on macOS and Linux its program leads a session and a process group of
+//!   its own (`setsid` of the PTY), put in a job (`os/jobs.rs`); on Windows
+//!   it runs on the kit's ConPTY (`conpty.rs`) in a Job Object of its own.
+//!   Closing the session hangs it up (`SIGHUP`, or the console closing),
+//!   then ends what is left of its tree, its group and its session (the
+//!   jobs of an interactive shell, in groups of their own);
 //! - the output goes to the window as text (UTF-8 decoded across reads) in
 //!   numbered chunks, event `pty://<id>`; the last [`BACKLOG`] bytes stay in
 //!   the session for a view that attaches later (the panel opens after the
@@ -18,12 +19,9 @@
 //! - the keys typed are written in order by a thread of the session, so a
 //!   program that does not read never blocks the window.
 //!
-//! Only the PTY itself is Unix code (`unix` below); the sessions, the
-//! output and the choice of the program are plain code, tested on every
-//! system.
-
-// On Windows the sessions are only counted (always none) and tested.
-#![cfg_attr(windows, allow(dead_code))]
+//! Only the pseudo terminal itself is code of one system (`unix` below,
+//! `conpty.rs`); the sessions, the output and the choice of the program
+//! are plain code, tested on every system.
 
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -186,10 +184,32 @@ impl Backlog {
 pub struct Launch {
     pub program: PathBuf,
     pub args: Vec<String>,
-    /// `SHELL` for the session: what runs, or bash for an agent (Claude
-    /// Code and Codex run their commands with it), never the user's own.
+    /// `SHELL` for the session on macOS and Linux: what runs, or bash for
+    /// an agent (Claude Code and Codex run their commands with it), never
+    /// the user's own. Not set on Windows.
     pub shell: PathBuf,
     pub title: String,
+    /// The folder of the kit's ConPTY (Windows): `conpty.dll` and
+    /// `OpenConsole.exe`.
+    pub conpty: Option<PathBuf>,
+}
+
+/// The kit's ConPTY folder for a session of `kit` (Windows only).
+fn conpty_dir(kit: &Kit) -> Option<PathBuf> {
+    kit.target()
+        .is_windows()
+        .then(|| crate::setup::catalog::kit_path(kit, "conpty"))
+}
+
+/// The kit's PowerShell.
+fn pwsh(kit: &Kit) -> PathBuf {
+    crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe")
+}
+
+/// A batch file (`agy.cmd`): Windows runs it with cmd only.
+fn is_batch(path: &Path) -> bool {
+    path.extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("cmd") || e.eq_ignore_ascii_case("bat"))
 }
 
 fn title(dir: &Path, what: &str) -> String {
@@ -199,17 +219,20 @@ fn title(dir: &Path, what: &str) -> String {
     format!("{name} · {what}")
 }
 
-/// The kit's shell for `kit`'s system (D-109): its PowerShell when
-/// installed, else `/bin/bash --rcfile <kit>/data/kit/bashrc -i` (bash 3.2
-/// on macOS reads it too, D-105). Never a shell of the user's PATH.
+/// The kit's shell for `kit`'s system (D-109, D-148): its PowerShell; on
+/// macOS and Linux without it `/bin/bash --rcfile <kit>/data/kit/bashrc -i`
+/// (bash 3.2 on macOS reads it too, D-105). Never a shell of the user's
+/// PATH: on Windows without the kit's PowerShell the session does not
+/// start (it says the program is not installed).
 pub fn shell(kit: &Kit, dir: &Path) -> Launch {
-    let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
-    if pwsh.is_file() {
+    let pwsh = pwsh(kit);
+    if pwsh.is_file() || kit.target().is_windows() {
         return Launch {
             args: super::cfg::pwsh_args(kit),
             shell: pwsh.clone(),
             program: pwsh,
             title: title(dir, "pwsh"),
+            conpty: conpty_dir(kit),
         };
     }
     Launch {
@@ -217,22 +240,77 @@ pub fn shell(kit: &Kit, dir: &Path) -> Launch {
         args: super::cfg::bash_args(kit),
         shell: PathBuf::from(BASH),
         title: title(dir, "bash"),
+        conpty: None,
     }
 }
 
 /// An agent or another program of the kit, started directly (Antigravity's
-/// `agy` is a sh script of the kit, written with its execute bit).
-pub fn command(command: &Path, dir: &Path) -> Launch {
+/// `agy` is a sh script of the kit, written with its execute bit). On
+/// Windows a batch (`agy.cmd`) runs through the kit's PowerShell
+/// (`-Command "& '<path>'; exit $LASTEXITCODE"`): cmd would read `&` and
+/// `%` in the path (D-17, D-45).
+pub fn command(kit: &Kit, command: &Path, dir: &Path) -> Launch {
     let name = command.file_stem().map_or_else(
         || command.display().to_string(),
         |n| n.to_string_lossy().into(),
     );
+    let (program, args) = if kit.target().is_windows() && is_batch(command) {
+        let quoted = super::terminal::ps_single_quoted(&command.display().to_string());
+        let mut args: Vec<String> = [
+            "-NoLogo",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+        ]
+        .map(String::from)
+        .into();
+        args.push(format!("& '{quoted}'; exit $LASTEXITCODE"));
+        (pwsh(kit), args)
+    } else {
+        (command.to_path_buf(), Vec::new())
+    };
     Launch {
-        program: command.to_path_buf(),
-        args: Vec::new(),
+        program,
+        args,
         shell: PathBuf::from(BASH),
         title: title(dir, &name),
+        conpty: conpty_dir(kit),
     }
+}
+
+/// What portable-pty and Windows would not tell clearly: it falls back to
+/// `$HOME` for a folder that is not one, and a program that cannot start
+/// would look like one that printed nothing and ended with 1. Errors in
+/// `lang`.
+pub fn ready(launch: &Launch, dir: &Path, lang: &str) -> Result<()> {
+    let shown = dir.display().to_string();
+    anyhow::ensure!(
+        dir.is_dir(),
+        crate::i18n::t(lang, "La cartella {0} non esiste.", &[&shown])
+    );
+    let shown = launch.program.display().to_string();
+    anyhow::ensure!(
+        runnable(&launch.program),
+        crate::i18n::t(lang, "{0} non è installato.", &[&shown])
+    );
+    Ok(())
+}
+
+#[cfg(unix)]
+fn runnable(program: &Path) -> bool {
+    use std::os::unix::ffi::OsStrExt;
+    let Ok(path) = std::ffi::CString::new(program.as_os_str().as_bytes()) else {
+        return false;
+    };
+    // access(X_OK) also refuses a file on a `noexec` mount.
+    // SAFETY: a NUL-terminated path, only read.
+    program.is_file() && unsafe { libc::access(path.as_ptr(), libc::X_OK) } == 0
+}
+
+#[cfg(windows)]
+fn runnable(program: &Path) -> bool {
+    program.is_file()
 }
 
 /// The bytes of xterm.js's binary input (its `onBinary`: mouse reports of
@@ -252,7 +330,9 @@ pub fn latin1(data: &str) -> Option<Vec<u8>> {
 /// and bash 3.2 or pwsh would then run in the C locale. `LANG` when none is
 /// set, as VS Code does (`en_US.UTF-8` on macOS, which has no `C.UTF-8`);
 /// `LC_CTYPE` over a `LANG` of another charset, which keeps its messages;
-/// never over an `LC_ALL` chosen by the user.
+/// never over an `LC_ALL` chosen by the user. Not on Windows, where the
+/// console is UTF-16 and the kit's profile sets the code pages.
+#[cfg_attr(windows, allow(dead_code))]
 pub fn utf8_locale(
     os: crate::kit::Os,
     lc_all: Option<&str>,
@@ -284,7 +364,9 @@ pub fn utf8_locale(
 /// unless it calls `setsid` itself, and the system gives that pid to no new
 /// process while one of them lives. So a process with that pid, once the
 /// leader was reaped, means the session is gone and the pid now another
-/// program's: then none. Never the app itself.
+/// program's: then none. Never the app itself. Unix only: on Windows the
+/// session's Job Object holds them.
+#[cfg_attr(windows, allow(dead_code))]
 pub fn in_session(procs: &[(u32, u32)], leader: u32, leader_running: bool) -> Vec<u32> {
     if leader == 0 || (!leader_running && procs.iter().any(|&(pid, _)| pid == leader)) {
         return Vec::new();
@@ -314,7 +396,25 @@ pub trait Io: Send + Sync {
     /// Lets go of the PTY and of the job: what is left of the program's
     /// group is killed.
     fn release(&self);
+    /// The program ended and its output was not closed by the system:
+    /// the PTY lets the reader end (Windows closes the pseudo console,
+    /// whose host would keep the pipe open). Default: nothing.
+    fn program_ended(&self) {}
 }
+
+/// A program started on a new PTY.
+struct Spawned {
+    io: Box<dyn Io>,
+    reader: Box<dyn Read + Send>,
+    /// Waits for the program to end: its exit code (`None`: by a signal).
+    wait: Box<dyn FnOnce() -> Option<u32> + Send>,
+    /// A line of the app shown before the program's output.
+    note: Option<String>,
+}
+
+/// How long the exit of a program waits for its output to end by itself
+/// before the PTY is told the program ended.
+const SETTLE: Duration = Duration::from_millis(200);
 
 struct State {
     backlog: Backlog,
@@ -564,7 +664,6 @@ impl Sessions {
     /// `on_output` every chunk, `on_exit` the session once its program
     /// ended (a program that ends at once never has its exit told first)
     /// and its output was read (see [`DRAIN`]). Errors in `lang`.
-    #[cfg(unix)]
     #[allow(clippy::too_many_arguments)]
     pub fn open(
         &self,
@@ -576,11 +675,14 @@ impl Sessions {
         on_output: impl Fn(u64, &Chunk) + Send + 'static,
         on_exit: impl FnOnce(PtyInfo) + Send + 'static,
     ) -> Result<PtyInfo> {
-        let spawned = unix::spawn(launch, env, dir, lang)?;
-        let session = self.insert(launch.title.clone(), dir, Box::new(spawned.io));
+        let spawned = spawn(launch, env, dir, lang)?;
+        let session = self.insert(launch.title.clone(), dir, spawned.io);
         let opened = session.info();
         on_open(&opened);
         let id = session.id;
+        if let Some(chunk) = spawned.note.and_then(|n| session.output(n.as_bytes())) {
+            on_output(id, &chunk);
+        }
         let reader = spawned.reader;
         let out = Arc::clone(&session);
         // Dropped once the pump sent its last chunk.
@@ -589,22 +691,72 @@ impl Sessions {
             pump(&out, reader, |chunk| on_output(id, chunk));
             drop(drained);
         });
-        let mut child = spawned.child;
+        let wait = spawned.wait;
         let waited = Arc::clone(&session);
         std::thread::spawn(move || {
-            let code = match child.wait() {
-                Ok(status) if status.signal().is_none() => Some(status.exit_code()),
-                _ => None,
-            };
+            let code = wait();
             waited.exited(code);
             // The exit after the program's last lines, so the view's note
             // never lands inside them; not later than DRAIN when a job left
-            // in the background keeps the PTY open.
-            let _ = read_all.recv_timeout(DRAIN);
+            // in the background keeps the PTY open. A pseudo console of
+            // Windows keeps its output open until it is closed.
+            let settled = read_all.recv_timeout(SETTLE);
+            if matches!(settled, Err(std::sync::mpsc::RecvTimeoutError::Timeout)) {
+                waited.io.program_ended();
+                let _ = read_all.recv_timeout(DRAIN);
+            }
             on_exit(waited.info());
         });
         Ok(opened)
     }
+}
+
+/// Starts `launch` on a new PTY (unix) with the kit environment only.
+#[cfg(unix)]
+fn spawn(launch: &Launch, env: &crate::env::KitEnv, dir: &Path, lang: &str) -> Result<Spawned> {
+    let spawned = unix::spawn(launch, env, dir, lang)?;
+    let mut child = spawned.child;
+    Ok(Spawned {
+        io: Box::new(spawned.io),
+        reader: spawned.reader,
+        wait: Box::new(move || match child.wait() {
+            Ok(status) if status.signal().is_none() => Some(status.exit_code()),
+            _ => None,
+        }),
+        note: None,
+    })
+}
+
+/// Starts `launch` on a new pseudo console (Windows, `conpty.rs`) with the
+/// kit environment only; without the kit's ConPTY the session says that
+/// Windows' own is used.
+#[cfg(windows)]
+fn spawn(launch: &Launch, env: &crate::env::KitEnv, dir: &Path, lang: &str) -> Result<Spawned> {
+    ready(launch, dir, lang)?;
+    let mut env = env.clone();
+    env.set("COLORTERM", "truecolor");
+    let spawned = super::conpty::spawn(
+        &launch.program,
+        &launch.args,
+        &env,
+        dir,
+        launch.conpty.as_deref(),
+    )?;
+    let note = spawned.system.then(|| {
+        let text = crate::i18n::t(
+            lang,
+            "Il ConPTY del kit non è installato: questo terminale usa quello di Windows, e alcuni programmi (Claude Code) possono non ricevere i tasti.",
+            &[],
+        );
+        format!("\x1b[2m{text}\x1b[0m\r\n")
+    });
+    let process = spawned.process;
+    Ok(Spawned {
+        io: Box::new(spawned.io),
+        reader: Box::new(spawned.reader),
+        wait: Box::new(move || process.wait()),
+        note,
+    })
 }
 
 #[cfg(unix)]
@@ -642,33 +794,8 @@ mod unix {
         pixel_height: 0,
     };
 
-    /// What portable-pty would not tell: it falls back to `$HOME` for a
-    /// folder that is not one, and it closes the pipe through which a
-    /// failed `exec` is reported (a program that cannot start would look
-    /// like one that printed nothing and ended with 1). Errors in `lang`.
-    pub fn ready(launch: &Launch, dir: &Path, lang: &str) -> Result<()> {
-        use std::os::unix::ffi::OsStrExt;
-        let shown = dir.display().to_string();
-        anyhow::ensure!(
-            dir.is_dir(),
-            crate::i18n::t(lang, "La cartella {0} non esiste.", &[&shown])
-        );
-        let program = &launch.program;
-        let path = std::ffi::CString::new(program.as_os_str().as_bytes())
-            .with_context(|| format!("{}", program.display()))?;
-        // access(X_OK) also refuses a file on a `noexec` mount.
-        // SAFETY: a NUL-terminated path, only read.
-        let runnable = program.is_file() && unsafe { libc::access(path.as_ptr(), libc::X_OK) } == 0;
-        let shown = program.display().to_string();
-        anyhow::ensure!(
-            runnable,
-            crate::i18n::t(lang, "{0} non è installato.", &[&shown])
-        );
-        Ok(())
-    }
-
     pub fn spawn(launch: &Launch, env: &KitEnv, dir: &Path, lang: &str) -> Result<Spawned> {
-        ready(launch, dir, lang)?;
+        super::ready(launch, dir, lang)?;
         let pair = native_pty_system().openpty(SIZE).context("openpty")?;
         let mut cmd = CommandBuilder::new(&launch.program);
         cmd.args(&launch.args);

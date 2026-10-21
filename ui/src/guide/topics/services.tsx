@@ -1233,16 +1233,16 @@ export const SERVICES: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Su Windows si apre una finestra di console classica con la PowerShell 7 del kit.",
-              "On Windows a classic console window opens with the kit's PowerShell 7.",
-              "Sur Windows, une fenêtre de console classique s'ouvre avec le PowerShell 7 du kit.",
-              "Unter Windows öffnet sich ein klassisches Konsolenfenster mit der PowerShell 7 des Kits.",
+              "Si apre una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit (su macOS e Linux, se non c'è, bash). Mai il terminale del PC né una finestra a parte.",
+              "A tab opens in the terminal panel inside Atollo, on every system, with the kit's PowerShell 7 (on macOS and Linux, if it is missing, bash). Never the PC's terminal or a separate window.",
+              "Un onglet du panneau des terminaux s'ouvre dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit (sur macOS et Linux, s'il manque, bash). Jamais le terminal du PC ni une fenêtre à part.",
+              "Auf jedem System öffnet sich eine Registerkarte im Terminalbereich in Atollo, mit der PowerShell 7 des Kits (unter macOS und Linux, falls sie fehlt, bash). Nie das Terminal des PCs oder ein eigenes Fenster.",
             ),
             tr(
-              "Su macOS e Linux si apre una scheda del pannello dei terminali dentro Atollo (con la PowerShell del kit se c'è, altrimenti bash).",
-              "On macOS and Linux a tab opens in the terminal panel inside Atollo (with the kit's PowerShell if there is one, otherwise bash).",
-              "Sur macOS et Linux, un onglet du panneau des terminaux s'ouvre dans Atollo (avec le PowerShell du kit s'il existe, sinon bash).",
-              "Unter macOS und Linux öffnet sich eine Registerkarte im Terminalbereich in Atollo (mit der PowerShell des Kits, falls vorhanden, sonst bash).",
+              "Su Windows il terminale usa il ConPTY del kit (conpty.dll e OpenConsole.exe di Microsoft, la console di Windows Terminal), una parte dell'app installata con i componenti obbligatori: se manca, l'app lo scarica prima di aprire il terminale (avanzamento in «Attività»).",
+              "On Windows the terminal uses the kit's ConPTY (Microsoft's conpty.dll and OpenConsole.exe, the console of Windows Terminal), a part of the app installed with the required components: if it is missing, the app downloads it before opening the terminal (progress in “Activity”).",
+              "Sous Windows, le terminal utilise le ConPTY du kit (conpty.dll et OpenConsole.exe de Microsoft, la console de Windows Terminal), une partie de l'application installée avec les composants obligatoires : s'il manque, l'application le télécharge avant d'ouvrir le terminal (progression dans « Activité »).",
+              "Unter Windows nutzt das Terminal das ConPTY des Kits (conpty.dll und OpenConsole.exe von Microsoft, die Konsole von Windows Terminal), einen Teil der App, der mit den Pflichtkomponenten installiert wird: Fehlt es, lädt die App es herunter, bevor das Terminal öffnet (Fortschritt in „Aktivität“).",
             ),
             tr(
               "All'apertura compare «Atollo · <nome del terminale>» e l'elenco degli strumenti trovati; il prompt mostra Atollo e la cartella corrente.",
@@ -1343,19 +1343,22 @@ export const SERVICES: TopicTexts = {
       </Section>
 
       <Section
-        title={tr(
-          "I terminali su macOS e Linux",
-          "Terminals on macOS and Linux",
-          "Les terminaux sur macOS et Linux",
-          "Terminals unter macOS und Linux",
-        )}
+        title={tr("Il pannello dei terminali", "The terminal panel", "Le panneau des terminaux", "Der Terminalbereich")}
       >
         <P>
           {tr(
-            "Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · bash», «app · claude»…); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.",
-            "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · bash”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
-            "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · bash », « app · claude »…) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
-            "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · bash“, „app · claude“…); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
+            "Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.",
+            "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
+            "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · pwsh », « app · claude »…) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
+            "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · pwsh“, „app · claude“…); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "Su Windows e Linux Ctrl+C copia il testo selezionato (senza selezione arriva al programma), Ctrl+Maiusc+C copia, Ctrl+V e Ctrl+Maiusc+V incollano; su macOS ⌘C e ⌘V.",
+            "On Windows and Linux Ctrl+C copies the selected text (without a selection it goes to the program), Ctrl+Shift+C copies, Ctrl+V and Ctrl+Shift+V paste; on macOS ⌘C and ⌘V.",
+            "Sous Windows et Linux, Ctrl+C copie le texte sélectionné (sans sélection il va au programme), Ctrl+Maj+C copie, Ctrl+V et Ctrl+Maj+V collent ; sur macOS ⌘C et ⌘V.",
+            "Unter Windows und Linux kopiert Strg+C den markierten Text (ohne Markierung geht es an das Programm), Strg+Umschalt+C kopiert, Strg+V und Strg+Umschalt+V fügen ein; unter macOS ⌘C und ⌘V.",
           )}
         </P>
       </Section>

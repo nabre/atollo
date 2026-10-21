@@ -86,9 +86,8 @@ pub async fn eject_run<R: Runtime>(
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
         editor.stop();
-        // The app's terminal sessions (macOS and Linux) hung up first, as at
-        // the app's exit; what is left of them is stopped below. None on
-        // Windows, whose consoles are stopped by their pids.
+        // The app's terminal sessions hung up first, as at the app's exit;
+        // what is left of them is stopped below by their pids.
         handle.state::<terminal::Consoles>().close_all();
         crate::os::sessions::stop(&consoles);
         let pids: Vec<u32> = crate::os::sessions::kit_processes(&kit)

@@ -314,10 +314,9 @@ fn editor_windows_cannot_invoke_commands() {
 }
 
 /// The app's terminal (editor/pty.rs): its commands answer the main window
-/// on macOS and Linux (permissions/pty.toml), never an editor window, and
-/// do not exist on Windows, which keeps its consoles.
+/// on every system (permissions/pty.toml, D-148), never an editor window.
 #[test]
-fn terminal_sessions_only_on_unix_and_only_for_main() {
+fn terminal_sessions_only_for_main() {
     let app = mock_builder()
         .manage(state())
         .manage(editor::terminal::Consoles::default())
@@ -330,11 +329,7 @@ fn terminal_sessions_only_on_unix_and_only_for_main() {
         .build()
         .unwrap();
     let r = invoke_cmd(&main, "pty_sessions", LOCAL);
-    if cfg!(unix) {
-        assert_eq!(r, Ok(serde_json::json!([])));
-    } else {
-        assert!(r.is_err(), "no terminal sessions on Windows: {r:?}");
-    }
+    assert_eq!(r, Ok(serde_json::json!([])));
     let editor_url = "http://127.0.0.1:7000/";
     let editor = WebviewWindowBuilder::new(
         &app,

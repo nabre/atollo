@@ -256,7 +256,7 @@ pub fn link<R: tauri::Runtime>(
         );
     }
     let dir = kit.home();
-    let mut launch = pty::command(&exe, &dir);
+    let mut launch = pty::command(kit, &exe, &dir);
     launch.args.push("setup-token".into());
     launch.title = "Claude Code: setup-token".into();
     // A new token is asked for: not the saved one, nor an API key.

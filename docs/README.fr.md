@@ -99,7 +99,7 @@ Sans l'étape 2, macOS lance l'application depuis une copie temporaire (App Tran
 
 En bas de chaque page, le panneau **Activité** : ce qui tourne ou s'installe (actions des projets, chaque version des bases de données, pools des serveurs web, composants), avec la sortie et les erreurs au même endroit ; « Tout arrêter » arrête tout après une confirmation. La barre d'état compte les mêmes choses.
 
-Sous Windows, la console d'Atollo est la console classique de Windows avec le PowerShell 7 du kit ; sous macOS et Linux, un onglet du panneau des terminaux de l'application ; dans les deux cas, elle n'a que l'environnement isolé d'Atollo : les programmes installés sur le PC hôte n'interfèrent pas. Si la version enregistrée d'un terminal a été supprimée, il indique celle qu'il utilise à sa place (par exemple PHP 8.2 → 8.4).
+La console d'Atollo est un onglet du panneau des terminaux de l'application sur tous les systèmes, avec le PowerShell 7 du kit (sous Windows sur le ConPTY de Microsoft, la console de Windows Terminal, téléchargé avec le kit) ; elle n'ouvre jamais le terminal du PC et n'a que l'environnement isolé d'Atollo : les programmes installés sur le PC hôte n'interfèrent pas. Si la version enregistrée d'un terminal a été supprimée, il indique celle qu'il utilise à sa place (par exemple PHP 8.2 → 8.4).
 
 ## Reste à faire
 

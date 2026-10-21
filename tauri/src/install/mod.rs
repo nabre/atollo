@@ -19,6 +19,7 @@ mod agents;
 mod android;
 mod caddy;
 pub mod conda;
+mod conpty;
 mod core;
 mod db;
 mod editor;
@@ -272,6 +273,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "r" => &native::R,
         "pwsh" => &editor::Pwsh,
         "vscodium-server" => &editor::Server,
+        "conpty" => &conpty::ConPty,
         "mysql" => &db::MySql,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,

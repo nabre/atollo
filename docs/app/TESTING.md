@@ -30,7 +30,7 @@ They cover, among other things:
 - downloads with checksums and signatures;
 - editor and real web server (with the token and without);
 - editor windows that cannot call the app's commands;
-- a real console in `conhost.exe`, in a folder with spaces;
+- a real terminal session on Windows' ConPTY (`editor/conpty.rs`): the kit environment only, a folder with spaces, the exit code, typed input, and closing that ends the session's tree;
 - agent alignment and Antigravity sign-in with the real Credential Manager;
 - project detection on samples (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, static, composite projects, `panel.json` and `pannello.json`);
 - remembered and locked ports, starting and stopping an action through its job;
@@ -173,7 +173,7 @@ To be run before every release, with the release exe (`npm run build`), on a PC 
 - [ ] **Standard user** without administrator rights: no UAC prompt at any step.
 - [ ] **Authenticated proxy and SSL inspection.** Settings › Network with a proxy and a PEM file: installation, editor extensions and agents work.
 - [ ] **No network.** The app and the editor start, download errors are readable, the update check fails without blocking anything.
-- [ ] **Forced close from Task Manager.** No `node.exe`, editor server, kit console (`conhost.exe`, `pwsh.exe`) or project server is left.
+- [ ] **Forced close from Task Manager.** No `node.exe`, editor server, kit terminal (`OpenConsole.exe`, `pwsh.exe`) or project server is left.
 - [ ] **ARM64.** The exe is native, the editor runs in emulation and the warning is shown.
 - [ ] **Moved R** (D-104). Kit with R on `D:`, then on `E:`: after startup `lib\R\etc\x64\Makeconf` has `LOCAL_SOFT` on the new folder and `install.packages(..., type="source")` compiles.
 - [ ] **macOS and Linux**: the “macOS, Linux and Windows ARM64” section below.
@@ -279,7 +279,8 @@ Kit prepared on Windows for another system (at every release):
 
 ### Agents
 - [ ] **Claude Code, Codex and Antigravity.** Sign-in, start from the app and from the editor, alignment of instructions and skills among the three.
-- [ ] **An agent's console.** Home or Projects › Agent with Claude Code: the classic Windows console opens, even if the PC's default terminal is Windows Terminal or another one. Claude Code receives Enter, arrows and Ctrl+C. Closing the console leaves no `claude.exe`.
+- [ ] **An agent's terminal.** Home or Projects › the Claude Code button: a tab of the app's terminal panel opens (no console window, no Windows Terminal, even if it is the PC's default terminal). Claude Code receives Enter, arrows, Esc and Ctrl+C. Closing the tab leaves no `claude.exe` nor `OpenConsole.exe`.
+- [ ] **The kit's ConPTY.** In Task Manager the session's host is `OpenConsole.exe` from `data\apps\win32-*\conpty\`, never `conhost.exe`. With the component removed and no network, «Terminale» says in the app that it cannot install it; with the network, it is downloaded first (progress in «Attività») and the terminal opens.
 - [ ] **Git when needed.** On a kit without Git, at startup only the system components are installed: GitHub CLI works without Git (D-81). Choosing Claude Code, cloning a project or starting an action with `git` installs Git; unchecking Git also removes Claude Code.
 - [ ] **Editor updated with a folder open.** With File Explorer open on `data\apps\win32-x64\vscodium-server\extensions`, the editor of another version is still replaced at startup (D-60).
 

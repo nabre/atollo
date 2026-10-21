@@ -1,9 +1,8 @@
-// The terminal panel of macOS and Linux (D-109): at the bottom of every
-// page, as VSCodium's terminal, a tab per session opened by «Terminale» or
-// an agent's button; closing a tab whose program still runs asks first.
-// Its own chunk with xterm.js, read the first time a session opens: on
-// Windows no session opens (the consoles are windows of their own), so
-// the panel and xterm.js are never loaded there.
+// The terminal panel (D-109, D-148): at the bottom of every page, as
+// VSCodium's terminal, a tab per session opened by «Terminale», a terminal
+// of the Terminals page or an agent's button; closing a tab whose program
+// still runs asks first. Its own chunk with xterm.js, read the first time a
+// session opens.
 import { useState } from "react";
 import type { PtyBackend, PtyInfo } from "./api";
 import type { Terminals } from "./state";

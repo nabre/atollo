@@ -149,6 +149,7 @@ const COMPONENTS: Record<string, Logo> = {
   gh: { icon: SiGithub },
   pwsh: { icon: codicon("terminal-powershell"), color: "#5391FE" },
   "vscodium-server": { icon: SiVscodium, color: "#2F80ED" },
+  conpty: { icon: codicon("terminal") },
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },
   antigravity: { icon: AntigravityIcon },

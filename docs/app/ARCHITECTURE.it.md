@@ -99,8 +99,9 @@ tauri\src\
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema Atollo
     picker                    selettori di file e cartelle (D-109)
-    terminal                  console del kit: console classica di Windows (D-57, D-95)
-    pty                       terminale nell'app su macOS e Linux, sessioni PTY per xterm.js (D-109)
+    terminal                  console del kit: una sessione del terminale nell'app su ogni sistema (D-148)
+    pty                       terminale nell'app, sessioni PTY per xterm.js (D-109, D-148)
+    conpty                    pseudo console di Windows: conpty.dll del kit dal suo percorso, un job per sessione (D-148)
     terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e
                               versioni propri; una linea salvata non più installata passa alla più nuova (`replaced`)
   servers\                    pagina Server web: pool Caddy/Apache condivisi dai progetti
@@ -207,7 +208,7 @@ Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\
 | `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin, mongo-express |
 | `services.rs` | server di database del kit |
 | `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato |
-| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella; le sessioni del terminale nell'app su macOS e Linux |
+| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella; le sessioni del terminale nell'app |
 | `runs.rs` | azioni avviate: avvio, arresto, output, porte |
 
 Per aggiungere un comando:
@@ -302,7 +303,7 @@ Le cartelle delle pagine:
 | `github\` | `account.tsx`, `identity.tsx` (chi firma i commit), `repos.tsx`, `details.tsx` |
 | `settings\` | `page.tsx` (sette sezioni: Generale, Rete, Agenti, Aggiornamenti, Account GitHub, Privacy, Il kit), `sections.tsx`, `autosave.ts` (salvate mentre cambiano, D-137), `firstrun.tsx` (le scelte del primo avvio), `conda.tsx` (pacchetti conservati), `about.tsx` (kit e aggiornamenti) |
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (un blocco per tipo, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (il compilatore di Rust su Windows), `matrix.tsx` (la matrice, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
-| `terminal\` | il terminale nell'app di macOS e Linux (D-109): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `api.ts` |
+| `terminal\` | il terminale nell'app su ogni sistema (D-109, D-148): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `api.ts` |
 | `guide\` | `model.ts` (capitoli, argomenti, parole di ricerca), `topics\` (il testo, un file per capitolo), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
 
 Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `common.tsx` se lo usano più cartelle.

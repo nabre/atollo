@@ -719,10 +719,20 @@
     "fr": "Projet introuvable : {0}",
     "de": "Projekt nicht gefunden: {0}"
   },
+  "la console del terminale dell'app su Windows: conpty.dll e OpenConsole.exe di Microsoft": {
+    "en": "the console of the app's terminal on Windows: Microsoft's conpty.dll and OpenConsole.exe",
+    "fr": "la console du terminal de l'application sous Windows : conpty.dll et OpenConsole.exe de Microsoft",
+    "de": "die Konsole des App-Terminals unter Windows: conpty.dll und OpenConsole.exe von Microsoft"
+  },
   "{0} non è installato.": {
     "en": "{0} is not installed.",
     "fr": "{0} n'est pas installé.",
     "de": "{0} ist nicht installiert."
+  },
+  "Il ConPTY del kit non è installato: questo terminale usa quello di Windows, e alcuni programmi (Claude Code) possono non ricevere i tasti.": {
+    "en": "The kit's ConPTY is not installed: this terminal uses Windows' own, and some programs (Claude Code) may not receive the keys.",
+    "fr": "Le ConPTY du kit n'est pas installé : ce terminal utilise celui de Windows, et certains programmes (Claude Code) peuvent ne pas recevoir les touches.",
+    "de": "Das ConPTY des Kits ist nicht installiert: Dieses Terminal verwendet das von Windows, und manche Programme (Claude Code) erhalten die Tasten womöglich nicht."
   },
   "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.": {
     "en": "Close Antigravity before signing out: it is still open in the kit.",

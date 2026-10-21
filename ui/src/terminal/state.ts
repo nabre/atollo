@@ -1,11 +1,12 @@
-// The sessions of the app's terminal (macOS and Linux) and the panel's
+// The sessions of the app's terminal (every system, D-148) and the panel's
 // state: kept by the main window while pages change, filled by the events
 // of Rust. No xterm.js here, so the window loads it only with the panel.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PtyBackend, PtyInfo } from "./api";
 
-/** The sessions and the panel's state; `enabled` false (Windows, or before
- * the system is known) reads and listens to nothing. */
+/** The sessions and the panel's state; `enabled` false (the browser
+ * preview's first render, before the app answers) reads and listens to
+ * nothing. */
 export function useTerminals(backend: PtyBackend, enabled: boolean) {
   const [sessions, setSessions] = useState<PtyInfo[]>([]);
   const [active, setActive] = useState<number | null>(null);

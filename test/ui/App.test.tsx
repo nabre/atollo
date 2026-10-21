@@ -1010,7 +1010,7 @@ describe("App", () => {
     // The search narrows the topics; the sources table counts its rows
     fireEvent.change(screen.getByLabelText("Cerca nella guida"), { target: { value: "sha-256" } });
     fireEvent.click(await screen.findByText("Da dove arrivano gli strumenti"));
-    expect(await screen.findByText("Tabella completa delle fonti (36 componenti e 5 parti)")).toBeTruthy();
+    expect(await screen.findByText("Tabella completa delle fonti (37 componenti e 5 parti)")).toBeTruthy();
     expect(screen.getByText("PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)")).toBeTruthy();
     expect(screen.getByText(/macOS e Linux: GitHub desktop\/dugite-native/)).toBeTruthy();
 

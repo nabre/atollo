@@ -238,7 +238,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | 3 · Sidebar | The page title with its icons (including the book “Open the guide for this page”), often a search box, and panes that open and close with a click on their title. |
 | 4 · Tab area | What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools. |
 | 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools and the project actions, each with its output; “Stop all” stops them all after a confirmation. |
-| 6 · Status bar | On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals (macOS and Linux), the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel. |
+| 6 · Status bar | On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals, the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel. |
 
 #### The pages
 
@@ -267,7 +267,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | Atollo (on the left) | Hovering over it shows the kit folder. | — |
 | ▶ number · ⨯ number | How many things are running (project actions, every running database version, even several of the same database, and the running web server pools) and how many actions stopped with an error. It turns red if there is at least one error. | Opens or closes the “Activity” panel. |
 | Spinner with text | A component installation in progress and the step it is on. | Opens the panel. |
-| Open terminals (macOS and Linux) | How many sessions the app's terminal panel has. | Shows or hides the terminals. |
+| Open terminals | How many sessions the app's terminal panel has. | Shows or hides the terminals. |
 | Editor running | The editor server is on (hovering over it shows its address). | — |
 | win32-x64, darwin-arm64… | The system and the processor the kit runs on. | — |
 | v0.x.y | The Atollo version. | — |
@@ -732,7 +732,7 @@ The kit's editor is VSCodium, the free version of Visual Studio Code. The “Edi
 
 #### The project terminal
 
-“Terminal” opens a kit console in the project folder: on Windows a classic console window with the kit's PowerShell 7; on macOS and Linux a tab of the terminal panel inside Atollo. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder.
+“Terminal” opens a kit console in the project folder: a tab of the terminal panel inside Atollo, on every system, with the kit's PowerShell 7. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder.
 
 For consoles in other folders or with tools you choose there is the Terminals page: [3.4 The kit's terminals](#34-the-kits-terminals).
 
@@ -1158,8 +1158,8 @@ Related topics: [2.3 Starting a project: actions and ports](#23-starting-a-proje
 
 The “Terminals” box lists the default “All tools” terminal (“Every tool at its latest version”) and the ones you created. “Open” on a row opens the console in its starting folder.
 
-- On Windows a classic console window opens with the kit's PowerShell 7.
-- On macOS and Linux a tab opens in the terminal panel inside Atollo (with the kit's PowerShell if there is one, otherwise bash).
+- A tab opens in the terminal panel inside Atollo, on every system, with the kit's PowerShell 7 (on macOS and Linux, if it is missing, bash). Never the PC's terminal or a separate window.
+- On Windows the terminal uses the kit's ConPTY (Microsoft's conpty.dll and OpenConsole.exe, the console of Windows Terminal), a part of the app installed with the required components: if it is missing, the app downloads it before opening the terminal (progress in “Activity”).
 - When it opens, “Atollo · \<terminal name\>” appears with the list of tools found; the prompt shows Atollo and the current folder.
 
 #### Creating your own terminal
@@ -1177,9 +1177,11 @@ Useful when you always need the same set: for example a “PHP 7.4 legacy” ter
 - The default terminal cannot be changed: duplicate it to create your own. “Delete” asks for a confirmation (Esc closes the question) and removes only the terminal, not the tools.
 - If a chosen version is no longer installed, the terminal uses the newest one and says so, for example “PHP 8.2 → 8.4”; a tool removed altogether stays out.
 
-#### Terminals on macOS and Linux
+#### The terminal panel
 
-The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · bash”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.
+The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.
+
+On Windows and Linux Ctrl+C copies the selected text (without a selection it goes to the program), Ctrl+Shift+C copies, Ctrl+V and Ctrl+Shift+V paste; on macOS ⌘C and ⌘V.
 
 <details>
 <summary>Under the hood</summary>
@@ -1228,7 +1230,7 @@ The Agents page does not start agents: an agent always works in a project's fold
 
 1. Open the project.
 2. At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Antigravity”). Click the one of the agent you want to use.
-3. The agent starts right away. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.
+3. The agent starts right away, in the project folder, in a tab of the terminal panel inside Atollo (on every system).
 
 The same buttons are on the project's row (sidebar or “Quick panel”): a click on a logo opens that agent in the project. An agent that is not installed has no button; if none is installed, there are no agent buttons.
 
@@ -2322,7 +2324,7 @@ Many components are published on GitHub. Without a sign-in, the GitHub API allow
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open. |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Only when the commands of projects and frameworks ask for it. |
 
-#### Complete table of sources (36 components and 5 parts)
+#### Complete table of sources (37 components and 5 parts)
 
 For each component: where the kit reads the versions from, where it downloads the file from, how it verifies it and where it puts it. The columns describe Windows; where macOS and Linux use another source, it is written under the address.
 
@@ -2331,6 +2333,7 @@ For each component: where the kit reads the versions from, where it downloads th
 | [PowerShell 7 (pwsh)](https://github.com/PowerShell/PowerShell) | api.github.com/repos/PowerShell/PowerShell/releases/latest | PowerShell-\<v\>-win-(x64\|arm64).zip | SHA-256 — GitHub Release asset.digest | `pwsh\<line>\pwsh.exe` |
 | [GitHub CLI (gh)](https://cli.github.com) | api.github.com/repos/cli/cli/releases/latest | gh_\<v\>_windows_(amd64\|arm64).zip | SHA-256 — GitHub Release asset.digest | `gh\<line>\bin\gh.exe` |
 | [Editor (VSCodium Reh Web)](https://vscodium.com) | Built-in catalog (pinned version 1.135.06055, D-58) | github.com/VSCodium/vscodium/releases/download/\<v\>/vscodium-reh-web-win32-x64-\<v\>.tar.gz<br>macOS and Linux: vscodium-reh-web-\<target\>-\<v\>.tar.gz, SHA-256 pinned per target (native on ARM64 too) | SHA-256 — SHA-256 hardcoded in components.json | `vscodium-server\` |
+| [ConPTY (conpty.dll + OpenConsole.exe)](https://github.com/microsoft/terminal) | Built-in catalog (pinned version 1.25.260930003, D-148) | api.nuget.org/v3-flatcontainer/microsoft.windows.console.conpty/\<v\>/microsoft.windows.console.conpty.\<v\>.nupkg<br>Windows only: on macOS and Linux the terminal uses the system's PTY | Authenticode + SHA — Package SHA-256 hardcoded in components.json (NuGet's SHA-512); conpty.dll and OpenConsole.exe signed by Microsoft Corporation | `conpty\` |
 | [Claude Code](https://claude.com/product/claude-code) | registry.npmjs.org/@anthropic-ai/claude-code-win32-\<arch\>/latest | dist.tarball field of the npm package | Authenticode + SHA — npm sha512 integrity + Anthropic Authenticode signature | `claude\<line>\claude.exe` |
 | [Codex (OpenAI)](https://github.com/openai/codex) | registry.npmjs.org/@openai/codex/latest → /\<ver\>-win32-\<arch\> | dist.tarball field of the architecture-specific package | npm sha512 — npm dist.integrity (sha512-...) | `codex\<line>\bin\codex.exe` |
 | [Antigravity (Google)](https://antigravity.google) | antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64\|arm64).json | url field of the official JSON manifest<br>macOS and Linux: manifests/\<os\>_\<arch\>.json, .tar.gz archive | SHA-512 — SHA-512 (128 hex) from the manifest sha512 field | `antigravity\<line>\agy.exe (via data\kit\bin\agy.cmd)` |

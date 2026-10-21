@@ -12,7 +12,7 @@ fn missing_required_lists_only_installable_ones() {
     let missing = missing_required(&kit);
     assert_eq!(
         missing,
-        ["gh", "pwsh", "vscodium-server"],
+        ["gh", "pwsh", "vscodium-server", "conpty"],
         "git only when needed (D-81)"
     );
     for id in ["node", "uv", "python"] {

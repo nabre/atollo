@@ -85,7 +85,9 @@ fn shell_is_the_kit_pwsh_when_installed() {
 
 #[test]
 fn agents_run_directly_with_bash_as_shell() {
+    let (_t, kit) = kit_on("pty-agent", Target::LINUX_X64, &[]);
     let l = command(
+        &kit,
         Path::new("/k/data/apps/linux-x64/claude/claude"),
         Path::new("/k/projects/my app"),
     );
@@ -93,6 +95,10 @@ fn agents_run_directly_with_bash_as_shell() {
     assert!(l.args.is_empty());
     assert_eq!(l.shell, Path::new("/bin/bash"));
     assert_eq!(l.title, "my app · claude");
+    assert_eq!(l.conpty, None, "no ConPTY off Windows");
+    // A sh script named like a batch is not one off Windows.
+    let agy = command(&kit, Path::new("/k/agy.cmd"), Path::new("/p"));
+    assert_eq!(agy.program, Path::new("/k/agy.cmd"));
 }
 
 #[test]
@@ -442,6 +448,7 @@ mod real {
             args: vec!["-c".into(), script.into()],
             shell: PathBuf::from("/bin/sh"),
             title: "test".into(),
+            conpty: None,
         }
     }
 
@@ -566,6 +573,7 @@ mod real {
             args: vec!["--norc".into(), "--noprofile".into(), "-i".into()],
             shell: PathBuf::from("/bin/bash"),
             title: "test".into(),
+            conpty: None,
         }
     }
 
@@ -695,7 +703,13 @@ mod real {
         std::fs::write(&script, "#!/bin/sh\necho hi\n").unwrap();
         let e = sessions
             .open(
-                &command(&script, &tmp.0),
+                &Launch {
+                    program: script.clone(),
+                    args: Vec::new(),
+                    shell: PathBuf::from(BASH),
+                    title: "agy".into(),
+                    conpty: None,
+                },
                 &env(),
                 &tmp.0,
                 "it",

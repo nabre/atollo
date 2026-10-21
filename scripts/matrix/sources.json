@@ -36,6 +36,7 @@
     "mongo-express": { "windows": "GitHub nabre/atollo, the kit's build (pure JavaScript)", "unix": "GitHub nabre/atollo, the kit's build (pure JavaScript)" },
     "sqlite": { "windows": "sqlite.org (x64 when there is no arm64 zip)", "unix": "sqlite.org; linux-arm64: conda-forge", "notRelocatable": ["linux-arm64"] },
     "pwsh": { "windows": "GitHub PowerShell/PowerShell", "unix": "GitHub PowerShell/PowerShell" },
-    "vscodium-server": { "windows": "VSCodium reh-web, pinned version (x64 on ARM64 too)", "unix": "VSCodium reh-web, pinned version per target" }
+    "vscodium-server": { "windows": "VSCodium reh-web, pinned version (x64 on ARM64 too)", "unix": "VSCodium reh-web, pinned version per target" },
+    "conpty": { "windows": "NuGet Microsoft.Windows.Console.ConPTY, pinned version, conpty.dll + OpenConsole.exe signed by Microsoft (x64 and arm64)", "unix": "not needed: the system's PTY" }
   }
 }

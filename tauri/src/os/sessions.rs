@@ -130,7 +130,8 @@ pub fn stop_children(kit: &Kit) {
     let me = std::process::id();
     let webview = crate::os::webview::fixed_folder(kit);
     let all = processes::all();
-    // Descendants, not only children: a console's shell is under conhost.exe.
+    // Descendants, not only children: the programs a terminal's shell or
+    // an agent started.
     let mut ours = BTreeSet::from([me]);
     loop {
         let before = ours.len();

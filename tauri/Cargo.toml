@@ -51,8 +51,9 @@ ureq = { version = "3.4.2", default-features = false, features = ["win-system-pr
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
-# The in-app terminal of macOS and Linux (D-109): a PTY per session. Windows
-# keeps its classic consoles (D-57, D-95).
+# The PTY of the app's terminal on macOS and Linux (D-109). Windows has its
+# own ConPTY code (editor/conpty.rs, D-148): the kit's conpty.dll loaded by
+# its path, never one found by name.
 portable-pty = "=0.9.0"
 # Folder and file pickers of macOS and Linux (NSOpenPanel, GTK), called from
 # Rust only; Windows keeps IFileOpenDialog. rfd directly, not
@@ -87,6 +88,7 @@ features = [
     "Win32_System_Console",
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_JobObjects",
+    "Win32_System_LibraryLoader",
     "Win32_System_Pipes",
     "Win32_System_Registry",
     "Win32_System_Threading",

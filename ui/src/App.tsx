@@ -135,6 +135,8 @@ export function App() {
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "p") return;
+      // Ctrl+P in a terminal is the shell's (the previous command).
+      if (e.target instanceof Element && e.target.closest(".xterm")) return;
       e.preventDefault();
       setPage("projects");
       setQuickOpen(true);
@@ -149,9 +151,9 @@ export function App() {
   const current = all.find((p) => p.id === page) ?? all[0];
   const [panelOpen, setPanelOpen] = useState(false);
   const [panelHeight, setPanelHeight] = useStoredSize("panel", 240, 120, 600);
-  // The app's terminal on macOS and Linux (D-109); Windows opens console
-  // windows instead, so nothing is read or listened to there.
-  const terminals = useTerminals(tauriPty, info !== null && !info.platform.startsWith("win32"));
+  // The app's terminal on every system (D-109, D-148): read once the app
+  // answered.
+  const terminals = useTerminals(tauriPty, info !== null);
   const [terminalHeight, setTerminalHeight] = useStoredSize("terminal", 280, 120, 800);
 
   return (

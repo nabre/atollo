@@ -1,79 +1,58 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::{tests::TempDir, Arch, Target};
 
+/// On Windows a batch agent (`agy.cmd`) runs through the kit's PowerShell,
+/// in the app's terminal, never through cmd or a shell of the PC.
 #[test]
-fn batch_runs_through_the_kit_powershell_in_conhost() {
+fn batch_runs_through_the_kit_powershell() {
     let tmp = TempDir::new("term");
-    let kit = Kit::at(tmp.0.join("k & (1)"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("k & (1)"), Arch::X64).for_target(Target::WIN32_X64);
     kit.prepare().unwrap();
-    let script = kit.root().join(r"it's\agy.cmd");
-    let env = KitEnv::default();
-    let batch = Program::Command(&script);
-    assert!(line(&kit, &env, &batch).is_err(), "no PC shell");
-    assert!(line(&kit, &env, &Program::Shell).is_err());
-
-    let pwsh = kit.apps().join(r"pwsh\pwsh.exe");
-    std::fs::create_dir_all(pwsh.parent().unwrap()).unwrap();
-    std::fs::write(&pwsh, b"").unwrap();
-    let l = line(&kit, &env, &batch).unwrap();
-    assert!(l
-        .conhost
-        .to_string_lossy()
-        .to_lowercase()
-        .ends_with(r"\system32\conhost.exe"));
-    assert_eq!(l.args[0], pwsh.display().to_string());
-    assert!(
-        l.args.last().unwrap().contains(r"it''s\agy.cmd'"),
-        "{:?}",
-        l.args
+    let script = kit.root().join("it's").join("agy.cmd");
+    let dir = kit.projects().join("app");
+    let l = pty::command(&kit, &script, &dir);
+    let pwsh = crate::setup::catalog::kit_path(&kit, r"pwsh\pwsh.exe");
+    assert_eq!(l.program, pwsh);
+    assert_eq!(
+        l.args[..5],
+        [
+            "-NoLogo",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command"
+        ]
+    );
+    let quoted = format!("& '{}'; exit $LASTEXITCODE", script.display()).replace("it's", "it''s");
+    assert_eq!(l.args[5], quoted);
+    assert_eq!(l.title, "app · agy");
+    assert_eq!(
+        l.conpty,
+        Some(crate::setup::catalog::kit_path(&kit, "conpty"))
     );
 
-    let shell = line(&kit, &env, &Program::Shell).unwrap();
-    assert_eq!(shell.args[0], pwsh.display().to_string());
+    // An exe agent runs directly.
+    let claude = kit.apps().join("claude").join("claude.exe");
+    let l = pty::command(&kit, &claude, &dir);
+    assert_eq!(l.program, claude);
+    assert!(l.args.is_empty());
+
+    // The shell is always the kit's PowerShell on Windows, even before it
+    // is installed: the session then says it is missing, never bash or cmd.
+    let shell = pty::shell(&kit, &dir);
+    assert_eq!(shell.program, pwsh);
     assert!(shell.args.iter().any(|a| a.ends_with("profile.ps1")));
+    let e = pty::ready(&shell, &dir, "it").unwrap_err();
+    assert!(e.to_string().contains("non"), "{e:#}");
 }
 
-/// A real conhost runs the program (in a folder with spaces) with the
-/// kit environment, and the console is counted until it closes.
+/// The close question and "Rimuovi l'unità" count the sessions that run.
 #[test]
-fn real_console_runs_and_ends() {
-    let tmp = TempDir::new("term-real");
-    let dir = tmp.0.join("a b");
-    std::fs::create_dir_all(&dir).unwrap();
-    let script = dir.join("probe.cmd");
-    std::fs::write(&script, "@echo %ATOLLO_PROBE%> ran.txt\r\n").unwrap();
-    let mut env = KitEnv::default();
-    env.set("ATOLLO_PROBE", "kit-env");
-    // The app's environment always has it: Windows on ARM64 starts no
-    // process without SystemRoot.
-    if let Some(root) = std::env::var_os("SystemRoot") {
-        env.set("SystemRoot", root.to_string_lossy());
-    }
-    // Through cmd here: the test kit has no PowerShell.
-    let l = Line {
-        conhost: conhost(&env),
-        args: vec![
-            r"C:\Windows\System32\cmd.exe".into(),
-            "/d".into(),
-            "/c".into(),
-            script.display().to_string(),
-        ],
-    };
+fn consoles_count_running_sessions() {
     let consoles = Consoles::default();
-    let (tx, rx) = std::sync::mpsc::channel();
-    start(
-        &consoles,
-        &env,
-        &dir,
-        &l,
-        Box::new(move || tx.send(()).unwrap()),
-    )
-    .unwrap();
-    assert_eq!(consoles.count(), 1);
-    rx.recv_timeout(std::time::Duration::from_secs(20)).unwrap();
     assert_eq!(consoles.count(), 0);
-    let ran = std::fs::read_to_string(dir.join("ran.txt")).unwrap();
-    assert_eq!(ran.trim(), "kit-env", "the kit environment only");
+    assert!(consoles.pids().is_empty());
+    consoles.close_all();
 }
 
 /// BUG-V6-31: PowerShell closes a `'...'` string on ’ and its siblings
@@ -89,7 +68,7 @@ fn powershell_quotes_typographic_apostrophes() {
 }
 
 /// The quoted path of a batch in `D:\…\O’Brien {x}` runs in a real
-/// PowerShell, as the console starts it.
+/// PowerShell, as the terminal starts it.
 #[cfg(windows)]
 #[test]
 fn powershell_runs_a_batch_under_a_typographic_apostrophe() {

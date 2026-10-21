@@ -99,8 +99,9 @@ tauri\src\
     mod  window               VSCodium web server; editor-<n> windows (D-69)
     cfg  ext  theme           settings and terminal profiles; extensions (D-71); Atollo theme
     picker                    file and folder pickers (D-109)
-    terminal                  kit console: classic Windows console (D-57, D-95)
-    pty                       in-app terminal on macOS and Linux, PTY sessions for xterm.js (D-109)
+    terminal                  kit console: a session of the in-app terminal on every system (D-148)
+    pty                       in-app terminal, PTY sessions for xterm.js (D-109, D-148)
+    conpty                    Windows' pseudo console: the kit's conpty.dll by its path, job per session (D-148)
     terminals                 Terminals page: consoles saved in data\app\terminals.json, with their own tools and
                               versions; a saved line no longer installed falls back to the newest (`replaced`)
   servers\                    Web server page: Caddy/Apache pools shared by the projects
@@ -207,7 +208,7 @@ One file per page or area of the interface, with the same names as the files in 
 | `databases.rs` | project databases, copies, `.env`, content, phpMyAdmin, mongo-express |
 | `services.rs` | the kit's database servers |
 | `servers.rs` | web server pools: list, profiles, start, stop, reload, linked project |
-| `terminals.rs` | Terminals page: list, saving, removal, opening, folder choice; the in-app terminal's sessions on macOS and Linux |
+| `terminals.rs` | Terminals page: list, saving, removal, opening, folder choice; the in-app terminal's sessions |
 | `runs.rs` | started actions: start, stop, output, ports |
 
 To add a command:
@@ -302,7 +303,7 @@ The page folders:
 | `github\` | `account.tsx`, `identity.tsx` (who signs the commits), `repos.tsx`, `details.tsx` |
 | `settings\` | `page.tsx` (seven sections: General, Network, Agents, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `about.tsx` (kit and updates) |
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
-| `terminal\` | the in-app terminal of macOS and Linux (D-109): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `api.ts` |
+| `terminal\` | the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `api.ts` |
 | `guide\` | `model.ts` (chapters, topics, search words), `topics\` (the text, one file per chapter), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
 
 A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `common.tsx` if several folders use it.
