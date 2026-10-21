@@ -115,6 +115,37 @@ fn lock_is_released_and_stale_lock_taken() {
     assert!(Lock::take(&p.state).is_ok(), "holder gone: stale");
 }
 
+/// BUG-V6-18: the silence of the holder is measured on its heartbeat, not
+/// on the lock folder's time; a held lock keeps beating.
+#[test]
+fn lock_staleness_follows_the_heartbeat() {
+    let (_t, _kit, p) = kit("sync-lock-beat");
+    let lock = p.state.join("lock");
+    let old = SystemTime::now() - Duration::from_secs(600);
+    let set_old = |f: &Path| {
+        fs::File::options()
+            .write(true)
+            .open(f)
+            .unwrap()
+            .set_modified(old)
+            .unwrap();
+    };
+    // A holder alive (this process) but silent for 10 minutes, in a folder
+    // just made: stale.
+    fs::create_dir_all(&lock).unwrap();
+    fs::write(lock.join("pid"), std::process::id().to_string()).unwrap();
+    fs::write(lock.join("beat"), "").unwrap();
+    set_old(&lock.join("beat"));
+    let held = Lock::take(&p.state).unwrap();
+
+    // Held: the beat is renewed by itself, without any step.
+    set_old(&lock.join("beat"));
+    std::thread::sleep(BEAT * 4);
+    assert!(Lock::silence(&lock) < Duration::from_secs(60));
+    drop(held);
+    assert!(!lock.exists());
+}
+
 #[test]
 fn stamp_format() {
     assert_eq!(civil_from_days(0), (1970, 1, 1));
