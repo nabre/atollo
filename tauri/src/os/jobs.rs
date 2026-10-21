@@ -256,6 +256,7 @@ pub fn spawn_in(cmd: &mut Command, job: &Job) -> Result<Child> {
         .with_context(|| format!("starting {:?}", cmd.get_program()))?;
     if let Err(e) = job.assign(&child) {
         let _ = child.kill();
+        let _ = child.wait();
         return Err(e);
     }
     Ok(child)
@@ -588,6 +589,7 @@ pub fn spawn_in(cmd: &mut Command, job: &Job) -> Result<Child> {
     };
     if let Err(e) = resume() {
         let _ = child.kill();
+        let _ = child.wait();
         return Err(e);
     }
     Ok(child)
