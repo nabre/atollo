@@ -22,24 +22,18 @@
 | `BUG-V6-11` | MEDIA | Plausibile | Server web | `caddy reload` fallito → stop e start di tutto il pool |
 | `BUG-V6-13` | MEDIA | Plausibile | Rete | Download fermo: nessun timeout sul corpo, «Annulla» inefficace |
 | `BUG-V6-14` | MEDIA | Confermato | Setup | Un download fatto a mano viene consumato anche se l'installazione fallisce |
-| `BUG-V6-15` | MEDIA | Confermato | Agenti | Dopo «Rimuovi unità» le sincronizzazioni in background scrivono ancora |
-| `BUG-V6-17` | MEDIA | Confermato | Agenti | Salvataggio del portachiavi riprovato ogni 3 s per sempre; log senza rotazione |
 | `SEC-V6-01` | MEDIA | Plausibile | DB, server | File di segreti/stato illeggibile → riscritto vuoto |
-| `SEC-V6-02` | MEDIA | Scelta da rivedere | Agenti | Token a lunga durata in ogni processo del kit, cartelle `projects/` già fidate |
 | `BUG-V6-22` | BASSA | Confermato | Router | `bootstrap::take` cancella un file legacy di un altro componente |
 | `BUG-V6-23` | BASSA | Plausibile | Rete, update | `.old` ancora in uso blocca la sostituzione |
 | `BUG-V6-25` | BASSA | Confermato | OS | Processo avviato e lasciato fuori dal Job se `Job::new`/`assign` falliscono |
 | `BUG-V6-26` | BASSA | Confermato | DB | Amministratore MongoDB creato prima di salvarne la password |
 | `BUG-V6-27` | BASSA | Confermato | Core | `write_atomic` senza `fsync` |
 | `BUG-V6-28` | BASSA | Confermato | Progetti | Server statico: `//cartella` dà un redirect relativo al protocollo |
-| `BUG-V6-29` | BASSA | Confermato | Agenti | Uscita da Antigravity annullata se agy è aperto; comandi sul thread principale |
 | `BUG-V6-31` | BASSA | Confermato | Editor | Virgolette tipografiche nel percorso rompono il comando PowerShell |
-| `BUG-V6-32` | BASSA | Confermato | Agenti | Accesso «api key» di Claude/Codex irraggiungibile |
 | `BUG-V6-33` | BASSA | Confermato | Vari | Minori: `sync --project` vuoto, `components.txt` senza lock, token scritto poi protetto |
 | `SEC-V6-03` | BASSA | Confermato | Rete | Editore Authenticode confrontato come sottostringa |
 | `SEC-V6-04` | BASSA | Plausibile | Installatori | Metadati remoti usati nei nomi dei file senza filtro |
 | `PORT-V6-05` | BASSA | Plausibile | Rete | `:` nei nomi d'archivio rifiutato anche su Unix |
-| `PORT-V6-06` | BASSA | Plausibile | Agenti | Chiave di sigillo persa dopo crash e spostamento (macOS/Linux) |
 | `TEST-V6-01` | BASSA | Confermato | Prove | `ports_are_kept_and_locked` instabile in parallelo |
 
 ---
@@ -120,25 +114,10 @@
 - **Scenario**: l'utente scarica il JDK dal browser perché il proxy blocca il download; il file viene spostato nella cartella di lavoro; l'estrazione fallisce (antivirus, `InUse`); la cartella di lavoro viene cancellata col file. Al nuovo tentativo va riscaricato a mano.
 - **Correzione**: copiare, e cancellare l'originale solo dopo un'installazione riuscita.
 
-### `BUG-V6-15` — «Rimuovi unità» non ferma le sincronizzazioni in background
-- **Dove**: [`commands/window.rs:56-112`](../../../tauri/src/commands/window.rs#L56-L112), [`agents/mod.rs:199-201`](../../../tauri/src/agents/mod.rs#L199-L201), [`:246-266`](../../../tauri/src/agents/mod.rs#L246-L266), [`editor/terminal.rs:151-159`](../../../tauri/src/editor/terminal.rs#L151-L159).
-- **Scenario**: chiudere agenti e console fa scattare `on_exit` → `sync::run`; il watcher (3 s) vede l'agente sparito e sincronizza, e ritenta `keyring::save`. Le scritture (`CLAUDE.md`, `config.toml`, giunzioni) possono essere in corso quando l'interfaccia dice che l'unità si può staccare.
-- **Correzione**: un flag «in chiusura» in `AppState`, impostato prima di fermare qualcosa; watcher e callback d'uscita non sincronizzano se è alzato; l'espulsione prende il lock di sync e aspetta.
-
-### `BUG-V6-17` — Portachiavi riprovato ogni 3 s, log che cresce
-- **Dove**: [`agents/mod.rs:259-263`](../../../tauri/src/agents/mod.rs#L259-L263), [`log.rs:16-24`](../../../tauri/src/log.rs#L16-L24).
-- **Scenario**: `keyring-before*.json` presente e salvataggio impossibile (Portachiavi bloccato, Secret Service assente) → tentativo ogni 3 s con una riga WARN; su macOS può riaprire la richiesta del Portachiavi; `app.log` ruota solo all'avvio e cresce senza limite.
-- **Correzione**: attesa esponenziale e stop dopo N errori; rotazione del log per dimensione anche durante la sessione.
-
 ### `SEC-V6-01` [Plausibile, effetto grave] — Un file di stato illeggibile diventa vuoto e viene riscritto
 - **Dove**: [`db/auth.rs:53-55`](../../../tauri/src/db/auth.rs#L53-L55) (`secrets.json`), [`db/services/data.rs:193-200`](../../../tauri/src/db/services/data.rs#L193-L200), [`db/services/access.rs:36-70`](../../../tauri/src/db/services/access.rs#L36-L70), [`servers/pools.rs:38-40`](../../../tauri/src/servers/pools.rs#L38-L40), [`db/services/mod.rs:381-383`](../../../tauri/src/db/services/mod.rs#L381-L383).
 - **Scenario**: `fsx::read_json` dà `None` su un file danneggiato o bloccato un attimo dall'antivirus; `unwrap_or_default()` lo tratta come vuoto; l'avvio successivo scrive un file nuovo: profili dei server persi, oppure nuova password di root MySQL / amministratore MongoDB e dati chiusi a chiave. Inoltre `secrets.json` è letto-modificato-scritto senza lock e i lock per motore sono distinti: due primi avvii (MySQL e MongoDB) possono cancellarsi la password a vicenda.
 - **Correzione**: per segreti e stato non ricostruibile usare `try_read_json` e **rifiutare di scrivere** se il file esiste ma non si legge; un lock unico attorno a `secrets.json` (come `db_json_lock`).
-
-### `SEC-V6-02` [Scelta da rivedere] — Token in ogni processo, progetti fidati prima di essere visti
-- **Dove**: [`env.rs:858`](../../../tauri/src/env.rs#L858) (`GEMINI_API_KEY`), [`env.rs:886`](../../../tauri/src/env.rs#L886) + [`claude_token.rs:111-115`](../../../tauri/src/agents/claude_token.rs#L111-L115) (`CLAUDE_CODE_OAUTH_TOKEN`, un anno), [`agents/sync/mod.rs:188-264`](../../../tauri/src/agents/sync/mod.rs#L188-L264), [`agents/sync/codex.rs:290-305`](../../../tauri/src/agents/sync/codex.rs#L290-L305).
-- **Scenario**: l'ambiente del kit passa ad azioni dei progetti, script `npm`, terminali ed editor: uno script di un repository clonato può leggere ed esfiltrare il token. Le cartelle di `projects/` sono già fidate per Claude e Codex: hook e server MCP del repository si caricano senza domanda. Il README lo dice («open only projects you trust»), ma la fiducia è concessa prima che l'utente abbia visto il codice.
-- **Correzione**: token e chiave solo nell'ambiente di lancio dell'agente, non in `KitEnv`/`project_env`; fiducia concessa al primo avvio esplicito di un agente nel progetto (o un interruttore «Fidati di questo progetto» nella pagina del progetto). Va registrata come decisione `D-1xx`.
 
 ---
 
@@ -152,14 +131,11 @@
 | `BUG-V6-26` | [`db/services/access.rs:44-70`](../../../tauri/src/db/services/access.rs#L44-L70) | `createUser` poi salvataggio della password: se il salvataggio fallisce l'amministratore esiste con password ignota | salvare prima, creare dopo (come MySQL) |
 | `BUG-V6-27` | [`fsx.rs:84`](../../../tauri/src/fsx.rs#L84) | senza `sync_all` prima del `rename`, su exFAT/FAT uno stacco brusco lascia file a lunghezza zero; con `SEC-V6-01` si perde lo stato | `File::create` + `write_all` + `sync_all` + `rename` |
 | `BUG-V6-28` | [`projects/serve.rs:128-136`](../../../tauri/src/projects/serve.rs#L128-L136) | `GET //assets` → `Location: //assets/`, letto come `http://assets/` | comprimere le barre iniziali |
-| `BUG-V6-29` | [`agents/mod.rs:227-230`](../../../tauri/src/agents/mod.rs#L227-L230), [`commands/agents.rs:112-124`](../../../tauri/src/commands/agents.rs#L112-L124) | uscita da Antigravity con agy aperto: alla chiusura l'accesso torna in `keyring.json`; `agent_sign_out` è sincrono (thread principale), `codex logout` senza timeout | rifiutare l'uscita con l'agente aperto; comando `async` + `spawn_blocking`; timeout |
 | `BUG-V6-31` | [`editor/terminal.rs:119-133`](../../../tauri/src/editor/terminal.rs#L119-L133) | PowerShell tratta U+2018..U+201B come apici: kit in `D:\O’Brien\Atollo` → l'agente non parte | raddoppiare anche quei quattro caratteri, o passare il percorso come argomento |
-| `BUG-V6-32` | [`env.rs:27-72`](../../../tauri/src/env.rs#L27-L72), [`agents/mod.rs:87`](../../../tauri/src/agents/mod.rs#L87), [`:105`](../../../tauri/src/agents/mod.rs#L105) | `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` non sono nella lista ammessa: i rami «api key» non scattano mai | campo in Impostazioni come per Gemini, o togliere i rami morti |
 | `BUG-V6-33` | [`cli.rs:131`](../../../tauri/src/cli.rs#L131); [`commands/mod.rs:177-187`](../../../tauri/src/commands/mod.rs#L177-L187); [`editor/mod.rs:231-232`](../../../tauri/src/editor/mod.rs#L231-L232) | `sync --project` senza valore diventa `None` invece di errore; `components.txt` letto-modificato-scritto senza lock; token scritto e solo dopo protetto | errore d'uso; lock; `write_private` |
 | `SEC-V6-03` | [`net/signature.rs:88`](../../../tauri/src/net/signature.rs#L88), [`install/web.rs:110`](../../../tauri/src/install/web.rs#L110), [`install/agents.rs:65`](../../../tauri/src/install/agents.rs#L65) | l'editore Authenticode è una sottostringa del soggetto: un certificato valido con `O=Microsoft Corporation` in un OU passa; per `vc_redist` è l'unico controllo | confrontare l'attributo `O=` analizzato, esatto; eventualmente l'impronta |
 | `SEC-V6-04` | [`install/agents.rs:54`](../../../tauri/src/install/agents.rs#L54), [`:163-168`](../../../tauri/src/install/agents.rs#L163-L168), [`install/lang/mod.rs:57`](../../../tauri/src/install/lang/mod.rs#L57), [`install/db.rs:584-587`](../../../tauri/src/install/db.rs#L584-L587) | un manifesto compromesso con `version = "../../x"` fa scrivere fuori dalla cartella di lavoro | in `fetch` ammettere solo `[A-Za-z0-9._+-]` |
 | `PORT-V6-05` | [`net/archive.rs:59`](../../../tauri/src/net/archive.rs#L59) | un tar per macOS/Linux con `foo:bar` (valido su Unix) fa fallire l'installazione | rifiutare `:` solo su Windows |
-| `PORT-V6-06` | [`agents/keyring.rs:164-168`](../../../tauri/src/agents/keyring.rs#L164-L168) | dopo crash + spostamento del kit la voce della chiave di sigillo ha il vecchio `kit.id()`: `restore` fallisce a ogni avvio | nome della voce da `machine_tag`, o scartare il file irrecuperabile con un avviso |
 | `TEST-V6-01` | [`test/rust/projects/run.rs:40-49`](../../../test/rust/projects/run.rs#L40-L49) | la prova usa porte reali 7100+; in parallelo un'altra prova occupa 7100 e `assign_port` ne dà un'altra (7102 ≠ 7100). Passa da sola 3/3 | intervallo di porte iniettabile nel `Runner` per le prove, o porta effimera |
 
 ---
