@@ -69,7 +69,7 @@ Atollo is a complete development environment that lives in a single folder: on a
 
 Picture a work backpack that is already packed: inside is everything you need to write programs and websites, tidy and working. You carry it with you, open it on any computer and work, without installing anything and without leaving a mess on the PC that hosts you. When you are done, you close it and take it away.
 
-Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors.
+Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors (on ARM64 Windows 11 is needed).
 
 > [!NOTE]
 > **Who it is for**

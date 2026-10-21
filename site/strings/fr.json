@@ -75,7 +75,7 @@
   "mxKind_web": "Serveurs web",
   "mxKind_databases": "Bases de données",
   "platformsTitle": "Systèmes",
-  "platformsLead": "Windows 10 et 11, macOS 12 ou ultérieur, Linux avec glibc 2.35 ou ultérieure (Ubuntu 22.04, Debian 12 et plus récents).",
+  "platformsLead": "Windows 10 et 11 (Windows 11 sur ARM64), macOS 12 ou ultérieur, Linux avec glibc 2.35 ou ultérieure (Ubuntu 22.04, Debian 12 et plus récents).",
   "pWinX64": "natif",
   "pWinArm": "certains composants en build x64 émulée : détails dans le tableau des outils",
   "pMacArm": "Apple Silicon",
