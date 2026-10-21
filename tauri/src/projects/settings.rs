@@ -1,7 +1,7 @@
 //! The kit's settings of each project, kept in
 //! `data\projects\<project>\dev-settings.json` and never in the project's
 //! folder, so the project stays as its repository has it. Today: the agent
-//! last opened in it (the default of the agent choice) and when the editor,
+//! last opened in it (recorded only, D-146) and when the editor,
 //! a console or an agent last opened it (the order of the projects), the
 //! editor extensions added to or removed from those of its languages, the
 //! versions of its languages, whether it is among the favorites of the
@@ -19,7 +19,10 @@ use crate::projects::state::ProjectState;
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSettings {
-    /// Id of the agent last opened in the project.
+    /// Id of the agent last opened in the project. Only recorded: no choice
+    /// starts from it any more, every installed agent has its own button
+    /// in the projects (D-146); kept so a project's file stays readable by
+    /// older versions of the app and as a trace of the last launch.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub agent: Option<String>,
     /// Seconds since 1970 of the last editor, console or agent opened in it.
