@@ -2,7 +2,8 @@
 // VSCodium's terminal, a tab per session opened by «Terminale», a terminal
 // of the Terminals page or an agent's button; closing a tab whose program
 // still runs asks first. Its own chunk with xterm.js, read the first time a
-// session opens.
+// session opens. A tab moves into a window of its own (D-149), and comes
+// back from it.
 import { useState } from "react";
 import type { PtyBackend, PtyInfo } from "./api";
 import type { Terminals } from "./state";
@@ -15,12 +16,18 @@ export function TerminalPanel({
   terminals,
   backend,
   height,
+  detached = false,
 }: {
   terminals: Terminals;
   backend: PtyBackend;
-  height: number;
+  /** None: the panel fills its window. */
+  height?: number | undefined;
+  /** The window of a detached session (window.tsx): its one tab, which
+   * goes back to the main window's panel. */
+  detached?: boolean;
 }) {
-  const { sessions, active, setActive, setShown, close } = terminals;
+  const { active, setActive, setShown, close, detach } = terminals;
+  const sessions = detached ? terminals.sessions : terminals.docked;
   const [asking, setAsking] = useState<PtyInfo | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +69,18 @@ export function TerminalPanel({
           <>
             {current && (
               <IconButton
+                icon={codicon(detached ? "layout-panel" : "multiple-windows")}
+                label={detached ? t("Riporta nel pannello") : t("Sposta in una nuova finestra")}
+                onClick={() => {
+                  setError(null);
+                  (detached ? backend.dock(current.id) : detach(current.id)).catch((e: unknown) => {
+                    setError(String(e));
+                  });
+                }}
+              />
+            )}
+            {current && (
+              <IconButton
                 icon={codicon("close")}
                 label={t("Chiudi il terminale")}
                 onClick={() => {
@@ -69,19 +88,21 @@ export function TerminalPanel({
                 }}
               />
             )}
-            <IconButton
-              icon={codicon("chrome-minimize")}
-              label={t("Nascondi i terminali")}
-              onClick={() => {
-                setShown(false);
-              }}
-            />
+            {!detached && (
+              <IconButton
+                icon={codicon("chrome-minimize")}
+                label={t("Nascondi i terminali")}
+                onClick={() => {
+                  setShown(false);
+                }}
+              />
+            )}
           </>
         }
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {/* A tab whose program ended closes without the dialog: its
-              error shows here. */}
+          {/* A tab whose program ended closes without the dialog, and a
+              tab that could not move: the error shows here. */}
           {!asking && error && (
             <div className="shrink-0 px-2 pt-1">
               <ErrorLine error={error} />

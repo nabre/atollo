@@ -1158,7 +1158,7 @@ Related topics: [2.3 Starting a project: actions and ports](#23-starting-a-proje
 
 The “Terminals” box lists the default “All tools” terminal (“Every tool at its latest version”) and the ones you created. “Open” on a row opens the console in its starting folder.
 
-- A tab opens in the terminal panel inside Atollo, on every system, with the kit's PowerShell 7 (on macOS and Linux, if it is missing, bash). Never the PC's terminal or a separate window.
+- A tab opens in the terminal panel inside Atollo, on every system, with the kit's PowerShell 7 (on macOS and Linux, if it is missing, bash). Never the PC's terminal: the tab can move into an Atollo window of its own.
 - On Windows the terminal uses the kit's ConPTY (Microsoft's conpty.dll and OpenConsole.exe, the console of Windows Terminal), a part of the app installed with the required components: if it is missing, the app downloads it before opening the terminal (progress in “Activity”).
 - When it opens, “Atollo · \<terminal name\>” appears with the list of tools found; the prompt shows Atollo and the current folder.
 
@@ -1180,6 +1180,8 @@ Useful when you always need the same set: for example a “PHP 7.4 legacy” ter
 #### The terminal panel
 
 The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.
+
+“Move into a new window” detaches the selected tab: the terminal goes on in a window of its own, which can move to another screen or be maximized, with the same session, its output and the same font (Geist Mono). “Move back to the panel” puts it back among the tabs; closing the window does the same while the program runs, and never stops it. To stop it, “Close the terminal”, in the window or in the panel.
 
 On Windows and Linux Ctrl+C copies the selected text (without a selection it goes to the program), Ctrl+Shift+C copies, Ctrl+V and Ctrl+Shift+V paste; on macOS ⌘C and ⌘V.
 

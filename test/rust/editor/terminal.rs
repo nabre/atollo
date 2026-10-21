@@ -94,3 +94,26 @@ fn powershell_runs_a_batch_under_a_typographic_apostrophe() {
         .unwrap();
     assert_eq!(status.code(), Some(7));
 }
+
+/// D-149: only `terminal-<id>` names the window of a detached session.
+#[test]
+fn window_labels_name_their_session() {
+    assert_eq!(label(7), "terminal-7");
+    assert_eq!(session_of("terminal-7"), Some(7));
+    assert_eq!(
+        session_of(&label(18_446_744_073_709_551_615)),
+        Some(u64::MAX)
+    );
+    for other in [
+        "terminal-",
+        "terminal-01",
+        "terminal-+1",
+        "terminal-1a",
+        "terminal-99999999999999999999",
+        "main",
+        "editor-1",
+        "Terminal-1",
+    ] {
+        assert_eq!(session_of(other), None, "{other}");
+    }
+}

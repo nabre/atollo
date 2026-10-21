@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::editor::terminals::{self, Terminal, TerminalsView};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[tauri::command]
 pub async fn terminals_list<R: Runtime>(
@@ -104,16 +104,31 @@ pub async fn terminal_dir_pick<R: Runtime>(
 // The app's terminal on every system (editor/pty.rs): its sessions are
 // opened by `terminal_open`, `terminal_launch` and `agent_launch`, with the
 // checks and the environment of each; the panel of the main window shows,
-// types into, resizes and closes them.
+// types into, resizes and closes them, and so does the window of a
+// detached session (`terminal-<id>`, D-149), for that session only.
 
-/// The terminal sessions, running or ended but still shown.
+/// The main window, or the window of session `id`.
+fn ensure_pty<R: Runtime>(webview: &Webview<R>, id: u64) -> CmdResult<()> {
+    if webview.label() == MAIN || terminal::session_of(webview.label()) == Some(id) {
+        Ok(())
+    } else {
+        Err("forbidden".into())
+    }
+}
+
+/// The terminal sessions, running or ended but still shown; to the window
+/// of a detached session, only its own.
 #[tauri::command]
 pub fn pty_sessions<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
 ) -> CmdResult<Vec<crate::editor::pty::PtyInfo>> {
+    let ptys = &app.state::<terminal::Consoles>().ptys;
+    if let Some(id) = terminal::session_of(webview.label()) {
+        return Ok(ptys.info(id).into_iter().collect());
+    }
     ensure_main(&webview)?;
-    Ok(app.state::<terminal::Consoles>().ptys.list())
+    Ok(ptys.list())
 }
 
 /// The output kept by session `id`, up to the chunk number it carries.
@@ -123,7 +138,7 @@ pub fn pty_backlog<R: Runtime>(
     webview: Webview<R>,
     id: u64,
 ) -> CmdResult<crate::editor::pty::Chunk> {
-    ensure_main(&webview)?;
+    ensure_pty(&webview, id)?;
     app.state::<terminal::Consoles>()
         .ptys
         .backlog(id)
@@ -141,7 +156,7 @@ pub fn pty_write<R: Runtime>(
     data: String,
     binary: Option<bool>,
 ) -> CmdResult<()> {
-    ensure_main(&webview)?;
+    ensure_pty(&webview, id)?;
     let ptys = &app.state::<terminal::Consoles>().ptys;
     if binary == Some(true) {
         let Some(bytes) = crate::editor::pty::latin1(&data) else {
@@ -160,7 +175,7 @@ pub fn pty_resize<R: Runtime>(
     cols: u16,
     rows: u16,
 ) -> CmdResult<()> {
-    ensure_main(&webview)?;
+    ensure_pty(&webview, id)?;
     app.state::<terminal::Consoles>()
         .ptys
         .resize(id, cols, rows)
@@ -168,19 +183,48 @@ pub fn pty_resize<R: Runtime>(
 }
 
 /// Ends the program of session `id` (hang-up, then its tree after a
-/// moment) and forgets the session.
+/// moment) and forgets the session; the panel drops its tab and its own
+/// window, if any, closes.
 #[tauri::command]
 pub async fn pty_close<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     id: u64,
 ) -> CmdResult<()> {
-    ensure_main(&webview)?;
+    ensure_pty(&webview, id)?;
     let ptys = app.state::<terminal::Consoles>().ptys.clone();
     tauri::async_runtime::spawn_blocking(move || {
         ptys.close(id, crate::editor::pty::GRACE)
             .or_fail_chain("terminal")
     })
     .await
-    .or_fail("terminal")?
+    .or_fail("terminal")??;
+    let _ = app.emit_to(MAIN, crate::editor::pty::CLOSED_EVENT, id);
+    if let Some(window) = app.get_webview_window(&terminal::label(id)) {
+        let _ = window.close();
+    }
+    Ok(())
+}
+
+/// Moves session `id` from the panel into a window of its own (D-149).
+/// Async: a window is never built on the thread that runs the windows.
+#[tauri::command]
+pub async fn pty_detach<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    id: u64,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    terminal::detach(&app, id).or_fail_chain("terminal")
+}
+
+/// Brings session `id` back to the panel and closes its window.
+#[tauri::command]
+pub async fn pty_dock<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    id: u64,
+) -> CmdResult<()> {
+    ensure_pty(&webview, id)?;
+    terminal::dock(&app, id).or_fail_chain("terminal")
 }

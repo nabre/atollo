@@ -24,6 +24,9 @@ export default defineConfig(({ mode }) => ({
     // brands' logos (react-icons), the translation catalogs. The Guide's
     // chapters likewise, one chunk each, read together when it opens.
     rolldownOptions: {
+      // The app window, and the window of a detached terminal (D-149),
+      // which loads only the terminal; relative to ui\, the build's folder.
+      input: { main: "index.html", terminal: "terminal.html" },
       output: {
         codeSplitting: {
           groups: [

@@ -779,6 +779,8 @@
   "{0} (terminato)": "{0} (beendet)",
   "Chiudi il terminale": "Terminal schließen",
   "Nascondi i terminali": "Terminals ausblenden",
+  "Riporta nel pannello": "Zurück in den Bereich",
+  "Sposta in una nuova finestra": "In ein neues Fenster verschieben",
   "Mostra i terminali": "Terminals einblenden",
   "Chiudere il terminale?": "Terminal schließen?",
   "In «{0}» un programma è ancora in esecuzione: chiudendo il terminale si ferma.": "In „{0}“ läuft noch ein Programm: Wenn du das Terminal schließt, wird es beendet.",

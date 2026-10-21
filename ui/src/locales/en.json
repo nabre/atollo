@@ -779,6 +779,8 @@
   "{0} (terminato)": "{0} (ended)",
   "Chiudi il terminale": "Close the terminal",
   "Nascondi i terminali": "Hide the terminals",
+  "Riporta nel pannello": "Move back to the panel",
+  "Sposta in una nuova finestra": "Move into a new window",
   "Mostra i terminali": "Show the terminals",
   "Chiudere il terminale?": "Close the terminal?",
   "In «{0}» un programma è ancora in esecuzione: chiudendo il terminale si ferma.": "A program is still running in “{0}”: closing the terminal stops it.",

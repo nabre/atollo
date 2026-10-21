@@ -99,7 +99,7 @@ tauri\src\
     mod  window               VSCodium web server; editor-<n> windows (D-69)
     cfg  ext  theme           settings and terminal profiles; extensions (D-71); Atollo theme
     picker                    file and folder pickers (D-109)
-    terminal                  kit console: a session of the in-app terminal on every system (D-148)
+    terminal                  kit console: a session of the in-app terminal on every system (D-148), its own window once detached (D-149)
     pty                       in-app terminal, PTY sessions for xterm.js (D-109, D-148)
     conpty                    Windows' pseudo console: the kit's conpty.dll by its path, job per session (D-148)
     terminals                 Terminals page: consoles saved in data\app\terminals.json, with their own tools and
@@ -303,7 +303,7 @@ The page folders:
 | `github\` | `account.tsx`, `identity.tsx` (who signs the commits), `repos.tsx`, `details.tsx` |
 | `settings\` | `page.tsx` (seven sections: General, Network, Agents, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `about.tsx` (kit and updates) |
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
-| `terminal\` | the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `api.ts` |
+| `terminal\` | the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `font.ts` (Geist Mono before xterm.js measures), `api.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |
 | `guide\` | `model.ts` (chapters, topics, search words), `topics\` (the text, one file per chapter), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
 
 A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `common.tsx` if several folders use it.

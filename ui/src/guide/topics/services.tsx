@@ -1233,10 +1233,10 @@ export const SERVICES: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Si apre una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit (su macOS e Linux, se non c'è, bash). Mai il terminale del PC né una finestra a parte.",
-              "A tab opens in the terminal panel inside Atollo, on every system, with the kit's PowerShell 7 (on macOS and Linux, if it is missing, bash). Never the PC's terminal or a separate window.",
-              "Un onglet du panneau des terminaux s'ouvre dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit (sur macOS et Linux, s'il manque, bash). Jamais le terminal du PC ni une fenêtre à part.",
-              "Auf jedem System öffnet sich eine Registerkarte im Terminalbereich in Atollo, mit der PowerShell 7 des Kits (unter macOS und Linux, falls sie fehlt, bash). Nie das Terminal des PCs oder ein eigenes Fenster.",
+              "Si apre una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit (su macOS e Linux, se non c'è, bash). Mai il terminale del PC: la scheda si può spostare in una finestra di Atollo tutta sua.",
+              "A tab opens in the terminal panel inside Atollo, on every system, with the kit's PowerShell 7 (on macOS and Linux, if it is missing, bash). Never the PC's terminal: the tab can move into an Atollo window of its own.",
+              "Un onglet du panneau des terminaux s'ouvre dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit (sur macOS et Linux, s'il manque, bash). Jamais le terminal du PC : l'onglet peut passer dans une fenêtre d'Atollo à lui.",
+              "Auf jedem System öffnet sich eine Registerkarte im Terminalbereich in Atollo, mit der PowerShell 7 des Kits (unter macOS und Linux, falls sie fehlt, bash). Nie das Terminal des PCs: Die Registerkarte lässt sich in ein eigenes Atollo-Fenster verschieben.",
             ),
             tr(
               "Su Windows il terminale usa il ConPTY del kit (conpty.dll e OpenConsole.exe di Microsoft, la console di Windows Terminal), una parte dell'app installata con i componenti obbligatori: se manca, l'app lo scarica prima di aprire il terminale (avanzamento in «Attività»).",
@@ -1351,6 +1351,14 @@ export const SERVICES: TopicTexts = {
             "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
             "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · pwsh », « app · claude »…) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
             "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · pwsh“, „app · claude“…); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "«Sposta in una nuova finestra» stacca la scheda scelta: il terminale continua in una finestra sua, che si può spostare su un altro schermo o ingrandire, con la stessa sessione, la sua uscita e lo stesso carattere (Geist Mono). «Riporta nel pannello» lo rimette tra le schede; chiudere la finestra fa lo stesso finché il programma gira, e non lo ferma mai. Per fermarlo, «Chiudi il terminale», nella finestra o nel pannello.",
+            "“Move into a new window” detaches the selected tab: the terminal goes on in a window of its own, which can move to another screen or be maximized, with the same session, its output and the same font (Geist Mono). “Move back to the panel” puts it back among the tabs; closing the window does the same while the program runs, and never stops it. To stop it, “Close the terminal”, in the window or in the panel.",
+            "« Déplacer dans une nouvelle fenêtre » détache l'onglet choisi : le terminal continue dans une fenêtre à lui, qu'on peut déplacer sur un autre écran ou agrandir, avec la même session, sa sortie et la même police (Geist Mono). « Remettre dans le panneau » le replace parmi les onglets ; fermer la fenêtre fait de même tant que le programme tourne, et ne l'arrête jamais. Pour l'arrêter, « Fermer le terminal », dans la fenêtre ou dans le panneau.",
+            "„In ein neues Fenster verschieben“ löst die gewählte Registerkarte: Das Terminal läuft in einem eigenen Fenster weiter, das sich auf einen anderen Bildschirm verschieben oder maximieren lässt, mit derselben Sitzung, ihrer Ausgabe und derselben Schrift (Geist Mono). „Zurück in den Bereich“ legt es wieder zu den Registerkarten; das Fenster zu schließen bewirkt dasselbe, solange das Programm läuft, und hält es nie an. Zum Anhalten „Terminal schließen“, im Fenster oder im Bereich.",
           )}
         </P>
         <P>

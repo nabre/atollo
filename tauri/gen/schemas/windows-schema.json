@@ -621,10 +621,10 @@
           "markdownDescription": "Enables the projects_orphans command without any pre-configured scope."
         },
         {
-          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close.",
+          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock.",
           "type": "string",
           "const": "allow-pty-sessions",
-          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close."
+          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock."
         },
         {
           "description": "Enables the relations_matrix command without any pre-configured scope.",

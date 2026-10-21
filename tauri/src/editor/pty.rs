@@ -47,6 +47,12 @@ pub const DRAIN: Duration = Duration::from_millis(500);
 pub const OPENED_EVENT: &str = "pty-opened";
 /// The program of a session ended: the payload is its [`PtyInfo`].
 pub const EXIT_EVENT: &str = "pty-exit";
+/// A session moved to a window of its own or back to the panel: the
+/// payload is its [`PtyInfo`].
+pub const MOVED_EVENT: &str = "pty-moved";
+/// A session was closed (by the panel or by its own window): the payload
+/// is its id.
+pub const CLOSED_EVENT: &str = "pty-closed";
 /// The system's bash, never one of the user's PATH (cfg.rs uses it too).
 pub const BASH: &str = super::cfg::BASH;
 
@@ -67,6 +73,8 @@ pub struct PtyInfo {
     pub running: bool,
     /// The exit code, when it ended with one.
     pub code: Option<u32>,
+    /// Shown by a window of its own (`terminal-<id>`), not by the panel.
+    pub detached: bool,
 }
 
 /// Output of a session: the chunk `seq` (1, 2, ...), or for a backlog
@@ -421,6 +429,7 @@ struct State {
     decoder: Utf8,
     running: bool,
     code: Option<u32>,
+    detached: bool,
 }
 
 pub struct Session {
@@ -444,6 +453,7 @@ impl Session {
             dir: self.dir.clone(),
             running: s.running,
             code: s.code,
+            detached: s.detached,
         }
     }
 
@@ -575,6 +585,7 @@ impl Sessions {
                 decoder: Utf8::default(),
                 running: true,
                 code: None,
+                detached: false,
             }),
         });
         self.lock().insert(id, Arc::clone(&session));
@@ -605,6 +616,18 @@ impl Sessions {
         pids.sort_unstable();
         pids.dedup();
         pids
+    }
+
+    pub fn info(&self, id: u64) -> Result<PtyInfo> {
+        Ok(self.get(id)?.info())
+    }
+
+    /// Moves session `id` to a window of its own (`true`) or back to the
+    /// panel; its new state.
+    pub fn set_detached(&self, id: u64, detached: bool) -> Result<PtyInfo> {
+        let session = self.get(id)?;
+        session.state().detached = detached;
+        Ok(session.info())
     }
 
     pub fn backlog(&self, id: u64) -> Result<Chunk> {

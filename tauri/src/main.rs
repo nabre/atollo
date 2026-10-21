@@ -563,6 +563,12 @@ fn build_app<R: tauri::Runtime>(
             {
                 editor::window::closed(window.label());
             }
+            // A detached terminal's window closed (D-149).
+            if window.label().starts_with(editor::terminal::LABEL_PREFIX)
+                && matches!(event, tauri::WindowEvent::Destroyed)
+            {
+                editor::terminal::closed(window.app_handle(), window.label());
+            }
             // The editor's title bar shows maximize or restore (D-69).
             if window.label().starts_with(editor::window::LABEL_PREFIX)
                 && matches!(event, tauri::WindowEvent::Resized(_))
