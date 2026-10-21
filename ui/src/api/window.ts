@@ -1,5 +1,5 @@
-// Removing the drive and closing (tauri/src/os/sessions.rs).
-// Rust: tauri/src/commands/window.rs.
+// Removing the drive and closing (tauri/src/os/sessions.rs), the tray menu.
+// Rust: tauri/src/commands/window.rs, tauri/src/tray.rs.
 
 import { act, query, subscribe } from "./core";
 
@@ -38,4 +38,9 @@ export function appQuit(): Promise<void> {
 /** The window is closing with something open: the interface asks. */
 export function onCloseRequested(handler: (open: OpenNow) => void): Promise<() => void> {
   return subscribe<OpenNow>("close-requested", handler);
+}
+
+/** A project chosen in the tray menu (tauri/src/tray.rs): its page opens. */
+export function onOpenProject(handler: (id: string) => void): Promise<() => void> {
+  return subscribe<string>("open-project", handler);
 }
