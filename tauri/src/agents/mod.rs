@@ -7,8 +7,9 @@
 //!
 //! - signed in: Claude `.claude\.credentials.json` (OAuth token), the
 //!   token of `claude setup-token` in `data/agents/claude/oauth-token`
-//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`) or
-//!   `ANTHROPIC_API_KEY`; Codex `.codex\auth.json` (token or API key);
+//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`); Codex
+//!   `.codex\auth.json` (token, or the API key of `codex login
+//!   --with-api-key`);
 //!   Antigravity a login saved in the kit (`agents/keyring.rs`) or `GEMINI_API_KEY`
 //!   (same sources as nabre/dev-kit `core/stats/*.js`);
 //! - launch: the agents are aligned first, the agent opens in a console
@@ -29,7 +30,7 @@ pub mod sync;
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
@@ -59,7 +60,8 @@ pub struct AgentInfo {
     pub installed: bool,
     pub version: Option<String>,
     pub signed_in: bool,
-    /// How: "account", "api key".
+    /// How: "account", "token" (Claude Code on macOS) or "api key" (Codex's
+    /// auth.json, Antigravity's Gemini key).
     pub sign_in_kind: Option<String>,
     pub running: bool,
     /// "Collega con un token" is offered (Claude Code on macOS).
@@ -70,7 +72,37 @@ fn json(path: &Path) -> Option<Value> {
     crate::fsx::read_json(path)
 }
 
-fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
+/// The Gemini API key of the settings (its own owner-only file), if any.
+pub fn gemini_key(kit: &Kit) -> Option<String> {
+    crate::settings::Settings::load(kit)
+        .settings
+        .gemini_api_key
+        .filter(|k| !k.is_empty())
+}
+
+/// The environment agent `id` is started with: the kit's (`env`, or a
+/// project's) plus the secrets only that agent gets, never the other
+/// programs of the kit (SEC-V6-02): Claude Code's token saved in the kit
+/// (D-115), Antigravity's Gemini key. The agent hands them to what it
+/// starts itself (its MCP servers, its commands).
+pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
+    let mut env = env.clone();
+    match id {
+        "claude" => claude_token::apply_in(&kit.data(), &mut env),
+        "antigravity" => {
+            if let Some(key) = gemini_key(kit) {
+                env.set(GEMINI_VAR, key);
+            }
+        }
+        _ => {}
+    }
+    env
+}
+
+/// The variable Antigravity reads its Gemini API key from.
+pub const GEMINI_VAR: &str = "GEMINI_API_KEY";
+
+fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
     let home = kit.home();
     let has = |v: Option<&str>| v.is_some_and(|s| !s.is_empty());
     match id {
@@ -84,8 +116,6 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
                 Some("account")
             } else if claude_token::read(kit).is_some() {
                 Some("token")
-            } else if has(env.get("ANTHROPIC_API_KEY")) {
-                Some("api key")
             } else {
                 None
             }
@@ -102,8 +132,8 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
                 .as_ref()
                 .and_then(|a| a.get("OPENAI_API_KEY"))
                 .and_then(Value::as_str))
-                || has(env.get("OPENAI_API_KEY"))
             {
+                // `codex login --with-api-key`: the key in auth.json.
                 Some("api key")
             } else {
                 None
@@ -112,7 +142,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
         "antigravity" => {
             if keyring::has_login(kit) {
                 Some("account")
-            } else if has(env.get("GEMINI_API_KEY")) {
+            } else if gemini_key(kit).is_some() {
                 Some("api key")
             } else {
                 None
@@ -139,13 +169,13 @@ pub fn running(kit: &Kit) -> BTreeSet<String> {
         .collect()
 }
 
-pub fn status(kit: &Kit, env: &KitEnv) -> Vec<AgentInfo> {
+pub fn status(kit: &Kit) -> Vec<AgentInfo> {
     let catalog = Catalog::get();
     let now = running(kit);
     IDS.iter()
         .filter_map(|id| catalog.find(id))
         .map(|c| {
-            let kind = sign_in(kit, env, &c.id);
+            let kind = sign_in(kit, &c.id);
             AgentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -196,17 +226,23 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    // Claude Code's token saved in the kit, if any, is in `env` already
-    // (`KitEnv::build`, D-115).
-    crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
-        let _ = sync::run(&after, Some(&after_dir));
+    // Claude Code's token or the Gemini key, in this agent's environment
+    // only (SEC-V6-02).
+    let env = launch_env(kit, env, id);
+    // Not aligned again when the console ends because the drive is being
+    // removed (BUG-V6-15).
+    let closing = closing_of(app);
+    crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
+        let _ = closing.run(|| sync::run(&after, Some(&after_dir)));
     })
 }
 
 /// Signs out in the kit: the saved login is removed (Claude's and Codex's
 /// files, Antigravity's saved login). The account's sessions on the
 /// provider's site are not revoked: do it from the account settings.
-pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
+/// Antigravity is refused while an agy of the kit runs: its login would
+/// come back into the kit when it ends (BUG-V6-29). Errors in `lang`.
+pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str, lang: &str) -> Result<()> {
     let home = kit.home();
     match id {
         "claude" => {
@@ -215,22 +251,55 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
         }
         "codex" => {
             let codex = crate::setup::catalog::kit_path(kit, "codex/bin/codex.exe");
-            if codex.is_file() {
-                let status = crate::os::jobs::kit_command(&codex, env)
-                    .arg("logout")
-                    .status()
-                    .context("codex logout")?;
-                if status.success() {
-                    return Ok(());
-                }
+            if codex.is_file() && codex_logout(&codex, env)? {
+                return Ok(());
             }
             remove_if_exists(&home.join(".codex").join("auth.json"))
         }
         "antigravity" => {
+            if keyring::kit_agy_running(kit) {
+                bail!(
+                    "{}",
+                    crate::i18n::t(
+                        lang,
+                        "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.",
+                        &[]
+                    )
+                );
+            }
             keyring::save(kit)?;
             remove_if_exists(&kit.data().join("antigravity").join("keyring.json"))
         }
         _ => bail!("unknown agent: {id}"),
+    }
+}
+
+/// How long `codex logout` may take before it is stopped (and auth.json
+/// removed by the kit instead).
+const CODEX_LOGOUT_WITHIN: Duration = Duration::from_secs(20);
+
+/// `codex logout`; `false` when it failed or did not end in time.
+fn codex_logout(codex: &Path, env: &KitEnv) -> Result<bool> {
+    use std::process::Stdio;
+    let mut child = crate::os::jobs::kit_command(codex, env)
+        .arg("logout")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .context("codex logout")?;
+    let start = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait().context("codex logout")? {
+            return Ok(status.success());
+        }
+        if start.elapsed() > CODEX_LOGOUT_WITHIN {
+            crate::log::warn("codex logout: no answer in 20 s, stopped");
+            let _ = child.kill();
+            let _ = child.wait();
+            return Ok(false);
+        }
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -243,24 +312,179 @@ fn remove_if_exists(path: &Path) -> Result<()> {
     }
 }
 
+/// "Rimuovi l'unità" under way (BUG-V6-15): the alignments and saves the
+/// app starts by itself (the watcher, the end of an agent's console) are
+/// skipped from the moment it begins, and it waits for the one already
+/// running, so nothing writes to the drive once the interface says it can
+/// be removed. One per app (`AppState::closing`), shared by clones.
+#[derive(Debug, Default, Clone)]
+pub struct Closing(std::sync::Arc<ClosingState>);
+
+#[derive(Debug, Default)]
+struct ClosingState {
+    /// Background work running now; `closing` is read and set under it.
+    busy: std::sync::Mutex<Busy>,
+    idle: std::sync::Condvar,
+}
+
+#[derive(Debug, Default)]
+struct Busy {
+    running: usize,
+    closing: bool,
+}
+
+/// Counts one background work until dropped (also on a panic).
+struct Running<'a>(&'a ClosingState);
+
+impl Drop for Running<'_> {
+    fn drop(&mut self) {
+        let mut busy = self.0.lock();
+        busy.running -= 1;
+        if busy.running == 0 {
+            self.0.idle.notify_all();
+        }
+    }
+}
+
+impl ClosingState {
+    fn lock(&self) -> std::sync::MutexGuard<'_, Busy> {
+        self.busy
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+}
+
+impl Closing {
+    /// Runs `work` (an alignment, a save of the login) unless the drive is
+    /// being removed; `None` when skipped.
+    pub fn run<T>(&self, work: impl FnOnce() -> T) -> Option<T> {
+        {
+            let mut busy = self.0.lock();
+            if busy.closing {
+                return None;
+            }
+            busy.running += 1;
+        }
+        let _running = Running(&self.0);
+        Some(work())
+    }
+
+    /// From now on background work is skipped.
+    pub fn begin(&self) {
+        self.0.lock().closing = true;
+    }
+
+    /// Waits for the background work already running, at most `limit`;
+    /// `false` if some is still running then.
+    pub fn wait_idle(&self, limit: Duration) -> bool {
+        let busy = self.0.lock();
+        let (busy, _) = self
+            .0
+            .idle
+            .wait_timeout_while(busy, limit, |b| b.running > 0)
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        busy.running == 0
+    }
+
+    /// The user goes on working after "Rimuovi l'unità" (an agent started
+    /// again): background work resumes.
+    pub fn reopen(&self) {
+        self.0.lock().closing = false;
+    }
+}
+
+/// The `Closing` of the app, if it runs (`None` in the command line).
+fn closing_of<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Closing {
+    use tauri::Manager;
+    app.try_state::<crate::commands::AppState>()
+        .map(|s| s.closing.clone())
+        .unwrap_or_default()
+}
+
+/// The first wait after a failed save of Antigravity's login (the watcher
+/// looks every 3 s); doubled after each failure, at most [`SAVE_MAX_WAIT`].
+const SAVE_FIRST_WAIT: Duration = Duration::from_secs(6);
+const SAVE_MAX_WAIT: Duration = Duration::from_secs(600);
+/// Failed saves of the same pending run after which the watcher stops.
+const SAVE_MAX_FAILURES: u32 = 8;
+
+/// The watcher's saves of Antigravity's login left in the system
+/// (BUG-V6-17): a store that cannot be used (Keychain locked, no Secret
+/// Service) is not asked every 3 s for ever, which logged a line each time
+/// and could raise the Keychain's prompt again on macOS. Counted per
+/// pending run ([`keyring::pending_stamp`]): a new agy run starts again
+/// from zero.
+#[derive(Debug, Default)]
+struct SaveRetry {
+    stamp: Option<std::time::SystemTime>,
+    failures: u32,
+    next: Option<Instant>,
+}
+
+impl SaveRetry {
+    /// A save is due now for the pending run `stamp`.
+    fn due(&mut self, stamp: Option<std::time::SystemTime>, now: Instant) -> bool {
+        if stamp != self.stamp {
+            *self = SaveRetry {
+                stamp,
+                ..SaveRetry::default()
+            };
+        }
+        stamp.is_some()
+            && self.failures < SAVE_MAX_FAILURES
+            && self.next.is_none_or(|next| now >= next)
+    }
+
+    /// A save failed at `now`; `true` when that was the last try.
+    fn failed(&mut self, now: Instant) -> bool {
+        self.failures += 1;
+        let wait = SAVE_FIRST_WAIT
+            .saturating_mul(1 << (self.failures - 1).min(16))
+            .min(SAVE_MAX_WAIT);
+        self.next = Some(now + wait);
+        self.failures == SAVE_MAX_FAILURES
+    }
+
+    fn succeeded(&mut self) {
+        self.failures = 0;
+        self.next = None;
+    }
+}
+
 /// Background: when an agent of the kit ends anywhere, align the agents and
-/// save Antigravity's login left in Windows.
-pub fn watch(kit: Kit) {
+/// save Antigravity's login left in Windows; nothing while the drive is
+/// being removed (`closing`).
+pub fn watch(kit: Kit, closing: Closing) {
     std::thread::spawn(move || {
         let mut before = BTreeSet::new();
+        let mut retry = SaveRetry::default();
         loop {
             std::thread::sleep(Duration::from_secs(3));
             let now = running(&kit);
             let ended: Vec<&String> = before.difference(&now).collect();
             if !ended.is_empty() {
                 crate::log::info(&format!("agents ended: {ended:?}"));
-                let _ = sync::run(&kit, None);
+                let _ = closing.run(|| sync::run(&kit, None));
             }
             // Antigravity's login still in Windows and no agy of the kit
-            // running: saved now (save waits for a fresh "starting" mark).
-            if keyring::pending(&kit) && !now.contains("antigravity") {
-                if let Err(e) = keyring::save(&kit) {
-                    crate::log::warn(&format!("antigravity login: {e:#}"));
+            // running: saved now (save waits for a fresh "starting" mark),
+            // tried again less and less often after a failure.
+            let at = Instant::now();
+            if keyring::pending(&kit)
+                && !now.contains("antigravity")
+                && retry.due(keyring::pending_stamp(&kit), at)
+            {
+                match closing.run(|| keyring::save(&kit)) {
+                    Some(Ok(())) => retry.succeeded(),
+                    Some(Err(e)) => {
+                        crate::log::warn(&format!("antigravity login: {e:#}"));
+                        if retry.failed(at) {
+                            crate::log::warn(&format!(
+                                "antigravity login: not saved after {SAVE_MAX_FAILURES} tries, no more tries until agy runs again or the app starts again"
+                            ));
+                        }
+                    }
+                    None => {}
                 }
             }
             before = now;

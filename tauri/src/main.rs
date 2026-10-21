@@ -311,6 +311,7 @@ fn run() -> i32 {
         services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
         servers: std::sync::Arc::new(servers::WebServers::new(kit.clone())),
         env: std::sync::RwLock::new(kit_env),
+        closing: agents::Closing::default(),
     };
     // The exe swap of a staged update happens on Exit (`run` may not return).
     let (update_kit, update_exe) = (kit.clone(), exe.clone());
@@ -679,8 +680,9 @@ fn build_app<R: tauri::Runtime>(
             // cleanly, the kit moved, the agents aligned; then the watcher.
             let background = kit.clone();
             let env = app.state::<AppState>().env();
+            let closing = app.state::<AppState>().closing.clone();
             std::thread::spawn(move || {
-                if let Err(e) = agents::keyring::save(&background) {
+                if let Some(Err(e)) = closing.run(|| agents::keyring::save(&background)) {
                     log::warn(&format!("antigravity login: {e:#}"));
                 }
                 // Git follows the GitHub account, also after a sign-in or a
@@ -689,8 +691,8 @@ fn build_app<R: tauri::Runtime>(
                 if let Err(e) = github::sync_git(&background, &env, signed_in) {
                     log::warn(&format!("github: git helper: {e:#}"));
                 }
-                let _ = agents::sync::run(&background, None);
-                agents::watch(background);
+                let _ = closing.run(|| agents::sync::run(&background, None));
+                agents::watch(background, closing);
             });
             let handle = app.handle().clone();
             os::instance::listen(&kit, move |message| {

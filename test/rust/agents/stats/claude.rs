@@ -87,8 +87,7 @@ fn sessions_and_tokens() {
 #[test]
 fn logins() {
     let tmp = TempDir::new("stats-claude-login");
-    assert!(read_login(&tmp.0, false).is_none());
-    assert!(matches!(read_login(&tmp.0, true), Some(Login::ApiKey)));
+    assert!(read_login(&tmp.0).is_none());
     fs::write(
         tmp.0.join(".credentials.json"),
         r#"{"claudeAiOauth":{"accessToken":"tok","expiresAt":1000,"subscriptionType":"max"}}"#,
@@ -99,7 +98,7 @@ fn logins() {
         expires,
         plan,
         ..
-    }) = read_login(&tmp.0, false)
+    }) = read_login(&tmp.0)
     else {
         panic!("no login");
     };

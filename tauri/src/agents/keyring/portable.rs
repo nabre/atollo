@@ -22,6 +22,44 @@ impl std::fmt::Display for NoStore {
 
 impl std::error::Error for NoStore {}
 
+/// The key that sealed this computer's own secrets in a "before" file is
+/// no longer in the Keychain or the Secret Service (deleted, the Keychain
+/// reset, a kit moved by a version that named the key after the kit's
+/// folder): those secrets can never be opened again (PORT-V6-06).
+#[derive(Debug)]
+#[cfg_attr(not(any(unix, test)), allow(dead_code))]
+pub struct SealKeyMissing;
+
+impl std::fmt::Display for SealKeyMissing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("the key that sealed this computer's own Antigravity sign-in is gone")
+    }
+}
+
+impl std::error::Error for SealKeyMissing {}
+
+/// `data/antigravity/keyring-seal-id`: the id in the name of the kit's
+/// sealing key, kept with the kit.
+pub const SEAL_ID_FILE: &str = "keyring-seal-id";
+
+/// The id in the name of the kit's sealing key
+/// (`antigravity-before-<id>`): the one saved in [`SEAL_ID_FILE`] when it
+/// is one, else the kit's id, the name older versions used (so a "before"
+/// file they left is still opened). Saved with the kit when the key is
+/// made, the name no longer changes when the kit moves (PORT-V6-06).
+pub fn seal_id(saved: Option<&str>, kit_id: &str) -> String {
+    match saved.map(str::trim) {
+        Some(id)
+            if !id.is_empty()
+                && id.len() <= 64
+                && id.bytes().all(|b| b.is_ascii_alphanumeric()) =>
+        {
+            id.to_owned()
+        }
+        _ => kit_id.to_owned(),
+    }
+}
+
 /// A Secret Service error that means "there is none" (nobody owns or can
 /// start `org.freedesktop.secrets`, or no session bus), never a locked or
 /// refused one.

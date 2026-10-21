@@ -40,7 +40,6 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::net::Net;
 use crate::setup::catalog::Catalog;
@@ -188,14 +187,15 @@ pub struct Ctx {
 }
 
 impl Ctx {
-    pub fn new(kit: &Kit, env: &KitEnv, lang: &'static str, net: Option<Net>) -> Ctx {
-        let keys = ["ANTHROPIC_API_KEY", "GEMINI_API_KEY"];
+    /// `gemini_key`: the Gemini API key of the settings (not in the kit's
+    /// environment, SEC-V6-02).
+    pub fn new(kit: &Kit, gemini_key: Option<&str>, lang: &'static str, net: Option<Net>) -> Ctx {
         Ctx {
             home: kit.home(),
             data: kit.data(),
-            env: keys
-                .iter()
-                .filter_map(|k| Some(((*k).to_owned(), env.get(k)?.to_owned())))
+            env: gemini_key
+                .map(|k| (crate::agents::GEMINI_VAR.to_owned(), k.to_owned()))
+                .into_iter()
                 .collect(),
             lang,
             net,
@@ -401,9 +401,10 @@ fn finish(mut a: AgentStats, cx: &Ctx) -> AgentStats {
 
 /// The statistics of the agents installed in the kit. `force`: "Refresh"
 /// (the servers are asked sooner, never before a 429 wait ends).
-pub fn collect(kit: &Kit, env: &KitEnv, lang: &'static str, force: bool) -> Report {
-    let net = Net::new(&crate::settings::Settings::load(kit).settings, None).ok();
-    let cx = Ctx::new(kit, env, lang, net);
+pub fn collect(kit: &Kit, lang: &'static str, force: bool) -> Report {
+    let settings = crate::settings::Settings::load(kit).settings;
+    let net = Net::new(&settings, None).ok();
+    let cx = Ctx::new(kit, settings.gemini_api_key.as_deref(), lang, net);
     let catalog = Catalog::get();
     let installed = |id: &str| catalog.find(id).is_some_and(|c| c.is_installed(kit));
     let period = Period::now();
@@ -423,7 +424,7 @@ pub fn collect(kit: &Kit, env: &KitEnv, lang: &'static str, force: bool) -> Repo
         let claude = installed("claude").then(|| {
             s.spawn(move || {
                 let limits = cached_online("claude", force, cx.now, || claude::limits(cx));
-                let login = claude::read_login(&cx.claude_dir(), cx.has_env("ANTHROPIC_API_KEY"));
+                let login = claude::read_login(&cx.claude_dir());
                 AgentStats {
                     account: account(login.as_ref(), cx.now),
                     limits,

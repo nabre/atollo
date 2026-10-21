@@ -15,10 +15,7 @@ use super::{read_json, Credits, Ctx, Fail, Limits, Login, Window};
 
 /// The login of `.claude\.credentials.json` (only read, never refreshed:
 /// a refresh would replace the token Claude Code keeps).
-pub fn read_login(dir: &Path, api_key: bool) -> Option<Login> {
-    if api_key {
-        return Some(Login::ApiKey);
-    }
+pub fn read_login(dir: &Path) -> Option<Login> {
     let j = read_json(&dir.join(".credentials.json"))?;
     let o = j.get("claudeAiOauth")?;
     let token = o.get("accessToken")?.as_str().filter(|t| !t.is_empty())?;
@@ -172,7 +169,7 @@ pub fn credits(j: &Value) -> Option<Credits> {
 }
 
 pub fn limits(cx: &Ctx) -> Result<Limits, Fail> {
-    let Some(login) = read_login(&cx.claude_dir(), cx.has_env("ANTHROPIC_API_KEY")) else {
+    let Some(login) = read_login(&cx.claude_dir()) else {
         return Ok(Limits::error(
             cx.t("accesso non ancora fatto: apri Claude Code", &[]),
         ));

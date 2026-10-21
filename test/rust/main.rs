@@ -23,6 +23,7 @@ fn state() -> AppState {
         webview: "test".into(),
         env: std::sync::RwLock::new(KitEnv::default()),
         host: env::Host::default(),
+        closing: agents::Closing::default(),
     }
 }
 
