@@ -11,8 +11,8 @@ pub async fn agents_status<R: Runtime>(
     state: State<'_, AppState>,
 ) -> CmdResult<Vec<crate::agents::AgentInfo>> {
     ensure_main(&webview)?;
-    let (kit, env) = (state.kit.clone(), state.env());
-    tauri::async_runtime::spawn_blocking(move || crate::agents::status(&kit, &env))
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || crate::agents::status(&kit))
         .await
         .or_fail("agents")
 }
@@ -26,12 +26,10 @@ pub async fn agents_stats<R: Runtime>(
     force: bool,
 ) -> CmdResult<crate::agents::stats::Report> {
     ensure_main(&webview)?;
-    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::agents::stats::collect(&kit, &env, lang, force)
-    })
-    .await
-    .or_fail("stats")
+    let (kit, lang) = (state.kit.clone(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || crate::agents::stats::collect(&kit, lang, force))
+        .await
+        .or_fail("stats")
 }
 
 /// Opens an agent in a kit console in the project (never elsewhere).
@@ -77,12 +75,11 @@ pub async fn agent_token_link<R: Runtime>(
     ensure_main(&webview)?;
     let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        let saved = app.clone();
-        crate::agents::claude_token::link(&app, &kit, &env, lang, move || {
-            use tauri::Manager;
-            token_changed(&saved.state::<AppState>());
-        })
-        .or_fail_chain("claude setup-token")
+        // Nothing to rebuild once saved: the token is read when Claude
+        // Code is started (`agents::launch_env`), not kept in the kit's
+        // environment (SEC-V6-02).
+        crate::agents::claude_token::link(&app, &kit, &env, lang, || {})
+            .or_fail_chain("claude setup-token")
     })
     .await
     .or_fail("claude setup-token")?
@@ -98,15 +95,7 @@ pub fn agent_token_save<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::agents::claude_token::save(&state.kit, &token).or_fail_chain("claude token")?;
-    token_changed(&state);
     Ok(())
-}
-
-/// Claude Code's token saved or removed: the kit's environment is built
-/// again, so that terminals and editor opened from now on get it, or no
-/// longer get it (D-115).
-fn token_changed(state: &AppState) {
-    apply_env(state);
 }
 
 #[tauri::command]
@@ -117,8 +106,5 @@ pub fn agent_sign_out<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::agents::sign_out(&state.kit, &state.env(), &agent).or_fail_chain("sign out")?;
-    if agent == "claude" {
-        token_changed(&state);
-    }
     Ok(())
 }

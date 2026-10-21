@@ -72,7 +72,37 @@ fn json(path: &Path) -> Option<Value> {
     crate::fsx::read_json(path)
 }
 
-fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
+/// The Gemini API key of the settings (its own owner-only file), if any.
+pub fn gemini_key(kit: &Kit) -> Option<String> {
+    crate::settings::Settings::load(kit)
+        .settings
+        .gemini_api_key
+        .filter(|k| !k.is_empty())
+}
+
+/// The environment agent `id` is started with: the kit's (`env`, or a
+/// project's) plus the secrets only that agent gets, never the other
+/// programs of the kit (SEC-V6-02): Claude Code's token saved in the kit
+/// (D-115), Antigravity's Gemini key. The agent hands them to what it
+/// starts itself (its MCP servers, its commands).
+pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
+    let mut env = env.clone();
+    match id {
+        "claude" => claude_token::apply_in(&kit.data(), &mut env),
+        "antigravity" => {
+            if let Some(key) = gemini_key(kit) {
+                env.set(GEMINI_VAR, key);
+            }
+        }
+        _ => {}
+    }
+    env
+}
+
+/// The variable Antigravity reads its Gemini API key from.
+pub const GEMINI_VAR: &str = "GEMINI_API_KEY";
+
+fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
     let home = kit.home();
     let has = |v: Option<&str>| v.is_some_and(|s| !s.is_empty());
     match id {
@@ -112,7 +142,7 @@ fn sign_in(kit: &Kit, env: &KitEnv, id: &str) -> Option<&'static str> {
         "antigravity" => {
             if keyring::has_login(kit) {
                 Some("account")
-            } else if has(env.get("GEMINI_API_KEY")) {
+            } else if gemini_key(kit).is_some() {
                 Some("api key")
             } else {
                 None
@@ -139,13 +169,13 @@ pub fn running(kit: &Kit) -> BTreeSet<String> {
         .collect()
 }
 
-pub fn status(kit: &Kit, env: &KitEnv) -> Vec<AgentInfo> {
+pub fn status(kit: &Kit) -> Vec<AgentInfo> {
     let catalog = Catalog::get();
     let now = running(kit);
     IDS.iter()
         .filter_map(|id| catalog.find(id))
         .map(|c| {
-            let kind = sign_in(kit, env, &c.id);
+            let kind = sign_in(kit, &c.id);
             AgentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -194,9 +224,10 @@ pub fn launch<R: tauri::Runtime>(
         crate::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    // Claude Code's token saved in the kit, if any, is in `env` already
-    // (`KitEnv::build`, D-115).
-    crate::editor::terminal::open_command(app, kit, env, dir, &command, move || {
+    // Claude Code's token or the Gemini key, in this agent's environment
+    // only (SEC-V6-02).
+    let env = launch_env(kit, env, id);
+    crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
         let _ = sync::run(&after, Some(&after_dir));
     })
 }

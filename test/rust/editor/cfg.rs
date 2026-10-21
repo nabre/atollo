@@ -240,7 +240,12 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
     let (_t, kit) = kit_on(
         "cfg-mac",
         Target::DARWIN_ARM64,
-        &["pwsh/pwsh", "antigravity/agy", "codex/bin/codex"],
+        &[
+            "pwsh/pwsh",
+            "antigravity/agy",
+            "codex/bin/codex",
+            "claude/claude",
+        ],
     );
     let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
     assert_eq!(
@@ -250,6 +255,7 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
             "Atollo",
             "Atollo - Bash",
             "Atollo - zsh",
+            "Claude Code",
             "Codex"
         ]
     );
@@ -259,6 +265,10 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
     // Antigravity through the kit's agy (sh): it carries the login.
     let agy = slashed(&p["Antigravity"]["path"]);
     assert!(agy.ends_with("data/kit/bin/agy"), "{agy}");
+    // Claude Code through the kit's claude (sh): the token saved in the
+    // kit reaches it, not the editor's other terminals (SEC-V6-02).
+    let claude = slashed(&p["Claude Code"]["path"]);
+    assert!(claude.ends_with("data/kit/bin/claude"), "{claude}");
     // The shells macOS lists in /etc/shells are hidden, as on Windows.
     for shell in ["bash", "zsh", "sh", "csh", "tcsh", "ksh", "dash"] {
         assert!(p[shell].is_null(), "{shell} shown");
