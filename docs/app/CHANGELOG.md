@@ -1,5 +1,15 @@
 # Novità
 
+## Rilievi del report v6 (21/10/2026)
+
+- **Database**: un backup MySQL con viste, trigger, routine, eventi o colonne binarie si ripristina intero; una copia compare solo quando è completa; un progetto con un nome lungo ha il suo database; un `secrets.json`, `services.json` o `servers.json` illeggibile non viene mai riscritto vuoto; i dati iniziali di MySQL copiati a metà non vengono aperti.
+- **Installazioni**: un aggiornamento conda che fallisce lascia funzionante l'ambiente di prima; un download fermo finisce dopo un minuto e «Annulla» lo ferma subito; un file scaricato a mano resta finché l'installazione riesce; firma Authenticode con l'editore esatto; nomi di file dai metadati remoti controllati.
+- **Kit su un altro disco o PC**: un kit alla radice di un'unità (`E:\`) si sposta senza rompere percorsi e JSON; i file che lo spostamento non ha potuto aggiornare si riprovano a ogni avvio; i file privati creati da un altro account vengono sostituiti o nominati nell'errore; Maven, Gradle e PowerShell accettano `&`, lettere accentate e `’` nel percorso.
+- **Agenti**: token e chiave Gemini solo agli agenti, un progetto è fidato quando ci avvii un agente (D-144); le istruzioni comuni non si perdono se un file manca un attimo; dopo «Rimuovi unità» nulla scrive più sul disco; uscita da Antigravity rifiutata con agy aperto; salvataggi dell'accesso non riusciti ritentati con attese crescenti; log che ruota anche durante la sessione.
+- **Progetti e server web**: un nome con spazi o graffe dà un indirizzo valido; un doppio clic su Avvia avvia una volta sola; uno snippet Caddy sbagliato non spegne il pool.
+- **Interfaccia**: la chiave Gemini e le modifiche ai framework non si perdono; `npx vitest` dalla radice esegue solo le prove dell'interfaccia.
+- **Documentazione**: README, aiuto della riga di comando, Guida, informativa e sito allineati all'app (`DOC-V6-01..16`).
+
 ## Rilascio 0.5.0 alpha (21/10/2026)
 
 - **Versione 0.5.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.0` pubblica i file per i sei sistemi.
