@@ -310,6 +310,21 @@ fn run_and_reload_arguments() {
             "unix//tmp/Atollo/k/caddy-1/a.sock"
         ]
     );
+    // BUG-V6-11: the check after a failed reload, never on the instance.
+    let validate: Vec<String> = validate_args(Path::new(r"D:\O’Brien\Atollo\Caddyfile"))
+        .into_iter()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        validate,
+        [
+            "validate",
+            "--config",
+            r"D:\O’Brien\Atollo\Caddyfile",
+            "--adapter",
+            "caddyfile"
+        ]
+    );
 }
 
 /// The admin endpoint is never a TCP port (any local program could read the
