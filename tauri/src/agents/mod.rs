@@ -189,6 +189,8 @@ pub fn launch<R: tauri::Runtime>(
     lang: &str,
 ) -> Result<()> {
     let command = command_of(kit, id, lang)?;
+    // Launched by the user from Atollo: the project is trusted (SEC-V6-02).
+    sync::trust_project(kit, dir);
     let report = sync::run(kit, Some(dir));
     for w in &report.warnings {
         crate::log::warn(&format!("before {id}: {w}"));
