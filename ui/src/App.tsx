@@ -89,9 +89,6 @@ export function App() {
   const projectTabs = useTabs();
   /** The tools open in the editor of the Tools page, kept the same way. */
   const toolTabs = useTabs();
-  const [info, setInfo] = useState<AppInfo | null>(null);
-  const [lang, setLangState] = useState<Lang>("it");
-  const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState<OpenNow | null>(null);
   const setup = useSetup();
   const { agents } = useAgents();
@@ -107,24 +104,23 @@ export function App() {
   } = useLoad<EditorStatus | null>(editorStatus, null, { onError: { fallback: null }, every: 5000 });
   useSubscription(onEditorStatus, setEditor);
 
-  /** The read itself, for "Riprova" (busy until it ends). */
-  const readInfo = useCallback(() => {
-    return appInfo().then(
-      (i) => {
+  // The kit's state: a read that works clears the error of the one before.
+  // The texts take the language before the page renders with it.
+  const readInfo = useCallback(
+    () =>
+      appInfo().then((i) => {
         setLang(i.lang);
-        setLangState(i.lang);
-        setInfo(i);
-        setError(null);
-      },
-      (e: unknown) => {
-        setError(String(e));
-      },
-    );
-  }, []);
-  const loadInfo = useCallback(() => {
-    void readInfo();
-  }, [readInfo]);
-  useEffect(loadInfo, [loadInfo]);
+        return i;
+      }),
+    [],
+  );
+  const {
+    data: info,
+    error,
+    reload: loadInfo,
+    retry: retryInfo,
+  } = useLoad<AppInfo | null>(readInfo, null, { onError: "show" });
+  const lang: Lang = info?.lang ?? "it";
 
   useSubscription(onCloseRequested, setClosing);
 
@@ -162,7 +158,7 @@ export function App() {
         {t("Vai al contenuto")}
       </a>
       <TitleBar title={current?.label} />
-      <Banner info={info} error={error} onRetry={readInfo} />
+      <Banner info={info} error={error} onRetry={retryInfo} />
       {/* VSCodium's floating parts: 4px apart on the workbench color, the
           activity bar on the window's edge. */}
       <div className="flex min-h-0 flex-1 gap-vsc-size40 pr-vsc-size40 pb-vsc-size40">

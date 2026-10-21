@@ -1,9 +1,11 @@
 // VSCodium's controls. Text buttons, fields, dropdowns, badges, the progress
 // bar, dividers and icons are the vscode-elements components (elements.ts),
 // with their --vscode-* colors and VSCodium 1.135's sizes (the fields' in
-// elements.ts, the buttons' here). Icon actions, checkboxes and radios
-// stay native elements drawn as those components: their role and name must
-// be in the page (light DOM), where the pages' <label for> reach them.
+// elements.ts, the buttons' here). Icon actions, toggles, checkboxes and
+// radios stay native elements drawn as those components: their role, name
+// and state must be in the page (light DOM), where the pages' <label for>
+// reach them. The meter has no component to draw as. A field with
+// suggestions is in suggest.tsx.
 import {
   useEffect,
   useId,
@@ -237,6 +239,46 @@ export function IconButton({
       ].join(" ")}
     >
       <Icon size={16} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
+    </button>
+  );
+}
+
+/** A toggle with text (aria-pressed): one chip of a row of choices. Drawn
+ * as VSCodium's input options (.monaco-custom-toggle) with the toggle
+ * colors, pressed or not; a native button, as IconButton: vscode-button
+ * has no pressed state. */
+export function ToggleButton({
+  pressed,
+  onClick,
+  disabled = false,
+  title,
+  className = "",
+  children,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string | undefined;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        "rounded-vsc-small border px-vsc-size60 text-vsc-body-small leading-(--vscode-spacing-size200) disabled:opacity-40",
+        "focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-vsc-focus",
+        pressed
+          ? "border-(--vscode-inputOption-activeBorder) bg-(--vscode-inputOption-activeBackground) text-(--vscode-inputOption-activeForeground)"
+          : "border-vsc-border enabled:hover:bg-(--vscode-toolbar-hoverBackground)",
+        className,
+      ].join(" ")}
+    >
+      {children}
     </button>
   );
 }
@@ -692,6 +734,53 @@ export function CountBadge({ children, className = "" }: { children: ReactNode; 
 export function ProgressBar({ active }: { active: boolean }) {
   if (!active) return null;
   return <vscode-progress-bar aria-label={t("Caricamento…")} className="shrink-0" />;
+}
+
+const METER = {
+  none: "bg-vsc-desc",
+  ok: "bg-vsc-success",
+  warning: "bg-vsc-warning",
+  error: "bg-vsc-error",
+} as const;
+
+/** How much of something is used (role meter), as a thin bar: the track
+ * in the border color, the part used in its tone. Neither VSCodium nor
+ * vscode-elements has one: vscode-progress-bar says that work goes on,
+ * not a value. */
+export function Meter({
+  value,
+  min = 0,
+  max = 100,
+  label,
+  valueText,
+  tone = "none",
+  className = "",
+}: {
+  value: number;
+  min?: number;
+  max?: number;
+  /** Its accessible name. */
+  label: string;
+  /** The value as read out ("40% used"). */
+  valueText?: string | undefined;
+  tone?: keyof typeof METER;
+  className?: string;
+}) {
+  const shown = Math.min(max, Math.max(min, value));
+  const width = max > min ? ((shown - min) / (max - min)) * 100 : 0;
+  return (
+    <span
+      role="meter"
+      aria-label={label}
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={shown}
+      aria-valuetext={valueText}
+      className={`block h-vsc-size60 overflow-hidden rounded-vsc-circle bg-vsc-border ${className}`}
+    >
+      <span className={`block h-full rounded-vsc-circle ${METER[tone]}`} style={{ width: `${String(width)}%` }} />
+    </span>
+  );
 }
 
 /** A line between groups (vscode-divider). */

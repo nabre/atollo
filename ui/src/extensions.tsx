@@ -15,7 +15,7 @@ import { t } from "./i18n";
 import { ComponentLogo, LanguageLogo } from "./logos";
 import { ActionButton, ErrorLine, LoadError } from "./common";
 import { useAction, useLoad } from "./hooks";
-import { Checkbox, Codicon, codicon, DataTable } from "./workbench";
+import { Checkbox, Codicon, codicon, DataTable, SuggestField } from "./workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({
@@ -235,8 +235,9 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
       save("add", [...choice.added, id], choice.removed);
     }
   };
-  const suggestions = (matrix?.extensions ?? []).filter((e) => !p.extensions.some((x) => x.id === e.id));
-  const listId = `ext-suggest-${p.id}`;
+  const suggestions = (matrix?.extensions ?? [])
+    .filter((e) => !p.extensions.some((x) => x.id === e.id))
+    .map((e) => ({ value: e.id, label: e.name }));
   const on = p.extensions.filter((x) => x.on);
   const toInstall = on.filter((x) => !x.installed).length;
   return (
@@ -310,28 +311,19 @@ export function ProjectExtensions({ project: p, onChanged }: { project: ProjectI
           className="flex flex-wrap items-center gap-2 px-3"
           aria-label={t("Aggiungi un'estensione")}
         >
-          {/* Native, drawn as a vscode-textfield (.input): the datalist of
-              suggestions must be in the input's own tree, which the
-              component's shadow root is not. */}
-          <input
+          <SuggestField
             value={adding}
-            list={listId}
+            suggestions={suggestions}
             placeholder={t("editore.nome da Open VSX")}
-            aria-label={t("Estensione da aggiungere")}
-            aria-invalid={invalid}
-            onChange={(e) => {
-              setAdding(e.target.value);
+            label={t("Estensione da aggiungere")}
+            invalid={invalid}
+            mono
+            onChange={(v) => {
+              setAdding(v);
               setInvalid(false);
             }}
-            className="w-64 input text-[12px]"
+            className="w-64"
           />
-          <datalist id={listId}>
-            {suggestions.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-          </datalist>
           <ActionButton
             icon={codicon("add")}
             label={t("Aggiungi")}

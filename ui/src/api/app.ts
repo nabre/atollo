@@ -36,7 +36,8 @@ export interface AppInfo {
   systemTemp: string | null;
 }
 
-const SAMPLE_INFO: AppInfo = {
+/** The browser preview's answers (core.ts), reused by the tests. */
+export const SAMPLE_INFO: AppInfo = {
   version: PREVIEW_VERSION,
   root: "E:\\Atollo",
   data: "E:\\Atollo\\data",
@@ -118,7 +119,7 @@ export interface SettingsView {
   problem: string | null;
 }
 
-const SAMPLE_SETTINGS: SettingsView = {
+export const SAMPLE_SETTINGS: SettingsView = {
   settings: {
     lang: null,
     network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
@@ -155,15 +156,17 @@ export interface UpdateStatus {
   manual: boolean;
 }
 
+export const SAMPLE_UPDATE: UpdateStatus = {
+  current: PREVIEW_VERSION,
+  latest: null,
+  staged: null,
+  checking: false,
+  error: null,
+  manual: false,
+};
+
 export function updateStatus(): Promise<UpdateStatus> {
-  return query<UpdateStatus>("update_status", {
-    current: PREVIEW_VERSION,
-    latest: null,
-    staged: null,
-    checking: false,
-    error: null,
-    manual: false,
-  });
+  return query<UpdateStatus>("update_status", SAMPLE_UPDATE);
 }
 
 export function updateCheck(): Promise<UpdateStatus> {

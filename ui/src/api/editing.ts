@@ -43,14 +43,16 @@ export interface ExtensionsMatrix {
   extensions: MatrixExtension[];
 }
 
+export const SAMPLE_EDITOR: EditorStatus = {
+  installed: true,
+  running: false,
+  port: null,
+  emulated: false,
+  extensions: { running: false, total: 0, done: 0, failed: [] },
+};
+
 export function editorStatus(): Promise<EditorStatus> {
-  return query<EditorStatus>("editor_status", {
-    installed: true,
-    running: false,
-    port: null,
-    emulated: false,
-    extensions: { running: false, total: 0, done: 0, failed: [] },
-  });
+  return query<EditorStatus>("editor_status", SAMPLE_EDITOR);
 }
 
 /** Opens the editor on a project (`null` = the projects folder). */
@@ -67,7 +69,7 @@ export function projectExtensions(project: string, added: string[], removed: str
   return act("project_extensions", { project, added, removed });
 }
 
-const SAMPLE_MATRIX: ExtensionsMatrix = {
+export const SAMPLE_MATRIX: ExtensionsMatrix = {
   languages: ["JavaScript", "TypeScript", "HTML", "CSS", "Python"],
   tools: [["deno", "Deno"]],
   extensions: [

@@ -1,6 +1,7 @@
 // The workbench controls on vscode-elements keep what the pages rely on:
 // roles and names in the page, clicks only when enabled, forms submitted
-// (and not while busy), controlled values, the dialog's focus and Esc.
+// (and not while busy), controlled values, the dialog's focus and Esc,
+// suggestions taken without submitting, toggles' and meters' states.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
@@ -11,10 +12,13 @@ import {
   CheckboxLabel,
   ConfirmDialog,
   IconButton,
+  Meter,
   Radio,
   SearchBox,
   Select,
+  SuggestField,
   TextField,
+  ToggleButton,
 } from "../../../ui/src/workbench";
 // VSCodium 1.135's workbench, vendored by scripts/vscodium-css/extract.mjs.
 import referenceCss from "../../../docs/brand/vscodium-1.135/workbench-ref.css?raw";
@@ -393,6 +397,151 @@ describe("workbench controls", () => {
     const second = document.querySelector("vscode-textfield");
     expect(second).not.toBe(first);
     expect(second?.autocomplete).toBe("off");
+  });
+
+  it("says whether a toggle with text is pressed, and ignores clicks while disabled", () => {
+    const onClick = vi.fn();
+    const draw = (pressed: boolean, disabled = false) => (
+      <ToggleButton pressed={pressed} disabled={disabled} title="Cartella vuota" onClick={onClick}>
+        vuoto
+      </ToggleButton>
+    );
+    const { rerender } = render(draw(false));
+    const chip = screen.getByRole("button", { name: "vuoto", pressed: false, description: "Cartella vuota" });
+    fireEvent.click(chip);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    rerender(draw(true));
+    expect(screen.getByRole("button", { name: "vuoto", pressed: true })).toBe(chip);
+    // Pressed: the toggle colors of VSCodium's input options.
+    expect(chip.className).toContain("bg-(--vscode-inputOption-activeBackground)");
+    expect(chip.className).not.toMatch(ONLY_TOKENS);
+    rerender(draw(true, true));
+    fireEvent.click(chip);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives a meter its value, its range and its text, kept inside the range", () => {
+    const { rerender } = render(<Meter label="Sessione" value={40} valueText="40% usato" tone="warning" />);
+    const meter = screen.getByRole("meter", { name: "Sessione" });
+    expect(meter.getAttribute("aria-valuenow")).toBe("40");
+    expect(meter.getAttribute("aria-valuemin")).toBe("0");
+    expect(meter.getAttribute("aria-valuemax")).toBe("100");
+    expect(meter.getAttribute("aria-valuetext")).toBe("40% usato");
+    const bar = meter.firstElementChild as HTMLElement;
+    expect(bar.style.width).toBe("40%");
+    expect(bar.className).toContain("bg-vsc-warning");
+    expect(meter.className).not.toMatch(ONLY_TOKENS);
+    rerender(<Meter label="Sessione" value={130} max={200} />);
+    expect(meter.getAttribute("aria-valuenow")).toBe("130");
+    expect(bar.style.width).toBe("65%");
+    rerender(<Meter label="Sessione" value={-5} />);
+    expect(meter.getAttribute("aria-valuenow")).toBe("0");
+    expect(bar.style.width).toBe("0%");
+  });
+
+  it("suggests values as one types, taken with the arrows and Enter, without submitting", async () => {
+    const onSubmit = vi.fn();
+    function Add() {
+      const [id, setId] = useState("");
+      return (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(id);
+          }}
+        >
+          <SuggestField
+            label="Estensione"
+            value={id}
+            onChange={setId}
+            suggestions={[
+              { value: "ms-python.python", label: "Python" },
+              { value: "charliermarsh.ruff", label: "Ruff" },
+              { value: "esbenp.prettier-vscode", label: "Prettier" },
+            ]}
+          />
+          <Button variant="primary" submit>
+            Aggiungi
+          </Button>
+        </form>
+      );
+    }
+    render(<Add />);
+    const host = screen.getByLabelText<HTMLElementTagNameMap["vscode-textfield"]>("Estensione");
+    const input = await innerInput(host);
+    expect(screen.queryByRole("listbox")).toBeNull();
+    await waitFor(() => {
+      expect(input.getAttribute("role")).toBe("combobox");
+    });
+    expect(input.getAttribute("aria-expanded")).toBe("false");
+    // Matched in the value or in the label.
+    act(() => {
+      type(input, "py");
+    });
+    const list = screen.getByRole("listbox", { name: "Estensione" });
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["ms-python.pythonPython"]);
+    act(() => {
+      type(input, "r");
+    });
+    expect(screen.getAllByRole("option")).toHaveLength(2);
+    await waitFor(() => {
+      expect(input.getAttribute("aria-expanded")).toBe("true");
+    });
+    expect(list.isConnected).toBe(true);
+    // Down twice, Enter: the second one, and the form is not submitted.
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(screen.getByRole("option", { selected: true }).textContent).toContain("esbenp.prettier-vscode");
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(host.value).toBe("esbenp.prettier-vscode");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    // With the list closed, Enter submits the text as typed.
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSubmit).toHaveBeenCalledWith("esbenp.prettier-vscode");
+  });
+
+  it("takes a suggestion by click, keeps any text, and closes the list with Esc alone", async () => {
+    const onChange = vi.fn();
+    const onCancel = vi.fn();
+    function Field() {
+      const [id, setId] = useState("");
+      return (
+        <ConfirmDialog title="Aggiungere?" cancelLabel="Annulla" onCancel={onCancel} actions={null}>
+          <SuggestField
+            label="Estensione"
+            value={id}
+            onChange={(v) => {
+              onChange(v);
+              setId(v);
+            }}
+            suggestions={[{ value: "ms-python.python" }, { value: "charliermarsh.ruff" }]}
+          />
+        </ConfirmDialog>
+      );
+    }
+    render(<Field />);
+    const input = await innerInput(screen.getByLabelText("Estensione"));
+    act(() => {
+      type(input, "nessuna.corrispondenza");
+    });
+    // Nothing matches: no list, the text stays.
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(onChange).toHaveBeenLastCalledWith("nessuna.corrispondenza");
+    act(() => {
+      type(input, "ruff");
+    });
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(onCancel).not.toHaveBeenCalled();
+    // The arrow opens it again; a click takes one.
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.click(screen.getByRole("option", { name: "charliermarsh.ruff" }));
+    expect(onChange).toHaveBeenLastCalledWith("charliermarsh.ruff");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    // Closed, Esc is the dialog's again.
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });
 

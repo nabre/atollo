@@ -3,7 +3,7 @@
 // network needs it, a proxy and the certificates of a firewall that
 // inspects HTTPS. Saved as they change, as on the Settings page; nothing is
 // installed until «Installa», so the downloads already use them.
-import { ErrorLine } from "../common";
+import { ErrorLine, LoadError } from "../common";
 import { t } from "../i18n";
 import { SettingsGroup } from "../workbench";
 import { useSettingsAutosave } from "./autosave";
@@ -16,8 +16,8 @@ export function FirstRunSettings({
   platform?: string | undefined;
   onSaved?: (() => void) | undefined;
 }) {
-  const { view, s, loadError, error, status, set, net } = useSettingsAutosave(onSaved);
-  if (loadError) return <ErrorLine error={loadError} />;
+  const { view, s, loadError, error, status, set, net, retry } = useSettingsAutosave(onSaved);
+  if (loadError) return <LoadError error={loadError} onRetry={retry} />;
   if (!s) return null;
   const start = t("Prima di iniziare");
   return (

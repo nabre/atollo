@@ -5,6 +5,7 @@
 // Used by the Settings page and by the first-start page.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { settingsGet, settingsSet, type Settings, type SettingsView } from "../api";
+import { useLoad } from "../hooks";
 
 /** The wait after a change before saving it. */
 const DELAY = 500;
@@ -20,9 +21,7 @@ function envChanged(a: Settings, b: Settings): boolean {
 }
 
 export function useSettingsAutosave(onSaved?: () => void) {
-  const [view, setView] = useState<SettingsView | null>(null);
   const [s, setS] = useState<Settings | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SaveStatus>("idle");
   /** A change saved that the running editor does not see yet. */
@@ -42,21 +41,25 @@ export function useSettingsAutosave(onSaved?: () => void) {
     onSavedRef.current = onSaved;
   }, [onSaved]);
 
-  const load = useCallback(() => {
-    settingsGet().then(
-      (v) => {
-        setView(v);
+  // The settings read: a read that works clears the error of the one before.
+  // The values to edit and to compare with start from it.
+  const read = useCallback(
+    () =>
+      settingsGet().then((v) => {
         setS(v.settings);
         current.current = v.settings;
         saved.current = v.settings;
-        setLoadError(null);
-      },
-      (e: unknown) => {
-        setLoadError(String(e));
-      },
-    );
-  }, []);
-  useEffect(load, [load]);
+        return v;
+      }),
+    [],
+  );
+  const {
+    data: view,
+    setData: setView,
+    error: loadError,
+    reload: load,
+    retry,
+  } = useLoad<SettingsView | null>(read, null, { onError: "show" });
 
   const flush = useCallback(async () => {
     window.clearTimeout(timer.current);
@@ -88,7 +91,7 @@ export function useSettingsAutosave(onSaved?: () => void) {
       }
     }
     running.current = false;
-  }, []);
+  }, [setView]);
 
   // Saves what is waiting when the page closes.
   useEffect(
@@ -138,5 +141,5 @@ export function useSettingsAutosave(onSaved?: () => void) {
     [change],
   );
 
-  return { view, s, loadError, error, status, needsRestart, set, net, setGemini, load };
+  return { view, s, loadError, error, status, needsRestart, set, net, setGemini, load, retry };
 }

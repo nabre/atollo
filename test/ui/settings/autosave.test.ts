@@ -1,8 +1,9 @@
 // The settings saved as they change (D-137): a Gemini key whose save was
-// refused goes again with the next change, never dropped as «unchanged».
+// refused goes again with the next change, never dropped as «unchanged»;
+// a read that works clears the error of the failed one.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, renderHook } from "@testing-library/react";
-import type { Settings, SettingsView } from "../../../ui/src/api";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { SAMPLE_SETTINGS } from "../../../ui/src/api";
 import { useSettingsAutosave } from "../../../ui/src/settings/autosave";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
@@ -17,18 +18,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const SETTINGS: Settings = {
-  lang: null,
-  network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
-  geminiApiKey: null,
-  autoUpdate: true,
-  rustToolchain: null,
-  programTemp: "auto",
-  theme: "system",
-  keepCondaPackages: true,
-  toolsTarget: null,
-};
-const VIEW: SettingsView = { settings: SETTINGS, geminiKeySet: false, problem: null };
+// The browser preview's settings: no Gemini key saved.
+const VIEW = SAMPLE_SETTINGS;
+const SETTINGS = VIEW.settings;
 
 /** The Gemini key of each settings_set, in order. */
 function geminiSent(): (string | null)[] {
@@ -97,5 +89,27 @@ describe("useSettingsAutosave", () => {
     });
     await wait();
     expect(geminiSent()).toEqual(["AIza-1", "AIza-2", null]);
+  });
+
+  it("clears a failed read when the next one works", async () => {
+    let fail = true;
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "settings_get") return fail ? Promise.reject(new Error("letto male")) : Promise.resolve(VIEW);
+      return Promise.resolve();
+    });
+    const { result } = renderHook(() => useSettingsAutosave());
+    await waitFor(() => {
+      expect(result.current.loadError).toBe("Error: letto male");
+    });
+    expect(result.current.s).toBeNull();
+    fail = false;
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.retry();
+    });
+    expect(ok).toBe(true);
+    expect(result.current.loadError).toBeNull();
+    expect(result.current.s).toEqual(SETTINGS);
+    expect(result.current.view).toEqual(VIEW);
   });
 });
