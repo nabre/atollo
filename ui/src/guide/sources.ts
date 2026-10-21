@@ -244,6 +244,31 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     targetPath: () => `antigravity\\${lLine()}\\agy.exe (via data\\kit\\bin\\agy.cmd)`,
   }),
   defSource({
+    id: "pi",
+    logoId: "pi",
+    name: "Pi (Earendil)",
+    group: "agents",
+    home: "https://pi.dev",
+    metaSource: "api.github.com/repos/earendil-works/pi/releases/latest",
+    unix: () =>
+      tr(
+        "macOS e Linux: pi-<os>-<arch>.tar.gz della stessa release",
+        "macOS and Linux: pi-<os>-<arch>.tar.gz of the same release",
+        "macOS et Linux : pi-<os>-<arch>.tar.gz de la même release",
+        "macOS und Linux: pi-<os>-<arch>.tar.gz desselben Releases",
+      ),
+    binarySource: "github.com/earendil-works/pi/releases/download/v<v>/pi-windows-<arch>.zip",
+    verifyKind: "SHA-256",
+    verifyDetail: () =>
+      tr(
+        "Digest SHA-256 di GitHub (o SHA256SUMS della release)",
+        "GitHub's SHA-256 digest (or the release's SHA256SUMS)",
+        "Digest SHA-256 de GitHub (ou SHA256SUMS de la release)",
+        "SHA-256-Digest von GitHub (oder SHA256SUMS des Releases)",
+      ),
+    targetPath: () => `pi\\${lLine()}\\pi.exe`,
+  }),
+  defSource({
     id: "llama",
     logoId: "llama",
     name: "llama.cpp (llama-server)",

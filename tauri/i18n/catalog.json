@@ -2103,5 +2103,20 @@
     "en": "Stopped ({0})",
     "fr": "Arrêté ({0})",
     "de": "Gestoppt ({0})"
+  },
+  "agente da terminale di Earendil (Mario Zechner): modelli locali o dei provider in cloud": {
+    "en": "terminal agent by Earendil (Mario Zechner): local models or the cloud providers'",
+    "fr": "agent en terminal d'Earendil (Mario Zechner) : modèles locaux ou des fournisseurs cloud",
+    "de": "Terminal-Agent von Earendil (Mario Zechner): lokale Modelle oder die der Cloud-Anbieter"
+  },
+  "Modelli locali: nessun limite di piano": {
+    "en": "Local models: no plan limits",
+    "fr": "Modèles locaux : aucune limite de forfait",
+    "de": "Lokale Modelle: keine Tariflimits"
+  },
+  "I limiti dei provider di Pi non sono letti dal kit": {
+    "en": "The limits of Pi's providers are not read by the kit",
+    "fr": "Les limites des fournisseurs de Pi ne sont pas lues par le kit",
+    "de": "Die Limits der Anbieter von Pi liest das Kit nicht"
   }
 }

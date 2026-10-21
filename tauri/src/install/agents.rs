@@ -1,4 +1,4 @@
-//! Claude Code, Codex, Antigravity.
+//! Claude Code, Codex, Antigravity, Pi.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
@@ -139,6 +139,35 @@ impl Installer for Antigravity {
             }],
             version,
         })
+    }
+}
+
+/// Pi (D-152): the standalone build of earendil-works/pi (Bun, no Node.js
+/// needed), the whole folder (`pi(.exe)` with its themes, its HTML export
+/// and its wasm), checked with GitHub's digest or the release's
+/// `SHA256SUMS`.
+pub struct Pi;
+
+/// The archive of Pi for `target`: its name pattern and kind.
+pub(crate) fn pi_asset(target: crate::kit::Target) -> (String, Kind) {
+    let os = match target.os {
+        crate::kit::Os::Win32 => "windows",
+        crate::kit::Os::Darwin => "darwin",
+        crate::kit::Os::Linux => "linux",
+    };
+    let arch = target.arch.as_str();
+    if target.is_windows() {
+        (format!("^pi-{os}-{arch}\\.zip$"), Kind::Zip)
+    } else {
+        (format!("^pi-{os}-{arch}\\.tar\\.gz$"), Kind::TarGz)
+    }
+}
+
+impl Installer for Pi {
+    fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
+        let (re, kind) = pi_asset(target_of(ctx, component));
+        // The zip of Windows has the files at its root, the tar.gz in `pi/`.
+        super::github_single(ctx, "earendil-works/pi", &re, kind, Inner::Auto)
     }
 }
 

@@ -246,6 +246,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "claude" => &agents::Claude,
         "codex" => &agents::Codex,
         "antigravity" => &agents::Antigravity,
+        "pi" => &agents::Pi,
         "llama" => &llama::Llama,
         "git" => &core::Git,
         "python" => &core::Python,

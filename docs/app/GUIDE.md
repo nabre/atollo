@@ -2325,7 +2325,7 @@ Many components are published on GitHub. Without a sign-in, the GitHub API allow
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open. |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Only when the commands of projects and frameworks ask for it. |
 
-#### Complete table of sources (38 components and 5 parts)
+#### Complete table of sources (39 components and 5 parts)
 
 For each component: where the kit reads the versions from, where it downloads the file from, how it verifies it and where it puts it. The columns describe Windows; where macOS and Linux use another source, it is written under the address.
 
@@ -2338,6 +2338,7 @@ For each component: where the kit reads the versions from, where it downloads th
 | [Claude Code](https://claude.com/product/claude-code) | registry.npmjs.org/@anthropic-ai/claude-code-win32-\<arch\>/latest | dist.tarball field of the npm package | Authenticode + SHA — npm sha512 integrity + Anthropic Authenticode signature | `claude\<line>\claude.exe` |
 | [Codex (OpenAI)](https://github.com/openai/codex) | registry.npmjs.org/@openai/codex/latest → /\<ver\>-win32-\<arch\> | dist.tarball field of the architecture-specific package | npm sha512 — npm dist.integrity (sha512-...) | `codex\<line>\bin\codex.exe` |
 | [Antigravity (Google)](https://antigravity.google) | antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64\|arm64).json | url field of the official JSON manifest<br>macOS and Linux: manifests/\<os\>_\<arch\>.json, .tar.gz archive | SHA-512 — SHA-512 (128 hex) from the manifest sha512 field | `antigravity\<line>\agy.exe (via data\kit\bin\agy.cmd)` |
+| [Pi (Earendil)](https://pi.dev) | api.github.com/repos/earendil-works/pi/releases/latest | github.com/earendil-works/pi/releases/download/v\<v\>/pi-windows-\<arch\>.zip<br>macOS and Linux: pi-\<os\>-\<arch\>.tar.gz of the same release | SHA-256 — GitHub's SHA-256 digest (or the release's SHA256SUMS) | `pi\<line>\pi.exe` |
 | [llama.cpp (llama-server)](https://github.com/ggml-org/llama.cpp) | build bNNNNN pinned in Atollo's catalog (D-151) | github.com/ggml-org/llama.cpp/releases/download/\<b\>/llama-\<b\>-bin-win-vulkan-\<arch\>.zip<br>Linux: llama-\<b\>-bin-ubuntu-vulkan-\<arch\>.tar.gz; macOS: llama-\<b\>-bin-macos-\<arch\>.tar.gz (Metal) | SHA-256 — SHA-256 per platform pinned in the catalog (from GitHub's digest) | `llama\llama-server.exe` |
 | [Git + Git Bash (PortableGit)](https://git-scm.com) | api.github.com/repos/git-for-windows/git/releases/latest | PortableGit-\<v\>-(64-bit\|arm64).7z.exe (extracted in Rust)<br>macOS and Linux: GitHub desktop/dugite-native (dugite-native-v\<v\>-\<sha\>-\<system\>.tar.gz, the asset's .sha256), follows the kit | SHA-256 — GitHub Release asset.digest | `git\<line>\cmd\git.exe and git\<line>\bin\bash.exe` |
 | [Python + pip](https://www.python.org) | raw.githubusercontent.com/astral-sh/python-build-standalone/latest-release/latest-release.json | cpython-3.\<minor\>.\<patch\>+\<date\>-\<triple\>-install_only_stripped.tar.gz | SHA-256 — SHA-256 from the official SHA256SUMS list | `python\<line>\python.exe (+ pip)` |

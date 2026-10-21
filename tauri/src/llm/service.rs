@@ -415,9 +415,7 @@ impl Llm {
 /// listens there may be another program; something answers there and a
 /// `llama-server` of this kit runs.
 pub fn probe(kit: &Kit) -> (u16, bool) {
-    let port = settings::load(kit)
-        .port
-        .unwrap_or(*settings::PORTS.start());
+    let port = settings::load(kit).port.unwrap_or(*settings::PORTS.start());
     (port, responds(port) && !kit_servers(kit).is_empty())
 }
 

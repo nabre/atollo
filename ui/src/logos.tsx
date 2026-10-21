@@ -125,6 +125,21 @@ function AntigravityIcon({ size = 16, className, style }: IconBaseProps) {
   );
 }
 
+/** Pi's mark: the letter π, as the agent shows it in its terminal. */
+function PiIcon({ size = 16, className, style }: IconBaseProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={className} style={style}>
+      <path
+        d="M4 7.5h16M9 7.5v11M15.5 7.5v8.5c0 1.6.7 2.5 2.3 2.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 interface Logo {
   icon: IconType;
   /** Brand colour; none = the text colour (black or white brands). */
@@ -153,6 +168,7 @@ const COMPONENTS: Record<string, Logo> = {
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },
   antigravity: { icon: AntigravityIcon },
+  pi: { icon: PiIcon },
   llama: { icon: codicon("chip") },
   git: { icon: SiGit, color: "#F05032" },
   python: PYTHON,
