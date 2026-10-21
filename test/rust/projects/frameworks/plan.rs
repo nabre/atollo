@@ -146,6 +146,8 @@ fn filled_lines() {
         ),
         "npm create vite@9 'it''s mine' -- --identifier com.example.itsmine"
     );
+    // PowerShell also ends a string on the typographic quotes (BUG-V6-31).
+    assert_eq!(fill("x {name}", "O’Brien"), "x 'O’’Brien'");
 }
 
 #[test]
