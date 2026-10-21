@@ -54,9 +54,12 @@ pub enum Inner {
 
 /// `base` + an archive entry name, or `None` if the name would escape `base`.
 /// Splits on both `'/'` and `'\\'` so paths work identically on Windows,
-/// macOS, and Linux without creating literal backslashes on Unix.
+/// macOS, and Linux without creating literal backslashes on Unix. A `:` is
+/// refused on Windows only (a drive, `C:rel`, or an alternate data stream);
+/// on macOS and Linux it is an ordinary character of a file name, which
+/// tar archives for those systems may have.
 pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
-    if name.starts_with(['/', '\\']) || name.contains(':') {
+    if name.starts_with(['/', '\\']) || (cfg!(windows) && name.contains(':')) {
         return None;
     }
     let mut out = base.to_path_buf();
@@ -1037,20 +1040,25 @@ fn move_tree(from: &Path, to: &Path) -> io::Result<()> {
     Ok(())
 }
 
-/// Removes a component folder: renamed first, so a folder in use is left
-/// untouched (`InUse`).
 /// Puts `new` in place of the file `dest`. The old file is renamed to
 /// `<name>.old` first: Windows allows renaming a running exe, so a program in
 /// use can still be updated (`Replace-File` of the kit). Leftover `.old`
-/// files are deleted when possible.
+/// files are deleted when possible; one still running (the program updated
+/// twice while it runs) stays, and the old file goes to `<name>.old-<ms>`
+/// instead, deleted by a later replace or `clean_leftovers`.
 pub fn replace_file(new: &Path, dest: &Path) -> Result<()> {
-    let old = dest.with_file_name(format!(
-        "{}.old",
-        dest.file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default()
-    ));
+    let name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let old = dest.with_file_name(format!("{name}.old"));
     let _ = fs::remove_file(&old);
+    remove_old_files(dest, &format!("{name}.old-"));
+    let old = if fs::symlink_metadata(&old).is_ok() {
+        sibling(dest, "old")
+    } else {
+        old
+    };
     // Copied next to `dest` first, not renamed: `new` may be on another disk
     // (PC temp folder), and an interrupted copy leaves only `<name>.atollo-new`.
     let staged = staged_path(dest);
@@ -1072,6 +1080,25 @@ pub fn replace_file(new: &Path, dest: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Deletes the files next to `dest` whose name is `prefix` followed by a
+/// stamp (`<name>.old-<ms>`), when they are no longer in use.
+fn remove_old_files(dest: &Path, prefix: &str) {
+    let Some(dir) = dest.parent() else {
+        return;
+    };
+    for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let stamped = name
+            .strip_prefix(prefix)
+            .is_some_and(|ms| !ms.is_empty() && ms.bytes().all(|b| b.is_ascii_digit()));
+        if stamped && entry.file_type().is_ok_and(|t| t.is_file()) {
+            let _ = fs::remove_file(entry.path());
+        }
+    }
+}
+
+/// Removes a component folder: renamed first, so a folder in use is left
+/// untouched (`InUse`).
 pub fn remove_dir(dest: &Path) -> Result<()> {
     if !dest.exists() {
         return Ok(());
@@ -1080,6 +1107,46 @@ pub fn remove_dir(dest: &Path) -> Result<()> {
     fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
     let _ = fs::remove_dir_all(&old);
     Ok(())
+}
+
+/// Runs `make`, which builds `dest` where it stays (a conda environment
+/// writes its own folder into its files, so it cannot be built elsewhere and
+/// swapped in). An existing `dest` is set aside first (`<name>.old-<ms>`,
+/// `InUse` if it cannot move), deleted when `make` succeeds and put back in
+/// place of what `make` left when it fails: an update that breaks halfway
+/// leaves the old one working.
+pub fn rebuild_in_place<T>(dest: &Path, make: impl FnOnce() -> Result<T>) -> Result<T> {
+    let old = if dest.exists() {
+        let old = sibling(dest, "old");
+        fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+        Some(old)
+    } else {
+        None
+    };
+    match make() {
+        Ok(v) => {
+            if let Some(old) = old {
+                let _ = fs::remove_dir_all(old);
+            }
+            Ok(v)
+        }
+        Err(e) => {
+            // What `make` left halfway goes, so it is not taken for installed.
+            if dest.exists() {
+                let _ = fs::remove_dir_all(dest);
+            }
+            if let Some(old) = old {
+                if let Err(back) = fs::rename(&old, dest) {
+                    crate::log::warn(&format!(
+                        "{} not put back from {}: {back}",
+                        dest.display(),
+                        old.display()
+                    ));
+                }
+            }
+            Err(e)
+        }
+    }
 }
 
 fn sibling(dest: &Path, tag: &str) -> PathBuf {

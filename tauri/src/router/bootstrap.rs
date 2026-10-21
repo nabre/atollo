@@ -71,17 +71,11 @@ pub fn has_staged(kit: &Kit, id: &str) -> bool {
 /// Uses a pre-downloaded bootstrap archive from `data/apps/<target>/.bootstrap`
 /// when present and matching `expect`: at the top (an older version's
 /// layout), then in any component's folder, since the download does not say
-/// for which component it is. Removes the staged file once consumed on a
-/// host that can execute `kit.target()`.
-pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<bool> {
+/// for which component it is. Returns the staged file copied, which
+/// [`used`] removes once the installation succeeds.
+pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<Option<PathBuf>> {
     let top = boot_dir(kit);
-    let legacy = top.join(file_name);
-    if legacy.is_file() {
-        if let Err(e) = verify::check(&legacy, expect) {
-            crate::log::warn(&format!("bootstrap {file_name} discarded: {e}"));
-        }
-    }
-    let mut candidates = vec![legacy];
+    let mut candidates = vec![top.join(file_name)];
     candidates.extend(
         fs::read_dir(&top)
             .into_iter()
@@ -96,20 +90,29 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
         .into_iter()
         .find(|c| c.is_file() && verify::matches(c, expect).unwrap_or(false))
     else {
-        return Ok(false);
+        return Ok(None);
     };
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent)?;
     }
     fs::copy(&candidate, dest)?;
-    if can_execute_on_host(kit.target()) {
-        let _ = fs::remove_file(&candidate);
-        if let Some(folder) = candidate.parent().filter(|p| *p != top) {
-            let _ = fs::remove_dir(folder);
-        }
-        let _ = fs::remove_dir(&top);
+    Ok(Some(candidate))
+}
+
+/// The installation that took the staged `file` ([`take`]) succeeded: on a
+/// host that can execute `kit.target()` it is consumed, with its folder
+/// and `.bootstrap` once empty. Elsewhere (staging for another system) it
+/// stays for the first start there.
+pub fn used(kit: &Kit, file: &Path) {
+    if !can_execute_on_host(kit.target()) {
+        return;
     }
-    Ok(true)
+    let top = boot_dir(kit);
+    let _ = fs::remove_file(file);
+    if let Some(folder) = file.parent().filter(|p| *p != top) {
+        let _ = fs::remove_dir(folder);
+    }
+    let _ = fs::remove_dir(&top);
 }
 
 /// Removes what was pre-downloaded for `c` on `kit`'s system, its saved
