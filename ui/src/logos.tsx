@@ -180,6 +180,8 @@ const COMPONENTS: Record<string, Logo> = {
   mysql: { icon: SiMysql, color: "#4479A1" },
   mongodb: { icon: SiMongodb, color: "#47A248" },
   phpmyadmin: { icon: SiPhpmyadmin, color: "#6C78AF" },
+  // Simple Icons has no mongo-express: MongoDB's leaf, whose browser it is.
+  "mongo-express": { icon: SiMongodb, color: "#47A248" },
   // SQLite's #003B57 is unreadable on dark: the light blue of its logo.
   sqlite: { icon: SiSqlite, color: "#0F80CC" },
   r: R,

@@ -106,11 +106,11 @@ export function dbBrowseRows(
     : invoke<DbRows>("db_browse_rows", { engine, line, database, table, offset });
 }
 
-/** phpMyAdmin on the kit's MySQL, in the browser (D-107, D-117): installed
- * the first time, the server started when it is off; `line`: another
- * version, on its own port (null: the version the server runs). `engine`
- * (optional): `mysql`, the only SQL server the interface names. */
-export function dbAdminOpen(line: string | null = null, engine: "mysql" = "mysql"): Promise<ServiceInfo[]> {
+/** The kit's database in the browser: phpMyAdmin on MySQL (D-107, D-117),
+ * mongo-express on MongoDB (D-147); installed the first time with what it
+ * needs, the server started when it is off; `line`: another version, on
+ * its own port (null: the version the server runs). */
+export function dbAdminOpen(line: string | null = null, engine: "mysql" | "mongodb" = "mysql"): Promise<ServiceInfo[]> {
   return query<ServiceInfo[]>("db_admin_open", SAMPLE_SERVICES, { line, engine });
 }
 

@@ -74,6 +74,7 @@
   "mxKind_tools": "Strumenti di sviluppo",
   "mxKind_web": "Server web",
   "mxKind_databases": "Database",
+  "mxKind_dbviewers": "Visualizzazione database",
   "platformsTitle": "Sistemi",
   "platformsLead": "Windows 10 e 11 (Windows 11 su ARM64), macOS 12 o successivo, Linux con glibc 2.35 o successiva (Ubuntu 22.04, Debian 12 e più recenti).",
   "pWinX64": "nativo",
