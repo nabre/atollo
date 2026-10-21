@@ -206,8 +206,12 @@ export function SideBarTitle({ title, actions }: { title: string; actions?: Reac
  * rest. Each pane sets its header and rows 4px in from the sides, so the
  * scroll bars stay on the edge. */
 export function PaneStack({ children }: { children: ReactNode }) {
-  return <div className="flex min-h-0 flex-1 flex-col pb-vsc-size40">{children}</div>;
+  return <div className="group/panes flex min-h-0 flex-1 flex-col pb-vsc-size40">{children}</div>;
 }
+
+/** The least body of a `fill` pane beside a `fit` one, as VSCodium's
+ * panes' minimumBodySize: the `fit` pane never takes all the height. */
+const FILL_BESIDE_FIT = "group-has-[[data-fit]]/panes:min-h-[calc(var(--vsc-size-pane-header)+120px)]";
 
 /** A collapsible pane (Outline, Timeline), as the modern UI's: a 28px
  * header with the small radius, 4px in from the sides, its title 12px
@@ -219,6 +223,7 @@ export function ViewPane({
   expanded,
   onToggle,
   fill = false,
+  fit = false,
   first = false,
   actions,
   badge,
@@ -229,17 +234,24 @@ export function ViewPane({
   onToggle: () => void;
   /** Takes the height left by the others when open. */
   fill?: boolean;
+  /** As tall as its content, up to the height there is, scrolling only
+   * beyond it; the rest goes to the other `fill` panes (as VSCodium's Open
+   * Editors). Set by the view while other panes are open: alone, a `fill`
+   * pane fills. */
+  fit?: boolean;
   /** No border on top: the first pane of the side bar. */
   first?: boolean;
   actions?: ReactNode;
   badge?: ReactNode;
   children: ReactNode;
 }) {
+  const fits = expanded && fit;
   return (
     <section
-      className={`flex min-h-vsc-pane-header flex-col ${expanded && fill ? "flex-1 basis-0" : "shrink-0"} ${
-        expanded && !fill ? "max-h-[60%]" : ""
-      }`}
+      data-fit={fits ? "" : undefined}
+      className={`flex min-h-vsc-pane-header flex-col ${
+        fits ? "flex-[0_1_auto]" : expanded && fill ? `flex-1 basis-0 ${FILL_BESIDE_FIT}` : "shrink-0"
+      } ${expanded && !fill && !fit ? "max-h-[60%]" : ""}`}
     >
       <h3
         className={`group/pane relative mx-vsc-size40 flex h-vsc-pane-header shrink-0 items-center rounded-vsc-small text-vsc-section-fg hover:bg-vsc-list-hover ${
@@ -268,7 +280,9 @@ export function ViewPane({
           </ActionBar>
         )}
       </h3>
-      {expanded && <div className="min-h-0 flex-1 overflow-y-auto px-vsc-size40">{children}</div>}
+      {expanded && (
+        <div className={`min-h-0 overflow-y-auto px-vsc-size40 ${fits ? "flex-[0_1_auto]" : "flex-1"}`}>{children}</div>
+      )}
     </section>
   );
 }
