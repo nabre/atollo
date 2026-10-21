@@ -111,6 +111,46 @@ export function basesByCategory(pieces: FrameworkPiece[]): { id: string; label: 
     .filter((g) => g.bases.length > 0);
 }
 
+/** The four groups of the ways to make a project from a base, each with
+ * its categories (the quick panel's blocks, the tree's branches): static
+ * sites and documentation are web; bases without a known category are in
+ * «Altro». */
+export const GROUPS = [
+  { id: "web", categories: ["web-php", "web-js", "web-python", "web-other", "docs"] },
+  { id: "cms", categories: ["cms"] },
+  { id: "app", categories: ["desktop", "mobile"] },
+  { id: "other", categories: ["data", "cli", "other"] },
+] as const;
+
+export type GroupId = (typeof GROUPS)[number]["id"];
+
+export function groupLabel(group: GroupId): string {
+  return { web: t("Web"), cms: t("CMS"), app: t("App"), other: t("Altro") }[group];
+}
+
+export interface BaseGroup {
+  id: GroupId;
+  label: string;
+  /** Its categories with bases, in order. */
+  categories: { id: string; label: string; bases: FrameworkPiece[] }[];
+  /** All its bases, in the categories' order. */
+  bases: FrameworkPiece[];
+}
+
+/** The bases by group and category, the empty ones left out. */
+export function basesByGroup(pieces: FrameworkPiece[]): BaseGroup[] {
+  const byCategory = basesByCategory(pieces);
+  return GROUPS.map((g) => {
+    const categories = byCategory.filter((c) => (g.categories as readonly string[]).includes(c.id));
+    return { id: g.id, label: groupLabel(g.id), categories, bases: categories.flatMap((c) => c.bases) };
+  }).filter((g) => g.bases.length > 0);
+}
+
+/** The group of base `id`, if it is one. */
+export function groupOf(pieces: FrameworkPiece[], id: string): BaseGroup | undefined {
+  return basesByGroup(pieces).find((g) => g.bases.some((b) => b.id === id));
+}
+
 /** The additions that work with `base`. */
 export function addonsFor(pieces: FrameworkPiece[], base: string): FrameworkPiece[] {
   return pieces.filter((p) => p.kind === "addon" && p.on?.[base] !== undefined);
