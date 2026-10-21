@@ -680,14 +680,28 @@ fn legacy_db_name(project: &str) -> String {
 /// The name a new database and user of the project on `engine` gets (then
 /// stored in `db.json`): [`legacy_db_name`], never one of that server's own
 /// names, which get `_db` after them. Only for what is not created yet:
-/// anything that reaches a server uses [`project_db_name`].
+/// anything that reaches a server uses [`project_db_name`], so a name
+/// stored before keeps winning.
 pub fn db_name(project: &str, engine: &str) -> String {
     let mut name = legacy_db_name(project);
     if is_reserved(engine, &name) {
         name.push_str("_db");
     }
+    // The user has the database's name, and MySQL takes user names of 32
+    // characters at most (ERROR 1470, BUG-V6-07): a longer one is cut,
+    // with 6 digits of the project's hash after it, so two long names that
+    // start alike stay two.
+    if engine == DbEngine::MySql.id() && name.len() > MYSQL_USER_MAX {
+        use sha2::{Digest, Sha256};
+        let hash = Sha256::digest(project.to_ascii_lowercase().as_bytes());
+        name.truncate(MYSQL_USER_MAX - 7);
+        name.push_str(&format!("_{:02x}{:02x}{:02x}", hash[0], hash[1], hash[2]));
+    }
     name
 }
+
+/// The longest user name of MySQL 8 and later.
+const MYSQL_USER_MAX: usize = 32;
 
 /// SQL that creates (or brings back to `password`) a project's database and
 /// user on MySQL (D-110), with every right on that database only:
