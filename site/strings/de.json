@@ -28,7 +28,7 @@
   "versionLabel": "Version",
   "noRelease": "Noch keine Version veröffentlicht: die Dateien kommen mit dem ersten Tag.",
   "checksum": "Jede Datei hat ihre .sha256",
-  "featuresTitle": "Vier Teile, ein Ordner",
+  "featuresTitle": "Fünf Teile, ein Ordner",
   "f1Title": "Isolierter Editor und Terminals",
   "f1Text": "Integriertes VSCodium mit den Atollo-Themes dunkel und hell, in einem Fenster, das am Workbench von VSCodium 1.135 gemessen ist: dieselben Größen, dieselben Farben und die Codicon-Icons. Die Terminals sehen nur den <code>PATH</code> und die Variablen des Kits: Programme des Gastrechners stören nicht, und der PC bleibt sauber.",
   "f2Title": "Sprachen und Werkzeuge bei Bedarf",
