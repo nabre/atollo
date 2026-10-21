@@ -747,10 +747,10 @@ export const PROJECTS: TopicTexts = {
                 "Logos der Agenten und „Agent“",
               ),
               tr(
-                "Scegli un agente con il suo logo e aprilo nel progetto.",
-                "Choose an agent by its logo and open it in the project.",
-                "Choisissez un agent par son logo et ouvrez-le dans le projet.",
-                "Wähle einen Agenten über sein Logo und öffne ihn im Projekt.",
+                "Scegli un agente con il suo logo e aprilo nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto.",
+                "Choose an agent by its logo and open it in the project. From then on Claude Code and Codex trust the project's folder.",
+                "Choisissez un agent par son logo et ouvrez-le dans le projet. Dès lors, Claude Code et Codex considèrent le dossier du projet comme fiable.",
+                "Wähle einen Agenten über sein Logo und öffne ihn im Projekt. Ab dann vertrauen Claude Code und Codex dem Projektordner.",
               ),
             ],
             [
@@ -1318,10 +1318,10 @@ export const PROJECTS: TopicTexts = {
           <Bullets
             items={[
               tr(
-                "Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto.",
-                "The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions.",
-                "La commande est exécutée avec cmd.exe sous Windows et /bin/sh sous macOS et Linux, dans le dossier de l'action, avec l'environnement du kit et les versions du projet.",
-                "Der Befehl wird unter Windows mit cmd.exe und unter macOS und Linux mit /bin/sh ausgeführt, im Ordner der Aktion, mit der Umgebung des Kits und den Versionen des Projekts.",
+                "Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto. I token degli agenti (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) non ci sono: arrivano solo agli agenti avviati da Atollo.",
+                "The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions. The agents' tokens (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) are not in it: only the agents Atollo launches get them.",
+                "La commande est exécutée avec cmd.exe sous Windows et /bin/sh sous macOS et Linux, dans le dossier de l'action, avec l'environnement du kit et les versions du projet. Les jetons des agents (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) n'y sont pas : seuls les agents lancés par Atollo les reçoivent.",
+                "Der Befehl wird unter Windows mit cmd.exe und unter macOS und Linux mit /bin/sh ausgeführt, im Ordner der Aktion, mit der Umgebung des Kits und den Versionen des Projekts. Die Token der Agenten (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) sind nicht darin: Nur die von Atollo gestarteten Agenten erhalten sie.",
               ),
               tr(
                 "Le azioni web ricevono le variabili PORT (e ROCKET_PORT) con la porta; tutte ricevono BROWSER=none, PYTHONUNBUFFERED=1 e ATOLLO_LANG. Se il progetto ha un database MySQL del kit e il suo .env non dice un'altra porta, ricevono anche DB_PORT.",

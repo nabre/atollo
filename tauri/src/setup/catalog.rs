@@ -165,8 +165,8 @@ impl Catalog {
 
     /// Always installed on `target`: the system components (required, and
     /// the parts of the app) and, transitively, what they need there
-    /// (GitHub CLI needs Git, the editor needs PowerShell 7). Never turned
-    /// off or skipped.
+    /// (the editor needs PowerShell 7). Git is not among them: GitHub CLI
+    /// works without it (D-81). Never turned off or skipped.
     pub fn locked_on(&self, target: Target) -> BTreeSet<&str> {
         let always: Vec<&str> = self
             .components

@@ -92,7 +92,7 @@ Senza il passo 2 macOS avvia l'app da una copia temporanea (App Translocation) e
 | **Terminali** | console con gli strumenti del kit in qualunque cartella del PC: «Tutti gli strumenti» e terminali tuoi, con gli strumenti e le versioni che scegli |
 | **Strumenti** | linguaggi e strumenti divisi per tipo (sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database), con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove, più versioni; il compilatore di Rust (GNU o MSVC) nella pagina di Rust; la matrice delle estensioni dell'editor |
 | **Guida** | la guida dell'app, in nove capitoli; ogni pagina apre il suo argomento |
-| **Impostazioni** | salvate mentre le cambi: lingua, tema, rete (proxy, certificati, rete locale), chiave di Gemini, aggiornamenti dell'app, privacy; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI), e chi firma i commit; dove si trova la cartella di Atollo; le istruzioni dei framework |
+| **Impostazioni** | salvate mentre le cambi: lingua, tema, i file temporanei dei programmi, i pacchetti tenuti per reinstallare senza rete, rete (proxy, certificati, rete locale), chiave di Gemini, aggiornamenti dell'app, privacy; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI), e chi firma i commit; dove si trova la cartella di Atollo; le istruzioni dei framework; **Il kit**, in sola lettura: le sue cartelle, il suo disco, la piattaforma e le versioni |
 | **Rimuovi l'unità** | chiude tutto ciò che Atollo ha aperto, riporta in `data\` l'accesso di Antigravity e lascia espellere l'unità |
 
 In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (azioni dei progetti, ogni versione dei database, pool dei server web, componenti), con l'output e gli errori in un solo posto; «Ferma tutto» ferma ogni cosa dopo una conferma. La barra di stato conta le stesse cose.
@@ -114,11 +114,11 @@ Hai un Mac, un PC Linux o un PC con Windows ARM64? Prova Atollo e raccontaci com
 
 ## Limiti noti
 
-- Su Windows 10 e 11 (`x64` e `ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`). Su Windows ARM64 l'editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX e R girano in emulazione x64; su Linux ARM64 manca Android. I rilasci per macOS e Linux sono provati in CI ma non ancora su macchine pulite ([#5](https://github.com/nabre/atollo/issues/5)), e gli accessi degli agenti vanno provati su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); componenti e fonti per sistema in [docs/app/CATALOG.it.md](app/CATALOG.it.md), la matrice componente × sistema in [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html) (in inglese). Apache su macOS e Linux è una build del kit (D-116), con PHP tramite `php-fpm`.
+- Su Windows 10 e 11 (`x64`), Windows 11 (`ARM64`), macOS (Apple Silicon e Intel) e Linux (`x64` e `ARM64`). Su Windows ARM64 l'editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX e R girano in emulazione x64; su Linux ARM64 manca Android. I rilasci per macOS e Linux sono provati in CI ma non ancora su macchine pulite ([#5](https://github.com/nabre/atollo/issues/5)), e gli accessi degli agenti vanno provati su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); componenti e fonti per sistema in [docs/app/CATALOG.it.md](app/CATALOG.it.md), la matrice componente × sistema in [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html) (in inglese). Apache su macOS e Linux è una build del kit (D-116), con PHP tramite `php-fpm`.
 - Su Linux MySQL vuole due librerie del sistema, `libaio` e `libnuma`: su Ubuntu 24.04 e Debian 13 `sudo apt install libaio1t64 libnuma1` (su versioni precedenti `libaio1`), su Fedora e RHEL `sudo dnf install libaio numactl-libs`. Se mancano, Atollo lo dice con il comando da eseguire.
 - Su macOS e Linux una cartella di Atollo su exFAT o FAT (una chiavetta formattata per Windows) funziona, ma quei file system non hanno link: dove un programma ne porta, Atollo copia i file (per esempio i 142 link interni di Git), con più spazio occupato. Su una chiavetta solo per Mac o Linux conviene APFS o ext4.
-- Fuori dalla cartella di Atollo restano solo le tracce di Windows, i file temporanei di passaggio nel temp di sistema (rimossi automaticamente alla chiusura), l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta in `data\gh`) e quello di Antigravity mentre `agy` è aperto (solo per la sessione).
-- Le cartelle in `projects\` sono attendibili per Claude Code e Codex: apri solo progetti di cui ti fidi. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
+- Fuori dalla cartella di Atollo restano solo le tracce di Windows, i file temporanei di passaggio nel temp di sistema (rimossi automaticamente alla chiusura; con Impostazioni › Generale › Temporanei dei programmi, anche i programmi possono usarlo mentre girano), l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta in `data\gh`), quello di Antigravity mentre `agy` è aperto (solo per la sessione), su macOS l'accesso di Claude Code nel Portachiavi (se non ti colleghi con un token) e i dati della webview nella tua Libreria, e la voce del registro che rustup scrive su Windows, che Atollo rimuove. L'elenco completo è in [PRIVACY §4](PRIVACY.it.md#4-i-dati-salvati-sul-tuo-dispositivo).
+- La cartella di un progetto diventa attendibile per Claude Code e Codex quando vi apri un agente da Atollo (le altre cartelle di `projects\` no): apri un agente solo nei progetti di cui ti fidi. I token degli agenti (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) vanno solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
 - I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
 - «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file della cartella di Atollo.
 
@@ -146,14 +146,21 @@ Atollo non usa un installer, non registra servizi di sistema né attività piani
 
 ```
 Atollo.exe                           apre la finestra
-Atollo.exe env                       mostra l'ambiente che ricevono i programmi di Atollo
-Atollo.exe components                elenca linguaggi e strumenti, con quelli installati
+Atollo.exe env [--project <nome>]    mostra l'ambiente che ricevono i programmi di Atollo
+                                     (con un progetto, con le sue versioni)
+Atollo.exe components [--target <sistema>]
+                                     elenca linguaggi e strumenti, con quelli installati
+Atollo.exe versions [<id>]           le versioni su disco; con un id, quelle da scaricare
 Atollo.exe check                     verifica che i programmi installati rispondano
-Atollo.exe prepare [opzioni]         installa, aggiorna e rimuove i componenti scelti
-    --only a,b                       solo questi (e ciò che serve loro)
+Atollo.exe prepare [opzioni]         installa e aggiorna i componenti scelti
+                                     e rimuove quelli non scelti
+    --only a,b                       solo questi (e ciò che serve loro), non rimuove niente
     --skip a,b                       non questi
     --update-all                     aggiorna anche quelli già installati
     --force                          scarica di nuovo
+    --line id=x.y                    aggiunge quella versione accanto alle altre (ripetibile)
+    --target <sistema>               prepara per un altro sistema: win32-x64, win32-arm64,
+                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <cartella>] [--verbose]
                                      allinea istruzioni, skill e MCP dei tre agenti
 Atollo.exe keyring restore|save      accesso di Antigravity (usato da agy.cmd)

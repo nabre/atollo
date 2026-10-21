@@ -94,7 +94,7 @@ Ohne Schritt 2 startet macOS die App aus einer temporären Kopie (App Translocat
 | **Terminals** | Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs: „Alle Werkzeuge“ und eigene Terminals mit den Werkzeugen und Versionen, die du wählst |
 | **Werkzeuge** | Sprachen und Werkzeuge nach Art (System und Editor, KI-Agenten, Sprachen, Entwicklungswerkzeuge, Webserver, Datenbanken), mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen, mehrere Versionen; der Rust-Compiler (GNU oder MSVC) auf der Seite von Rust; die Matrix der Editor-Erweiterungen |
 | **Anleitung** | die Anleitung in der App, in neun Kapiteln; jede Seite öffnet ihr eigenes Thema |
-| **Einstellungen** | gespeichert, sobald du sie änderst: Sprache, Design, Netzwerk (Proxy, Zertifikate, lokales Netzwerk), Gemini-Schlüssel, Updates der App, Datenschutz; das **GitHub-Konto** von Atollo, eines für alles (App, Git, Editor, Konsolen, Agenten, GitHub CLI), und wer die Commits signiert; wo der Ordner von Atollo liegt; die Anweisungen der Frameworks |
+| **Einstellungen** | gespeichert, sobald du sie änderst: Sprache, Design, die temporären Dateien der Programme, die Pakete zum Neuinstallieren ohne Netzwerk, Netzwerk (Proxy, Zertifikate, lokales Netzwerk), Gemini-Schlüssel, Updates der App, Datenschutz; das **GitHub-Konto** von Atollo, eines für alles (App, Git, Editor, Konsolen, Agenten, GitHub CLI), und wer die Commits signiert; wo der Ordner von Atollo liegt; die Anweisungen der Frameworks; **Das Kit**, nur zum Lesen: seine Ordner, sein Laufwerk, die Plattform und die Versionen |
 | **Laufwerk entfernen** | schließt alles, was Atollo geöffnet hat, holt die Anmeldung von Antigravity nach `data\` zurück und lässt das Laufwerk auswerfen |
 
 Unten auf jeder Seite das Feld **Aktivität**: was läuft oder installiert wird (Aktionen der Projekte, jede Version der Datenbanken, Pools der Webserver, Komponenten), mit Ausgabe und Fehlern an einem Ort; „Alle beenden“ beendet nach einer Bestätigung alles. Die Statusleiste zählt dieselben Dinge.
@@ -116,11 +116,11 @@ Du hast einen Mac, einen Linux-PC oder einen PC mit Windows ARM64? Probier Atoll
 
 ## Bekannte Grenzen
 
-- Auf Windows 10 und 11 (`x64` und `ARM64`), macOS (Apple Silicon und Intel) und Linux (`x64` und `ARM64`). Auf Windows ARM64 laufen Editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX und R in x64-Emulation; auf Linux ARM64 fehlt Android. Die Releases für macOS und Linux sind in der CI getestet, aber noch nicht auf sauberen Rechnern ([#5](https://github.com/nabre/atollo/issues/5)), und die Anmeldung der Agenten muss noch auf einem Mac getestet werden ([#6](https://github.com/nabre/atollo/issues/6)); Komponenten und Quellen pro System in [docs/app/CATALOG.md](app/CATALOG.md) (auf Englisch), die Matrix Komponente × System in [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html). Apache auf macOS und Linux ist ein eigener Build des Kits (D-116), mit PHP über `php-fpm`.
+- Auf Windows 10 und 11 (`x64`), Windows 11 (`ARM64`), macOS (Apple Silicon und Intel) und Linux (`x64` und `ARM64`). Auf Windows ARM64 laufen Editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX und R in x64-Emulation; auf Linux ARM64 fehlt Android. Die Releases für macOS und Linux sind in der CI getestet, aber noch nicht auf sauberen Rechnern ([#5](https://github.com/nabre/atollo/issues/5)), und die Anmeldung der Agenten muss noch auf einem Mac getestet werden ([#6](https://github.com/nabre/atollo/issues/6)); Komponenten und Quellen pro System in [docs/app/CATALOG.md](app/CATALOG.md) (auf Englisch), die Matrix Komponente × System in [docs/app/TOOLS-MATRIX.html](app/TOOLS-MATRIX.html). Apache auf macOS und Linux ist ein eigener Build des Kits (D-116), mit PHP über `php-fpm`.
 - Unter Linux braucht MySQL zwei Systembibliotheken, `libaio` und `libnuma`: auf Ubuntu 24.04 und Debian 13 `sudo apt install libaio1t64 libnuma1` (auf älteren Versionen `libaio1`), auf Fedora und RHEL `sudo dnf install libaio numactl-libs`. Fehlen sie, sagt Atollo es mit dem auszuführenden Befehl.
 - Unter macOS und Linux funktioniert ein Atollo-Ordner auf exFAT oder FAT (ein für Windows formatiertes Laufwerk), aber diese Dateisysteme kennen keine Links: Wo ein Programm welche mitbringt, kopiert Atollo die Dateien (etwa die 142 internen Links von Git), was mehr Platz belegt. Auf einem Laufwerk nur für Mac oder Linux ist APFS oder ext4 besser.
-- Außerhalb des Atollo-Ordners bleiben nur die Spuren von Windows, temporäre Übergangsdateien im System-Temp-Ordner (werden beim Beenden automatisch gelöscht), die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung, wenn du dich in einer Konsole mit `gh auth login` anmeldest (die in den Einstellungen bleibt in `data\gh`), und die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung).
-- Die Ordner in `projects\` gelten für Claude Code und Codex als vertrauenswürdig: Öffne nur Projekte, denen du vertraust. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
+- Außerhalb des Atollo-Ordners bleiben nur die Spuren von Windows, temporäre Übergangsdateien im System-Temp-Ordner (werden beim Beenden automatisch gelöscht; mit Einstellungen › Allgemein › Temporäre Dateien der Programme können ihn auch die Programme benutzen, solange sie laufen), die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung, wenn du dich in einer Konsole mit `gh auth login` anmeldest (die in den Einstellungen bleibt in `data\gh`), die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung), auf macOS die Anmeldung von Claude Code im Schlüsselbund (außer du verbindest dich mit einem Token) und die Daten der Webansicht in deiner Library, und der Registry-Eintrag, den rustup unter Windows schreibt und Atollo entfernt. Die vollständige Liste steht in [PRIVACY §4](PRIVACY.de.md#4-auf-deinem-gerät-gespeicherte-daten).
+- Der Ordner eines Projekts wird für Claude Code und Codex vertrauenswürdig, sobald du darin einen Agenten aus Atollo öffnest (die anderen Ordner in `projects\` nicht): Öffne einen Agenten nur in Projekten, denen du vertraust. Die Token der Agenten (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) gehen nur an die von Atollo gestarteten Agenten, nicht an die Aktionen der Projekte, Skripte, Terminals oder den Editor. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
 - Die Nutzungslimits der Agenten stammen aus nicht dokumentierten Schnittstellen der Anbieter und können nach einem ihrer Updates nicht mehr funktionieren.
 - „Laufwerk entfernen“ sieht keine PC-Programme, die nur eine Datei im Ordner von Atollo geöffnet halten.
 
@@ -148,14 +148,21 @@ Atollo verwendet keinen Installer, registriert keine Systemdienste oder geplante
 
 ```
 Atollo.exe                           öffnet das Fenster
-Atollo.exe env                       zeigt die Umgebung der Programme von Atollo
-Atollo.exe components                listet Sprachen und Werkzeuge, mit den installierten
+Atollo.exe env [--project <Name>]    zeigt die Umgebung der Programme von Atollo
+                                     (mit einem Projekt, mit seinen Versionen)
+Atollo.exe components [--target <System>]
+                                     listet Sprachen und Werkzeuge, mit den installierten
+Atollo.exe versions [<id>]           die Versionen auf der Platte; mit einer id die herunterladbaren
 Atollo.exe check                     prüft, ob die installierten Programme antworten
-Atollo.exe prepare [Optionen]        installiert, aktualisiert und entfernt die gewählten Komponenten
-    --only a,b                       nur diese (und was sie brauchen)
+Atollo.exe prepare [Optionen]        installiert und aktualisiert die gewählten Komponenten
+                                     und entfernt die nicht gewählten
+    --only a,b                       nur diese (und was sie brauchen), entfernt nichts
     --skip a,b                       diese nicht
     --update-all                     auch die bereits installierten aktualisieren
     --force                          neu herunterladen
+    --line id=x.y                    legt diese Version neben die anderen (wiederholbar)
+    --target <System>                bereitet für ein anderes System vor: win32-x64, win32-arm64,
+                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <Ordner>] [--verbose]
                                      gleicht Anweisungen, Skills und MCP der drei Agenten ab
 Atollo.exe keyring restore|save      Anmeldung von Antigravity (von agy.cmd benutzt)

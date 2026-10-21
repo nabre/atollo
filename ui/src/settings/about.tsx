@@ -102,6 +102,11 @@ export function Privacy() {
           </li>
           <li>
             {t(
+              "Con la pagina Agenti aperta, ogni 2 minuti legge i limiti del piano di ogni agente collegato, mandandone il token solo al suo fornitore; con l'account GitHub collegato ne usa il token con api.github.com.",
+            )}
+          </li>
+          <li>
+            {t(
               "Gli agenti AI, GitHub e i registri dei pacchetti parlano direttamente con i loro servizi, con le loro regole sulla privacy.",
             )}
           </li>

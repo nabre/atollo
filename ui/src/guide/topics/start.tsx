@@ -241,10 +241,10 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64.",
-            "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors.",
-            "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64.",
-            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren.",
+            "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64 (su ARM64 serve Windows 11).",
+            "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors (on ARM64 Windows 11 is needed).",
+            "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64 (sur ARM64, Windows 11 est nécessaire).",
+            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren (auf ARM64 braucht es Windows 11).",
           )}
         </P>
         <Callout tone="info" title={tr("A chi serve", "Who it is for", "À qui il s'adresse", "Für wen es gedacht ist")}>
@@ -785,10 +785,10 @@ export const START: TopicTexts = {
           title={tr("Fiducia nei progetti", "Trust in projects", "Confiance dans les projets", "Vertrauen in Projekte")}
         >
           {tr(
-            "Le cartelle in projects sono considerate attendibili da Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Metti in projects solo codice di cui ti fidi.",
-            "The folders in projects are considered trusted by Claude Code and Codex, which can therefore run commands in them without asking every time. Put in projects only code you trust.",
-            "Les dossiers dans projects sont considérés comme fiables par Claude Code et Codex, qui peuvent donc y exécuter des commandes sans demander à chaque fois. Ne mettez dans projects que du code en lequel vous avez confiance.",
-            "Die Ordner in projects gelten für Claude Code und Codex als vertrauenswürdig, die darin also Befehle ausführen können, ohne jedes Mal zu fragen. Leg in projects nur Code ab, dem du vertraust.",
+            "Quando apri un agente in un progetto da Atollo, la cartella del progetto diventa attendibile per Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Apri un agente solo nei progetti di cui ti fidi.",
+            "When you open an agent in a project from Atollo, the project's folder becomes trusted by Claude Code and Codex, which can then run commands in it without asking every time. Open an agent only in projects you trust.",
+            "Quand vous ouvrez un agent dans un projet depuis Atollo, le dossier du projet devient fiable pour Claude Code et Codex, qui peuvent alors y exécuter des commandes sans demander à chaque fois. N'ouvrez un agent que dans les projets en lesquels vous avez confiance.",
+            "Wenn du in einem Projekt einen Agenten aus Atollo öffnest, wird der Projektordner für Claude Code und Codex vertrauenswürdig, die darin dann Befehle ausführen können, ohne jedes Mal zu fragen. Öffne einen Agenten nur in Projekten, denen du vertraust.",
           )}
         </Callout>
       </Section>

@@ -92,7 +92,7 @@ Without step 2 macOS starts the app from a temporary copy (App Translocation) an
 | **Terminals** | consoles with the kit's tools in any folder of the PC: "All tools" and terminals of your own, with the tools and versions you choose |
 | **Tools** | languages and tools by kind (system and editor, AI agents, languages, development tools, web servers, databases), with their logo, dependencies and disk space; install, update and remove, several versions; the Rust compiler (GNU or MSVC) on Rust's page; the editor extensions matrix |
 | **Guide** | the user guide inside the app, in nine chapters; every page opens its own topic |
-| **Settings** | saved as you change them: language, theme, network (proxy, certificates, local network), Gemini key, app updates, privacy; Atollo's **GitHub account**, one for everything (app, Git, editor, consoles, agents, GitHub CLI), and who signs the commits; where the workspace folder is; the frameworks' instructions |
+| **Settings** | saved as you change them: language, theme, the programs' temporary files, the packages kept to reinstall without the network, network (proxy, certificates, local network), Gemini key, app updates, privacy; Atollo's **GitHub account**, one for everything (app, Git, editor, consoles, agents, GitHub CLI), and who signs the commits; where the workspace folder is; the frameworks' instructions; **The kit**, read only: its folders, its disk, the platform and the versions |
 | **Remove drive** | closes everything Atollo opened, brings Antigravity's sign-in back into `data\` and lets you eject the drive |
 
 At the bottom of every page, the **Activity** panel: what is running or installing (project actions, every database version, web server pools, components), with output and errors in one place; "Stop all" stops everything after a confirmation. The status bar counts the same things.
@@ -114,11 +114,11 @@ Have a Mac, a Linux PC or a Windows ARM64 PC? Try Atollo and tell us how it went
 
 ## Known limits
 
-- On Windows 10 and 11 (`x64` and `ARM64`), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`). On Windows ARM64 the editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX and R run under x64 emulation; on Linux ARM64 Android is missing. The macOS and Linux releases are tried in CI but not yet on clean machines ([#5](https://github.com/nabre/atollo/issues/5)), and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/atollo/issues/6)); components and sources per system in [docs/app/CATALOG.md](docs/app/CATALOG.md), the component × system matrix in [docs/app/TOOLS-MATRIX.html](docs/app/TOOLS-MATRIX.html). Apache on macOS and Linux is the kit's own build (D-116), with PHP through `php-fpm`.
+- On Windows 10 and 11 (`x64`), Windows 11 (`ARM64`), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`). On Windows ARM64 the editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX and R run under x64 emulation; on Linux ARM64 Android is missing. The macOS and Linux releases are tried in CI but not yet on clean machines ([#5](https://github.com/nabre/atollo/issues/5)), and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/atollo/issues/6)); components and sources per system in [docs/app/CATALOG.md](docs/app/CATALOG.md), the component × system matrix in [docs/app/TOOLS-MATRIX.html](docs/app/TOOLS-MATRIX.html). Apache on macOS and Linux is the kit's own build (D-116), with PHP through `php-fpm`.
 - On Linux MySQL needs two system libraries, `libaio` and `libnuma`: on Ubuntu 24.04 and Debian 13 `sudo apt install libaio1t64 libnuma1` (on older releases `libaio1`), on Fedora and RHEL `sudo dnf install libaio numactl-libs`. If they are missing, Atollo says so with the command to run.
 - On macOS and Linux an Atollo folder on exFAT or FAT (a drive formatted for Windows) works, but those file systems have no links: where a program ships some, Atollo copies the files instead (for instance Git's 142 internal links), taking more space. On a drive used only with a Mac or Linux, APFS or ext4 is better.
-- Outside the Atollo folder there are only Windows' own traces, transient temporary files in the system temp folder (automatically removed on exit), GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one made in Settings stays in `data\gh`) and Antigravity's while `agy` is open (for the session only).
-- The folders in `projects\` are trusted by Claude Code and Codex: open only projects you trust. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
+- Outside the Atollo folder there are only Windows' own traces, transient temporary files in the system temp folder (automatically removed on exit; with Settings › General › Temporary files of programs, the programs may use it too while they run), GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one made in Settings stays in `data\gh`), Antigravity's while `agy` is open (for the session only), on macOS Claude Code's login in the Keychain (unless you connect with a token) and the web view's data in your Library, and the registry entry rustup writes on Windows, which Atollo removes. The full list is in [PRIVACY §4](docs/PRIVACY.md#4-data-stored-on-your-device).
+- A project's folder is trusted by Claude Code and Codex once you open an agent in it from Atollo (the other folders in `projects\` are not): open an agent only in projects you trust. The agents' tokens (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) go only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
 - The agents' usage limits come from undocumented interfaces of the providers and may stop working after one of their updates.
 - "Remove drive" does not see PC programs that keep only a file of the workspace open.
 
@@ -146,14 +146,21 @@ Atollo does not use an installer, registers no system services or scheduled task
 
 ```
 Atollo.exe                           opens the window
-Atollo.exe env                       shows the environment Atollo's programs get
-Atollo.exe components                lists languages and tools, with the installed ones
+Atollo.exe env [--project <name>]    shows the environment Atollo's programs get
+                                     (with a project, with its versions)
+Atollo.exe components [--target <system>]
+                                     lists languages and tools, with the installed ones
+Atollo.exe versions [<id>]           the versions on disk; with an id, the ones to download
 Atollo.exe check                     checks that the installed programs answer
-Atollo.exe prepare [options]         installs, updates and removes the chosen components
-    --only a,b                       only these (and what they need)
+Atollo.exe prepare [options]         installs and updates the chosen components
+                                     and removes the ones not chosen
+    --only a,b                       only these (and what they need), removes nothing
     --skip a,b                       not these
     --update-all                     also update the installed ones
     --force                          download again
+    --line id=x.y                    adds that version next to the others (can be repeated)
+    --target <system>                prepares for another system: win32-x64, win32-arm64,
+                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <folder>] [--verbose]
                                      aligns instructions, skills and MCP of the three agents
 Atollo.exe keyring restore|save      Antigravity's sign-in (used by agy.cmd)
