@@ -7,8 +7,27 @@ fn names_and_sql() {
         assert_eq!(db_name("app & co (1)", engine), "app___co__1_");
         assert_eq!(db_name("---", engine), "progetto");
         assert_eq!(db_name("mysql2", engine), "mysql2");
-        assert_eq!(db_name(&"x".repeat(80), engine).len(), 64);
     }
+    assert_eq!(db_name(&"x".repeat(80), "mongodb").len(), 64);
+    // MySQL's users have 32 characters at most (BUG-V6-07): cut, with a
+    // hash of the project, the same every time and different for another
+    let long = db_name("acme-customer-portal-staging-environment", "mysql");
+    assert_eq!(long.len(), 32, "{long}");
+    assert!(long.starts_with("acme_customer_portal_stag_"), "{long}");
+    assert!(is_valid_name(&long), "{long}");
+    assert_eq!(
+        db_name("ACME-customer-portal-staging-environment", "mysql"),
+        long
+    );
+    let other = db_name("acme-customer-portal-staging-environment-2", "mysql");
+    assert_eq!(other.len(), 32);
+    assert_ne!(other, long);
+    assert_eq!(db_name(&"x".repeat(80), "mysql").len(), 32);
+    assert_eq!(db_name(&"x".repeat(32), "mysql"), "x".repeat(32));
+    assert_eq!(
+        db_name("acme-customer-portal-staging-environment", "mongodb"),
+        "acme_customer_portal_staging_environment"
+    );
     // never the server's own databases or users; those of the other
     // server are ordinary names
     for (project, sql, mongo) in [
@@ -434,6 +453,21 @@ fn names_stored_legacy_and_new() {
     assert_eq!(
         project_db_name(&kit, "renamed", "mysql").unwrap(),
         "old_name"
+    );
+    // a long project: the new name fits MySQL's users (BUG-V6-07), one
+    // stored before stays the name in use
+    let long = "acme-customer-portal-staging-environment";
+    let (name, _) = ensure_project_db(&kit, long, "mysql").unwrap();
+    assert_eq!(name.len(), 32, "{name}");
+    assert_eq!(db_json(&kit, long)["names"]["mysql"], name.as_str());
+    write_db_json(
+        &kit,
+        "acme-customer-portal-production",
+        r#"{"mysql":"pw","names":{"mysql":"acme_customer_portal_production"}}"#,
+    );
+    assert_eq!(
+        project_db_name(&kit, "acme-customer-portal-production", "mysql").unwrap(),
+        "acme_customer_portal_production"
     );
     write_db_json(&kit, "bad", r#"{"mysql":"pw","names":{"mysql":"mysql"}}"#);
     assert!(project_db_name(&kit, "bad", "mysql").is_err());
