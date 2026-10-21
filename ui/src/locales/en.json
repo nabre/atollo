@@ -906,5 +906,7 @@
   "In esecuzione: {0}": "Running: {0}",
   "Ferma tutto": "Stop all",
   "Fermare le azioni dei progetti, i database e i server web in esecuzione?": "Stop the running project actions, databases and web servers?",
-  "Eliminare il profilo «{0}»?": "Delete the profile “{0}”?"
+  "Eliminare il profilo «{0}»?": "Delete the profile “{0}”?",
+  "Modelli locali": "Local models",
+  "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina Modelli locali.": "The server of the language models on the PC (llama.cpp): Pi and the chat in the browser use them, without the network. The models are downloaded from the Local models page."
 }

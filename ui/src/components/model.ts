@@ -6,7 +6,7 @@ import { locale, t } from "../i18n";
 /** The kinds of tool, as the site's matrix (site/matrix.mjs, KINDS and
  * KIND_OF: a test keeps them equal). The catalog's groups are coarser:
  * "languages" holds almost everything. */
-export const KINDS = ["system", "agents", "languages", "tools", "web", "databases", "dbviewers"] as const;
+export const KINDS = ["system", "agents", "ai", "languages", "tools", "web", "databases", "dbviewers"] as const;
 export type Kind = (typeof KINDS)[number];
 
 /** A component's kind when it is not its group's. */
@@ -30,6 +30,7 @@ export const KIND_OF_GROUP: Record<Group, Kind> = {
   required: "system",
   app: "system",
   agents: "agents",
+  ai: "ai",
   languages: "languages",
   databases: "databases",
 };
@@ -44,6 +45,12 @@ export function groups(): { id: Kind; title: string; hint: string; has: (c: Comp
   const text: Record<Kind, [string, string]> = {
     system: [t("Sistema ed editor"), t("Sempre installati: l'editor, la shell del kit, GitHub CLI e Git.")],
     agents: [t("Agenti AI"), t("Facoltativi: il kit funziona anche senza. Sempre all'ultima versione.")],
+    ai: [
+      t("Modelli locali"),
+      t(
+        "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina Modelli locali.",
+      ),
+    ],
     languages: [
       t("Linguaggi"),
       t(

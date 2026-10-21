@@ -44,6 +44,7 @@ import {
 
 const GROUPS: { id: TerminalToolGroup; label: () => string }[] = [
   { id: "agents", label: () => t("Agenti") },
+  { id: "ai", label: () => t("Modelli locali") },
   { id: "languages", label: () => t("Linguaggi") },
   { id: "databases", label: () => t("Database") },
 ];

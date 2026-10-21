@@ -115,5 +115,6 @@
   "themeSystem": "Match system",
   "themeLight": "Light",
   "themeDark": "Dark",
-  "langLabel": "Language"
+  "langLabel": "Language",
+  "mxKind_ai": "Local models"
 }

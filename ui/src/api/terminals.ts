@@ -4,7 +4,7 @@
 
 import { act, engineText, query } from "./core";
 
-export type TerminalToolGroup = "agents" | "languages" | "databases";
+export type TerminalToolGroup = "agents" | "ai" | "languages" | "databases";
 
 export interface Terminal {
   /** Empty for a new one. */

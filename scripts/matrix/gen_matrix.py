@@ -59,6 +59,7 @@ GROUPS = {
     "required": "Required",
     "app": "App",
     "agents": "Agents",
+    "ai": "Local models",
     "languages": "Languages and tools",
     "databases": "Databases",
 }
@@ -168,7 +169,7 @@ ICON = {"ok": "●", "emu": "◐", "no": "○", "dep": "◌"}
 
 rows = []
 counts = {t[0]: {"ok": 0, "emu": 0, "no": 0, "dep": 0} for t in TARGETS}
-order = ["required", "app", "agents", "languages", "databases"]
+order = ["required", "app", "agents", "ai", "languages", "databases"]
 for g in order:
     items = [c for c in cat if c["group"] == g]
     rows.append(f'<tr class="grp" data-group="{g}"><th colspan="{len(TARGETS) + 4}">{GROUPS[g]} <span>{len(items)}</span></th></tr>')

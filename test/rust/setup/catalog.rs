@@ -58,12 +58,13 @@ fn catalog_is_valid() {
         assert!(c.group == Group::Languages && !c.def, "{id}");
     }
     assert_eq!(catalog.find("claude").unwrap().needs, ["git"]);
-    // Only the parts of the app and the kit's own mongo-express build
-    // (D-147) have a fixed version, and all of them do; mongo-express's
-    // SHA-256 is pinned once its release is published.
+    // Only the parts of the app, the kit's own mongo-express build (D-147)
+    // and llama.cpp's rolling builds (D-151, SHA-256 per target) have a
+    // fixed version, and all of them do; mongo-express's SHA-256 is pinned
+    // once its release is published.
     for c in catalog.all() {
         let app = c.group == Group::App;
-        let pinned = app || c.id == "mongo-express";
+        let pinned = app || c.id == "mongo-express" || c.id == "llama";
         assert_eq!(c.version.is_some(), pinned, "{}: version", c.id);
         if c.id != "mongo-express" {
             assert_eq!(c.sha256.is_some(), app, "{}: sha256", c.id);

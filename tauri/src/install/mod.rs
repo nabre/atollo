@@ -24,6 +24,7 @@ mod core;
 mod db;
 mod editor;
 mod lang;
+mod llama;
 mod native;
 mod web;
 
@@ -245,6 +246,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "claude" => &agents::Claude,
         "codex" => &agents::Codex,
         "antigravity" => &agents::Antigravity,
+        "llama" => &llama::Llama,
         "git" => &core::Git,
         "python" => &core::Python,
         "node" => &core::Node,

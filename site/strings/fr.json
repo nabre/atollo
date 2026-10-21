@@ -115,5 +115,6 @@
   "themeSystem": "Comme le système",
   "themeLight": "Clair",
   "themeDark": "Sombre",
-  "langLabel": "Langue"
+  "langLabel": "Langue",
+  "mxKind_ai": "Modèles locaux"
 }

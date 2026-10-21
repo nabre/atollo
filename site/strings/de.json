@@ -115,5 +115,6 @@
   "themeSystem": "Wie das System",
   "themeLight": "Hell",
   "themeDark": "Dunkel",
-  "langLabel": "Sprache"
+  "langLabel": "Sprache",
+  "mxKind_ai": "Lokale Modelle"
 }

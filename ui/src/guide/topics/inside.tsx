@@ -257,6 +257,7 @@ function SourcesTable({ components }: { components: ComponentInfo[] | null }) {
     { id: "all", label: `${tr("Tutti", "All", "Tous", "Alle")} (${String(TOOL_SOURCES.length)})` },
     { id: "system", label: tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor") },
     { id: "agents", label: tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten") },
+    { id: "ai", label: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle") },
     { id: "languages", label: tr("Linguaggi", "Languages", "Langages", "Sprachen") },
     {
       id: "tools",

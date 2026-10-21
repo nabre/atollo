@@ -4,6 +4,7 @@
     "claude": { "windows": "npm @anthropic-ai/claude-code-win32-<arch>, native binary", "unix": "npm @anthropic-ai/claude-code-<target>, native binary" },
     "codex": { "windows": "npm @openai/codex <v>-win32-<arch>", "unix": "npm @openai/codex <v>-<target>" },
     "antigravity": { "windows": "Google's manifest, agy.exe", "unix": "Google's manifest, .tar.gz" },
+    "llama": { "windows": "GitHub ggml-org/llama.cpp, build fixed in the catalog (Vulkan + CPU)", "unix": "GitHub ggml-org/llama.cpp, build fixed in the catalog (Vulkan + CPU on Linux, Metal on macOS)" },
     "git": { "windows": "PortableGit (git-for-windows, 64-bit/arm64)", "unix": "dugite-native (relocatable; prepared separately if the PC cannot run the target)" },
     "python": { "windows": "python-build-standalone", "unix": "python-build-standalone" },
     "node": { "windows": "nodejs.org (LTS)", "unix": "nodejs.org (LTS)" },

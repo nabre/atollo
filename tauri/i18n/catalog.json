@@ -1993,5 +1993,10 @@
     "en": "Close Atollo",
     "fr": "Fermer Atollo",
     "de": "Atollo schließen"
+  },
+  "modelli linguistici locali (GGUF): il server per gli agenti e una chat nel browser, su CPU o GPU (Vulkan, Metal)": {
+    "en": "local language models (GGUF): the server for the agents and a chat in the browser, on the CPU or the GPU (Vulkan, Metal)",
+    "fr": "modèles de langage locaux (GGUF) : le serveur pour les agents et un chat dans le navigateur, sur le CPU ou le GPU (Vulkan, Metal)",
+    "de": "lokale Sprachmodelle (GGUF): der Server für die Agenten und ein Chat im Browser, auf CPU oder GPU (Vulkan, Metal)"
   }
 }

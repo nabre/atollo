@@ -153,6 +153,7 @@ const COMPONENTS: Record<string, Logo> = {
   claude: { icon: SiClaude, color: "#D97757" },
   codex: { icon: RiOpenaiFill },
   antigravity: { icon: AntigravityIcon },
+  llama: { icon: codicon("chip") },
   git: { icon: SiGit, color: "#F05032" },
   python: PYTHON,
   node: { icon: SiNodedotjs, color: "#5FA04E" },
