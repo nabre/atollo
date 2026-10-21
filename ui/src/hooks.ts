@@ -126,6 +126,15 @@ export function useLoad<T>(load: () => Promise<T>, initial: T, options: LoadOpti
   return { data, error, reload, retry: read, setData };
 }
 
+/** Starts `action` now; a throw before its promise becomes a rejection. */
+function attempt(action: () => Promise<void>): Promise<void> {
+  try {
+    return action();
+  } catch (e: unknown) {
+    return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+  }
+}
+
 /** Runs an action, keeping track of what is busy and of the last error. */
 export function useAction(onDone?: () => void) {
   const [busy, setBusy] = useState<string | null>(null);
@@ -143,7 +152,7 @@ export function useAction(onDone?: () => void) {
       const id = ++seq.current;
       setBusy(key);
       setError(null);
-      action().then(
+      attempt(action).then(
         () => {
           if (!mounted.current) return;
           if (id === seq.current) setBusy(null);
@@ -174,14 +183,22 @@ export function useCopy(resetMs?: number) {
   );
   const copy = useCallback(
     (text: string) => {
-      void navigator.clipboard.writeText(text).then(() => {
-        setCopied(true);
-        if (resetMs !== undefined) {
-          timer.current = window.setTimeout(() => {
-            setCopied(false);
-          }, resetMs);
-        }
-      });
+      // A refused copy (no permission, no focus) says nothing was copied.
+      attempt(() => navigator.clipboard.writeText(text)).then(
+        () => {
+          setCopied(true);
+          window.clearTimeout(timer.current);
+          if (resetMs !== undefined) {
+            timer.current = window.setTimeout(() => {
+              setCopied(false);
+            }, resetMs);
+          }
+        },
+        () => {
+          window.clearTimeout(timer.current);
+          setCopied(false);
+        },
+      );
     },
     [resetMs],
   );
