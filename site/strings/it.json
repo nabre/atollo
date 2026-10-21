@@ -28,7 +28,7 @@
   "versionLabel": "Versione",
   "noRelease": "Nessun rilascio pubblicato ancora: i file arrivano con il primo tag.",
   "checksum": "Ogni file ha il suo .sha256",
-  "featuresTitle": "Quattro parti, una cartella",
+  "featuresTitle": "Cinque parti, una cartella",
   "f1Title": "Editor e terminali isolati",
   "f1Text": "VSCodium integrato con i temi Atollo scuro e chiaro, in una finestra misurata sul workbench di VSCodium 1.135: le stesse dimensioni, gli stessi colori e le icone codicon. I terminali vedono solo il <code>PATH</code> e le variabili del kit: i programmi del PC ospite non interferiscono, e il PC non si sporca.",
   "f2Title": "Linguaggi e strumenti su richiesta",

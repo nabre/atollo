@@ -28,7 +28,7 @@
   "versionLabel": "Version",
   "noRelease": "No release published yet: the files arrive with the first tag.",
   "checksum": "Each file has its .sha256",
-  "featuresTitle": "Four parts, one folder",
+  "featuresTitle": "Five parts, one folder",
   "f1Title": "Isolated editor and terminals",
   "f1Text": "Built-in VSCodium with the Atollo dark and light themes, in a window measured on VSCodium 1.135's own workbench: the same sizes, colors and codicon icons. Terminals see only the kit's <code>PATH</code> and variables: programs on the host PC don't interfere, and the PC stays clean.",
   "f2Title": "Languages and tools on demand",
