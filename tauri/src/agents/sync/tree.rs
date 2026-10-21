@@ -2,6 +2,8 @@
 //! `tree.js`). The state of the last sync (size and times of each file on
 //! both sides) tells a change from a deletion; when both sides changed the
 //! same file the newer wins and the other is saved in `.sync\conflicts`.
+//! A deletion is carried only if the file is still missing after a short
+//! wait, and the copy it removes is first saved in `.sync\deleted`.
 //! Writes and deletions never go through a link or junction.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -117,6 +119,27 @@ pub fn copy_file(from: &Path, to: &Path) -> Result<()> {
     Ok(())
 }
 
+/// How long a file missing on one side must stay missing before the other
+/// side's copy is deleted. Editors that save through a temporary file
+/// (and some antivirus programs) take a file away for a moment: seen
+/// missing twice, before and after this wait, it was deleted (BUG-V6-16).
+#[cfg(not(test))]
+const SETTLE: std::time::Duration = std::time::Duration::from_millis(1500);
+#[cfg(test)]
+const SETTLE: std::time::Duration = std::time::Duration::from_millis(20);
+
+/// Deletes `file` after a copy in `.sync\deleted\<stamp>-<label>`, as the
+/// skills deleted by an agent are kept: a deletion can always be undone.
+fn remove_kept(p: &Paths, file: &Path, top: &Path, label: &str) -> Result<()> {
+    let dest = p.state.join("deleted").join(format!(
+        "{}-{}",
+        stamp(),
+        label.replace(['\\', '/', ':'], "_")
+    ));
+    copy_file(file, &dest)?;
+    remove_file(file, top)
+}
+
 fn remove_file(file: &Path, top: &Path) -> Result<()> {
     match fs::remove_file(file) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),
@@ -191,16 +214,45 @@ pub fn sync_tree(
             .map(|m| BTreeMap::from([(String::new(), m)]))
             .unwrap_or_default()
     };
-    let m = if is_dir {
-        list_files(master)
-    } else {
-        single(master)
+    let list = |abs: &Path| {
+        if is_dir {
+            list_files(abs)
+        } else {
+            single(abs)
+        }
     };
-    let r = if is_dir {
-        list_files(replica)
-    } else {
-        single(replica)
+    let changed = |st: &Meta, b: Option<&Value>, side: &str| match b {
+        None => true,
+        Some(b) => {
+            b.get("size").and_then(Value::as_u64) != Some(st.size)
+                || b.get(side).and_then(Value::as_i64) != Some(st.mtime)
+        }
     };
+    // Synced before, now on one side only, unchanged there: deleted on the
+    // other side, or away for a moment.
+    let gone = |m: &BTreeMap<String, Meta>, r: &BTreeMap<String, Meta>| -> BTreeSet<String> {
+        base.as_object()
+            .into_iter()
+            .flatten()
+            .filter(|(rel, b)| match (m.get(*rel), r.get(*rel)) {
+                (Some(ms), None) => !changed(ms, Some(*b), "m"),
+                (None, Some(rs)) => !changed(rs, Some(*b), "r"),
+                _ => false,
+            })
+            .map(|(rel, _)| rel.clone())
+            .collect()
+    };
+    let (mut m, mut r) = (list(master), list(replica));
+    // A deletion is carried only when the file is still missing after
+    // `SETTLE`; one that came back is synced as a change.
+    let first = gone(&m, &r);
+    if !first.is_empty() {
+        std::thread::sleep(SETTLE);
+        (m, r) = (list(master), list(replica));
+    }
+    // Gone only in the second look: not confirmed, decided at the next sync
+    // (its state is kept, so it is not taken for a new file either).
+    let mut unconfirmed = Vec::new();
     // One component per `/` part: the native separator on every OS.
     let abs = |top: &Path, rel: &str| {
         rel.split('/')
@@ -212,13 +264,6 @@ pub fn sync_tree(
             label.to_owned()
         } else {
             format!("{label}/{rel}")
-        }
-    };
-    let changed = |st: &Meta, b: Option<&Value>, side: &str| match b {
-        None => true,
-        Some(b) => {
-            b.get("size").and_then(Value::as_u64) != Some(st.size)
-                || b.get(side).and_then(Value::as_i64) != Some(st.mtime)
         }
     };
     let guard = |file: &Path, top: &Path, report: &mut Report| {
@@ -260,8 +305,10 @@ pub fn sync_tree(
             (Some(ms), None) => {
                 // Only in the shared copy: deleted on the agent's side, or new.
                 if b.is_some() && !changed(ms, b, "m") {
-                    if guard(&ma, master, report) {
-                        remove_file(&ma, master)?;
+                    if !first.contains(rel) {
+                        unconfirmed.push(rel.clone());
+                    } else if guard(&ma, master, report) {
+                        remove_kept(p, &ma, master, &name(rel))?;
                         report.note(format!("{} deleted", name(rel)));
                     }
                 } else {
@@ -279,8 +326,10 @@ pub fn sync_tree(
             }
             (None, Some(rs)) => {
                 if b.is_some() && !changed(rs, b, "r") {
-                    if guard(&ra, replica, report) {
-                        remove_file(&ra, replica)?;
+                    if !first.contains(rel) {
+                        unconfirmed.push(rel.clone());
+                    } else if guard(&ra, replica, report) {
+                        remove_kept(p, &ra, replica, &name(rel))?;
                         report.note(format!("{} deleted in {}", name(rel), replica.display()));
                     }
                 } else {
@@ -301,16 +350,7 @@ pub fn sync_tree(
     }
 
     // State after the sync: the files are now equal on both sides.
-    let m2 = if is_dir {
-        list_files(master)
-    } else {
-        single(master)
-    };
-    let r2 = if is_dir {
-        list_files(replica)
-    } else {
-        single(replica)
-    };
+    let (m2, r2) = (list(master), list(replica));
     let mut now = serde_json::Map::new();
     for (rel, ms) in &m2 {
         if let Some(rs) = r2.get(rel) {
@@ -318,6 +358,11 @@ pub fn sync_tree(
                 rel.clone(),
                 json!({ "size": ms.size, "m": ms.mtime, "r": rs.mtime }),
             );
+        }
+    }
+    for rel in unconfirmed {
+        if let Some(b) = base.get(&rel) {
+            now.entry(rel).or_insert_with(|| b.clone());
         }
     }
     write_json(&state_file, &Value::Object(now))

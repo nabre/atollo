@@ -16,9 +16,10 @@
 //! A change made on either side is carried to the others, deletions too,
 //! thanks to the state of the last sync in `data\agents\.sync`; when both
 //! sides changed the newer wins and the other is saved in
-//! `.sync\conflicts`. Also: the kit rule for the three agents, the trusted
-//! folders (`projects\` and its subfolders) for Claude and Codex, and the
+//! `.sync\conflicts`. Also: the kit rule for the three agents and the
 //! project skills (`.agents\skills` <-> `.claude\skills`) with `project`.
+//! A project is trusted for Claude and Codex only when an agent is launched
+//! in it from Atollo ([`trust_project`]).
 //!
 //! Run at start, before and after every agent, and when an agent ends.
 //! Never blocks the agents: each step fails alone, as a warning.
@@ -28,16 +29,17 @@ mod links;
 pub(crate) mod mcp;
 mod project;
 mod tree;
+mod trust;
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use serde_json::Value;
 
 use crate::fsx::{join_rel, write_atomic};
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 
 /// Folders of the kit and of the three agents.
 #[derive(Debug, Clone)]
@@ -50,6 +52,8 @@ pub struct Paths {
     pub codex: PathBuf,
     pub gemini: PathBuf,
     pub projects: PathBuf,
+    /// The kit's system: its paths ignore case only on Windows.
+    pub os: Os,
 }
 
 impl Paths {
@@ -64,6 +68,7 @@ impl Paths {
             codex: home.join(".codex"),
             gemini: home.join(".gemini"),
             projects: kit.projects(),
+            os: kit.os(),
         }
     }
 
@@ -184,90 +189,64 @@ fn sync_rules(p: &Paths) -> Result<()> {
     Ok(())
 }
 
-/// `projects\` and every non-dot folder in it (`trust.js`).
-pub fn trusted_folders(p: &Paths) -> Vec<PathBuf> {
-    let mut out = vec![p.projects.clone()];
-    let mut subs: Vec<PathBuf> = fs::read_dir(&p.projects)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter(|e| {
-            e.file_type().is_ok_and(|t| t.is_dir())
-                && !e.file_name().to_string_lossy().starts_with('.')
-        })
-        .map(|e| e.path())
-        .collect();
-    subs.sort();
-    out.extend(subs);
-    out
+/// The user launches an agent in `dir` from Atollo: the project becomes
+/// trusted for Claude Code and Codex (SEC-V6-02, see [`trust`]). Only a
+/// project of the kit (a folder right inside `projects\`); each agent
+/// fails alone, as a warning in the log.
+pub fn trust_project(kit: &Kit, dir: &Path) {
+    let p = Paths::of(kit);
+    if dir.parent() != Some(p.projects.as_path()) {
+        crate::log::warn(&format!(
+            "agents trust: {} is not a project of the kit: not trusted",
+            dir.display()
+        ));
+        return;
+    }
+    let _lock = match Lock::take(&p.state) {
+        Ok(l) => l,
+        Err(e) => {
+            crate::log::warn(&format!("agents trust: {e:#}"));
+            return;
+        }
+    };
+    for (who, done) in [
+        ("Claude", trust::claude(&p, dir)),
+        ("Codex", trust::codex(&p, dir)),
+    ] {
+        if let Err(e) = done {
+            crate::log::warn(&format!("agents trust: {who}: {e:#}"));
+        }
+    }
 }
 
-/// Claude: `projects["D:/kit/projects/x"].hasTrustDialogAccepted = true`, with
-/// the drive letter both upper and lower case (the kit's windows write
-/// "D:/...", VSCodium "d:/..."). Re-read just before writing.
-fn trust_claude(p: &Paths) -> Result<()> {
-    let file = p.claude_json();
-    let current = read_json(&file)?;
-    let trusted = |cfg: &Option<Value>, k: &str| {
-        cfg.as_ref()
-            .and_then(|c| {
-                c.pointer(&format!(
-                    "/projects/{}",
-                    k.replace('~', "~0").replace('/', "~1")
-                ))
-            })
-            .and_then(|v| v.get("hasTrustDialogAccepted"))
-            == Some(&Value::Bool(true))
-    };
-    let mut todo = Vec::new();
-    for f in trusted_folders(p) {
-        let key = f.display().to_string().replace('\\', "/");
-        let mut chars = key.chars();
-        let first = chars.next().unwrap_or_default();
-        let rest: String = chars.collect();
-        for k in [
-            format!("{}{rest}", first.to_ascii_uppercase()),
-            format!("{}{rest}", first.to_ascii_lowercase()),
-        ] {
-            if !trusted(&current, &k) && !todo.contains(&k) {
-                todo.push(k);
-            }
-        }
-    }
-    if current.is_some() && todo.is_empty() {
-        return Ok(());
-    }
-    let mut fresh = read_json(&file)?.unwrap_or_else(|| Value::Object(Default::default()));
-    let obj = fresh
-        .as_object_mut()
-        .context(".claude.json is not an object")?;
-    let projects = obj
-        .entry("projects")
-        .or_insert_with(|| Value::Object(Default::default()));
-    if !projects.is_object() {
-        *projects = Value::Object(Default::default());
-    }
-    if let Some(map) = projects.as_object_mut() {
-        for k in todo {
-            let entry = map
-                .entry(k)
-                .or_insert_with(|| Value::Object(Default::default()));
-            if !entry.is_object() {
-                *entry = Value::Object(Default::default());
-            }
-            if let Some(e) = entry.as_object_mut() {
-                e.insert("hasTrustDialogAccepted".into(), Value::Bool(true));
-            }
-        }
-    }
-    write_json(&file, &fresh)
-}
+/// How often the holder of the lock shows it is still at work.
+#[cfg(not(test))]
+const BEAT: Duration = Duration::from_secs(15);
+#[cfg(test)]
+const BEAT: Duration = Duration::from_millis(50);
 
 /// One sync at a time per kit: a lock folder with the pid inside (created
-/// atomically); a stale one (holder gone, or older than 2 minutes) is taken.
-struct Lock(PathBuf);
+/// atomically); a stale one (holder gone, or silent for 2 minutes) is
+/// taken. While the lock is held a thread rewrites `beat` in it every
+/// [`BEAT`], and the silence is measured on that file: a long sync (a slow
+/// USB drive) is never taken for a dead one (BUG-V6-18).
+struct Lock {
+    dir: PathBuf,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    beat: Option<std::thread::JoinHandle<()>>,
+}
 
 impl Lock {
+    /// Time since the holder last showed it is alive: its last beat, or
+    /// the lock's own time before the first one.
+    fn silence(lock: &Path) -> Duration {
+        [lock.join("beat"), lock.join("pid"), lock.to_path_buf()]
+            .iter()
+            .find_map(|f| fs::metadata(f).and_then(|m| m.modified()).ok())
+            .and_then(|t| t.elapsed().ok())
+            .unwrap_or(Duration::MAX)
+    }
+
     fn take(state: &Path) -> Result<Lock> {
         fs::create_dir_all(state)?;
         let lock = state.join("lock");
@@ -277,14 +256,10 @@ impl Lock {
             match fs::create_dir(&lock) {
                 Ok(()) => {
                     fs::write(&pid_file, me.to_string())?;
-                    return Ok(Lock(lock));
+                    return Ok(Lock::beating(lock));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                    let age = fs::metadata(&lock)
-                        .and_then(|m| m.modified())
-                        .ok()
-                        .and_then(|t| t.elapsed().ok())
-                        .unwrap_or(Duration::MAX);
+                    let age = Self::silence(&lock);
                     let holder: u32 = fs::read_to_string(&pid_file)
                         .ok()
                         .and_then(|s| s.trim().parse().ok())
@@ -306,19 +281,54 @@ impl Lock {
         bail!("another sync is still running: skipped")
     }
 
+    /// The lock just taken, with its heartbeat started.
+    fn beating(dir: PathBuf) -> Lock {
+        use std::sync::atomic::Ordering;
+        let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (flag, at) = (std::sync::Arc::clone(&stop), dir.clone());
+        Self::beat_in(&at);
+        let beat = std::thread::Builder::new()
+            .name("agents-sync-lock".into())
+            .spawn(move || {
+                let mut last = std::time::Instant::now();
+                while !flag.load(Ordering::Relaxed) {
+                    std::thread::sleep(Duration::from_millis(10).min(BEAT));
+                    if last.elapsed() >= BEAT {
+                        Self::beat_in(&at);
+                        last = std::time::Instant::now();
+                    }
+                }
+            })
+            .ok();
+        Lock { dir, stop, beat }
+    }
+
+    /// A new time on `beat`, only while the lock is still this process's
+    /// (never on one another process took after judging this one dead).
+    fn beat_in(dir: &Path) {
+        let me = std::process::id().to_string();
+        if fs::read_to_string(dir.join("pid")).is_ok_and(|s| s.trim() == me) {
+            let _ = fs::write(dir.join("beat"), std::process::id().to_string());
+        }
+    }
+
     fn touch(&self) {
-        let _ = fs::write(self.0.join("pid"), std::process::id().to_string());
+        Self::beat_in(&self.dir);
     }
 }
 
 impl Drop for Lock {
     fn drop(&mut self) {
-        let mine = fs::read_to_string(self.0.join("pid"))
+        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(t) = self.beat.take() {
+            let _ = t.join();
+        }
+        let mine = fs::read_to_string(self.dir.join("pid"))
             .ok()
             .and_then(|s| s.trim().parse::<u32>().ok())
             == Some(std::process::id());
         if mine {
-            let _ = fs::remove_dir_all(&self.0);
+            let _ = fs::remove_dir_all(&self.dir);
         }
     }
 }
@@ -481,7 +491,9 @@ pub fn run(kit: &Kit, project: Option<&Path>) -> Report {
         });
     }
     step("kit rule", &mut report, &mut |_| sync_rules(&p));
-    step("trusted folders", &mut report, &mut |_| trust_claude(&p));
+    step("trusted folders", &mut report, &mut |_| {
+        trust::forget_pretrust(&p)
+    });
     if let Some(dir) = project {
         step("project skills", &mut report, &mut |r| {
             project::sync(&p, dir, r)

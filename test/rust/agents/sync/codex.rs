@@ -37,13 +37,33 @@ fn user_text_and_keys_kept() {
     assert!(text.contains("model = \"o9\""));
     assert!(text.contains("[mcp_servers.\"kit\"]"));
     assert!(!text.contains("command = \"kit\""), "hand-made table wins");
-    let app = p.projects.join("app").display().to_string().to_lowercase();
-    assert!(text.contains(&format!("[projects.'{app}']")));
+    assert!(!text.contains("[projects."), "no folder trusted in advance");
     // Stable: a second run changes nothing.
     sync_config(&p, &servers, &mut r).unwrap();
     assert_eq!(
         fs::read_to_string(p.codex.join("config.toml")).unwrap(),
         text
+    );
+}
+
+/// SEC-V6-02: the block of trusted folders of earlier versions is dropped;
+/// a table of the user's (or of a launch) stays.
+#[test]
+fn old_trust_block_dropped_user_tables_kept() {
+    let (_t, _kit, p) = kit("codex-old-trust");
+    fs::create_dir_all(&p.codex).unwrap();
+    let mine = "[projects.'c:\\mine']\ntrust_level = \"untrusted\"";
+    fs::write(
+        p.codex.join("config.toml"),
+        format!("{mine}\n\n{TRUST_BEGIN}\n[projects.'c:\\kit\\projects']\ntrust_level = \"trusted\"\n{TRUST_END}\n"),
+    )
+    .unwrap();
+    sync_config(&p, &Servers::new(), &mut Report::default()).unwrap();
+    let text = fs::read_to_string(p.codex.join("config.toml")).unwrap();
+    assert!(text.contains(mine), "{text}");
+    assert!(
+        !text.contains(TRUST_BEGIN) && !text.contains("kit\\projects"),
+        "{text}"
     );
 }
 

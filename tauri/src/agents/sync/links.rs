@@ -7,8 +7,10 @@
 //! - a real folder with `SKILL.md` (made or installed by the agent) moves to
 //!   `data\agents\skills` and becomes a junction; if one with that name and
 //!   different content exists, the older is kept in `.sync\conflicts`;
-//! - a junction pointing elsewhere (the kit moved: junctions keep absolute
-//!   paths) or to a skill that no longer exists is made again or removed.
+//! - a junction of the kit pointing elsewhere (the kit moved: junctions
+//!   keep absolute paths) or to a skill that no longer exists is made again
+//!   or removed; a link of the user's to a folder outside `data\agents` is
+//!   left as it is (with a warning if it hides a shared skill of that name).
 //!
 //! A disk without junctions (FAT32, exFAT): `link_skills` returns false and
 //! the caller copies the skills instead.
@@ -47,14 +49,30 @@ mod dirlink {
     }
 }
 
+fn norm(p: &Path) -> String {
+    let s = p.display().to_string();
+    s.trim_start_matches(r"\\?\")
+        .trim_end_matches(['\\', '/'])
+        .to_lowercase()
+}
+
 fn same(a: &Path, b: &Path) -> bool {
-    let norm = |p: &Path| {
-        let s = p.display().to_string();
-        s.trim_start_matches(r"\\?\")
-            .trim_end_matches(['\\', '/'])
-            .to_lowercase()
-    };
     norm(a) == norm(b)
+}
+
+/// A link the kit made: to a skill in `data\agents\skills`, here or in the
+/// kit's old place (links keep absolute paths, so after a move they point
+/// at `<old root>\data\agents\skills\<name>`). Any other link is the
+/// user's and stays (BUG-V6-30).
+fn kit_link(shared_root: &Path, target: &Path) -> bool {
+    let (t, root) = (norm(target), norm(shared_root));
+    if t.strip_prefix(&root)
+        .is_some_and(|rest| rest.starts_with(['\\', '/']))
+    {
+        return true;
+    }
+    let parts: Vec<&str> = t.split(['\\', '/']).filter(|s| !s.is_empty()).collect();
+    parts.len() > 4 && parts[parts.len() - 4..parts.len() - 1] == ["data", "agents", "skills"]
 }
 
 fn can_link(dir: &Path, target: &Path) -> bool {
@@ -170,8 +188,16 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
             if shared.exists() && target.as_deref().is_some_and(|t| same(t, &shared)) {
                 continue;
             }
-            let _ = dirlink::delete(&path);
-            let _ = fs::remove_dir(&path);
+            // Only the kit's own links are made again or removed.
+            if target.as_deref().is_some_and(|t| kit_link(&shared_root, t)) {
+                let _ = dirlink::delete(&path);
+                let _ = fs::remove_dir(&path);
+            } else if !shared.exists() {
+                report.note(format!(
+                    "{}: a link of yours to another folder, left as it is",
+                    path.display()
+                ));
+            }
         } else if path.is_dir() && path.join("SKILL.md").is_file() {
             adopt(p, tool, &name, &path, report)?;
         }
@@ -194,6 +220,12 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
         } else if !is_reparse(&link) {
             report.warn(format!(
                 "{} exists and is not a skill: skill {name} not linked",
+                link.display()
+            ));
+            continue;
+        } else if !dirlink::get_target(&link).is_ok_and(|t| same(&t, &shared_root.join(&name))) {
+            report.warn(format!(
+                "{} is a link of yours to another folder: left as it is, skill {name} not linked",
                 link.display()
             ));
             continue;
