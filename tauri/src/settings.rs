@@ -48,6 +48,10 @@ pub struct Settings {
     /// version, this file); never written here.
     #[serde(skip_serializing)]
     pub gemini_api_key: Option<String>,
+    /// The key's file is there but cannot be read (PORT-V6-01): `save`
+    /// leaves it alone unless the key is removed on purpose.
+    #[serde(skip)]
+    pub gemini_unreadable: bool,
     pub auto_update: bool,
     /// Rust toolchain host on Windows: `gnu` (default, own linker) or
     /// `msvc` (needs Visual Studio Build Tools on the PC). Chosen on Rust's
@@ -80,6 +84,7 @@ impl Default for Settings {
             lang: None,
             network: Network::default(),
             gemini_api_key: None,
+            gemini_unreadable: false,
             auto_update: true,
             rust_toolchain: None,
             program_temp: ProgramTemp::Auto,
@@ -163,7 +168,10 @@ impl Settings {
         match read_secret(&gemini_file(kit)) {
             Ok(Some(key)) => s.gemini_api_key = Some(key),
             Ok(None) => {}
-            Err(e) => crate::log::warn(&format!("Gemini key: {e:#}")),
+            Err(e) => {
+                s.gemini_unreadable = true;
+                crate::log::warn(&format!("Gemini key: {e:#}"));
+            }
         }
         if let Some(ca) = &mut s.network.extra_ca_certs {
             if Path::new(ca.as_str()).is_relative() {
@@ -227,11 +235,13 @@ impl Settings {
     }
 
     /// Writes `settings.json` and the Gemini key's own file (removed when
-    /// there is no key). A PEM file inside the kit is written relative to it.
+    /// there is no key, kept when it could not be read). A PEM file inside
+    /// the kit is written relative to it.
     pub fn save(&self, kit: &Kit) -> anyhow::Result<()> {
         let key = gemini_file(kit);
         match self.gemini_api_key.as_deref().filter(|k| !k.is_empty()) {
             Some(k) => crate::router::fs::write_private(&key, k)?,
+            None if self.gemini_unreadable => {}
             None => match std::fs::remove_file(&key) {
                 Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),
                 _ => {}

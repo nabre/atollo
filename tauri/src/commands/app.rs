@@ -247,6 +247,8 @@ pub fn settings_set<R: Runtime>(
     let mut update_now = false;
     Settings::update(&state.kit, |saved, _problem| {
         update_now = settings.auto_update && !saved.auto_update;
+        // A key that could not be read stays on disk unless removed on purpose.
+        settings.gemini_unreadable = gemini.is_none() && saved.gemini_unreadable;
         settings.gemini_api_key = match gemini {
             None => saved.gemini_api_key.take(),
             Some(k) if k.trim().is_empty() => None,
