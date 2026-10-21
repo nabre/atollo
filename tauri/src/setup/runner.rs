@@ -1,5 +1,5 @@
 //! A preparation run: what to install, update or remove, in catalog order
-//! (port of nabre/dev-kit `Prepare-DevKit.ps1`, DECISIONS.md D-11).
+//! (DECISIONS.md D-11).
 //!
 //! Rules kept from the kit: a component fails alone (the others go on);
 //! without "update all" an installed component is left as it is; "only"

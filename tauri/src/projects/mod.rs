@@ -4,7 +4,7 @@
 //! the actions started by the kit (`run`), the static file server (`serve`)
 //! and a project's own Apache (`apache`). What a project is: `detect`.
 //!
-//! The projects in `projects\` (port of nabre/dev-kit `core/projects.js`):
+//! The projects in `projects\`:
 //! list with what each one is, new empty project, delete an empty one (with
 //! its databases on the kit's servers, D-89), clone from GitHub
 //! or a Git URL.

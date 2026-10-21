@@ -1,5 +1,4 @@
-//! Claude Code: plan limits from Anthropic's server, usage from its sessions
-//! (port of nabre/dev-kit `core/stats/claude.js`).
+//! Claude Code: plan limits from Anthropic's server, usage from its sessions.
 
 use std::collections::HashMap;
 use std::path::Path;

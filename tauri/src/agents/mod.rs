@@ -10,8 +10,8 @@
 //!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`); Codex
 //!   `.codex\auth.json` (token, or the API key of `codex login
 //!   --with-api-key`);
-//!   Antigravity a login saved in the kit (`agents/keyring/`) or `GEMINI_API_KEY`
-//!   (same sources as nabre/dev-kit `core/stats/*.js`);
+//!   Antigravity a login saved in the kit (`agents/keyring/`) or
+//!   `GEMINI_API_KEY`;
 //! - launch: the agents are aligned first, the agent opens in a console
 //!   window of the app in the chosen folder (on macOS and Linux a session of
 //!   the app's terminal, `editor/pty.rs`), and they are aligned again when it

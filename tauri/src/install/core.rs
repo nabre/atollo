@@ -1,5 +1,4 @@
-//! Git, Python, Node.js, uv, GitHub CLI (port of nabre/dev-kit
-//! `_prepare-core.ps1:109-335` and `_prepare-finish.ps1:10-38`).
+//! Git, Python, Node.js, uv, GitHub CLI.
 
 use std::fs;
 use std::path::Path;

@@ -1,8 +1,8 @@
 //! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
 //! `versions`, `check`, `prepare`, `sync`, `keyring`, `serve`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
-//! console. Step lines use the markers of nabre/dev-kit's setup output
-//! (`── N. Name ──`, `√`, `x`, `!`, `·`), so they read the same.
+//! console. Step lines use the markers `── N. Name ──`, `√`, `x`, `!` and
+//! `·`.
 
 use std::ffi::OsString;
 #[cfg(windows)]

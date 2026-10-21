@@ -1,5 +1,4 @@
-//! PHP (with Composer and the Visual C++ runtime) and Apache (port of
-//! nabre/dev-kit `_prepare-web.ps1`).
+//! PHP (with Composer and the Visual C++ runtime) and Apache.
 //!
 //! The Visual C++ runtime is not installed: its DLLs are extracted from
 //! Microsoft's `vc_redist.x64.exe` (signature required: Microsoft publishes

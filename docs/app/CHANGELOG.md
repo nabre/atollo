@@ -2,7 +2,8 @@
 
 ## Il terminale dell'editor resta quello del kit (21/10/2026)
 
-- **Profili di prima del nome Atollo**: «Dev-Kit», «Dev-Kit - Git Bash» e gli altri, rimasti nei kit di prima, puntavano a una cartella di PowerShell o Git con la versione; dopo un aggiornamento il terminale predefinito dell'editor mancava e VSCodium apriva la shell del PC. Ora quei profili si tolgono e il predefinito passa al profilo «Atollo» corrispondente.
+- **Profili lasciati da un kit precedente**: con un nome che il kit non usa più, puntavano a una cartella di PowerShell o Git con la versione; dopo un aggiornamento il terminale predefinito dell'editor mancava e VSCodium apriva la shell del PC. Ora quei profili si tolgono e il predefinito torna a «Atollo».
+- **Nessun nome di prima**: tolti dal codice e dai documenti anche i riferimenti al progetto da cui Atollo è nato.
 
 ## «Apri nel browser» sui siti dei pool (21/10/2026)
 
@@ -1041,7 +1042,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 ## Fase 2: motore di installazione (14/10/2026)
 
 **Fatto**
-- `catalog.rs` + `catalog/components.json`: i 32 componenti (agenti e linguaggi presi da nabre/dev-kit, più PowerShell 7, Windows Terminal, editor, WebView2) in ordine di installazione; scelta in `data\app\components.txt` nel formato di Atollo (`id=1|0`, CRLF); dipendenze a cascata (Apache con PHP, Kotlin con Java); versioni in `data\app\versions\`.
+- `catalog.rs` + `catalog/components.json`: i 32 componenti (agenti e linguaggi, più PowerShell 7, Windows Terminal, editor, WebView2) in ordine di installazione; scelta in `data\app\components.txt` nel formato di Atollo (`id=1|0`, CRLF); dipendenze a cascata (Apache con PHP, Kotlin con Java); versioni in `data\app\versions\`.
 - `net.rs`: HTTPS con il TLS di Windows e i certificati del suo archivio (funziona con l'ispezione SSL aziendale), proxy dalle impostazioni, dall'ambiente o di Windows; download in `.part` con 3 tentativi; API di GitHub.
 - `verify.rs`: SHA-256, SHA-512, integrità npm; un file che non corrisponde viene cancellato.
 - `archive.rs`: zip, tar.gz, 7z (anche dentro un `.7z.exe`), con rifiuto dei percorsi che escono dalla cartella; scambio delle cartelle con ripristino, "in uso" se un file è aperto.

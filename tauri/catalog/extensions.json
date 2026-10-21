@@ -4,8 +4,7 @@
     "languages: nomi dei linguaggi come li rileva detect/mod.rs (LANGUAGES); tools: id dei componenti che un progetto richiede (Deno, Bun, CMake).",
     "Un'estensione con languages o tools è predefinita nei progetti che li hanno; senza nessuno dei due è generale: sempre installata.",
     "programs: per le generali, solo quando quel componente è nel kit. optional: non predefinita, si aggiunge a mano a un progetto.",
-    "Ogni estensione viene proposta una volta sola: se la disinstalli non torna, a meno che un progetto non la aggiunga a mano.",
-    "Origine: nabre/dev-kit setup/vscodium/extensions.txt."
+    "Ogni estensione viene proposta una volta sola: se la disinstalli non torna, a meno che un progetto non la aggiunga a mano."
   ],
   "extensions": [
     { "id": "anthropic.claude-code", "name": "Claude Code", "programs": ["claude"], "note": "usa accesso e impostazioni del kit (editor_cfg.rs)" },

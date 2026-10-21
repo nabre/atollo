@@ -1,7 +1,6 @@
 //! Keeps Claude Code, Codex and Antigravity aligned: the same global
-//! instructions, skills and MCP servers for the three (port of nabre/dev-kit
-//! `setup/agents/sync.js` and its modules). The shared copy lives in
-//! `data\agents`:
+//! instructions, skills and MCP servers for the three. The shared copy lives
+//! in `data\agents`:
 //!
 //! ```text
 //! data\agents\AGENTS.md   = data\home\.claude\CLAUDE.md   (Claude)

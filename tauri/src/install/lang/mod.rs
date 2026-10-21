@@ -1,5 +1,5 @@
-//! Languages installed from archives (port of nabre/dev-kit
-//! `_languages.ps1:77-340`; sources and checks in docs/app/CATALOG.md §2).
+//! Languages installed from archives (sources and checks in
+//! docs/app/CATALOG.md §2).
 //! One file per language or family; here the helpers they share.
 
 mod cc;

@@ -1,5 +1,4 @@
-//! Installers of the components (port of nabre/dev-kit `_prepare-*.ps1` and
-//! `_languages.ps1`; specification in docs/app/CATALOG.md §2).
+//! Installers of the components (specification in docs/app/CATALOG.md §2).
 //!
 //! Each component says where its latest build is and how to verify it
 //! (`latest`): a release made of one or more parts (Java with Maven and

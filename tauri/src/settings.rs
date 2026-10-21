@@ -1,9 +1,9 @@
 //! The user's settings, in `data\app\settings.json`.
 //!
-//! They replace nabre/dev-kit's `data\proxy.cmd`: language, proxy and
-//! certificates, Gemini API key, local network, automatic updates. A file that
-//! cannot be read is never overwritten: the defaults are used and the problem
-//! is reported, so a hand edit with a typo does not lose the other values.
+//! Language, proxy and certificates, Gemini API key, local network, automatic
+//! updates. A file that cannot be read is never overwritten: the defaults are
+//! used and the problem is reported, so a hand edit with a typo does not lose
+//! the other values.
 //! Keys this version does not know (written by a newer one) are kept.
 //! The Settings page saves each change as it is made (D-137): every
 //! read-change-write goes through [`Settings::update`], one at a time.

@@ -1,6 +1,6 @@
 //! `Atollo.exe serve <folder> <port>`: file server for HTML/CSS/JS-only
-//! projects (port of nabre/dev-kit `core/static-server.js`), on 127.0.0.1
-//! only, or on every interface with `ATOLLO_ALLOW_LAN=1` (Settings).
+//! projects, on 127.0.0.1 only, or on every interface with
+//! `ATOLLO_ALLOW_LAN=1` (Settings).
 //!
 //! - only requests addressed to localhost, or with the local network
 //!   allowed to an IP address (a `Host` of another name that points to the

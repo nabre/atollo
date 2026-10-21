@@ -1,5 +1,4 @@
-//! Claude Code, Codex, Antigravity (port of nabre/dev-kit
-//! `_prepare-core.ps1:10-104`).
+//! Claude Code, Codex, Antigravity.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;

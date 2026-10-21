@@ -1,6 +1,5 @@
-//! Final check of the installed components (port of nabre/dev-kit
-//! `Test-Installation`, `_prepare-finish.ps1:157-217`): each program answers
-//! its version command, with the kit environment and a time limit.
+//! Final check of the installed components: each program answers its
+//! version command, with the kit environment and a time limit.
 
 use std::io::Read;
 use std::process::Stdio;

@@ -1,9 +1,8 @@
-//! What a project is and how to start it (port of nabre/dev-kit
-//! `core/detectors`): platform, languages, the kit's programs it needs and
-//! the actions of the Projects page. Every action has:
+//! What a project is and how to start it: platform, languages, the kit's
+//! programs it needs and the actions of the Projects page. Every action has:
 //! - `command`: run by `cmd.exe /d /s /c` in the project folder, with the
-//!   kit's environment (as in nabre/dev-kit: `npm.ps1` in PowerShell would
-//!   swallow the `--` of `npm run dev -- --port`);
+//!   kit's environment (not PowerShell: its `npm.ps1` would swallow the `--`
+//!   of `npm run dev -- --port`);
 //! - `type`: `web` (a server on its own port: `{port}` in the command, `PORT`
 //!   in the environment, preview in the browser), `desktop` (an app with its
 //!   own window: Electron, Tauri), `command` (ends by itself: build, test);

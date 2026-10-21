@@ -2,8 +2,8 @@
 //! checksums (`verify`), the Authenticode signatures (`signature`) and the
 //! archives with the folder swaps of the installer (`archive`).
 //!
-//! Downloads for the installer (port of nabre/dev-kit `_common.ps1`
-//! Initialize-Network / Get-Download and `_prepare-helpers.ps1` Get-LatestTag).
+//! Downloads for the installer: network setup, the download itself and the
+//! latest release tag of a project.
 //!
 //! TLS is Windows' own (SChannel through native-tls) with the Windows
 //! certificate store, so corporate SSL inspection works as it does for the

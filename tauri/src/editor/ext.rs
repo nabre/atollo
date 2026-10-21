@@ -1,7 +1,5 @@
-//! Extensions of the integrated editor (port of nabre/dev-kit
-//! `setup/vscodium/extensions.txt`, `app-extensions.js` and
-//! `_vscodium-extensions.ps1`), chosen by the languages of the projects
-//! (DECISIONS.md D-71).
+//! Extensions of the integrated editor, chosen by the languages of the
+//! projects (DECISIONS.md D-71).
 //!
 //! - the kit's matrix (`catalog/extensions.json`): an extension with
 //!   `languages` (as `detect::LANGUAGES` names them) or `tools` (components a

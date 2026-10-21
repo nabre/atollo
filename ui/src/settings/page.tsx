@@ -5,7 +5,7 @@
 // wizard's frameworks (frameworks/); each opens in a tab of the editor.
 // Every change is saved and applied as it is made, with no Save button
 // (D-137): the tab bar says when. The search on top shows every setting
-// that matches. Replaces nabre/dev-kit's proxy.cmd.
+// that matches.
 import { useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { editorRestart, type AppInfo } from "../api";

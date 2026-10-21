@@ -1,5 +1,5 @@
 //! Antigravity's Google login kept inside the kit, with no trace left in the
-//! system's credential store (port of nabre/dev-kit `agy-keyring.ps1`).
+//! system's credential store.
 //!
 //! `agy` stores its login with go-keyring, with no option to use a file:
 //! the Credential Manager on Windows, the Keychain on macOS, the Secret
@@ -145,7 +145,8 @@ pub trait Store {
         true
     }
     /// A restore that fails partway deletes the kit's credentials it had
-    /// already written (macOS and Linux; Windows as nabre/dev-kit).
+    /// already written (macOS and Linux; on Windows they are left as they
+    /// are, as earlier kits did).
     fn undo_partial(&self) -> bool {
         false
     }
@@ -194,7 +195,6 @@ pub fn save_with(kit: &Kit, store: &dyn Store) -> Result<()> {
 
 /// After an agy run (`agy.cmd`): the "starting" mark of this run is
 /// dropped when no agy of the kit runs any more, then the login is saved.
-/// (In nabre/dev-kit a hidden watcher process did it later.)
 pub fn save_after_run(kit: &Kit) -> Result<()> {
     save_after_run_with(kit, &System::of(kit))
 }

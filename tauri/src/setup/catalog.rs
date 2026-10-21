@@ -2,7 +2,7 @@
 //!
 //! The catalog (`catalog/components.json`, embedded) is the only list of
 //! components (docs/app/CATALOG.md). The choice is `data/app/components.txt`,
-//! in the format of nabre/dev-kit `_components.ps1:31-80`: three comment lines,
+//! in this format: three comment lines,
 //! then `id=1` or `id=0` per component, UTF-8 without BOM, CRLF. Versions are
 //! `data/app/versions/<target>/<id>.txt`, plain text.
 //!
@@ -750,8 +750,7 @@ impl Choice {
     }
 
     /// Turns a component on or off, following the dependencies on every
-    /// target both ways, as the "Languages and tools" page of
-    /// nabre/dev-kit does. Those of one target only are not saved (see
+    /// target both ways. Those of one target only are not saved (see
     /// [`Choice`]).
     pub fn set(&mut self, catalog: &Catalog, id: &str, on: bool) {
         let locked = catalog.locked();

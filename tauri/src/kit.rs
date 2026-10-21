@@ -5,7 +5,7 @@
 //! side; everything the kit downloads or writes lives in `data\`. Nothing is
 //! ever created outside the root. On macOS the root holds `Atollo.app`, on
 //! Linux the AppImage (`root_from`). The platform rule and the "kit was moved"
-//! record follow nabre/dev-kit `setup/windows/_env.cmd` (lines 13-16, 238-267).
+//! record are the ones earlier kits used.
 
 use std::fs;
 use std::io;
@@ -504,7 +504,7 @@ impl Kit {
     }
 
     /// First 16 hex chars of SHA-256 of the lower-case root: the same scheme
-    /// nabre/dev-kit uses for its per-kit mutex names.
+    /// earlier kits used for their per-kit mutex names.
     pub fn id(&self) -> String {
         let lower = self.root.to_string_lossy().to_lowercase();
         let digest = Sha256::digest(lower.as_bytes());
@@ -760,8 +760,7 @@ pub fn watcher_unsafe_folder_on(os: Os, path: &Path) -> Option<String> {
     })
 }
 
-/// Why a project name is not accepted (rules of nabre/dev-kit
-/// `core/projects.js:37-44`).
+/// Why a project name is not accepted.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum NameError {
     #[error("empty name")]

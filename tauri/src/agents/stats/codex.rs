@@ -1,5 +1,5 @@
 //! Codex: plan limits from OpenAI's server or from its logs, usage from its
-//! sessions (port of nabre/dev-kit `core/stats/codex.js`).
+//! sessions.
 
 use std::collections::HashSet;
 use std::path::Path;

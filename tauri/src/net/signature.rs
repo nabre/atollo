@@ -1,5 +1,4 @@
-//! Authenticode signatures (port of nabre/dev-kit `Assert-Signature`,
-//! `_prepare-helpers.ps1:110-130`).
+//! Authenticode signatures.
 //!
 //! `WinVerifyTrust` checks the signature and the certificate chain against
 //! the Windows trust store, with revocation of the whole chain; the
