@@ -1011,10 +1011,10 @@ export const HELP: TopicTexts = {
         >
           <P>
             {tr(
-              "Perché un agente lavora sempre in un progetto: si apre dalla pagina Progetti, con il pulsante «Agente». La pagina Agenti serve per accesso, limiti e cartella condivisa.",
-              "Because an agent always works in a project: you open it from the Projects page, with the “Agent” button. The Agents page is for sign-in, limits and the shared folder.",
-              "Parce qu'un agent travaille toujours dans un projet : il s'ouvre depuis la page Projets, avec le bouton « Agent ». La page Agents sert pour la connexion, les limites et le dossier partagé.",
-              "Weil ein Agent immer in einem Projekt arbeitet: Er wird auf der Seite Projekte mit der Schaltfläche „Agent“ geöffnet. Die Seite Agenten dient für Anmeldung, Limits und den gemeinsamen Ordner.",
+              "Perché un agente lavora sempre in un progetto: si apre dalla pagina Progetti, con il pulsante che porta il logo dell'agente. La pagina Agenti serve per accesso, limiti e cartella condivisa.",
+              "Because an agent always works in a project: you open it from the Projects page, with the button that shows the agent's logo. The Agents page is for sign-in, limits and the shared folder.",
+              "Parce qu'un agent travaille toujours dans un projet : il s'ouvre depuis la page Projets, avec le bouton qui porte le logo de l'agent. La page Agents sert pour la connexion, les limites et le dossier partagé.",
+              "Weil ein Agent immer in einem Projekt arbeitet: Er wird auf der Seite Projekte mit der Schaltfläche geöffnet, die das Logo des Agenten trägt. Die Seite Agenten dient für Anmeldung, Limits und den gemeinsamen Ordner.",
             )}
           </P>
         </QA>

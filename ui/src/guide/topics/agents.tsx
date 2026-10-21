@@ -51,10 +51,10 @@ export const AGENTS: TopicTexts = {
             "Das Kit bietet drei: Claude Code (Anthropic), Codex (OpenAI) und Antigravity (Google). Sie werden über Werkzeuge installiert.",
           ),
           tr(
-            "Si aprono sempre dentro un progetto, dalla pagina Progetti, con il pulsante «Agente».",
-            "They always open inside a project, from the Projects page, with the “Agent” button.",
-            "Ils s'ouvrent toujours dans un projet, depuis la page Projets, avec le bouton « Agent ».",
-            "Sie öffnen sich immer in einem Projekt, auf der Seite Projekte, mit der Schaltfläche „Agent“.",
+            "Si aprono sempre dentro un progetto, dalla pagina Progetti, con il pulsante che porta il logo dell'agente.",
+            "They always open inside a project, from the Projects page, with the button that shows the agent's logo.",
+            "Ils s'ouvrent toujours dans un projet, depuis la page Projets, avec le bouton qui porte le logo de l'agent.",
+            "Sie öffnen sich immer in einem Projekt, auf der Seite Projekte, mit der Schaltfläche, die das Logo des Agenten trägt.",
           ),
           tr(
             "L'accesso al tuo account si fa al primo avvio dell'agente e resta nel kit, anche su un altro PC.",
@@ -161,35 +161,35 @@ export const AGENTS: TopicTexts = {
           steps={[
             tr("Apri il progetto.", "Open the project.", "Ouvrez le projet.", "Öffne das Projekt."),
             tr(
-              "In alto, accanto a «Editor» e «Terminale», fai clic sul logo dell'agente che vuoi usare.",
-              "At the top, next to “Editor” and “Terminal”, click the logo of the agent you want to use.",
-              "En haut, à côté de « Éditeur » et « Terminal », cliquez sur le logo de l'agent que vous voulez utiliser.",
-              "Klicke oben neben „Editor“ und „Terminal“ auf das Logo des Agenten, den du verwenden möchtest.",
+              "In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Antigravity»). Fai clic su quello dell'agente che vuoi usare.",
+              "At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Antigravity”). Click the one of the agent you want to use.",
+              "En haut, à côté de « Éditeur » et « Terminal », il y a un bouton pour chaque agent installé, avec son logo (« Ouvrir Claude Code », « Ouvrir Codex », « Ouvrir Antigravity »). Cliquez sur celui de l'agent que vous voulez utiliser.",
+              "Oben neben „Editor“ und „Terminal“ gibt es für jeden installierten Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Antigravity öffnen“). Klicke auf die des Agenten, den du verwenden möchtest.",
             ),
             tr(
-              "Premi «Agente». Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.",
-              "Press “Agent”. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.",
-              "Appuyez sur « Agent ». Sur Windows, une console du kit s'ouvre dans le dossier du projet avec l'agent lancé ; sur macOS et Linux, un onglet du panneau des terminaux.",
-              "Drück „Agent“. Unter Windows öffnet sich eine Konsole des Kits im Projektordner mit dem gestarteten Agenten; unter macOS und Linux eine Registerkarte im Terminalbereich.",
+              "L'agente parte subito. Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.",
+              "The agent starts right away. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.",
+              "L'agent démarre aussitôt. Sur Windows, une console du kit s'ouvre dans le dossier du projet avec l'agent lancé ; sur macOS et Linux, un onglet du panneau des terminaux.",
+              "Der Agent startet sofort. Unter Windows öffnet sich eine Konsole des Kits im Projektordner mit dem gestarteten Agenten; unter macOS und Linux eine Registerkarte im Terminalbereich.",
             ),
           ]}
         />
         <P>
           {tr(
-            "Più in fretta: il pulsante «Agente» nella riga del progetto (barra laterale o «Pannello rapido») apre l'ultimo agente usato in quel progetto, o il primo installato.",
-            "Quicker: the “Agent” button on the project's row (sidebar or “Quick panel”) opens the last agent used in that project, or the first one installed.",
-            "Plus rapide : le bouton « Agent » sur la ligne du projet (barre latérale ou « Panneau rapide ») ouvre le dernier agent utilisé dans ce projet, ou le premier installé.",
-            "Schneller: Die Schaltfläche „Agent“ in der Zeile des Projekts (Seitenleiste oder „Schnellübersicht“) öffnet den zuletzt in diesem Projekt verwendeten Agenten oder den ersten installierten.",
+            "Gli stessi pulsanti sono nella riga del progetto (barra laterale o «Pannello rapido»): un clic sul logo apre quell'agente nel progetto. Un agente non installato non ha il suo pulsante; se non ne è installato nessuno, non ci sono pulsanti degli agenti.",
+            "The same buttons are on the project's row (sidebar or “Quick panel”): a click on a logo opens that agent in the project. An agent that is not installed has no button; if none is installed, there are no agent buttons.",
+            "Les mêmes boutons se trouvent sur la ligne du projet (barre latérale ou « Panneau rapide ») : un clic sur un logo ouvre cet agent dans le projet. Un agent non installé n'a pas de bouton ; si aucun n'est installé, il n'y a pas de boutons d'agents.",
+            "Dieselben Schaltflächen gibt es in der Zeile des Projekts (Seitenleiste oder „Schnellübersicht“): Ein Klick auf ein Logo öffnet diesen Agenten im Projekt. Ein nicht installierter Agent hat keine Schaltfläche; ist keiner installiert, gibt es keine Agenten-Schaltflächen.",
           )}
         </P>
         <Under>
           <Bullets
             items={[
               tr(
-                "L'agente scelto viene ricordato nel file dev-settings.json del progetto.",
-                "The chosen agent is remembered in the project's dev-settings.json file.",
-                "L'agent choisi est mémorisé dans le fichier dev-settings.json du projet.",
-                "Der gewählte Agent wird in der Datei dev-settings.json des Projekts gespeichert.",
+                "L'ultimo agente aperto viene annotato nel file dev-settings.json del progetto.",
+                "The last agent opened is noted in the project's dev-settings.json file.",
+                "Le dernier agent ouvert est noté dans le fichier dev-settings.json du projet.",
+                "Der zuletzt geöffnete Agent wird in der Datei dev-settings.json des Projekts vermerkt.",
               ),
               tr(
                 "Prima dell'avvio il kit installa ciò che manca (l'agente, le sue dipendenze, i programmi dei server MCP come Node.js o uv), applica le versioni del progetto e allinea istruzioni, skill e server MCP. Quando l'agente termina, li allinea di nuovo.",
