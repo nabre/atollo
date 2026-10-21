@@ -47,7 +47,7 @@ Real tests: the CI (x64 job) installs `pwsh`, `node`, `git` and the editor; all 
 | | `phpmyadmin` | phpMyAdmin | no | 60 | `php`, `mysql` | **new** (D-107, replacing the Adminer of D-85); MySQL in the browser, on all six targets (D-117) |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **new** (D-73); on Linux ARM64 from conda-forge, not relocatable |
 
-The groups, defaults (`def`) and sizes are those of `components.json` (35 components). First-run proposal: required, editor, three agents, Python, PHP, Apache, plus Git that is always installed: about 1.8 GB (1845 MB, of which 250 for the editor), on every system (Apache too since D-116).
+The groups, defaults (`def`) and sizes are those of `components.json` (35 components). First-run proposal: required, editor, three agents, Python, PHP, Apache, plus Git, which Claude Code needs: about 1.8 GB (1845 MB, of which 250 for the editor), on every system (Apache too since D-116).
 
 The pages do not show the catalog's groups but the kinds of the site's matrix (D-139; `ui/src/components/model.ts` and `site/matrix.mjs`, which a test keeps equal): System and editor (`required`, `app`, plus Git), AI agents, Languages, Development tools (uv, pnpm, CMake, Android SDK, Typst, TinyTeX), Web server (Apache, Caddy), Databases.
 
