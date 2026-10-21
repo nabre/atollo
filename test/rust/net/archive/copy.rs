@@ -1,6 +1,7 @@
 use super::*;
 use crate::kit::tests::TempDir;
 use crate::net::archive::tests::tree;
+#[cfg(windows)]
 use std::fs::File;
 
 /// A file over 4 GiB (sparse: nothing written) does not fit on FAT32;
