@@ -19,6 +19,7 @@ export {
   TRY_TAB,
   useCombination,
   useFrameworks,
+  useFrameworksAutosave,
   usePlan,
 } from "./model";
 export type { Frameworks } from "./model";

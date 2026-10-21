@@ -164,11 +164,18 @@ export function useFrameworks() {
   const [error, setError] = useState<string | null>(null);
   // Counts the edits: a save that ends after another edit leaves it unsaved.
   const edits = useRef(0);
+  // The edits saved (or loaded over), and the pieces as last edited: save
+  // reads these, so it saves the latest even from a page closing.
+  const savedEdits = useRef(0);
+  const latest = useRef<FrameworkPiece[]>([]);
   const load = useCallback(() => {
+    const at = edits.current;
     frameworksGet().then(
       (v) => {
         setView(v);
         setPieces(v.pieces);
+        latest.current = v.pieces;
+        savedEdits.current = at;
         setDirty(false);
         setError(null);
       },
@@ -179,16 +186,43 @@ export function useFrameworks() {
   }, []);
   const change = useCallback((next: FrameworkPiece[]) => {
     edits.current += 1;
+    latest.current = next;
     setPieces(next);
     setDirty(true);
   }, []);
   const save = useCallback(async () => {
-    if (!dirty) return;
     const at = edits.current;
-    await frameworksSet(pieces);
+    if (at === savedEdits.current) return;
+    await frameworksSet(latest.current);
+    savedEdits.current = Math.max(savedEdits.current, at);
     if (edits.current === at) load();
-  }, [dirty, pieces, load]);
+  }, [load]);
   return { view, pieces, dirty, error, load, change, save };
+}
+
+/** The wait after an edit of the frameworks before saving it. */
+const FRAMEWORKS_DELAY = 800;
+
+/** Saves the frameworks a moment after the last edit, and what still waits
+ * when the page closes (`run` shows the save as busy and its error). */
+export function useFrameworksAutosave(fw: Frameworks, run: (key: string, action: () => Promise<void>) => void) {
+  const { dirty, pieces, save } = fw;
+  useEffect(() => {
+    if (!dirty) return;
+    const timer = window.setTimeout(() => {
+      run("frameworks", save);
+    }, FRAMEWORKS_DELAY);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [dirty, pieces, save, run]);
+  useEffect(
+    () => () => {
+      // The page is gone: nothing left to show an error in.
+      save().catch(() => undefined);
+    },
+    [save],
+  );
 }
 
 export type Frameworks = ReturnType<typeof useFrameworks>;
