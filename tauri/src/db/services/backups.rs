@@ -11,7 +11,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
-use super::tools::run_with_input;
+use super::tools::{run_with_input, run_with_reader};
 use super::{auth, project_line, Services};
 use crate::db::DbEngine;
 use crate::os::jobs;
@@ -20,8 +20,11 @@ use crate::projects::state::ProjectState;
 /// The options of a MySQL dump (D-78): one consistent snapshot, with the
 /// routines, triggers and events, and no GTID statement, which only an
 /// administrator could restore (the restore runs as the project's user).
-pub const DUMP_ARGS: [&str; 5] = [
+/// Binary columns as hexadecimal (BUG-V6-04): the copy is text a client
+/// reads back whatever the bytes of a BLOB or a hash.
+pub const DUMP_ARGS: [&str; 6] = [
     "--single-transaction",
+    "--hex-blob",
     "--routines",
     "--events",
     "--triggers",
@@ -155,7 +158,11 @@ impl Services {
                     .ok_or_else(|| anyhow!("the project has no {id} database yet"))?;
                 let line = project_line(&self.kit, project, id);
                 let (port, env) = self.running_at(engine, line.as_deref())?;
-                let sql = fs::read_to_string(&path)?;
+                // Streamed, never whole in memory nor read as UTF-8 text
+                // (BUG-V6-04).
+                let sql = std::io::BufReader::new(
+                    fs::File::open(&path).with_context(|| path.display().to_string())?,
+                );
                 let (mut cmd, login) = self.sql_as_project(
                     engine,
                     restore,
@@ -166,7 +173,7 @@ impl Services {
                     &password,
                 )?;
                 cmd.arg(&name);
-                let result = run_with_input(cmd, &sql, Duration::from_secs(600));
+                let result = run_with_reader(cmd, sql, Duration::from_secs(600));
                 let _ = fs::remove_file(login);
                 result.context(restore)
             }
