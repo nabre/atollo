@@ -152,9 +152,18 @@ data\
                               (the mysql client's logins); the folder has the owner's DACL
     pre-v2\                   copy of ports.json and secrets.json before the migration (D-89)
     pre-caddy\                copy of servers.json and of the panel.json files before the switch from Nginx to Caddy (D-120)
+  agents\                     what the three agents share: AGENTS.md, skills\, mcp.json, the sync state in .sync\
+  antigravity\                Antigravity's sign-in kept in the kit (keyring.json)
+  apache\                     kit.conf and htdocs\ of the kit's Apache site
+  cache\                      cache of the package managers (npm, pip, uv, Composer, Go, NuGet…) and of
+                              GitHub's responses; it can be deleted
   db\<engine>\<version>\      data of each database server version, with the server's my.cnf (D-81, D-102)
+  gh\                         GitHub CLI's sign-in (hosts.yml)
   home\                       HOME of the programs: .gitconfig and the like
   kit\                        files written from runtime\ at every start
+  npm-global\  python-user\  composer\  go\  gradle\…
+                              packages and tools installed globally with npm, pip, Composer, Go and the others
+  php\<line>\                 the php.ini of each PHP line (macOS and Linux: php/<target>/<line>/)
   projects\<project>\         everything the kit keeps for a project (D-89)
     dev-settings.json  ports.json
     apache\  caddy\           the project's own server; conf.d\ holds the user's .conf / .caddy files,
@@ -164,6 +173,8 @@ data\
       backups\                copies of the databases (D-78)
   servers\<pool>\             generated configurations of the Caddy/Apache pools
   tmp\                        staging in the kit when the system temp is missing or not enough; TEMP of the programs in the kit
+  vscodium-server\            settings and extensions of the editor server
+  webview2\                   the data of the app window
 ```
 
 In the system temp, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` and `claude\` (`TEMP` of the programs and `CLAUDE_CODE_TMPDIR`, when the choice or the disk calls for it). `Kit::system_temp()` returns it, `os\temp.rs` creates its work folders and cleans them up, `net\archive.rs` (`stage_into`) moves the result into `data\apps`. The startup order: the migration of the projects' data (`projects\migrate.rs`) runs after the single instance (D-08), followed by the temp cleanup (`os::temp::sweep`); at shutdown, after the job, `os::temp::cleanup_at_exit`.
