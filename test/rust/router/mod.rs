@@ -346,6 +346,14 @@ fn bootstrap_files_go_with_their_component_only() {
         r_line.join("micromamba").is_file(),
         "another version of the same name is skipped, not deleted"
     );
+    // The same at the top, in the older layout: it may be another
+    // component's (BUG-V6-22).
+    fs::write(top.join("micromamba"), b"legacy").unwrap();
+    assert!(bootstrap::take(&kit, "micromamba", &expect, &dest)
+        .unwrap()
+        .is_some());
+    assert_eq!(fs::read(top.join("micromamba")).unwrap(), b"legacy");
+    fs::remove_file(top.join("micromamba")).unwrap();
 
     bootstrap::remove(&kit, r).unwrap();
     assert!(!bootstrap::staged_dir(&kit, "r", None).exists());
