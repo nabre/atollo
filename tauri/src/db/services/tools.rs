@@ -234,7 +234,7 @@ impl Services {
         env: &KitEnv,
         port: u16,
     ) -> Result<(Command, PathBuf)> {
-        let admin = auth::load(&self.kit)
+        let admin = auth::try_load(&self.kit)?
             .mongodb_admin
             .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
         let exe = exe_name(self.kit.os(), stem);

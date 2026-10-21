@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::detect::{self, set_site_with_options, SiteKind, SiteOptions};
 use crate::env::KitEnv;
-use crate::fsx::{read_json, write_json};
+use crate::fsx::{read_json, try_read_json, write_json};
 use crate::kit::{validate_project_name, Kit};
 use crate::projects::run::is_port_free;
 
@@ -35,8 +35,16 @@ pub(super) fn store_path(kit: &Kit) -> PathBuf {
     kit.app_dir().join("servers.json")
 }
 
+/// `servers.json`, empty when missing or damaged: for what only reads it.
 pub(super) fn load_store(kit: &Kit) -> StoredServers {
     read_json(&store_path(kit)).unwrap_or_default()
+}
+
+/// `servers.json` for a change written back: a file that is there but
+/// cannot be read is an error, never taken for "no profiles" and saved
+/// over empty (SEC-V6-01).
+pub(super) fn try_load_store(kit: &Kit) -> Result<StoredServers> {
+    Ok(try_read_json(&store_path(kit))?.unwrap_or_default())
 }
 
 /// The port of every pool, by id, as `servers.json` keeps them (read
@@ -326,7 +334,15 @@ impl WebServers {
             .store_lock
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let mut store = load_store(&self.kit);
+        // Unreadable: the page shows what it can, nothing is written over
+        // the file (SEC-V6-01).
+        let (mut store, readable) = match try_load_store(&self.kit) {
+            Ok(store) => (store, true),
+            Err(e) => {
+                crate::log::warn(&format!("{e:#}: left as it is"));
+                (StoredServers::default(), false)
+            }
+        };
         let mut store_dirty = migrate_port_ids(&mut store);
         // The ports of the pools of Nginx go to Caddy's once Caddy is
         // installed (its line names the pool, D-120).
@@ -502,7 +518,7 @@ impl WebServers {
             });
             store_dirty |= store.ports.len() != before;
         }
-        if store_dirty {
+        if store_dirty && readable {
             let _ = save_store(&self.kit, &store);
         }
         drop(store_guard);
@@ -561,7 +577,7 @@ impl WebServers {
             .store_lock
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let mut store = load_store(&self.kit);
+        let mut store = try_load_store(&self.kit)?;
         if let Some(p) = input.port {
             // One port per pool (defect 6): two pools on one port, the
             // second never starts and its sites answer from the first. Nor
@@ -595,7 +611,7 @@ impl WebServers {
             .store_lock
             .lock()
             .unwrap_or_else(PoisonError::into_inner);
-        let mut store = load_store(&self.kit);
+        let mut store = try_load_store(&self.kit)?;
         store.profiles.retain(|p| p.id != id);
         store.ports.remove(id);
         let saved = save_store(&self.kit, &store);

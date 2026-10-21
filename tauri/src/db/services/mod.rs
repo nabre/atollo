@@ -268,7 +268,9 @@ static SETTINGS_LOCK: Mutex<()> = Mutex::new(());
 /// Reads `services.json`, lets `change` modify it and writes it when it
 /// changed, with no other change in between (BUG-V5-02, as
 /// `Settings::update`): two starts storing their port lose neither. An
-/// error from `change` leaves the file as it is.
+/// error from `change` leaves the file as it is, and so does a file that is
+/// there but cannot be read (SEC-V6-01): never written again as if empty,
+/// the ports and versions of the other servers lost.
 fn update_settings<T>(
     kit: &Kit,
     change: impl FnOnce(&mut BTreeMap<String, Setting>) -> Result<T>,
@@ -276,7 +278,8 @@ fn update_settings<T>(
     let _one = SETTINGS_LOCK
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let before = load_settings(kit);
+    let before: BTreeMap<String, Setting> =
+        crate::fsx::try_read_json(&settings_path(kit))?.unwrap_or_default();
     let mut all = before.clone();
     let out = change(&mut all)?;
     if all != before {
@@ -794,7 +797,7 @@ impl Services {
             bail!("phpMyAdmin does not open {engine}");
         }
         let (port, env) = self.running_at(engine, line)?;
-        let password = admin_password(&auth::load(&self.kit), engine)
+        let password = admin_password(&auth::try_load(&self.kit)?, engine)
             .ok_or_else(|| anyhow::anyhow!("{engine} has no password of root yet"))?;
         self.phpmyadmin.open(&self.kit, &env, port, &password, lang)
     }

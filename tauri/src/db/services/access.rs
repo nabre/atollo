@@ -33,8 +33,9 @@ impl Services {
         fresh: bool,
     ) -> Result<()> {
         let id = engine.id();
-        let mut secrets = auth::load(&self.kit);
-        let known = admin_password(&secrets, engine);
+        // Unreadable is never "no password yet" (SEC-V6-01): a new one
+        // would be stored over the one the data has.
+        let known = admin_password(&auth::try_load(&self.kit)?, engine);
         let password = match &known {
             Some(p) => p.clone(),
             None => auth::new_password()?,
@@ -52,7 +53,10 @@ impl Services {
                         "MongoDB already has users that Atollo does not know: \
                          its administrator could not be created",
                     )?;
-                    secrets.mongodb_admin = Some(password.clone());
+                    auth::update_secrets(&self.kit, |secrets| {
+                        secrets.mongodb_admin = Some(password.clone());
+                        Ok(())
+                    })?;
                 }
                 // The initialization gave root the stored password
                 // (`data::prepare`, `--init-file`): root is never without
@@ -67,7 +71,6 @@ impl Services {
                     }
                 }
             }
-            auth::save(&self.kit, &secrets)?;
             crate::log::info(&format!("{id}: administrator password set"));
         }
         match engine {
@@ -182,7 +185,7 @@ impl Services {
             .context("the passwords of the project's databases")?;
         match kind {
             DbEngine::MongoDb => {
-                let admin = auth::load(&self.kit)
+                let admin = auth::try_load(&self.kit)?
                     .mongodb_admin
                     .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
                 let mut cmd = jobs::kit_command(client_at(&self.kit, kind, None), &env);
@@ -254,7 +257,7 @@ impl Services {
         let (port, env) = self.running_at(engine, line)?;
         match engine {
             DbEngine::MongoDb => {
-                let admin = auth::load(&self.kit)
+                let admin = auth::try_load(&self.kit)?
                     .mongodb_admin
                     .ok_or_else(|| anyhow!("MongoDB has no administrator yet"))?;
                 let mut cmd = jobs::kit_command(client_at(&self.kit, engine, None), &env);
