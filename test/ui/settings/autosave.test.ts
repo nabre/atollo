@@ -3,7 +3,7 @@
 // a read that works clears the error of the failed one.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { Settings, SettingsView } from "../../../ui/src/api";
+import { SAMPLE_SETTINGS } from "../../../ui/src/api";
 import { useSettingsAutosave } from "../../../ui/src/settings/autosave";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
@@ -18,18 +18,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const SETTINGS: Settings = {
-  lang: null,
-  network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
-  geminiApiKey: null,
-  autoUpdate: true,
-  rustToolchain: null,
-  programTemp: "auto",
-  theme: "system",
-  keepCondaPackages: true,
-  toolsTarget: null,
-};
-const VIEW: SettingsView = { settings: SETTINGS, geminiKeySet: false, problem: null };
+// The browser preview's settings: no Gemini key saved.
+const VIEW = SAMPLE_SETTINGS;
+const SETTINGS = VIEW.settings;
 
 /** The Gemini key of each settings_set, in order. */
 function geminiSent(): (string | null)[] {

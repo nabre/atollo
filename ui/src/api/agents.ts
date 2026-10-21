@@ -19,7 +19,7 @@ export interface AgentInfo {
   tokenLink: boolean;
 }
 
-const SAMPLE_AGENTS: AgentInfo[] = [
+export const SAMPLE_AGENTS: AgentInfo[] = [
   {
     id: "claude",
     name: "Claude Code",

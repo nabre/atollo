@@ -3,7 +3,7 @@
 // versions to move to; the section is read again when the install ends.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { ProjectDatabases, ProjectInfo, SetupSnapshot } from "../../../ui/src/api";
+import { SAMPLE_SETUP, type ProjectDatabases, type ProjectInfo, type SetupSnapshot } from "../../../ui/src/api";
 import { Databases } from "../../../ui/src/projects/databases";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
@@ -22,15 +22,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 
 /** A `setup` event, to every section listening. */
 function emit(running: boolean) {
-  const payload: SetupSnapshot = {
-    running,
-    cancelling: false,
-    automatic: false,
-    total: 1,
-    steps: [],
-    queue: [],
-    error: null,
-  };
+  const payload: SetupSnapshot = { ...SAMPLE_SETUP, running, total: 1 };
   act(() => {
     for (const l of listeners) l({ payload });
   });

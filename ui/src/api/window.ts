@@ -19,7 +19,15 @@ export interface OpenNow {
   databases: number;
 }
 
-const NOTHING_OPEN: OpenNow = { processes: [], editor: false, terminals: 0, actions: 0, setup: false, databases: 0 };
+/** The browser preview's answer (core.ts): nothing of the kit open. */
+export const NOTHING_OPEN: OpenNow = {
+  processes: [],
+  editor: false,
+  terminals: 0,
+  actions: 0,
+  setup: false,
+  databases: 0,
+};
 
 export function ejectList(): Promise<OpenNow> {
   return query<OpenNow>("eject_list", NOTHING_OPEN);
