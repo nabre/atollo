@@ -29,6 +29,9 @@ export function useSettingsAutosave(onSaved?: () => void) {
   const [needsRestart, setNeedsRestart] = useState(false);
   // What waits to be saved: the settings, the Gemini key (null: unchanged).
   const pending = useRef<{ s: Settings; gemini: string | null } | null>(null);
+  // A Gemini key whose save failed: it goes again with the next change
+  // (null: none).
+  const unsavedGemini = useRef<string | null>(null);
   const saved = useRef<Settings | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const running = useRef(false);
@@ -60,7 +63,8 @@ export function useSettingsAutosave(onSaved?: () => void) {
     if (running.current) return;
     running.current = true;
     while (pending.current) {
-      const next = pending.current;
+      // A key refused earlier goes again, unless a newer one is waiting.
+      const next = { ...pending.current, gemini: pending.current.gemini ?? unsavedGemini.current };
       pending.current = null;
       setStatus("saving");
       try {
@@ -68,6 +72,7 @@ export function useSettingsAutosave(onSaved?: () => void) {
         if (saved.current && envChanged(saved.current, next.s)) setNeedsRestart(true);
         saved.current = next.s;
         if (next.gemini !== null) {
+          unsavedGemini.current = null;
           const keySet = next.gemini.trim() !== "";
           setView((v) => (v ? { ...v, geminiKeySet: keySet, problem: null } : v));
         } else {
@@ -77,6 +82,7 @@ export function useSettingsAutosave(onSaved?: () => void) {
         setStatus("saved");
         onSavedRef.current?.();
       } catch (e: unknown) {
+        if (next.gemini !== null) unsavedGemini.current = next.gemini;
         setError(String(e));
         setStatus("idle");
       }
