@@ -4,7 +4,7 @@
 //!
 //! - they listen on 127.0.0.1 only and ask for a password (D-74): MySQL's
 //!   `root` and MongoDB's `admin` get a random one at the first start, also
-//!   on data made by an older Atollo (`db/auth.rs`); each project gets its
+//!   on data made by an older Atollo (`db/auth/`); each project gets its
 //!   own database and user (`project_db_create`);
 //! - data in `data\db\<id>\<version>`, one folder per version the server
 //!   runs (D-81: a setting of the server, the newest by default), created

@@ -350,7 +350,7 @@ impl KitEnv {
         env.set_path("ATOLLO", root);
         env.set_path("CP_ROOT", root);
         env.set_path("CP_DATA", &data);
-        // The `[client]` login of the kit's MySQL (db/auth.rs, D-74, D-110),
+        // The `[client]` login of the kit's MySQL (db/auth/, D-74, D-110),
         // on the port of the version the server runs: the launchers of
         // data\kit\bin (`mysql`, `mysqldump`, `mysqladmin`) run the programs
         // of CP_MYSQL with `--defaults-extra-file` of this login; a project's
@@ -650,7 +650,7 @@ impl KitEnv {
             path.push(app(r"codex\codex-path"));
         }
         // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
-        // which carries its login in and out of Windows (agents/keyring.rs).
+        // which carries its login in and out of Windows (agents/keyring/).
         if has(r"python\python.exe") {
             if is_win {
                 path.push(app("python"));

@@ -1,4 +1,4 @@
-// Databases of a project (tauri/src/db/auth.rs, D-74), their backups, and
+// Databases of a project (tauri/src/db/auth/, D-74), their backups, and
 // what is inside a running server, read only (db/browse.rs, D-79).
 // Rust: tauri/src/commands/databases.rs.
 
