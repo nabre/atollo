@@ -158,12 +158,18 @@ pub trait Store {
 pub struct System {
     #[cfg_attr(windows, allow(dead_code))]
     seal_user: String,
+    /// [`SEAL_ID_FILE`] and the id it holds (or will hold).
+    #[cfg_attr(windows, allow(dead_code))]
+    seal_id: (PathBuf, String),
 }
 
 impl System {
     pub fn of(kit: &Kit) -> System {
+        let file = kit.data().join("antigravity").join(SEAL_ID_FILE);
+        let id = seal_id(fs::read_to_string(&file).ok().as_deref(), &kit.id());
         System {
-            seal_user: format!("antigravity-before-{}", kit.id()),
+            seal_user: format!("antigravity-before-{id}"),
+            seal_id: (file, id),
         }
     }
 }
@@ -198,7 +204,21 @@ impl System {
         Ok(keyring::Entry::new(SEAL_SERVICE, &self.seal_user)?)
     }
 
-    /// The sealing key, created on first use.
+    /// The id in the key's name saved with the kit, if it is not yet: the
+    /// name then survives a move of the kit (PORT-V6-06).
+    fn keep_seal_id(&self) -> Result<()> {
+        let (file, id) = &self.seal_id;
+        if !file.exists() {
+            if let Some(dir) = file.parent() {
+                fs::create_dir_all(dir)?;
+            }
+            fs::write(file, id).with_context(|| file.display().to_string())?;
+        }
+        Ok(())
+    }
+
+    /// The sealing key, created on first use. Missing when it is only
+    /// read: [`SealKeyMissing`].
     fn key(&self, create: bool) -> Result<[u8; 32]> {
         let entry = self.key_entry()?;
         let text = match entry.get_password() {
@@ -209,6 +229,7 @@ impl System {
                 entry.set_password(&text)?;
                 text
             }
+            Err(keyring::Error::NoEntry) => return Err(SealKeyMissing.into()),
             Err(e) => return Err(e.into()),
         };
         let bytes = base64::engine::general_purpose::STANDARD.decode(text.trim())?;
@@ -246,6 +267,8 @@ impl Store for System {
     /// access denied, any error) the computer's secret never reaches the
     /// kit.
     fn protect(&self, blob: &str) -> Result<String> {
+        self.keep_seal_id()
+            .context("sealing key: its name in the kit")?;
         let key = self
             .key(true)
             .context("sealing key in the Keychain or the Secret Service")?;
@@ -841,16 +864,39 @@ fn save_login(kit: &Kit, f: &Files, store: &dyn Store) -> Result<()> {
         })
     });
     // This computer's secrets opened before anything is written: a file
-    // sealed elsewhere (another computer's, its key not here) changes
-    // nothing, neither the kit's copy nor the store.
-    let to_restore = to_restore
-        .into_iter()
-        .map(|mut o| {
-            o.blob = o.blob.as_deref().map(|b| store.unprotect(b)).transpose()?;
-            Ok(o)
-        })
-        .collect::<Result<Vec<_>>>()
-        .context("this computer's own Antigravity sign-in cannot be opened, nothing changed")?;
+    // sealed elsewhere (a wrong key, an altered file) changes nothing,
+    // neither the kit's copy nor the store. A sealing key that is gone for
+    // good ([`SealKeyMissing`]) would block every save for ever: those
+    // secrets are dropped with a warning, what agy left in their place
+    // leaves the store, and the kit's sign-in is saved (PORT-V6-06).
+    let mut opened = Vec::new();
+    let mut lost = Vec::new();
+    for mut o in to_restore {
+        match o.blob.as_deref().map(|b| store.unprotect(b)).transpose() {
+            Ok(blob) => {
+                o.blob = blob;
+                opened.push(o);
+            }
+            Err(e) if e.downcast_ref::<SealKeyMissing>().is_some() => lost.push(o.target),
+            Err(e) => {
+                return Err(e.context(
+                    "this computer's own Antigravity sign-in cannot be opened, nothing changed",
+                ))
+            }
+        }
+    }
+    if !lost.is_empty() {
+        crate::log::warn(&format!(
+            "antigravity keyring: {SealKeyMissing}: this computer's own sign-in ({}) cannot be put back; the kit's sign-in is saved and the pending file dropped",
+            lost.join(", ")
+        ));
+        for t in lost {
+            if now.iter().any(|c| c.target == t) && !to_delete.contains(&t) {
+                to_delete.push(t);
+            }
+        }
+    }
+    let to_restore = opened;
     // The kit's copy first; the system is cleaned only once it is written.
     save_file(&f.store, &keep)?;
     for t in to_delete {
@@ -900,6 +946,16 @@ pub fn save_after_run_with(kit: &Kit, store: &dyn Store) -> Result<()> {
 /// Something still to save (an agy run that did not end cleanly).
 pub fn pending(kit: &Kit) -> bool {
     files(kit).seen.exists()
+}
+
+/// Which pending run: the latest change of its "before" file and of its
+/// "starting" mark (a new agy run touches the mark), `None` when nothing
+/// is pending. The watcher's retries are counted per value (BUG-V6-17).
+pub fn pending_stamp(kit: &Kit) -> Option<std::time::SystemTime> {
+    let f = files(kit);
+    let changed = |p: &Path| fs::metadata(p).and_then(|m| m.modified()).ok();
+    let seen = changed(&f.seen)?;
+    Some(changed(&f.starting).map_or(seen, |s| s.max(seen)))
 }
 
 /// Before agy starts: the kit's login into the system's store.

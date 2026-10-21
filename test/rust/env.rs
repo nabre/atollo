@@ -293,8 +293,11 @@ fn settings_override_and_add() {
     let env = KitEnv::build(&kit, &s, "fr", &host());
     assert_eq!(env.get("HTTPS_PROXY"), Some("http://corp:3128"));
     assert_eq!(env.get("ATOLLO_ALLOW_LAN"), Some("1"));
-    assert_eq!(env.get("GEMINI_API_KEY"), Some("abc"));
     assert_eq!(env.get("ATOLLO_LANG"), Some("fr"));
+    // The Gemini key reaches Antigravity only (`agents::launch_env`), never
+    // every program of the kit (SEC-V6-02).
+    assert_eq!(env.get("GEMINI_API_KEY"), None);
+    assert!(!env.get(SETTINGS_VARS).unwrap().contains("GEMINI"));
 }
 
 #[test]
@@ -387,6 +390,8 @@ fn print_env_and_debug_mask_secrets() {
         ..Settings::default()
     };
     let mut env = KitEnv::build(&kit, &s, "en", &host());
+    // An agent's environment (`agents::launch_env`): its secrets too.
+    env.set("GEMINI_API_KEY", "AIzaSECRET");
     env.set("GH_TOKEN", "ghp_SECRET");
     env.set("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-SECRET");
     let mut out = Vec::new();

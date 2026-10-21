@@ -60,6 +60,9 @@ pub async fn eject_run<R: Runtime>(
 ) -> CmdResult<OpenNow> {
     ensure_main(&webview)?;
     use tauri::Manager;
+    // First: the agents' background alignments and saves stop now, before
+    // the consoles and agents they react to are ended (BUG-V6-15).
+    state.closing.begin();
     state.setup.cancel(&setup_notify(app.clone()));
     if let Some(r) = app.try_state::<Arc<Runner>>() {
         r.stop_all();
@@ -78,6 +81,7 @@ pub async fn eject_run<R: Runtime>(
     );
     let handle = app.clone();
     let services = Arc::clone(&state.services);
+    let closing = state.closing.clone();
     tauri::async_runtime::spawn_blocking(move || {
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
@@ -100,6 +104,11 @@ pub async fn eject_run<R: Runtime>(
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
         std::thread::sleep(std::time::Duration::from_millis(500));
+        // An alignment or a save started before the flag was raised ends
+        // before the drive is said to be free.
+        if !closing.wait_idle(std::time::Duration::from_secs(60)) {
+            crate::log::warn("eject: an agents' alignment still running after 60 s");
+        }
         if let Err(e) = crate::agents::keyring::save_after_run(&kit) {
             crate::log::warn(&format!("eject, antigravity login: {e:#}"));
         }

@@ -47,22 +47,28 @@ fn kit_env(kit: &Kit) -> KitEnv {
     )
 }
 
-/// With the file, `CLAUDE_CODE_OAUTH_TOKEN` in the kit's environment, so
-/// in every program of the kit (terminals, editor, the Agents page);
-/// without it (or after "Esci") nothing. Never in `Atollo env` nor in
-/// `KitEnv`'s `Debug`.
+/// With the file, `CLAUDE_CODE_OAUTH_TOKEN` in Claude Code's environment
+/// only (`agents::launch_env`): never in the kit's, which every program of
+/// the kit gets (SEC-V6-02); without it (or after "Esci") nothing. Never in
+/// `Atollo env` nor in `KitEnv`'s `Debug`.
 #[test]
 fn environment_with_and_without_token() {
     let tmp = TempDir::new("claude-token");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
-    assert_eq!(kit_env(&kit).get(VAR), None);
+    let claude_env = |kit: &Kit| crate::agents::launch_env(kit, &kit_env(kit), "claude");
+    assert_eq!(claude_env(&kit).get(VAR), None);
     assert_eq!(read(&kit), None);
 
     assert!(save(&kit, "not a token").is_err());
     save(&kit, &format!("  {}\n", sample())).unwrap();
     assert_eq!(read(&kit), Some(sample()));
-    let env = kit_env(&kit);
+    assert_eq!(kit_env(&kit).get(VAR), None, "not in the kit's environment");
+    for other in ["codex", "antigravity"] {
+        let env = crate::agents::launch_env(&kit, &kit_env(&kit), other);
+        assert_eq!(env.get(VAR), None, "{other}");
+    }
+    let env = claude_env(&kit);
     assert_eq!(env.get(VAR), Some(sample().as_str()));
     let mut printed = Vec::new();
     crate::cli::print_env(&env, &mut printed).unwrap();
@@ -74,7 +80,7 @@ fn environment_with_and_without_token() {
 
     // A file edited by hand into something else is ignored.
     std::fs::write(path(&kit), "garbage").unwrap();
-    assert_eq!(kit_env(&kit).get(VAR), None);
+    assert_eq!(claude_env(&kit).get(VAR), None);
     let mut other = KitEnv::default();
     apply_in(&kit.data(), &mut other);
     assert_eq!(other.get(VAR), None);
@@ -83,7 +89,7 @@ fn environment_with_and_without_token() {
     remove(&kit).unwrap();
     assert!(!path(&kit).exists());
     remove(&kit).unwrap();
-    assert_eq!(kit_env(&kit).get(VAR), None);
+    assert_eq!(claude_env(&kit).get(VAR), None);
 }
 
 #[cfg(unix)]

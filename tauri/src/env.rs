@@ -847,7 +847,8 @@ impl KitEnv {
         let sep_str = if is_win { ";" } else { ":" };
         env.set("PATH", path.join(sep_str));
 
-        // Settings (replace data\proxy.cmd, _env.cmd:270-273)
+        // Settings (replace data\proxy.cmd, _env.cmd:270-273). The Gemini
+        // key is not here: only the agents get it (`agents::launch_env`).
         let net = &settings.network;
         let mut from_settings: Vec<&str> = Vec::new();
         for (name, value) in [
@@ -855,7 +856,6 @@ impl KitEnv {
             ("HTTP_PROXY", &net.http_proxy),
             ("NO_PROXY", &net.no_proxy),
             ("NODE_EXTRA_CA_CERTS", &net.extra_ca_certs),
-            ("GEMINI_API_KEY", &settings.gemini_api_key),
             ("ATOLLO_LANG", &settings.lang),
         ] {
             if let Some(value) = value.as_deref().filter(|v| !v.is_empty()) {
@@ -881,9 +881,10 @@ impl KitEnv {
         if !from_settings.is_empty() {
             env.set(SETTINGS_VARS, from_settings.join(";"));
         }
-        // Claude Code's token saved in the kit (D-115): every program of
-        // the kit gets it, terminals and editor too.
-        crate::agents::claude_token::apply_in(&data, &mut env);
+        // Claude Code's token saved in the kit (D-115) is not here either:
+        // projects' actions, scripts, terminals and the editor never see
+        // it, only the agents do (`agents::launch_env`, the kit's `claude`
+        // and `agy` wrappers).
         // The versions preferred for the kit instead of the default folders.
         crate::versions::apply_kit_choice(kit, &mut env);
         env
