@@ -764,6 +764,15 @@ pub fn reload_args(conf: &Path, admin: &Path) -> Vec<OsString> {
     args
 }
 
+/// `caddy validate` of the `Caddyfile` `conf`: adapted and provisioned,
+/// nothing started. After a failed reload it tells a configuration Caddy
+/// refuses from an instance that does not answer (BUG-V6-11).
+pub fn validate_args(conf: &Path) -> Vec<OsString> {
+    let mut args = run_args(conf);
+    args[0] = "validate".into();
+    args
+}
+
 /// The reason of a failed `caddy reload` from its `stderr`, for the log:
 /// the last non-empty lines (Caddy ends with the error, an adapt error
 /// names the Caddyfile's line), at most 2000 characters.
