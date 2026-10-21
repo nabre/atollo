@@ -14,7 +14,7 @@ import {
 import { locale, t } from "../i18n";
 import { ActionButton } from "../common";
 import { Badge } from "../tags";
-import { Codicon, codicon } from "../workbench";
+import { Codicon, codicon, Meter } from "../workbench";
 
 /** Read again every 2 minutes, as often as the app asks the servers. */
 const EVERY = 2 * 60 * 1000;
@@ -66,11 +66,11 @@ export function useStats(): {
   };
 }
 
-const BAR: Record<Level, string> = {
-  none: "bg-vsc-desc",
-  ok: "bg-vsc-success",
-  warning: "bg-vsc-warning",
-  critical: "bg-vsc-error",
+const TONE: Record<Level, "none" | "ok" | "warning" | "error"> = {
+  none: "none",
+  ok: "ok",
+  warning: "warning",
+  critical: "error",
 };
 
 const count = (n: number) =>
@@ -109,17 +109,7 @@ function LimitBar({ w }: { w: LimitWindow }) {
           {w.percent === null ? "—" : `${String(p)}%`}
         </span>
       </div>
-      <span
-        role="meter"
-        aria-label={w.label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={p}
-        aria-valuetext={t("{0}% usato", String(p))}
-        className="block h-1.5 overflow-hidden rounded-full bg-vsc-border"
-      >
-        <span className={`block h-full rounded-full ${BAR[w.level]}`} style={{ width: `${String(p)}%` }} />
-      </span>
+      <Meter value={p} label={w.label} valueText={t("{0}% usato", String(p))} tone={TONE[w.level]} />
       <p className="h-4 text-[11px] text-vsc-desc">{w.resetsAt !== null && t("si azzera {0}", relative(w.resetsAt))}</p>
     </li>
   );

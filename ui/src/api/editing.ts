@@ -69,7 +69,7 @@ export function projectExtensions(project: string, added: string[], removed: str
   return act("project_extensions", { project, added, removed });
 }
 
-const SAMPLE_MATRIX: ExtensionsMatrix = {
+export const SAMPLE_MATRIX: ExtensionsMatrix = {
   languages: ["JavaScript", "TypeScript", "HTML", "CSS", "Python"],
   tools: [["deno", "Deno"]],
   extensions: [
