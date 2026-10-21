@@ -447,12 +447,15 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
         install::conda::sweep(ctx.kit);
         return Ok(results);
     }
-    let choice = match Choice::read(ctx.kit, catalog) {
-        Some(choice) => choice,
-        None => {
-            let choice = Choice::defaults(catalog);
-            choice.write(ctx.kit, catalog)?;
-            choice
+    let choice = {
+        let _one = super::catalog::choice_lock();
+        match Choice::read(ctx.kit, catalog) {
+            Some(choice) => choice,
+            None => {
+                let choice = Choice::defaults(catalog);
+                choice.write(ctx.kit, catalog)?;
+                choice
+            }
         }
     };
     let plan = plan(ctx, catalog, &choice, opts)?;
