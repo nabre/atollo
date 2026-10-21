@@ -11,16 +11,18 @@ fn unsafe_names_are_refused() {
         Some(base.join("a").join("b.txt"))
     );
     assert_eq!(safe_join(base, "./a"), Some(base.join("a")));
-    for bad in [
-        "../evil",
-        "a/../../evil",
-        "/abs",
-        r"C:\abs",
-        "C:rel",
-        r"\\server\share\x",
-        "",
-    ] {
+    for bad in ["../evil", "a/../../evil", "/abs", r"\\server\share\x", ""] {
         assert_eq!(safe_join(base, bad), None, "{bad}");
+    }
+    // A drive or a stream on Windows; an ordinary character elsewhere,
+    // always inside the base (PORT-V6-05).
+    for colon in [r"C:\abs", "C:rel", "file.txt:stream", "man/foo:bar.1"] {
+        if cfg!(windows) {
+            assert_eq!(safe_join(base, colon), None, "{colon}");
+        } else {
+            let joined = safe_join(base, colon).unwrap();
+            assert!(joined.starts_with(base), "{colon}");
+        }
     }
 }
 

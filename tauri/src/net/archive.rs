@@ -54,9 +54,12 @@ pub enum Inner {
 
 /// `base` + an archive entry name, or `None` if the name would escape `base`.
 /// Splits on both `'/'` and `'\\'` so paths work identically on Windows,
-/// macOS, and Linux without creating literal backslashes on Unix.
+/// macOS, and Linux without creating literal backslashes on Unix. A `:` is
+/// refused on Windows only (a drive, `C:rel`, or an alternate data stream);
+/// on macOS and Linux it is an ordinary character of a file name, which
+/// tar archives for those systems may have.
 pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
-    if name.starts_with(['/', '\\']) || name.contains(':') {
+    if name.starts_with(['/', '\\']) || (cfg!(windows) && name.contains(':')) {
         return None;
     }
     let mut out = base.to_path_buf();
