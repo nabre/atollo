@@ -2099,11 +2099,6 @@
     "fr": "En cours sur {0}",
     "de": "Läuft auf {0}"
   },
-  "In memoria: {0}": {
-    "en": "In memory: {0}",
-    "fr": "En mémoire : {0}",
-    "de": "Im Speicher: {0}"
-  },
   "Fermo ({0})": {
     "en": "Stopped ({0})",
     "fr": "Arrêté ({0})",

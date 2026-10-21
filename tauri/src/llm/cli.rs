@@ -172,18 +172,12 @@ pub fn stop(kit: &Kit, lang: &str, out: &mut dyn Write) -> Result<()> {
     Ok(())
 }
 
-/// `llm status`: whether it answers, and the models in memory.
+/// `llm status`: whether a server of the kit answers.
 pub fn status(kit: &Kit, lang: &str, out: &mut dyn Write) -> Result<()> {
-    let (port, up, loaded) = super::service::probe(kit);
+    let (port, up) = super::service::probe(kit);
     let url = super::service::url_of(port);
     if up {
         writeln!(out, "  √ {}", t(lang, "In esecuzione su {0}", &[&url]))?;
-        let loaded = if loaded.is_empty() {
-            "-".to_owned()
-        } else {
-            loaded.join(", ")
-        };
-        writeln!(out, "  · {}", t(lang, "In memoria: {0}", &[&loaded]))?;
     } else {
         writeln!(out, "  · {}", t(lang, "Fermo ({0})", &[&url]))?;
     }

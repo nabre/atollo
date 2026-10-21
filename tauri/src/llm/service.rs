@@ -410,32 +410,33 @@ impl Llm {
     }
 }
 
-/// A server of this kit on the saved port: whether it answers, and the
-/// models it has in memory (`llm status` of the command line, which does
-/// not own it).
-pub fn probe(kit: &Kit) -> (u16, bool, Vec<String>) {
-    let port = settings::load(kit).port.unwrap_or(*settings::PORTS.start());
-    if !responds(port) {
-        return (port, false, Vec::new());
-    }
-    let loaded = settings::key(kit)
-        .and_then(|k| api(port, &k, "/models"))
-        .map(|m| loaded_in(&m))
-        .unwrap_or_default();
-    (port, true, loaded)
+/// Whether a server of this kit answers on the saved port (`llm status` of
+/// the command line, which did not start it). The key is never sent: what
+/// listens there may be another program; something answers there and a
+/// `llama-server` of this kit runs.
+pub fn probe(kit: &Kit) -> (u16, bool) {
+    let port = settings::load(kit)
+        .port
+        .unwrap_or(*settings::PORTS.start());
+    (port, responds(port) && !kit_servers(kit).is_empty())
+}
+
+/// The `llama-server` processes of this kit, whoever started them.
+fn kit_servers(kit: &Kit) -> Vec<u32> {
+    let dir = kit_path(kit, SERVER)
+        .parent()
+        .map(std::path::Path::to_path_buf)
+        .unwrap_or_else(|| kit.apps().join("llama"));
+    crate::os::processes::running_under(&dir)
+        .iter()
+        .map(|p| p.pid)
+        .collect()
 }
 
 /// Ends every `llama-server` of this kit, whoever started it (`llm stop`
 /// of the command line); how many.
 pub fn stop_everywhere(kit: &Kit) -> usize {
-    let dir = kit_path(kit, SERVER)
-        .parent()
-        .map(std::path::Path::to_path_buf)
-        .unwrap_or_else(|| kit.apps().join("llama"));
-    let pids: Vec<u32> = crate::os::processes::running_under(&dir)
-        .iter()
-        .map(|p| p.pid)
-        .collect();
+    let pids = kit_servers(kit);
     crate::os::sessions::stop(&pids);
     pids.len()
 }
