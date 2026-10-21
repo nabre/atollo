@@ -20,6 +20,7 @@ use crate::kit::{Kit, Os};
 use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
+use crate::servers::host_label;
 
 /// `C:\a\b` as Apache wants it: `C:/a/b`.
 pub fn fwd(p: &Path) -> String {
@@ -345,7 +346,7 @@ pub fn project_conf_with_site(
     };
     let mut server_aliases: Vec<String> = Vec::new();
     if let Some(p) = project.filter(|p| !p.is_empty()) {
-        let def = format!("{p}.localhost");
+        let def = format!("{}.localhost", host_label(p));
         if !server_aliases.contains(&def) {
             server_aliases.push(def);
         }
