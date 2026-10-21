@@ -23,7 +23,7 @@ import {
   type ProjectInfo,
   type RunInfo,
 } from "../api";
-import { AgentButton } from "../agents";
+import { AgentButtons } from "../agents";
 import { useFrameworks } from "../frameworks";
 import { GithubRepositories } from "../github";
 import type { GuideTopicId } from "../guide";
@@ -346,7 +346,7 @@ export function ProjectsPage({
                             run(`terminal:${p.id}`, () => terminalOpen(p.id));
                           }}
                         />
-                        <AgentButton agents={agents} project={p.id} preferred={p.settings.agent} />
+                        <AgentButtons agents={agents} project={p.id} />
                       </>
                     }
                     decorations={<ProjectState p={p} runs={runs} />}
