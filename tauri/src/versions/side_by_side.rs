@@ -54,6 +54,26 @@ fn fwd(p: &Path) -> String {
     p.display().to_string().replace('\\', "/")
 }
 
+/// `text` as a `.properties` value Gradle reads in ISO-8859-1: every
+/// character outside ASCII as `\uXXXX` (UTF-16), so `C:/Users/Müller` stays
+/// that; a `\` (none in [`fwd`]'s paths) doubled.
+fn properties_escape(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        if c == '\\' {
+            out.push_str("\\\\");
+        } else if c.is_ascii() {
+            out.push(c);
+        } else {
+            let mut units = [0u16; 2];
+            for u in c.encode_utf16(&mut units) {
+                out.push_str(&format!("\\u{u:04X}"));
+            }
+        }
+    }
+    out
+}
+
 /// `gradle.properties` with the kit's JDKs as the only local ones (the
 /// user's other lines stay).
 pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
@@ -67,7 +87,7 @@ pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
         .collect();
     if !jdks.is_empty() {
         out.push("# Atollo: the kit's JDKs for toolchains, none of the PC's".into());
-        let list: Vec<String> = jdks.iter().map(|p| fwd(p)).collect();
+        let list: Vec<String> = jdks.iter().map(|p| properties_escape(&fwd(p))).collect();
         out.push(format!("{GRADLE_PATHS}={}", list.join(",")));
         out.push(format!("{GRADLE_DETECT}=false"));
     }
@@ -76,16 +96,33 @@ pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
     text
 }
 
+/// `text` as XML character data: a kit in `D:\R&D` is still a toolchains
+/// file Maven can read.
+fn xml_escape(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&apos;"),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 /// Maven's toolchains: one JDK per line on disk.
 pub fn maven_toolchains(jdks: &[(String, PathBuf)]) -> String {
     let mut xml = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- {KIT_MARK}: written by the kit, the JDKs it has; a file without this line is left alone. -->\n<toolchains>\n"
     );
     for (line, dir) in jdks {
-        let version = line.split('.').next().unwrap_or(line);
+        let version = xml_escape(line.split('.').next().unwrap_or(line));
         xml.push_str(&format!(
             "  <toolchain>\n    <type>jdk</type>\n    <provides><version>{version}</version><vendor>temurin</vendor></provides>\n    <configuration><jdkHome>{}</jdkHome></configuration>\n  </toolchain>\n",
-            dir.display()
+            xml_escape(&dir.display().to_string())
         ));
     }
     xml.push_str("</toolchains>\n");
@@ -137,13 +174,31 @@ fn is_dir_link(path: &Path) -> bool {
 }
 
 #[cfg(windows)]
-fn dir_link_target_ok(path: &Path) -> bool {
-    junction::get_target(path).is_ok_and(|t| t.is_dir())
+fn dir_link_target(path: &Path) -> Option<PathBuf> {
+    junction::get_target(path).ok()
 }
 
 #[cfg(not(windows))]
-fn dir_link_target_ok(path: &Path) -> bool {
-    fs::read_link(path).is_ok_and(|t| t.is_dir())
+fn dir_link_target(path: &Path) -> Option<PathBuf> {
+    let target = fs::read_link(path).ok()?;
+    Some(match path.parent() {
+        Some(dir) if target.is_relative() => dir.join(target),
+        _ => target,
+    })
+}
+
+/// A link to a folder there, inside one of `roots`: a kit copied (not
+/// moved) elsewhere keeps links to the original kit's folders, which go
+/// with it, so they are made again.
+fn dir_link_target_ok(path: &Path, roots: &[PathBuf]) -> bool {
+    let Some(target) = dir_link_target(path).and_then(|t| fs::canonicalize(t).ok()) else {
+        return false;
+    };
+    target.is_dir()
+        && roots
+            .iter()
+            .filter_map(|r| fs::canonicalize(r).ok())
+            .any(|r| target.starts_with(r))
 }
 
 #[cfg(windows)]
@@ -266,7 +321,8 @@ fn copy_source(path: &Path, mark: &str) -> PathBuf {
 }
 
 /// Each root gets, as junctions (Windows) or symlinks (Unix), the versions the
-/// other roots have of their own; links to versions gone are removed. On a
+/// other roots have of their own; links to versions gone, or outside
+/// `roots` (another copy of the kit), are made again or removed. On a
 /// Unix disk without links they are copies, removed the same way.
 pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
     for root in roots {
@@ -277,7 +333,7 @@ pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
                 if is_staged(&path) {
                     // A copy interrupted (the app closed): made again below.
                     let _ = fs::remove_dir_all(&path);
-                } else if is_dir_link(&path) && !dir_link_target_ok(&path) {
+                } else if is_dir_link(&path) && !dir_link_target_ok(&path, roots) {
                     remove_dir_link(&path);
                 } else if !is_dir_link(&path) && stale_copy(&path) {
                     let _ = fs::remove_dir_all(&path);

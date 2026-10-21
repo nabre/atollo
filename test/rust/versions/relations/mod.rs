@@ -19,6 +19,23 @@ fn windows_runtimes_only_on_windows() {
     }
 }
 
+/// A project on `>=3.12.4` with the kit's 3.12.3: the full version says no,
+/// whatever later patches of the line would say; the line alone decides
+/// only when the version is unknown.
+#[test]
+fn a_known_version_outside_the_range_is_not_admitted() {
+    let range = Range::parse(">=3.12.4", super::super::ranges::Bare::Exact).unwrap();
+    let have = |version: Option<&str>| Have {
+        installed: true,
+        lines: vec![("3.12".into(), version.map(str::to_owned))],
+        kit: Some("3.12".into()),
+        offered: Vec::new(),
+    };
+    assert!(!admits(&range, &have(Some("3.12.3")), "3.12"));
+    assert!(admits(&range, &have(Some("3.12.7")), "3.12"));
+    assert!(admits(&range, &have(None), "3.12"), "unknown: any patch");
+}
+
 /// `id` installed at `version`: its key files, in the folder of its line.
 fn fake(kit: &Kit, id: &str, version: &str) {
     let c = Catalog::get().find(id).unwrap();

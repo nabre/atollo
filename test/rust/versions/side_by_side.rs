@@ -22,6 +22,32 @@ fn gradle_finds_the_kit_jdks_only() {
     assert!(xml.contains("<version>11</version>") && xml.contains(KIT_MARK));
 }
 
+/// Gradle reads `gradle.properties` in ISO-8859-1: a JDK under
+/// `C:\Users\Müller` is written with `\u` escapes, the file stays ASCII.
+#[test]
+fn gradle_paths_outside_ascii_are_escaped() {
+    let jdks = [PathBuf::from(r"C:\Users\Müller\kit\java\21.0")];
+    let out = gradle_properties("", &jdks);
+    assert!(out.contains(r"paths=C:/Users/M\u00FCller/kit/java/21.0"));
+    assert!(out.is_ascii());
+    assert_eq!(gradle_properties(&out, &jdks), out, "stable");
+    // Outside the BMP: a UTF-16 pair, as Java reads it.
+    assert_eq!(properties_escape("a😀"), r"a\uD83D\uDE00");
+}
+
+/// A kit in `D:\R&D`: the toolchains file is still well-formed XML.
+#[test]
+fn maven_toolchains_escape_the_jdk_folder() {
+    let xml = maven_toolchains(&[(
+        "21.0".into(),
+        PathBuf::from(r#"D:\R&D <a> "b" 'c'\java\21.0"#),
+    )]);
+    assert!(xml.contains(
+        r"<jdkHome>D:\R&amp;D &lt;a&gt; &quot;b&quot; &apos;c&apos;\java\21.0</jdkHome>"
+    ));
+    assert!(!xml.contains("R&D"));
+}
+
 #[test]
 fn dotnet_roots_share_their_versions() {
     let tmp = TempDir::new("dotnet-sbs");
@@ -47,6 +73,31 @@ fn dotnet_roots_share_their_versions() {
     link_dotnet(std::slice::from_ref(&eight)).unwrap();
     assert!(!join_rel(&eight, "shared/Microsoft.NETCore.App/10.0.3").exists());
     assert!(join_rel(&eight, "sdk/8.0.415").is_dir());
+}
+
+/// A kit copied (not moved): its links still name the original kit's
+/// folders, there and whole; they are made again inside the copy.
+#[test]
+fn dotnet_links_of_a_copied_kit_point_inside_it() {
+    let tmp = TempDir::new("dotnet-copied-kit");
+    let original = join_rel(&tmp.0, "a/8.0/sdk/8.0.415");
+    fs::create_dir_all(&original).unwrap();
+    let ten = join_rel(&tmp.0, "b/10.0");
+    let eight = join_rel(&tmp.0, "b/8.0");
+    fs::create_dir_all(join_rel(&eight, "sdk/8.0.415")).unwrap();
+    fs::create_dir_all(join_rel(&ten, "sdk")).unwrap();
+    let link = join_rel(&ten, "sdk/8.0.415");
+    create_dir_link(&original, &link).unwrap();
+    assert!(!dir_link_target_ok(&link, &[ten.clone(), eight.clone()]));
+
+    link_dotnet(&[ten.clone(), eight.clone()]).unwrap();
+    let target = fs::canonicalize(dir_link_target(&link).unwrap()).unwrap();
+    assert_eq!(
+        target,
+        fs::canonicalize(join_rel(&eight, "sdk/8.0.415")).unwrap()
+    );
+    assert!(dir_link_target_ok(&link, &[ten.clone(), eight.clone()]));
+    assert!(original.is_dir(), "the original kit is left alone");
 }
 
 /// On a disk without links (exFAT, FAT) the version is copied, marked, and
