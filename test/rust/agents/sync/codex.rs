@@ -37,8 +37,7 @@ fn user_text_and_keys_kept() {
     assert!(text.contains("model = \"o9\""));
     assert!(text.contains("[mcp_servers.\"kit\"]"));
     assert!(!text.contains("command = \"kit\""), "hand-made table wins");
-    let app = p.projects.join("app").display().to_string().to_lowercase();
-    assert!(text.contains(&format!("[projects.'{app}']")));
+    assert!(!text.contains("[projects."), "no folder trusted in advance");
     // Stable: a second run changes nothing.
     sync_config(&p, &servers, &mut r).unwrap();
     assert_eq!(
@@ -47,31 +46,25 @@ fn user_text_and_keys_kept() {
     );
 }
 
-/// PORT-V6-02: the trusted folder's key is lower case only on Windows.
+/// SEC-V6-02: the block of trusted folders of earlier versions is dropped;
+/// a table of the user's (or of a launch) stays.
 #[test]
-fn trusted_keys_keep_their_case_off_windows() {
-    use crate::kit::{tests::TempDir, Arch, Kit, Os, Target};
-    let tmp = TempDir::new("codex-case");
-    for os in [Os::Linux, Os::Win32] {
-        let kit = Kit::at_target(
-            tmp.0.join(format!("Kit-{os:?}")),
-            Target::new(os, Arch::X64),
-        );
-        let p = Paths::of(&kit);
-        fs::create_dir_all(p.projects.join("App")).unwrap();
-        sync_config(&p, &Servers::new(), &mut Report::default()).unwrap();
-        let text = fs::read_to_string(p.codex.join("config.toml")).unwrap();
-        let app = p.projects.join("App").display().to_string();
-        let key = if os == Os::Win32 {
-            app.to_lowercase()
-        } else {
-            app
-        };
-        assert!(
-            text.contains(&format!("[projects.'{key}']")),
-            "{os:?}: {text}"
-        );
-    }
+fn old_trust_block_dropped_user_tables_kept() {
+    let (_t, _kit, p) = kit("codex-old-trust");
+    fs::create_dir_all(&p.codex).unwrap();
+    let mine = "[projects.'c:\\mine']\ntrust_level = \"untrusted\"";
+    fs::write(
+        p.codex.join("config.toml"),
+        format!("{mine}\n\n{TRUST_BEGIN}\n[projects.'c:\\kit\\projects']\ntrust_level = \"trusted\"\n{TRUST_END}\n"),
+    )
+    .unwrap();
+    sync_config(&p, &Servers::new(), &mut Report::default()).unwrap();
+    let text = fs::read_to_string(p.codex.join("config.toml")).unwrap();
+    assert!(text.contains(mine), "{text}");
+    assert!(
+        !text.contains(TRUST_BEGIN) && !text.contains("kit\\projects"),
+        "{text}"
+    );
 }
 
 #[test]
