@@ -58,11 +58,16 @@ fn catalog_is_valid() {
         assert!(c.group == Group::Languages && !c.def, "{id}");
     }
     assert_eq!(catalog.find("claude").unwrap().needs, ["git"]);
-    // Only the parts of the app have a fixed version, and all of them do.
+    // Only the parts of the app and the kit's own mongo-express build
+    // (D-147) have a fixed version, and all of them do; mongo-express's
+    // SHA-256 is pinned once its release is published.
     for c in catalog.all() {
         let app = c.group == Group::App;
-        assert_eq!(c.version.is_some(), app, "{}: version", c.id);
-        assert_eq!(c.sha256.is_some(), app, "{}: sha256", c.id);
+        let pinned = app || c.id == "mongo-express";
+        assert_eq!(c.version.is_some(), pinned, "{}: version", c.id);
+        if c.id != "mongo-express" {
+            assert_eq!(c.sha256.is_some(), app, "{}: sha256", c.id);
+        }
     }
     assert_eq!(
         catalog.find("vscodium-server").map(|c| c.group),

@@ -276,6 +276,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,
         "phpmyadmin" => &db::PhpMyAdmin,
+        "mongo-express" => &db::MongoExpress,
         _ => return None,
     })
 }

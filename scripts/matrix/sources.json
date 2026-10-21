@@ -33,6 +33,7 @@
     "mysql": { "windows": "cdn.mysql.com, 8.4 and 9.7 pinned in sha256ByLine", "unix": "cdn.mysql.com, 8.4 and 9.7 pinned in sha256ByLine" },
     "mongodb": { "windows": "MongoDB builds + mongosh + Database Tools", "unix": "macOS: MongoDB builds; Linux: server from conda-forge; the vendor's mongosh and Database Tools", "notRelocatable": ["linux-x64", "linux-arm64"] },
     "phpmyadmin": { "windows": "phpmyadmin.net", "unix": "phpmyadmin.net" },
+    "mongo-express": { "windows": "GitHub nabre/atollo, the kit's build (pure JavaScript)", "unix": "GitHub nabre/atollo, the kit's build (pure JavaScript)" },
     "sqlite": { "windows": "sqlite.org (x64 when there is no arm64 zip)", "unix": "sqlite.org; linux-arm64: conda-forge", "notRelocatable": ["linux-arm64"] },
     "pwsh": { "windows": "GitHub PowerShell/PowerShell", "unix": "GitHub PowerShell/PowerShell" },
     "vscodium-server": { "windows": "VSCodium reh-web, pinned version (x64 on ARM64 too)", "unix": "VSCodium reh-web, pinned version per target" }

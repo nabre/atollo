@@ -29,6 +29,20 @@ fn php_header_version() {
     assert_eq!(header_version("<?php echo 1;"), None);
 }
 
+/// mongo-express's check (D-147): the version of its package.json.
+#[test]
+fn package_json_version() {
+    let tmp = TempDir::new("checkup-package");
+    let file = tmp.0.join("package.json");
+    std::fs::write(&file, r#"{"name":"mongo-express","version":"1.1.0-rc-4"}"#).unwrap();
+    assert_eq!(package_version(&file).unwrap(), "1.1.0-rc-4");
+    std::fs::write(&file, r#"{"name":"mongo-express"}"#).unwrap();
+    assert!(package_version(&file).is_err());
+    std::fs::write(&file, "not json").unwrap();
+    assert!(package_version(&file).is_err());
+    assert!(package_version(&tmp.0.join("none.json")).is_err());
+}
+
 /// `@` in the check program is the kit root, as in the key.
 #[test]
 fn check_program_at_the_kit_root() {
