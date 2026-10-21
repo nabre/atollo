@@ -86,10 +86,10 @@ function PageMap() {
       icon: codicon("database"),
       name: tr("Database", "Databases", "Bases de données", "Datenbanken"),
       text: tr(
-        "I server MySQL e MongoDB del kit: avvio, password, porte, versioni, phpMyAdmin.",
-        "The kit's MySQL and MongoDB servers: starting, passwords, ports, versions, phpMyAdmin.",
-        "Les serveurs MySQL et MongoDB du kit : démarrage, mots de passe, ports, versions, phpMyAdmin.",
-        "Die MySQL- und MongoDB-Server des Kits: Start, Passwörter, Ports, Versionen, phpMyAdmin.",
+        "I server MySQL e MongoDB del kit: avvio, password, porte, versioni, phpMyAdmin e mongo-express.",
+        "The kit's MySQL and MongoDB servers: starting, passwords, ports, versions, phpMyAdmin and mongo-express.",
+        "Les serveurs MySQL et MongoDB du kit : démarrage, mots de passe, ports, versions, phpMyAdmin et mongo-express.",
+        "Die MySQL- und MongoDB-Server des Kits: Start, Passwörter, Ports, Versionen, phpMyAdmin und mongo-express.",
       ),
       page: "databases",
       topic: "databases",
@@ -722,10 +722,10 @@ export const START: TopicTexts = {
             [
               tr("Database", "Databases", "Bases de données", "Datenbanken"),
               tr(
-                "MySQL, MongoDB, phpMyAdmin, SQLite.",
-                "MySQL, MongoDB, phpMyAdmin, SQLite.",
-                "MySQL, MongoDB, phpMyAdmin, SQLite.",
-                "MySQL, MongoDB, phpMyAdmin, SQLite.",
+                "MySQL, MongoDB, SQLite; nel browser phpMyAdmin e mongo-express.",
+                "MySQL, MongoDB, SQLite; in the browser phpMyAdmin and mongo-express.",
+                "MySQL, MongoDB, SQLite ; dans le navigateur phpMyAdmin et mongo-express.",
+                "MySQL, MongoDB, SQLite; im Browser phpMyAdmin und mongo-express.",
               ),
               tr(
                 "Solo se ti servono. MySQL si installa anche al primo avvio del server.",

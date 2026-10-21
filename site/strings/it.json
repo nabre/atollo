@@ -34,7 +34,7 @@
   "f2Title": "Linguaggi e strumenti su richiesta",
   "f2Text": "Più di 20 linguaggi e strumenti (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), scaricati quando servono e verificati con checksum SHA-256 o firma. Più versioni affiancate, una per progetto.",
   "f3Title": "Database e server web locali",
-  "f3Text": "MySQL con phpMyAdmin, MongoDB e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto; più versioni affiancate, ognuna con la sua porta. Caddy e Apache per i siti su indirizzi <code>.localhost</code>, su ogni sistema, da soli o in un server condiviso da più progetti. Una porta già occupata viene rifiutata, dicendo chi la tiene. Nessun servizio di sistema.",
+  "f3Text": "MySQL con phpMyAdmin, MongoDB con mongo-express e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto; più versioni affiancate, ognuna con la sua porta. Caddy e Apache per i siti su indirizzi <code>.localhost</code>, su ogni sistema, da soli o in un server condiviso da più progetti. Una porta già occupata viene rifiutata, dicendo chi la tiene. Nessun servizio di sistema.",
   "f4Title": "Tre agenti AI, una sola configurazione",
   "f4Text": "Claude Code, Codex e Antigravity: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in <code>data/agents</code> e <code>atollo sync</code> li allinea per tutti e tre. Limiti del piano e consumi di oggi e degli ultimi 7 giorni.",
   "f5Title": "Una cartella per sei sistemi",

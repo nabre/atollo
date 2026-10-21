@@ -190,10 +190,24 @@ export const TOOLS: TopicTexts = {
             [
               tr("Database", "Databases", "Bases de données", "Datenbanken"),
               tr(
-                "MySQL, MongoDB (più versioni), phpMyAdmin, SQLite.",
-                "MySQL, MongoDB (several versions), phpMyAdmin, SQLite.",
-                "MySQL, MongoDB (plusieurs versions), phpMyAdmin, SQLite.",
-                "MySQL, MongoDB (mehrere Versionen), phpMyAdmin, SQLite.",
+                "I server: MySQL e MongoDB (più versioni), SQLite.",
+                "The servers: MySQL and MongoDB (several versions), SQLite.",
+                "Les serveurs : MySQL et MongoDB (plusieurs versions), SQLite.",
+                "Die Server: MySQL und MongoDB (mehrere Versionen), SQLite.",
+              ),
+            ],
+            [
+              tr(
+                "Visualizzazione database",
+                "Database viewers",
+                "Visualisation des bases de données",
+                "Datenbank-Ansicht",
+              ),
+              tr(
+                "I database nel browser: phpMyAdmin per MySQL, mongo-express per MongoDB. Si aprono dalla pagina Database, che li installa al primo uso.",
+                "The databases in the browser: phpMyAdmin for MySQL, mongo-express for MongoDB. They open from the Databases page, which installs them the first time.",
+                "Les bases de données dans le navigateur : phpMyAdmin pour MySQL, mongo-express pour MongoDB. Elles s'ouvrent depuis la page Bases de données, qui les installe la première fois.",
+                "Die Datenbanken im Browser: phpMyAdmin für MySQL, mongo-express für MongoDB. Sie öffnen sich auf der Seite Datenbanken, die sie beim ersten Mal installiert.",
               ),
             ],
           ]}
