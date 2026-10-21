@@ -121,7 +121,7 @@ tauri\src\
                               D-140), data (folders and ports per version), access (passwords and databases
                               of the projects), backups (D-78), tools (login files), mysql (initialization,
                               my.cnf, libaio: D-110)
-    auth  browse  phpmyadmin  passwords and .env (D-74); read-only content (D-79); phpMyAdmin (D-107)
+    auth  browse  phpmyadmin  passwords and .env (D-74); read-only content (D-79); phpMyAdmin (D-107), mongo-express and web_admin (D-147)
   github\                     the kit's GitHub account (D-70): mod (sign-in, Git helper), repos (list, clone,
                               rename, deletion)
   net\                        network: mod (HTTPS, proxy and exceptions, GitHub API), ca (the PEM file of the
@@ -204,7 +204,7 @@ One file per page or area of the interface, with the same names as the files in 
 | `orphans.rs` | data without a project: list and "Link to…" (D-89) |
 | `frameworks.rs` | new project from a framework |
 | `github.rs` | GitHub account and repositories |
-| `databases.rs` | project databases, copies, `.env`, content, phpMyAdmin |
+| `databases.rs` | project databases, copies, `.env`, content, phpMyAdmin, mongo-express |
 | `services.rs` | the kit's database servers |
 | `servers.rs` | web server pools: list, profiles, start, stop, reload, linked project |
 | `terminals.rs` | Terminals page: list, saving, removal, opening, folder choice; the in-app terminal's sessions on macOS and Linux |

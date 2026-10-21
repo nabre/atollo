@@ -6,7 +6,7 @@ import { locale, t } from "../i18n";
 /** The kinds of tool, as the site's matrix (site/matrix.mjs, KINDS and
  * KIND_OF: a test keeps them equal). The catalog's groups are coarser:
  * "languages" holds almost everything. */
-export const KINDS = ["system", "agents", "languages", "tools", "web", "databases"] as const;
+export const KINDS = ["system", "agents", "languages", "tools", "web", "databases", "dbviewers"] as const;
 export type Kind = (typeof KINDS)[number];
 
 /** A component's kind when it is not its group's. */
@@ -23,6 +23,8 @@ export const KIND_OF: Record<string, Kind> = {
   tinytex: "tools",
   apache: "web",
   caddy: "web",
+  phpmyadmin: "dbviewers",
+  "mongo-express": "dbviewers",
 };
 export const KIND_OF_GROUP: Record<Group, Kind> = {
   required: "system",
@@ -58,6 +60,12 @@ export function groups(): { id: Kind; title: string; hint: string; has: (c: Comp
     databases: [
       t("Database"),
       t("Server avviati dalla pagina Database, solo su questo PC (127.0.0.1); i dati restano in data\\db."),
+    ],
+    dbviewers: [
+      t("Visualizzazione database"),
+      t(
+        "I database nel browser: phpMyAdmin per MySQL, mongo-express per MongoDB. Si aprono dalla pagina Database, che li installa al primo uso.",
+      ),
     ],
   };
   return KINDS.map((id) => ({

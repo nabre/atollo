@@ -136,6 +136,42 @@ describe("DatabasesPage", () => {
     expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: null, engine: "mysql" });
   });
 
+  // D-147: MongoDB's page opens mongo-express, on its version or another.
+  it("opens mongo-express on MongoDB", async () => {
+    const mongo: ServiceInfo = {
+      ...(STOPPED[1] as ServiceInfo),
+      line: "8.0",
+      lines: ["8.0", "7.0"],
+      others: [
+        {
+          line: "7.0",
+          state: "stopped",
+          port: 27018,
+          dataDir: "E:\\Atollo\\data\\db\\mongodb\\7.0",
+          log: "E:\\Atollo\\data\\app\\logs\\mongodb-7.0.log",
+          url: "mongodb://admin@127.0.0.1:27018/?authSource=admin",
+          message: null,
+        },
+      ],
+    };
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "services_list" || cmd === "db_admin_open") return Promise.resolve([STOPPED[0], mongo]);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<DatabasesPage />);
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: /^MongoDB/ }));
+    await flush();
+    expect(screen.queryByRole("button", { name: "Apri phpMyAdmin" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Apri mongo-express" }));
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: null, engine: "mongodb" });
+    // Stopped: the page shows its details, with the other versions.
+    fireEvent.click(screen.getByRole("button", { name: "mongo-express su 7.0" }));
+    await flush();
+    expect(invoke).toHaveBeenCalledWith("db_admin_open", { line: "7.0", engine: "mongodb" });
+  });
+
   it("browses the version chosen, each on its own port", async () => {
     const mongo: ServiceInfo = {
       ...(STOPPED[1] as ServiceInfo),

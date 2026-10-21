@@ -4,10 +4,11 @@
 //!
 //! - PHP's own server (`php -S`) of the kit's default PHP, on a loopback
 //!   address of its own (`127.x.y.z`, new at every start) and a port the
-//!   system gives: browsers share cookies between the ports of one host, so
-//!   on 127.0.0.1 the token's cookie and phpMyAdmin's session would reach
-//!   the projects' sites (their PHP could read them and log in as root);
-//!   serving phpMyAdmin's folder through the router
+//!   system gives (`web_admin`, shared with mongo-express, D-147): browsers
+//!   share cookies between the ports of one host, so on 127.0.0.1 the
+//!   token's cookie and phpMyAdmin's session would reach the projects'
+//!   sites (their PHP could read them and log in as root); serving
+//!   phpMyAdmin's folder through the router
 //!   `data\kit\phpmyadmin.php` (`runtime/phpmyadmin.php`), started at the
 //!   first "phpMyAdmin" and ended with the MySQL version it logs in to or
 //!   the app (the app's job);
@@ -25,14 +26,14 @@
 //!   server's output in `data\app\logs\phpmyadmin.log`.
 
 use std::fs::{self, File};
-use std::net::{Ipv4Addr, TcpListener};
 use std::path::PathBuf;
-use std::process::{Child, Stdio};
-use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::process::Stdio;
 
 use anyhow::{bail, Context, Result};
 
+#[cfg(test)]
+use super::web_admin::{address, private_loopback};
+use super::web_admin::{free_address, wait_ready, Served, Slot};
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
@@ -40,78 +41,24 @@ use crate::os::jobs::{self, Job};
 use crate::os::temp::TempWork;
 use crate::setup::catalog;
 
-const READY_WITHIN: Duration = Duration::from_secs(15);
-
 /// phpMyAdmin's `config.inc.php`, written into its folder.
 const CONFIG: &str = include_str!("../../../runtime/phpmyadmin.config.php");
 
-struct Server {
-    child: Child,
-    host: Ipv4Addr,
-    port: u16,
-    /// The MySQL port it logs in to.
-    db_port: u16,
-    token: String,
-    // Dropped after the fields above: ends PHP's server.
-    _job: Job,
-    // Dropped last, once PHP has ended: the uploads' folder.
-    _uploads: TempWork,
+pub struct PhpMyAdmin {
+    slot: Slot,
 }
 
-#[derive(Default)]
-pub struct PhpMyAdmin {
-    running: Mutex<Option<Server>>,
+impl Default for PhpMyAdmin {
+    fn default() -> Self {
+        PhpMyAdmin {
+            slot: Slot::new("phpmyadmin"),
+        }
+    }
 }
 
 /// `phpmyadmin\index.php` of the component.
 fn entry(kit: &Kit) -> PathBuf {
     catalog::kit_path(kit, "phpmyadmin/index.php")
-}
-
-/// The loopback address phpMyAdmin is served on, from random bytes: in
-/// 127.0.0.0/8 and never 127.0.0.1, where the projects' sites are. macOS
-/// answers only on 127.0.0.1 unless an alias is added: there it stays.
-pub fn private_loopback(random: [u8; 3]) -> Ipv4Addr {
-    if cfg!(target_os = "macos") {
-        return Ipv4Addr::LOCALHOST;
-    }
-    Ipv4Addr::new(127, 1 + random[0] % 254, random[1], 1 + random[2] % 254)
-}
-
-/// Three random bytes of a fresh token (64 hex digits).
-fn random_bytes() -> Result<[u8; 3]> {
-    let token = crate::editor::random_token()?;
-    let byte = |i: usize| u8::from_str_radix(&token[2 * i..2 * i + 2], 16);
-    Ok([byte(0)?, byte(1)?, byte(2)?])
-}
-
-/// A loopback address of its own and a free port on it, from the system;
-/// 127.0.0.1 when the system refuses the address (logged).
-fn free_address() -> Result<(Ipv4Addr, u16)> {
-    let host = private_loopback(random_bytes()?);
-    let listener = match TcpListener::bind((host, 0)) {
-        Ok(l) => l,
-        Err(e) if host != Ipv4Addr::LOCALHOST => {
-            crate::log::warn(&format!(
-                "phpmyadmin: {host} refused ({e}), using 127.0.0.1"
-            ));
-            TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).context("free port")?
-        }
-        Err(e) => return Err(e).context("free port"),
-    };
-    let addr = listener.local_addr()?;
-    let std::net::IpAddr::V4(ip) = addr.ip() else {
-        bail!("not an IPv4 address: {addr}");
-    };
-    Ok((ip, addr.port()))
-}
-
-fn responds_at(host: Ipv4Addr, port: u16) -> bool {
-    std::net::TcpStream::connect_timeout(&(host, port).into(), Duration::from_millis(400)).is_ok()
-}
-
-pub fn address(host: Ipv4Addr, port: u16, token: &str) -> String {
-    format!("http://{host}:{port}/?atollo={token}")
 }
 
 impl PhpMyAdmin {
@@ -127,43 +74,22 @@ impl PhpMyAdmin {
         password: &str,
         lang: &str,
     ) -> Result<String> {
-        let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(s) = running.as_mut() {
-            if matches!(s.child.try_wait(), Ok(None)) && s.db_port == db_port {
-                return Ok(address(s.host, s.port, &s.token));
-            }
-        }
-        *running = None;
-        let server = start(kit, env, db_port, password, lang)?;
-        let url = address(server.host, server.port, &server.token);
-        *running = Some(server);
-        Ok(url)
+        self.slot
+            .open(db_port, || start(kit, env, db_port, password, lang))
     }
 
     pub fn stop(&self) {
-        if self
-            .running
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .take()
-            .is_some()
-        {
-            crate::log::info("phpmyadmin: stopped");
-        }
+        self.slot.stop();
     }
 
     /// Ends phpMyAdmin when it logs in to the MySQL at `db_port` (a
     /// version that stops); one on another version stays.
     pub fn stop_for(&self, db_port: u16) {
-        let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
-        if running.as_ref().is_some_and(|s| s.db_port == db_port) {
-            *running = None;
-            crate::log::info("phpmyadmin: stopped");
-        }
+        self.slot.stop_for(db_port);
     }
 }
 
-fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> Result<Server> {
+fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> Result<Served> {
     let index = entry(kit);
     let Some(root) = index.parent().filter(|_| index.is_file()) else {
         bail!("phpMyAdmin is not installed: {} missing", index.display());
@@ -188,7 +114,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> R
     let out = File::create(&log).with_context(|| log.display().to_string())?;
     let token = crate::editor::random_token()?;
     let secret = crate::editor::random_token()?;
-    let (host, port) = free_address()?;
+    let (host, port) = free_address(kit, "phpmyadmin")?;
     // The default PHP with its own php.ini and extensions, whatever line
     // the kit's environment names.
     let php_dir = catalog::kit_path(kit, "php");
@@ -221,30 +147,16 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> R
         .stderr(Stdio::from(out));
     let job = Job::new()?;
     let mut child = jobs::spawn_in(&mut cmd, &job).context("spawn php -S for phpMyAdmin")?;
-    let begun = Instant::now();
-    while !responds_at(host, port) {
-        if !matches!(child.try_wait(), Ok(None)) {
-            let text = fs::read_to_string(&log).unwrap_or_default();
-            bail!("PHP's server ended: {}", text.trim());
-        }
-        if begun.elapsed() > READY_WITHIN {
-            let _ = child.kill();
-            bail!(
-                "no answer on port {port} within {} s",
-                READY_WITHIN.as_secs()
-            );
-        }
-        std::thread::sleep(Duration::from_millis(100));
-    }
+    wait_ready(&mut child, host, port, &log, "PHP's server")?;
     crate::log::info(&format!("phpmyadmin: started on {host}:{port}"));
-    Ok(Server {
+    Ok(Served {
         child,
         host,
         port,
         db_port,
         token,
         _job: job,
-        _uploads: uploads,
+        _keep: Some(uploads),
     })
 }
 

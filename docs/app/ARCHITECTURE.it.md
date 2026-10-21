@@ -121,7 +121,7 @@ tauri\src\
                               per motore: D-140), data (cartelle e porte per versione), access (password e
                               database dei progetti), backups (D-78), tools (file di login), mysql
                               (inizializzazione, my.cnf, libaio: D-110)
-    auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107)
+    auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107), mongo-express e web_admin (D-147)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
   net\                        rete: mod (HTTPS, proxy ed eccezioni, API di GitHub), ca (il file PEM delle
@@ -204,7 +204,7 @@ Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\
 | `orphans.rs` | dati senza progetto: elenco e «Collega a…» (D-89) |
 | `frameworks.rs` | nuovo progetto da framework |
 | `github.rs` | account e repository GitHub |
-| `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin |
+| `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin, mongo-express |
 | `services.rs` | server di database del kit |
 | `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato |
 | `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella; le sessioni del terminale nell'app su macOS e Linux |

@@ -3,7 +3,7 @@
 import { tr } from "./model";
 
 /** The kinds of the Tools page (components/model.ts, D-139), plus the parts. */
-export type SourceCategory = "system" | "agents" | "languages" | "tools" | "web" | "databases" | "part";
+export type SourceCategory = "system" | "agents" | "languages" | "tools" | "web" | "databases" | "dbviewers" | "part";
 
 export interface ToolSourceRow {
   id: string;
@@ -1011,7 +1011,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     logoId: "phpmyadmin",
     name: () =>
       tr("phpMyAdmin (per MySQL)", "phpMyAdmin (for MySQL)", "phpMyAdmin (pour MySQL)", "phpMyAdmin (für MySQL)"),
-    group: "databases",
+    group: "dbviewers",
     home: "https://www.phpmyadmin.net",
     metaSource: "www.phpmyadmin.net/home_page/version.json",
     binarySource: "files.phpmyadmin.net/phpMyAdmin/<v>/phpMyAdmin-<v>-all-languages.zip",
@@ -1024,6 +1024,36 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "SHA-256 aus der offiziellen .sha256-Datei + Syntaxprüfung php -l",
       ),
     targetPath: () => `phpmyadmin\\${lLine()}\\index.php`,
+  }),
+  defSource({
+    id: "mongo-express",
+    logoId: "mongo-express",
+    name: () =>
+      tr(
+        "mongo-express (per MongoDB)",
+        "mongo-express (for MongoDB)",
+        "mongo-express (pour MongoDB)",
+        "mongo-express (für MongoDB)",
+      ),
+    group: "dbviewers",
+    home: "https://github.com/mongo-express/mongo-express",
+    metaSource: () =>
+      tr(
+        "versione fissata nel catalogo di Atollo (build del kit, D-147)",
+        "version pinned in Atollo's catalog (the kit's build, D-147)",
+        "version fixée dans le catalogue d'Atollo (build du kit, D-147)",
+        "im Katalog von Atollo festgelegte Version (Build des Kits, D-147)",
+      ),
+    binarySource: "github.com/nabre/atollo/releases/download/mongo-express-v<v>/mongo-express-<v>.zip",
+    verifyKind: "SHA-256",
+    verifyDetail: () =>
+      tr(
+        "SHA-256 fissato nel catalogo (o il .sha256 della release del kit); build in CI dal commit fissato di mongo-express",
+        "SHA-256 pinned in the catalog (or the .sha256 of the kit's release); built in CI from mongo-express's pinned commit",
+        "SHA-256 fixé dans le catalogue (ou le .sha256 de la release du kit) ; build en CI depuis le commit fixé de mongo-express",
+        "Im Katalog festgelegtes SHA-256 (oder die .sha256 des Kit-Releases); in der CI aus dem festgelegten Commit von mongo-express gebaut",
+      ),
+    targetPath: () => `mongo-express\\${lLine()}\\app.js`,
   }),
   defSource({
     id: "sqlite",

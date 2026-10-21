@@ -80,4 +80,18 @@ describe("kinds", () => {
     expect(kindOf({ id: "caddy", group: "languages" })).toBe("web");
     expect(kindOf({ id: "rust", group: "languages" })).toBe("languages");
   });
+
+  // D-147: «Database» holds the servers only; the tools that show them in
+  // the browser have their own section right after it.
+  it("put the database viewers after the servers", () => {
+    const ids = (kind: string) =>
+      catalog.components
+        .filter((c) => kindOf({ id: c.id, group: c.group as Group }) === kind)
+        .map((c) => c.id)
+        .sort();
+    expect(ids("databases")).toEqual(["mongodb", "mysql", "sqlite"]);
+    expect(ids("dbviewers")).toEqual(["mongo-express", "phpmyadmin"]);
+    expect(KINDS.indexOf("dbviewers")).toBe(KINDS.indexOf("databases") + 1);
+    expect(groups().find((g) => g.id === "dbviewers")?.title).toBe("Visualizzazione database");
+  });
 });

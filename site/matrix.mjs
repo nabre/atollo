@@ -17,11 +17,12 @@ export const TARGETS = [
 
 // Finer kinds than the catalog's groups (where "languages" holds almost
 // everything). A component not listed here falls back to its group's kind.
-export const KINDS = ["system", "agents", "languages", "tools", "web", "databases"];
+export const KINDS = ["system", "agents", "languages", "tools", "web", "databases", "dbviewers"];
 export const KIND_OF = {
   pwsh: "system", gh: "system", git: "system", "vscodium-server": "system",
   uv: "tools", pnpm: "tools", cmake: "tools", android: "tools", typst: "tools", tinytex: "tools",
   apache: "web", caddy: "web",
+  phpmyadmin: "dbviewers", "mongo-express": "dbviewers",
 };
 export const KIND_OF_GROUP = { required: "system", app: "system", agents: "agents", languages: "languages", databases: "databases" };
 
