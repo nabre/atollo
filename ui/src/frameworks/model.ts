@@ -190,12 +190,19 @@ export function useFrameworks() {
     setPieces(next);
     setDirty(true);
   }, []);
-  const save = useCallback(async () => {
-    const at = edits.current;
-    if (at === savedEdits.current) return;
-    await frameworksSet(latest.current);
-    savedEdits.current = Math.max(savedEdits.current, at);
-    if (edits.current === at) load();
+  // One save at a time: a save waits for the one before, then sends the
+  // latest pieces, so an older save never lands last.
+  const saving = useRef<Promise<void>>(Promise.resolve());
+  const save = useCallback(() => {
+    const next = saving.current.then(async () => {
+      const at = edits.current;
+      if (at === savedEdits.current) return;
+      await frameworksSet(latest.current);
+      savedEdits.current = Math.max(savedEdits.current, at);
+      if (edits.current === at) load();
+    });
+    saving.current = next.catch(() => undefined);
+    return next;
   }, [load]);
   return { view, pieces, dirty, error, load, change, save };
 }

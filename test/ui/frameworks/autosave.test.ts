@@ -79,6 +79,39 @@ describe("useFrameworksAutosave", () => {
     expect(namesSent()).toEqual(["AB"]);
   });
 
+  it("runs one save at a time, the latest edit last", async () => {
+    vi.useFakeTimers();
+    const { result } = await mounted();
+    let finish: (v?: unknown) => void = () => undefined;
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "frameworks_get") return Promise.resolve(VIEW);
+      if (namesSent().length === 1)
+        return new Promise((resolve) => {
+          finish = resolve;
+        });
+      return Promise.resolve();
+    });
+    act(() => {
+      result.current.change([piece("A")]);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    act(() => {
+      result.current.change([piece("AB")]);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    // The second save waits for the first, still running.
+    expect(namesSent()).toEqual(["A"]);
+    await act(async () => {
+      finish(undefined);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(namesSent()).toEqual(["A", "AB"]);
+  });
+
   it("saves nothing when the page closes with nothing changed", async () => {
     vi.useFakeTimers();
     const { unmount } = await mounted();
