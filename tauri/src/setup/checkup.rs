@@ -31,6 +31,11 @@ const LIMIT: Duration = Duration::from_secs(60);
 /// `@version` of its header or its `const VERSION`.
 pub const PHP_SCRIPT: &str = "<php>";
 
+/// As the only argument of a check: a Node.js package's `package.json`
+/// (mongo-express, D-147), whose answer is its `version`. Nothing runs: the
+/// kit's Node.js is checked by its own component.
+pub const PACKAGE_JSON: &str = "<package.json>";
+
 /// Runs the check command of `c`; `None` if it has none or nothing of it is
 /// on disk. Half installed (a part missing): failed, naming the part.
 pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
@@ -44,6 +49,7 @@ pub fn check(kit: &Kit, env: &KitEnv, c: &Component) -> Option<Check> {
     let result = match c.missing_part(kit) {
         Some(part) => Err(anyhow::anyhow!("{} not found", part.display())),
         None if args == [PHP_SCRIPT] => php_script(kit, env, &kit_path(kit, program)),
+        None if args == [PACKAGE_JSON] => package_version(&kit_path(kit, program)),
         None => run(env, &kit_path(kit, program), args),
     };
     Some(Check {
@@ -75,6 +81,17 @@ fn php_script(kit: &Kit, env: &KitEnv, script: &std::path::Path) -> Result<Strin
     let head = std::fs::read(script)?;
     let head = String::from_utf8_lossy(&head[..head.len().min(2048)]);
     Ok(header_version(&head).unwrap_or("compiled").to_owned())
+}
+
+/// The `version` of the `package.json` at `file`.
+pub fn package_version(file: &std::path::Path) -> Result<String> {
+    let text = std::fs::read_to_string(file).with_context(|| file.display().to_string())?;
+    let json: serde_json::Value =
+        serde_json::from_str(&text).with_context(|| file.display().to_string())?;
+    match json.get("version").and_then(serde_json::Value::as_str) {
+        Some(v) if !v.is_empty() => Ok(v.to_owned()),
+        _ => bail!("{}: no version", file.display()),
+    }
 }
 
 /// `x.y.z` of the `@version x.y.z` line of a PHP header, or of a
