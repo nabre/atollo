@@ -119,12 +119,31 @@ pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     }
 }
 
+/// When a project was last opened or changed, whichever is later.
+fn recency(modified: u64, settings: &settings::ProjectSettings) -> u64 {
+    modified.max(settings.last_opened.unwrap_or(0))
+}
+
 /// Every project, most recently opened or changed first.
 pub fn list(kit: &Kit, lang: &str) -> Vec<ProjectInfo> {
     let mut out: Vec<ProjectInfo> = folders(kit).iter().map(|d| info(kit, d, lang)).collect();
-    let recent = |p: &ProjectInfo| p.modified.max(p.settings.last_opened.unwrap_or(0));
+    let recent = |p: &ProjectInfo| recency(p.modified, &p.settings);
     out.sort_by(|a, b| recent(b).cmp(&recent(a)).then_with(|| a.id.cmp(&b.id)));
     out
+}
+
+/// The projects' ids in the order of [`list`], without reading what is in
+/// them: the tray menu reads it on every change (D-145).
+pub fn recent(kit: &Kit) -> Vec<String> {
+    let mut out: Vec<(u64, String)> = folders(kit)
+        .iter()
+        .filter_map(|dir| {
+            let id = dir.file_name()?.to_string_lossy().into_owned();
+            Some((recency(modified(dir), &settings::load(kit, &id)), id))
+        })
+        .collect();
+    out.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
+    out.into_iter().map(|(_, id)| id).collect()
 }
 
 fn tr(lang: &str, source: &str, args: &[&str]) -> String {

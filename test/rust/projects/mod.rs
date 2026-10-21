@@ -165,6 +165,25 @@ fn create_list_delete() {
     assert!(none.calls().is_empty());
 }
 
+/// `recent` (the tray menu, D-145) keeps the order of `list`: the last
+/// opened first, then by name; hidden folders are not projects.
+#[test]
+fn recent_follows_the_order_of_list() {
+    let tmp = TempDir::new("projects-recent");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    for name in ["alpha", "beta", "gamma"] {
+        create(&kit, name, "it").unwrap();
+    }
+    fs::create_dir_all(kit.projects().join(".hidden")).unwrap();
+    // Far in the future: later than any folder's modification time.
+    settings::update(&kit, "gamma", |s| s.last_opened = Some(u64::MAX - 1));
+    settings::update(&kit, "alpha", |s| s.last_opened = Some(u64::MAX - 2));
+    let ids: Vec<String> = list(&kit, "it").into_iter().map(|p| p.id).collect();
+    assert_eq!(recent(&kit), ids);
+    assert_eq!(recent(&kit), ["gamma", "alpha", "beta"]);
+}
+
 /// The kit's servers, faked: which are installed, which drop fails, the
 /// drops asked (and the servers "started" for them).
 struct FakeDbs {
