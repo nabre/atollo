@@ -3,14 +3,23 @@
 // ways to make a new one. Each project starts, stops and opens from here
 // without its page.
 import type { ReactNode } from "react";
-import { urlOpen, type AgentInfo, type EditorStatus, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
+import {
+  urlOpen,
+  type AgentInfo,
+  type EditorStatus,
+  type FrameworkPiece,
+  type FrameworksView,
+  type ProjectAction,
+  type ProjectInfo,
+  type RunInfo,
+} from "../api";
 import { AgentButton } from "../agents";
-import { basesByCategory, PieceLogo, type Frameworks } from "../frameworks";
+import { basesByGroup, PieceLogo, textOf, type BaseGroup, type Frameworks } from "../frameworks";
 import { t } from "../i18n";
 import { ActionBar, Button, Codicon, codicon, Dot, EditorBody, EditorSection, IconButton, Link } from "../workbench";
 import { KIND_ICON, LanguageIcons, ProjectState } from "./kind";
 import { COMPONENT_NAMES } from "./needs";
-import { wayLabel, type NewWay } from "./new";
+import { GROUP_ICON, wayLabel, type NewWay } from "./new";
 import type { ProjectSection } from "./page";
 import { alive } from "./runs";
 
@@ -69,7 +78,7 @@ export function ProjectsHome({
     .filter((p) => !p.settings.pinned)
     .sort((a, b) => recency(b) - recency(a))
     .slice(0, RECENT);
-  const groups = basesByCategory(fw.pieces);
+  const groups = basesByGroup(fw.pieces);
   const card = (p: ProjectInfo) => (
     <ProjectCard key={p.id} p={p} runs={runs} busy={busy} status={status} agents={agents} handlers={handlers} />
   );
@@ -141,53 +150,46 @@ export function ProjectsHome({
           </EditorSection>
         )}
 
-        <EditorSection id="home-new" title={t("Nuovo progetto")}>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
-            <WayTile
-              icon={<Codicon name="new-folder" size={20} />}
-              title={wayLabel("empty")}
-              text={t("Una cartella nuova e vuota in projects.")}
-              onClick={() => {
-                handlers.onNew("empty");
-              }}
-            />
-            <WayTile
-              icon={<Codicon name="repo-clone" size={20} />}
-              title={wayLabel("git")}
-              text={t("Il repository si clona in una cartella di projects.")}
-              onClick={() => {
-                handlers.onNew("git");
-              }}
-            />
-            <WayTile
-              icon={<Codicon name="wand" size={20} />}
-              title={wayLabel("framework")}
-              text={t("Una base e le sue aggiunte, con i comandi ufficiali.")}
-              onClick={() => {
-                handlers.onNew("framework");
-              }}
-            >
-              {groups.length > 0 && (
-                <span className="flex flex-wrap gap-1 pt-1">
-                  {/* A group opens the wizard on its first base. */}
-                  {groups.map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      title={g.bases.map((b) => b.name || b.id).join(", ")}
-                      onClick={() => {
-                        handlers.onNew("framework", g.bases[0]?.id);
-                      }}
-                      className="flex items-center gap-1 rounded-sm border border-vsc-border px-1.5 text-[12px] leading-5 hover:bg-vsc-list-hover"
-                    >
-                      {g.bases[0] && <PieceLogo piece={g.bases[0]} size={12} />}
-                      {g.label}
-                    </button>
-                  ))}
-                </span>
-              )}
-            </WayTile>
-          </div>
+        <EditorSection
+          id="home-new"
+          title={t("Nuovo progetto")}
+          actions={
+            <span className="flex flex-wrap justify-end gap-x-4 gap-y-1">
+              <WayLink
+                icon="new-folder"
+                label={wayLabel("empty")}
+                title={t("Una cartella nuova e vuota in projects.")}
+                onClick={() => {
+                  handlers.onNew("empty");
+                }}
+              />
+              <WayLink
+                icon="repo-clone"
+                label={wayLabel("git")}
+                title={t("Il repository si clona in una cartella di projects.")}
+                onClick={() => {
+                  handlers.onNew("git");
+                }}
+              />
+            </span>
+          }
+        >
+          {groups.length > 0 && (
+            // Columns, not a grid: the blocks keep their height (Web holds
+            // the most), side by side when wide, one under the other when narrow.
+            <div className="columns-[17rem] gap-2">
+              {groups.map((g) => (
+                <GroupBlock
+                  key={g.id}
+                  group={g}
+                  view={fw.view}
+                  onBase={(id) => {
+                    handlers.onNew("framework", id);
+                  }}
+                />
+              ))}
+            </div>
+          )}
           <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 pt-1">
             <li className="flex items-center gap-1.5">
               <Codicon name="repo-clone" size={14} className="text-vsc-link" />
@@ -375,32 +377,69 @@ function RunningRow({
   );
 }
 
-/** A way of making a project, as a card that starts it. */
-function WayTile({
-  icon,
-  title,
-  text,
-  onClick,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-  onClick: () => void;
-  children?: ReactNode;
-}) {
+/** A way of making a project without a base, as a small link. */
+function WayLink({ icon, label, title, onClick }: { icon: string; label: string; title: string; onClick: () => void }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-vsc-border p-3">
-      <button
-        type="button"
-        onClick={onClick}
-        className="flex items-center gap-2 text-left font-semibold text-vsc-link hover:underline"
-      >
-        <span className="text-vsc-icon">{icon}</span>
-        {title}
-      </button>
-      <span className="text-[12px] text-vsc-desc">{text}</span>
-      {children}
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="flex items-center gap-1.5 text-vsc-link hover:text-vsc-link-active hover:underline"
+    >
+      <Codicon name={icon} size={14} />
+      {label}
+    </button>
+  );
+}
+
+/** A group of bases (Web, CMS, App, Altro) as a block: its bases as
+ * buttons, under their categories when it has more than one. */
+function GroupBlock({
+  group,
+  view,
+  onBase,
+}: {
+  group: BaseGroup;
+  view: FrameworksView | null;
+  onBase: (id: string) => void;
+}) {
+  const id = `home-group-${group.id}`;
+  const buttons = (list: FrameworkPiece[]) => (
+    <div className="flex flex-wrap gap-1">
+      {list.map((b) => (
+        <button
+          key={b.id}
+          type="button"
+          title={textOf(view, b.desc)}
+          onClick={() => {
+            onBase(b.id);
+          }}
+          className="flex items-center gap-1.5 rounded-sm border border-vsc-border px-1.5 text-[12px] leading-6 hover:bg-vsc-list-hover"
+        >
+          <PieceLogo piece={b} size={14} />
+          {b.name || b.id}
+        </button>
+      ))}
     </div>
+  );
+  return (
+    <section
+      aria-labelledby={id}
+      className="mb-2 flex break-inside-avoid flex-col gap-2 rounded-md border border-vsc-border p-3"
+    >
+      <h4 id={id} className="flex items-center gap-2 font-semibold">
+        <Codicon name={GROUP_ICON[group.id]} size={16} className="text-vsc-icon" />
+        {group.label}
+        <span className="text-[12px] font-normal text-vsc-desc">{group.bases.length}</span>
+      </h4>
+      {group.categories.length === 1
+        ? buttons(group.bases)
+        : group.categories.map((c) => (
+            <div key={c.id} role="group" aria-label={c.label} className="space-y-1">
+              <div className="text-[12px] text-vsc-desc">{c.label}</div>
+              {buttons(c.bases)}
+            </div>
+          ))}
+    </section>
   );
 }
