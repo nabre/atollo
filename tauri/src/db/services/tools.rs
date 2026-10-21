@@ -16,30 +16,64 @@ use crate::router::bins::exe_name;
 
 /// Runs a tool with `input` on its stdin (SQL with passwords: never on the
 /// command line) and waits at most `limit`; fails with its error output.
-pub(super) fn run_with_input(mut cmd: Command, input: &str, limit: Duration) -> Result<()> {
-    use std::io::{Read, Write};
+pub(super) fn run_with_input(cmd: Command, input: &str, limit: Duration) -> Result<()> {
+    run_with_reader(cmd, std::io::Cursor::new(input.as_bytes().to_vec()), limit)
+}
+
+/// [`run_with_input`] with what `input` reads (a copy, read as it goes,
+/// never whole in memory). Stdin is written and stderr read by threads of
+/// their own (BUG-V6-05): a tool that stops reading (a lock it waits for)
+/// still meets `limit`, and one that ends on an error in the middle of the
+/// input fails with its own words, not with the "broken pipe" of the write.
+pub(super) fn run_with_reader(
+    mut cmd: Command,
+    mut input: impl std::io::Read + Send + 'static,
+    limit: Duration,
+) -> Result<()> {
+    use std::io::Read;
     cmd.stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
     let mut child = jobs::spawn(&mut cmd)?;
-    if let Some(mut stdin) = child.stdin.take() {
-        stdin.write_all(input.as_bytes())?;
-    }
+    // The end of the input closes stdin: the tool reads its end.
+    let writer = child
+        .stdin
+        .take()
+        .map(|mut stdin| std::thread::spawn(move || std::io::copy(&mut input, &mut stdin)));
+    let reader = child.stderr.take().map(|mut e| {
+        std::thread::spawn(move || {
+            let mut err = Vec::new();
+            let _ = e.read_to_end(&mut err);
+            String::from_utf8_lossy(&err).into_owned()
+        })
+    });
     let start = Instant::now();
     loop {
         if let Some(status) = child.try_wait()? {
-            let mut err = String::new();
-            if let Some(mut e) = child.stderr.take() {
-                let _ = e.read_to_string(&mut err);
+            let err = reader.and_then(|r| r.join().ok()).unwrap_or_default();
+            if !status.success() {
+                bail!("{}", err.trim());
             }
-            return if status.success() {
-                Ok(())
-            } else {
-                Err(anyhow!("{}", err.trim()))
-            };
+            // Done, but not all of the input reached it (a copy that could
+            // not be read to its end): never taken for a whole run. The
+            // writer ends with the input or with the pipe (a moment after).
+            if let Some(w) = writer {
+                let gone = Instant::now();
+                while !w.is_finished() && gone.elapsed() < Duration::from_secs(5) {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                match w.is_finished().then(|| w.join()) {
+                    Some(Ok(Ok(_))) => {}
+                    Some(Ok(Err(e))) => bail!("{:?}: {e}", cmd.get_program()),
+                    _ => bail!("{:?}: the input was not read to its end", cmd.get_program()),
+                }
+            }
+            return Ok(());
         }
         if start.elapsed() > limit {
+            // The threads end with the pipes, once the tool is gone.
             let _ = child.kill();
+            let _ = child.wait();
             bail!("{:?}: no answer", cmd.get_program());
         }
         std::thread::sleep(Duration::from_millis(100));
@@ -218,3 +252,7 @@ impl Services {
         Ok((cmd, config))
     }
 }
+
+#[cfg(test)]
+#[path = "../../../../test/rust/db/services/tools.rs"]
+mod tests;
