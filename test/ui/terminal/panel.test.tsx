@@ -53,6 +53,7 @@ const { terms, FakeTerminal } = vi.hoisted(() => {
     sendBinary(data: string) {
       this.onBinaryHandler?.(data);
     }
+    unicode = { activeVersion: "6" };
     keyHandler: ((e: KeyboardEvent) => boolean) | null = null;
     attachCustomKeyEventHandler(handler: (e: KeyboardEvent) => boolean) {
       this.keyHandler = handler;
@@ -71,6 +72,11 @@ vi.mock("@xterm/xterm", () => ({ Terminal: FakeTerminal }));
 vi.mock("@xterm/addon-fit", () => ({
   FitAddon: class {
     fit() {}
+  },
+}));
+vi.mock("@xterm/addon-unicode11", () => ({
+  Unicode11Addon: class {
+    activate() {}
   },
 }));
 

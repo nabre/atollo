@@ -5,6 +5,7 @@
 import { useEffect, useRef } from "react";
 import { Terminal, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
 import "@xterm/xterm/css/xterm.css";
 import type { PtyBackend, PtyChunk, PtyInfo } from "./api";
 import { t } from "../i18n";
@@ -118,8 +119,14 @@ export function TerminalView({
       // The kit's ConPTY (D-148) reflows its own lines like the builds of
       // Windows after 21376: xterm.js then keeps its usual reflow.
       ...(onWindows() ? { windowsPty: { backend: "conpty" as const, buildNumber: 22000 } } : {}),
+      // The Unicode 11 widths (`unicode` is a proposed API of xterm.js).
+      allowProposedApi: true,
     });
     term.current = x;
+    // Emoji and wide characters take the cells the program counted
+    // (wcswidth: the kit's ConPTY measures the same way, D-148).
+    x.loadAddon(new Unicode11Addon());
+    x.unicode.activeVersion = "11";
     if (!onMac()) {
       x.attachCustomKeyEventHandler((e) =>
         clipboardKey(e, x.getSelection(), (text) => {

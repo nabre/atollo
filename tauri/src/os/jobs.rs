@@ -304,13 +304,28 @@ unsafe impl Sync for Job {}
 impl Job {
     /// A new job that kills its processes when its last handle closes.
     pub fn new() -> Result<Job> {
+        Job::with_breakaway(true)
+    }
+
+    /// A job none of whose processes can leave it (a terminal session): a
+    /// program asking for `CREATE_BREAKAWAY_FROM_JOB` (Codex's background
+    /// server) stays in it and ends with the session instead of outliving
+    /// the app.
+    pub fn contained() -> Result<Job> {
+        Job::with_breakaway(false)
+    }
+
+    fn with_breakaway(breakaway: bool) -> Result<Job> {
         // SAFETY: no security attributes (handle not inheritable), no name.
         let handle =
             unsafe { CreateJobObjectW(None, PCWSTR::null()) }.context("CreateJobObjectW")?;
         let job = Job { handle };
         let mut info = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
-        info.BasicLimitInformation.LimitFlags =
-            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK;
+        info.BasicLimitInformation.LimitFlags = if breakaway {
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE | JOB_OBJECT_LIMIT_BREAKAWAY_OK
+        } else {
+            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        };
         // SAFETY: `info` is the structure that JobObjectExtendedLimitInformation expects.
         unsafe {
             SetInformationJobObject(

@@ -10,7 +10,8 @@
 //! bare name happens here.
 //!
 //! - the program is created suspended, put in the app's job and in a job of
-//!   its session, then resumed: none of its children escapes the session;
+//!   its session, then resumed: none of its children escapes the session,
+//!   not even one asking to break away (Codex's background server);
 //! - the pseudo console is closed when the program ends (the reader then
 //!   ends) or when the session is closed: its processes get
 //!   `CTRL_CLOSE_EVENT`, as when a console window closes; what is left is
@@ -54,6 +55,10 @@ pub const FILES: [&str; 2] = ["conpty.dll", "OpenConsole.exe"];
 /// `PSEUDOCONSOLE_RESIZE_QUIRK`: the terminal (xterm.js) reflows its own
 /// lines on a resize, the console host does not repaint them.
 const RESIZE_QUIRK: u32 = 0x2;
+/// `PSEUDOCONSOLE_GLYPH_WIDTH_WCSWIDTH` (`conpty.h` of the package): the
+/// kit's ConPTY counts the cells of emoji and wide characters as xterm.js
+/// with its Unicode 11 widths does. Windows' own ConPTY does not know it.
+const GLYPH_WIDTH_WCSWIDTH: u32 = 0x10;
 
 type CreateFn = unsafe extern "system" fn(COORD, HANDLE, HANDLE, u32, *mut HPCON) -> HRESULT;
 type ResizeFn = unsafe extern "system" fn(HPCON, COORD) -> HRESULT;
@@ -388,6 +393,11 @@ pub fn spawn(
     let (in_read, in_write) = pipe()?;
     let (out_read, out_write) = pipe()?;
     let mut hpc = HPCON::default();
+    let flags = if api.kit {
+        RESIZE_QUIRK | GLYPH_WIDTH_WCSWIDTH
+    } else {
+        RESIZE_QUIRK
+    };
     // SAFETY: two valid pipe ends (the console host duplicates them) and a
     // writable handle.
     unsafe {
@@ -395,7 +405,7 @@ pub fn spawn(
             SIZE,
             HANDLE(in_read.as_raw_handle()),
             HANDLE(out_write.as_raw_handle()),
-            RESIZE_QUIRK,
+            flags,
             &mut hpc,
         )
     }
@@ -461,7 +471,7 @@ pub fn spawn(
     // session's, before its first instruction: never a session outside them.
     let joined = (|| -> Result<Job> {
         jobs::assign_to_app_raw(process.as_raw_handle())?;
-        let job = Job::new()?;
+        let job = Job::contained()?;
         job.assign_raw(process.as_raw_handle())?;
         Ok(job)
     })();
