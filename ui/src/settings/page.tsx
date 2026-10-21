@@ -13,7 +13,7 @@ import { GithubAccount, GitIdentitySetting } from "../github";
 import type { GuideTopicId } from "../guide";
 import { BrandSymbol } from "../brand";
 import { useAction } from "../hooks";
-import { ErrorLine } from "../common";
+import { ErrorLine, LoadError } from "../common";
 import {
   addPiece,
   FrameworksTree,
@@ -83,6 +83,7 @@ export function SettingsPage({
     view,
     s,
     loadError,
+    retry,
     error: saveError,
     status,
     needsRestart,
@@ -294,7 +295,7 @@ export function SettingsPage({
         <div className="min-h-0 flex-1 overflow-y-auto px-vsc-size240 pb-vsc-size400">
           {(loadError ?? view?.problem ?? saveError ?? error ?? (needsRestart && editorRunning)) && (
             <div className="space-y-2 px-[14px] pt-3">
-              <ErrorLine error={loadError} />
+              <LoadError error={loadError} onRetry={retry} />
               {view?.problem && (
                 <ErrorLine
                   error={t(

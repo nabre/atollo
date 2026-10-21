@@ -783,6 +783,39 @@ describe("App", () => {
     expect(invoke).toHaveBeenCalledWith("app_quit", undefined);
   });
 
+  it("clears a failed read of what is open when «Aggiorna» reads it", async () => {
+    let fail = true;
+    invoke.mockImplementation((cmd) =>
+      cmd === "eject_list" && fail
+        ? Promise.reject(new Error("letto male"))
+        : answers({
+            eject_list: { processes: [], editor: false, terminals: 0, actions: 0, setup: false, databases: 0 },
+          })(cmd),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Rimuovi l'unità" }));
+    expect(await screen.findByText("Error: letto male")).toBeTruthy();
+    fail = false;
+    fireEvent.click(screen.getByRole("button", { name: "Aggiorna" }));
+    expect(await screen.findByText("Nessun programma del kit aperto.")).toBeTruthy();
+    expect(screen.queryByText("Error: letto male")).toBeNull();
+  });
+
+  it("clears a failed read of the settings with «Riprova»", async () => {
+    let fail = true;
+    invoke.mockImplementation((cmd) =>
+      cmd === "settings_get" && fail ? Promise.reject(new Error("letto male")) : answers()(cmd),
+    );
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Error: letto male");
+    fail = false;
+    fireEvent.click(within(alert).getByRole("button", { name: "Riprova" }));
+    expect(await screen.findByLabelText("Lingua")).toBeTruthy();
+    expect(screen.queryByText(/letto male/)).toBeNull();
+  });
+
   it("shows the progress of an automatic installation", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
