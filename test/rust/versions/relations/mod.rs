@@ -146,6 +146,9 @@ fn links_and_projects() {
     let again = matrix(&kit, "it", false).unwrap();
     assert_eq!(again.generated, m2.generated);
     assert_eq!(again.fingerprint, m2.fingerprint);
+    // `tool-versions.json` is no one's file since D-80: not in the fingerprint.
+    fs::write(kit.app_dir().join("tool-versions.json"), "{}").unwrap();
+    assert_eq!(fingerprint(&kit, "it"), m2.fingerprint);
     fs::write(app.join(".nvmrc"), "22.21.0\n").unwrap();
     assert_ne!(
         fingerprint(&kit, "it"),
