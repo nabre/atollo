@@ -17,9 +17,8 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import type { IconType } from "react-icons";
-import { VscodeOption, VscodeSingleSelect, VscodeTextarea, VscodeTextfield } from "@vscode-elements/react-elements";
 import { t } from "../i18n";
-import { useHost } from "./elements";
+import { useHost, VscodeOption, VscodeSingleSelect, VscodeTextarea, VscodeTextfield } from "./elements";
 import { Codicon, codicon } from "./codicon";
 
 type TextElement = HTMLElementTagNameMap["vscode-textfield" | "vscode-textarea"];
