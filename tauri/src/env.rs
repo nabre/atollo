@@ -269,7 +269,7 @@ impl KitEnv {
     }
 
     /// The PHP in `php_dir` and its own `php.ini` (`data\php\<line>`,
-    /// install/web.rs): `CP_PHP`, `PHPRC` and, with `/` for Apache,
+    /// install/web/php_ini.rs): `CP_PHP`, `PHPRC` and, with `/` for Apache,
     /// `CP_PHP_FWD` and `CP_PHPRC_FWD`.
     pub fn set_php(&mut self, data: &Path, php_dir: &Path) {
         let ini = crate::install::php_ini_dir(data, php_dir);

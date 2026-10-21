@@ -45,7 +45,7 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "under %SystemRoot%, inside #[cfg(windows)]",
     ),
     (
-        "install/web.rs",
+        "install/web/vcruntime.rs",
         r#"r"System32\expand.exe""#,
         "a program of Windows under %SystemRoot%; not gated yet: it extracts the \
          Visual C++ cabinet, which P6 keeps to Windows",
