@@ -60,6 +60,27 @@ fn write_json_creates_the_folder_and_leaves_no_temporary() {
     let _ = fs::remove_dir_all(&dir);
 }
 
+/// The new content replaces the old whole, flushed to the disk first
+/// (BUG-V6-27); a write that cannot start leaves the old file as it was.
+#[test]
+fn write_atomic_replaces_whole_or_leaves_the_old() {
+    let dir = temp("atomic-whole");
+    fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("state.json");
+    write_atomic(&file, b"old").unwrap();
+    write_atomic(&file, &[b'n'; 70_000]).unwrap();
+    assert_eq!(fs::read(&file).unwrap(), vec![b'n'; 70_000]);
+    assert_eq!(fs::read_dir(&dir).unwrap().count(), 1, "no temporary left");
+    // A folder where the target should be: the temporary file is written,
+    // the rename fails, nothing is left beside the old one.
+    let busy = dir.join("busy");
+    fs::create_dir_all(busy.join("inside")).unwrap();
+    assert!(write_atomic(&busy, b"x").is_err());
+    assert!(busy.join("inside").is_dir());
+    assert_eq!(fs::read_dir(&dir).unwrap().count(), 2, "no temporary left");
+    let _ = fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn write_atomic_concurrent_threads_do_not_collide_on_tmp() {
     let dir = temp("concurrent");

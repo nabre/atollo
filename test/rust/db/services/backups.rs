@@ -90,3 +90,62 @@ fn only_the_projects_own_database() {
     let e = format!("{:#}", s.own_database("shop", "mysql").unwrap_err());
     assert!(e.contains("other"), "{e}");
 }
+
+/// A dump is written to `<copy>.part`, listed only once done; a failed one
+/// leaves nothing; two in the same second get two names (BUG-V6-06).
+#[test]
+fn a_copy_is_listed_only_when_whole() {
+    let tmp = TempDir::new("db-backups-part");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit);
+    let dir = s.backup_dir("shop").unwrap();
+
+    let (file, part, out) = new_copy(&dir, "shop", DbEngine::MongoDb).unwrap();
+    assert!(part.is_file() && !file.exists());
+    assert!(
+        s.backups("shop").is_empty(),
+        "a dump being written is no copy"
+    );
+    // cut short: the half-written archive goes
+    drop(out);
+    fs::write(&part, "half").unwrap();
+    let e = finish_copy(&part, &file, Err(anyhow!("mongodump: no answer"))).unwrap_err();
+    assert!(e.to_string().contains("no answer"), "{e}");
+    assert_eq!(fs::read_dir(&dir).unwrap().count(), 0, "nothing left");
+    assert!(s.backups("shop").is_empty());
+
+    // done: the copy, listed
+    let (file, part, out) = new_copy(&dir, "shop", DbEngine::MySql).unwrap();
+    drop(out);
+    fs::write(&part, "-- dump").unwrap();
+    assert_eq!(finish_copy(&part, &file, Ok(())).unwrap(), file);
+    assert!(!part.exists());
+    let listed = s.backups("shop");
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].file, file.file_name().unwrap().to_string_lossy());
+
+    // many at once: as many names, the newest first
+    let names: Vec<PathBuf> = (0..5)
+        .map(|_| {
+            let (file, part, _out) = new_copy(&dir, "shop", DbEngine::MySql).unwrap();
+            fs::write(&part, "-- dump").unwrap();
+            finish_copy(&part, &file, Ok(())).unwrap()
+        })
+        .collect();
+    let listed = s.backups("shop");
+    assert_eq!(listed.len(), 6, "{listed:?}");
+    assert_eq!(
+        listed[0].file,
+        names[4].file_name().unwrap().to_string_lossy(),
+        "the newest first"
+    );
+}
+
+/// Binary columns go into the copy as hexadecimal (BUG-V6-04): the restore
+/// streams the file to the client, whatever bytes a BLOB held.
+#[test]
+fn binary_columns_are_dumped_as_text() {
+    assert!(DUMP_ARGS.contains(&"--hex-blob"), "{DUMP_ARGS:?}");
+    assert_eq!(DUMP_ARGS[0], "--single-transaction");
+}

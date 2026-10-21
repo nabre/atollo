@@ -11,7 +11,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
-use super::tools::run_with_input;
+use super::tools::{run_with_input, run_with_reader};
 use super::{auth, project_line, Services};
 use crate::db::DbEngine;
 use crate::os::jobs;
@@ -20,8 +20,11 @@ use crate::projects::state::ProjectState;
 /// The options of a MySQL dump (D-78): one consistent snapshot, with the
 /// routines, triggers and events, and no GTID statement, which only an
 /// administrator could restore (the restore runs as the project's user).
-pub const DUMP_ARGS: [&str; 5] = [
+/// Binary columns as hexadecimal (BUG-V6-04): the copy is text a client
+/// reads back whatever the bytes of a BLOB or a hash.
+pub const DUMP_ARGS: [&str; 6] = [
     "--single-transaction",
+    "--hex-blob",
     "--routines",
     "--events",
     "--triggers",
@@ -35,6 +38,75 @@ pub struct Backup {
     pub file: String,
     pub engine: String,
     pub size: u64,
+}
+
+/// A new copy of database `name` in `dir` (BUG-V6-06):
+/// `<name>-<yyyymmdd-hhmmss><ms><ext>`, never the name of another copy (two
+/// exports in the same second), and its `<file>.part`, created here (the
+/// name is taken) and where the dump is written: not listed among the
+/// copies ([`DbEngine::of_backup`]) before [`finish_copy`] renames it.
+fn new_copy(
+    dir: &std::path::Path,
+    name: &str,
+    kind: DbEngine,
+) -> Result<(PathBuf, PathBuf, fs::File)> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let millis = || {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_millis())
+    };
+    for _ in 0..1000 {
+        // The stamp and the milliseconds of the same second.
+        let before = millis();
+        let stamp = crate::agents::sync::stamp();
+        if millis() / 1000 != before / 1000 {
+            continue;
+        }
+        let file = dir.join(format!(
+            "{name}-{stamp}{:03}{}",
+            before % 1000,
+            kind.backup_ext()
+        ));
+        let part = part_of(&file);
+        if !file.exists() {
+            match fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&part)
+            {
+                Ok(out) => return Ok((file, part, out)),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(e) => return Err(anyhow!("{}: {e}", part.display())),
+            }
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    bail!("{}: no free name for a copy", dir.display())
+}
+
+/// `<file>.part`, where a copy is written before it is one.
+fn part_of(file: &std::path::Path) -> PathBuf {
+    let mut name = file.as_os_str().to_owned();
+    name.push(".part");
+    PathBuf::from(name)
+}
+
+/// A dump done: its `.part` becomes the copy. A dump failed or cut short
+/// (time limit, disk full): its `.part` goes, never left to be restored
+/// with `--drop` (BUG-V6-06).
+fn finish_copy(
+    part: &std::path::Path,
+    file: &std::path::Path,
+    dumped: Result<()>,
+) -> Result<PathBuf> {
+    let renamed =
+        dumped.and_then(|()| fs::rename(part, file).with_context(|| file.display().to_string()));
+    if let Err(e) = renamed {
+        let _ = fs::remove_file(part);
+        return Err(e);
+    }
+    Ok(file.to_path_buf())
 }
 
 impl Services {
@@ -85,37 +157,37 @@ impl Services {
         // this project, never one another project (or someone else) uses.
         let name = self.own_database(project, engine)?;
         let dir = self.backup_dir(project)?;
-        let stamp = crate::agents::sync::stamp();
-        let file = dir.join(format!("{name}-{stamp}{}", kind.backup_ext()));
+        let (file, part, out) = new_copy(&dir, &name, kind)?;
         let dump = kind.dump_bin();
-        match kind {
-            DbEngine::MongoDb => {
-                let (mut cmd, config) = self.mongo_tool(dump, &env, port)?;
-                cmd.arg(format!("--db={name}"))
-                    .arg(format!("--archive={}", file.display()))
-                    .arg("--gzip");
-                let result = run_with_input(cmd, "", Duration::from_secs(600));
-                let _ = fs::remove_file(config);
-                result.context(dump)?;
-                Ok(file)
-            }
-            DbEngine::MySql => {
-                let out = fs::File::create(&file)?;
-                let mut cmd = self.sql_tool_at(kind, dump, &env, line.as_deref(), port);
-                cmd.args(DUMP_ARGS)
-                    .arg(&name)
-                    .stdin(Stdio::null())
-                    .stdout(Stdio::from(out))
-                    .stderr(Stdio::piped());
-                let child = jobs::spawn(&mut cmd)?;
-                let done = child.wait_with_output()?;
-                if !done.status.success() {
-                    let _ = fs::remove_file(&file);
-                    bail!("{dump}: {}", String::from_utf8_lossy(&done.stderr).trim());
+        let written = || -> Result<()> {
+            match kind {
+                DbEngine::MongoDb => {
+                    drop(out);
+                    let (mut cmd, config) = self.mongo_tool(dump, &env, port)?;
+                    cmd.arg(format!("--db={name}"))
+                        .arg(format!("--archive={}", part.display()))
+                        .arg("--gzip");
+                    let result = run_with_input(cmd, "", Duration::from_secs(600));
+                    let _ = fs::remove_file(config);
+                    result.context(dump)
                 }
-                Ok(file)
+                DbEngine::MySql => {
+                    let mut cmd = self.sql_tool_at(kind, dump, &env, line.as_deref(), port);
+                    cmd.args(DUMP_ARGS)
+                        .arg(&name)
+                        .stdin(Stdio::null())
+                        .stdout(Stdio::from(out))
+                        .stderr(Stdio::piped());
+                    let child = jobs::spawn(&mut cmd)?;
+                    let done = child.wait_with_output()?;
+                    if !done.status.success() {
+                        bail!("{dump}: {}", String::from_utf8_lossy(&done.stderr).trim());
+                    }
+                    Ok(())
+                }
             }
-        }
+        };
+        finish_copy(&part, &file, written())
     }
 
     /// Puts a copy back into the project's database (what is there now is
@@ -155,7 +227,13 @@ impl Services {
                     .ok_or_else(|| anyhow!("the project has no {id} database yet"))?;
                 let line = project_line(&self.kit, project, id);
                 let (port, env) = self.running_at(engine, line.as_deref())?;
-                let sql = fs::read_to_string(&path)?;
+                // Streamed, never whole in memory nor read as UTF-8 text
+                // (BUG-V6-04), without the `DEFINER` of root's dump: the
+                // views, triggers, routines and events become the project
+                // user's, who may create them (BUG-V6-01).
+                let sql = super::mysql::WithoutDefiner::new(std::io::BufReader::new(
+                    fs::File::open(&path).with_context(|| path.display().to_string())?,
+                ));
                 let (mut cmd, login) = self.sql_as_project(
                     engine,
                     restore,
@@ -166,7 +244,7 @@ impl Services {
                     &password,
                 )?;
                 cmd.arg(&name);
-                let result = run_with_input(cmd, &sql, Duration::from_secs(600));
+                let result = run_with_reader(cmd, sql, Duration::from_secs(600));
                 let _ = fs::remove_file(login);
                 result.context(restore)
             }

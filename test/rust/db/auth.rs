@@ -7,8 +7,27 @@ fn names_and_sql() {
         assert_eq!(db_name("app & co (1)", engine), "app___co__1_");
         assert_eq!(db_name("---", engine), "progetto");
         assert_eq!(db_name("mysql2", engine), "mysql2");
-        assert_eq!(db_name(&"x".repeat(80), engine).len(), 64);
     }
+    assert_eq!(db_name(&"x".repeat(80), "mongodb").len(), 64);
+    // MySQL's users have 32 characters at most (BUG-V6-07): cut, with a
+    // hash of the project, the same every time and different for another
+    let long = db_name("acme-customer-portal-staging-environment", "mysql");
+    assert_eq!(long.len(), 32, "{long}");
+    assert!(long.starts_with("acme_customer_portal_stag_"), "{long}");
+    assert!(is_valid_name(&long), "{long}");
+    assert_eq!(
+        db_name("ACME-customer-portal-staging-environment", "mysql"),
+        long
+    );
+    let other = db_name("acme-customer-portal-staging-environment-2", "mysql");
+    assert_eq!(other.len(), 32);
+    assert_ne!(other, long);
+    assert_eq!(db_name(&"x".repeat(80), "mysql").len(), 32);
+    assert_eq!(db_name(&"x".repeat(32), "mysql"), "x".repeat(32));
+    assert_eq!(
+        db_name("acme-customer-portal-staging-environment", "mongodb"),
+        "acme_customer_portal_staging_environment"
+    );
     // never the server's own databases or users; those of the other
     // server are ordinary names
     for (project, sql, mongo) in [
@@ -157,6 +176,63 @@ fn secrets_round_trip_and_gitignore() {
     assert!(fs::read_to_string(p.join(".env"))
         .unwrap()
         .contains("DB_PASSWORD=z"));
+}
+
+/// A `secrets.json` that cannot be read is never taken for "no password"
+/// and written over (SEC-V6-01); changes at once, under one lock, keep
+/// each other's password.
+#[test]
+fn unreadable_secrets_are_never_overwritten() {
+    let tmp = crate::kit::tests::TempDir::new("db-auth-secrets-damaged");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    let path = secrets_path(&kit);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, r#"{"mysqlRoot": "kept", "#).unwrap();
+    assert!(try_load(&kit).is_err());
+    assert_eq!(load(&kit), Secrets::default(), "only shown as none");
+    let e = update_secrets(&kit, |s| {
+        s.mongodb_admin = Some("new".into());
+        Ok(())
+    })
+    .unwrap_err();
+    assert!(e.to_string().contains("secrets.json"), "{e}");
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        r#"{"mysqlRoot": "kept", "#
+    );
+    // the other projects' names cannot be checked either
+    assert!(name_used_by(&kit, "shop", "mysql", "shop").is_err());
+
+    // readable: two changes at once both stay
+    fs::remove_file(&path).unwrap();
+    std::thread::scope(|scope| {
+        for engine in ["mysql", "mongodb"] {
+            let kit = &kit;
+            scope.spawn(move || {
+                for _ in 0..20 {
+                    update_secrets(kit, |s| {
+                        match engine {
+                            "mysql" => s.mysql_root.get_or_insert_with(|| "root".into()),
+                            _ => s.mongodb_admin.get_or_insert_with(|| "admin".into()),
+                        };
+                        Ok(())
+                    })
+                    .unwrap();
+                }
+            });
+        }
+    });
+    let s = try_load(&kit).unwrap();
+    assert_eq!(s.mysql_root.as_deref(), Some("root"));
+    assert_eq!(s.mongodb_admin.as_deref(), Some("admin"));
+    // an error from the change writes nothing
+    assert!(update_secrets(&kit, |s| -> Result<()> {
+        s.mysql_root = None;
+        bail!("no")
+    })
+    .is_err());
+    assert_eq!(try_load(&kit).unwrap(), s);
 }
 
 #[cfg(windows)]
@@ -434,6 +510,21 @@ fn names_stored_legacy_and_new() {
     assert_eq!(
         project_db_name(&kit, "renamed", "mysql").unwrap(),
         "old_name"
+    );
+    // a long project: the new name fits MySQL's users (BUG-V6-07), one
+    // stored before stays the name in use
+    let long = "acme-customer-portal-staging-environment";
+    let (name, _) = ensure_project_db(&kit, long, "mysql").unwrap();
+    assert_eq!(name.len(), 32, "{name}");
+    assert_eq!(db_json(&kit, long)["names"]["mysql"], name.as_str());
+    write_db_json(
+        &kit,
+        "acme-customer-portal-production",
+        r#"{"mysql":"pw","names":{"mysql":"acme_customer_portal_production"}}"#,
+    );
+    assert_eq!(
+        project_db_name(&kit, "acme-customer-portal-production", "mysql").unwrap(),
+        "acme_customer_portal_production"
     );
     write_db_json(&kit, "bad", r#"{"mysql":"pw","names":{"mysql":"mysql"}}"#);
     assert!(project_db_name(&kit, "bad", "mysql").is_err());
