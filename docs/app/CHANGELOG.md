@@ -1,5 +1,12 @@
 # Novità
 
+## Codice più ordinato e interfaccia più leggera (21/10/2026)
+
+- **Interfaccia più leggera**: il file principale passa da 1,2 MB a 258 kB; Impostazioni, Strumenti e la procedura guidata si caricano quando si aprono, e solo i componenti di `vscode-elements` usati vengono registrati.
+- **Letture**: le informazioni del kit, l'elenco di «Rimuovi l'unità» e le impostazioni ignorano una lettura vecchia che risponde tardi; Impostazioni e primo avvio hanno «Riprova».
+- **Controlli**: un campo con suggerimenti (estensioni del progetto), pulsanti a scelta con testo (procedura guidata) e misuratori con valore (limiti degli agenti) nello stile di VSCodium.
+- **Codice**: gli installatori, la rete, i database e il portachiavi degli agenti divisi in cartelle, nessun file oltre le 450 righe; le prove dell'interfaccia partono dai dati dell'anteprima; `tool-versions.json` fuori dall'impronta della matrice.
+
 ## Rilascio 0.5.1 alpha (21/10/2026)
 
 - **Versione 0.5.1** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.1` pubblica i file per i sei sistemi.
