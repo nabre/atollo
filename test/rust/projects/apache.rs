@@ -49,6 +49,30 @@ fn conf_of_a_project() {
     assert!(!with_site.contains("/up") && !with_site.contains(".."));
 }
 
+/// BUG-V6-08: the `ServerAlias` of a project with a hard name is its DNS
+/// label, like the pools, never the raw name split on a space.
+#[test]
+fn server_alias_of_a_hard_name_is_a_label() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
+    let root = Path::new(r"D:\kit\projects\My App’s {shop}\public");
+    let dir = Path::new(r"D:\kit\data\projects\x\apache");
+    let conf = project_conf_with_site(
+        base,
+        Some("My App’s {shop}"),
+        root,
+        dir,
+        7105,
+        true,
+        &[],
+        &[],
+        Os::Win32,
+        None,
+    )
+    .unwrap();
+    assert!(conf.contains("ServerAlias my-app-s-shop.localhost\r\n"));
+    assert!(!conf.contains("My App’s {shop}.localhost"));
+}
+
 /// SEC-V3-03: not in LAN mode only a local `Host` is served; the first
 /// VirtualHost, which answers any other one, refuses everything. In LAN
 /// mode an IP of the PC is the `Host`: no VirtualHost.
