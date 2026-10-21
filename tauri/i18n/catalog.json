@@ -714,6 +714,11 @@
     "fr": "{0} n'est pas installé.",
     "de": "{0} ist nicht installiert."
   },
+  "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.": {
+    "en": "Close Antigravity before signing out: it is still open in the kit.",
+    "fr": "Fermez Antigravity avant de vous déconnecter : il est encore ouvert dans le kit.",
+    "de": "Schließe Antigravity, bevor du dich abmeldest: Es ist im Kit noch geöffnet."
+  },
   "Componenti del kit non installati: {0}{1}. Riprova da Strumenti.": {
     "en": "Kit components not installed: {0}{1}. Try again from Tools.",
     "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Outils.",

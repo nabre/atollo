@@ -238,7 +238,9 @@ pub fn launch<R: tauri::Runtime>(
 /// Signs out in the kit: the saved login is removed (Claude's and Codex's
 /// files, Antigravity's saved login). The account's sessions on the
 /// provider's site are not revoked: do it from the account settings.
-pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
+/// Antigravity is refused while an agy of the kit runs: its login would
+/// come back into the kit when it ends (BUG-V6-29). Errors in `lang`.
+pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str, lang: &str) -> Result<()> {
     let home = kit.home();
     match id {
         "claude" => {
@@ -247,22 +249,55 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str) -> Result<()> {
         }
         "codex" => {
             let codex = crate::setup::catalog::kit_path(kit, "codex/bin/codex.exe");
-            if codex.is_file() {
-                let status = crate::os::jobs::kit_command(&codex, env)
-                    .arg("logout")
-                    .status()
-                    .context("codex logout")?;
-                if status.success() {
-                    return Ok(());
-                }
+            if codex.is_file() && codex_logout(&codex, env)? {
+                return Ok(());
             }
             remove_if_exists(&home.join(".codex").join("auth.json"))
         }
         "antigravity" => {
+            if keyring::kit_agy_running(kit) {
+                bail!(
+                    "{}",
+                    crate::i18n::t(
+                        lang,
+                        "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.",
+                        &[]
+                    )
+                );
+            }
             keyring::save(kit)?;
             remove_if_exists(&kit.data().join("antigravity").join("keyring.json"))
         }
         _ => bail!("unknown agent: {id}"),
+    }
+}
+
+/// How long `codex logout` may take before it is stopped (and auth.json
+/// removed by the kit instead).
+const CODEX_LOGOUT_WITHIN: Duration = Duration::from_secs(20);
+
+/// `codex logout`; `false` when it failed or did not end in time.
+fn codex_logout(codex: &Path, env: &KitEnv) -> Result<bool> {
+    use std::process::Stdio;
+    let mut child = crate::os::jobs::kit_command(codex, env)
+        .arg("logout")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .context("codex logout")?;
+    let start = Instant::now();
+    loop {
+        if let Some(status) = child.try_wait().context("codex logout")? {
+            return Ok(status.success());
+        }
+        if start.elapsed() > CODEX_LOGOUT_WITHIN {
+            crate::log::warn("codex logout: no answer in 20 s, stopped");
+            let _ = child.kill();
+            let _ = child.wait();
+            return Ok(false);
+        }
+        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
