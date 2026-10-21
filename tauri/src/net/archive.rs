@@ -1082,6 +1082,46 @@ pub fn remove_dir(dest: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Runs `make`, which builds `dest` where it stays (a conda environment
+/// writes its own folder into its files, so it cannot be built elsewhere and
+/// swapped in). An existing `dest` is set aside first (`<name>.old-<ms>`,
+/// `InUse` if it cannot move), deleted when `make` succeeds and put back in
+/// place of what `make` left when it fails: an update that breaks halfway
+/// leaves the old one working.
+pub fn rebuild_in_place<T>(dest: &Path, make: impl FnOnce() -> Result<T>) -> Result<T> {
+    let old = if dest.exists() {
+        let old = sibling(dest, "old");
+        fs::rename(dest, &old).map_err(|_| InUse(dest.to_path_buf()))?;
+        Some(old)
+    } else {
+        None
+    };
+    match make() {
+        Ok(v) => {
+            if let Some(old) = old {
+                let _ = fs::remove_dir_all(old);
+            }
+            Ok(v)
+        }
+        Err(e) => {
+            // What `make` left halfway goes, so it is not taken for installed.
+            if dest.exists() {
+                let _ = fs::remove_dir_all(dest);
+            }
+            if let Some(old) = old {
+                if let Err(back) = fs::rename(&old, dest) {
+                    crate::log::warn(&format!(
+                        "{} not put back from {}: {back}",
+                        dest.display(),
+                        old.display()
+                    ));
+                }
+            }
+            Err(e)
+        }
+    }
+}
+
 fn sibling(dest: &Path, tag: &str) -> PathBuf {
     let name = dest
         .file_name()

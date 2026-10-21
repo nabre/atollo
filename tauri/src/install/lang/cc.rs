@@ -342,20 +342,23 @@ impl Installer for Cc {
             .ok_or_else(|| anyhow!("cc has no folder"))?;
         let make = make_version(&release.version)
             .ok_or_else(|| anyhow!("cc: version {}", release.version))?;
-        // A whole new folder: the LLVM of an older kit goes too.
-        if folder.exists() {
-            crate::net::archive::remove_dir(&folder)?;
+        // A whole new folder: the LLVM of an older kit goes too. The old one
+        // is set aside, not deleted, and comes back if the new one fails.
+        if let Some(parent) = folder.parent() {
+            crate::net::archive::clean_leftovers(parent);
         }
         let spec = format!("make={make}");
-        micromamba_create(
-            ctx,
-            component,
-            release,
-            &folder.join("make"),
-            &[&spec],
-            progress,
-        )?;
-        self.after_conda(ctx, component, &folder, progress)?;
+        crate::net::archive::rebuild_in_place(&folder, || {
+            micromamba_create(
+                ctx,
+                component,
+                release,
+                &folder.join("make"),
+                &[&spec],
+                &mut *progress,
+            )?;
+            self.after_conda(ctx, component, &folder, &mut *progress)
+        })?;
         if !crate::setup::catalog::kit_path(ctx.kit, "zig/zig.exe").is_file() {
             progress.note(
                 "Zig is not installed: cc, c++, ar and ranlib need it, and stay off the PATH until it is",

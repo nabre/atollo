@@ -720,10 +720,6 @@ pub(super) fn micromamba_create(
                 let _ = fs::set_permissions(&mm, p);
             }
         }
-        // The same line again (a patch): the old folder goes first.
-        if prefix.exists() {
-            crate::net::archive::remove_dir(prefix)?;
-        }
         let envs = mamba_envs(work);
         let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
         progress.note(&format!("micromamba: {}", specs.join(" ")));
@@ -731,10 +727,20 @@ pub(super) fn micromamba_create(
         let own = micromamba_runner(ctx.kit.target()).conda_subdir();
         let args = micromamba_create_args(prefix, specs, (platform != own).then_some(platform));
         let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        run(ctx, &mm, &args, &envs, progress)?;
-        // The package cache is in the work folder; a `pkgs` left in the
-        // environment is only downloaded archives.
-        let _ = fs::remove_dir_all(prefix.join("pkgs"));
+        // The same line again (a patch): the old environment is set aside,
+        // not deleted, and comes back if the new one is not created (no
+        // network, solver, full disk). What an interrupted run set aside
+        // next to it goes first.
+        if let Some(parent) = prefix.parent() {
+            crate::net::archive::clean_leftovers(parent);
+        }
+        crate::net::archive::rebuild_in_place(prefix, || {
+            run(ctx, &mm, &args, &envs, &mut *progress)?;
+            // The package cache is in the work folder; a `pkgs` left in the
+            // environment is only downloaded archives.
+            let _ = fs::remove_dir_all(prefix.join("pkgs"));
+            Ok(())
+        })?;
         if super::conda::wanted(ctx, component) {
             super::conda::keep(
                 ctx,

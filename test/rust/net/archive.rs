@@ -1086,3 +1086,54 @@ fn copy_tree_copies_files_and_folders() {
         "2"
     );
 }
+
+/// A rebuild that fails halfway (no network, solver, full disk) leaves the
+/// old folder where it was, without what the failed one wrote (BUG-V6-02).
+#[test]
+fn rebuild_in_place_puts_the_old_one_back_on_failure() {
+    let tmp = TempDir::new("rebuildfail");
+    let dest = tmp.0.join("r").join("4.5");
+    tree(&dest, "old");
+    let err = rebuild_in_place(&dest, || -> Result<()> {
+        assert!(!dest.exists(), "the old one is set aside first");
+        fs::create_dir_all(dest.join("conda-meta")).unwrap();
+        fs::write(dest.join("half.txt"), "new").unwrap();
+        bail!("solver failed")
+    })
+    .unwrap_err();
+    assert!(err.to_string().contains("solver failed"), "{err:#}");
+    assert_eq!(
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
+        "old"
+    );
+    assert!(!dest.join("half.txt").exists());
+    assert!(!dest.join("conda-meta").exists());
+    assert_eq!(names(&tmp.0.join("r")), ["4.5"]);
+}
+
+/// A rebuild that works leaves only the new folder; one without an old
+/// folder that fails leaves nothing.
+#[test]
+fn rebuild_in_place_replaces_on_success() {
+    let tmp = TempDir::new("rebuildok");
+    let dest = tmp.0.join("r").join("4.5");
+    tree(&dest, "old");
+    rebuild_in_place(&dest, || {
+        tree(&dest, "new");
+        Ok(())
+    })
+    .unwrap();
+    assert_eq!(
+        fs::read_to_string(dest.join("bin").join("tool.exe")).unwrap(),
+        "new"
+    );
+    assert_eq!(names(&tmp.0.join("r")), ["4.5"]);
+
+    let fresh = tmp.0.join("r").join("4.4");
+    rebuild_in_place(&fresh, || -> Result<()> {
+        tree(&fresh, "half");
+        bail!("no network")
+    })
+    .unwrap_err();
+    assert!(!fresh.exists());
+}
