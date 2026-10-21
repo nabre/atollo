@@ -16,6 +16,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../../runtime/phpmyadmin.php"),
     ),
     (
+        "mongo-express.js",
+        include_str!("../../../runtime/mongo-express.js"),
+    ),
+    (
         "php-router.php",
         include_str!("../../../runtime/php-router.php"),
     ),

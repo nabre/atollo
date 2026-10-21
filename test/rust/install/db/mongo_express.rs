@@ -44,7 +44,10 @@ fn refuses_what_cannot_be_checked() {
         "1.1.0-beta.1-1",
     ] {
         assert!(!valid_version(bad), "{bad}");
-        assert!(mongo_express_release(bad, &"a".repeat(64)).is_err(), "{bad}");
+        assert!(
+            mongo_express_release(bad, &"a".repeat(64)).is_err(),
+            "{bad}"
+        );
     }
 }
 
@@ -54,7 +57,9 @@ fn refuses_what_cannot_be_checked() {
 #[test]
 fn catalog_entry() {
     let catalog = Catalog::get();
-    let c = catalog.find("mongo-express").expect("mongo-express in the catalog");
+    let c = catalog
+        .find("mongo-express")
+        .expect("mongo-express in the catalog");
     let mongodb = catalog.find("mongodb").unwrap();
     assert_eq!(c.group, crate::setup::catalog::Group::Databases);
     assert!(!c.def);
@@ -73,7 +78,10 @@ fn catalog_entry() {
     }
     assert!(c.minor_folder && !c.versioned);
     assert_eq!(c.key, "mongo-express/app.js");
-    assert!(c.keys.iter().any(|k| k == "mongo-express/build-assets.json"));
+    assert!(c
+        .keys
+        .iter()
+        .any(|k| k == "mongo-express/build-assets.json"));
     let version = c.version.as_deref().expect("a version fixed");
     assert!(valid_version(version), "{version}");
     if let Some(sha) = c.sha256.as_deref() {

@@ -258,6 +258,16 @@ impl Services {
         self.phpmyadmin.open(&self.kit, &env, port, &password, lang)
     }
 
+    /// The address that opens mongo-express logged in to the running
+    /// MongoDB (D-147), version `line` (None: the one the server runs).
+    pub fn mongo_express_url(&self, line: Option<&str>) -> Result<String> {
+        let engine = DbEngine::MongoDb;
+        let (port, env) = self.running_at(engine, line)?;
+        let password = admin_password(&auth::try_load(&self.kit)?, engine)
+            .ok_or_else(|| anyhow::anyhow!("{engine} has no password of admin yet"))?;
+        self.mongo_express.open(&self.kit, &env, port, &password)
+    }
+
     /// Asks the server to shut down, then ends whatever is left.
     #[allow(dead_code)] // the tests; the commands name the version
     pub fn stop(&self, id: &str) {
@@ -292,6 +302,8 @@ impl Services {
         let id = engine.id();
         let ask = match engine {
             DbEngine::MongoDb => {
+                // mongo-express logged in to this version ends with it.
+                self.mongo_express.stop_for(server.port);
                 let mut cmd = jobs::kit_command(client_at(&self.kit, engine, None), &server.env);
                 cmd.args(["--quiet", "--host", "127.0.0.1", "--port"])
                     .arg(server.port.to_string())
@@ -330,6 +342,7 @@ impl Services {
     /// server gone, and the job ends it in any case.
     pub fn stop_all(&self) {
         self.phpmyadmin.stop();
+        self.mongo_express.stop();
         let keys: Vec<Key> = self
             .running
             .lock()

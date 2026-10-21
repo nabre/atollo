@@ -172,6 +172,7 @@ pub struct Services {
     running: Mutex<BTreeMap<Key, Server>>,
     errors: Mutex<BTreeMap<Key, String>>,
     phpmyadmin: crate::db::phpmyadmin::PhpMyAdmin,
+    mongo_express: crate::db::mongo_express::MongoExpress,
 }
 
 /// The folder of version `line` of the versioned component `id` (None: the
@@ -241,6 +242,7 @@ impl Services {
             running: Mutex::new(BTreeMap::new()),
             errors: Mutex::new(BTreeMap::new()),
             phpmyadmin: crate::db::phpmyadmin::PhpMyAdmin::default(),
+            mongo_express: crate::db::mongo_express::MongoExpress::default(),
         }
     }
 

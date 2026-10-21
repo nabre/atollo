@@ -307,11 +307,21 @@ pub async fn db_browse_rows<R: Runtime>(
     .or_fail("browse")?
 }
 
-/// phpMyAdmin on the kit's SQL server in the browser (D-107, D-110):
-/// phpMyAdmin (with PHP and the server) installed the first time, the
-/// server started when it is off. `engine`: `mysql` (null too). `line`:
-/// another installed version, on its own port (D-102); null: the version
-/// the server runs.
+/// The web admin of `engine` (D-107, D-147): phpMyAdmin for MySQL,
+/// mongo-express for MongoDB.
+pub fn admin_component(engine: DbEngine) -> &'static str {
+    match engine {
+        DbEngine::MySql => "phpmyadmin",
+        DbEngine::MongoDb => "mongo-express",
+    }
+}
+
+/// The kit's database in the browser: phpMyAdmin on MySQL (D-107, D-110),
+/// mongo-express on MongoDB (D-147). The tool (with what it needs: PHP or
+/// Node.js, and the server) installed the first time with the progress of
+/// the preparation task, the server started when it is off. `engine`:
+/// `mysql` (null too) or `mongodb`. `line`: another installed version, on
+/// its own port (D-102); null: the version the server runs.
 #[tauri::command]
 pub async fn db_admin_open<R: Runtime>(
     app: AppHandle<R>,
@@ -322,30 +332,27 @@ pub async fn db_admin_open<R: Runtime>(
 ) -> CmdResult<Vec<crate::db::services::ServiceInfo>> {
     ensure_main(&webview)?;
     let engine = match engine.as_deref() {
-        Some(id) => engine_of(id, "phpmyadmin")?,
+        Some(id) => engine_of(id, "db-admin")?,
         None => DbEngine::MySql,
     };
-    if !engine.is_sql() {
-        return Err(fail(
-            "phpmyadmin",
-            format!("phpMyAdmin does not open {engine}"),
-        ));
-    }
+    let tool = admin_component(engine);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let env = ensure(&app, &task, &kit, lang, &[engine.component(), "phpmyadmin"])?;
+        let env = ensure(&app, &task, &kit, lang, &[engine.component(), tool])?;
         services
             .start_engine(engine, line.as_deref(), &env)
             .map_err(|e| start_error(lang, &e))?;
-        let url = services
-            .phpmyadmin_url(engine, line.as_deref(), lang)
-            .or_fail_chain("phpmyadmin")?;
+        let url = match engine {
+            DbEngine::MySql => services.phpmyadmin_url(engine, line.as_deref(), lang),
+            DbEngine::MongoDb => services.mongo_express_url(line.as_deref()),
+        }
+        .or_fail_chain(tool)?;
         open_in_browser(&url)?;
         Ok(services.list())
     })
     .await
-    .or_fail("phpmyadmin")?
+    .or_fail(tool)?
 }
 
 #[cfg(test)]
