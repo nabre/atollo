@@ -47,6 +47,33 @@ fn user_text_and_keys_kept() {
     );
 }
 
+/// PORT-V6-02: the trusted folder's key is lower case only on Windows.
+#[test]
+fn trusted_keys_keep_their_case_off_windows() {
+    use crate::kit::{tests::TempDir, Arch, Kit, Os, Target};
+    let tmp = TempDir::new("codex-case");
+    for os in [Os::Linux, Os::Win32] {
+        let kit = Kit::at_target(
+            tmp.0.join(format!("Kit-{os:?}")),
+            Target::new(os, Arch::X64),
+        );
+        let p = Paths::of(&kit);
+        fs::create_dir_all(p.projects.join("App")).unwrap();
+        sync_config(&p, &Servers::new(), &mut Report::default()).unwrap();
+        let text = fs::read_to_string(p.codex.join("config.toml")).unwrap();
+        let app = p.projects.join("App").display().to_string();
+        let key = if os == Os::Win32 {
+            app.to_lowercase()
+        } else {
+            app
+        };
+        assert!(
+            text.contains(&format!("[projects.'{key}']")),
+            "{os:?}: {text}"
+        );
+    }
+}
+
 #[test]
 fn keys_before_tables_only() {
     let keys = top_level_keys("a = 1\nb = \"\"\"\nc = 2\n\"\"\"\n[t]\nd = 3\n");

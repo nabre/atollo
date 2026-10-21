@@ -287,16 +287,25 @@ pub fn sync_config(p: &Paths, servers: &Servers, report: &mut Report) -> Result<
         }
     }
 
-    // Trusted folders, keyed by the lower-case path. A table Codex wrote for
-    // the same folder is kept (a second one would be invalid TOML).
-    let user_lower = user.to_lowercase();
+    // Trusted folders, keyed by the lower-case path on Windows, where paths
+    // ignore case; elsewhere `/home/Me/Kit` and `/home/me/kit` are two
+    // folders and the key is the path as it is (PORT-V6-02). A table Codex
+    // wrote for the same folder is kept (a second one would be invalid TOML).
+    let fold = |s: &str| {
+        if p.os.is_windows() {
+            s.to_lowercase()
+        } else {
+            s.to_owned()
+        }
+    };
+    let user_folded = fold(&user);
     let mut trust = Vec::new();
     for f in trusted_folders(p) {
-        let path = f.display().to_string().to_lowercase();
+        let path = fold(&f.display().to_string());
         let literal = format!("'{path}'");
         let basic = Value::String(path.clone()).to_string();
-        if user_lower.contains(&format!("[projects.{literal}]"))
-            || user_lower.contains(&format!("[projects.{}]", basic.to_lowercase()))
+        if user_folded.contains(&format!("[projects.{literal}]"))
+            || user_folded.contains(&format!("[projects.{}]", fold(&basic)))
         {
             continue;
         }

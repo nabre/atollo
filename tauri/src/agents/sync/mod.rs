@@ -37,7 +37,7 @@ use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
 use crate::fsx::{join_rel, write_atomic};
-use crate::kit::Kit;
+use crate::kit::{Kit, Os};
 
 /// Folders of the kit and of the three agents.
 #[derive(Debug, Clone)]
@@ -50,6 +50,8 @@ pub struct Paths {
     pub codex: PathBuf,
     pub gemini: PathBuf,
     pub projects: PathBuf,
+    /// The kit's system: its paths ignore case only on Windows.
+    pub os: Os,
 }
 
 impl Paths {
@@ -64,6 +66,7 @@ impl Paths {
             codex: home.join(".codex"),
             gemini: home.join(".gemini"),
             projects: kit.projects(),
+            os: kit.os(),
         }
     }
 
