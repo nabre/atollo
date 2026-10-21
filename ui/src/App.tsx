@@ -14,12 +14,15 @@ import {
   onCloseRequested,
   onOpenProject,
   runStop,
+  updateCheck,
   type AppInfo,
   type EditorStatus,
   type OpenNow,
   type RunInfo,
   type SetupSnapshot,
+  type UpdateStatus,
 } from "./api";
+import { updateFound, updateText } from "./update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./activity";
 import { TitleBar } from "./titlebar";
@@ -496,10 +499,55 @@ function StatusItem({
   );
 }
 
+/** The version, the bar's last item: a click looks for an update, as
+ * «Cerca aggiornamenti» in Settings › Updates. While it looks the item
+ * spins; then an icon tells what it found (up to date, a newer version, a
+ * failed check), and the hover and screen readers say it in full. */
+function VersionItem({ version }: { version: string }) {
+  const [checking, setChecking] = useState(false);
+  const [found, setFound] = useState<UpdateStatus | null>(null);
+  const check = () => {
+    if (checking) return;
+    setChecking(true);
+    updateCheck().then(
+      (st) => {
+        setChecking(false);
+        setFound(st);
+      },
+      (e: unknown) => {
+        setChecking(false);
+        setFound({ current: version, latest: null, staged: null, checking: false, error: String(e), manual: false });
+      },
+    );
+  };
+  const text = found ? updateText(found) : null;
+  const newer = found ? updateFound(found) : null;
+  const label = checking ? t("Ricerca degli aggiornamenti…") : t("Cerca aggiornamenti");
+  return (
+    <StatusItem title={text ? `${text}\n${label}` : label} onClick={check} last>
+      <span className="sr-only">{label}</span>
+      {checking ? (
+        <Icon name="loading" spin size={14} className="[--vscode-icon-foreground:currentColor]" />
+      ) : found?.error ? (
+        <Codicon name="warning" size={14} />
+      ) : newer ? (
+        <Codicon name="arrow-circle-up" size={14} />
+      ) : found ? (
+        <Codicon name="check" size={14} />
+      ) : null}
+      <span>v{version}</span>
+      {newer && !checking && <span aria-hidden="true">→ v{newer}</span>}
+      <span role="status" className="sr-only">
+        {checking ? "" : (text ?? "")}
+      </span>
+    </StatusItem>
+  );
+}
+
 /** VSCodium's status bar on the brand's band: the kit as the remote item,
- * what runs and what failed (it opens the Activity panel, as the editor's
- * Problems item), the installs; on the right the editor, the kit and the
- * panel's toggle. */
+ * what runs and what failed (the one item that opens and closes the
+ * Activity panel, as the editor's Problems item), the installs; on the
+ * right the terminals, the editor and the kit. */
 function StatusBar({
   info,
   editor,
@@ -526,7 +574,6 @@ function StatusBar({
   const installing = setupStatusText(setup);
   const live = running.count;
   const errors = Object.values(runs).filter((r) => r.state === "error").length;
-  const panelLabel = panelOpen ? t("Nascondi il pannello") : t("Mostra il pannello");
   return (
     <footer
       aria-label={t("Barra di stato")}
@@ -560,7 +607,7 @@ function StatusBar({
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
       {installing && (
-        <StatusItem onClick={onPanel}>
+        <StatusItem>
           {/* The item's color, as the editor's status-bar codicons. */}
           <Icon name="loading" spin size={14} className="[--vscode-icon-foreground:currentColor]" />
           <span role="status">{installing}</span>
@@ -574,6 +621,7 @@ function StatusBar({
             terminals.setShown(!terminals.shown);
           }}
           pressed={terminals.shown}
+          last={!info}
         >
           <span className="sr-only">{terminalsLabel}</span>
           <Codicon name="terminal" size={14} />
@@ -589,13 +637,9 @@ function StatusBar({
             </StatusItem>
           )}
           <StatusItem>{info.platform}</StatusItem>
-          <StatusItem>v{info.version}</StatusItem>
+          <VersionItem version={info.version} />
         </>
       )}
-      <StatusItem title={panelLabel} onClick={onPanel} pressed={panelOpen} last>
-        <span className="sr-only">{panelLabel}</span>
-        <Codicon name="layout-panel" size={14} />
-      </StatusItem>
     </footer>
   );
 }

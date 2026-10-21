@@ -1,5 +1,13 @@
 # Novità
 
+## La versione nella barra di stato cerca gli aggiornamenti (22/10/2026)
+
+- **Un clic sulla versione** (l'ultima voce della barra di stato) cerca gli aggiornamenti di Atollo, come «Cerca aggiornamenti» in Impostazioni › Aggiornamenti: mentre cerca gira la rotellina, poi accanto compaiono un segno di spunta (è la più recente), la versione nuova (pronta per la prossima chiusura, o da scaricare) o un avviso (controllo non riuscito); passandoci sopra si legge l'esito per intero.
+
+## Un solo interruttore per «Attività» nella barra di stato (21/10/2026)
+
+- **Barra di stato più pulita**: il pannello «Attività» si apre e si chiude solo dal contatore ▶ · ⨯, come «Problemi» in VSCodium. Tolta l'icona del pannello in fondo a destra, che faceva la stessa cosa; la rotellina di un'installazione in corso resta visibile ma non è più un pulsante.
+
 ## MongoDB senza la scheda «Contenuto» (21/10/2026)
 
 - **Una pagina sola**: la pagina di MongoDB mostra solo i dettagli, come quella di MySQL; il contenuto si esplora e si modifica in mongo-express («Apri mongo-express»). Tolto l'esploratore in sola lettura dell'app, che faceva meno di mongo-express (D-150).

@@ -1019,10 +1019,10 @@ export const START: TopicTexts = {
             [
               tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste"),
               tr(
-                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello.",
-                "On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals, the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel.",
-                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs ; à droite, les terminaux ouverts, l'état de l'éditeur, le système (par exemple win32-x64), la version d'Atollo et, en dernier, l'icône qui affiche ou masque le panneau.",
-                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler; rechts die geöffneten Terminals, der Status des Editors, das System (zum Beispiel win32-x64), die Atollo-Version und als Letztes das Symbol, das den Bereich ein- oder ausblendet.",
+                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori, che mostra o nasconde il pannello «Attività»; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64) e, per ultima, la versione di Atollo: un clic cerca gli aggiornamenti, e accanto compare l'esito (un segno di spunta, la versione nuova o un avviso).",
+                "On the left the Atollo item and the counter of what is running and of the errors, which shows or hides the “Activity” panel; on the right the open terminals, the editor status, the system (for example win32-x64) and, last, the Atollo version: a click checks for updates, and the result appears beside it (a check mark, the new version or a warning).",
+                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs, qui affiche ou masque le panneau « Activité » ; à droite, les terminaux ouverts, l'état de l'éditeur, le système (par exemple win32-x64) et, en dernier, la version d'Atollo : un clic recherche les mises à jour, et le résultat s'affiche à côté (une coche, la nouvelle version ou un avertissement).",
+                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler, der den Bereich „Aktivität“ ein- oder ausblendet; rechts die geöffneten Terminals, der Status des Editors, das System (zum Beispiel win32-x64) und als Letztes die Atollo-Version: Ein Klick sucht nach Updates, daneben erscheint das Ergebnis (ein Häkchen, die neue Version oder eine Warnung).",
               ),
             ],
           ]}
@@ -1081,7 +1081,7 @@ export const START: TopicTexts = {
                 "Une installation de composants en cours et l'étape en train d'être faite.",
                 "Eine laufende Installation von Komponenten und der Schritt, den sie gerade ausführt.",
               ),
-              tr("Apre il pannello.", "Opens the panel.", "Ouvre le panneau.", "Öffnet den Bereich."),
+              tr("—", "—", "—", "—"),
             ],
             [
               tr("Terminali aperti", "Open terminals", "Terminaux ouverts", "Geöffnete Terminals"),
@@ -1127,26 +1127,6 @@ export const START: TopicTexts = {
               tr("v0.x.y", "v0.x.y", "v0.x.y", "v0.x.y"),
               tr("La versione di Atollo.", "The Atollo version.", "La version d'Atollo.", "Die Atollo-Version."),
               tr("—", "—", "—", "—"),
-            ],
-            [
-              tr(
-                "Icona del pannello (l'ultima a destra)",
-                "Panel icon (the last on the right)",
-                "Icône du panneau (la dernière à droite)",
-                "Symbol des Bereichs (das letzte rechts)",
-              ),
-              tr(
-                "Passandoci sopra dice «Mostra il pannello» o «Nascondi il pannello».",
-                "Hovering over it says “Show the panel” or “Hide the panel”.",
-                "Au survol, il indique « Afficher le panneau » ou « Masquer le panneau ».",
-                "Beim Darüberfahren zeigt es „Panel anzeigen“ oder „Panel ausblenden“.",
-              ),
-              tr(
-                "Apre o chiude il pannello «Attività».",
-                "Opens or closes the “Activity” panel.",
-                "Ouvre ou ferme le panneau « Activité ».",
-                "Öffnet oder schließt den Bereich „Aktivität“.",
-              ),
             ],
           ]}
         />

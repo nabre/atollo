@@ -192,8 +192,55 @@ describe("App", () => {
         "px-vsc-statusbar-item-padding",
       ]),
     );
-    const toggle = within(bar).getAllByRole("button").at(-1);
-    expect(classes(toggle ?? null)).toEqual(expect.arrayContaining(["mr-vsc-size20", "px-vsc-size60"]));
+    // The last item keeps the bar's edge.
+    const version = within(bar).getByText(/^v\d/).closest("button");
+    expect(classes(version)).toEqual(expect.arrayContaining(["mr-vsc-size20", "px-vsc-size60"]));
+    // One item opens and closes the Activity panel: its counter; the
+    // other button is the version, which looks for updates.
+    const buttons = within(bar).getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]?.textContent).toMatch(/^Attività/);
+    expect(buttons[1]).toBe(version);
+    expect(buttons[0]?.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(buttons[0] as HTMLElement);
+    expect(buttons[0]?.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("looks for updates from the version in the status bar", async () => {
+    let answer: (st: unknown) => void = () => undefined;
+    const base = answers();
+    invoke.mockImplementation((cmd) =>
+      cmd === "update_check"
+        ? new Promise((done) => {
+            answer = done;
+          })
+        : base(cmd),
+    );
+    render(<App />);
+    const bar = screen.getByRole("contentinfo", { name: "Barra di stato" });
+    const version = await within(bar).findByRole("button", { name: /^Cerca aggiornamenti/ });
+    fireEvent.click(version);
+    expect(invoke).toHaveBeenCalledWith("update_check", undefined);
+    expect(version.getAttribute("title")).toBe("Ricerca degli aggiornamenti…");
+    // A second click while it looks asks nothing more.
+    fireEvent.click(version);
+    expect(invoke.mock.calls.filter(([c]) => c === "update_check")).toHaveLength(1);
+    act(() => {
+      answer({ ...SAMPLE_UPDATE, latest: "9.9.9", staged: "9.9.9" });
+    });
+    const said = "La versione 9.9.9 è pronta: sostituisce questa alla chiusura di Atollo.";
+    expect((await within(bar).findByText(said)).getAttribute("role")).toBe("status");
+    expect(version.getAttribute("title")).toBe(`${said}\nCerca aggiornamenti`);
+    expect(version.textContent).toContain("→ v9.9.9");
+  });
+
+  it("says in the status bar when the update check fails", async () => {
+    const base = answers();
+    invoke.mockImplementation((cmd) => (cmd === "update_check" ? Promise.reject(new Error("offline")) : base(cmd)));
+    render(<App />);
+    const bar = screen.getByRole("contentinfo", { name: "Barra di stato" });
+    fireEvent.click(await within(bar).findByRole("button", { name: /^Cerca aggiornamenti/ }));
+    expect((await within(bar).findByText(/^Controllo non riuscito: .*offline/)).getAttribute("role")).toBe("status");
   });
 
   it("signs in to GitHub with the one-time code", async () => {
