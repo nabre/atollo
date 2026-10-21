@@ -1,5 +1,5 @@
-//! Databases of a project (D-74), backups, `.env`, content (D-79) and
-//! phpMyAdmin (D-107).
+//! Databases of a project (D-74), backups, `.env`, phpMyAdmin (D-107) and
+//! mongo-express (D-147).
 
 use super::*;
 use crate::db::DbEngine;
@@ -255,56 +255,6 @@ pub async fn project_db_restore<R: Runtime>(
     })
     .await
     .or_fail("restore")?
-}
-
-/// The databases of a running server with their tables or collections
-/// (D-79), read only. `line`: another version, on its own port
-/// (D-102); null: the version the server runs.
-#[tauri::command]
-pub async fn db_browse_tree<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-    engine: String,
-    line: Option<String>,
-) -> CmdResult<Vec<crate::db::browse::Database>> {
-    ensure_main(&webview)?;
-    engine_of(&engine, "browse")?;
-    let services = Arc::clone(&state.services);
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::db::browse::tree(&services, &engine, line.as_deref()).or_fail_chain("browse")
-    })
-    .await
-    .or_fail("browse")?
-}
-
-/// One page of rows of a table or collection, from `offset` (D-79), on
-/// version `line` (null: the one the server runs).
-#[tauri::command]
-pub async fn db_browse_rows<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-    engine: String,
-    line: Option<String>,
-    database: String,
-    table: String,
-    offset: u64,
-) -> CmdResult<crate::db::browse::Rows> {
-    ensure_main(&webview)?;
-    engine_of(&engine, "browse")?;
-    let services = Arc::clone(&state.services);
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::db::browse::rows(
-            &services,
-            &engine,
-            line.as_deref(),
-            &database,
-            &table,
-            offset,
-        )
-        .or_fail_chain("browse")
-    })
-    .await
-    .or_fail("browse")?
 }
 
 /// The web admin of `engine` (D-107, D-147): phpMyAdmin for MySQL,

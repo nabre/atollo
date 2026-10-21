@@ -122,7 +122,7 @@ tauri\src\
                               per motore: D-140), data (cartelle e porte per versione), access (password e
                               database dei progetti), backups (D-78), tools (file di login), mysql
                               (inizializzazione, my.cnf, libaio: D-110)
-    auth  browse  phpmyadmin  password e .env (D-74); contenuto in sola lettura (D-79); phpMyAdmin (D-107), mongo-express e web_admin (D-147)
+    auth  phpmyadmin          password e .env (D-74); phpMyAdmin (D-107), mongo-express e web_admin (D-147)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
   net\                        rete: mod (HTTPS, proxy ed eccezioni, API di GitHub), ca (il file PEM delle
@@ -296,7 +296,7 @@ Le cartelle delle pagine:
 | Cartella | File |
 | --- | --- |
 | `projects\` | `explorer.tsx` (pagina Progetti), `home.tsx` (ciò che gira, preferiti e recenti), `quickopen.tsx` (Ctrl+P), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `wizard.tsx` (nuovo progetto da un framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx` (con `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx` |
-| `databases\` | `page.tsx` (pagina Database, `SecretField`), `browser.tsx` (contenuto in sola lettura), `backups.tsx` (copie dei database di un progetto) |
+| `databases\` | `page.tsx` (pagina Database, `SecretField`), `backups.tsx` (copie dei database di un progetto) |
 | `agents\` | `page.tsx` (pagina Agenti, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limiti e consumi), `token.tsx` (il token di Claude Code su macOS) |
 | `frameworks\` | `model.ts` (dati e hook), `fields.tsx` (campi delle istruzioni), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (versioni del kit), `project.tsx` (versioni di un progetto), `lines.tsx` (scelta della riga) |
@@ -311,7 +311,7 @@ Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pe
 ### `api\`
 
 - `core.ts` ha i tre aiuti con cui si scrive ogni comando: `query(cmd, anteprima, args)` per un comando che risponde con dati, `act(cmd, args)` per uno che agisce e basta, `subscribe(evento, handler)` per gli eventi. Fuori da Tauri (`npm run dev` aperto nel browser) rispondono con l'anteprima e la pagina mostra il banner «anteprima»: così le pagine si disegnano nel browser. Restano dentro `api\`: le pagine non chiamano comandi per nome.
-- Un'anteprima calcolata (`sampleStats()`, `sampleRows()`) si scrive con `browserPreview ? … : invoke(…)`, per non calcolarla quando gira l'app.
+- Un'anteprima calcolata (`sampleStats()`) si scrive con `browserPreview ? … : invoke(…)`, per non calcolarla quando gira l'app.
 - I tipi rispecchiano le strutture Rust con `serde(rename_all = "camelCase")`.
 
 ### Hook (`hooks.ts`)

@@ -19,7 +19,6 @@ import {
   type ServiceState,
 } from "../api";
 import { t } from "../i18n";
-import { DbBrowser } from "./browser";
 import { ComponentLogo } from "../logos";
 import { ActionButton, ErrorLine } from "../common";
 import { useAction, useCopy, useLoad } from "../hooks";
@@ -34,7 +33,6 @@ import {
   IconButton,
   List,
   ListItem,
-  NavBar,
   Notice,
   PaneStack,
   Properties,
@@ -43,7 +41,6 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
-  Watermark,
 } from "../workbench";
 
 function stateLabel(state: ServiceState): string {
@@ -274,22 +271,8 @@ function ServiceDetails({
   const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
   const viewer = dbViewer(s.id);
-  // MySQL's content is in phpMyAdmin (D-107): no explorer, only the details.
-  const explorer = s.id !== "mysql";
-  const [chosen, setSection] = useState<"content" | "details">(s.state === "running" ? "content" : "details");
-  const section = explorer ? chosen : "details";
-  // The version the explorer reads (null: the one the server runs); each
-  // has its own port and data (D-102).
-  const [browseLine, setBrowseLine] = useState<string | null>(null);
-  const browsed = s.others.find((o) => o.line === browseLine);
-  const browsedState = browsed ? browsed.state : s.state;
-  const browsedOn = browsedState === "running" || browsedState === "starting";
-  // The explorer stays while the server is on: a check that misses once
-  // ("starting" for a moment) must not close it and lose the table chosen.
-  const [browsable, setBrowsable] = useState(s.state === "running");
-  if (browsedState === "running" && !browsable) setBrowsable(true);
-  if (!browsedOn && browsable) setBrowsable(false);
-  const browseId = `browse-line-${s.id}`;
+  // The content is in the server's web admin (D-107, D-147, D-150): the
+  // page shows only the details.
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
@@ -330,194 +313,141 @@ function ServiceDetails({
           </>
         }
       />
-      {explorer && (
-        <NavBar
-          label={t("Sezioni del server")}
-          items={[
-            { id: "content", label: t("Contenuto") },
-            { id: "details", label: t("Dettagli") },
-          ]}
-          active={section}
-          onSelect={setSection}
-        />
-      )}
-      {section === "content" && s.others.length > 0 && (
-        <div className="flex shrink-0 items-center gap-2 px-5 py-2">
-          <label htmlFor={browseId}>{t("Versione")}</label>
-          <Select
-            id={browseId}
-            value={browseLine ?? ""}
-            onChange={(line) => {
-              const next = line === "" ? null : line;
-              const state = s.others.find((o) => o.line === next)?.state ?? s.state;
-              setBrowseLine(next);
-              setBrowsable(state === "running");
-            }}
-            options={[
-              { value: "", label: t("Quella del server ({0})", s.line ?? "") },
-              ...s.others.map((o) => ({ value: o.line, label: `${o.line} :${String(o.port)}` })),
-            ]}
-            className="w-56"
-          />
-        </div>
-      )}
-      {section === "content" &&
-        (browsable ? (
-          <DbBrowser key={browseLine ?? ""} engine={s.id} line={browseLine} />
-        ) : (
-          <Watermark>
-            <p className="text-vsc-desc">{t("Avvia il server per vederne il contenuto.")}</p>
-            {!browsedOn && (
-              <ActionButton
-                icon={codicon("debug-start")}
-                label={browseLine === null ? t("Avvia") : t("Avvia {0}", browseLine)}
-                primary
-                busy={browseLine === null ? busy : lineBusy(browseLine)}
-                onClick={() => {
-                  if (browseLine === null) onStart();
-                  else onLineStart(browseLine);
-                }}
-              />
-            )}
-          </Watermark>
-        ))}
-      {section === "details" && (
-        <EditorBody>
-          {s.state === "error" && s.message && (
-            <Notice tone="error">
-              <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap">{s.message}</pre>
-            </Notice>
-          )}
-          <EditorSection id={`db-conn-${s.id}`} title={t("Connessione")}>
-            <Properties
-              rows={[
-                [t("Stringa"), <SecretField value={s.url} label={t("la stringa di connessione")} />],
+      <EditorBody>
+        {s.state === "error" && s.message && (
+          <Notice tone="error">
+            <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap">{s.message}</pre>
+          </Notice>
+        )}
+        <EditorSection id={`db-conn-${s.id}`} title={t("Connessione")}>
+          <Properties
+            rows={[
+              [t("Stringa"), <SecretField value={s.url} label={t("la stringa di connessione")} />],
 
-                [
-                  t("Password di {0}", s.user),
-                  s.password ? (
-                    <SecretField value={s.password} label={t("la password di {0}", s.user)} />
-                  ) : (
-                    <span className="text-vsc-desc">{t("Generata al primo avvio.")}</span>
-                  ),
-                ],
-              ]}
-            />
-          </EditorSection>
-          <EditorSection id={`db-set-${s.id}`} title={t("Impostazioni")}>
-            <div className="space-y-4">
-              {s.lines.length > 1 && (
-                <div className="space-y-1">
-                  <label htmlFor={`line-${s.id}`} className="block font-semibold">
-                    {t("Versione")}
-                  </label>
-                  <p className="text-vsc-desc">
-                    {on
-                      ? t("Ferma il server per cambiarla.")
-                      : t(
-                          "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.",
-                        )}
-                  </p>
-                  <Select
-                    id={`line-${s.id}`}
-                    value={s.line ?? ""}
-                    disabled={on || busy}
-                    onChange={(line) => {
-                      onLine(line === s.lines[0] ? null : line);
-                    }}
-                    options={s.lines.map((l, i) => ({
-                      value: l,
-                      label: i === 0 ? t("{0} (la più recente)", l) : l,
-                    }))}
-                    className="w-40"
-                  />
-                </div>
-              )}
+              [
+                t("Password di {0}", s.user),
+                s.password ? (
+                  <SecretField value={s.password} label={t("la password di {0}", s.user)} />
+                ) : (
+                  <span className="text-vsc-desc">{t("Generata al primo avvio.")}</span>
+                ),
+              ],
+            ]}
+          />
+        </EditorSection>
+        <EditorSection id={`db-set-${s.id}`} title={t("Impostazioni")}>
+          <div className="space-y-4">
+            {s.lines.length > 1 && (
               <div className="space-y-1">
-                <label htmlFor={portId} className="block font-semibold">
-                  {t("Porta")}
+                <label htmlFor={`line-${s.id}`} className="block font-semibold">
+                  {t("Versione")}
                 </label>
                 <p className="text-vsc-desc">
-                  {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
+                  {on
+                    ? t("Ferma il server per cambiarla.")
+                    : t(
+                        "Un server per tutti i progetti. Ogni versione ha i suoi dati: al primo avvio di una più recente si copiano quelli della precedente, che restano com'erano.",
+                      )}
                 </p>
-                <TextField
-                  id={portId}
-                  inputMode="numeric"
-                  mono
-                  value={port}
-                  onChange={(v) => {
-                    setPort(v.replace(/\D/g, ""));
+                <Select
+                  id={`line-${s.id}`}
+                  value={s.line ?? ""}
+                  disabled={on || busy}
+                  onChange={(line) => {
+                    onLine(line === s.lines[0] ? null : line);
                   }}
-                  onBlur={() => {
-                    if (portValid && portValue !== s.port) onSet(portValue, s.autostart);
-                  }}
-                  invalid={!portValid}
-                  className="w-24"
+                  options={s.lines.map((l, i) => ({
+                    value: l,
+                    label: i === 0 ? t("{0} (la più recente)", l) : l,
+                  }))}
+                  className="w-40"
                 />
               </div>
-              <CheckboxLabel
-                checked={s.autostart}
+            )}
+            <div className="space-y-1">
+              <label htmlFor={portId} className="block font-semibold">
+                {t("Porta")}
+              </label>
+              <p className="text-vsc-desc">
+                {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
+              </p>
+              <TextField
+                id={portId}
+                inputMode="numeric"
+                mono
+                value={port}
                 onChange={(v) => {
-                  onSet(portValid ? portValue : null, v);
+                  setPort(v.replace(/\D/g, ""));
                 }}
-              >
-                {t("Avvia con Atollo")}
-              </CheckboxLabel>
-              {s.others.length > 0 && (
-                <p className="text-vsc-desc">
-                  {t("Con il server partono anche le altre versioni su cui sono i database dei progetti.")}
-                </p>
-              )}
+                onBlur={() => {
+                  if (portValid && portValue !== s.port) onSet(portValue, s.autostart);
+                }}
+                invalid={!portValid}
+                className="w-24"
+              />
+            </div>
+            <CheckboxLabel
+              checked={s.autostart}
+              onChange={(v) => {
+                onSet(portValid ? portValue : null, v);
+              }}
+            >
+              {t("Avvia con Atollo")}
+            </CheckboxLabel>
+            {s.others.length > 0 && (
+              <p className="text-vsc-desc">
+                {t("Con il server partono anche le altre versioni su cui sono i database dei progetti.")}
+              </p>
+            )}
+          </div>
+        </EditorSection>
+        {s.others.length > 0 && (
+          <EditorSection id={`db-others-${s.id}`} title={t("Altre versioni")}>
+            <div className="space-y-3">
+              <p className="text-vsc-desc">
+                {t(
+                  "Accese insieme a {0}, ciascuna sulla sua porta e con i suoi dati, per i progetti che le chiedono: si sceglie nella pagina del progetto, e la porta arriva al progetto come DB_PORT.",
+                  s.line ?? "",
+                )}
+              </p>
+              {s.others.map((o) => (
+                <OtherLine
+                  // A new key when the port changes: the field starts from it.
+                  key={`${o.line}-${String(o.port)}`}
+                  id={s.id}
+                  o={o}
+                  busy={lineBusy(o.line)}
+                  onStart={() => {
+                    onLineStart(o.line);
+                  }}
+                  onStop={() => {
+                    onLineStop(o.line);
+                  }}
+                  onPort={(port) => {
+                    onLinePort(o.line, port);
+                  }}
+                  viewer={viewer}
+                  onViewer={
+                    onLineViewer
+                      ? () => {
+                          onLineViewer(o.line);
+                        }
+                      : undefined
+                  }
+                />
+              ))}
             </div>
           </EditorSection>
-          {s.others.length > 0 && (
-            <EditorSection id={`db-others-${s.id}`} title={t("Altre versioni")}>
-              <div className="space-y-3">
-                <p className="text-vsc-desc">
-                  {t(
-                    "Accese insieme a {0}, ciascuna sulla sua porta e con i suoi dati, per i progetti che le chiedono: si sceglie nella pagina del progetto, e la porta arriva al progetto come DB_PORT.",
-                    s.line ?? "",
-                  )}
-                </p>
-                {s.others.map((o) => (
-                  <OtherLine
-                    // A new key when the port changes: the field starts from it.
-                    key={`${o.line}-${String(o.port)}`}
-                    id={s.id}
-                    o={o}
-                    busy={lineBusy(o.line)}
-                    onStart={() => {
-                      onLineStart(o.line);
-                    }}
-                    onStop={() => {
-                      onLineStop(o.line);
-                    }}
-                    onPort={(port) => {
-                      onLinePort(o.line, port);
-                    }}
-                    viewer={viewer}
-                    onViewer={
-                      onLineViewer
-                        ? () => {
-                            onLineViewer(o.line);
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            </EditorSection>
-          )}
-          <EditorSection id={`db-files-${s.id}`} title={t("File")}>
-            <Properties
-              rows={[
-                [t("Dati"), <code className="font-mono text-[12px] break-all select-text">{s.dataDir}</code>],
-                [t("Log"), <code className="font-mono text-[12px] break-all select-text">{s.log}</code>],
-              ]}
-            />
-          </EditorSection>
-        </EditorBody>
-      )}
+        )}
+        <EditorSection id={`db-files-${s.id}`} title={t("File")}>
+          <Properties
+            rows={[
+              [t("Dati"), <code className="font-mono text-[12px] break-all select-text">{s.dataDir}</code>],
+              [t("Log"), <code className="font-mono text-[12px] break-all select-text">{s.log}</code>],
+            ]}
+          />
+        </EditorSection>
+      </EditorBody>
     </div>
   );
 }

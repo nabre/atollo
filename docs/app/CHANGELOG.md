@@ -1,5 +1,9 @@
 # Novità
 
+## MongoDB senza la scheda «Contenuto» (21/10/2026)
+
+- **Una pagina sola**: la pagina di MongoDB mostra solo i dettagli, come quella di MySQL; il contenuto si esplora e si modifica in mongo-express («Apri mongo-express»). Tolto l'esploratore in sola lettura dell'app, che faceva meno di mongo-express (D-150).
+
 ## Il terminale dentro Atollo anche su Windows (21/10/2026)
 
 - **Un'interfaccia sola**: su Windows «Terminale» del progetto, «Apri», «Salva e apri» e «Apri in…» della pagina Terminali e i pulsanti degli agenti aprono una scheda del pannello dei terminali dentro l'app, come su macOS e Linux. Niente più finestra della console classica, mai Windows Terminal né il terminale del PC (D-148).

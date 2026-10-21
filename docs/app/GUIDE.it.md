@@ -871,7 +871,7 @@ Argomenti collegati: [3.2 Il database di un progetto](#32-il-database-di-un-prog
 > - Il kit ha un server MySQL e uno MongoDB, condivisi da tutti i progetti e raggiungibili solo da questo PC.
 > - «Avvia» installa il server se manca, lo accende e genera la password di amministratore.
 > - Ogni progetto ha poi il suo database e il suo utente, che si creano dalla pagina del progetto.
-> - MySQL si esplora e si modifica con phpMyAdmin, MongoDB con mongo-express, entrambi nel browser; MongoDB si legge anche nella scheda «Contenuto».
+> - MySQL si esplora e si modifica con phpMyAdmin, MongoDB con mongo-express, entrambi nel browser.
 
 ![La pagina Database, server MySQL](../../ui/public/guide/it/databases.webp)
 
@@ -910,7 +910,7 @@ In alto lo stato, l'indirizzo 127.0.0.1:\<porta\>, la versione e i pulsanti «Av
 | Server | Come vedi i dati |
 | --- | --- |
 | MySQL | «Apri phpMyAdmin». La prima volta il kit installa phpMyAdmin (e PHP se manca), accende MySQL se è spento e apre phpMyAdmin nel browser, già collegato come root. Per un'altra versione c'è «phpMyAdmin su …» nella parte «Altre versioni». |
-| MongoDB | «Apri mongo-express». La prima volta il kit installa mongo-express (e Node.js se manca), accende MongoDB se è spento e apre mongo-express nel browser, già collegato come admin: database, collezioni, documenti, indici, importazione ed esportazione. Per un'altra versione c'è «mongo-express su …». In sola lettura, nella pagina: la scheda «Contenuto», a sinistra i database con le loro collezioni e una stima dei documenti (quelli di sistema sotto «Di sistema»), a destra i documenti della collezione scelta, 100 per pagina, con «Pagina precedente», «Pagina successiva» e «Aggiorna». |
+| MongoDB | «Apri mongo-express». La prima volta il kit installa mongo-express (e Node.js se manca), accende MongoDB se è spento e apre mongo-express nel browser, già collegato come admin: database, collezioni, documenti, indici, importazione ed esportazione. Per un'altra versione c'è «mongo-express su …». |
 
 <details>
 <summary>Sotto il cofano: phpMyAdmin e mongo-express</summary>

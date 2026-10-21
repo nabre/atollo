@@ -122,7 +122,7 @@ tauri\src\
                               D-140), data (folders and ports per version), access (passwords and databases
                               of the projects), backups (D-78), tools (login files), mysql (initialization,
                               my.cnf, libaio: D-110)
-    auth  browse  phpmyadmin  passwords and .env (D-74); read-only content (D-79); phpMyAdmin (D-107), mongo-express and web_admin (D-147)
+    auth  phpmyadmin          passwords and .env (D-74); phpMyAdmin (D-107), mongo-express and web_admin (D-147)
   github\                     the kit's GitHub account (D-70): mod (sign-in, Git helper), repos (list, clone,
                               rename, deletion)
   net\                        network: mod (HTTPS, proxy and exceptions, GitHub API), ca (the PEM file of the
@@ -296,7 +296,7 @@ The page folders:
 | Folder | Files |
 | --- | --- |
 | `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx` |
-| `databases\` | `page.tsx` (Databases page, `SecretField`), `browser.tsx` (read-only content), `backups.tsx` (copies of a project's databases) |
+| `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases) |
 | `agents\` | `page.tsx` (Agents page, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limits and consumption), `token.tsx` (Claude Code's token on macOS) |
 | `frameworks\` | `model.ts` (data and hooks), `fields.tsx` (instruction fields), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (kit versions), `project.tsx` (versions of a project), `lines.tsx` (line choice) |
@@ -311,7 +311,7 @@ A module does not import whoever imports it: no cycle among the files of `ui\src
 ### `api\`
 
 - `core.ts` has the three helpers every command is written with: `query(cmd, preview, args)` for a command that answers with data, `act(cmd, args)` for one that just acts, `subscribe(event, handler)` for events. Outside Tauri (`npm run dev` opened in the browser) they answer with the preview and the page shows the "preview" banner: this way the pages render in the browser. They stay inside `api\`: pages do not call commands by name.
-- A computed preview (`sampleStats()`, `sampleRows()`) is written as `browserPreview ? … : invoke(…)`, so that it is not computed when the app is running.
+- A computed preview (`sampleStats()`) is written as `browserPreview ? … : invoke(…)`, so that it is not computed when the app is running.
 - The types mirror the Rust structs with `serde(rename_all = "camelCase")`.
 
 ### Hooks (`hooks.ts`)

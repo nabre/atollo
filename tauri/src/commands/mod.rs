@@ -401,8 +401,6 @@ macro_rules! command_handler {
             $crate::commands::servers::server_assign_project,
             $crate::commands::orphans::projects_orphans,
             $crate::commands::orphans::project_orphan_adopt,
-            $crate::commands::databases::db_browse_tree,
-            $crate::commands::databases::db_browse_rows,
             $crate::commands::databases::db_admin_open,
             $crate::commands::runs::run_list,
             $crate::commands::runs::run_start,

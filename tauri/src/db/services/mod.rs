@@ -246,10 +246,6 @@ impl Services {
         }
     }
 
-    pub(crate) fn kit(&self) -> &Kit {
-        &self.kit
-    }
-
     /// The turn of `engine` ([`Services::ops`]); not reentrant: what holds
     /// it calls [`Services::stop_key`], never [`Services::stop_engine`].
     fn op(&self, engine: DbEngine) -> std::sync::MutexGuard<'_, ()> {
