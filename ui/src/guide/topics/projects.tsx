@@ -54,10 +54,10 @@ export const PROJECTS: TopicTexts = {
             "Ein Projekt ist einfach ein Ordner in projects: Das Kit erkennt ihn von selbst.",
           ),
           tr(
-            "Per crearne uno ci sono tre strade: «Progetto vuoto», «Da un indirizzo Git» e «Da framework o CMS». Più l'elenco dei tuoi repository GitHub.",
-            "There are three ways to create one: “Empty project”, “From a Git address” and “From a framework or CMS”. Plus the list of your GitHub repositories.",
-            "Il y a trois voies pour en créer un : « Projet vide », « Depuis une adresse Git » et « À partir d'un framework ou d'un CMS ». Plus la liste de vos dépôts GitHub.",
-            "Es gibt drei Wege, eines zu erstellen: „Leeres Projekt“, „Von einer Git-Adresse“ und „Aus Framework oder CMS“. Dazu die Liste deiner GitHub-Repositorys.",
+            "Per crearne uno ci sono tre strade: «Progetto vuoto», «Da un indirizzo Git» e «Da una base», con le basi di framework e CMS in quattro gruppi: Web, CMS, App e Altro. Più l'elenco dei tuoi repository GitHub.",
+            "There are three ways to create one: “Empty project”, “From a Git address” and “From a base”, with the bases of frameworks and CMS in four groups: Web, CMS, App and Other. Plus the list of your GitHub repositories.",
+            "Il y a trois voies pour en créer un : « Projet vide », « Depuis une adresse Git » et « À partir d'une base », avec les bases de frameworks et de CMS en quatre groupes : Web, CMS, App et Autre. Plus la liste de vos dépôts GitHub.",
+            "Es gibt drei Wege, eines zu erstellen: „Leeres Projekt“, „Von einer Git-Adresse“ und „Aus einer Basis“, mit den Basen von Frameworks und CMS in vier Gruppen: Web, CMS, App und Sonstiges. Dazu die Liste deiner GitHub-Repositorys.",
           ),
           tr(
             "Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework.",
@@ -77,10 +77,10 @@ export const PROJECTS: TopicTexts = {
       <GuideShot
         src="project-new.webp"
         title={tr(
-          "La procedura «Da framework o CMS»",
-          "The “From a framework or CMS” procedure",
-          "La procédure « À partir d'un framework ou d'un CMS »",
-          "Der Ablauf „Aus Framework oder CMS“",
+          "La procedura «Da una base»",
+          "The “From a base” procedure",
+          "La procédure « À partir d'une base »",
+          "Der Ablauf „Aus einer Basis“",
         )}
         caption={tr(
           "Base, aggiunte, nome, file .env e riepilogo, uno sotto l'altro. A sinistra l'albero delle tre strade.",
@@ -109,22 +109,22 @@ export const PROJECTS: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "dal «Pannello rapido», con le tre caselle sotto «Nuovo progetto»;",
-              "from the “Quick panel”, with the three boxes under “New project”;",
-              "depuis le « Panneau rapide », avec les trois cases sous « Nouveau projet » ;",
-              "über die „Schnellübersicht“, mit den drei Kästen unter „Neues Projekt“;",
+              "dal «Pannello rapido», sotto «Nuovo progetto»: in alto a destra i collegamenti «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo (Web, CMS, App, Altro) con le sue basi divise per categoria: un clic su una base apre la procedura con quella base già scelta;",
+              "from the “Quick panel”, under “New project”: at the top right the “Empty project” and “From a Git address” links; below, a block per group (Web, CMS, App, Other) with its bases by category: a click on a base opens the wizard with that base already chosen;",
+              "depuis le « Panneau rapide », sous « Nouveau projet » : en haut à droite les liens « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe (Web, CMS, App, Autre) avec ses bases par catégorie : un clic sur une base ouvre l'assistant avec cette base déjà choisie ;",
+              "über die „Schnellübersicht“, unter „Neues Projekt“: oben rechts die Links „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe (Web, CMS, App, Sonstiges) mit ihren Basen nach Kategorie: Ein Klick auf eine Basis öffnet den Assistenten mit dieser Basis bereits ausgewählt;",
             ),
             tr(
-              "dalle icone in cima alla barra laterale: «Nuovo progetto» (cartella con il più) e «Nuovo progetto da framework o CMS» (bacchetta);",
-              "from the icons at the top of the sidebar: “New project” (folder with a plus) and “New project from a framework or CMS” (wand);",
-              "depuis les icônes en haut de la barre latérale : « Nouveau projet » (dossier avec un plus) et « Nouveau projet à partir d'un framework ou d'un CMS » (baguette) ;",
-              "über die Symbole oben in der Seitenleiste: „Neues Projekt“ (Ordner mit Plus) und „Neues Projekt aus Framework oder CMS“ (Zauberstab);",
+              "dalle icone in cima alla barra laterale: «Nuovo progetto» (cartella con il più) e «Nuovo progetto da una base» (bacchetta);",
+              "from the icons at the top of the sidebar: “New project” (folder with a plus) and “New project from a base” (wand);",
+              "depuis les icônes en haut de la barre latérale : « Nouveau projet » (dossier avec un plus) et « Nouveau projet à partir d'une base » (baguette) ;",
+              "über die Symbole oben in der Seitenleiste: „Neues Projekt“ (Ordner mit Plus) und „Neues Projekt aus einer Basis“ (Zauberstab);",
             ),
             tr(
-              "dal riquadro «Nuovo progetto» della barra laterale, un albero con le tre strade; sotto «Da framework o CMS» ci sono i gruppi e le basi: un clic su una base apre la procedura con quella base già scelta;",
-              "from the “New project” pane of the sidebar, a tree with the three ways; under “From a framework or CMS” are the groups and the bases: a click on a base opens the wizard with that base already chosen;",
-              "depuis le volet « Nouveau projet » de la barre latérale, une arborescence avec les trois voies ; sous « À partir d'un framework ou d'un CMS » se trouvent les groupes et les bases : un clic sur une base ouvre l'assistant avec cette base déjà choisie ;",
-              "über den Bereich „Neues Projekt“ der Seitenleiste, einen Baum mit den drei Wegen; unter „Aus Framework oder CMS“ stehen die Gruppen und die Basen: Ein Klick auf eine Basis öffnet den Assistenten mit dieser Basis bereits ausgewählt;",
+              "dal riquadro «Nuovo progetto» della barra laterale, un albero: «Progetto vuoto», «Da un indirizzo Git», poi i rami Web, CMS, App e Altro con il numero delle basi. Sotto Web, App e Altro ci sono le categorie e le loro basi, sotto CMS direttamente le basi; un clic su un gruppo apre la procedura sulla sua prima base, un clic su una base la apre con quella base già scelta;",
+              "from the “New project” pane of the sidebar, a tree: “Empty project”, “From a Git address”, then the Web, CMS, App and Other branches with the number of bases. Under Web, App and Other are the categories and their bases, under CMS the bases directly; a click on a group opens the wizard on its first base, a click on a base opens it with that base already chosen;",
+              "depuis le volet « Nouveau projet » de la barre latérale, une arborescence : « Projet vide », « Depuis une adresse Git », puis les branches Web, CMS, App et Autre avec le nombre de bases. Sous Web, App et Autre se trouvent les catégories et leurs bases, sous CMS directement les bases ; un clic sur un groupe ouvre l'assistant sur sa première base, un clic sur une base l'ouvre avec cette base déjà choisie ;",
+              "über den Bereich „Neues Projekt“ der Seitenleiste, einen Baum: „Leeres Projekt“, „Von einer Git-Adresse“, dann die Zweige Web, CMS, App und Sonstiges mit der Anzahl der Basen. Unter Web, App und Sonstiges stehen die Kategorien und ihre Basen, unter CMS direkt die Basen; ein Klick auf eine Gruppe öffnet den Assistenten mit ihrer ersten Basis, ein Klick auf eine Basis öffnet ihn mit dieser Basis bereits ausgewählt;",
             ),
             rich(
               tr(
@@ -245,10 +245,10 @@ export const PROJECTS: TopicTexts = {
 
       <Section
         title={tr(
-          "Strada 3 · «Da framework o CMS»",
-          "Way 3 · “From a framework or CMS”",
-          "Voie 3 · « À partir d'un framework ou d'un CMS »",
-          "Weg 3 · „Aus Framework oder CMS“",
+          "Strada 3 · «Da una base»",
+          "Way 3 · “From a base”",
+          "Voie 3 · « À partir d'une base »",
+          "Weg 3 · „Aus einer Basis“",
         )}
       >
         <P>
@@ -538,10 +538,10 @@ export const PROJECTS: TopicTexts = {
       <Section title={tr("La barra laterale", "The sidebar", "La barre latérale", "Die Seitenleiste")}>
         <P>
           {tr(
-            "In cima, le icone: «Nuovo progetto», «Nuovo progetto da framework o CMS», «Apri un progetto (Ctrl+P)», «Aggiorna», «Apri la cartella» (apre projects) e il libro della guida. Sotto, quattro riquadri:",
-            "At the top, the icons: “New project”, “New project from a framework or CMS”, “Open a project (Ctrl+P)”, “Refresh”, “Open folder” (opens projects) and the guide's book. Below, four panes:",
-            "En haut, les icônes : « Nouveau projet », « Nouveau projet à partir d'un framework ou d'un CMS », « Ouvrir un projet (Ctrl+P) », « Actualiser », « Ouvrir le dossier » (ouvre projects) et le livre du guide. En dessous, quatre volets :",
-            "Oben die Symbole: „Neues Projekt“, „Neues Projekt aus Framework oder CMS“, „Projekt öffnen (Strg+P)“, „Aktualisieren“, „Ordner öffnen“ (öffnet projects) und das Buch der Anleitung. Darunter vier Bereiche:",
+            "In cima, le icone: «Nuovo progetto», «Nuovo progetto da una base», «Apri un progetto (Ctrl+P)», «Aggiorna», «Apri la cartella» (apre projects) e il libro della guida. Sotto, quattro riquadri:",
+            "At the top, the icons: “New project”, “New project from a base”, “Open a project (Ctrl+P)”, “Refresh”, “Open folder” (opens projects) and the guide's book. Below, four panes:",
+            "En haut, les icônes : « Nouveau projet », « Nouveau projet à partir d'une base », « Ouvrir un projet (Ctrl+P) », « Actualiser », « Ouvrir le dossier » (ouvre projects) et le livre du guide. En dessous, quatre volets :",
+            "Oben die Symbole: „Neues Projekt“, „Neues Projekt aus einer Basis“, „Projekt öffnen (Strg+P)“, „Aktualisieren“, „Ordner öffnen“ (öffnet projects) und das Buch der Anleitung. Darunter vier Bereiche:",
           )}
         </P>
         <Table
@@ -574,10 +574,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Nuovo progetto", "New project", "Nouveau projet", "Neues Projekt"),
               tr(
-                "L'albero delle tre strade per creare un progetto, con le basi dei framework.",
-                "The tree of the three ways to create a project, with the framework bases.",
-                "L'arborescence des trois voies pour créer un projet, avec les bases des frameworks.",
-                "Der Baum der drei Wege zum Erstellen eines Projekts, mit den Basen der Frameworks.",
+                "L'albero delle strade per creare un progetto: «Progetto vuoto», «Da un indirizzo Git» e le basi nei gruppi Web, CMS, App e Altro.",
+                "The tree of the ways to create a project: “Empty project”, “From a Git address” and the bases in the Web, CMS, App and Other groups.",
+                "L'arborescence des voies pour créer un projet : « Projet vide », « Depuis une adresse Git » et les bases dans les groupes Web, CMS, App et Autre.",
+                "Der Baum der Wege zum Erstellen eines Projekts: „Leeres Projekt“, „Von einer Git-Adresse“ und die Basen in den Gruppen Web, CMS, App und Sonstiges.",
               ),
             ],
             [
@@ -596,6 +596,14 @@ export const PROJECTS: TopicTexts = {
             ],
           ]}
         />
+        <P>
+          {tr(
+            "Un clic sul titolo di un riquadro lo apre o lo chiude. Da solo, «Progetti» occupa tutta l'altezza; se è aperto anche «Nuovo progetto» o «Dai tuoi repository GitHub», «Progetti» prende solo l'altezza delle sue righe (e scorre solo se non ci stanno) e il resto va agli altri riquadri aperti.",
+            "A click on a pane's title opens or closes it. Alone, “Projects” takes the full height; if “New project” or “From your GitHub repositories” is open too, “Projects” takes only the height of its rows (and scrolls only if they do not fit) and the rest goes to the other open panes.",
+            "Un clic sur le titre d'un volet l'ouvre ou le ferme. Seul, « Projets » occupe toute la hauteur ; si « Nouveau projet » ou « Depuis vos dépôts GitHub » est ouvert aussi, « Projets » ne prend que la hauteur de ses lignes (et ne défile que si elles ne tiennent pas) et le reste va aux autres volets ouverts.",
+            "Ein Klick auf den Titel eines Bereichs öffnet oder schließt ihn. Allein nimmt „Projekte“ die ganze Höhe ein; ist auch „Neues Projekt“ oder „Aus deinen GitHub-Repositorys“ offen, nimmt „Projekte“ nur die Höhe seiner Zeilen (und scrollt nur, wenn sie nicht hineinpassen), und der Rest geht an die anderen offenen Bereiche.",
+          )}
+        </P>
         <P>
           {tr(
             "Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per un sito web, una finestra per un'app con finestra, un terminale per un programma a riga di comando. Un pallino verde vuol dire che qualcosa è avviato; un triangolo giallo che mancano dei componenti. Passando il mouse sulla riga compaiono i pulsanti ▶ «Avvia» (o ■ «Ferma»), «Editor», «Terminale» e uno per ogni agente installato, con il suo logo.",
@@ -662,10 +670,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Nuovo progetto", "New project", "Nouveau projet", "Neues Projekt"),
               tr(
-                "Le tre strade per creare un progetto, più i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida.",
-                "The three ways to create a project, plus the links to GitHub repositories, the projects folder and the guide.",
-                "Les trois voies pour créer un projet, plus les liens vers les dépôts GitHub, le dossier des projets et le guide.",
-                "Die drei Wege zum Erstellen eines Projekts, dazu die Links zu den GitHub-Repositorys, zum Projektordner und zur Anleitung.",
+                "Accanto al titolo «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo, Web, CMS, App e Altro, con le basi come pulsanti (un clic apre la procedura su quella base); in fondo i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida.",
+                "Beside the title “Empty project” and “From a Git address”; below, a block per group, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide.",
+                "À côté du titre « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe, Web, CMS, App et Autre, avec les bases en boutons (un clic ouvre l'assistant sur cette base) ; en bas les liens vers les dépôts GitHub, le dossier des projets et le guide.",
+                "Neben dem Titel „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe, Web, CMS, App und Sonstiges, mit den Basen als Schaltflächen (ein Klick öffnet den Assistenten mit dieser Basis); unten die Links zu den GitHub-Repositorys, zum Projektordner und zur Anleitung.",
               ),
             ],
           ]}
