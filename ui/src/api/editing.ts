@@ -9,6 +9,17 @@ export interface EditorStatus {
   port: number | null;
   /** The editor server is x64 only: emulated on ARM64 PCs. */
   emulated: boolean;
+  /** The recommended extensions being installed in the background. */
+  extensions: EditorExtensions;
+}
+
+/** Rust: `ExtState` (tauri/src/editor/ext.rs). */
+export interface EditorExtensions {
+  running: boolean;
+  total: number;
+  done: number;
+  /** Ids of the extensions that did not install. */
+  failed: string[];
 }
 
 /** A row of the kit's matrix language-extension. */
@@ -33,7 +44,13 @@ export interface ExtensionsMatrix {
 }
 
 export function editorStatus(): Promise<EditorStatus> {
-  return query<EditorStatus>("editor_status", { installed: true, running: false, port: null, emulated: false });
+  return query<EditorStatus>("editor_status", {
+    installed: true,
+    running: false,
+    port: null,
+    emulated: false,
+    extensions: { running: false, total: 0, done: 0, failed: [] },
+  });
 }
 
 /** Opens the editor on a project (`null` = the projects folder). */

@@ -93,8 +93,9 @@ export interface Settings {
     extraCaCerts: string | null;
     allowLan: boolean;
   };
-  /** Never sent to the interface: see `geminiKeySet`. */
-  geminiApiKey: string | null;
+  /** Never sent to the interface (Rust skips it): see `geminiKeySet`;
+   * the key goes to `settingsSet` on its own. */
+  geminiApiKey?: string | null;
   autoUpdate: boolean;
   rustToolchain: "gnu" | "msvc" | null;
   /** `TEMP` of the programs; applies to the consoles opened after saving. */
@@ -121,7 +122,6 @@ const SAMPLE_SETTINGS: SettingsView = {
   settings: {
     lang: null,
     network: { httpsProxy: null, httpProxy: null, noProxy: null, extraCaCerts: null, allowLan: false },
-    geminiApiKey: null,
     autoUpdate: true,
     rustToolchain: null,
     programTemp: "auto",
