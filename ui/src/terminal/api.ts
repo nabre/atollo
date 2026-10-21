@@ -1,8 +1,7 @@
-// The app's terminal of macOS and Linux (tauri/src/editor/pty.rs, commands
-// in tauri/src/commands/terminals.rs): sessions opened by the Terminal and
-// agent buttons, shown by the panel of the main window. Windows keeps its
-// console windows: there no session ever opens and these commands do not
-// exist, so the panel never shows.
+// The app's terminal on every system (tauri/src/editor/pty.rs, the kit's
+// ConPTY on Windows; commands in tauri/src/commands/terminals.rs): sessions
+// opened by the Terminal and agent buttons, shown by the panel of the main
+// window (D-109, D-148).
 import { act, query, subscribe } from "../api/core";
 
 export interface PtyInfo {

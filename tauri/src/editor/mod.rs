@@ -18,6 +18,8 @@
 //! - output in `data\app\logs\editor.log`, with the token masked.
 
 pub mod cfg;
+#[cfg(windows)]
+pub mod conpty;
 pub mod ext;
 #[cfg(unix)]
 pub mod picker;

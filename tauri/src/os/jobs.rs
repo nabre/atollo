@@ -18,8 +18,6 @@ use std::ffi::OsStr;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
 #[cfg(windows)]
-use std::os::windows::ffi::OsStrExt;
-#[cfg(windows)]
 use std::os::windows::io::AsRawHandle;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -31,7 +29,7 @@ use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
 #[cfg(windows)]
-use windows::core::{PCWSTR, PWSTR};
+use windows::core::PCWSTR;
 #[cfg(windows)]
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
 #[cfg(windows)]
@@ -40,16 +38,15 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 };
 #[cfg(windows)]
 use windows::Win32::System::JobObjects::{
-    AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
-    SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_LIMIT_BREAKAWAY_OK,
-    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    AssignProcessToJobObject, CreateJobObjectW, JobObjectBasicProcessIdList,
+    JobObjectExtendedLimitInformation, QueryInformationJobObject, SetInformationJobObject,
+    JOBOBJECT_BASIC_PROCESS_ID_LIST, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+    JOB_OBJECT_LIMIT_BREAKAWAY_OK, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
 #[cfg(windows)]
 use windows::Win32::System::Threading::{
-    CreateProcessW, GetCurrentProcess, OpenThread, ResumeThread, TerminateProcess,
-    WaitForSingleObject, CREATE_BREAKAWAY_FROM_JOB, CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW,
-    CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT, INFINITE, PROCESS_INFORMATION, STARTUPINFOW,
-    THREAD_SUSPEND_RESUME,
+    GetCurrentProcess, OpenThread, ResumeThread, CREATE_BREAKAWAY_FROM_JOB,
+    CREATE_NEW_PROCESS_GROUP, CREATE_NO_WINDOW, CREATE_SUSPENDED, THREAD_SUSPEND_RESUME,
 };
 
 use crate::env::KitEnv;
@@ -341,6 +338,45 @@ impl Job {
         unsafe { AssignProcessToJobObject(self.handle, process) }
             .context("AssignProcessToJobObject")
     }
+
+    /// Puts a process started by other code in the job (the program of a
+    /// terminal session, started by portable-pty): `process` must stay
+    /// valid for the call.
+    pub fn assign_raw(&self, process: std::os::windows::io::RawHandle) -> Result<()> {
+        // SAFETY: the caller keeps the process handle open for the call.
+        unsafe { AssignProcessToJobObject(self.handle, HANDLE(process)) }
+            .context("AssignProcessToJobObject")
+    }
+
+    /// The processes in the job now.
+    pub fn pids(&self) -> Vec<u32> {
+        // The header (two counts) and room for 1024 ids, as usize words.
+        let head = std::mem::offset_of!(JOBOBJECT_BASIC_PROCESS_ID_LIST, ProcessIdList)
+            / size_of::<usize>();
+        let mut buf = vec![0usize; head + 1024];
+        let bytes = u32::try_from(buf.len() * size_of::<usize>()).unwrap_or(u32::MAX);
+        // SAFETY: `buf` is a writable buffer of `bytes` bytes, aligned for
+        // JOBOBJECT_BASIC_PROCESS_ID_LIST.
+        let ok = unsafe {
+            QueryInformationJobObject(
+                Some(self.handle),
+                JobObjectBasicProcessIdList,
+                buf.as_mut_ptr().cast(),
+                bytes,
+                None,
+            )
+        };
+        if ok.is_err() {
+            return Vec::new();
+        }
+        // SAFETY: the buffer now starts with the structure Windows filled.
+        let list = unsafe { &*buf.as_ptr().cast::<JOBOBJECT_BASIC_PROCESS_ID_LIST>() };
+        let n = (list.NumberOfProcessIdsInList as usize).min(buf.len() - head);
+        buf[head..head + n]
+            .iter()
+            .filter_map(|&pid| u32::try_from(pid).ok())
+            .collect()
+    }
 }
 
 #[cfg(windows)]
@@ -447,131 +483,15 @@ pub fn spawn(cmd: &mut Command) -> Result<Child> {
     Ok(child)
 }
 
-/// A process started by [`spawn_console`]; the handle closes on drop.
+/// Puts a process started by other code (suspended) in the app's job when
+/// the app could not enter it itself; otherwise the process is already in
+/// it, as every child.
 #[cfg(windows)]
-pub struct Console {
-    process: HANDLE,
-    pid: u32,
-}
-
-// SAFETY: a process handle is a kernel handle usable from any thread.
-#[cfg(windows)]
-unsafe impl Send for Console {}
-
-#[cfg(windows)]
-impl Console {
-    pub fn id(&self) -> u32 {
-        self.pid
-    }
-
-    /// Waits until the process ends.
-    pub fn wait(&self) {
-        // SAFETY: the handle is valid until drop.
-        let _ = unsafe { WaitForSingleObject(self.process, INFINITE) };
-    }
-}
-
-#[cfg(windows)]
-impl Drop for Console {
-    fn drop(&mut self) {
-        // SAFETY: returned by CreateProcessW, closed once.
-        let _ = unsafe { CloseHandle(self.process) };
-    }
-}
-
-/// One argument of a Windows command line. No argument here contains a
-/// double quote (paths cannot): only spaces need quotes.
-#[cfg(windows)]
-fn quote(arg: &str) -> String {
-    if !arg.is_empty() && !arg.contains([' ', '\t']) {
-        return arg.to_owned();
-    }
-    // Backslashes before the closing quote are doubled.
-    let tail = arg.len() - arg.trim_end_matches('\\').len();
-    format!("\"{arg}{}\"", "\\".repeat(tail))
-}
-
-/// Starts `program` with `args`, the kit environment only, in `dir`, inside
-/// the app's job, without standard handles. A console host (`conhost.exe`)
-/// given standard handles writes the console to them as VT text instead of
-/// showing its window, and `std::process::Command` always passes them.
-#[cfg(windows)]
-pub fn spawn_console(
-    program: &std::path::Path,
-    args: &[String],
-    env: &KitEnv,
-    dir: &std::path::Path,
-) -> Result<Console> {
-    anyhow::ensure!(
-        args.iter().all(|a| !a.contains('"')),
-        "double quote in an argument"
-    );
-    let wide = |s: &std::ffi::OsStr| -> Vec<u16> { s.encode_wide().chain([0]).collect() };
-    let mut line: Vec<u16> = std::iter::once(quote(&program.display().to_string()))
-        .chain(args.iter().map(|a| quote(a)))
-        .collect::<Vec<_>>()
-        .join(" ")
-        .encode_utf16()
-        .chain([0])
-        .collect();
-    let mut vars: Vec<(&str, &str)> = env.iter().collect();
-    vars.sort_by_key(|(k, _)| k.to_uppercase());
-    let mut block: Vec<u16> = vars
-        .iter()
-        .flat_map(|(k, v)| {
-            format!("{k}={v}")
-                .encode_utf16()
-                .chain([0])
-                .collect::<Vec<_>>()
-        })
-        .collect();
-    if block.is_empty() {
-        block.push(0);
-    }
-    block.push(0);
-    let (program, dir) = (wide(program.as_os_str()), wide(dir.as_os_str()));
-    let startup = STARTUPINFOW {
-        cb: size_of::<STARTUPINFOW>() as u32,
-        ..Default::default()
-    };
-    let mut info = PROCESS_INFORMATION::default();
-    // SAFETY: every buffer is NUL-terminated and outlives the call; the
-    // command line is writable, as CreateProcessW requires.
-    unsafe {
-        CreateProcessW(
-            PCWSTR(program.as_ptr()),
-            Some(PWSTR(line.as_mut_ptr())),
-            None,
-            None,
-            false,
-            CREATE_UNICODE_ENVIRONMENT | CREATE_SUSPENDED,
-            Some(block.as_ptr().cast()),
-            PCWSTR(dir.as_ptr()),
-            &startup,
-            &mut info,
-        )
-    }
-    .context("CreateProcessW")?;
-    let console = Console {
-        process: info.hProcess,
-        pid: info.dwProcessId,
-    };
-    let assigned = match APP_JOB.get().filter(|j| !j.self_assigned) {
-        // SAFETY: the process handle is valid (owned by `console`).
-        Some(app) => unsafe { AssignProcessToJobObject(app.job.handle, info.hProcess) }
-            .context("AssignProcessToJobObject"),
+pub fn assign_to_app_raw(process: std::os::windows::io::RawHandle) -> Result<()> {
+    match APP_JOB.get().filter(|j| !j.self_assigned) {
+        Some(app) => app.job.assign_raw(process),
         None => Ok(()),
-    };
-    // SAFETY: the main thread handle of the new process, closed once here.
-    unsafe {
-        if assigned.is_ok() {
-            ResumeThread(info.hThread);
-        } else {
-            let _ = TerminateProcess(info.hProcess, 1);
-        }
-        let _ = CloseHandle(info.hThread);
     }
-    assigned.map(|()| console)
 }
 
 /// Starts a program in `job` (a job of its own, nested in the app's): it is

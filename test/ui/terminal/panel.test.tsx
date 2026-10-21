@@ -1,4 +1,4 @@
-// The terminal panel of macOS and Linux with a fake backend and a fake
+// The terminal panel (every system, D-148) with a fake backend and a fake
 // xterm.js: a session that opens shows the panel with the output kept by
 // Rust then the chunks after it, typing goes back to the session, and
 // closing a tab whose program still runs asks first.
@@ -7,7 +7,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import type { PtyBackend, PtyChunk, PtyInfo } from "../../../ui/src/terminal";
 import { useTerminals } from "../../../ui/src/terminal";
 import { TerminalPanel } from "../../../ui/src/terminal/panel";
-import { sequencer } from "../../../ui/src/terminal/view";
+import { clipboardKey, sequencer } from "../../../ui/src/terminal/view";
 
 // The fake xterm.js, made before the mocks (vi.mock is hoisted); every
 // one made is kept, with what was written to it.
@@ -52,6 +52,13 @@ const { terms, FakeTerminal } = vi.hoisted(() => {
     }
     sendBinary(data: string) {
       this.onBinaryHandler?.(data);
+    }
+    keyHandler: ((e: KeyboardEvent) => boolean) | null = null;
+    attachCustomKeyEventHandler(handler: (e: KeyboardEvent) => boolean) {
+      this.keyHandler = handler;
+    }
+    getSelection() {
+      return "";
     }
     dispose() {
       this.disposed = true;
@@ -292,5 +299,38 @@ describe("TerminalPanel", () => {
     // Its program ends after the tab closed: the tab does not come back.
     fake.exit({ ...BASH, id: 2, title: "app · claude", running: false, code: 0 });
     expect(screen.queryByRole("tab", { name: /app · claude/ })).toBeNull();
+  });
+});
+
+describe("clipboard keys off macOS (D-46, D-148)", () => {
+  const key = (k: string, mods: { shift?: boolean; alt?: boolean; meta?: boolean; ctrl?: boolean } = {}) => ({
+    type: "keydown",
+    key: k,
+    ctrlKey: mods.ctrl ?? true,
+    shiftKey: mods.shift ?? false,
+    altKey: mods.alt ?? false,
+    metaKey: mods.meta ?? false,
+  });
+
+  it("copies a selection on Ctrl+C, else Ctrl+C goes to the program", () => {
+    const copied: string[] = [];
+    const copy = (s: string) => copied.push(s);
+    expect(clipboardKey(key("c"), "", copy)).toBe(true);
+    expect(clipboardKey(key("c"), "ls -la", copy)).toBe(false);
+    expect(clipboardKey(key("C", { shift: true }), "x", copy)).toBe(false);
+    // Ctrl+Shift+C never reaches the program, even without a selection.
+    expect(clipboardKey(key("C", { shift: true }), "", copy)).toBe(false);
+    expect(copied).toEqual(["ls -la", "x"]);
+  });
+
+  it("leaves Ctrl+V to the browser's paste and the other keys to xterm.js", () => {
+    const copy = vi.fn();
+    expect(clipboardKey(key("v"), "", copy)).toBe(false);
+    expect(clipboardKey(key("V", { shift: true }), "", copy)).toBe(false);
+    expect(clipboardKey(key("d"), "", copy)).toBe(true);
+    expect(clipboardKey(key("c", { ctrl: false }), "sel", copy)).toBe(true);
+    expect(clipboardKey(key("c", { alt: true }), "sel", copy)).toBe(true);
+    expect(clipboardKey({ ...key("c"), type: "keyup" }, "sel", copy)).toBe(true);
+    expect(copy).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,7 @@
-# The commands of the app's terminal of macOS and Linux (editor/pty.rs,
-# commands/terminals.rs), registered only there. Written by hand, not
-# generated from build.rs COMMANDS: one permission for the five commands,
-# granted by capabilities/main.json (on Windows the commands do not exist,
-# so it allows nothing there).
+# The commands of the app's terminal on every system (editor/pty.rs,
+# commands/terminals.rs; D-109, D-148). Written by hand, not generated from
+# build.rs COMMANDS: one permission for the five commands, granted by
+# capabilities/main.json.
 
 [[permission]]
 identifier = "allow-pty-sessions"

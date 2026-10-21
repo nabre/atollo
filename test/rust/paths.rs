@@ -20,11 +20,6 @@ const ALLOWED: &[(&str, &str, &str)] = &[
          the cmd profile is written for Windows only",
     ),
     (
-        "editor/terminal.rs",
-        r#"r"System32\conhost.exe""#,
-        "the console host of Windows under %SystemRoot%, inside `cfg(windows)`",
-    ),
-    (
         "env.rs",
         r#"r"WindowsPowerShell\v1.0""#,
         "under System32, inside `if is_win`",

@@ -1,10 +1,9 @@
 //! The kit's terminals (terminals.rs): the default one and the user's, with
-//! their tools and versions, opened in any folder of the PC; on macOS and
-//! Linux also the sessions of the app's terminal (`pty_*`).
+//! their tools and versions, opened in any folder of the PC; the sessions
+//! of the app's terminal (`pty_*`).
 
 use super::*;
 use crate::editor::terminals::{self, Terminal, TerminalsView};
-#[cfg(unix)]
 use tauri::Manager;
 
 #[tauri::command]
@@ -102,13 +101,12 @@ pub async fn terminal_dir_pick<R: Runtime>(
     .or_fail_chain("terminals")
 }
 
-// The app's terminal on macOS and Linux (editor/pty.rs): its sessions are
+// The app's terminal on every system (editor/pty.rs): its sessions are
 // opened by `terminal_open`, `terminal_launch` and `agent_launch`, with the
 // checks and the environment of each; the panel of the main window shows,
 // types into, resizes and closes them.
 
 /// The terminal sessions, running or ended but still shown.
-#[cfg(unix)]
 #[tauri::command]
 pub fn pty_sessions<R: Runtime>(
     app: AppHandle<R>,
@@ -119,7 +117,6 @@ pub fn pty_sessions<R: Runtime>(
 }
 
 /// The output kept by session `id`, up to the chunk number it carries.
-#[cfg(unix)]
 #[tauri::command]
 pub fn pty_backlog<R: Runtime>(
     app: AppHandle<R>,
@@ -136,7 +133,6 @@ pub fn pty_backlog<R: Runtime>(
 /// What was typed in session `id`; queued, never blocking the window.
 /// `binary`: bytes that are not text, one character per byte (xterm.js's
 /// `onBinary`).
-#[cfg(unix)]
 #[tauri::command]
 pub fn pty_write<R: Runtime>(
     app: AppHandle<R>,
@@ -156,7 +152,6 @@ pub fn pty_write<R: Runtime>(
     ptys.write(id, &data).or_fail_chain("terminal")
 }
 
-#[cfg(unix)]
 #[tauri::command]
 pub fn pty_resize<R: Runtime>(
     app: AppHandle<R>,
@@ -174,7 +169,6 @@ pub fn pty_resize<R: Runtime>(
 
 /// Ends the program of session `id` (hang-up, then its tree after a
 /// moment) and forgets the session.
-#[cfg(unix)]
 #[tauri::command]
 pub async fn pty_close<R: Runtime>(
     app: AppHandle<R>,

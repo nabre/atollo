@@ -68,6 +68,28 @@ export function sequencer(write: (data: string) => void) {
   };
 }
 
+/** Windows' browser engine (WebView2): the sessions run on ConPTY. */
+const onWindows = () => typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent);
+/** macOS copies and pastes with ⌘, which xterm.js leaves to the browser. */
+const onMac = () => typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
+
+/** The keys of Windows Terminal and VSCodium's terminal off macOS (D-46):
+ * Ctrl+C copies when text is selected (else it goes to the program),
+ * Ctrl+Shift+C copies, Ctrl+V and Ctrl+Shift+V paste (the browser's own
+ * paste, which xterm.js reads). False: xterm.js leaves the key alone. */
+export function clipboardKey(
+  e: Pick<KeyboardEvent, "type" | "key" | "ctrlKey" | "shiftKey" | "altKey" | "metaKey">,
+  selection: string,
+  copy: (text: string) => void,
+): boolean {
+  if (e.type !== "keydown" || !e.ctrlKey || e.altKey || e.metaKey) return true;
+  const key = e.key.toLowerCase();
+  if (key === "v") return false;
+  if (key !== "c" || (!e.shiftKey && !selection)) return true;
+  if (selection) copy(selection);
+  return false;
+}
+
 export function TerminalView({
   session,
   backend,
@@ -93,8 +115,18 @@ export function TerminalView({
       cursorBlink: true,
       scrollback: 5000,
       theme: themeFromCss(style),
+      // The kit's ConPTY (D-148) reflows its own lines like the builds of
+      // Windows after 21376: xterm.js then keeps its usual reflow.
+      ...(onWindows() ? { windowsPty: { backend: "conpty" as const, buildNumber: 22000 } } : {}),
     });
     term.current = x;
+    if (!onMac()) {
+      x.attachCustomKeyEventHandler((e) =>
+        clipboardKey(e, x.getSelection(), (text) => {
+          navigator.clipboard.writeText(text).catch(() => undefined);
+        }),
+      );
+    }
     const fit = new FitAddon();
     x.loadAddon(fit);
     x.open(el);
