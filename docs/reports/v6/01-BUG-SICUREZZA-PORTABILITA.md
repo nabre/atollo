@@ -21,7 +21,6 @@
 | `BUG-V6-09` | MEDIA | Confermato | DB | Copia dei dati iniziali MySQL sul posto |
 | `BUG-V6-10` | MEDIA | Plausibile | Progetti | `Runner::finish` per chiave d'azione: una corsa sostituita uccide la nuova |
 | `BUG-V6-11` | MEDIA | Plausibile | Server web | `caddy reload` fallito → stop e start di tutto il pool |
-| `BUG-V6-12` | MEDIA | Confermato | Versioni | `toolchains.xml` di Maven non valido con `&` nel percorso |
 | `BUG-V6-13` | MEDIA | Plausibile | Rete | Download fermo: nessun timeout sul corpo, «Annulla» inefficace |
 | `BUG-V6-14` | MEDIA | Confermato | Setup | Un download fatto a mano viene consumato anche se l'installazione fallisce |
 | `BUG-V6-15` | MEDIA | Confermato | Agenti | Dopo «Rimuovi unità» le sincronizzazioni in background scrivono ancora |
@@ -32,11 +31,8 @@
 | `SEC-V6-01` | MEDIA | Plausibile | DB, server | File di segreti/stato illeggibile → riscritto vuoto |
 | `SEC-V6-02` | MEDIA | Scelta da rivedere | Agenti | Token a lunga durata in ogni processo del kit, cartelle `projects/` già fidate |
 | `PORT-V6-02` | MEDIA | Plausibile | Agenti | Chiavi di fiducia di Codex in minuscolo su macOS/Linux |
-| `BUG-V6-20` | BASSA | Confermato | Setup | Un panic nel thread di setup lascia «in corso» per sempre |
-| `BUG-V6-21` | BASSA | Confermato | Versioni | Il controllo degli intervalli ignora un «no» certo |
 | `BUG-V6-22` | BASSA | Confermato | Router | `bootstrap::take` cancella un file legacy di un altro componente |
 | `BUG-V6-23` | BASSA | Plausibile | Rete, update | `.old` ancora in uso blocca la sostituzione |
-| `BUG-V6-24` | BASSA | Plausibile | Setup | Controllo con molto output: stallo di 60 s |
 | `BUG-V6-25` | BASSA | Confermato | OS | Processo avviato e lasciato fuori dal Job se `Job::new`/`assign` falliscono |
 | `BUG-V6-26` | BASSA | Confermato | DB | Amministratore MongoDB creato prima di salvarne la password |
 | `BUG-V6-27` | BASSA | Confermato | Core | `write_atomic` senza `fsync` |
@@ -48,8 +44,6 @@
 | `BUG-V6-33` | BASSA | Confermato | Vari | Minori: `sync --project` vuoto, `components.txt` senza lock, token scritto poi protetto |
 | `SEC-V6-03` | BASSA | Confermato | Rete | Editore Authenticode confrontato come sottostringa |
 | `SEC-V6-04` | BASSA | Plausibile | Installatori | Metadati remoti usati nei nomi dei file senza filtro |
-| `PORT-V6-03` | BASSA | Plausibile | Versioni | Collegamenti .NET puntano al kit originale dopo una copia |
-| `PORT-V6-04` | BASSA | Plausibile | Versioni | `gradle.properties` con percorsi non ASCII |
 | `PORT-V6-05` | BASSA | Plausibile | Rete | `:` nei nomi d'archivio rifiutato anche su Unix |
 | `PORT-V6-06` | BASSA | Plausibile | Agenti | Chiave di sigillo persa dopo crash e spostamento (macOS/Linux) |
 | `TEST-V6-01` | BASSA | Confermato | Prove | `ports_are_kept_and_locked` instabile in parallelo |
@@ -128,11 +122,6 @@
 - **Scenario**: uno snippet `conf.d/*.caddy` sbagliato → reload rifiutato → il codice ferma il pool e lo riavvia → l'avvio fallisce sulla stessa configurazione. Tutti i siti del pool sono giù.
 - **Correzione**: `caddy validate` prima; riavviare solo se l'admin non risponde, non se la configurazione è rifiutata; nel secondo caso riportare l'errore e lasciare in piedi l'istanza.
 
-### `BUG-V6-12` — `toolchains.xml` di Maven non valido
-- **Dove**: [`versions/side_by_side.rs:80-92`](../../../tauri/src/versions/side_by_side.rs#L80-L92).
-- **Scenario**: kit in `D:\R&D\kit` → `<jdkHome>D:\R&D\...` non è XML ben formato; Maven fallisce («Non-parseable toolchains file») a ogni comando. Il README promette che `&` nel nome della cartella va bene.
-- **Correzione**: escape XML di `& < > " '`.
-
 ### `BUG-V6-13` [Plausibile] — Download fermo: nessun timeout sul corpo
 - **Dove**: [`net/mod.rs:155-164`](../../../tauri/src/net/mod.rs#L155-L164), [`:550-567`](../../../tauri/src/net/mod.rs#L550-L567).
 - **Scenario**: un proxy smette di mandare byte dopo le intestazioni; `body.read` resta bloccato fino al timeout TCP del sistema; «Annulla» è controllato solo tra una lettura e l'altra; il lock dell'installazione resta preso.
@@ -189,11 +178,8 @@
 
 | ID | Dove | Scenario | Correzione |
 |---|---|---|---|
-| `BUG-V6-20` | [`setup/task.rs:180-191`](../../../tauri/src/setup/task.rs#L180-L191) | un panic in un installatore lascia `running = true`: «C'è già un'installazione in corso» fino al riavvio (idem `Updater::check`) | guardia `Drop` che azzera lo stato, o `catch_unwind` |
-| `BUG-V6-21` | [`versions/relations/mod.rs:227`](../../../tauri/src/versions/relations/mod.rs#L227), [`ranges.rs:208-216`](../../../tauri/src/versions/ranges.rs#L208-L216) | progetto `>=3.12.4`, kit con 3.12.3: `admits_text` dice no, `admits_line("3.12")` dice sì (3.12.999) → «OK» | `admits_line` solo se la versione completa è ignota |
 | `BUG-V6-22` | [`router/bootstrap.rs:79-83`](../../../tauri/src/router/bootstrap.rs#L79-L83) | nel vecchio `.bootstrap/` piatto, `verify::check` cancella un file di un altro componente con altro hash | `verify::matches` (non distruttivo) |
 | `BUG-V6-23` | [`net/archive.rs:1053-1060`](../../../tauri/src/net/archive.rs#L1053-L1060), [`setup/self_update.rs:618-620`](../../../tauri/src/setup/self_update.rs#L618-L620) | `Atollo.old.exe` ancora in esecuzione → `rename` fallisce → aggiornamento rimandato senza motivo | nome unico `*.old-<ms>` se il vecchio non si toglie |
-| `BUG-V6-24` | [`setup/checkup.rs:109-123`](../../../tauri/src/setup/checkup.rs#L109-L123) | stdout/stderr letti dopo l'uscita: un comando con >64 KB di output si blocca fino al limite di 60 s | leggere le pipe in thread |
 | `BUG-V6-25` | [`db/services/mod.rs:703-705`](../../../tauri/src/db/services/mod.rs#L703-L705), [`editor/pty.rs:702-711`](../../../tauri/src/editor/pty.rs#L702-L711), [`editor/ext.rs:569-576`](../../../tauri/src/editor/ext.rs#L569-L576) | `spawn` poi `Job::new()?`/`assign()?`: a errore il figlio resta vivo fuori dal Job, con porta e cartella dati | `jobs::spawn_in` (già usato dai pool) o kill+wait su ogni errore |
 | `BUG-V6-26` | [`db/services/access.rs:44-70`](../../../tauri/src/db/services/access.rs#L44-L70) | `createUser` poi salvataggio della password: se il salvataggio fallisce l'amministratore esiste con password ignota | salvare prima, creare dopo (come MySQL) |
 | `BUG-V6-27` | [`fsx.rs:84`](../../../tauri/src/fsx.rs#L84) | senza `sync_all` prima del `rename`, su exFAT/FAT uno stacco brusco lascia file a lunghezza zero; con `SEC-V6-01` si perde lo stato | `File::create` + `write_all` + `sync_all` + `rename` |
@@ -205,8 +191,6 @@
 | `BUG-V6-33` | [`cli.rs:131`](../../../tauri/src/cli.rs#L131); [`commands/mod.rs:177-187`](../../../tauri/src/commands/mod.rs#L177-L187); [`editor/mod.rs:231-232`](../../../tauri/src/editor/mod.rs#L231-L232) | `sync --project` senza valore diventa `None` invece di errore; `components.txt` letto-modificato-scritto senza lock; token scritto e solo dopo protetto | errore d'uso; lock; `write_private` |
 | `SEC-V6-03` | [`net/signature.rs:88`](../../../tauri/src/net/signature.rs#L88), [`install/web.rs:110`](../../../tauri/src/install/web.rs#L110), [`install/agents.rs:65`](../../../tauri/src/install/agents.rs#L65) | l'editore Authenticode è una sottostringa del soggetto: un certificato valido con `O=Microsoft Corporation` in un OU passa; per `vc_redist` è l'unico controllo | confrontare l'attributo `O=` analizzato, esatto; eventualmente l'impronta |
 | `SEC-V6-04` | [`install/agents.rs:54`](../../../tauri/src/install/agents.rs#L54), [`:163-168`](../../../tauri/src/install/agents.rs#L163-L168), [`install/lang/mod.rs:57`](../../../tauri/src/install/lang/mod.rs#L57), [`install/db.rs:584-587`](../../../tauri/src/install/db.rs#L584-L587) | un manifesto compromesso con `version = "../../x"` fa scrivere fuori dalla cartella di lavoro | in `fetch` ammettere solo `[A-Za-z0-9._+-]` |
-| `PORT-V6-03` | [`versions/side_by_side.rs:139-147`](../../../tauri/src/versions/side_by_side.rs#L139-L147) | kit **copiato** (non spostato): i collegamenti .NET puntano al kit originale | collegamento valido solo se punta dentro `kit.apps()`, o relativo |
-| `PORT-V6-04` | [`versions/side_by_side.rs:70-71`](../../../tauri/src/versions/side_by_side.rs#L70-L71) | Gradle legge `gradle.properties` in ISO-8859-1: `C:/Users/Müller/...` diventa illeggibile | escape `\uXXXX` dei caratteri non ASCII |
 | `PORT-V6-05` | [`net/archive.rs:59`](../../../tauri/src/net/archive.rs#L59) | un tar per macOS/Linux con `foo:bar` (valido su Unix) fa fallire l'installazione | rifiutare `:` solo su Windows |
 | `PORT-V6-06` | [`agents/keyring.rs:164-168`](../../../tauri/src/agents/keyring.rs#L164-L168) | dopo crash + spostamento del kit la voce della chiave di sigillo ha il vecchio `kit.id()`: `restore` fallisce a ogni avvio | nome della voce da `machine_tag`, o scartare il file irrecuperabile con un avviso |
 | `TEST-V6-01` | [`test/rust/projects/run.rs:40-49`](../../../test/rust/projects/run.rs#L40-L49) | la prova usa porte reali 7100+; in parallelo un'altra prova occupa 7100 e `assign_port` ne dà un'altra (7102 ≠ 7100). Passa da sola 3/3 | intervallo di porte iniettabile nel `Runner` per le prove, o porta effimera |
