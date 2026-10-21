@@ -62,7 +62,7 @@ impl Installer for Claude {
                 },
                 sign: target.is_windows().then(|| Sign {
                     file: "claude.exe".into(),
-                    publisher: "Anthropic",
+                    publisher: "Anthropic, PBC",
                     required: false,
                 }),
             }],
