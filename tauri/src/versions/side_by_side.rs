@@ -76,16 +76,33 @@ pub fn gradle_properties(text: &str, jdks: &[PathBuf]) -> String {
     text
 }
 
+/// `text` as XML character data: a kit in `D:\R&D` is still a toolchains
+/// file Maven can read.
+fn xml_escape(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&apos;"),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
 /// Maven's toolchains: one JDK per line on disk.
 pub fn maven_toolchains(jdks: &[(String, PathBuf)]) -> String {
     let mut xml = format!(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!-- {KIT_MARK}: written by the kit, the JDKs it has; a file without this line is left alone. -->\n<toolchains>\n"
     );
     for (line, dir) in jdks {
-        let version = line.split('.').next().unwrap_or(line);
+        let version = xml_escape(line.split('.').next().unwrap_or(line));
         xml.push_str(&format!(
             "  <toolchain>\n    <type>jdk</type>\n    <provides><version>{version}</version><vendor>temurin</vendor></provides>\n    <configuration><jdkHome>{}</jdkHome></configuration>\n  </toolchain>\n",
-            dir.display()
+            xml_escape(&dir.display().to_string())
         ));
     }
     xml.push_str("</toolchains>\n");
