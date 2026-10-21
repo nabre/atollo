@@ -1019,10 +1019,10 @@ export const START: TopicTexts = {
             [
               tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste"),
               tr(
-                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti (macOS e Linux), lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello.",
-                "On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals (macOS and Linux), the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel.",
-                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs ; à droite, les terminaux ouverts (macOS et Linux), l'état de l'éditeur, le système (par exemple win32-x64), la version d'Atollo et, en dernier, l'icône qui affiche ou masque le panneau.",
-                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler; rechts die geöffneten Terminals (macOS und Linux), der Status des Editors, das System (zum Beispiel win32-x64), die Atollo-Version und als Letztes das Symbol, das den Bereich ein- oder ausblendet.",
+                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello.",
+                "On the left the Atollo item and the counter of what is running and of the errors; on the right the open terminals, the editor status, the system (for example win32-x64), the Atollo version and, last, the icon that shows or hides the panel.",
+                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs ; à droite, les terminaux ouverts, l'état de l'éditeur, le système (par exemple win32-x64), la version d'Atollo et, en dernier, l'icône qui affiche ou masque le panneau.",
+                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler; rechts die geöffneten Terminals, der Status des Editors, das System (zum Beispiel win32-x64), die Atollo-Version und als Letztes das Symbol, das den Bereich ein- oder ausblendet.",
               ),
             ],
           ]}
@@ -1084,12 +1084,7 @@ export const START: TopicTexts = {
               tr("Apre il pannello.", "Opens the panel.", "Ouvre le panneau.", "Öffnet den Bereich."),
             ],
             [
-              tr(
-                "Terminali aperti (macOS e Linux)",
-                "Open terminals (macOS and Linux)",
-                "Terminaux ouverts (macOS et Linux)",
-                "Geöffnete Terminals (macOS und Linux)",
-              ),
+              tr("Terminali aperti", "Open terminals", "Terminaux ouverts", "Geöffnete Terminals"),
               tr(
                 "Quante sessioni ha il pannello dei terminali dell'app.",
                 "How many sessions the app's terminal panel has.",

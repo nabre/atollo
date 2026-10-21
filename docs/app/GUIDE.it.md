@@ -238,7 +238,7 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 | 3 · Barra laterale | Il titolo della pagina con le sue icone (tra cui il libro «Apri la guida di questa pagina»), spesso una casella di ricerca, e dei riquadri che si aprono e si chiudono con un clic sul titolo. |
 | 4 · Area delle schede | Ciò che hai scelto nella barra laterale si apre in una scheda. La prima scheda di alcune pagine è fissa: il «Pannello rapido» in Progetti, «Tutti gli strumenti» in Strumenti. |
 | 5 · Pannello «Attività» | Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma. |
-| 6 · Barra di stato | A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti (macOS e Linux), lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello. |
+| 6 · Barra di stato | A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64), la versione di Atollo e, per ultima, l'icona che mostra o nasconde il pannello. |
 
 #### Le pagine
 
@@ -267,7 +267,7 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 | Atollo (a sinistra) | Passandoci sopra mostra la cartella del kit. | — |
 | ▶ numero · ⨯ numero | Quante cose sono in esecuzione (azioni dei progetti, ogni versione dei database accesa, anche più d'una dello stesso database, e i pool dei server web accesi) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore. | Apre o chiude il pannello «Attività». |
 | Rotellina con testo | Un'installazione di componenti in corso e il passo che sta facendo. | Apre il pannello. |
-| Terminali aperti (macOS e Linux) | Quante sessioni ha il pannello dei terminali dell'app. | Mostra o nasconde i terminali. |
+| Terminali aperti | Quante sessioni ha il pannello dei terminali dell'app. | Mostra o nasconde i terminali. |
 | Editor attivo | Il server dell'editor è acceso (passandoci sopra, il suo indirizzo). | — |
 | win32-x64, darwin-arm64… | Il sistema e il processore su cui gira il kit. | — |
 | v0.x.y | La versione di Atollo. | — |
@@ -732,7 +732,7 @@ L'editor del kit è VSCodium, la versione libera di Visual Studio Code. Il pulsa
 
 #### Il terminale del progetto
 
-«Terminale» apre una console del kit nella cartella del progetto: su Windows una finestra di console classica con la PowerShell 7 del kit; su macOS e Linux una scheda del pannello dei terminali dentro Atollo. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella.
+«Terminale» apre una console del kit nella cartella del progetto: una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella.
 
 Per console in altre cartelle o con strumenti scelti da te c'è la pagina Terminali: [3.4 Terminali del kit](#34-terminali-del-kit).
 
@@ -1156,8 +1156,8 @@ Argomenti collegati: [2.3 Avviare un progetto: azioni e porte](#23-avviare-un-pr
 
 Il riquadro «Terminali» elenca il terminale predefinito «Tutti gli strumenti» («Ogni strumento alla versione più recente») e quelli che hai creato tu. «Apri» su una riga apre la console nella sua cartella di partenza.
 
-- Su Windows si apre una finestra di console classica con la PowerShell 7 del kit.
-- Su macOS e Linux si apre una scheda del pannello dei terminali dentro Atollo (con la PowerShell del kit se c'è, altrimenti bash).
+- Si apre una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit (su macOS e Linux, se non c'è, bash). Mai il terminale del PC né una finestra a parte.
+- Su Windows il terminale usa il ConPTY del kit (conpty.dll e OpenConsole.exe di Microsoft, la console di Windows Terminal), una parte dell'app installata con i componenti obbligatori: se manca, l'app lo scarica prima di aprire il terminale (avanzamento in «Attività»).
 - All'apertura compare «Atollo · \<nome del terminale\>» e l'elenco degli strumenti trovati; il prompt mostra Atollo e la cartella corrente.
 
 #### Creare un terminale tuo
@@ -1175,9 +1175,11 @@ Utile quando ti serve sempre lo stesso insieme: per esempio un terminale «PHP 7
 - Il terminale predefinito non si modifica: duplicalo per crearne uno tuo. «Elimina» chiede conferma (Esc chiude la domanda) e toglie solo il terminale, non gli strumenti.
 - Se una versione scelta non è più installata, il terminale usa la più recente e lo dice, per esempio «PHP 8.2 → 8.4»; uno strumento tolto del tutto resta fuori.
 
-#### I terminali su macOS e Linux
+#### Il pannello dei terminali
 
-Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · bash», «app · claude»…); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.
+Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.
+
+Su Windows e Linux Ctrl+C copia il testo selezionato (senza selezione arriva al programma), Ctrl+Maiusc+C copia, Ctrl+V e Ctrl+Maiusc+V incollano; su macOS ⌘C e ⌘V.
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -1226,7 +1228,7 @@ La pagina Agenti non avvia gli agenti: un agente lavora sempre nella cartella di
 
 1. Apri il progetto.
 2. In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Antigravity»). Fai clic su quello dell'agente che vuoi usare.
-3. L'agente parte subito. Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.
+3. L'agente parte subito, nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo (su ogni sistema).
 
 Gli stessi pulsanti sono nella riga del progetto (barra laterale o «Pannello rapido»): un clic sul logo apre quell'agente nel progetto. Un agente non installato non ha il suo pulsante; se non ne è installato nessuno, non ci sono pulsanti degli agenti.
 
@@ -2319,7 +2321,7 @@ Molti componenti sono pubblicati su GitHub. Senza accesso, l'API di GitHub conse
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura e solo con la pagina Agenti aperta. |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Solo quando lo chiedono i comandi dei progetti e dei framework. |
 
-#### Tabella completa delle fonti (35 componenti e 5 parti)
+#### Tabella completa delle fonti (36 componenti e 5 parti)
 
 Per ogni componente: da dove il kit legge le versioni, da dove scarica il file, come lo verifica e dove lo mette. Le colonne descrivono Windows; dove macOS e Linux usano un'altra fonte, è scritta sotto l'indirizzo.
 
@@ -2328,6 +2330,7 @@ Per ogni componente: da dove il kit legge le versioni, da dove scarica il file, 
 | [PowerShell 7 (pwsh)](https://github.com/PowerShell/PowerShell) | api.github.com/repos/PowerShell/PowerShell/releases/latest | PowerShell-\<v\>-win-(x64\|arm64).zip | SHA-256 — GitHub Release asset.digest | `pwsh\<linea>\pwsh.exe` |
 | [GitHub CLI (gh)](https://cli.github.com) | api.github.com/repos/cli/cli/releases/latest | gh_\<v\>_windows_(amd64\|arm64).zip | SHA-256 — GitHub Release asset.digest | `gh\<linea>\bin\gh.exe` |
 | [Editor (VSCodium Reh Web)](https://vscodium.com) | Catalogo integrato (versione fissata 1.135.06055, D-58) | github.com/VSCodium/vscodium/releases/download/\<v\>/vscodium-reh-web-win32-x64-\<v\>.tar.gz<br>macOS e Linux: vscodium-reh-web-\<target\>-\<v\>.tar.gz, SHA-256 fissato per target (nativo anche su ARM64) | SHA-256 — SHA-256 cablato in components.json | `vscodium-server\` |
+| [ConPTY (conpty.dll + OpenConsole.exe)](https://github.com/microsoft/terminal) | Catalogo integrato (versione fissata 1.25.260930003, D-148) | api.nuget.org/v3-flatcontainer/microsoft.windows.console.conpty/\<v\>/microsoft.windows.console.conpty.\<v\>.nupkg<br>Solo Windows: su macOS e Linux il terminale usa il PTY del sistema | Authenticode + SHA — SHA-256 del pacchetto cablato in components.json (SHA-512 di NuGet); conpty.dll e OpenConsole.exe firmati Microsoft Corporation | `conpty\` |
 | [Claude Code](https://claude.com/product/claude-code) | registry.npmjs.org/@anthropic-ai/claude-code-win32-\<arch\>/latest | Campo dist.tarball del pacchetto npm | Authenticode + SHA — Integrità npm sha512 + firma Authenticode Anthropic | `claude\<linea>\claude.exe` |
 | [Codex (OpenAI)](https://github.com/openai/codex) | registry.npmjs.org/@openai/codex/latest → /\<ver\>-win32-\<arch\> | Campo dist.tarball del pacchetto specifico per architettura | npm sha512 — Integrità npm dist.integrity (sha512-...) | `codex\<linea>\bin\codex.exe` |
 | [Antigravity (Google)](https://antigravity.google) | antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64\|arm64).json | Campo url del manifesto JSON ufficiale<br>macOS e Linux: manifests/\<os\>_\<arch\>.json, archivio .tar.gz | SHA-512 — SHA-512 (128 hex) dal campo sha512 del manifesto | `antigravity\<linea>\agy.exe (via data\kit\bin\agy.cmd)` |

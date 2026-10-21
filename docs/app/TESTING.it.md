@@ -30,7 +30,7 @@ Coprono, fra l'altro:
 - download con checksum e firme;
 - editor e server web reale (con il token e senza);
 - finestre dell'editor che non possono chiamare i comandi dell'app;
-- una console reale in `conhost.exe`, in una cartella con spazi;
+- una sessione reale del terminale sul ConPTY di Windows (`editor/conpty.rs`): solo l'ambiente del kit, una cartella con spazi, il codice di uscita, i tasti battuti e la chiusura che ferma l'albero della sessione;
 - allineamento degli agenti e accesso di Antigravity con Gestione credenziali reale;
 - rilevamento dei progetti su esempi (Node, Next, Tauri, Electron, PHP, Laravel, Django, FastAPI, Flask, Streamlit, Rust, statico, progetti composti, `panel.json` e `pannello.json`);
 - porte ricordate e bloccate, avvio e arresto di un'azione attraverso il suo job;
@@ -172,7 +172,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Utente standard** senza diritti di amministratore: nessuna richiesta UAC in nessun passo.
 - [ ] **Proxy autenticato e ispezione SSL.** Impostazioni › Rete con proxy e file PEM: installazione, estensioni dell'editor e agenti funzionano.
 - [ ] **Senza rete.** L'app e l'editor partono, gli errori di download si leggono, il controllo degli aggiornamenti fallisce senza bloccare nulla.
-- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, console del kit (`conhost.exe`, `pwsh.exe`) o server di progetto.
+- [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, terminale del kit (`OpenConsole.exe`, `pwsh.exe`) o server di progetto.
 - [ ] **ARM64.** L'exe è nativo, l'editor gira in emulazione e l'avviso si vede.
 - [ ] **R spostato** (D-104). Kit con R su `D:`, poi su `E:`: dopo l'avvio `lib\R\etc\x64\Makeconf` ha `LOCAL_SOFT` sulla cartella nuova e `install.packages(..., type="source")` compila.
 - [ ] **macOS e Linux**: la sezione «macOS, Linux e Windows ARM64» qui sotto.
@@ -278,7 +278,8 @@ Kit preparato su Windows per un altro sistema (a ogni rilascio):
 
 ### Agenti
 - [ ] **Claude Code, Codex e Antigravity.** Accesso, avvio dall'app e dall'editor, allineamento di istruzioni e skill fra i tre.
-- [ ] **Console di un agente.** Home o Progetti › Agente con Claude Code: si apre la console classica di Windows, anche se il terminale predefinito del PC è Windows Terminal o un altro. Claude Code riceve Invio, frecce e Ctrl+C. Chiudendo la console non resta nessun `claude.exe`.
+- [ ] **Terminale di un agente.** Home o Progetti › il pulsante di Claude Code: si apre una scheda del pannello dei terminali dell'app (nessuna finestra di console, niente Windows Terminal, anche se è il terminale predefinito del PC). Claude Code riceve Invio, frecce, Esc e Ctrl+C. Chiudendo la scheda non resta nessun `claude.exe` né `OpenConsole.exe`.
+- [ ] **ConPTY del kit.** Nel Task Manager la console della sessione è `OpenConsole.exe` di `data\apps\win32-*\conpty\`, mai `conhost.exe`. Senza il componente e senza rete, «Terminale» dice nell'app che non riesce a installarlo; con la rete lo scarica prima (avanzamento in «Attività») e apre il terminale.
 - [ ] **Git quando serve.** Su un kit senza Git, all'avvio si installano solo i componenti di sistema: GitHub CLI funziona senza Git (D-81). Scegliere Claude Code, clonare un progetto o avviare un'azione con `git` installa Git; togliere la spunta a Git toglie anche Claude Code.
 - [ ] **Editor aggiornato con una cartella aperta.** Con Esplora file aperto su `data\apps\win32-x64\vscodium-server\extensions`, l'editor di un'altra versione viene comunque sostituito all'avvio (D-60).
 

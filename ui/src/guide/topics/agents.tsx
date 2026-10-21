@@ -167,10 +167,10 @@ export const AGENTS: TopicTexts = {
               "Oben neben „Editor“ und „Terminal“ gibt es für jeden installierten Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Antigravity öffnen“). Klicke auf die des Agenten, den du verwenden möchtest.",
             ),
             tr(
-              "L'agente parte subito. Su Windows si apre una console del kit nella cartella del progetto con l'agente avviato; su macOS e Linux una scheda del pannello dei terminali.",
-              "The agent starts right away. On Windows a kit console opens in the project folder with the agent started; on macOS and Linux, a tab in the terminal panel.",
-              "L'agent démarre aussitôt. Sur Windows, une console du kit s'ouvre dans le dossier du projet avec l'agent lancé ; sur macOS et Linux, un onglet du panneau des terminaux.",
-              "Der Agent startet sofort. Unter Windows öffnet sich eine Konsole des Kits im Projektordner mit dem gestarteten Agenten; unter macOS und Linux eine Registerkarte im Terminalbereich.",
+              "L'agente parte subito, nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo (su ogni sistema).",
+              "The agent starts right away, in the project folder, in a tab of the terminal panel inside Atollo (on every system).",
+              "L'agent démarre aussitôt, dans le dossier du projet, dans un onglet du panneau des terminaux dans Atollo (sur tous les systèmes).",
+              "Der Agent startet sofort, im Projektordner, in einer Registerkarte des Terminalbereichs in Atollo (auf jedem System).",
             ),
           ]}
         />

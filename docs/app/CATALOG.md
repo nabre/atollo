@@ -14,6 +14,7 @@ Real tests: the CI (x64 job) installs `pwsh`, `node`, `git` and the editor; all 
 | required (`required`) | `gh` | GitHub CLI | always | 40 | | pull requests, issues, access to GitHub (also for private clones); works without Git (D-81) |
 | | `pwsh` | PowerShell 7 | always | 110 | | **new**; the kit's terminal |
 | app (`app`) | `vscodium-server` | Editor (VSCodium web server) | always | 250 | `pwsh` | **new**; part of the app, version pinned at each release (DECISIONS.md (in Italian) D-58); in Tools it appears with the required ones, checked and not editable; SHA-256 pinned per target, x64 under emulation on Windows ARM64 |
+| app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | always, Windows only | 3 | — | **new**; part of the app, the console of the in-app terminal on Windows (DECISIONS.md (in Italian) D-148); version and SHA-256 of the NuGet package pinned; x64 and ARM64 native; not offered on macOS and Linux (their PTY) |
 | agents (`agents`) | `claude` | Claude Code | yes | 250 | `git` | |
 | | `codex` | Codex | yes | 440 | | |
 | | `antigravity` | Antigravity | yes | 190 | | sign-in saved in the kit (`agents/keyring.rs`) |
@@ -53,7 +54,7 @@ The pages do not show the catalog's groups but the kinds of the site's matrix (D
 
 The other catalogs in `tauri/catalog/`: `frameworks.json`, the "New project" wizard (D-83, D-131): 81 pieces, 63 bases and 18 additions; `extensions.json`, the editor's extensions per language (D-71); `relations.json`, the relations matrix (D-81).
 
-Removed from the catalog on 14/10/2026: Windows Terminal (`terminal`), because the consoles were the classic Windows console (DECISIONS.md D-57), then back the same day as the consoles' default terminal (D-68) and removed again on 16/10/2026 (D-95), along with the `os` group that contained only it; VSCodium desktop (`vscodium`), because the editor is built in. The `conpty` component proposed in D-47 was not added.
+Removed from the catalog on 14/10/2026: Windows Terminal (`terminal`), because the consoles were the classic Windows console (DECISIONS.md D-57), then back the same day as the consoles' default terminal (D-68) and removed again on 16/10/2026 (D-95), along with the `os` group that contained only it; VSCodium desktop (`vscodium`), because the editor is built in. The `conpty` component proposed in D-47 was not added then; it came on 21/10/2026 with the in-app terminal on Windows (D-148).
 
 Catalog fields beyond those of Atollo: `keys` (the other parts of a component: Maven and Gradle for Java, Ninja for CMake, Composer for PHP, yarn for pnpm, the editor's `node.exe`; installed only if all of them are there), `remove` (other owned files; `tools\vcruntime` of PHP and Apache goes away only with the last of the two), `check` (command of the final check, for all), `version` and `sha256` (`app` group). Key files are written with Windows names and translated for macOS and Linux (`translate_rel`: `git/bin/bash.exe` → `git/bin/git`, `.exe` and `.cmd` removed).
 
@@ -114,6 +115,7 @@ Abbreviations:
 | uv | GHA `astral-sh/uv` | `uv-<triple>.zip` | SHA-256 from `digest` | `uv.exe`, `uvx.exe`, `uvw.exe` → `A\uv\<line>\` | `uv/uv.exe` | `_prepare-core.ps1:273-302` |
 | gh | GHA `cli/cli` | `gh_<v>_windows_amd64.zip` / `_arm64.zip` | SHA-256 from `digest` | zip (`bin\gh.exe`) → `A\gh\<line>\` | `gh/bin/gh.exe` | `_prepare-core.ps1:307-335` |
 | vscodium-server | pinned in the catalog (`version`, today 1.135.06055; D-58), never the latest | `github.com/VSCodium/vscodium/releases/download/<v>/vscodium-reh-web-win32-x64-<v>.tar.gz`, x64 only (on ARM64 too) | SHA-256 pinned in the catalog (`sha256`, same as VSCodium's and as GitHub's `digest`) | tar.gz (root: `bin\`, `node.exe`, `out\`, `extensions\`) → `A\vscodium-server\`; before the swap the old editor's processes are stopped | `vscodium-server/out/server-main.js` + `vscodium-server/node.exe` | new |
+| conpty | pinned in the catalog (`version`, today 1.25.260930003; D-148): the newest stable at least two weeks old | `api.nuget.org/v3-flatcontainer/microsoft.windows.console.conpty/<v>/microsoft.windows.console.conpty.<v>.nupkg` (one package for x64 and ARM64) | SHA-256 pinned in the catalog (`sha256`; NuGet's SHA-512 checked when pinned) + Authenticode `Microsoft Corporation` on both files | zip: `runtimes\win-<arch>\native\conpty.dll` and `build\native\runtimes\<arch>\OpenConsole.exe` → `A\conpty\` (side by side: the DLL looks for the host in its folder first); final check: the file version of `OpenConsole.exe`, never run | `conpty/conpty.dll` + `conpty/OpenConsole.exe` | new |
 | pwsh | GHA `PowerShell/PowerShell`, `PowerShell-<v>-win-(x64\|arm64).zip` | native for both | SHA-256 from `digest` | zip → `A\pwsh\` | `pwsh/pwsh.exe` | new |
 | php | `windows.php.net/downloads/releases/releases.json`, most recent (or chosen) branch, Thread Safe build `ts-vs*-x64` (or `ts-vc*-x64`) | x64 only (emulated on ARM64, with a warning) | SHA-256 from `releases.json` | zip; VC++ DLLs next to `php.exe`; `cacert.pem` from curl.se with SHA-256 (if it fails, only a warning); `php.ini` created once (§3); version saved together with Composer's | `php/php.exe` + `tools/composer.phar` | `_prepare-web.ps1:89-167` |
 | composer (part of php) | `getcomposer.org/versions`, first `stable` | `getcomposer.org<path>`, architecture-independent | SHA-256 from `<url>.sha256sum` | `A\tools\composer.phar` + `composer.cmd` (`@php "%~dp0composer.phar" %*`) and `composer` for Git Bash | `tools/composer.phar` | `_prepare-web.ps1:153-164` |
@@ -150,7 +152,7 @@ Abbreviations:
 
 ## 3. Cross-cutting rules
 
-- **Order**: that of `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, caddy, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, mysql, mongodb, phpmyadmin, sqlite, pwsh, vscodium-server. Removals first, then installations; Git configuration and the Apache site are final steps of those components. From the command line, at the end of `prepare`, the final check of what was installed. Editor extensions after the editor starts; alignment of the agents at app startup and around each agent.
+- **Order**: that of `components.json`: claude, codex, antigravity, git, python, node, uv, gh, php, apache, caddy, rust, go, java (+maven, gradle), kotlin, android, dotnet, dart, zig, julia, bun, deno, typst, tinytex, pnpm, cmake (+ninja), cc, ruby, r, mysql, mongodb, phpmyadmin, sqlite, pwsh, vscodium-server, conpty. Removals first, then installations; Git configuration and the Apache site are final steps of those components. From the command line, at the end of `prepare`, the final check of what was installed. Editor extensions after the editor starts; alignment of the agents at app startup and around each agent.
 - **One error does not stop the others**: each step is isolated and ends up in the summary; overall result "with errors" if one fails.
 - **When it is installed**: key file or a `keys` part missing, editor at a version different from the release's (at app startup, or in a `prepare` that includes it), or "Update all" (`--update-all`) / `--force`. `--only` installs or updates the listed components and whatever they need and is missing, required ones excluded, without removing anything; `--skip` also skips what depends on them and is not yet installed (never the required ones).
 - **When needed** (D-59): starting an agent, a clone, a project action first install the components they need and mark them as chosen in `components.txt`.
@@ -174,7 +176,7 @@ Abbreviations:
 | --- | --- | --- |
 | VSCodium desktop required | removed | built-in editor |
 | Git, Node.js, uv required | installed when needed (DECISIONS.md D-59) | only PowerShell 7 and GitHub CLI are required |
-| — | `pwsh` required; `vscodium-server` part of the app with pinned version (D-58) | the kit's exclusive terminal (classic Windows console, D-57, D-95), built-in editor |
+| — | `pwsh` required; `vscodium-server` and, on Windows, `conpty` parts of the app with pinned version (D-58, D-148) | the kit's exclusive terminal (inside the app on every system, D-109, D-148), built-in editor |
 | Git: fallback without API (tag + Authenticode) | only the GitHub API with `digest` | — |
 | Git SFX and TinyTeX SFX open the 7-Zip window | 7z extraction in Rust, no window | clean interface |
 | Typst and TinyTeX are not removed when deselected | removed | bug in `_prepare-migrate.ps1:128` |

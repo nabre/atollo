@@ -1,5 +1,14 @@
 # Novità
 
+## Il terminale dentro Atollo anche su Windows (21/10/2026)
+
+- **Un'interfaccia sola**: su Windows «Terminale» del progetto, «Apri», «Salva e apri» e «Apri in…» della pagina Terminali e i pulsanti degli agenti aprono una scheda del pannello dei terminali dentro l'app, come su macOS e Linux. Niente più finestra della console classica, mai Windows Terminal né il terminale del PC (D-148).
+- **Claude Code riceve i tasti**: Invio, frecce, Esc e Ctrl+C arrivano a Claude Code e a Codex. Il terminale usa il ConPTY aggiornato di Microsoft (`conpty.dll` e `OpenConsole.exe`, la console di Windows Terminal e VS Code), una parte dell'app scaricata da NuGet con i componenti obbligatori, verificata con lo SHA-256 e la firma di Microsoft. Se manca, l'app lo scarica prima di aprire il terminale; se non ci riesce lo dice nell'app.
+- **Copia e incolla** come in Windows Terminal: Ctrl+C copia il testo selezionato (senza selezione arriva al programma), Ctrl+Maiusc+C copia, Ctrl+V e Ctrl+Maiusc+V incollano. Ctrl+P nel terminale va alla shell, non apre «Apri un progetto».
+- **Caratteri larghi**: emoji e ideogrammi occupano le colonne giuste anche quando si torna indietro con le frecce.
+- **Chiusura**: chiudere la scheda, «Chiudi tutto» o «Rimuovi l'unità» fermano il programma e tutto ciò che ha avviato, compreso il server in background di Codex; la conferma alla chiusura conta i terminali aperti.
+- **Il pannello dei terminali si apre davvero**: la protezione del prototipo dell'interfaccia impediva a xterm.js di caricarsi (anche su macOS e Linux); ora la protezione resta e il pannello si apre.
+
 ## L'intestazione del terminale (21/10/2026)
 
 - **«ATOLLO» in grande** all'apertura del terminale del kit (PowerShell e Bash, su ogni sistema): lettere a blocchi nel colore del terminale, l'ultima O è l'atollo del wordmark (smeraldo, ambra e corallo con l'isolotto, la laguna e le onde). Sotto, il nome del terminale e gli strumenti trovati. `ATOLLO_QUIET` la toglie, come prima.

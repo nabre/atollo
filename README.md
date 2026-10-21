@@ -97,7 +97,7 @@ Without step 2 macOS starts the app from a temporary copy (App Translocation) an
 
 At the bottom of every page, the **Activity** panel: what is running or installing (project actions, every database version, web server pools, components), with output and errors in one place; "Stop all" stops everything after a confirmation. The status bar counts the same things.
 
-On Windows Atollo's console is the classic Windows console with the kit's PowerShell 7, on macOS and Linux a tab of the app's terminal panel; either way it has only Atollo's isolated environment: programs installed on the host PC do not interfere. If a terminal's saved version has been removed, it says which one it uses instead (for example PHP 8.2 → 8.4).
+Atollo's console is a tab of the app's terminal panel on every system, with the kit's PowerShell 7 (on Windows on Microsoft's ConPTY, the console of Windows Terminal, downloaded with the kit); it never opens the PC's terminal and has only Atollo's isolated environment: programs installed on the host PC do not interfere. If a terminal's saved version has been removed, it says which one it uses instead (for example PHP 8.2 → 8.4).
 
 ## Still to do
 

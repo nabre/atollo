@@ -1654,10 +1654,10 @@ export const PROJECTS: TopicTexts = {
       >
         <P>
           {tr(
-            "«Terminale» apre una console del kit nella cartella del progetto: su Windows una finestra di console classica con la PowerShell 7 del kit; su macOS e Linux una scheda del pannello dei terminali dentro Atollo. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella.",
-            "“Terminal” opens a kit console in the project folder: on Windows a classic console window with the kit's PowerShell 7; on macOS and Linux a tab of the terminal panel inside Atollo. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder.",
-            "« Terminal » ouvre une console du kit dans le dossier du projet : sous Windows, une fenêtre de console classique avec le PowerShell 7 du kit ; sous macOS et Linux, un onglet du panneau des terminaux dans Atollo. Les outils sont ceux du kit, aux versions choisies pour le projet. L'invite affiche Atollo et le dossier.",
-            "„Terminal“ öffnet eine Konsole des Kits im Projektordner: unter Windows ein klassisches Konsolenfenster mit der PowerShell 7 des Kits; unter macOS und Linux einen Tab des Terminalbereichs in Atollo. Die Werkzeuge sind die des Kits, in den für das Projekt gewählten Versionen. Die Eingabeaufforderung zeigt Atollo und den Ordner.",
+            "«Terminale» apre una console del kit nella cartella del progetto: una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella.",
+            "“Terminal” opens a kit console in the project folder: a tab of the terminal panel inside Atollo, on every system, with the kit's PowerShell 7. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder.",
+            "« Terminal » ouvre une console du kit dans le dossier du projet : un onglet du panneau des terminaux dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit. Les outils sont ceux du kit, aux versions choisies pour le projet. L'invite affiche Atollo et le dossier.",
+            "„Terminal“ öffnet eine Konsole des Kits im Projektordner: einen Tab des Terminalbereichs in Atollo, auf jedem System, mit der PowerShell 7 des Kits. Die Werkzeuge sind die des Kits, in den für das Projekt gewählten Versionen. Die Eingabeaufforderung zeigt Atollo und den Ordner.",
           )}
         </P>
         <P>

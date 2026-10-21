@@ -99,7 +99,7 @@ Ohne Schritt 2 startet macOS die App aus einer temporären Kopie (App Translocat
 
 Unten auf jeder Seite das Feld **Aktivität**: was läuft oder installiert wird (Aktionen der Projekte, jede Version der Datenbanken, Pools der Webserver, Komponenten), mit Ausgabe und Fehlern an einem Ort; „Alle beenden“ beendet nach einer Bestätigung alles. Die Statusleiste zählt dieselben Dinge.
 
-Unter Windows ist die Konsole von Atollo die klassische Windows-Konsole mit der PowerShell 7 des Kits, unter macOS und Linux ein Tab im Terminal-Feld der App; in beiden Fällen hat sie nur die isolierte Umgebung von Atollo: Auf dem Host-PC installierte Programme stören nicht. Wurde die gespeicherte Version eines Terminals entfernt, sagt es, welche es stattdessen nutzt (zum Beispiel PHP 8.2 → 8.4).
+Die Konsole von Atollo ist auf jedem System ein Tab im Terminal-Feld der App, mit der PowerShell 7 des Kits (unter Windows auf dem ConPTY von Microsoft, der Konsole von Windows Terminal, mit dem Kit heruntergeladen); sie öffnet nie das Terminal des PCs und hat nur die isolierte Umgebung von Atollo: Auf dem Host-PC installierte Programme stören nicht. Wurde die gespeicherte Version eines Terminals entfernt, sagt es, welche es stattdessen nutzt (zum Beispiel PHP 8.2 → 8.4).
 
 ## Noch zu tun
 

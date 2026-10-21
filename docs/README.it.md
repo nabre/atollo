@@ -97,7 +97,7 @@ Senza il passo 2 macOS avvia l'app da una copia temporanea (App Translocation) e
 
 In basso, su ogni pagina, il pannello **Attività**: cosa è avviato o in installazione (azioni dei progetti, ogni versione dei database, pool dei server web, componenti), con l'output e gli errori in un solo posto; «Ferma tutto» ferma ogni cosa dopo una conferma. La barra di stato conta le stesse cose.
 
-Su Windows la console di Atollo è la console classica di Windows con il PowerShell 7 del kit, su macOS e Linux una scheda del pannello dei terminali dell'app; in tutti e due i casi ha solo l'ambiente isolato di Atollo: i programmi installati sul PC ospite non interferiscono. Se la versione salvata di un terminale è stata rimossa, dice quale usa al suo posto (per esempio PHP 8.2 → 8.4).
+La console di Atollo è una scheda del pannello dei terminali dell'app su ogni sistema, con il PowerShell 7 del kit (su Windows sul ConPTY di Microsoft, la console di Windows Terminal, scaricato con il kit); non apre mai il terminale del PC e ha solo l'ambiente isolato di Atollo: i programmi installati sul PC ospite non interferiscono. Se la versione salvata di un terminale è stata rimossa, dice quale usa al suo posto (per esempio PHP 8.2 → 8.4).
 
 ## C'è ancora da fare
 
