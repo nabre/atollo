@@ -17,6 +17,89 @@ fn spellings_and_boundaries() {
     assert!(r.replace(b"nothing here").is_none());
 }
 
+/// BUG-V6-03: a kit at the root of a drive, on either end of the move. The
+/// separator of the text is kept and never doubled, JSON stays valid, a
+/// drive alone (`E:` not followed by a separator) is left as it is.
+#[test]
+fn drive_roots_on_either_end() {
+    let cases: [(&str, &str, &str, &str); 8] = [
+        (
+            r"E:\",
+            r"F:\",
+            r"a E:\data\x E:/data/y file:///e%3A/data/z E: E:foo xE:\no",
+            r"a F:\data\x F:/data/y file:///f%3A/data/z E: E:foo xE:\no",
+        ),
+        (
+            r"E:\",
+            r"F:\",
+            r#"{"a": "E:\\data\\x", "b": "E:\\", "c": "E:"}"#,
+            r#"{"a": "F:\\data\\x", "b": "F:\\", "c": "E:"}"#,
+        ),
+        (
+            r"E:\kit",
+            r"F:\",
+            r"E:\kit\data E:/kit/data file:///e%3A/kit/w E:\kit E:\kit2",
+            r"F:\data F:/data file:///f%3A/w F:\ E:\kit2",
+        ),
+        (
+            r"E:\kit",
+            r"F:\",
+            r#"{"a": "E:\\kit\\data", "b": "E:\\kit", "c": "E:/kit/x"}"#,
+            r#"{"a": "F:\\data", "b": "F:\\", "c": "F:/x"}"#,
+        ),
+        (
+            r"F:\",
+            r"E:\kit",
+            r"F:\data F:/data file:///f%3A/data F:",
+            r"E:\kit\data E:/kit/data file:///e%3A/kit/data F:",
+        ),
+        (
+            r"F:\",
+            r"E:\kit",
+            r#"{"a": "F:\\data\\x", "b": "F:\\"}"#,
+            r#"{"a": "E:\\kit\\data\\x", "b": "E:\\kit\\"}"#,
+        ),
+        // A trailing separator on one end only changes nothing.
+        (
+            r"E:\kit\",
+            r"F:\kit",
+            r#"E:\kit\a "E:\\kit\\b""#,
+            r#"F:\kit\a "F:\\kit\\b""#,
+        ),
+        (r"e:", r"F:\", r"e:\a E:\b", r"f:\a F:\b"),
+    ];
+    for (from, to, text, want) in cases {
+        let r = Replacer::new(Os::Win32, from, to);
+        let out = String::from_utf8(r.replace(text.as_bytes()).unwrap()).unwrap();
+        assert_eq!(out, want, "{from} -> {to}");
+        if text.starts_with('{') {
+            serde_json::from_str::<Value>(&out).unwrap_or_else(|e| panic!("{out}: {e}"));
+        }
+    }
+}
+
+/// Claude's per-folder data of a kit at a drive root: `E:\data` is
+/// `E--data`, with the roots cut as `relocate` cuts them.
+#[test]
+fn claude_folders_of_drive_roots() {
+    let tmp = TempDir::new("relocate-drive-root");
+    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let p = Paths::of(&kit);
+    let dir = p.claude.join("projects");
+    for (from, to, old, new) in [
+        ("E:", "F:", "E--data-x", "F--data-x"),
+        (r"E:\kit", "F:", "E--kit-projects-a", "F--projects-a"),
+        ("F:", r"E:\kit", "F--projects-a", "E--kit-projects-a"),
+    ] {
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join(old)).unwrap();
+        let r = Replacer::new(Os::Win32, from, to);
+        let mut m = Moved::default();
+        relocate_claude_projects(&p, &r, from, to, &mut m);
+        assert!(dir.join(new).is_dir(), "{from} -> {to}");
+    }
+}
+
 #[test]
 fn windows_ignores_case_unix_does_not() {
     let win = Replacer::new(Os::Win32, r"E:\Kit", r"F:\kit");
