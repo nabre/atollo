@@ -148,14 +148,21 @@ Atollo verwendet keinen Installer, registriert keine Systemdienste oder geplante
 
 ```
 Atollo.exe                           öffnet das Fenster
-Atollo.exe env                       zeigt die Umgebung der Programme von Atollo
-Atollo.exe components                listet Sprachen und Werkzeuge, mit den installierten
+Atollo.exe env [--project <Name>]    zeigt die Umgebung der Programme von Atollo
+                                     (mit einem Projekt, mit seinen Versionen)
+Atollo.exe components [--target <System>]
+                                     listet Sprachen und Werkzeuge, mit den installierten
+Atollo.exe versions [<id>]           die Versionen auf der Platte; mit einer id die herunterladbaren
 Atollo.exe check                     prüft, ob die installierten Programme antworten
-Atollo.exe prepare [Optionen]        installiert, aktualisiert und entfernt die gewählten Komponenten
-    --only a,b                       nur diese (und was sie brauchen)
+Atollo.exe prepare [Optionen]        installiert und aktualisiert die gewählten Komponenten
+                                     und entfernt die nicht gewählten
+    --only a,b                       nur diese (und was sie brauchen), entfernt nichts
     --skip a,b                       diese nicht
     --update-all                     auch die bereits installierten aktualisieren
     --force                          neu herunterladen
+    --line id=x.y                    legt diese Version neben die anderen (wiederholbar)
+    --target <System>                bereitet für ein anderes System vor: win32-x64, win32-arm64,
+                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <Ordner>] [--verbose]
                                      gleicht Anweisungen, Skills und MCP der drei Agenten ab
 Atollo.exe keyring restore|save      Anmeldung von Antigravity (von agy.cmd benutzt)

@@ -146,14 +146,21 @@ Atollo does not use an installer, registers no system services or scheduled task
 
 ```
 Atollo.exe                           opens the window
-Atollo.exe env                       shows the environment Atollo's programs get
-Atollo.exe components                lists languages and tools, with the installed ones
+Atollo.exe env [--project <name>]    shows the environment Atollo's programs get
+                                     (with a project, with its versions)
+Atollo.exe components [--target <system>]
+                                     lists languages and tools, with the installed ones
+Atollo.exe versions [<id>]           the versions on disk; with an id, the ones to download
 Atollo.exe check                     checks that the installed programs answer
-Atollo.exe prepare [options]         installs, updates and removes the chosen components
-    --only a,b                       only these (and what they need)
+Atollo.exe prepare [options]         installs and updates the chosen components
+                                     and removes the ones not chosen
+    --only a,b                       only these (and what they need), removes nothing
     --skip a,b                       not these
     --update-all                     also update the installed ones
     --force                          download again
+    --line id=x.y                    adds that version next to the others (can be repeated)
+    --target <system>                prepares for another system: win32-x64, win32-arm64,
+                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <folder>] [--verbose]
                                      aligns instructions, skills and MCP of the three agents
 Atollo.exe keyring restore|save      Antigravity's sign-in (used by agy.cmd)
