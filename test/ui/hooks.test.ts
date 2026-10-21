@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import { useAction, useLoad, type LoadOptions } from "../../ui/src/hooks";
+import { useAction, useCopy, useLoad, type LoadOptions } from "../../ui/src/hooks";
 
 /** A promise settled by the test. */
 function deferred<T>() {
@@ -213,5 +213,57 @@ describe("useAction", () => {
     second.resolve(undefined);
     await settle();
     expect(result.current.busy).toBeNull();
+  });
+
+  it("clears busy and shows the error of an action that throws at once", async () => {
+    const { result } = renderHook(() => useAction());
+    act(() => {
+      result.current.run("bad", () => {
+        throw new Error("no");
+      });
+    });
+    await settle();
+    expect(result.current.busy).toBeNull();
+    expect(result.current.error).toBe("Error: no");
+  });
+});
+
+describe("useCopy", () => {
+  function clipboard(writeText: (text: string) => Promise<void>) {
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  }
+
+  it("stays not copied when the clipboard refuses", async () => {
+    clipboard(() => Promise.reject(new Error("denied")));
+    const { result } = renderHook(() => useCopy(1000));
+    act(() => {
+      result.current.copy("x");
+    });
+    await settle();
+    expect(result.current.copied).toBe(false);
+  });
+
+  it("counts the wait from the last copy", async () => {
+    vi.useFakeTimers();
+    clipboard(() => Promise.resolve());
+    const { result } = renderHook(() => useCopy(1000));
+    act(() => {
+      result.current.copy("a");
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(800);
+    });
+    act(() => {
+      result.current.copy("b");
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    // The first copy's timer would have reset it at 1000 ms.
+    expect(result.current.copied).toBe(true);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(600);
+    });
+    expect(result.current.copied).toBe(false);
   });
 });
