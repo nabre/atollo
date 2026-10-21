@@ -369,6 +369,16 @@ fn keeping_taken<T>(kit: &Kit, run: impl FnOnce() -> Result<T>) -> Result<T> {
     result
 }
 
+/// A file name only (`[A-Za-z0-9._+-]+`, not `.` or `..`): no separator,
+/// drive or other character that would put the download elsewhere.
+pub(crate) fn is_plain_file_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.bytes().any(|b| b != b'.')
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'+' | b'-'))
+}
+
 /// Downloads and verifies one file into `work`; the same file added by hand
 /// (`setup/downloads.rs`) is used instead, and a failed download says where to
 /// get it in the browser (`ByHand`).
@@ -380,6 +390,11 @@ pub fn fetch(
     work: &Path,
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
+    // The name often comes from remote metadata (a version in a manifest,
+    // an asset name): one that could leave `work` is refused.
+    if !is_plain_file_name(file_name) {
+        bail!("refused download name {file_name:?}: only letters, digits and . _ + -");
+    }
     let file = work.join(file_name);
     if let Some(staged) = crate::router::bootstrap::take(ctx.kit, file_name, expect, &file)? {
         progress.note("bootstrap pre-downloaded, checksum ok");
