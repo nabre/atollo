@@ -168,6 +168,8 @@ struct Fake {
     /// The sealing key is not this one (a "before" file of another
     /// computer): sealed secrets cannot be opened.
     other_key: bool,
+    /// The sealing key is gone from the store (deleted, a Keychain reset).
+    key_gone: bool,
     /// The Secret Service's collections (object paths), as the real
     /// `write` chooses among them ([`login_collection`]); `None`: any.
     collections: Option<&'static [&'static str]>,
@@ -256,6 +258,7 @@ impl Store for Fake {
     }
     fn unprotect(&self, blob: &str) -> Result<String> {
         match blob.strip_prefix("sealed:") {
+            Some(_) if self.key_gone => Err(SealKeyMissing.into()),
             Some(_) if self.other_key => anyhow::bail!("sealed secret: wrong key or altered"),
             Some(rest) => Ok(rest.to_owned()),
             None => Ok(blob.to_owned()),
@@ -367,6 +370,54 @@ fn before_file_sealed_elsewhere_changes_nothing() {
         "store untouched"
     );
     assert!(f.seen.exists(), "kept, not dropped");
+}
+
+/// The sealing key gone for good (PORT-V6-06): the save is not blocked
+/// for ever. This computer's own sign-in cannot be put back; what agy left
+/// in its place is the kit's, saved in the kit and taken out of the store;
+/// the pending file is dropped.
+#[test]
+fn sealing_key_gone_drops_the_pending_file() {
+    let (_tmp, kit) = kit();
+    let f = files(&kit);
+    let store = Fake::with(&[(T, "own")]);
+    restore_with(&kit, &store).unwrap();
+    store.agy_writes(T, "new");
+    let gone = Fake {
+        key_gone: true,
+        items: RefCell::new(store.items.borrow().clone()),
+        clock: Cell::new(store.clock.get()),
+        ..Fake::default()
+    };
+    end_run(&kit, &gone);
+    assert_eq!(gone.secret_of(T), None, "the kit's sign-in left the store");
+    assert_eq!(read(&f.store)[0].blob.as_deref(), Some("new"));
+    assert!(!pending(&kit), "the pending file dropped");
+    assert_eq!(gone.forgot.get(), 1);
+}
+
+/// The name of the sealing key comes from the kit, not from its folder: a
+/// kit moved keeps it; without the saved id, the kit's id as before.
+#[test]
+fn sealing_key_name_survives_a_move() {
+    assert_eq!(
+        seal_id(Some("0a1b2c3d4e5f6071\n"), "ffff"),
+        "0a1b2c3d4e5f6071"
+    );
+    assert_eq!(seal_id(None, "ffff"), "ffff");
+    for bad in ["", "  ", "../x", "a b", &"a".repeat(65)] {
+        assert_eq!(seal_id(Some(bad), "ffff"), "ffff", "{bad:?}");
+    }
+    let (_tmp, kit) = kit();
+    let system = System::of(&kit);
+    assert_eq!(system.seal_user, format!("antigravity-before-{}", kit.id()));
+    let saved = kit.data().join("antigravity").join(SEAL_ID_FILE);
+    fs::create_dir_all(saved.parent().unwrap()).unwrap();
+    fs::write(&saved, "00112233aabbccdd").unwrap();
+    assert_eq!(
+        System::of(&kit).seal_user,
+        "antigravity-before-00112233aabbccdd"
+    );
 }
 
 /// The tag of a run's files: the machine and the account, never the host
