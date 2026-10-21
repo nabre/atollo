@@ -1,5 +1,10 @@
 # Novità
 
+## Un clic sul logo apre l'agente (21/10/2026)
+
+- **Un pulsante per agente** nella pagina del progetto, nella sua riga della barra laterale e nel «Pannello rapido»: il logo di Claude Code, Codex o Antigravity apre subito quell'agente nel progetto. Non si sceglie più l'agente prima di premere «Agente» (D-146).
+- **Solo gli agenti installati** hanno il loro pulsante; l'errore di un avvio compare sul pulsante di quell'agente.
+
 ## «Apri nel browser» sui siti dei pool (21/10/2026)
 
 - **«Apri nel browser»** apre anche i siti serviti da un pool (`http://<progetto>.localhost:<porta>/`): prima l'app accettava solo `localhost` e `127.0.0.1`, e il pulsante non faceva nulla.
