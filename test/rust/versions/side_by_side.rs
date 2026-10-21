@@ -75,6 +75,31 @@ fn dotnet_roots_share_their_versions() {
     assert!(join_rel(&eight, "sdk/8.0.415").is_dir());
 }
 
+/// A kit copied (not moved): its links still name the original kit's
+/// folders, there and whole; they are made again inside the copy.
+#[test]
+fn dotnet_links_of_a_copied_kit_point_inside_it() {
+    let tmp = TempDir::new("dotnet-copied-kit");
+    let original = join_rel(&tmp.0, "a/8.0/sdk/8.0.415");
+    fs::create_dir_all(&original).unwrap();
+    let ten = join_rel(&tmp.0, "b/10.0");
+    let eight = join_rel(&tmp.0, "b/8.0");
+    fs::create_dir_all(join_rel(&eight, "sdk/8.0.415")).unwrap();
+    fs::create_dir_all(join_rel(&ten, "sdk")).unwrap();
+    let link = join_rel(&ten, "sdk/8.0.415");
+    create_dir_link(&original, &link).unwrap();
+    assert!(!dir_link_target_ok(&link, &[ten.clone(), eight.clone()]));
+
+    link_dotnet(&[ten.clone(), eight.clone()]).unwrap();
+    let target = fs::canonicalize(dir_link_target(&link).unwrap()).unwrap();
+    assert_eq!(
+        target,
+        fs::canonicalize(join_rel(&eight, "sdk/8.0.415")).unwrap()
+    );
+    assert!(dir_link_target_ok(&link, &[ten.clone(), eight.clone()]));
+    assert!(original.is_dir(), "the original kit is left alone");
+}
+
 /// On a disk without links (exFAT, FAT) the version is copied, marked, and
 /// the copy goes when its source goes (the refusal is injected).
 #[test]
