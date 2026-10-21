@@ -94,6 +94,58 @@ fn unreadable_settings_are_never_overwritten() {
     );
 }
 
+/// MongoDB's administrator: its password is stored before the server hears
+/// of it (BUG-V6-26); a creation that fails leaves no new password behind,
+/// so the next start tries again.
+#[test]
+fn mongodb_admin_password_stored_first() {
+    let tmp = TempDir::new("services-mongo-admin");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let s = Services::new(kit.clone());
+    let env = KitEnv::default();
+    // no mongosh in this kit: the creation fails
+    let e = s
+        .secure(DbEngine::MongoDb, None, true, &env, 1, true)
+        .unwrap_err();
+    assert!(format!("{e:#}").contains("could not be created"), "{e:#}");
+    assert_eq!(auth::try_load(&kit).unwrap().mongodb_admin, None);
+    // a password known before stays
+    auth::update_secrets(&kit, |s| {
+        s.mongodb_admin = Some("known".into());
+        Ok(())
+    })
+    .unwrap();
+    assert!(s
+        .secure(DbEngine::MongoDb, None, true, &env, 1, true)
+        .is_err());
+    assert_eq!(
+        auth::try_load(&kit).unwrap().mongodb_admin.as_deref(),
+        Some("known")
+    );
+    // secrets.json that cannot be written: the server never hears of a
+    // password (the client is not even started)
+    #[cfg(windows)]
+    {
+        let path = auth::secrets_path(&kit);
+        fs::write(&path, "{}").unwrap();
+        let mut ro = fs::metadata(&path).unwrap().permissions();
+        ro.set_readonly(true);
+        fs::set_permissions(&path, ro.clone()).unwrap();
+        let e = s
+            .secure(DbEngine::MongoDb, None, true, &env, 1, true)
+            .unwrap_err();
+        #[allow(clippy::permissions_set_readonly_false)]
+        ro.set_readonly(false);
+        fs::set_permissions(&path, ro).unwrap();
+        assert!(
+            !format!("{e:#}").contains("could not be created"),
+            "the server was asked first: {e:#}"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), "{}");
+    }
+}
+
 /// BUG-V5-02: a start, a stop or a change of version of a server waits for
 /// the one in progress (here a turn held by the test), so the check of
 /// what runs and the start happen in the same turn.
