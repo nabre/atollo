@@ -1,9 +1,10 @@
 # The commands of the app's terminal on every system (editor/pty.rs,
 # commands/terminals.rs; D-109, D-148). Written by hand, not generated from
-# build.rs COMMANDS: one permission for the five commands, granted by
-# capabilities/main.json.
+# build.rs COMMANDS: one permission for the seven commands, granted by
+# capabilities/main.json and capabilities/terminal.json (the window of a
+# detached session, which Rust lets reach only its own session; D-149).
 
 [[permission]]
 identifier = "allow-pty-sessions"
-description = "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close."
-commands.allow = ["pty_sessions", "pty_backlog", "pty_write", "pty_resize", "pty_close"]
+description = "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock."
+commands.allow = ["pty_sessions", "pty_backlog", "pty_write", "pty_resize", "pty_close", "pty_detach", "pty_dock"]

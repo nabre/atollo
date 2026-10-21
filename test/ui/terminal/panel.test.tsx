@@ -1,7 +1,8 @@
 // The terminal panel (every system, D-148) with a fake backend and a fake
 // xterm.js: a session that opens shows the panel with the output kept by
-// Rust then the chunks after it, typing goes back to the session, and
-// closing a tab whose program still runs asks first.
+// Rust then the chunks after it, typing goes back to the session, closing
+// a tab whose program still runs asks first, and a tab moves into a window
+// of its own and back (D-149).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { PtyBackend, PtyChunk, PtyInfo } from "../../../ui/src/terminal";
@@ -89,6 +90,8 @@ afterEach(() => {
 function fakeBackend(start: PtyInfo[] = []) {
   const opened: ((i: PtyInfo) => void)[] = [];
   const exited: ((i: PtyInfo) => void)[] = [];
+  const moved: ((i: PtyInfo) => void)[] = [];
+  const closed: ((id: number) => void)[] = [];
   const output = new Map<number, ((c: PtyChunk) => void)[]>();
   const backlogs = new Map<number, PtyChunk>();
   const calls: string[] = [];
@@ -113,8 +116,24 @@ function fakeBackend(start: PtyInfo[] = []) {
       calls.push(`close ${String(id)}`);
       return failures.close === null ? Promise.resolve() : Promise.reject(new Error(failures.close));
     },
+    detach: (id) => {
+      calls.push(`detach ${String(id)}`);
+      return Promise.resolve();
+    },
+    dock: (id) => {
+      calls.push(`dock ${String(id)}`);
+      return Promise.resolve();
+    },
     onOpened: (h) => {
       opened.push(h);
+      return Promise.resolve(() => undefined);
+    },
+    onMoved: (h) => {
+      moved.push(h);
+      return Promise.resolve(() => undefined);
+    },
+    onClosed: (h) => {
+      closed.push(h);
       return Promise.resolve(() => undefined);
     },
     onExit: (h) => {
@@ -153,6 +172,20 @@ function fakeBackend(start: PtyInfo[] = []) {
         });
       });
     },
+    move(info: PtyInfo) {
+      act(() => {
+        moved.forEach((h) => {
+          h(info);
+        });
+      });
+    },
+    closed(id: number) {
+      act(() => {
+        closed.forEach((h) => {
+          h(id);
+        });
+      });
+    },
   };
 }
 
@@ -165,7 +198,14 @@ function Harness({ backend, enabled = true }: { backend: PtyBackend; enabled?: b
   );
 }
 
-const BASH: PtyInfo = { id: 1, title: "app · bash", dir: "/k/projects/app", running: true, code: null };
+const BASH: PtyInfo = {
+  id: 1,
+  title: "app · bash",
+  dir: "/k/projects/app",
+  running: true,
+  code: null,
+  detached: false,
+};
 
 describe("sequencer", () => {
   it("writes the backlog, then only the later chunks, then the notes", () => {
@@ -305,6 +345,89 @@ describe("TerminalPanel", () => {
     // Its program ends after the tab closed: the tab does not come back.
     fake.exit({ ...BASH, id: 2, title: "app · claude", running: false, code: 0 });
     expect(screen.queryByRole("tab", { name: /app · claude/ })).toBeNull();
+  });
+});
+
+describe("detached terminals (D-149)", () => {
+  it("moves a tab into a window of its own, and shows it again when it comes back", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.open(BASH, { seq: 0, data: "" });
+    fake.open({ ...BASH, id: 2, title: "app · claude" }, { seq: 0, data: "" });
+    fireEvent.click(screen.getByRole("button", { name: "Sposta in una nuova finestra" }));
+    await waitFor(() => {
+      expect(fake.calls).toContain("detach 2");
+    });
+    // The tab leaves when Rust says it moved; its view lets go of xterm.js.
+    expect(screen.getByRole("tab", { name: "app · claude" })).toBeTruthy();
+    fake.move({ ...BASH, id: 2, title: "app · claude", detached: true });
+    expect(screen.queryByRole("tab", { name: "app · claude" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "app · bash", selected: true })).toBeTruthy();
+    expect(terms[1]?.disposed).toBe(true);
+    // Back from its window: shown and chosen, on a new view.
+    fake.move({ ...BASH, id: 2, title: "app · claude" });
+    expect(screen.getByRole("tab", { name: "app · claude", selected: true })).toBeTruthy();
+    expect(terms).toHaveLength(3);
+  });
+
+  it("hides with every tab detached, and shows a tab docked again", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.open(BASH, { seq: 0, data: "" });
+    fake.move({ ...BASH, detached: true });
+    expect(screen.getByText("hidden 1")).toBeTruthy();
+    fake.move(BASH);
+    expect(screen.getByRole("tab", { name: "app · bash", selected: true })).toBeTruthy();
+  });
+
+  it("drops a session its own window closed", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.open(BASH, { seq: 0, data: "" });
+    fake.move({ ...BASH, detached: true });
+    fake.closed(1);
+    expect(screen.getByText("hidden 0")).toBeTruthy();
+  });
+
+  it("in its window: one tab that goes back to the panel, no hiding", async () => {
+    const fake = fakeBackend([{ ...BASH, detached: true }]);
+    function Detached() {
+      const terminals = useTerminals(fake.backend, true);
+      return <TerminalPanel terminals={terminals} backend={fake.backend} detached />;
+    }
+    render(<Detached />);
+    await waitFor(() => {
+      expect(screen.getByRole("tab", { name: "app · bash" })).toBeTruthy();
+    });
+    expect(screen.queryByRole("button", { name: "Nascondi i terminali" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Riporta nel pannello" }));
+    await waitFor(() => {
+      expect(fake.calls).toContain("dock 1");
+    });
+  });
+
+  it("asks the program to draw again for a view opened after its output", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.open(BASH, { seq: 4, data: "$ ls\r\n$ " });
+    await waitFor(() => {
+      expect(fake.calls).toContain("resize 1 80x23");
+    });
+    await waitFor(() => {
+      expect(fake.calls.at(-1)).toBe("resize 1 80x24");
+    });
   });
 });
 

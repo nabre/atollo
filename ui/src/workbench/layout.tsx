@@ -589,15 +589,17 @@ export function Panel({
   active: string;
   onSelect: (id: string) => void;
   actions?: ReactNode;
-  height: number;
+  /** Its height in pixels; none: it fills its window (a detached
+   * terminal's). */
+  height?: number | undefined;
   children: ReactNode;
 }) {
   return (
     <Part
       as="section"
       label={tabs.find((x) => x.id === active)?.label}
-      className="shrink-0 bg-vsc-panel"
-      style={{ height }}
+      className={`bg-vsc-panel ${height === undefined ? "min-h-0 flex-1" : "shrink-0"}`}
+      {...(height === undefined ? {} : { style: { height } })}
     >
       <div className="flex h-vsc-title shrink-0 items-center pr-vsc-size40 pl-vsc-size20">
         <div role="tablist" className="flex min-w-0 flex-1 items-center self-stretch">

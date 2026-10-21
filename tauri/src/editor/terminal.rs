@@ -1,13 +1,14 @@
 //! Consoles outside the editor: the kit's PowerShell or an agent, as a
 //! session of the app's own terminal (`pty.rs`; DECISIONS.md D-109, D-148)
-//! on every system. The main window shows it in its terminal panel. Never a
-//! shell of the PC, and never the PC's terminal program. It ends with the
-//! app, and "Rimuovi l'unità" ends it.
+//! on every system. The main window shows it in its terminal panel, or a
+//! window of its own once detached (`terminal-<id>`, D-149). Never a shell
+//! of the PC, and never the PC's terminal program. It ends with the app,
+//! and "Rimuovi l'unità" ends it.
 
 use std::path::Path;
 
 use anyhow::Result;
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
 
 use super::pty;
 use crate::env::KitEnv;
@@ -80,11 +81,16 @@ fn open<R: Runtime>(
             crate::log::info(&format!("terminal {}: {}", info.id, info.title));
             let _ = app.emit_to(main, pty::OPENED_EVENT, info);
         },
+        // To the panel and to the session's own window: only the one that
+        // listens (the view that shows it) receives it.
         move |id, chunk| {
-            let _ = out.emit_to(main, &pty::output_event(id), chunk);
+            let event = pty::output_event(id);
+            let _ = out.emit_to(main, &event, chunk);
+            let _ = out.emit_to(label(id).as_str(), &event, chunk);
         },
         move |info| {
             let _ = end.emit_to(main, pty::EXIT_EVENT, &info);
+            let _ = end.emit_to(label(info.id).as_str(), pty::EXIT_EVENT, &info);
             on_exit();
         },
     )?;
@@ -113,6 +119,99 @@ pub fn open_console<R: Runtime>(
     dir: &Path,
 ) -> Result<()> {
     open(app, kit, env, dir, None, Box::new(|| {}))
+}
+
+/// The label of the window of a detached session (D-149).
+pub const LABEL_PREFIX: &str = "terminal-";
+
+pub fn label(id: u64) -> String {
+    format!("{LABEL_PREFIX}{id}")
+}
+
+/// The session a window shows: `terminal-<id>`.
+pub fn session_of(label: &str) -> Option<u64> {
+    let id = label.strip_prefix(LABEL_PREFIX)?;
+    // Digits only: `terminal-+1` or `terminal-01` name no session.
+    if id.is_empty()
+        || !id.bytes().all(|b| b.is_ascii_digit())
+        || (id.len() > 1 && id.starts_with('0'))
+    {
+        return None;
+    }
+    id.parse().ok()
+}
+
+/// Moves session `id` into a window of its own (`terminal.html`, its
+/// view only), as VSCodium's «Move Terminal into New Window»; a window
+/// already open comes to the front. The panel drops its tab.
+pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
+    let label = label(id);
+    if let Some(window) = app.get_webview_window(&label) {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+        return Ok(());
+    }
+    let ptys = &app.state::<Consoles>().ptys;
+    let info = ptys.info(id)?;
+    let state = app.state::<crate::commands::AppState>();
+    let lang = serde_json::to_string(state.lang())?;
+    let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("terminal.html".into()))
+        .title(format!("{} - Atollo", info.title))
+        .inner_size(960.0, 600.0)
+        .min_inner_size(420.0, 260.0)
+        // The window's own title bar: the page is only the terminal.
+        .initialization_script(format!("window.__ATOLLO_LANG__ = {lang};"))
+        .data_directory(state.kit.webview_data())
+        .theme(
+            crate::settings::Settings::load(&state.kit)
+                .settings
+                .theme
+                .window(),
+        )
+        .zoom_hotkeys_enabled(false)
+        .build()?;
+    // F5, Ctrl+F, Ctrl+P... go to the program, as in the panel (D-148).
+    super::window::quiet_webview(&window, "terminal");
+    let info = ptys.set_detached(id, true)?;
+    let _ = app.emit_to(crate::commands::MAIN, pty::MOVED_EVENT, &info);
+    Ok(())
+}
+
+/// Brings session `id` back to the panel of the main window, which shows
+/// it, and closes its window.
+pub fn dock<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
+    let info = app.state::<Consoles>().ptys.set_detached(id, false)?;
+    let _ = app.emit_to(crate::commands::MAIN, pty::MOVED_EVENT, &info);
+    if let Some(window) = app.get_webview_window(&label(id)) {
+        let _ = window.close();
+    }
+    Ok(())
+}
+
+/// The window of a detached session was closed: a program that still
+/// runs goes back to the panel (closing a window never stops it), an
+/// ended one is forgotten.
+pub fn closed<R: Runtime>(app: &AppHandle<R>, window: &str) {
+    let Some(id) = session_of(window) else {
+        return;
+    };
+    let ptys = app.state::<Consoles>().ptys.clone();
+    let Ok(info) = ptys.info(id) else {
+        return;
+    };
+    if !info.detached {
+        return;
+    }
+    if info.running {
+        let _ = dock(app, id);
+        return;
+    }
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        if ptys.close(id, pty::GRACE).is_ok() {
+            let _ = handle.emit_to(crate::commands::MAIN, pty::CLOSED_EVENT, id);
+        }
+    });
 }
 
 #[cfg(test)]

@@ -1,5 +1,10 @@
 # Novità
 
+## Terminali staccabili (22/10/2026)
+
+- **«Sposta in una nuova finestra»** nel pannello dei terminali: la scheda scelta continua in una finestra di Atollo tutta sua, da spostare su un altro schermo o ingrandire, con la stessa sessione e la sua uscita. «Riporta nel pannello» la rimette tra le schede; chiudere la finestra fa lo stesso e non ferma il programma. «Chiudi il terminale» lo ferma, dalla finestra o dal pannello (D-149).
+- **Il carattere giusto da subito**: il terminale si apre quando Geist Mono è pronto, anche con le cornici delle TUI e il grassetto, così le colonne non si storcono in una finestra nuova; se il carattere arriva tardi, il terminale si rimisura.
+
 ## La versione nella barra di stato cerca gli aggiornamenti (22/10/2026)
 
 - **Un clic sulla versione** (l'ultima voce della barra di stato) cerca gli aggiornamenti di Atollo, come «Cerca aggiornamenti» in Impostazioni › Aggiornamenti: mentre cerca gira la rotellina, poi accanto compaiono un segno di spunta (è la più recente), la versione nuova (pronta per la prossima chiusura, o da scaricare) o un avviso (controllo non riuscito); passandoci sopra si legge l'esito per intero.

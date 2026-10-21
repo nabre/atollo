@@ -762,6 +762,8 @@
   "{0} (terminato)": "{0} (terminé)",
   "Chiudi il terminale": "Fermer le terminal",
   "Nascondi i terminali": "Masquer les terminaux",
+  "Riporta nel pannello": "Remettre dans le panneau",
+  "Sposta in una nuova finestra": "Déplacer dans une nouvelle fenêtre",
   "Mostra i terminali": "Afficher les terminaux",
   "Chiudere il terminale?": "Fermer le terminal ?",
   "In «{0}» un programma è ancora in esecuzione: chiudendo il terminale si ferma.": "Un programme est encore en cours d'exécution dans « {0} » : fermer le terminal l'arrête.",

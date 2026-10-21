@@ -1157,7 +1157,7 @@ Argomenti collegati: [2.3 Avviare un progetto: azioni e porte](#23-avviare-un-pr
 
 Il riquadro «Terminali» elenca il terminale predefinito «Tutti gli strumenti» («Ogni strumento alla versione più recente») e quelli che hai creato tu. «Apri» su una riga apre la console nella sua cartella di partenza.
 
-- Si apre una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit (su macOS e Linux, se non c'è, bash). Mai il terminale del PC né una finestra a parte.
+- Si apre una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit (su macOS e Linux, se non c'è, bash). Mai il terminale del PC: la scheda si può spostare in una finestra di Atollo tutta sua.
 - Su Windows il terminale usa il ConPTY del kit (conpty.dll e OpenConsole.exe di Microsoft, la console di Windows Terminal), una parte dell'app installata con i componenti obbligatori: se manca, l'app lo scarica prima di aprire il terminale (avanzamento in «Attività»).
 - All'apertura compare «Atollo · \<nome del terminale\>» e l'elenco degli strumenti trovati; il prompt mostra Atollo e la cartella corrente.
 
@@ -1179,6 +1179,8 @@ Utile quando ti serve sempre lo stesso insieme: per esempio un terminale «PHP 7
 #### Il pannello dei terminali
 
 Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.
+
+«Sposta in una nuova finestra» stacca la scheda scelta: il terminale continua in una finestra sua, che si può spostare su un altro schermo o ingrandire, con la stessa sessione, la sua uscita e lo stesso carattere (Geist Mono). «Riporta nel pannello» lo rimette tra le schede; chiudere la finestra fa lo stesso finché il programma gira, e non lo ferma mai. Per fermarlo, «Chiudi il terminale», nella finestra o nel pannello.
 
 Su Windows e Linux Ctrl+C copia il testo selezionato (senza selezione arriva al programma), Ctrl+Maiusc+C copia, Ctrl+V e Ctrl+Maiusc+V incollano; su macOS ⌘C e ⌘V.
 

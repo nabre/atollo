@@ -216,6 +216,25 @@ fn sessions_write_resize_and_count() {
     assert_eq!(sessions.pids(), [4300, 5000, 5001]);
 }
 
+/// D-149: a session moves into a window of its own and back; it keeps
+/// running and keeps its output meanwhile.
+#[test]
+fn sessions_detach_and_dock() {
+    let sessions = Sessions::default();
+    sessions.insert(
+        "app · bash".into(),
+        Path::new("/p"),
+        Box::new(FakeIo::new(1)),
+    );
+    assert!(!sessions.info(1).unwrap().detached);
+    let moved = sessions.set_detached(1, true).unwrap();
+    assert!(moved.detached && moved.running);
+    assert!(sessions.list()[0].detached);
+    assert!(!sessions.set_detached(1, false).unwrap().detached);
+    assert!(sessions.set_detached(9, true).is_err(), "no such session");
+    assert!(sessions.info(9).is_err());
+}
+
 #[test]
 fn pump_numbers_chunks_and_fills_the_backlog() {
     let sessions = Sessions::default();

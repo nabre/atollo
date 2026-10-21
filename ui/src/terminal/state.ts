@@ -49,6 +49,23 @@ export function useTerminals(backend: PtyBackend, enabled: boolean) {
         setSessions((list) => list.map((s) => (s.id === info.id ? info : s)));
       }),
     );
+    // Into a window of its own, or back: a session docked again is shown.
+    keep(
+      backend.onMoved((info) => {
+        upsert(info);
+        if (!info.detached) {
+          setActive(info.id);
+          setShown(true);
+        }
+      }),
+    );
+    // Closed by its own window.
+    keep(
+      backend.onClosed((id) => {
+        setSessions((list) => list.filter((s) => s.id !== id));
+        setActive((a) => (a === id ? null : a));
+      }),
+    );
     backend.sessions().then(
       (list) => {
         if (gone) return;
@@ -78,13 +95,21 @@ export function useTerminals(backend: PtyBackend, enabled: boolean) {
     [backend],
   );
 
+  /** Into a window of its own: its tab leaves the panel when Rust says
+   * so (`onMoved`). */
+  const detach = useCallback((id: number) => backend.detach(id), [backend]);
+
+  // The panel's tabs: the detached sessions are in their windows.
+  const docked = sessions.filter((s) => !s.detached);
   return {
     sessions,
+    docked,
     active,
     setActive,
-    shown: shown && sessions.length > 0,
+    shown: shown && docked.length > 0,
     setShown,
     close,
+    detach,
   };
 }
 

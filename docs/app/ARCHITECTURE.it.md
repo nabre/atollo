@@ -99,7 +99,7 @@ tauri\src\
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema Atollo
     picker                    selettori di file e cartelle (D-109)
-    terminal                  console del kit: una sessione del terminale nell'app su ogni sistema (D-148)
+    terminal                  console del kit: una sessione del terminale nell'app su ogni sistema (D-148), in una finestra sua se staccata (D-149)
     pty                       terminale nell'app, sessioni PTY per xterm.js (D-109, D-148)
     conpty                    pseudo console di Windows: conpty.dll del kit dal suo percorso, un job per sessione (D-148)
     terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e
@@ -303,7 +303,7 @@ Le cartelle delle pagine:
 | `github\` | `account.tsx`, `identity.tsx` (chi firma i commit), `repos.tsx`, `details.tsx` |
 | `settings\` | `page.tsx` (sette sezioni: Generale, Rete, Agenti, Aggiornamenti, Account GitHub, Privacy, Il kit), `sections.tsx`, `autosave.ts` (salvate mentre cambiano, D-137), `firstrun.tsx` (le scelte del primo avvio), `conda.tsx` (pacchetti conservati), `about.tsx` (kit e aggiornamenti) |
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (un blocco per tipo, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (il compilatore di Rust su Windows), `matrix.tsx` (la matrice, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
-| `terminal\` | il terminale nell'app su ogni sistema (D-109, D-148): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `api.ts` |
+| `terminal\` | il terminale nell'app su ogni sistema (D-109, D-148): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `font.ts` (Geist Mono prima che xterm.js misuri), `api.ts`; `window.tsx` è la pagina della finestra di una sessione staccata (`terminal.html`, D-149) |
 | `guide\` | `model.ts` (capitoli, argomenti, parole di ricerca), `topics\` (il testo, un file per capitolo), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
 
 Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `common.tsx` se lo usano più cartelle.

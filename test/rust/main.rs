@@ -341,3 +341,72 @@ fn terminal_sessions_only_for_main() {
     .unwrap();
     assert!(invoke_cmd(&editor, "pty_sessions", editor_url).is_err());
 }
+
+fn invoke_with(
+    webview: &tauri::WebviewWindow<tauri::test::MockRuntime>,
+    cmd: &str,
+    body: serde_json::Value,
+) -> Result<serde_json::Value, serde_json::Value> {
+    get_ipc_response(
+        webview,
+        InvokeRequest {
+            cmd: cmd.into(),
+            callback: tauri::ipc::CallbackFn(0),
+            error: tauri::ipc::CallbackFn(1),
+            url: LOCAL.parse().unwrap(),
+            body: tauri::ipc::InvokeBody::Json(body),
+            headers: Default::default(),
+            invoke_key: INVOKE_KEY.to_string(),
+        },
+    )
+    .map(|b| b.deserialize::<serde_json::Value>().unwrap())
+}
+
+/// D-149: the window of a detached session (`terminal-<id>`) reaches the
+/// terminal's commands for its own session only, and none of the app's.
+#[test]
+fn detached_terminal_reaches_only_its_session() {
+    let app = mock_builder()
+        .manage(state())
+        .manage(editor::terminal::Consoles::default())
+        .invoke_handler(command_handler!())
+        .build(context())
+        .unwrap();
+    let data = std::env::temp_dir().join("atollo-ipc-test-webview-pty-window");
+    let window =
+        WebviewWindowBuilder::new(&app, "terminal-1", WebviewUrl::App("terminal.html".into()))
+            .data_directory(data)
+            .build()
+            .unwrap();
+    // Its own session (gone here): listed as none, asked for by id.
+    assert_eq!(
+        invoke_cmd(&window, "pty_sessions", LOCAL),
+        Ok(serde_json::json!([]))
+    );
+    let own = invoke_with(&window, "pty_backlog", serde_json::json!({ "id": 1 }));
+    assert!(
+        own.is_err_and(|e| e.to_string().contains("not found")),
+        "its own: allowed"
+    );
+    for (cmd, body) in [
+        ("pty_backlog", serde_json::json!({ "id": 2 })),
+        ("pty_write", serde_json::json!({ "id": 2, "data": "x" })),
+        (
+            "pty_resize",
+            serde_json::json!({ "id": 2, "cols": 80, "rows": 24 }),
+        ),
+        ("pty_close", serde_json::json!({ "id": 2 })),
+        ("pty_dock", serde_json::json!({ "id": 2 })),
+        // Only the panel detaches.
+        ("pty_detach", serde_json::json!({ "id": 1 })),
+    ] {
+        let r = invoke_with(&window, cmd, body);
+        assert!(
+            r.is_err_and(|e| e.to_string().contains("forbidden")),
+            "{cmd}"
+        );
+    }
+    // No other command of the app (capabilities/terminal.json).
+    assert!(invoke(&window, LOCAL).is_err());
+    assert!(invoke_with(&window, "terminal_launch", serde_json::json!({ "id": "x" })).is_err());
+}
