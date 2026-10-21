@@ -58,6 +58,56 @@ fn folders_both_ways_conflicts_and_deletions() {
     assert!(!a.join("two").exists());
 }
 
+/// BUG-V6-16: an instruction file deleted on one side is deleted on the
+/// other only after a copy in `.sync\deleted`.
+#[test]
+fn deleted_instructions_are_kept() {
+    let (_t, _kit, p) = kit("tree-deleted");
+    let (a, b) = (p.agents.join("AGENTS.md"), p.codex.join("AGENTS.md"));
+    fs::create_dir_all(&p.agents).unwrap();
+    fs::write(&a, "my rules").unwrap();
+    let mut r = Report::default();
+    sync_tree(&p, &a, &b, "i", false, "AGENTS.md", &mut r).unwrap();
+    assert_eq!(fs::read_to_string(&b).unwrap(), "my rules");
+    fs::remove_file(&b).unwrap();
+    sync_tree(&p, &a, &b, "i", false, "AGENTS.md", &mut r).unwrap();
+    assert!(!a.exists(), "deleted");
+    let kept: Vec<_> = fs::read_dir(p.state.join("deleted"))
+        .unwrap()
+        .flatten()
+        .collect();
+    assert_eq!(kept.len(), 1);
+    assert!(kept[0]
+        .file_name()
+        .to_string_lossy()
+        .ends_with("-AGENTS.md"));
+    assert_eq!(fs::read_to_string(kept[0].path()).unwrap(), "my rules");
+}
+
+/// An editor saving through a temporary file: the file is away for a
+/// moment and back with new text. Nothing is deleted, the new text wins.
+#[test]
+fn a_file_away_for_a_moment_is_not_deleted() {
+    let (_t, _kit, p) = kit("tree-away");
+    let (a, b) = (p.agents.join("AGENTS.md"), p.claude.join("CLAUDE.md"));
+    fs::create_dir_all(&p.agents).unwrap();
+    fs::write(&a, "v1").unwrap();
+    let mut r = Report::default();
+    sync_tree(&p, &a, &b, "i", false, "AGENTS.md", &mut r).unwrap();
+    fs::remove_file(&b).unwrap();
+    let back = b.clone();
+    let editor = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(2));
+        fs::write(&back, "v2, saved").unwrap();
+    });
+    sync_tree(&p, &a, &b, "i", false, "AGENTS.md", &mut r).unwrap();
+    editor.join().unwrap();
+    assert!(a.exists(), "not deleted");
+    assert!(!p.state.join("deleted").exists());
+    sync_tree(&p, &a, &b, "i", false, "AGENTS.md", &mut r).unwrap();
+    assert_eq!(fs::read_to_string(&a).unwrap(), "v2, saved");
+}
+
 #[cfg(windows)]
 #[test]
 fn junction_inside_is_never_written_through() {

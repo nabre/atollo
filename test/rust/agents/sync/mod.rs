@@ -81,7 +81,11 @@ fn rule_and_trust() {
         .join("rules")
         .join("atollo.md")
         .is_file());
-    let cfg: Value = serde_json::from_str(&fs::read_to_string(p.claude_json()).unwrap()).unwrap();
+    // SEC-V6-02: a sync trusts nothing; launching an agent in a project
+    // trusts that one.
+    let read = || -> Value {
+        serde_json::from_str(&fs::read_to_string(p.claude_json()).unwrap()).unwrap()
+    };
     let app = p
         .projects
         .join("app")
@@ -89,10 +93,17 @@ fn rule_and_trust() {
         .to_string()
         .replace('\\', "/");
     let lower = format!("{}{}", app[..1].to_ascii_lowercase(), &app[1..]);
-    assert_eq!(cfg["projects"][&app]["hasTrustDialogAccepted"], true);
-    assert_eq!(cfg["projects"][&lower]["hasTrustDialogAccepted"], true);
+    let cfg = read();
+    assert!(cfg["projects"].get(&app).is_none(), "not before a launch");
     assert_eq!(cfg["numStartups"], 3, "the rest kept");
     assert_eq!(cfg["projects"]["x"]["history"][0], 1);
+    let codex = fs::read_to_string(p.codex.join("config.toml")).unwrap();
+    assert!(!codex.contains("[projects."), "{codex}");
+
+    trust_project(&kit, &p.projects.join("app"));
+    let cfg = read();
+    assert_eq!(cfg["projects"][&app]["hasTrustDialogAccepted"], true);
+    assert_eq!(cfg["projects"][&lower]["hasTrustDialogAccepted"], true);
     let hidden = p
         .projects
         .join(".hidden")
@@ -100,6 +111,11 @@ fn rule_and_trust() {
         .to_string()
         .replace('\\', "/");
     assert!(cfg["projects"].get(&hidden).is_none());
+    // Kept by the next syncs.
+    run(&kit, None);
+    assert_eq!(read()["projects"][&app]["hasTrustDialogAccepted"], true);
+    let codex = fs::read_to_string(p.codex.join("config.toml")).unwrap();
+    assert_eq!(codex.matches("[projects.").count(), 1, "{codex}");
 }
 
 #[test]
@@ -113,6 +129,37 @@ fn lock_is_released_and_stale_lock_taken() {
     fs::create_dir_all(p.state.join("lock")).unwrap();
     fs::write(p.state.join("lock").join("pid"), "4000000000").unwrap();
     assert!(Lock::take(&p.state).is_ok(), "holder gone: stale");
+}
+
+/// BUG-V6-18: the silence of the holder is measured on its heartbeat, not
+/// on the lock folder's time; a held lock keeps beating.
+#[test]
+fn lock_staleness_follows_the_heartbeat() {
+    let (_t, _kit, p) = kit("sync-lock-beat");
+    let lock = p.state.join("lock");
+    let old = SystemTime::now() - Duration::from_secs(600);
+    let set_old = |f: &Path| {
+        fs::File::options()
+            .write(true)
+            .open(f)
+            .unwrap()
+            .set_modified(old)
+            .unwrap();
+    };
+    // A holder alive (this process) but silent for 10 minutes, in a folder
+    // just made: stale.
+    fs::create_dir_all(&lock).unwrap();
+    fs::write(lock.join("pid"), std::process::id().to_string()).unwrap();
+    fs::write(lock.join("beat"), "").unwrap();
+    set_old(&lock.join("beat"));
+    let held = Lock::take(&p.state).unwrap();
+
+    // Held: the beat is renewed by itself, without any step.
+    set_old(&lock.join("beat"));
+    std::thread::sleep(BEAT * 4);
+    assert!(Lock::silence(&lock) < Duration::from_secs(60));
+    drop(held);
+    assert!(!lock.exists());
 }
 
 #[test]

@@ -5,7 +5,9 @@
 //! `kit.rs` notices the move at start and saves the old root in
 //! `data\app\old-root.txt` (`old-root-<os>.txt` on macOS and Linux,
 //! `Kit::old_root_file`); it is removed here once the paths are updated,
-//! so a move is never lost if this step does not run at that start.
+//! so a move is never lost if this step does not run at that start. Files
+//! that could not be updated (held by another program) are listed with
+//! their old root in `old-root-failed.json` and tried again at each start.
 //! Spellings replaced: `E:\kit`, `E:\\kit` (JSON), `E:/kit`, and
 //! `file:///e%3A/kit` URIs, only as a whole path, keeping the drive letter's
 //! case. Claude's per-folder data (`.claude\projects\E--kit-...`) is renamed
@@ -21,7 +23,7 @@ use regex::bytes::{Captures, Regex};
 use serde_json::Value;
 
 use super::sync::{read_json, write_json, Paths, Report};
-use crate::fsx::join_rel;
+use crate::fsx::{join_rel, write_atomic};
 use crate::kit::{same_root, Kit, Os};
 
 const TEXT_MAX: u64 = 8 * 1024 * 1024;
@@ -61,10 +63,40 @@ fn uri_path(p: &str) -> String {
     out
 }
 
+/// A root without its last separators: `E:\` is `E:`, `E:\kit\` is `E:\kit`
+/// (BUG-V6-03: both ends of a move are cut the same way, so the separator
+/// that follows in the text is never doubled).
+pub fn trim_root(root: &str) -> &str {
+    root.trim_end_matches(['\\', '/'])
+}
+
+/// A root that is a whole drive (`E:`, once trimmed) or the Unix `/`: in
+/// the text it is a path only when a separator follows.
+fn bare_root(root: &str) -> bool {
+    let b = root.as_bytes();
+    b.is_empty() || (b.len() == 2 && b[0].is_ascii_alphabetic() && b[1] == b':')
+}
+
+/// One way the old root is written, and the new root written the same way.
+struct Pair {
+    /// What is looked for: the old root, plus `sep` when `with_sep`.
+    find: Vec<u8>,
+    /// The new root in the same spelling, without separator.
+    to: Vec<u8>,
+    /// The separator of this spelling: `\\` in JSON, `\`, or `/`.
+    sep: &'static [u8],
+    /// `find` ends with `sep`: the separator found is written again after
+    /// the new root. Otherwise the old root ended the path there.
+    with_sep: bool,
+}
+
 /// Old and new root in every spelling, longest first.
 pub struct Replacer {
     re: Regex,
-    pairs: Vec<(Vec<u8>, Vec<u8>)>,
+    pairs: Vec<Pair>,
+    /// The new root is a whole drive (`F:\`): where the old root ended a
+    /// path, the new one gets its separator back (`F:\`, not `F:`).
+    to_bare: bool,
     /// Paths of `os` ignore case (Windows): `E:\Kit` is found as `e:\kit`.
     /// Elsewhere only the exact spelling is the old root, as in
     /// [`crate::kit::same_root`]: `/media/u/Kit` and `/media/u/kit` differ.
@@ -72,21 +104,57 @@ pub struct Replacer {
 }
 
 impl Replacer {
+    /// Each spelling of the old root is looked for twice: followed by its
+    /// separator (`E:\kit\`, `E:\\kit\\` in JSON, `E:/kit/`), so the new
+    /// root gets the separator of the text and never a second one; and
+    /// alone, ending a path (`"E:\kit"`). A drive alone (`E:`) is a path
+    /// only with its separator: `E:` followed by anything else is not the
+    /// kit (BUG-V6-03).
     pub fn new(os: Os, from: &str, to: &str) -> Replacer {
         let fold = os.is_windows();
-        let key = |a: &str| if fold { a.to_lowercase() } else { a.to_owned() };
-        let mut pairs: Vec<(String, String)> = vec![
-            (from.to_owned(), to.to_owned()),
-            (uri_path(from), uri_path(to)),
-            (from.replace('\\', "/"), to.replace('\\', "/")),
-            (from.replace('\\', "\\\\"), to.replace('\\', "\\\\")),
+        let (from, to) = (trim_root(from), trim_root(to));
+        let key = |a: &[u8]| {
+            if fold {
+                a.to_ascii_lowercase()
+            } else {
+                a.to_vec()
+            }
+        };
+        let uri = |p: &str| uri_path(p).trim_end_matches('/').to_owned();
+        let spellings: [(String, String, &'static [u8]); 4] = [
+            (
+                from.replace('\\', "\\\\"),
+                to.replace('\\', "\\\\"),
+                b"\\\\",
+            ),
+            (from.to_owned(), to.to_owned(), b"\\"),
+            (from.replace('\\', "/"), to.replace('\\', "/"), b"/"),
+            (uri(from), uri(to), b"/"),
         ];
+        let mut pairs: Vec<Pair> = Vec::new();
+        for with_sep in [true, false] {
+            if !with_sep && bare_root(from) {
+                continue;
+            }
+            for (a, b, sep) in &spellings {
+                let mut find = a.clone().into_bytes();
+                if with_sep {
+                    find.extend_from_slice(sep);
+                }
+                pairs.push(Pair {
+                    find,
+                    to: b.clone().into_bytes(),
+                    sep,
+                    with_sep,
+                });
+            }
+        }
         let mut seen = std::collections::HashSet::new();
-        pairs.retain(|(a, _)| seen.insert(key(a)));
-        pairs.sort_by_key(|(a, _)| std::cmp::Reverse(a.len()));
+        pairs.retain(|p| !p.find.is_empty() && seen.insert(key(&p.find)));
+        pairs.sort_by_key(|p| std::cmp::Reverse(p.find.len()));
         let alts: Vec<String> = pairs
             .iter()
-            .map(|(a, _)| format!("({})", regex::escape(a)))
+            .map(|p| format!("({})", regex::escape(&String::from_utf8_lossy(&p.find))))
             .collect();
         // (?-u) byte mode: files are read as bytes; no look-around in the
         // regex crate, so the boundaries are checked by hand in `replace`.
@@ -95,10 +163,8 @@ impl Replacer {
             .unwrap_or_else(|_| Regex::new("$^").unwrap_or_else(|_| unreachable!()));
         Replacer {
             re,
-            pairs: pairs
-                .into_iter()
-                .map(|(a, b)| (a.into_bytes(), b.into_bytes()))
-                .collect(),
+            pairs,
+            to_bare: bare_root(to),
             fold,
         }
     }
@@ -107,19 +173,30 @@ impl Replacer {
         !b.is_some_and(|c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'.' | b'-'))
     }
 
+    /// The new text of `pair`; `next`: the byte after the match.
+    fn written(&self, pair: &Pair, next: Option<&u8>) -> Vec<u8> {
+        let mut new = pair.to.clone();
+        if pair.with_sep || (self.to_bare && !matches!(next, Some(b'\\' | b'/'))) {
+            new.extend_from_slice(pair.sep);
+        }
+        new
+    }
+
     pub fn replace(&self, text: &[u8]) -> Option<Vec<u8>> {
         let mut out = Vec::with_capacity(text.len());
         let mut last = 0;
         let mut changed = false;
         for caps in self.re.captures_iter(text) {
             let Some(m) = caps.get(0) else { continue };
+            let pair = &self.pairs[Self::index(&caps)];
             if !Self::boundary(m.start().checked_sub(1).and_then(|i| text.get(i)))
-                || !Self::boundary(text.get(m.end()))
+                || (!pair.with_sep && !Self::boundary(text.get(m.end())))
             {
                 continue;
             }
             out.extend_from_slice(&text[last..m.start()]);
-            out.extend_from_slice(&self.substitute(&caps, m.as_bytes()));
+            let new = self.written(pair, text.get(m.end()));
+            out.extend_from_slice(&self.substitute(new, m.as_bytes()));
             last = m.end();
             changed = true;
         }
@@ -130,17 +207,20 @@ impl Replacer {
         Some(out)
     }
 
+    /// The pair whose alternative matched.
+    fn index(caps: &Captures) -> usize {
+        (1..caps.len())
+            .find(|i| caps.get(*i).is_some())
+            .unwrap_or(1)
+            - 1
+    }
+
     /// The new spelling, with the drive letter in the case found where
     /// paths ignore case (Windows; elsewhere the match is exact). Only a
     /// real drive letter (`E:`, or `/e%3A` in a URI) is touched: the first
     /// letter of a Unix path is part of a folder name, so `/home/u/kit`
     /// moved to `/Users/u/kit` stays `/Users` (PORT-V4-02).
-    fn substitute(&self, caps: &Captures, found: &[u8]) -> Vec<u8> {
-        let i = (1..caps.len())
-            .find(|i| caps.get(*i).is_some())
-            .unwrap_or(1)
-            - 1;
-        let mut new = self.pairs[i].1.clone();
+    fn substitute(&self, mut new: Vec<u8>, found: &[u8]) -> Vec<u8> {
         if !self.fold {
             // An exact match: the case found says nothing more.
             return new;
@@ -168,9 +248,10 @@ impl Replacer {
             }
         };
         let text = fold(text);
-        self.pairs.iter().any(|(a, b)| {
-            let a = fold(a);
-            a.len() != b.len() && text.windows(a.len()).any(|w| w == a.as_slice())
+        self.pairs.iter().any(|p| {
+            let a = fold(&p.find);
+            a.len() != self.written(p, None).len()
+                && text.windows(a.len()).any(|w| w == a.as_slice())
         })
     }
 }
@@ -190,17 +271,30 @@ fn has_drive_letter(path: &[u8], at: usize) -> bool {
 struct Moved {
     changed: usize,
     programs: Vec<PathBuf>,
-    failed: Vec<String>,
+    /// What could not be updated, and why: kept for the next start.
+    failed: Vec<(PathBuf, String)>,
+}
+
+impl Moved {
+    fn fail(&mut self, path: &Path, why: impl std::fmt::Display) {
+        self.failed.push((path.to_path_buf(), why.to_string()));
+    }
 }
 
 fn relocate_file(file: &Path, r: &Replacer, report: &mut Moved) {
     let Ok(meta) = fs::metadata(file) else { return };
-    if !meta.is_file() {
+    // The size first: a file larger than any the kit changes is not read.
+    if !meta.is_file() || meta.len() > BINARY_MAX {
         return;
     }
-    let Ok(bytes) = fs::read(file) else { return };
+    let bytes = match fs::read(file) {
+        Ok(b) => b,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return,
+        // Held by another program: tried again at the next start.
+        Err(e) => return report.fail(file, e),
+    };
     let binary = bytes.iter().take(8192).any(|b| *b == 0);
-    if meta.len() > if binary { BINARY_MAX } else { TEXT_MAX } {
+    if !binary && meta.len() > TEXT_MAX {
         return;
     }
     let Some(mut out) = r.replace(&bytes) else {
@@ -221,15 +315,16 @@ fn relocate_file(file: &Path, r: &Replacer, report: &mut Moved) {
             p.set_readonly(false);
             fs::set_permissions(file, p)?;
         }
-        fs::write(file, &out)?;
-        if readonly {
-            fs::set_permissions(file, meta.permissions())?;
-        }
-        Ok(())
+        // Through a temporary file: a crash never leaves half a file. The
+        // new file gets the old one's permissions back (read-only, and the
+        // executable bit of a venv's scripts on macOS and Linux).
+        let written = write_atomic(file, &out);
+        let restored = fs::set_permissions(file, meta.permissions());
+        written.and(restored)
     })();
     match result {
         Ok(()) => report.changed += 1,
-        Err(e) => report.failed.push(format!("{} ({e})", file.display())),
+        Err(e) => report.fail(file, e),
     }
 }
 
@@ -402,7 +497,7 @@ fn relocate_claude_projects(p: &Paths, r: &Replacer, from: &str, to: &str, repor
         };
         match done {
             Ok(()) => report.changed += 1,
-            Err(err) => report.failed.push(format!("{} ({err})", src.display())),
+            Err(err) => report.fail(&src, err),
         }
     }
 }
@@ -521,48 +616,168 @@ fn targets(kit: &Kit, p: &Paths) -> Vec<PathBuf> {
     out
 }
 
-/// Replaces the old root (from [`Kit::old_root_file`]) everywhere.
-pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
+/// Files and folders a move could not update (held by another program),
+/// with the root they still hold: `old-root-failed.json` next to
+/// [`Kit::old_root_file`], tried again at every start until they follow,
+/// also after a further move (BUG-V6-19).
+fn left_file(kit: &Kit) -> PathBuf {
     let pending = kit.old_root_file();
-    let Ok(from) = crate::fsx::read_text(&pending) else {
-        return Ok(());
-    };
-    let from = from
-        .trim()
-        .trim_matches('"')
-        .trim_end_matches(['\\', '/'])
-        .to_owned();
-    let to = kit.root().display().to_string();
-    if !from.is_empty() && !same_root(kit.os(), &from, &to) {
-        let p = Paths::of(kit);
-        let r = Replacer::new(kit.os(), &from, &to);
-        let mut moved = Moved::default();
+    let stem = pending
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    pending.with_file_name(format!("{stem}-failed.json"))
+}
+
+/// What is left of one move: its old root and the paths, relative to the
+/// kit (with `/`), so that they still name the files if the kit moves on.
+struct Left {
+    from: String,
+    files: Vec<String>,
+}
+
+fn read_left(kit: &Kit) -> Vec<Left> {
+    let list: Vec<Value> = crate::fsx::read_json(&left_file(kit)).unwrap_or_default();
+    list.iter()
+        .filter_map(|e| {
+            let from = e.get("from")?.as_str()?.to_owned();
+            let files = e
+                .get("files")?
+                .as_array()?
+                .iter()
+                .filter_map(|f| f.as_str().map(str::to_owned))
+                .collect();
+            Some(Left { from, files })
+        })
+        .collect()
+}
+
+fn write_left(kit: &Kit, left: &[Left]) -> Result<()> {
+    let file = left_file(kit);
+    if left.is_empty() {
+        return match fs::remove_file(&file) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.into()),
+            _ => Ok(()),
+        };
+    }
+    let list: Vec<Value> = left
+        .iter()
+        .map(|l| serde_json::json!({ "from": l.from, "files": l.files }))
+        .collect();
+    write_json(&file, &Value::Array(list))
+}
+
+/// `path` relative to the kit, with `/` (as it is if outside the kit).
+fn kit_relative(kit: &Kit, path: &Path) -> String {
+    path.strip_prefix(kit.root()).map_or_else(
+        |_| path.display().to_string(),
+        |rel| {
+            rel.components()
+                .map(|c| c.as_os_str().to_string_lossy())
+                .collect::<Vec<_>>()
+                .join("/")
+        },
+    )
+}
+
+/// Replaces `from` with `to` in the kit's files: all of them, or `only`
+/// those (the ones left by an earlier start). The paths that failed are
+/// returned relative to the kit.
+fn move_files(
+    kit: &Kit,
+    from: &str,
+    to: &str,
+    only: Option<&[PathBuf]>,
+    report: &mut Report,
+) -> Vec<String> {
+    let p = Paths::of(kit);
+    let r = Replacer::new(kit.os(), from, to);
+    let wanted = |f: &Path| only.is_none_or(|o| o.iter().any(|x| x == f));
+    let mut moved = Moved::default();
+    if wanted(&p.claude_json()) {
         if let Err(e) = relocate_claude_json(&p, &r, &mut moved) {
-            moved
-                .failed
-                .push(format!("{} ({e:#})", p.claude_json().display()));
+            moved.fail(&p.claude_json(), format!("{e:#}"));
         }
-        relocate_claude_projects(&p, &r, &from, &to, &mut moved);
-        for f in targets(kit, &p) {
+    }
+    let claude_projects = p.claude.join("projects");
+    if only.is_none_or(|o| o.iter().any(|x| x.starts_with(&claude_projects))) {
+        relocate_claude_projects(&p, &r, from, to, &mut moved);
+    }
+    for f in targets(kit, &p) {
+        if wanted(&f) {
             relocate_file(&f, &r, &mut moved);
         }
-        report.note(format!(
-            "kit moved from \"{from}\" to \"{to}\": {} files and folders updated",
-            moved.changed
-        ));
-        for f in &moved.programs {
-            report.warn(format!("{}: holds the old path and cannot be updated (different length): reinstall it or recreate the .venv (uv sync)", f.display()));
-        }
-        for f in &moved.failed {
-            report.warn(format!("{f}: path not updated"));
-        }
-        crate::log::info(&format!(
-            "relocate {from} -> {to}: {} changed, {} programs, {} failed",
-            moved.changed,
-            moved.programs.len(),
-            moved.failed.len()
+    }
+    report.note(format!(
+        "kit moved from \"{from}\" to \"{to}\": {} files and folders updated",
+        moved.changed
+    ));
+    for f in &moved.programs {
+        report.warn(format!("{}: holds the old path and cannot be updated (different length): reinstall it or recreate the .venv (uv sync)", f.display()));
+    }
+    for (f, why) in &moved.failed {
+        report.warn(format!(
+            "{} ({why}): path not updated, tried again at the next start",
+            f.display()
         ));
     }
+    crate::log::info(&format!(
+        "relocate {from} -> {to}: {} changed, {} programs, {} failed",
+        moved.changed,
+        moved.programs.len(),
+        moved.failed.len()
+    ));
+    moved
+        .failed
+        .iter()
+        .map(|(f, _)| kit_relative(kit, f))
+        .collect()
+}
+
+/// Replaces the old root (from [`Kit::old_root_file`]) everywhere, and
+/// tries again the files an earlier move left behind.
+pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
+    // Both ends cut the same way: a kit at the root of a drive (`E:\`) is
+    // `E:` on either side (BUG-V6-03).
+    let to = trim_root(&kit.root().display().to_string()).to_owned();
+    let mut left = Vec::new();
+    for l in read_left(kit) {
+        // Moved back: those files hold the current root already.
+        if l.from.is_empty() || same_root(kit.os(), &l.from, &to) {
+            continue;
+        }
+        let only: Vec<PathBuf> = l
+            .files
+            .iter()
+            .map(|f| {
+                if Path::new(f).is_absolute() {
+                    PathBuf::from(f)
+                } else {
+                    join_rel(kit.root(), f)
+                }
+            })
+            .collect();
+        let files = move_files(kit, &l.from, &to, Some(&only), report);
+        if !files.is_empty() {
+            left.push(Left {
+                from: l.from,
+                files,
+            });
+        }
+    }
+    let pending = kit.old_root_file();
+    if let Ok(from) = crate::fsx::read_text(&pending) {
+        let from = trim_root(from.trim().trim_matches('"')).to_owned();
+        if !from.is_empty() && !same_root(kit.os(), &from, &to) {
+            let files = move_files(kit, &from, &to, None, report);
+            if !files.is_empty() {
+                left.push(Left { from, files });
+            }
+        }
+    }
+    // The list first: the old root goes only once what it still names is
+    // saved.
+    write_left(kit, &left)?;
     let _ = fs::remove_file(&pending);
     Ok(())
 }

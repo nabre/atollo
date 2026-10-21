@@ -1,6 +1,6 @@
 //! Codex `config.toml`: kit blocks at the top (settings) and at the end (MCP
-//! servers, trusted folders); the user's text in between is kept as it is
-//! (port of `codex.js`, same block layout).
+//! servers); the user's text in between is kept as it is, with the trusted
+//! projects (port of `codex.js`, same block layout).
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -9,13 +9,14 @@ use anyhow::Result;
 use serde_json::Value;
 
 use super::mcp::{server_type, Servers};
-use super::{trusted_folders, Paths, Report, KIT_RULE_TEXT};
+use super::{Paths, Report, KIT_RULE_TEXT};
 use crate::fsx::write_atomic;
 
 const TOP_BEGIN: &str = "# >>> Atollo: impostazioni del kit (non modificare questo blocco) >>>";
 const TOP_END: &str = "# <<< Atollo <<<";
 const MCP_BEGIN: &str = "# >>> Atollo: server MCP da data/agents/mcp.json (non modificare: cambia quel file o usa \"claude mcp\") >>>";
 const MCP_END: &str = "# <<< Atollo: server MCP <<<";
+/// The block of trusted folders earlier versions wrote: only removed now.
 const TRUST_BEGIN: &str =
     "# >>> Atollo: cartelle attendibili (projects del kit, riscritte a ogni avvio) >>>";
 const TRUST_END: &str = "# <<< Atollo: cartelle attendibili <<<";
@@ -287,23 +288,10 @@ pub fn sync_config(p: &Paths, servers: &Servers, report: &mut Report) -> Result<
         }
     }
 
-    // Trusted folders, keyed by the lower-case path. A table Codex wrote for
-    // the same folder is kept (a second one would be invalid TOML).
-    let user_lower = user.to_lowercase();
-    let mut trust = Vec::new();
-    for f in trusted_folders(p) {
-        let path = f.display().to_string().to_lowercase();
-        let literal = format!("'{path}'");
-        let basic = Value::String(path.clone()).to_string();
-        if user_lower.contains(&format!("[projects.{literal}]"))
-            || user_lower.contains(&format!("[projects.{}]", basic.to_lowercase()))
-        {
-            continue;
-        }
-        let key = if path.contains('\'') { basic } else { literal };
-        trust.push(format!("[projects.{key}]\ntrust_level = \"trusted\""));
-    }
-
+    // No block of trusted folders any more (SEC-V6-02): the one earlier
+    // versions wrote is dropped above; a project is trusted with a table
+    // of its own, among the user's, when an agent is launched in it
+    // (`trust::codex`).
     let mut text = format!(
         "{TOP_BEGIN}\n{}{}{TOP_END}\n",
         top.join("\n"),
@@ -316,12 +304,6 @@ pub fn sync_config(p: &Paths, servers: &Servers, report: &mut Report) -> Result<
         text.push_str(&format!(
             "\n{MCP_BEGIN}\n{}\n{MCP_END}\n",
             tables.join("\n\n")
-        ));
-    }
-    if !trust.is_empty() {
-        text.push_str(&format!(
-            "\n{TRUST_BEGIN}\n{}\n{TRUST_END}\n",
-            trust.join("\n\n")
         ));
     }
     if text.replace("\r\n", "\n") != old.replace("\r\n", "\n") {
