@@ -18,6 +18,33 @@ fn project_names_cannot_escape() {
     }
 }
 
+/// «Apri nel browser» opens the local server and the sites of a pool
+/// (`<project>.localhost`), nothing else.
+#[test]
+fn local_urls_include_the_pool_sites() {
+    for good in [
+        "http://localhost:7100/",
+        "http://127.0.0.1:7100/a?b#c",
+        "http://shop.localhost:8080/",
+        "http://api.shop-2.localhost:8080",
+    ] {
+        assert!(app::is_local_url(good), "{good}");
+    }
+    for bad in [
+        "https://localhost:7100/",
+        "http://example.com:80/",
+        "http://localhost.example.com:80/",
+        "http://evil.com/.localhost:80/",
+        "http://.localhost:80/",
+        "http://a..localhost:80/",
+        "http://a_b.localhost:80/",
+        "http://shop.localhost:99999/",
+        "http://localhost:7100/ \"x\"",
+    ] {
+        assert!(!app::is_local_url(bad), "{bad}");
+    }
+}
+
 #[test]
 fn unavailable_msg_names_arm64_only_on_windows_arm64() {
     use crate::kit::Target;

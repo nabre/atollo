@@ -1,5 +1,9 @@
 # Novità
 
+## «Apri nel browser» sui siti dei pool (21/10/2026)
+
+- **«Apri nel browser»** apre anche i siti serviti da un pool (`http://<progetto>.localhost:<porta>/`): prima l'app accettava solo `localhost` e `127.0.0.1`, e il pulsante non faceva nulla.
+
 ## Codice più ordinato e interfaccia più leggera (21/10/2026)
 
 - **Interfaccia più leggera**: il file principale passa da 1,2 MB a 258 kB; Impostazioni, Strumenti e la procedura guidata si caricano quando si aprono, e solo i componenti di `vscode-elements` usati vengono registrati.
