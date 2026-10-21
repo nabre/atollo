@@ -785,10 +785,10 @@ export const START: TopicTexts = {
           title={tr("Fiducia nei progetti", "Trust in projects", "Confiance dans les projets", "Vertrauen in Projekte")}
         >
           {tr(
-            "Le cartelle in projects sono considerate attendibili da Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Metti in projects solo codice di cui ti fidi.",
-            "The folders in projects are considered trusted by Claude Code and Codex, which can therefore run commands in them without asking every time. Put in projects only code you trust.",
-            "Les dossiers dans projects sont considérés comme fiables par Claude Code et Codex, qui peuvent donc y exécuter des commandes sans demander à chaque fois. Ne mettez dans projects que du code en lequel vous avez confiance.",
-            "Die Ordner in projects gelten für Claude Code und Codex als vertrauenswürdig, die darin also Befehle ausführen können, ohne jedes Mal zu fragen. Leg in projects nur Code ab, dem du vertraust.",
+            "Quando apri un agente in un progetto da Atollo, la cartella del progetto diventa attendibile per Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Apri un agente solo nei progetti di cui ti fidi.",
+            "When you open an agent in a project from Atollo, the project's folder becomes trusted by Claude Code and Codex, which can then run commands in it without asking every time. Open an agent only in projects you trust.",
+            "Quand vous ouvrez un agent dans un projet depuis Atollo, le dossier du projet devient fiable pour Claude Code et Codex, qui peuvent alors y exécuter des commandes sans demander à chaque fois. N'ouvrez un agent que dans les projets en lesquels vous avez confiance.",
+            "Wenn du in einem Projekt einen Agenten aus Atollo öffnest, wird der Projektordner für Claude Code und Codex vertrauenswürdig, die darin dann Befehle ausführen können, ohne jedes Mal zu fragen. Öffne einen Agenten nur in Projekten, denen du vertraust.",
           )}
         </Callout>
       </Section>

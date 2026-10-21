@@ -73,6 +73,8 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 
 The database passwords, the Gemini API key and the Claude token file are created readable by your user only, where the disk supports permissions (NTFS, APFS, ext4…). The other files, `settings.json` included, are ordinary files. On USB sticks formatted FAT32 or exFAT there are no permissions at all: **anyone with the stick can read every file above**. Keep the stick safe, or use a disk with permissions.
 
+The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor.
+
 Exceptions, outside the Atollo folder:
 
 - **Temporary files**: files in transit go to `<system temp>/Atollo/`; depending on Settings › General › **Temporary files of programs**, programs may also use the system's temporary folder (by default when the kit is on a USB stick, a network drive or FAT32/exFAT).

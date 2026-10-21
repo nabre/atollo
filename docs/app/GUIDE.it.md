@@ -181,7 +181,7 @@ La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti
 > [!WARNING]
 > **Fiducia nei progetti**
 >
-> Le cartelle in projects sono considerate attendibili da Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Metti in projects solo codice di cui ti fidi.
+> Quando apri un agente in un progetto da Atollo, la cartella del progetto diventa attendibile per Claude Code e Codex, che possono quindi eseguirvi comandi senza chiedere ogni volta. Apri un agente solo nei progetti di cui ti fidi.
 
 #### 3. Che cosa succede mentre scarica
 
@@ -498,7 +498,7 @@ In alto ci sono il nome, il tipo e la piattaforma riconosciuta (per esempio «La
 | Avvia / Ferma | Avvia l'azione predefinita del progetto, o la ferma se è in corso. |
 | Editor | Apre il progetto nell'editor, in una finestra di Atollo. |
 | Terminale | Apre una console del kit nella cartella del progetto, con le sue versioni. |
-| Loghi degli agenti e «Agente» | Scegli un agente con il suo logo e aprilo nel progetto. |
+| Loghi degli agenti e «Agente» | Scegli un agente con il suo logo e aprilo nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto. |
 | Apri la cartella | Apre la cartella del progetto in Esplora file (o Finder). |
 | Aggiorna | Rilegge il progetto: utile dopo aver cambiato a mano panel.json o i file del progetto. |
 
@@ -635,7 +635,7 @@ Le azioni tue, la stella e il sito web stanno nel file panel.json nella cartella
 <details>
 <summary>Sotto il cofano</summary>
 
-- Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto.
+- Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto. I token degli agenti (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) non ci sono: arrivano solo agli agenti avviati da Atollo.
 - Le azioni web ricevono le variabili PORT (e ROCKET_PORT) con la porta; tutte ricevono BROWSER=none, PYTHONUNBUFFERED=1 e ATOLLO_LANG. Se il progetto ha un database MySQL del kit e il suo .env non dice un'altra porta, ricevono anche DB_PORT.
 - Le porte assegnate e quelle scelte da te sono in `data\projects\<progetto>\ports.json`, fuori dal progetto.
 - Ogni azione gira in un suo gruppo di processi (un Job Object su Windows): «Ferma» chiude anche i processi figli, per esempio il server avviato da npm.
@@ -1212,8 +1212,8 @@ Un agente è un programma a riga di comando che dialoga con un modello di intell
 
 | Agente | Fornitore | Accesso |
 | --- | --- | --- |
-| Claude Code | Anthropic | Account Claude (abbonamento) oppure chiave API ANTHROPIC_API_KEY. |
-| Codex | OpenAI | Account ChatGPT oppure chiave API OPENAI_API_KEY. |
+| Claude Code | Anthropic | Account Claude (abbonamento); su macOS anche un token di claude setup-token. |
+| Codex | OpenAI | Account ChatGPT oppure chiave API salvata da Codex con codex login --with-api-key. |
 | Antigravity | Google | Account Google oppure chiave API di Gemini, da scrivere in Impostazioni › Agenti. |
 
 Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio li propone già). Seguono sempre l'ultima versione e portano con sé ciò che serve; Git, che usano tutti, è già tra i componenti sempre installati.
@@ -1255,7 +1255,7 @@ In cima alla barra laterale: «Aggiorna i consumi», «Apri la cartella condivis
 | --- | --- |
 | accesso non fatto: si fa al primo avvio dell'agente | Apri l'agente in un progetto e segui le sue istruzioni (di solito una pagina nel browser). |
 | accesso fatto | L'agente ha un accesso con il tuo account, salvato nel kit. |
-| accesso con chiave API | L'agente usa una chiave API: niente limiti di piano, paghi a consumo. |
+| accesso con chiave API | Codex con la chiave salvata da codex login --with-api-key, o Antigravity con la chiave di Gemini delle Impostazioni: niente limiti di piano, paghi a consumo. |
 | accesso con un token | Solo Claude Code su macOS, collegato con un token (vedi sotto). |
 
 L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi rifarlo. «Esci» toglie l'accesso salvato nel kit dopo una domanda («Togliere l'accesso salvato nel kit?», Esc annulla), con l'agente chiuso: mentre è aperto il pulsante dice «Chiudi prima l'agente». Con una chiave API «Esci» non c'è.
@@ -1268,7 +1268,7 @@ L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi 
 > [!NOTE]
 > **Claude Code su macOS**
 >
-> Su macOS Claude Code salverebbe l'accesso nel Portachiavi, che resta su quel Mac. «Collega con un token» apre claude setup-token nel terminale dell'app: completi l'accesso nel browser e il token (valido un anno) viene salvato nel kit, così funziona su ogni Mac. Se non viene riconosciuto, incollalo nel campo «Token di Claude Code» e premi «Salva il token».
+> Su macOS Claude Code salverebbe l'accesso nel Portachiavi, che resta su quel Mac. «Collega con un token» apre claude setup-token nel terminale dell'app: completi l'accesso nel browser e il token (valido un anno) viene salvato nel kit, così funziona su ogni Mac. Se non viene riconosciuto, incollalo nel campo «Token di Claude Code» e premi «Salva il token». Il token arriva, come CLAUDE_CODE_OAUTH_TOKEN, solo a Claude Code avviato da Atollo: non alle azioni dei progetti, agli script, ai terminali né all'editor.
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -1363,7 +1363,7 @@ Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code
 - Lo stato dell'allineamento, i conflitti e le skill cancellate sono in `data\agents\.sync` (conflicts, deleted).
 - Gli avvisi dell'allineamento finiscono nel log dell'app, `data\app\logs\app.log`.
 - L'allineamento si può lanciare anche dalla riga di comando: `Atollo.exe sync [--project <cartella>] [--verbose]`.
-- Claude Code e Codex considerano attendibili projects e le sue sottocartelle: possono eseguire comandi lì senza chiedere la fiducia ogni volta.
+- Claude Code e Codex considerano attendibile la cartella di un progetto solo dopo che vi hai aperto un agente da Atollo: da lì possono eseguire comandi senza chiedere la fiducia ogni volta. Le altre cartelle di projects non sono attendibili in anticipo.
 - In Codex le variabili ${VAR} non vengono espanse: il kit le traduce dove Codex ha una chiave apposita, altrimenti le copia così come sono con un commento.
 
 </details>
@@ -1762,7 +1762,7 @@ Proxy, certificati aggiuntivi e rete locale: [6.3 Rete aziendale: proxy, certifi
 
 #### Agenti
 
-«Chiave API di Gemini (Antigravity senza account Google)»: incolla la chiave e passa ad altro (un clic fuori dal campo o Tab). La chiave si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata: scrivi per sostituirla»: la chiave non viene più mostrata. «Togli la chiave» la cancella subito. Antigravity mostrerà «accesso con chiave API». La chiave è salvata a parte, in `data\app\secrets\gemini-api-key`, leggibile solo dal tuo utente dove il disco ha i permessi, e passata ai programmi del kit come GEMINI_API_KEY.
+«Chiave API di Gemini (Antigravity senza account Google)»: incolla la chiave e passa ad altro (un clic fuori dal campo o Tab). La chiave si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata: scrivi per sostituirla»: la chiave non viene più mostrata. «Togli la chiave» la cancella subito. Antigravity mostrerà «accesso con chiave API». La chiave è salvata a parte, in `data\app\secrets\gemini-api-key`, leggibile solo dal tuo utente dove il disco ha i permessi, e passata come GEMINI_API_KEY solo ad Antigravity avviato da Atollo: non alle azioni dei progetti, agli script, ai terminali né all'editor.
 
 #### Aggiornamenti
 
