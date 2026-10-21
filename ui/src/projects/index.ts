@@ -2,4 +2,4 @@
 // the Activity panel.
 export { alive, stateText, useRuns } from "./runs";
 export { ProjectsPage } from "./explorer";
-export { WIZARD_TAB } from "./wizard";
+export { WIZARD_TAB } from "./new";

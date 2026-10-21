@@ -19,6 +19,33 @@ export default defineConfig(({ mode }) => ({
     outDir: "../dist",
     emptyOutDir: true,
     sourcemap: false,
+    // What every window reads at start in chunks of its own, each under the
+    // 500 kB warning and cached apart from the app's code: React, the
+    // brands' logos (react-icons), the translation catalogs. The Guide's
+    // chapters likewise, one chunk each, read together when it opens.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: "react", test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+            { name: "icons", test: /[\\/]node_modules[\\/]react-icons[\\/]/ },
+            { name: "locales", test: /[\\/]src[\\/]locales[\\/]/ },
+            {
+              // Only the Guide's own modules: what they import from the app
+              // stays where the app has it (never read at start through
+              // them). The chapters' common parts get a chunk of their own,
+              // so no two chunks import each other.
+              name: (id: string) => {
+                const topic = /[\\/]src[\\/]guide[\\/]topics[\\/](\w+)\.tsx$/.exec(id)?.[1];
+                if (topic) return `guide-${topic}`;
+                return /[\\/]src[\\/]guide[\\/](model|sources|widgets)\.tsx?$/.test(id) ? "guide-base" : null;
+              },
+              includeDependenciesRecursively: false,
+            },
+          ],
+        },
+      },
+    },
   },
   test: {
     environment: "jsdom",
