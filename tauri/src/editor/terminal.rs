@@ -117,7 +117,7 @@ fn line(kit: &Kit, env: &KitEnv, program: &Program) -> Result<Line> {
             args.extend(pwsh_args(kit));
         }
         Program::Command(path) if is_batch(path) => {
-            let quoted = path.display().to_string().replace('\'', "''");
+            let quoted = ps_single_quoted(&path.display().to_string());
             args.push(pwsh(kit)?.display().to_string());
             args.extend(
                 [
@@ -137,6 +137,21 @@ fn line(kit: &Kit, env: &KitEnv, program: &Program) -> Result<Line> {
         conhost: conhost(env),
         args,
     })
+}
+
+/// `s` for the inside of a PowerShell `'...'` string: every quote PowerShell
+/// closes the string on doubled, the typographic ones U+2018..U+201B too
+/// (a kit in `D:\O’Brien\Atollo`: BUG-V6-31).
+#[cfg(any(windows, test))]
+fn ps_single_quoted(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if matches!(c, '\'' | '\u{2018}' | '\u{2019}' | '\u{201A}' | '\u{201B}') {
+            out.push(c);
+        }
+        out.push(c);
+    }
+    out
 }
 
 /// Windows' console host.
