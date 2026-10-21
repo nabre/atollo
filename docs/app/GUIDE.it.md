@@ -1776,7 +1776,7 @@ Sotto l'account, «Chi firma i commit» ha i campi «Nome» ed «E-mail» dei co
 
 #### Privacy
 
-«Cosa fa Atollo con i tuoi dati», in breve: nessuna telemetria e nessun account; impostazioni, chiavi e accessi restano nella cartella del kit. Atollo contatta GitHub per i suoi aggiornamenti (se l'aggiornamento automatico è attivo), le fonti ufficiali di linguaggi e strumenti quando li installi o aggiorni e, una volta al giorno, per leggere le versioni disponibili (anche questo si spegne con ATOLLO_NO_UPDATE), e Open VSX per le estensioni dell'editor. Agenti, GitHub e registri dei pacchetti parlano direttamente con i loro servizi, con le loro regole.
+«Cosa fa Atollo con i tuoi dati», in breve: nessuna telemetria e nessun account; impostazioni, chiavi e accessi restano nella cartella del kit. Atollo contatta GitHub per i suoi aggiornamenti (se l'aggiornamento automatico è attivo), le fonti ufficiali di linguaggi e strumenti quando li installi o aggiorni e, una volta al giorno, per leggere le versioni disponibili (anche questo si spegne con ATOLLO_NO_UPDATE), e Open VSX per le estensioni dell'editor. Con la pagina Agenti aperta, ogni 2 minuti legge i limiti del piano di ogni agente collegato, mandandone il token solo al suo fornitore; con l'account GitHub collegato ne usa il token con api.github.com. Agenti, GitHub e registri dei pacchetti parlano direttamente con i loro servizi, con le loro regole.
 
 «Leggi l'informativa sulla privacy» apre nel browser l'informativa completa (docs/PRIVACY.md su GitHub), nella lingua dell'app.
 

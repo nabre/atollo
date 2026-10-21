@@ -1776,7 +1776,7 @@ Below the account, “Who signs the commits” has the “Name” and “Email�
 
 #### Privacy
 
-“What Atollo does with your data”, in short: no telemetry and no account; settings, keys and sign-ins stay in the kit's folder. Atollo contacts GitHub for its own updates (if automatic updates are on), the official sources of languages and tools when you install or update them and, once a day, to read the available versions (ATOLLO_NO_UPDATE turns this off too), and Open VSX for the editor's extensions. Agents, GitHub and package registries talk directly to their own services, under their own rules.
+“What Atollo does with your data”, in short: no telemetry and no account; settings, keys and sign-ins stay in the kit's folder. Atollo contacts GitHub for its own updates (if automatic updates are on), the official sources of languages and tools when you install or update them and, once a day, to read the available versions (ATOLLO_NO_UPDATE turns this off too), and Open VSX for the editor's extensions. While the Agents page is open, every 2 minutes it reads the plan limits of each signed-in agent, sending that agent's token only to its provider; with the GitHub account signed in it uses that account's token with api.github.com. Agents, GitHub and package registries talk directly to their own services, under their own rules.
 
 “Read the privacy policy” opens the full policy in the browser (docs/PRIVACY.md on GitHub), in the app's language.
 
