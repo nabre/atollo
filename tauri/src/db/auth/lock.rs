@@ -15,7 +15,7 @@ use crate::kit::Kit;
 /// the command line beside the app, would otherwise each write back what
 /// they read, and one change would be lost. In this process a mutex; across
 /// the processes of the kit the lock of the Antigravity keyring
-/// (`agents/keyring.rs`): `Local\Atollo-db-json-<kit id>` on Windows, an
+/// (`agents/keyring/`): `Local\Atollo-db-json-<kit id>` on Windows, an
 /// exclusive `flock` on `data/app/db/db-json.lock` elsewhere.
 pub(crate) fn db_json_lock(kit: &Kit) -> Result<DbJsonLock> {
     static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
