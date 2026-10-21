@@ -5,6 +5,8 @@
 >
 > **Metodo**: revisione in sola lettura, divisa per sottosistema (installatori/rete/setup/versioni; progetti/server/database; agenti/editor/os/comandi; interfaccia; contratto IPC e i18n; documentazione contro codice) più una ricerca esterna su Pi e llama.cpp. I rilievi di gravità ALTA sono stati riletti nel codice prima di entrare nel report. Prove eseguite il 21/10/2026 su Windows 11 x64.
 
+> **Stato (21/10/2026, dopo le correzioni)**: tutti i 49 rilievi del codice e le 16 incongruenze della documentazione sono **chiusi** in `main`, un commit per rilievo, e tolti dai documenti 01 e 02. Prove: `cargo test` **855 superati**, 0 falliti, 7 ignorati (due giri); interfaccia **37 file, 230 superati**; `npm run lint` pulito. Le tabelle qui sotto restano come fotografia della revisione; cosa resta da verificare a mano è nel documento [01](./01-BUG-SICUREZZA-PORTABILITA.md), §1.1.
+
 ---
 
 ## 1. Indice
@@ -12,8 +14,8 @@
 | # | Documento | Contenuto |
 |---|---|---|
 | **00** | questo file | sintesi, stato delle prove, numeri dei rilievi |
-| **01** | [`01-BUG-SICUREZZA-PORTABILITA.md`](./01-BUG-SICUREZZA-PORTABILITA.md) | 49 rilievi `BUG/SEC/PORT/UX/TEST-V6-xx` con file:riga, scenario, correzione proposta |
-| **02** | [`02-INCONGRUENZE-DOCUMENTAZIONE.md`](./02-INCONGRUENZE-DOCUMENTAZIONE.md) | 16 incongruenze `DOC-V6-xx` tra documentazione e app, con il lato da correggere |
+| **01** | [`01-BUG-SICUREZZA-PORTABILITA.md`](./01-BUG-SICUREZZA-PORTABILITA.md) | rilievi `BUG/SEC/PORT/UX/TEST-V6-xx` ancora aperti (oggi nessuno), rami che li hanno chiusi, verifiche manuali |
+| **02** | [`02-INCONGRUENZE-DOCUMENTAZIONE.md`](./02-INCONGRUENZE-DOCUMENTAZIONE.md) | incongruenze `DOC-V6-xx` ancora aperte (oggi nessuna), strategia contro la deriva |
 | **03** | [`03-LLM-LOCALI-GGUF-E-PI.md`](./03-LLM-LOCALI-GGUF-E-PI.md) | progetto: modelli GGUF locali con llama.cpp e Pi come quarto agente |
 | **04** | [`04-NUOVE-FUNZIONALITA.md`](./04-NUOVE-FUNZIONALITA.md) | 12 funzionalità semplici e di impatto, con stima di sforzo |
 | **05** | [`05-PIANO-ESECUTIVO-V6.md`](./05-PIANO-ESECUTIVO-V6.md) | ondate di correzione, regole di codice per non ricadere negli stessi errori, decisioni da prendere |
