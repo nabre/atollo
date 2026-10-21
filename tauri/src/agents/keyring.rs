@@ -902,6 +902,16 @@ pub fn pending(kit: &Kit) -> bool {
     files(kit).seen.exists()
 }
 
+/// Which pending run: the latest change of its "before" file and of its
+/// "starting" mark (a new agy run touches the mark), `None` when nothing
+/// is pending. The watcher's retries are counted per value (BUG-V6-17).
+pub fn pending_stamp(kit: &Kit) -> Option<std::time::SystemTime> {
+    let f = files(kit);
+    let changed = |p: &Path| fs::metadata(p).and_then(|m| m.modified()).ok();
+    let seen = changed(&f.seen)?;
+    Some(changed(&f.starting).map_or(seen, |s| s.max(seen)))
+}
+
 /// Before agy starts: the kit's login into the system's store.
 pub fn restore(kit: &Kit) -> Result<()> {
     restore_with(kit, &System::of(kit))
