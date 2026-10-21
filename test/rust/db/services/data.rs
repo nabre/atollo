@@ -141,6 +141,7 @@ fn a_copy_cut_short_is_no_data() {
         assert!(!root.join("8.4").exists(), "no data folder half there");
         assert!(!root.join("8.4.partial").exists(), "nothing left beside");
     }
+    #[cfg(windows)]
     drop(hold);
     #[cfg(unix)]
     {
