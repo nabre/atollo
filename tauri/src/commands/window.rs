@@ -14,6 +14,8 @@ pub struct OpenNow {
     pub setup: bool,
     /// Database servers started by the app.
     pub databases: usize,
+    /// The server of the local models, when it runs (0 or 1).
+    pub llm: usize,
 }
 
 impl OpenNow {
@@ -24,6 +26,7 @@ impl OpenNow {
             || self.actions > 0
             || self.setup
             || self.databases > 0
+            || self.llm > 0
     }
 }
 
@@ -39,6 +42,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
         actions,
         setup: state.setup.snapshot().running,
         databases: state.services.running(),
+        llm: state.llm.running(),
     }
 }
 
@@ -68,6 +72,7 @@ pub async fn eject_run<R: Runtime>(
         r.stop_all();
     }
     state.servers.stop_all();
+    state.llm.stop_all();
     for (label, window) in app.webview_windows() {
         if label.starts_with(editor::window::LABEL_PREFIX) {
             let _ = window.destroy();
@@ -133,6 +138,7 @@ pub fn app_quit<R: Runtime>(
         r.stop_all();
     }
     app.state::<AppState>().servers.stop_all();
+    app.state::<AppState>().llm.stop_all();
     // The databases shut down cleanly first (D-73), off this thread.
     let services = Arc::clone(&app.state::<AppState>().services);
     let handle = app.clone();

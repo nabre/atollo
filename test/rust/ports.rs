@@ -53,3 +53,19 @@ fn every_owner_from_its_file() {
     refuse_taken(&kit, 8095, |o| *o == Owner::Pool("legacy".into()), "it").unwrap();
     refuse_taken(&kit, 8096, |_| false, "it").unwrap();
 }
+
+/// The port of the local models is kept for them (`llm.json`).
+#[test]
+fn the_local_models_keep_their_port() {
+    let tmp = TempDir::new("ports-llm");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    std::fs::write(kit.app_dir().join("llm.json"), r#"{ "port": 9931 }"#).unwrap();
+    assert_eq!(ports_taken(&kit)[&9931], Owner::Llm);
+    let err = refuse_taken(&kit, 9931, |_| false, "it").unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "La porta 9931 è dei modelli locali: scegline un'altra."
+    );
+    refuse_taken(&kit, 9931, |o| *o == Owner::Llm, "it").unwrap();
+}

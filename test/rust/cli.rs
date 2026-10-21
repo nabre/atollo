@@ -290,3 +290,19 @@ fn failed_by_hand_shows_downloads_dir() {
         "{text}"
     );
 }
+
+#[test]
+fn llm_commands() {
+    for a in ["start", "stop", "status"] {
+        assert_eq!(parse(&args(&["llm", a])), Cli::Llm(a.into()));
+    }
+    assert_eq!(parse(&args(&["llm"])), Cli::Unknown("llm ".into()));
+    assert_eq!(
+        parse(&args(&["llm", "restart"])),
+        Cli::Unknown("llm restart".into())
+    );
+    assert_eq!(
+        parse(&args(&["llm", "stop", "now"])),
+        Cli::Unknown("llm stop".into())
+    );
+}

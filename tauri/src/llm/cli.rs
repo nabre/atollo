@@ -135,3 +135,57 @@ pub fn remove(kit: &Kit, id: &str, lang: &str, out: &mut dyn Write) -> Result<()
     writeln!(out, "  √ {}", t(lang, "{0}: cancellato", &[id]))?;
     Ok(())
 }
+
+/// `llm start`: the server in the foreground, until it stops or Ctrl+C.
+pub fn start(kit: &Kit, env: &crate::env::KitEnv, lang: &str, out: &mut dyn Write) -> Result<()> {
+    let llm = super::service::Llm::new(kit.clone());
+    let port = llm.start(env, lang)?;
+    writeln!(
+        out,
+        "  √ {}",
+        t(
+            lang,
+            "Modelli locali su {0} (chiave in {1}). Ctrl+C per fermarli.",
+            &[
+                &super::service::url_of(port),
+                &super::settings::key_file(kit).display().to_string()
+            ]
+        )
+    )?;
+    out.flush()?;
+    llm.wait();
+    Ok(())
+}
+
+/// `llm stop`: every server of this kit.
+pub fn stop(kit: &Kit, lang: &str, out: &mut dyn Write) -> Result<()> {
+    let n = super::service::stop_everywhere(kit);
+    writeln!(
+        out,
+        "  √ {}",
+        t(
+            lang,
+            "Server dei modelli locali fermati: {0}",
+            &[&n.to_string()]
+        )
+    )?;
+    Ok(())
+}
+
+/// `llm status`: whether it answers, and the models in memory.
+pub fn status(kit: &Kit, lang: &str, out: &mut dyn Write) -> Result<()> {
+    let (port, up, loaded) = super::service::probe(kit);
+    let url = super::service::url_of(port);
+    if up {
+        writeln!(out, "  √ {}", t(lang, "In esecuzione su {0}", &[&url]))?;
+        let loaded = if loaded.is_empty() {
+            "-".to_owned()
+        } else {
+            loaded.join(", ")
+        };
+        writeln!(out, "  · {}", t(lang, "In memoria: {0}", &[&loaded]))?;
+    } else {
+        writeln!(out, "  · {}", t(lang, "Fermo ({0})", &[&url]))?;
+    }
+    Ok(())
+}

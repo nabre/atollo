@@ -9,7 +9,9 @@
 //! - `local`: what is on disk, one folder per repository
 //!   (`data/models/gguf/<owner>--<repo>`) with its `atollo.json`;
 //! - `pull`: the downloads, resumed after an interruption (`net::resume`),
-//!   checked against the drive (FAT32, free space) before they start.
+//!   checked against the drive (FAT32, free space) before they start;
+//! - `service`: the server (`llama-server` in router mode on `presets`),
+//!   its port and key in `settings`.
 //!
 //! Secrets in `data/app/secrets`, owner-only like the Gemini key (D-137):
 //! the Hugging Face token for the gated models (`hf-token`).
@@ -18,7 +20,10 @@ pub mod catalog;
 pub mod cli;
 pub mod hf;
 pub mod local;
+pub mod presets;
 pub mod pull;
+pub mod service;
+pub mod settings;
 
 use std::path::PathBuf;
 

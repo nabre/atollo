@@ -51,6 +51,8 @@ pub enum Cli {
     },
     /// The local models (D-151).
     Models(Models),
+    /// Their server: `start`, `stop`, `status`.
+    Llm(String),
     Version,
     Help,
     Unknown(String),
@@ -206,6 +208,14 @@ pub fn parse(args: &[OsString]) -> Cli {
                 (Some(other), _, _) => Cli::Unknown(format!("models {other}")),
             }
         }
+        "llm" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            Some(a @ ("start" | "stop" | "status")) if args.len() == 2 => Cli::Llm(a.to_owned()),
+            other => Cli::Unknown(format!("llm {}", other.unwrap_or_default())),
+        },
         "version" | "--version" | "-V" => Cli::Version,
         "help" | "--help" | "-h" | "/?" => Cli::Help,
         other => Cli::Unknown(other.to_owned()),

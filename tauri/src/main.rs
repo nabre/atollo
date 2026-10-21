@@ -214,6 +214,21 @@ fn run() -> i32 {
             return cli::print_components(&kit, lang, &mut *cli::output()).map_or(1, |()| 0);
         }
         Cli::Models(cmd) => return models(&kit, &loaded.settings, &host, lang, cmd),
+        Cli::Llm(action) => {
+            let mut out = cli::output();
+            let result = match action.as_str() {
+                "start" => llm::cli::start(&kit, &kit_env, lang, &mut *out),
+                "stop" => llm::cli::stop(&kit, lang, &mut *out),
+                _ => llm::cli::status(&kit, lang, &mut *out),
+            };
+            return match result {
+                Ok(()) => 0,
+                Err(e) => {
+                    let _ = writeln!(out, "  x {e:#}");
+                    1
+                }
+            };
+        }
         Cli::Version => {
             let _ = writeln!(cli::output(), "Atollo {}", env!("CARGO_PKG_VERSION"));
             return 0;
@@ -312,6 +327,7 @@ fn run() -> i32 {
         webview: webview_desc,
         editor: std::sync::Arc::new(editor::Editor::new(kit.clone(), kit_env.clone())),
         services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
+        llm: std::sync::Arc::new(llm::service::Llm::new(kit.clone())),
         servers: std::sync::Arc::new(servers::WebServers::new(kit.clone())),
         env: std::sync::RwLock::new(kit_env),
         closing: agents::Closing::default(),
@@ -462,7 +478,7 @@ fn prepare(
 /// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
 /// kit's Antigravity command ([`help_text`]); the target ids
 /// are those of `Target::ALL`.
-const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
 /// The program's name in the help: the file it was started from
 /// (`Atollo-0.2.0-win32-x64.exe`, `Atollo.AppImage`, `Atollo`, ...); on
@@ -612,9 +628,11 @@ fn build_app<R: tauri::Runtime>(
                     std::sync::Arc::clone(&window.app_handle().state::<AppState>().services);
                 let servers =
                     std::sync::Arc::clone(&window.app_handle().state::<AppState>().servers);
+                let llm = std::sync::Arc::clone(&window.app_handle().state::<AppState>().llm);
                 let handle = window.app_handle().clone();
                 std::thread::spawn(move || {
                     servers.stop_all();
+                    llm.stop_all();
                     services.stop_all();
                     handle.exit(0);
                 });
@@ -631,12 +649,14 @@ fn build_app<R: tauri::Runtime>(
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Atollo" (D-73).
-            // Then the server profiles marked "Avvia con Atollo".
-            let (services, servers, env, lang) = {
+            // Then the server profiles marked "Avvia con Atollo", and the
+            // server of the local models when it is marked too (D-151).
+            let (services, servers, llm, env, lang) = {
                 let state = app.state::<AppState>();
                 (
                     std::sync::Arc::clone(&state.services),
                     std::sync::Arc::clone(&state.servers),
+                    std::sync::Arc::clone(&state.llm),
                     state.env.read().map(|e| e.clone()).unwrap_or_default(),
                     state.lang(),
                 )
@@ -644,6 +664,7 @@ fn build_app<R: tauri::Runtime>(
             std::thread::spawn(move || {
                 services.autostart(&env);
                 servers.autostart(&env, lang);
+                llm.autostart(&env);
             });
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);
             let notify = app.handle().clone();
