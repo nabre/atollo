@@ -1,5 +1,11 @@
 # Novità
 
+## Rilascio 0.5.1 alpha (21/10/2026)
+
+- **Versione 0.5.1** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.1` pubblica i file per i sei sistemi.
+- **Cosa porta**: tutti i rilievi del report v6 chiusi (database, installazioni, kit su un altro disco o PC, agenti, progetti e server web, interfaccia), i token degli agenti solo agli agenti e un progetto fidato quando ci avvii un agente (D-144), la documentazione allineata all'app nelle quattro lingue.
+- **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.5.1.
+
 ## Rilievi del report v6 (21/10/2026)
 
 - **Database**: un backup MySQL con viste, trigger, routine, eventi o colonne binarie si ripristina intero; una copia compare solo quando è completa; un progetto con un nome lungo ha il suo database; un `secrets.json`, `services.json` o `servers.json` illeggibile non viene mai riscritto vuoto; i dati iniziali di MySQL copiati a metà non vengono aperti.
