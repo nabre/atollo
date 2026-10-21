@@ -1,4 +1,5 @@
 use super::*;
+use std::net::Ipv4Addr;
 
 #[test]
 fn address_carries_the_token() {
