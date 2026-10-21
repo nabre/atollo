@@ -24,7 +24,7 @@ fn sign_in_detection() {
     assert_eq!(s[0].sign_in_kind.as_deref(), Some("account"));
     assert_eq!(s[1].sign_in_kind.as_deref(), Some("api key"));
     assert!(!s[2].signed_in);
-    sign_out(&kit, &env, "claude").unwrap();
+    sign_out(&kit, &env, "claude", "en").unwrap();
     assert!(!status(&kit)[0].signed_in);
 }
 
@@ -48,7 +48,7 @@ fn claude_token_sign_in() {
         "offered on macOS only"
     );
     assert!(info.iter().all(|a| a.id == "claude" || !a.token_link));
-    sign_out(&kit, &env, "claude").unwrap();
+    sign_out(&kit, &env, "claude", "en").unwrap();
     assert_eq!(sign_in(&kit, "claude"), None);
     assert!(!claude_token::path(&kit).exists());
 }

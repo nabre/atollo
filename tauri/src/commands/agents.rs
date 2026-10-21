@@ -101,13 +101,19 @@ pub fn agent_token_save<R: Runtime>(
     Ok(())
 }
 
+/// "Esci". Async, so off the window's thread: `codex logout` and the save
+/// of Antigravity's login take a moment (BUG-V6-29).
 #[tauri::command]
-pub fn agent_sign_out<R: Runtime>(
+pub async fn agent_sign_out<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     agent: String,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    crate::agents::sign_out(&state.kit, &state.env(), &agent).or_fail_chain("sign out")?;
-    Ok(())
+    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::agents::sign_out(&kit, &env, &agent, lang).or_fail_chain("sign out")
+    })
+    .await
+    .or_fail("sign out")?
 }
