@@ -615,7 +615,12 @@ fn apply_plan(kit: &Kit, plan: &SwapPlan) -> Result<bool> {
     }
     let (current, old) = (&plan.current, &plan.old);
     let dest = destination(current, &info.version);
-    let _ = remove_any(old);
+    // The copy of an earlier update still running (a `sync` or `keyring`
+    // of that version) cannot be deleted: it moves to a name of its own,
+    // deleted at a later start, and `old` is free for this one.
+    if remove_any(old).is_err() {
+        let _ = fs::rename(old, stamped_old(old, &now_ms()));
+    }
     fs::rename(current, old)
         .with_context(|| format!("{} → {}", current.display(), old.display()))?;
     let moved = fs::rename(&staged, &dest).or_else(|e| match plan.form {
@@ -674,6 +679,53 @@ fn remove_old_of(plan: &SwapPlan) {
         if let Err(e) = remove_any(&plan.old) {
             crate::log::warn(&format!("{}: {e}", plan.old.display()));
         }
+    }
+    // Those set aside by a swap while an older one still ran.
+    let Some(dir) = plan.old.parent() else {
+        return;
+    };
+    for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if is_stamped_old(&plan.old, &name) {
+            let _ = remove_any(&entry.path());
+        }
+    }
+}
+
+fn now_ms() -> String {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis().to_string())
+        .unwrap_or_default()
+}
+
+/// `old` with a stamp after its `.old`: `Atollo.old-<ms>.exe`,
+/// `Atollo.app.old-<ms>`.
+fn stamped_old(old: &Path, stamp: &str) -> PathBuf {
+    let name = old
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let (head, tail) = split_old(&name);
+    old.with_file_name(format!("{head}.old-{stamp}{tail}"))
+}
+
+/// `name` is `old`'s name with a stamp ([`stamped_old`]).
+fn is_stamped_old(old: &Path, name: &str) -> bool {
+    let Some(old_name) = old.file_name().map(|n| n.to_string_lossy().into_owned()) else {
+        return false;
+    };
+    let (head, tail) = split_old(&old_name);
+    name.strip_prefix(&format!("{head}.old-"))
+        .and_then(|rest| rest.strip_suffix(tail))
+        .is_some_and(|ms| !ms.is_empty() && ms.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// The name around its last `.old`: (`Atollo`, `.exe`) for `Atollo.old.exe`.
+fn split_old(name: &str) -> (&str, &str) {
+    match name.rfind(".old") {
+        Some(i) => (&name[..i], &name[i + 4..]),
+        None => (name, ""),
     }
 }
 

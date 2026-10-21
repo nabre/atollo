@@ -455,6 +455,34 @@ fn replace_file_works_while_in_use() {
     );
 }
 
+/// The `.old` of an earlier update still running (it cannot be deleted):
+/// the old file goes to a name of its own instead of stopping the
+/// update; the stamped leftovers of earlier times go (BUG-V6-23).
+#[cfg(windows)]
+#[test]
+fn replace_file_with_the_old_one_still_running() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let tmp = TempDir::new("replold");
+    let dest = tmp.0.join("tool.exe");
+    fs::write(&dest, "1").unwrap();
+    let old = tmp.0.join("tool.exe.old");
+    fs::write(&old, "0").unwrap();
+    fs::write(tmp.0.join("tool.exe.old-123"), "left").unwrap();
+    // Without FILE_SHARE_DELETE: neither deleted nor replaced.
+    let held = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(1)
+        .open(&old)
+        .unwrap();
+    let new = tmp.0.join("new.exe");
+    fs::write(&new, "2").unwrap();
+    replace_file(&new, &dest).unwrap();
+    assert_eq!(fs::read_to_string(&dest).unwrap(), "2");
+    assert_eq!(fs::read_to_string(&old).unwrap(), "0");
+    assert_eq!(names(&tmp.0), ["new.exe", "tool.exe", "tool.exe.old"]);
+    drop(held);
+}
+
 /// A program of the PC keeps a folder of the tree open (as Cloud Code's
 /// indexer did with `extensions\terminal-suggest` of the editor): the
 /// swap still works. A file really in use stops it, and nothing changes.

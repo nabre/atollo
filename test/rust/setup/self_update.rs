@@ -276,6 +276,56 @@ fn swap_and_cleanup_windows() {
     assert!(!staged_exe(&kit).exists());
 }
 
+/// The `Atollo.old.exe` of an earlier update is still running (here a
+/// copy of `cmd.exe` waiting on `ping`): Windows renames it but does not
+/// delete it. It moves to a stamped name and the update goes on; the next
+/// start deletes it once it has ended (BUG-V6-23).
+#[cfg(windows)]
+#[test]
+fn swap_with_the_old_copy_still_running_windows() {
+    let tmp = TempDir::new("self-update-busy");
+    let kit = Kit::at_target(tmp.0.clone(), Target::new(Os::Win32, Arch::X64));
+    let exe = tmp.0.join("Atollo.exe");
+    fs::write(&exe, b"current").unwrap();
+    let stuck = tmp.0.join("Atollo.old.exe");
+    let system = std::env::var_os("SystemRoot").unwrap_or_else(|| "C:\\Windows".into());
+    let cmd = Path::new(&system).join("System32").join("cmd.exe");
+    fs::copy(&cmd, &stuck).unwrap();
+    let older = fs::read(&stuck).unwrap();
+    let mut running = std::process::Command::new(&stuck)
+        .args(["/c", "ping -n 30 127.0.0.1 >nul"])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    assert!(fs::remove_file(&stuck).is_err(), "running: not deleted");
+    let plan = swap_plan(Os::Win32, &exe, None, &update_dir(&kit)).unwrap();
+    fs::create_dir_all(update_dir(&kit)).unwrap();
+    fs::write(staged_exe(&kit), b"new").unwrap();
+    let hash = verify::sha256_hex(&staged_exe(&kit)).unwrap();
+    write_info(&kit, "999.0.0", hash, None);
+    assert!(apply_plan(&kit, &plan).unwrap());
+    assert_eq!(fs::read(&exe).unwrap(), b"new");
+    assert_eq!(fs::read(&stuck).unwrap(), b"current");
+    let aside: Vec<PathBuf> = fs::read_dir(&tmp.0)
+        .unwrap()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| is_stamped_old(&plan.old, &p.file_name().unwrap().to_string_lossy()))
+        .collect();
+    assert_eq!(aside.len(), 1, "{aside:?}");
+    assert_eq!(fs::read(&aside[0]).unwrap(), older);
+    assert!(!is_stamped_old(&plan.old, "Atollo.old-12x.exe"));
+    assert!(!is_stamped_old(&plan.old, "Atollo.exe"));
+
+    let _ = running.kill();
+    let _ = running.wait();
+    remove_old_of(&plan);
+    assert!(!aside[0].exists() && !stuck.exists());
+    assert!(exe.is_file());
+}
+
 /// Windows with a release name: the new exe takes the new version's name,
 /// and the next start (from it) removes `Atollo.old.exe`.
 #[test]
