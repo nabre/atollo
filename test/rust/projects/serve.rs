@@ -42,6 +42,16 @@ fn paths() {
     crate::os::safe_path::tests::junction(&root.join("lnk"), &outside);
     assert!(matches!(resolve(&root, "/"), Answer::File(p) if p.ends_with("index.html")));
     assert!(matches!(resolve(&root, "/sub?x=1"), Answer::Redirect(l) if l == "/sub/?x=1"));
+    // BUG-V6-28: never a protocol-relative `Location` (`//sub/` is the
+    // host `sub`), a folder with spaces and ’ kept as asked.
+    assert!(matches!(resolve(&root, "//sub"), Answer::Redirect(l) if l == "/sub/"));
+    assert!(matches!(resolve(&root, "///sub?x=1"), Answer::Redirect(l) if l == "/sub/?x=1"));
+    assert!(matches!(resolve(&root, "/\\sub"), Answer::Redirect(l) if l == "/sub/"));
+    fs::create_dir_all(root.join("O’Brien {x}")).unwrap();
+    assert!(matches!(
+        resolve(&root, "//O%E2%80%99Brien%20%7Bx%7D"),
+        Answer::Redirect(l) if l == "/O%E2%80%99Brien%20%7Bx%7D/"
+    ));
     assert!(matches!(resolve(&root, "/.env"), Answer::Status(403, _)));
     assert!(matches!(
         resolve(&root, "/%2e%2e/x"),

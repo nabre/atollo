@@ -132,7 +132,10 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
             } else {
                 format!("?{query}")
             };
-            return Answer::Redirect(format!("{path}/{q}"));
+            // One leading slash: `//assets/` (or `/\assets/`) would be read
+            // as the host `assets` (BUG-V6-28).
+            let path = path.trim_start_matches(['/', '\\']);
+            return Answer::Redirect(format!("/{path}/{q}"));
         }
         file = file.join("index.html");
     }
