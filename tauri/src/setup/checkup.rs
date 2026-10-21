@@ -4,6 +4,7 @@
 
 use std::io::Read;
 use std::process::Stdio;
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
@@ -110,6 +111,10 @@ fn run(env: &KitEnv, exe: &std::path::Path, args: &[String]) -> Result<String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     let mut child = jobs::spawn(&mut cmd).context("start")?;
+    // Both pipes read while it runs: a program that writes more than a
+    // pipe holds would otherwise wait for a reader until the limit.
+    let stdout = drain(child.stdout.take());
+    let stderr = drain(child.stderr.take());
     let start = Instant::now();
     let status = loop {
         if let Some(status) = child.try_wait()? {
@@ -121,12 +126,14 @@ fn run(env: &KitEnv, exe: &std::path::Path, args: &[String]) -> Result<String> {
         }
         std::thread::sleep(Duration::from_millis(50));
     };
+    // A child it left running may keep a pipe open: wait no longer than
+    // the limit for the rest of the output.
     let mut out = String::new();
-    if let Some(mut s) = child.stdout.take() {
-        let _ = s.read_to_string(&mut out);
-    }
-    if let Some(mut s) = child.stderr.take() {
-        let _ = s.read_to_string(&mut out);
+    for pipe in [stdout, stderr] {
+        let left = LIMIT.saturating_sub(start.elapsed());
+        if let Ok(bytes) = pipe.recv_timeout(left) {
+            out.push_str(&String::from_utf8_lossy(&bytes));
+        }
     }
     let first = out
         .lines()
@@ -141,6 +148,19 @@ fn run(env: &KitEnv, exe: &std::path::Path, args: &[String]) -> Result<String> {
         bail!("empty answer");
     }
     Ok(first)
+}
+
+/// Reads `pipe` to its end on a thread; its bytes arrive on the channel.
+fn drain(pipe: Option<impl Read + Send + 'static>) -> mpsc::Receiver<Vec<u8>> {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        if let Some(mut pipe) = pipe {
+            let _ = pipe.read_to_end(&mut bytes);
+        }
+        let _ = tx.send(bytes);
+    });
+    rx
 }
 
 #[cfg(test)]

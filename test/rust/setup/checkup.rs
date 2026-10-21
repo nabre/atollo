@@ -76,6 +76,53 @@ fn check_program_at_the_kit_root() {
     assert_eq!(result.answer, "10.0.0");
 }
 
+/// A check that writes more than a pipe holds (64 KB) answers at once: the
+/// output is read while it runs, not after.
+#[test]
+fn a_long_answer_does_not_wait_for_the_limit() {
+    let tmp = TempDir::new("checkup-long");
+    let (name, script): (&str, &[u8]) = if cfg!(windows) {
+        (
+            "long.cmd",
+            b"@echo 1.2.3\r\n@for /L %%i in (1,1,3000) do @echo 0123456789012345678901234567890123456789\r\n",
+        )
+    } else {
+        (
+            "long.sh",
+            b"#!/bin/sh\necho 1.2.3\nyes 0123456789012345678901234567890123456789 | head -n 3000\n",
+        )
+    };
+    let exe = tmp.0.join(name);
+    std::fs::write(&exe, script).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let mut env = KitEnv::default();
+    for var in ["SystemRoot", "PATH"] {
+        if let Some(v) = std::env::var_os(var) {
+            env.set(var, v.to_string_lossy());
+        }
+    }
+    let start = Instant::now();
+    // ETXTBSY right after writing the script (see above): retry there.
+    let mut result = run(&env, &exe, &[]);
+    let attempts = if cfg!(unix) { 20 } else { 1 };
+    for _ in 1..attempts {
+        if result.is_ok() {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+        result = run(&env, &exe, &[]);
+    }
+    assert_eq!(result.unwrap(), "1.2.3");
+    assert!(
+        start.elapsed() < Duration::from_secs(30),
+        "waited for the limit"
+    );
+}
+
 /// Half installed: in the check, failed, with the missing part.
 #[test]
 fn half_installed_fails_the_check() {
