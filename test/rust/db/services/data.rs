@@ -97,6 +97,74 @@ fn each_version_has_its_data() {
     );
 }
 
+/// A copy of the data cut short is never taken for data (BUG-V6-09): it is
+/// made beside the version's folder and renamed when whole; what a cut
+/// copy left goes at the next try.
+#[test]
+fn a_copy_cut_short_is_no_data() {
+    let tmp = TempDir::new("services-seed-partial");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let root = kit.data().join("db").join("mysql");
+    let old = root.join("8.0");
+    fs::create_dir_all(old.join("shop")).unwrap();
+    fs::write(old.join("mysql.ibd"), b"dictionary").unwrap();
+    fs::write(old.join("shop").join("t.ibd"), b"rows").unwrap();
+    // what an earlier cut copy left
+    fs::create_dir_all(root.join("8.4.partial")).unwrap();
+    fs::write(root.join("8.4.partial").join("mysql.ibd"), b"half").unwrap();
+
+    // a file that cannot be read: the copy stops halfway
+    let blocked = old.join("shop").join("t.ibd");
+    #[cfg(windows)]
+    let hold = {
+        use std::os::windows::fs::OpenOptionsExt;
+        fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&blocked)
+            .unwrap()
+    };
+    #[cfg(unix)]
+    let hold = {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&blocked, fs::Permissions::from_mode(0o000)).unwrap();
+        // root reads it anyway: nothing cut short to see then
+        fs::read(&blocked).is_err().then_some(())
+    };
+    #[cfg(windows)]
+    let cut = true;
+    #[cfg(unix)]
+    let cut = hold.is_some();
+    if cut {
+        assert!(seed(&kit, "mysql", "8.4", &[]).is_err());
+        assert!(!root.join("8.4").exists(), "no data folder half there");
+        assert!(!root.join("8.4.partial").exists(), "nothing left beside");
+    }
+    drop(hold);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&blocked, fs::Permissions::from_mode(0o644)).unwrap();
+    }
+    if !cut {
+        fs::create_dir_all(root.join("8.4.partial")).unwrap();
+    }
+    assert_eq!(
+        seed(&kit, "mysql", "8.4", &[]).unwrap().as_deref(),
+        Some("8.0")
+    );
+    assert_eq!(
+        fs::read(root.join("8.4").join("mysql.ibd")).unwrap(),
+        b"dictionary"
+    );
+    assert_eq!(
+        fs::read(root.join("8.4").join("shop").join("t.ibd")).unwrap(),
+        b"rows"
+    );
+    assert!(!root.join("8.4.partial").exists());
+}
+
 /// The data of a running version is never copied (D-102).
 #[test]
 fn no_copy_of_a_running_version() {
