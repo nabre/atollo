@@ -1946,6 +1946,8 @@ Un database spento di colpo può perdere gli ultimi dati scritti, e un programma
 
 Se c'è qualcosa di aperto, Atollo chiede «Chiudere Atollo?» ed elenca che cosa si chiuderà. «Chiudi tutto» ferma azioni e server, spegne i database con ordine ed esce. È sicuro anche questo; la pagina «Rimuovi l'unità» in più chiude i programmi del kit avviati fuori dall'app (per esempio da una console) e ti dice se resta qualcosa.
 
+Lo stesso vale per «Chiudi Atollo» nel menu dell'icona di Atollo, nell'area di notifica di Windows, nella barra dei menu di macOS o nell'area di stato di Linux. Quel menu ha anche «Mostra Atollo» e «Progetti», con i progetti più recenti: un clic apre la pagina del progetto.
+
 <details>
 <summary>Sotto il cofano</summary>
 

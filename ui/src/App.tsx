@@ -12,6 +12,7 @@ import {
   editorStatus,
   onEditorStatus,
   onCloseRequested,
+  onOpenProject,
   runStop,
   type AppInfo,
   type EditorStatus,
@@ -123,6 +124,11 @@ export function App() {
   const lang: Lang = info?.lang ?? "it";
 
   useSubscription(onCloseRequested, setClosing);
+  // A project chosen in the tray menu (D-145): its page on Projects.
+  useSubscription(onOpenProject, (id) => {
+    setPage("projects");
+    projectTabs.show(id);
+  });
 
   /** Ctrl+P (⌘P on macOS), as the editor's Quick Open: Projects, its box. */
   const [quickOpen, setQuickOpen] = useState(false);

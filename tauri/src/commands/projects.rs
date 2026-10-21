@@ -12,9 +12,16 @@ pub async fn projects_list<R: Runtime>(
 ) -> CmdResult<Vec<crate::projects::ProjectInfo>> {
     ensure_main(&webview)?;
     let (kit, lang) = (state.kit.clone(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || crate::projects::list(&kit, lang))
-        .await
-        .or_fail("projects")
+    let app = tauri::Manager::app_handle(&webview).clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let list = crate::projects::list(&kit, lang);
+        // The interface reads the list after every change of a project:
+        // the tray menu follows (D-145).
+        crate::tray::refresh(&app);
+        list
+    })
+    .await
+    .or_fail("projects")
 }
 
 /// A new empty project in `projects\`.

@@ -1958,5 +1958,25 @@
     "en": "The project name must be a valid Julia name: letters, digits and _, no hyphens or spaces.",
     "fr": "Le nom du projet doit être un nom Julia valide : lettres, chiffres et _, sans tirets ni espaces.",
     "de": "Der Projektname muss ein gültiger Julia-Name sein: Buchstaben, Ziffern und _, ohne Bindestriche oder Leerzeichen."
+  },
+  "Mostra Atollo": {
+    "en": "Show Atollo",
+    "fr": "Afficher Atollo",
+    "de": "Atollo anzeigen"
+  },
+  "Progetti": {
+    "en": "Projects",
+    "fr": "Projets",
+    "de": "Projekte"
+  },
+  "Nessun progetto": {
+    "en": "No projects",
+    "fr": "Aucun projet",
+    "de": "Keine Projekte"
+  },
+  "Chiudi Atollo": {
+    "en": "Close Atollo",
+    "fr": "Fermer Atollo",
+    "de": "Atollo schließen"
   }
 }

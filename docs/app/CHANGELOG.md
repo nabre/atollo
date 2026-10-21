@@ -7,6 +7,11 @@
 - **Controlli**: un campo con suggerimenti (estensioni del progetto), pulsanti a scelta con testo (procedura guidata) e misuratori con valore (limiti degli agenti) nello stile di VSCodium.
 - **Codice**: gli installatori, la rete, i database e il portachiavi degli agenti divisi in cartelle, nessun file oltre le 450 righe; le prove dell'interfaccia partono dai dati dell'anteprima; `tool-versions.json` fuori dall'impronta della matrice.
 
+## L'icona nell'area di notifica (21/10/2026)
+
+- **Icona di Atollo** nell'area di notifica di Windows, nella barra dei menu di macOS e nell'area di stato di Linux (AppIndicator), con il menu nella lingua dell'app: «Mostra Atollo», «Progetti» (i più recenti, il clic apre la pagina del progetto) e «Chiudi Atollo», che chiede conferma come la chiusura della finestra se qualcosa è aperto (D-145).
+- **Clic sinistro** sull'icona (Windows, macOS): la finestra torna in primo piano. Su Linux senza la libreria AppIndicator l'app parte senza icona.
+
 ## Rilascio 0.5.1 alpha (21/10/2026)
 
 - **Versione 0.5.1** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.1` pubblica i file per i sei sistemi.
