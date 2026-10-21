@@ -11,7 +11,6 @@
 |---|:---:|:---:|---|---|
 | `BUG-V6-01` | ALTA | Confermato | DB | Ripristino MySQL interrotto da `DEFINER=root` |
 | `BUG-V6-02` | ALTA | Confermato | Installatori | Aggiornamento conda: l'ambiente vecchio cancellato prima del nuovo |
-| `BUG-V6-03` | ALTA | Confermato | Agenti | Rilocazione di un kit alla radice dell'unità rompe i percorsi e i JSON |
 | `PORT-V6-01` | ALTA | Plausibile | OS | DACL «solo proprietario» illeggibile su un altro PC/account |
 | `BUG-V6-04` | MEDIA | Confermato | DB | Dump senza `--hex-blob`, ripristino con `read_to_string` |
 | `BUG-V6-05` | MEDIA | Confermato | DB | `run_with_input` ignora il timeout durante la scrittura di stdin |
@@ -24,13 +23,9 @@
 | `BUG-V6-13` | MEDIA | Plausibile | Rete | Download fermo: nessun timeout sul corpo, «Annulla» inefficace |
 | `BUG-V6-14` | MEDIA | Confermato | Setup | Un download fatto a mano viene consumato anche se l'installazione fallisce |
 | `BUG-V6-15` | MEDIA | Confermato | Agenti | Dopo «Rimuovi unità» le sincronizzazioni in background scrivono ancora |
-| `BUG-V6-16` | MEDIA | Confermato | Agenti | `sync_tree` cancella senza copia e la cancellazione si propaga |
 | `BUG-V6-17` | MEDIA | Confermato | Agenti | Salvataggio del portachiavi riprovato ogni 3 s per sempre; log senza rotazione |
-| `BUG-V6-18` | MEDIA | Plausibile | Agenti | `touch()` del lock di sync non aggiorna la data della cartella |
-| `BUG-V6-19` | MEDIA | Confermato | Agenti | La rilocazione toglie il segnale anche quando è fallita |
 | `SEC-V6-01` | MEDIA | Plausibile | DB, server | File di segreti/stato illeggibile → riscritto vuoto |
 | `SEC-V6-02` | MEDIA | Scelta da rivedere | Agenti | Token a lunga durata in ogni processo del kit, cartelle `projects/` già fidate |
-| `PORT-V6-02` | MEDIA | Plausibile | Agenti | Chiavi di fiducia di Codex in minuscolo su macOS/Linux |
 | `BUG-V6-22` | BASSA | Confermato | Router | `bootstrap::take` cancella un file legacy di un altro componente |
 | `BUG-V6-23` | BASSA | Plausibile | Rete, update | `.old` ancora in uso blocca la sostituzione |
 | `BUG-V6-25` | BASSA | Confermato | OS | Processo avviato e lasciato fuori dal Job se `Job::new`/`assign` falliscono |
@@ -38,7 +33,6 @@
 | `BUG-V6-27` | BASSA | Confermato | Core | `write_atomic` senza `fsync` |
 | `BUG-V6-28` | BASSA | Confermato | Progetti | Server statico: `//cartella` dà un redirect relativo al protocollo |
 | `BUG-V6-29` | BASSA | Confermato | Agenti | Uscita da Antigravity annullata se agy è aperto; comandi sul thread principale |
-| `BUG-V6-30` | BASSA | Plausibile | Agenti | Collegamenti di skill dell'utente rimossi a ogni sync |
 | `BUG-V6-31` | BASSA | Confermato | Editor | Virgolette tipografiche nel percorso rompono il comando PowerShell |
 | `BUG-V6-32` | BASSA | Confermato | Agenti | Accesso «api key» di Claude/Codex irraggiungibile |
 | `BUG-V6-33` | BASSA | Confermato | Vari | Minori: `sync --project` vuoto, `components.txt` senza lock, token scritto poi protetto |
@@ -65,12 +59,6 @@
 - **Scenario**: R 4.5.1 installato; «Aggiorna tutto» con la rete che cade, conda-forge irraggiungibile, solver che fallisce o disco pieno. `remove_dir(prefix)` è già avvenuto: l'ambiente non c'è più, il file di versione dice ancora 4.5.1, il componente risulta non installato e va riscaricato. Offline (chiavetta su un PC senza rete) non c'è rimedio.
 - **Evidenza**: `// The same line again (a patch): the old folder goes first.` `if prefix.exists() { remove_dir(prefix)?; } ... run(ctx, &mm, &args, ...)?;`
 - **Correzione**: spostare il vecchio prefisso da parte (`<prefix>.old-<ms>`), creare il nuovo, togliere il vecchio solo a successo; in caso d'errore rimetterlo al suo posto (lo schema `set_aside` di `conda::restore` esiste già). Conda incide il prefisso nei file: va creato nel percorso definitivo, quindi «sposta da parte e ripristina», non «crea altrove e scambia».
-
-### `BUG-V6-03` [ALTA] — Kit alla radice dell'unità: la rilocazione raddoppia i separatori e rompe i JSON
-
-- **Dove**: [`agents/relocate.rs:530-536`](../../../tauri/src/agents/relocate.rs#L530-L536) (`from` ripulito dei separatori finali, `to` no), [`:75-104`](../../../tauri/src/agents/relocate.rs#L75-L104) (`Replacer::new`, deduplica).
-- **Scenario**: kit in `E:\`, la chiavetta torna come `F:\`. `from = "E:"`, `to = "F:\"`. Le quattro grafie di `from` collassano tutte su `e:` e resta la prima coppia (`E:` → `F:\`). Nei file di testo `E:\data\x` diventa `F:\\data\x`; nei JSON grezzi (`mcp.json`, `.claude/settings.json`, impostazioni di VSCodium, `plugins/*.json`) `E:\\data` diventa `F:\\\data`: escape non valido, il file non si legge più. `mcp::load` fallisce a ogni sync; `editor::cfg::write` risponde `LeftAlone` e non lo ripara. Anche da `E:\kit` a `F:\` escono `F:\\data` e `F://data`. In più `E:` sostituisce ogni altro percorso su `E:`.
-- **Correzione**: normalizzare **entrambi** gli estremi con lo stesso `trim_end_matches(['\\','/'])` e costruire le quattro grafie da radici senza separatore finale; delimitare `E:` con il separatore successivo. Prove: `E:\`↔`F:\`, `E:\kit`↔`F:\`, `F:\`↔`E:\kit`, su testo e JSON.
 
 ### `PORT-V6-01` [ALTA, da confermare] — La DACL «solo proprietario» rende i file del kit illeggibili su un altro PC
 
@@ -137,25 +125,10 @@
 - **Scenario**: chiudere agenti e console fa scattare `on_exit` → `sync::run`; il watcher (3 s) vede l'agente sparito e sincronizza, e ritenta `keyring::save`. Le scritture (`CLAUDE.md`, `config.toml`, giunzioni) possono essere in corso quando l'interfaccia dice che l'unità si può staccare.
 - **Correzione**: un flag «in chiusura» in `AppState`, impostato prima di fermare qualcosa; watcher e callback d'uscita non sincronizzano se è alzato; l'espulsione prende il lock di sync e aspetta.
 
-### `BUG-V6-16` — `sync_tree` cancella senza copia
-- **Dove**: [`agents/sync/tree.rs:120-134`](../../../tauri/src/agents/sync/tree.rs#L120-L134), [`:260-266`](../../../tauri/src/agents/sync/tree.rs#L260-L266), [`:281-284`](../../../tauri/src/agents/sync/tree.rs#L281-L284).
-- **Scenario**: le skill tolte finiscono in `.sync/deleted`, le istruzioni no. Se `.codex/AGENTS.md` manca un attimo (salvataggio atomico di un editor, antivirus, client cloud), la sincronizzazione cancella `data/agents/AGENTS.md`, poi `CLAUDE.md` e `.gemini/AGENTS.md`. Le istruzioni globali dell'utente sono perse.
-- **Correzione**: copia in `.sync/deleted/<stamp>-<etichetta>` prima di ogni `remove_file`; propagare una cancellazione solo se l'assenza si ripete in due sync.
-
 ### `BUG-V6-17` — Portachiavi riprovato ogni 3 s, log che cresce
 - **Dove**: [`agents/mod.rs:259-263`](../../../tauri/src/agents/mod.rs#L259-L263), [`log.rs:16-24`](../../../tauri/src/log.rs#L16-L24).
 - **Scenario**: `keyring-before*.json` presente e salvataggio impossibile (Portachiavi bloccato, Secret Service assente) → tentativo ogni 3 s con una riga WARN; su macOS può riaprire la richiesta del Portachiavi; `app.log` ruota solo all'avvio e cresce senza limite.
 - **Correzione**: attesa esponenziale e stop dopo N errori; rotazione del log per dimensione anche durante la sessione.
-
-### `BUG-V6-18` [Plausibile] — Il lock della sync scade anche se il proprietario è vivo
-- **Dove**: [`agents/sync/mod.rs:283-296`](../../../tauri/src/agents/sync/mod.rs#L283-L296), [`:309-311`](../../../tauri/src/agents/sync/mod.rs#L309-L311).
-- **Scenario**: la scadenza si misura sulla data della cartella del lock; `touch()` riscrive `pid` dentro, che non la cambia. Una sync più lunga di 120 s (copia su USB lenta) viene giudicata morta e un secondo processo sincronizza insieme.
-- **Correzione**: battito su un file dedicato e scadenza misurata su quello, o lock del sistema operativo.
-
-### `BUG-V6-19` — La rilocazione dimentica i file falliti
-- **Dove**: [`agents/relocate.rs:540-566`](../../../tauri/src/agents/relocate.rs#L540-L566), scrittura non atomica a [`:224`](../../../tauri/src/agents/relocate.rs#L224).
-- **Scenario**: un `.claude.json` bloccato o oltre 8 MB va in `moved.failed`, poi `old-root.txt` viene tolto comunque: quei file non saranno mai corretti.
-- **Correzione**: tenere il segnale (o uno residuo con i soli file falliti); controllare la dimensione prima di leggere; `write_atomic`.
 
 ### `SEC-V6-01` [Plausibile, effetto grave] — Un file di stato illeggibile diventa vuoto e viene riscritto
 - **Dove**: [`db/auth.rs:53-55`](../../../tauri/src/db/auth.rs#L53-L55) (`secrets.json`), [`db/services/data.rs:193-200`](../../../tauri/src/db/services/data.rs#L193-L200), [`db/services/access.rs:36-70`](../../../tauri/src/db/services/access.rs#L36-L70), [`servers/pools.rs:38-40`](../../../tauri/src/servers/pools.rs#L38-L40), [`db/services/mod.rs:381-383`](../../../tauri/src/db/services/mod.rs#L381-L383).
@@ -166,11 +139,6 @@
 - **Dove**: [`env.rs:858`](../../../tauri/src/env.rs#L858) (`GEMINI_API_KEY`), [`env.rs:886`](../../../tauri/src/env.rs#L886) + [`claude_token.rs:111-115`](../../../tauri/src/agents/claude_token.rs#L111-L115) (`CLAUDE_CODE_OAUTH_TOKEN`, un anno), [`agents/sync/mod.rs:188-264`](../../../tauri/src/agents/sync/mod.rs#L188-L264), [`agents/sync/codex.rs:290-305`](../../../tauri/src/agents/sync/codex.rs#L290-L305).
 - **Scenario**: l'ambiente del kit passa ad azioni dei progetti, script `npm`, terminali ed editor: uno script di un repository clonato può leggere ed esfiltrare il token. Le cartelle di `projects/` sono già fidate per Claude e Codex: hook e server MCP del repository si caricano senza domanda. Il README lo dice («open only projects you trust»), ma la fiducia è concessa prima che l'utente abbia visto il codice.
 - **Correzione**: token e chiave solo nell'ambiente di lancio dell'agente, non in `KitEnv`/`project_env`; fiducia concessa al primo avvio esplicito di un agente nel progetto (o un interruttore «Fidati di questo progetto» nella pagina del progetto). Va registrata come decisione `D-1xx`.
-
-### `PORT-V6-02` [Plausibile] — Fiducia di Codex in minuscolo su sistemi sensibili alle maiuscole
-- **Dove**: [`agents/sync/codex.rs:295`](../../../tauri/src/agents/sync/codex.rs#L295).
-- **Scenario**: su Linux/macOS `/home/Me/Kit/projects` diventa `[projects.'/home/me/kit/projects']`; se Codex confronta esatto, chiede la fiducia a ogni avvio.
-- **Correzione**: minuscolo solo con `kit.os().is_windows()`.
 
 ---
 
@@ -185,7 +153,6 @@
 | `BUG-V6-27` | [`fsx.rs:84`](../../../tauri/src/fsx.rs#L84) | senza `sync_all` prima del `rename`, su exFAT/FAT uno stacco brusco lascia file a lunghezza zero; con `SEC-V6-01` si perde lo stato | `File::create` + `write_all` + `sync_all` + `rename` |
 | `BUG-V6-28` | [`projects/serve.rs:128-136`](../../../tauri/src/projects/serve.rs#L128-L136) | `GET //assets` → `Location: //assets/`, letto come `http://assets/` | comprimere le barre iniziali |
 | `BUG-V6-29` | [`agents/mod.rs:227-230`](../../../tauri/src/agents/mod.rs#L227-L230), [`commands/agents.rs:112-124`](../../../tauri/src/commands/agents.rs#L112-L124) | uscita da Antigravity con agy aperto: alla chiusura l'accesso torna in `keyring.json`; `agent_sign_out` è sincrono (thread principale), `codex logout` senza timeout | rifiutare l'uscita con l'agente aperto; comando `async` + `spawn_blocking`; timeout |
-| `BUG-V6-30` | [`agents/sync/links.rs:168-174`](../../../tauri/src/agents/sync/links.rs#L168-L174) | una skill dell'utente che è un collegamento a un'altra cartella viene tolta a ogni sync | togliere solo collegamenti che puntano dentro il kit |
 | `BUG-V6-31` | [`editor/terminal.rs:119-133`](../../../tauri/src/editor/terminal.rs#L119-L133) | PowerShell tratta U+2018..U+201B come apici: kit in `D:\O’Brien\Atollo` → l'agente non parte | raddoppiare anche quei quattro caratteri, o passare il percorso come argomento |
 | `BUG-V6-32` | [`env.rs:27-72`](../../../tauri/src/env.rs#L27-L72), [`agents/mod.rs:87`](../../../tauri/src/agents/mod.rs#L87), [`:105`](../../../tauri/src/agents/mod.rs#L105) | `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` non sono nella lista ammessa: i rami «api key» non scattano mai | campo in Impostazioni come per Gemini, o togliere i rami morti |
 | `BUG-V6-33` | [`cli.rs:131`](../../../tauri/src/cli.rs#L131); [`commands/mod.rs:177-187`](../../../tauri/src/commands/mod.rs#L177-L187); [`editor/mod.rs:231-232`](../../../tauri/src/editor/mod.rs#L231-L232) | `sync --project` senza valore diventa `None` invece di errore; `components.txt` letto-modificato-scritto senza lock; token scritto e solo dopo protetto | errore d'uso; lock; `write_private` |
