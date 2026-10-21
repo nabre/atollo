@@ -10,7 +10,6 @@
 | ID | Grav. | Stato | Area | Titolo |
 |---|:---:|:---:|---|---|
 | `BUG-V6-01` | ALTA | Confermato | DB | Ripristino MySQL interrotto da `DEFINER=root` |
-| `BUG-V6-02` | ALTA | Confermato | Installatori | Aggiornamento conda: l'ambiente vecchio cancellato prima del nuovo |
 | `PORT-V6-01` | ALTA | Plausibile | OS | DACL «solo proprietario» illeggibile su un altro PC/account |
 | `BUG-V6-04` | MEDIA | Confermato | DB | Dump senza `--hex-blob`, ripristino con `read_to_string` |
 | `BUG-V6-05` | MEDIA | Confermato | DB | `run_with_input` ignora il timeout durante la scrittura di stdin |
@@ -20,20 +19,13 @@
 | `BUG-V6-09` | MEDIA | Confermato | DB | Copia dei dati iniziali MySQL sul posto |
 | `BUG-V6-10` | MEDIA | Plausibile | Progetti | `Runner::finish` per chiave d'azione: una corsa sostituita uccide la nuova |
 | `BUG-V6-11` | MEDIA | Plausibile | Server web | `caddy reload` fallito → stop e start di tutto il pool |
-| `BUG-V6-13` | MEDIA | Plausibile | Rete | Download fermo: nessun timeout sul corpo, «Annulla» inefficace |
-| `BUG-V6-14` | MEDIA | Confermato | Setup | Un download fatto a mano viene consumato anche se l'installazione fallisce |
 | `SEC-V6-01` | MEDIA | Plausibile | DB, server | File di segreti/stato illeggibile → riscritto vuoto |
-| `BUG-V6-22` | BASSA | Confermato | Router | `bootstrap::take` cancella un file legacy di un altro componente |
-| `BUG-V6-23` | BASSA | Plausibile | Rete, update | `.old` ancora in uso blocca la sostituzione |
 | `BUG-V6-25` | BASSA | Confermato | OS | Processo avviato e lasciato fuori dal Job se `Job::new`/`assign` falliscono |
 | `BUG-V6-26` | BASSA | Confermato | DB | Amministratore MongoDB creato prima di salvarne la password |
 | `BUG-V6-27` | BASSA | Confermato | Core | `write_atomic` senza `fsync` |
 | `BUG-V6-28` | BASSA | Confermato | Progetti | Server statico: `//cartella` dà un redirect relativo al protocollo |
 | `BUG-V6-31` | BASSA | Confermato | Editor | Virgolette tipografiche nel percorso rompono il comando PowerShell |
 | `BUG-V6-33` | BASSA | Confermato | Vari | Minori: `sync --project` vuoto, `components.txt` senza lock, token scritto poi protetto |
-| `SEC-V6-03` | BASSA | Confermato | Rete | Editore Authenticode confrontato come sottostringa |
-| `SEC-V6-04` | BASSA | Plausibile | Installatori | Metadati remoti usati nei nomi dei file senza filtro |
-| `PORT-V6-05` | BASSA | Plausibile | Rete | `:` nei nomi d'archivio rifiutato anche su Unix |
 | `TEST-V6-01` | BASSA | Confermato | Prove | `ports_are_kept_and_locked` instabile in parallelo |
 
 ---
@@ -46,13 +38,6 @@
 - **Scenario**: l'esportazione gira come `root` con `--routines --events --triggers`; il dump contiene ``DEFINER=`root`@`localhost` ``. Il ripristino gira, per scelta (D-78), come utente del progetto, che ha solo `GRANT ALL ON db.*`. Creare un oggetto con un `DEFINER` altrui richiede `SET_USER_ID`/`SUPER`: MySQL risponde `ERROR 1227` e il client si ferma al primo errore. Il dump è per tabella `DROP; CREATE; INSERT`: alcune tabelle sono ripristinate, le altre restano com'erano. Il database è incoerente.
 - **Evidenza**: `"--routines", "--events", "--triggers"` nel dump; `// As the project's user, never root` nel ripristino. Nel repository nessuna gestione di `DEFINER`.
 - **Correzione**: togliere `DEFINER=...` mentre si passa l'SQL al client (filtro in streaming su `/*!50013 DEFINER=... */` e `DEFINER=`…`@`…``), così gli oggetti nascono con l'utente del progetto. Prova: dump con vista e trigger → ripristino completo.
-
-### `BUG-V6-02` [ALTA] — Aggiornare un componente conda cancella quello funzionante prima di avere il nuovo
-
-- **Dove**: [`install/native.rs:723-726`](../../../tauri/src/install/native.rs#L723-L726) (`micromamba_create`); stesso schema in [`install/lang/cc.rs:346-348`](../../../tauri/src/install/lang/cc.rs#L346-L348). Passano di qui R, Ruby, C/C++, MongoDB su Linux, SQLite su Linux ARM64.
-- **Scenario**: R 4.5.1 installato; «Aggiorna tutto» con la rete che cade, conda-forge irraggiungibile, solver che fallisce o disco pieno. `remove_dir(prefix)` è già avvenuto: l'ambiente non c'è più, il file di versione dice ancora 4.5.1, il componente risulta non installato e va riscaricato. Offline (chiavetta su un PC senza rete) non c'è rimedio.
-- **Evidenza**: `// The same line again (a patch): the old folder goes first.` `if prefix.exists() { remove_dir(prefix)?; } ... run(ctx, &mm, &args, ...)?;`
-- **Correzione**: spostare il vecchio prefisso da parte (`<prefix>.old-<ms>`), creare il nuovo, togliere il vecchio solo a successo; in caso d'errore rimetterlo al suo posto (lo schema `set_aside` di `conda::restore` esiste già). Conda incide il prefisso nei file: va creato nel percorso definitivo, quindi «sposta da parte e ripristina», non «crea altrove e scambia».
 
 ### `PORT-V6-01` [ALTA, da confermare] — La DACL «solo proprietario» rende i file del kit illeggibili su un altro PC
 
@@ -104,16 +89,6 @@
 - **Scenario**: uno snippet `conf.d/*.caddy` sbagliato → reload rifiutato → il codice ferma il pool e lo riavvia → l'avvio fallisce sulla stessa configurazione. Tutti i siti del pool sono giù.
 - **Correzione**: `caddy validate` prima; riavviare solo se l'admin non risponde, non se la configurazione è rifiutata; nel secondo caso riportare l'errore e lasciare in piedi l'istanza.
 
-### `BUG-V6-13` [Plausibile] — Download fermo: nessun timeout sul corpo
-- **Dove**: [`net/mod.rs:155-164`](../../../tauri/src/net/mod.rs#L155-L164), [`:550-567`](../../../tauri/src/net/mod.rs#L550-L567).
-- **Scenario**: un proxy smette di mandare byte dopo le intestazioni; `body.read` resta bloccato fino al timeout TCP del sistema; «Annulla» è controllato solo tra una lettura e l'altra; il lock dell'installazione resta preso.
-- **Correzione**: timeout d'inattività sulla lettura (es. 60 s) con `ureq`; verificare i default della versione in uso.
-
-### `BUG-V6-14` — Un download fatto a mano si perde se l'installazione fallisce
-- **Dove**: [`setup/downloads.rs:256-259`](../../../tauri/src/setup/downloads.rs#L256-L259), [`router/bootstrap.rs:104-110`](../../../tauri/src/router/bootstrap.rs#L104-L110).
-- **Scenario**: l'utente scarica il JDK dal browser perché il proxy blocca il download; il file viene spostato nella cartella di lavoro; l'estrazione fallisce (antivirus, `InUse`); la cartella di lavoro viene cancellata col file. Al nuovo tentativo va riscaricato a mano.
-- **Correzione**: copiare, e cancellare l'originale solo dopo un'installazione riuscita.
-
 ### `SEC-V6-01` [Plausibile, effetto grave] — Un file di stato illeggibile diventa vuoto e viene riscritto
 - **Dove**: [`db/auth.rs:53-55`](../../../tauri/src/db/auth.rs#L53-L55) (`secrets.json`), [`db/services/data.rs:193-200`](../../../tauri/src/db/services/data.rs#L193-L200), [`db/services/access.rs:36-70`](../../../tauri/src/db/services/access.rs#L36-L70), [`servers/pools.rs:38-40`](../../../tauri/src/servers/pools.rs#L38-L40), [`db/services/mod.rs:381-383`](../../../tauri/src/db/services/mod.rs#L381-L383).
 - **Scenario**: `fsx::read_json` dà `None` su un file danneggiato o bloccato un attimo dall'antivirus; `unwrap_or_default()` lo tratta come vuoto; l'avvio successivo scrive un file nuovo: profili dei server persi, oppure nuova password di root MySQL / amministratore MongoDB e dati chiusi a chiave. Inoltre `secrets.json` è letto-modificato-scritto senza lock e i lock per motore sono distinti: due primi avvii (MySQL e MongoDB) possono cancellarsi la password a vicenda.
@@ -125,17 +100,12 @@
 
 | ID | Dove | Scenario | Correzione |
 |---|---|---|---|
-| `BUG-V6-22` | [`router/bootstrap.rs:79-83`](../../../tauri/src/router/bootstrap.rs#L79-L83) | nel vecchio `.bootstrap/` piatto, `verify::check` cancella un file di un altro componente con altro hash | `verify::matches` (non distruttivo) |
-| `BUG-V6-23` | [`net/archive.rs:1053-1060`](../../../tauri/src/net/archive.rs#L1053-L1060), [`setup/self_update.rs:618-620`](../../../tauri/src/setup/self_update.rs#L618-L620) | `Atollo.old.exe` ancora in esecuzione → `rename` fallisce → aggiornamento rimandato senza motivo | nome unico `*.old-<ms>` se il vecchio non si toglie |
 | `BUG-V6-25` | [`db/services/mod.rs:703-705`](../../../tauri/src/db/services/mod.rs#L703-L705), [`editor/pty.rs:702-711`](../../../tauri/src/editor/pty.rs#L702-L711), [`editor/ext.rs:569-576`](../../../tauri/src/editor/ext.rs#L569-L576) | `spawn` poi `Job::new()?`/`assign()?`: a errore il figlio resta vivo fuori dal Job, con porta e cartella dati | `jobs::spawn_in` (già usato dai pool) o kill+wait su ogni errore |
 | `BUG-V6-26` | [`db/services/access.rs:44-70`](../../../tauri/src/db/services/access.rs#L44-L70) | `createUser` poi salvataggio della password: se il salvataggio fallisce l'amministratore esiste con password ignota | salvare prima, creare dopo (come MySQL) |
 | `BUG-V6-27` | [`fsx.rs:84`](../../../tauri/src/fsx.rs#L84) | senza `sync_all` prima del `rename`, su exFAT/FAT uno stacco brusco lascia file a lunghezza zero; con `SEC-V6-01` si perde lo stato | `File::create` + `write_all` + `sync_all` + `rename` |
 | `BUG-V6-28` | [`projects/serve.rs:128-136`](../../../tauri/src/projects/serve.rs#L128-L136) | `GET //assets` → `Location: //assets/`, letto come `http://assets/` | comprimere le barre iniziali |
 | `BUG-V6-31` | [`editor/terminal.rs:119-133`](../../../tauri/src/editor/terminal.rs#L119-L133) | PowerShell tratta U+2018..U+201B come apici: kit in `D:\O’Brien\Atollo` → l'agente non parte | raddoppiare anche quei quattro caratteri, o passare il percorso come argomento |
 | `BUG-V6-33` | [`cli.rs:131`](../../../tauri/src/cli.rs#L131); [`commands/mod.rs:177-187`](../../../tauri/src/commands/mod.rs#L177-L187); [`editor/mod.rs:231-232`](../../../tauri/src/editor/mod.rs#L231-L232) | `sync --project` senza valore diventa `None` invece di errore; `components.txt` letto-modificato-scritto senza lock; token scritto e solo dopo protetto | errore d'uso; lock; `write_private` |
-| `SEC-V6-03` | [`net/signature.rs:88`](../../../tauri/src/net/signature.rs#L88), [`install/web.rs:110`](../../../tauri/src/install/web.rs#L110), [`install/agents.rs:65`](../../../tauri/src/install/agents.rs#L65) | l'editore Authenticode è una sottostringa del soggetto: un certificato valido con `O=Microsoft Corporation` in un OU passa; per `vc_redist` è l'unico controllo | confrontare l'attributo `O=` analizzato, esatto; eventualmente l'impronta |
-| `SEC-V6-04` | [`install/agents.rs:54`](../../../tauri/src/install/agents.rs#L54), [`:163-168`](../../../tauri/src/install/agents.rs#L163-L168), [`install/lang/mod.rs:57`](../../../tauri/src/install/lang/mod.rs#L57), [`install/db.rs:584-587`](../../../tauri/src/install/db.rs#L584-L587) | un manifesto compromesso con `version = "../../x"` fa scrivere fuori dalla cartella di lavoro | in `fetch` ammettere solo `[A-Za-z0-9._+-]` |
-| `PORT-V6-05` | [`net/archive.rs:59`](../../../tauri/src/net/archive.rs#L59) | un tar per macOS/Linux con `foo:bar` (valido su Unix) fa fallire l'installazione | rifiutare `:` solo su Windows |
 | `TEST-V6-01` | [`test/rust/projects/run.rs:40-49`](../../../test/rust/projects/run.rs#L40-L49) | la prova usa porte reali 7100+; in parallelo un'altra prova occupa 7100 e `assign_port` ne dà un'altra (7102 ≠ 7100). Passa da sola 3/3 | intervallo di porte iniettabile nel `Runner` per le prove, o porta effimera |
 
 ---
