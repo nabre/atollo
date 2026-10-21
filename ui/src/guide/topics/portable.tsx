@@ -142,6 +142,14 @@ export const PORTABLE: TopicTexts = {
             "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ und listet auf, was geschlossen wird. „Alles schließen“ stoppt Aktionen und Server, fährt die Datenbanken geordnet herunter und beendet sich. Auch das ist sicher; die Seite „Laufwerk entfernen“ schließt zusätzlich die außerhalb der App gestarteten Programme des Kits (zum Beispiel aus einer Konsole) und sagt dir, ob etwas übrig bleibt.",
           )}
         </P>
+        <P>
+          {tr(
+            "Lo stesso vale per «Esci da Atollo» nel menu dell'icona di Atollo, nell'area di notifica di Windows, nella barra dei menu di macOS o nell'area di stato di Linux. Quel menu ha anche «Mostra Atollo» e «Progetti», con i progetti più recenti: un clic apre la pagina del progetto.",
+            "The same goes for “Quit Atollo” in the menu of Atollo's icon, in the Windows notification area, the macOS menu bar or the Linux status area. That menu also has “Show Atollo” and “Projects”, with the most recent projects: a click opens the project's page.",
+            "Il en va de même pour « Quitter Atollo » dans le menu de l'icône d'Atollo, dans la zone de notification de Windows, la barre des menus de macOS ou la zone d'état de Linux. Ce menu propose aussi « Afficher Atollo » et « Projets », avec les projets les plus récents : un clic ouvre la page du projet.",
+            "Dasselbe gilt für „Atollo beenden“ im Menü des Atollo-Symbols, im Infobereich von Windows, in der Menüleiste von macOS oder im Statusbereich von Linux. Dieses Menü hat auch „Atollo anzeigen“ und „Projekte“ mit den zuletzt verwendeten Projekten: Ein Klick öffnet die Seite des Projekts.",
+          )}
+        </P>
       </Section>
 
       <Under>
