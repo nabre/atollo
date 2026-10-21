@@ -320,3 +320,120 @@ fn length_change_found_by_the_rules_of_the_os() {
     assert!(!Replacer::new(Os::Linux, "/opt/kit", "/opt/kit2").has_length_change(bin));
     assert!(Replacer::new(Os::Linux, "/opt/KIT", "/opt/kit2").has_length_change(bin));
 }
+
+/// BUG-V6-19: a file held by another program during the move is listed
+/// with its old root; the old root marker goes, the list stays, and the
+/// next start updates the file and drops the list.
+#[cfg(windows)]
+#[test]
+fn files_held_during_the_move_are_tried_again() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let tmp = TempDir::new("relocate-held");
+    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    kit.prepare().unwrap();
+    let p = Paths::of(&kit);
+    fs::create_dir_all(&p.claude).unwrap();
+    let file = p.claude.join("settings.json");
+    fs::write(&file, r#"{"a": "E:/old/x"}"#).unwrap();
+    fs::write(kit.old_root_file(), r"E:\old").unwrap();
+    let held = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0)
+        .open(&file)
+        .unwrap();
+    let mut report = Report::default();
+    relocate(&kit, &mut report).unwrap();
+    drop(held);
+    assert!(
+        report.warnings.iter().any(|w| w.contains("settings.json")),
+        "{:?}",
+        report.warnings
+    );
+    assert!(!kit.old_root_file().exists());
+    let left = read_left(&kit);
+    assert_eq!(left.len(), 1);
+    assert_eq!(left[0].from, r"E:\old");
+    assert_eq!(left[0].files, [kit_relative(&kit, &file)]);
+
+    let mut report = Report::default();
+    relocate(&kit, &mut report).unwrap();
+    assert!(report.warnings.is_empty(), "{:?}", report.warnings);
+    let fwd = kit.root().display().to_string().replace('\\', "/");
+    assert_eq!(
+        fs::read_to_string(&file).unwrap(),
+        format!(r#"{{"a": "{fwd}/x"}}"#)
+    );
+    assert!(!left_file(&kit).exists(), "nothing left");
+}
+
+/// The files left by a move follow from the root they still hold, also
+/// after the kit moved again; moved back there, they are left alone.
+#[test]
+fn files_left_follow_a_further_move() {
+    let tmp = TempDir::new("relocate-left");
+    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    kit.prepare().unwrap();
+    let p = Paths::of(&kit);
+    fs::create_dir_all(&p.claude).unwrap();
+    let (a, b) = (p.claude.join("settings.json"), p.mcp_file());
+    let first = tmp.0.join("first").display().to_string();
+    let fwd = |s: &str| s.replace('\\', "/");
+    fs::write(&a, format!(r#"{{"a": "{}/x"}}"#, fwd(&first))).unwrap();
+    fs::create_dir_all(b.parent().unwrap()).unwrap();
+    fs::write(&b, format!(r#"{{"b": "{}/y"}}"#, fwd(&first))).unwrap();
+    write_left(
+        &kit,
+        &[Left {
+            from: first.clone(),
+            files: vec![kit_relative(&kit, &a)],
+        }],
+    )
+    .unwrap();
+    relocate(&kit, &mut Report::default()).unwrap();
+    let now = fwd(&kit.root().display().to_string());
+    assert_eq!(
+        fs::read_to_string(&a).unwrap(),
+        format!(r#"{{"a": "{now}/x"}}"#)
+    );
+    assert!(
+        fs::read_to_string(&b).unwrap().contains(&fwd(&first)),
+        "only the files listed"
+    );
+    assert!(!left_file(&kit).exists());
+
+    // Listed with the current root: moved back, nothing to do.
+    write_left(
+        &kit,
+        &[Left {
+            from: kit.root().display().to_string(),
+            files: vec![kit_relative(&kit, &b)],
+        }],
+    )
+    .unwrap();
+    relocate(&kit, &mut Report::default()).unwrap();
+    assert!(fs::read_to_string(&b).unwrap().contains(&fwd(&first)));
+    assert!(!left_file(&kit).exists());
+}
+
+/// A venv's script keeps its executable bit through the atomic write.
+#[cfg(unix)]
+#[test]
+fn rewritten_files_keep_their_mode() {
+    use std::os::unix::fs::PermissionsExt;
+    let tmp = TempDir::new("relocate-mode");
+    let f = tmp.0.join("activate");
+    fs::write(&f, "#!/bin/sh\n/old/kit/bin/python\n").unwrap();
+    fs::set_permissions(&f, fs::Permissions::from_mode(0o755)).unwrap();
+    let mut m = Moved::default();
+    relocate_file(
+        &f,
+        &Replacer::new(Os::Linux, "/old/kit", "/new/kit"),
+        &mut m,
+    );
+    assert_eq!(m.changed, 1);
+    assert!(fs::read_to_string(&f).unwrap().contains("/new/kit/bin"));
+    assert_eq!(
+        fs::metadata(&f).unwrap().permissions().mode() & 0o777,
+        0o755
+    );
+}
