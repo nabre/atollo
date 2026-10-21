@@ -122,3 +122,39 @@ fn closing_skips_and_waits_for_background_work() {
     closing.reopen();
     assert_eq!(closing.run(|| 3), Some(3));
 }
+
+/// The watcher's saves of the login (BUG-V6-17): after a failure the next
+/// try waits 6 s, 12 s, 24 s… (at most 10 min); after 8 failures of the
+/// same pending run, no more tries; a new run starts again from zero.
+#[test]
+fn login_save_retries_back_off_and_stop() {
+    let t0 = Instant::now();
+    let run = Some(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(1));
+    let mut retry = SaveRetry::default();
+    assert!(!retry.due(None, t0), "nothing pending");
+    assert!(retry.due(run, t0));
+    let mut at = t0;
+    let mut waits = Vec::new();
+    for n in 1..=SAVE_MAX_FAILURES {
+        let last = retry.failed(at);
+        assert_eq!(last, n == SAVE_MAX_FAILURES);
+        let next = retry.next.unwrap();
+        waits.push((next - at).as_secs());
+        if !last {
+            assert!(!retry.due(run, next - Duration::from_millis(1)), "too soon");
+            assert!(retry.due(run, next));
+        }
+        at = next;
+    }
+    assert_eq!(waits, [6, 12, 24, 48, 96, 192, 384, 600]);
+    assert!(
+        !retry.due(run, at + Duration::from_secs(3600)),
+        "given up for this run"
+    );
+    // agy ran again: another pending run, tried at once.
+    let again = Some(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(2));
+    assert!(retry.due(again, at));
+    retry.failed(at);
+    retry.succeeded();
+    assert!(retry.due(again, at), "a success clears the wait");
+}

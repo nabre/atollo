@@ -30,7 +30,7 @@ pub mod sync;
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
@@ -364,12 +364,63 @@ fn closing_of<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Closing {
         .unwrap_or_default()
 }
 
+/// The first wait after a failed save of Antigravity's login (the watcher
+/// looks every 3 s); doubled after each failure, at most [`SAVE_MAX_WAIT`].
+const SAVE_FIRST_WAIT: Duration = Duration::from_secs(6);
+const SAVE_MAX_WAIT: Duration = Duration::from_secs(600);
+/// Failed saves of the same pending run after which the watcher stops.
+const SAVE_MAX_FAILURES: u32 = 8;
+
+/// The watcher's saves of Antigravity's login left in the system
+/// (BUG-V6-17): a store that cannot be used (Keychain locked, no Secret
+/// Service) is not asked every 3 s for ever, which logged a line each time
+/// and could raise the Keychain's prompt again on macOS. Counted per
+/// pending run ([`keyring::pending_stamp`]): a new agy run starts again
+/// from zero.
+#[derive(Debug, Default)]
+struct SaveRetry {
+    stamp: Option<std::time::SystemTime>,
+    failures: u32,
+    next: Option<Instant>,
+}
+
+impl SaveRetry {
+    /// A save is due now for the pending run `stamp`.
+    fn due(&mut self, stamp: Option<std::time::SystemTime>, now: Instant) -> bool {
+        if stamp != self.stamp {
+            *self = SaveRetry {
+                stamp,
+                ..SaveRetry::default()
+            };
+        }
+        stamp.is_some()
+            && self.failures < SAVE_MAX_FAILURES
+            && self.next.is_none_or(|next| now >= next)
+    }
+
+    /// A save failed at `now`; `true` when that was the last try.
+    fn failed(&mut self, now: Instant) -> bool {
+        self.failures += 1;
+        let wait = SAVE_FIRST_WAIT
+            .saturating_mul(1 << (self.failures - 1).min(16))
+            .min(SAVE_MAX_WAIT);
+        self.next = Some(now + wait);
+        self.failures == SAVE_MAX_FAILURES
+    }
+
+    fn succeeded(&mut self) {
+        self.failures = 0;
+        self.next = None;
+    }
+}
+
 /// Background: when an agent of the kit ends anywhere, align the agents and
 /// save Antigravity's login left in Windows; nothing while the drive is
 /// being removed (`closing`).
 pub fn watch(kit: Kit, closing: Closing) {
     std::thread::spawn(move || {
         let mut before = BTreeSet::new();
+        let mut retry = SaveRetry::default();
         loop {
             std::thread::sleep(Duration::from_secs(3));
             let now = running(&kit);
@@ -379,10 +430,24 @@ pub fn watch(kit: Kit, closing: Closing) {
                 let _ = closing.run(|| sync::run(&kit, None));
             }
             // Antigravity's login still in Windows and no agy of the kit
-            // running: saved now (save waits for a fresh "starting" mark).
-            if keyring::pending(&kit) && !now.contains("antigravity") {
-                if let Some(Err(e)) = closing.run(|| keyring::save(&kit)) {
-                    crate::log::warn(&format!("antigravity login: {e:#}"));
+            // running: saved now (save waits for a fresh "starting" mark),
+            // tried again less and less often after a failure.
+            let at = Instant::now();
+            if keyring::pending(&kit)
+                && !now.contains("antigravity")
+                && retry.due(keyring::pending_stamp(&kit), at)
+            {
+                match closing.run(|| keyring::save(&kit)) {
+                    Some(Ok(())) => retry.succeeded(),
+                    Some(Err(e)) => {
+                        crate::log::warn(&format!("antigravity login: {e:#}"));
+                        if retry.failed(at) {
+                            crate::log::warn(&format!(
+                                "antigravity login: not saved after {SAVE_MAX_FAILURES} tries, no more tries until agy runs again or the app starts again"
+                            ));
+                        }
+                    }
+                    None => {}
                 }
             }
             before = now;
