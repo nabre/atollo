@@ -178,12 +178,15 @@ impl SetupTask {
         ));
         let task = Arc::clone(self);
         std::thread::spawn(move || {
-            let error = task.run(&opts, &notify).err();
+            // A panic in an installer ends the run like an error: otherwise
+            // `running` stays and every next run is refused until restart.
+            let run = std::panic::AssertUnwindSafe(|| task.run(&opts, &notify));
+            let error = std::panic::catch_unwind(run).unwrap_or_else(|p| Err(panic_text(&*p)));
             let mut state = task.lock();
             state.running = false;
             state.cancelling = false;
             state.queue.clear();
-            state.error = error;
+            state.error = error.err();
             for step in &state.steps {
                 crate::log::info(&format!("setup {}: {:?}", step.id, step.outcome));
             }
@@ -296,6 +299,18 @@ impl Sink for TaskSink<'_> {
         }
         (self.notify)(&state);
     }
+}
+
+/// The message of a panic caught with `catch_unwind`, logged.
+pub(crate) fn panic_text(payload: &(dyn std::any::Any + Send)) -> String {
+    let message = payload
+        .downcast_ref::<&str>()
+        .map(|s| (*s).to_owned())
+        .or_else(|| payload.downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "unknown".to_owned());
+    let text = format!("internal error: {message}");
+    crate::log::error(&text);
+    text
 }
 
 #[cfg(test)]
