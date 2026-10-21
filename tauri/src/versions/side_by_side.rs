@@ -174,13 +174,31 @@ fn is_dir_link(path: &Path) -> bool {
 }
 
 #[cfg(windows)]
-fn dir_link_target_ok(path: &Path) -> bool {
-    junction::get_target(path).is_ok_and(|t| t.is_dir())
+fn dir_link_target(path: &Path) -> Option<PathBuf> {
+    junction::get_target(path).ok()
 }
 
 #[cfg(not(windows))]
-fn dir_link_target_ok(path: &Path) -> bool {
-    fs::read_link(path).is_ok_and(|t| t.is_dir())
+fn dir_link_target(path: &Path) -> Option<PathBuf> {
+    let target = fs::read_link(path).ok()?;
+    Some(match path.parent() {
+        Some(dir) if target.is_relative() => dir.join(target),
+        _ => target,
+    })
+}
+
+/// A link to a folder there, inside one of `roots`: a kit copied (not
+/// moved) elsewhere keeps links to the original kit's folders, which go
+/// with it, so they are made again.
+fn dir_link_target_ok(path: &Path, roots: &[PathBuf]) -> bool {
+    let Some(target) = dir_link_target(path).and_then(|t| fs::canonicalize(t).ok()) else {
+        return false;
+    };
+    target.is_dir()
+        && roots
+            .iter()
+            .filter_map(|r| fs::canonicalize(r).ok())
+            .any(|r| target.starts_with(r))
 }
 
 #[cfg(windows)]
@@ -303,7 +321,8 @@ fn copy_source(path: &Path, mark: &str) -> PathBuf {
 }
 
 /// Each root gets, as junctions (Windows) or symlinks (Unix), the versions the
-/// other roots have of their own; links to versions gone are removed. On a
+/// other roots have of their own; links to versions gone, or outside
+/// `roots` (another copy of the kit), are made again or removed. On a
 /// Unix disk without links they are copies, removed the same way.
 pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
     for root in roots {
@@ -314,7 +333,7 @@ pub fn link_dotnet(roots: &[PathBuf]) -> Result<()> {
                 if is_staged(&path) {
                     // A copy interrupted (the app closed): made again below.
                     let _ = fs::remove_dir_all(&path);
-                } else if is_dir_link(&path) && !dir_link_target_ok(&path) {
+                } else if is_dir_link(&path) && !dir_link_target_ok(&path, roots) {
                     remove_dir_link(&path);
                 } else if !is_dir_link(&path) && stale_copy(&path) {
                     let _ = fs::remove_dir_all(&path);
