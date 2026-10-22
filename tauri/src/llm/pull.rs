@@ -290,6 +290,25 @@ pub fn cancel_all(limit: std::time::Duration) -> usize {
     n
 }
 
+/// Every file of `e` is on disk in `dir` with its size, and the entry says
+/// they were downloaded and checked.
+fn whole(dir: &Path, e: &Entry) -> bool {
+    e.complete
+        && e.files.iter().all(|f| {
+            std::fs::metadata(dir.join(&f.name)).is_ok_and(|m| m.is_file() && m.len() == f.bytes)
+        })
+}
+
+/// Deletes `path`; nothing when it is not there.
+fn remove_if_there(path: &Path) -> Result<()> {
+    match std::fs::remove_file(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            Err(anyhow::Error::new(e).context(path.display().to_string()))
+        }
+        _ => Ok(()),
+    }
+}
+
 /// The entry of `plan` in its folder's manifest: an entry with the same
 /// files already there (the same model under another id) is used instead.
 /// An id another repository has already (the same file of another
@@ -305,9 +324,28 @@ fn entry_for(kit: &Kit, plan: &Plan) -> Result<Entry> {
     local::update_manifest(&dir, |manifest| {
         if let Some(e) = manifest
             .models
-            .iter()
+            .iter_mut()
             .find(|e| names(&e.files) == names(&files))
         {
+            // A download left halfway may be of an older commit: publishers
+            // upload new GGUFs under the same names, and the plan is read
+            // again from the repository's last commit. Its bytes joined to
+            // those of the new file would fail the checksum only at the end
+            // of the whole download, so the files that changed start again
+            // and the entry takes the plan's commit and checksums. A model
+            // already downloaded and checked is left as it is.
+            if !whole(&dir, e) && (e.commit != plan.commit || e.files != files) {
+                for (old, new) in e.files.iter().zip(&files) {
+                    if old.sha256 != new.sha256 || old.bytes != new.bytes {
+                        let file = dir.join(&new.name);
+                        remove_if_there(&crate::net::resume::part_of(&file))?;
+                        remove_if_there(&file)?;
+                    }
+                }
+                e.commit = plan.commit.clone();
+                e.files = files.clone();
+                e.complete = false;
+            }
             return Ok(e.clone());
         }
         let mut id = plan.id.clone();

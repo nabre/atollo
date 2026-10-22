@@ -119,6 +119,34 @@ fn an_entry_is_reused_not_doubled() {
     assert!(entry_for(&kit, &clash).is_err());
 }
 
+/// A download paused at one commit and resumed after the repository got a
+/// new one does not join the old bytes to the new file: the part of a file
+/// that changed is dropped, and the entry takes the new commit. A part of
+/// the same commit is kept.
+#[test]
+fn a_part_of_an_older_commit_starts_again() {
+    let tmp = TempDir::new("llm-commit");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let old = plan(&[10]);
+    let dir = old.dir(&kit);
+    entry_for(&kit, &old).unwrap();
+    let part = crate::net::resume::part_of(&dir.join("m-0.gguf"));
+    std::fs::write(&part, b"12345").unwrap();
+    entry_for(&kit, &old).unwrap();
+    assert!(part.exists());
+    let mut new = plan(&[10]);
+    new.commit = "d".repeat(40);
+    new.files[0].sha256 = "1".repeat(64);
+    let entry = entry_for(&kit, &new).unwrap();
+    assert!(!part.exists());
+    assert_eq!(entry.commit, new.commit);
+    assert_eq!(entry.files[0].sha256, new.files[0].sha256);
+    let manifest = local::read_manifest(&dir).unwrap();
+    assert_eq!(manifest.models.len(), 1);
+    assert_eq!(manifest.models[0].commit, new.commit);
+}
+
 /// One download per repository folder, also seen from another process
 /// (its lock file with a live pid); Cancel of every download; a removal
 /// refused meanwhile.
