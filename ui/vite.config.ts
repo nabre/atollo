@@ -57,6 +57,10 @@ export default defineConfig(({ mode }) => ({
     include: ["**/*.test.tsx", "**/*.test.ts"],
     // What jsdom lacks for the vscode-elements components.
     setupFiles: ["../test/ui/setup.ts"],
+    // A worker per CPU, each loading jsdom and the app, does not start in
+    // time on a 16-thread Windows machine ("Failed to start forks worker"):
+    // half the CPUs run the whole suite green (TEST-V7-01).
+    maxWorkers: "50%",
     // The theme's CSS, VSCodium's reference and codicon.css, read as text by
     // theme.test.ts and codicon.test.tsx.
     css: { include: [/[\\/]theme[\\/]theme(-\w+)?\.css/, /workbench-ref\.css/, /[\\/]codicon\.css/] },
