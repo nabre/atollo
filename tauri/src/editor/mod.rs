@@ -34,6 +34,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -72,7 +73,15 @@ pub struct Status {
 pub struct Editor {
     kit: Kit,
     env: Mutex<KitEnv>,
+    /// Held only to look at, clear or store the server, never across a
+    /// start: `status()` runs on the main thread (the 5 s poll, the close
+    /// button) and must not wait up to 90 s for a slow start (BUG-V7-15).
     server: Mutex<Option<Server>>,
+    /// Held for a whole start, so that two opens start one server.
+    starting: Mutex<()>,
+    /// Bumped by `stop()`: a start that was running when the server was
+    /// stopped ends the server it made instead of storing it.
+    stops: AtomicU64,
     extensions: std::sync::Arc<Mutex<ext::ExtState>>,
     /// The background install of extensions: ends with the server, which
     /// it shares the program folder with (an update could not replace it).
@@ -100,6 +109,8 @@ impl Editor {
             kit,
             env: Mutex::new(env),
             server: Mutex::new(None),
+            starting: Mutex::new(()),
+            stops: AtomicU64::new(0),
             extensions: std::sync::Arc::default(),
             extensions_job: ext::JobSlot::default(),
             on_installed: Mutex::new(None),
@@ -142,18 +153,32 @@ impl Editor {
 
     /// The server's base URL and token, starting it when needed.
     pub fn ensure_running(&self) -> Result<(u16, String)> {
-        let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(s) = guard.as_mut() {
-            if matches!(s.child.try_wait(), Ok(None)) {
-                // A project opened: its extensions may be new.
-                self.sync_extensions_now(false);
-                return Ok((s.port, s.token.clone()));
+        let _starting = self.starting.lock().unwrap_or_else(|e| e.into_inner());
+        {
+            let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(s) = guard.as_mut() {
+                if matches!(s.child.try_wait(), Ok(None)) {
+                    // A project opened: its extensions may be new.
+                    self.sync_extensions_now(false);
+                    return Ok((s.port, s.token.clone()));
+                }
             }
+            *guard = None;
         }
-        *guard = None;
-        let server = self.start()?;
+        let stops = self.stops.load(Ordering::SeqCst);
+        // Without the server lock: status() answers "not running" meanwhile.
+        let mut server = self.start()?;
         let out = (server.port, server.token.clone());
-        *guard = Some(server);
+        {
+            let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
+            if self.stops.load(Ordering::SeqCst) != stops {
+                // Stopped while it started (an update, the app closing):
+                // what was asked for no longer holds.
+                let _ = server.child.kill();
+                bail!("the editor was stopped while it started");
+            }
+            *guard = Some(server);
+        }
         self.sync_extensions_now(true);
         Ok(out)
     }
@@ -198,6 +223,9 @@ impl Editor {
 
     pub fn stop(&self) {
         let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
+        // Under the server lock, so a start in progress either stored its
+        // server before (ended here) or sees the count change after.
+        self.stops.fetch_add(1, Ordering::SeqCst);
         if let Some(mut s) = guard.take() {
             let _ = s.child.kill();
         }
