@@ -233,6 +233,15 @@ pub fn add(kit: &Kit, files: &[PathBuf]) -> Result<Vec<String>> {
         let part = dir.join(format!("{name}.part"));
         fs::copy(file, &part)
             .with_context(|| format!("{} → {}", file.display(), part.display()))?;
+        // The copy keeps the source's modification time on Windows and
+        // macOS: a file that sat in Downloads for a month would be pruned
+        // by the next `add`, before any installation used it. Its month
+        // starts now.
+        fs::OpenOptions::new()
+            .write(true)
+            .open(&part)
+            .and_then(|f| f.set_modified(SystemTime::now()))
+            .with_context(|| part.display().to_string())?;
         fs::rename(&part, &dest).with_context(|| dest.display().to_string())?;
         names.push(name.to_owned());
     }
