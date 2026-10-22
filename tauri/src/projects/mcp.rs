@@ -40,6 +40,9 @@ pub struct McpServer {
     pub url: Option<String>,
     #[serde(default)]
     pub env: BTreeMap<String, String>,
+    /// An address's headers (`Authorization: Bearer ${VAR}`).
+    #[serde(default)]
+    pub headers: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -64,6 +67,17 @@ fn read_object(dir: &Path) -> Result<Option<Map<String, Value>>> {
     }
 }
 
+fn strings(v: &Value, key: &str) -> BTreeMap<String, String> {
+    v.get(key)
+        .and_then(Value::as_object)
+        .map(|o| {
+            o.iter()
+                .filter_map(|(k, v)| v.as_str().map(|v| (k.clone(), v.to_owned())))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 fn server_of(name: &str, v: &Value) -> McpServer {
     let s = |k: &str| v.get(k).and_then(Value::as_str).map(str::to_owned);
     McpServer {
@@ -81,15 +95,8 @@ fn server_of(name: &str, v: &Value) -> McpServer {
             })
             .unwrap_or_default(),
         url: s("url"),
-        env: v
-            .get("env")
-            .and_then(Value::as_object)
-            .map(|o| {
-                o.iter()
-                    .filter_map(|(k, v)| v.as_str().map(|v| (k.clone(), v.to_owned())))
-                    .collect()
-            })
-            .unwrap_or_default(),
+        env: strings(v, "env"),
+        headers: strings(v, "headers"),
     }
 }
 
@@ -143,7 +150,13 @@ fn check(s: &McpServer) -> Result<()> {
         }
         other => bail!("{}: unknown kind {other}", s.name),
     }
-    if s.args.iter().chain(s.env.values()).any(|v| !one_line(v)) {
+    if s.args
+        .iter()
+        .chain(s.env.values())
+        .chain(s.headers.keys())
+        .chain(s.headers.values())
+        .any(|v| !one_line(v))
+    {
         bail!("{}: one line per value", s.name);
     }
     Ok(())
@@ -152,7 +165,7 @@ fn check(s: &McpServer) -> Result<()> {
 /// The server as `.mcp.json` has it, keeping the keys the page does not edit.
 fn to_value(s: &McpServer, old: Option<&Value>) -> Value {
     let mut o = old.and_then(Value::as_object).cloned().unwrap_or_default();
-    for k in ["type", "command", "args", "url", "env"] {
+    for k in ["type", "command", "args", "url", "env", "headers"] {
         o.remove(k);
     }
     if s.kind == "http" {
@@ -179,12 +192,16 @@ fn to_value(s: &McpServer, old: Option<&Value>) -> Value {
             serde_json::to_value(&s.env).unwrap_or_default(),
         );
     }
+    if s.kind == "http" && !s.headers.is_empty() {
+        o.insert(
+            "headers".into(),
+            serde_json::to_value(&s.headers).unwrap_or_default(),
+        );
+    }
     Value::Object(o)
 }
 
-/// Writes the servers to `.mcp.json` and the same ones to Codex's project
-/// file. An empty list removes `mcpServers` (and the Codex block).
-pub fn set(dir: &Path, servers: &[McpServer]) -> Result<()> {
+fn check_all(servers: &[McpServer]) -> Result<()> {
     for s in servers {
         check(s)?;
     }
@@ -192,6 +209,45 @@ pub fn set(dir: &Path, servers: &[McpServer]) -> Result<()> {
     if servers.iter().any(|s| !seen.insert(s.name.as_str())) {
         bail!("two servers with the same name");
     }
+    Ok(())
+}
+
+/// The kit's servers (`data\agents\mcp.json`), every agent's in every
+/// project: the list of Agenti › «Server MCP» (report v6/04, N-7).
+pub fn kit_get(kit: &crate::kit::Kit) -> McpView {
+    match crate::agents::sync::mcp::load(&crate::agents::sync::Paths::of(kit)) {
+        Err(_) => McpView {
+            servers: Vec::new(),
+            read_only: true,
+        },
+        Ok(m) => McpView {
+            servers: m.iter().map(|(n, v)| server_of(n, v)).collect(),
+            read_only: false,
+        },
+    }
+}
+
+/// Writes the kit's servers, keeping the keys the page does not edit; the
+/// agents' alignment (`agents::sync::run`) then carries them to each agent.
+pub fn kit_set(kit: &crate::kit::Kit, servers: &[McpServer]) -> Result<()> {
+    check_all(servers)?;
+    crate::agents::sync::locked(kit, |paths| {
+        if crate::os::safe_path::is_link(&paths.mcp_file()) {
+            bail!("{}: link, left alone", paths.mcp_file().display());
+        }
+        let old = crate::agents::sync::mcp::load(paths)?;
+        let new: Map<String, Value> = servers
+            .iter()
+            .map(|s| (s.name.clone(), to_value(s, old.get(&s.name))))
+            .collect();
+        crate::agents::sync::mcp::save(paths, &new)
+    })
+}
+
+/// Writes the servers to `.mcp.json` and the same ones to Codex's project
+/// file. An empty list removes `mcpServers` (and the Codex block).
+pub fn set(dir: &Path, servers: &[McpServer]) -> Result<()> {
+    check_all(servers)?;
     for p in [
         mcp_path(dir),
         dir.join(".codex"),

@@ -764,7 +764,7 @@ Two panes.
 
 “Save” writes them in the project's `.vscode\settings.json` file; the other settings in the file stay. If the file contains comments or is not plain JSON, Atollo does not rewrite it and asks you to edit it in the editor.
 
-The second pane, “Project MCP servers”, adds MCP servers that apply only in this project, on top of the kit's. How they work and how to add them: [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers).
+The second pane, “Project MCP servers”, adds MCP servers that apply only in this project, on top of the kit's. Under “Ready servers” one click is enough for filesystem (the files, only in the project's folder) and, once the project's database has been created, for mysql (DBHub) or mongodb: the database reaches the server when the agent starts, never written in .mcp.json. How they work and how to add them: [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers).
 
 Related topics: [3.4 The kit's terminals](#34-the-kits-terminals), [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers), [5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)
 
@@ -1320,6 +1320,7 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 > - Instructions, skills and MCP servers are written only once, in the `data\agents` folder, and apply to all the agents.
 > - The kit syncs them when the app starts, before and after each agent and when an agent ends.
 > - You can also edit an agent's files: the change passes to the others.
+> - The kit's MCP servers can also be added from the Agents page, “The kit's MCP servers” box, with the ready servers GitHub, Playwright and Fetch one click away.
 > - MCP servers for a single project are added in the project's “Editor” section.
 
 #### What is shared
@@ -1356,6 +1357,26 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 >
 > The MCP servers' programs install themselves when an agent starts: npx and node bring Node.js, uvx and uv bring uv, python brings Python.
 
+#### The kit's MCP servers and the ready servers
+
+1. On the Agents page, below the shared folder, there is the “The kit's MCP servers” box: the list of `data\agents\mcp.json`.
+2. Under “Ready servers” press “Add” beside the server you need; for another server press “Add a server” and fill in name, type and program or address.
+3. Atollo writes mcp.json and syncs the agents at once: Claude Code, Codex, Antigravity and Pi have the server without waiting for their next start. “Remove” on a row removes it.
+
+| Ready server | What it does | Where |
+| --- | --- | --- |
+| `github` | Issues, pull requests and repositories on GitHub, with the kit's GitHub account. It is GitHub's own server, online (api.githubcopilot.com/mcp): nothing to download. | the kit |
+| `playwright` | A browser the agent opens and uses: pages, clicks, forms, screenshots. | the kit |
+| `fetch` | Reads a web page and gives it to the agent as text. | the kit |
+| `filesystem` | Reads and writes files, only in the project's folder. | the project |
+| `mysql` | Queries the project's MySQL database (DBHub), once it has been created. | the project |
+| `mongodb` | Queries the project's MongoDB database, once it has been created. | the project |
+
+> [!NOTE]
+> **No secret in the files**
+>
+> The GitHub token and the databases' addresses are never written in mcp.json or in .mcp.json: the server reads a variable (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) that Atollo gives the agent when it starts it. The GitHub token goes only to the kit's servers, never to those a project's .mcp.json asks for: a cloned repository could send it anywhere. GitHub needs the kit to be signed in to GitHub. An agent started from an editor terminal, rather than from the app, does not have these variables.
+
 #### How the sync works
 
 - Instructions: AGENTS.md is copied as CLAUDE.md for Claude Code and as AGENTS.md for Codex, Antigravity and Pi. If you edit one of those files, the change goes back into AGENTS.md and on to the others. If both sides change, the most recent wins and the other is kept in the conflicts folder.
@@ -1370,11 +1391,12 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 #### MCP servers for a single project
 
 1. Open the project, “Editor” section, “Project MCP servers” box.
-2. Press “Add a server”.
-3. Write the “Name” (letters, digits, - and _) and choose the “Type”: “program” (with “Program”, for example npx, and the “Arguments, one per line”) or “address (http)” (with the “Address”).
-4. Press “Add”. “Remove” on a row removes it.
+2. For a ready server press “Add” beside it under “Ready servers”: filesystem (the files, only in the project's folder) and, once the project's database has been created with “Create database and user”, mysql or mongodb. For another server go on with the next step.
+3. Press “Add a server”.
+4. Write the “Name” (letters, digits, - and _) and choose the “Type”: “program” (with “Program”, for example npx, and the “Arguments, one per line”) or “address (http)” (with the “Address”).
+5. Press “Add”. “Remove” on a row removes it.
 
-These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from `.codex\config.toml`, which Atollo keeps in sync; Antigravity and Pi use only the kit's servers.
+These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from `.codex\config.toml`, which Atollo keeps in sync; Antigravity and Pi use only the kit's servers. The programs they need (Node for npx, uv for uvx) are installed when the agent starts; the project's database reaches the mysql or mongodb server as a variable, never written in .mcp.json, which may be in the repository.
 
 <details>
 <summary>Under the hood</summary>

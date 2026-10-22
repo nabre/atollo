@@ -24,6 +24,7 @@
 
 pub mod claude_token;
 pub mod keyring;
+pub mod presets;
 pub mod relocate;
 pub mod stats;
 pub mod sync;

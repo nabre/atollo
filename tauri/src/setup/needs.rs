@@ -4,6 +4,7 @@
 //! a clone or a project action needs them.
 
 use std::collections::BTreeSet;
+use std::path::Path;
 
 use super::catalog::Catalog;
 use crate::detect::Action;
@@ -108,20 +109,31 @@ pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
     of_command(&action.command)
 }
 
-/// What the agent `id` needs to start: the agent itself and the programs
-/// of the kit's MCP servers (`npx`, `uvx`, `python`...). The catalog's own
-/// dependencies (Claude Code needs Git) are added by the installation.
-pub fn of_agent(kit: &Kit, id: &str) -> BTreeSet<&'static str> {
+/// What the agent `id` needs to start in `project_dir`: the agent itself and
+/// the programs of the kit's and the project's MCP servers (`npx`, `uvx`,
+/// `python`...). The catalog's own dependencies (Claude Code needs Git) are
+/// added by the installation.
+pub fn of_agent(kit: &Kit, id: &str, project_dir: Option<&Path>) -> BTreeSet<&'static str> {
     let mut out = BTreeSet::new();
     if let Some(c) = Catalog::get().find(id) {
         out.insert(c.id.as_str());
     }
-    let servers =
-        crate::agents::sync::mcp::load(&crate::agents::sync::Paths::of(kit)).unwrap_or_default();
-    for server in servers.values() {
-        if let Some(program) = server.get("command").and_then(|c| c.as_str()) {
-            out.extend(component_of(program));
-        }
+    let mut servers: Vec<Option<String>> =
+        crate::agents::sync::mcp::load(&crate::agents::sync::Paths::of(kit))
+            .unwrap_or_default()
+            .values()
+            .map(|s| s.get("command").and_then(|c| c.as_str()).map(str::to_owned))
+            .collect();
+    if let Some(dir) = project_dir {
+        servers.extend(
+            crate::projects::mcp::get(dir)
+                .servers
+                .into_iter()
+                .map(|s| s.command),
+        );
+    }
+    for program in servers.iter().flatten() {
+        out.extend(component_of(program));
     }
     out
 }

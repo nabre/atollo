@@ -484,6 +484,12 @@ export const AGENTS: TopicTexts = {
             "Du kannst auch die Dateien eines Agenten ändern: Die Änderung geht an die anderen über.",
           ),
           tr(
+            "I server MCP del kit si aggiungono anche dalla pagina Agenti, riquadro «Server MCP del kit», con i server pronti GitHub, Playwright e Fetch a un clic.",
+            "The kit's MCP servers can also be added from the Agents page, “The kit's MCP servers” box, with the ready servers GitHub, Playwright and Fetch one click away.",
+            "Les serveurs MCP du kit s'ajoutent aussi depuis la page Agents, panneau « Serveurs MCP du kit », avec les serveurs prêts GitHub, Playwright et Fetch en un clic.",
+            "Die MCP-Server des Kits lassen sich auch auf der Seite Agenten im Bereich „MCP-Server des Kits“ hinzufügen, mit den fertigen Servern GitHub, Playwright und Fetch per Klick.",
+          ),
+          tr(
             "I server MCP di un solo progetto si aggiungono nella sezione «Editor» del progetto.",
             "MCP servers for a single project are added in the project's “Editor” section.",
             "Les serveurs MCP d'un seul projet s'ajoutent dans la section « Éditeur » du projet.",
@@ -573,6 +579,123 @@ export const AGENTS: TopicTexts = {
 
       <Section
         title={tr(
+          "Server MCP del kit e server pronti",
+          "The kit's MCP servers and the ready servers",
+          "Serveurs MCP du kit et serveurs prêts",
+          "MCP-Server des Kits und fertige Server",
+        )}
+      >
+        <Steps
+          steps={[
+            tr(
+              "Nella pagina Agenti, sotto la cartella condivisa, c'è il riquadro «Server MCP del kit»: l'elenco di data\\agents\\mcp.json.",
+              "On the Agents page, below the shared folder, there is the “The kit's MCP servers” box: the list of data\\agents\\mcp.json.",
+              "Dans la page Agents, sous le dossier partagé, se trouve le panneau « Serveurs MCP du kit » : la liste de data\\agents\\mcp.json.",
+              "Auf der Seite Agenten gibt es unter dem gemeinsamen Ordner den Bereich „MCP-Server des Kits“: die Liste von data\\agents\\mcp.json.",
+            ),
+            tr(
+              "In «Server pronti» premi «Aggiungi» accanto al server che ti serve; per un altro server premi «Aggiungi un server» e compila nome, tipo e programma o indirizzo.",
+              "Under “Ready servers” press “Add” beside the server you need; for another server press “Add a server” and fill in name, type and program or address.",
+              "Dans « Serveurs prêts », appuyez sur « Ajouter » à côté du serveur qu'il vous faut ; pour un autre serveur, appuyez sur « Ajouter un serveur » et remplissez nom, type et programme ou adresse.",
+              "Drück unter „Fertige Server“ neben dem gewünschten Server auf „Hinzufügen“; für einen anderen Server drück „Server hinzufügen“ und gib Name, Typ und Programm oder Adresse ein.",
+            ),
+            tr(
+              "Atollo scrive mcp.json e allinea subito gli agenti: Claude Code, Codex, Antigravity e Pi hanno il server senza aspettare il prossimo avvio. «Togli» su una riga lo rimuove.",
+              "Atollo writes mcp.json and syncs the agents at once: Claude Code, Codex, Antigravity and Pi have the server without waiting for their next start. “Remove” on a row removes it.",
+              "Atollo écrit mcp.json et synchronise aussitôt les agents : Claude Code, Codex, Antigravity et Pi ont le serveur sans attendre leur prochain lancement. « Retirer » sur une ligne le supprime.",
+              "Atollo schreibt mcp.json und gleicht die Agenten sofort ab: Claude Code, Codex, Antigravity und Pi haben den Server, ohne auf ihren nächsten Start zu warten. „Entfernen“ in einer Zeile entfernt ihn.",
+            ),
+          ]}
+        />
+        <Table
+          columns={[
+            tr("Server pronto", "Ready server", "Serveur prêt", "Fertiger Server"),
+            tr("Che cosa fa", "What it does", "Ce qu'il fait", "Was er tut"),
+            tr("Dove", "Where", "Où", "Wo"),
+          ]}
+          rows={[
+            [
+              <Code key="g">github</Code>,
+              tr(
+                "Issue, pull request e repository su GitHub, con l'account GitHub del kit. È il server di GitHub stesso, in rete (api.githubcopilot.com/mcp): niente da scaricare.",
+                "Issues, pull requests and repositories on GitHub, with the kit's GitHub account. It is GitHub's own server, online (api.githubcopilot.com/mcp): nothing to download.",
+                "Issues, pull requests et dépôts sur GitHub, avec le compte GitHub du kit. C'est le serveur de GitHub lui-même, en ligne (api.githubcopilot.com/mcp) : rien à télécharger.",
+                "Issues, Pull Requests und Repositorys auf GitHub, mit dem GitHub-Konto des Kits. Es ist der Server von GitHub selbst, online (api.githubcopilot.com/mcp): nichts herunterzuladen.",
+              ),
+              tr("il kit", "the kit", "le kit", "das Kit"),
+            ],
+            [
+              <Code key="p">playwright</Code>,
+              tr(
+                "Un browser che l'agente apre e usa: pagine, clic, moduli, schermate.",
+                "A browser the agent opens and uses: pages, clicks, forms, screenshots.",
+                "Un navigateur que l'agent ouvre et utilise : pages, clics, formulaires, captures d'écran.",
+                "Ein Browser, den der Agent öffnet und benutzt: Seiten, Klicks, Formulare, Bildschirmfotos.",
+              ),
+              tr("il kit", "the kit", "le kit", "das Kit"),
+            ],
+            [
+              <Code key="f">fetch</Code>,
+              tr(
+                "Legge una pagina web e la dà all'agente come testo.",
+                "Reads a web page and gives it to the agent as text.",
+                "Lit une page web et la donne à l'agent sous forme de texte.",
+                "Liest eine Webseite und gibt sie dem Agenten als Text.",
+              ),
+              tr("il kit", "the kit", "le kit", "das Kit"),
+            ],
+            [
+              <Code key="s">filesystem</Code>,
+              tr(
+                "Legge e scrive i file, solo nella cartella del progetto.",
+                "Reads and writes files, only in the project's folder.",
+                "Lit et écrit les fichiers, seulement dans le dossier du projet.",
+                "Liest und schreibt Dateien, nur im Ordner des Projekts.",
+              ),
+              tr("il progetto", "the project", "le projet", "das Projekt"),
+            ],
+            [
+              <Code key="m">mysql</Code>,
+              tr(
+                "Interroga il database MySQL del progetto (DBHub), quando è stato creato.",
+                "Queries the project's MySQL database (DBHub), once it has been created.",
+                "Interroge la base de données MySQL du projet (DBHub), une fois qu'elle a été créée.",
+                "Fragt die MySQL-Datenbank des Projekts ab (DBHub), sobald sie angelegt ist.",
+              ),
+              tr("il progetto", "the project", "le projet", "das Projekt"),
+            ],
+            [
+              <Code key="d">mongodb</Code>,
+              tr(
+                "Interroga il database MongoDB del progetto, quando è stato creato.",
+                "Queries the project's MongoDB database, once it has been created.",
+                "Interroge la base de données MongoDB du projet, une fois qu'elle a été créée.",
+                "Fragt die MongoDB-Datenbank des Projekts ab, sobald sie angelegt ist.",
+              ),
+              tr("il progetto", "the project", "le projet", "das Projekt"),
+            ],
+          ]}
+        />
+        <Callout
+          tone="info"
+          title={tr(
+            "Nessun segreto nei file",
+            "No secret in the files",
+            "Aucun secret dans les fichiers",
+            "Kein Geheimnis in den Dateien",
+          )}
+        >
+          {tr(
+            "Il token di GitHub e gli indirizzi dei database non sono mai scritti in mcp.json o in .mcp.json: il server legge una variabile (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) che Atollo dà all'agente quando lo avvia. Il token di GitHub va solo ai server del kit, mai a quelli che il .mcp.json di un progetto chiede: un repository clonato potrebbe mandarlo ovunque. Per GitHub serve l'accesso a GitHub del kit. Un agente avviato da un terminale dell'editor, invece che dall'app, non ha queste variabili.",
+            "The GitHub token and the databases' addresses are never written in mcp.json or in .mcp.json: the server reads a variable (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) that Atollo gives the agent when it starts it. The GitHub token goes only to the kit's servers, never to those a project's .mcp.json asks for: a cloned repository could send it anywhere. GitHub needs the kit to be signed in to GitHub. An agent started from an editor terminal, rather than from the app, does not have these variables.",
+            "Le jeton GitHub et les adresses des bases de données ne sont jamais écrits dans mcp.json ni dans .mcp.json : le serveur lit une variable (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) qu'Atollo donne à l'agent quand il le lance. Le jeton GitHub ne va qu'aux serveurs du kit, jamais à ceux que demande le .mcp.json d'un projet : un dépôt cloné pourrait l'envoyer n'importe où. GitHub demande que le kit soit connecté à GitHub. Un agent lancé depuis un terminal de l'éditeur, plutôt que depuis l'application, n'a pas ces variables.",
+            "Das GitHub-Token und die Adressen der Datenbanken werden nie in mcp.json oder .mcp.json geschrieben: Der Server liest eine Variable (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}), die Atollo dem Agenten beim Start gibt. Das GitHub-Token geht nur an die Server des Kits, nie an die, die die .mcp.json eines Projekts verlangt: Ein geklontes Repository könnte es überallhin schicken. GitHub setzt voraus, dass das Kit bei GitHub angemeldet ist. Ein Agent, der aus einem Terminal des Editors statt aus der App gestartet wird, hat diese Variablen nicht.",
+          )}
+        </Callout>
+      </Section>
+
+      <Section
+        title={tr(
           "Come avviene l'allineamento",
           "How the sync works",
           "Comment se fait la synchronisation",
@@ -628,6 +751,12 @@ export const AGENTS: TopicTexts = {
               "Öffne das Projekt, Abschnitt „Editor“, Bereich „MCP-Server des Projekts“.",
             ),
             tr(
+              "Per un server pronto premi «Aggiungi» accanto a lui in «Server pronti»: filesystem (i file, solo nella cartella del progetto) e, quando il database del progetto è stato creato con «Crea database e utente», mysql o mongodb. Per un altro server continua dal passo seguente.",
+              "For a ready server press “Add” beside it under “Ready servers”: filesystem (the files, only in the project's folder) and, once the project's database has been created with “Create database and user”, mysql or mongodb. For another server go on with the next step.",
+              "Pour un serveur prêt, appuyez sur « Ajouter » à côté de lui dans « Serveurs prêts » : filesystem (les fichiers, seulement dans le dossier du projet) et, une fois la base de données du projet créée avec « Créer la base et l'utilisateur », mysql ou mongodb. Pour un autre serveur, continuez à l'étape suivante.",
+              "Für einen fertigen Server drück unter „Fertige Server“ daneben auf „Hinzufügen“: filesystem (die Dateien, nur im Ordner des Projekts) und, sobald die Datenbank des Projekts mit „Datenbank und Benutzer erstellen“ angelegt ist, mysql oder mongodb. Für einen anderen Server mach mit dem nächsten Schritt weiter.",
+            ),
+            tr(
               "Premi «Aggiungi un server».",
               "Press “Add a server”.",
               "Appuyez sur « Ajouter un serveur ».",
@@ -649,10 +778,10 @@ export const AGENTS: TopicTexts = {
         />
         <P>
           {tr(
-            "Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da .codex\\config.toml, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit.",
-            "These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from .codex\\config.toml, which Atollo keeps in sync; Antigravity and Pi use only the kit's servers.",
-            "Ces serveurs ne valent que dans ce projet, en plus de ceux du kit. Claude Code les lit dans le fichier .mcp.json du projet (et demande confirmation à la première utilisation) ; Codex dans .codex\\config.toml, qu'Atollo garde synchronisé ; Antigravity et Pi n'utilisent que les serveurs du kit.",
-            "Diese Server gelten nur in diesem Projekt, zusätzlich zu denen des Kits. Claude Code liest sie aus der Datei .mcp.json des Projekts (und fragt bei der ersten Verwendung nach einer Bestätigung); Codex aus .codex\\config.toml, das Atollo abgeglichen hält; Antigravity und Pi verwenden nur die Server des Kits.",
+            "Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da .codex\\config.toml, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit. I programmi che servono (Node per npx, uv per uvx) si installano all'avvio dell'agente; il database del progetto arriva al server mysql o mongodb come variabile, mai scritto in .mcp.json, che può stare nel repository.",
+            "These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from .codex\\config.toml, which Atollo keeps in sync; Antigravity and Pi use only the kit's servers. The programs they need (Node for npx, uv for uvx) are installed when the agent starts; the project's database reaches the mysql or mongodb server as a variable, never written in .mcp.json, which may be in the repository.",
+            "Ces serveurs ne valent que dans ce projet, en plus de ceux du kit. Claude Code les lit dans le fichier .mcp.json du projet (et demande confirmation à la première utilisation) ; Codex dans .codex\\config.toml, qu'Atollo garde synchronisé ; Antigravity et Pi n'utilisent que les serveurs du kit. Les programmes nécessaires (Node pour npx, uv pour uvx) s'installent au lancement de l'agent ; la base de données du projet arrive au serveur mysql ou mongodb sous forme de variable, jamais écrite dans .mcp.json, qui peut se trouver dans le dépôt.",
+            "Diese Server gelten nur in diesem Projekt, zusätzlich zu denen des Kits. Claude Code liest sie aus der Datei .mcp.json des Projekts (und fragt bei der ersten Verwendung nach einer Bestätigung); Codex aus .codex\\config.toml, das Atollo abgeglichen hält; Antigravity und Pi verwenden nur die Server des Kits. Die nötigen Programme (Node für npx, uv für uvx) werden beim Start des Agenten installiert; die Datenbank des Projekts erreicht den Server mysql oder mongodb als Variable, nie in .mcp.json geschrieben, die im Repository liegen kann.",
           )}
         </P>
       </Section>
