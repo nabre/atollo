@@ -500,3 +500,19 @@ fn ports_stay_when_the_server_changes_version() {
     s.set("mysql", Some(3310), true, "it").unwrap();
     assert_eq!(ports(&kit), (3310, 3307), "the same port: nothing moves");
 }
+
+/// BUG-V7-11: the folder of a socket too long for its data folder is a
+/// private one of the user's folder of sockets, never the kit's
+/// `<TEMP>/Atollo/<id>`, which another user may have made first.
+#[cfg(unix)]
+#[test]
+fn long_socket_folder_is_private() {
+    let tmp = TempDir::new("db-socket-dir");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let dir = private_socket_dir(&kit, 3306).unwrap();
+    assert!(caddy::is_private_dir(&dir));
+    assert!(mysql::fallback_socket(&dir, 3306).is_some());
+    if let Some(temp) = kit.system_temp() {
+        assert!(!dir.starts_with(temp), "{}", dir.display());
+    }
+}

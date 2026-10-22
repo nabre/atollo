@@ -17,7 +17,46 @@ use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs;
+use crate::projects::caddy;
 use crate::setup::catalog::Catalog;
+
+/// The folder of MySQL's socket when it does not fit in the data folder
+/// ([`mysql::socket_dir`]): in the first base of
+/// [`caddy::socket_bases`] whose private folder of sockets
+/// ([`caddy::socket_parent`]: the user's own, checked for owner, links and
+/// rights, in a parent nobody else can rename in) gives a short enough
+/// path. Made owner-only from the start and checked again
+/// ([`caddy::is_private_dir`]) before it is used: one another user made
+/// first, or a link, is refused (BUG-V7-11). `None` (in the log) when no
+/// base gives one: the server does not start rather than use a shared one.
+fn private_socket_dir(kit: &Kit, port: u16) -> Option<PathBuf> {
+    for base in caddy::socket_bases(kit) {
+        let Some(parent) = caddy::socket_parent(&base) else {
+            continue;
+        };
+        let dir = mysql::socket_dir(&parent);
+        if mysql::fallback_socket(&dir, port).is_none() {
+            continue;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            let _ = fs::DirBuilder::new().mode(0o700).create(&dir);
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = fs::DirBuilder::new().create(&dir);
+        }
+        if caddy::is_private_dir(&dir) {
+            return Some(dir);
+        }
+        crate::log::warn(&format!(
+            "mysql: {}: not a private folder, not used for the socket",
+            dir.display()
+        ));
+    }
+    None
+}
 
 /// `data\db\<id>`: the data of every version of the server.
 fn data_root(kit: &Kit, id: &str) -> PathBuf {
@@ -235,16 +274,16 @@ impl Services {
                 }
             }
             fs::create_dir_all(&data)?;
-            // A socket that does not fit its data folder goes to the kit's
-            // own private folder of the PC's temporary one, never /tmp.
-            let fallback = mysql::socket_dir(kit.system_temp());
-            let socket = mysql::socket_path(kit.os(), &data, port, fallback.as_deref())?;
-            if let Some(dir) = socket.as_ref().and_then(|s| s.parent()) {
-                if dir != data {
-                    fs::create_dir_all(dir)?;
-                    crate::router::fs::restrict_dir_to_owner(dir)?;
+            // A socket that does not fit its data folder goes to the user's
+            // private folder of sockets, never /tmp itself; the folder is
+            // only looked for (and made) when it is needed.
+            let socket = match mysql::socket_path(kit.os(), &data, port, None) {
+                Ok(socket) => socket,
+                Err(_) => {
+                    let fallback = private_socket_dir(kit, port);
+                    mysql::socket_path(kit.os(), &data, port, fallback.as_deref())?
                 }
-            }
+            };
             let cnf = mysql::server_cnf(kit.os(), &basedir, &data, port, socket.as_deref());
             if fs::read_to_string(data.join("my.cnf")).ok().as_deref() != Some(cnf.as_str()) {
                 crate::fsx::write_atomic(&data.join("my.cnf"), cnf.as_bytes())?;

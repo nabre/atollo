@@ -53,15 +53,25 @@ pub fn cnf_path(os: Os, path: &Path) -> String {
 
 /// A Unix socket's path must fit in `sun_path` (104 bytes on macOS, 108 on
 /// Linux) or the server does not start: deep kits get one in `fallback`,
-/// the kit's own private folder (0700) in the PC's temporary one
-/// (`<TEMP>/Atollo/<kit id>/mysql`, [`socket_dir`]), named by the port;
-/// never a shared folder such as `/tmp` itself.
+/// a folder of the user's own private folder of sockets ([`socket_dir`]),
+/// named by the port; never a shared folder such as `/tmp` itself.
 const SOCKET_MAX: usize = 100;
 
-/// The kit's private folder of the sockets that do not fit in their data
-/// folder: `mysql` in the kit's temporary folder (`Kit::system_temp`).
-pub fn socket_dir(system_temp: Option<&Path>) -> Option<PathBuf> {
-    system_temp.map(|t| t.join("mysql"))
+/// The folder of the sockets that do not fit in their data folder: `mysql`
+/// in `parent`, the user's private folder of sockets
+/// (`crate::projects::caddy::socket_parent`, `/tmp/atollo-caddy-<uid>`).
+/// Never the kit's `<TEMP>/Atollo/<id>`: on a shared `/tmp` another user
+/// may have made it first, and could then keep the server from starting or
+/// put another folder in place of the socket's (BUG-V7-11).
+pub fn socket_dir(parent: &Path) -> PathBuf {
+    parent.join("mysql")
+}
+
+/// The socket of the server on `port` in the folder `dir` ([`socket_dir`]),
+/// `None` when its path does not fit `sun_path`.
+pub fn fallback_socket(dir: &Path, port: u16) -> Option<PathBuf> {
+    Some(dir.join(format!("atollo-mysql-{port}.sock")))
+        .filter(|s| s.as_os_str().len() <= SOCKET_MAX)
 }
 
 /// The socket of the server of `data` on `port`: none on Windows (TCP
@@ -81,9 +91,9 @@ pub fn socket_path(
     if inside.as_os_str().len() <= SOCKET_MAX {
         return Ok(Some(inside));
     }
-    match fallback.map(|f| f.join(format!("atollo-mysql-{port}.sock"))) {
-        Some(s) if s.as_os_str().len() <= SOCKET_MAX => Ok(Some(s)),
-        _ => anyhow::bail!(
+    match fallback.and_then(|f| fallback_socket(f, port)) {
+        Some(s) => Ok(Some(s)),
+        None => anyhow::bail!(
             "{}: the folder of the kit is too deep for MySQL's socket and the PC has \
              no short temporary folder: move the kit to a shorter path",
             data.display()
