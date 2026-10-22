@@ -78,6 +78,38 @@ export function diagnosticsExport(): Promise<string> {
   );
 }
 
+/** One check of «Salute del kit» (tauri/src/health.rs). */
+export interface HealthFinding {
+  id: "disk" | "space" | "path" | "owners" | "libs";
+  level: "ok" | "warn" | "err";
+  text: string;
+  /** What to do, when there is something to do. */
+  fix: string | null;
+}
+
+export const SAMPLE_HEALTH: HealthFinding[] = [
+  {
+    id: "disk",
+    level: "ok",
+    text: "Il disco del kit è exFAT: va bene; mancano solo collegamenti e permessi, di cui il kit fa a meno.",
+    fix: null,
+  },
+  {
+    id: "space",
+    level: "warn",
+    text: "Sul disco del kit restano 3.2 GB: bastano per poco (un modello locale ne pesa da 5 a 20).",
+    fix: null,
+  },
+  { id: "path", level: "ok", text: "Percorso del kit senza caratteri a rischio.", fix: null },
+  { id: "owners", level: "ok", text: "I file del kit si leggono tutti.", fix: null },
+];
+
+/** «Salute del kit»: the drive, the space, the kit's folder, files of
+ * another account, the libraries of Linux. */
+export function kitHealth(): Promise<HealthFinding[]> {
+  return query<HealthFinding[]>("kit_health", SAMPLE_HEALTH);
+}
+
 /** «Segnala un problema»: a new issue of Atollo on GitHub, in the browser,
  * with the version and the system filled in. */
 export function issueOpen(): Promise<void> {

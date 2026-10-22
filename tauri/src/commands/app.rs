@@ -156,6 +156,20 @@ pub async fn diagnostics_export<R: Runtime>(
     .or_fail("diagnostics")?
 }
 
+/// «Salute del kit» (health.rs): the drive, the space, the kit's folder,
+/// files of another account, the libraries of Linux.
+#[tauri::command]
+pub async fn kit_health<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<Vec<crate::health::Finding>> {
+    ensure_main(&webview)?;
+    let (kit, lang) = (state.kit.clone(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || crate::health::check(&kit, lang))
+        .await
+        .or_fail("health")
+}
+
 /// «Segnala un problema»: a new issue of Atollo on GitHub, in the browser,
 /// with its version and system filled in (nothing is sent by the app).
 #[tauri::command]

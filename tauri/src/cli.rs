@@ -35,8 +35,11 @@ pub enum Cli {
     Components(Option<crate::kit::Target>),
     /// The saved versions; with an id, the lines that can be downloaded.
     Versions(Option<String>),
-    /// Every installed program answers its version command.
-    Check,
+    /// Every installed program answers its version command; with `--kit`,
+    /// the health of the kit (health.rs).
+    Check {
+        kit: bool,
+    },
     /// Aligns the agents (`--project <folder>`, `--verbose`).
     Sync {
         project: Option<std::path::PathBuf>,
@@ -136,7 +139,15 @@ pub fn parse(args: &[OsString]) -> Cli {
         "versions" if args.len() <= 2 => {
             Cli::Versions(args.get(1).map(|a| a.to_string_lossy().to_lowercase()))
         }
-        "check" => Cli::Check,
+        "check" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            None => Cli::Check { kit: false },
+            Some("--kit") if args.len() == 2 => Cli::Check { kit: true },
+            Some(other) => Cli::Unknown(format!("check {other}")),
+        },
         "sync" => {
             let mut project = None;
             let mut verbose = false;
@@ -286,6 +297,24 @@ pub fn print_versions(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<
         }
         for s in &tool.saved {
             writeln!(out, "{}", row(&s.line, s.version.as_ref(), String::new()))?;
+        }
+    }
+    out.flush()
+}
+
+/// The health of the kit, one finding per line (`√`, `!`, `x`) with what
+/// to do under it.
+pub fn print_health(findings: &[crate::health::Finding], out: &mut dyn Write) -> io::Result<()> {
+    use crate::health::Level;
+    for f in findings {
+        let mark = match f.level {
+            Level::Ok => "√",
+            Level::Warn => "!",
+            Level::Err => "x",
+        };
+        writeln!(out, "  {mark} {}", f.text.replace('\n', "\n    "))?;
+        if let Some(fix) = &f.fix {
+            writeln!(out, "    → {fix}")?;
         }
     }
     out.flush()
