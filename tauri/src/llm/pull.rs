@@ -236,12 +236,14 @@ impl Pulling {
     fn take(dir: &Path, folder: &str, id: &str, cancel: Arc<AtomicBool>) -> Result<Pulling> {
         let mut map = pulling_map();
         let key = folder_key(folder);
-        if map.contains_key(&key) || locked_elsewhere(dir) {
+        if map.contains_key(&key) {
             bail!("a model of this repository is already being downloaded");
         }
         std::fs::create_dir_all(dir)?;
         let lock = dir.join(LOCK);
-        std::fs::write(&lock, std::process::id().to_string())?;
+        if !claim(dir)? {
+            bail!("a model of this repository is already being downloaded");
+        }
         map.insert(
             key.clone(),
             Running {
@@ -257,18 +259,63 @@ impl Pulling {
 impl Drop for Pulling {
     fn drop(&mut self) {
         pulling_map().remove(&self.key);
-        let _ = std::fs::remove_file(&self.lock);
+        // Only our own lock: one that another process took over after ours
+        // was judged stale stays its own.
+        let mine = std::process::id().to_string();
+        if std::fs::read_to_string(&self.lock).is_ok_and(|s| s.trim() == mine) {
+            let _ = std::fs::remove_file(&self.lock);
+        }
     }
 }
 
-/// Another process downloads into `dir` now (its lock, with a live pid).
+/// Creates the lock of `dir` with this process's pid, or false when another
+/// process holds it. The file is created only if it is not there
+/// (`create_new`), so the app and the command line starting a download into
+/// one folder at the same moment cannot both get it; a lock left by a
+/// process that is gone, or by this one, is replaced.
+fn claim(dir: &Path) -> Result<bool> {
+    use std::io::Write;
+    let lock = dir.join(LOCK);
+    for _ in 0..3 {
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&lock)
+        {
+            Ok(mut file) => {
+                file.write_all(std::process::id().to_string().as_bytes())?;
+                return Ok(true);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                if locked_elsewhere(dir) {
+                    return Ok(false);
+                }
+                remove_if_there(&lock)?;
+            }
+            Err(e) => return Err(anyhow::Error::new(e).context(lock.display().to_string())),
+        }
+    }
+    Ok(false)
+}
+
+/// Another process downloads into `dir` now: its lock with a live pid, or
+/// one created a moment ago whose pid is not written yet.
 fn locked_elsewhere(dir: &Path) -> bool {
     let me = std::process::id();
-    std::fs::read_to_string(dir.join(LOCK))
-        .ok()
-        .and_then(|s| s.trim().parse::<u32>().ok())
-        .is_some_and(|pid| pid != me && crate::agents::sync::alive(pid))
+    let lock = dir.join(LOCK);
+    let Ok(text) = std::fs::read_to_string(&lock) else {
+        return false;
+    };
+    match text.trim().parse::<u32>() {
+        Ok(pid) => pid != me && crate::agents::sync::alive(pid),
+        Err(_) => std::fs::metadata(&lock)
+            .and_then(|m| m.modified())
+            .is_ok_and(|t| t.elapsed().is_ok_and(|age| age < LOCK_FRESH)),
+    }
 }
+
+/// How long a lock without a pid counts as being written.
+const LOCK_FRESH: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// A download goes on in `folder` (of `data/models/gguf`), here or in
 /// another process: nothing there may be removed meanwhile.

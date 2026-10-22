@@ -191,3 +191,27 @@ fn a_folder_is_one_whatever_its_case() {
     drop(hold);
     assert!(!busy(&kit, "o--case"));
 }
+
+/// The lock is created only when it is not there: one being written (no
+/// pid yet) holds the folder, a stale one is replaced, and a download lets
+/// go only of its own lock.
+#[test]
+fn the_lock_is_taken_once() {
+    let tmp = TempDir::new("llm-lock");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let dir = crate::llm::models_dir(&kit).join("o--lock");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join(LOCK), "").unwrap();
+    assert!(busy(&kit, "o--lock"));
+    assert!(!claim(&dir).unwrap());
+    std::fs::write(dir.join(LOCK), "4294967").unwrap();
+    let hold = Pulling::take(&dir, "o--lock", "m", Arc::new(AtomicBool::new(false))).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(dir.join(LOCK)).unwrap(),
+        std::process::id().to_string()
+    );
+    std::fs::write(dir.join(LOCK), "4294967").unwrap();
+    drop(hold);
+    assert!(dir.join(LOCK).exists());
+}
