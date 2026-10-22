@@ -63,7 +63,7 @@ export function appInfo(): Promise<AppInfo> {
 
 /** Opens a kit folder in File Explorer: "agents", "db" or "projects" (+ project). */
 export function folderOpen(
-  which: "agents" | "backup" | "db" | "diagnostics" | "models" | "projects",
+  which: "agents" | "backup" | "db" | "diagnostics" | "kit" | "models" | "projects",
   project: string | null = null,
 ): Promise<void> {
   return act("folder_open", { which, project });
@@ -119,6 +119,49 @@ export function issueOpen(): Promise<void> {
 /** Opens a local address (http://localhost:<port>/) in the PC's browser. */
 export function urlOpen(url: string): Promise<void> {
   return act("url_open", { url });
+}
+
+/** What «Esporta il kit» made (N-12, tauri/src/backup.rs). */
+export interface KitExported {
+  path: string;
+  files: number;
+  bytes: number;
+}
+
+/** The `atollo-backup.json` of a copy. */
+export interface KitCopy {
+  atollo: string;
+  /** Unix seconds. */
+  created: number;
+  root: string;
+  files: number;
+  bytes: number;
+}
+
+/** A copy of the kit into the folder chosen (null: none chosen). */
+export function kitExport(zip: boolean): Promise<KitExported | null> {
+  return query<KitExported | null>(
+    "kit_export",
+    { path: "E:\\Copie\\Atollo-20261022-101500.zip", files: 1840, bytes: 412_000_000 },
+    { zip },
+  );
+}
+
+/** The copy chosen, checked and put aside; applied at the next start. */
+export function kitImport(zip: boolean): Promise<KitCopy | null> {
+  return query<KitCopy | null>(
+    "kit_import",
+    { atollo: "0.5.1", created: 1_792_600_000, root: "E:\\Atollo", files: 1840, bytes: 412_000_000 },
+    { zip },
+  );
+}
+
+export function kitImportPending(): Promise<boolean> {
+  return query<boolean>("kit_import_pending", false);
+}
+
+export function kitImportCancel(): Promise<void> {
+  return act("kit_import_cancel");
 }
 
 /** A QR's modules (tauri/src/net/lan.rs): `width` × `width`, row by row,

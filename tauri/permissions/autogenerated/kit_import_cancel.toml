@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kit-import-cancel"
+description = "Enables the kit_import_cancel command without any pre-configured scope."
+commands.allow = ["kit_import_cancel"]
+
+[[permission]]
+identifier = "deny-kit-import-cancel"
+description = "Denies the kit_import_cancel command without any pre-configured scope."
+commands.deny = ["kit_import_cancel"]

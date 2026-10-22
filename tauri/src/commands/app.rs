@@ -126,6 +126,8 @@ pub fn folder_open<R: Runtime>(
         "db" => state.kit.data().join("db"),
         "models" => crate::llm::models_dir(&state.kit),
         "diagnostics" => crate::diagnostics::dir(&state.kit),
+        // The kit's own folder (a copy imported, N-12).
+        "kit" => state.kit.root().to_path_buf(),
         "backup" => {
             let name = project.as_deref().ok_or("no project")?;
             project_dir(&state.kit, Some(name), state.lang())?;
@@ -187,6 +189,110 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> CmdResult<()> {
         return Err(format!("not a local address: {url}").into());
     }
     open_in_browser(&url)
+}
+
+/// The system's window to choose a folder (`files`: a file instead);
+/// `None` when it was closed without a choice.
+fn pick<R: Runtime>(
+    webview: &Webview<R>,
+    title: String,
+    files: bool,
+) -> CmdResult<impl FnOnce() -> anyhow::Result<Option<PathBuf>> + Send + 'static> {
+    #[cfg(windows)]
+    let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
+    #[cfg(unix)]
+    let window = webview.window();
+    Ok(move || {
+        if files {
+            #[cfg(windows)]
+            let picked = crate::setup::downloads::pick(owner, &title)?;
+            #[cfg(unix)]
+            let picked = crate::editor::picker::files(&window, &title, None)?;
+            return Ok(picked.into_iter().next());
+        }
+        #[cfg(windows)]
+        let picked = crate::editor::terminals::pick_dir(owner, &title, None);
+        #[cfg(unix)]
+        let picked = crate::editor::picker::folder(&window, &title, None);
+        picked
+    })
+}
+
+/// «Esporta il kit» (N-12): a copy of `projects\` and `data\` without what
+/// is downloaded again, into the folder chosen, as a folder or a zip. The
+/// database servers are stopped for it, the automatic ones started again.
+#[tauri::command]
+pub async fn kit_export<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    zip: bool,
+) -> CmdResult<Option<crate::backup::Exported>> {
+    ensure_main(&webview)?;
+    let choose = pick(
+        &webview,
+        tr(&state, "Dove salvare la copia del kit", &[]),
+        false,
+    )?;
+    let (kit, env, services) = (state.kit.clone(), state.env(), Arc::clone(&state.services));
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(dest) = choose()? else {
+            return Ok(None);
+        };
+        services.stop_all();
+        let result = crate::backup::export(kit.root(), &dest, zip);
+        services.autostart(&env);
+        result.map(Some)
+    })
+    .await
+    .or_fail("export")?
+    .or_fail_chain("export")
+}
+
+/// «Importa una copia» (N-12): the copy chosen (a folder or a zip made by
+/// «Esporta il kit») checked and put aside in the kit; applied when the app
+/// starts again.
+#[tauri::command]
+pub async fn kit_import<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    zip: bool,
+) -> CmdResult<Option<crate::backup::Manifest>> {
+    ensure_main(&webview)?;
+    let choose = pick(
+        &webview,
+        tr(&state, "Scegli la copia del kit da importare", &[]),
+        zip,
+    )?;
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(source) = choose()? else {
+            return Ok(None);
+        };
+        crate::backup::stage(kit.root(), &source).map(Some)
+    })
+    .await
+    .or_fail("import")?
+    .or_fail_chain("import")
+}
+
+/// A copy imported waits for the next start.
+#[tauri::command]
+pub fn kit_import_pending<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<bool> {
+    ensure_main(&webview)?;
+    Ok(crate::backup::pending(state.kit.root()))
+}
+
+/// The copy waiting is given up: the next start is as before.
+#[tauri::command]
+pub fn kit_import_cancel<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    crate::backup::cancel(state.kit.root()).or_fail_chain("import")
 }
 
 /// A project's site from the phone (N-6): its address with this PC's IP on

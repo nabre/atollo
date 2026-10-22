@@ -134,7 +134,7 @@ Atollo\
                   (the settings of each project: data\projects\<project>\dev-settings.json)
 ```
 
-For a backup, copy `projects\` and `data\` (without `data\apps\` and `data\cache\`, which are downloaded again).
+For a backup, use Settings › The kit › **Copy of the kit**: it exports `projects\` and `data\` to a folder or a zip, without `data\apps\`, `data\cache\` and `data\models\` (downloaded again), with the databases stopped for the copy, and imports such a copy into a kit at its next start. By hand, copy the same folders with Atollo closed. The copy holds the kit's passwords: keep it safe.
 
 ## Uninstallation
 

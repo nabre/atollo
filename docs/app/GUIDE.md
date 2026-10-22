@@ -2006,6 +2006,8 @@ Read-only information: kit folder, projects folder, data and programs folder, th
 
 “Kit health” checks what of the PC and the drive may stop the kit: the drive (FAT32, exFAT, noexec), the free space, risky characters in the kit's path, files made private by another account and, on Linux, the system's libraries. Each line is green, yellow or red, with what to do under it; “Check again” runs the checks again ([9.1 When something goes wrong](#91-when-something-goes-wrong)).
 
+“Copy of the kit” copies the projects and the data (settings, databases, agents) into a folder or a zip with “Export to a folder…” or “Export to a zip…”, without the programs, the caches and the local models, which are downloaded again. The database servers stop for the copy, and those with “Start with Atollo” start again after. “Import from a folder…” or “Import from a zip…” checks a copy and prepares it: close Atollo with “Close Atollo to import it” and open it again, and at the start the copy takes the place of the projects and the data; the previous ones go to .atollo-before-import-\<date-time\>, in the kit's folder. The copy holds the kit's passwords: keep it safe ([7.3 Updates and backups](#73-updates-and-backups)).
+
 Below, “Reporting a problem” has two buttons. “Export diagnostics” makes a zip in `data\app\diagnostics` with version, system, disk, environment, the programs' check, components, ports and the end of the logs, with the kit's keys, tokens and passwords replaced by \*\*\*, your profile folder as ~ and your and the PC's names removed; “Open folder” shows it. The zip stays on the PC: look at it and attach it yourself. “Report a problem” opens a new issue on GitHub in the browser with version and system already filled in; nothing leaves until you create it.
 
 #### Frameworks
@@ -2219,6 +2221,8 @@ On another PC the USB stick might become E: instead of D:. You do not have to do
 >
 > Only one kit at a time can be open per folder: starting Atollo again from the same folder brings the window already open to the front. Two different kits (two USB sticks), on the other hand, can run together.
 
+To bring only your work into a kit that already exists, without the programs, use “Copy of the kit” in Settings › The kit: export to a zip here, import there ([7.3 Updates and backups](#73-updates-and-backups)).
+
 #### The same kit on Windows, macOS and Linux
 
 The programs are different for each system, and the kit keeps them in separate folders (`data\apps\win32-x64`, `data\apps\darwin-arm64`, `data\apps\linux-x64…`). Everything else is shared: projects, settings, sign-ins, agent instructions, databases.
@@ -2252,7 +2256,7 @@ Related topics: [7.1 Safely removing the drive](#71-safely-removing-the-drive), 
 >
 > - Atollo updates itself: it downloads the new version and puts it in place of the old one when you close the app.
 > - The tools are updated from the Tools page, with “Update \<name\>” on a row or “Update all”.
-> - For a complete backup it is enough to copy projects and data (without the programs, which can be downloaded again).
+> - For a complete backup there is “Copy of the kit” in Settings › The kit: projects and data into a folder or a zip, without the programs, which are downloaded again, and the import into another kit.
 
 #### Updating Atollo
 
@@ -2277,6 +2281,14 @@ In Settings › “Updates” you see the state (“Atollo … is the latest ver
 > Update when you have no projects running: programs in use cannot be replaced, and the row would show “in use: close the kit programs and try again”.
 
 #### Backups
+
+1. Open Settings › The kit › “Copy of the kit” and press “Export to a zip…” (or “Export to a folder…”), then choose where to put it: an external disk, a synced folder. Not inside the kit: there it is refused.
+2. The kit stops the database servers, copies projects and data into Atollo-\<date-time\> and starts again those with “Start with Atollo”. At the end it says how many files and how much space: “Copy made: … files, …”.
+3. To bring it back, into this kit or a new one on another PC: “Import from a zip…” (or “Import from a folder…”), then “Close Atollo to import it” and open Atollo again. At the start the copy takes the place of projects and data; the previous ones stay in .atollo-before-import-\<date-time\>, in the kit's folder, until you delete them. “Cancel the import” changes your mind.
+
+On another PC or in another folder the kit adjusts as when you move it: the programs already downloaded stay, the missing ones are downloaded again on their own. Antigravity's sign-in has to be done again on another PC or account, and the database data needs the same server versions, which are downloaded again by version.
+
+By hand, with Atollo closed, the copy is this:
 
 | To copy | Why |
 | --- | --- |

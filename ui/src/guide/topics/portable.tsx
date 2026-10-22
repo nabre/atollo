@@ -331,6 +331,17 @@ export const PORTABLE: TopicTexts = {
             "Pro Ordner kann jeweils nur ein Kit geöffnet sein: Wenn du Atollo aus demselben Ordner erneut startest, wird das bereits geöffnete Fenster in den Vordergrund geholt. Zwei verschiedene Kits (zwei USB-Sticks) können dagegen gleichzeitig laufen.",
           )}
         </Callout>
+        <P>
+          {rich(
+            tr(
+              "Per portare solo il tuo lavoro in un kit che c'è già, senza i programmi, usa «Copia del kit» in Impostazioni › Il kit: esporta in uno zip da qui, importa di là ({0}).",
+              "To bring only your work into a kit that already exists, without the programs, use “Copy of the kit” in Settings › The kit: export to a zip here, import there ({0}).",
+              "Pour apporter seulement votre travail dans un kit qui existe déjà, sans les programmes, utilisez « Copie du kit » dans Paramètres › Le kit : exportez dans un zip ici, importez là-bas ({0}).",
+              "Um nur deine Arbeit in ein bereits vorhandenes Kit zu bringen, ohne die Programme, verwende „Kopie des Kits“ unter Einstellungen › Das Kit: hier in ein Zip exportieren, dort importieren ({0}).",
+            ),
+            <See key="b" id="updates" />,
+          )}
+        </P>
       </Section>
 
       <Section
@@ -432,10 +443,10 @@ export const PORTABLE: TopicTexts = {
             "Die Werkzeuge werden auf der Seite Werkzeuge aktualisiert, mit „<Name> aktualisieren“ in einer Zeile oder „Alle aktualisieren“.",
           ),
           tr(
-            "Per una copia di sicurezza completa basta copiare projects e data (senza i programmi, che si riscaricano).",
-            "For a complete backup it is enough to copy projects and data (without the programs, which can be downloaded again).",
-            "Pour une sauvegarde complète, il suffit de copier projects et data (sans les programmes, qui se retéléchargent).",
-            "Für eine vollständige Sicherung genügt es, projects und data zu kopieren (ohne die Programme, die sich erneut herunterladen lassen).",
+            "Per una copia di sicurezza completa c'è «Copia del kit» in Impostazioni › Il kit: progetti e dati in una cartella o in uno zip, senza i programmi, che si riscaricano, e l'importazione in un altro kit.",
+            "For a complete backup there is “Copy of the kit” in Settings › The kit: projects and data into a folder or a zip, without the programs, which are downloaded again, and the import into another kit.",
+            "Pour une sauvegarde complète, il y a « Copie du kit » dans Paramètres › Le kit : projets et données dans un dossier ou un zip, sans les programmes, qui se retéléchargent, et l'importation dans un autre kit.",
+            "Für eine vollständige Sicherung gibt es „Kopie des Kits“ unter Einstellungen › Das Kit: Projekte und Daten in einen Ordner oder ein Zip, ohne die Programme, die sich erneut herunterladen lassen, und den Import in ein anderes Kit.",
           ),
         ]}
       />
@@ -511,6 +522,44 @@ export const PORTABLE: TopicTexts = {
       </Section>
 
       <Section title={tr("Copie di sicurezza", "Backups", "Sauvegardes", "Sicherungen")}>
+        <Steps
+          steps={[
+            tr(
+              "Apri Impostazioni › Il kit › «Copia del kit» e premi «Esporta in uno zip…» (o «Esporta in una cartella…»), poi scegli dove metterla: un disco esterno, una cartella sincronizzata. Non dentro il kit: lì è rifiutata.",
+              "Open Settings › The kit › “Copy of the kit” and press “Export to a zip…” (or “Export to a folder…”), then choose where to put it: an external disk, a synced folder. Not inside the kit: there it is refused.",
+              "Ouvrez Paramètres › Le kit › « Copie du kit » et appuyez sur « Exporter dans un zip… » (ou « Exporter dans un dossier… »), puis choisissez où la mettre : un disque externe, un dossier synchronisé. Pas dans le kit : elle y est refusée.",
+              "Öffne Einstellungen › Das Kit › „Kopie des Kits“ und drücke „In ein Zip exportieren…“ (oder „In einen Ordner exportieren…“), dann wähle, wohin sie kommt: eine externe Festplatte, ein synchronisierter Ordner. Nicht in das Kit: Dort wird sie abgelehnt.",
+            ),
+            tr(
+              "Il kit ferma i server dei database, copia progetti e dati in Atollo-<data-ora> e riavvia quelli con «Avvia con Atollo». Alla fine dice quanti file e quanto spazio: «Copia fatta: … file, …».",
+              "The kit stops the database servers, copies projects and data into Atollo-<date-time> and starts again those with “Start with Atollo”. At the end it says how many files and how much space: “Copy made: … files, …”.",
+              "Le kit arrête les serveurs de bases de données, copie projets et données dans Atollo-<date-heure> et redémarre ceux avec « Démarrer avec Atollo ». À la fin, il indique combien de fichiers et quelle taille : « Copie faite : … fichiers, … ».",
+              "Das Kit hält die Datenbankserver an, kopiert Projekte und Daten nach Atollo-<Datum-Uhrzeit> und startet die mit „Mit Atollo starten“ wieder. Am Ende sagt es, wie viele Dateien und wie viel Platz: „Kopie erstellt: … Dateien, …“.",
+            ),
+            tr(
+              "Per riportarla, in questo kit o in uno nuovo su un altro PC: «Importa da uno zip…» (o «Importa da una cartella…»), poi «Chiudi Atollo per importarla» e riapri Atollo. All'avvio la copia prende il posto di progetti e dati; quelli di prima restano in .atollo-before-import-<data-ora>, nella cartella del kit, finché non li cancelli tu. «Annulla l'importazione» ci ripensa.",
+              "To bring it back, into this kit or a new one on another PC: “Import from a zip…” (or “Import from a folder…”), then “Close Atollo to import it” and open Atollo again. At the start the copy takes the place of projects and data; the previous ones stay in .atollo-before-import-<date-time>, in the kit's folder, until you delete them. “Cancel the import” changes your mind.",
+              "Pour la remettre, dans ce kit ou dans un nouveau sur un autre PC : « Importer depuis un zip… » (ou « Importer depuis un dossier… »), puis « Fermer Atollo pour l'importer » et rouvrez Atollo. Au démarrage, la copie remplace projets et données ; les précédents restent dans .atollo-before-import-<date-heure>, dans le dossier du kit, jusqu'à ce que vous les supprimiez. « Annuler l'importation » revient en arrière.",
+              "Um sie zurückzuholen, in dieses Kit oder ein neues auf einem anderen PC: „Aus einem Zip importieren…“ (oder „Aus einem Ordner importieren…“), dann „Atollo schließen, um sie zu importieren“ und Atollo wieder öffnen. Beim Start ersetzt die Kopie Projekte und Daten; die bisherigen bleiben in .atollo-before-import-<Datum-Uhrzeit>, im Ordner des Kits, bis du sie löschst. „Import abbrechen“ macht es rückgängig.",
+            ),
+          ]}
+        />
+        <P>
+          {tr(
+            "Su un altro PC o in un'altra cartella il kit si sistema come quando lo sposti: i programmi già scaricati restano, quelli che mancano si riscaricano da soli. L'accesso di Antigravity va rifatto su un altro PC o account, e i dati dei database vogliono le stesse versioni dei server, che si riscaricano per versione.",
+            "On another PC or in another folder the kit adjusts as when you move it: the programs already downloaded stay, the missing ones are downloaded again on their own. Antigravity's sign-in has to be done again on another PC or account, and the database data needs the same server versions, which are downloaded again by version.",
+            "Sur un autre PC ou dans un autre dossier, le kit s'adapte comme quand vous le déplacez : les programmes déjà téléchargés restent, ceux qui manquent se retéléchargent tout seuls. La connexion d'Antigravity est à refaire sur un autre PC ou compte, et les données des bases de données demandent les mêmes versions des serveurs, qui se retéléchargent par version.",
+            "Auf einem anderen PC oder in einem anderen Ordner passt sich das Kit an wie beim Verschieben: Die bereits heruntergeladenen Programme bleiben, die fehlenden werden von selbst erneut heruntergeladen. Die Anmeldung bei Antigravity musst du auf einem anderen PC oder Konto wiederholen, und die Daten der Datenbanken brauchen dieselben Serverversionen, die nach Version erneut heruntergeladen werden.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "A mano, con Atollo chiuso, la copia è questa:",
+            "By hand, with Atollo closed, the copy is this:",
+            "À la main, avec Atollo fermé, la copie est celle-ci :",
+            "Von Hand, bei geschlossenem Atollo, ist die Kopie diese:",
+          )}
+        </P>
         <Table
           columns={[tr("Da copiare", "To copy", "À copier", "Zu kopieren"), tr("Perché", "Why", "Pourquoi", "Warum")]}
           rows={[

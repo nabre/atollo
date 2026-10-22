@@ -80,8 +80,12 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 | Impostazioni, accessi (`auth.json`) e sessioni di Pi, e il `models.json` del kit con indirizzo e chiave del server locale (leggibile solo dal tuo utente) | `data/home/.pi/agent/` |
 | Dati del server dell'editor e il suo token di accesso per sessione | `data/vscodium-server/` |
 | I tuoi progetti | `projects/` |
+| Una copia del kit che aspetta di essere importata, solo dopo «Importa da…» | `.atollo-import/` |
+| Quello che una copia importata ha sostituito, finché non lo cancelli | `.atollo-before-import-<data-ora>/` |
 
 Le password dei database, la chiave API di Gemini, il file del token di Claude, la chiave dei modelli locali e il token di Hugging Face vengono creati leggibili solo dal tuo utente, dove il disco supporta i permessi (NTFS, APFS, ext4…). Gli altri file, `settings.json` compreso, sono file normali. Sulle chiavette formattate FAT32 o exFAT non esistono permessi: **chiunque abbia la chiavetta può leggere tutti i file sopra**. Tieni la chiavetta al sicuro, oppure usa un disco con i permessi.
+
+Impostazioni › Il kit › **«Copia del kit»** scrive `projects/` e `data/` (senza programmi, cache e modelli locali) in una cartella o in uno zip **che scegli tu**, anche fuori dalla cartella di Atollo. La copia contiene i segreti del kit **in chiaro** (`data/app/db/secrets.json`, `data/app/secrets/`, gli accessi degli agenti e di GitHub): tienila al sicuro. Atollo non la manda mai da nessuna parte.
 
 Il token di Claude e la chiave API di Gemini vengono passati (come `CLAUDE_CODE_OAUTH_TOKEN` e `GEMINI_API_KEY`) solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. La chiave dei modelli locali va a Pi quando lo avvia Atollo (`LLAMA_API_KEY`) e nel `models.json` di Pi, così `pi` funziona anche dai terminali del kit. Il token di Hugging Face va solo a `huggingface.co`.
 

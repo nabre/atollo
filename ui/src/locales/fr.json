@@ -1030,5 +1030,19 @@
   "Nessun file da salvare.": "Aucun fichier à enregistrer.",
   "Cosa copiare": "Quoi copier",
   "{0} file": "{0} fichiers",
-  "In tutto: {0} file, {1}": "En tout : {0} fichiers, {1}"
+  "In tutto: {0} file, {1}": "En tout : {0} fichiers, {1}",
+  "Copia del kit": "Copie du kit",
+  "Progetti e dati (impostazioni, database, agenti) in una cartella o in uno zip, senza i programmi, le cache e i modelli locali, che si riscaricano. I database si fermano per la copia. La copia contiene le password del kit: tienila al sicuro.": "Projets et données (paramètres, bases de données, agents) dans un dossier ou un zip, sans les programmes, les caches et les modèles locaux, qui se téléchargent à nouveau. Les bases de données s'arrêtent pour la copie. La copie contient les mots de passe du kit : gardez-la en lieu sûr.",
+  "Esporta in una cartella…": "Exporter dans un dossier…",
+  "Esporta in uno zip…": "Exporter dans un zip…",
+  "Importa da una cartella…": "Importer depuis un dossier…",
+  "Importa da uno zip…": "Importer depuis un zip…",
+  "Copia fatta: {0} file, {1}.": "Copie faite : {0} fichiers, {1}.",
+  "Copia pronta: {0} file, {1}, fatta il {2}.": "Copie prête : {0} fichiers, {1}, faite le {2}.",
+  "Una copia aspetta di essere importata.": "Une copie attend d'être importée.",
+  "Al prossimo avvio prende il posto dei progetti e dei dati di questo kit; quelli di adesso vanno nella cartella .atollo-before-import, non si cancellano. I programmi che mancano si riscaricano.": "Au prochain démarrage, elle remplace les projets et les données de ce kit ; ceux d'aujourd'hui vont dans le dossier .atollo-before-import, ils ne sont pas supprimés. Les programmes manquants se téléchargent à nouveau.",
+  "Chiudi Atollo per importarla": "Fermer Atollo pour l'importer",
+  "Annulla l'importazione": "Annuler l'importation",
+  "Apri la cartella del kit": "Ouvrir le dossier du kit",
+  "Poi riapri Atollo: la copia si applica all'avvio.": "Puis rouvrez Atollo : la copie s'applique au démarrage."
 }

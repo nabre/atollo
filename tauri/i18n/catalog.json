@@ -2253,5 +2253,20 @@
     "en": "The base's folder is gone: save it again from the project.",
     "fr": "Le dossier de la base n'existe plus : enregistrez-la à nouveau depuis le projet.",
     "de": "Der Ordner der Basis ist nicht mehr da: speichere sie erneut aus dem Projekt."
+  },
+  "Dove salvare la copia del kit": {
+    "en": "Where to save the copy of the kit",
+    "fr": "Où enregistrer la copie du kit",
+    "de": "Wo die Kopie des Kits gespeichert wird"
+  },
+  "Scegli la copia del kit da importare": {
+    "en": "Choose the copy of the kit to import",
+    "fr": "Choisissez la copie du kit à importer",
+    "de": "Wähle die Kopie des Kits zum Importieren"
+  },
+  "Importazione della copia del kit non riuscita: {0}": {
+    "en": "Importing the copy of the kit failed: {0}",
+    "fr": "L'importation de la copie du kit a échoué : {0}",
+    "de": "Der Import der Kopie des Kits ist fehlgeschlagen: {0}"
   }
 }

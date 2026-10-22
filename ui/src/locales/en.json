@@ -1030,5 +1030,19 @@
   "Nessun file da salvare.": "No file to save.",
   "Cosa copiare": "What to copy",
   "{0} file": "{0} files",
-  "In tutto: {0} file, {1}": "In all: {0} files, {1}"
+  "In tutto: {0} file, {1}": "In all: {0} files, {1}",
+  "Copia del kit": "Copy of the kit",
+  "Progetti e dati (impostazioni, database, agenti) in una cartella o in uno zip, senza i programmi, le cache e i modelli locali, che si riscaricano. I database si fermano per la copia. La copia contiene le password del kit: tienila al sicuro.": "Projects and data (settings, databases, agents) into a folder or a zip, without the programs, the caches and the local models, which are downloaded again. The databases stop for the copy. The copy holds the kit's passwords: keep it safe.",
+  "Esporta in una cartella…": "Export to a folder…",
+  "Esporta in uno zip…": "Export to a zip…",
+  "Importa da una cartella…": "Import from a folder…",
+  "Importa da uno zip…": "Import from a zip…",
+  "Copia fatta: {0} file, {1}.": "Copy made: {0} files, {1}.",
+  "Copia pronta: {0} file, {1}, fatta il {2}.": "Copy ready: {0} files, {1}, made on {2}.",
+  "Una copia aspetta di essere importata.": "A copy is waiting to be imported.",
+  "Al prossimo avvio prende il posto dei progetti e dei dati di questo kit; quelli di adesso vanno nella cartella .atollo-before-import, non si cancellano. I programmi che mancano si riscaricano.": "At the next start it takes the place of this kit's projects and data; the current ones go to the .atollo-before-import folder, they are not deleted. The missing programs are downloaded again.",
+  "Chiudi Atollo per importarla": "Close Atollo to import it",
+  "Annulla l'importazione": "Cancel the import",
+  "Apri la cartella del kit": "Open the kit's folder",
+  "Poi riapri Atollo: la copia si applica all'avvio.": "Then open Atollo again: the copy is applied at the start."
 }

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kit-import"
+description = "Enables the kit_import command without any pre-configured scope."
+commands.allow = ["kit_import"]
+
+[[permission]]
+identifier = "deny-kit-import"
+description = "Denies the kit_import command without any pre-configured scope."
+commands.deny = ["kit_import"]

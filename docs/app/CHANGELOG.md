@@ -1,5 +1,13 @@
 # Novità
 
+## Copia del kit (22/10/2026)
+
+- **«Copia del kit»** in Impostazioni › «Il kit»: «Esporta in una cartella…» o «Esporta in uno zip…» copia i progetti e i dati (impostazioni, database, agenti) in `Atollo-<data-ora>`, senza i programmi, le cache e i modelli locali, che si riscaricano. È la copia di sicurezza del README, fatta da Atollo (D-163).
+- **I database si fermano** per la copia, così i loro file sono coerenti; dopo ripartono quelli con «Avvia con Atollo». Le azioni dei progetti in corso restano accese.
+- **«Importa da una cartella…» o «Importa da uno zip…»** controlla la copia e la prepara; chiudi Atollo con «Chiudi Atollo per importarla» e riaprilo: all'avvio la copia prende il posto dei progetti e dei dati. Quelli di prima vanno in `.atollo-before-import-<data-ora>` nella cartella del kit, mai cancellati; «Annulla l'importazione» ci ripensa.
+- **Su un altro PC o un altro disco**: i programmi già scaricati nel kit restano, quelli che mancano si riscaricano da soli, e il kit si sistema come quando lo sposti. L'accesso di Antigravity va rifatto su un altro PC o account.
+- **La copia contiene le password del kit** in chiaro: tienila al sicuro. Atollo non la manda da nessuna parte.
+
 ## Le mie basi (22/10/2026)
 
 - **«Salva come base»** nella testata della pagina del progetto, accanto ad «Apri la cartella»: i file del progetto diventano una base di «Nuovo progetto», da cui crearne altri uguali, per esempio un Laravel con i pacchetti di sempre (D-162).

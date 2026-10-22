@@ -136,7 +136,7 @@ Atollo\
                   (les paramètres de chaque projet : data\projects\<projet>\dev-settings.json)
 ```
 
-Pour une sauvegarde, copiez `projects\` et `data\` (sans `data\apps\` ni `data\cache\`, qui se téléchargent à nouveau).
+Pour une sauvegarde, utilisez Paramètres › Le kit › **Copie du kit** : elle exporte `projects\` et `data\` dans un dossier ou un zip, sans `data\apps\`, `data\cache\` ni `data\models\` (qui se téléchargent à nouveau), avec les bases de données arrêtées pendant la copie, et importe une telle copie dans un kit à son démarrage suivant. À la main, copiez les mêmes dossiers avec Atollo fermé. La copie contient les mots de passe du kit : gardez-la en lieu sûr.
 
 ## Désinstallation
 

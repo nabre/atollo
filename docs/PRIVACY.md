@@ -80,8 +80,12 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | Pi's settings, sign-ins (`auth.json`), sessions and the kit's `models.json` with the local server's address and key (readable by your user only) | `data/home/.pi/agent/` |
 | Editor server data and its per-session access token | `data/vscodium-server/` |
 | Your projects | `projects/` |
+| A kit copy waiting to be imported, only after “Import from…” | `.atollo-import/` |
+| What an imported copy replaced, kept until you delete it | `.atollo-before-import-<date-time>/` |
 
 The database passwords, the Gemini API key, the Claude token file, the local models' key and the Hugging Face token are created readable by your user only, where the disk supports permissions (NTFS, APFS, ext4…). The other files, `settings.json` included, are ordinary files. On USB sticks formatted FAT32 or exFAT there are no permissions at all: **anyone with the stick can read every file above**. Keep the stick safe, or use a disk with permissions.
+
+Settings › The kit › **“Copy of the kit”** writes `projects/` and `data/` (without programs, caches and local models) to a folder or a zip **you choose**, possibly outside the Atollo folder. The copy holds the kit's secrets **in clear** (`data/app/db/secrets.json`, `data/app/secrets/`, the agents' and GitHub sign-ins): keep it safe. Atollo never sends it anywhere.
 
 The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The local models' key goes to Pi when Atollo launches it (`LLAMA_API_KEY`) and into Pi's own `models.json`, so that `pi` works from the kit's terminals too. The Hugging Face token is sent only to `huggingface.co`.
 

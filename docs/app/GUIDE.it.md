@@ -2006,6 +2006,8 @@ Informazioni in sola lettura: cartella del kit, cartella dei progetti, cartella 
 
 «Salute del kit» controlla ciò che del PC e del disco può fermare il kit: il disco (FAT32, exFAT, noexec), lo spazio libero, i caratteri a rischio nel percorso del kit, i file resi privati da un altro account e, su Linux, le librerie di sistema. Ogni riga è verde, gialla o rossa, con sotto che cosa fare; «Controlla di nuovo» rifà i controlli ([9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va)).
 
+«Copia del kit» copia i progetti e i dati (impostazioni, database, agenti) in una cartella o in uno zip con «Esporta in una cartella…» o «Esporta in uno zip…», senza i programmi, le cache e i modelli locali, che si riscaricano. I server dei database si fermano per la copia e ripartono dopo quelli con «Avvia con Atollo». «Importa da una cartella…» o «Importa da uno zip…» controlla una copia e la prepara: chiudi Atollo con «Chiudi Atollo per importarla» e riaprilo, e all'avvio la copia prende il posto dei progetti e dei dati; quelli di prima vanno in .atollo-before-import-\<data-ora\>, nella cartella del kit. La copia contiene le password del kit: tienila al sicuro ([7.3 Aggiornamenti e copie di sicurezza](#73-aggiornamenti-e-copie-di-sicurezza)).
+
 Sotto, «Segnalare un problema» ha due pulsanti. «Esporta diagnostica» crea in `data\app\diagnostics` uno zip con versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit sostituiti da \*\*\*, la cartella del tuo profilo come ~ e i nomi tuo e del PC tolti; «Apri la cartella» lo mostra. Lo zip resta sul PC: guardalo e allegalo tu. «Segnala un problema» apre nel browser una segnalazione nuova su GitHub con versione e sistema già scritti; nulla parte finché non la crei.
 
 #### Framework
@@ -2219,6 +2221,8 @@ Su un altro PC la chiavetta potrebbe diventare E: invece di D:. Non devi fare ni
 >
 > Si può aprire un kit alla volta per cartella: avviare di nuovo Atollo dalla stessa cartella porta in primo piano la finestra già aperta. Due kit diversi (due chiavette) possono invece girare insieme.
 
+Per portare solo il tuo lavoro in un kit che c'è già, senza i programmi, usa «Copia del kit» in Impostazioni › Il kit: esporta in uno zip da qui, importa di là ([7.3 Aggiornamenti e copie di sicurezza](#73-aggiornamenti-e-copie-di-sicurezza)).
+
 #### Lo stesso kit su Windows, macOS e Linux
 
 I programmi sono diversi per ogni sistema, e il kit li tiene in cartelle separate (`data\apps\win32-x64`, `data\apps\darwin-arm64`, `data\apps\linux-x64…`). Tutto il resto è in comune: progetti, impostazioni, accessi, istruzioni degli agenti, database.
@@ -2252,7 +2256,7 @@ Argomenti collegati: [7.1 Rimuovere l'unità in sicurezza](#71-rimuovere-lunità
 >
 > - Atollo si aggiorna da solo: scarica la nuova versione e la mette al posto della vecchia quando chiudi l'app.
 > - Gli strumenti si aggiornano dalla pagina Strumenti, con «Aggiorna \<nome\>» su una riga o «Aggiorna tutto».
-> - Per una copia di sicurezza completa basta copiare projects e data (senza i programmi, che si riscaricano).
+> - Per una copia di sicurezza completa c'è «Copia del kit» in Impostazioni › Il kit: progetti e dati in una cartella o in uno zip, senza i programmi, che si riscaricano, e l'importazione in un altro kit.
 
 #### Aggiornare Atollo
 
@@ -2277,6 +2281,14 @@ In Impostazioni › «Aggiornamenti» vedi lo stato («Atollo … è la versione
 > Aggiorna quando non hai progetti avviati: i programmi in uso non si possono sostituire, e la riga mostrerebbe «in uso: chiudi i programmi del kit e riprova».
 
 #### Copie di sicurezza
+
+1. Apri Impostazioni › Il kit › «Copia del kit» e premi «Esporta in uno zip…» (o «Esporta in una cartella…»), poi scegli dove metterla: un disco esterno, una cartella sincronizzata. Non dentro il kit: lì è rifiutata.
+2. Il kit ferma i server dei database, copia progetti e dati in Atollo-\<data-ora\> e riavvia quelli con «Avvia con Atollo». Alla fine dice quanti file e quanto spazio: «Copia fatta: … file, …».
+3. Per riportarla, in questo kit o in uno nuovo su un altro PC: «Importa da uno zip…» (o «Importa da una cartella…»), poi «Chiudi Atollo per importarla» e riapri Atollo. All'avvio la copia prende il posto di progetti e dati; quelli di prima restano in .atollo-before-import-\<data-ora\>, nella cartella del kit, finché non li cancelli tu. «Annulla l'importazione» ci ripensa.
+
+Su un altro PC o in un'altra cartella il kit si sistema come quando lo sposti: i programmi già scaricati restano, quelli che mancano si riscaricano da soli. L'accesso di Antigravity va rifatto su un altro PC o account, e i dati dei database vogliono le stesse versioni dei server, che si riscaricano per versione.
+
+A mano, con Atollo chiuso, la copia è questa:
 
 | Da copiare | Perché |
 | --- | --- |
