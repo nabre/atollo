@@ -1078,10 +1078,10 @@ export const INSIDE: TopicTexts = {
                 "Der Hash der Datei muss der vom Hersteller veröffentlichte sein (oder der im Katalog des Kits festgelegte).",
               ),
               tr(
-                "Python, Node.js, Go, Maven, Caddy, SQLite, l'editor",
-                "Python, Node.js, Go, Maven, Caddy, SQLite, the editor",
-                "Python, Node.js, Go, Maven, Caddy, SQLite, l'éditeur",
-                "Python, Node.js, Go, Maven, Caddy, SQLite, der Editor",
+                "Python, Node.js, Go, Maven, Caddy, SQLite, l'editor, Pi, llama.cpp, i modelli locali",
+                "Python, Node.js, Go, Maven, Caddy, SQLite, the editor, Pi, llama.cpp, the local models",
+                "Python, Node.js, Go, Maven, Caddy, SQLite, l'éditeur, Pi, llama.cpp, les modèles locaux",
+                "Python, Node.js, Go, Maven, Caddy, SQLite, der Editor, Pi, llama.cpp, die lokalen Modelle",
               ),
             ],
             [
