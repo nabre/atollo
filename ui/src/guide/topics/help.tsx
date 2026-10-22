@@ -83,6 +83,21 @@ function problems(): { title: string; items: Problem[] }[] {
           ),
           see: "move",
         },
+        {
+          q: tr(
+            "Un programma si chiude da solo o manca una libreria, con il kit su una chiavetta.",
+            "A program crashes or a library is missing, with the kit on a USB stick.",
+            "Un programme plante ou une bibliothèque manque, avec le kit sur une clé USB.",
+            "Ein Programm stürzt ab oder eine Bibliothek fehlt, mit dem Kit auf einem USB-Stick.",
+          ),
+          a: tr(
+            "Un file del programma può essersi danneggiato sulla chiavetta. Premi «Verifica i file» nella pagina Strumenti (o esegui check --files): elenca le cartelle con file mancanti o cambiati dall'installazione, e «Reinstalla» le rimette alla stessa versione, senza toccare progetti e database.",
+            "One of the program's files may be damaged on the stick. Press “Check the files” on the Tools page (or run check --files): it lists the folders with files missing or changed since the installation, and “Reinstall” puts them back at the same version, without touching projects and databases.",
+            "Un fichier du programme peut s'être endommagé sur la clé. Appuyez sur « Vérifier les fichiers » dans la page Outils (ou lancez check --files) : la liste montre les dossiers avec des fichiers manquants ou modifiés depuis l'installation, et « Réinstaller » les remet à la même version, sans toucher aux projets ni aux bases de données.",
+            "Eine Datei des Programms kann auf dem Stick beschädigt sein. Klicke auf der Seite Werkzeuge auf „Dateien prüfen“ (oder führe check --files aus): Die Liste zeigt die Ordner mit fehlenden oder seit der Installation geänderten Dateien, und „Neu installieren“ stellt sie in derselben Version wieder her, ohne Projekte und Datenbanken anzurühren.",
+          ),
+          see: "tools",
+        },
       ],
     },
     {

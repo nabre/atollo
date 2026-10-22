@@ -322,6 +322,12 @@ Verified by hand on Windows x64: Claude Code 2.1.306 expands `${VAR}` in the hea
 - [ ] **Logos.** Every component has its logo, readable in the light theme and in the dark one; the projects show the language labels.
 - [ ] **Dependencies.** Apache shows the “PHP” dependency; with Claude Code chosen, Git shows “for Claude Code”. Removing PHP also removes Apache.
 - [ ] **PATH after an installation.** After installing a language from this page, Home › Terminal opens the kit console with the kit's PowerShell 7 and the new program is in the PATH, without restarting the app.
+- [ ] **Check the files** (D-159). After installing a component (e.g. `gh`) its folder has `.atollo-manifest` (header `# Atollo manifest 1: sha256 size path`); “Check the files” on the toolbar shows “No damaged file: N folders checked.”
+- [ ] **Files: damage found.** Flip one byte of a file in the component's folder (e.g. `bin\gh.exe`) and delete another: “Check the files” lists the component with “1 files changed, 1 missing” and the paths; with two damaged components “Reinstall all” appears too.
+- [ ] **Files: Reinstall.** “Reinstall” on the damaged row prepares the component again at the same version (the projects and the databases stay as they were); “Check the files” is fine again.
+- [ ] **Files: no manifest.** A component installed with a version before D-159 (or with `.atollo-manifest` deleted) appears in “Without a manifest, installed before Atollo kept one: …”; after its update it is checked.
+- [ ] **Files: not damage.** `pip install requests` in the kit's Python, a gem in Ruby, an edit of Apache's `httpd.conf` and the logs of a running server: “Check the files” stays fine.
+- [ ] **Files: command line.** `Atollo.exe check --files | Out-Host` prints `√`, `x` or `-` per folder, the damaged paths under the `x` lines; `$LASTEXITCODE` is 0 when all is fine, 1 with a damaged folder.
 
 ### Terminals
 - [ ] **Replaced version.** A terminal saved with PHP 8.2, then 8.2 removed: the Terminals page says which one it uses instead (“PHP 8.2 → 8.4”) and the terminal opens with 8.4.

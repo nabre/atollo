@@ -576,10 +576,10 @@ export const TOOLS: TopicTexts = {
 
       <Section
         title={tr(
-          "«Piattaforma», «Espandi» e «Verifica»",
-          "“Platform”, “Expand” and “Verify”",
-          "« Plateforme », « Développer » et « Vérifier »",
-          "„Plattform“, „Erweitern“ und „Prüfen“",
+          "«Piattaforma», «Espandi», «Verifica» e «Verifica i file»",
+          "“Platform”, “Expand”, “Verify” and “Check the files”",
+          "« Plateforme », « Développer », « Vérifier » et « Vérifier les fichiers »",
+          "„Plattform“, „Erweitern“, „Prüfen“ und „Dateien prüfen“",
         )}
       >
         <Bullets
@@ -601,6 +601,24 @@ export const TOOLS: TopicTexts = {
               "“Verify” asks every installed component to respond with its version, and adds a ✓ or ⚠ mark in the status cell.",
               "« Vérifier » demande à chaque composant installé de répondre avec sa version, et ajoute un signe ✓ ou ⚠ dans la cellule de l'état.",
               "„Prüfen“ fordert jede installierte Komponente auf, mit ihrer Version zu antworten, und fügt in der Statuszelle ein ✓ oder ⚠ hinzu.",
+            ),
+            tr(
+              "«Verifica i file» confronta i file di ogni programma installato con quelli della sua installazione: trova i file mancanti o cambiati, per esempio su una chiavetta danneggiata. Ogni cartella danneggiata mostra quanti file sono cambiati e quanti mancano, i primi percorsi e «Reinstalla»; con più di una c'è anche «Reinstalla tutti». Se va tutto bene compare «Nessun file danneggiato» con il numero di cartelle verificate.",
+              "“Check the files” compares the files of every installed program with those of its installation: it finds the files missing or changed, for example on a damaged USB stick. Every damaged folder shows how many files changed and how many are missing, the first paths and “Reinstall”; with more than one there is also “Reinstall all”. If everything is fine, “No damaged file” appears with the number of folders checked.",
+              "« Vérifier les fichiers » compare les fichiers de chaque programme installé avec ceux de son installation : il trouve les fichiers manquants ou modifiés, par exemple sur une clé USB endommagée. Chaque dossier endommagé indique combien de fichiers ont changé et combien manquent, les premiers chemins et « Réinstaller » ; s'il y en a plusieurs, il y a aussi « Tout réinstaller ». Si tout va bien, « Aucun fichier endommagé » apparaît avec le nombre de dossiers vérifiés.",
+              "„Dateien prüfen“ vergleicht die Dateien jedes installierten Programms mit denen seiner Installation: Es findet fehlende oder geänderte Dateien, zum Beispiel auf einem beschädigten USB-Stick. Jeder beschädigte Ordner zeigt, wie viele Dateien geändert sind und wie viele fehlen, die ersten Pfade und „Neu installieren“; bei mehr als einem gibt es auch „Alle neu installieren“. Wenn alles in Ordnung ist, erscheint „Keine beschädigte Datei“ mit der Zahl der geprüften Ordner.",
+            ),
+            tr(
+              "«Reinstalla» rimette i file del programma alla stessa versione; progetti e database non si toccano. I file aggiunti dopo l'installazione (pacchetti pip, gem, workload) e quelli che il kit o i programmi cambiano apposta (httpd.conf, config.inc.php, i log) non sono un danno. Rust, Android e TinyTeX non si verificano: la loro cartella la cambiano loro.",
+              "“Reinstall” puts the program's files back at the same version; projects and databases are not touched. Files added after the installation (pip packages, gems, workloads) and those the kit or the programs change on purpose (httpd.conf, config.inc.php, the logs) are not damage. Rust, Android and TinyTeX are not checked: their folder is theirs to change.",
+              "« Réinstaller » remet les fichiers du programme à la même version ; les projets et les bases de données ne sont pas touchés. Les fichiers ajoutés après l'installation (paquets pip, gems, workloads) et ceux que le kit ou les programmes modifient exprès (httpd.conf, config.inc.php, les journaux) ne sont pas un dommage. Rust, Android et TinyTeX ne sont pas vérifiés : leur dossier, c'est à eux de le modifier.",
+              "„Neu installieren“ stellt die Dateien des Programms in derselben Version wieder her; Projekte und Datenbanken bleiben unberührt. Nach der Installation hinzugefügte Dateien (pip-Pakete, Gems, Workloads) und solche, die das Kit oder die Programme absichtlich ändern (httpd.conf, config.inc.php, die Logs), sind kein Schaden. Rust, Android und TinyTeX werden nicht geprüft: Ihren Ordner ändern sie selbst.",
+            ),
+            tr(
+              "Un componente installato prima che Atollo tenesse il manifesto compare nell'elenco «Senza manifesto»: si verifica dalla sua prossima installazione o aggiornamento.",
+              "A component installed before Atollo kept the manifest appears in the “Without a manifest” list: it is checked from its next installation or update.",
+              "Un composant installé avant qu'Atollo ne tienne le manifeste apparaît dans la liste « Sans manifeste » : il est vérifié à partir de sa prochaine installation ou mise à jour.",
+              "Eine Komponente, die installiert wurde, bevor Atollo das Manifest führte, steht in der Liste „Ohne Manifest“: Sie wird ab ihrer nächsten Installation oder Aktualisierung geprüft.",
             ),
           ]}
         />
@@ -632,6 +650,12 @@ export const TOOLS: TopicTexts = {
               "The “to update” status corresponds to a <component>.reinstall file, written when the kit changes folder and a conda environment (R, Ruby, MongoDB and SQLite on Linux, make) cannot follow it.",
               "L'état « à mettre à jour » correspond à un fichier <composant>.reinstall, écrit quand le kit change de dossier et qu'un environnement conda (R, Ruby, MongoDB et SQLite sur Linux, make) ne peut pas le suivre.",
               "Der Status „zu aktualisieren“ entspricht einer Datei <Komponente>.reinstall, die geschrieben wird, wenn das Kit den Ordner wechselt und eine conda-Umgebung (R, Ruby, MongoDB und SQLite unter Linux, make) nicht mitziehen kann.",
+            ),
+            tr(
+              "«Verifica i file» legge .atollo-manifest, scritto alla fine di ogni installazione nella cartella del componente (o della versione): dimensione e SHA-256 di ogni file. «Reinstalla» scrive lo stesso segno <componente>.reinstall (o <componente>@<versione>.reinstall) e prepara di nuovo il componente.",
+              "“Check the files” reads .atollo-manifest, written at the end of every installation in the component's (or the version's) folder: size and SHA-256 of every file. “Reinstall” writes the same <component>.reinstall mark (or <component>@<version>.reinstall) and prepares the component again.",
+              "« Vérifier les fichiers » lit .atollo-manifest, écrit à la fin de chaque installation dans le dossier du composant (ou de la version) : taille et SHA-256 de chaque fichier. « Réinstaller » écrit la même marque <composant>.reinstall (ou <composant>@<version>.reinstall) et prépare à nouveau le composant.",
+              "„Dateien prüfen“ liest .atollo-manifest, das am Ende jeder Installation in den Ordner der Komponente (oder der Version) geschrieben wird: Größe und SHA-256 jeder Datei. „Neu installieren“ schreibt dieselbe Markierung <Komponente>.reinstall (oder <Komponente>@<Version>.reinstall) und bereitet die Komponente erneut vor.",
             ),
           ]}
         />

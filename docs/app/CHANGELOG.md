@@ -1,5 +1,13 @@
 # Novità
 
+## Verifica dei file dei componenti (22/10/2026)
+
+- **«Verifica i file»** nella pagina Strumenti, accanto a «Verifica»: confronta i file di ogni programma installato con quelli della sua installazione e trova quelli mancanti o cambiati, per esempio su una chiavetta danneggiata. «Verifica» dice solo se un programma risponde; questa trova la libreria rotta che lo fa chiudere più tardi (D-159).
+- **«Reinstalla»** su ogni cartella danneggiata, e «Reinstalla tutti» quando sono più di una: rimette i file del programma alla stessa versione; progetti e database non si toccano. Se va tutto bene: «Nessun file danneggiato» con il numero di cartelle verificate.
+- **Non sono un danno** i file aggiunti dopo l'installazione (pacchetti pip, gem, workload di .NET) e quelli che Atollo o i programmi cambiano apposta (`httpd.conf`, `config.inc.php`, i log). Rust, Android e TinyTeX non si verificano: la loro cartella la cambiano loro.
+- **Dalla prossima installazione**: Atollo scrive l'elenco dei file (`.atollo-manifest`, con dimensione e SHA-256) alla fine di ogni installazione. I componenti installati prima compaiono come «senza manifesto» e si verificano dal loro prossimo aggiornamento.
+- **`Atollo check --files`** fa la stessa verifica dalla riga di comando e finisce con 1 quando qualcosa è danneggiato.
+
 ## QR del sito in rete locale (22/10/2026)
 
 - **«Dal telefono»** nel dettaglio di un'azione in corso, nella pagina del progetto, quando «Rete locale» è accesa nelle Impostazioni: l'indirizzo del sito con l'IP di questo PC sulla rete, con «Copia» e «Mostra il QR». Inquadri il QR con la fotocamera del telefono, collegato alla stessa rete, invece di ricopiare l'IP (D-158).

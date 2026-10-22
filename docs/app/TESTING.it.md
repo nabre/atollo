@@ -322,6 +322,12 @@ Provato a mano su Windows x64: Claude Code 2.1.306 espande `${VAR}` nelle intest
 - [ ] **Loghi.** Ogni componente ha il suo logo, leggibile nel tema chiaro e in quello scuro; i progetti mostrano le etichette dei linguaggi.
 - [ ] **Dipendenze.** Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code». Togliendo PHP si toglie anche Apache.
 - [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre la console del kit con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
+- [ ] **Verifica i file** (D-159). Dopo l'installazione di un componente (per esempio `gh`) la sua cartella ha `.atollo-manifest` (intestazione `# Atollo manifest 1: sha256 size path`); «Verifica i file» nella barra degli strumenti mostra «Nessun file danneggiato: N cartelle verificate.»
+- [ ] **File: danno trovato.** Cambiando un byte di un file nella cartella del componente (per esempio `bin\gh.exe`) e cancellandone un altro, «Verifica i file» elenca il componente con «1 file cambiati, 1 mancanti» e i percorsi; con due componenti danneggiati compare anche «Reinstalla tutti».
+- [ ] **File: Reinstalla.** «Reinstalla» sulla riga danneggiata prepara di nuovo il componente alla stessa versione (progetti e database restano come erano); «Verifica i file» torna a posto.
+- [ ] **File: senza manifesto.** Un componente installato con una versione precedente a D-159 (o con `.atollo-manifest` cancellato) compare in «Senza manifesto, installati prima che Atollo lo tenesse: …»; dopo il suo aggiornamento si verifica.
+- [ ] **File: non è un danno.** `pip install requests` nel Python del kit, una gem in Ruby, una modifica a `httpd.conf` di Apache e i log di un server avviato: «Verifica i file» resta a posto.
+- [ ] **File: riga di comando.** `Atollo.exe check --files | Out-Host` stampa `√`, `x` o `-` per cartella, i percorsi danneggiati sotto le righe `x`; `$LASTEXITCODE` è 0 quando è tutto a posto, 1 con una cartella danneggiata.
 
 ### Terminali
 - [ ] **Versione sostituita.** Un terminale salvato con PHP 8.2, poi 8.2 tolto: la pagina Terminali dice quale usa al suo posto («PHP 8.2 → 8.4») e il terminale si apre con la 8.4.
