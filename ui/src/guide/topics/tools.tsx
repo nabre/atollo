@@ -37,6 +37,12 @@ export const TOOLS: TopicTexts = {
             "Die Symbole in den Zeilen wirken sofort: „Installieren“ und „Aktualisieren“ starten, sobald du sie drückst.",
           ),
           tr(
+            "Il riquadro «Aggiornamenti» elenca i componenti installati con una versione nuova, con «Cosa cambia» e «Aggiorna»; il loro numero compare sull'icona di Strumenti.",
+            "The “Updates” box lists the installed components with a new version, with “What changes” and “Update”; their number appears on the Tools icon.",
+            "Le panneau « Mises à jour » liste les composants installés ayant une nouvelle version, avec « Ce qui change » et « Mettre à jour » ; leur nombre apparaît sur l'icône d'Outils.",
+            "Der Bereich „Aktualisierungen“ listet die installierten Komponenten mit einer neuen Version auf, mit „Was sich ändert“ und „Aktualisieren“; ihre Zahl erscheint auf dem Symbol von Werkzeuge.",
+          ),
+          tr(
             "Le caselle invece preparano una scelta, che si conferma con «Applica»: così si installano e tolgono più cose insieme.",
             "The checkboxes, instead, prepare a choice that you confirm with “Apply”: this way you install and remove several things at once.",
             "Les cases, elles, préparent un choix, que vous confirmez avec « Appliquer » : ainsi vous installez et retirez plusieurs choses à la fois.",
@@ -109,6 +115,15 @@ export const TOOLS: TopicTexts = {
                   "Die Gesamtansichten: „Alle Werkzeuge“, „Matrix“, „Erweiterungen des Editors“, „Beziehungen“, „PC-Voraussetzungen“ ({0}).",
                 ),
                 <See key="o" id="tools-overview" />,
+              ),
+            ],
+            [
+              tr("Riquadro «Aggiornamenti»", "“Updates” box", "Panneau « Mises à jour »", "Bereich „Aktualisierungen“"),
+              tr(
+                "I componenti installati che hanno una versione nuova, ognuno con «Cosa cambia» e «Aggiorna»; il numero compare anche sull'icona di Strumenti nella barra delle attività.",
+                "The installed components that have a new version, each with “What changes” and “Update”; the number also appears on the Tools icon in the activity bar.",
+                "Les composants installés qui ont une nouvelle version, chacun avec « Ce qui change » et « Mettre à jour » ; le nombre apparaît aussi sur l'icône d'Outils dans la barre d'activité.",
+                "Die installierten Komponenten mit einer neuen Version, jede mit „Was sich ändert“ und „Aktualisieren“; die Zahl erscheint auch auf dem Symbol von Werkzeuge in der Aktivitätsleiste.",
               ),
             ],
             [
@@ -624,6 +639,58 @@ export const TOOLS: TopicTexts = {
         />
       </Section>
 
+      <Section
+        title={tr(
+          "Il riquadro «Aggiornamenti»",
+          "The “Updates” box",
+          "Le panneau « Mises à jour »",
+          "Der Bereich „Aktualisierungen“",
+        )}
+      >
+        <P>
+          {tr(
+            "Nella barra laterale di Strumenti, sotto «Componenti» e «Panoramica», il riquadro «Aggiornamenti» elenca i componenti installati che alla loro fonte hanno una versione più recente: invece di «Aggiorna tutto» alla cieca, vedi che cosa cambia e scegli. Il numero di quelli indietro compare sul titolo del riquadro e sull'icona di Strumenti nella barra delle attività («Versioni nuove: 2»).",
+            "In the Tools side bar, below “Components” and “Overview”, the “Updates” box lists the installed components that have a newer version at their source: instead of “Update all” blindly, you see what changes and choose. The number of those behind appears on the box's title and on the Tools icon in the activity bar (“New versions: 2”).",
+            "Dans la barre latérale d'Outils, sous « Composants » et « Vue d'ensemble », le panneau « Mises à jour » liste les composants installés qui ont une version plus récente à leur source : au lieu de « Tout mettre à jour » à l'aveugle, vous voyez ce qui change et vous choisissez. Le nombre de ceux en retard apparaît sur le titre du panneau et sur l'icône d'Outils dans la barre d'activité (« Nouvelles versions : 2 »).",
+            "In der Seitenleiste von Werkzeuge, unter „Komponenten“ und „Übersicht“, listet der Bereich „Aktualisierungen“ die installierten Komponenten auf, die an ihrer Quelle eine neuere Version haben: statt blind „Alle aktualisieren“ siehst du, was sich ändert, und wählst. Die Zahl der veralteten erscheint im Titel des Bereichs und auf dem Symbol von Werkzeuge in der Aktivitätsleiste („Neue Versionen: 2“).",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "Ogni riga: il nome, la versione installata → quella nuova (per esempio 2.100.0 → 2.103.0), «Cosa cambia» e «Aggiorna».",
+              "Each row: the name, the installed version → the new one (for example 2.100.0 → 2.103.0), “What changes” and “Update”.",
+              "Chaque ligne : le nom, la version installée → la nouvelle (par exemple 2.100.0 → 2.103.0), « Ce qui change » et « Mettre à jour ».",
+              "Jede Zeile: der Name, die installierte Version → die neue (zum Beispiel 2.100.0 → 2.103.0), „Was sich ändert“ und „Aktualisieren“.",
+            ),
+            tr(
+              "«Cosa cambia» apre nel browser le note di rilascio del componente (la pagina dei cambiamenti o delle release della sua fonte); se il componente non ne ha, il suo sito ufficiale.",
+              "“What changes” opens the component's release notes in the browser (its source's changelog or releases page); if the component has none, its official site.",
+              "« Ce qui change » ouvre dans le navigateur les notes de version du composant (la page des changements ou des versions de sa source) ; s'il n'en a pas, son site officiel.",
+              "„Was sich ändert“ öffnet die Versionshinweise der Komponente im Browser (die Changelog- oder Release-Seite ihrer Quelle); hat die Komponente keine, ihre offizielle Website.",
+            ),
+            tr(
+              "«Aggiorna» aggiorna solo quel componente, come «Aggiorna» nella sua riga della tabella; a lavoro finito la riga sparisce dal riquadro.",
+              "“Update” updates only that component, like “Update” in its row of the table; when the work ends the row disappears from the box.",
+              "« Mettre à jour » met à jour seulement ce composant, comme « Mettre à jour » dans sa ligne du tableau ; une fois le travail terminé, la ligne disparaît du panneau.",
+              "„Aktualisieren“ aktualisiert nur diese Komponente, wie „Aktualisieren“ in ihrer Zeile der Tabelle; wenn die Arbeit fertig ist, verschwindet die Zeile aus dem Bereich.",
+            ),
+            tr(
+              "Le versioni si chiedono da sole dopo l'avvio, al massimo una volta al giorno, solo con «Aggiornamento automatico» attivo nelle Impostazioni; «Controlla ora» (la freccia circolare sul titolo del riquadro) le chiede subito. In fondo, «Controllato il …» dice quando.",
+              "The versions are asked by themselves after the start, at most once a day, only with “Automatic update” on in Settings; “Check now” (the circular arrow on the box's title) asks them at once. At the bottom, “Checked on …” says when.",
+              "Les versions sont demandées d'elles-mêmes après le démarrage, au plus une fois par jour, seulement avec « Mise à jour automatique » activée dans les Paramètres ; « Vérifier maintenant » (la flèche circulaire sur le titre du panneau) les demande tout de suite. En bas, « Vérifié le … » dit quand.",
+              "Die Versionen werden nach dem Start von selbst abgefragt, höchstens einmal am Tag, nur mit „Automatisches Update“ an in den Einstellungen; „Jetzt prüfen“ (der Kreispfeil im Titel des Bereichs) fragt sie sofort ab. Unten sagt „Geprüft am …“, wann.",
+            ),
+            tr(
+              "«Tutto aggiornato.» quando niente è indietro; «Non ancora controllato…» finché le versioni non sono mai state chieste. I componenti che fanno parte dell'app, a una versione fissata, non compaiono: seguono la versione di Atollo. Le versioni si confrontano per numeri (2.10 viene dopo 2.9), e una versione più vecchia alla fonte non è un aggiornamento.",
+              "“Everything up to date.” when nothing is behind; “Not checked yet…” until the versions have never been asked. The components that are part of the app, at a pinned version, do not appear: they follow Atollo's version. Versions are compared by numbers (2.10 comes after 2.9), and an older version at the source is not an update.",
+              "« Tout est à jour. » quand rien n'est en retard ; « Pas encore vérifié… » tant que les versions n'ont jamais été demandées. Les composants qui font partie de l'application, à une version figée, n'apparaissent pas : ils suivent la version d'Atollo. Les versions se comparent par nombres (2.10 vient après 2.9), et une version plus ancienne à la source n'est pas une mise à jour.",
+              "„Alles aktuell.“, wenn nichts veraltet ist; „Noch nicht geprüft…“, solange die Versionen nie abgefragt wurden. Die Komponenten, die Teil der App sind, in einer festgelegten Version, erscheinen nicht: Sie folgen der Version von Atollo. Versionen werden nach Zahlen verglichen (2.10 kommt nach 2.9), und eine ältere Version an der Quelle ist kein Update.",
+            ),
+          ]}
+        />
+      </Section>
+
       <Under>
         <Bullets
           items={[
@@ -656,6 +723,12 @@ export const TOOLS: TopicTexts = {
               "“Check the files” reads .atollo-manifest, written at the end of every installation in the component's (or the version's) folder: size and SHA-256 of every file. “Reinstall” writes the same <component>.reinstall mark (or <component>@<version>.reinstall) and prepares the component again.",
               "« Vérifier les fichiers » lit .atollo-manifest, écrit à la fin de chaque installation dans le dossier du composant (ou de la version) : taille et SHA-256 de chaque fichier. « Réinstaller » écrit la même marque <composant>.reinstall (ou <composant>@<version>.reinstall) et prépare à nouveau le composant.",
               "„Dateien prüfen“ liest .atollo-manifest, das am Ende jeder Installation in den Ordner der Komponente (oder der Version) geschrieben wird: Größe und SHA-256 jeder Datei. „Neu installieren“ schreibt dieselbe Markierung <Komponente>.reinstall (oder <Komponente>@<Version>.reinstall) und bereitet die Komponente erneut vor.",
+            ),
+            tr(
+              "Le ultime versioni chieste per il riquadro «Aggiornamenti» sono in data\\app\\updates.json, con l'ora del controllo. Ogni componente le chiede alla sua fonte come farebbe un suo aggiornamento (una richiesta per componente installato; quelle a GitHub passano dalla cache di data\\cache\\github); una fonte che non risponde tiene la versione dell'ultima volta.",
+              "The latest versions asked for the “Updates” box are in data\\app\\updates.json, with the time of the check. Each component asks its source as an update of it would (one request per installed component; those to GitHub go through the cache of data\\cache\\github); a source that does not answer keeps the version of the last time.",
+              "Les dernières versions demandées pour le panneau « Mises à jour » sont dans data\\app\\updates.json, avec l'heure de la vérification. Chaque composant les demande à sa source comme le ferait sa mise à jour (une requête par composant installé ; celles vers GitHub passent par le cache de data\\cache\\github) ; une source qui ne répond pas garde la version de la dernière fois.",
+              "Die zuletzt abgefragten Versionen für den Bereich „Aktualisierungen“ stehen in data\\app\\updates.json, mit dem Zeitpunkt der Prüfung. Jede Komponente fragt ihre Quelle so ab, wie es ihr Update täte (eine Anfrage pro installierter Komponente; die an GitHub laufen über den Cache in data\\cache\\github); eine Quelle, die nicht antwortet, behält die Version vom letzten Mal.",
             ),
           ]}
         />

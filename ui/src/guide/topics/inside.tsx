@@ -916,10 +916,10 @@ export const INSIDE: TopicTexts = {
               "Git folgt dem Kit-Ordner (safe.directory) und dem GitHub-Konto: Wenn „Wer die Commits signiert“ leer ist, kommen Name und private Adresse vom Konto.",
             ),
             tr(
-              "Dopo 10 secondi, le versioni offerte da ogni fonte, per i menu che ne scaricano una (al massimo una volta al giorno).",
-              "After 10 seconds, the versions each source offers, for the menus that download one (at most once a day).",
-              "Après 10 secondes, les versions proposées par chaque source, pour les menus qui en téléchargent une (au plus une fois par jour).",
-              "Nach 10 Sekunden die Versionen, die jede Quelle anbietet, für die Menüs, die eine herunterladen (höchstens einmal am Tag).",
+              "Dopo 10 secondi, le versioni offerte da ogni fonte, per i menu che ne scaricano una (al massimo una volta al giorno); poi, con «Aggiornamento automatico» attivo, l'ultima versione di ogni componente installato, per il riquadro «Aggiornamenti» di Strumenti (anche questa al massimo una volta al giorno).",
+              "After 10 seconds, the versions each source offers, for the menus that download one (at most once a day); then, with “Automatic update” on, the latest version of each installed component, for the “Updates” pane of Tools (also at most once a day).",
+              "Après 10 secondes, les versions proposées par chaque source, pour les menus qui en téléchargent une (au plus une fois par jour) ; puis, avec « Mise à jour automatique » activée, la dernière version de chaque composant installé, pour le volet « Mises à jour » d'Outils (au plus une fois par jour aussi).",
+              "Nach 10 Sekunden die Versionen, die jede Quelle anbietet, für die Menüs, die eine herunterladen (höchstens einmal am Tag); danach, mit „Automatisches Update“ an, die neueste Version jeder installierten Komponente, für den Bereich „Aktualisierungen“ von Werkzeuge (ebenfalls höchstens einmal am Tag).",
             ),
             tr(
               "Dopo 20 secondi, se attivo, il controllo degli aggiornamenti di Atollo (spegnere «Aggiornamento automatico» prima lo ferma).",

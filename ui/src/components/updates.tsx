@@ -89,7 +89,7 @@ export function UpdatesPane({
                 </Link>
                 <ActionButton
                   icon={codicon("cloud-download")}
-                  label={t("Aggiorna")}
+                  label={t("Aggiorna {0}", u.name)}
                   small
                   busy={busy === `update:${u.id}`}
                   disabled={running || busy !== null}

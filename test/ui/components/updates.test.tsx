@@ -33,7 +33,7 @@ describe("UpdatesPane", () => {
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("component_link_open", { id: "gh", kind: "notes" });
     });
-    fireEvent.click(within(gh).getByRole("button", { name: "Aggiorna" }));
+    fireEvent.click(within(gh).getByRole("button", { name: "Aggiorna GitHub CLI" }));
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("setup_start", { only: ["gh"], updateAll: true });
     });

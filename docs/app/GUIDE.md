@@ -1605,6 +1605,7 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-ag
 >
 > - The Tools page lists all the components the kit can install, divided into eight kinds as on the site: system and editor, AI agents, local models, languages, development tools, web servers, databases, database viewers.
 > - The icons on the rows act right away: “Install” and “Update” start as soon as you press them.
+> - The “Updates” box lists the installed components with a new version, with “What changes” and “Update”; their number appears on the Tools icon.
 > - The checkboxes, instead, prepare a choice that you confirm with “Apply”: this way you install and remove several things at once.
 > - Each row shows the status on disk with an icon: not present, pre-installed, installed, to update, error.
 
@@ -1619,6 +1620,7 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-ag
 | Search tools | Searches the name, the description and the identifier. |
 | “Components” box | A tree with the eight kinds and their components, with how many are installed. A click opens the component's tab. |
 | “Overview” box | The overall views: “All tools”, “Matrix”, “Editor extensions”, “Relations”, “PC requirements” ([5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)). |
+| “Updates” box | The installed components that have a new version, each with “What changes” and “Update”; the number also appears on the Tools icon in the activity bar. |
 | “All tools” tab | The first tab, always open: the table of all components. |
 | “Apply” bar | At the bottom, always visible: the pending changes, “Update all”, “Apply”. |
 
@@ -1700,6 +1702,16 @@ A click on the name opens the tab. At the top, like the page of an editor extens
 - “Reinstall” puts the program's files back at the same version; projects and databases are not touched. Files added after the installation (pip packages, gems, workloads) and those the kit or the programs change on purpose (httpd.conf, config.inc.php, the logs) are not damage. Rust, Android and TinyTeX are not checked: their folder is theirs to change.
 - A component installed before Atollo kept the manifest appears in the “Without a manifest” list: it is checked from its next installation or update.
 
+#### The “Updates” box
+
+In the Tools side bar, below “Components” and “Overview”, the “Updates” box lists the installed components that have a newer version at their source: instead of “Update all” blindly, you see what changes and choose. The number of those behind appears on the box's title and on the Tools icon in the activity bar (“New versions: 2”).
+
+- Each row: the name, the installed version → the new one (for example 2.100.0 → 2.103.0), “What changes” and “Update”.
+- “What changes” opens the component's release notes in the browser (its source's changelog or releases page); if the component has none, its official site.
+- “Update” updates only that component, like “Update” in its row of the table; when the work ends the row disappears from the box.
+- The versions are asked by themselves after the start, at most once a day, only with “Automatic update” on in Settings; “Check now” (the circular arrow on the box's title) asks them at once. At the bottom, “Checked on …” says when.
+- “Everything up to date.” when nothing is behind; “Not checked yet…” until the versions have never been asked. The components that are part of the app, at a pinned version, do not appear: they follow Atollo's version. Versions are compared by numbers (2.10 comes after 2.9), and an older version at the source is not an update.
+
 <details>
 <summary>Under the hood</summary>
 
@@ -1708,6 +1720,7 @@ A click on the name opens the tab. At the top, like the page of an editor extens
 - A removed component is also removed from the folders of the other systems that have it on disk.
 - The “to update” status corresponds to a \<component\>.reinstall file, written when the kit changes folder and a conda environment (R, Ruby, MongoDB and SQLite on Linux, make) cannot follow it.
 - “Check the files” reads .atollo-manifest, written at the end of every installation in the component's (or the version's) folder: size and SHA-256 of every file. “Reinstall” writes the same \<component\>.reinstall mark (or \<component\>@\<version\>.reinstall) and prepares the component again.
+- The latest versions asked for the “Updates” box are in `data\app\updates.json`, with the time of the check. Each component asks its source as an update of it would (one request per installed component; those to GitHub go through the cache of `data\cache\github`); a source that does not answer keeps the version of the last time.
 
 </details>
 
@@ -1921,7 +1934,7 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.6 A project
 | Language | The language of Atollo: the system's (“System language”), Italian, English, French or German. It changes at once. |
 | Theme | Light or dark: “Same as the system” (the default), “Light” or “Dark”. It applies at once to every window: Atollo, the integrated editor and its terminals, without restarting the editor. |
 | Temporary files of programs | Where the kit's programs put their temporary files. “Automatic” uses the system's temporary folder if the kit is on a USB stick, a network drive or a FAT32/exFAT drive, otherwise `data\tmp`. “In the kit” always `data\tmp`; “In the system” always the system's folder (the files stay on the PC until you close the app). |
-| Automatic update | “Download new versions of Atollo automatically (they replace the exe on close)”: the new version replaces the current one when you close the app. On by default. It applies at once: turning it on starts a check right away; turning it off before the check 20 seconds after start stops that check. |
+| Automatic update | “Download new versions of Atollo automatically (they replace the exe on close)”: the new version replaces the current one when you close the app. On by default. It applies at once: turning it on starts a check right away; turning it off before the check 20 seconds after start stops that check. It also allows the daily check of the installed components' versions: at most once a day, after the start, Atollo asks each source for its latest version and Tools shows the ones behind in the “Updates” pane. Off, nothing is asked by itself; “Check now” still works. |
 | Packages to reinstall without the network | Only on macOS and Linux: keeps in the kit the packages of the components that must be reinstalled when the kit changes folder (R, Ruby, MongoDB, SQLite, make), so the network is not needed. “Free” deletes them. |
 
 > [!TIP]
@@ -2410,7 +2423,7 @@ Related topics: [8.1 Portable and isolated: what it means](#81-portable-and-isol
 - Missing required components and those to reinstall are installed automatically; not at the first start: there everything is downloaded only with “Install” on the “Welcome” page.
 - The agents' instructions, skills and MCP servers are synced; if the kit has been moved, the paths are updated.
 - Git follows the kit folder (safe.directory) and the GitHub account: if “Who signs the commits” is empty, the name and private address come from the account.
-- After 10 seconds, the versions each source offers, for the menus that download one (at most once a day).
+- After 10 seconds, the versions each source offers, for the menus that download one (at most once a day); then, with “Automatic update” on, the latest version of each installed component, for the “Updates” pane of Tools (also at most once a day).
 - After 20 seconds, if turned on, the check for Atollo updates (turning “Automatic update” off before then stops it).
 
 > [!NOTE]

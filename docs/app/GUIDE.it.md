@@ -1605,6 +1605,7 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-g
 >
 > - La pagina Strumenti elenca tutti i componenti che il kit sa installare, divisi in otto tipi come nel sito: sistema ed editor, agenti AI, modelli locali, linguaggi, strumenti di sviluppo, server web, database, visualizzazione database.
 > - Le icone delle righe agiscono subito: «Installa» e «Aggiorna» partono appena le premi.
+> - Il riquadro «Aggiornamenti» elenca i componenti installati con una versione nuova, con «Cosa cambia» e «Aggiorna»; il loro numero compare sull'icona di Strumenti.
 > - Le caselle invece preparano una scelta, che si conferma con «Applica»: così si installano e tolgono più cose insieme.
 > - Ogni riga mostra lo stato su disco con un'icona: non esiste, pre-installato, installato, da aggiornare, errore.
 
@@ -1619,6 +1620,7 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-g
 | Cerca negli strumenti | Cerca nel nome, nella descrizione e nell'identificativo. |
 | Riquadro «Componenti» | Un albero con gli otto tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente. |
 | Riquadro «Panoramica» | Le viste d'insieme: «Tutti gli strumenti», «Matrice», «Estensioni dell'editor», «Relazioni», «Requisiti del PC» ([5.3 Panoramiche: matrice, relazioni, estensioni, requisiti](#53-panoramiche-matrice-relazioni-estensioni-requisiti)). |
+| Riquadro «Aggiornamenti» | I componenti installati che hanno una versione nuova, ognuno con «Cosa cambia» e «Aggiorna»; il numero compare anche sull'icona di Strumenti nella barra delle attività. |
 | Scheda «Tutti gli strumenti» | La prima scheda, sempre aperta: la tabella di tutti i componenti. |
 | Barra «Applica» | In fondo, sempre visibile: le modifiche in attesa, «Aggiorna tutto», «Applica». |
 
@@ -1700,6 +1702,16 @@ Un clic sul nome apre la scheda. In alto, come la pagina di un'estensione dell'e
 - «Reinstalla» rimette i file del programma alla stessa versione; progetti e database non si toccano. I file aggiunti dopo l'installazione (pacchetti pip, gem, workload) e quelli che il kit o i programmi cambiano apposta (httpd.conf, config.inc.php, i log) non sono un danno. Rust, Android e TinyTeX non si verificano: la loro cartella la cambiano loro.
 - Un componente installato prima che Atollo tenesse il manifesto compare nell'elenco «Senza manifesto»: si verifica dalla sua prossima installazione o aggiornamento.
 
+#### Il riquadro «Aggiornamenti»
+
+Nella barra laterale di Strumenti, sotto «Componenti» e «Panoramica», il riquadro «Aggiornamenti» elenca i componenti installati che alla loro fonte hanno una versione più recente: invece di «Aggiorna tutto» alla cieca, vedi che cosa cambia e scegli. Il numero di quelli indietro compare sul titolo del riquadro e sull'icona di Strumenti nella barra delle attività («Versioni nuove: 2»).
+
+- Ogni riga: il nome, la versione installata → quella nuova (per esempio 2.100.0 → 2.103.0), «Cosa cambia» e «Aggiorna».
+- «Cosa cambia» apre nel browser le note di rilascio del componente (la pagina dei cambiamenti o delle release della sua fonte); se il componente non ne ha, il suo sito ufficiale.
+- «Aggiorna» aggiorna solo quel componente, come «Aggiorna» nella sua riga della tabella; a lavoro finito la riga sparisce dal riquadro.
+- Le versioni si chiedono da sole dopo l'avvio, al massimo una volta al giorno, solo con «Aggiornamento automatico» attivo nelle Impostazioni; «Controlla ora» (la freccia circolare sul titolo del riquadro) le chiede subito. In fondo, «Controllato il …» dice quando.
+- «Tutto aggiornato.» quando niente è indietro; «Non ancora controllato…» finché le versioni non sono mai state chieste. I componenti che fanno parte dell'app, a una versione fissata, non compaiono: seguono la versione di Atollo. Le versioni si confrontano per numeri (2.10 viene dopo 2.9), e una versione più vecchia alla fonte non è un aggiornamento.
+
 <details>
 <summary>Sotto il cofano</summary>
 
@@ -1708,6 +1720,7 @@ Un clic sul nome apre la scheda. In alto, come la pagina di un'estensione dell'e
 - Un componente tolto viene tolto anche dalle cartelle degli altri sistemi che lo hanno su disco.
 - Lo stato «da aggiornare» corrisponde a un file \<componente\>.reinstall, scritto quando il kit cambia cartella e un ambiente conda (R, Ruby, MongoDB e SQLite su Linux, make) non può seguirlo.
 - «Verifica i file» legge .atollo-manifest, scritto alla fine di ogni installazione nella cartella del componente (o della versione): dimensione e SHA-256 di ogni file. «Reinstalla» scrive lo stesso segno \<componente\>.reinstall (o \<componente\>@\<versione\>.reinstall) e prepara di nuovo il componente.
+- Le ultime versioni chieste per il riquadro «Aggiornamenti» sono in `data\app\updates.json`, con l'ora del controllo. Ogni componente le chiede alla sua fonte come farebbe un suo aggiornamento (una richiesta per componente installato; quelle a GitHub passano dalla cache di `data\cache\github`); una fonte che non risponde tiene la versione dell'ultima volta.
 
 </details>
 
@@ -1921,7 +1934,7 @@ Argomenti collegati: [2.1 Creare un progetto](#21-creare-un-progetto), [2.6 Git 
 | Lingua | La lingua di Atollo: quella del sistema («Lingua del sistema»), italiano, inglese, francese o tedesco. Cambia subito. |
 | Tema | Chiaro o scuro: «Come il sistema» (di base), «Chiaro» o «Scuro». Vale subito per tutte le finestre: Atollo, l'editor integrato e i suoi terminali, senza riavviare l'editor. |
 | Temporanei dei programmi | Dove i programmi del kit mettono i loro file temporanei. «Automatico» usa la cartella temporanea del sistema se il kit è su una chiavetta, un disco di rete o un disco FAT32/exFAT, altrimenti `data\tmp`. «Nel kit» sempre `data\tmp`; «Nel sistema» sempre la cartella del sistema (i file restano sul PC finché chiudi l'app). |
-| Aggiornamento automatico | «Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base. Vale subito: attivarlo avvia un controllo all'istante; spegnerlo prima del controllo dei 20 secondi dopo l'avvio ferma quel controllo. |
+| Aggiornamento automatico | «Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)»: la nuova versione sostituisce quella attuale quando chiudi l'app. Attivo di base. Vale subito: attivarlo avvia un controllo all'istante; spegnerlo prima del controllo dei 20 secondi dopo l'avvio ferma quel controllo. Permette anche il controllo giornaliero delle versioni dei componenti installati: al massimo una volta al giorno, dopo l'avvio, Atollo chiede a ogni fonte l'ultima versione e Strumenti mostra il riquadro «Aggiornamenti» con quelli indietro. Spento, non si chiede niente da solo; «Controlla ora» funziona comunque. |
 | Pacchetti per reinstallare senza rete | Solo su macOS e Linux: conserva nel kit i pacchetti dei componenti che vanno reinstallati quando il kit cambia cartella (R, Ruby, MongoDB, SQLite, make), così non serve la rete. «Libera» li cancella. |
 
 > [!TIP]
@@ -2410,7 +2423,7 @@ Argomenti collegati: [8.1 Portabile e isolato: che cosa vuol dire](#81-portabile
 - I componenti obbligatori mancanti e quelli da reinstallare vengono installati da soli; al primo avvio no: lì si scarica tutto solo con «Installa» della pagina «Benvenuto».
 - Istruzioni, skill e server MCP degli agenti vengono allineati; se il kit è stato spostato, i percorsi vengono aggiornati.
 - Git segue la cartella del kit (safe.directory) e l'account GitHub: se «Chi firma i commit» è vuoto, nome e indirizzo privato vengono dall'account.
-- Dopo 10 secondi, le versioni offerte da ogni fonte, per i menu che ne scaricano una (al massimo una volta al giorno).
+- Dopo 10 secondi, le versioni offerte da ogni fonte, per i menu che ne scaricano una (al massimo una volta al giorno); poi, con «Aggiornamento automatico» attivo, l'ultima versione di ogni componente installato, per il riquadro «Aggiornamenti» di Strumenti (anche questa al massimo una volta al giorno).
 - Dopo 20 secondi, se attivo, il controllo degli aggiornamenti di Atollo (spegnere «Aggiornamento automatico» prima lo ferma).
 
 > [!NOTE]
