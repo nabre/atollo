@@ -1,31 +1,21 @@
-// The building blocks of the Guide's text: screenshots with a zoom, code
-// blocks to copy, cards, the "in short" box, steps, tips, the folded
-// technical part, links between topics and to the app's pages, flows,
-// tables and quick folder openers.
-import { createContext, useContext, useId, useRef, useState, type ReactNode } from "react";
-import type { IconType } from "react-icons";
-import { folderOpen, type AppInfo, type ComponentInfo } from "../api";
+// The app's widgets of the Guide (the contract is core/widgets.ts):
+// screenshots with a zoom, code blocks to copy, cards, the "in short" box,
+// steps, tips, the folded technical part, links between topics and to the
+// app's pages, flows, tables and quick folder openers.
+import { createContext, useContext, useId, useRef, useState } from "react";
+import { folderOpen } from "../api";
 import { useCopy } from "../shared/hooks";
-import { lang, t } from "../i18n";
+import { lang } from "../i18n";
 import { Tag } from "../shared/tags";
 import { Button, Codicon, codicon, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
-import { sectionCode, topicOf, tr, type AppPageTarget, type GuideTopicId } from "./model";
+import { guideLabels } from "./core/labels";
+import { tr } from "./core/lang";
+import type { GuideWidgetImpl, GuideWidgetProps as W } from "./core/widgets";
+import { sectionCode, topicOf, type AppPageTarget, type GuideTopicId } from "./model";
 
 /** A screenshot of the app from /guide/<lang>/*.webp (taken in the browser preview,
  * on its sample data) with a caption, an optional example and a zoom. */
-export function GuideShot({
-  src,
-  title,
-  caption,
-  example,
-  scenario = tr("dati di esempio", "sample data", "données d'exemple", "Beispieldaten"),
-}: {
-  src: string;
-  title: string;
-  caption: string;
-  example?: ReactNode;
-  scenario?: string;
-}) {
+export function GuideShot({ src, title, caption, example, scenario = guideLabels().sample }: W["GuideShot"]) {
   const [zoom, setZoom] = useState(false);
 
   return (
@@ -45,7 +35,7 @@ export function GuideShot({
           >
             <span className="inline-flex items-center gap-1">
               <Codicon name="screen-full" size={12} />
-              {tr("Ingrandisci", "Zoom", "Agrandir", "Vergrößern")}
+              {guideLabels().zoom}
             </span>
           </Button>
         </div>
@@ -54,12 +44,7 @@ export function GuideShot({
           onClick={() => {
             setZoom(true);
           }}
-          title={tr(
-            "Clicca per ingrandire l'immagine",
-            "Click to enlarge image",
-            "Cliquer pour agrandir l'image",
-            "Klicken, um das Bild zu vergrößern",
-          )}
+          title={guideLabels().zoomHint}
           className="group relative block w-full cursor-zoom-in overflow-hidden bg-black/20 text-left focus-visible:outline-1 focus-visible:outline-vsc-focus"
         >
           <img
@@ -75,14 +60,7 @@ export function GuideShot({
             <div className="rounded border-l-2 border-l-vsc-focus bg-vsc-bg/70 px-3 py-2 text-vsc-fg">
               <div className="mb-0.5 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
                 <Codicon name="info" size={14} className="text-vsc-info" />
-                <span>
-                  {tr(
-                    "Esempio pratico nello screenshot",
-                    "Practical example in screenshot",
-                    "Exemple pratique dans la capture d'écran",
-                    "Praktisches Beispiel im Screenshot",
-                  )}
-                </span>
+                <span>{guideLabels().example}</span>
               </div>
               <div className="leading-relaxed">{example}</div>
             </div>
@@ -144,7 +122,7 @@ function ZoomDialog({
             <span className="truncate font-semibold text-vsc-settings-header">{title}</span>
             <Tag>{scenario}</Tag>
           </div>
-          <IconButton icon={codicon("close")} label={t("Chiudi")} onClick={onClose} />
+          <IconButton icon={codicon("close")} label={guideLabels().close} onClick={onClose} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto bg-black/40 p-2">
           <img src={`/guide/${lang()}/${src}`} alt={title} className="mx-auto block max-w-full rounded" />
@@ -156,7 +134,7 @@ function ZoomDialog({
 }
 
 /** A code or configuration snippet with header bar and one-click copy. */
-export function GuideCode({ title, path, code }: { title: string; path?: string; code: string }) {
+export function GuideCode({ title, path, code }: W["GuideCode"]) {
   const { copied, copy } = useCopy(1500);
   return (
     <div className="overflow-hidden rounded border border-vsc-border bg-vsc-sidebar/60">
@@ -175,7 +153,7 @@ export function GuideCode({ title, path, code }: { title: string; path?: string;
         >
           <span className="inline-flex items-center gap-1">
             {copied ? <Codicon name="check" size={12} /> : <Codicon name="copy" size={12} />}
-            {copied ? t("Copiata") : t("Copia")}
+            {copied ? guideLabels().copied : guideLabels().copy}
           </span>
         </Button>
       </div>
@@ -185,21 +163,7 @@ export function GuideCode({ title, path, code }: { title: string; path?: string;
 }
 
 /** An architectural principle or feature card. */
-export function GuideCard({
-  icon: Icon,
-  badge,
-  title,
-  children,
-  actionLabel,
-  onAction,
-}: {
-  icon: IconType;
-  badge?: string;
-  title: string;
-  children: ReactNode;
-  actionLabel?: string;
-  onAction?: () => void;
-}) {
+export function GuideCard({ icon: Icon, badge, title, children, actionLabel, onAction }: W["GuideCard"]) {
   return (
     <div className="flex flex-col justify-between gap-2.5 rounded-md border border-vsc-border bg-vsc-sidebar/40 p-3.5">
       <div className="space-y-1.5">
@@ -230,12 +194,12 @@ export function GuideCard({
 
 /** The opening box of a topic: what it is for and the few things to keep in
  * mind, before the details. */
-export function InBrief({ points }: { points: ReactNode[] }) {
+export function InBrief({ points }: W["InBrief"]) {
   return (
     <div className="rounded-md border border-vsc-focus/50 bg-vsc-badge/10 px-3.5 py-2.5 text-[12px]">
       <div className="mb-1 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
         <Codicon name="lightbulb" size={14} className="text-vsc-focus" />
-        {tr("In breve", "In short", "En bref", "Kurz gesagt")}
+        {guideLabels().inShort}
       </div>
       <ul className="m-0 list-disc space-y-1 pl-5 leading-relaxed">
         {points.map((p, i) => (
@@ -247,12 +211,12 @@ export function InBrief({ points }: { points: ReactNode[] }) {
 }
 
 /** A paragraph of the guide's running text. */
-export function P({ children }: { children: ReactNode }) {
+export function P({ children }: W["P"]) {
   return <p className="m-0 text-[12px] leading-relaxed text-vsc-fg/90">{children}</p>;
 }
 
 /** Numbered steps: what to click, in order. */
-export function Steps({ steps }: { steps: ReactNode[] }) {
+export function Steps({ steps }: W["Steps"]) {
   return (
     <ol className="m-0 list-decimal space-y-1.5 pl-5 text-[12px] leading-relaxed">
       {steps.map((s, i) => (
@@ -263,7 +227,7 @@ export function Steps({ steps }: { steps: ReactNode[] }) {
 }
 
 /** A bulleted list of the running text. */
-export function Bullets({ items }: { items: ReactNode[] }) {
+export function Bullets({ items }: W["Bullets"]) {
   return (
     <ul className="m-0 list-disc space-y-1 pl-5 text-[12px] leading-relaxed">
       {items.map((s, i) => (
@@ -280,26 +244,13 @@ const CALLOUT = {
 } as const;
 
 /** A tip, a note or a warning beside the text. */
-export function Callout({
-  tone,
-  title,
-  children,
-}: {
-  tone: keyof typeof CALLOUT;
-  title?: string;
-  children: ReactNode;
-}) {
+export function Callout({ tone, title, children }: W["Callout"]) {
   const { icon: Icon, color, border } = CALLOUT[tone];
-  const fallback = {
-    tip: tr("Consiglio", "Tip", "Conseil", "Tipp"),
-    info: tr("Da sapere", "Good to know", "À savoir", "Gut zu wissen"),
-    warn: tr("Attenzione", "Watch out", "Attention", "Achtung"),
-  }[tone];
   return (
     <div className={`rounded border-l-2 ${border} bg-vsc-bg/60 px-3 py-2 text-[12px]`}>
       <div className="mb-0.5 flex items-center gap-1.5 font-semibold text-vsc-settings-header">
         <Icon size={14} aria-hidden="true" className={color} />
-        {title ?? fallback}
+        {title ?? guideLabels()[tone]}
       </div>
       <div className="leading-relaxed text-vsc-fg/90 select-text">{children}</div>
     </div>
@@ -307,13 +258,13 @@ export function Callout({
 }
 
 /** The technical side of a topic, folded: who wants it opens it. */
-export function Under({ title, children }: { title?: string; children: ReactNode }) {
+export function Under({ title, children }: W["Under"]) {
   return (
     <details className="group rounded-md border border-vsc-border bg-vsc-sidebar/35 text-[12px]">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 font-semibold text-vsc-settings-header select-none">
         <Codicon name="chevron-right" size={14} className="transition-transform group-open:rotate-90" />
         <Codicon name="tools" size={14} className="text-vsc-desc" />
-        {title ?? tr("Sotto il cofano", "Under the hood", "Sous le capot", "Unter der Haube")}
+        {title ?? guideLabels().under}
       </summary>
       <div className="space-y-2 border-t border-vsc-border px-3.5 py-2.5 leading-relaxed">{children}</div>
     </details>
@@ -321,12 +272,12 @@ export function Under({ title, children }: { title?: string; children: ReactNode
 }
 
 /** A label of the interface as the user sees it: «Avvia». */
-export function Ui({ children }: { children: ReactNode }) {
+export function Ui({ children }: W["Ui"]) {
   return <strong className="font-semibold text-vsc-settings-header">«{children}»</strong>;
 }
 
 /** A path, a file name, a command or a value to type. */
-export function Code({ children }: { children: ReactNode }) {
+export function Code({ children }: W["Code"]) {
   return (
     <code className="rounded bg-vsc-input px-1 py-px font-mono text-[11px] break-all text-vsc-fg select-text">
       {children}
@@ -335,7 +286,7 @@ export function Code({ children }: { children: ReactNode }) {
 }
 
 /** A question and its answer (FAQ, problems). */
-export function QA({ q, children }: { q: string; children: ReactNode }) {
+export function QA({ q, children }: W["QA"]) {
   return (
     <div className="space-y-1 rounded-md border border-vsc-border bg-vsc-sidebar/35 px-3.5 py-2.5 text-[12px]">
       <div className="font-semibold text-vsc-settings-header">{q}</div>
@@ -345,7 +296,7 @@ export function QA({ q, children }: { q: string; children: ReactNode }) {
 }
 
 /** A titled part of a topic. */
-export function Section({ title, children }: { title: string; children: ReactNode }) {
+export function Section({ title, children }: W["Section"]) {
   const id = useId();
   return (
     <EditorSection id={id} title={title}>
@@ -353,15 +304,6 @@ export function Section({ title, children }: { title: string; children: ReactNod
     </EditorSection>
   );
 }
-
-/** What a topic receives: the kit it describes, when known. */
-export interface TopicProps {
-  info: AppInfo | null;
-  components: ComponentInfo[] | null;
-}
-
-/** The text of the topics of a chapter, by topic. */
-export type TopicTexts = Partial<Record<GuideTopicId, (p: TopicProps) => ReactNode>>;
 
 /** What a topic can do besides showing text: open another topic or a page. */
 export interface GuideNav {
@@ -375,7 +317,7 @@ export const GuideNavContext = createContext<GuideNav>({
 });
 
 /** A link to another topic, named by its title unless told otherwise. */
-export function See({ id, children }: { id: GuideTopicId; children?: ReactNode }) {
+export function See({ id, children }: W["See"]) {
   const nav = useContext(GuideNavContext);
   return (
     <Link
@@ -389,12 +331,10 @@ export function See({ id, children }: { id: GuideTopicId; children?: ReactNode }
 }
 
 /** "Read next": the topics close to this one. */
-export function Related({ ids }: { ids: GuideTopicId[] }) {
+export function Related({ ids }: W["Related"]) {
   return (
     <div className="rounded-md border border-vsc-border bg-vsc-sidebar/35 px-3.5 py-2.5 text-[12px]">
-      <div className="mb-1 font-semibold text-vsc-settings-header">
-        {tr("Argomenti collegati", "Related topics", "Sujets liés", "Verwandte Themen")}
-      </div>
+      <div className="mb-1 font-semibold text-vsc-settings-header">{guideLabels().related}</div>
       <ul className="m-0 list-none space-y-0.5 p-0">
         {ids.map((id) => (
           <li key={id} className="flex items-center gap-1.5">
@@ -408,7 +348,7 @@ export function Related({ ids }: { ids: GuideTopicId[] }) {
 }
 
 /** A button that opens a page of the app. */
-export function Go({ page, children }: { page: AppPageTarget; children: ReactNode }) {
+export function Go({ page, children }: W["Go"]) {
   const nav = useContext(GuideNavContext);
   return (
     <Button
@@ -427,7 +367,7 @@ export function Go({ page, children }: { page: AppPageTarget; children: ReactNod
 }
 
 /** A chain of steps drawn as boxes and arrows: how something flows. */
-export function Flow({ steps }: { steps: { title: string; text: string }[] }) {
+export function Flow({ steps }: W["Flow"]) {
   return (
     <ol className="m-0 flex list-none flex-wrap items-stretch gap-1.5 p-0 text-[12px]">
       {steps.map((s, i) => (
@@ -451,7 +391,7 @@ export function Flow({ steps }: { steps: { title: string; text: string }[] }) {
 }
 
 /** A plain table of the running text. */
-export function Table({ columns, rows }: { columns: string[]; rows: ReactNode[][] }) {
+export function Table({ columns, rows }: W["Table"]) {
   return (
     <div className="overflow-x-auto rounded border border-vsc-border">
       <DataTable columns={columns} className="w-full border-collapse text-[12px]">
@@ -470,7 +410,7 @@ export function Table({ columns, rows }: { columns: string[]; rows: ReactNode[][
 }
 
 /** A key of the keyboard: Ctrl, Invio. */
-export function Key({ children }: { children: ReactNode }) {
+export function Key({ children }: W["Key"]) {
   return (
     <kbd className="rounded border border-b-2 border-vsc-keybinding-border border-b-vsc-keybinding-bottom bg-vsc-keybinding px-1 font-mono text-[11px] text-vsc-keybinding-fg">
       {children}
@@ -479,7 +419,7 @@ export function Key({ children }: { children: ReactNode }) {
 }
 
 /** A labelled group of cards, two per row on wide windows. */
-export function Cards({ children }: { children: ReactNode }) {
+export function Cards({ children }: W["Cards"]) {
   return <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{children}</div>;
 }
 
@@ -534,3 +474,28 @@ export function KitFoldersBar() {
     </div>
   );
 }
+
+/** The app's renderer of the contract. */
+export const APP_WIDGETS: GuideWidgetImpl = {
+  P,
+  Steps,
+  Bullets,
+  Section,
+  InBrief,
+  Callout,
+  Under,
+  QA,
+  Flow,
+  Table,
+  Key,
+  Ui,
+  Code,
+  Cards,
+  GuideCode,
+  GuideShot,
+  GuideCard,
+  See,
+  Related,
+  Go,
+  KitFoldersBar,
+};

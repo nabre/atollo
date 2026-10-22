@@ -5,24 +5,8 @@
 // daily work, services, agents, tools, settings, carrying the kit, how it
 // works inside, and help when something goes wrong.
 import type { IconType } from "react-icons";
-import { lang } from "../i18n";
 import { codicon } from "../workbench";
-
-/** Localized string helper for rich guide content: the Italian source and
- * its English, French and German, all required (no silent fallback). */
-export function tr(it: string, en: string, fr: string, de: string): string {
-  const l = lang();
-  if (l === "en") return en;
-  if (l === "fr") return fr;
-  if (l === "de") return de;
-  return it;
-}
-
-/** Italian text of a draft, waiting for its translations: every call becomes
- * a tr() before it ships (test/ui/guide/text.test.ts). */
-export function L(it: string): string {
-  return it;
-}
+import { tr } from "./core/lang";
 
 export type GuideGroupId =
   "start" | "projects" | "services" | "agents" | "tools" | "settings" | "portable" | "inside" | "help";

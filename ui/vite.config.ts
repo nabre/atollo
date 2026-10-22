@@ -55,7 +55,9 @@ export default defineConfig(({ mode }) => ({
               name: (id: string) => {
                 const topic = /[\\/]src[\\/]guide[\\/]topics[\\/](\w+)\.tsx$/.exec(id)?.[1];
                 if (topic) return `guide-${topic}`;
-                return /[\\/]src[\\/]guide[\\/](model|sources|widgets)\.tsx?$/.test(id) ? "guide-base" : null;
+                return /[\\/]src[\\/]guide[\\/](model|sources|widgets|core[\\/]\w+)\.tsx?$/.test(id)
+                  ? "guide-base"
+                  : null;
               },
               includeDependenciesRecursively: false,
             },

@@ -1,10 +1,11 @@
 // Chapter 9 of the Guide, «Aiuto»: common problems with their message and
 // remedy, frequent questions, a glossary.
 import { useMemo, useState } from "react";
-import { rich } from "../../i18n";
 import { SearchBox } from "../../workbench";
-import { tr, type GuideTopicId } from "../model";
-import { Bullets, Callout, Code, InBrief, P, QA, Related, Section, See, type TopicTexts } from "../widgets";
+import { rich, tr } from "../core/lang";
+import type { GuideTopicId } from "../model";
+import { Bullets, Callout, Code, InBrief, P, QA, Related, Section, See } from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 
 interface Problem {
   /** What the user sees: the message or the symptom. */

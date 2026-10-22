@@ -1,7 +1,6 @@
 // Chapter 7 of the Guide, «Portare il kit con sé»: removing the drive,
 // moving the kit, updates and backups.
-import { rich } from "../../i18n";
-import { tr } from "../model";
+import { rich, tr } from "../core/lang";
 import {
   Bullets,
   Callout,
@@ -17,8 +16,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 
 export const PORTABLE: TopicTexts = {
   eject: () => (

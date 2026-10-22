@@ -22,12 +22,12 @@ import {
   ViewContainer,
   ViewPane,
 } from "../workbench";
+import { tr } from "./core/lang";
 import {
   GUIDE_GROUPS,
   GUIDE_TOPICS,
   sectionCode,
   topicOf,
-  tr,
   type AppPageTarget,
   type GuideGroupId,
   type GuideTopicId,

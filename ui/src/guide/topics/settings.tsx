@@ -1,7 +1,6 @@
 // Chapter 6 of the Guide, «Account e impostazioni»: the GitHub account, the
 // Settings page section by section, the network, the framework recipes.
-import { rich } from "../../i18n";
-import { tr } from "../model";
+import { rich, tr } from "../core/lang";
 import {
   Bullets,
   Callout,
@@ -18,8 +17,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 
 export const SETTINGS: TopicTexts = {
   github: () => (

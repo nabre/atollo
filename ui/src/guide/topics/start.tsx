@@ -1,10 +1,10 @@
 // Chapter 1 of the Guide, «Primi passi»: what Atollo is, the first start,
 // the window and a first project from start to finish.
-import { rich } from "../../i18n";
 import { Tag } from "../../shared/tags";
 import type { IconType } from "react-icons";
 import { codicon, Properties } from "../../workbench";
-import { GUIDE_GROUPS, GUIDE_TOPICS, tr, type AppPageTarget, type GuideTopicId } from "../model";
+import { rich, tr } from "../core/lang";
+import { GUIDE_GROUPS, GUIDE_TOPICS, type AppPageTarget, type GuideTopicId } from "../model";
 import {
   Bullets,
   Callout,
@@ -21,8 +21,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 import { useContext, type ReactNode } from "react";
 import { GuideNavContext } from "../widgets";
 

@@ -1,7 +1,6 @@
 // Chapter 2 of the Guide, «Progetti»: creating projects, the Projects page,
 // actions and ports, versions, editor and terminal, Git, deleting.
-import { rich } from "../../i18n";
-import { tr } from "../model";
+import { rich, tr } from "../core/lang";
 import {
   Bullets,
   Callout,
@@ -19,8 +18,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 
 const PANEL_EXAMPLE = `{
   "default": "dev",

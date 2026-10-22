@@ -12,7 +12,7 @@ import { SERVICES } from "./topics/services";
 import { SETTINGS } from "./topics/settings";
 import { START } from "./topics/start";
 import { TOOLS } from "./topics/tools";
-import type { TopicTexts } from "./widgets";
+import type { TopicTexts } from "./core/types";
 
 export const TOPIC_TEXTS: TopicTexts = {
   ...START,

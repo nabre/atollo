@@ -1,7 +1,6 @@
 // Chapter 5 of the Guide, «Strumenti e linguaggi»: the Tools page and its
 // table, several versions of a tool, the overviews.
-import { rich } from "../../i18n";
-import { tr } from "../model";
+import { rich, tr } from "../core/lang";
 import {
   Bullets,
   Callout,
@@ -16,8 +15,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 
 export const TOOLS: TopicTexts = {
   tools: () => (

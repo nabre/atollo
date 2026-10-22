@@ -113,7 +113,13 @@ function loadGuide(lang) {
           { get: (o, k) => (k in o ? o[k] : k === "__esModule" ? false : marker(String(k))) },
         );
       }
-      if (abs === GUIDE + "/model" || abs === GUIDE + "/sources" || abs.startsWith(GUIDE + "/topics/")) {
+      if (abs === GUIDE + "/core/widgets") return markerProxy; // the contract's stand-ins, by name
+      if (
+        abs === GUIDE + "/model" ||
+        abs === GUIDE + "/sources" ||
+        abs.startsWith(GUIDE + "/core/") ||
+        abs.startsWith(GUIDE + "/topics/")
+      ) {
         for (const ext of [".ts", ".tsx"]) if (fs.existsSync(abs + ext)) return load(abs + ext);
       }
       return markerProxy; // tags, workbench, logos, api
@@ -122,6 +128,7 @@ function loadGuide(lang) {
     new Function("require", "module", "exports", "__h", "__F", out)(req, mod, mod.exports, h, FRAG);
     return mod.exports;
   }
+  load(GUIDE + "/core/lang.ts").bindGuideLang(() => lang);
   const model = load(GUIDE + "/model.ts");
   const sources = load(GUIDE + "/sources.ts");
   const texts = {};

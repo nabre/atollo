@@ -3,6 +3,7 @@
 // subtitle. When this fails, run `node scripts/guide-docs.cjs`.
 import { afterAll, describe, expect, it } from "vitest";
 import { setLang } from "@/i18n";
+import "@/guide/register";
 import { GUIDE_TOPICS, sectionCode } from "@/guide/model";
 
 const docs = import.meta.glob<string>("../../../docs/app/GUIDE*.md", {

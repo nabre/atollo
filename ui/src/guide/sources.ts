@@ -1,6 +1,6 @@
 // Reference catalogs of the Guide: the external sources of every catalog
 // component and part (verified by test/ui/guide/sources.test.ts).
-import { tr } from "./model";
+import { tr } from "./core/lang";
 
 /** The kinds of the Tools page (components/model.ts, D-139), plus the parts. */
 export type SourceCategory =

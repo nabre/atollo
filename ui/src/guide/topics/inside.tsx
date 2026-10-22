@@ -1,12 +1,11 @@
 // Chapter 8 of the Guide, «Come funziona dentro»: isolation, the folders on
 // disk, background processes, download sources and checks, the command line.
 import { useMemo, useState, type ReactNode } from "react";
-import { urlOpen, type ComponentInfo } from "../../api";
-import { rich } from "../../i18n";
+import { urlOpen } from "../../api";
 import { ComponentLogo } from "../../shared/logos";
 import { Tag } from "../../shared/tags";
 import { Button, Codicon, SearchBox } from "../../workbench";
-import { tr } from "../model";
+import { rich, tr } from "../core/lang";
 import { sourceCounts, TOOL_SOURCES, type SourceCategory } from "../sources";
 import {
   Bullets,
@@ -23,8 +22,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { GuideComponentState, TopicTexts } from "../core/types";
 
 /** The folders of the kit, one row each, indented by depth. */
 function diskTree(): { path: string; depth: number; text: string }[] {
@@ -263,7 +262,7 @@ function diskTree(): { path: string; depth: number; text: string }[] {
 }
 
 /** The external sources of every component, with a filter and a search. */
-function SourcesTable({ components }: { components: ComponentInfo[] | null }) {
+function SourcesTable({ components }: { components: GuideComponentState[] | null }) {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<"all" | SourceCategory>("all");
   const byId = useMemo(() => new Map((components ?? []).map((c) => [c.id, c])), [components]);

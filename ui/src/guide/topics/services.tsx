@@ -1,7 +1,6 @@
 // Chapter 3 of the Guide, «Database, siti e terminali»: the database servers,
 // a project's database, websites and web server pools, the kit terminals.
-import { rich } from "../../i18n";
-import { tr } from "../model";
+import { rich, tr } from "../core/lang";
 import {
   Bullets,
   Callout,
@@ -18,8 +17,8 @@ import {
   Steps,
   Table,
   Under,
-  type TopicTexts,
-} from "../widgets";
+} from "../core/widgets";
+import type { TopicTexts } from "../core/types";
 
 const ENV_LARAVEL = () => `DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
