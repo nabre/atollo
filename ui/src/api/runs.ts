@@ -27,7 +27,16 @@ export interface RunInfo {
   skippedAliases: string[];
 }
 
-export type RunEvent = ({ kind: "state" } & RunInfo) | { kind: "log"; key: string; lines: string[] };
+/** A log as read: `seq` is the number of the last line written to any log
+ * then, over all the actions; an event's lines come after it when their
+ * numbers are higher (BUG-V7-30). */
+export interface RunLog {
+  lines: string[];
+  seq: number;
+}
+
+/** In a "log" event, `seq` is the number of the last of `lines`. */
+export type RunEvent = ({ kind: "state" } & RunInfo) | { kind: "log"; key: string; lines: string[]; seq: number };
 
 export interface Ports {
   ports: Record<string, number>;
@@ -48,8 +57,8 @@ export function runStop(key: string): Promise<void> {
   return act("run_stop", { key });
 }
 
-export function runLog(key: string): Promise<string[]> {
-  return query<string[]>("run_log", browserPreview ? previewLog(key) : [], { key });
+export function runLog(key: string): Promise<RunLog> {
+  return query<RunLog>("run_log", browserPreview ? previewLog(key) : { lines: [], seq: 0 }, { key });
 }
 
 export function runClear(key: string): Promise<void> {

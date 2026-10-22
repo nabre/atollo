@@ -4,13 +4,15 @@
 // events the page gets from Rust (tauri/src/projects/run.rs); a stop ends it.
 // The page and the Activity panel can be designed and shown with what runs.
 import { previewEmit } from "./core";
-import type { RunEvent, RunInfo } from "./runs";
+import type { RunEvent, RunInfo, RunLog } from "./runs";
 import { SAMPLE_PROJECTS } from "./projects";
 
 const runs = new Map<string, RunInfo>();
 const logs = new Map<string, string[]>();
 /** The first port the kit gives a web action (PORT_FROM in run.rs). */
 let nextPort = 7100;
+/** The number of the last line written to a log (RunLog). */
+let seq = 0;
 
 function emit(e: RunEvent) {
   previewEmit("run", e);
@@ -18,7 +20,8 @@ function emit(e: RunEvent) {
 
 function log(key: string, lines: string[]) {
   logs.set(key, [...(logs.get(key) ?? []), ...lines]);
-  emit({ kind: "log", key, lines });
+  seq += lines.length;
+  emit({ kind: "log", key, lines, seq });
 }
 
 /** What the page shows of a start: the sample action, its port, its output. */
@@ -88,6 +91,6 @@ export function previewRuns(): RunInfo[] {
   return [...runs.values()];
 }
 
-export function previewLog(key: string): string[] {
-  return logs.get(key) ?? [];
+export function previewLog(key: string): RunLog {
+  return { lines: logs.get(key) ?? [], seq };
 }

@@ -25,16 +25,46 @@ afterEach(() => {
 
 describe("mergeLog", () => {
   it("adds the lines that came after the snapshot, once", () => {
-    expect(mergeLog(["a", "b"], ["c"])).toEqual(["a", "b", "c"]);
-    expect(mergeLog(["a", "b", "c"], ["b", "c", "d"])).toEqual(["a", "b", "c", "d"]);
-    expect(mergeLog(["a", "b"], [])).toEqual(["a", "b"]);
-    expect(mergeLog([], ["a"])).toEqual(["a"]);
+    expect(mergeLog({ lines: ["a", "b"], seq: 2 }, [{ lines: ["c"], seq: 3 }])).toEqual(["a", "b", "c"]);
+    // A batch half in the snapshot, half after it.
+    expect(mergeLog({ lines: ["a", "b", "c"], seq: 3 }, [{ lines: ["b", "c", "d"], seq: 4 }])).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+    expect(mergeLog({ lines: ["a", "b"], seq: 2 }, [])).toEqual(["a", "b"]);
+    expect(mergeLog({ lines: [], seq: 0 }, [{ lines: ["a"], seq: 1 }])).toEqual(["a"]);
+    // Numbered over all the actions: gaps are other actions' lines.
+    expect(
+      mergeLog({ lines: ["a"], seq: 40 }, [
+        { lines: ["b"], seq: 37 },
+        { lines: ["c"], seq: 52 },
+      ]),
+    ).toEqual(["a", "c"]);
+  });
+
+  it("keeps a new line equal to the last read (BUG-V7-30)", () => {
+    expect(mergeLog({ lines: ["a", ""], seq: 2 }, [{ lines: [""], seq: 3 }])).toEqual(["a", "", ""]);
+    expect(mergeLog({ lines: ["x", ""], seq: 2 }, [{ lines: [""], seq: 3 }])).toEqual(["x", "", ""]);
+    expect(mergeLog({ lines: [".", "."], seq: 2 }, [{ lines: [".", "."], seq: 4 }])).toEqual([".", ".", ".", "."]);
+    // The same line already read is not added twice.
+    expect(mergeLog({ lines: ["a", ""], seq: 2 }, [{ lines: [""], seq: 2 }])).toEqual(["a", ""]);
+  });
+
+  it("puts the lines in their order when the events come out of it", () => {
+    expect(
+      mergeLog({ lines: ["a"], seq: 1 }, [
+        { lines: ["c"], seq: 3 },
+        { lines: ["b"], seq: 2 },
+      ]),
+    ).toEqual(["a", "b", "c"]);
   });
 });
 
 describe("useRuns", () => {
   it("keeps a line that comes while the log is read", async () => {
-    let answer: (lines: string[]) => void = () => undefined;
+    let answer: (log: { lines: string[]; seq: number }) => void = () => undefined;
     invoke.mockImplementation((cmd) => {
       if (cmd === "run_log")
         return new Promise((resolve) => {
@@ -49,14 +79,18 @@ describe("useRuns", () => {
     act(() => {
       result.current.loadLog("blog|dev");
     });
-    // A line after the snapshot, which the answer does not hold.
+    // A line already in the snapshot, then two after it, one the same as
+    // the snapshot's last.
     act(() => {
-      handlers.get("run")?.({ payload: { kind: "log", key: "blog|dev", lines: ["ready"] } });
+      const emit = (lines: string[], seq: number) =>
+        handlers.get("run")?.({ payload: { kind: "log", key: "blog|dev", lines, seq } });
+      emit([""], 2);
+      emit(["", "ready"], 4);
     });
     await act(async () => {
-      answer(["start"]);
+      answer({ lines: ["start", ""], seq: 2 });
       await Promise.resolve();
     });
-    expect(result.current.logs["blog|dev"]).toEqual(["start", "ready"]);
+    expect(result.current.logs["blog|dev"]).toEqual(["start", "", "", "ready"]);
   });
 });

@@ -461,7 +461,7 @@ describe("App", () => {
       answers({
         projects_list: [project("sito (1) & co")],
         run_start: { ...running, state: "starting" },
-        run_log: ["> Atollo.exe serve . 7100"],
+        run_log: { lines: ["> Atollo.exe serve . 7100"], seq: 1 },
       }),
     );
     render(<App />);
@@ -479,7 +479,7 @@ describe("App", () => {
     });
     act(() => {
       runListener?.({ payload: { kind: "state", ...running } });
-      runListener?.({ payload: { kind: "log", key: running.key, lines: ["pronto"] } });
+      runListener?.({ payload: { kind: "log", key: running.key, lines: ["pronto"], seq: 2 } });
     });
     // Its state and output in the Activity panel
     fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
@@ -633,7 +633,7 @@ describe("App", () => {
           { ...project("negozio"), requires: ["php", "mysql"], missing: ["mysql"] },
         ],
         run_start: { ...running, state: "starting" },
-        run_log: [],
+        run_log: { lines: [], seq: 0 },
         project_pin: null,
       }),
     );
