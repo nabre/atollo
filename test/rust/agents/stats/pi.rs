@@ -9,7 +9,8 @@ fn session(now: i64) -> String {
         r#"{"type":"session","version":3,"id":"s","timestamp":"2026-10-21T22:12:35.570Z","cwd":"/p"}"#.to_owned(),
         format!(r#"{{"type":"message","id":"a","timestamp":"2026-10-21T22:12:36.000Z","message":{{"role":"user","content":"Hello","timestamp":{now}}}}}"#),
         format!(r#"{{"type":"message","id":"b","timestamp":"2026-10-21T22:12:40.000Z","message":{{"role":"assistant","api":"openai-completions","provider":"atollo","model":"qwen2.5-0.5b","usage":{{"input":20,"output":10,"cacheRead":1637,"cacheWrite":5,"totalTokens":1672}},"stopReason":"stop","timestamp":{now}}}}}"#),
-        r#"{"type":"compaction","id":"c","timestamp":"2026-10-21T22:12:41.000Z","summary":"x","usage":{"input":100,"output":50,"cacheRead":0,"cacheWrite":0},"provider":"atollo","model":"qwen2.5-0.5b"}"#.to_owned(),
+        // A summary dated by its entry only (ms, as `to_time` reads it): today.
+        format!(r#"{{"type":"compaction","id":"c","timestamp":{now},"summary":"x","usage":{{"input":100,"output":50,"cacheRead":0,"cacheWrite":0}},"provider":"atollo","model":"qwen2.5-0.5b"}}"#),
     ]
     .join("\n")
 }
