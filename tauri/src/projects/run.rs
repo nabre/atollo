@@ -593,6 +593,7 @@ impl Runner {
                 &action.domains,
                 &action.aliases,
                 env,
+                lang,
             )?;
             let shown = if self.kit.os().is_windows() {
                 format!("httpd.exe -f data\\projects\\{id}\\apache\\httpd.conf ({folder})")
@@ -629,6 +630,7 @@ impl Runner {
                 &action.domains,
                 &action.aliases,
                 env,
+                lang,
             )?;
             (
                 cmd,

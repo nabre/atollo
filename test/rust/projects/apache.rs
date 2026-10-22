@@ -74,6 +74,51 @@ fn document_root_that_breaks_quotes_is_refused() {
     );
 }
 
+/// BUG-V7-12: a missing Apache or Caddy is said in the user's language,
+/// with the menu as the interface names it.
+#[test]
+fn missing_server_in_the_users_language() {
+    let tmp = crate::kit::tests::TempDir::new("apache-missing");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let root = tmp.0.join("projects").join("shop");
+    let env = KitEnv::default();
+    let none = BTreeMap::new();
+    let apache = command(
+        &kit,
+        "shop",
+        &root,
+        &root,
+        7105,
+        None,
+        false,
+        &[],
+        &none,
+        &env,
+        "en",
+    );
+    let caddy = crate::projects::caddy::command(
+        &kit,
+        "shop",
+        &root,
+        &root,
+        7105,
+        None,
+        false,
+        &[],
+        &none,
+        &env,
+        "fr",
+    );
+    assert_eq!(
+        apache.err().unwrap().to_string(),
+        "Apache is not installed (Tools > Apache)"
+    );
+    assert_eq!(
+        caddy.err().unwrap().to_string(),
+        "Caddy n'est pas installé (Outils > Caddy)"
+    );
+}
+
 /// BUG-V6-08: the `ServerAlias` of a project with a hard name is its DNS
 /// label, like the pools, never the raw name split on a space.
 #[test]

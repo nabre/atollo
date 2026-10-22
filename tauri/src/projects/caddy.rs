@@ -815,7 +815,8 @@ pub fn caddy_command(exe: &Path, run_dir: &Path, env: &KitEnv) -> Command {
 }
 
 /// Prepares the project's `Caddyfile` and returns the `Command` that starts
-/// its Caddy.
+/// its Caddy. `lang` is the user's, for the message of a missing Caddy,
+/// which names a menu of the interface.
 #[allow(clippy::too_many_arguments)]
 pub fn command(
     kit: &Kit,
@@ -828,11 +829,15 @@ pub fn command(
     domains: &[String],
     aliases: &BTreeMap<String, String>,
     env: &KitEnv,
+    lang: &str,
 ) -> Result<Command> {
     let caddy = caddy_dir(kit, env);
     let exe = caddy_exe(kit, &caddy);
     if !exe.is_file() {
-        bail!("Caddy is not installed (Strumenti > Caddy)");
+        bail!(
+            "{}",
+            crate::i18n::t(lang, "{0} non è installato (Strumenti > {0})", &["Caddy"])
+        );
     }
     let run_dir = dir(kit, project)?;
     // Where the user's own `.caddy` go, as `apache\conf.d` for Apache.

@@ -475,7 +475,8 @@ pub fn apache_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
 
 /// `httpd.exe -f <project conf>`, the configuration written for `root`;
 /// off Windows in the foreground, with PHP on `fcgi` (php-fpm) and its key
-/// in the process's environment only.
+/// in the process's environment only. `lang` is the user's, for the
+/// message of a missing Apache, which names a menu of the interface.
 #[allow(clippy::too_many_arguments)]
 pub fn command(
     kit: &Kit,
@@ -488,11 +489,15 @@ pub fn command(
     domains: &[String],
     aliases: &BTreeMap<String, String>,
     env: &KitEnv,
+    lang: &str,
 ) -> Result<Command> {
     let apache = apache_dir(kit, env);
     let exe = httpd_exe(kit, &apache);
     if !exe.is_file() {
-        bail!("Apache is not installed (Strumenti > Apache)");
+        bail!(
+            "{}",
+            crate::i18n::t(lang, "{0} non è installato (Strumenti > {0})", &["Apache"])
+        );
     }
     let base = fs::read_to_string(apache.join("conf").join("httpd.conf")).context("httpd.conf")?;
     let dir = dir(kit, project)?;
