@@ -10,7 +10,7 @@ import { Tag } from "../shared/tags";
 import { Button, Codicon, codicon, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
 import { guideLabels } from "./core/labels";
 import { tr } from "./core/lang";
-import type { GuideWidgetImpl, GuideWidgetProps as W } from "./core/widgets";
+import type { GuideWidgetProps as W } from "./core/widgets";
 import { sectionCode, topicOf, type AppPageTarget, type GuideTopicId } from "./model";
 
 /** A screenshot of the app from /guide/<lang>/*.webp (taken in the browser preview,
@@ -481,28 +481,3 @@ export function KitFoldersBar() {
     </div>
   );
 }
-
-/** The app's renderer of the contract. */
-export const APP_WIDGETS: GuideWidgetImpl = {
-  P,
-  Steps,
-  Bullets,
-  Section,
-  InBrief,
-  Callout,
-  Under,
-  QA,
-  Flow,
-  Table,
-  Key,
-  Ui,
-  Code,
-  Cards,
-  GuideCode,
-  GuideShot,
-  GuideCard,
-  See,
-  Related,
-  Go,
-  KitFoldersBar,
-};

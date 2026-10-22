@@ -6,6 +6,7 @@
 // never an empty page.
 import { createElement, type ReactNode } from "react";
 import type { AppPageTarget, GuideTopicId } from "../model";
+import type { GuideComponentState, GuideKitInfo, GuideProblem, SourceCategory, ToolSourceRow } from "./types";
 
 /** Where a link of the Guide leads: never a function, so every renderer
  * can draw it (the app opens the topic or the page, the site links). */
@@ -63,6 +64,22 @@ export interface GuideWidgetProps {
   Go: { page: AppPageTarget; children: ReactNode };
   /** The kit's key folders. */
   KitFoldersBar: Record<string, never>;
+  /** A short label beside the text: a version, a state. */
+  Badge: { tone?: "focus"; children: ReactNode };
+  /** What the app knows of this kit: the whole card ("card", a section
+   * with its title) or its folder ("root", alone or in the {0} of
+   * `text`). Nothing where the kit is unknown (the site): the text uses
+   * `info` only here. */
+  KitInfo: { info: GuideKitInfo | null; show: "card" | "root"; text?: string };
+  /** The table of the components' sources: in the app with the state of
+   * each on this PC (`components`) and its filters, on the site every row. */
+  SourcesTable: {
+    rows: ToolSourceRow[];
+    categories: { id: SourceCategory; label: string }[];
+    components: GuideComponentState[] | null;
+  };
+  /** Questions and answers by group with a search box over them. */
+  FilterList: { groups: { title: string; items: GuideProblem[] }[]; placeholder: string };
 }
 
 export type WidgetName = keyof GuideWidgetProps;
@@ -90,6 +107,10 @@ export const WIDGET_NAMES = [
   "Related",
   "Go",
   "KitFoldersBar",
+  "Badge",
+  "KitInfo",
+  "SourcesTable",
+  "FilterList",
 ] as const satisfies readonly WidgetName[];
 
 /** A renderer: a function for every widget of the contract. */
@@ -133,3 +154,7 @@ export const See = widget("See");
 export const Related = widget("Related");
 export const Go = widget("Go");
 export const KitFoldersBar = widget("KitFoldersBar");
+export const Badge = widget("Badge");
+export const KitInfo = widget("KitInfo");
+export const SourcesTable = widget("SourcesTable");
+export const FilterList = widget("FilterList");

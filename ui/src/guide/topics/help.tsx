@@ -1,21 +1,12 @@
 // Chapter 9 of the Guide, «Aiuto»: common problems with their message and
 // remedy, frequent questions, a glossary.
-import { useMemo, useState } from "react";
-import { SearchBox } from "../../workbench";
 import { rich, tr } from "../core/lang";
-import type { GuideTopicId } from "../model";
-import { Bullets, Callout, Code, InBrief, P, QA, Related, Section, See } from "../core/widgets";
-import type { TopicTexts } from "../core/types";
+import { Bullets, Callout, Code, FilterList, InBrief, P, QA, Related, Section, See } from "../core/widgets";
+import type { GuideProblem, TopicTexts } from "../core/types";
 
-interface Problem {
-  /** What the user sees: the message or the symptom. */
-  q: string;
-  /** What to do. */
-  a: string;
-  see?: GuideTopicId;
-}
-
-function problems(): { title: string; items: Problem[] }[] {
+/** The problems by area: what the user sees (the message or the
+ * symptom), what to do and where to read more. */
+function problems(): { title: string; items: GuideProblem[] }[] {
   return [
     {
       title: tr(
@@ -385,47 +376,6 @@ function problems(): { title: string; items: Problem[] }[] {
       ],
     },
   ];
-}
-
-/** The problems with a search box, by area. */
-function Problems() {
-  const [q, setQ] = useState("");
-  const groups = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return problems()
-      .map((g) => ({ ...g, items: g.items.filter((p) => !s || `${p.q} ${p.a}`.toLowerCase().includes(s)) }))
-      .filter((g) => g.items.length > 0);
-  }, [q]);
-  return (
-    <>
-      <div className="w-full max-w-md">
-        <SearchBox
-          value={q}
-          onChange={setQ}
-          placeholder={tr(
-            "Cerca un messaggio o un problema",
-            "Search for a message or a problem",
-            "Chercher un message ou un problème",
-            "Nach einer Meldung oder einem Problem suchen",
-          )}
-        />
-      </div>
-      {groups.map((g) => (
-        <Section key={g.title} title={g.title}>
-          {g.items.map((p) => (
-            <QA key={p.q} q={p.q}>
-              <P>{p.a}</P>
-              {p.see && (
-                <P>
-                  {tr("Approfondisci:", "Learn more:", "En savoir plus :", "Mehr dazu:")} <See id={p.see} />
-                </P>
-              )}
-            </QA>
-          ))}
-        </Section>
-      ))}
-    </>
-  );
 }
 
 function glossary(): [string, string][] {
@@ -853,7 +803,15 @@ export const HELP: TopicTexts = {
           ]}
         />
       </Section>
-      <Problems />
+      <FilterList
+        groups={problems()}
+        placeholder={tr(
+          "Cerca un messaggio o un problema",
+          "Search for a message or a problem",
+          "Chercher un message ou un problème",
+          "Nach einer Meldung oder einem Problem suchen",
+        )}
+      />
       <Section
         title={tr(
           "Se il problema non è qui",

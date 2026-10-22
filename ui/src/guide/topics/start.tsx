@@ -1,18 +1,16 @@
 // Chapter 1 of the Guide, «Primi passi»: what Atollo is, the first start,
 // the window and a first project from start to finish.
-import { Tag } from "../../shared/tags";
-import { Properties } from "../../workbench";
 import { rich, tr } from "../core/lang";
 import { GUIDE_GROUPS, GUIDE_TOPICS, type AppPageTarget, type GuideTopicId } from "../model";
 import {
   Bullets,
   Callout,
   Cards,
-  Code,
   Flow,
   GuideCard,
   InBrief,
   Key,
+  KitInfo,
   P,
   Related,
   Section,
@@ -22,7 +20,6 @@ import {
   Under,
 } from "../core/widgets";
 import type { TopicTexts } from "../core/types";
-import type { ReactNode } from "react";
 
 /** The cards of the chapters, each opening its first topic. */
 function ChapterMap() {
@@ -461,36 +458,7 @@ export const START: TopicTexts = {
         <ChapterMap />
       </Section>
 
-      {info && (
-        <Section title={tr("Il tuo kit", "Your kit", "Votre kit", "Dein Kit")}>
-          <Properties
-            rows={[
-              [tr("Versione", "Version", "Version", "Version"), <Tag key="v" tone="focus">{`v${info.version}`}</Tag>],
-              [
-                tr("Cartella del kit", "Kit folder", "Dossier du kit", "Ordner des Kits"),
-                <Code key="r">{info.root}</Code>,
-              ],
-              [
-                tr("Cartella dei progetti", "Projects folder", "Dossier des projets", "Projektordner"),
-                <Code key="p">{info.projects}</Code>,
-              ],
-              ...(info.diskFs
-                ? ([
-                    [
-                      tr(
-                        "File system del disco",
-                        "Disk file system",
-                        "Système de fichiers du disque",
-                        "Dateisystem der Festplatte",
-                      ),
-                      <Tag key="fs">{info.diskFs}</Tag>,
-                    ],
-                  ] as [string, ReactNode][])
-                : []),
-            ]}
-          />
-        </Section>
-      )}
+      <KitInfo info={info} show="card" />
 
       <Related ids={["first-run", "window", "first-project"]} />
     </>

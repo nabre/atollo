@@ -1,12 +1,7 @@
 // Chapter 8 of the Guide, «Come funziona dentro»: isolation, the folders on
 // disk, background processes, download sources and checks, the command line.
-import { useMemo, useState, type ReactNode } from "react";
-import { urlOpen } from "../../api";
-import { ComponentLogo } from "../../shared/logos";
-import { Tag } from "../../shared/tags";
-import { Button, Codicon, SearchBox } from "../../workbench";
 import { rich, tr } from "../core/lang";
-import { sourceCounts, TOOL_SOURCES, type SourceCategory } from "../sources";
+import { sourceCategories, sourceCounts, TOOL_SOURCES } from "../sources";
 import {
   Bullets,
   Callout,
@@ -15,15 +10,17 @@ import {
   GuideCode,
   InBrief,
   KitFoldersBar,
+  KitInfo,
   P,
   Related,
   Section,
   See,
+  SourcesTable,
   Steps,
   Table,
   Under,
 } from "../core/widgets";
-import type { GuideComponentState, TopicTexts } from "../core/types";
+import type { TopicTexts } from "../core/types";
 
 /** The folders of the kit, one row each, indented by depth. */
 function diskTree(): { path: string; depth: number; text: string }[] {
@@ -259,145 +256,6 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       ),
     },
   ];
-}
-
-/** The external sources of every component, with a filter and a search. */
-function SourcesTable({ components }: { components: GuideComponentState[] | null }) {
-  const [query, setQuery] = useState("");
-  const [cat, setCat] = useState<"all" | SourceCategory>("all");
-  const byId = useMemo(() => new Map((components ?? []).map((c) => [c.id, c])), [components]);
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return TOOL_SOURCES.filter(
-      (r) =>
-        (cat === "all" || r.group === cat) &&
-        (!q ||
-          [r.id, r.name, r.home, r.metaSource, r.binarySource, r.verifyKind, r.targetPath].some((s) =>
-            s.toLowerCase().includes(q),
-          )),
-    );
-  }, [query, cat]);
-  const cats: { id: "all" | SourceCategory; label: string }[] = [
-    { id: "all", label: `${tr("Tutti", "All", "Tous", "Alle")} (${String(TOOL_SOURCES.length)})` },
-    { id: "system", label: tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor") },
-    { id: "agents", label: tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten") },
-    { id: "ai", label: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle") },
-    { id: "languages", label: tr("Linguaggi", "Languages", "Langages", "Sprachen") },
-    {
-      id: "tools",
-      label: tr("Strumenti di sviluppo", "Development tools", "Outils de développement", "Entwicklungswerkzeuge"),
-    },
-    { id: "web", label: tr("Server web", "Web servers", "Serveurs web", "Webserver") },
-    { id: "databases", label: tr("Database", "Databases", "Bases de données", "Datenbanken") },
-    {
-      id: "dbviewers",
-      label: tr(
-        "Visualizzazione database",
-        "Database viewers",
-        "Visualisation des bases de données",
-        "Datenbank-Ansicht",
-      ),
-    },
-    { id: "part", label: tr("Parti", "Parts", "Parties", "Teile") },
-  ];
-  return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {cats.map((c) => (
-            <Button
-              key={c.id}
-              small
-              variant={cat === c.id ? "primary" : "secondary"}
-              onClick={() => {
-                setCat(c.id);
-              }}
-            >
-              {c.label}
-            </Button>
-          ))}
-        </div>
-        <div className="w-64">
-          <SearchBox
-            value={query}
-            onChange={setQuery}
-            placeholder={tr(
-              "Filtra per nome, indirizzo, impronta…",
-              "Filter by name, address, hash…",
-              "Filtrer par nom, adresse, empreinte…",
-              "Nach Name, Adresse, Hash filtern…",
-            )}
-          />
-        </div>
-      </div>
-      <Table
-        columns={[
-          tr("Componente", "Component", "Composant", "Komponente"),
-          tr("Versioni da", "Versions from", "Versions depuis", "Versionen von"),
-          tr("File da", "Files from", "Fichiers depuis", "Dateien von"),
-          tr("Verifica", "Check", "Vérification", "Prüfung"),
-          tr(
-            "In data\\apps\\<sistema>\\",
-            "In data\\apps\\<system>\\",
-            "Dans data\\apps\\<système>\\",
-            "In data\\apps\\<System>\\",
-          ),
-        ]}
-        rows={rows.map((r) => {
-          const live = byId.get(r.id);
-          const state: ReactNode = live?.installed ? (
-            <Tag tone="focus">{live.version ?? tr("installato", "installed", "installé", "installiert")}</Tag>
-          ) : live && (!live.available || live.noArm64 || live.unavailableReason !== null) ? (
-            <Tag title={live.unavailableReason ?? undefined}>
-              {tr("non disponibile qui", "not available here", "non disponible ici", "hier nicht verfügbar")}
-            </Tag>
-          ) : (
-            <Tag>
-              {live
-                ? tr("non installato", "not installed", "non installé", "nicht installiert")
-                : tr("con il suo componente", "with its component", "avec son composant", "mit seiner Komponente")}
-            </Tag>
-          );
-          return [
-            <div key="n" className="space-y-1">
-              <div className="flex items-center gap-2">
-                <ComponentLogo id={r.logoId} size={16} />
-                <span className="font-semibold text-vsc-settings-header">{r.name}</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 pl-6">
-                {state}
-                <button
-                  type="button"
-                  onClick={() => {
-                    void urlOpen(r.home);
-                  }}
-                  title={r.home}
-                  className="inline-flex items-center gap-0.5 text-[11px] text-vsc-link hover:underline"
-                >
-                  {tr("Sito", "Website", "Site", "Website")}
-                  <Codicon name="link-external" size={10} />
-                </button>
-              </div>
-            </div>,
-            <div key="m" className="font-mono text-[11px] break-all select-text">
-              {r.metaSource}
-            </div>,
-            <div key="b" className="space-y-1">
-              <div className="font-mono text-[11px] break-all text-vsc-desc select-text">{r.binarySource}</div>
-              {r.unix && <div className="text-[11px] select-text">{r.unix}</div>}
-            </div>,
-            <div key="v" className="space-y-0.5">
-              <Tag tone="focus">{r.verifyKind}</Tag>
-              <div className="text-[11px] text-vsc-desc">{r.verifyDetail}</div>
-            </div>,
-            <code key="p" className="font-mono text-[11px] break-all select-text">
-              {r.targetPath}
-            </code>,
-          ];
-        })}
-      />
-    </>
-  );
 }
 
 const CLI_EXAMPLE = `cd D:\\Atollo
@@ -718,14 +576,11 @@ export const INSIDE: TopicTexts = {
             n.text,
           ])}
         />
-        {info && (
-          <P>
-            {rich(
-              tr("Il tuo kit è in {0}.", "Your kit is in {0}.", "Votre kit est dans {0}.", "Dein Kit liegt in {0}."),
-              <Code key="r">{info.root}</Code>,
-            )}
-          </P>
-        )}
+        <KitInfo
+          info={info}
+          show="root"
+          text={tr("Il tuo kit è in {0}.", "Your kit is in {0}.", "Votre kit est dans {0}.", "Dein Kit liegt in {0}.")}
+        />
       </Section>
 
       <Section
@@ -1440,7 +1295,7 @@ export const INSIDE: TopicTexts = {
             "Für jede Komponente: woher das Kit die Versionen liest, woher es die Datei herunterlädt, wie es sie prüft und wohin es sie legt. Die Spalten beschreiben Windows; wo macOS und Linux eine andere Quelle verwenden, steht sie unter der Adresse.",
           )}
         </P>
-        <SourcesTable components={components} />
+        <SourcesTable rows={TOOL_SOURCES} categories={sourceCategories()} components={components} />
       </Section>
 
       <Under>

@@ -1,26 +1,34 @@
 // Reference catalogs of the Guide: the external sources of every catalog
 // component and part (verified by test/ui/guide/sources.test.ts).
 import { tr } from "./core/lang";
+import type { SourceCategory, ToolSourceRow } from "./core/types";
 
-/** The kinds of the Tools page (components/model.ts, D-139), plus the parts. */
-export type SourceCategory =
-  "system" | "agents" | "ai" | "languages" | "tools" | "web" | "databases" | "dbviewers" | "part";
+export type { SourceCategory, ToolSourceRow };
 
-export interface ToolSourceRow {
-  id: string;
-  logoId: string;
-  name: string;
-  group: SourceCategory;
-  home: string;
-  metaSource: string;
-  binarySource: string;
-  verifyKind: "SHA-256" | "SHA-512" | "SHA3-256" | "npm sha512" | "Authenticode + SHA";
-  verifyDetail: string;
-  targetPath: string;
-  /** Where macOS and Linux get it when not the same source as Windows
-   * (the other columns describe Windows); null when only the file names
-   * change. */
-  unix: string | null;
+/** The kinds of the table of sources, in its order, with their names. */
+export function sourceCategories(): { id: SourceCategory; label: string }[] {
+  return [
+    { id: "system", label: tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor") },
+    { id: "agents", label: tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten") },
+    { id: "ai", label: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle") },
+    { id: "languages", label: tr("Linguaggi", "Languages", "Langages", "Sprachen") },
+    {
+      id: "tools",
+      label: tr("Strumenti di sviluppo", "Development tools", "Outils de développement", "Entwicklungswerkzeuge"),
+    },
+    { id: "web", label: tr("Server web", "Web servers", "Serveurs web", "Webserver") },
+    { id: "databases", label: tr("Database", "Databases", "Bases de données", "Datenbanken") },
+    {
+      id: "dbviewers",
+      label: tr(
+        "Visualizzazione database",
+        "Database viewers",
+        "Visualisation des bases de données",
+        "Datenbank-Ansicht",
+      ),
+    },
+    { id: "part", label: tr("Parti", "Parts", "Parties", "Teile") },
+  ];
 }
 
 type LazyStr = string | (() => string);

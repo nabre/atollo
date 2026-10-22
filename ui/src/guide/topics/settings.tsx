@@ -10,6 +10,7 @@ import {
   GuideShot,
   Go,
   InBrief,
+  KitInfo,
   P,
   Related,
   Section,
@@ -602,7 +603,7 @@ export const SETTINGS: TopicTexts = {
             "Schreibgeschützte Informationen: Kit-Ordner, Projektordner, Ordner für Daten und Programme, Laufwerk des Kits (Dateisystem und Typ: fest, wechselbar, Netzwerk), temporärer Ordner der Programme, Plattform, Version von WebView2 und von Atollo. Wenn es zum Laufwerk etwas zu melden gibt, erscheint ein Hinweis.",
           )}
         </P>
-        {info && <Code>{info.root}</Code>}
+        <KitInfo info={info} show="root" />
         <P>
           {rich(
             tr(
