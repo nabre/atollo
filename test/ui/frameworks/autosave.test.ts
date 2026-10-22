@@ -112,6 +112,39 @@ describe("useFrameworksAutosave", () => {
     expect(namesSent()).toEqual(["A", "AB"]);
   });
 
+  it("keeps an edit made while the reload after a save runs", async () => {
+    vi.useFakeTimers();
+    const { result } = await mounted();
+    let answer: (v: FrameworksView) => void = () => undefined;
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "frameworks_get")
+        return new Promise((resolve) => {
+          answer = resolve;
+        });
+      return Promise.resolve();
+    });
+    act(() => {
+      result.current.change([piece("A")]);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    // The save is done and its reload waits: the user types on.
+    act(() => {
+      result.current.change([piece("AB")]);
+    });
+    await act(async () => {
+      answer({ ...VIEW, pieces: [piece("A")] });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.pieces.map((p) => p.name)).toEqual(["AB"]);
+    expect(result.current.dirty).toBe(true);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(namesSent()).toEqual(["A", "AB"]);
+  });
+
   it("saves nothing when the page closes with nothing changed", async () => {
     vi.useFakeTimers();
     const { unmount } = await mounted();
