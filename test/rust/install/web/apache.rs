@@ -39,6 +39,13 @@ fn apache_site_created_once() {
     apache_site(&tmp.0, Os::Win32).unwrap();
     assert_eq!(fs::read_to_string(&conf).unwrap(), "mine");
     assert!(tmp.0.join("htdocs").join("index.php").is_file());
+    // BUG-V7-38: no sentence in one language in the welcome page.
+    let page = fs::read_to_string(tmp.0.join("htdocs").join("index.php")).unwrap();
+    assert!(page.contains("<h1>Apache &#10003;</h1>"), "{page}");
+    assert!(
+        !page.contains("funziona") && !page.contains("cartella"),
+        "{page}"
+    );
 }
 
 #[test]
