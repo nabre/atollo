@@ -172,6 +172,9 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
     action().then(
       (i) => {
         setInfo(i);
+        // A status poll already on its way holds the state from before the
+        // action: a new read makes its answer the stale one, dropped.
+        reloadInfo();
         reloadView();
       },
       (e: unknown) => {
