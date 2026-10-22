@@ -185,10 +185,8 @@ pub(super) fn apply(project: &mut Project, dir: &Path, lang: &str) {
     }
 }
 
-/// Validates an RFC 6761 `.localhost` domain alias (`mio-sito.localhost`).
-pub fn valid_domain(d: &str) -> bool {
-    crate::projects::alias::valid_domain(d)
-}
+// Validates an RFC 6761 `.localhost` domain alias (`mio-sito.localhost`).
+pub use crate::projects::alias::valid_domain;
 
 /// Validates a URL path prefix for an alias (`/media`, `/uploads`).
 pub fn valid_alias_url(u: &str) -> bool {

@@ -440,18 +440,13 @@ pub fn random_token() -> Result<String> {
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
-/// Protected DACL with full access for the owner only (mode 600 on Unix).
-/// Fails on disks without permissions (FAT32/exFAT): the caller only logs it.
-pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
-    crate::router::restrict_to_owner(path)
-}
-
-/// The same for a folder, inherited by every file and folder created in it
-/// afterwards (temporary files included): they are private from the start.
-/// On Unix the folder gets mode 700: what is inside cannot be reached.
-pub(crate) fn restrict_dir_to_owner(path: &Path) -> Result<()> {
-    crate::router::restrict_dir_to_owner(path)
-}
+// restrict_to_owner: protected DACL with full access for the owner only
+// (mode 600 on Unix); it fails on disks without permissions (FAT32/exFAT):
+// the caller only logs it. restrict_dir_to_owner: the same for a folder,
+// inherited by every file and folder created in it afterwards (temporary
+// files included), so they are private from the start; on Unix the folder
+// gets mode 700 and what is inside cannot be reached.
+pub(crate) use crate::router::{restrict_dir_to_owner, restrict_to_owner};
 
 fn append_log(path: &Path, line: &str) {
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {

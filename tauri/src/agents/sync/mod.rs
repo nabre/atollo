@@ -104,6 +104,8 @@ impl Report {
 }
 
 /// Missing or empty file: `None`. Damaged: an error that says where.
+/// `fsx::try_read_json` on a [`Value`], the agents' files of other
+/// programs, so the callers name no type.
 pub fn read_json(file: &Path) -> Result<Option<Value>> {
     crate::fsx::try_read_json(file)
 }
@@ -116,9 +118,7 @@ pub fn read_state(file: &Path) -> Value {
         .unwrap_or(Value::Object(Default::default()))
 }
 
-pub fn write_json(file: &Path, v: &Value) -> Result<()> {
-    crate::fsx::write_json(file, v)
-}
+pub use crate::fsx::write_json;
 
 /// JSON with sorted keys: two servers are equal when their settings are.
 pub fn canonical(v: &Value) -> String {

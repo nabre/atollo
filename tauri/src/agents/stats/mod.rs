@@ -277,6 +277,8 @@ fn host_of(url: &str) -> &str {
     url.split('/').nth(2).unwrap_or(url)
 }
 
+/// `fsx::read_json` on a [`Value`]: the agents' own files, read as they
+/// are, so the callers name no type.
 pub fn read_json(path: &Path) -> Option<Value> {
     crate::fsx::read_json(path)
 }
