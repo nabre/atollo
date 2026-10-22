@@ -2,7 +2,7 @@
 
 English · [Italiano](PRIVACY.it.md) · [Français](PRIVACY.fr.md) · [Deutsch](PRIVACY.de.md)
 
-Effective date: 21 October 2026
+Effective date: 22 October 2026
 
 This page explains what the Atollo desktop app (`Atollo.exe`, the macOS `.app` and the Linux AppImage) and its website do with your data. Atollo is open source: everything written here can be checked in the code of this repository.
 
@@ -11,7 +11,8 @@ This page explains what the Atollo desktop app (`Atollo.exe`, the macOS `.app` a
 - Atollo has **no telemetry, no analytics and no crash reporting**. It has no account and no server of its own.
 - Everything Atollo stores stays **in the Atollo folder** on your device (`data/` and `projects/`), with the few exceptions listed in section 4.
 - Atollo connects to the network only to **check for its own updates**, to **download the tools you use from their official sources**, and to talk to **GitHub and the AI agents' providers when you use those features**. The table in section 3 lists every connection, with how to turn it off.
-- The tools and AI agents you run inside Atollo (Claude Code, Codex, Antigravity, Git, npm…) are third-party programs with their own privacy policies.
+- The tools and AI agents you run inside Atollo (Claude Code, Codex, Antigravity, Pi, Git, npm…) are third-party programs with their own privacy policies.
+- **Local AI models** run on your computer: with a local model, your prompts and files never leave it.
 
 ## 2. What Atollo does not collect
 
@@ -24,7 +25,7 @@ Atollo does not collect, send or sell:
 
 Nobody running the Atollo project receives any data from the app. The project does not operate servers: updates and releases are hosted on GitHub.
 
-Atollo also turns off the telemetry and self-update checks of several programs it manages, inside its own environment: the integrated editor (VSCodium) runs with telemetry off and extension auto-update off; the environment sets `GOTELEMETRY=off`, `DOTNET_CLI_TELEMETRY_OPTOUT=1`, `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`, `PIP_DISABLE_PIP_VERSION_CHECK=1`, `GH_NO_UPDATE_NOTIFIER=1` (for the app's GitHub CLI calls), `DISABLE_UPDATES=1` (Claude Code) and `AGY_CLI_DISABLE_AUTO_UPDATE=true` (Antigravity). Other programs keep their own defaults.
+Atollo also turns off the telemetry and self-update checks of several programs it manages, inside its own environment: the integrated editor (VSCodium) runs with telemetry off and extension auto-update off; the environment sets `GOTELEMETRY=off`, `DOTNET_CLI_TELEMETRY_OPTOUT=1`, `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`, `PIP_DISABLE_PIP_VERSION_CHECK=1`, `GH_NO_UPDATE_NOTIFIER=1` (for the app's GitHub CLI calls), `DISABLE_UPDATES=1` (Claude Code), `AGY_CLI_DISABLE_AUTO_UPDATE=true` (Antigravity), `PI_SKIP_VERSION_CHECK=1` and `PI_TELEMETRY=0` (Pi). Other programs keep their own defaults.
 
 ## 3. Network connections the app makes
 
@@ -35,7 +36,8 @@ Every request the app makes itself carries a `User-Agent` of the form `Atollo/<v
 | About 20 seconds after start, and when you press "Check for updates" | GitHub (`api.github.com`, then the release download from `github.com`) | A request for the list of releases of `nabre/atollo`; if a newer version exists, its download. If a `GITHUB_TOKEN` or `GH_TOKEN` variable is set on the computer, it is sent to `api.github.com` only (to avoid GitHub's rate limit). | Settings › General › **Automatic update** off, or set the `ATOLLO_NO_UPDATE` variable on the computer. The button still works on demand. |
 | About 10 seconds after start, at most once a day per tool | The official source of each tool that offers several versions (for example `nodejs.org`, `go.dev`, `api.adoptium.net`, `api.github.com`) | A request for the list of available versions. To `api.github.com` only: the token above, or your GitHub account's token if you signed in (section 4). | Set the `ATOLLO_NO_UPDATE` variable. |
 | At first start, when you confirm the first-start page (after choosing language and network); later, automatically, when a required component is missing or an app update needs newer ones | Official sources of PowerShell 7, GitHub CLI and the editor (GitHub releases) | Download requests. | No switch: these components are required. Nothing else is installed without your action. |
-| When you install or update a tool (Tools page) or an action needs one (for example Node.js for `npm`) | The tool's official source, for example `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `api.anaconda.org`, `dl.google.com`, `storage.googleapis.com`, `raw.githubusercontent.com`, `www.apachelounge.com`, `dl.static-php.dev`, `curl.se`, `aka.ms`, `api.nuget.org`, `julialang-s3.julialang.org`, `ziglang.org`, Google's Antigravity update server, GitHub releases | Download requests; checksums are verified locally. | Do not install the tool. |
+| When you install or update a tool (Tools page) or an action needs one (for example Node.js for `npm`) | The tool's official source, for example `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `api.anaconda.org`, `dl.google.com`, `storage.googleapis.com`, `raw.githubusercontent.com`, `www.apachelounge.com`, `dl.static-php.dev`, `curl.se`, `aka.ms`, `api.nuget.org`, `julialang-s3.julialang.org`, `ziglang.org`, Google's Antigravity update server, GitHub releases (among them `ggml-org/llama.cpp` for the local models' server and `earendil-works/pi` for Pi) | Download requests; checksums are verified locally. | Do not install the tool. |
+| Only when you download a local model (Local models page, or `models pull`), or look up a Hugging Face repository | Hugging Face: `huggingface.co` (the API, for a repository's last commit and its GGUF files), then its CDN for the model files | Requests for the repository's listing and for the model's files at a fixed commit; a paused or interrupted download resumes with a `Range` request. Your Hugging Face token, only if you saved one for gated models, and only to `huggingface.co` (it is not forwarded to the CDN). Each file's SHA-256 is verified locally. | Do not download models. |
 | In the background after the editor starts, and when a project is opened | The editor's extension gallery (Open VSX); CodeLLDB from its GitHub release | Requests for the extensions the kit and your projects use. | Do not open the editor, or remove the extensions from it. |
 | Only when you sign in to GitHub (Settings › GitHub account) and use your repositories (Projects › “From your GitHub repositories”) | GitHub (`github.com`, `api.github.com`), through GitHub CLI | The sign-in (a one-time code you type at `github.com/login/device`), then your account's token with requests to list, clone, rename or delete your repositories. | Do not sign in, or sign out in Settings › GitHub account. |
 | Once, at sign-in or at a start while signed in, only if the commit name and email are empty | GitHub (`api.github.com/user`), through GitHub CLI | Your account's token, to read the account's name, login and number: they become the name of your commits and GitHub's private `noreply` address. | Fill in Settings › GitHub account › “Who signs the commits”, or do not sign in. |
@@ -46,7 +48,7 @@ Things that are **not** connections made by Atollo itself:
 - programs you run in the editor, in the consoles or through actions (`git`, `npm`, `pip`, `cargo`, the AI agents…) connect wherever they are designed to;
 - links you click open in your own browser.
 
-Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers.
+Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers. The local models' server (llama.cpp) always listens on `127.0.0.1` only, on a port of its own (9931 and following), and answers only requests that carry its random key; `llm status` does not send that key to whatever listens on the port. The models run on this computer: with a local model nothing goes to the network.
 
 ## 4. Data stored on your device
 
@@ -68,12 +70,17 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | Antigravity's Google sign-in, moved out of the system's credential store after each run | `data/antigravity/keyring.json` |
 | Claude Code's long-lived token, if you use "Connect with a token" (macOS) | `data/agents/claude/oauth-token` |
 | Database passwords (random, generated by Atollo) | `data/app/db/secrets.json`, `data/app/db/mysql.cnf`, `data/projects/<project>/private/db.json` |
+| Local models (GGUF files) and what Atollo downloaded of them | `data/models/gguf/<owner>--<repo>/` (with `atollo.json`) |
+| Local models' settings (port, automatic start, the model Pi uses) and the server's presets | `data/app/llm.json`, `data/app/llm/presets.ini` |
+| The **local models' server key** (random, generated by Atollo, readable by your user only) | `data/app/secrets/llama-key` |
+| The **Hugging Face token**, if you enter one for gated models (readable by your user only) | `data/app/secrets/hf-token` |
+| Pi's settings, sign-ins (`auth.json`), sessions and the kit's `models.json` with the local server's address and key (readable by your user only) | `data/home/.pi/agent/` |
 | Editor server data and its per-session access token | `data/vscodium-server/` |
 | Your projects | `projects/` |
 
-The database passwords, the Gemini API key and the Claude token file are created readable by your user only, where the disk supports permissions (NTFS, APFS, ext4…). The other files, `settings.json` included, are ordinary files. On USB sticks formatted FAT32 or exFAT there are no permissions at all: **anyone with the stick can read every file above**. Keep the stick safe, or use a disk with permissions.
+The database passwords, the Gemini API key, the Claude token file, the local models' key and the Hugging Face token are created readable by your user only, where the disk supports permissions (NTFS, APFS, ext4…). The other files, `settings.json` included, are ordinary files. On USB sticks formatted FAT32 or exFAT there are no permissions at all: **anyone with the stick can read every file above**. Keep the stick safe, or use a disk with permissions.
 
-The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor.
+The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The local models' key goes to Pi when Atollo launches it (`LLAMA_API_KEY`) and into Pi's own `models.json`, so that `pi` works from the kit's terminals too. The Hugging Face token is sent only to `huggingface.co`.
 
 Exceptions, outside the Atollo folder:
 
@@ -90,11 +97,14 @@ Atollo installs and starts programs made by others. When you use them, they talk
 - **Claude Code** (Anthropic): [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
 - **Codex** (OpenAI): [openai.com/policies/privacy-policy](https://openai.com/policies/privacy-policy/)
 - **Antigravity** and the Gemini API (Google): [policies.google.com/privacy](https://policies.google.com/privacy)
+- **Pi** (Earendil): [pi.dev](https://pi.dev); with a cloud provider (signed in with `/login`), that provider's policy applies
+- **Hugging Face**, where local models are downloaded from: [huggingface.co/privacy](https://huggingface.co/privacy)
+- **llama.cpp** (ggml-org), the local models' server: it runs on your computer and sends nothing; [github.com/ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)
 - **GitHub** and GitHub CLI: [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
 - **VSCodium** and Open VSX: [open-vsx.org](https://open-vsx.org/)
 - Package registries (npm, PyPI, crates.io, Maven Central, NuGet…) and the download sites of each tool, under their own policies.
 
-The AI agents send your prompts and the files they read to their providers: that is how they work. Choose what you open with them.
+The AI agents send your prompts and the files they read to their providers: that is how they work. Choose what you open with them. Pi is the exception when it uses a local model: then prompts and files stay on your computer; with a cloud provider chosen in Pi, they go to that provider.
 
 ## 6. Website
 

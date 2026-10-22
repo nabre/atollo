@@ -1321,10 +1321,10 @@ export const PROJECTS: TopicTexts = {
           <Bullets
             items={[
               tr(
-                "Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto. I token degli agenti (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) non ci sono: arrivano solo agli agenti avviati da Atollo.",
-                "The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions. The agents' tokens (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) are not in it: only the agents Atollo launches get them.",
-                "La commande est exécutée avec cmd.exe sous Windows et /bin/sh sous macOS et Linux, dans le dossier de l'action, avec l'environnement du kit et les versions du projet. Les jetons des agents (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) n'y sont pas : seuls les agents lancés par Atollo les reçoivent.",
-                "Der Befehl wird unter Windows mit cmd.exe und unter macOS und Linux mit /bin/sh ausgeführt, im Ordner der Aktion, mit der Umgebung des Kits und den Versionen des Projekts. Die Token der Agenten (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) sind nicht darin: Nur die von Atollo gestarteten Agenten erhalten sie.",
+                "Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto. I token degli agenti (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY, LLAMA_API_KEY) non ci sono: arrivano solo agli agenti avviati da Atollo.",
+                "The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions. The agents' tokens (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY, LLAMA_API_KEY) are not in it: only the agents Atollo launches get them.",
+                "La commande est exécutée avec cmd.exe sous Windows et /bin/sh sous macOS et Linux, dans le dossier de l'action, avec l'environnement du kit et les versions du projet. Les jetons des agents (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY, LLAMA_API_KEY) n'y sont pas : seuls les agents lancés par Atollo les reçoivent.",
+                "Der Befehl wird unter Windows mit cmd.exe und unter macOS und Linux mit /bin/sh ausgeführt, im Ordner der Aktion, mit der Umgebung des Kits und den Versionen des Projekts. Die Token der Agenten (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY, LLAMA_API_KEY) sind nicht darin: Nur die von Atollo gestarteten Agenten erhalten sie.",
               ),
               tr(
                 "Le azioni web ricevono le variabili PORT (e ROCKET_PORT) con la porta; tutte ricevono BROWSER=none, PYTHONUNBUFFERED=1 e ATOLLO_LANG. Se il progetto ha un database MySQL del kit e il suo .env non dice un'altra porta, ricevono anche DB_PORT.",
@@ -1892,10 +1892,10 @@ export const PROJECTS: TopicTexts = {
               "Im Terminal des Projekts oder des Editors: die Befehle git und gh, bereits angemeldet.",
             ),
             tr(
-              "Con un agente: Claude Code, Codex e Antigravity possono fare commit, creare rami e aprire pull request.",
-              "With an agent: Claude Code, Codex and Antigravity can commit, create branches and open pull requests.",
-              "Avec un agent : Claude Code, Codex et Antigravity peuvent faire des commits, créer des branches et ouvrir des pull requests.",
-              "Mit einem Agenten: Claude Code, Codex und Antigravity können Commits machen, Branches erstellen und Pull Requests öffnen.",
+              "Con un agente: Claude Code, Codex, Antigravity e Pi possono fare commit, creare rami e aprire pull request.",
+              "With an agent: Claude Code, Codex, Antigravity and Pi can commit, create branches and open pull requests.",
+              "Avec un agent : Claude Code, Codex, Antigravity et Pi peuvent faire des commits, créer des branches et ouvrir des pull requests.",
+              "Mit einem Agenten: Claude Code, Codex, Antigravity und Pi können Commits machen, Branches erstellen und Pull Requests öffnen.",
             ),
           ]}
         />

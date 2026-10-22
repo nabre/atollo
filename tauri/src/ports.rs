@@ -1,7 +1,8 @@
 //! Which part of Atollo has each port (BUG-V5-05): the shared web server
 //! pools (`servers.json`), every version of each database server
 //! (`services.json`, [`line_ports`]), the actions of the projects
-//! (`ports.json` of each) and the editor's range. A port chosen by hand
+//! (`ports.json` of each), the editor's range and the server of the local
+//! models (`llm.json`). A port chosen by hand
 //! for one of them is refused when another has it, with its owner named:
 //! never a pool that cannot start because a MySQL version listens there.
 //! A new pool's automatic port is none of them either.
@@ -30,6 +31,8 @@ pub enum Owner {
     Project { project: String, action: String },
     /// [`crate::editor::PORTS`].
     Editor,
+    /// The server of the local models (D-151).
+    Llm,
 }
 
 impl Owner {
@@ -65,12 +68,17 @@ impl Owner {
                     &[&from.to_string(), &to.to_string()],
                 )
             }
+            Owner::Llm => t(
+                lang,
+                "La porta {0} è dei modelli locali: scegline un'altra.",
+                &[&p],
+            ),
         }
     }
 }
 
 /// Every port kept and its owner, in the order pools, databases, projects,
-/// editor; a port two of them have (from before this check) more than once.
+/// editor, local models; a port two of them have (from before this check) more than once.
 fn owners(kit: &Kit) -> Vec<(u16, Owner)> {
     let mut out: Vec<(u16, Owner)> = crate::servers::pool_ports(kit)
         .into_iter()
@@ -104,6 +112,9 @@ fn owners(kit: &Kit) -> Vec<(u16, Owner)> {
         }
     }
     out.extend(crate::editor::PORTS.map(|p| (p, Owner::Editor)));
+    if let Some(p) = crate::llm::settings::load(kit).port {
+        out.push((p, Owner::Llm));
+    }
     out
 }
 

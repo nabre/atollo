@@ -417,10 +417,37 @@ function glossary(): [string, string][] {
     [
       tr("Agente IA", "AI agent", "Agent IA", "KI-Agent"),
       tr(
-        "Un assistente a riga di comando che lavora nella cartella del progetto: legge, modifica, esegue comandi. Nel kit: Claude Code, Codex, Antigravity.",
-        "A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity.",
-        "Un assistant en ligne de commande qui travaille dans le dossier du projet : il lit, modifie, exécute des commandes. Dans le kit : Claude Code, Codex, Antigravity.",
-        "Ein Befehlszeilen-Assistent, der im Projektordner arbeitet: Er liest, ändert und führt Befehle aus. Im Kit: Claude Code, Codex, Antigravity.",
+        "Un assistente a riga di comando che lavora nella cartella del progetto: legge, modifica, esegue comandi. Nel kit: Claude Code, Codex, Antigravity, Pi.",
+        "A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity, Pi.",
+        "Un assistant en ligne de commande qui travaille dans le dossier du projet : il lit, modifie, exécute des commandes. Dans le kit : Claude Code, Codex, Antigravity, Pi.",
+        "Ein Befehlszeilen-Assistent, der im Projektordner arbeitet: Er liest, ändert und führt Befehle aus. Im Kit: Claude Code, Codex, Antigravity, Pi.",
+      ),
+    ],
+    [
+      tr("GGUF", "GGUF", "GGUF", "GGUF"),
+      tr(
+        "Il formato dei file dei modelli locali che usa llama.cpp: un file (a volte in parti) con i pesi del modello compressi secondo una «quantizzazione», per esempio Q4_K_M.",
+        "The file format of the local models llama.cpp uses: a file (sometimes in parts) with the model's weights compressed according to a “quantization”, for example Q4_K_M.",
+        "Le format des fichiers des modèles locaux qu'utilise llama.cpp : un fichier (parfois en parties) avec les poids du modèle compressés selon une « quantification », par exemple Q4_K_M.",
+        "Das Dateiformat der lokalen Modelle, die llama.cpp verwendet: eine Datei (manchmal in Teilen) mit den Gewichten des Modells, komprimiert nach einer „Quantisierung“, zum Beispiel Q4_K_M.",
+      ),
+    ],
+    [
+      tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
+      tr(
+        "Modelli linguistici che girano sul PC, senza rete e senza account, con il server llama.cpp del kit. Si scaricano dalla pagina «Modelli locali» e li usano Pi e la chat nel browser.",
+        "Language models that run on the PC, with no network and no account, with the kit's llama.cpp server. You download them from the “Local models” page; Pi and the chat in the browser use them.",
+        "Des modèles de langage qui tournent sur le PC, sans réseau et sans compte, avec le serveur llama.cpp du kit. Ils se téléchargent depuis la page « Modèles locaux » et Pi et le chat dans le navigateur les utilisent.",
+        "Sprachmodelle, die auf dem PC laufen, ohne Netzwerk und ohne Konto, mit dem llama.cpp-Server des Kits. Du lädst sie auf der Seite „Lokale Modelle“ herunter; Pi und der Chat im Browser verwenden sie.",
+      ),
+    ],
+    [
+      tr("Pi", "Pi", "Pi", "Pi"),
+      tr(
+        "L'agente da terminale di Earendil (Mario Zechner), il quarto del kit: lavora con i modelli locali, senza account, o con un provider in cloud scelto con /login.",
+        "The terminal agent by Earendil (Mario Zechner), the kit's fourth: it works with the local models, with no account, or with a cloud provider chosen with /login.",
+        "L'agent de terminal d'Earendil (Mario Zechner), le quatrième du kit : il fonctionne avec les modèles locaux, sans compte, ou avec un fournisseur dans le cloud choisi avec /login.",
+        "Der Terminal-Agent von Earendil (Mario Zechner), der vierte des Kits: Er arbeitet mit den lokalen Modellen, ohne Konto, oder mit einem mit /login gewählten Cloud-Anbieter.",
       ),
     ],
     [

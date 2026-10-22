@@ -140,12 +140,15 @@ fn store(kit: &Kit, mut all: Vec<Terminal>) -> Result<()> {
     write_json(&file(kit), &Stored { terminals: all })
 }
 
-/// The components a terminal can leave out or include: agents, languages
-/// and databases (the others are always there, or not commands).
+/// The components a terminal can leave out or include: agents, local
+/// models, languages and databases (the others are always there, or not
+/// commands).
 fn selectable() -> impl Iterator<Item = &'static Component> {
     Catalog::get().all().iter().filter(|c| {
-        matches!(c.group, Group::Agents | Group::Languages | Group::Databases)
-            && !NO_COMMAND.contains(&c.id.as_str())
+        matches!(
+            c.group,
+            Group::Agents | Group::Ai | Group::Languages | Group::Databases
+        ) && !NO_COMMAND.contains(&c.id.as_str())
     })
 }
 

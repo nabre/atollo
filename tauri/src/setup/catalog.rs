@@ -27,6 +27,9 @@ use crate::kit::{Arch, Kit, Target};
 pub enum Group {
     Required,
     Agents,
+    /// Local language models (llama.cpp, D-151): the server the agents and
+    /// the chat use, with the models of `data/models`.
+    Ai,
     Languages,
     /// Database servers and tools (D-73), with their own group too.
     Databases,
@@ -320,14 +323,16 @@ fn exists(path: &Path) -> bool {
 
 impl Component {
     /// Its section of the Tools page: required (and the editor), agents,
-    /// languages (several versions), tools (one, the latest), databases.
+    /// local models, languages (several versions), tools (one, the
+    /// latest), databases.
     pub fn page_section(&self) -> u8 {
         match self.group {
             Group::Required | Group::App => 0,
             Group::Agents => 1,
-            Group::Languages if self.versioned => 2,
-            Group::Languages => 3,
-            Group::Databases => 4,
+            Group::Ai => 2,
+            Group::Languages if self.versioned => 3,
+            Group::Languages => 4,
+            Group::Databases => 5,
         }
     }
 

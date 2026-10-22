@@ -11,7 +11,7 @@
 
 <p align="center">
   A portable, zero-install development environment for Windows, macOS and Linux, on x64 and ARM64.<br>
-  Editor, 20+ languages and runtimes, local databases and the Claude Code, Codex and Antigravity AI agents in one folder you can carry on a USB drive.
+  Editor, 20+ languages and runtimes, local databases, local AI models and the Claude Code, Codex, Antigravity and Pi AI agents in one folder you can carry on a USB drive.
 </p>
 
 <p align="center">
@@ -34,7 +34,7 @@
 
 <p align="center">English · <a href="docs/README.it.md">Italiano</a> · <a href="docs/README.fr.md">Français</a> · <a href="docs/README.de.md">Deutsch</a></p>
 
-**Atollo** is a self-contained *Universal Portable Dev & AI Workspace* (`Atollo.exe`) that unifies an **Editor** (integrated VSCodium), **Toolchain/Runtime Manager** (20+ on-demand languages and tools), **Local Servers/Databases** (MySQL, MongoDB, SQLite, Caddy/Apache), and an **AI Agent Orchestrator** (Claude Code, Codex, and Antigravity with synchronized instructions, skills, and MCP servers) into a single portable folder. Zero install, zero administrator rights, zero system services outside the workspace folder.
+**Atollo** is a self-contained *Universal Portable Dev & AI Workspace* (`Atollo.exe`) that unifies an **Editor** (integrated VSCodium), **Toolchain/Runtime Manager** (20+ on-demand languages and tools), **Local Servers/Databases** (MySQL, MongoDB, SQLite, Caddy/Apache), and an **AI Agent Orchestrator** (Claude Code, Codex, Antigravity, and Pi with synchronized instructions, skills, and MCP servers, plus local LLMs through llama.cpp) into a single portable folder. Zero install, zero administrator rights, zero system services outside the workspace folder.
 
 On first start the app downloads the system components by itself: PowerShell 7, GitHub CLI and the editor. Everything else is chosen on the "Tools" page, or arrives when needed: Node.js with an `npm` action, uv with a `uvx` MCP server, and so on.
 
@@ -48,7 +48,8 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 - **Isolated editor and terminals.** Built-in VSCodium with the Atollo dark and light themes, in a window measured on VSCodium 1.135's own workbench: the same sizes, colors and codicon icons. Terminals see only the kit's `PATH` and variables: programs on the host PC don't interfere, and the PC stays clean.
 - **Languages and tools on demand.** 20+ languages and tools (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), downloaded when needed and verified by SHA-256 checksum or signature. Side-by-side versions, one per project.
 - **Local databases and web servers.** MySQL with phpMyAdmin, MongoDB with mongo-express, and SQLite, started and stopped with one click, with a database, user and password for each project; several versions side by side, each keeping its own port. Caddy and Apache for sites at `<project>.localhost`, on every system, on their own or in a server shared by several projects. A port already in use is refused, naming whoever holds it. No system services.
-- **Three AI agents, one configuration.** Claude Code, Codex and Antigravity: install, sign in and start. Write instructions, skills and MCP servers once in `data/agents` and `atollo sync` keeps all three aligned. Plan limits and usage for today and the last 7 days.
+- **Four AI agents, one configuration.** Claude Code, Codex, Antigravity and Pi: install, sign in and start. Write instructions, skills and MCP servers once in `data/agents` and `atollo sync` keeps all four aligned. Plan limits and usage for today and the last 7 days.
+- **Local AI models.** Language models that run on the PC, with no network and no account: GGUF models from Atollo's catalog or from any Hugging Face repository, downloads that resume where they stopped (even after closing Atollo) and are verified by SHA-256. The llama.cpp server (CPU, or GPU with Vulkan or Metal) listens on 127.0.0.1 only, with a key; Pi uses it out of the box, and its chat opens in the browser. One copy in `data/models`, shared by Windows, macOS and Linux.
 - **One folder for six systems.** The same folder, or the same external SSD, moves from Windows to macOS to Linux with projects, databases and agent settings intact: each machine runs the native programs of its system. "Remove drive" closes everything Atollo opened and lets you eject the disk.
 
 ## Documentation
@@ -86,11 +87,12 @@ Without step 2 macOS starts the app from a temporary copy (App Translocation) an
 | Page | What it has |
 | --- | --- |
 | **Projects** | the **quick panel** (what is running, favourite and recent projects with Run, Editor, Terminal and agent, what needs fixing), the project list with ▶ on every row, Ctrl+P to open one by name; **New project**, a tab beside the projects: empty, from your GitHub repositories (with clone, rename and delete on GitHub), from a Git URL or from one of 63 grouped bases (Laravel, Next.js, Django, WordPress, Astro, Tauri…); notices about the workspace. Each project has its own page, with Start, Editor, Terminal and agent at the top and seven sections: **Run** (actions, ports and their output), **Website**, **Components** (with the versions), **Databases** (the project's database with user and password, backups), **Extensions**, **Editor** (settings and MCP servers), **Git** |
-| **Agents** | the installed Claude Code, Codex and Antigravity: version, sign-in, plan limits and usage of today and the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
+| **Agents** | the installed Claude Code, Codex, Antigravity and Pi: version, sign-in, plan limits and usage of today and the last 7 days; instructions, skills and MCP servers shared in `data\agents` |
+| **Local models** | the llama.cpp server (start and stop, address, the browser chat and its key), the model Pi uses, Atollo's catalog of GGUF models with "fits / at the limit / too large" for this PC's RAM or video memory, any Hugging Face repository (with an optional token for gated models), downloads you can pause and resume; models in `data\models`, on this PC only |
 | **Databases** | Atollo's MySQL (with phpMyAdmin) and MongoDB (with mongo-express) servers: start and stop, administrator password, port, several versions side by side each on its own port, data in `data\db`, on this PC only; SQLite without a server |
 | **Web Servers** | the Caddy and Apache servers shared by the projects (pools) and your own profiles, with the `<project>.localhost` sites they serve; on this PC only, or on the local network if Settings allow it |
 | **Terminals** | consoles with the kit's tools in any folder of the PC: "All tools" and terminals of your own, with the tools and versions you choose |
-| **Tools** | languages and tools by kind (system and editor, AI agents, languages, development tools, web servers, databases), with their logo, dependencies and disk space; install, update and remove, several versions; the Rust compiler (GNU or MSVC) on Rust's page; the editor extensions matrix |
+| **Tools** | languages and tools by kind (system and editor, AI agents, local models, languages, development tools, web servers, databases), with their logo, dependencies and disk space; install, update and remove, several versions; the Rust compiler (GNU or MSVC) on Rust's page; the editor extensions matrix |
 | **Guide** | the user guide inside the app, in nine chapters; every page opens its own topic |
 | **Settings** | saved as you change them: language, theme, the programs' temporary files, the packages kept to reinstall without the network, network (proxy, certificates, local network), Gemini key, app updates, privacy; Atollo's **GitHub account**, one for everything (app, Git, editor, consoles, agents, GitHub CLI), and who signs the commits; where the workspace folder is; the frameworks' instructions; **The kit**, read only: its folders, its disk, the platform and the versions |
 | **Remove drive** | closes everything Atollo opened, brings Antigravity's sign-in back into `data\` and lets you eject the drive |
@@ -118,7 +120,7 @@ Have a Mac, a Linux PC or a Windows ARM64 PC? Try Atollo and tell us how it went
 - On Linux MySQL needs two system libraries, `libaio` and `libnuma`: on Ubuntu 24.04 and Debian 13 `sudo apt install libaio1t64 libnuma1` (on older releases `libaio1`), on Fedora and RHEL `sudo dnf install libaio numactl-libs`. If they are missing, Atollo says so with the command to run.
 - On macOS and Linux an Atollo folder on exFAT or FAT (a drive formatted for Windows) works, but those file systems have no links: where a program ships some, Atollo copies the files instead (for instance Git's 142 internal links), taking more space. On a drive used only with a Mac or Linux, APFS or ext4 is better.
 - Outside the Atollo folder there are only Windows' own traces, transient temporary files in the system temp folder (automatically removed on exit; with Settings › General › Temporary files of programs, the programs may use it too while they run), GitHub CLI's sign-in in the Credential Manager if you sign in from a console with `gh auth login` (the one made in Settings stays in `data\gh`), Antigravity's while `agy` is open (for the session only), on macOS Claude Code's login in the Keychain (unless you connect with a token) and the web view's data in your Library, and the registry entry rustup writes on Windows, which Atollo removes. The full list is in [PRIVACY §4](docs/PRIVACY.md#4-data-stored-on-your-device).
-- A project's folder is trusted by Claude Code and Codex once you open an agent in it from Atollo (the other folders in `projects\` are not): open an agent only in projects you trust. The agents' tokens (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) go only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
+- A project's folder is trusted by Claude Code, Codex and Pi once you open an agent in it from Atollo (the other folders in `projects\` are not): open an agent only in projects you trust. The agents' tokens (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`, the local models' `LLAMA_API_KEY`) go only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The editor instead asks the first time it opens each project and opens the ones you don't trust in "Restricted Mode".
 - The agents' usage limits come from undocumented interfaces of the providers and may stop working after one of their updates.
 - "Remove drive" does not see PC programs that keep only a file of the workspace open.
 
@@ -162,9 +164,14 @@ Atollo.exe prepare [options]         installs and updates the chosen components
     --target <system>                prepares for another system: win32-x64, win32-arm64,
                                      darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <folder>] [--verbose]
-                                     aligns instructions, skills and MCP of the three agents
-Atollo.exe keyring restore|save      Antigravity's sign-in (used by agy.cmd)
+                                     aligns the agents' instructions, skills and MCP servers
+Atollo.exe keyring restore|save      Antigravity's sign-in (used by the kit's agy.cmd)
 Atollo.exe serve <folder> <port>     file server for a static site
+Atollo.exe models                    the local models: the catalog's and the downloaded ones
+Atollo.exe models pull <model>       downloads a catalog id or a Hugging Face model
+                                     (owner/name:quantization), resumed if interrupted
+Atollo.exe models rm <id>            deletes a downloaded model
+Atollo.exe llm start|stop|status     the server of the local models (chat and agents)
 Atollo.exe version                   shows the version
 Atollo.exe help                      shows the help
 ```
@@ -213,7 +220,7 @@ The full text, with every network connection and every file the app keeps, is in
 
 - **No telemetry or data collection:** the application does not collect personal data, usage statistics, telemetry, or crash reports, and never contacts any server operated by the project author. It also disables built-in telemetry in managed components (such as PowerShell 7 and the VSCodium server).
 - **Local storage:** settings, projects, local databases, logs, and credentials are stored locally inside Atollo's `data\` (and `projects\`) folder on the user's device; the few exceptions (temporary files, Antigravity's sign-in while it runs) are listed in the policy.
-- **Network connections:** the application only connects to GitHub to check for its own updates (Settings › General › Automatic update, or `ATOLLO_NO_UPDATE`), to the official sources of the components it downloads, to the Open VSX registry for editor extensions and, when the user signs in to GitHub (Settings › GitHub account) or opens the Agents page, to GitHub and to the agents' providers (**Claude Code**, **Codex**, **Antigravity**) under their own privacy policies.
+- **Network connections:** the application only connects to GitHub to check for its own updates (Settings › General › Automatic update, or `ATOLLO_NO_UPDATE`), to the official sources of the components it downloads, to the Open VSX registry for editor extensions and, when the user signs in to GitHub (Settings › GitHub account) or opens the Agents page, to GitHub and to the agents' providers (**Claude Code**, **Codex**, **Antigravity**, and the cloud provider chosen in **Pi**) under their own privacy policies. Local models come from Hugging Face (`huggingface.co` and its CDN), the llama.cpp and Pi programs from their GitHub releases (`ggml-org/llama.cpp`, `earendil-works/pi`); a local model runs on the PC, and its prompts never leave it.
 
 ## License
 

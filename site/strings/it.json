@@ -1,7 +1,7 @@
 {
   "langName": "Italiano",
   "title": "Atollo — Universal Portable Dev & AI Workspace",
-  "description": "Editor, più di 20 linguaggi, database locali e gli agenti Claude Code, Codex e Antigravity in una sola cartella portabile. Windows, macOS e Linux, x64 e ARM64. Niente installazione, niente diritti di amministratore.",
+  "description": "Editor, più di 20 linguaggi, database locali, modelli AI locali e gli agenti Claude Code, Codex, Antigravity e Pi in una sola cartella portabile. Windows, macOS e Linux, x64 e ARM64. Niente installazione, niente diritti di amministratore.",
   "navFeatures": "Funzioni",
   "navHow": "Come si usa",
   "navTools": "Strumenti",
@@ -35,8 +35,8 @@
   "f2Text": "Più di 20 linguaggi e strumenti (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), scaricati quando servono e verificati con checksum SHA-256 o firma. Più versioni affiancate, una per progetto.",
   "f3Title": "Database e server web locali",
   "f3Text": "MySQL con phpMyAdmin, MongoDB con mongo-express e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto; più versioni affiancate, ognuna con la sua porta. Caddy e Apache per i siti su indirizzi <code>.localhost</code>, su ogni sistema, da soli o in un server condiviso da più progetti. Una porta già occupata viene rifiutata, dicendo chi la tiene. Nessun servizio di sistema.",
-  "f4Title": "Tre agenti AI, una sola configurazione",
-  "f4Text": "Claude Code, Codex e Antigravity: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in <code>data/agents</code> e <code>atollo sync</code> li allinea per tutti e tre. Limiti del piano e consumi di oggi e degli ultimi 7 giorni.",
+  "f4Title": "Quattro agenti AI, una sola configurazione",
+  "f4Text": "Claude Code, Codex, Antigravity e Pi: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in <code>data/agents</code> e <code>atollo sync</code> li allinea per tutti e quattro. Limiti del piano e consumi di oggi e degli ultimi 7 giorni. E modelli locali, senza rete e senza account: modelli GGUF dal catalogo di Atollo o da Hugging Face, download che riprendono controllati con lo SHA-256, un server llama.cpp su <code>127.0.0.1</code> con una chiave che Pi usa senza altre impostazioni.",
   "f5Title": "Una cartella per sei sistemi",
   "f5Text": "La stessa cartella, o lo stesso SSD esterno, passa da Windows a macOS a Linux con progetti, database e configurazioni degli agenti intatti: su ogni macchina girano i programmi nativi di quel sistema. «Rimuovi l'unità» chiude tutto ciò che Atollo ha aperto e lascia espellere il disco.",
   "howTitle": "Come si usa",
@@ -115,5 +115,6 @@
   "themeSystem": "Come il sistema",
   "themeLight": "Chiaro",
   "themeDark": "Scuro",
-  "langLabel": "Lingua"
+  "langLabel": "Lingua",
+  "mxKind_ai": "Modelli locali"
 }

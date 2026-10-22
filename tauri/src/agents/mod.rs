@@ -3,7 +3,7 @@
 //! the kit moves (`relocate`), Antigravity's login (`keyring`) and the
 //! usage of each agent (`stats`).
 //!
-//! Claude Code, Codex and Antigravity: state, launch, sign-out.
+//! Claude Code, Codex, Antigravity and Pi: state, launch, sign-out.
 //!
 //! - signed in: Claude `.claude\.credentials.json` (OAuth token), the
 //!   token of `claude setup-token` in `data/agents/claude/oauth-token`
@@ -11,7 +11,8 @@
 //!   `.codex\auth.json` (token, or the API key of `codex login
 //!   --with-api-key`);
 //!   Antigravity a login saved in the kit (`agents/keyring/`) or
-//!   `GEMINI_API_KEY`;
+//!   `GEMINI_API_KEY`; Pi `.pi\agent\auth.json` (a provider of the
+//!   cloud), or the local model chosen for it (D-152);
 //! - launch: the agents are aligned first, the agent opens in a console
 //!   window of the app in the chosen folder (on macOS and Linux a session of
 //!   the app's terminal, `editor/pty.rs`), and they are aligned again when it
@@ -40,7 +41,7 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::setup::catalog::Catalog;
 
-pub const IDS: [&str; 3] = ["claude", "codex", "antigravity"];
+pub const IDS: [&str; 4] = ["claude", "codex", "antigravity", "pi"];
 
 /// Program of each agent, relative to `data\apps\<platform>`.
 pub fn exe_of(id: &str) -> Option<&'static str> {
@@ -48,6 +49,7 @@ pub fn exe_of(id: &str) -> Option<&'static str> {
         "claude" => Some(r"claude\claude.exe"),
         "codex" => Some(r"codex\bin\codex.exe"),
         "antigravity" => Some(r"antigravity\agy.exe"),
+        "pi" => Some(r"pi\pi.exe"),
         _ => None,
     }
 }
@@ -60,8 +62,9 @@ pub struct AgentInfo {
     pub installed: bool,
     pub version: Option<String>,
     pub signed_in: bool,
-    /// How: "account", "token" (Claude Code on macOS) or "api key" (Codex's
-    /// auth.json, Antigravity's Gemini key).
+    /// How: "account", "token" (Claude Code on macOS), "api key" (Codex's
+    /// auth.json, Antigravity's Gemini key) or "local" (Pi on a local
+    /// model).
     pub sign_in_kind: Option<String>,
     pub running: bool,
     /// "Collega con un token" is offered (Claude Code on macOS).
@@ -83,8 +86,9 @@ pub fn gemini_key(kit: &Kit) -> Option<String> {
 /// The environment agent `id` is started with: the kit's (`env`, or a
 /// project's) plus the secrets only that agent gets, never the other
 /// programs of the kit (SEC-V6-02): Claude Code's token saved in the kit
-/// (D-115), Antigravity's Gemini key. The agent hands them to what it
-/// starts itself (its MCP servers, its commands).
+/// (D-115), Antigravity's Gemini key, the address and key of the local
+/// models for Pi (its `/llama` command reads them, D-152). The agent hands
+/// them to what it starts itself (its MCP servers, its commands).
 pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
     let mut env = env.clone();
     match id {
@@ -92,6 +96,15 @@ pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
         "antigravity" => {
             if let Some(key) = gemini_key(kit) {
                 env.set(GEMINI_VAR, key);
+            }
+        }
+        "pi" => {
+            if let (Some(port), Some(key)) = (
+                crate::llm::settings::load(kit).port,
+                crate::llm::settings::key(kit),
+            ) {
+                env.set("LLAMA_BASE_URL", crate::llm::service::url_of(port));
+                env.set("LLAMA_API_KEY", key);
             }
         }
         _ => {}
@@ -102,7 +115,8 @@ pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
 /// The variable Antigravity reads its Gemini API key from.
 pub const GEMINI_VAR: &str = "GEMINI_API_KEY";
 
-fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
+/// How agent `id` is signed in ([`AgentInfo::sign_in_kind`]), if it is.
+pub(crate) fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
     let home = kit.home();
     let has = |v: Option<&str>| v.is_some_and(|s| !s.is_empty());
     match id {
@@ -148,7 +162,28 @@ fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
                 None
             }
         }
+        "pi" => pi_sign_in(kit),
         _ => None,
+    }
+}
+
+/// Pi: a provider of the cloud in `auth.json` (signed in with an account,
+/// or an API key), else the local model the user chose for it.
+fn pi_sign_in(kit: &Kit) -> Option<&'static str> {
+    let auth = json(&sync::pi::dir(&kit.home()).join("auth.json"));
+    let entries = auth.as_ref().and_then(Value::as_object);
+    let kind = |k: &str| {
+        entries
+            .into_iter()
+            .flat_map(|o| o.values())
+            .any(|c| c.get("type").and_then(Value::as_str) == Some(k))
+    };
+    if kind("oauth") {
+        Some("account")
+    } else if kind("api_key") {
+        Some("api key")
+    } else {
+        sync::pi::local_model(kit).map(|_| "local")
     }
 }
 
@@ -219,6 +254,10 @@ pub fn launch<R: tauri::Runtime>(
     lang: &str,
 ) -> Result<()> {
     let command = command_of(kit, id, lang)?;
+    // Pi on a local model: its server first, so the first request finds it.
+    if id == "pi" && sync::pi::local_model(kit).is_some() {
+        start_local_models(app, lang);
+    }
     // Launched by the user from Atollo: the project is trusted (SEC-V6-02).
     sync::trust_project(kit, dir);
     let report = sync::run(kit, Some(dir));
@@ -237,8 +276,20 @@ pub fn launch<R: tauri::Runtime>(
     })
 }
 
-/// Signs out in the kit: the saved login is removed (Claude's and Codex's
-/// files, Antigravity's saved login). The account's sessions on the
+/// Starts the server of the local models of the app (not from the command
+/// line); a failure is logged, the agent opens anyway.
+fn start_local_models<R: tauri::Runtime>(app: &tauri::AppHandle<R>, lang: &str) {
+    use tauri::Manager;
+    let Some(state) = app.try_state::<crate::commands::AppState>() else {
+        return;
+    };
+    if let Err(e) = state.llm.start(&state.env(), lang) {
+        crate::log::warn(&format!("pi: local models: {e:#}"));
+    }
+}
+
+/// Signs out in the kit: the saved login is removed (Claude's, Codex's and
+/// Pi's files, Antigravity's saved login). The account's sessions on the
 /// provider's site are not revoked: do it from the account settings.
 /// Antigravity is refused while an agy of the kit runs: its login would
 /// come back into the kit when it ends (BUG-V6-29). Errors in `lang`.
@@ -270,6 +321,8 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str, lang: &str) -> Result<()> {
             keyring::save(kit)?;
             remove_if_exists(&kit.data().join("antigravity").join("keyring.json"))
         }
+        // The providers of the cloud only: the local models need no login.
+        "pi" => remove_if_exists(&sync::pi::dir(&home).join("auth.json")),
         _ => bail!("unknown agent: {id}"),
     }
 }

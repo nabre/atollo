@@ -14,6 +14,10 @@ pub struct OpenNow {
     pub setup: bool,
     /// Database servers started by the app.
     pub databases: usize,
+    /// The server of the local models, when it runs (0 or 1).
+    pub llm: usize,
+    /// Downloads of local models under way.
+    pub downloads: usize,
 }
 
 impl OpenNow {
@@ -24,6 +28,8 @@ impl OpenNow {
             || self.actions > 0
             || self.setup
             || self.databases > 0
+            || self.llm > 0
+            || self.downloads > 0
     }
 }
 
@@ -39,6 +45,8 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
         actions,
         setup: state.setup.snapshot().running,
         databases: state.services.running(),
+        llm: state.llm.running(),
+        downloads: crate::llm::pull::pulling().len(),
     }
 }
 
@@ -68,6 +76,7 @@ pub async fn eject_run<R: Runtime>(
         r.stop_all();
     }
     state.servers.stop_all();
+    state.llm.stop_all();
     for (label, window) in app.webview_windows() {
         if label.starts_with(editor::window::LABEL_PREFIX) {
             let _ = window.destroy();
@@ -83,6 +92,9 @@ pub async fn eject_run<R: Runtime>(
     let services = Arc::clone(&state.services);
     let closing = state.closing.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        // The downloads of models let go of their files on the drive (what
+        // arrived is kept for later).
+        crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
         editor.stop();
@@ -133,10 +145,12 @@ pub fn app_quit<R: Runtime>(
         r.stop_all();
     }
     app.state::<AppState>().servers.stop_all();
+    app.state::<AppState>().llm.stop_all();
     // The databases shut down cleanly first (D-73), off this thread.
     let services = Arc::clone(&app.state::<AppState>().services);
     let handle = app.clone();
     std::thread::spawn(move || {
+        crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
         services.stop_all();
         handle.exit(0);
     });

@@ -3,7 +3,8 @@
 import { tr } from "./model";
 
 /** The kinds of the Tools page (components/model.ts, D-139), plus the parts. */
-export type SourceCategory = "system" | "agents" | "languages" | "tools" | "web" | "databases" | "dbviewers" | "part";
+export type SourceCategory =
+  "system" | "agents" | "ai" | "languages" | "tools" | "web" | "databases" | "dbviewers" | "part";
 
 export interface ToolSourceRow {
   id: string;
@@ -241,6 +242,62 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
         "SHA-512 (128 Hex) aus dem Feld sha512 des Manifests",
       ),
     targetPath: () => `antigravity\\${lLine()}\\agy.exe (via data\\kit\\bin\\agy.cmd)`,
+  }),
+  defSource({
+    id: "pi",
+    logoId: "pi",
+    name: "Pi (Earendil)",
+    group: "agents",
+    home: "https://pi.dev",
+    metaSource: "api.github.com/repos/earendil-works/pi/releases/latest",
+    unix: () =>
+      tr(
+        "macOS e Linux: pi-<os>-<arch>.tar.gz della stessa release",
+        "macOS and Linux: pi-<os>-<arch>.tar.gz of the same release",
+        "macOS et Linux : pi-<os>-<arch>.tar.gz de la même release",
+        "macOS und Linux: pi-<os>-<arch>.tar.gz desselben Releases",
+      ),
+    binarySource: "github.com/earendil-works/pi/releases/download/v<v>/pi-windows-<arch>.zip",
+    verifyKind: "SHA-256",
+    verifyDetail: () =>
+      tr(
+        "Digest SHA-256 di GitHub (o SHA256SUMS della release)",
+        "GitHub's SHA-256 digest (or the release's SHA256SUMS)",
+        "Digest SHA-256 de GitHub (ou SHA256SUMS de la release)",
+        "SHA-256-Digest von GitHub (oder SHA256SUMS des Releases)",
+      ),
+    targetPath: () => `pi\\${lLine()}\\pi.exe`,
+  }),
+  defSource({
+    id: "llama",
+    logoId: "llama",
+    name: "llama.cpp (llama-server)",
+    group: "ai",
+    home: "https://github.com/ggml-org/llama.cpp",
+    metaSource: () =>
+      tr(
+        "build bNNNNN fissata nel catalogo di Atollo (D-151)",
+        "build bNNNNN pinned in Atollo's catalog (D-151)",
+        "build bNNNNN fixée dans le catalogue d'Atollo (D-151)",
+        "im Katalog von Atollo festgelegter Build bNNNNN (D-151)",
+      ),
+    unix: () =>
+      tr(
+        "Linux: llama-<b>-bin-ubuntu-vulkan-<arch>.tar.gz; macOS: llama-<b>-bin-macos-<arch>.tar.gz (Metal)",
+        "Linux: llama-<b>-bin-ubuntu-vulkan-<arch>.tar.gz; macOS: llama-<b>-bin-macos-<arch>.tar.gz (Metal)",
+        "Linux : llama-<b>-bin-ubuntu-vulkan-<arch>.tar.gz ; macOS : llama-<b>-bin-macos-<arch>.tar.gz (Metal)",
+        "Linux: llama-<b>-bin-ubuntu-vulkan-<arch>.tar.gz; macOS: llama-<b>-bin-macos-<arch>.tar.gz (Metal)",
+      ),
+    binarySource: "github.com/ggml-org/llama.cpp/releases/download/<b>/llama-<b>-bin-win-vulkan-<arch>.zip",
+    verifyKind: "SHA-256",
+    verifyDetail: () =>
+      tr(
+        "SHA-256 per piattaforma fissato nel catalogo (dal digest di GitHub)",
+        "SHA-256 per platform pinned in the catalog (from GitHub's digest)",
+        "SHA-256 par plateforme fixé dans le catalogue (depuis le digest de GitHub)",
+        "SHA-256 pro Plattform im Katalog festgelegt (aus dem Digest von GitHub)",
+      ),
+    targetPath: "llama\\llama-server.exe",
   }),
   defSource({
     id: "git",

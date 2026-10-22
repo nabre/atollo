@@ -73,10 +73,10 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       path: "app\\",
       depth: 2,
       text: tr(
-        "Lo stato dell'app: settings.json (Impostazioni), secrets\\ (la chiave di Gemini, protetta), ca-bundle.pem (i certificati, se le Impostazioni hanno un file PEM), components.txt (componenti scelti), versions\\ (versioni installate), logs\\, services.json e servers.json (database e server web, con le porte di ogni versione e di ogni pool), terminals.json, frameworks.json, root.txt (ultima cartella del kit), safe-directory.txt (l'ultimo safe.directory scritto dal kit).",
-        "The app's state: settings.json (Settings), secrets\\ (the Gemini key, protected), ca-bundle.pem (the certificates, when Settings has a PEM file), components.txt (chosen components), versions\\ (installed versions), logs\\, services.json and servers.json (databases and web servers, with the ports of every version and every pool), terminals.json, frameworks.json, root.txt (last kit folder), safe-directory.txt (the last safe.directory the kit wrote).",
-        "L'état de l'application : settings.json (Paramètres), secrets\\ (la clé de Gemini, protégé), ca-bundle.pem (les certificats, si les Paramètres ont un fichier PEM), components.txt (composants choisis), versions\\ (versions installées), logs\\, services.json et servers.json (bases de données et serveurs web, avec les ports de chaque version et de chaque pool), terminals.json, frameworks.json, root.txt (dernier dossier du kit), safe-directory.txt (le dernier safe.directory écrit par le kit).",
-        "Der Zustand der App: settings.json (Einstellungen), secrets\\ (der Gemini-Schlüssel, geschützt), ca-bundle.pem (die Zertifikate, wenn die Einstellungen eine PEM-Datei haben), components.txt (gewählte Komponenten), versions\\ (installierte Versionen), logs\\, services.json und servers.json (Datenbanken und Webserver, mit den Ports jeder Version und jedes Pools), terminals.json, frameworks.json, root.txt (letzter Kit-Ordner), safe-directory.txt (das letzte vom Kit geschriebene safe.directory).",
+        "Lo stato dell'app: settings.json (Impostazioni), secrets\\ (la chiave di Gemini, quella del server dei modelli locali e il token di Hugging Face, protetti), llm.json e llm\\presets.ini (il server dei modelli locali), ca-bundle.pem (i certificati, se le Impostazioni hanno un file PEM), components.txt (componenti scelti), versions\\ (versioni installate), logs\\, services.json e servers.json (database e server web, con le porte di ogni versione e di ogni pool), terminals.json, frameworks.json, root.txt (ultima cartella del kit), safe-directory.txt (l'ultimo safe.directory scritto dal kit).",
+        "The app's state: settings.json (Settings), secrets\\ (the Gemini key, the local models server's key and the Hugging Face token, protected), llm.json and llm\\presets.ini (the local models server), ca-bundle.pem (the certificates, when Settings has a PEM file), components.txt (chosen components), versions\\ (installed versions), logs\\, services.json and servers.json (databases and web servers, with the ports of every version and every pool), terminals.json, frameworks.json, root.txt (last kit folder), safe-directory.txt (the last safe.directory the kit wrote).",
+        "L'état de l'application : settings.json (Paramètres), secrets\\ (la clé de Gemini, celle du serveur des modèles locaux et le jeton Hugging Face, protégé), llm.json et llm\\presets.ini (le serveur des modèles locaux), ca-bundle.pem (les certificats, si les Paramètres ont un fichier PEM), components.txt (composants choisis), versions\\ (versions installées), logs\\, services.json et servers.json (bases de données et serveurs web, avec les ports de chaque version et de chaque pool), terminals.json, frameworks.json, root.txt (dernier dossier du kit), safe-directory.txt (le dernier safe.directory écrit par le kit).",
+        "Der Zustand der App: settings.json (Einstellungen), secrets\\ (der Gemini-Schlüssel, der Schlüssel des Servers der lokalen Modelle und das Hugging-Face-Token, geschützt), llm.json und llm\\presets.ini (der Server der lokalen Modelle), ca-bundle.pem (die Zertifikate, wenn die Einstellungen eine PEM-Datei haben), components.txt (gewählte Komponenten), versions\\ (installierte Versionen), logs\\, services.json und servers.json (Datenbanken und Webserver, mit den Ports jeder Version und jedes Pools), terminals.json, frameworks.json, root.txt (letzter Kit-Ordner), safe-directory.txt (das letzte vom Kit geschriebene safe.directory).",
       ),
     },
     {
@@ -125,6 +125,21 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       ),
     },
     {
+      path: tr(
+        "models\\gguf\\<proprietario>--<nome>\\",
+        "models\\gguf\\<owner>--<name>\\",
+        "models\\gguf\\<propriétaire>--<nom>\\",
+        "models\\gguf\\<Eigentümer>--<Name>\\",
+      ),
+      depth: 2,
+      text: tr(
+        "I modelli locali (file GGUF), una cartella per repository di Hugging Face, una sola copia per Windows, macOS e Linux; atollo.json dice che cosa ha scaricato il kit.",
+        "The local models (GGUF files), one folder per Hugging Face repository, a single copy for Windows, macOS and Linux; atollo.json says what the kit downloaded.",
+        "Les modèles locaux (fichiers GGUF), un dossier par dépôt Hugging Face, une seule copie pour Windows, macOS et Linux ; atollo.json dit ce que le kit a téléchargé.",
+        "Die lokalen Modelle (GGUF-Dateien), ein Ordner pro Hugging-Face-Repository, eine einzige Kopie für Windows, macOS und Linux; atollo.json sagt, was das Kit heruntergeladen hat.",
+      ),
+    },
+    {
       path: "servers\\<pool>\\",
       depth: 2,
       text: tr(
@@ -138,10 +153,10 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       path: "agents\\",
       depth: 2,
       text: tr(
-        "Ciò che i tre agenti condividono: AGENTS.md, skills\\, mcp.json, e lo stato dell'allineamento in .sync\\.",
-        "What the three agents share: AGENTS.md, skills\\, mcp.json, and the sync state in .sync\\.",
-        "Ce que les trois agents partagent : AGENTS.md, skills\\, mcp.json, et l'état de l'alignement dans .sync\\.",
-        "Was die drei Agenten gemeinsam nutzen: AGENTS.md, skills\\, mcp.json und den Stand des Abgleichs in .sync\\.",
+        "Ciò che gli agenti condividono: AGENTS.md, skills\\, mcp.json, e lo stato dell'allineamento in .sync\\.",
+        "What the agents share: AGENTS.md, skills\\, mcp.json, and the sync state in .sync\\.",
+        "Ce que les agents partagent : AGENTS.md, skills\\, mcp.json, et l'état de l'alignement dans .sync\\.",
+        "Was die Agenten gemeinsam nutzen: AGENTS.md, skills\\, mcp.json und den Stand des Abgleichs in .sync\\.",
       ),
     },
     {
@@ -158,10 +173,10 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       path: "home\\",
       depth: 2,
       text: tr(
-        "La «cartella utente» dei programmi del kit: .claude, .codex, .gemini (profili degli agenti), .gitconfig, .npmrc, AppData (su Windows).",
-        "The “user folder” of the kit's programs: .claude, .codex, .gemini (agent profiles), .gitconfig, .npmrc, AppData (on Windows).",
-        "Le « dossier utilisateur » des programmes du kit : .claude, .codex, .gemini (profils des agents), .gitconfig, .npmrc, AppData (sur Windows).",
-        "Der „Benutzerordner“ der Programme des Kits: .claude, .codex, .gemini (Profile der Agenten), .gitconfig, .npmrc, AppData (unter Windows).",
+        "La «cartella utente» dei programmi del kit: .claude, .codex, .gemini, .pi (profili degli agenti), .gitconfig, .npmrc, AppData (su Windows).",
+        "The “user folder” of the kit's programs: .claude, .codex, .gemini, .pi (agent profiles), .gitconfig, .npmrc, AppData (on Windows).",
+        "Le « dossier utilisateur » des programmes du kit : .claude, .codex, .gemini, .pi (profils des agents), .gitconfig, .npmrc, AppData (sur Windows).",
+        "Der „Benutzerordner“ der Programme des Kits: .claude, .codex, .gemini, .pi (Profile der Agenten), .gitconfig, .npmrc, AppData (unter Windows).",
       ),
     },
     {
@@ -257,6 +272,7 @@ function SourcesTable({ components }: { components: ComponentInfo[] | null }) {
     { id: "all", label: `${tr("Tutti", "All", "Tous", "Alle")} (${String(TOOL_SOURCES.length)})` },
     { id: "system", label: tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor") },
     { id: "agents", label: tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten") },
+    { id: "ai", label: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle") },
     { id: "languages", label: tr("Linguaggi", "Languages", "Langages", "Sprachen") },
     {
       id: "tools",
@@ -465,8 +481,8 @@ export const INSIDE: TopicTexts = {
             ],
             [
               tr("Agenti", "Agents", "Agents", "Agenten"),
-              <Code key="d">CLAUDE_CONFIG_DIR, CODEX_HOME</Code>,
-              <Code key="e">data\home\.claude, data\home\.codex</Code>,
+              <Code key="d">CLAUDE_CONFIG_DIR, CODEX_HOME, PI_CODING_AGENT_DIR</Code>,
+              <Code key="e">data\home\.claude, data\home\.codex, data\home\.pi\agent</Code>,
             ],
             [
               tr("GitHub CLI", "GitHub CLI", "GitHub CLI", "GitHub CLI"),
@@ -991,14 +1007,34 @@ export const INSIDE: TopicTexts = {
                 "Wenn du sie schließt oder beim Schließen der App",
               ),
             ],
+            [
+              tr(
+                "Server dei modelli locali",
+                "Local models server",
+                "Serveur des modèles locaux",
+                "Server der lokalen Modelle",
+              ),
+              tr(
+                "Con «Avvia», «Avvia con Atollo» o aprendo Pi su un modello locale",
+                "With “Start”, “Start with Atollo” or by opening Pi on a local model",
+                "Avec « Démarrer », « Démarrer avec Atollo » ou en ouvrant Pi sur un modèle local",
+                "Mit „Starten“, „Mit Atollo starten“ oder durch Öffnen von Pi mit einem lokalen Modell",
+              ),
+              tr(
+                "Con «Ferma», «Ferma tutto», o alla chiusura; un modello lascia la memoria dopo dieci minuti senza richieste",
+                "With “Stop”, “Stop all”, or on closing; a model leaves the memory after ten minutes without requests",
+                "Avec « Arrêter », « Tout arrêter », ou à la fermeture ; un modèle quitte la mémoire après dix minutes sans requêtes",
+                "Mit „Beenden“, „Alle beenden“ oder beim Schließen; ein Modell verlässt den Speicher nach zehn Minuten ohne Anfragen",
+              ),
+            ],
           ]}
         />
         <P>
           {tr(
-            "Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata e i pool attivi; «Ferma tutto» li ferma dopo una conferma.",
-            "Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version and the active pools; “Stop all” stops them after a confirmation.",
-            "Fermer une console n'arrête pas les bases de données : elles restent allumées jusqu'à ce que vous les arrêtiez ou fermiez l'application. Le panneau Activité (depuis la barre d'état) liste les actions des projets, chaque version de base de données démarrée et les pools actifs ; « Tout arrêter » les arrête après une confirmation.",
-            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt. Das Panel Aktivität (über die Statusleiste) listet die Aktionen der Projekte, jede gestartete Datenbankversion und die aktiven Pools auf; „Alle beenden“ stoppt sie nach einer Bestätigung.",
+            "Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata, i pool attivi e il server dei modelli locali; «Ferma tutto» li ferma dopo una conferma.",
+            "Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version, the active pools and the local models server; “Stop all” stops them after a confirmation.",
+            "Fermer une console n'arrête pas les bases de données : elles restent allumées jusqu'à ce que vous les arrêtiez ou fermiez l'application. Le panneau Activité (depuis la barre d'état) liste les actions des projets, chaque version de base de données démarrée, les pools actifs et le serveur des modèles locaux ; « Tout arrêter » les arrête après une confirmation.",
+            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt. Das Panel Aktivität (über die Statusleiste) listet die Aktionen der Projekte, jede gestartete Datenbankversion, die aktiven Pools und den Server der lokalen Modelle auf; „Alle beenden“ stoppt sie nach einer Bestätigung.",
           )}
         </P>
       </Section>
@@ -1007,10 +1043,10 @@ export const INSIDE: TopicTexts = {
         <P>
           {rich(
             tr(
-              "Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e spegne con ordine i database, poi esce. Prima di staccare l'unità usa {0}.",
-              "If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions and the web servers and shuts down the databases neatly, then exits. Before unplugging the drive use {0}.",
-              "Si quelque chose est ouvert, Atollo demande « Fermer Atollo ? » avec la liste ; « Tout fermer » arrête les actions, les serveurs web et éteint proprement les bases de données, puis quitte. Avant de débrancher le lecteur, utilisez {0}.",
-              "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ mit der Liste; „Alles schließen“ stoppt die Aktionen und die Webserver, fährt die Datenbanken geordnet herunter und beendet sich dann. Bevor du das Laufwerk abziehst, verwende {0}.",
+              "Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e il server dei modelli locali e spegne con ordine i database, poi esce. Prima di staccare l'unità usa {0}.",
+              "If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions, the web servers and the local models server and shuts down the databases neatly, then exits. Before unplugging the drive use {0}.",
+              "Si quelque chose est ouvert, Atollo demande « Fermer Atollo ? » avec la liste ; « Tout fermer » arrête les actions, les serveurs web et le serveur des modèles locaux et éteint proprement les bases de données, puis quitte. Avant de débrancher le lecteur, utilisez {0}.",
+              "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ mit der Liste; „Alles schließen“ stoppt die Aktionen, die Webserver und den Server der lokalen Modelle, fährt die Datenbanken geordnet herunter und beendet sich dann. Bevor du das Laufwerk abziehst, verwende {0}.",
             ),
             <See key="e" id="eject" />,
           )}
@@ -1039,10 +1075,10 @@ export const INSIDE: TopicTexts = {
               "Die Einzelinstanz verwendet eine aus dem Kit-Ordner abgeleitete Kennung (ein Mutex unter Windows, ein Lock unter macOS und Linux): Zwei verschiedene Kits stören sich nicht.",
             ),
             tr(
-              "Ogni porta ha un solo proprietario: un pool (di base da 8081 a 8999), una versione di database, un'azione di un progetto (di base da 7100 a 7999); da 7000 a 7099 sono dell'editor. Una porta già presa viene rifiutata con il nome di chi la tiene (per esempio «La porta 3306 è già del database MySQL 8.4: scegline un'altra.»), e la porta automatica di un nuovo pool le evita tutte.",
-              "Every port has only one owner: a pool (by default 8081 to 8999), a database version, a project action (by default 7100 to 7999); 7000 to 7099 belong to the editor. A port already taken is refused with the name of whoever holds it (for example “Port 3306 already belongs to database MySQL 8.4: choose another one.”), and a new pool's automatic port avoids them all.",
-              "Chaque port n'a qu'un seul propriétaire : un pool (par défaut de 8081 à 8999), une version de base de données, une action d'un projet (par défaut de 7100 à 7999) ; de 7000 à 7099, ils sont à l'éditeur. Un port déjà pris est refusé avec le nom de celui qui le tient (par exemple « Le port 3306 appartient déjà à la base de données MySQL 8.4 : choisissez-en un autre. »), et le port automatique d'un nouveau pool les évite tous.",
-              "Jeder Port hat nur einen Besitzer: einen Pool (standardmäßig 8081 bis 8999), eine Datenbankversion, eine Aktion eines Projekts (standardmäßig 7100 bis 7999); 7000 bis 7099 gehören dem Editor. Ein bereits vergebener Port wird mit dem Namen dessen abgelehnt, der ihn hält (zum Beispiel „Port 3306 gehört bereits zur Datenbank MySQL 8.4: Wähle einen anderen.“), und der automatische Port eines neuen Pools meidet sie alle.",
+              "Ogni porta ha un solo proprietario: un pool (di base da 8081 a 8999), una versione di database, un'azione di un progetto (di base da 7100 a 7999), il server dei modelli locali (9931 e seguenti); da 7000 a 7099 sono dell'editor. Una porta già presa viene rifiutata con il nome di chi la tiene (per esempio «La porta 3306 è già del database MySQL 8.4: scegline un'altra.»), e la porta automatica di un nuovo pool le evita tutte.",
+              "Every port has only one owner: a pool (by default 8081 to 8999), a database version, a project action (by default 7100 to 7999), the local models server (9931 and the following ones); 7000 to 7099 belong to the editor. A port already taken is refused with the name of whoever holds it (for example “Port 3306 already belongs to database MySQL 8.4: choose another one.”), and a new pool's automatic port avoids them all.",
+              "Chaque port n'a qu'un seul propriétaire : un pool (par défaut de 8081 à 8999), une version de base de données, une action d'un projet (par défaut de 7100 à 7999), le serveur des modèles locaux (9931 et les suivants) ; de 7000 à 7099, ils sont à l'éditeur. Un port déjà pris est refusé avec le nom de celui qui le tient (par exemple « Le port 3306 appartient déjà à la base de données MySQL 8.4 : choisissez-en un autre. »), et le port automatique d'un nouveau pool les évite tous.",
+              "Jeder Port hat nur einen Besitzer: einen Pool (standardmäßig 8081 bis 8999), eine Datenbankversion, eine Aktion eines Projekts (standardmäßig 7100 bis 7999), den Server der lokalen Modelle (9931 und folgende); 7000 bis 7099 gehören dem Editor. Ein bereits vergebener Port wird mit dem Namen dessen abgelehnt, der ihn hält (zum Beispiel „Port 3306 gehört bereits zur Datenbank MySQL 8.4: Wähle einen anderen.“), und der automatische Port eines neuen Pools meidet sie alle.",
             ),
             tr(
               "Ogni versione di un database tiene la sua porta, anche quando cambi la versione del server; due avvii della stessa versione fanno partire un solo server, sulla stessa porta.",
@@ -1338,6 +1374,24 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
+              <Code key="h">huggingface.co</Code>,
+              tr(
+                "I modelli locali: la ricerca dei file GGUF e i download, che huggingface.co reindirizza alla sua CDN. Solo quando scarichi un modello; il token, se c'è, va solo a huggingface.co.",
+                "The local models: the search for GGUF files and the downloads, which huggingface.co redirects to its CDN. Only when you download a model; the token, if any, goes only to huggingface.co.",
+                "Les modèles locaux : la recherche des fichiers GGUF et les téléchargements, que huggingface.co redirige vers son CDN. Seulement quand vous téléchargez un modèle ; le jeton, s'il y en a un, ne va qu'à huggingface.co.",
+                "Die lokalen Modelle: die Suche nach GGUF-Dateien und die Downloads, die huggingface.co an sein CDN weiterleitet. Nur wenn du ein Modell herunterlädst; das Token, falls vorhanden, geht nur an huggingface.co.",
+              ),
+            ],
+            [
+              <Code key="g">github.com/ggml-org/llama.cpp · github.com/earendil-works/pi</Code>,
+              tr(
+                "Le release di llama.cpp e di Pi, come per gli altri componenti pubblicati su GitHub (sono nella tabella delle fonti qui sotto).",
+                "The releases of llama.cpp and Pi, as for the other components published on GitHub (they are in the table of sources below).",
+                "Les releases de llama.cpp et de Pi, comme pour les autres composants publiés sur GitHub (ils sont dans le tableau des sources ci-dessous).",
+                "Die Releases von llama.cpp und Pi, wie bei den anderen auf GitHub veröffentlichten Komponenten (sie stehen in der Tabelle der Quellen unten).",
+              ),
+            ],
+            [
               <Code key="d">registry.npmjs.org · pypi.org · packagist.org…</Code>,
               tr(
                 "Solo quando lo chiedono i comandi dei progetti e dei framework.",
@@ -1520,6 +1574,42 @@ export const INSIDE: TopicTexts = {
                 "Used by the kit around Antigravity: restores or saves its sign-in.",
                 "Utilisé par le kit autour d'Antigravity : remet ou enregistre sa connexion.",
                 "Vom Kit rund um Antigravity verwendet: stellt dessen Anmeldung wieder her oder speichert sie.",
+              ),
+            ],
+            [
+              <Code key="m">models</Code>,
+              tr(
+                "I modelli locali: quelli del catalogo e quelli scaricati.",
+                "The local models: those of the catalog and those downloaded.",
+                "Les modèles locaux : ceux du catalogue et ceux téléchargés.",
+                "Die lokalen Modelle: die des Katalogs und die heruntergeladenen.",
+              ),
+            ],
+            [
+              <Code key="n">{`models pull ${tr("<modello>", "<model>", "<modèle>", "<Modell>")}`}</Code>,
+              tr(
+                "Scarica un id del catalogo o un modello di Hugging Face (proprietario/nome:quantizzazione); riprende se interrotto.",
+                "Downloads a catalog id or a Hugging Face model (owner/name:quantization); resumes if interrupted.",
+                "Télécharge un id du catalogue ou un modèle de Hugging Face (propriétaire/nom:quantification) ; reprend s'il est interrompu.",
+                "Lädt eine Katalog-ID oder ein Hugging-Face-Modell herunter (Eigentümer/Name:Quantisierung); setzt nach einer Unterbrechung fort.",
+              ),
+            ],
+            [
+              <Code key="o">models rm &lt;id&gt;</Code>,
+              tr(
+                "Cancella un modello scaricato.",
+                "Deletes a downloaded model.",
+                "Supprime un modèle téléchargé.",
+                "Löscht ein heruntergeladenes Modell.",
+              ),
+            ],
+            [
+              <Code key="p">llm start | stop | status</Code>,
+              tr(
+                "Il server dei modelli locali (chat e agenti): lo avvia, lo ferma o dice se risponde. status non manda la chiave a chi ascolta sulla porta.",
+                "The local models server (chat and agents): starts it, stops it or says whether it answers. status does not send the key to whatever listens on the port.",
+                "Le serveur des modèles locaux (chat et agents) : le démarre, l'arrête ou dit s'il répond. status n'envoie pas la clé à ce qui écoute sur le port.",
+                "Der Server der lokalen Modelle (Chat und Agenten): startet ihn, stoppt ihn oder sagt, ob er antwortet. status sendet den Schlüssel nicht an das, was auf dem Port lauscht.",
               ),
             ],
             [

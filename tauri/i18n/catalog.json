@@ -914,11 +914,6 @@
     "fr": "Nom non valide : seulement des lettres, des chiffres, « . », « - » et « _ ».",
     "de": "Ungültiger Name: nur Buchstaben, Ziffern, „.“, „-“ und „_“."
   },
-  "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.": {
-    "en": "Usage: {0} [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n      --target <id>       for another system: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components,\n                          remove the ones not chosen\n      --only a,b          only these and what they need, removing nothing\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n      --target <id>       prepare for another system (ids as for components)\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's {1})\n  serve <folder> <port>   file server for a static site\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.",
-    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis,\n                          supprime ceux qui ne le sont pas\n      --only a,b          ceux-ci et ce dont ils ont besoin, sans rien supprimer\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.",
-    "de": "Verwendung: {0} [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n      --target <id>       für ein anderes System: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten,\n                          entfernt die nicht gewählten\n      --only a,b          nur diese und was sie brauchen, ohne zu entfernen\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n      --target <id>       bereitet für ein anderes System vor (ids wie bei components)\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von {1} des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo."
-  },
   "predefinita": {
     "en": "default",
     "fr": "par défaut",
@@ -1993,5 +1988,130 @@
     "en": "Close Atollo",
     "fr": "Fermer Atollo",
     "de": "Atollo schließen"
+  },
+  "modelli linguistici locali (GGUF): il server per gli agenti e una chat nel browser, su CPU o GPU (Vulkan, Metal)": {
+    "en": "local language models (GGUF): the server for the agents and a chat in the browser, on the CPU or the GPU (Vulkan, Metal)",
+    "fr": "modèles de langage locaux (GGUF) : le serveur pour les agents et un chat dans le navigateur, sur le CPU ou le GPU (Vulkan, Metal)",
+    "de": "lokale Sprachmodelle (GGUF): der Server für die Agenten und ein Chat im Browser, auf CPU oder GPU (Vulkan, Metal)"
+  },
+  "{0} pesa {1} GB: il disco del kit è {2} e non tiene file oltre i 4 GB. Su un disco exFAT o NTFS ci sta, oppure scegli un modello più piccolo.": {
+    "en": "{0} weighs {1} GB: the kit's drive is {2} and holds no file over 4 GB. It fits on an exFAT or NTFS drive, or choose a smaller model.",
+    "fr": "{0} pèse {1} Go : le disque du kit est en {2} et n'accepte pas de fichier de plus de 4 Go. Il tient sur un disque exFAT ou NTFS, sinon choisissez un modèle plus petit.",
+    "de": "{0} ist {1} GB groß: das Laufwerk des Kits ist {2} und nimmt keine Datei über 4 GB auf. Auf einem exFAT- oder NTFS-Laufwerk passt es, oder wähle ein kleineres Modell."
+  },
+  "Spazio insufficiente sul disco del kit: servono {0} GB, liberi {1} GB.": {
+    "en": "Not enough space on the kit's drive: {0} GB needed, {1} GB free.",
+    "fr": "Espace insuffisant sur le disque du kit : {0} Go nécessaires, {1} Go libres.",
+    "de": "Nicht genug Platz auf dem Laufwerk des Kits: {0} GB nötig, {1} GB frei."
+  },
+  "per il codice, leggero: entra in 8 GB di RAM o di memoria video": {
+    "en": "for code, light: fits in 8 GB of RAM or video memory",
+    "fr": "pour le code, léger : tient dans 8 Go de RAM ou de mémoire vidéo",
+    "de": "für Code, leicht: passt in 8 GB RAM oder Grafikspeicher"
+  },
+  "generale e per il codice, con ragionamento: per 8-12 GB": {
+    "en": "general and for code, with reasoning: for 8-12 GB",
+    "fr": "généraliste et pour le code, avec raisonnement : pour 8-12 Go",
+    "de": "allgemein und für Code, mit Reasoning: für 8-12 GB"
+  },
+  "il modello aperto di OpenAI, con ragionamento e strumenti: per 16-24 GB": {
+    "en": "OpenAI's open model, with reasoning and tools: for 16-24 GB",
+    "fr": "le modèle ouvert d'OpenAI, avec raisonnement et outils : pour 16-24 Go",
+    "de": "das offene Modell von OpenAI, mit Reasoning und Werkzeugen: für 16-24 GB"
+  },
+  "di Mistral, fatto per gli agenti di programmazione: per 16-24 GB di memoria video": {
+    "en": "by Mistral, made for coding agents: for 16-24 GB of video memory",
+    "fr": "de Mistral, conçu pour les agents de programmation : pour 16-24 Go de mémoire vidéo",
+    "de": "von Mistral, für Programmier-Agenten gemacht: für 16-24 GB Grafikspeicher"
+  },
+  "per il codice e gli agenti; a esperti (3B attivi), veloce anche sulla CPU con molta RAM: 24 GB e più": {
+    "en": "for code and agents; mixture of experts (3B active), fast on the CPU too with plenty of RAM: 24 GB and more",
+    "fr": "pour le code et les agents ; à experts (3B actifs), rapide même sur le CPU avec beaucoup de RAM : 24 Go et plus",
+    "de": "für Code und Agenten; Mixture of Experts (3B aktiv), auch auf der CPU schnell mit viel RAM: 24 GB und mehr"
+  },
+  "Catalogo di Atollo:": {
+    "en": "Atollo's catalog:",
+    "fr": "Catalogue d'Atollo :",
+    "de": "Katalog von Atollo:"
+  },
+  "Altri modelli nel kit:": {
+    "en": "Other models in the kit:",
+    "fr": "Autres modèles dans le kit :",
+    "de": "Weitere Modelle im Kit:"
+  },
+  "Cartella dei modelli: {0}": {
+    "en": "Models folder: {0}",
+    "fr": "Dossier des modèles : {0}",
+    "de": "Ordner der Modelle: {0}"
+  },
+  "{0}: {1} GB da {2}": {
+    "en": "{0}: {1} GB from {2}",
+    "fr": "{0} : {1} Go depuis {2}",
+    "de": "{0}: {1} GB von {2}"
+  },
+  "{0}: scaricato e verificato": {
+    "en": "{0}: downloaded and checked",
+    "fr": "{0} : téléchargé et vérifié",
+    "de": "{0}: heruntergeladen und geprüft"
+  },
+  "{0}: cancellato": {
+    "en": "{0}: deleted",
+    "fr": "{0} : supprimé",
+    "de": "{0}: gelöscht"
+  },
+  "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.": {
+    "en": "Usage: {0} [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n      --target <id>       for another system: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n  prepare [options]       install and update the chosen components,\n                          remove the ones not chosen\n      --only a,b          only these and what they need, removing nothing\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n      --target <id>       prepare for another system (ids as for components)\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's {1})\n  serve <folder> <port>   file server for a static site\n  models                  the local models: the catalog's and the downloaded ones\n  models pull <model>     download a catalog id or a Hugging Face model\n                          (owner/name:quantization), resumed if interrupted\n  models rm <id>          delete a downloaded model\n  llm start|stop|status   the server of the local models (chat and agents)\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.",
+    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n  prepare [options]       installe et met à jour les composants choisis,\n                          supprime ceux qui ne le sont pas\n      --only a,b          ceux-ci et ce dont ils ont besoin, sans rien supprimer\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  models                  les modèles locaux : ceux du catalogue et les téléchargés\n  models pull <modèle>    télécharge un id du catalogue ou un modèle de Hugging Face\n                          (propriétaire/nom:quantification), reprend s'il est interrompu\n  models rm <id>          supprime un modèle téléchargé\n  llm start|stop|status   le serveur des modèles locaux (chat et agents)\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.",
+    "de": "Verwendung: {0} [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n      --target <id>       für ein anderes System: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten,\n                          entfernt die nicht gewählten\n      --only a,b          nur diese und was sie brauchen, ohne zu entfernen\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n      --target <id>       bereitet für ein anderes System vor (ids wie bei components)\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von {1} des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  models                  die lokalen Modelle: die des Katalogs und die heruntergeladenen\n  models pull <Modell>    lädt eine Katalog-id oder ein Modell von Hugging Face herunter\n                          (Besitzer/Name:Quantisierung), setzt nach Abbruch fort\n  models rm <id>          löscht ein heruntergeladenes Modell\n  llm start|stop|status   der Server der lokalen Modelle (Chat und Agenten)\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo."
+  },
+  "La porta {0} dei modelli locali è occupata da un altro programma.": {
+    "en": "Port {0} of the local models is taken by another program.",
+    "fr": "Le port {0} des modèles locaux est pris par un autre programme.",
+    "de": "Der Port {0} der lokalen Modelle ist von einem anderen Programm belegt."
+  },
+  "Nessun modello locale: scaricane uno dalla pagina Modelli locali.": {
+    "en": "No local model: download one from the Local models page.",
+    "fr": "Aucun modèle local : téléchargez-en un depuis la page Modèles locaux.",
+    "de": "Kein lokales Modell: lade eins auf der Seite Lokale Modelle herunter."
+  },
+  "La porta {0} è dei modelli locali: scegline un'altra.": {
+    "en": "Port {0} belongs to the local models: choose another one.",
+    "fr": "Le port {0} est celui des modèles locaux : choisissez-en un autre.",
+    "de": "Der Port {0} gehört den lokalen Modellen: wähle einen anderen."
+  },
+  "Modelli locali su {0} (chiave in {1}). Ctrl+C per fermarli.": {
+    "en": "Local models on {0} (key in {1}). Ctrl+C to stop them.",
+    "fr": "Modèles locaux sur {0} (clé dans {1}). Ctrl+C pour les arrêter.",
+    "de": "Lokale Modelle auf {0} (Schlüssel in {1}). Strg+C zum Beenden."
+  },
+  "Server dei modelli locali fermati: {0}": {
+    "en": "Servers of the local models stopped: {0}",
+    "fr": "Serveurs des modèles locaux arrêtés : {0}",
+    "de": "Server der lokalen Modelle beendet: {0}"
+  },
+  "In esecuzione su {0}": {
+    "en": "Running on {0}",
+    "fr": "En cours sur {0}",
+    "de": "Läuft auf {0}"
+  },
+  "Fermo ({0})": {
+    "en": "Stopped ({0})",
+    "fr": "Arrêté ({0})",
+    "de": "Gestoppt ({0})"
+  },
+  "agente da terminale di Earendil (Mario Zechner): modelli locali o dei provider in cloud": {
+    "en": "terminal agent by Earendil (Mario Zechner): local models or the cloud providers'",
+    "fr": "agent en terminal d'Earendil (Mario Zechner) : modèles locaux ou des fournisseurs cloud",
+    "de": "Terminal-Agent von Earendil (Mario Zechner): lokale Modelle oder die der Cloud-Anbieter"
+  },
+  "Modelli locali: nessun limite di piano": {
+    "en": "Local models: no plan limits",
+    "fr": "Modèles locaux : aucune limite de forfait",
+    "de": "Lokale Modelle: keine Tariflimits"
+  },
+  "I limiti dei provider di Pi non sono letti dal kit": {
+    "en": "The limits of Pi's providers are not read by the kit",
+    "fr": "Les limites des fournisseurs de Pi ne sont pas lues par le kit",
+    "de": "Die Limits der Anbieter von Pi liest das Kit nicht"
   }
 }

@@ -25,10 +25,10 @@ export const TOOLS: TopicTexts = {
       <InBrief
         points={[
           tr(
-            "La pagina Strumenti elenca tutti i componenti che il kit sa installare, divisi in sei tipi come nel sito: sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database.",
-            "The Tools page lists all the components the kit can install, divided into six kinds as on the site: system and editor, AI agents, languages, development tools, web servers, databases.",
-            "La page Outils liste tous les composants que le kit sait installer, répartis en six types comme sur le site : système et éditeur, agents IA, langages, outils de développement, serveurs web, bases de données.",
-            "Die Seite Werkzeuge listet alle Komponenten auf, die das Kit installieren kann, in sechs Arten aufgeteilt wie auf der Website: System und Editor, KI-Agenten, Sprachen, Entwicklungswerkzeuge, Webserver, Datenbanken.",
+            "La pagina Strumenti elenca tutti i componenti che il kit sa installare, divisi in otto tipi come nel sito: sistema ed editor, agenti AI, modelli locali, linguaggi, strumenti di sviluppo, server web, database, visualizzazione database.",
+            "The Tools page lists all the components the kit can install, divided into eight kinds as on the site: system and editor, AI agents, local models, languages, development tools, web servers, databases, database viewers.",
+            "La page Outils liste tous les composants que le kit sait installer, répartis en huit types comme sur le site : système et éditeur, agents IA, modèles locaux, langages, outils de développement, serveurs web, bases de données, visualisation des bases de données.",
+            "Die Seite Werkzeuge listet alle Komponenten auf, die das Kit installieren kann, in acht Arten aufgeteilt wie auf der Website: System und Editor, KI-Agenten, lokale Modelle, Sprachen, Entwicklungswerkzeuge, Webserver, Datenbanken, Datenbank-Ansicht.",
           ),
           tr(
             "Le icone delle righe agiscono subito: «Installa» e «Aggiorna» partono appena le premi.",
@@ -93,10 +93,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Riquadro «Componenti»", "“Components” box", "Panneau « Composants »", "Bereich „Komponenten“"),
               tr(
-                "Un albero con i sei tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente.",
-                "A tree with the six kinds and their components, with how many are installed. A click opens the component's tab.",
-                "Une arborescence avec les six types et leurs composants, avec le nombre d'installés. Un clic ouvre l'onglet du composant.",
-                "Ein Baum mit den sechs Arten und ihren Komponenten, mit der Anzahl der installierten. Ein Klick öffnet die Registerkarte der Komponente.",
+                "Un albero con gli otto tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente.",
+                "A tree with the eight kinds and their components, with how many are installed. A click opens the component's tab.",
+                "Une arborescence avec les huit types et leurs composants, avec le nombre d'installés. Un clic ouvre l'onglet du composant.",
+                "Ein Baum mit den acht Arten und ihren Komponenten, mit der Anzahl der installierten. Ein Klick öffnet die Registerkarte der Komponente.",
               ),
             ],
             [
@@ -154,10 +154,22 @@ export const TOOLS: TopicTexts = {
             [
               tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
-                "Claude Code, Codex, Antigravity: facoltativi, sempre all'ultima versione.",
-                "Claude Code, Codex, Antigravity: optional, always at the latest version.",
-                "Claude Code, Codex, Antigravity : facultatifs, toujours à la dernière version.",
-                "Claude Code, Codex, Antigravity: optional, immer in der neuesten Version.",
+                "Claude Code, Codex, Antigravity, Pi: facoltativi, sempre all'ultima versione.",
+                "Claude Code, Codex, Antigravity, Pi: optional, always at the latest version.",
+                "Claude Code, Codex, Antigravity, Pi : facultatifs, toujours à la dernière version.",
+                "Claude Code, Codex, Antigravity, Pi: optional, immer in der neuesten Version.",
+              ),
+            ],
+            [
+              tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
+              rich(
+                tr(
+                  "llama.cpp, il server dei modelli linguistici sul PC: li usano Pi e la chat nel browser, senza rete. Facoltativo, a una versione fissata; i modelli si scaricano dalla pagina Modelli locali ({0}).",
+                  "llama.cpp, the server of the language models on the PC: Pi and the chat in the browser use them, with no network. Optional, at a pinned version; the models are downloaded from the Local models page ({0}).",
+                  "llama.cpp, le serveur des modèles de langage sur le PC : Pi et le chat dans le navigateur les utilisent, sans réseau. Facultatif, à une version figée ; les modèles se téléchargent depuis la page Modèles locaux ({0}).",
+                  "llama.cpp, der Server der Sprachmodelle auf dem PC: Pi und der Chat im Browser verwenden sie, ohne Netzwerk. Optional, in einer festgelegten Version; die Modelle werden auf der Seite Lokale Modelle heruntergeladen ({0}).",
+                ),
+                <See key="m" id="models" />,
               ),
             ],
             [
@@ -227,10 +239,10 @@ export const TOOLS: TopicTexts = {
       >
         <P>
           {tr(
-            "Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Tipo» («Tutti i tipi» o uno dei sei) e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.",
-            "Above the table are the filters: the search, “Platform”, “Type” (“All types” or one of the six) and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, version, versions on disk, size, status, projects that use it, what it requires and the actions.",
-            "Au-dessus du tableau se trouvent les filtres : la recherche, « Plateforme », « Type » (« Tous les types » ou l'un des six) et « État » (Tous, Installés, Non installés, À appliquer, Utilisés par les projets), plus les boutons « Développer » et « Vérifier ». Les colonnes : nom, version, versions sur le disque, taille, état, projets qui l'utilisent, ce qu'il requiert et les actions.",
-            "Über der Tabelle stehen die Filter: die Suche, „Plattform“, „Typ“ („Alle Typen“ oder eine der sechs) und „Status“ (Alle, Installiert, Nicht installiert, Zu übernehmen, Von Projekten verwendet), dazu die Schaltflächen „Erweitern“ und „Prüfen“. Die Spalten: Name, Version, Versionen auf dem Datenträger, Größe, Status, Projekte, die es verwenden, was es benötigt, und die Aktionen.",
+            "Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Tipo» («Tutti i tipi» o uno degli otto) e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.",
+            "Above the table are the filters: the search, “Platform”, “Type” (“All types” or one of the eight) and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, version, versions on disk, size, status, projects that use it, what it requires and the actions.",
+            "Au-dessus du tableau se trouvent les filtres : la recherche, « Plateforme », « Type » (« Tous les types » ou l'un des huit) et « État » (Tous, Installés, Non installés, À appliquer, Utilisés par les projets), plus les boutons « Développer » et « Vérifier ». Les colonnes : nom, version, versions sur le disque, taille, état, projets qui l'utilisent, ce qu'il requiert et les actions.",
+            "Über der Tabelle stehen die Filter: die Suche, „Plattform“, „Typ“ („Alle Typen“ oder eine der acht) und „Status“ (Alle, Installiert, Nicht installiert, Zu übernehmen, Von Projekten verwendet), dazu die Schaltflächen „Erweitern“ und „Prüfen“. Die Spalten: Name, Version, Versionen auf dem Datenträger, Größe, Status, Projekte, die es verwenden, was es benötigt, und die Aktionen.",
           )}
         </P>
         <P>
@@ -868,10 +880,10 @@ export const TOOLS: TopicTexts = {
       <Section title={tr("Matrice", "Matrix", "Matrice", "Matrix")}>
         <P>
           {tr(
-            "Una tabella con un componente per riga, divisa negli stessi sei tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
-            "A table with one component per row, split into the same six kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
-            "Un tableau avec un composant par ligne, réparti dans les mêmes six types que le tableau « Tous les outils », et les six systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ≈ en émulation (la version x64 sur un PC ARM64), ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
-            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben sechs Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den sechs Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ≈ in Emulation (die x64-Version auf einem ARM64-PC), ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
+            "Una tabella con un componente per riga, divisa negli stessi otto tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
+            "A table with one component per row, split into the same eight kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
+            "Un tableau avec un composant par ligne, réparti dans les mêmes huit types que le tableau « Tous les outils », et les six systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ≈ en émulation (la version x64 sur un PC ARM64), ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
+            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben acht Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den sechs Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ≈ in Emulation (die x64-Version auf einem ARM64-PC), ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
           )}
         </P>
         <Callout tone="info">

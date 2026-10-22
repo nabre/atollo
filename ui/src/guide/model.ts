@@ -50,6 +50,7 @@ export type GuideTopicId =
   | "agents"
   | "agents-shared"
   | "agents-usage"
+  | "models"
   // 5. Tools
   | "tools"
   | "tools-versions"
@@ -76,7 +77,16 @@ export type GuideTopicId =
 
 /** The pages a topic can open ("new" is the «Nuovo progetto» tab of Progetti). */
 export type AppPageTarget =
-  "new" | "projects" | "agents" | "databases" | "servers" | "terminals" | "components" | "settings" | "eject";
+  | "new"
+  | "projects"
+  | "agents"
+  | "models"
+  | "databases"
+  | "servers"
+  | "terminals"
+  | "components"
+  | "settings"
+  | "eject";
 
 export interface GuideTopic {
   id: GuideTopicId;
@@ -436,10 +446,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     group: "agents",
     title: () =>
       tr(
-        "Gli agenti: Claude Code, Codex, Antigravity",
-        "The agents: Claude Code, Codex, Antigravity",
-        "Les agents : Claude Code, Codex, Antigravity",
-        "Die Agenten: Claude Code, Codex, Antigravity",
+        "Gli agenti: Claude Code, Codex, Antigravity, Pi",
+        "The agents: Claude Code, Codex, Antigravity, Pi",
+        "Les agents : Claude Code, Codex, Antigravity, Pi",
+        "Die Agenten: Claude Code, Codex, Antigravity, Pi",
       ),
     subtitle: () =>
       tr(
@@ -450,7 +460,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("hubot"),
     keywords:
-      "agenti claude code codex antigravity gemini accesso login token chiave api agents sign in login api key agents connexion clé api agenten anmeldung api-schlüssel",
+      "agenti claude code codex antigravity gemini pi earendil accesso login token chiave api agents sign in login api key agents connexion clé api agenten anmeldung api-schlüssel",
     targetPage: "agents",
   },
   {
@@ -465,10 +475,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Un'unica cartella per istruire i tre agenti insieme: AGENTS.md, le skill, i server MCP del kit e quelli di un progetto.",
-        "A single folder to instruct all three agents at once: AGENTS.md, the skills, the kit's MCP servers and those of a project.",
-        "Un seul dossier pour instruire les trois agents ensemble : AGENTS.md, les skills, les serveurs MCP du kit et ceux d'un projet.",
-        "Ein einziger Ordner, um alle drei Agenten gemeinsam anzuleiten: AGENTS.md, die Skills, die MCP-Server des Kits und die eines Projekts.",
+        "Un'unica cartella per istruire gli agenti insieme: AGENTS.md, le skill, i server MCP del kit e quelli di un progetto.",
+        "A single folder to instruct all the agents at once: AGENTS.md, the skills, the kit's MCP servers and those of a project.",
+        "Un seul dossier pour instruire les agents ensemble : AGENTS.md, les skills, les serveurs MCP du kit et ceux d'un projet.",
+        "Ein einziger Ordner, um alle Agenten gemeinsam anzuleiten: AGENTS.md, die Skills, die MCP-Server des Kits und die eines Projekts.",
       ),
     icon: codicon("sync"),
     keywords:
@@ -497,6 +507,28 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       "limiti quote consumi token sessioni piano 5 ore settimana statistiche limits quota usage tokens sessions plan week limites quota consommation tokens sessions forfait semaine limits kontingent verbrauch tokens sitzungen plan woche",
     targetPage: "agents",
   },
+  {
+    id: "models",
+    group: "agents",
+    title: () =>
+      tr(
+        "Modelli locali: llama.cpp e i GGUF",
+        "Local models: llama.cpp and GGUF",
+        "Modèles locaux : llama.cpp et les GGUF",
+        "Lokale Modelle: llama.cpp und GGUF",
+      ),
+    subtitle: () =>
+      tr(
+        "Modelli linguistici sul PC, senza rete e senza account: il server, la chat nel browser, il modello di Pi, scaricare dal catalogo o da Hugging Face.",
+        "Language models on the PC, with no network and no account: the server, the chat in the browser, Pi's model, downloading from the catalog or from Hugging Face.",
+        "Des modèles de langage sur le PC, sans réseau et sans compte : le serveur, le chat dans le navigateur, le modèle de Pi, télécharger depuis le catalogue ou depuis Hugging Face.",
+        "Sprachmodelle auf dem PC, ohne Netzwerk und ohne Konto: der Server, der Chat im Browser, das Modell von Pi, Herunterladen aus dem Katalog oder von Hugging Face.",
+      ),
+    icon: codicon("chip"),
+    keywords:
+      "modelli locali llm llama.cpp llama-server gguf hugging face quantizzazione qwen gpt-oss devstral pi chat gpu vulkan metal ram memoria video scarica sospendi riprendi token chiave local models quantization download pause resume video memory key modèles locaux quantification télécharger suspendre reprendre mémoire vidéo clé lokale modelle quantisierung herunterladen anhalten fortsetzen grafikspeicher schlüssel",
+    targetPage: "models",
+  },
 
   // 5. Tools
   {
@@ -505,14 +537,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     title: () => tr("La pagina Strumenti", "The Tools page", "La page Outils", "Die Seite Werkzeuge"),
     subtitle: () =>
       tr(
-        "La tabella di tutti gli strumenti divisa nei sei tipi, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».",
-        "The table of all the tools split into the six kinds, the five states, installing and updating right away or choosing first and then “Apply”.",
-        "Le tableau de tous les outils réparti en six types, les cinq états, installer et mettre à jour tout de suite ou choisir puis « Appliquer ».",
-        "Die Tabelle aller Werkzeuge, nach den sechs Arten aufgeteilt, die fünf Zustände, sofort installieren und aktualisieren oder erst auswählen und dann „Übernehmen“.",
+        "La tabella di tutti gli strumenti divisa negli otto tipi, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».",
+        "The table of all the tools split into the eight kinds, the five states, installing and updating right away or choosing first and then “Apply”.",
+        "Le tableau de tous les outils réparti en huit types, les cinq états, installer et mettre à jour tout de suite ou choisir puis « Appliquer ».",
+        "Die Tabelle aller Werkzeuge, nach den acht Arten aufgeteilt, die fünf Zustände, sofort installieren und aktualisieren oder erst auswählen und dann „Übernehmen“.",
       ),
     icon: codicon("extensions"),
     keywords:
-      "strumenti componenti tabella tipi sistema ed editor agenti ai linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
+      "strumenti componenti tabella tipi sistema ed editor agenti ai modelli locali llama.cpp local models modèles locaux lokale modelle linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
     targetPage: "components",
   },
   {
@@ -811,7 +843,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("symbol-keyword"),
     keywords:
-      "cli riga di comando prepare check components versions env sync powershell command line ligne de commande kommandozeile befehlszeile",
+      "cli riga di comando prepare check components versions env sync models llm powershell command line ligne de commande kommandozeile befehlszeile",
   },
 
   // 9. Help

@@ -29,6 +29,7 @@
 mod antigravity;
 mod claude;
 mod codex;
+mod pi;
 pub mod util;
 
 use std::collections::HashMap;
@@ -137,7 +138,7 @@ impl Limits {
 pub struct AgentStats {
     pub id: &'static str,
     pub name: String,
-    /// "none", "expired", "apikey", "ok".
+    /// "none", "expired", "apikey", "ok", "local" (Pi on a local model).
     pub account: &'static str,
     pub limits: Limits,
     pub usage: Usage,
@@ -418,6 +419,9 @@ pub fn collect(kit: &Kit, lang: &'static str, force: bool) -> Report {
         peak_label: None,
         level: "none",
     };
+    let pi_login = installed("pi")
+        .then(|| crate::agents::sign_in(kit, "pi"))
+        .flatten();
     let (cx, period) = (&cx, &period);
     let agents = std::thread::scope(|s| {
         let claude = installed("claude").then(|| {
@@ -471,7 +475,31 @@ pub fn collect(kit: &Kit, lang: &'static str, force: bool) -> Report {
                 }
             })
         });
-        [claude, codex, agy]
+        let pi = installed("pi").then(|| {
+            s.spawn(move || {
+                // No plan limits: the local models have none, the kit does
+                // not ask the providers of the cloud Pi may use.
+                let (account, note) = match pi_login {
+                    Some("local") => ("local", cx.t("Modelli locali: nessun limite di piano", &[])),
+                    Some(kind) => (
+                        if kind == "api key" { "apikey" } else { "ok" },
+                        cx.t("I limiti dei provider di Pi non sono letti dal kit", &[]),
+                    ),
+                    None => ("none", String::new()),
+                };
+                AgentStats {
+                    account,
+                    limits: if note.is_empty() {
+                        Limits::default()
+                    } else {
+                        Limits::note(note)
+                    },
+                    usage: pi::usage(&crate::agents::sync::pi::dir(&cx.home), period),
+                    ..blank("pi")
+                }
+            })
+        });
+        [claude, codex, agy, pi]
             .into_iter()
             .flatten()
             .filter_map(|h| h.join().ok())

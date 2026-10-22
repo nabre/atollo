@@ -429,6 +429,12 @@
           "markdownDescription": "Enables the github_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
+          "type": "string",
+          "const": "allow-local-models",
+          "markdownDescription": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key."
+        },
+        {
           "description": "Enables the privacy_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-privacy-open",

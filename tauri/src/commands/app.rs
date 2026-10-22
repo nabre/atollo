@@ -110,7 +110,8 @@ pub(super) fn apply_env(state: &AppState) -> &'static str {
 }
 
 /// Opens a folder of the kit in File Explorer: `agents` (shared
-/// instructions, skills, MCP), `projects` or one project.
+/// instructions, skills, MCP), `models` (the local models, D-151),
+/// `projects` or one project.
 #[tauri::command]
 pub fn folder_open<R: Runtime>(
     webview: Webview<R>,
@@ -122,6 +123,7 @@ pub fn folder_open<R: Runtime>(
     let dir = match which.as_str() {
         "agents" => state.kit.data().join("agents"),
         "db" => state.kit.data().join("db"),
+        "models" => crate::llm::models_dir(&state.kit),
         "backup" => {
             let name = project.as_deref().ok_or("no project")?;
             project_dir(&state.kit, Some(name), state.lang())?;

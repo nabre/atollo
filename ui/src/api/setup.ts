@@ -109,7 +109,7 @@ export interface SetupSnapshot {
 }
 
 /** `app`: part of Atollo (the editor), shown with the required ones. */
-export type Group = "required" | "app" | "agents" | "languages" | "databases";
+export type Group = "required" | "app" | "agents" | "ai" | "languages" | "databases";
 
 export interface ComponentInfo {
   id: string;

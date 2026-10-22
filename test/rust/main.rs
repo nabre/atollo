@@ -16,6 +16,7 @@ fn state() -> AppState {
         setup,
         editor,
         services: std::sync::Arc::new(db::services::Services::new(kit.clone())),
+        llm: std::sync::Arc::new(llm::service::Llm::new(kit.clone())),
         servers: std::sync::Arc::new(servers::WebServers::new(kit.clone())),
         kit,
         lang: std::sync::RwLock::new("it"),
@@ -174,10 +175,20 @@ const OLD_HELP_FR: &str = "Utilisation : Atollo.exe [commande]\n\nCommandes :\n 
 
 const OLD_HELP_DE: &str = "Verwendung: Atollo.exe [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten,\n                          entfernt die nicht gewählten\n      --only a,b          nur diese und was sie brauchen, ohne zu entfernen\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von agy.cmd des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo.";
 
-/// `old` with `components_lines` inserted after the line of `components`
-/// and `prepare_line` after the line of `--line`.
+/// `old` with `components_lines` inserted after the line of `components`,
+/// `prepare_line` after the line of `--line` and the lines of the local
+/// models (D-151) after the line of `serve`.
 fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str) -> String {
     let mut out = Vec::new();
+    let lang = if old.starts_with("Uso") {
+        "it"
+    } else if old.starts_with("Usage") {
+        "en"
+    } else if old.starts_with("Utilisation") {
+        "fr"
+    } else {
+        "de"
+    };
     for line in old.split('\n') {
         out.push(line);
         if line.starts_with("  components ") {
@@ -186,8 +197,45 @@ fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str)
         if line.starts_with("      --line ") {
             out.push(prepare_line);
         }
+        if line.starts_with("  serve ") {
+            out.extend_from_slice(models_lines(lang));
+        }
     }
     out.join("\n")
+}
+
+/// The lines of `models` and `llm` in `lang`.
+fn models_lines(lang: &str) -> &'static [&'static str] {
+    match lang {
+        "it" => &[
+            "  models                  i modelli locali: del catalogo e scaricati",
+            "  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face",
+            "                          (proprietario/nome:quantizzazione), riprende se interrotto",
+            "  models rm <id>          cancella un modello scaricato",
+            "  llm start|stop|status   il server dei modelli locali (chat e agenti)",
+        ],
+        "en" => &[
+            "  models                  the local models: the catalog's and the downloaded ones",
+            "  models pull <model>     download a catalog id or a Hugging Face model",
+            "                          (owner/name:quantization), resumed if interrupted",
+            "  models rm <id>          delete a downloaded model",
+            "  llm start|stop|status   the server of the local models (chat and agents)",
+        ],
+        "fr" => &[
+            "  models                  les modèles locaux : ceux du catalogue et les téléchargés",
+            "  models pull <modèle>    télécharge un id du catalogue ou un modèle de Hugging Face",
+            "                          (propriétaire/nom:quantification), reprend s'il est interrompu",
+            "  models rm <id>          supprime un modèle téléchargé",
+            "  llm start|stop|status   le serveur des modèles locaux (chat et agents)",
+        ],
+        _ => &[
+            "  models                  die lokalen Modelle: die des Katalogs und die heruntergeladenen",
+            "  models pull <Modell>    lädt eine Katalog-id oder ein Modell von Hugging Face herunter",
+            "                          (Besitzer/Name:Quantisierung), setzt nach Abbruch fort",
+            "  models rm <id>          löscht ein heruntergeladenes Modell",
+            "  llm start|stop|status   der Server der lokalen Modelle (Chat und Agenten)",
+        ],
+    }
 }
 
 /// Windows keeps the help it has always printed, byte for byte, apart
@@ -340,6 +388,44 @@ fn terminal_sessions_only_for_main() {
     .build()
     .unwrap();
     assert!(invoke_cmd(&editor, "pty_sessions", editor_url).is_err());
+}
+
+/// The local models (permissions/llm.toml, D-151): the main window only,
+/// never an editor window nor a detached terminal.
+#[test]
+fn local_models_only_for_main() {
+    let app = mock_builder()
+        .manage(state())
+        .invoke_handler(command_handler!())
+        .build(context())
+        .unwrap();
+    let data = std::env::temp_dir().join("atollo-ipc-test-webview-llm");
+    let main = WebviewWindowBuilder::new(&app, MAIN, WebviewUrl::App("index.html".into()))
+        .data_directory(data.clone())
+        .build()
+        .unwrap();
+    let r = invoke_cmd(&main, "llm_status", LOCAL);
+    assert_eq!(
+        r.as_ref().map(|v| v["state"].clone()),
+        Ok(serde_json::json!("stopped")),
+        "{r:?}"
+    );
+    let editor_url = "http://127.0.0.1:7000/";
+    let editor = WebviewWindowBuilder::new(
+        &app,
+        "editor-1",
+        WebviewUrl::External(editor_url.parse().unwrap()),
+    )
+    .data_directory(data.clone())
+    .build()
+    .unwrap();
+    assert!(invoke_cmd(&editor, "llm_status", editor_url).is_err());
+    let terminal =
+        WebviewWindowBuilder::new(&app, "terminal-1", WebviewUrl::App("terminal.html".into()))
+            .data_directory(data)
+            .build()
+            .unwrap();
+    assert!(invoke_cmd(&terminal, "llm_key", LOCAL).is_err());
 }
 
 fn invoke_with(

@@ -14,6 +14,7 @@
 pub mod guard;
 pub mod instance;
 pub mod jobs;
+pub mod memory;
 pub mod processes;
 pub mod safe_path;
 pub mod sessions;

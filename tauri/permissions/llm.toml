@@ -1,0 +1,8 @@
+# The commands of the local models (llm/, commands/llm.rs; D-151). Written
+# by hand, not generated from build.rs COMMANDS: one permission for all of
+# them, granted by capabilities/main.json only.
+
+[[permission]]
+identifier = "allow-local-models"
+description = "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key."
+commands.allow = ["llm_status", "llm_models", "llm_start", "llm_stop", "llm_set", "llm_hf_inspect", "llm_pull", "llm_pull_cancel", "llm_remove", "llm_hf_token_set", "llm_key"]

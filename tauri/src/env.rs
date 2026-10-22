@@ -394,6 +394,12 @@ impl KitEnv {
         env.set("AGY_CLI_DISABLE_AUTO_UPDATE", "true");
         // The folder of its line, for the kit's agy.cmd.
         env.set_path("CP_ANTIGRAVITY", app("antigravity"));
+        // Pi (D-152): its folder in the kit's home, no update check, no
+        // telemetry. The address and key of the local models are not here:
+        // only Pi's launch has them (`agents::launch_env`).
+        env.set_path("PI_CODING_AGENT_DIR", crate::agents::sync::pi::dir(&home));
+        env.set("PI_SKIP_VERSION_CHECK", "1");
+        env.set("PI_TELEMETRY", "0");
 
         // Portable profile (_env.cmd:76-98)
         if let Some(real) = host
@@ -649,6 +655,9 @@ impl KitEnv {
             path.push(app(r"codex\bin"));
             path.push(app(r"codex\codex-path"));
         }
+        if has(r"pi\pi.exe") {
+            path.push(app("pi"));
+        }
         // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
         // which carries its login in and out of Windows (agents/keyring/).
         if has(r"python\python.exe") {
@@ -897,6 +906,7 @@ impl KitEnv {
             "CLAUDE_CONFIG_DIR",
             "CLAUDE_CODE_TMPDIR",
             "CODEX_HOME",
+            "PI_CODING_AGENT_DIR",
             "HOME",
             "APPDATA",
             "LOCALAPPDATA",

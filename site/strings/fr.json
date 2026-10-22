@@ -1,7 +1,7 @@
 {
   "langName": "Français",
   "title": "Atollo — Universal Portable Dev & AI Workspace",
-  "description": "Un éditeur, plus de 20 langages, des bases de données locales et les agents Claude Code, Codex et Antigravity dans un seul dossier portable. Windows, macOS et Linux, x64 et ARM64. Aucune installation, aucun droit d'administrateur.",
+  "description": "Un éditeur, plus de 20 langages, des bases de données locales, des modèles d'IA locaux et les agents Claude Code, Codex, Antigravity et Pi dans un seul dossier portable. Windows, macOS et Linux, x64 et ARM64. Aucune installation, aucun droit d'administrateur.",
   "navFeatures": "Fonctions",
   "navHow": "Utilisation",
   "navTools": "Outils",
@@ -35,8 +35,8 @@
   "f2Text": "Plus de 20 langages et outils (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), téléchargés quand il le faut et vérifiés par somme SHA-256 ou signature. Plusieurs versions côte à côte, une par projet.",
   "f3Title": "Bases de données et serveurs web locaux",
   "f3Text": "MySQL avec phpMyAdmin, MongoDB avec mongo-express et SQLite, démarrés et arrêtés d'un clic, avec base, utilisateur et mot de passe pour chaque projet ; plusieurs versions côte à côte, chacune gardant son port. Caddy et Apache pour les sites sur des adresses <code>.localhost</code>, sur chaque système, seuls ou dans un serveur partagé par plusieurs projets. Un port déjà pris est refusé, avec le nom de qui le tient. Aucun service système.",
-  "f4Title": "Trois agents IA, une seule configuration",
-  "f4Text": "Claude Code, Codex et Antigravity : installation, connexion et lancement. Instructions, skills et serveurs MCP s'écrivent une fois dans <code>data/agents</code> et <code>atollo sync</code> les aligne pour les trois. Limites du forfait et consommation du jour et des 7 derniers jours.",
+  "f4Title": "Quatre agents IA, une seule configuration",
+  "f4Text": "Claude Code, Codex, Antigravity et Pi : installation, connexion et lancement. Instructions, skills et serveurs MCP s'écrivent une fois dans <code>data/agents</code> et <code>atollo sync</code> les aligne pour les quatre. Limites du forfait et consommation du jour et des 7 derniers jours. Et des modèles locaux, sans réseau et sans compte : modèles GGUF du catalogue d'Atollo ou de Hugging Face, téléchargements qui reprennent, vérifiés par SHA-256, un serveur llama.cpp sur <code>127.0.0.1</code> avec une clé, que Pi utilise sans autre réglage.",
   "f5Title": "Un dossier pour six systèmes",
   "f5Text": "Le même dossier, ou le même SSD externe, passe de Windows à macOS à Linux avec projets, bases de données et réglages des agents intacts : chaque machine exécute les programmes natifs de son système. « Retirer le lecteur » ferme tout ce qu'Atollo a ouvert et laisse éjecter le disque.",
   "howTitle": "Utilisation",
@@ -115,5 +115,6 @@
   "themeSystem": "Comme le système",
   "themeLight": "Clair",
   "themeDark": "Sombre",
-  "langLabel": "Langue"
+  "langLabel": "Langue",
+  "mxKind_ai": "Modèles locaux"
 }

@@ -1,5 +1,6 @@
 //! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
-//! `versions`, `check`, `prepare`, `sync`, `keyring`, `serve`, `version`, `help`. The exe is a GUI program, so output goes
+//! `versions`, `check`, `prepare`, `sync`, `keyring`, `serve`, `models`,
+//! `llm`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
 //! console. Step lines use the markers `── N. Name ──`, `√`, `x`, `!` and
 //! `·`.
@@ -48,9 +49,21 @@ pub enum Cli {
         dir: std::path::PathBuf,
         port: u16,
     },
+    /// The local models (D-151).
+    Models(Models),
+    /// Their server: `start`, `stop`, `status`.
+    Llm(String),
     Version,
     Help,
     Unknown(String),
+}
+
+/// `models`, `models pull <id|owner/repo[:quant]>`, `models rm <id>`.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Models {
+    List,
+    Pull(String),
+    Remove(String),
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -186,6 +199,23 @@ pub fn parse(args: &[OsString]) -> Cli {
             }
             Cli::Prepare(p)
         }
+        "models" => {
+            let arg = |i: usize| args.get(i).map(|a| a.to_string_lossy().into_owned());
+            match (arg(1).as_deref(), arg(2), args.len()) {
+                (None, _, _) => Cli::Models(Models::List),
+                (Some("pull"), Some(spec), 3) => Cli::Models(Models::Pull(spec)),
+                (Some("rm"), Some(id), 3) => Cli::Models(Models::Remove(id)),
+                (Some(other), _, _) => Cli::Unknown(format!("models {other}")),
+            }
+        }
+        "llm" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            Some(a @ ("start" | "stop" | "status")) if args.len() == 2 => Cli::Llm(a.to_owned()),
+            other => Cli::Unknown(format!("llm {}", other.unwrap_or_default())),
+        },
         "version" | "--version" | "-V" => Cli::Version,
         "help" | "--help" | "-h" | "/?" => Cli::Help,
         other => Cli::Unknown(other.to_owned()),

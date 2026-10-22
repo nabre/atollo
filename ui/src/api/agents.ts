@@ -1,10 +1,10 @@
-// Claude Code, Codex and Antigravity: state, plan limits and usage
+// Claude Code, Codex, Antigravity and Pi: state, plan limits and usage
 // (tauri/src/stats), launch. Rust: tauri/src/commands/agents.rs.
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, engineText, query } from "./core";
 
-export type AgentId = "claude" | "codex" | "antigravity";
+export type AgentId = "claude" | "codex" | "antigravity" | "pi";
 
 export interface AgentInfo {
   id: AgentId;
@@ -12,7 +12,8 @@ export interface AgentInfo {
   installed: boolean;
   version: string | null;
   signedIn: boolean;
-  /** "account", "api key" or "token" (Claude Code on macOS). */
+  /** "account", "api key", "token" (Claude Code on macOS) or "local" (Pi
+   * on a local model). */
   signInKind: string | null;
   running: boolean;
   /** "Collega con un token" offered: Claude Code on macOS (Rust `token_link`). */
@@ -43,6 +44,16 @@ export const SAMPLE_AGENTS: AgentInfo[] = [
   {
     id: "antigravity",
     name: "Antigravity",
+    installed: false,
+    version: null,
+    signedIn: false,
+    signInKind: null,
+    running: false,
+    tokenLink: false,
+  },
+  {
+    id: "pi",
+    name: "Pi",
     installed: false,
     version: null,
     signedIn: false,
@@ -103,7 +114,7 @@ export interface Usage {
 export interface AgentStats {
   id: AgentId;
   name: string;
-  account: "none" | "expired" | "apikey" | "ok";
+  account: "none" | "expired" | "apikey" | "ok" | "local";
   limits: Limits;
   usage: Usage;
   peak: number | null;

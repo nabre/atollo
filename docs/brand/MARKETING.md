@@ -54,7 +54,7 @@ Quando ti viene chiesto di lavorare su qualsiasi aspetto di comunicazione, marke
 In geografia, un **atollo** è un anello corallino che si innalza in mezzo all'oceano aperto e racchiude al suo interno una **laguna calma, fertile e completamente protetta** dalle correnti esterne.
 Nel mondo del software:
 * **L'oceano esterno** è il computer ospite: può essere un PC Windows scolastico o aziendale blindato senza permessi di amministratore, un Mac Apple Silicon a casa, una workstation Linux, o un sistema pieno di versioni globali in conflitto.
-* **La laguna interna è Atollo:** un perimetro isolato e autosufficiente (`projects/` + `data/`) dove il tuo editor, i tuoi 20+ linguaggi, i tuoi database, i tuoi server web, il tuo account GitHub e i tuoi 3 agenti AI sono già configurati, dialogano tra loro e non lasciano alcuna traccia sul sistema ospite quando smonti l'unità.
+* **La laguna interna è Atollo:** un perimetro isolato e autosufficiente (`projects/` + `data/`) dove il tuo editor, i tuoi 20+ linguaggi, i tuoi database, i tuoi server web, il tuo account GitHub e i tuoi 4 agenti AI sono già configurati, dialogano tra loro e non lasciano alcuna traccia sul sistema ospite quando smonti l'unità.
 
 ### 3.2 I 4 Pilastri Funzionali + Il Fondamento Multi-OS
 
@@ -69,9 +69,10 @@ Ogni presentazione completa di Atollo deve articolarsi su questi **5 punti**:
 3. **Local Server & Database Stack (Zero Servizi di Sistema)**
    * Motori database locali (MySQL, MongoDB, SQLite) avviabili e arrestabili con un clic, con creazione automatica di database, utenti e credenziali `.env` isolati per ciascun progetto, backup integrati e phpMyAdmin pronto all'uso.
    * Pool di server web condivisi o dedicati per progetto e scaffolding guidato dei principali framework.
-4. **AI Agent Hub & Orchestrator (3 Agenti, 1 Sola Mente)**
-   * Installazione, accesso e avvio diretto di **Claude Code**, **Codex** e **Antigravity**.
-   * **Sincronizzazione unificata (`sync`):** scrivi una sola volta istruzioni, skill, regole e server MCP in `data/agents` (o per singolo progetto) e Atollo li mantiene allineati automaticamente per tutti e tre gli agenti.
+4. **AI Agent Hub & Orchestrator (4 Agenti, 1 Sola Mente)**
+   * Installazione, accesso e avvio diretto di **Claude Code**, **Codex**, **Antigravity** e **Pi**.
+   * **Sincronizzazione unificata (`sync`):** scrivi una sola volta istruzioni, skill, regole e server MCP in `data/agents` (o per singolo progetto) e Atollo li mantiene allineati automaticamente per tutti e quattro gli agenti.
+   * **Modelli AI locali:** modelli GGUF (dal catalogo di Atollo o da Hugging Face) che girano sul PC con llama.cpp, senza rete e senza account; download che riprendono, verificati con lo SHA-256; il server ascolta solo su `127.0.0.1` con una chiave e Pi lo usa senza altre impostazioni. Una sola copia in `data/models` per Windows, macOS e Linux.
    * **Controllo dei consumi:** monitoraggio in tempo reale dei limiti del piano e dei consumi giornalieri e degli ultimi 7 giorni.
 5. **Il Fondamento: Continuità Fisica Multi-OS (`6/6`) e Rimozione Sicura**
    * Grazie al Router multipiattaforma (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite (su Windows ARM64 alcuni componenti usano la build x64 in emulazione, come dice la matrice in [`docs/app/TOOLS-MATRIX.html`](../app/TOOLS-MATRIX.html)).
@@ -86,7 +87,7 @@ Alla domanda «in cosa è diverso?» non si risponde con un confronto (Direttiva
 | Aspetto | Cosa dire | Fatti da citare |
 | :--- | :--- | :--- |
 | **Isolato, con i programmi nativi** | Nessun container e nessuna macchina virtuale: ogni sistema esegue i propri programmi, direttamente. | Nessun diritto di amministratore, nessun servizio di sistema, registro e `PATH` del sistema mai toccati; avvio anche da chiavetta USB o SSD esterno. |
-| **Tutto da una finestra** | Ogni area del lavoro ha la sua pagina, e ciò che succede si vede in un posto solo. | Pagine **Progetti**, **Agenti**, **Database**, **Strumenti**, **Impostazioni**; pannello **Attività** con output ed errori; riga di comando per gli script (`atollo check`, `atollo prepare`, `atollo sync`). |
+| **Tutto da una finestra** | Ogni area del lavoro ha la sua pagina, e ciò che succede si vede in un posto solo. | Pagine **Progetti**, **Agenti**, **Modelli locali**, **Database**, **Strumenti**, **Impostazioni**; pannello **Attività** con output ed errori; riga di comando per gli script (`atollo check`, `atollo prepare`, `atollo sync`). |
 | **La cartella viaggia con te** | Cambiano unità, cartella o sistema: il lavoro resta lo stesso. | Percorsi riallineati al cambio di lettera o cartella; su ognuno dei 6 target i programmi di quel sistema; progetti, database, accessi e configurazioni degli agenti intatti. |
 | **Ogni componente verificato** | Nulla si usa senza essere controllato, e le versioni non si pestano i piedi. | Checksum SHA-256 o firma su ogni download; versioni *side-by-side* per progetto; matrice delle relazioni che avvisa delle incompatibilità. |
 
@@ -187,9 +188,9 @@ L'app ha l'aspetto del workbench dell'editor che il kit installa, **VSCodium 1.1
 Quando generi copy per una campagna, una sezione del sito o un post social, scegli l'angolo corrispondente al pubblico:
 
 ### Persona 1: Lo Sviluppatore "AI-First"
-* **Dolore:** Usa Claude Code, Codex e Antigravity, ma deve mantenere 3 cartelle di configurazione diverse, 3 file di istruzioni, 3 elenchi di server MCP e non sa mai quanto budget/token sta consumando su ciascun fornitore.
-* **Hook:** *"Tre agenti AI. Una sola mente. Sul tuo disco."*
-* **Funzionalità da evidenziare:** Pagina **Agenti**, comando `atollo sync`, allineamento automatico di istruzioni/skill/MCP in `data/agents`, grafico dei consumi giornalieri e settimanali, salvataggio delle credenziali nel kit.
+* **Dolore:** Usa Claude Code, Codex, Antigravity e Pi, ma deve mantenere 4 cartelle di configurazione diverse, 4 file di istruzioni, 4 elenchi di server MCP e non sa mai quanto budget/token sta consumando su ciascun fornitore; per il codice riservato vorrebbe un modello che non esca dal PC.
+* **Hook:** *"Quattro agenti AI. Una sola mente. Sul tuo disco."*
+* **Funzionalità da evidenziare:** Pagina **Agenti**, comando `atollo sync`, allineamento automatico di istruzioni/skill/MCP in `data/agents`, grafico dei consumi giornalieri e settimanali, salvataggio delle credenziali nel kit; pagina **Modelli locali** (Pi su un modello che gira sul PC, senza rete).
 
 ### Persona 2: Lo Sviluppatore Full-Stack / Poliglotta
 * **Dolore:** Ha il PC lento e il `PATH` inquinato da 4 versioni di Node, 3 di Python, Java, PHP, servizi di MySQL e MongoDB che partono all'avvio di Windows/macOS, oppure una macchina virtuale che consuma 8 GB di RAM solo per far girare un sito locale.
@@ -217,10 +218,10 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 ### 8.2 Elevator Pitch Completo (Per GitHub README / Pagina "Informazioni")
 
 **Italiano:**
-> **Atollo** è un *Universal Portable Dev & AI Workspace* per Windows, macOS e Linux (`x64` e `ARM64`). Racchiude in un'unica cartella portabile un editor integrato (VSCodium), più di 20 linguaggi e strumenti scaricati su richiesta, database e server web locali (MySQL, MongoDB, SQLite, Caddy/Apache) e gli agenti **Claude Code, Codex e Antigravity** con istruzioni, skill e server MCP sincronizzati. Non richiede installazione né diritti di amministratore, isola completamente il proprio ambiente dal sistema ospite e ti segue su qualsiasi disco o computer.
+> **Atollo** è un *Universal Portable Dev & AI Workspace* per Windows, macOS e Linux (`x64` e `ARM64`). Racchiude in un'unica cartella portabile un editor integrato (VSCodium), più di 20 linguaggi e strumenti scaricati su richiesta, database e server web locali (MySQL, MongoDB, SQLite, Caddy/Apache), modelli AI locali (llama.cpp) e gli agenti **Claude Code, Codex, Antigravity e Pi** con istruzioni, skill e server MCP sincronizzati. Non richiede installazione né diritti di amministratore, isola completamente il proprio ambiente dal sistema ospite e ti segue su qualsiasi disco o computer.
 
 **English:**
-> **Atollo** is a *Universal Portable Dev & AI Workspace* for Windows, macOS, and Linux (`x64` and `ARM64`). It packs into a single portable folder a built-in editor (VSCodium), 20+ on-demand languages and toolchains, local databases and web servers (MySQL, MongoDB, SQLite, Caddy/Apache), and **Claude Code, Codex, and Antigravity** agents with synchronized instructions, skills, and MCP servers. It requires no installation and no administrator rights, completely isolates its environment from the host OS, and travels with you on any drive or machine.
+> **Atollo** is a *Universal Portable Dev & AI Workspace* for Windows, macOS, and Linux (`x64` and `ARM64`). It packs into a single portable folder a built-in editor (VSCodium), 20+ on-demand languages and toolchains, local databases and web servers (MySQL, MongoDB, SQLite, Caddy/Apache), local AI models (llama.cpp), and **Claude Code, Codex, Antigravity, and Pi** agents with synchronized instructions, skills, and MCP servers. It requires no installation and no administrator rights, completely isolates its environment from the host OS, and travels with you on any drive or machine.
 
 ---
 
@@ -237,11 +238,11 @@ Quando un agente prepara materiali per il lancio pubblico, deve dare priorità a
 ### 9.2 Canali Prioritari e Angoli Editoriali
 * **Hacker News (`Show HN`):**
   * *Titolo consigliato:* `Show HN: Atollo – Portable, zero-install dev environment and AI agent hub (Win/Mac/Linux, x64/ARM64)`
-  * *Primo commento tecnico:* Spiegare l'architettura in Rust + Tauri 2, come funziona il `Router` sui 6 target, l'isolamento del `PATH` senza container né permessi di root, la gestione dei processi tramite Job Object / gruppi di processi e la sincronizzazione unificata di Claude Code, Codex e Antigravity.
+  * *Primo commento tecnico:* Spiegare l'architettura in Rust + Tauri 2, come funziona il `Router` sui 6 target, l'isolamento del `PATH` senza container né permessi di root, la gestione dei processi tramite Job Object / gruppi di processi e la sincronizzazione unificata di Claude Code, Codex, Antigravity e Pi, il server llama.cpp dei modelli locali su `127.0.0.1` con chiave.
 * **Scuole, Università, Bootcamp e Formazione IT:**
   * Proporre **Atollo** come soluzione definitiva al *"Laboratorio bloccato"*: gli studenti tengono `Atollo` sulla propria chiavetta USB o cartella profilo, lavorano in aula senza chiedere la password di amministratore al tecnico IT e continuano a casa sullo stesso identico ambiente.
 * **Community AI & Developer (`r/ClaudeAI`, `r/LocalLLaMA`, `r/rust`, `r/webdev`, X/Twitter):**
-  * Mostrare screenshot reali della pagina **Agenti** (con i consumi di oggi/7 giorni e la sincronizzazione MCP/skill tra i 3 agenti) e della matrice **Strumenti** multipiattaforma, nella lingua del pubblico: `site/shots/<lingua>/` ha le stesse sei schermate in `en`, `it`, `fr`, `de` (D-143). Per un link condiviso basta la social card `docs/brand/social.png`, in inglese.
+  * Mostrare screenshot reali della pagina **Agenti** (con i consumi di oggi/7 giorni e la sincronizzazione MCP/skill tra i 4 agenti) e della matrice **Strumenti** multipiattaforma, nella lingua del pubblico: `site/shots/<lingua>/` ha le stesse sei schermate in `en`, `it`, `fr`, `de` (D-143). Per un link condiviso basta la social card `docs/brand/social.png`, in inglese.
 
 ---
 

@@ -16,12 +16,14 @@
 //! and is renamed only when complete; 3 attempts, waiting 5 s then 10 s.
 //!
 //! Here `Net`, its downloads and texts; GitHub's releases, checksums and
-//! calls in `github`, the system's proxy and its exceptions in `proxy`.
+//! calls in `github`, the system's proxy and its exceptions in `proxy`, the
+//! large downloads resumed with `Range` (the local models) in `resume`.
 
 pub mod archive;
 pub mod ca;
 mod github;
 mod proxy;
+pub mod resume;
 /// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
 #[cfg(windows)]
 pub mod signature;

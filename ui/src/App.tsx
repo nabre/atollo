@@ -31,6 +31,7 @@ import { setupStatusText, useSetup } from "./setup";
 import { CloseDialog, EjectPage } from "./eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
+import { ModelsPage } from "./models";
 import { ServersPage } from "./servers";
 import { TerminalsPage } from "./terminals";
 import { tauriPty, useTerminals, type Terminals } from "./terminal";
@@ -60,7 +61,16 @@ const PRELOAD: Partial<Record<PageId, () => Promise<unknown>>> = {
 const TerminalPanel = lazy(() => import("./terminal/panel").then((m) => ({ default: m.TerminalPanel })));
 
 type PageId =
-  "projects" | "agents" | "databases" | "servers" | "terminals" | "components" | "guide" | "settings" | "eject";
+  | "projects"
+  | "agents"
+  | "models"
+  | "databases"
+  | "servers"
+  | "terminals"
+  | "components"
+  | "guide"
+  | "settings"
+  | "eject";
 
 interface Page {
   id: PageId;
@@ -72,6 +82,7 @@ function pages(): Page[] {
   return [
     { id: "projects", label: t("Progetti"), icon: codicon("folder-library") },
     { id: "agents", label: t("Agenti"), icon: codicon("hubot") },
+    { id: "models", label: t("Modelli locali"), icon: codicon("chip") },
     { id: "databases", label: t("Database"), icon: codicon("database") },
     { id: "servers", label: t("Server Web"), icon: codicon("globe") },
     { id: "terminals", label: t("Terminali"), icon: codicon("terminal") },
@@ -203,6 +214,8 @@ export function App() {
               />
             ) : page === "agents" ? (
               <AgentsPage onGuide={openGuide} />
+            ) : page === "models" ? (
+              <ModelsPage onGuide={openGuide} />
             ) : page === "components" ? (
               <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
             ) : page === "databases" ? (
@@ -593,7 +606,7 @@ function StatusBar({
         <span aria-hidden="true">Atollo</span>
       </span>
       <StatusItem
-        title={t("Attività: progetti avviati, database, server web, installazioni")}
+        title={t("Attività: progetti avviati, database, modelli locali, server web, installazioni")}
         onClick={onPanel}
         pressed={panelOpen}
         tone={errors > 0 ? "error" : undefined}

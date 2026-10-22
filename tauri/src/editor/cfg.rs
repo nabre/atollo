@@ -27,6 +27,7 @@ pub const KIT_PROFILES: &[&str] = &[
     "Claude Code",
     "Codex",
     "Antigravity",
+    "Pi",
 ];
 const HIDDEN: &[&str] = &[
     "PowerShell",
@@ -45,6 +46,7 @@ pub const KIT_PROFILES_UNIX: &[&str] = &[
     "Claude Code",
     "Codex",
     "Antigravity",
+    "Pi",
 ];
 /// The shells VSCodium detects on macOS and Linux: those of /etc/shells,
 /// named after their file (macOS lists csh, dash, ksh and tcsh too).
@@ -239,6 +241,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         ("Claude Code", r"claude\claude.exe", "sparkle"),
         ("Codex", r"codex\bin\codex.exe", "hubot"),
         ("Antigravity", r"antigravity\agy.exe", "rocket"),
+        ("Pi", r"pi\pi.exe", "symbol-constant"),
     ] {
         let exe = app(rel);
         if exe.is_file() {

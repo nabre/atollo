@@ -36,6 +36,7 @@ pub(crate) mod editing;
 mod error;
 pub(crate) mod frameworks;
 pub(crate) mod github;
+pub(crate) mod llm;
 pub(crate) mod orphans;
 pub(crate) mod projects;
 pub(crate) mod runs;
@@ -73,6 +74,8 @@ pub struct AppState {
     pub services: Arc<crate::db::services::Services>,
     /// Shared Caddy and Apache VirtualHost server pools.
     pub servers: Arc<crate::servers::WebServers>,
+    /// The server of the local models (D-151).
+    pub llm: Arc<crate::llm::service::Llm>,
     /// "Rimuovi l'unità" under way: the agents' background alignments and
     /// saves stop (BUG-V6-15).
     pub closing: crate::agents::Closing,
@@ -316,6 +319,19 @@ macro_rules! command_handler {
             $crate::commands::terminals::pty_close,
             $crate::commands::terminals::pty_detach,
             $crate::commands::terminals::pty_dock,
+            // The local models; permission `allow-local-models`
+            // (permissions/llm.toml).
+            $crate::commands::llm::llm_status,
+            $crate::commands::llm::llm_models,
+            $crate::commands::llm::llm_start,
+            $crate::commands::llm::llm_stop,
+            $crate::commands::llm::llm_set,
+            $crate::commands::llm::llm_hf_inspect,
+            $crate::commands::llm::llm_pull,
+            $crate::commands::llm::llm_pull_cancel,
+            $crate::commands::llm::llm_remove,
+            $crate::commands::llm::llm_hf_token_set,
+            $crate::commands::llm::llm_key,
             $crate::commands::setup::components_list,
             $crate::commands::setup::components_sync,
             $crate::commands::setup::components_check,

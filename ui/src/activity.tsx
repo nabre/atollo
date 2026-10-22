@@ -1,15 +1,19 @@
 // The Activity panel (D-76): at the bottom of every page, as VSCodium's
 // panel, what is running or installing in the kit (projects' actions,
-// database servers, web server pools, the setup) and its output or error.
+// database servers, the server of the local models, web server pools, the
+// setup) and its output or error.
 // The status bar's Activity item opens and closes it. `useRunning` is what
 // the status bar, the Projects badge and the panel count (UX-V5-01).
 import { useEffect, useRef, useState } from "react";
 import {
+  llmStatus,
+  llmStop,
   serversList,
   serverStop,
   servicesList,
   serviceStop,
   urlOpen,
+  type LlmInfo,
   type RunInfo,
   type ServiceInfo,
   type ServiceState,
@@ -71,10 +75,12 @@ export function liveLines(services: ServiceInfo[]): LiveLine[] {
 
 const readPools = () => serversList().then((v) => v.pools);
 
+const readLlm = () => llmStatus().then((i): LlmInfo | null => (i.state === "stopped" ? null : i));
+
 /** What runs in the kit, read every few seconds: the projects' live
- * actions, the database versions not stopped (each line, D-102) and the
- * web server pools on; `count` is how many, for the status bar and the
- * Projects badge. */
+ * actions, the database versions not stopped (each line, D-102), the
+ * server of the local models (D-151) and the web server pools on; `count`
+ * is how many, for the status bar and the Projects badge. */
 export function useRunning(runs: Record<string, RunInfo>) {
   const {
     data: services,
@@ -85,6 +91,10 @@ export function useRunning(runs: Record<string, RunInfo>) {
     onError: "keep",
     every: 4000,
   });
+  const { data: llm, reload: reloadLlm } = useLoad<LlmInfo | null>(readLlm, null, {
+    onError: "keep",
+    every: 4000,
+  });
   const liveRuns = Object.values(runs).filter((r) => alive(r.state));
   const lines = liveLines(services);
   const pools = allPools.filter((p) => p.running);
@@ -92,10 +102,12 @@ export function useRunning(runs: Record<string, RunInfo>) {
     liveRuns,
     lines,
     pools,
-    count: liveRuns.length + lines.length + pools.length,
+    llm,
+    count: liveRuns.length + lines.length + pools.length + (llm ? 1 : 0),
     setServices,
     reloadServices,
     reloadPools,
+    reloadLlm,
   };
 }
 
@@ -105,6 +117,7 @@ type Selected =
   | { kind: "run"; key: string }
   | { kind: "service"; key: string }
   | { kind: "pool"; id: string }
+  | { kind: "llm" }
   | { kind: "setup" }
   | null;
 
@@ -138,7 +151,7 @@ export function ActivityPanel({
   const [selected, setSelected] = useState<Selected>(null);
   const [confirmStop, setConfirmStop] = useState(false);
   const [stopping, setStopping] = useState(false);
-  const { liveRuns, lines: liveServices, pools, setServices, reloadServices, reloadPools } = running;
+  const { liveRuns, lines: liveServices, pools, llm, setServices, reloadServices, reloadPools, reloadLlm } = running;
   const logRef = useRef<HTMLPreElement>(null);
 
   const list = Object.values(runs).sort((a, b) => b.start - a.start);
@@ -154,9 +167,11 @@ export function ActivityPanel({
         ? { kind: "run", key: list[0].key }
         : liveServices[0]
           ? { kind: "service", key: liveServices[0].key }
-          : pools[0]
-            ? { kind: "pool", id: pools[0].id }
-            : null);
+          : llm
+            ? { kind: "llm" }
+            : pools[0]
+              ? { kind: "pool", id: pools[0].id }
+              : null);
   const currentRun = current?.kind === "run" ? runs[current.key] : undefined;
   const currentService = current?.kind === "service" ? liveServices.find((s) => s.key === current.key) : undefined;
   const currentPool = current?.kind === "pool" ? pools.find((p) => p.id === current.id) : undefined;
@@ -170,12 +185,13 @@ export function ActivityPanel({
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
 
-  const nothing = list.length === 0 && liveServices.length === 0 && pools.length === 0 && !installing;
-  const count = list.length + liveServices.length + pools.length;
-  const anyLive = liveRuns.length + liveServices.length + pools.length > 0;
+  const nothing = list.length === 0 && liveServices.length === 0 && pools.length === 0 && !llm && !installing;
+  const count = list.length + liveServices.length + pools.length + (llm ? 1 : 0);
+  const anyLive = liveRuns.length + liveServices.length + pools.length + (llm ? 1 : 0) > 0;
 
-  /** Stops the actions, the pools and the database versions, then reads
-   * them again (the actions come back through their events). */
+  /** Stops the actions, the pools, the database versions and the server of
+   * the local models, then reads them again (the actions come back through
+   * their events). */
   const stopAll = () => {
     setConfirmStop(false);
     setStopping(true);
@@ -183,10 +199,12 @@ export function ActivityPanel({
       ...liveRuns.map((r) => onStop(r.key)),
       ...pools.map((p) => serverStop(p.id)),
       ...liveServices.map((s) => serviceStop(s.id, s.line)),
+      ...(llm ? [llmStop()] : []),
     ]).then(() => {
       setStopping(false);
       reloadServices();
       reloadPools();
+      reloadLlm();
     });
   };
 
@@ -219,7 +237,7 @@ export function ActivityPanel({
           {confirmStop && (
             <InlineConfirm
               row
-              question={t("Fermare le azioni dei progetti, i database e i server web in esecuzione?")}
+              question={t("Fermare le azioni dei progetti, i database, i modelli locali e i server web in esecuzione?")}
               className="shrink-0 border-b border-vsc-border px-3 py-1"
               onCancel={() => {
                 setConfirmStop(false);
@@ -270,6 +288,17 @@ export function ActivityPanel({
                     }}
                   />
                 ))}
+                {llm && (
+                  <ListRow
+                    icon={<Dot tone={llm.state === "error" ? "err" : llm.state === "running" ? "ok" : "warn"} />}
+                    label={t("Modelli locali")}
+                    description={`127.0.0.1:${String(llm.port)}`}
+                    selected={current?.kind === "llm"}
+                    onSelect={() => {
+                      setSelected({ kind: "llm" });
+                    }}
+                  />
+                )}
                 {pools.map((p) => (
                   <ListRow
                     key={p.id}
@@ -369,6 +398,28 @@ export function ActivityPanel({
                   <p className="text-[12px] text-vsc-desc">
                     {t("Log")}: <span className="font-mono select-text">{currentService.log}</span>
                   </p>
+                </div>
+              )}
+              {current?.kind === "llm" && llm && (
+                <div className="space-y-2 overflow-auto px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="flex-1">
+                      {t("Modelli locali")} · 127.0.0.1:{String(llm.port)}
+                    </span>
+                    <IconButton
+                      icon={codicon("debug-stop")}
+                      label={t("Ferma")}
+                      onClick={() => {
+                        llmStop().then(reloadLlm, () => undefined);
+                      }}
+                    />
+                  </div>
+                  <p className="text-[12px] text-vsc-desc">
+                    {t("In memoria: {0}", llm.loaded.length ? llm.loaded.join(", ") : t("nessun modello"))}
+                  </p>
+                  {llm.error && (
+                    <pre className="m-0 font-mono text-[12px] whitespace-pre-wrap text-vsc-error">{llm.error}</pre>
+                  )}
                 </div>
               )}
               {currentPool && (

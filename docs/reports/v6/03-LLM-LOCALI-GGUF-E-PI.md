@@ -188,3 +188,37 @@ Decisioni da registrare in [`DECISIONS.md`](../../app/DECISIONS.md): llama.cpp c
 3. Pi dal binario GitHub (proposta) o da npm con Node del kit?
 4. I modelli locali anche per Claude Code e Codex (F5) o solo per Pi?
 5. Pi installato di default al primo avvio o solo su richiesta (proposta: su richiesta, `def: false`)?
+
+---
+
+## 7. Esito (22/10/2026)
+
+Sviluppato sul ramo `feature/local-llm-pi` (decisioni [D-151](../../app/DECISIONS.md) e [D-152](../../app/DECISIONS.md)). Domande del §6 risolte con le proposte: CPU e GPU con scelta automatica, i cinque modelli, Pi dal binario GitHub, modelli locali solo per Pi, Pi su richiesta.
+
+### 7.1 F0 — Prova a mano (Windows 11 x64, RTX 2070, llama.cpp `b11669`, Pi 1.3.0 e 1.4.0)
+
+| Domanda | Risposta |
+|---|---|
+| CPU e Vulkan affiancate? | **No**: la build Vulkan contiene già tutti i backend CPU e carica Vulkan solo con un driver (`--list-devices` vede la GPU; quella CPU dice `(none)`). Una build per target. |
+| Nome dei modelli in `/v1/models` | con `--models-dir` il nome della sottocartella; con `--models-preset` il nome della sezione. Il kit usa i preset: id scelti dal kit, contesto per modello, nessun file in più da indovinare. |
+| `/health` | senza chiave (pronto per il controllo di avvio); `/models` e `/v1/*` rispondono 401 senza chiave. |
+| Provider llama.cpp integrato di Pi | **non adatto**: legge i modelli solo da una credenziale salvata con `/login` e li aggiorna solo in una sessione interattiva; `--print` e `--list-models` non vedono nulla con `LLAMA_BASE_URL`. Il kit scrive invece il provider `atollo` in `models.json` (API `openai-completions`): funziona in ogni modalità. |
+| Bash di Pi su Windows | cerca `shellPath`, poi Git in Program Files, poi `bash.exe` nel PATH: nel kit nessuno dei due ultimi; `shellPath` = Git Bash del kit. |
+| `trust.json` | `{ "<percorso reale>": true }`; serve solo con `.pi/` o `.agents/skills` nel progetto. |
+| Tool calling (modello × compito) | Qwen3.5 9B: `bash` (`cat`, `uname`) riuscito, risposta esatta. Qwen2.5-Coder 7B: scrive la chiamata come testo JSON → «solo chat». Qwen2.5 0.5B: chiama `read` ma sbaglia il percorso. gpt-oss 20B, Devstral 24B, Qwen3-Coder 30B non provati (troppo grandi per la GPU di prova): `tools: true` dal modello, da confermare. |
+| Download da Hugging Face | `resolve/<commit>/<file>` rimanda alla CDN (`X-Repo-Commit`, `Accept-Ranges: bytes`); la ripresa con `Range` funziona attraverso il redirect (provata con 0,5 GB e 4,7 GB). |
+| `pi update` | resta possibile a mano; `PI_SKIP_VERSION_CHECK=1` toglie solo il controllo. Un Pi aggiornato da sé mostra la sua versione nella verifica del kit. |
+| Pi da exFAT | non provato. |
+
+### 7.2 Fatto
+
+| Fase | Commit | Note |
+|---|---|---|
+| F1 | `c75c0eb`, `a3fb382` | gruppo `ai`, llama.cpp a build fissata; archivio `data\models`, catalogo, Hugging Face, ripresa `Range` con SHA-256 durante il download, FAT32 e spazio, CLI `models` |
+| F2 | `a7f7f6a`, `b1e3805` | servizio con preset, porta `Owner::Llm`, chiave, Attività, «Ferma tutto», «Rimuovi l'unità», CLI `llm`; `llm status` senza chiave verso porte altrui |
+| F3 | `7308ca3` | Pi: installatore, ambiente, allineamento (istruzioni, skill, MCP, regola, `models.json`, `settings.json`, fiducia), accesso, consumi |
+| F4 | `7955f98` e i documenti | pagina «Modelli locali», Pi negli agenti, Guida, README, PRIVACY, CATALOG, ARCHITECTURE |
+
+**Differenze dalla proposta**: una build per target invece di CPU + Vulkan; router su preset invece di `--models-dir`; Pi collegato con `models.json` invece del provider integrato; nessuna voce in `relocate.rs` (le chiavi del kit in `settings.json` si riscrivono a ogni allineamento); la chat del browser chiede la chiave nelle sue impostazioni («Copia la chiave»).
+
+**Restano**: F5 (Claude Code e Codex sul server locale, Ollama, CUDA); prova a mano su macOS, Linux, Windows ARM64 e su exFAT; prova del tool calling con i tre modelli grandi.

@@ -14,6 +14,8 @@ export const COMPONENT_NAMES: Record<string, string> = {
   claude: "Claude Code",
   codex: "Codex",
   antigravity: "Antigravity",
+  pi: "Pi",
+  llama: "llama.cpp",
   git: "Git",
   python: "Python",
   node: "Node.js",

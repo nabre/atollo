@@ -43,3 +43,26 @@ fn antigravity_download_by_url() {
         (Kind::File, "agy-1.4.2".to_owned(), "agy-1.4.2".to_owned())
     );
 }
+
+/// Pi 1.3 publishes one archive per target: a zip on Windows, a tar.gz
+/// elsewhere (release v1.3.0 of earendil-works/pi).
+#[test]
+fn pi_archive_per_target() {
+    let names = [
+        "pi-windows-x64.zip",
+        "pi-windows-arm64.zip",
+        "pi-darwin-arm64.tar.gz",
+        "pi-darwin-x64.tar.gz",
+        "pi-linux-x64.tar.gz",
+        "pi-linux-arm64.tar.gz",
+        "pi-1.3.0-source.tar.gz",
+        "SHA256SUMS",
+    ];
+    for target in Target::ALL {
+        let (re, kind) = pi_asset(target);
+        let re = regex::Regex::new(&re).unwrap();
+        let found: Vec<&str> = names.iter().copied().filter(|n| re.is_match(n)).collect();
+        assert_eq!(found.len(), 1, "{target}: {found:?}");
+        assert_eq!(kind == Kind::Zip, target.is_windows(), "{target}");
+    }
+}
