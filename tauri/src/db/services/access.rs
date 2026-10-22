@@ -147,7 +147,9 @@ impl Services {
     /// the server runs), in its `db.json` (D-102). A project that
     /// has a database already gets it, with the same name and password,
     /// on the version chosen (started for it); its data stays on the
-    /// version it was on (a copy and a restore move it).
+    /// version it was on (a copy and a restore move it). That data is
+    /// copied first (a safety copy, D-154), on the version it leaves:
+    /// without the copy the version does not change.
     pub fn project_db_line(
         &self,
         project: &str,
@@ -161,6 +163,21 @@ impl Services {
         }
         let previous = auth::project_line(&self.kit, project, engine)?;
         let has_db = auth::try_project_password(&self.kit, project, engine)?.is_some();
+        if has_db && line.map(str::to_owned) != previous {
+            // Its server, on the version it leaves, for the copy; a version
+            // no longer installed has nothing to copy from.
+            match self.start_for(project, engine, env) {
+                Err(e) if e.is::<super::LineMissing>() => crate::log::warn(&format!(
+                    "{project}: {engine}: no copy before the change of version: {e:#}"
+                )),
+                started => {
+                    started?;
+                    self.safety_copy(project, engine, super::backups::BEFORE_LINE).context(
+                        "the copy of the database before the change of version: version not changed",
+                    )?;
+                }
+            }
+        }
         if has_db {
             // A database created before the versions were kept: the one it
             // is on now, for the deletion of the project.

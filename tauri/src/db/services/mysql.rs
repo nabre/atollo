@@ -120,6 +120,39 @@ pub fn server_cnf(os: Os, basedir: &Path, data: &Path, port: u16, socket: Option
     text
 }
 
+/// The query (for the administrator, `-N -B -r`) listing the views,
+/// triggers, routines and events of database `db`, a kind and a name per
+/// line. `db` is a name the kit made (letters, digits, `_`).
+pub fn objects_sql(db: &str) -> String {
+    format!(
+        "SELECT 'VIEW', TABLE_NAME FROM information_schema.VIEWS WHERE TABLE_SCHEMA = '{db}'\n\
+         UNION ALL SELECT 'TRIGGER', TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{db}'\n\
+         UNION ALL SELECT ROUTINE_TYPE, ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = '{db}'\n\
+         UNION ALL SELECT 'EVENT', EVENT_NAME FROM information_schema.EVENTS WHERE EVENT_SCHEMA = '{db}';\n"
+    )
+}
+
+/// The statements that drop the objects `listing` names (the output of
+/// [`objects_sql`]) from `db`. A restore runs as the project's user, who
+/// may not drop an object whose definer is `root` (`SYSTEM_USER`, MySQL
+/// 8.0.16+): the administrator drops them first, and the copy creates
+/// them again as the project's (the copy is taken just before, D-154).
+pub fn drop_objects_sql(db: &str, listing: &str) -> String {
+    let quote = |name: &str| format!("`{}`", name.replace('`', "``"));
+    listing
+        .lines()
+        .filter_map(|l| l.split_once('\t'))
+        .filter_map(|(kind, name)| {
+            let kind = match kind.trim() {
+                k @ ("VIEW" | "TRIGGER" | "PROCEDURE" | "FUNCTION" | "EVENT") => k,
+                _ => return None,
+            };
+            (!name.is_empty())
+                .then(|| format!("DROP {kind} IF EXISTS {}.{};\n", quote(db), quote(name)))
+        })
+        .collect()
+}
+
 /// The options that stop the SQL client from running its own commands
 /// while it reads a file given to it (a copy restored, D-78): a dump from
 /// elsewhere could hold `\! cmd`, `system`, `source`, `tee` or `pager` and

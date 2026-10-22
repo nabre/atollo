@@ -149,3 +149,40 @@ fn binary_columns_are_dumped_as_text() {
     assert!(DUMP_ARGS.contains(&"--hex-blob"), "{DUMP_ARGS:?}");
     assert_eq!(DUMP_ARGS[0], "--single-transaction");
 }
+
+/// Only the last safety copies of a label stay; the others, and the copies
+/// of another label or of the user, are left alone.
+#[test]
+fn safety_copies_keep_the_last_ones() {
+    let tmp = TempDir::new("db-safety");
+    let dir = tmp.0.clone();
+    let mine = [
+        "shop-20261001-100000000.sql",
+        "shop-prima-del-cambio-di-versione-20261001-100000000.sql",
+    ];
+    let safety: Vec<String> = (1..=5)
+        .map(|i| format!("shop-{BEFORE_RESTORE}-2026100{i}-100000000.sql"))
+        .collect();
+    for n in mine
+        .iter()
+        .copied()
+        .chain(safety.iter().map(String::as_str))
+    {
+        fs::write(dir.join(n), "x").unwrap();
+    }
+    fs::write(
+        dir.join(format!("shop-{BEFORE_RESTORE}-20261009-1.archive.gz")),
+        "x",
+    )
+    .unwrap();
+    prune(&dir, "shop", BEFORE_RESTORE, DbEngine::MySql, SAFETY_KEPT);
+    for (i, n) in safety.iter().enumerate() {
+        assert_eq!(dir.join(n).exists(), i >= 2, "{n}");
+    }
+    for n in mine {
+        assert!(dir.join(n).exists(), "{n}");
+    }
+    assert!(dir
+        .join(format!("shop-{BEFORE_RESTORE}-20261009-1.archive.gz"))
+        .exists());
+}

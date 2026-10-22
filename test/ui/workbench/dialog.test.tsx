@@ -273,7 +273,9 @@ describe("DatabaseCopies", () => {
     );
     render(<DatabaseCopies project="shop" engine="mysql" />);
     fireEvent.click(await screen.findByRole("button", { name: "Ripristina…" }));
-    const dialog = screen.getByRole("alertdialog", { name: "Ripristinare shop-1.sql?" });
+    const dialog = screen.getByRole("alertdialog", {
+      name: "Ripristinare shop-1.sql? Prima il kit copia ciò che il database contiene ora.",
+    });
     expect(dialog.getAttribute("aria-describedby")).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Annulla" }));
     fireEvent.keyDown(document.activeElement ?? dialog, { key: "Escape" });

@@ -1,5 +1,12 @@
 # Novità
 
+## Copie di sicurezza dei database (22/10/2026)
+
+- **Prima di un ripristino** il kit copia ciò che il database del progetto contiene ora, in `<database>-prima-del-ripristino-<data e ora>` nella cartella delle copie: se hai ripristinato il file sbagliato, ripristini quella copia e torni a prima. Se la copia non riesce il ripristino non si fa. La conferma lo dice: «Ripristinare …? Prima il kit copia ciò che il database contiene ora.» (D-154)
+- **Prima di cambiare versione** del server di un database (MySQL o MongoDB), il kit copia il database sulla versione che lascia, in `<database>-prima-del-cambio-di-versione-<data e ora>`; se la copia non riesce la versione non cambia.
+- **Solo le ultime 3** copie di sicurezza di ogni tipo restano, le più vecchie si eliminano; le copie fatte con «Esporta» non si eliminano mai.
+- **Ripristino MySQL più robusto**: viste, trigger, routine ed eventi creati da root non fermano più il ripristino su MySQL 8.0.16 e successivi (tornano con l'utente del progetto), e una vista rotta non ferma la copia di sicurezza.
+
 ## Segnalare un problema (22/10/2026)
 
 - **«Esporta diagnostica»** in Impostazioni › «Il kit» (e `Atollo diagnostics` dalla riga di comando) crea uno zip in `data\app\diagnostics` con quello che serve per capire un problema: versione e sistema, disco del kit, RAM, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log. «Apri la cartella» lo mostra (D-153).

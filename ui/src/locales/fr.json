@@ -264,7 +264,6 @@
   "Riduci a icona": "Réduire",
   "Rimuovi l'unità": "Retirer le lecteur",
   "Ripristina": "Restaurer",
-  "Ripristinare {0}?": "Restaurer {0} ?",
   "Salva": "Enregistrer",
   "Salvato.": "Enregistré.",
   "Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)": "Télécharger automatiquement les nouvelles versions d'Atollo (elles remplacent l'exe à la fermeture)",
@@ -969,5 +968,6 @@
   "Esporta diagnostica": "Exporter le diagnostic",
   "Segnala un problema": "Signaler un problème",
   "Segnalare un problema": "Signaler un problème",
-  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Le zip de diagnostic rassemble version, système, disque, environnement, vérification des programmes, composants, ports et la fin des journaux, sans les clés, jetons et mots de passe du kit et avec votre dossier de profil affiché comme ~. Il reste sur le PC : joignez-le vous-même au signalement, après l'avoir regardé."
+  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Le zip de diagnostic rassemble version, système, disque, environnement, vérification des programmes, composants, ports et la fin des journaux, sans les clés, jetons et mots de passe du kit et avec votre dossier de profil affiché comme ~. Il reste sur le PC : joignez-le vous-même au signalement, après l'avoir regardé.",
+  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "Restaurer {0} ? Le kit copie d'abord ce que la base contient maintenant."
 }

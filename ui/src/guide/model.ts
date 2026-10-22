@@ -398,7 +398,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("key"),
     keywords:
-      "database progetto utente password .env database_url db_host copie backup ripristino sqlite project database user password backup restore base de données projet utilisateur mot de passe sauvegarde restauration projektdatenbank benutzer passwort sicherung wiederherstellung",
+      "database progetto utente password .env database_url db_host copie backup ripristino sqlite copia di sicurezza prima-del-ripristino prima-del-cambio-di-versione cambio versione project database user password backup restore safety copy version change base de données projet utilisateur mot de passe sauvegarde restauration projektdatenbank benutzer passwort sicherung wiederherstellung",
     targetPage: "projects",
   },
   {

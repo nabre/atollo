@@ -1023,16 +1023,19 @@ MONGODB_URI=mongodb://portale:a71e…@127.0.0.1:27017/portale?authSource=portale
 
 1. Nella parte «Copie» premi «Esporta»: compare «Copia salvata: …» e la copia si aggiunge all'elenco.
 2. Per tornare a una copia premi «Ripristina…» accanto al file e conferma: «I dati attuali vengono sostituiti.»
-3. «Apri la cartella delle copie» apre la cartella: per ripristinare una copia arrivata da fuori (da un collega, da un altro kit) mettila lì e comparirà nell'elenco.
+3. Prima di ripristinare, il kit copia ciò che il database contiene ora, in \<database\>-prima-del-ripristino-\<data e ora\>: se la copia non riesce, il ripristino non si fa. Così un ripristino del file sbagliato si annulla ripristinando quella copia.
+4. «Apri la cartella delle copie» apre la cartella: per ripristinare una copia arrivata da fuori (da un collega, da un altro kit) mettila lì e comparirà nell'elenco.
 
 > [!TIP]
 > **Consiglio**
 >
 > Le copie stanno nel kit, in `data\projects\<progetto>\private\backups`. Per sicurezza tienine una anche fuori dal kit: se perdi la chiavetta, perdi anche le copie.
 
+Delle copie di sicurezza («prima-del-ripristino» e «prima-del-cambio-di-versione») il kit tiene le ultime 3 di ogni tipo ed elimina le più vecchie. Le copie fatte con «Esporta» non vengono mai eliminate.
+
 #### Cambiare la versione del server
 
-Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie su quale gira il database del progetto. Cambiandola, database e utente si creano anche sulla nuova versione, vuoti: i dati si portano con una copia (Esporta sulla vecchia, Ripristina sulla nuova). Se la versione scelta non è installata, compare «Installa …».
+Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie su quale gira il database del progetto. Cambiandola, database e utente si creano anche sulla nuova versione, vuoti: i dati si portano con una copia (Esporta sulla vecchia, Ripristina sulla nuova). Se la versione scelta non è installata, compare «Installa …». Prima del cambio il kit copia il database sulla versione che lascia, in \<database\>-prima-del-cambio-di-versione-\<data e ora\>: se la copia non riesce, la versione non cambia (se quella versione non è più installata, non c'è niente da copiare e il cambio si fa).
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -1040,6 +1043,7 @@ Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie
 - Nomi, password e versioni del database del progetto: `data\projects\<progetto>\private\db.json`, leggibile solo dal tuo utente su NTFS.
 - MySQL: utente con caching_sha2_password su localhost e 127.0.0.1, tutti i permessi sul solo database del progetto. MongoDB: ruolo dbOwner sul database, authSource uguale al nome del database.
 - Le copie MySQL sono file .sql fatti con mysqldump (--single-transaction, con routine, trigger ed eventi); quelle MongoDB file .archive.gz fatti con mongodump. Il ripristino MySQL gira con l'utente del progetto e senza comandi del client; quello MongoDB tocca solo il database del progetto.
+- Le copie di sicurezza MySQL usano mysqldump --force: un oggetto rotto (una vista su una tabella eliminata) non ferma la copia del resto. Prima di un ripristino MySQL l'amministratore toglie viste, trigger, routine ed eventi del solo database del progetto (quelli di root l'utente del progetto non potrebbe sostituirli); la copia li ricrea come utente del progetto.
 - Eliminando il progetto dall'app, il kit elimina anche database e utente su ogni versione in cui li aveva creati.
 
 </details>
