@@ -359,6 +359,9 @@ fn run() -> i32 {
                     // it: their programs run outside the kit's folder, where
                     // `stop_children` does not look. None on Windows.
                     handle.state::<editor::terminal::Consoles>().close_all();
+                    // An editor start in progress gives up before the sweep
+                    // below (the windows are gone: waiting freezes nothing).
+                    handle.state::<AppState>().editor.stop_and_wait();
                     // The programs' temp left on the PC goes (D-90): the
                     // programs are ended first, or they would still hold it.
                     if update_kit.system_temp().is_some() {
