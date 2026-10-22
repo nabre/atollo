@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { TerminalsView } from "@/api";
-import { TerminalsPage } from "@/terminals";
+import { TerminalsPage } from "@/terminal/page";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));

@@ -2,7 +2,7 @@
 // panel with its one tab, filling the window. Rust gives this window only
 // its own session (pty_sessions) and its events; the language comes from
 // the window's start script, as the editor windows' (editor/terminal.rs).
-import "../freeze";
+import "../shell/freeze";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@fontsource-variable/geist/wght.css";

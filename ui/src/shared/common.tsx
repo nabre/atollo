@@ -3,9 +3,9 @@
 // workbench/.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
-import type { EditorStatus } from "./api";
-import { t } from "./i18n";
-import { Button, codicon, IconButton, Notice, type MenuTrigger } from "./workbench";
+import type { EditorStatus } from "../api";
+import { t } from "../i18n";
+import { Button, codicon, IconButton, Notice, type MenuTrigger } from "../workbench";
 
 /** A button of the pages: a text button (Button), or with `compact` an
  * icon action (IconButton) named by its label. */

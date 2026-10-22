@@ -2,8 +2,8 @@
 // its port and its output.
 import { useEffect, useRef, useState } from "react";
 import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
-import { useAction } from "../hooks";
-import { ErrorLine } from "../common";
+import { useAction } from "../shared/hooks";
+import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import {
   CheckboxLabel,
@@ -19,7 +19,7 @@ import {
   TextField,
 } from "../workbench";
 import { projectActionDefault, projectActionRemove, urlOpen } from "../api";
-import { ActionButton } from "../common";
+import { ActionButton } from "../shared/common";
 import { ActionBar, EditorSection, Properties } from "../workbench";
 import { ActionForm } from "./actionform";
 import { alive, stateText } from "./runs";

@@ -3,7 +3,7 @@
 // page, Shift+Enter starts it; under the projects, the ways to make a new one.
 import type { ProjectInfo, RunInfo } from "../api";
 import { t } from "../i18n";
-import { Palette, type PaletteItem } from "../palette";
+import { Palette, type PaletteItem } from "../shared/palette";
 import { codicon } from "../workbench";
 import { mainAction } from "./home";
 import { KIND_ICON, ProjectState } from "./kind";

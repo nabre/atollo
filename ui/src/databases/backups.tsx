@@ -4,8 +4,8 @@
 import { useCallback, useState } from "react";
 import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "../api";
 import { locale, t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { codicon, InlineConfirm, Notice } from "../workbench";
 
 function size(bytes: number): string {

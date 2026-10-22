@@ -307,20 +307,18 @@ Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispond
 | --- | --- | --- |
 | Ingresso | `main.tsx`, `App.tsx` | finestra in stile VSCodium: barra delle attività, pagina, pannello Attività, barra di stato |
 | Verso Rust | `api\` | un file per area, come `commands\` (sopra); `index.ts` li riesporta, le pagine importano da `./api`; `preview-runs.ts` fa girare le azioni nell'anteprima del browser |
-| Hook comuni | `hooks.ts` | `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (sotto) |
-| Pezzi comuni | `common.tsx` | `ActionButton`, `ErrorLine`, `editorHint` |
+| Aiuti comuni | `shared\`: `hooks.ts`, `common.tsx`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | aiuti senza pagina, usati da più cartelle: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (sotto); `ActionButton`, `ErrorLine`, `editorHint`; etichette, loghi dei marchi, il brand; la scelta rapida di Quick Open e della palette dei comandi |
 | Componenti di base | `workbench\` | i controlli di VSCodium (`@vscode-elements/elements`), i codicon e le parti del workbench (sotto); dal resto dell'app importa solo `i18n` |
 | Tema | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | font, il font dei codicon e note del brand; i colori `--vsc-*` per Tailwind; tutte le variabili `--vscode-*` di VS Code; le misure di VSCodium 1.135 e le misure `--vsc-size-*` (gli ultimi tre generati, sotto) |
-| Pagine grandi | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `models\`, `terminal\`, `guide\` | una cartella per pagina o parte, con `index.ts` che esporta solo ciò che usano le altre pagine |
-| Altre pagine | `servers.tsx`, `terminals.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, `setup.tsx` | una pagina o una sezione per file |
-| Pezzi della finestra e del brand | `titlebar.tsx`, `activity.tsx`, `brand.tsx`, `logos.tsx`, `tags.tsx`, `byhand.tsx`, `freeze.ts` | usati da più cartelle, quindi nella radice di `ui\src`; `activity.tsx` ha il pannello Attività e `useRunning`, l'unico conteggio di ciò che gira (azioni, versioni dei database, modelli locali, pool) per la barra di stato, il badge di Progetti e il pannello, con «Ferma tutto» dopo una conferma; `freeze.ts` congela i prototipi della sola finestra principale |
+| Pagine | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `models\`, `servers\`, `terminal\`, `guide\` | una cartella per pagina o parte, con `index.ts` che esporta solo ciò che usano le altre pagine |
+| Cornice della finestra | `shell\`: `titlebar.tsx`, `activity.tsx`, `commands.tsx`, `eject.tsx`, `update.ts`, `freeze.ts`, `freezeproto.ts` | la barra del titolo; `activity.tsx` ha il pannello Attività e `useRunning`, l'unico conteggio di ciò che gira (azioni, versioni dei database, modelli locali, pool) per la barra di stato, il badge di Progetti e il pannello, con «Ferma tutto» dopo una conferma; la palette dei comandi (D-160); «Rimuovi l'unità» e la chiusura; le parole dell'aggiornamento; `freeze.ts` congela i prototipi della sola finestra principale |
 | Testi | `i18n.ts`, `locales\*.json` | `t("frase italiana")`; il test controlla le quattro lingue |
 
 Le cartelle delle pagine:
 
 | Cartella | File |
 | --- | --- |
-| `projects\` | `explorer.tsx` (pagina Progetti), `home.tsx` (ciò che gira, preferiti e recenti), `quickopen.tsx` (Ctrl+P), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `wizard.tsx` (nuovo progetto da un framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx` (con `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx` |
+| `projects\` | `explorer.tsx` (pagina Progetti), `home.tsx` (ciò che gira, preferiti e recenti), `quickopen.tsx` (Ctrl+P), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `wizard.tsx` (nuovo progetto da un framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx` (con `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx`, `extensions.tsx` (estensioni dell'editor per linguaggio: la matrice del kit e quelle di un progetto) |
 | `databases\` | `page.tsx` (pagina Database, `SecretField`), `backups.tsx` (copie dei database di un progetto) |
 | `agents\` | `page.tsx` (pagina Agenti, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limiti e consumi), `token.tsx` (il token di Claude Code su macOS) |
 | `models\` | `page.tsx` (pagina Modelli locali: server, modello di Pi, catalogo di Atollo, Hugging Face, questo PC; D-151) |
@@ -328,11 +326,12 @@ Le cartelle delle pagine:
 | `versions\` | `model.ts`, `kit.tsx` (versioni del kit), `project.tsx` (versioni di un progetto), `lines.tsx` (scelta della riga) |
 | `github\` | `account.tsx`, `identity.tsx` (chi firma i commit), `repos.tsx`, `details.tsx` |
 | `settings\` | `page.tsx` (sette sezioni: Generale, Rete, Agenti, Aggiornamenti, Account GitHub, Privacy, Il kit), `sections.tsx`, `autosave.ts` (salvate mentre cambiano, D-137), `firstrun.tsx` (le scelte del primo avvio), `conda.tsx` (pacchetti conservati), `about.tsx` (kit e aggiornamenti) |
-| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (un blocco per tipo, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (il compilatore di Rust su Windows), `matrix.tsx` (la matrice, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
-| `terminal\` | il terminale nell'app su ogni sistema (D-109, D-148): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `font.ts` (Geist Mono prima che xterm.js misuri), `api.ts`; `window.tsx` è la pagina della finestra di una sessione staccata (`terminal.html`, D-149) |
+| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (un blocco per tipo, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (il compilatore di Rust su Windows), `matrix.tsx` (la matrice, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (matrice delle relazioni), `setup.tsx` (la preparazione in corso), `byhand.tsx` (file scaricati a mano) |
+| `servers\` | `page.tsx` (pagina Server Web: pool Caddy e Apache) |
+| `terminal\` | `page.tsx` (pagina Terminali: le console del kit salvate); il terminale nell'app su ogni sistema (D-109, D-148): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `font.ts` (Geist Mono prima che xterm.js misuri), `api.ts`; `window.tsx` è la pagina della finestra di una sessione staccata (`terminal.html`, D-149) |
 | `guide\` | `model.ts` (capitoli, argomenti, parole di ricerca), `topics\` (il testo, un file per capitolo), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
 
-Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `common.tsx` se lo usano più cartelle.
+Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `shared\` se lo usano più cartelle. Un import che salirebbe di più di una cartella si scrive con l'alias `@/` (`ui\tsconfig.json`, `ui\vite.config.ts`), tranne dentro `guide\`.
 
 ### `api\`
 
@@ -340,7 +339,7 @@ Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pe
 - Un'anteprima calcolata (`sampleStats()`) si scrive con `browserPreview ? … : invoke(…)`, per non calcolarla quando gira l'app.
 - I tipi rispecchiano le strutture Rust con `serde(rename_all = "camelCase")`.
 
-### Hook (`hooks.ts`)
+### Hook (`shared\hooks.ts`)
 
 - `useSubscription(onRun, handler)` registra un ascoltatore una volta sola, passa ogni evento all'ultimo `handler` e lo toglie allo smontaggio anche se la registrazione finisce dopo.
 - `useEvery(read, ms)` legge subito e poi ogni `ms`; `read` va tenuta stabile con `useCallback`.
@@ -348,7 +347,7 @@ Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pe
 - `useAction(onDone)` esegue un'azione con l'attesa e l'ultimo errore.
 - `useCopy(resetMs)` copia negli appunti; `copied` torna falso dopo `resetMs`, se c'è.
 
-Letture ancora scritte a mano, perché `useLoad` cambierebbe ciò che l'utente vede: un errore che resta anche dopo una lettura riuscita (`App.tsx` per le informazioni, `eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, dove lo stesso errore vale anche per avvio e arresto); letture in catena o che riempiono un modulo (`components\page.tsx`, `projects\editorsettings.tsx`); letture con argomenti o con richieste e attesa proprie (`frameworks\model.ts`, `github\repos.tsx`, `relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `setup.tsx`).
+Letture ancora scritte a mano, perché `useLoad` cambierebbe ciò che l'utente vede: un errore che resta anche dopo una lettura riuscita (`App.tsx` per le informazioni, `shell\eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, dove lo stesso errore vale anche per avvio e arresto); letture in catena o che riempiono un modulo (`components\page.tsx`, `projects\editorsettings.tsx`); letture con argomenti o con richieste e attesa proprie (`frameworks\model.ts`, `github\repos.tsx`, `components\relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `components\setup.tsx`).
 
 ### `workbench\`
 
@@ -371,12 +370,12 @@ I controlli sono quelli di VSCodium: `@vscode-elements/elements` (D-88), registr
 Regole per chi aggiunge un controllo:
 - campi e select mandano un `change` che non risale: `onChange` di React su un tag `<vscode-*>` scritto a mano non scatta mai. Si usano i wrapper (`VscodeTextfield`…) o un primitivo di `workbench\`;
 - su un tag `<vscode-*>` scritto a mano si scrive `class` e `for`, non `className` e `htmlFor`; i tipi JSX sono in `elements.ts`;
-- un'icona è un codicon (`Codicon` o `codicon(name)`); `react-icons` dà solo i loghi dei marchi (`logos.tsx`, Simple Icons) e il tipo `IconType`, e nessuno importa `react-icons/vsc` (un test lo controlla);
+- un'icona è un codicon (`Codicon` o `codicon(name)`); `react-icons` dà solo i loghi dei marchi (`shared\logos.tsx`, Simple Icons) e il tipo `IconType`, e nessuno importa `react-icons/vsc` (un test lo controlla);
 - `vscode-icon` vuole il CSS dei codicon con l'id `vscode-codicon-stylesheet` (lo aggiunge `elements.ts`, spento nella pagina) e prende il colore da `--vscode-icon-foreground`: per il colore del testo intorno, `[--vscode-icon-foreground:currentColor]`;
 - un colore viene sempre da una variabile del tema (`--vscode-*` o un token `vsc-*`), mai scritto a mano; fanno eccezione i valori fissi di VSCodium (il rosso del pulsante Chiudi) e i colori dei loghi;
 - una misura (altezza, larghezza, spaziatura, raggio, ombra) viene sempre da `theme-sizes.css`: una misura `--vscode-*` del registro di VSCodium o un token `--vsc-size-*` con la sua classe (`h-vsc-*`, `w-vsc-*`, `size-vsc-*`), mai un numero scritto in un componente (D-142).
 
-Restano nativi, con il perché nel file: i pulsanti della finestra (`titlebar.tsx`), barra delle attività e barra di stato (`App.tsx`), la scelta dell'agente con i loghi (`agents\page.tsx`, ruolo `radio`), il pulsante del menu bloccato di `versions\kit.tsx`. Dal 21/10/2026 il workbench ha anche `ToggleButton` (testo e `aria-pressed`, le scelte della procedura guidata), `Meter` (ruolo `meter` con valore, i limiti in `agents\stats.tsx`) e `SuggestField` (`workbench\suggest.tsx`, un `TextField` con l'elenco dei suggerimenti disegnato sotto, al posto del `<datalist>` di `extensions.tsx` che non attraversa lo shadow root). `workbench\elements.ts` registra solo i componenti di `vscode-elements` usati, ognuno dal suo modulo; `elements.test.tsx` controlla che ogni tag disegnato sia registrato.
+Restano nativi, con il perché nel file: i pulsanti della finestra (`shell\titlebar.tsx`), barra delle attività e barra di stato (`App.tsx`), la scelta dell'agente con i loghi (`agents\page.tsx`, ruolo `radio`), il pulsante del menu bloccato di `versions\kit.tsx`. Dal 21/10/2026 il workbench ha anche `ToggleButton` (testo e `aria-pressed`, le scelte della procedura guidata), `Meter` (ruolo `meter` con valore, i limiti in `agents\stats.tsx`) e `SuggestField` (`workbench\suggest.tsx`, un `TextField` con l'elenco dei suggerimenti disegnato sotto, al posto del `<datalist>` di `projects\extensions.tsx` che non attraversa lo shadow root). `workbench\elements.ts` registra solo i componenti di `vscode-elements` usati, ognuno dal suo modulo; `elements.test.tsx` controlla che ogni tag disegnato sia registrato.
 
 Prove: `test\ui\workbench\controls.test.tsx` (eventi che scattano davvero, valori controllati, Invio, nomi accessibili), `elements.test.tsx` (registrazione), `codicon.test.tsx` (glifi del font incluso, misure, nessun `react-icons/vsc`), `layout.test.tsx`, `list.test.tsx`, `dialog.test.tsx`, `settings.test.tsx`. jsdom non ha `adoptedStyleSheets`: `test\ui\setup.ts` ne dà una versione vuota, che non disegna nulla.
 
@@ -409,7 +408,7 @@ Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0
 
 Dall'analisi del 15/10/2026, ricontrollata il 21/10. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88); le misure di VSCodium 1.135 come token e i codicon dal loro font (D-142). Resta solo la voce 10:
 
-1. ~~**Errore di lettura che resta sullo schermo**~~: fatto il 21/10/2026. L'errore si toglieva già dopo una lettura riuscita; mancava la protezione da una lettura vecchia che risponde tardi. Le informazioni del kit (`App.tsx`), l'elenco di «Rimuovi l'unità» (`eject.tsx`) e le impostazioni (`settings\autosave.ts`) passano da `useLoad` con `"show"`; Impostazioni e primo avvio hanno «Riprova». `databases\page.tsx` lo usava già.
+1. ~~**Errore di lettura che resta sullo schermo**~~: fatto il 21/10/2026. L'errore si toglieva già dopo una lettura riuscita; mancava la protezione da una lettura vecchia che risponde tardi. Le informazioni del kit (`App.tsx`), l'elenco di «Rimuovi l'unità» (`shell\eject.tsx`) e le impostazioni (`settings\autosave.ts`) passano da `useLoad` con `"show"`; Impostazioni e primo avvio hanno «Riprova». `databases\page.tsx` lo usava già.
 2. ~~**Conferme nella pagina senza `alertdialog`**~~: fatto il 17/10/2026 (D-106), le quattro conferme usano `InlineConfirm`.
 3. ~~**Anteprima riusata dai test**~~: fatto il 21/10/2026. `api\` esporta i dati dell'anteprima (`SAMPLE_*`, `NOTHING_OPEN`) e `App.test.tsx`, `autosave.test.ts`, `program-temp.test.tsx` e `databases.test.tsx` partono da quelli. Restano scritti a mano solo i casi che l'anteprima non ha (componenti non disponibili su ARM64, il piano dei framework, `RunInfo`).
 4. ~~**`tool-versions.json` nell'impronta della matrice**~~: fatto il 21/10/2026, il file non entra più nell'impronta e il `_doc` di `tauri\catalog\relations.json` nomina `versions\relations\`.

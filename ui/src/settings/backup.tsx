@@ -13,8 +13,8 @@ import {
   type KitCopy,
   type KitExported,
 } from "../api";
-import { ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { locale, t } from "../i18n";
 import { Button, Notice, SettingItem } from "../workbench";
 

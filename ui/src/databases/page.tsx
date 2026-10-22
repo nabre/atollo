@@ -19,9 +19,9 @@ import {
   type ServiceState,
 } from "../api";
 import { t } from "../i18n";
-import { ComponentLogo } from "../logos";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useCopy, useLoad } from "../hooks";
+import { ComponentLogo } from "../shared/logos";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useCopy, useLoad } from "../shared/hooks";
 import {
   Button,
   CheckboxLabel,

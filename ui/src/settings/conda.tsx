@@ -5,8 +5,8 @@
 // follow the kit.
 import { condaKept, condaKeptFree, type CondaKept, type Settings } from "../api";
 import { locale, t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { CheckboxLabel, codicon, SettingItem } from "../workbench";
 
 function megabytes(bytes: number): string {

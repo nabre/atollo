@@ -10,9 +10,9 @@ import {
   onGithub,
   type GithubStatus,
 } from "../api";
-import { useAction, useCopy, useLoad } from "../hooks";
-import { ActionButton, ErrorLine, LoadError } from "../common";
-import { useSubscription } from "../hooks";
+import { useAction, useCopy, useLoad } from "../shared/hooks";
+import { ActionButton, ErrorLine, LoadError } from "../shared/common";
+import { useSubscription } from "../shared/hooks";
 import { rich, t } from "../i18n";
 import { Codicon, codicon, InlineConfirm } from "../workbench";
 

@@ -3,9 +3,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SAMPLE_AGENTS, SAMPLE_PROJECTS, SAMPLE_SERVICES, type RunInfo } from "@/api";
-import type { Running } from "@/activity";
-import { CommandPalette } from "@/commands";
-import { filterItems } from "@/palette";
+import type { Running } from "@/shell/activity";
+import { CommandPalette } from "@/shell/commands";
+import { filterItems } from "@/shared/palette";
 import { codicon } from "@/workbench";
 import { invoke } from "@test/support/tauri";
 

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import type { FrameworkPiece, FrameworksView } from "@/api";
 import { useFrameworks, useFrameworksAutosave } from "@/frameworks";
-import { useAction } from "@/hooks";
+import { useAction } from "@/shared/hooks";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));

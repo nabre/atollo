@@ -26,9 +26,9 @@ import {
   usePlan,
   type Frameworks,
 } from "../frameworks";
-import { ErrorLine } from "../common";
+import { ErrorLine } from "../shared/common";
 import type { GuideTopicId } from "../guide";
-import { useLoad, useSubscription } from "../hooks";
+import { useLoad, useSubscription } from "../shared/hooks";
 import { t } from "../i18n";
 import {
   Button,

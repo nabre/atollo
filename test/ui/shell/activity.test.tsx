@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { RunInfo, ServiceInfo, WebServerPool } from "@/api";
-import { ActivityPanel, liveLines, useRunning } from "@/activity";
+import { ActivityPanel, liveLines, useRunning } from "@/shell/activity";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));

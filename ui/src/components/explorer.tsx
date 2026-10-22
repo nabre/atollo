@@ -7,11 +7,11 @@ import { useState, type ReactNode } from "react";
 import type { ComponentInfo, SetupSnapshot } from "../api";
 import type { GuideTopicId } from "../guide";
 import { t } from "../i18n";
-import { ErrorLine } from "../common";
-import { ComponentLogo } from "../logos";
-import { ExtensionsMatrixSection } from "../extensions";
-import { RelationsSection, RuntimeRows, useRelations } from "../relations";
-import { ItemStatus, itemState } from "../setup";
+import { ErrorLine } from "../shared/common";
+import { ComponentLogo } from "../shared/logos";
+import { ExtensionsMatrixSection } from "../projects/extensions";
+import { RelationsSection, RuntimeRows, useRelations } from "./relations";
+import { ItemStatus, itemState } from "./setup";
 import { composerOf, splitVersion, useKitVersions } from "../versions";
 import {
   Codicon,

@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { SAMPLE_SETUP, type SetupStep } from "@/api";
-import { SetupProgress } from "@/setup";
+import { SetupProgress } from "@/components/setup";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: () => Promise.resolve(null),

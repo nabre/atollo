@@ -2,7 +2,7 @@
 // tool's lines, the button that asks for more, the state of a chosen one.
 import type { SetupSnapshot, VersionedTool } from "../api";
 import { t } from "../i18n";
-import { ActionButton } from "../common";
+import { ActionButton } from "../shared/common";
 import { codicon, Link, Notice, Select } from "../workbench";
 import { isPresent, offered, present, stepOf } from "./model";
 

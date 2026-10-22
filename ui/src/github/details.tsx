@@ -2,8 +2,8 @@
 // delete on GitHub.
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { githubDelete, githubRename, type GithubRepo } from "../api";
-import { useAction, useCopy } from "../hooks";
-import { ActionButton, ErrorLine } from "../common";
+import { useAction, useCopy } from "../shared/hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
 import { locale, t } from "../i18n";
 import { codicon, InlineConfirm, TextField } from "../workbench";
 

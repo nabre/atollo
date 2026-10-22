@@ -4,11 +4,11 @@
 // shown when the window is closed with something open (CloseDialog).
 import { useState } from "react";
 
-import { appQuit, ejectList, ejectRun, type OpenNow } from "./api";
-import { ActionButton, ErrorLine } from "./common";
-import { useAction, useLoad } from "./hooks";
-import { Codicon, codicon, ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "./workbench";
-import { t } from "./i18n";
+import { appQuit, ejectList, ejectRun, type OpenNow } from "../api";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
+import { Codicon, codicon, ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "../workbench";
+import { t } from "../i18n";
 
 function nothingOpen(o: OpenNow): boolean {
   return (

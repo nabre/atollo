@@ -6,9 +6,9 @@
 import { useState } from "react";
 import type { ComponentInfo, TargetId, TargetProfile, TargetToolStatus } from "../api";
 import { t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { ComponentLogo } from "../logos";
-import { Tag } from "../tags";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { ComponentLogo } from "../shared/logos";
+import { Tag } from "../shared/tags";
 import { codicon, DataTable, Dot, Link } from "../workbench";
 import { groups } from "./model";
 import type { ComponentsState } from "./state";

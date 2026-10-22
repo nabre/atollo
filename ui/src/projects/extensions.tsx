@@ -10,12 +10,12 @@ import {
   type ExtensionsMatrix,
   type ProjectExtension,
   type ProjectInfo,
-} from "./api";
-import { t } from "./i18n";
-import { ComponentLogo, LanguageLogo } from "./logos";
-import { ActionButton, ErrorLine, LoadError } from "./common";
-import { useAction, useLoad } from "./hooks";
-import { Checkbox, Codicon, codicon, DataTable, SuggestField } from "./workbench";
+} from "../api";
+import { t } from "../i18n";
+import { ComponentLogo, LanguageLogo } from "../shared/logos";
+import { ActionButton, ErrorLine, LoadError } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
+import { Checkbox, Codicon, codicon, DataTable, SuggestField } from "../workbench";
 
 /** The matrix: one row per extension, one column per language or tool, then "all". */
 export function ExtensionsMatrixSection({

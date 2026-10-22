@@ -867,7 +867,7 @@ fn open_main_window<R: tauri::Runtime>(
         .title("Atollo")
         .inner_size(1180.0, 760.0)
         .min_inner_size(820.0, 560.0)
-        // The interface draws its own title bar (ui/src/titlebar.tsx).
+        // The interface draws its own title bar (ui/src/shell/titlebar.tsx).
         .decorations(false)
         .shadow(true)
         .data_directory(data_dir.to_path_buf())

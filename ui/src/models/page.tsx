@@ -31,9 +31,9 @@ import {
 } from "../api";
 import type { GuideTopicId } from "../guide";
 import { locale, t } from "../i18n";
-import { ComponentLogo } from "../logos";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useCopy, useLoad, useSubscription } from "../hooks";
+import { ComponentLogo } from "../shared/logos";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useCopy, useLoad, useSubscription } from "../shared/hooks";
 import {
   Button,
   CheckboxLabel,

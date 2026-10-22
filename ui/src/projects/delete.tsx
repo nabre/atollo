@@ -6,8 +6,8 @@
 // databases on the servers (named in the log).
 import { useCallback, useState } from "react";
 import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan, type PlannedDb } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { locale, t } from "../i18n";
 import { codicon, ConfirmDialog } from "../workbench";
 

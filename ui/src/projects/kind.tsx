@@ -3,8 +3,8 @@
 import type { IconType } from "react-icons";
 import type { ProjectAction, ProjectInfo, RunInfo } from "../api";
 import { t } from "../i18n";
-import { LanguageIcon } from "../logos";
-import { Mark } from "../tags";
+import { LanguageIcon } from "../shared/logos";
+import { Mark } from "../shared/tags";
 import { Codicon, codicon, Dot } from "../workbench";
 import { alive } from "./runs";
 

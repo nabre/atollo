@@ -1,8 +1,8 @@
 // Atollo marks, variant A of the brand board (brand.png). The SVGs come
 // from docs/brand/make.py: edit the script, not the files.
-import symbol from "./assets/brand/symbol.svg";
-import wordmarkLight from "./assets/brand/wordmark-light.svg";
-import wordmarkDark from "./assets/brand/wordmark-dark.svg";
+import symbol from "../assets/brand/symbol.svg";
+import wordmarkLight from "../assets/brand/wordmark-light.svg";
+import wordmarkDark from "../assets/brand/wordmark-dark.svg";
 
 /** The app icon: the A on its deep forest tile. */
 export function BrandSymbol({ size }: { size: number }) {

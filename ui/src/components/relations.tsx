@@ -14,13 +14,13 @@ import {
   type RelationRuntime,
   type RelationsMatrix,
   type SetupSnapshot,
-} from "./api";
-import { t } from "./i18n";
-import { ComponentLogo } from "./logos";
-import { ActionButton, ErrorLine } from "./common";
-import { useAction } from "./hooks";
-import { Tag } from "./tags";
-import { Codicon, codicon, DataTable } from "./workbench";
+} from "../api";
+import { t } from "../i18n";
+import { ComponentLogo } from "../shared/logos";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction } from "../shared/hooks";
+import { Tag } from "../shared/tags";
+import { Codicon, codicon, DataTable } from "../workbench";
 
 /** The matrix, read again when the preparation finishes a step or `key`
  * (the components on disk) changes; the backend rebuilds it only when what

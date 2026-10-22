@@ -13,11 +13,11 @@ import {
   type AppInfo,
   type HealthFinding,
 } from "../api";
-import { BrandSymbol } from "../brand";
-import { useAction, useLoad } from "../hooks";
-import { ErrorLine } from "../common";
+import { BrandSymbol } from "../shared/brand";
+import { useAction, useLoad } from "../shared/hooks";
+import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
-import { updateText } from "../update";
+import { updateText } from "../shell/update";
 import { KitBackup } from "./backup";
 import { Button, Dot, Link, Properties, SettingItem, SettingsGroup } from "../workbench";
 

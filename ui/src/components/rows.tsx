@@ -3,13 +3,13 @@
 import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, type VersionedTool } from "../api";
 import { t } from "../i18n";
 import { Checkbox, Codicon } from "../workbench";
-import { ItemBar, ItemStatus, itemState, type ItemState } from "../setup";
+import { ItemBar, ItemStatus, itemState, type ItemState } from "./setup";
 import { composerOf, splitVersion, ToolInstallLine, ToolVersions, type KitVersions } from "../versions";
-import { ByHandBox } from "../byhand";
-import { LinkProblems, outsideOf } from "../relations";
+import { ByHandBox } from "./byhand";
+import { LinkProblems, outsideOf } from "./relations";
 import { sizeText } from "./model";
-import { ComponentLogo } from "../logos";
-import { Badge, Tag } from "../tags";
+import { ComponentLogo } from "../shared/logos";
+import { Badge, Tag } from "../shared/tags";
 
 /** The projects that need `c`: blue when chosen, orange with a warning when not. */
 export function ProjectsChip({ names, on }: { names: string[]; on: boolean }) {

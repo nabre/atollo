@@ -22,24 +22,23 @@ import {
   type SetupSnapshot,
   type UpdateStatus,
 } from "./api";
-import { updateFound, updateText } from "./update";
+import { updateFound, updateText } from "./shell/update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
-import { ActivityPanel, useRunning, type Running } from "./activity";
-import { TitleBar } from "./titlebar";
+import { ActivityPanel, useRunning, type Running } from "./shell/activity";
+import { TitleBar } from "./shell/titlebar";
 import { AgentsPage, useAgents } from "./agents";
-import { setupStatusText, useSetup } from "./setup";
-import { CloseDialog, EjectPage } from "./eject";
+import { setupStatusText, useSetup } from "./components/setup";
+import { CloseDialog, EjectPage } from "./shell/eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
 import { ModelsPage } from "./models";
 import { ServersPage } from "./servers";
-import { TerminalsPage } from "./terminals";
-import { tauriPty, useTerminals, type Terminals } from "./terminal";
+import { tauriPty, TerminalsPage, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
 import { Codicon, codicon, Icon, IconButton, Notice, Sash, useStoredSize, useTabs } from "./workbench";
-import { useLoad, useSubscription } from "./hooks";
-import { ErrorLine, LoadError } from "./common";
-import { CommandPalette } from "./commands";
+import { useLoad, useSubscription } from "./shared/hooks";
+import { ErrorLine, LoadError } from "./shared/common";
+import { CommandPalette } from "./shell/commands";
 import { useUpdates } from "./components/updates";
 
 // The pages seldom open (the Guide, large; Settings; Tools, with the

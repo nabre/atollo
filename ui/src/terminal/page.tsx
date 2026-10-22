@@ -15,11 +15,11 @@ import {
   type TerminalTool,
   type TerminalToolGroup,
   type TerminalsView,
-} from "./api";
-import { ActionButton, ErrorLine } from "./common";
-import { useAction, useLoad } from "./hooks";
-import { t } from "./i18n";
-import { ComponentLogo } from "./logos";
+} from "../api";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
+import { t } from "../i18n";
+import { ComponentLogo } from "../shared/logos";
 import {
   Button,
   Checkbox,
@@ -40,7 +40,7 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
-} from "./workbench";
+} from "../workbench";
 
 const GROUPS: { id: TerminalToolGroup; label: () => string }[] = [
   { id: "agents", label: () => t("Agenti") },

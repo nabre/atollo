@@ -19,13 +19,13 @@ import {
   type ServiceState,
   type SetupSnapshot,
   type WebServerPool,
-} from "./api";
-import { t } from "./i18n";
-import { alive, stateText } from "./projects";
-import { SetupProgress, setupStatusText } from "./setup";
-import { ActionBar, Button, codicon, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "./workbench";
-import { ActionButton, ErrorLine } from "./common";
-import { useAction, useLoad } from "./hooks";
+} from "../api";
+import { t } from "../i18n";
+import { alive, stateText } from "../projects";
+import { SetupProgress, setupStatusText } from "../components/setup";
+import { ActionBar, Button, codicon, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "../workbench";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 
 /** A version of a database server that is not stopped: the one it runs, or
  * another one on its own port (`line` set, D-102). */

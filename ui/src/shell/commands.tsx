@@ -20,14 +20,14 @@ import {
   type ProjectInfo,
   type RunInfo,
   type ServiceInfo,
-} from "./api";
+} from "../api";
 import type { Running } from "./activity";
-import { useLoad } from "./hooks";
-import { t } from "./i18n";
-import { Palette, type PaletteItem } from "./palette";
-import { mainAction } from "./projects/home";
-import { alive } from "./projects/runs";
-import { codicon } from "./workbench";
+import { useLoad } from "../shared/hooks";
+import { t } from "../i18n";
+import { Palette, type PaletteItem } from "../shared/palette";
+import { mainAction } from "../projects/home";
+import { alive } from "../projects/runs";
+import { codicon } from "../workbench";
 
 /** Stops what `running` has: the actions, the pools, the database versions
  * and the local models' server; rejects with what failed, a line each. */

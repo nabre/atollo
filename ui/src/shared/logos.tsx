@@ -98,7 +98,7 @@ import {
   SiZig,
 } from "react-icons/si";
 import { Mark, Tag } from "./tags";
-import { codicon } from "./workbench";
+import { codicon } from "../workbench";
 
 /** Antigravity's logo: an arch in Google's colours, red at the top to blue
  * at the feet. */

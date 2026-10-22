@@ -3,7 +3,7 @@
 // network needs it, a proxy and the certificates of a firewall that
 // inspects HTTPS. Saved as they change, as on the Settings page; nothing is
 // installed until «Installa», so the downloads already use them.
-import { ErrorLine, LoadError } from "../common";
+import { ErrorLine, LoadError } from "../shared/common";
 import { t } from "../i18n";
 import { SettingsGroup } from "../workbench";
 import { useSettingsAutosave } from "./autosave";

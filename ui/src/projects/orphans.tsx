@@ -5,8 +5,8 @@
 // (./delete.tsx). Nothing is deleted by itself.
 import { useCallback, useState } from "react";
 import { projectOrphanAdopt, projectsOrphans, type Holdings, type ProjectInfo } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, ConfirmDialog, Select, ViewPane } from "../workbench";
 import { DeleteProjectDialog } from "./delete";

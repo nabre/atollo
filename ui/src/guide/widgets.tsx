@@ -5,9 +5,9 @@
 import { createContext, useContext, useId, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { folderOpen, type AppInfo, type ComponentInfo } from "../api";
-import { useCopy } from "../hooks";
+import { useCopy } from "../shared/hooks";
 import { lang, t } from "../i18n";
-import { Tag } from "../tags";
+import { Tag } from "../shared/tags";
 import { Button, Codicon, codicon, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
 import { sectionCode, topicOf, tr, type AppPageTarget, type GuideTopicId } from "./model";
 

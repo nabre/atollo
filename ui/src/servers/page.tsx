@@ -14,11 +14,11 @@ import {
   type WebServerEngine,
   type WebServerPool,
   type WebServersView,
-} from "./api";
-import { ActionButton, ErrorLine } from "./common";
-import { useEvery } from "./hooks";
-import { t } from "./i18n";
-import { ComponentLogo } from "./logos";
+} from "../api";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useEvery } from "../shared/hooks";
+import { t } from "../i18n";
+import { ComponentLogo } from "../shared/logos";
 import {
   Button,
   CheckboxLabel,
@@ -40,7 +40,7 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
-} from "./workbench";
+} from "../workbench";
 
 /** The two options of a profile, as in the creation form and the details. */
 function ProfileOptions({

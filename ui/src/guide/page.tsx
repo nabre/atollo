@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { componentsList, folderOpen, type AppInfo, type ComponentInfo } from "../api";
 import { t } from "../i18n";
-import { Tag } from "../tags";
+import { Tag } from "../shared/tags";
 import {
   Button,
   Codicon,

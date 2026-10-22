@@ -5,11 +5,11 @@
 import { useState } from "react";
 import { componentLinkOpen, setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot } from "../api";
 import { t } from "../i18n";
-import { ByHandBox } from "../byhand";
-import { ComponentLogo } from "../logos";
-import { LinkProblems, outsideOf } from "../relations";
-import { ItemBar, ItemStatus, itemState } from "../setup";
-import { Tag } from "../tags";
+import { ByHandBox } from "./byhand";
+import { ComponentLogo } from "../shared/logos";
+import { LinkProblems, outsideOf } from "./relations";
+import { ItemBar, ItemStatus, itemState } from "./setup";
+import { Tag } from "../shared/tags";
 import { ToolInstallLine, ToolVersions, splitVersion, composerOf, type KitVersions } from "../versions";
 import {
   Button,

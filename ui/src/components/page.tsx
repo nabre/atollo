@@ -5,13 +5,13 @@
 // kit (language, updates, network: FirstRunSettings, D-137), since nothing
 // is downloaded before «Installa».
 import { useState } from "react";
-import { BrandSymbol } from "../brand";
+import { BrandSymbol } from "../shared/brand";
 import type { SetupSnapshot } from "../api";
 import { rich, t } from "../i18n";
-import { ErrorLine } from "../common";
+import { ErrorLine } from "../shared/common";
 import { Codicon, SettingsEditor, SettingsGroup, SingleEditor } from "../workbench";
 import { useKitVersions } from "../versions";
-import { RuntimeRows, useRelations } from "../relations";
+import { RuntimeRows, useRelations } from "./relations";
 import { groups, matches } from "./model";
 import { ComponentRow } from "./rows";
 import { useComponents } from "./state";

@@ -8,8 +8,8 @@ import { useState } from "react";
 import { act } from "../api/core";
 import type { AgentInfo } from "../api";
 import { t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction } from "../shared/hooks";
 import { Button, codicon, Notice, TextField } from "../workbench";
 
 /** Offered for Claude Code on macOS (Rust `AgentInfo::token_link`). */

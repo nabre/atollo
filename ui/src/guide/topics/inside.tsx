@@ -3,8 +3,8 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { urlOpen, type ComponentInfo } from "../../api";
 import { rich } from "../../i18n";
-import { ComponentLogo } from "../../logos";
-import { Tag } from "../../tags";
+import { ComponentLogo } from "../../shared/logos";
+import { Tag } from "../../shared/tags";
 import { Button, Codicon, SearchBox } from "../../workbench";
 import { tr } from "../model";
 import { sourceCounts, TOOL_SOURCES, type SourceCategory } from "../sources";

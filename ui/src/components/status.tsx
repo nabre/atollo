@@ -8,7 +8,7 @@
 import type { IconType } from "react-icons";
 import type { ComponentInfo, TargetToolStatus } from "../api";
 import { t } from "../i18n";
-import type { ItemState } from "../setup";
+import type { ItemState } from "./setup";
 import { cellReason } from "./targets";
 import { codicon } from "../workbench";
 

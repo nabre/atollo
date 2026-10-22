@@ -1,11 +1,19 @@
 // Progress of the preparation (installing, updating, removing components),
 // shared by the status bar, the Activity panel and the Tools page.
 import { useEffect, useState } from "react";
-import { onSetup, setupCancel, setupState, type ByHand, type Outcome, type SetupSnapshot, type SetupStep } from "./api";
-import { t } from "./i18n";
-import { ComponentLogo } from "./logos";
-import { useSubscription } from "./hooks";
-import { Button, Codicon } from "./workbench";
+import {
+  onSetup,
+  setupCancel,
+  setupState,
+  type ByHand,
+  type Outcome,
+  type SetupSnapshot,
+  type SetupStep,
+} from "../api";
+import { t } from "../i18n";
+import { ComponentLogo } from "../shared/logos";
+import { useSubscription } from "../shared/hooks";
+import { Button, Codicon } from "../workbench";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {

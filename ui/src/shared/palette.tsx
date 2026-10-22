@@ -3,7 +3,7 @@
 // close. Quick Open of Projects (Ctrl+P) and the command palette
 // (Ctrl+Shift+P, report v6/04 N-8) are made of it.
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { TextField, useModalFocus } from "./workbench";
+import { TextField, useModalFocus } from "../workbench";
 
 export interface PaletteItem {
   key: string;

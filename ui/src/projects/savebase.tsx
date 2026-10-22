@@ -4,8 +4,8 @@
 // out one by one.
 import { useCallback, useState } from "react";
 import { projectBasePreview, projectSaveBase, type BaseEntry } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { locale, t } from "../i18n";
 import { CheckboxLabel, codicon, ConfirmDialog, Notice, TextField } from "../workbench";
 

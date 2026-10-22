@@ -2,8 +2,8 @@
 // the logo of a base or addition.
 import type { ComponentInfo, FrameworkPiece } from "../api";
 import { t } from "../i18n";
-import { ComponentLogo, FrameworkLogo } from "../logos";
-import { Tag } from "../tags";
+import { ComponentLogo, FrameworkLogo } from "../shared/logos";
+import { Tag } from "../shared/tags";
 import { Codicon, codicon, IconButton } from "../workbench";
 
 /** A tool of the kit as a tag: its logo and its name in the catalog. */

@@ -11,9 +11,9 @@ import type { IconType } from "react-icons";
 import { editorRestart, type AppInfo } from "../api";
 import { GithubAccount, GitIdentitySetting } from "../github";
 import type { GuideTopicId } from "../guide";
-import { BrandSymbol } from "../brand";
-import { useAction } from "../hooks";
-import { ErrorLine, LoadError } from "../common";
+import { BrandSymbol } from "../shared/brand";
+import { useAction } from "../shared/hooks";
+import { ErrorLine, LoadError } from "../shared/common";
 import {
   addPiece,
   FrameworksTree,

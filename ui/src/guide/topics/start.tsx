@@ -1,7 +1,7 @@
 // Chapter 1 of the Guide, «Primi passi»: what Atollo is, the first start,
 // the window and a first project from start to finish.
 import { rich } from "../../i18n";
-import { Tag } from "../../tags";
+import { Tag } from "../../shared/tags";
 import type { IconType } from "react-icons";
 import { codicon, Properties } from "../../workbench";
 import { GUIDE_GROUPS, GUIDE_TOPICS, tr, type AppPageTarget, type GuideTopicId } from "../model";

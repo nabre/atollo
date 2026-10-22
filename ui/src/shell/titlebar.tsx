@@ -10,11 +10,11 @@
 // workbench's color.
 import { useEffect, useState } from "react";
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
-import { browserPreview } from "./api";
-import { t } from "./i18n";
-import { BrandWordmark } from "./brand";
-import { Badge } from "./tags";
-import { Codicon } from "./workbench";
+import { browserPreview } from "../api";
+import { t } from "../i18n";
+import { BrandWordmark } from "../shared/brand";
+import { Badge } from "../shared/tags";
+import { Codicon } from "../workbench";
 
 /** The window, or null in the browser preview and in the tests. */
 function current(): Window | null {

@@ -1,7 +1,7 @@
 // What a check of Atollo's updates found, in words: Settings › Updates and
 // the version in the status bar say the same.
-import type { UpdateStatus } from "./api";
-import { t } from "./i18n";
+import type { UpdateStatus } from "../api";
+import { t } from "../i18n";
 
 export function updateText(st: UpdateStatus): string {
   if (st.staged) return t("La versione {0} è pronta: sostituisce questa alla chiusura di Atollo.", st.staged);

@@ -16,12 +16,12 @@ import {
 } from "../api";
 import type { GuideTopicId } from "../guide";
 import { rich, t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { ComponentLogo, componentIcon } from "../logos";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { ComponentLogo, componentIcon } from "../shared/logos";
 import { AgentUsage, useStats } from "./stats";
 import { TokenLink } from "./token";
 import { KitMcpBox } from "../projects/mcp";
-import { useAction, useLoad } from "../hooks";
+import { useAction, useLoad } from "../shared/hooks";
 import {
   Button,
   codicon,

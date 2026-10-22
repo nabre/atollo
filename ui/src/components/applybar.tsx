@@ -4,8 +4,8 @@
 import { useState } from "react";
 import { setupCancel, type SetupSnapshot } from "../api";
 import { t } from "../i18n";
-import { ActionButton } from "../common";
-import { setupStatusText } from "../setup";
+import { ActionButton } from "../shared/common";
+import { setupStatusText } from "./setup";
 import { codicon, InlineConfirm } from "../workbench";
 import type { KitVersions } from "../versions";
 import { linesOf, sizeText } from "./model";
