@@ -80,16 +80,20 @@ fn server_cnf_on_every_system() {
     }
 }
 
-/// A socket path that does not fit `sun_path` goes to the kit's private
-/// folder of the PC's temporary one, never `/tmp` itself; without one that
-/// fits, an error.
+/// A socket path that does not fit `sun_path` goes to the user's private
+/// folder of sockets, never `/tmp` itself nor the kit's `/tmp/Atollo/<id>`
+/// (BUG-V7-11); without one that fits, an error.
 #[test]
 fn long_socket_paths_move() {
     let deep = Path::new("/media/someone/a-very-long-volume-name/Atollo/data/db/mysql/9.7")
         .join("x".repeat(60));
-    let own = socket_dir(Some(Path::new("/tmp/Atollo/k1"))).unwrap();
-    assert_eq!(own, Path::new("/tmp/Atollo/k1").join("mysql"));
-    assert_eq!(socket_dir(None), None);
+    let own = socket_dir(Path::new("/tmp/atollo-caddy-1000"));
+    assert_eq!(own, Path::new("/tmp/atollo-caddy-1000").join("mysql"));
+    assert_eq!(
+        fallback_socket(&own, 3307),
+        Some(own.join("atollo-mysql-3307.sock"))
+    );
+    assert_eq!(fallback_socket(&deep, 3307), None);
     assert_eq!(
         socket_path(Os::Linux, &deep, 3307, Some(&own))
             .unwrap()

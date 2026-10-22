@@ -8,7 +8,7 @@ use std::sync::Mutex;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
-use crate::projects::run::split_lines;
+use crate::projects::run::{split_lines, take_utf8};
 
 /// The job of the command running now: dropping it ends the whole tree.
 static CURRENT: Mutex<Option<Job>> = Mutex::new(None);
@@ -108,6 +108,7 @@ pub fn run_line(
             let last = &last;
             s.spawn(move || {
                 let (mut rest, mut buf) = (String::new(), [0u8; 8192]);
+                let mut pending = Vec::new();
                 let mut emit = |l: String| {
                     if !l.trim().is_empty() {
                         out(&l);
@@ -116,13 +117,19 @@ pub fn run_line(
                             .unwrap_or_else(std::sync::PoisonError::into_inner) = l;
                     }
                 };
+                // A character split across two reads waits for the
+                // second one (BUG-V7-13).
                 while let Ok(n @ 1..) = pipe.read(&mut buf) {
-                    let chunk = String::from_utf8_lossy(&buf[..n]);
+                    pending.extend_from_slice(&buf[..n]);
+                    let chunk = take_utf8(&mut pending);
                     split_lines(&mut rest, &chunk)
                         .into_iter()
                         .for_each(&mut emit);
                 }
-                split_lines(&mut rest, "\n").into_iter().for_each(&mut emit);
+                let tail = String::from_utf8_lossy(&pending).into_owned() + "\n";
+                split_lines(&mut rest, &tail)
+                    .into_iter()
+                    .for_each(&mut emit);
             });
         }
     });

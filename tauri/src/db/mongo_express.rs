@@ -26,7 +26,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 
-use super::web_admin::{free_address, wait_ready, Served, Slot};
+use super::web_admin::{abandon, free_address, wait_ready, Served, Slot};
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
@@ -147,7 +147,10 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str) -> Result<Served
         .stderr(Stdio::from(out));
     let job = Job::new()?;
     let mut child = jobs::spawn_in(&mut cmd, &job).context("spawn node for mongo-express")?;
-    wait_ready(&mut child, host, port, &log, "mongo-express")?;
+    if let Err(e) = wait_ready(&mut child, host, port, &log, "mongo-express") {
+        abandon(job, child);
+        return Err(e);
+    }
     crate::log::info(&format!("mongo-express: started on {host}:{port}"));
     Ok(Served {
         child,

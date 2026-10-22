@@ -314,6 +314,11 @@
     "fr": "port : {0}",
     "de": "Port: {0}"
   },
+  "{0} non è installato (Strumenti > {0})": {
+    "en": "{0} is not installed (Tools > {0})",
+    "fr": "{0} n'est pas installé (Outils > {0})",
+    "de": "{0} ist nicht installiert (Werkzeuge > {0})"
+  },
   "Avvio non riuscito: {0}": {
     "en": "Start failed: {0}",
     "fr": "Échec du démarrage : {0}",

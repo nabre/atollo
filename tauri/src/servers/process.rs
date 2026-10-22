@@ -563,6 +563,13 @@ impl WebServers {
             std::thread::sleep(Duration::from_millis(80));
         }
         if !ready {
+            // Its job first, which kills the group while the leader, not yet
+            // reaped, still names it; then the leader is reaped, or on macOS
+            // and Linux it would stay a zombie until the app exits
+            // (BUG-V7-14).
+            drop(job);
+            let _ = child.kill();
+            let _ = child.wait();
             let detail = pool_error_tail(&pool_dir);
             bail!(
                 "{} did not start listening on port {}{detail}",

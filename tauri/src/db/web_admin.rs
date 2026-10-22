@@ -173,3 +173,13 @@ pub fn wait_ready(
     }
     Ok(())
 }
+
+/// Ends a server that [`wait_ready`] gave up on: its job first, which
+/// kills the whole group while the leader, not yet reaped, still names it
+/// (`jobs::own_group`), then the leader is reaped, or on macOS and Linux it
+/// would stay a zombie until the app exits (BUG-V7-14).
+pub fn abandon(job: Job, mut child: Child) {
+    drop(job);
+    let _ = child.kill();
+    let _ = child.wait();
+}

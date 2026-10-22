@@ -32,7 +32,9 @@ pub(super) fn component_dir(kit: &Kit, id: &str, line: Option<&str>) -> PathBuf 
 
 /// Generates Apache VirtualHost file content for one attached project in a
 /// pool; `conf_d`, the project's own `apache\conf.d` when it is there, is
-/// included inside it, as its dedicated server does (BUG-V5-05).
+/// included inside it, as its dedicated server does (BUG-V5-05). `None` (in
+/// the log) when its folder cannot be written in `httpd.conf`: the other
+/// sites of the pool are served all the same.
 pub(super) fn apache_vhost_conf(
     port: u16,
     project_root: &Path,
@@ -40,8 +42,14 @@ pub(super) fn apache_vhost_conf(
     doc_root: &Path,
     site: &AttachedSite,
     conf_d: Option<&Path>,
-) -> String {
-    let doc_fwd = fwd(doc_root);
+) -> Option<String> {
+    let Some(doc_root) = apache::quoted_path(doc_root) else {
+        crate::log::warn(&format!(
+            "{}: not served by Apache, its folder cannot be written in httpd.conf",
+            doc_root.display()
+        ));
+        return None;
+    };
     let mut aliases_list = vec![site.server_name.clone()];
     for d in &site.domains {
         let d = d.trim().to_ascii_lowercase();
@@ -57,8 +65,8 @@ pub(super) fn apache_vhost_conf(
         lines.push(format!("    ServerAlias {}", aliases_list[1..].join(" ")));
     }
     lines.extend([
-        format!("    DocumentRoot \"{doc_fwd}\""),
-        format!("    <Directory \"{doc_fwd}\">"),
+        format!("    DocumentRoot {doc_root}"),
+        format!("    <Directory {doc_root}>"),
         "        Options Indexes FollowSymLinks".to_owned(),
         "        AllowOverride All".to_owned(),
         "        Require all granted".to_owned(),
@@ -75,7 +83,7 @@ pub(super) fn apache_vhost_conf(
     }
     lines.push("</VirtualHost>".to_owned());
     lines.push(String::new());
-    lines.join("\r\n")
+    Some(lines.join("\r\n"))
 }
 
 /// The local names, besides `localhost`, that reach a pool's own page out
@@ -279,14 +287,16 @@ impl WebServers {
                         .ok()
                         .map(|d| d.join("conf.d"))
                         .filter(|d| d.is_dir());
-                    let vhost = apache_vhost_conf(
+                    let Some(vhost) = apache_vhost_conf(
                         pool.port,
                         &proj_root,
                         &self.kit.projects(),
                         &doc_root,
                         site,
                         conf_d.as_deref(),
-                    );
+                    ) else {
+                        continue;
+                    };
                     write_atomic(&vhosts_dir.join(vhost_file(site)), vhost.as_bytes())?;
                 }
                 let main_conf =

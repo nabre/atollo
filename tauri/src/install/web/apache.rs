@@ -340,15 +340,18 @@ pub fn apache_site(dir: &Path, os: Os) -> Result<()> {
         let text = lines.join(nl);
         write_atomic(&conf, format!("{text}{nl}").as_bytes())?;
     }
+    // The welcome page has no sentence in any language: it is written once,
+    // into the user's own htdocs, and would keep the language of the
+    // install whatever the interface says later (BUG-V7-38).
     if fs::read_dir(&htdocs)?.next().is_none() {
         if windows {
             let page = [
                 "<!doctype html>",
                 "<meta charset=\"utf-8\">",
                 "<title>Atollo</title>",
-                "<h1>Apache funziona</h1>",
+                "<h1>Apache &#10003;</h1>",
                 "<p>PHP <?= PHP_VERSION ?> &middot; <a href=\"?info\">phpinfo()</a></p>",
-                "<p>I file del sito stanno nella cartella <code>data\\apache\\htdocs\\</code> del kit.</p>",
+                "<p><code>data\\apache\\htdocs\\</code></p>",
                 "<?php if (isset($_GET['info'])) phpinfo(); ?>",
             ]
             .join("\r\n");
@@ -358,8 +361,8 @@ pub fn apache_site(dir: &Path, os: Os) -> Result<()> {
                 "<!doctype html>",
                 "<meta charset=\"utf-8\">",
                 "<title>Atollo</title>",
-                "<h1>Apache funziona</h1>",
-                "<p>I file del sito stanno nella cartella <code>data/apache/htdocs/</code> del kit.</p>",
+                "<h1>Apache &#10003;</h1>",
+                "<p><code>data/apache/htdocs/</code></p>",
             ]
             .join("\n");
             write_atomic(&htdocs.join("index.html"), format!("{page}\n").as_bytes())?;
