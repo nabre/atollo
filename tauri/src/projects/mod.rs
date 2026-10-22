@@ -31,6 +31,7 @@ use serde::Serialize;
 
 use crate::detect::{self, Project};
 use crate::env::KitEnv;
+use crate::i18n::t as tr;
 use crate::kit::{validate_project_name, Kit};
 use crate::setup::Catalog;
 
@@ -144,10 +145,6 @@ pub fn recent(kit: &Kit) -> Vec<String> {
         .collect();
     out.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
     out.into_iter().map(|(_, id)| id).collect()
-}
-
-fn tr(lang: &str, source: &str, args: &[&str]) -> String {
-    crate::i18n::t(lang, source, args)
 }
 
 fn check_name(name: &str, lang: &str) -> Result<()> {

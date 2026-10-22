@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::detect::{self, Action, Kind};
 use crate::env::KitEnv;
+use crate::i18n::t as tr;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::state::{self, ProjectState};
@@ -1264,10 +1265,6 @@ pub(crate) fn take_utf8(pending: &mut Vec<u8>) -> String {
     let text = String::from_utf8_lossy(&pending[..valid]).into_owned();
     pending.drain(..valid);
     text
-}
-
-fn tr(lang: &str, source: &str, args: &[&str]) -> String {
-    crate::i18n::t(lang, source, args)
 }
 
 /// The value of `key` in the `.env` of `dir` (`KEY=value`, `export KEY=`,

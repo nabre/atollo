@@ -32,6 +32,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::i18n::t as tr;
+
 pub use overrides::{
     remove_action, save_action, set_default_action, set_site_with_options, ActionEdit, SiteKind,
     SiteOptions, SITE_ACTION,
@@ -216,10 +218,6 @@ const MANIFESTS: [&str; 7] = [
 ];
 
 pub const OVERRIDE_FILES: [&str; 2] = ["panel.json", "pannello.json"];
-
-fn tr(lang: &str, source: &str, args: &[&str]) -> String {
-    crate::i18n::t(lang, source, args)
-}
 
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
