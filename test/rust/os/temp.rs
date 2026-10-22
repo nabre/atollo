@@ -86,6 +86,27 @@ fn cleanup_at_exit_removes_programs_temp_only() {
     cleanup_at_exit(&host); // nothing left: no error
 }
 
+#[cfg(windows)]
+#[test]
+fn every_host_temp_is_private_on_windows() {
+    assert!(private_base(Path::new(r"C:\Users\me\AppData\Local\Temp")));
+}
+
+#[cfg(unix)]
+#[test]
+fn only_a_private_host_temp_holds_the_kits_folder() {
+    use std::os::unix::fs::PermissionsExt;
+    let tmp = TempDir::new("temp-private");
+    let mine = tmp.0.join("mine");
+    fs::create_dir_all(&mine).unwrap();
+    fs::set_permissions(&mine, fs::Permissions::from_mode(0o700)).unwrap();
+    assert!(private_base(&mine));
+    // Writable by others, as a shared /tmp (BUG-V7-17).
+    fs::set_permissions(&mine, fs::Permissions::from_mode(0o1777)).unwrap();
+    assert!(!private_base(&mine));
+    assert!(!private_base(&tmp.0.join("missing")));
+}
+
 #[test]
 fn falls_back_to_data_tmp_without_space() {
     let tmp = TempDir::new("temp-space");
