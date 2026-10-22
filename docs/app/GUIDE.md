@@ -353,6 +353,7 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.3 Starting 
 >
 > - A project is simply a folder inside projects: the kit recognizes it by itself.
 > - There are three ways to create one: “Empty project”, “From a Git address” and “From a base”, with the bases of frameworks and CMS in four groups: Web, CMS, App and Other. Plus the list of your GitHub repositories.
+> - A project of yours can become a base: “Save as a base” on its page, and you find it first under “My bases”.
 > - With a framework, the kit installs the tools needed and runs the framework's official commands.
 > - You can also copy a folder into projects by hand: it appears in the list after “Refresh”.
 
@@ -364,9 +365,9 @@ Related topics: [2.1 Creating a project](#21-creating-a-project), [2.3 Starting 
 
 All roads lead to the “New project” tab of the Projects page, which opens in one of these ways:
 
-- from the “Quick panel”, under “New project”: at the top right the “Empty project” and “From a Git address” links; below, a block per group (Web, CMS, App, Other) with its bases by category: a click on a base opens the wizard with that base already chosen;
+- from the “Quick panel”, under “New project”: at the top right the “Empty project” and “From a Git address” links; below, a block per group (My bases, if you saved any, then Web, CMS, App, Other) with its bases by category: a click on a base opens the wizard with that base already chosen;
 - from the icons at the top of the sidebar: “New project” (folder with a plus) and “New project from a base” (wand);
-- from the “New project” pane of the sidebar, a tree: “Empty project”, “From a Git address”, then the Web, CMS, App and Other branches with the number of bases. Under Web, App and Other are the categories and their bases, under CMS the bases directly; a click on a group opens the wizard on its first base, a click on a base opens it with that base already chosen;
+- from the “New project” pane of the sidebar, a tree: “Empty project”, “From a Git address”, then the My bases (with the star, if you saved any), Web, CMS, App and Other branches with the number of bases. Under Web, App and Other are the categories and their bases, under CMS the bases directly; a click on a group opens the wizard on its first base, a click on a base opens it with that base already chosen;
 - from <kbd>Ctrl+P</kbd>, which has the three “New project” entries at the bottom of the list.
 
 A created or cloned project also appears at once on the “Web Servers” page.
@@ -401,7 +402,7 @@ A wizard that creates a project starting from a base (a framework like Laravel, 
 
 | Step | What you do |
 | --- | --- |
-| 1. Base | Choose a group with the tags at the top (Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries) and then the base's card. |
+| 1. Base | Choose a group with the tags at the top (My bases, if you saved any, Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries) and then the base's card. |
 | 2. Additions | Tick the additions you want. They are divided by type (Interface, Styles, Tests, Databases…): you choose only one of each type, and choosing another replaces the first. |
 | 3. Name | Type the project name. Alternatively use an existing project that is empty (“empty”) or has files but no Git (“with files”): the framework's files are added and the ones already there stay as they are. A Git repository cannot be used. |
 | 4. .env file | The variables the kit will write in the project's .env file. {name} becomes the project name, {package} an identifier like com.example.nome, {password} a new password. You can change the values, remove lines or add some with “Add a variable”. |
@@ -434,6 +435,33 @@ A wizard that creates a project starting from a base (a framework like Laravel, 
 - At the end, if there is a .env file that Git would pick up, the kit adds /.env to the .gitignore file.
 - The recipe's actions go into the project's panel.json file with an identifier that starts with fw- (for example fw-avvia).
 - Some bases require particular components: Android apps want the Android SDK component; Laravel with MongoDB wants PHP's mongodb extension, which the kit does not install.
+
+</details>
+
+#### “My bases”
+
+A project of yours can become a base, to create more like it: for example a Laravel with your usual packages or the layout of a monorepo.
+
+1. On the project's page press “Save as a base”, in the header next to “Open folder”.
+2. Type the base's name (at first it is the project's) and, if you like, a description.
+3. “What to copy” has every folder and file at the root of the project, with the number of files and the size: untick the ones you do not want. Below, the total.
+4. Press “Save as a base”: “Saved: you find it in New project › My bases. The same name replaces it.”
+
+Which files: in a Git repository, those Git would keep, that is the tracked files and the new ones .gitignore does not leave out. Without Git, all of them but the folders without sources (node_modules, vendor, .venv, venv, target, dist, build and the like). Never .env nor .env.local and the other copies, which hold the passwords: .env.example stays instead. Never the .git folder.
+
+To use it: in “New project” the “My bases” group, with the star, is the first. The kit copies the base's files into the new project instead of running a framework's commands, then writes the .env, runs the steps and saves the actions as for the other bases. Here too you can use an existing project that is empty or has files but no Git.
+
+> [!NOTE]
+> **Good to know**
+>
+> Nothing changes inside the files: package.json, composer.json and the like keep the name of the project you saved the base from. The “New project” pane of the sidebar shows a base just saved after you reopen the Projects page; the wizard sees it at once.
+
+<details>
+<summary>Under the hood</summary>
+
+- The files go to `data\frameworks\mine\<id>`, where the id is mine- followed by the name in lowercase letters, digits and dashes. The copy is made aside and then takes the place of the previous one: saving again with the same name replaces files and base.
+- To remove a base: Settings, framework instructions, “Remove” on the base; at the save its folder goes too. If the folder is missing, creating a project says “The base's folder is gone: save it again from the project.”
+- Links and junctions inside the project are not copied. Without Git the storage folder is skipped too: in a Laravel without Git it has to be recreated with the base's steps.
 
 </details>
 
@@ -474,7 +502,7 @@ At the top, the icons: “New project”, “New project from a base”, “Open
 | --- | --- |
 | Projects | All the projects in alphabetical order, with the count at the top. Folders starting with a dot and links do not count. With more than six projects the “Search projects” box appears. |
 | Data without a project | It appears only if the kit has data of projects that are no longer in projects. See [2.7 Deleting a project and the “Data without a project”](#27-deleting-a-project-and-the-data-without-a-project). |
-| New project | The tree of the ways to create a project: “Empty project”, “From a Git address” and the bases in the Web, CMS, App and Other groups. |
+| New project | The tree of the ways to create a project: “Empty project”, “From a Git address” and the bases in the My bases, Web, CMS, App and Other groups. |
 | From your GitHub repositories | The repositories of your account, ready to clone. |
 
 A click on a pane's title opens or closes it. Alone, “Projects” takes the full height; if “New project” or “From your GitHub repositories” is open too, “Projects” takes only the height of its rows (and scrolls only if they do not fit) and the rest goes to the other open panes.
@@ -491,7 +519,7 @@ It is the first tab of the page, always there. It only shows the parts that have
 | Favorites | The projects you have marked with the star (“Add … to favorites”), as cards with their languages and buttons. |
 | Recent | The six projects used or changed most recently, excluding those already among the favorites. |
 | Needs attention | The actions stopped with an error (“Show the output”) and the projects missing components (“Install”, which opens the project's Components section). |
-| New project | Beside the title “Empty project” and “From a Git address”; below, a block per group, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide. |
+| New project | Beside the title “Empty project” and “From a Git address”; below, a block per group, My bases, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide. |
 
 #### Opening a project by name
 
@@ -510,6 +538,7 @@ At the top are the name, the type and the recognized platform (for example “La
 | Terminal | Opens a kit console in the project folder, with its versions. |
 | Agent logos | One button for each installed agent: a click on its logo opens that agent in the project. From then on Claude Code and Codex trust the project's folder. |
 | Open folder | Opens the project folder in File Explorer (or Finder). |
+| Save as a base | Saves the project's files as a base of “New project”, under “My bases”: you choose what to copy, never .env. |
 | Refresh | Rereads the project: useful after changing panel.json or the project's files by hand. |
 
 Below, the seven sections:
@@ -2099,6 +2128,7 @@ Choose a base and some additions: the tab shows the complete plan the wizard wou
 
 - The official recipes are in the kit's catalog (tauri/catalog/frameworks.json): 63 bases and 18 additions.
 - Your changes are in `data\app\frameworks.json`, which contains only the differences from the official recipes.
+- The bases saved from a project with “Save as a base” are in the “My bases” group (category “mine”): instead of the “Create the project” commands they have the template field, the folder of `data\frameworks\mine` to copy. A base must have the creation commands or a valid template. Removing one with “Remove”, its folder goes too at the save.
 - If that file cannot be read, the kit uses the official recipes and does not touch it: “The instructions in … cannot be read: using the official ones and leaving the file as it is.”
 
 </details>

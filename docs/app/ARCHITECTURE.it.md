@@ -96,7 +96,8 @@ tauri\src\
     settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
     run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
     caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
-    frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner
+    frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner,
+                              mine (le basi salvate da un progetto, «Le mie basi», D-162)
   detect\                     tipo, linguaggi e azioni di un progetto: mod, node, php, python, rust, go,
                               site, container, overrides (panel.json)
   editor\                     editor e console
@@ -174,6 +175,7 @@ data\
   cache\                      cache dei gestori di pacchetti (npm, pip, uv, Composer, Go, NuGet…) e delle
                               risposte di GitHub; si può cancellare
   db\<motore>\<versione>\     dati di ogni versione dei server di database, con il my.cnf del server (D-81, D-102)
+  frameworks\mine\<id>\       i file di una base salvata da un progetto, copiati quando se ne crea uno (D-162)
   gh\                         l'accesso di GitHub CLI (hosts.yml)
   home\                       HOME dei programmi: .gitconfig e simili; .pi\agent\ (Pi: PI_CODING_AGENT_DIR)
   kit\                        file scritti da runtime\ a ogni avvio

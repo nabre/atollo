@@ -353,6 +353,7 @@ Argomenti collegati: [2.1 Creare un progetto](#21-creare-un-progetto), [2.3 Avvi
 >
 > - Un progetto è semplicemente una cartella dentro projects: il kit la riconosce da sola.
 > - Per crearne uno ci sono tre strade: «Progetto vuoto», «Da un indirizzo Git» e «Da una base», con le basi di framework e CMS in quattro gruppi: Web, CMS, App e Altro. Più l'elenco dei tuoi repository GitHub.
+> - Un tuo progetto può diventare una base: «Salva come base» nella sua pagina, e la ritrovi per prima sotto «Le mie basi».
 > - Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework.
 > - Puoi anche copiare a mano una cartella in projects: compare nell'elenco dopo «Aggiorna».
 
@@ -364,9 +365,9 @@ Argomenti collegati: [2.1 Creare un progetto](#21-creare-un-progetto), [2.3 Avvi
 
 Tutte le strade portano alla scheda «Nuovo progetto» della pagina Progetti, che si apre in uno di questi modi:
 
-- dal «Pannello rapido», sotto «Nuovo progetto»: in alto a destra i collegamenti «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo (Web, CMS, App, Altro) con le sue basi divise per categoria: un clic su una base apre la procedura con quella base già scelta;
+- dal «Pannello rapido», sotto «Nuovo progetto»: in alto a destra i collegamenti «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo (Le mie basi, se ne hai salvate, poi Web, CMS, App, Altro) con le sue basi divise per categoria: un clic su una base apre la procedura con quella base già scelta;
 - dalle icone in cima alla barra laterale: «Nuovo progetto» (cartella con il più) e «Nuovo progetto da una base» (bacchetta);
-- dal riquadro «Nuovo progetto» della barra laterale, un albero: «Progetto vuoto», «Da un indirizzo Git», poi i rami Web, CMS, App e Altro con il numero delle basi. Sotto Web, App e Altro ci sono le categorie e le loro basi, sotto CMS direttamente le basi; un clic su un gruppo apre la procedura sulla sua prima base, un clic su una base la apre con quella base già scelta;
+- dal riquadro «Nuovo progetto» della barra laterale, un albero: «Progetto vuoto», «Da un indirizzo Git», poi i rami Le mie basi (con la stella, se ne hai salvate), Web, CMS, App e Altro con il numero delle basi. Sotto Web, App e Altro ci sono le categorie e le loro basi, sotto CMS direttamente le basi; un clic su un gruppo apre la procedura sulla sua prima base, un clic su una base la apre con quella base già scelta;
 - da <kbd>Ctrl+P</kbd>, che in fondo all'elenco ha le tre voci «Nuovo progetto».
 
 Un progetto creato o clonato compare subito anche nella pagina «Server Web».
@@ -401,7 +402,7 @@ Una procedura guidata che crea un progetto partendo da una base (un framework co
 
 | Passo | Che cosa fai |
 | --- | --- |
-| 1. Base | Scegli un gruppo con le etichette in alto (Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie) e poi la scheda della base. |
+| 1. Base | Scegli un gruppo con le etichette in alto (Le mie basi, se ne hai salvate, Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie) e poi la scheda della base. |
 | 2. Aggiunte | Spunta le aggiunte che vuoi. Sono divise per tipo (Interfaccia, Stili, Prove, Database…): di ogni tipo se ne sceglie una sola, e sceglierne un'altra sostituisce la prima. |
 | 3. Nome | Scrivi il nome del progetto. In alternativa usa un progetto esistente vuoto («vuoto») o con dei file ma senza Git («con file»): i file del framework si aggiungono e quelli che ci sono restano come sono. Un repository Git non si può usare. |
 | 4. File .env | Le variabili che il kit scriverà nel file .env del progetto. {name} diventa il nome del progetto, {package} un identificativo come com.example.nome, {password} una password nuova. Puoi cambiare i valori, togliere righe o aggiungerne con «Aggiungi una variabile». |
@@ -434,6 +435,33 @@ Una procedura guidata che crea un progetto partendo da una base (un framework co
 - Alla fine, se c'è un file .env che Git prenderebbe, il kit aggiunge /.env al file .gitignore.
 - Le azioni della ricetta vanno nel file panel.json del progetto con un identificativo che comincia con fw- (per esempio fw-avvia).
 - Alcune basi richiedono componenti particolari: le app Android vogliono il componente Android SDK; Laravel con MongoDB vuole l'estensione mongodb di PHP, che il kit non installa.
+
+</details>
+
+#### «Le mie basi»
+
+Un tuo progetto può diventare una base, da cui crearne altri uguali: per esempio un Laravel con i pacchetti di sempre o la struttura di un monorepo.
+
+1. Nella pagina del progetto premi «Salva come base», nella testata accanto ad «Apri la cartella».
+2. Scrivi il nome della base (all'inizio è quello del progetto) e, se vuoi, una descrizione.
+3. In «Cosa copiare» c'è ogni cartella e file della radice del progetto, con il numero dei file e la dimensione: togli la spunta a quelli che non vuoi. Sotto, il totale.
+4. Premi «Salva come base»: «Salvata: la trovi in Nuovo progetto › Le mie basi. Con lo stesso nome la si sostituisce.»
+
+Quali file: in un repository Git, quelli che Git terrebbe, cioè i file seguiti e quelli nuovi che .gitignore non esclude. Senza Git, tutti tranne le cartelle senza sorgenti (node_modules, vendor, .venv, venv, target, dist, build e simili). Mai .env né .env.local e le altre copie, che hanno le password: .env.example invece resta. Mai la cartella .git.
+
+Per usarla: in «Nuovo progetto» il gruppo «Le mie basi», con la stella, è il primo. Il kit copia i file della base nel progetto nuovo invece di eseguire i comandi di un framework, poi scrive il .env, esegue i passi e salva le azioni come per le altre basi. Anche qui puoi usare un progetto esistente vuoto o con dei file ma senza Git.
+
+> [!NOTE]
+> **Da sapere**
+>
+> Dentro i file non si cambia niente: package.json, composer.json e simili tengono il nome del progetto da cui hai salvato la base. Il riquadro «Nuovo progetto» della barra laterale mostra una base appena salvata dopo aver riaperto la pagina Progetti; la procedura la vede subito.
+
+<details>
+<summary>Sotto il cofano</summary>
+
+- I file vanno in `data\frameworks\mine\<id>`, dove l'id è mine- seguito dal nome in lettere minuscole, cifre e trattini. La copia si fa a parte e poi prende il posto di quella di prima: salvare di nuovo con lo stesso nome sostituisce file e base.
+- Per togliere una base: Impostazioni, istruzioni dei framework, «Togli» sulla base; al salvataggio se ne va anche la sua cartella. Se la cartella manca, creare un progetto dice «La cartella della base non c'è più: salvala di nuovo dal progetto.»
+- Collegamenti e junction dentro il progetto non si copiano. Senza Git si salta anche la cartella storage: in un Laravel senza Git va ricreata con i passi della base.
 
 </details>
 
@@ -474,7 +502,7 @@ In cima, le icone: «Nuovo progetto», «Nuovo progetto da una base», «Apri un
 | --- | --- |
 | Progetti | Tutti i progetti in ordine alfabetico, con il numero in alto. Le cartelle che iniziano con un punto e i collegamenti non contano. Oltre sei progetti compare la casella «Cerca nei progetti». |
 | Dati senza progetto | Compare solo se il kit ha dati di progetti che non sono più in projects. Vedi [2.7 Eliminare un progetto e i «Dati senza progetto»](#27-eliminare-un-progetto-e-i-dati-senza-progetto). |
-| Nuovo progetto | L'albero delle strade per creare un progetto: «Progetto vuoto», «Da un indirizzo Git» e le basi nei gruppi Web, CMS, App e Altro. |
+| Nuovo progetto | L'albero delle strade per creare un progetto: «Progetto vuoto», «Da un indirizzo Git» e le basi nei gruppi Le mie basi, Web, CMS, App e Altro. |
 | Dai tuoi repository GitHub | I repository del tuo account, da clonare. |
 
 Un clic sul titolo di un riquadro lo apre o lo chiude. Da solo, «Progetti» occupa tutta l'altezza; se è aperto anche «Nuovo progetto» o «Dai tuoi repository GitHub», «Progetti» prende solo l'altezza delle sue righe (e scorre solo se non ci stanno) e il resto va agli altri riquadri aperti.
@@ -491,7 +519,7 @@ Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per
 | Preferiti | I progetti che hai segnato con la stella («Aggiungi … ai preferiti»), come schede con i loro linguaggi e pulsanti. |
 | Recenti | I sei progetti usati o modificati più di recente, escluso chi è già tra i preferiti. |
 | Da sistemare | Le azioni fermate con un errore («Vedi l'output») e i progetti a cui mancano componenti («Installa», che apre la sezione Componenti del progetto). |
-| Nuovo progetto | Accanto al titolo «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo, Web, CMS, App e Altro, con le basi come pulsanti (un clic apre la procedura su quella base); in fondo i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida. |
+| Nuovo progetto | Accanto al titolo «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo, Le mie basi, Web, CMS, App e Altro, con le basi come pulsanti (un clic apre la procedura su quella base); in fondo i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida. |
 
 #### Aprire un progetto per nome
 
@@ -510,6 +538,7 @@ In alto ci sono il nome, il tipo e la piattaforma riconosciuta (per esempio «La
 | Terminale | Apre una console del kit nella cartella del progetto, con le sue versioni. |
 | Loghi degli agenti | Un pulsante per ogni agente installato: il clic sul logo apre quell'agente nel progetto. Da quel momento Claude Code e Codex considerano attendibile la cartella del progetto. |
 | Apri la cartella | Apre la cartella del progetto in Esplora file (o Finder). |
+| Salva come base | Salva i file del progetto come base di «Nuovo progetto», sotto «Le mie basi»: scegli che cosa copiare, mai .env. |
 | Aggiorna | Rilegge il progetto: utile dopo aver cambiato a mano panel.json o i file del progetto. |
 
 Sotto, le sette sezioni:
@@ -2099,6 +2128,7 @@ Scegli una base e delle aggiunte: la scheda mostra il piano completo che la proc
 
 - Le ricette ufficiali sono nel catalogo del kit (tauri/catalog/frameworks.json): 63 basi e 18 aggiunte.
 - Le tue modifiche sono in `data\app\frameworks.json`, che contiene solo le differenze dalle ricette ufficiali.
+- Le basi salvate da un progetto con «Salva come base» sono nel gruppo «Le mie basi» (category «mine»): al posto dei comandi di «Crea il progetto» hanno il campo template, la cartella di `data\frameworks\mine` da copiare. Una base deve avere i comandi di creazione oppure un template valido. Togliendone una con «Togli», al salvataggio se ne va anche la sua cartella.
 - Se quel file non si può leggere, il kit usa le ricette ufficiali e non lo tocca: «Le istruzioni in … non sono leggibili: uso quelle ufficiali e non modifico il file.»
 
 </details>

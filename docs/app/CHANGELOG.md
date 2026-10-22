@@ -1,5 +1,13 @@
 # Novità
 
+## Le mie basi (22/10/2026)
+
+- **«Salva come base»** nella testata della pagina del progetto, accanto ad «Apri la cartella»: i file del progetto diventano una base di «Nuovo progetto», da cui crearne altri uguali, per esempio un Laravel con i pacchetti di sempre (D-162).
+- **Scegli che cosa copiare**: la finestra mostra ogni cartella e file della radice con il numero dei file e la dimensione, e ognuno si può togliere; più il nome e la descrizione della base.
+- **Solo i file che servono**: in un repository, quelli che Git terrebbe (`.gitignore` rispettato); senza Git, tutto tranne `node_modules`, `vendor`, `.venv` e le altre cartelle senza sorgenti. **Mai `.env`** né le sue copie, con le password; `.env.example` resta.
+- **«Le mie basi»**, il primo gruppo (con la stella) della procedura, dell'albero di «Nuovo progetto» e del «Pannello rapido»: creare un progetto da una tua base copia i suoi file, poi `.env`, passi e azioni come per le altre. Salvarla di nuovo con lo stesso nome la sostituisce; toglierla nelle istruzioni dei framework in Impostazioni toglie anche i suoi file.
+- Il riquadro «Nuovo progetto» della barra laterale mostra una base appena salvata dopo aver riaperto la pagina Progetti. I nomi dentro i file (`package.json`, `composer.json`) restano quelli del progetto originale.
+
 ## Riepilogo degli aggiornamenti (22/10/2026)
 
 - **Il riquadro «Aggiornamenti»** nella barra laterale di Strumenti elenca i componenti installati che hanno una versione nuova, con la versione installata e quella nuova (2.100.0 → 2.103.0): invece di «Aggiorna tutto» alla cieca, vedi che cosa è indietro e scegli (D-161).

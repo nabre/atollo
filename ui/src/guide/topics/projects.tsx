@@ -60,6 +60,12 @@ export const PROJECTS: TopicTexts = {
             "Es gibt drei Wege, eines zu erstellen: „Leeres Projekt“, „Von einer Git-Adresse“ und „Aus einer Basis“, mit den Basen von Frameworks und CMS in vier Gruppen: Web, CMS, App und Sonstiges. Dazu die Liste deiner GitHub-Repositorys.",
           ),
           tr(
+            "Un tuo progetto può diventare una base: «Salva come base» nella sua pagina, e la ritrovi per prima sotto «Le mie basi».",
+            "A project of yours can become a base: “Save as a base” on its page, and you find it first under “My bases”.",
+            "Un de vos projets peut devenir une base : « Enregistrer comme base » dans sa page, et vous la retrouvez en premier sous « Mes bases ».",
+            "Ein eigenes Projekt kann zur Basis werden: „Als Basis speichern“ auf seiner Seite, und du findest sie als Erstes unter „Meine Basen“.",
+          ),
+          tr(
             "Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework.",
             "With a framework, the kit installs the tools needed and runs the framework's official commands.",
             "Avec un framework, le kit installe les outils nécessaires et exécute les commandes officielles du framework.",
@@ -109,10 +115,10 @@ export const PROJECTS: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "dal «Pannello rapido», sotto «Nuovo progetto»: in alto a destra i collegamenti «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo (Web, CMS, App, Altro) con le sue basi divise per categoria: un clic su una base apre la procedura con quella base già scelta;",
-              "from the “Quick panel”, under “New project”: at the top right the “Empty project” and “From a Git address” links; below, a block per group (Web, CMS, App, Other) with its bases by category: a click on a base opens the wizard with that base already chosen;",
-              "depuis le « Panneau rapide », sous « Nouveau projet » : en haut à droite les liens « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe (Web, CMS, App, Autre) avec ses bases par catégorie : un clic sur une base ouvre l'assistant avec cette base déjà choisie ;",
-              "über die „Schnellübersicht“, unter „Neues Projekt“: oben rechts die Links „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe (Web, CMS, App, Sonstiges) mit ihren Basen nach Kategorie: Ein Klick auf eine Basis öffnet den Assistenten mit dieser Basis bereits ausgewählt;",
+              "dal «Pannello rapido», sotto «Nuovo progetto»: in alto a destra i collegamenti «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo (Le mie basi, se ne hai salvate, poi Web, CMS, App, Altro) con le sue basi divise per categoria: un clic su una base apre la procedura con quella base già scelta;",
+              "from the “Quick panel”, under “New project”: at the top right the “Empty project” and “From a Git address” links; below, a block per group (My bases, if you saved any, then Web, CMS, App, Other) with its bases by category: a click on a base opens the wizard with that base already chosen;",
+              "depuis le « Panneau rapide », sous « Nouveau projet » : en haut à droite les liens « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe (Mes bases, si vous en avez enregistré, puis Web, CMS, App, Autre) avec ses bases par catégorie : un clic sur une base ouvre l'assistant avec cette base déjà choisie ;",
+              "über die „Schnellübersicht“, unter „Neues Projekt“: oben rechts die Links „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe (Meine Basen, wenn du welche gespeichert hast, dann Web, CMS, App, Sonstiges) mit ihren Basen nach Kategorie: Ein Klick auf eine Basis öffnet den Assistenten mit dieser Basis bereits ausgewählt;",
             ),
             tr(
               "dalle icone in cima alla barra laterale: «Nuovo progetto» (cartella con il più) e «Nuovo progetto da una base» (bacchetta);",
@@ -121,10 +127,10 @@ export const PROJECTS: TopicTexts = {
               "über die Symbole oben in der Seitenleiste: „Neues Projekt“ (Ordner mit Plus) und „Neues Projekt aus einer Basis“ (Zauberstab);",
             ),
             tr(
-              "dal riquadro «Nuovo progetto» della barra laterale, un albero: «Progetto vuoto», «Da un indirizzo Git», poi i rami Web, CMS, App e Altro con il numero delle basi. Sotto Web, App e Altro ci sono le categorie e le loro basi, sotto CMS direttamente le basi; un clic su un gruppo apre la procedura sulla sua prima base, un clic su una base la apre con quella base già scelta;",
-              "from the “New project” pane of the sidebar, a tree: “Empty project”, “From a Git address”, then the Web, CMS, App and Other branches with the number of bases. Under Web, App and Other are the categories and their bases, under CMS the bases directly; a click on a group opens the wizard on its first base, a click on a base opens it with that base already chosen;",
-              "depuis le volet « Nouveau projet » de la barre latérale, une arborescence : « Projet vide », « Depuis une adresse Git », puis les branches Web, CMS, App et Autre avec le nombre de bases. Sous Web, App et Autre se trouvent les catégories et leurs bases, sous CMS directement les bases ; un clic sur un groupe ouvre l'assistant sur sa première base, un clic sur une base l'ouvre avec cette base déjà choisie ;",
-              "über den Bereich „Neues Projekt“ der Seitenleiste, einen Baum: „Leeres Projekt“, „Von einer Git-Adresse“, dann die Zweige Web, CMS, App und Sonstiges mit der Anzahl der Basen. Unter Web, App und Sonstiges stehen die Kategorien und ihre Basen, unter CMS direkt die Basen; ein Klick auf eine Gruppe öffnet den Assistenten mit ihrer ersten Basis, ein Klick auf eine Basis öffnet ihn mit dieser Basis bereits ausgewählt;",
+              "dal riquadro «Nuovo progetto» della barra laterale, un albero: «Progetto vuoto», «Da un indirizzo Git», poi i rami Le mie basi (con la stella, se ne hai salvate), Web, CMS, App e Altro con il numero delle basi. Sotto Web, App e Altro ci sono le categorie e le loro basi, sotto CMS direttamente le basi; un clic su un gruppo apre la procedura sulla sua prima base, un clic su una base la apre con quella base già scelta;",
+              "from the “New project” pane of the sidebar, a tree: “Empty project”, “From a Git address”, then the My bases (with the star, if you saved any), Web, CMS, App and Other branches with the number of bases. Under Web, App and Other are the categories and their bases, under CMS the bases directly; a click on a group opens the wizard on its first base, a click on a base opens it with that base already chosen;",
+              "depuis le volet « Nouveau projet » de la barre latérale, une arborescence : « Projet vide », « Depuis une adresse Git », puis les branches Mes bases (avec l'étoile, si vous en avez enregistré), Web, CMS, App et Autre avec le nombre de bases. Sous Web, App et Autre se trouvent les catégories et leurs bases, sous CMS directement les bases ; un clic sur un groupe ouvre l'assistant sur sa première base, un clic sur une base l'ouvre avec cette base déjà choisie ;",
+              "über den Bereich „Neues Projekt“ der Seitenleiste, einen Baum: „Leeres Projekt“, „Von einer Git-Adresse“, dann die Zweige Meine Basen (mit dem Stern, wenn du welche gespeichert hast), Web, CMS, App und Sonstiges mit der Anzahl der Basen. Unter Web, App und Sonstiges stehen die Kategorien und ihre Basen, unter CMS direkt die Basen; ein Klick auf eine Gruppe öffnet den Assistenten mit ihrer ersten Basis, ein Klick auf eine Basis öffnet ihn mit dieser Basis bereits ausgewählt;",
             ),
             rich(
               tr(
@@ -268,10 +274,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("1. Base", "1. Base", "1. Base", "1. Basis"),
               tr(
-                "Scegli un gruppo con le etichette in alto (Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie) e poi la scheda della base.",
-                "Choose a group with the tags at the top (Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries) and then the base's card.",
-                "Choisissez un groupe avec les étiquettes en haut (Web avec PHP, Web avec JavaScript et TypeScript, Web avec Python, Web avec d'autres langages, CMS, Sites statiques et documentation, Application de bureau, Application mobile, Données et documents, Ligne de commande et bibliothèques) puis la carte de la base.",
-                "Wähle eine Gruppe mit den Etiketten oben (Web mit PHP, Web mit JavaScript und TypeScript, Web mit Python, Web mit anderen Sprachen, CMS, Statische Websites und Dokumentation, Desktop-App, Mobile App, Daten und Dokumente, Kommandozeile und Bibliotheken) und dann die Karte der Basis.",
+                "Scegli un gruppo con le etichette in alto (Le mie basi, se ne hai salvate, Web con PHP, Web con JavaScript e TypeScript, Web con Python, Web con altri linguaggi, CMS, Siti statici e documentazione, App desktop, App mobile, Dati e documenti, Riga di comando e librerie) e poi la scheda della base.",
+                "Choose a group with the tags at the top (My bases, if you saved any, Web with PHP, Web with JavaScript and TypeScript, Web with Python, Web with other languages, CMS, Static sites and documentation, Desktop app, Mobile app, Data and documents, Command line and libraries) and then the base's card.",
+                "Choisissez un groupe avec les étiquettes en haut (Mes bases, si vous en avez enregistré, Web avec PHP, Web avec JavaScript et TypeScript, Web avec Python, Web avec d'autres langages, CMS, Sites statiques et documentation, Application de bureau, Application mobile, Données et documents, Ligne de commande et bibliothèques) puis la carte de la base.",
+                "Wähle eine Gruppe mit den Etiketten oben (Meine Basen, wenn du welche gespeichert hast, Web mit PHP, Web mit JavaScript und TypeScript, Web mit Python, Web mit anderen Sprachen, CMS, Statische Websites und Dokumentation, Desktop-App, Mobile App, Daten und Dokumente, Kommandozeile und Bibliotheken) und dann die Karte der Basis.",
               ),
             ],
             [
@@ -444,6 +450,93 @@ export const PROJECTS: TopicTexts = {
         </Under>
       </Section>
 
+      <Section title={tr("«Le mie basi»", "“My bases”", "« Mes bases »", "„Meine Basen“")}>
+        <P>
+          {tr(
+            "Un tuo progetto può diventare una base, da cui crearne altri uguali: per esempio un Laravel con i pacchetti di sempre o la struttura di un monorepo.",
+            "A project of yours can become a base, to create more like it: for example a Laravel with your usual packages or the layout of a monorepo.",
+            "Un de vos projets peut devenir une base, pour en créer d'autres pareils : par exemple un Laravel avec vos paquets habituels ou la structure d'un monorepo.",
+            "Ein eigenes Projekt kann zur Basis werden, um weitere gleiche zu erstellen: zum Beispiel ein Laravel mit deinen üblichen Paketen oder die Struktur eines Monorepos.",
+          )}
+        </P>
+        <Steps
+          steps={[
+            tr(
+              "Nella pagina del progetto premi «Salva come base», nella testata accanto ad «Apri la cartella».",
+              "On the project's page press “Save as a base”, in the header next to “Open folder”.",
+              "Dans la page du projet, appuyez sur « Enregistrer comme base », dans l'en-tête à côté de « Ouvrir le dossier ».",
+              "Klicke auf der Seite des Projekts auf „Als Basis speichern“, in der Kopfzeile neben „Ordner öffnen“.",
+            ),
+            tr(
+              "Scrivi il nome della base (all'inizio è quello del progetto) e, se vuoi, una descrizione.",
+              "Type the base's name (at first it is the project's) and, if you like, a description.",
+              "Tapez le nom de la base (au départ celui du projet) et, si vous voulez, une description.",
+              "Gib den Namen der Basis ein (anfangs der des Projekts) und, wenn du willst, eine Beschreibung.",
+            ),
+            tr(
+              "In «Cosa copiare» c'è ogni cartella e file della radice del progetto, con il numero dei file e la dimensione: togli la spunta a quelli che non vuoi. Sotto, il totale.",
+              "“What to copy” has every folder and file at the root of the project, with the number of files and the size: untick the ones you do not want. Below, the total.",
+              "« Quoi copier » contient chaque dossier et fichier à la racine du projet, avec le nombre de fichiers et la taille : décochez ceux que vous ne voulez pas. En dessous, le total.",
+              "„Was kopiert wird“ enthält jeden Ordner und jede Datei im Stamm des Projekts, mit der Anzahl der Dateien und der Größe: Entferne das Häkchen bei denen, die du nicht willst. Darunter die Summe.",
+            ),
+            tr(
+              "Premi «Salva come base»: «Salvata: la trovi in Nuovo progetto › Le mie basi. Con lo stesso nome la si sostituisce.»",
+              "Press “Save as a base”: “Saved: you find it in New project › My bases. The same name replaces it.”",
+              "Appuyez sur « Enregistrer comme base » : « Enregistrée : vous la trouvez dans Nouveau projet › Mes bases. Le même nom la remplace. »",
+              "Klicke auf „Als Basis speichern“: „Gespeichert: du findest sie unter Neues Projekt › Meine Basen. Derselbe Name ersetzt sie.“",
+            ),
+          ]}
+        />
+        <P>
+          {tr(
+            "Quali file: in un repository Git, quelli che Git terrebbe, cioè i file seguiti e quelli nuovi che .gitignore non esclude. Senza Git, tutti tranne le cartelle senza sorgenti (node_modules, vendor, .venv, venv, target, dist, build e simili). Mai .env né .env.local e le altre copie, che hanno le password: .env.example invece resta. Mai la cartella .git.",
+            "Which files: in a Git repository, those Git would keep, that is the tracked files and the new ones .gitignore does not leave out. Without Git, all of them but the folders without sources (node_modules, vendor, .venv, venv, target, dist, build and the like). Never .env nor .env.local and the other copies, which hold the passwords: .env.example stays instead. Never the .git folder.",
+            "Quels fichiers : dans un dépôt Git, ceux que Git garderait, c'est-à-dire les fichiers suivis et les nouveaux que .gitignore n'exclut pas. Sans Git, tous sauf les dossiers sans sources (node_modules, vendor, .venv, venv, target, dist, build et semblables). Jamais .env ni .env.local et les autres copies, qui contiennent les mots de passe : .env.example reste en revanche. Jamais le dossier .git.",
+            "Welche Dateien: in einem Git-Repository die, die Git behalten würde, also die verfolgten Dateien und die neuen, die .gitignore nicht ausschließt. Ohne Git alle außer den Ordnern ohne Quellen (node_modules, vendor, .venv, venv, target, dist, build und Ähnliche). Nie .env oder .env.local und die anderen Kopien, die die Passwörter enthalten: .env.example dagegen bleibt. Nie der Ordner .git.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "Per usarla: in «Nuovo progetto» il gruppo «Le mie basi», con la stella, è il primo. Il kit copia i file della base nel progetto nuovo invece di eseguire i comandi di un framework, poi scrive il .env, esegue i passi e salva le azioni come per le altre basi. Anche qui puoi usare un progetto esistente vuoto o con dei file ma senza Git.",
+            "To use it: in “New project” the “My bases” group, with the star, is the first. The kit copies the base's files into the new project instead of running a framework's commands, then writes the .env, runs the steps and saves the actions as for the other bases. Here too you can use an existing project that is empty or has files but no Git.",
+            "Pour l'utiliser : dans « Nouveau projet », le groupe « Mes bases », avec l'étoile, est le premier. Le kit copie les fichiers de la base dans le nouveau projet au lieu d'exécuter les commandes d'un framework, puis écrit le .env, exécute les étapes et enregistre les actions comme pour les autres bases. Ici aussi, vous pouvez utiliser un projet existant vide ou avec des fichiers mais sans Git.",
+            "Zum Verwenden: In „Neues Projekt“ ist die Gruppe „Meine Basen“ mit dem Stern die erste. Das Kit kopiert die Dateien der Basis in das neue Projekt, statt die Befehle eines Frameworks auszuführen, schreibt dann die .env, führt die Schritte aus und speichert die Aktionen wie bei den anderen Basen. Auch hier kannst du ein bestehendes Projekt verwenden, das leer ist oder Dateien, aber kein Git hat.",
+          )}
+        </P>
+        <Callout tone="info">
+          {tr(
+            "Dentro i file non si cambia niente: package.json, composer.json e simili tengono il nome del progetto da cui hai salvato la base. Il riquadro «Nuovo progetto» della barra laterale mostra una base appena salvata dopo aver riaperto la pagina Progetti; la procedura la vede subito.",
+            "Nothing changes inside the files: package.json, composer.json and the like keep the name of the project you saved the base from. The “New project” pane of the sidebar shows a base just saved after you reopen the Projects page; the wizard sees it at once.",
+            "Rien ne change dans les fichiers : package.json, composer.json et semblables gardent le nom du projet à partir duquel vous avez enregistré la base. Le volet « Nouveau projet » de la barre latérale montre une base qui vient d'être enregistrée après la réouverture de la page Projets ; l'assistant la voit tout de suite.",
+            "In den Dateien ändert sich nichts: package.json, composer.json und Ähnliche behalten den Namen des Projekts, aus dem du die Basis gespeichert hast. Der Bereich „Neues Projekt“ der Seitenleiste zeigt eine gerade gespeicherte Basis, nachdem du die Seite Projekte wieder geöffnet hast; der Assistent sieht sie sofort.",
+          )}
+        </Callout>
+        <Under>
+          <Bullets
+            items={[
+              tr(
+                "I file vanno in data\\frameworks\\mine\\<id>, dove l'id è mine- seguito dal nome in lettere minuscole, cifre e trattini. La copia si fa a parte e poi prende il posto di quella di prima: salvare di nuovo con lo stesso nome sostituisce file e base.",
+                "The files go to data\\frameworks\\mine\\<id>, where the id is mine- followed by the name in lowercase letters, digits and dashes. The copy is made aside and then takes the place of the previous one: saving again with the same name replaces files and base.",
+                "Les fichiers vont dans data\\frameworks\\mine\\<id>, où l'id est mine- suivi du nom en lettres minuscules, chiffres et tirets. La copie se fait à part puis prend la place de la précédente : enregistrer de nouveau avec le même nom remplace fichiers et base.",
+                "Die Dateien kommen nach data\\frameworks\\mine\\<id>, wobei die id mine- gefolgt vom Namen in Kleinbuchstaben, Ziffern und Bindestrichen ist. Die Kopie wird nebenan erstellt und ersetzt dann die vorherige: Erneutes Speichern mit demselben Namen ersetzt Dateien und Basis.",
+              ),
+              tr(
+                "Per togliere una base: Impostazioni, istruzioni dei framework, «Togli» sulla base; al salvataggio se ne va anche la sua cartella. Se la cartella manca, creare un progetto dice «La cartella della base non c'è più: salvala di nuovo dal progetto.»",
+                "To remove a base: Settings, framework instructions, “Remove” on the base; at the save its folder goes too. If the folder is missing, creating a project says “The base's folder is gone: save it again from the project.”",
+                "Pour retirer une base : Paramètres, instructions des frameworks, « Retirer » sur la base ; à l'enregistrement, son dossier s'en va aussi. Si le dossier manque, créer un projet affiche « Le dossier de la base n'existe plus : enregistrez-la à nouveau depuis le projet. »",
+                "Um eine Basis zu entfernen: Einstellungen, Anweisungen der Frameworks, „Entfernen“ bei der Basis; beim Speichern verschwindet auch ihr Ordner. Fehlt der Ordner, meldet das Erstellen eines Projekts „Der Ordner der Basis ist nicht mehr da: speichere sie erneut aus dem Projekt.“",
+              ),
+              tr(
+                "Collegamenti e junction dentro il progetto non si copiano. Senza Git si salta anche la cartella storage: in un Laravel senza Git va ricreata con i passi della base.",
+                "Links and junctions inside the project are not copied. Without Git the storage folder is skipped too: in a Laravel without Git it has to be recreated with the base's steps.",
+                "Les liens et jonctions dans le projet ne sont pas copiés. Sans Git, le dossier storage est aussi ignoré : dans un Laravel sans Git, il faut le recréer avec les étapes de la base.",
+                "Links und Junctions im Projekt werden nicht kopiert. Ohne Git wird auch der Ordner storage übersprungen: In einem Laravel ohne Git muss er mit den Schritten der Basis neu erstellt werden.",
+              ),
+            ]}
+          />
+        </Under>
+      </Section>
+
       <Section
         title={tr(
           "I tuoi repository GitHub",
@@ -574,10 +667,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Nuovo progetto", "New project", "Nouveau projet", "Neues Projekt"),
               tr(
-                "L'albero delle strade per creare un progetto: «Progetto vuoto», «Da un indirizzo Git» e le basi nei gruppi Web, CMS, App e Altro.",
-                "The tree of the ways to create a project: “Empty project”, “From a Git address” and the bases in the Web, CMS, App and Other groups.",
-                "L'arborescence des voies pour créer un projet : « Projet vide », « Depuis une adresse Git » et les bases dans les groupes Web, CMS, App et Autre.",
-                "Der Baum der Wege zum Erstellen eines Projekts: „Leeres Projekt“, „Von einer Git-Adresse“ und die Basen in den Gruppen Web, CMS, App und Sonstiges.",
+                "L'albero delle strade per creare un progetto: «Progetto vuoto», «Da un indirizzo Git» e le basi nei gruppi Le mie basi, Web, CMS, App e Altro.",
+                "The tree of the ways to create a project: “Empty project”, “From a Git address” and the bases in the My bases, Web, CMS, App and Other groups.",
+                "L'arborescence des voies pour créer un projet : « Projet vide », « Depuis une adresse Git » et les bases dans les groupes Mes bases, Web, CMS, App et Autre.",
+                "Der Baum der Wege zum Erstellen eines Projekts: „Leeres Projekt“, „Von einer Git-Adresse“ und die Basen in den Gruppen Meine Basen, Web, CMS, App und Sonstiges.",
               ),
             ],
             [
@@ -670,10 +763,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Nuovo progetto", "New project", "Nouveau projet", "Neues Projekt"),
               tr(
-                "Accanto al titolo «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo, Web, CMS, App e Altro, con le basi come pulsanti (un clic apre la procedura su quella base); in fondo i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida.",
-                "Beside the title “Empty project” and “From a Git address”; below, a block per group, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide.",
-                "À côté du titre « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe, Web, CMS, App et Autre, avec les bases en boutons (un clic ouvre l'assistant sur cette base) ; en bas les liens vers les dépôts GitHub, le dossier des projets et le guide.",
-                "Neben dem Titel „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe, Web, CMS, App und Sonstiges, mit den Basen als Schaltflächen (ein Klick öffnet den Assistenten mit dieser Basis); unten die Links zu den GitHub-Repositorys, zum Projektordner und zur Anleitung.",
+                "Accanto al titolo «Progetto vuoto» e «Da un indirizzo Git»; sotto, un riquadro per gruppo, Le mie basi, Web, CMS, App e Altro, con le basi come pulsanti (un clic apre la procedura su quella base); in fondo i collegamenti ai repository GitHub, alla cartella dei progetti e alla guida.",
+                "Beside the title “Empty project” and “From a Git address”; below, a block per group, My bases, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide.",
+                "À côté du titre « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe, Mes bases, Web, CMS, App et Autre, avec les bases en boutons (un clic ouvre l'assistant sur cette base) ; en bas les liens vers les dépôts GitHub, le dossier des projets et le guide.",
+                "Neben dem Titel „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe, Meine Basen, Web, CMS, App und Sonstiges, mit den Basen als Schaltflächen (ein Klick öffnet den Assistenten mit dieser Basis); unten die Links zu den GitHub-Repositorys, zum Projektordner und zur Anleitung.",
               ),
             ],
           ]}
@@ -774,6 +867,15 @@ export const PROJECTS: TopicTexts = {
                 "Opens the project folder in File Explorer (or Finder).",
                 "Ouvre le dossier du projet dans l'Explorateur de fichiers (ou le Finder).",
                 "Öffnet den Projektordner im Datei-Explorer (oder Finder).",
+              ),
+            ],
+            [
+              tr("Salva come base", "Save as a base", "Enregistrer comme base", "Als Basis speichern"),
+              tr(
+                "Salva i file del progetto come base di «Nuovo progetto», sotto «Le mie basi»: scegli che cosa copiare, mai .env.",
+                "Saves the project's files as a base of “New project”, under “My bases”: you choose what to copy, never .env.",
+                "Enregistre les fichiers du projet comme base de « Nouveau projet », sous « Mes bases » : vous choisissez quoi copier, jamais .env.",
+                "Speichert die Dateien des Projekts als Basis von „Neues Projekt“, unter „Meine Basen“: Du wählst, was kopiert wird, nie .env.",
               ),
             ],
             [
