@@ -1242,13 +1242,31 @@ pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
 }
 
 /// A command (or a variable) found by the app listens on 127.0.0.1; with
-/// the local network allowed, on every interface.
+/// the local network allowed, on every interface. Only the address a
+/// server binds to moves (`--host 127.0.0.1`, `127.0.0.1:{port}`, a value
+/// that is the address alone): the host of a URL (`http://127.0.0.1`,
+/// `mysql://u:p@127.0.0.1`) is one the program connects to, and 0.0.0.0
+/// cannot be connected to on Windows, so it stays (BUG-V7-10). Neither do
+/// longer addresses such as 127.0.0.10.
 fn on_network(s: String, lan: bool) -> String {
-    if lan {
-        s.replace("127.0.0.1", "0.0.0.0")
-    } else {
-        s
+    const LOCAL: &str = "127.0.0.1";
+    if !lan {
+        return s;
     }
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s.as_str();
+    while let Some(at) = rest.find(LOCAL) {
+        let (before, after) = (&rest[..at], &rest[at + LOCAL.len()..]);
+        out.push_str(before);
+        let prev = out.chars().next_back();
+        let in_url = out.ends_with("//") || prev == Some('@');
+        let longer = prev.is_some_and(|c| c.is_ascii_digit() || c == '.')
+            || after.starts_with(|c: char| c.is_ascii_digit());
+        out.push_str(if in_url || longer { LOCAL } else { "0.0.0.0" });
+        rest = after;
+    }
+    out.push_str(rest);
+    out
 }
 
 #[cfg(test)]

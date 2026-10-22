@@ -7,6 +7,30 @@ fn local_network_setting() {
     let cmd = "php -S 127.0.0.1:7101 -t public".to_owned();
     assert_eq!(on_network(cmd.clone(), false), cmd);
     assert_eq!(on_network(cmd, true), "php -S 0.0.0.0:7101 -t public");
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    assert_eq!(lan("--host 127.0.0.1"), "--host 0.0.0.0");
+    assert_eq!(lan("--host=127.0.0.1 --port"), "--host=0.0.0.0 --port");
+    assert_eq!(lan("127.0.0.1"), "0.0.0.0");
+}
+
+/// BUG-V7-10: in LAN mode the address a client connects to stays, only the
+/// one a server binds to moves to 0.0.0.0.
+#[test]
+fn local_network_keeps_client_urls() {
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    for kept in [
+        "mysql://u:p@127.0.0.1:3306/db",
+        "redis://127.0.0.1:6379",
+        "curl http://127.0.0.1:8000/health",
+        "127.0.0.10",
+        "10.127.0.0.1",
+    ] {
+        assert_eq!(lan(kept), kept);
+    }
+    assert_eq!(
+        lan("serve --host 127.0.0.1 --api http://127.0.0.1:9000"),
+        "serve --host 0.0.0.0 --api http://127.0.0.1:9000"
+    );
 }
 
 /// The DB_PORT of a project's `.env` is read (it wins over the kit's).
