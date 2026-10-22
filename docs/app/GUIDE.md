@@ -553,6 +553,7 @@ At the top is the detail of the chosen action (at first the default one), below 
 | Folder | Where the command is run. |
 | Port | Only for web actions: “automatic” or a number you choose. |
 | Address | While the action is listening, the address to open (a link). |
+| From the phone | With “Local network” on in the Settings, the address with this PC's IP on the network, to open from a phone or another PC on the same network: “Copy”, and “Show the QR code” to scan with the camera, instead of typing the IP. Atollo makes the QR code itself, with no service on the internet. There is none for a name like shop.localhost of a shared server: the phone cannot send that name. |
 | Source | panel.json, if the action is written by hand in the project. |
 
 Below the detail is the “Output of …” pane with the “Follow” checkbox, which keeps the last lines in view. The kit keeps the last 3000 lines of each action; its notes appear as lines starting with \[Atollo\]. The buttons at the top: the “Default” star, “Open in the browser” (while a web action is listening) and “Clear the output” (when the action has finished).
@@ -1135,7 +1136,7 @@ The buttons at the top: “Start” or “Stop”, “Reload configuration” an
 
 #### Being reachable from other PCs on the network
 
-Normally the sites respond only to this PC. To try them from a phone or another computer on the same network, turn on “Let other PCs on the network reach the project servers” in Settings › Network: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network). The other devices use this PC's IP address and the port, with PHP's built-in server too; .localhost names work only here. Databases and phpMyAdmin stay closed to the network in any case.
+Normally the sites respond only to this PC. To try them from a phone or another computer on the same network, turn on “Let other PCs on the network reach the project servers” in Settings › Network: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network). The other devices use this PC's IP address and the port, with PHP's built-in server too; .localhost names work only here. While the site is running, the “From the phone” row in the action's details shows that address with its QR code, to scan with the phone. Databases and phpMyAdmin stay closed to the network in any case.
 
 <details>
 <summary>Under the hood</summary>
@@ -2005,10 +2006,11 @@ If everything downloads at home but at the office downloads fail with connection
 
 #### Local network
 
-The “Let other PCs on the network reach the project servers” checkbox opens the projects' sites to the network: useful to try a site from your phone. From the other devices you use this PC's IP address with the site's port (for example http://192.168.1.20:8000). Databases and phpMyAdmin stay reachable only from this PC.
+The “Let other PCs on the network reach the project servers” checkbox opens the projects' sites to the network: useful to try a site from your phone. From the other devices you use this PC's IP address with the site's port (for example http://192.168.1.20:8000), with no need to type it: in the details of the running action, on the project page, the “From the phone” row shows the address with “Copy” and “Show the QR code”, to scan with the phone's camera. Databases and phpMyAdmin stay reachable only from this PC.
 
 - PHP's built-in server (php -S) and the file server of static sites answer whoever calls them by the PC's IP address; with any other name the request stays refused.
 - On this PC a static site also answers at http://\<project\>.localhost:\<port\>, besides localhost and 127.0.0.1, with the checkbox on or off.
+- The “From the phone” row appears only for a localhost or 127.0.0.1 address and only if this PC has a private address on the network (192.168.x.x, 10.x.x.x, 172.16-31.x.x). The site must have been started after turning “Local network” on: if it was already running, stop it and start it again. With a VPN on, the address shown may be the VPN's.
 
 > [!WARNING]
 > **Watch out**

@@ -48,7 +48,7 @@ Ogni richiesta che l'app fa da sé porta uno `User-Agent` della forma `Atollo/<v
 - i programmi che avvii nell'editor, nelle console o con le azioni (`git`, `npm`, `pip`, `cargo`, gli agenti AI…) si collegano dove sono progettati per farlo;
 - i link che clicchi si aprono nel tuo browser, e così «Segnala un problema» (sezione 4).
 
-Server locali: l'editor e i server dei progetti ascoltano solo su questo computer (`127.0.0.1`/`localhost`), a meno che tu non attivi **Rete locale** nelle Impostazioni per i server dei progetti. Il server dei modelli locali (llama.cpp) ascolta sempre e solo su `127.0.0.1`, su una porta sua (9931 e seguenti), e risponde solo alle richieste con la sua chiave casuale; `llm status` non manda quella chiave a chi ascolta sulla porta. I modelli girano su questo computer: con un modello locale niente va in rete.
+Server locali: l'editor e i server dei progetti ascoltano solo su questo computer (`127.0.0.1`/`localhost`), a meno che tu non attivi **Rete locale** nelle Impostazioni per i server dei progetti. Con la rete locale accesa, il QR dell'indirizzo di un sito per il telefono lo crea Atollo su questo computer: nessun servizio su internet vede l'indirizzo, e trovare l'IP di questo PC sulla rete locale non manda alcun pacchetto. Il server dei modelli locali (llama.cpp) ascolta sempre e solo su `127.0.0.1`, su una porta sua (9931 e seguenti), e risponde solo alle richieste con la sua chiave casuale; `llm status` non manda quella chiave a chi ascolta sulla porta. I modelli girano su questo computer: con un modello locale niente va in rete.
 
 ## 4. I dati salvati sul tuo dispositivo
 
