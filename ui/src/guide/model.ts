@@ -231,7 +231,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("new-folder"),
     keywords:
-      "nuovo progetto wizard framework cms clona git vuoto base aggiunte laravel vite django wordpress new project clone empty base additions nouveau projet cloner vide base ajouts neues projekt klonen leer basis ergänzungen",
+      "nuovo progetto wizard framework cms clona git vuoto base aggiunte laravel vite django wordpress le mie basi salva come base modello new project clone empty base additions my bases save as a base template nouveau projet cloner vide base ajouts mes bases enregistrer comme base modèle neues projekt klonen leer basis ergänzungen meine basen als basis speichern vorlage",
     targetPage: "new",
   },
   {
@@ -253,7 +253,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("folder-library"),
     keywords:
-      "progetti pannello rapido preferiti recenti quick open ctrl+p ctrl+shift+p palette comandi command palette avvia ferma start stop palette de commandes befehlspalette sezioni scheda progetto projects quick panel favorites recent sections projets panneau rapide favoris récents sections projekte schnellübersicht favoriten zuletzt abschnitte",
+      "progetti pannello rapido preferiti recenti quick open ctrl+p ctrl+shift+p palette comandi command palette avvia ferma start stop palette de commandes befehlspalette salva come base save as a base enregistrer comme base als basis speichern sezioni scheda progetto projects quick panel favorites recent sections projets panneau rapide favoris récents sections projekte schnellübersicht favoriten zuletzt abschnitte",
     targetPage: "projects",
   },
   {
@@ -678,7 +678,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("wand"),
     keywords:
-      "framework ricette istruzioni basi aggiunte prova una combinazione frameworks.json framework recipes instructions bases additions try combination recettes instructions bases ajouts essayer combinaison rezepte anweisungen basen ergänzungen ausprobieren kombination",
+      "framework ricette istruzioni basi aggiunte prova una combinazione frameworks.json template mine le mie basi my bases mes bases meine basen framework recipes instructions bases additions try combination recettes instructions bases ajouts essayer combinaison rezepte anweisungen basen ergänzungen ausprobieren kombination",
     targetPage: "settings",
   },
 

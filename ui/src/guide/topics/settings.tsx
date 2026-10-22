@@ -1155,6 +1155,12 @@ export const SETTINGS: TopicTexts = {
               "Deine Änderungen liegen in data\\app\\frameworks.json, die nur die Unterschiede zu den offiziellen Rezepten enthält.",
             ),
             tr(
+              "Le basi salvate da un progetto con «Salva come base» sono nel gruppo «Le mie basi» (category «mine»): al posto dei comandi di «Crea il progetto» hanno il campo template, la cartella di data\\frameworks\\mine da copiare. Una base deve avere i comandi di creazione oppure un template valido. Togliendone una con «Togli», al salvataggio se ne va anche la sua cartella.",
+              "The bases saved from a project with “Save as a base” are in the “My bases” group (category “mine”): instead of the “Create the project” commands they have the template field, the folder of data\\frameworks\\mine to copy. A base must have the creation commands or a valid template. Removing one with “Remove”, its folder goes too at the save.",
+              "Les bases enregistrées depuis un projet avec « Enregistrer comme base » sont dans le groupe « Mes bases » (category « mine ») : à la place des commandes de « Créer le projet », elles ont le champ template, le dossier de data\\frameworks\\mine à copier. Une base doit avoir les commandes de création ou un template valide. Quand on en retire une avec « Retirer », son dossier s'en va aussi à l'enregistrement.",
+              "Die mit „Als Basis speichern“ aus einem Projekt gespeicherten Basen stehen in der Gruppe „Meine Basen“ (category „mine“): Statt der Befehle von „Projekt erstellen“ haben sie das Feld template, den Ordner von data\\frameworks\\mine, der kopiert wird. Eine Basis braucht die Erstellungsbefehle oder ein gültiges template. Entfernst du eine mit „Entfernen“, verschwindet beim Speichern auch ihr Ordner.",
+            ),
+            tr(
               "Se quel file non si può leggere, il kit usa le ricette ufficiali e non lo tocca: «Le istruzioni in … non sono leggibili: uso quelle ufficiali e non modifico il file.»",
               "If that file cannot be read, the kit uses the official recipes and does not touch it: “The instructions in … cannot be read: using the official ones and leaving the file as it is.”",
               "Si ce fichier ne peut pas être lu, le kit utilise les recettes officielles et n'y touche pas : « Les instructions de … sont illisibles : j'utilise les officielles et je ne modifie pas le fichier. »",

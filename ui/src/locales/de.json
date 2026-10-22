@@ -1019,5 +1019,16 @@
   "Non ancora controllato: «Controlla ora», o si controlla da solo una volta al giorno con l'aggiornamento automatico.": "Noch nicht geprüft: „Jetzt prüfen“, oder es prüft selbst einmal am Tag mit der automatischen Aktualisierung.",
   "Tutto aggiornato.": "Alles aktuell.",
   "Cosa cambia": "Was sich ändert",
-  "Controllato il {0}": "Geprüft am {0}"
+  "Controllato il {0}": "Geprüft am {0}",
+  "Le mie basi": "Meine Basen",
+  "Salva {0} come base": "{0} als Basis speichern",
+  "Salva come base": "Als Basis speichern",
+  "Salva i file del progetto come base per i nuovi progetti (Le mie basi)": "Speichert die Dateien des Projekts als Basis für neue Projekte (Meine Basen)",
+  "Salvata: la trovi in Nuovo progetto › Le mie basi. Con lo stesso nome la si sostituisce.": "Gespeichert: du findest sie unter Neues Projekt › Meine Basen. Derselbe Name ersetzt sie.",
+  "I file che Git terrebbe (.gitignore rispettato; senza Git, tutto tranne node_modules, vendor, .venv e simili), mai .env: un nuovo progetto da questa base parte da una loro copia.": "Die Dateien, die Git behalten würde (.gitignore beachtet; ohne Git alles außer node_modules, vendor, .venv und Ähnlichem), nie .env: ein neues Projekt aus dieser Basis beginnt mit einer Kopie davon.",
+  "Nome della base": "Name der Basis",
+  "Nessun file da salvare.": "Keine Datei zu speichern.",
+  "Cosa copiare": "Was kopiert wird",
+  "{0} file": "{0} Dateien",
+  "In tutto: {0} file, {1}": "Insgesamt: {0} Dateien, {1}"
 }

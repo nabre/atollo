@@ -398,6 +398,8 @@ macro_rules! command_handler {
             $crate::commands::databases::project_backups,
             $crate::commands::databases::project_db_export,
             $crate::commands::databases::project_db_restore,
+            $crate::commands::projects::project_base_preview,
+            $crate::commands::projects::project_save_base,
             $crate::commands::projects::project_mcp,
             $crate::commands::projects::project_mcp_set,
             $crate::commands::editing::project_editor_settings,

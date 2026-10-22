@@ -1019,5 +1019,16 @@
   "Non ancora controllato: «Controlla ora», o si controlla da solo una volta al giorno con l'aggiornamento automatico.": "Not checked yet: “Check now”, or it checks by itself once a day with automatic updates.",
   "Tutto aggiornato.": "Everything up to date.",
   "Cosa cambia": "What changes",
-  "Controllato il {0}": "Checked on {0}"
+  "Controllato il {0}": "Checked on {0}",
+  "Le mie basi": "My bases",
+  "Salva {0} come base": "Save {0} as a base",
+  "Salva come base": "Save as a base",
+  "Salva i file del progetto come base per i nuovi progetti (Le mie basi)": "Saves the project's files as a base for new projects (My bases)",
+  "Salvata: la trovi in Nuovo progetto › Le mie basi. Con lo stesso nome la si sostituisce.": "Saved: you find it in New project › My bases. The same name replaces it.",
+  "I file che Git terrebbe (.gitignore rispettato; senza Git, tutto tranne node_modules, vendor, .venv e simili), mai .env: un nuovo progetto da questa base parte da una loro copia.": "The files Git would keep (.gitignore respected; without Git, everything but node_modules, vendor, .venv and the like), never .env: a new project from this base starts from a copy of them.",
+  "Nome della base": "Name of the base",
+  "Nessun file da salvare.": "No file to save.",
+  "Cosa copiare": "What to copy",
+  "{0} file": "{0} files",
+  "In tutto: {0} file, {1}": "In all: {0} files, {1}"
 }

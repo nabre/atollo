@@ -23,6 +23,7 @@ export function wayLabel(way: NewWay): string {
 
 /** The icon of a group of bases. */
 export const GROUP_ICON: Record<GroupId, string> = {
+  mine: "star-empty",
   web: "globe",
   cms: "layout",
   app: "device-desktop",

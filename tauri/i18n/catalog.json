@@ -2243,5 +2243,15 @@
     "en": "Reinstall the damaged components from Tools › “Check the files”.",
     "fr": "Réinstallez les composants endommagés depuis Outils › « Vérifier les fichiers ».",
     "de": "Installiere die beschädigten Komponenten über Werkzeuge › „Dateien prüfen“ neu."
+  },
+  "{0}: cartella della base non valida.": {
+    "en": "{0}: the base's folder is not valid.",
+    "fr": "{0} : le dossier de la base n'est pas valide.",
+    "de": "{0}: der Ordner der Basis ist ungültig."
+  },
+  "La cartella della base non c'è più: salvala di nuovo dal progetto.": {
+    "en": "The base's folder is gone: save it again from the project.",
+    "fr": "Le dossier de la base n'existe plus : enregistrez-la à nouveau depuis le projet.",
+    "de": "Der Ordner der Basis ist nicht mehr da: speichere sie erneut aus dem Projekt."
   }
 }

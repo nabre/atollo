@@ -83,6 +83,8 @@ const COMMANDS: &[&str] = &[
     "project_backups",
     "project_db_export",
     "project_db_restore",
+    "project_base_preview",
+    "project_save_base",
     "project_mcp",
     "project_mcp_set",
     "project_editor_settings",

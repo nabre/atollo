@@ -93,6 +93,8 @@
     "allow-project-backups",
     "allow-project-db-export",
     "allow-project-db-restore",
+    "allow-project-base-preview",
+    "allow-project-save-base",
     "allow-project-mcp",
     "allow-project-mcp-set",
     "allow-project-editor-settings",

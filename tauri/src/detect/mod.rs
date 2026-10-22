@@ -183,7 +183,7 @@ pub struct Project {
 }
 
 /// Folders that do not hold sources.
-const IGNORED: [&str; 18] = [
+pub(crate) const IGNORED: [&str; 18] = [
     "node_modules",
     ".git",
     "target",
