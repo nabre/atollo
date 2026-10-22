@@ -15,7 +15,7 @@ import {
 import { t } from "../i18n";
 import { ComponentLogo } from "../logos";
 import { useAction, useLoad } from "../hooks";
-import { ErrorLine } from "../common";
+import { ErrorLine, LoadError } from "../common";
 import { useSetup } from "../setup";
 import { Codicon, EditorSection, Link, Notice } from "../workbench";
 import { isPresent, useOffers, useReloadOnSteps } from "./model";
@@ -28,11 +28,15 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
   const project = p.id;
   const setup = useSetup();
   const read = useCallback(() => projectVersions(project), [project]);
+  // A read that fails says so, with «Riprova»: an empty section would read
+  // as nothing to choose.
   const {
     data,
+    error: loadError,
     setData,
     reload: load,
-  } = useLoad<ProjectVersionsData | null>(read, null, { onError: { fallback: null } });
+    retry,
+  } = useLoad<ProjectVersionsData | null>(read, null, { onError: "show" });
   const readMatrix = useCallback(() => relationsMatrix(false), []);
   const { data: matrix } = useLoad<RelationsMatrix | null>(readMatrix, null, { onError: { fallback: null } });
   const { busy, error, run } = useAction();
@@ -159,6 +163,7 @@ export function ProjectVersions({ p }: { p: ProjectInfo }) {
           "Valgono per terminale, azioni e agenti del progetto, per il server web che lo serve (Caddy o Apache, con il suo PHP) e per i terminali dell'editor aperti da adesso. Una versione da scaricare si scarica appena scelta.",
         )}
       </p>
+      <LoadError error={loadError} onRetry={retry} className="mt-2" />
       {data !== null && activeTools.length === 0 && inactiveTools.length === 0 && (
         <p className="mt-2 text-vsc-desc">{t("Nessun linguaggio installato ha più versioni.")}</p>
       )}
