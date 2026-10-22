@@ -92,6 +92,7 @@ const COMMANDS: &[&str] = &[
     "project_db_line",
     "project_env_preview",
     "project_env_apply",
+    "project_env_block",
     "services_list",
     "service_start",
     "service_stop",

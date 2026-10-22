@@ -573,6 +573,12 @@
           "markdownDescription": "Enables the project_env_apply command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_env_block command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-env-block",
+          "markdownDescription": "Enables the project_env_block command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_env_preview command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-env-preview",
@@ -1309,6 +1315,12 @@
           "type": "string",
           "const": "deny-project-env-apply",
           "markdownDescription": "Denies the project_env_apply command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_env_block command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-env-block",
+          "markdownDescription": "Denies the project_env_block command without any pre-configured scope."
         },
         {
           "description": "Denies the project_env_preview command without any pre-configured scope.",

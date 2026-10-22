@@ -92,6 +92,18 @@ export function projectEnvPreview(project: string, engine: ProjectDb["engine"]):
   });
 }
 
+/** The connection as .env lines, to copy (N-11). */
+export function projectEnvBlock(project: string, engine: ProjectDb["engine"]): Promise<string> {
+  return query<string>(
+    "project_env_block",
+    "DATABASE_URL=mysql://negozio_online:••••@127.0.0.1:3306/negozio_online\n",
+    {
+      project,
+      engine,
+    },
+  );
+}
+
 export function projectEnvApply(project: string, engine: ProjectDb["engine"]): Promise<void> {
   return act("project_env_apply", { project, engine });
 }

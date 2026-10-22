@@ -2,7 +2,7 @@
 // the kit's servers, written in .env, and their copies.
 import { useRef, useState } from "react";
 import type { ProjectInfo } from "../api";
-import { useAction, useSubscription } from "../hooks";
+import { useAction, useCopy, useSubscription } from "../hooks";
 import { ActionButton, ErrorLine } from "../common";
 import { t } from "../i18n";
 import {
@@ -10,6 +10,7 @@ import {
   projectDbCreate,
   projectDbLine,
   projectEnvApply,
+  projectEnvBlock,
   projectEnvPreview,
   versionsAdd,
   versionsInstall,
@@ -36,19 +37,34 @@ function EnvPreview({
 }) {
   const [changes, setChanges] = useState<EnvChange[] | null>(null);
   const { busy, error, run } = useAction(onDone);
+  const { copied, copy } = useCopy(1500);
   return (
     <div className="space-y-2">
       {changes === null ? (
-        <ActionButton
-          icon={codicon("code")}
-          label={t("Scrivi in .env")}
-          busy={busy === "preview"}
-          onClick={() => {
-            run("preview", async () => {
-              setChanges(await projectEnvPreview(project, db.engine));
-            });
-          }}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <ActionButton
+            icon={codicon("code")}
+            label={t("Scrivi in .env")}
+            busy={busy === "preview"}
+            onClick={() => {
+              run("preview", async () => {
+                setChanges(await projectEnvPreview(project, db.engine));
+              });
+            }}
+          />
+          <ActionButton
+            icon={codicon("copy")}
+            label={t("Copia blocco .env")}
+            busy={busy === "block"}
+            onClick={() => {
+              // Read here, not on the first render: the block holds the password.
+              run("block", async () => {
+                copy(await projectEnvBlock(project, db.engine));
+              });
+            }}
+          />
+          {copied && <span className="text-vsc-desc">{t("Copiato")}</span>}
+        </div>
       ) : changes.length === 0 ? (
         <Notice tone="success">{t("Il file .env ha già questa connessione.")}</Notice>
       ) : (

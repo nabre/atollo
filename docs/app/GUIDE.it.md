@@ -960,6 +960,7 @@ Argomenti collegati: [3.2 Il database di un progetto](#32-il-database-di-un-prog
 >
 > - Ogni progetto ha un database e un utente tutti suoi, con una password generata dal kit.
 > - «Scrivi in .env» mette la connessione nel file .env del progetto, dopo averti mostrato che cosa cambia.
+> - «Copia blocco .env» copia le stesse righe, da incollare dove vuoi tu.
 > - «Esporta» salva una copia del database; «Ripristina…» la rimette.
 > - Tutto si fa da Progetti › il progetto › sezione «Database».
 
@@ -1013,6 +1014,7 @@ MONGODB_URI=mongodb://portale:a71e…@127.0.0.1:27017/portale?authSource=portale
 
 - Se il file .env non esiste viene creato copiando .env.example. Le altre righe e i commenti restano.
 - Se la connessione è già quella giusta: «Il file .env ha già questa connessione.»
+- «Copia blocco .env», accanto, non tocca il file: copia le righe della tabella (DB_\* per Laravel, altrimenti DATABASE_URL o MONGODB_URI) da incollare in un altro .env, in un file di configurazione o in un terminale; compare «Copiato». Le righe contengono la password: il kit le legge solo quando premi il pulsante.
 
 > [!WARNING]
 > **Attenzione**

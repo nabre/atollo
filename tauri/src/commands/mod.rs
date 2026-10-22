@@ -407,6 +407,7 @@ macro_rules! command_handler {
             $crate::commands::databases::project_db_line,
             $crate::commands::databases::project_env_preview,
             $crate::commands::databases::project_env_apply,
+            $crate::commands::databases::project_env_block,
             $crate::commands::services::services_list,
             $crate::commands::services::service_start,
             $crate::commands::services::service_stop,

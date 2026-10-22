@@ -173,6 +173,24 @@ pub fn project_env_preview<R: Runtime>(
     ))
 }
 
+/// The connection as `.env` lines, for «Copia blocco .env»: Laravel's
+/// `DB_*` when the project's `.env` uses them.
+#[tauri::command]
+pub fn project_env_block<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    engine: String,
+) -> CmdResult<String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let db = project_db_of(&state, &project, &engine)?;
+    Ok(crate::db::auth::env_block(
+        &crate::db::auth::env_source(&dir),
+        &db,
+    ))
+}
+
 /// Writes the connection into the project's `.env` (from `.env.example`
 /// when it has none); only the lines shown by the preview change.
 #[tauri::command]

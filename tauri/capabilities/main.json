@@ -102,6 +102,7 @@
     "allow-project-db-line",
     "allow-project-env-preview",
     "allow-project-env-apply",
+    "allow-project-env-block",
     "allow-services-list",
     "allow-service-start",
     "allow-service-stop",
