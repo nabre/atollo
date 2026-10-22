@@ -104,25 +104,40 @@ export function useStoredSize(key: string, fallback: number, min: number, max: n
 }
 
 /** The sash between two parts: drag to resize, double click to reset;
- * arrows when focused. `delta` is the movement in pixels. */
+ * arrows when focused. `delta` is the movement in pixels; `size`, `min`
+ * and `max` are the part's, in pixels, read out by screen readers. */
 export function Sash({
   vertical,
   label,
+  size,
+  min,
+  max,
   onDrag,
   onReset,
 }: {
   /** Between parts side by side (drags left-right). */
   vertical: boolean;
   label: string;
+  size: number;
+  min: number;
+  max: number;
   onDrag: (delta: number) => void;
   onReset: () => void;
 }) {
   const start = useRef<number | null>(null);
+  // A drag that ends without a pointerup (the window loses the focus, a
+  // touch cancelled) ends here too: else the next hover would resize.
+  const end = () => {
+    start.current = null;
+  };
   return (
     <div
       role="separator"
       aria-label={label}
       aria-orientation={vertical ? "vertical" : "horizontal"}
+      aria-valuenow={size}
+      aria-valuemin={min}
+      aria-valuemax={max}
       tabIndex={0}
       onPointerDown={(e) => {
         start.current = vertical ? e.clientX : e.clientY;
@@ -134,9 +149,9 @@ export function Sash({
         onDrag(at - start.current);
         start.current = at;
       }}
-      onPointerUp={() => {
-        start.current = null;
-      }}
+      onPointerUp={end}
+      onPointerCancel={end}
+      onLostPointerCapture={end}
       onDoubleClick={onReset}
       onKeyDown={(e) => {
         const step = e.shiftKey ? 40 : 10;
@@ -173,6 +188,9 @@ export function ViewContainer({ side, id, children }: { side?: ReactNode; id: st
           <Sash
             vertical
             label={t("Ridimensiona la barra laterale")}
+            size={width}
+            min={170}
+            max={640}
             onDrag={(d) => {
               setWidth((w) => w + d);
             }}

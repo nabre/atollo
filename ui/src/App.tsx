@@ -256,6 +256,9 @@ export function App() {
               <Sash
                 vertical={false}
                 label={t("Ridimensiona i terminali")}
+                size={terminalHeight}
+                min={120}
+                max={800}
                 onDrag={(d) => {
                   setTerminalHeight((h) => h - d);
                 }}
@@ -273,6 +276,9 @@ export function App() {
               <Sash
                 vertical={false}
                 label={t("Ridimensiona il pannello")}
+                size={panelHeight}
+                min={120}
+                max={600}
                 onDrag={(d) => {
                   setPanelHeight((h) => h - d);
                 }}
