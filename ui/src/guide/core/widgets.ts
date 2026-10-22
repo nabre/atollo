@@ -83,6 +83,9 @@ export interface GuideWidgetProps {
   FilterList: { groups: { title: string; items: GuideProblem[] }[]; placeholder: string };
   /** Words and what they mean, A to Z (the glossary). */
   Terms: { items: [string, string][] };
+  /** Text true only where it is read: in the app ("app") or on the site
+   * ("web"), e.g. where the Guide's own buttons are. */
+  Only: { in: "app" | "web"; children: ReactNode };
   /** The window of the app drawn as boxes, one label per part. */
   WindowSketch: { title: string; activity: string; sidebar: string; tabs: string; panel: string; status: string };
 }
@@ -118,6 +121,7 @@ export const WIDGET_NAMES = [
   "FilterList",
   "Terms",
   "WindowSketch",
+  "Only",
 ] as const satisfies readonly WidgetName[];
 
 /** A renderer: a function for every widget of the contract. */
@@ -167,3 +171,4 @@ export const SourcesTable = widget("SourcesTable");
 export const FilterList = widget("FilterList");
 export const Terms = widget("Terms");
 export const WindowSketch = widget("WindowSketch");
+export const Only = widget("Only");

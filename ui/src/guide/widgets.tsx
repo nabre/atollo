@@ -434,6 +434,11 @@ export function Key({ children }: W["Key"]) {
   );
 }
 
+/** The app shows the text meant for the app. */
+export function Only({ in: where, children }: W["Only"]) {
+  return where === "app" ? children : null;
+}
+
 /** The glossary: terms and meanings, side by side on wide windows. */
 export function Terms({ items }: W["Terms"]) {
   return (

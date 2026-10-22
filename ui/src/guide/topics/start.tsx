@@ -11,6 +11,7 @@ import {
   InBrief,
   Key,
   KitInfo,
+  Only,
   P,
   Related,
   Section,
@@ -450,11 +451,27 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
-            "In ogni argomento trovi: un riquadro «In breve» all'inizio, i passaggi da seguire, consigli e avvertenze, e una parte ripiegata «Sotto il cofano» con i dettagli tecnici (file, cartelle, comandi). Il pulsante in alto a destra apre la pagina dell'app di cui l'argomento parla. La casella di ricerca a sinistra cerca nei titoli, nelle descrizioni e nelle parole chiave.",
-            "In every topic you find: an “In short” box at the start, the steps to follow, tips and warnings, and a collapsed “Under the hood” part with the technical details (files, folders, commands). The button at the top right opens the app page the topic is about. The search box on the left searches titles, descriptions and keywords.",
-            "Dans chaque sujet, vous trouvez : un encadré « En bref » au début, les étapes à suivre, des conseils et des avertissements, et une partie repliée « Sous le capot » avec les détails techniques (fichiers, dossiers, commandes). Le bouton en haut à droite ouvre la page de l'application dont parle le sujet. Le champ de recherche à gauche cherche dans les titres, les descriptions et les mots-clés.",
-            "In jedem Thema findest du: einen Kasten „Kurz gesagt“ am Anfang, die Schritte, die du befolgst, Tipps und Warnungen, und einen eingeklappten Teil „Unter der Haube“ mit den technischen Details (Dateien, Ordner, Befehle). Die Schaltfläche oben rechts öffnet die Seite der App, um die es im Thema geht. Das Suchfeld links durchsucht Titel, Beschreibungen und Stichwörter.",
-          )}
+            "In ogni argomento trovi: un riquadro «In breve» all'inizio, i passaggi da seguire, consigli e avvertenze, e una parte ripiegata «Sotto il cofano» con i dettagli tecnici (file, cartelle, comandi).",
+            "In every topic you find: an “In short” box at the start, the steps to follow, tips and warnings, and a collapsed “Under the hood” part with the technical details (files, folders, commands).",
+            "Dans chaque sujet, vous trouvez : un encadré « En bref » au début, les étapes à suivre, des conseils et des avertissements, et une partie repliée « Sous le capot » avec les détails techniques (fichiers, dossiers, commandes).",
+            "In jedem Thema findest du: einen Kasten „Kurz gesagt“ am Anfang, die Schritte, die du befolgst, Tipps und Warnungen, und einen eingeklappten Teil „Unter der Haube“ mit den technischen Details (Dateien, Ordner, Befehle).",
+          )}{" "}
+          <Only in="app">
+            {tr(
+              "Il pulsante in alto a destra apre la pagina dell'app di cui l'argomento parla. La casella di ricerca a sinistra cerca nei titoli, nelle descrizioni e nelle parole chiave.",
+              "The button at the top right opens the app page the topic is about. The search box on the left searches titles, descriptions and keywords.",
+              "Le bouton en haut à droite ouvre la page de l'application dont parle le sujet. Le champ de recherche à gauche cherche dans les titres, les descriptions et les mots-clés.",
+              "Die Schaltfläche oben rechts öffnet die Seite der App, um die es im Thema geht. Das Suchfeld links durchsucht Titel, Beschreibungen und Stichwörter.",
+            )}
+          </Only>
+          <Only in="web">
+            {tr(
+              "Sotto il titolo di ogni argomento c'è la pagina dell'app di cui parla. La casella di ricerca sopra i capitoli cerca nei titoli, nelle descrizioni e nelle parole chiave.",
+              "Under the title of every topic is the app page it is about. The search box above the chapters searches titles, descriptions and keywords.",
+              "Sous le titre de chaque sujet figure la page de l'application dont il parle. Le champ de recherche au-dessus des chapitres cherche dans les titres, les descriptions et les mots-clés.",
+              "Unter dem Titel jedes Themas steht die Seite der App, um die es geht. Das Suchfeld über den Kapiteln durchsucht Titel, Beschreibungen und Stichwörter.",
+            )}
+          </Only>
         </P>
         <ChapterMap />
       </Section>
