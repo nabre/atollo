@@ -257,7 +257,7 @@ Se all'agente viene chiesto di applicare o aggiornare il brand **Atollo** nel co
      * [`ui/src/theme/theme-vscode.css`](../../ui/src/theme/theme-vscode.css), [`ui/src/theme/theme-colors.css`](../../ui/src/theme/theme-colors.css) e [`ui/src/theme/theme-sizes.css`](../../ui/src/theme/theme-sizes.css) (le misure, Sezione 5.4).
    * [`scripts/vscodium-css/extract.mjs`](../../scripts/vscodium-css/extract.mjs): estrae dal VSCodium fissato nel catalogo le regole che l'app imita, in `vscodium-1.135/workbench-ref.css` (licenza MIT di Code-OSS); si rilancia quando il catalogo fissa un altro editor, poi `themes.py`.
 2. **Interfaccia Utente e Configurazione Tauri:**
-   * [`ui/src/brand.tsx`](../../ui/src/brand.tsx) e [`ui/index.html`](../../ui/index.html)
+   * [`ui/src/shared/brand.tsx`](../../ui/src/shared/brand.tsx) e [`ui/index.html`](../../ui/index.html)
    * [`tauri/tauri.conf.json`](../../tauri/tauri.conf.json) (`productName`, `mainBinaryName`, `identifier`, titolo finestra)
    * [`tauri/src/editor/theme.rs`](../../tauri/src/editor/theme.rs) e [`tauri/src/editor/cfg.rs`](../../tauri/src/editor/cfg.rs) (ID e nome del tema dell'editor)
 3. **Localizzazione e Documentazione:**
