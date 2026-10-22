@@ -117,6 +117,7 @@ const COMMANDS: &[&str] = &[
     "run_ports",
     "run_set_port",
     "url_open",
+    "lan_link",
     "diagnostics_export",
     "issue_open",
     "kit_health",

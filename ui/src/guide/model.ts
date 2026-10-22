@@ -275,7 +275,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("debug-start"),
     keywords:
-      "avvio azioni porta output predefinita panel.json avvia ferma comando npm run dev start actions port default stop command démarrer actions port par défaut arrêter commande starten aktionen port standard beenden befehl",
+      "avvio azioni porta output predefinita panel.json avvia ferma comando npm run dev indirizzo dal telefono qr rete locale lan start actions port default stop command address phone qr code local network démarrer actions port par défaut arrêter commande adresse téléphone réseau local starten aktionen port standard beenden befehl adresse telefon lokales netzwerk",
     targetPage: "projects",
   },
   {
@@ -420,7 +420,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("globe"),
     keywords:
-      "sito web server caddy apache pool profilo localhost dominio alias php lan rete locale website web server domain local network site web serveur domaine réseau local website webserver domain lokales netzwerk conf.d",
+      "sito web server caddy apache pool profilo localhost dominio alias php lan rete locale qr telefono website web server domain local network phone site web serveur domaine réseau local website webserver domain lokales netzwerk conf.d",
     targetPage: "servers",
   },
   {
@@ -656,7 +656,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("remote"),
     keywords:
-      "rete proxy https http certificati pem ca aziendale lan rete locale no_proxy network proxy certificates company local network réseau proxy certificats entreprise réseau local netzwerk proxy zertifikate firma lokales netzwerk",
+      "rete proxy https http certificati pem ca aziendale lan rete locale no_proxy qr telefono cellulare network proxy certificates company local network phone mobile qr code réseau proxy certificats entreprise réseau local téléphone netzwerk proxy zertifikate firma lokales netzwerk telefon handy",
     targetPage: "settings",
   },
   {

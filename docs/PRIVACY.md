@@ -48,7 +48,7 @@ Things that are **not** connections made by Atollo itself:
 - programs you run in the editor, in the consoles or through actions (`git`, `npm`, `pip`, `cargo`, the AI agents…) connect wherever they are designed to;
 - links you click open in your own browser, and so does “Report a problem” (section 4).
 
-Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers. The local models' server (llama.cpp) always listens on `127.0.0.1` only, on a port of its own (9931 and following), and answers only requests that carry its random key; `llm status` does not send that key to whatever listens on the port. The models run on this computer: with a local model nothing goes to the network.
+Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers. With it on, the QR code of a site's address for the phone is made by Atollo on this computer: no service on the internet sees the address, and finding this PC's IP on the local network sends no packet. The local models' server (llama.cpp) always listens on `127.0.0.1` only, on a port of its own (9931 and following), and answers only requests that carry its random key; `llm status` does not send that key to whatever listens on the port. The models run on this computer: with a local model nothing goes to the network.
 
 ## 4. Data stored on your device
 

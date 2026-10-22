@@ -1,5 +1,11 @@
 # Novità
 
+## QR del sito in rete locale (22/10/2026)
+
+- **«Dal telefono»** nel dettaglio di un'azione in corso, nella pagina del progetto, quando «Rete locale» è accesa nelle Impostazioni: l'indirizzo del sito con l'IP di questo PC sulla rete, con «Copia» e «Mostra il QR». Inquadri il QR con la fotocamera del telefono, collegato alla stessa rete, invece di ricopiare l'IP (D-158).
+- **Il QR lo crea Atollo**, sul PC: nessun servizio su internet vede l'indirizzo. Scuro su bianco, si legge anche con il tema scuro.
+- **Solo per gli indirizzi di questo PC** (`localhost`, `127.0.0.1`): un sito di un server condiviso con un nome come `shop.localhost` non ce l'ha, perché il telefono non può mandare quel nome. Il sito va avviato dopo aver acceso «Rete locale»; al primo avvio il firewall di Windows può chiedere il permesso: consentilo per le reti private.
+
 ## Copia blocco .env (22/10/2026)
 
 - **«Copia blocco .env»** nella sezione «Database» della pagina del progetto, accanto a «Scrivi in .env»: copia la connessione come righe di `.env`, da incollare dove vuoi (un altro `.env`, un file di configurazione, un terminale); compare «Copiato» (D-157).

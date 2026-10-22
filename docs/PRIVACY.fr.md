@@ -48,7 +48,7 @@ Ne sont **pas** des connexions faites par Atollo lui-même :
 - les programmes que vous lancez dans l'éditeur, les consoles ou via des actions (`git`, `npm`, `pip`, `cargo`, les agents IA…) se connectent là où ils sont conçus pour le faire ;
 - les liens sur lesquels vous cliquez s'ouvrent dans votre navigateur, de même que « Signaler un problème » (section 4).
 
-Serveurs locaux : l'éditeur et les serveurs des projets n'écoutent que sur cet ordinateur (`127.0.0.1`/`localhost`), sauf si vous activez **Réseau local** dans les Paramètres pour les serveurs des projets. Le serveur des modèles locaux (llama.cpp) n'écoute toujours que sur `127.0.0.1`, sur son propre port (9931 et suivants), et ne répond qu'aux requêtes portant sa clé aléatoire ; `llm status` n'envoie pas cette clé à ce qui écoute sur le port. Les modèles tournent sur cet ordinateur : avec un modèle local, rien ne part sur le réseau.
+Serveurs locaux : l'éditeur et les serveurs des projets n'écoutent que sur cet ordinateur (`127.0.0.1`/`localhost`), sauf si vous activez **Réseau local** dans les Paramètres pour les serveurs des projets. Avec le réseau local activé, le QR code de l'adresse d'un site pour le téléphone est créé par Atollo sur cet ordinateur : aucun service sur internet ne voit l'adresse, et trouver l'IP de ce PC sur le réseau local n'envoie aucun paquet. Le serveur des modèles locaux (llama.cpp) n'écoute toujours que sur `127.0.0.1`, sur son propre port (9931 et suivants), et ne répond qu'aux requêtes portant sa clé aléatoire ; `llm status` n'envoie pas cette clé à ce qui écoute sur le port. Les modèles tournent sur cet ordinateur : avec un modèle local, rien ne part sur le réseau.
 
 ## 4. Les données enregistrées sur votre appareil
 

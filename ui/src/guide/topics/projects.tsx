@@ -995,6 +995,15 @@ export const PROJECTS: TopicTexts = {
               ),
             ],
             [
+              tr("Dal telefono", "From the phone", "Depuis le téléphone", "Vom Telefon"),
+              tr(
+                "Con «Rete locale» accesa nelle Impostazioni, l'indirizzo con l'IP di questo PC sulla rete, da aprire da un telefono o da un altro PC collegato alla stessa rete: «Copia», e «Mostra il QR» da inquadrare con la fotocamera, invece di ricopiare l'IP. Il QR lo crea Atollo, senza servizi su internet. Non c'è per un nome come shop.localhost di un server condiviso: il telefono non può mandare quel nome.",
+                "With “Local network” on in the Settings, the address with this PC's IP on the network, to open from a phone or another PC on the same network: “Copy”, and “Show the QR code” to scan with the camera, instead of typing the IP. Atollo makes the QR code itself, with no service on the internet. There is none for a name like shop.localhost of a shared server: the phone cannot send that name.",
+                "Avec « Réseau local » activé dans les Paramètres, l'adresse avec l'IP de ce PC sur le réseau, à ouvrir depuis un téléphone ou un autre PC du même réseau : « Copier », et « Afficher le QR code » à scanner avec l'appareil photo, au lieu de recopier l'IP. Atollo crée le QR code lui-même, sans service sur internet. Il n'y en a pas pour un nom comme shop.localhost d'un serveur partagé : le téléphone ne peut pas envoyer ce nom.",
+                "Mit eingeschaltetem „Lokales Netzwerk“ in den Einstellungen die Adresse mit der IP dieses PCs im Netzwerk, zum Öffnen von einem Telefon oder einem anderen PC im selben Netzwerk: „Kopieren“ und „QR-Code anzeigen“ zum Scannen mit der Kamera, statt die IP abzutippen. Den QR-Code erstellt Atollo selbst, ohne Dienst im Internet. Für einen Namen wie shop.localhost eines gemeinsamen Servers gibt es keine: Das Telefon kann diesen Namen nicht senden.",
+              ),
+            ],
+            [
               tr("Origine", "Source", "Origine", "Herkunft"),
               tr(
                 "panel.json, se l'azione è scritta a mano nel progetto.",

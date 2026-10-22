@@ -986,5 +986,11 @@
   "data\\agents\\mcp.json non è JSON valido: Atollo non lo riscrive. Correggilo nell'editor.": "data\\agents\\mcp.json is not valid JSON: Atollo does not rewrite it. Fix it in the editor.",
   "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.": "For every agent in every project: Atollo carries them to Claude Code, Codex, Antigravity and Pi. The programs they need (Node for npx, uv for uvx) are installed when the agent first starts; the GitHub token and the project's databases reach the agent when it starts, never written in the files.",
   "Copia blocco .env": "Copy .env block",
-  "Copiato": "Copied"
+  "Copiato": "Copied",
+  "Dal telefono": "From the phone",
+  "Copia l'indirizzo per il telefono": "Copy the address for the phone",
+  "Mostra il QR": "Show the QR code",
+  "Nascondi il QR": "Hide the QR code",
+  "QR di {0}": "QR code of {0}",
+  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scan it with the phone's camera, on the same network as this PC. If it does not open, Windows' firewall may ask for permission when the site first starts: allow it for private networks."
 }

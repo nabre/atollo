@@ -189,6 +189,22 @@ pub fn url_open<R: Runtime>(webview: Webview<R>, url: String) -> CmdResult<()> {
     open_in_browser(&url)
 }
 
+/// A project's site from the phone (N-6): its address with this PC's IP on
+/// the local network and the QR, when «Rete locale» is on; otherwise none.
+#[tauri::command]
+pub fn lan_link<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    url: String,
+) -> CmdResult<Option<crate::net::lan::LanLink>> {
+    ensure_main(&webview)?;
+    if !is_local_url(&url) {
+        return Ok(None);
+    }
+    let allowed = state.env().get("ATOLLO_ALLOW_LAN") == Some("1");
+    Ok(crate::net::lan::lan_link(&url, allowed))
+}
+
 /// Opens Atollo's privacy policy (`docs/PRIVACY.md`, in the app's
 /// language) on github.com in the PC's browser.
 #[tauri::command]

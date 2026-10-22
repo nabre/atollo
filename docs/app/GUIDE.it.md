@@ -553,6 +553,7 @@ In alto c'è il dettaglio dell'azione scelta (all'inizio quella predefinita), so
 | Cartella | Dove viene eseguito il comando. |
 | Porta | Solo per le azioni web: «automatica» o un numero scelto da te. |
 | Indirizzo | Mentre l'azione è in ascolto, l'indirizzo da aprire (un collegamento). |
+| Dal telefono | Con «Rete locale» accesa nelle Impostazioni, l'indirizzo con l'IP di questo PC sulla rete, da aprire da un telefono o da un altro PC collegato alla stessa rete: «Copia», e «Mostra il QR» da inquadrare con la fotocamera, invece di ricopiare l'IP. Il QR lo crea Atollo, senza servizi su internet. Non c'è per un nome come shop.localhost di un server condiviso: il telefono non può mandare quel nome. |
 | Origine | panel.json, se l'azione è scritta a mano nel progetto. |
 
 Sotto il dettaglio c'è il riquadro «Output di …» con la casella «Segui», che tiene in vista le ultime righe. Il kit conserva le ultime 3000 righe di ogni azione; le sue note compaiono come righe che iniziano con \[Atollo\]. I pulsanti in alto: la stella «Predefinita», «Apri nel browser» (mentre un'azione web è in ascolto) e «Togli l'output» (quando l'azione è finita).
@@ -1135,7 +1136,7 @@ I pulsanti in alto: «Avvia» o «Ferma», «Ricarica configurazione» e, per i 
 
 #### Farsi vedere dagli altri PC della rete
 
-Di norma i siti rispondono solo a questo PC. Per provarli da un telefono o da un altro computer della stessa rete, attiva «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» in Impostazioni › Rete: [6.3 Rete aziendale: proxy, certificati, rete locale](#63-rete-aziendale-proxy-certificati-rete-locale). Gli altri dispositivi usano l'indirizzo IP di questo PC e la porta, anche con il server integrato di PHP; i nomi .localhost funzionano solo qui. Database e phpMyAdmin restano comunque chiusi alla rete.
+Di norma i siti rispondono solo a questo PC. Per provarli da un telefono o da un altro computer della stessa rete, attiva «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» in Impostazioni › Rete: [6.3 Rete aziendale: proxy, certificati, rete locale](#63-rete-aziendale-proxy-certificati-rete-locale). Gli altri dispositivi usano l'indirizzo IP di questo PC e la porta, anche con il server integrato di PHP; i nomi .localhost funzionano solo qui. Mentre il sito è in corso, la riga «Dal telefono» nel dettaglio dell'azione mostra quell'indirizzo con il suo QR, da inquadrare con il telefono. Database e phpMyAdmin restano comunque chiusi alla rete.
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -2005,10 +2006,11 @@ Se a casa tutto si scarica e in ufficio i download falliscono con errori di conn
 
 #### Rete locale
 
-La casella «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» apre i siti dei progetti alla rete: utile per provare un sito dal telefono. Dagli altri dispositivi si usa l'indirizzo IP di questo PC con la porta del sito (per esempio http://192.168.1.20:8000). Database e phpMyAdmin restano raggiungibili solo da questo PC.
+La casella «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» apre i siti dei progetti alla rete: utile per provare un sito dal telefono. Dagli altri dispositivi si usa l'indirizzo IP di questo PC con la porta del sito (per esempio http://192.168.1.20:8000), che non serve ricopiare: nel dettaglio dell'azione in corso, nella pagina del progetto, la riga «Dal telefono» mostra l'indirizzo con «Copia» e «Mostra il QR», da inquadrare con la fotocamera del telefono. Database e phpMyAdmin restano raggiungibili solo da questo PC.
 
 - Il server PHP integrato (php -S) e il server di file dei siti statici rispondono a chi li chiama con l'indirizzo IP del PC; con qualsiasi altro nome la richiesta resta rifiutata.
 - Su questo PC un sito statico risponde anche a http://\<progetto\>.localhost:\<porta\>, oltre che a localhost e 127.0.0.1, con la casella accesa o spenta.
+- La riga «Dal telefono» compare solo per un indirizzo localhost o 127.0.0.1 e solo se questo PC ha un indirizzo privato sulla rete (192.168.x.x, 10.x.x.x, 172.16-31.x.x). Il sito deve essere stato avviato dopo aver acceso «Rete locale»: se era già in corso, fermalo e riavvialo. Con una VPN attiva l'indirizzo mostrato può essere quello della VPN.
 
 > [!WARNING]
 > **Attenzione**

@@ -121,6 +121,29 @@ export function urlOpen(url: string): Promise<void> {
   return act("url_open", { url });
 }
 
+/** A QR's modules (tauri/src/net/lan.rs): `width` × `width`, row by row,
+ * "1" dark; without the quiet zone. */
+export interface Qr {
+  width: number;
+  modules: string;
+}
+
+/** A site's address on the local network, with its QR (N-6). */
+export interface LanLink {
+  url: string;
+  qr: Qr;
+}
+
+/** `url` with this PC's IP on the local network and its QR, when «Rete
+ * locale» is on and the PC has a private address; null otherwise. */
+export function lanLink(url: string): Promise<LanLink | null> {
+  return query<LanLink | null>(
+    "lan_link",
+    { url: url.replace("localhost", "192.168.1.20"), qr: { width: 21, modules: "1".repeat(7) + "0".repeat(434) } },
+    { url },
+  );
+}
+
 /** Rust's compiler on Windows (Tools › Rust, D-137): "msvc", or null for
  * the default (GNU). From the next install or update of Rust. */
 export function rustToolchainSet(toolchain: "msvc" | null): Promise<void> {

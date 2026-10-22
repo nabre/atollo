@@ -48,7 +48,7 @@ Jede Anfrage, die die App selbst stellt, trägt einen `User-Agent` der Form `Ato
 - Programme, die du im Editor, in den Konsolen oder über Aktionen startest (`git`, `npm`, `pip`, `cargo`, die KI-Agenten…), verbinden sich dorthin, wofür sie gebaut sind;
 - Links, die du anklickst, öffnen sich in deinem Browser, ebenso „Problem melden“ (Abschnitt 4).
 
-Lokale Server: Der Editor und die Server der Projekte lauschen nur auf diesem Computer (`127.0.0.1`/`localhost`), außer du schaltest in den Einstellungen **Lokales Netzwerk** für die Server der Projekte ein. Der Server der lokalen Modelle (llama.cpp) lauscht immer nur auf `127.0.0.1`, auf einem eigenen Port (9931 und folgende), und beantwortet nur Anfragen mit seinem zufälligen Schlüssel; `llm status` sendet diesen Schlüssel nicht an das, was auf dem Port lauscht. Die Modelle laufen auf diesem Computer: Mit einem lokalen Modell geht nichts ins Netz.
+Lokale Server: Der Editor und die Server der Projekte lauschen nur auf diesem Computer (`127.0.0.1`/`localhost`), außer du schaltest in den Einstellungen **Lokales Netzwerk** für die Server der Projekte ein. Ist es eingeschaltet, erstellt Atollo den QR-Code der Adresse einer Website für das Telefon auf diesem Computer: Kein Dienst im Internet sieht die Adresse, und das Ermitteln der IP dieses PCs im lokalen Netzwerk sendet kein Paket. Der Server der lokalen Modelle (llama.cpp) lauscht immer nur auf `127.0.0.1`, auf einem eigenen Port (9931 und folgende), und beantwortet nur Anfragen mit seinem zufälligen Schlüssel; `llm status` sendet diesen Schlüssel nicht an das, was auf dem Port lauscht. Die Modelle laufen auf diesem Computer: Mit einem lokalen Modell geht nichts ins Netz.
 
 ## 4. Auf deinem Gerät gespeicherte Daten
 

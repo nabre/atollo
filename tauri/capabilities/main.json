@@ -127,6 +127,7 @@
     "allow-run-ports",
     "allow-run-set-port",
     "allow-url-open",
+    "allow-lan-link",
     "allow-diagnostics-export",
     "allow-issue-open",
     "allow-kit-health",

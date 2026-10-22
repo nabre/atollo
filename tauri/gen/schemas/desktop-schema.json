@@ -459,6 +459,12 @@
           "markdownDescription": "Enables the kit_mcp_set command without any pre-configured scope."
         },
         {
+          "description": "Enables the lan_link command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-lan-link",
+          "markdownDescription": "Enables the lan_link command without any pre-configured scope."
+        },
+        {
           "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
           "type": "string",
           "const": "allow-local-models",
@@ -1207,6 +1213,12 @@
           "type": "string",
           "const": "deny-kit-mcp-set",
           "markdownDescription": "Denies the kit_mcp_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the lan_link command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-lan-link",
+          "markdownDescription": "Denies the lan_link command without any pre-configured scope."
         },
         {
           "description": "Denies the mcp_presets command without any pre-configured scope.",

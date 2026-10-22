@@ -24,6 +24,7 @@ import { ActionBar, EditorSection, Properties } from "../workbench";
 import { ActionForm } from "./actionform";
 import { alive, stateText } from "./runs";
 import { KIND_ICON, kindText } from "./kind";
+import { LanAddress, useLanLink } from "./lan";
 
 /** The actions of the project, as a list: the row selects the action, its
  * inline button starts or stops it, the star marks the default one. */
@@ -144,6 +145,7 @@ export function ActionDetail({
   const editable = a.id !== "site" && a.static === null && a.apache === null && !a.caddy;
   const r = runs[key];
   const isDefault = p.default === a.id;
+  const lan = useLanLink(r?.url && r.state === "running" ? r.url : null);
   const rows: [string, React.ReactNode][] = [
     [t("Stato"), r ? stateText(r) : t("fermo")],
     [
@@ -178,6 +180,7 @@ export function ActionDetail({
         {r.url}
       </Link>,
     ]);
+    if (lan) rows.push([t("Dal telefono"), <LanAddress link={lan} />]);
   }
   if (a.custom) rows.push([t("Origine"), "panel.json"]);
   return (
