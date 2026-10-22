@@ -261,16 +261,31 @@ struct Pulling {
 }
 
 impl Pulling {
-    fn take(dir: &Path, folder: &str, id: &str, cancel: Arc<AtomicBool>) -> Result<Pulling> {
+    /// The hold on `dir`, or a refusal in `lang`: the page lets a second
+    /// quantization of a repository start while the first downloads.
+    fn take(
+        dir: &Path,
+        folder: &str,
+        id: &str,
+        cancel: Arc<AtomicBool>,
+        lang: &str,
+    ) -> Result<Pulling> {
+        let busy = || {
+            crate::i18n::t(
+                lang,
+                "Un modello di questo repository si sta già scaricando.",
+                &[],
+            )
+        };
         let mut map = pulling_map();
         let key = folder_key(folder);
         if map.contains_key(&key) {
-            bail!("a model of this repository is already being downloaded");
+            bail!("{}", busy());
         }
         std::fs::create_dir_all(dir)?;
         let lock = dir.join(LOCK);
         if !claim(dir)? {
-            bail!("a model of this repository is already being downloaded");
+            bail!("{}", busy());
         }
         map.insert(
             key.clone(),
@@ -409,9 +424,10 @@ fn remove_if_there(path: &Path) -> Result<()> {
 /// files already there (the same model under another id) is used instead.
 /// An id another repository has already (the same file of another
 /// publisher) gets the publisher's name after it; one taken by other files
-/// of the same repository is refused.
-fn entry_for(kit: &Kit, plan: &Plan) -> Result<Entry> {
+/// of the same repository is refused, in `lang`.
+fn entry_for(kit: &Kit, plan: &Plan, lang: &str) -> Result<Entry> {
     let dir = plan.dir(kit);
+    let in_kit = |id: &str| crate::i18n::t(lang, "Nel kit c'è già un modello chiamato {0}.", &[id]);
     let folder = local::folder_of(&plan.repo);
     let files = plan.local_files();
     let names = |fs: &[ModelFile]| fs.iter().map(|f| f.name.clone()).collect::<Vec<_>>();
@@ -446,12 +462,12 @@ fn entry_for(kit: &Kit, plan: &Plan) -> Result<Entry> {
         }
         let mut id = plan.id.clone();
         match taken(&id) {
-            Some(f) if f == folder => bail!("a model called {id} is already in the kit"),
+            Some(f) if f == folder => bail!("{}", in_kit(&id)),
             Some(_) => {
                 let owner = plan.repo.split('/').next().unwrap_or_default();
                 id = super::slug(&format!("{id}-{owner}"));
                 if taken(&id).is_some() {
-                    bail!("a model called {id} is already in the kit");
+                    bail!("{}", in_kit(&id));
                 }
             }
             None => {}
@@ -559,9 +575,10 @@ pub fn pull(
         &local::folder_of(&plan.repo),
         &plan.id,
         Arc::clone(&cancel),
+        lang,
     )?;
     check_room(kit, plan, lang)?;
-    let entry = entry_for(kit, plan)?;
+    let entry = entry_for(kit, plan, lang)?;
     // Downloaded and checked already: the entry keeps its own commit
     // (entry_for), so its files are not measured against the plan's.
     if whole(&dir, &entry) {

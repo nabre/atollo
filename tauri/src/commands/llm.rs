@@ -353,6 +353,7 @@ pub async fn llm_hf_token_set<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let kit = state.kit.clone();
+    let invalid = tr(&state, "Token di Hugging Face non valido.", &[]);
     tauri::async_runtime::spawn_blocking(move || {
         let file = crate::llm::hf_token_file(&kit);
         let token = token.trim();
@@ -368,7 +369,7 @@ pub async fn llm_hf_token_set<R: Runtime>(
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-'))
         {
-            return Err(fail("llm", "not a Hugging Face token"));
+            return Err(fail("llm", invalid));
         }
         crate::router::fs::write_private(&file, token).or_fail_chain("llm")
     })
