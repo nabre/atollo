@@ -63,10 +63,25 @@ export function appInfo(): Promise<AppInfo> {
 
 /** Opens a kit folder in File Explorer: "agents", "db" or "projects" (+ project). */
 export function folderOpen(
-  which: "agents" | "backup" | "db" | "models" | "projects",
+  which: "agents" | "backup" | "db" | "diagnostics" | "models" | "projects",
   project: string | null = null,
 ): Promise<void> {
   return act("folder_open", { which, project });
+}
+
+/** «Esporta diagnostica»: the zip for a report of a problem, its secrets
+ * masked (tauri/src/diagnostics.rs); its path. */
+export function diagnosticsExport(): Promise<string> {
+  return query<string>(
+    "diagnostics_export",
+    "E:\\Atollo\\data\\app\\diagnostics\\atollo-diagnostica-20261022-101500.zip",
+  );
+}
+
+/** «Segnala un problema»: a new issue of Atollo on GitHub, in the browser,
+ * with the version and the system filled in. */
+export function issueOpen(): Promise<void> {
+  return act("issue_open");
 }
 
 /** Opens a local address (http://localhost:<port>/) in the PC's browser. */

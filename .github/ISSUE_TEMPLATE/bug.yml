@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in Atollo does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying Atollo. «Segnala un problema» in Settings › The kit fills in the version and the system below.
+        If you can, attach the diagnostics zip (Settings › The kit › «Esporta diagnostica», or `Atollo diagnostics`): its secrets are already masked, but read it before attaching it.
+  - type: input
+    id: version
+    attributes:
+      label: Atollo version
+      placeholder: "0.5.1"
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: The kit's system (win32-x64, darwin-arm64, linux-x64…), the Windows build, the file system of the kit's drive.
+      placeholder: "win32-x64, Windows build 26200, exFAT removable"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw instead (error messages as text, screenshots welcome).
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the Projects page
+        2. …
+  - type: checkboxes
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      options:
+        - label: I attached the diagnostics zip (or it is not needed for this problem).
