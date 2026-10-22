@@ -98,7 +98,7 @@ jobs:
                 # Packaging, and the code that starts the app.
                 tauri/Cargo.toml | tauri/build.rs | tauri/tauri.conf.json | tauri/Info.plist | tauri/entitlements.plist | tauri/windows-app.manifest | tauri/icons/*)
                   bundle=true ;;
-                tauri/src/main.rs | tauri/src/cli.rs | tauri/src/kit.rs | tauri/src/log.rs | tauri/src/env/* | tauri/src/settings.rs | tauri/src/fsx.rs | tauri/src/i18n.rs | tauri/src/os/* | tauri/src/setup/*)
+                tauri/src/main.rs | tauri/src/cli.rs | tauri/src/kit/* | tauri/src/log.rs | tauri/src/env/* | tauri/src/settings.rs | tauri/src/fsx.rs | tauri/src/i18n.rs | tauri/src/os/* | tauri/src/setup/*)
                   bundle=true ;;
                 # What prepare and the real_ tests use on a real kit.
                 tauri/catalog/components.json)

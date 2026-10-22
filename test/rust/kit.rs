@@ -1,4 +1,5 @@
 use super::*;
+use super::{names::*, root::*};
 
 /// A fresh folder under the system temp, removed on drop.
 pub struct TempDir(pub PathBuf);

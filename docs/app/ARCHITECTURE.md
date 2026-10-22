@@ -63,12 +63,13 @@ A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`cli.r
 | Startup | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | startup order ("Startup", above), command line, single instance, WebView2 |
 | Commands | `commands\` | the interface's only entry point: they check the window, translate the errors, call the domain |
 | Domain | the folders per area (below) | components, versions, projects, editor and console, agents, local models, databases, web servers, GitHub |
-| Infrastructure | `kit.rs`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, clock, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
+| Infrastructure | `kit\`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, clock, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
 
 ```
 tauri\src\
   main.rs  cli.rs             startup, windows, shutdown; command line
-  kit.rs                      root, paths, first run, move, valid names
+  kit\                        mod (paths, first run, move), target (Os, Arch, Target), root (bundle,
+                              AppImage), names (valid project names)
   env\                        kit environment: mod (Host, KitEnv, build in parts), langs, unix (D-112),
                               path (PATH), secrets (masking)
   fsx.rs                      kit files: reading, JSON, atomic writes (below)
