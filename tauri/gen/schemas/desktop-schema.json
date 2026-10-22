@@ -441,6 +441,12 @@
           "markdownDescription": "Enables the issue_open command without any pre-configured scope."
         },
         {
+          "description": "Enables the kit_health command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-health",
+          "markdownDescription": "Enables the kit_health command without any pre-configured scope."
+        },
+        {
           "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
           "type": "string",
           "const": "allow-local-models",
@@ -1159,6 +1165,12 @@
           "type": "string",
           "const": "deny-issue-open",
           "markdownDescription": "Denies the issue_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_health command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-health",
+          "markdownDescription": "Denies the kit_health command without any pre-configured scope."
         },
         {
           "description": "Denies the privacy_open command without any pre-configured scope.",

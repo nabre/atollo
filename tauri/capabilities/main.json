@@ -125,6 +125,7 @@
     "allow-url-open",
     "allow-diagnostics-export",
     "allow-issue-open",
+    "allow-kit-health",
     "allow-privacy-open",
     "allow-rust-toolchain-set",
     "allow-settings-get",

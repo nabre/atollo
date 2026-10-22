@@ -1,5 +1,14 @@
 # Novità
 
+## Salute del kit (22/10/2026)
+
+- **«Salute del kit»** in Impostazioni › «Il kit» (e `Atollo check --kit` dalla riga di comando) dice subito che cosa del PC e del disco può fermare il kit, ognuno con che cosa fare; «Controlla di nuovo» rifà i controlli dopo una correzione (D-155).
+- **Il disco**: FAT32 (file fino a 4 GB, niente collegamenti), exFAT, e su macOS e Linux un disco montato `noexec` o `showexec`, con il comando per rimontarlo. **Lo spazio libero**: errore sotto 1 GB, avviso sotto 5 GB.
+- **Il percorso del kit**: un avviso se contiene `&`, `%`, `!`, `^`, apici o lettere accentate, che cmd, PowerShell, Maven e Gradle gestiscono male.
+- **File resi privati da un altro account**, magari su un altro PC: quanti sono e il comando da eseguire da amministratore per riprenderli (`takeown` e `icacls` su Windows, `chown` su macOS e Linux).
+- **Su Linux, le librerie del sistema** che servono al kit: libaio e libnuma (MySQL), libicu (.NET), libvulkan1 (la scheda video dei modelli locali), con il comando `apt` per installarle.
+- `Atollo check --kit` finisce con 1 quando un controllo è un errore: si può usare in uno script.
+
 ## Copie di sicurezza dei database (22/10/2026)
 
 - **Prima di un ripristino** il kit copia ciò che il database del progetto contiene ora, in `<database>-prima-del-ripristino-<data e ora>` nella cartella delle copie: se hai ripristinato il file sbagliato, ripristini quella copia e torni a prima. Se la copia non riesce il ripristino non si fa. La conferma lo dice: «Ripristinare …? Prima il kit copia ciò che il database contiene ora.» (D-154)

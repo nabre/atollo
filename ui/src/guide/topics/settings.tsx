@@ -605,6 +605,17 @@ export const SETTINGS: TopicTexts = {
         </P>
         {info && <Code>{info.root}</Code>}
         <P>
+          {rich(
+            tr(
+              "«Salute del kit» controlla ciò che del PC e del disco può fermare il kit: il disco (FAT32, exFAT, noexec), lo spazio libero, i caratteri a rischio nel percorso del kit, i file resi privati da un altro account e, su Linux, le librerie di sistema. Ogni riga è verde, gialla o rossa, con sotto che cosa fare; «Controlla di nuovo» rifà i controlli ({0}).",
+              "“Kit health” checks what of the PC and the drive may stop the kit: the drive (FAT32, exFAT, noexec), the free space, risky characters in the kit's path, files made private by another account and, on Linux, the system's libraries. Each line is green, yellow or red, with what to do under it; “Check again” runs the checks again ({0}).",
+              "« Santé du kit » contrôle ce qui, du PC et du disque, peut arrêter le kit : le disque (FAT32, exFAT, noexec), l'espace libre, les caractères à risque dans le chemin du kit, les fichiers rendus privés par un autre compte et, sous Linux, les bibliothèques du système. Chaque ligne est verte, jaune ou rouge, avec en dessous ce qu'il faut faire ; « Vérifier à nouveau » refait les contrôles ({0}).",
+              "„Zustand des Kits“ prüft, was am PC und am Laufwerk das Kit aufhalten kann: das Laufwerk (FAT32, exFAT, noexec), den freien Platz, riskante Zeichen im Pfad des Kits, von einem anderen Konto privat gemachte Dateien und unter Linux die Systembibliotheken. Jede Zeile ist grün, gelb oder rot, darunter steht, was zu tun ist; „Erneut prüfen“ wiederholt die Prüfungen ({0}).",
+            ),
+            <See key="h" id="troubleshooting" />,
+          )}
+        </P>
+        <P>
           {tr(
             "Sotto, «Segnalare un problema» ha due pulsanti. «Esporta diagnostica» crea in data\\app\\diagnostics uno zip con versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit sostituiti da ***, la cartella del tuo profilo come ~ e i nomi tuo e del PC tolti; «Apri la cartella» lo mostra. Lo zip resta sul PC: guardalo e allegalo tu. «Segnala un problema» apre nel browser una segnalazione nuova su GitHub con versione e sistema già scritti; nulla parte finché non la crei.",
             "Below, “Reporting a problem” has two buttons. “Export diagnostics” makes a zip in data\\app\\diagnostics with version, system, disk, environment, the programs' check, components, ports and the end of the logs, with the kit's keys, tokens and passwords replaced by ***, your profile folder as ~ and your and the PC's names removed; “Open folder” shows it. The zip stays on the PC: look at it and attach it yourself. “Report a problem” opens a new issue on GitHub in the browser with version and system already filled in; nothing leaves until you create it.",

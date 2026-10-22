@@ -115,6 +115,7 @@ const COMMANDS: &[&str] = &[
     "url_open",
     "diagnostics_export",
     "issue_open",
+    "kit_health",
     "privacy_open",
     "rust_toolchain_set",
     "settings_get",

@@ -969,5 +969,9 @@
   "Segnala un problema": "Problem melden",
   "Segnalare un problema": "Ein Problem melden",
   "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Das Diagnose-Zip sammelt Version, System, Laufwerk, Umgebung, die Prüfung der Programme, Komponenten, Ports und das Ende der Logs, ohne die Schlüssel, Tokens und Passwörter des Kits und mit deinem Profilordner als ~. Es bleibt auf dem PC: hänge es selbst an die Meldung an, nachdem du es angesehen hast.",
-  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "{0} wiederherstellen? Das Kit kopiert zuerst, was die Datenbank jetzt enthält."
+  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "{0} wiederherstellen? Das Kit kopiert zuerst, was die Datenbank jetzt enthält.",
+  "Salute del kit": "Zustand des Kits",
+  "Disco, spazio libero, percorso del kit, file resi privati da un altro account, librerie di sistema.": "Laufwerk, freier Platz, Pfad des Kits, von einem anderen Konto privat gemachte Dateien, Systembibliotheken.",
+  "Controllo in corso…": "Prüfung läuft…",
+  "Controlla di nuovo": "Erneut prüfen"
 }

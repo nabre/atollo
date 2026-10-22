@@ -1929,6 +1929,8 @@ Sotto l'account, «Chi firma i commit» ha i campi «Nome» ed «E-mail» dei co
 
 Informazioni in sola lettura: cartella del kit, cartella dei progetti, cartella dei dati e dei programmi, disco del kit (file system e tipo: fisso, rimovibile, di rete), cartella temporanea dei programmi, piattaforma, versione di WebView2 e di Atollo. Se il disco ha qualcosa da segnalare compare un avviso.
 
+«Salute del kit» controlla ciò che del PC e del disco può fermare il kit: il disco (FAT32, exFAT, noexec), lo spazio libero, i caratteri a rischio nel percorso del kit, i file resi privati da un altro account e, su Linux, le librerie di sistema. Ogni riga è verde, gialla o rossa, con sotto che cosa fare; «Controlla di nuovo» rifà i controlli ([9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va)).
+
 Sotto, «Segnalare un problema» ha due pulsanti. «Esporta diagnostica» crea in `data\app\diagnostics` uno zip con versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit sostituiti da \*\*\*, la cartella del tuo profilo come ~ e i nomi tuo e del PC tolti; «Apri la cartella» lo mostra. Lo zip resta sul PC: guardalo e allegalo tu. «Segnala un problema» apre nel browser una segnalazione nuova su GitHub con versione e sistema già scritti; nulla parte finché non la crei.
 
 #### Framework
@@ -2564,6 +2566,7 @@ cd D:\Atollo
 | `components [--target <sistema>]` | Elenca i componenti: scelto o no, gruppo, versione installata o perché non è disponibile. |
 | `versions [<id>]` | Senza id: le versioni su disco degli strumenti installati. Con un id: chiede alla fonte le versioni offerte e le salva. |
 | `check` | Chiede a ogni componente installato la sua versione e segna ✓ o ✗. |
+| `check --kit` | La salute del kit: disco, spazio, percorso, permessi, librerie, come «Salute del kit» nelle Impostazioni. Una riga per controllo (√, ! o x) con sotto che cosa fare; finisce con 1 se un controllo è un errore. |
 | `prepare [opzioni]` | Installa, aggiorna e toglie i componenti secondo la scelta. Le opzioni sono nella tabella sotto. |
 | `sync [--project <cartella>] [--verbose]` | Allinea istruzioni, skill e server MCP degli agenti. |
 | `serve <cartella> <porta>` | Serve una cartella come sito statico (il server di file del kit). |
@@ -2609,13 +2612,24 @@ Argomenti collegati: [5.1 La pagina Strumenti](#51-la-pagina-strumenti), [7.2 Su
 
 ### 9.1 Quando qualcosa non va
 
-*I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.*
+*Su un PC nuovo, prima la «Salute del kit». Poi i problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.*
 
 > **In breve**
 >
 > - Cerca il messaggio che vedi nella casella qui sotto: la guida ne raccoglie i più comuni, con il rimedio.
 > - Quasi ogni errore ha un suggerimento al passaggio del mouse e una riga di output o di log che dice di più.
 > - Il log dell'app è in `data\app\logs\app.log`; quelli dei server accanto.
+
+#### Salute del kit
+
+Su un PC nuovo, o con il kit su un'altra chiavetta, guarda prima Impostazioni › «Il kit» › «Salute del kit»: una riga per controllo, verde se va bene, gialla per un avviso, rossa per un errore, e sotto che cosa fare. «Controlla di nuovo» rifà i controlli dopo una correzione.
+
+- Il disco. FAT32 tiene file fino a 4 GB (niente modelli locali né copie di database grandi) e niente collegamenti: per un kit su chiavetta è meglio exFAT, o NTFS se resta su Windows. Su macOS e Linux un disco montato noexec (o FAT32 con showexec su Linux) non lascia partire i programmi: la riga dà il comando per rimontarlo.
+- Lo spazio libero: sotto 5 GB un avviso, sotto 1 GB un errore (installazioni, download e copie dei database non riescono). Libera spazio o sposta il kit su un disco più grande.
+- Il percorso del kit: &, %, !, ^, apici e lettere accentate o fuori dall'alfabeto latino confondono cmd, PowerShell, Maven e Gradle. Sposta il kit in una cartella con solo lettere, cifre, trattini e spazi.
+- File resi privati da un altro account, spesso su un altro PC: il kit non li legge (impostazioni, chiavi, accessi degli agenti). La riga dà il comando per riprenderli, da eseguire in un terminale da amministratore: takeown e icacls su Windows, sudo chown su macOS e Linux. L'app non lo esegue da sé perché servono i diritti di amministratore.
+- Su Linux, le librerie del sistema: libaio e libnuma per MySQL, libicu per .NET, libvulkan1 per la scheda video dei modelli locali (senza, restano sulla CPU). La riga dà il comando per installarle, per esempio con apt.
+- Dalla riga di comando gli stessi controlli li fa `.\Atollo.exe check --kit | Out-Host`, che finisce con 1 se uno è un errore.
 
 #### Download e installazione
 

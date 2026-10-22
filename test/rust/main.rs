@@ -200,8 +200,21 @@ fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str)
         if line.starts_with("  serve ") {
             out.extend_from_slice(models_lines(lang));
         }
+        if line.starts_with("  check ") {
+            out.push(kit_line(lang));
+        }
     }
     out.join("\n")
+}
+
+/// The line of `check --kit` in `lang`.
+fn kit_line(lang: &str) -> &'static str {
+    match lang {
+        "it" => "      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie",
+        "en" => "      --kit               the kit's health: drive, space, path, permissions, libraries",
+        "fr" => "      --kit               la santé du kit : disque, espace, chemin, permissions, bibliothèques",
+        _ => "      --kit               der Zustand des Kits: Laufwerk, Platz, Pfad, Rechte, Bibliotheken",
+    }
 }
 
 /// The lines of `models`, `llm` and `diagnostics` in `lang`.
