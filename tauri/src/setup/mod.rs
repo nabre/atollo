@@ -14,3 +14,4 @@ pub mod needs;
 pub mod runner;
 pub mod self_update;
 pub mod task;
+pub mod updates;

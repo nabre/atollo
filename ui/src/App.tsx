@@ -40,6 +40,7 @@ import { Codicon, codicon, Icon, IconButton, Notice, Sash, useStoredSize, useTab
 import { useLoad, useSubscription } from "./hooks";
 import { ErrorLine, LoadError } from "./common";
 import { CommandPalette } from "./commands";
+import { useUpdates } from "./components/updates";
 
 // The pages seldom open (the Guide, large; Settings; Tools, with the
 // first-start page that shares its rows): each its own chunk, read the
@@ -112,6 +113,8 @@ export function App() {
   // Actions, database versions and web server pools (UX-V5-01).
   const running = useRunning(runs);
   const live = running.count;
+  // The components with a new version (N-9), on Tools.
+  const newVersions = useUpdates(setup?.running ?? false).updates?.items.length ?? 0;
 
   const {
     data: editor,
@@ -213,7 +216,10 @@ export function App() {
           pages={all}
           page={page}
           onSelect={setPage}
-          badges={{ projects: { count: live, label: t("In esecuzione: {0}", String(live)) } }}
+          badges={{
+            projects: { count: live, label: t("In esecuzione: {0}", String(live)) },
+            components: { count: newVersions, label: t("Versioni nuove: {0}", String(newVersions)) },
+          }}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {/* The lazy pages' fallback: the Guide's, as before. */}

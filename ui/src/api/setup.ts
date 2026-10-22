@@ -249,6 +249,63 @@ export function componentsCheck(target?: string): Promise<ComponentCheck[]> {
   return query<ComponentCheck[]>("components_check", [], target ? { target } : undefined);
 }
 
+/** An installed component with a new version (N-9, tauri/src/setup/updates.rs). */
+export interface ComponentUpdate {
+  id: string;
+  name: string;
+  installed: string;
+  latest: string;
+  /** Its release notes, or its site. */
+  notes: string;
+}
+
+export interface Updates {
+  /** When the versions were asked (Unix seconds), if ever. */
+  checked: number | null;
+  items: ComponentUpdate[];
+}
+
+export const SAMPLE_UPDATES: Updates = {
+  checked: Math.floor(Date.now() / 1000) - 3 * 3600,
+  items: [
+    {
+      id: "node",
+      name: "Node.js",
+      installed: "24.10.0",
+      latest: "24.11.1",
+      notes: "https://github.com/nodejs/node/releases",
+    },
+    {
+      id: "gh",
+      name: "GitHub CLI",
+      installed: "2.100.0",
+      latest: "2.103.0",
+      notes: "https://github.com/cli/cli/releases/tag/v2.103.0",
+    },
+  ],
+};
+
+/** The components with a new version, from the versions asked last. */
+export function updatesList(): Promise<Updates> {
+  return query<Updates>("updates_list", SAMPLE_UPDATES);
+}
+
+/** «Controlla ora»: each installed component's source asked now. */
+export function updatesCheck(): Promise<Updates> {
+  return query<Updates>("updates_check", SAMPLE_UPDATES);
+}
+
+/** The versions were asked again (the daily check at the start). */
+export function onUpdates(handler: (payload: null) => void): Promise<() => void> {
+  return subscribe<null>("updates", handler);
+}
+
+/** A component's site or the notes of its new version, in the browser:
+ * the catalog's addresses only. */
+export function componentLinkOpen(id: string, kind: "home" | "notes"): Promise<void> {
+  return act("component_link_open", { id, kind });
+}
+
 /** What differs from a folder's manifest (N-5, tauri/src/setup/integrity.rs);
  * the lists are cut at 20. */
 export interface IntegrityDamage {

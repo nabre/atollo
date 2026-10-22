@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-component-link-open"
+description = "Enables the component_link_open command without any pre-configured scope."
+commands.allow = ["component_link_open"]
+
+[[permission]]
+identifier = "deny-component-link-open"
+description = "Denies the component_link_open command without any pre-configured scope."
+commands.deny = ["component_link_open"]

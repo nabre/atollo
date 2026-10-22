@@ -33,6 +33,7 @@ import {
 import { groups, matches } from "./model";
 import { useComponents } from "./state";
 import { ApplyBar } from "./applybar";
+import { UpdatesPane } from "./updates";
 import { ToolPage } from "./tool";
 import { ToolsTable } from "./table";
 import { TargetMatrix } from "./matrix";
@@ -268,6 +269,13 @@ export function ToolsPage({
               ))}
             </List>
           </ViewPane>
+          <UpdatesPane
+            expanded={!closed.has("updates")}
+            onToggle={() => {
+              toggle("updates");
+            }}
+            running={running}
+          />
         </PaneStack>
       )}
     </>
