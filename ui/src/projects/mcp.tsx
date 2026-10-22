@@ -161,7 +161,7 @@ export function ProjectMcpBox({ project }: { project: string }) {
           )}
           <p className="px-4 pb-3 text-[12px] text-vsc-desc">
             {t(
-              "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Atollo lo tiene allineato); Antigravity usa solo i server del kit.",
+              "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Atollo lo tiene allineato); Antigravity e Pi usano solo i server del kit.",
             )}
           </p>
         </>

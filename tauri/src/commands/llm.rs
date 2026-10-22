@@ -153,18 +153,20 @@ pub async fn llm_stop<R: Runtime>(
     .or_fail("llm")
 }
 
-/// "Avvia con Atollo", and the model Pi starts with (an id on disk, or
-/// none). The agents are aligned after a change of Pi's model.
+/// "Avvia con Atollo", and the model Pi starts with: an id on disk, or
+/// an empty one for none (Pi then uses the first model on disk). The
+/// agents are aligned after a change of Pi's model.
 #[tauri::command]
 pub async fn llm_set<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     autostart: Option<bool>,
-    pi_model: Option<Option<String>>,
+    pi_model: Option<String>,
 ) -> CmdResult<LlmInfo> {
     ensure_main(&webview)?;
     let (kit, llm) = (state.kit.clone(), Arc::clone(&state.llm));
     tauri::async_runtime::spawn_blocking(move || {
+        let pi_model = pi_model.map(|m| Some(m).filter(|m| !m.is_empty()));
         if let Some(Some(id)) = &pi_model {
             if crate::llm::local::find(&kit, id).is_none_or(|m| !m.complete) {
                 return Err(fail("llm", format!("model {id} not found")));

@@ -63,7 +63,7 @@ export function appInfo(): Promise<AppInfo> {
 
 /** Opens a kit folder in File Explorer: "agents", "db" or "projects" (+ project). */
 export function folderOpen(
-  which: "agents" | "backup" | "db" | "projects",
+  which: "agents" | "backup" | "db" | "models" | "projects",
   project: string | null = null,
 ): Promise<void> {
   return act("folder_open", { which, project });

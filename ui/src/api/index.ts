@@ -9,6 +9,7 @@ export * from "./setup";
 export * from "./versions";
 export * from "./agents";
 export * from "./services";
+export * from "./llm";
 export * from "./databases";
 export * from "./projects";
 export * from "./orphans";

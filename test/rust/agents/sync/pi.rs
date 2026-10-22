@@ -54,7 +54,7 @@ fn the_kit_block_keeps_the_users_text() {
 }
 
 /// Without a choice and without a provider of the cloud, the first model
-/// of the catalog's order; a choice wins; a provider of the cloud and no
+/// of the catalog that calls tools; a choice wins; a provider of the cloud and no
 /// choice: none.
 #[test]
 fn the_model_pi_uses() {
@@ -63,7 +63,9 @@ fn the_model_pi_uses() {
     add_model(&kit, "mine", None);
     add_model(&kit, "gpt-oss-20b", Some("gpt-oss-20b"));
     add_model(&kit, "qwen2.5-coder-7b", Some("qwen2.5-coder-7b"));
-    assert_eq!(local_model(&kit).as_deref(), Some("qwen2.5-coder-7b"));
+    // A catalog model that calls tools before one for chat only and one
+    // put there by hand.
+    assert_eq!(local_model(&kit).as_deref(), Some("gpt-oss-20b"));
     crate::llm::settings::update(&kit, |s| {
         s.pi_model = Some("mine".into());
         Ok(())

@@ -1,8 +1,8 @@
 // Agents page and the agent buttons of a project: Claude Code, Codex,
-// Antigravity, as VSCodium's Extensions view: the installed agents in the
-// side bar, the chosen one's page in the editor with its state, usage and
-// sign-out. Launch happens only in a project. Instructions, skills and MCP
-// servers are shared by the three (data\agents, aligned by the app).
+// Antigravity, Pi, as VSCodium's Extensions view: the installed agents in
+// the side bar, the chosen one's page in the editor with its state, usage
+// and sign-out. Launch happens only in a project. Instructions, skills and
+// MCP servers are shared by all of them (data\agents, aligned by the app).
 import { useState } from "react";
 import {
   agentLaunch,
@@ -53,6 +53,7 @@ export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } 
 function signInText(a: AgentInfo): string {
   if (!a.signedIn) return t("accesso non fatto: si fa al primo avvio dell'agente");
   if (a.signInKind === "api key") return t("accesso con chiave API");
+  if (a.signInKind === "local") return t("modelli locali del kit, senza accesso");
   return a.signInKind === "token" ? t("accesso con un token") : t("accesso fatto");
 }
 
@@ -199,7 +200,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                 {signInText(agent)}
               </p>
               <TokenLink agent={agent} onDone={reload} />
-              {agent.signedIn && agent.signInKind !== "api key" && (
+              {agent.signedIn && agent.signInKind !== "api key" && agent.signInKind !== "local" && (
                 <div className="flex flex-wrap items-center gap-1.5">
                   {confirm === agent.id ? (
                     <InlineConfirm
@@ -254,7 +255,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
               <p>
                 {rich(
                   t(
-                    "Claude Code, Codex e Antigravity condividono istruzioni globali, skill e server MCP: il kit li allinea a ogni avvio e quando un agente termina. Le istruzioni comuni sono in {0}, le skill in {1}, i server MCP in {2}.",
+                    "Claude Code, Codex, Antigravity e Pi condividono istruzioni globali, skill e server MCP: il kit li allinea a ogni avvio e quando un agente termina. Le istruzioni comuni sono in {0}, le skill in {1}, i server MCP in {2}.",
                   ),
                   <span className="font-mono">data\agents\AGENTS.md</span>,
                   <span className="font-mono">data\agents\skills</span>,

@@ -56,15 +56,20 @@ pub fn local_model(kit: &Kit) -> Option<String> {
     {
         return None;
     }
+    // The catalog's models that call tools first, in its order; then the
+    // others; last the catalog's models for chat only.
     let order = |id: &str| {
-        crate::llm::catalog::all()
-            .iter()
-            .position(|c| {
-                models
-                    .iter()
-                    .any(|m| m.id == id && m.catalog.as_deref() == Some(&c.id))
-            })
-            .unwrap_or(usize::MAX)
+        let catalog = crate::llm::catalog::all();
+        let at = catalog.iter().position(|c| {
+            models
+                .iter()
+                .any(|m| m.id == id && m.catalog.as_deref() == Some(&c.id))
+        });
+        match at {
+            Some(i) if catalog[i].tools => i,
+            Some(i) => 2 * catalog.len() + i,
+            None => catalog.len(),
+        }
     };
     let mut ids: Vec<&str> = models.iter().map(|m| m.id.as_str()).collect();
     ids.sort_by_key(|id| order(id));

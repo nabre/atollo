@@ -1,5 +1,5 @@
 {
-  "about": "Local models offered by Atollo (llm/catalog.rs, D-151): GGUF files from Hugging Face at a fixed commit, each with its SHA-256 (the lfs.oid of the Hugging Face API) and size in bytes. A model in several parts lists all of them, the first one first: the parts of Qwen2.5-Coder 7B stay under 4 GiB and fit a FAT32 drive. ctx: the context window the server gives it; ramGb: the memory it needs with that context, about; tools: it calls tools (the agents need it); desc: Italian, translated by tauri/i18n/catalog.json.",
+  "about": "Local models offered by Atollo (llm/catalog.rs, D-151): GGUF files from Hugging Face at a fixed commit, each with its SHA-256 (the lfs.oid of the Hugging Face API) and size in bytes. A model in several parts lists all of them, the first one first: the parts of Qwen2.5-Coder 7B stay under 4 GiB and fit a FAT32 drive. ctx: the context window the server gives it; ramGb: the memory it needs with that context, about; tools: it calls tools as the agents need (tried with Pi: Qwen2.5-Coder 7B writes its calls as text, so it is for chat only); desc: Italian, translated by tauri/i18n/catalog.json.",
   "models": [
     {
       "id": "qwen2.5-coder-7b",
@@ -13,7 +13,7 @@
       "quant": "Q4_K_M",
       "ctx": 32768,
       "ramGb": 7,
-      "tools": true,
+      "tools": false,
       "license": "apache-2.0",
       "desc": "per il codice, leggero: entra in 8 GB di RAM o di memoria video"
     },
