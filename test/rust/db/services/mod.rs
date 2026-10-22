@@ -419,6 +419,13 @@ fn real_databases_start_and_stop() {
             .any(|b| b.file == name && b.engine == id));
         s.restore(&project, &name).unwrap();
         assert_eq!(admin(&count), n, "{id}: data back after restore");
+        // The state before the restore was copied first (D-154).
+        assert!(
+            s.backups(&project)
+                .iter()
+                .any(|b| b.engine == id && b.file.contains(super::backups::BEFORE_RESTORE)),
+            "{id}: a copy before the restore"
+        );
         if engine.is_sql() {
             let triggers = admin(&format!(
                 "SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '{database}'"

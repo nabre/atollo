@@ -264,7 +264,6 @@
   "Riduci a icona": "Minimize",
   "Rimuovi l'unità": "Remove drive",
   "Ripristina": "Restore",
-  "Ripristinare {0}?": "Restore {0}?",
   "Salva": "Save",
   "Salvato.": "Saved.",
   "Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)": "Download new versions of Atollo automatically (they replace the exe on close)",
@@ -969,5 +968,6 @@
   "Esporta diagnostica": "Export diagnostics",
   "Segnala un problema": "Report a problem",
   "Segnalare un problema": "Reporting a problem",
-  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "The diagnostics zip gathers version, system, drive, environment, the programs' check, components, ports and the last part of the logs, with the kit's keys, tokens and passwords removed and your profile folder shown as ~. It stays on the PC: attach it to the report yourself, after looking at it."
+  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "The diagnostics zip gathers version, system, drive, environment, the programs' check, components, ports and the last part of the logs, with the kit's keys, tokens and passwords removed and your profile folder shown as ~. It stays on the PC: attach it to the report yourself, after looking at it.",
+  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "Restore {0}? The kit first copies what the database holds now."
 }

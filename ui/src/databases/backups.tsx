@@ -62,7 +62,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
               {confirm === b.file ? (
                 <InlineConfirm
                   row
-                  question={t("Ripristinare {0}?", b.file)}
+                  question={t("Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.", b.file)}
                   textClassName="text-vsc-warning"
                   onCancel={() => {
                     setConfirm(null);

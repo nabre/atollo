@@ -80,6 +80,37 @@ pub(super) fn run_with_reader(
     }
 }
 
+/// Runs a tool with `input` on its stdin and gives its output, waiting at
+/// most `limit`; fails with its error output.
+pub(super) fn run_for_output(mut cmd: Command, input: &str, limit: Duration) -> Result<String> {
+    use std::io::Write;
+    cmd.stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let mut child = jobs::spawn(&mut cmd)?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin.write_all(input.as_bytes())?;
+    }
+    let (tx, rx) = std::sync::mpsc::channel();
+    let pid = child.id();
+    std::thread::spawn(move || {
+        let _ = tx.send(child.wait_with_output());
+    });
+    match rx.recv_timeout(limit) {
+        Ok(out) => {
+            let out = out?;
+            if !out.status.success() {
+                bail!("{}", String::from_utf8_lossy(&out.stderr).trim());
+            }
+            Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+        }
+        Err(_) => {
+            crate::os::sessions::stop(&[pid]);
+            bail!("{:?}: no answer", cmd.get_program());
+        }
+    }
+}
+
 /// Runs a tool of a server and waits at most `limit`.
 pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
     cmd.stdin(Stdio::null())

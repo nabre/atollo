@@ -259,3 +259,25 @@ fn a_dump_streams_through_the_filter() {
     want.extend_from_slice(b"CREATE PROCEDURE `p`()\nBEGIN END");
     assert_eq!(out, want);
 }
+
+/// The objects of the project's database only, a kind and a name per line;
+/// the drops quote every name and take only the kinds they know.
+#[test]
+fn objects_dropped_before_a_restore() {
+    let q = objects_sql("shop");
+    for t in ["VIEWS", "TRIGGERS", "ROUTINES", "EVENTS"] {
+        assert!(q.contains(&format!("information_schema.{t}")), "{t}");
+    }
+    assert_eq!(q.matches("= 'shop'").count(), 4);
+    let listing =
+        "VIEW\tv\nTRIGGER\tt`x\nPROCEDURE\tp\nFUNCTION\tf\nEVENT\te\nTABLE\tnot me\nbroken line\n";
+    assert_eq!(
+        drop_objects_sql("shop", listing),
+        "DROP VIEW IF EXISTS `shop`.`v`;\n\
+         DROP TRIGGER IF EXISTS `shop`.`t``x`;\n\
+         DROP PROCEDURE IF EXISTS `shop`.`p`;\n\
+         DROP FUNCTION IF EXISTS `shop`.`f`;\n\
+         DROP EVENT IF EXISTS `shop`.`e`;\n"
+    );
+    assert_eq!(drop_objects_sql("shop", ""), "");
+}

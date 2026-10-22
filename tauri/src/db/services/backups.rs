@@ -2,6 +2,12 @@
 //! `data\projects\<project>\private\backups` (D-89): export and restore with
 //! the servers' own tools. The folder is owner-only before anything is
 //! written in it, so every copy is private from the start (by inheritance).
+//!
+//! Safety copies (D-154): a restore first copies what the database holds
+//! now (`<name>-prima-del-ripristino-<stamp>`), and a change of the
+//! version a project's database is on first copies it on the version it
+//! leaves (`<name>-prima-del-cambio-di-versione-<stamp>`); without that
+//! copy nothing is done. The last [`SAFETY_KEPT`] of each kind are kept.
 
 use std::fs;
 use std::path::PathBuf;
@@ -11,7 +17,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
 
-use super::tools::{run_with_input, run_with_reader};
+use super::tools::{run_for_output, run_with_input, run_with_reader};
 use super::{auth, project_line, Services};
 use crate::db::DbEngine;
 use crate::os::jobs;
@@ -30,6 +36,13 @@ pub const DUMP_ARGS: [&str; 6] = [
     "--triggers",
     "--set-gtid-purged=OFF",
 ];
+
+/// The label of the copy a restore makes first.
+pub const BEFORE_RESTORE: &str = "prima-del-ripristino";
+/// The label of the copy a change of version makes first.
+pub const BEFORE_LINE: &str = "prima-del-cambio-di-versione";
+/// Safety copies kept of each kind, per database.
+pub const SAFETY_KEPT: usize = 3;
 
 /// A copy of a project's database (D-78).
 #[derive(Debug, Clone, Serialize)]
@@ -149,6 +162,20 @@ impl Services {
     /// A copy of the project's database in its backup folder (D-78); the
     /// server must run.
     pub fn export(&self, project: &str, engine: &str) -> Result<PathBuf> {
+        self.export_as(project, engine, None)
+    }
+
+    /// A safety copy labelled `label` ([`BEFORE_RESTORE`], [`BEFORE_LINE`]);
+    /// only the last [`SAFETY_KEPT`] of that label stay.
+    pub(crate) fn safety_copy(&self, project: &str, engine: &str, label: &str) -> Result<PathBuf> {
+        let file = self.export_as(project, engine, Some(label))?;
+        let kind = DbEngine::parse(engine)?;
+        let name = self.own_database(project, kind.id())?;
+        prune(&self.backup_dir(project)?, &name, label, kind, SAFETY_KEPT);
+        Ok(file)
+    }
+
+    fn export_as(&self, project: &str, engine: &str, label: Option<&str>) -> Result<PathBuf> {
         let kind = DbEngine::parse(engine)?;
         let engine = kind.id();
         let line = project_line(&self.kit, project, engine);
@@ -157,7 +184,11 @@ impl Services {
         // this project, never one another project (or someone else) uses.
         let name = self.own_database(project, engine)?;
         let dir = self.backup_dir(project)?;
-        let (file, part, out) = new_copy(&dir, &name, kind)?;
+        let base = match label {
+            Some(l) => format!("{name}-{l}"),
+            None => name.clone(),
+        };
+        let (file, part, out) = new_copy(&dir, &base, kind)?;
         let dump = kind.dump_bin();
         let written = || -> Result<()> {
             match kind {
@@ -173,15 +204,27 @@ impl Services {
                 }
                 DbEngine::MySql => {
                     let mut cmd = self.sql_tool_at(kind, dump, &env, line.as_deref(), port);
-                    cmd.args(DUMP_ARGS)
-                        .arg(&name)
+                    cmd.args(DUMP_ARGS);
+                    // A safety copy goes past what is broken (a view on a
+                    // table dropped): the database to restore over is
+                    // often the broken one, and the rest of it is copied.
+                    if label.is_some() {
+                        cmd.arg("--force");
+                    }
+                    cmd.arg(&name)
                         .stdin(Stdio::null())
                         .stdout(Stdio::from(out))
                         .stderr(Stdio::piped());
                     let child = jobs::spawn(&mut cmd)?;
                     let done = child.wait_with_output()?;
-                    if !done.status.success() {
-                        bail!("{dump}: {}", String::from_utf8_lossy(&done.stderr).trim());
+                    let errors = String::from_utf8_lossy(&done.stderr);
+                    match (done.status.success(), label) {
+                        (true, _) => {}
+                        (false, Some(l)) => crate::log::warn(&format!(
+                            "{project}: {l}: {dump} skipped: {}",
+                            errors.trim()
+                        )),
+                        (false, None) => bail!("{dump}: {}", errors.trim()),
                     }
                     Ok(())
                 }
@@ -207,6 +250,9 @@ impl Services {
         let id = engine.id();
         let restore = engine.restore_bin();
         let name = self.own_database(project, id)?;
+        // What the database holds now, first: without it, no restore.
+        self.safety_copy(project, id, BEFORE_RESTORE)
+            .context("the copy of the database before the restore: nothing restored")?;
         match engine {
             DbEngine::MongoDb => {
                 let line = project_line(&self.kit, project, id);
@@ -227,6 +273,25 @@ impl Services {
                     .ok_or_else(|| anyhow!("the project has no {id} database yet"))?;
                 let line = project_line(&self.kit, project, id);
                 let (port, env) = self.running_at(engine, line.as_deref())?;
+                // The views, triggers, routines and events go first, as the
+                // administrator: those of root could not be replaced by the
+                // project's user.
+                let mut list =
+                    self.sql_tool_at(engine, engine.client_bin(), &env, line.as_deref(), port);
+                list.args(["-N", "-B", "-r"]);
+                let listing = run_for_output(
+                    list,
+                    &super::mysql::objects_sql(&name),
+                    Duration::from_secs(60),
+                )
+                .context("the objects of the database")?;
+                let drops = super::mysql::drop_objects_sql(&name, &listing);
+                if !drops.is_empty() {
+                    let cmd =
+                        self.sql_tool_at(engine, engine.client_bin(), &env, line.as_deref(), port);
+                    run_with_input(cmd, &drops, Duration::from_secs(60))
+                        .context("the objects of the database")?;
+                }
                 // Streamed, never whole in memory nor read as UTF-8 text
                 // (BUG-V6-04), without the `DEFINER` of root's dump: the
                 // views, triggers, routines and events become the project
@@ -262,6 +327,31 @@ impl Services {
         let name = auth::project_db_name(&self.kit, project, engine)?;
         auth::check_name_free(&self.kit, project, engine, &name)?;
         Ok(name)
+    }
+}
+
+/// Deletes the safety copies `<name>-<label>-*` of `kind` in `dir` but the
+/// newest `keep`; a copy that cannot be deleted stays (logged).
+fn prune(dir: &std::path::Path, name: &str, label: &str, kind: DbEngine, keep: usize) {
+    let prefix = format!("{name}-{label}-");
+    let mut copies: Vec<PathBuf> = fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_file()))
+        .filter(|e| {
+            let n = e.file_name().to_string_lossy().into_owned();
+            n.starts_with(&prefix) && n.ends_with(kind.backup_ext())
+        })
+        .map(|e| e.path())
+        .collect();
+    // The stamp in the name: newest last.
+    copies.sort();
+    let extra = copies.len().saturating_sub(keep);
+    for old in &copies[..extra] {
+        if let Err(e) = fs::remove_file(old) {
+            crate::log::warn(&format!("{}: {e}", old.display()));
+        }
     }
 }
 

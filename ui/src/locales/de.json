@@ -264,7 +264,6 @@
   "Riduci a icona": "Minimieren",
   "Rimuovi l'unità": "Laufwerk entfernen",
   "Ripristina": "Wiederherstellen",
-  "Ripristinare {0}?": "{0} wiederherstellen?",
   "Salva": "Speichern",
   "Salvato.": "Gespeichert.",
   "Scarica da solo le nuove versioni di Atollo (sostituiscono l'exe alla chiusura)": "Neue Versionen von Atollo automatisch herunterladen (sie ersetzen die EXE beim Schließen)",
@@ -969,5 +968,6 @@
   "Esporta diagnostica": "Diagnose exportieren",
   "Segnala un problema": "Problem melden",
   "Segnalare un problema": "Ein Problem melden",
-  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Das Diagnose-Zip sammelt Version, System, Laufwerk, Umgebung, die Prüfung der Programme, Komponenten, Ports und das Ende der Logs, ohne die Schlüssel, Tokens und Passwörter des Kits und mit deinem Profilordner als ~. Es bleibt auf dem PC: hänge es selbst an die Meldung an, nachdem du es angesehen hast."
+  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Das Diagnose-Zip sammelt Version, System, Laufwerk, Umgebung, die Prüfung der Programme, Komponenten, Ports und das Ende der Logs, ohne die Schlüssel, Tokens und Passwörter des Kits und mit deinem Profilordner als ~. Es bleibt auf dem PC: hänge es selbst an die Meldung an, nachdem du es angesehen hast.",
+  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "{0} wiederherstellen? Das Kit kopiert zuerst, was die Datenbank jetzt enthält."
 }
