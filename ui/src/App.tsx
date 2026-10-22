@@ -36,9 +36,10 @@ import { ServersPage } from "./servers";
 import { TerminalsPage } from "./terminals";
 import { tauriPty, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
-import { Codicon, codicon, Icon, Notice, Sash, useStoredSize, useTabs } from "./workbench";
+import { Codicon, codicon, Icon, IconButton, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./hooks";
-import { LoadError } from "./common";
+import { ErrorLine, LoadError } from "./common";
+import { CommandPalette } from "./commands";
 
 // The pages seldom open (the Guide, large; Settings; Tools, with the
 // first-start page that shares its rows): each its own chunk, read the
@@ -144,11 +145,21 @@ export function App() {
     projectTabs.show(id);
   });
 
-  /** Ctrl+P (⌘P on macOS), as the editor's Quick Open: Projects, its box. */
+  /** Ctrl+P (⌘P on macOS), as the editor's Quick Open: Projects, its box.
+   * Ctrl+Shift+P, the command palette (N-8), on any page. */
   const [quickOpen, setQuickOpen] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const [commandError, setCommandError] = useState<string | null>(null);
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "p") return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.key.toLowerCase() !== "p") return;
+      if (e.shiftKey) {
+        // No shell uses Ctrl+Shift+P: also from a terminal, as the editor.
+        e.preventDefault();
+        setCommandError(null);
+        setPalette(true);
+        return;
+      }
       // Ctrl+P in a terminal is the shell's (the previous command).
       if (e.target instanceof Element && e.target.closest(".xterm")) return;
       e.preventDefault();
@@ -181,6 +192,20 @@ export function App() {
       </a>
       <TitleBar title={current?.label} />
       <Banner info={info} error={error} onRetry={retryInfo} />
+      {commandError && (
+        <div className="flex items-start gap-2 px-3 py-1">
+          <div className="min-w-0 flex-1">
+            <ErrorLine error={commandError} />
+          </div>
+          <IconButton
+            icon={codicon("close")}
+            label={t("Chiudi")}
+            onClick={() => {
+              setCommandError(null);
+            }}
+          />
+        </div>
+      )}
       {/* VSCodium's floating parts: 4px apart on the workbench color, the
           activity bar on the window's edge. */}
       <div className="flex min-h-0 flex-1 gap-vsc-size40 pr-vsc-size40 pb-vsc-size40">
@@ -315,6 +340,26 @@ export function App() {
         }}
         terminals={terminals}
       />
+      {palette && (
+        <CommandPalette
+          pages={all.filter((p) => p.id !== page)}
+          agents={agents ?? []}
+          editor={editor}
+          runs={runs}
+          running={running}
+          onPage={(id) => {
+            setPage(id as PageId);
+          }}
+          onOpenProject={(id) => {
+            setPage("projects");
+            projectTabs.show(id);
+          }}
+          onError={setCommandError}
+          onClose={() => {
+            setPalette(false);
+          }}
+        />
+      )}
       {closing && (
         <CloseDialog
           open={closing}

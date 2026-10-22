@@ -959,6 +959,15 @@ export const START: TopicTexts = {
             ),
             <Key key="k">Ctrl+P</Key>,
           ),
+          rich(
+            tr(
+              "{0} apre la palette dei comandi da qualsiasi pagina, anche da un terminale: avviare o fermare un progetto, aprirlo, lanciarci un agente, cambiare pagina.",
+              "{0} opens the command palette from any page, even from a terminal: start or stop a project, open it, launch an agent in it, change page.",
+              "{0} ouvre la palette de commandes depuis n'importe quelle page, même depuis un terminal : démarrer ou arrêter un projet, l'ouvrir, y lancer un agent, changer de page.",
+              "{0} öffnet die Befehlspalette von jeder Seite aus, auch aus einem Terminal: ein Projekt starten oder stoppen, es öffnen, einen Agenten darin starten, die Seite wechseln.",
+            ),
+            <Key key="c">Ctrl+Shift+P</Key>,
+          ),
         ]}
       />
 
@@ -1048,9 +1057,9 @@ export const START: TopicTexts = {
               ),
               tr(
                 "Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi, il server dei modelli locali e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma.",
-                "It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools, the local models server and the project actions, each with its output; “Stop all” stops them all after a confirmation.",
+                "It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools, the local models server and the project actions, each with its output; “Stop everything” stops them all after a confirmation.",
                 "Il s'ouvre depuis la barre d'état. Il liste l'installation en cours, les versions des bases de données allumées, les pools de serveurs web allumés, le serveur des modèles locaux et les actions des projets, chacune avec sa sortie ; « Tout arrêter » les arrête toutes après une confirmation.",
-                "Er öffnet sich über die Statusleiste. Er listet die laufende Installation, die eingeschalteten Datenbankversionen, die eingeschalteten Webserver-Pools, den Server der lokalen Modelle und die Aktionen der Projekte auf, jede mit ihrer Ausgabe; „Alle beenden“ beendet sie alle nach einer Bestätigung.",
+                "Er öffnet sich über die Statusleiste. Er listet die laufende Installation, die eingeschalteten Datenbankversionen, die eingeschalteten Webserver-Pools, den Server der lokalen Modelle und die Aktionen der Projekte auf, jede mit ihrer Ausgabe; „Alles stoppen“ beendet sie alle nach einer Bestätigung.",
               ),
             ],
             [
@@ -1170,9 +1179,9 @@ export const START: TopicTexts = {
         <P>
           {tr(
             "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma»; per i modelli locali l'indirizzo, i modelli in memoria e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database, i modelli locali e i server web in esecuzione?» e poi ferma azioni, database, modelli locali e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
-            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”; for the local models the address, the models in memory and “Stop”. “Stop all”, at the top, asks “Stop the projects' actions, the databases, the local models and the web servers that are running?” and then stops actions, databases, local models and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
+            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”; for the local models the address, the models in memory and “Stop”. “Stop everything”, at the top, asks “Stop the projects' actions, the databases, the local models and the web servers that are running?” and then stops actions, databases, local models and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
             "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter » ; pour un pool de serveurs web, l'adresse, les VirtualHosts rattachés et « Arrêter » ; pour les modèles locaux, l'adresse, les modèles en mémoire et « Arrêter ». « Tout arrêter », en haut, demande « Arrêter les actions des projets, les bases de données, les modèles locaux et les serveurs web en cours ? » puis arrête actions, bases de données, modèles locaux et pools. S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
-            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“; bei den lokalen Modellen die Adresse, die Modelle im Speicher und „Beenden“. „Alle beenden“ oben fragt „Die laufenden Aktionen der Projekte, Datenbanken, lokalen Modelle und Webserver beenden?“ und beendet dann Aktionen, Datenbanken, lokale Modelle und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
+            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“; bei den lokalen Modellen die Adresse, die Modelle im Speicher und „Beenden“. „Alles stoppen“ oben fragt „Die laufenden Aktionen der Projekte, Datenbanken, lokalen Modelle und Webserver beenden?“ und beendet dann Aktionen, Datenbanken, lokale Modelle und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
           )}
         </P>
       </Section>
@@ -1201,12 +1210,21 @@ export const START: TopicTexts = {
               ),
             ],
             [
+              <Key key="c">Ctrl+Shift+P</Key>,
+              tr(
+                "Apre «Comandi», la palette dei comandi (⌘⇧P su macOS), da qualsiasi pagina e anche da un terminale. Offre «Avvia» o «Ferma» e «Apri» per ogni progetto, «Apri … nell'editor», ogni agente installato in un progetto, «Avvia» o «Ferma» per MySQL e MongoDB, «Vai a» per le altre pagine e, quando qualcosa è in corso, «Ferma tutto». Ogni parola scritta deve comparire, in qualsiasi ordine; ↑ e ↓ scelgono, Invio esegue, Esc chiude.",
+                "Opens “Commands”, the command palette (⌘⇧P on macOS), from any page and also from a terminal. It offers “Start” or “Stop” and “Open” for each project, “Open … in the editor”, each installed agent in a project, “Start” or “Stop” for MySQL and MongoDB, “Go to” for the other pages and, when something is running, “Stop everything”. Every word you type must appear, in any order; ↑ and ↓ choose, Enter runs, Esc closes.",
+                "Ouvre « Commandes », la palette de commandes (⌘⇧P sur macOS), depuis n'importe quelle page et aussi depuis un terminal. Elle propose « Démarrer » ou « Arrêter » et « Ouvrir » pour chaque projet, « Ouvrir … dans l'éditeur », chaque agent installé dans un projet, « Démarrer » ou « Arrêter » pour MySQL et MongoDB, « Aller à » pour les autres pages et, quand quelque chose tourne, « Tout arrêter ». Chaque mot tapé doit apparaître, dans n'importe quel ordre ; ↑ et ↓ choisissent, Entrée exécute, Échap ferme.",
+                "Öffnet „Befehle“, die Befehlspalette (⌘⇧P unter macOS), von jeder Seite und auch aus einem Terminal. Sie bietet „Starten“ oder „Stoppen“ und „Öffnen“ für jedes Projekt, „… im Editor öffnen“, jeden installierten Agenten in einem Projekt, „Starten“ oder „Stoppen“ für MySQL und MongoDB, „Zu … wechseln“ für die anderen Seiten und, wenn etwas läuft, „Alles stoppen“. Jedes eingegebene Wort muss vorkommen, in beliebiger Reihenfolge; ↑ und ↓ wählen, Eingabe führt aus, Esc schließt.",
+              ),
+            ],
+            [
               <Key key="e">Esc</Key>,
               tr(
                 "Chiude le finestre di conferma e lo zoom delle immagini, e annulla le domande nella pagina (per esempio quella di «Ferma tutto» o della rimozione di un terminale).",
-                "Closes confirmation dialogs and image zoom, and cancels the questions in the page (for example the one of “Stop all” or of removing a terminal).",
+                "Closes confirmation dialogs and image zoom, and cancels the questions in the page (for example the one of “Stop everything” or of removing a terminal).",
                 "Ferme les fenêtres de confirmation et le zoom des images, et annule les questions dans la page (par exemple celle de « Tout arrêter » ou de la suppression d'un terminal).",
-                "Schließt Bestätigungsdialoge und die Bildvergrößerung und bricht die Fragen in der Seite ab (zum Beispiel die von „Alle beenden“ oder beim Entfernen eines Terminals).",
+                "Schließt Bestätigungsdialoge und die Bildvergrößerung und bricht die Fragen in der Seite ab (zum Beispiel die von „Alles stoppen“ oder beim Entfernen eines Terminals).",
               ),
             ],
           ]}

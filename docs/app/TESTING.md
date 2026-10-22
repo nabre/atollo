@@ -44,7 +44,8 @@ They cover, among other things:
 - `useLoad` (`test\ui\hooks.test.ts`): first load, the three error policies, a new load when `load` or `key` change but not the policy, `enabled`, periodic loading stopped on unmount, `setData`;
 - interface controls on `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): events that really fire, controlled values, Enter in forms, accessible names; the codicons (`codicon.test.tsx`): glyphs of the bundled font, token sizes, no `react-icons/vsc` left;
 - the theme (`test\ui\theme\theme.test.ts`): every `--vscode-*` variable read by the components defined in both themes, every size declared once with its utility, the sizes of `docs\brand\vscodium-1.135\workbench-ref.css`, no token of the classic UI, every `--vscode-*` key Atollo reads known to VSCodium 1.135;
-- the Activity panel (`test\ui\activity.test.tsx`): a secondary database version and a pool listed and counted, "Stop all" stopping everything once confirmed; the Terminals page (`test\ui\terminals.test.tsx`): Esc closes the removal question;
+- the Activity panel (`test\ui\activity.test.tsx`): a secondary database version and a pool listed and counted, "Stop everything" stopping everything once confirmed; the Terminals page (`test\ui\terminals.test.tsx`): Esc closes the removal question;
+- the command palette (`test\ui\commands.test.tsx`, D-160): the commands of each project, of the installed agents and database servers and of the other pages, "Stop everything" only while something runs, a project found by two words, every typed word matching in any order and case, a failure shown after it closed; `test\ui\App.test.tsx`: Ctrl+Shift+P, "vai impostazioni", Enter opens Settings;
 - the Guide's documents: `node scripts/guide-docs.cjs --check` (in the `Lint and test` job) fails if `docs\app\GUIDE.md` or `GUIDE.it.md` is behind the in-app Guide.
 
 ## Generated files and screenshots
@@ -188,7 +189,7 @@ To be run before every release, with the release exe (`npm run build`), on a PC 
 - [ ] **Port in use.** With a port chosen by hand that is already used by another program, the start gives a clear error and the port does not change on its own.
 - [ ] **Port of another part of Atollo** (D-141). An action's port chosen by hand that is the port of a web server pool, of a database version (for example 3306) or in the editor's 7000-7099: refused, and the message names the owner (“Port 3306 already belongs to database MySQL 9.7: choose another one.”). The same for the port of a pool profile and for the port of a database server or of one of its versions; a new pool never gets one of them.
 - [ ] **Static site.** A folder with only `index.html`: the kit's file server serves it, at `http://localhost:<port>` and at `http://<project>.localhost:<port>`. A `.env` file is not reachable (403).
-- [ ] **Activity and “Stop all”.** With an action, a secondary MySQL version and a pool running: the status bar, the Projects badge and the Activity panel count the three and the panel lists them; “Stop all” asks first, “Cancel” changes nothing, the confirmation stops all three.
+- [ ] **Activity and “Stop everything”.** With an action, a secondary MySQL version and a pool running: the status bar, the Projects badge and the Activity panel count the three and the panel lists them; “Stop everything” asks first, “Cancel” changes nothing, the confirmation stops all three.
 - [ ] **“Serve as a website”.** With the `public` folder and PHP: `panel.json` contains the `site` action and the other keys of the file remain.
 - [ ] **“Stop”** on `npm run dev`: in Task Manager no `node.exe`/`esbuild.exe` of the project is left.
 - [ ] **Electron or Tauri.** The app opens its window and the output reaches the page.
@@ -303,7 +304,7 @@ Verified by hand on Windows x64 (with an RTX 2070, Vulkan): installation of llam
 - [ ] **Hugging Face.** “Search the GGUF files” on a public repository lists the quantizations with their size; a gated repository without a token says that a token is needed; with the token saved (`data\app\secrets\hf-token`, owner-only) it downloads.
 - [ ] **Server with its key.** “Start”: `llama-server` listens on `127.0.0.1` only, on 9931 or the next free port; `curl http://127.0.0.1:<port>/v1/models` without a key answers 401, with `Authorization: Bearer <key>` (“Copy the key”) the list of models. The key is not on the command line of `llama-server` (Task Manager › Command line). `Atollo.exe llm status` says whether it runs without sending the key.
 - [ ] **Chat in the browser.** “Open the chat”: llama.cpp's page asks for the key in its settings; with the copied key it answers.
-- [ ] **Stopping.** The server is in Activity and in the status bar's count; “Stop all”, “Remove drive” and closing Atollo stop it with its models' processes (none left in Task Manager). Deleting a model while the server runs stops it first, then the file goes away.
+- [ ] **Stopping.** The server is in Activity and in the status bar's count; “Stop everything”, “Remove drive” and closing Atollo stop it with its models' processes (none left in Task Manager). Deleting a model while the server runs stops it first, then the file goes away.
 - [ ] **Pi from a project.** With a tool-using model downloaded (Qwen3.5 9B), the Pi button of a project opens Pi in the project folder on the local model with no other setting; asked to list the files, it runs the bash tool with the kit's Git Bash. `pi` in a kit terminal works too. With a cloud provider signed in via `/login`, Pi uses it and the local model stays available.
 - [ ] **Pi's environment.** In `data\home\.pi\agent\`: `models.json` with the `atollo` provider (owner-only), `settings.json` with the kit's Git Bash as `shellPath`, `APPEND_SYSTEM.md` with the kit's block (the user's text kept), the project in `trust.json`. No update notice from Pi (`PI_SKIP_VERSION_CHECK=1`).
 
@@ -316,6 +317,19 @@ Verified by hand on Windows x64: Claude Code 2.1.306 expands `${VAR}` in the hea
 - [ ] **No token for a cloned repository.** A cloned repository whose `.mcp.json` has a server asking for `${GITHUB_PERSONAL_ACCESS_TOKEN}` (for example in `env` or a header) gets nothing: with the github server not in the kit's `mcp.json`, that server receives an empty or unexpanded value, never the token.
 - [ ] **Codex.** In a kit terminal `codex mcp list` shows the kit's servers (github with `bearer_token_env_var`, playwright, fetch) and, in a project, the project's ones (mysql with `env_vars`).
 - [ ] **At once, and by hand.** “Remove” on a kit server takes it away from Claude Code's `.claude.json`, Codex's `config.toml`, Antigravity's `mcp_config.json` and Pi's `mcp.json` without restarting the app. A `data\agents\mcp.json` that is not valid JSON shows the notice and is not rewritten.
+
+### Command palette (D-160)
+**Not yet tried by hand**: that WebView2 (Windows), WKWebView (macOS) and WebKitGTK (Linux) leave Ctrl+Shift+P to the page instead of using it themselves (the handler calls `preventDefault`).
+- [ ] **From Projects.** Ctrl+Shift+P (⌘⇧P on macOS) on the Projects page opens “Commands” with the box “What do you want to do? Start, stop, open, a project, an agent…”; projects are newest first, “Go to” lists every page but Projects.
+- [ ] **From another page.** In Settings (or Tools) Ctrl+Shift+P opens the same dialog; “Go to Settings” is not there, “Go to Projects” is. “go settings” typed on another page finds “Go to Settings” (the words in any order, any case).
+- [ ] **From a terminal.** With the cursor in a kit terminal (the Terminals page or the editor's terminal in the page), Ctrl+Shift+P opens “Commands” and the terminal receives nothing; Ctrl+P in the terminal stays the shell's (in PowerShell or Bash, the previous history line).
+- [ ] **Starting and stopping a project.** “Start <project>” starts its default action (it appears in Activity); reopening the palette, the entry is “Stop <project>” and stops it. A start error (for example a port in use) appears under the title bar, with the X that closes it.
+- [ ] **Opening.** “Open <project>” goes to its page; “Open <project> in the editor” (only with the editor installed) opens the editor in its folder.
+- [ ] **An agent in the project.** “Claude Code in <project>” (or another installed agent) opens the agent in the project's folder, as the project page's button does; an agent not installed has no entries.
+- [ ] **Databases.** With MySQL installed, “Start MySQL” starts it and the entry becomes “Stop MySQL”; the same for MongoDB. A server not installed has no entries.
+- [ ] **Stop everything.** With an action, a database and a pool running, “Stop everything” (there only then) stops them without asking for confirmation; the Activity panel is left empty. With nothing running the entry is not there.
+- [ ] **Closing.** Esc, or a click outside the dialog, closes without doing anything; ↑/↓ move the choice, Enter runs the highlighted one.
+- [ ] **Ctrl+P unchanged.** Ctrl+P still opens “Open a project” as before: Enter opens the page, Shift+Enter starts the default action, Esc closes.
 
 ### Tools
 - [ ] **Kinds** (D-139). “All tools” has the blocks System and editor, AI agents, Local models, Languages, Development tools, Web server, Databases, each with its title, count, description and a box to choose them all, and closes with a click; the same kinds in the side bar's tree, in the matrix and at the first start.

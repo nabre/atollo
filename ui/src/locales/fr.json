@@ -1000,5 +1000,17 @@
   "{0} file cambiati, {1} mancanti": "{0} fichiers modifiés, {1} manquants",
   "Reinstalla": "Réinstaller",
   "Reinstalla tutti": "Tout réinstaller",
-  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Sans manifeste, installés avant qu'Atollo n'en garde un : {0}. Ils sont vérifiés à partir de leur prochaine installation ou mise à jour."
+  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Sans manifeste, installés avant qu'Atollo n'en garde un : {0}. Ils sont vérifiés à partir de leur prochaine installation ou mise à jour.",
+  "progetti, database, modelli locali, server web": "projets, bases de données, modèles locaux, serveurs web",
+  "la pagina del progetto": "la page du projet",
+  "Apri {0} nell'editor": "Ouvrir {0} dans l'éditeur",
+  "{0} in {1}": "{0} dans {1}",
+  "agente": "agent",
+  "database": "base de données",
+  "Vai a {0}": "Aller à {0}",
+  "Comandi": "Commandes",
+  "Cosa vuoi fare? Avvia, ferma, apri, un progetto, un agente…": "Que voulez-vous faire ? Démarrer, arrêter, ouvrir, un projet, un agent…",
+  "Nessun comando corrisponde alla ricerca.": "Aucune commande ne correspond à la recherche.",
+  "Invio esegue · Esc chiude": "Entrée exécute · Échap ferme",
+  "Comandi trovati": "Commandes trouvées"
 }

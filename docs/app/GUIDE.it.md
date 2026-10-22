@@ -218,6 +218,7 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 > - A sinistra la barra delle attività cambia pagina; accanto, la barra laterale mostra elenchi e alberi.
 > - Al centro le schede; in basso la barra di stato e il pannello «Attività» con ciò che è in corso.
 > - <kbd>Ctrl+P</kbd> apre un progetto per nome da qualsiasi pagina.
+> - <kbd>Ctrl+Shift+P</kbd> apre la palette dei comandi da qualsiasi pagina, anche da un terminale: avviare o fermare un progetto, aprirlo, lanciarci un agente, cambiare pagina.
 
 #### Le parti della finestra
 
@@ -284,6 +285,7 @@ Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un
 | Tasti | Che cosa fa |
 | --- | --- |
 | <kbd>Ctrl+P</kbd> | Apre «Apri un progetto» (⌘P su macOS): scrivi parte del nome, della piattaforma o del linguaggio. Invio apre la pagina del progetto, Maiusc+Invio avvia la sua azione predefinita, Esc chiude. |
+| <kbd>Ctrl+Shift+P</kbd> | Apre «Comandi», la palette dei comandi (⌘⇧P su macOS), da qualsiasi pagina e anche da un terminale. Offre «Avvia» o «Ferma» e «Apri» per ogni progetto, «Apri … nell'editor», ogni agente installato in un progetto, «Avvia» o «Ferma» per MySQL e MongoDB, «Vai a» per le altre pagine e, quando qualcosa è in corso, «Ferma tutto». Ogni parola scritta deve comparire, in qualsiasi ordine; ↑ e ↓ scelgono, Invio esegue, Esc chiude. |
 | <kbd>Esc</kbd> | Chiude le finestre di conferma e lo zoom delle immagini, e annulla le domande nella pagina (per esempio quella di «Ferma tutto» o della rimozione di un terminale). |
 
 - Passa il mouse sopra icone, pallini e etichette: quasi tutto ha un suggerimento che spiega che cosa è o che cosa fa.
@@ -452,7 +454,7 @@ Argomenti collegati: [1.4 Il primo progetto, passo per passo](#14-il-primo-proge
 
 ### 2.2 La pagina Progetti e il «Pannello rapido»
 
-*L'elenco dei progetti, il «Pannello rapido» con preferiti e recenti, l'apertura veloce con Ctrl+P e le sette sezioni di un progetto.*
+*L'elenco dei progetti, il «Pannello rapido» con preferiti e recenti, l'apertura veloce con Ctrl+P, i comandi con Ctrl+Shift+P e le sette sezioni di un progetto.*
 
 > **In breve**
 >
@@ -494,6 +496,8 @@ Ogni riga di progetto ha un'icona che dice che tipo di progetto è: un globo per
 #### Aprire un progetto per nome
 
 Da qualsiasi pagina premi <kbd>Ctrl+P</kbd> (⌘P su macOS): compare «Apri un progetto». Scrivi parte del nome, della piattaforma o di un linguaggio; i progetti sono in ordine di uso recente. <kbd>Invio</kbd> apre la pagina, <kbd>Maiusc+Invio</kbd> avvia subito l'azione predefinita.
+
+Per fare qualcosa con un progetto senza aprirlo, <kbd>Ctrl+Shift+P</kbd> (⌘⇧P su macOS) apre «Comandi», da qualsiasi pagina e anche da un terminale. Per ogni progetto, dal più recente: «Avvia» o «Ferma» (la sua azione predefinita), «Apri» (la sua pagina), «Apri … nell'editor» quando l'editor è installato e «\<agente\> in \<progetto\>» per ogni agente installato. Ci sono anche «Avvia» o «Ferma» per i server MySQL e MongoDB installati, «Vai a» per le altre pagine e, quando qualcosa è in corso, «Ferma tutto»: lo stesso pulsante del pannello «Attività», senza la sua domanda, perché sceglierlo è già la conferma. Scrivi più parole, per esempio «avvia shop»: ognuna deve comparire, in qualsiasi ordine. Se un comando non riesce dopo la chiusura, l'errore compare sotto la barra del titolo.
 
 #### La pagina di un progetto
 
