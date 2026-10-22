@@ -33,6 +33,14 @@ const FILES: &[(&str, &str)] = &[
     ("bin/agy", include_str!("../../../runtime/bin/agy")),
     ("bin/claude", include_str!("../../../runtime/bin/claude")),
     (
+        "bin/atollo-mcp.cmd",
+        include_str!("../../../runtime/bin/atollo-mcp.cmd"),
+    ),
+    (
+        "bin/atollo-mcp",
+        include_str!("../../../runtime/bin/atollo-mcp"),
+    ),
+    (
         "bin/gradle.cmd",
         include_str!("../../../runtime/bin/gradle.cmd"),
     ),

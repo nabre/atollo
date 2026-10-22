@@ -1,5 +1,5 @@
 //! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
-//! `versions`, `check`, `prepare`, `sync`, `keyring`, `serve`, `models`,
+//! `versions`, `check`, `prepare`, `sync`, `keyring`, `mcp`, `serve`, `models`,
 //! `llm`, `diagnostics`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
 //! console. Step lines use the markers `── N. Name ──`, `√`, `x`, `!` and
@@ -50,6 +50,9 @@ pub enum Cli {
     },
     /// Antigravity's login: `restore` before agy, `save` after.
     Keyring(String),
+    /// The kit's GitHub MCP server on stdio (`mcp github`, started by the
+    /// agents through `data\kit\bin\atollo-mcp`): the token stays here.
+    McpGithub,
     /// File server of a static site: `serve <folder> <port>` (projects/run.rs).
     Serve {
         dir: std::path::PathBuf,
@@ -177,6 +180,14 @@ pub fn parse(args: &[OsString]) -> Cli {
         {
             Some(a @ ("restore" | "save")) => Cli::Keyring(a.to_owned()),
             other => Cli::Unknown(format!("keyring {}", other.unwrap_or_default())),
+        },
+        "mcp" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            Some("github") if args.len() == 2 => Cli::McpGithub,
+            other => Cli::Unknown(format!("mcp {}", other.unwrap_or_default())),
         },
         "serve" => match (
             args.get(1),

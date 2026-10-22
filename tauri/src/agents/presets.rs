@@ -3,9 +3,14 @@
 //! project) or in a project's `.mcp.json`, as if written by hand.
 //!
 //! - no secret in the files (`.mcp.json` is in the repository): a server
-//!   reads the GitHub token or the project's database from a variable,
-//!   `KEY: ${KEY}` (Codex passes it on as `env_vars`, Claude Code expands it),
-//!   that the app sets when it starts the agent ([`launch_vars`]);
+//!   reads the project's database from a variable, `KEY: ${KEY}` (Codex
+//!   passes it on as `env_vars`, Claude Code expands it), that the app sets
+//!   when it starts the agent ([`launch_vars`]);
+//! - the GitHub token is in no file and in no environment of the agent
+//!   (SEC-V7-01): the github server is the kit's launcher `atollo-mcp
+//!   github` (`agents::github_mcp`), which reads the token itself and sends
+//!   it to GitHub only. In the agent's environment the MCP servers of a
+//!   cloned project, which inherit it, would read it;
 //! - their programs (`npx` → Node, `uvx` → uv) are installed when the agent
 //!   starts, as for any server (`setup::needs::of_agent`).
 
@@ -19,8 +24,9 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::projects::mcp::McpServer;
 
-/// The kit account's GitHub token, for the GitHub server.
-pub const GITHUB_VAR: &str = "GITHUB_PERSONAL_ACCESS_TOKEN";
+/// The app itself, for the kit's launcher of the GitHub server: Codex gives
+/// a server only the variables it names (`env_vars`).
+pub const EXE_VAR: &str = "ATOLLO_EXE";
 /// The project's MySQL database, for DBHub.
 pub const MYSQL_VAR: &str = "DSN";
 /// The project's MongoDB database, for MongoDB's server.
@@ -53,6 +59,18 @@ fn stdio(name: &str, command: &str, args: &[&str], env: &[&str]) -> McpServer {
     }
 }
 
+/// The github server: `data\kit\bin\atollo-mcp github` (on the agent's
+/// PATH), which runs `Atollo mcp github` (`agents::github_mcp`). On Windows
+/// through `cmd /c`: the agents start a program, not a batch file.
+fn github() -> McpServer {
+    let (command, args): (&str, &[&str]) = if cfg!(windows) {
+        ("cmd", &["/c", "atollo-mcp", "github"])
+    } else {
+        ("atollo-mcp", &["github"])
+    };
+    stdio("github", command, args, &[EXE_VAR])
+}
+
 /// The ready servers, in the order of the page.
 pub fn all() -> Vec<Preset> {
     let preset = |id, scope, engine, server| Preset {
@@ -63,24 +81,9 @@ pub fn all() -> Vec<Preset> {
     };
     vec![
         // GitHub's own server, on GitHub (the local one is a program of its
-        // own to download); the kit's account, never a token in the file.
-        preset(
-            "github",
-            "kit",
-            None,
-            McpServer {
-                name: "github".into(),
-                kind: "http".into(),
-                command: None,
-                args: Vec::new(),
-                url: Some("https://api.githubcopilot.com/mcp/".into()),
-                env: BTreeMap::new(),
-                headers: BTreeMap::from([(
-                    "Authorization".to_owned(),
-                    format!("Bearer ${{{GITHUB_VAR}}}"),
-                )]),
-            },
-        ),
+        // own to download), through the kit's launcher: the kit's account,
+        // the token neither in the file nor in the agent's environment.
+        preset("github", "kit", None, github()),
         preset(
             "playwright",
             "kit",
@@ -134,7 +137,7 @@ pub fn all() -> Vec<Preset> {
 /// Which of the variables of the ready servers `texts` (the MCP files the
 /// agent reads) use as `${NAME}`.
 pub fn used_vars(texts: &[String]) -> Vec<&'static str> {
-    [GITHUB_VAR, MYSQL_VAR, MONGODB_VAR]
+    [MYSQL_VAR, MONGODB_VAR]
         .into_iter()
         .filter(|v| {
             let var = format!("${{{v}}}");
@@ -143,12 +146,13 @@ pub fn used_vars(texts: &[String]) -> Vec<&'static str> {
         .collect()
 }
 
-/// The variables to give the agent: those of the kit's servers, and the
-/// project's servers' but the GitHub token.
+/// The variables to give the agent: those the kit's servers and the
+/// project's use. Only the project's own databases: the GitHub token is
+/// never one (SEC-V7-01), whoever asks for it.
 pub fn wanted_vars(kit: &[String], project: &[String]) -> Vec<&'static str> {
     let mut wanted = used_vars(kit);
     for v in used_vars(project) {
-        if v != GITHUB_VAR && !wanted.contains(&v) {
+        if !wanted.contains(&v) {
             wanted.push(v);
         }
     }
@@ -156,10 +160,10 @@ pub fn wanted_vars(kit: &[String], project: &[String]) -> Vec<&'static str> {
 }
 
 /// The values of the variables the agent's servers use, to set when the
-/// agent starts in `dir`: the GitHub token (when the kit's account is
-/// signed in), the project's databases (when created). One already set
-/// stays. The token only for the kit's own servers: a cloned repository's
-/// `.mcp.json` asking for it would send it wherever it likes.
+/// agent starts in `dir`: the project's databases (when created). One
+/// already set stays. Never the GitHub token: the kit's github server reads
+/// it itself (`agents::github_mcp`), and in the agent's environment the MCP
+/// servers of a cloned repository, which inherit it, would read it too.
 pub fn launch_vars(
     kit: &Kit,
     env: &KitEnv,
@@ -178,11 +182,6 @@ pub fn launch_vars(
     );
     wanted.retain(|v| env.get(v).is_none());
     let mut out = Vec::new();
-    if wanted.contains(&GITHUB_VAR) {
-        if let Some(token) = crate::github::token(kit, env) {
-            out.push((GITHUB_VAR, token));
-        }
-    }
     if wanted.contains(&MYSQL_VAR) || wanted.contains(&MONGODB_VAR) {
         for db in dbs() {
             let var = match db.engine.as_str() {

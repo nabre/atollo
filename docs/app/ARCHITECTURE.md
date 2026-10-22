@@ -122,6 +122,8 @@ tauri\src\
     keyring  relocate         Antigravity sign-in (D-115; keyring\portable: the parts tested on every system);
                               paths rewritten after a move
     claude_token              Claude Code token on macOS (D-115)
+    presets  github_mcp       ready MCP servers (D-156); `Atollo mcp github`, the stdio bridge to GitHub's server
+                              that keeps the token out of the agent's environment (SEC-V7-01)
   db\                         databases
     engine                    DbEngine: MySQL, MongoDB (D-110)
     services\                 kit servers (D-73): mod (settings, start, stop, one operation at a time per engine:

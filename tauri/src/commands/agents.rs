@@ -60,8 +60,9 @@ pub async fn agent_launch<R: Runtime>(
             .collect();
         let mut env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
-        // The GitHub token and the project's databases of the ready MCP
-        // servers (N-7): in the agent's environment, never in a file.
+        // The project's databases of the ready MCP servers (N-7): in the
+        // agent's environment, never in a file. Never the GitHub token: the
+        // kit's github server reads it itself (SEC-V7-01).
         for (var, value) in
             crate::agents::presets::launch_vars(&kit, &env, &dir, || services.project_dbs(&project))
         {

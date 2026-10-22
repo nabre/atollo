@@ -23,6 +23,17 @@ fn commands() {
     assert_eq!(parse(&args(&["/?"])), Cli::Help);
     assert_eq!(parse(&args(&["components"])), Cli::Components(None));
     assert_eq!(parse(&args(&["x"])), Cli::Unknown("x".into()));
+    // The kit's GitHub MCP server (SEC-V7-01), only as `mcp github`.
+    assert_eq!(parse(&args(&["mcp", "github"])), Cli::McpGithub);
+    assert_eq!(
+        parse(&args(&["mcp", "other"])),
+        Cli::Unknown("mcp other".into())
+    );
+    assert_eq!(parse(&args(&["mcp"])), Cli::Unknown("mcp ".into()));
+    assert_eq!(
+        parse(&args(&["mcp", "github", "x"])),
+        Cli::Unknown("mcp github".into())
+    );
 }
 
 /// `models`: the list, a download by id or by repository, a removal; a
