@@ -23,6 +23,7 @@ import {
   ViewPane,
 } from "../workbench";
 import { tr } from "./core/lang";
+import { matches, searchWords, topicHaystack } from "./core/search";
 import {
   chapterTitle,
   GUIDE_GROUPS,
@@ -77,12 +78,9 @@ export function GuidePage({
   const next = index < GUIDE_TOPICS.length - 1 ? GUIDE_TOPICS[index + 1] : undefined;
 
   const found = useMemo(() => {
-    const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const words = searchWords(search);
     if (words.length === 0) return GUIDE_TOPICS;
-    return GUIDE_TOPICS.filter((x) => {
-      const text = `${x.title()} ${x.subtitle()} ${sectionCode(x)} ${x.keywords}`.toLowerCase();
-      return words.every((w) => text.includes(w));
-    });
+    return GUIDE_TOPICS.filter((x) => matches(words, topicHaystack(x)));
   }, [search]);
 
   const nav = useMemo<GuideNav>(() => ({ select: setTopicId, open: onNavigate }), [onNavigate]);
