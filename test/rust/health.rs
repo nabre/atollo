@@ -21,6 +21,24 @@ fn risky_characters_of_a_path() {
     assert_eq!(risky_chars("a%b^c%"), ['%', '^']);
 }
 
+/// The pasted command never runs a piece of the path.
+#[test]
+fn command_to_take_the_files_back() {
+    assert_eq!(
+        owners_fix(false, "/media/O'Brien/kit/data").unwrap(),
+        r#"sudo chown -R "$(id -un)" '/media/O'\''Brien/kit/data'"#
+    );
+    assert_eq!(
+        owners_fix(false, "/k/$(rm -rf ~)`x`").unwrap(),
+        r#"sudo chown -R "$(id -un)" '/k/$(rm -rf ~)`x`'"#
+    );
+    assert_eq!(
+        owners_fix(true, r"D:\Kit\data").unwrap(),
+        r#"takeown /f "D:\Kit\data" /r /d y && icacls "D:\Kit\data" /reset /t"#
+    );
+    assert!(owners_fix(true, r"D:\%PATH%\data").is_none());
+}
+
 #[test]
 fn files_the_account_reads() {
     let tmp = TempDir::new("health-read");

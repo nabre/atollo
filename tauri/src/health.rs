@@ -200,15 +200,10 @@ fn owners_finding(kit: &Kit, lang: &str) -> Finding {
         );
     }
     let first = bad[0].display().to_string();
-    let fix = if Os::current().is_windows() {
-        format!(
-            "takeown /f \"{}\" /r /d y && icacls \"{}\" /reset /t",
-            kit.data().display(),
-            kit.data().display()
-        )
-    } else {
-        format!("sudo chown -R \"$(id -un)\" '{}'", kit.data().display())
-    };
+    let fix = owners_fix(
+        Os::current().is_windows(),
+        &kit.data().display().to_string(),
+    );
     finding(
         "owners",
         Level::Err,
@@ -217,8 +212,23 @@ fn owners_finding(kit: &Kit, lang: &str) -> Finding {
             "{0} file del kit non si leggono, per esempio {1}: li ha resi privati un altro account, forse su un altro PC.",
             &[&bad.len().to_string(), &first],
         ),
-        Some(t(lang, "Da amministratore, riprendili con: {0}", &[&fix])),
+        fix.map(|fix| t(lang, "Da amministratore, riprendili con: {0}", &[&fix])),
     )
+}
+
+/// The command that takes the kit's files back, to copy and paste: the path
+/// is quoted so that no part of it runs. cmd expands `%` even in quotes, so
+/// such a path gets no command (the path's check already warns about it).
+pub(crate) fn owners_fix(windows: bool, data: &str) -> Option<String> {
+    if windows {
+        (!data.contains('%'))
+            .then(|| format!("takeown /f \"{data}\" /r /d y && icacls \"{data}\" /reset /t"))
+    } else {
+        Some(format!(
+            "sudo chown -R \"$(id -un)\" '{}'",
+            data.replace('\'', r"'\''")
+        ))
+    }
 }
 
 /// On Linux, the libraries of the system the kit's programs need.
