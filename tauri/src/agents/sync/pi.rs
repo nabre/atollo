@@ -83,10 +83,10 @@ const END: &str = "<!-- Atollo: end -->";
 /// at the end; the rest as it was.
 pub fn with_block(text: &str, block: &str) -> String {
     let marked = format!("{BEGIN}\n{block}\n{END}");
-    match (text.find(BEGIN), text.find(END)) {
-        (Some(a), Some(b)) if b > a => {
-            format!("{}{marked}{}", &text[..a], &text[b + END.len()..])
-        }
+    let begin = text.find(BEGIN);
+    let end = begin.and_then(|a| text[a..].find(END).map(|b| a + b));
+    match (begin, end) {
+        (Some(a), Some(b)) => format!("{}{marked}{}", &text[..a], &text[b + END.len()..]),
         _ if text.trim().is_empty() => format!("{marked}\n"),
         _ => format!("{}\n\n{marked}\n", text.trim_end()),
     }

@@ -633,6 +633,7 @@ fn build_app<R: tauri::Runtime>(
                 std::thread::spawn(move || {
                     servers.stop_all();
                     llm.stop_all();
+                    llm::pull::cancel_all(std::time::Duration::from_secs(10));
                     services.stop_all();
                     handle.exit(0);
                 });

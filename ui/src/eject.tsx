@@ -18,7 +18,8 @@ function nothingOpen(o: OpenNow): boolean {
     o.actions === 0 &&
     !o.setup &&
     o.databases === 0 &&
-    o.llm === 0
+    o.llm === 0 &&
+    o.downloads === 0
   );
 }
 
@@ -32,6 +33,7 @@ export function OpenList({ open }: { open: OpenNow }) {
       {open.actions > 0 && <li>{t("Progetti avviati: {0}", open.actions)}</li>}
       {open.databases > 0 && <li>{t("Database avviati: {0}", open.databases)}</li>}
       {open.llm > 0 && <li>{t("Il server dei modelli locali")}</li>}
+      {open.downloads > 0 && <li>{t("Modelli in scaricamento: {0}", open.downloads)}</li>}
       {open.processes.map((p) => (
         <li key={p.pid}>
           <span>{p.name}</span>{" "}

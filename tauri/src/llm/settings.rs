@@ -60,6 +60,12 @@ pub fn key_file(kit: &Kit) -> PathBuf {
 
 /// The key, made the first time.
 pub fn ensure_key(kit: &Kit) -> Result<String> {
+    // Two first uses at once (the server, the chat's «Copia la chiave»)
+    // make one key.
+    static KEY: Mutex<()> = Mutex::new(());
+    let _one = KEY
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if let Some(key) = crate::settings::read_secret(&key_file(kit))? {
         return Ok(key);
     }

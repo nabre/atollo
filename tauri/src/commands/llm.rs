@@ -3,9 +3,7 @@
 //! Hugging Face token. One permission for all of them, `allow-local-models`
 //! (permissions/llm.toml).
 
-use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
 
 use super::*;
 use crate::llm::catalog::CatalogModel;
@@ -50,15 +48,6 @@ struct PullEvent {
     error: Option<String>,
 }
 
-/// The downloads under way and their Cancel.
-static PULLS: Mutex<BTreeMap<String, Arc<AtomicBool>>> = Mutex::new(BTreeMap::new());
-
-fn pulls() -> std::sync::MutexGuard<'static, BTreeMap<String, Arc<AtomicBool>>> {
-    PULLS
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-}
-
 fn view(state: &AppState) -> ModelsView {
     let kit = &state.kit;
     let lang = state.lang();
@@ -83,7 +72,7 @@ fn view(state: &AppState) -> ModelsView {
             })
             .collect(),
         local: crate::llm::local::list(kit),
-        pulling: pulls().keys().cloned().collect(),
+        pulling: crate::llm::pull::pulling(),
         folder: root.display().to_string(),
         fs: volume.map(|v| v.fs.as_str().to_owned()),
         free: volume.map(|v| v.free),
@@ -130,8 +119,14 @@ pub async fn llm_start<R: Runtime>(
     let llm = Arc::clone(&state.llm);
     tauri::async_runtime::spawn_blocking(move || {
         let env = ensure(&app, &task, &kit, lang, &["llama"])?;
-        llm.start(&env, lang)
+        let before = crate::llm::settings::load(&kit).port;
+        let port = llm
+            .start(&env, lang)
             .map_err(|e| CmdError::from(format!("{e:#}")))?;
+        // A port chosen now: Pi's models.json points at it.
+        if before != Some(port) {
+            crate::agents::sync::run(&kit, None);
+        }
         Ok(llm.status())
     })
     .await
@@ -245,7 +240,6 @@ pub async fn llm_pull<R: Runtime>(
         };
         let key = format!("{}/{}", crate::llm::local::folder_of(&plan.repo), plan.id);
         let cancel = Arc::new(AtomicBool::new(false));
-        pulls().insert(key.clone(), Arc::clone(&cancel));
         let emit = |done: u64, total: u64, state: &'static str, error: Option<String>| {
             let _ = app.emit_to(
                 MAIN,
@@ -267,7 +261,7 @@ pub async fn llm_pull<R: Runtime>(
             &plan,
             token.as_deref(),
             lang,
-            &cancel,
+            cancel,
             &mut |done, total| {
                 if last.elapsed() >= std::time::Duration::from_millis(250) || done == total {
                     last = std::time::Instant::now();
@@ -275,7 +269,6 @@ pub async fn llm_pull<R: Runtime>(
                 }
             },
         );
-        pulls().remove(&key);
         match result {
             Ok(id) => {
                 emit(total, total, "done", None);
@@ -286,14 +279,10 @@ pub async fn llm_pull<R: Runtime>(
                 crate::agents::sync::run(&kit, None);
                 Ok(id)
             }
+            // Paused: not an error, what arrived is kept for «Riprendi».
             Err(e) if e.is::<crate::net::Cancelled>() => {
                 emit(0, total, "cancelled", None);
-                Err(crate::i18n::t(
-                    lang,
-                    "Scaricamento sospeso: riprende da dove si è fermato.",
-                    &[],
-                )
-                .into())
+                Ok(String::new())
             }
             Err(e) => {
                 emit(0, total, "failed", Some(format!("{e:#}")));
@@ -309,9 +298,7 @@ pub async fn llm_pull<R: Runtime>(
 #[tauri::command]
 pub fn llm_pull_cancel<R: Runtime>(webview: Webview<R>, key: String) -> CmdResult<()> {
     ensure_main(&webview)?;
-    if let Some(flag) = pulls().get(&key) {
-        flag.store(true, Ordering::Relaxed);
-    }
+    crate::llm::pull::cancel(&key);
     Ok(())
 }
 
@@ -334,11 +321,7 @@ pub async fn llm_remove<R: Runtime>(
     let handle = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         use tauri::Manager;
-        if crate::llm::local::find(&kit, &id)
-            .is_some_and(|m| pulls().contains_key(&format!("{}/{}", m.folder, m.id)))
-        {
-            return Err(fail("llm", format!("{id} is being downloaded")));
-        }
+        // Refused while a download goes on in its folder (llm::local::remove).
         llm.without_server(&env, lang, || crate::llm::local::remove(&kit, &id))
             .or_fail_chain("llm")?;
         // Pi's model gone: Pi is set to none.

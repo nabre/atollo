@@ -157,6 +157,22 @@ pub fn choices(tree: &Value) -> Vec<Choice> {
     for c in &mut out {
         c.label = c.label.trim_start_matches('/').to_owned();
     }
+    // On disk a file is its last part: two choices with a file of the same
+    // name (or the same id) would share it; the first stays.
+    let mut names = std::collections::BTreeSet::new();
+    let mut ids = std::collections::BTreeSet::new();
+    out.retain(|c| {
+        let own: Vec<&str> = c
+            .files
+            .iter()
+            .map(|f| f.name.rsplit('/').next().unwrap_or(&f.name))
+            .collect();
+        let free = ids.insert(c.id.clone()) && own.iter().all(|n| !names.contains(*n));
+        if free {
+            names.extend(own.iter().map(|n| (*n).to_owned()));
+        }
+        free
+    });
     out.sort_by_key(|c| c.bytes);
     out
 }

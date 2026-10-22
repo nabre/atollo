@@ -96,6 +96,25 @@ pub fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<()> {
     crate::fsx::write_json(&dir.join(MANIFEST), manifest)
 }
 
+/// One read-change-write of a manifest at a time in this process (another
+/// process downloading into a folder holds its lock, `pull::busy`).
+static MANIFEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Reads the manifest of `dir`, lets `change` change it, writes it back
+/// (only when `change` succeeds).
+pub fn update_manifest<T>(
+    dir: &Path,
+    change: impl FnOnce(&mut Manifest) -> Result<T>,
+) -> Result<T> {
+    let _turn = MANIFEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut manifest = read_manifest(dir)?;
+    let out = change(&mut manifest)?;
+    write_manifest(dir, &manifest)?;
+    Ok(out)
+}
+
 /// `-00001-of-00003` at the end of a stem: the part and the count.
 pub fn part_of(stem: &str) -> Option<(u32, u32)> {
     let (rest, count) = stem.rsplit_once("-of-")?;
@@ -267,39 +286,54 @@ pub fn remove(kit: &Kit, id: &str) -> Result<()> {
     let Some(model) = find(kit, id) else {
         bail!("model {id} not found");
     };
+    if super::pull::busy(kit, &model.folder) {
+        bail!(
+            "a model of {} is being downloaded: pause it first",
+            model.folder
+        );
+    }
     let dir = super::models_dir(kit).join(&model.folder);
     for f in &model.files {
         let file = dir.join(f);
         for path in [file.clone(), crate::net::resume::part_of(&file)] {
-            match fs::remove_file(&path) {
-                Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
-                    return Err(e).with_context(|| path.display().to_string())
-                }
-                _ => {}
-            }
+            remove_file(&path)?;
         }
     }
-    let mut manifest = read_manifest(&dir)?;
-    let before = manifest.models.len();
-    manifest.models.retain(|e| e.id != id);
-    if manifest.models.len() != before {
-        write_manifest(&dir, &manifest)?;
-    }
+    let entries = update_manifest(&dir, |manifest| {
+        manifest.models.retain(|e| e.id != id);
+        Ok(manifest.models.len())
+    })?;
     // Nothing left but the manifest (and a projector no model uses).
-    let left: Vec<String> = fs::read_dir(&dir)
+    let files: Vec<String> = fs::read_dir(&dir)
         .map(|d| {
             d.flatten()
                 .map(|e| e.file_name().to_string_lossy().into_owned())
                 .collect()
         })
         .unwrap_or_default();
-    let only_ours = left
-        .iter()
-        .all(|n| n == MANIFEST || is_mmproj(n) && manifest.models.is_empty());
-    if manifest.models.is_empty() && only_ours {
+    let only_ours = files.iter().all(|n| n == MANIFEST || is_mmproj(n));
+    if entries == 0 && only_ours {
         let _ = fs::remove_dir_all(&dir);
     }
     Ok(())
+}
+
+/// Deletes `path` (nothing when it is not there). On Windows a model the
+/// server's processes had open is freed a moment after they end: a refused
+/// delete is tried again for a few seconds.
+fn remove_file(path: &Path) -> Result<()> {
+    let mut tries = 0;
+    loop {
+        match fs::remove_file(path) {
+            Ok(()) => return Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied && tries < 30 => {
+                tries += 1;
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            Err(e) => return Err(e).with_context(|| path.display().to_string()),
+        }
+    }
 }
 
 #[cfg(test)]

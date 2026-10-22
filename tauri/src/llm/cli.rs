@@ -105,14 +105,14 @@ pub fn pull(kit: &Kit, net: &Net, spec: &str, lang: &str, out: &mut dyn Write) -
         )
     )?;
     let mut shown = u64::MAX;
-    let cancel = AtomicBool::new(false);
+    let cancel = std::sync::Arc::new(AtomicBool::new(false));
     let id = super::pull::pull(
         kit,
         net,
         &plan,
         token.as_deref(),
         lang,
-        &cancel,
+        cancel,
         &mut |done, total| {
             let pct = done * 100 / total.max(1);
             if pct / 5 != shown {
@@ -127,11 +127,15 @@ pub fn pull(kit: &Kit, net: &Net, spec: &str, lang: &str, out: &mut dyn Write) -
         "  √ {}",
         t(lang, "{0}: scaricato e verificato", &[&id])
     )?;
+    // Pi's models.json lists it (a server already running reads it at its
+    // next start).
+    crate::agents::sync::run(kit, None);
     Ok(id)
 }
 
 pub fn remove(kit: &Kit, id: &str, lang: &str, out: &mut dyn Write) -> Result<()> {
     local::remove(kit, id)?;
+    crate::agents::sync::run(kit, None);
     writeln!(out, "  √ {}", t(lang, "{0}: cancellato", &[id]))?;
     Ok(())
 }

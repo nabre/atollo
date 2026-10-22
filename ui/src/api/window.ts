@@ -19,6 +19,8 @@ export interface OpenNow {
   databases: number;
   /** The server of the local models, when it runs (0 or 1). */
   llm: number;
+  /** Downloads of local models under way. */
+  downloads: number;
 }
 
 /** The browser preview's answer (core.ts): nothing of the kit open. */
@@ -30,6 +32,7 @@ export const NOTHING_OPEN: OpenNow = {
   setup: false,
   databases: 0,
   llm: 0,
+  downloads: 0,
 };
 
 export function ejectList(): Promise<OpenNow> {

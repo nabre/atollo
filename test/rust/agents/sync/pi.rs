@@ -51,6 +51,12 @@ fn the_kit_block_keeps_the_users_text() {
     assert!(twice.starts_with("My own rule.\n\n"));
     assert!(twice.contains("new rule") && !twice.contains("\nrule\n"));
     assert_eq!(twice.matches(BEGIN).count(), 1);
+    // An end marker of the user's before the kit's block: the block is
+    // replaced, not added again.
+    let odd = format!("{END}\nnote\n{once}");
+    let fixed = with_block(&odd, "rule");
+    assert_eq!(with_block(&fixed, "rule"), fixed);
+    assert_eq!(fixed.matches(BEGIN).count(), 1);
 }
 
 /// Without a choice and without a provider of the cloud, the first model

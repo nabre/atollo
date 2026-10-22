@@ -99,8 +99,9 @@ fn plans_of_the_catalog_and_of_a_repository() {
     assert_eq!(Plan::from_choice(&info, &choice).name, "Qwen3-8B Q4_K_M");
 }
 
-/// The same files under another id resume the model already there; an id
-/// taken by other files is refused.
+/// The same files under another id resume the model already there; the
+/// same id from another publisher gets the publisher's name; an id taken
+/// by other files of the same repository is refused.
 #[test]
 fn an_entry_is_reused_not_doubled() {
     let tmp = TempDir::new("llm-entry");
@@ -110,7 +111,34 @@ fn an_entry_is_reused_not_doubled() {
     let mut again = plan(&[1]);
     again.id = "other".into();
     assert_eq!(entry_for(&kit, &again).unwrap().id, first.id);
+    let mut elsewhere = plan(&[1]);
+    elsewhere.repo = "bartowski/r".into();
+    assert_eq!(entry_for(&kit, &elsewhere).unwrap().id, "m-bartowski");
     let mut clash = plan(&[1, 2]);
-    clash.repo = "o/s".into();
+    clash.files[0].name = "Q/x.gguf".into();
     assert!(entry_for(&kit, &clash).is_err());
+}
+
+/// One download per repository folder, also seen from another process
+/// (its lock file with a live pid); Cancel of every download; a removal
+/// refused meanwhile.
+#[test]
+fn one_download_per_folder() {
+    let tmp = TempDir::new("llm-busy");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let dir = crate::llm::models_dir(&kit).join("o--busy");
+    let flag = Arc::new(AtomicBool::new(false));
+    let hold = Pulling::take(&dir, "o--busy", "m", Arc::clone(&flag)).unwrap();
+    assert!(busy(&kit, "o--busy"));
+    assert!(pulling().contains(&"o--busy/m".to_owned()));
+    assert!(Pulling::take(&dir, "o--busy", "n", Arc::new(AtomicBool::new(false))).is_err());
+    cancel("o--busy/m");
+    assert!(flag.load(std::sync::atomic::Ordering::Relaxed));
+    drop(hold);
+    assert!(!busy(&kit, "o--busy"));
+    assert!(!dir.join(LOCK).exists());
+    // A lock left by a process that is gone does not hold the folder.
+    std::fs::write(dir.join(LOCK), "4294967").unwrap();
+    assert!(!busy(&kit, "o--busy"));
 }

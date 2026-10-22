@@ -62,6 +62,19 @@ fn a_tree_becomes_choices() {
     assert_eq!(q8.files[1].sha256, "e".repeat(64));
 }
 
+/// Two choices whose files have the same name on disk (the same stem in
+/// two folders of the repository): only the first.
+#[test]
+fn files_of_the_same_name_once() {
+    let tree = json!([
+        lfs("a/m-Q4_K_M.gguf", 4, 'a'),
+        lfs("b/m-Q4_K_M.gguf", 5, 'b')
+    ]);
+    let c = choices(&tree);
+    assert_eq!(c.len(), 1);
+    assert_eq!(c[0].files[0].name, "a/m-Q4_K_M.gguf");
+}
+
 #[test]
 fn a_choice_is_picked_by_its_quantization() {
     let tree = json!([lfs("m-Q4_K_M.gguf", 4, 'a'), lfs("m-Q8_0.gguf", 8, 'b')]);

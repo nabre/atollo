@@ -964,5 +964,6 @@
   "si vedono dopo l'installazione di llama.cpp": "shown once llama.cpp is installed",
   "liberi {0}": "{0} free",
   "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Atollo lo tiene allineato); Antigravity e Pi usano solo i server del kit.": "Only in this project, besides the kit's. Claude Code reads them from .mcp.json (it asks at first use), Codex from .codex\\config.toml (Atollo keeps it aligned); Antigravity and Pi use the kit's servers only.",
-  "solo chat: con gli agenti non usa bene gli strumenti": "chat only: with the agents it does not use tools well"
+  "solo chat: con gli agenti non usa bene gli strumenti": "chat only: with the agents it does not use tools well",
+  "Modelli in scaricamento: {0}": "Models being downloaded: {0}"
 }

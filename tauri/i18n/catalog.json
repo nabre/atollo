@@ -2079,11 +2079,6 @@
     "fr": "Le port {0} est celui des modèles locaux : choisissez-en un autre.",
     "de": "Der Port {0} gehört den lokalen Modellen: wähle einen anderen."
   },
-  "Scaricamento sospeso: riprende da dove si è fermato.": {
-    "en": "Download paused: it goes on from where it stopped.",
-    "fr": "Téléchargement suspendu : il reprend là où il s'est arrêté.",
-    "de": "Download angehalten: er geht dort weiter, wo er stehen blieb."
-  },
   "Modelli locali su {0} (chiave in {1}). Ctrl+C per fermarli.": {
     "en": "Local models on {0} (key in {1}). Ctrl+C to stop them.",
     "fr": "Modèles locaux sur {0} (clé dans {1}). Ctrl+C pour les arrêter.",

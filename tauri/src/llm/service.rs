@@ -84,6 +84,9 @@ pub struct Llm {
     running: Mutex<Option<Server>>,
     error: Mutex<Option<String>>,
     gpus: Mutex<Option<Vec<Gpu>>>,
+    /// Set by [`Llm::stop_all`] (the drive is being removed, the app
+    /// closes): a start under way ends its server instead of keeping it.
+    stopping: std::sync::atomic::AtomicBool,
 }
 
 fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -146,6 +149,7 @@ impl Llm {
             running: Mutex::new(None),
             error: Mutex::new(None),
             gpus: Mutex::new(None),
+            stopping: std::sync::atomic::AtomicBool::new(false),
         }
     }
 
@@ -195,6 +199,9 @@ impl Llm {
     /// Starts the server (nothing when it runs); its port.
     pub fn start(&self, env: &KitEnv, lang: &str) -> Result<u16> {
         let _turn = lock(&self.op);
+        // Asked by the user after a "Rimuovi l'unità": the kit goes on.
+        self.stopping
+            .store(false, std::sync::atomic::Ordering::SeqCst);
         if let Some(p) = self.alive_port() {
             return Ok(p);
         }
@@ -260,6 +267,10 @@ impl Llm {
             port,
             _job: job,
         });
+        if self.stopping.load(std::sync::atomic::Ordering::SeqCst) {
+            self.stop_now();
+            bail!("stopped: the drive is being removed");
+        }
         let start = Instant::now();
         while !responds(port) {
             if self.alive_port().is_none() {
@@ -296,6 +307,8 @@ impl Llm {
     /// For "Rimuovi l'unità" and the end of the app: without waiting for
     /// an operation under way (a start waits up to a minute).
     pub fn stop_all(&self) {
+        self.stopping
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         self.stop_now();
     }
 
@@ -393,9 +406,15 @@ impl Llm {
 
     /// Started with the app when the user asked for it.
     pub fn autostart(&self, env: &KitEnv) {
-        if settings::load(&self.kit).autostart && self.installed() {
-            if let Err(e) = self.start(env, "en") {
-                crate::log::warn(&format!("llm: automatic start: {e:#}"));
+        let s = settings::load(&self.kit);
+        if s.autostart && self.installed() {
+            match self.start(env, "en") {
+                // A port chosen now: Pi's models.json points at it.
+                Ok(port) if s.port != Some(port) => {
+                    crate::agents::sync::run(&self.kit, None);
+                }
+                Ok(_) => {}
+                Err(e) => crate::log::warn(&format!("llm: automatic start: {e:#}")),
             }
         }
     }

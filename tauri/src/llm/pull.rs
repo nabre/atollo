@@ -7,10 +7,10 @@
 //! was closed: the entry in `atollo.json` is written first, `complete` once
 //! every file is there and checked.
 
-use std::collections::BTreeSet;
-use std::path::Path;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use anyhow::{bail, Result};
 
@@ -196,70 +196,159 @@ fn existing_parent(path: &Path) -> std::path::PathBuf {
     p
 }
 
-/// The models being downloaded now (`<folder>/<id>`): one download of a
-/// model at a time.
-static PULLING: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+/// The downloads under way in this process, one per model folder (a
+/// repository: its manifest and its files are written by one download at
+/// a time): the model's id and its Cancel.
+static PULLING: Mutex<BTreeMap<String, (String, Arc<AtomicBool>)>> = Mutex::new(BTreeMap::new());
 
-struct Pulling(String);
+fn pulling_map() -> std::sync::MutexGuard<'static, BTreeMap<String, (String, Arc<AtomicBool>)>> {
+    PULLING
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// The file that tells another process (the command line, the app) that a
+/// folder is being downloaded into: the pid of the one downloading.
+const LOCK: &str = ".pulling";
+
+/// A download's hold on its folder, until dropped.
+struct Pulling {
+    folder: String,
+    lock: PathBuf,
+}
 
 impl Pulling {
-    fn take(key: String) -> Option<Pulling> {
-        let mut set = PULLING
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        set.insert(key.clone()).then_some(Pulling(key))
+    fn take(dir: &Path, folder: &str, id: &str, cancel: Arc<AtomicBool>) -> Result<Pulling> {
+        let mut map = pulling_map();
+        if map.contains_key(folder) || locked_elsewhere(dir) {
+            bail!("a model of this repository is already being downloaded");
+        }
+        std::fs::create_dir_all(dir)?;
+        let lock = dir.join(LOCK);
+        std::fs::write(&lock, std::process::id().to_string())?;
+        map.insert(folder.to_owned(), (id.to_owned(), cancel));
+        Ok(Pulling {
+            folder: folder.to_owned(),
+            lock,
+        })
     }
 }
 
 impl Drop for Pulling {
     fn drop(&mut self) {
-        PULLING
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .remove(&self.0);
+        pulling_map().remove(&self.folder);
+        let _ = std::fs::remove_file(&self.lock);
     }
+}
+
+/// Another process downloads into `dir` now (its lock, with a live pid).
+fn locked_elsewhere(dir: &Path) -> bool {
+    let me = std::process::id();
+    std::fs::read_to_string(dir.join(LOCK))
+        .ok()
+        .and_then(|s| s.trim().parse::<u32>().ok())
+        .is_some_and(|pid| pid != me && crate::agents::sync::alive(pid))
+}
+
+/// A download goes on in `folder` (of `data/models/gguf`), here or in
+/// another process: nothing there may be removed meanwhile.
+pub fn busy(kit: &Kit, folder: &str) -> bool {
+    pulling_map().contains_key(folder) || locked_elsewhere(&super::models_dir(kit).join(folder))
+}
+
+/// The downloads under way in this process, as `<folder>/<id>`.
+pub fn pulling() -> Vec<String> {
+    pulling_map()
+        .iter()
+        .map(|(folder, (id, _))| format!("{folder}/{id}"))
+        .collect()
+}
+
+/// Stops the download `<folder>/<id>`; what arrived is kept.
+pub fn cancel(key: &str) {
+    let folder = key.split_once('/').map_or(key, |(f, _)| f);
+    if let Some((_, flag)) = pulling_map().get(folder) {
+        flag.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// Stops every download (the drive is being removed, the app closes) and
+/// waits for them to let go of their files, at most `limit`; how many
+/// were running.
+pub fn cancel_all(limit: std::time::Duration) -> usize {
+    let n = {
+        let map = pulling_map();
+        for (_, flag) in map.values() {
+            flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+        map.len()
+    };
+    let start = std::time::Instant::now();
+    while !pulling_map().is_empty() && start.elapsed() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    n
 }
 
 /// The entry of `plan` in its folder's manifest: an entry with the same
-/// files already there (the same model under another id) is used instead;
-/// an id taken by other files is refused.
+/// files already there (the same model under another id) is used instead.
+/// An id another repository has already (the same file of another
+/// publisher) gets the publisher's name after it; one taken by other files
+/// of the same repository is refused.
 fn entry_for(kit: &Kit, plan: &Plan) -> Result<Entry> {
     let dir = plan.dir(kit);
-    let mut manifest = local::read_manifest(&dir)?;
+    let folder = local::folder_of(&plan.repo);
     let files = plan.local_files();
     let names = |fs: &[ModelFile]| fs.iter().map(|f| f.name.clone()).collect::<Vec<_>>();
-    if let Some(e) = manifest
-        .models
-        .iter()
-        .find(|e| names(&e.files) == names(&files))
-    {
-        return Ok(e.clone());
-    }
-    if local::list(kit).iter().any(|m| m.id == plan.id) {
-        bail!("a model called {} is already in the kit", plan.id);
-    }
-    let entry = Entry {
-        id: plan.id.clone(),
-        name: plan.name.clone(),
-        repo: plan.repo.clone(),
-        commit: plan.commit.clone(),
-        files,
-        catalog: plan.catalog.clone(),
-        ctx: plan.ctx,
-        complete: false,
-    };
-    manifest.models.push(entry.clone());
-    local::write_manifest(&dir, &manifest)?;
-    Ok(entry)
+    let others = local::list(kit);
+    let taken = |id: &str| others.iter().find(|m| m.id == id).map(|m| m.folder.clone());
+    local::update_manifest(&dir, |manifest| {
+        if let Some(e) = manifest
+            .models
+            .iter()
+            .find(|e| names(&e.files) == names(&files))
+        {
+            return Ok(e.clone());
+        }
+        let mut id = plan.id.clone();
+        match taken(&id) {
+            Some(f) if f == folder => bail!("a model called {id} is already in the kit"),
+            Some(_) => {
+                let owner = plan.repo.split('/').next().unwrap_or_default();
+                id = super::slug(&format!("{id}-{owner}"));
+                if taken(&id).is_some() {
+                    bail!("a model called {id} is already in the kit");
+                }
+            }
+            None => {}
+        }
+        let entry = Entry {
+            id,
+            name: plan.name.clone(),
+            repo: plan.repo.clone(),
+            commit: plan.commit.clone(),
+            files: files.clone(),
+            catalog: plan.catalog.clone(),
+            ctx: plan.ctx,
+            complete: false,
+        };
+        manifest.models.push(entry.clone());
+        Ok(entry)
+    })
 }
 
 fn mark_complete(kit: &Kit, plan: &Plan, id: &str) -> Result<()> {
-    let dir = plan.dir(kit);
-    let mut manifest = local::read_manifest(&dir)?;
-    for e in manifest.models.iter_mut().filter(|e| e.id == id) {
-        e.complete = true;
-    }
-    local::write_manifest(&dir, &manifest)
+    local::update_manifest(&plan.dir(kit), |manifest| {
+        let mut found = false;
+        for e in manifest.models.iter_mut().filter(|e| e.id == id) {
+            e.complete = true;
+            found = true;
+        }
+        if !found {
+            bail!("{id}: its entry is gone from {}", local::MANIFEST);
+        }
+        Ok(())
+    })
 }
 
 /// Downloads `plan` (or what is missing of it) into its folder; `token`
@@ -271,7 +360,7 @@ pub fn pull(
     plan: &Plan,
     token: Option<&str>,
     lang: &str,
-    cancel: &AtomicBool,
+    cancel: Arc<AtomicBool>,
     progress: &mut dyn FnMut(u64, u64),
 ) -> Result<String> {
     if !super::valid_id(&plan.id) || !local::valid_repo(&plan.repo) {
@@ -284,13 +373,15 @@ pub fn pull(
     {
         bail!("{}: refused file name", plan.repo);
     }
-    let Some(_pulling) = Pulling::take(format!("{}/{}", local::folder_of(&plan.repo), plan.id))
-    else {
-        bail!("{} is already being downloaded", plan.name);
-    };
+    let dir = plan.dir(kit);
+    let _pulling = Pulling::take(
+        &dir,
+        &local::folder_of(&plan.repo),
+        &plan.id,
+        Arc::clone(&cancel),
+    )?;
     check_room(kit, plan, lang)?;
     let entry = entry_for(kit, plan)?;
-    let dir = plan.dir(kit);
     let total = plan.bytes();
     let auth = token.map(|t| format!("Bearer {t}"));
     let mut before = 0u64;
@@ -313,7 +404,7 @@ pub fn pull(
             &f.sha256,
             Some(f.bytes),
             &headers,
-            cancel,
+            &cancel,
             &mut |done, _| progress(before + done, total),
         )?;
         before += f.bytes;

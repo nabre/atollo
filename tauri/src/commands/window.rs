@@ -16,6 +16,8 @@ pub struct OpenNow {
     pub databases: usize,
     /// The server of the local models, when it runs (0 or 1).
     pub llm: usize,
+    /// Downloads of local models under way.
+    pub downloads: usize,
 }
 
 impl OpenNow {
@@ -27,6 +29,7 @@ impl OpenNow {
             || self.setup
             || self.databases > 0
             || self.llm > 0
+            || self.downloads > 0
     }
 }
 
@@ -43,6 +46,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
         setup: state.setup.snapshot().running,
         databases: state.services.running(),
         llm: state.llm.running(),
+        downloads: crate::llm::pull::pulling().len(),
     }
 }
 
@@ -88,6 +92,9 @@ pub async fn eject_run<R: Runtime>(
     let services = Arc::clone(&state.services);
     let closing = state.closing.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        // The downloads of models let go of their files on the drive (what
+        // arrived is kept for later).
+        crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
         editor.stop();
@@ -143,6 +150,7 @@ pub fn app_quit<R: Runtime>(
     let services = Arc::clone(&app.state::<AppState>().services);
     let handle = app.clone();
     std::thread::spawn(move || {
+        crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
         services.stop_all();
         handle.exit(0);
     });
