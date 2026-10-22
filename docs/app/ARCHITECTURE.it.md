@@ -13,7 +13,7 @@ Dal prompt iniziale (13-14/10/2026), validi per ogni modifica; ognuno ha una pro
 3. **Nessuna scrittura fuori dal kit**: niente registro, `PATH` di sistema, `%APPDATA%`, `%LOCALAPPDATA%` o `%TEMP%` reali; le sole eccezioni sono quelle dichiarate nel README (D-41, D-70, D-90, D-115).
 4. **Percorsi relativi alla radice del kit**, che funziona da qualsiasi cartella (spazi, parentesi, `&`) e dopo uno spostamento (rilocazione all'avvio).
 5. **WebView nel kit**: WebView2 di sistema o fisso in `data\apps\…\webview2\`, mai il bootstrapper; dati della WebView in `data\webview2\` (su macOS restano in `~/Library/WebKit`, traccia dichiarata).
-6. **Ambiente sempre del kit**: ogni processo avviato riceve l'ambiente di `env.rs`, mai il `PATH` dell'utente senza filtro.
+6. **Ambiente sempre del kit**: ogni processo avviato riceve l'ambiente di `env\`, mai il `PATH` dell'utente senza filtro.
 7. **Una sola istanza per kit**, con l'avviso delle altre copie aperte.
 8. **Nessun processo orfano**, anche se l'app viene chiusa a forza (Job Object su Windows, gruppi e guardiano su macOS e Linux: D-07, D-105).
 9. **Sicurezza**: comandi Tauri solo per la finestra `main`, finestre dell'editor senza IPC, CSP stretta; server solo su `127.0.0.1` con un token; argomenti a vettore, mai una riga per la shell; nomi validati; download con checksum o firma; segreti mai nei log.
@@ -63,13 +63,14 @@ Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`cli.
 | Avvio | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
 | Comandi | `commands\` | l'unico ingresso dell'interfaccia: controllano la finestra, traducono gli errori, chiamano il dominio |
 | Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, modelli locali, database, server web, GitHub |
-| Infrastruttura | `kit.rs`, `fsx.rs`, `time.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, orologio, ambiente, impostazioni, log, lingue, chi ha ogni porta, rete e controlli, processi, sistemi operativi di destinazione |
+| Infrastruttura | `kit.rs`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, orologio, ambiente, impostazioni, log, lingue, chi ha ogni porta, rete e controlli, processi, sistemi operativi di destinazione |
 
 ```
 tauri\src\
   main.rs  cli.rs             avvio, finestre, chiusura; riga di comando
   kit.rs                      radice, percorsi, primo avvio, spostamento, nomi validi
-  env.rs                      ambiente del kit e PATH
+  env\                        ambiente del kit: mod (Host, KitEnv, build per parti), langs, unix (D-112),
+                              path (PATH), secrets (mascheramento)
   fsx.rs                      file del kit: lettura, JSON, scrittura atomica (sotto)
   time.rs                     l'orologio: now_secs, now_ms dall'epoca Unix
   settings.rs                 data\app\settings.json (una modifica alla volta, `Settings::update`), file della chiave di Gemini
@@ -208,7 +209,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`. Ciò che tutto il crate legge da una cartella è riesportato per nome nel suo `mod.rs` e si scrive con il percorso corto: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`) ed `editor\ext.rs` restano interi; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02). Gli altri file dovrebbero restare sotto le 900 righe; oggi solo `install\mod.rs` le supera (sotto, «Opportunità»). I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
+- un file si divide quando ha parti che si leggono da sole; `editor\ext.rs` resta intero; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02), ed `env\` uno per parte di `KitEnv::build`, che chiama in ordine una funzione per sezione (STR-V7-03). Gli altri file dovrebbero restare sotto le 900 righe; oggi solo `install\mod.rs` le supera (sotto, «Opportunità»). I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
 
 ### Comandi Tauri (`commands\`)
 

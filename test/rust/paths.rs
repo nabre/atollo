@@ -20,12 +20,12 @@ const ALLOWED: &[(&str, &str, &str)] = &[
          the cmd profile is written for Windows only",
     ),
     (
-        "env.rs",
+        "env/path.rs",
         r#"r"WindowsPowerShell\v1.0""#,
         "under System32, inside `if is_win`",
     ),
     (
-        "env.rs",
+        "env/path.rs",
         r#"r"WindowsPowerShell\v1.0\Modules""#,
         "under System32, inside `if is_win`",
     ),

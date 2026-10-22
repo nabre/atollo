@@ -356,7 +356,7 @@ pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
 }
 
 /// The launcher of Composer in `bin/` of static-php-cli's PHP (macOS and
-/// Linux), on the PATH with `php` (env.rs): the `php` beside it runs the
+/// Linux), on the PATH with `php` (env/path.rs): the `php` beside it runs the
 /// `composer.phar` of its own folder.
 pub const COMPOSER_UNIX: &[u8] =
     b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nexec \"$d/php\" \"$d/../composer.phar\" \"$@\"\n";

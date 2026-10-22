@@ -1,5 +1,6 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use super::{path::*, secrets::*, unix::*};
+use crate::kit::{tests::TempDir, Arch, Target};
 
 fn host() -> Host {
     Host::from_pairs(

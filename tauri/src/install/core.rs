@@ -20,7 +20,7 @@ use crate::setup::Component;
 /// the relocatable build of GitHub Desktop (`desktop/dugite-native`, D-112):
 /// `bin/git`, `libexec/git-core`, `share/git-core/templates` and its own
 /// `etc/gitconfig`. It finds them through the kit's environment
-/// (`GIT_EXEC_PATH`, `GIT_TEMPLATE_DIR`, `GIT_CONFIG_SYSTEM`, env.rs), so the
+/// (`GIT_EXEC_PATH`, `GIT_TEMPLATE_DIR`, `GIT_CONFIG_SYSTEM`, env/unix.rs), so the
 /// folder follows the kit when it moves, like PortableGit.
 pub struct Git;
 

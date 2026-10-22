@@ -43,7 +43,7 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
 /// version than the server's, written at that version's start (`mysql` of
 /// its scripts then logs in on its port): `ATOLLO_MYSQL_CNF` (read by the
 /// kit's launchers, `setup/kit_files.rs`) and `CP_MYSQL`, the folder of that
-/// version. Empty: the kit's own (`env.rs`), on the server's port.
+/// version. Empty: the kit's own (`env/`), on the server's port.
 pub fn project_client_env(kit: &Kit, project: &str) -> Vec<(&'static str, PathBuf)> {
     let Some(engine) = project_sql_db(kit, project) else {
         return Vec::new();

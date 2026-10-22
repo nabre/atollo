@@ -182,7 +182,7 @@ fn restore_rustup_key(_before: Option<Vec<(String, Option<String>)>>, _owned: &[
 /// `rust/` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
 /// default on Windows x64 (own linker), `aarch64-pc-windows-gnullvm` on
 /// Windows ARM64 (linked by the clang of llvm-mingw, the `cc` component:
-/// `CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER` in env.rs), `msvc` from
+/// `CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER` in env/unix.rs), `msvc` from
 /// the settings on both, the native Rust target triple on macOS and Linux.
 pub struct Rust;
 
