@@ -471,6 +471,32 @@ fn entry_for(kit: &Kit, plan: &Plan) -> Result<Entry> {
     })
 }
 
+/// `dest` is file `f` of the plan, whole: of its size, and checked when it
+/// arrived (the entry, complete, has it with the same checksum) or read now.
+/// One of the same size but another content (put there by hand, left by
+/// another commit) would otherwise be marked as downloaded and checked: it
+/// is deleted, and downloaded again.
+fn already_there(dest: &Path, entry: &Entry, f: &ModelFile) -> Result<bool> {
+    if !std::fs::metadata(dest).is_ok_and(|m| m.is_file() && m.len() == f.bytes) {
+        return Ok(false);
+    }
+    let name = disk_name(&f.name);
+    let checked = entry.complete
+        && entry
+            .files
+            .iter()
+            .any(|e| e.name == name && e.sha256.eq_ignore_ascii_case(&f.sha256));
+    if checked || crate::net::verify::sha256_hex(dest)?.eq_ignore_ascii_case(f.sha256.trim()) {
+        return Ok(true);
+    }
+    crate::log::warn(&format!(
+        "model {}: {name} does not match its checksum, downloaded again",
+        entry.id
+    ));
+    remove_if_there(dest)?;
+    Ok(false)
+}
+
 fn mark_complete(kit: &Kit, plan: &Plan, id: &str) -> Result<()> {
     local::update_manifest(&plan.dir(kit), |manifest| {
         let mut found = false;
@@ -516,12 +542,19 @@ pub fn pull(
     )?;
     check_room(kit, plan, lang)?;
     let entry = entry_for(kit, plan)?;
+    // Downloaded and checked already: the entry keeps its own commit
+    // (entry_for), so its files are not measured against the plan's.
+    if whole(&dir, &entry) {
+        let bytes = entry.files.iter().map(|f| f.bytes).sum();
+        progress(bytes, bytes);
+        return Ok(entry.id);
+    }
     let total = plan.bytes();
     let auth = token.map(|t| format!("Bearer {t}"));
     let mut before = 0u64;
     for f in &plan.files {
         let dest = dir.join(disk_name(&f.name));
-        if dest.is_file() && std::fs::metadata(&dest).is_ok_and(|m| m.len() == f.bytes) {
+        if already_there(&dest, &entry, f)? {
             before += f.bytes;
             progress(before, total);
             continue;

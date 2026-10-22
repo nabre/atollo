@@ -246,3 +246,44 @@ fn a_renamed_model_is_resumed() {
     assert_eq!(Plan::of_choice(&kit, &info, "m").unwrap().id, "m");
     assert!(Plan::of_choice(&kit, &info, "x").is_err());
 }
+
+/// A file of the right size is taken as downloaded only when the entry
+/// checked it with the same checksum, or it is read now and matches; one
+/// with another content is deleted, to be downloaded again.
+#[test]
+fn a_file_of_the_right_size_is_checked() {
+    let tmp = TempDir::new("llm-there");
+    let dest = tmp.0.join("m-0.gguf");
+    std::fs::write(&dest, b"abc").unwrap();
+    let sha = crate::net::verify::sha256_hex(&dest).unwrap();
+    let f = ModelFile {
+        name: "Q/m-0.gguf".into(),
+        sha256: sha,
+        bytes: 3,
+    };
+    let mut entry = Entry {
+        id: "m".into(),
+        name: "M".into(),
+        repo: "o/r".into(),
+        commit: "c".repeat(40),
+        files: vec![ModelFile {
+            name: "m-0.gguf".into(),
+            ..f.clone()
+        }],
+        catalog: None,
+        ctx: None,
+        complete: false,
+    };
+    assert!(already_there(&dest, &entry, &f).unwrap());
+    let other = ModelFile {
+        sha256: "0".repeat(64),
+        ..f.clone()
+    };
+    entry.complete = true;
+    entry.files[0].sha256 = other.sha256.clone();
+    assert!(already_there(&dest, &entry, &other).unwrap());
+    entry.complete = false;
+    assert!(!already_there(&dest, &entry, &other).unwrap());
+    assert!(!dest.exists());
+    assert!(!already_there(&dest, &entry, &f).unwrap());
+}
