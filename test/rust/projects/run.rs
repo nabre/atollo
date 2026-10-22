@@ -10,7 +10,90 @@ fn local_network_setting() {
     let lan = |s: &str| on_network(s.to_owned(), true);
     assert_eq!(lan("--host 127.0.0.1"), "--host 0.0.0.0");
     assert_eq!(lan("--host=127.0.0.1 --port"), "--host=0.0.0.0 --port");
-    assert_eq!(lan("127.0.0.1"), "0.0.0.0");
+}
+
+/// BUG-V7-10: the bind forms the detectors write (and the usual servers
+/// take) move to 0.0.0.0 in LAN mode.
+#[test]
+fn local_network_moves_bind_forms() {
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    for (from, to) in [
+        (
+            "vite --port 7101 --strictPort --host 127.0.0.1",
+            "vite --port 7101 --strictPort --host 0.0.0.0",
+        ),
+        (
+            "next dev -p 7101 -H 127.0.0.1",
+            "next dev -p 7101 -H 0.0.0.0",
+        ),
+        (
+            "http-server -p 7101 -a 127.0.0.1",
+            "http-server -p 7101 -a 0.0.0.0",
+        ),
+        (
+            "trunk serve --port 7101 --address 127.0.0.1",
+            "trunk serve --port 7101 --address 0.0.0.0",
+        ),
+        (
+            "streamlit run app.py --server.address 127.0.0.1",
+            "streamlit run app.py --server.address 0.0.0.0",
+        ),
+        (
+            "serve -l tcp://127.0.0.1:7101",
+            "serve -l tcp://0.0.0.0:7101",
+        ),
+        (
+            "python manage.py runserver 127.0.0.1:7101",
+            "python manage.py runserver 0.0.0.0:7101",
+        ),
+        (
+            "php artisan serve --host=127.0.0.1 --port=7101",
+            "php artisan serve --host=0.0.0.0 --port=7101",
+        ),
+        (
+            "gunicorn app:app --bind 127.0.0.1:7101",
+            "gunicorn app:app --bind 0.0.0.0:7101",
+        ),
+        (
+            "jupyter lab --ip=\"127.0.0.1\"",
+            "jupyter lab --ip=\"0.0.0.0\"",
+        ),
+        ("HOST=127.0.0.1 npm run dev", "HOST=0.0.0.0 npm run dev"),
+    ] {
+        assert_eq!(lan(from), to);
+    }
+}
+
+/// BUG-V7-10: a client's address is never a bind, in a command or in a
+/// variable that is not a bind one.
+#[test]
+fn local_network_keeps_client_settings() {
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    for kept in [
+        "mysql -h 127.0.0.1 -P 3306",
+        "mysql --host=127.0.0.1 < dump.sql",
+        "curl 127.0.0.1:8000",
+        "redis-cli -h 127.0.0.1",
+        "127.0.0.1",
+        "DB_HOST=127.0.0.1 php artisan migrate",
+    ] {
+        assert_eq!(lan(kept), kept);
+    }
+    assert_eq!(
+        lan("vite --host 127.0.0.1 && mysql --host 127.0.0.1"),
+        "vite --host 0.0.0.0 && mysql --host 127.0.0.1"
+    );
+    let env = |k: &str, v: &str| env_on_network(k, v.to_owned(), true);
+    assert_eq!(env("DB_HOST", "127.0.0.1"), "127.0.0.1");
+    assert_eq!(env("REDIS_HOST", "127.0.0.1"), "127.0.0.1");
+    assert_eq!(env("DATABASE_HOST", "127.0.0.1:3306"), "127.0.0.1:3306");
+    assert_eq!(env("GRADIO_SERVER_NAME", "127.0.0.1"), "0.0.0.0");
+    assert_eq!(env("HOST", "127.0.0.1:7101"), "0.0.0.0:7101");
+    assert_eq!(env("HOST", "127.0.0.10"), "127.0.0.10");
+    assert_eq!(
+        env_on_network("HOST", "127.0.0.1".to_owned(), false),
+        "127.0.0.1"
+    );
 }
 
 /// BUG-V7-10: in LAN mode the address a client connects to stays, only the
