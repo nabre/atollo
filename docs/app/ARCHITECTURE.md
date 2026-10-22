@@ -84,7 +84,8 @@ tauri\src\
     kit_files  self_update    files written to data\kit\; new version of the exe
   install\                    one installer per family: core, agents (Pi too), llama (llama.cpp, D-151), web, caddy,
                               native, editor, db, android;
-                              conda (packages kept to reinstall without the network, D-118)
+                              conda (packages kept to reinstall without the network, D-118); the shared path:
+                              mod (types, Installer, registry), flow, parts, keys
     lang\                     one file per language or family: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
   versions\                   saved versions (D-80)
@@ -210,7 +211,7 @@ Folder rules:
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `editor\ext.rs` stays whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines; today only `install\mod.rs` goes over (below, "Opportunities"). The Guide's texts (`ui\src\guide\topics\`) are text, not code.
+- a file is split when it has parts that read on their own; `editor\ext.rs` stays whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`ui\src\guide\topics\`) are text, not code.
 
 ### Tauri commands (`commands\`)
 
@@ -410,7 +411,7 @@ The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.
 
 ## Opportunities found, not yet done
 
-From the analysis of October 15, 2026, checked again on October 21. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88); VSCodium 1.135's measures as tokens and the codicons from their font (D-142). Only item 10 remains:
+From the analysis of October 15, 2026, checked again on October 21. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88); VSCodium 1.135's measures as tokens and the codicons from their font (D-142). All of them are done:
 
 1. ~~**Read error that stays on screen**~~: done on October 21, 2026. The error already cleared after a successful read; what was missing was protection from an older read answering late. The kit's information (`App.tsx`), the "Remove the drive" list (`shell\eject.tsx`) and the settings (`settings\autosave.ts`) go through `useLoad` with `"show"`; Settings and the first start have "Retry". `databases\page.tsx` already used it.
 2. ~~**In-page confirmations without `alertdialog`**~~: done on October 17, 2026 (D-106), the four confirmations use `InlineConfirm`.
@@ -421,4 +422,4 @@ From the analysis of October 15, 2026, checked again on October 21. Done: comman
 7. ~~**`projectmcp.tsx`** not imported~~: it was already used by the project page; since October 17, 2026 it is `projects\mcp.tsx`.
 8. ~~**Files over 900 lines**~~: done on October 21, 2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` and `agents\keyring.rs` are folders with one file per part, the longest 447 lines; the tests in `test\rust\` follow the same split.
 9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in `topics\`, one file per chapter; the longest ones (`topics\projects.tsx`) are text.
-10. **`install\mod.rs`** (956 lines): the last code file over 900 lines, to be split like the installers above.
+10. ~~**`install\mod.rs`** (956 lines)~~: done in the v7 report's wave 2 (STR-V7-05), split into `flow.rs`, `parts.rs` and `keys.rs`.

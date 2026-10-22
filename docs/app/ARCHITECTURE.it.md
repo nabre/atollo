@@ -84,7 +84,8 @@ tauri\src\
     kit_files  self_update    file scritti in data\kit\; nuova versione dell'exe
   install\                    un installatore per famiglia: core, agents (anche Pi), llama (llama.cpp, D-151), web,
                               caddy, native, editor, db, android;
-                              conda (pacchetti conservati per reinstallare senza rete, D-118)
+                              conda (pacchetti conservati per reinstallare senza rete, D-118); il percorso comune:
+                              mod (tipi, Installer, registro), flow, parts, keys
     lang\                     un file per linguaggio o famiglia: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
   versions\                   versioni salvate (D-80)
@@ -211,7 +212,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`. Ciò che tutto il crate legge da una cartella è riesportato per nome nel suo `mod.rs` e si scrive con il percorso corto: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `editor\ext.rs` resta intero; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02), ed `env\` uno per parte di `KitEnv::build`, che chiama in ordine una funzione per sezione (STR-V7-03). Gli altri file dovrebbero restare sotto le 900 righe; oggi solo `install\mod.rs` le supera (sotto, «Opportunità»). I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
+- un file si divide quando ha parti che si leggono da sole; `editor\ext.rs` resta intero; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02), ed `env\` uno per parte di `KitEnv::build`, che chiama in ordine una funzione per sezione (STR-V7-03). Gli altri file dovrebbero restare sotto le 900 righe. I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
 
 ### Comandi Tauri (`commands\`)
 
@@ -411,7 +412,7 @@ Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0
 
 ## Opportunità individuate, non ancora fatte
 
-Dall'analisi del 15/10/2026, ricontrollata il 21/10. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88); le misure di VSCodium 1.135 come token e i codicon dal loro font (D-142). Resta solo la voce 10:
+Dall'analisi del 15/10/2026, ricontrollata il 21/10. Fatte: comandi per area e regole dei file (D-86); cartelle per area, file grandi divisi, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, ciclo fra le pagine dei progetti (D-87); controlli e tema di VSCodium (D-88); le misure di VSCodium 1.135 come token e i codicon dal loro font (D-142). Sono tutte fatte:
 
 1. ~~**Errore di lettura che resta sullo schermo**~~: fatto il 21/10/2026. L'errore si toglieva già dopo una lettura riuscita; mancava la protezione da una lettura vecchia che risponde tardi. Le informazioni del kit (`App.tsx`), l'elenco di «Rimuovi l'unità» (`shell\eject.tsx`) e le impostazioni (`settings\autosave.ts`) passano da `useLoad` con `"show"`; Impostazioni e primo avvio hanno «Riprova». `databases\page.tsx` lo usava già.
 2. ~~**Conferme nella pagina senza `alertdialog`**~~: fatto il 17/10/2026 (D-106), le quattro conferme usano `InlineConfirm`.
@@ -422,4 +423,4 @@ Dall'analisi del 15/10/2026, ricontrollata il 21/10. Fatte: comandi per area e r
 7. ~~**`projectmcp.tsx`** non importato~~: era già usato dalla pagina del progetto; dal 17/10/2026 è `projects\mcp.tsx`.
 8. ~~**File sopra le 900 righe**~~: fatto il 21/10/2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` e `agents\keyring.rs` sono cartelle con un file per parte, il più lungo di 447 righe; le prove in `test\rust\` seguono la stessa divisione.
 9. ~~**`ui\src\guide\`**: `sections.tsx` e `model.ts` sono testi della Guida più che codice~~: fatto il 19/10/2026 (D-136), il testo sta in `topics\`, un file per capitolo; i più lunghi (`topics\projects.tsx`) sono testo.
-10. **`install\mod.rs`** (956 righe): l'ultimo file di codice sopra le 900 righe, da dividere come gli installatori qui sopra.
+10. ~~**`install\mod.rs`** (956 righe)~~: fatto nell'ondata 2 del report v7 (STR-V7-05), diviso in `flow.rs`, `parts.rs` e `keys.rs`.
