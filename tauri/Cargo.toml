@@ -41,6 +41,9 @@ regex = "1.13.1"
 # settings into data/app/ca-bundle.pem for the app's downloads and the kit's
 # tools (D-137).
 rustls-native-certs = "0.8.5"
+# The QR of a project's site on the local network (N-6): the modules only,
+# drawn by the page; no image or SVG feature.
+qrcode = { version = "0.14.1", default-features = false }
 
 # Win32 APIs, WebView2, junctions and the system proxy: Windows only, so the
 # same crate also builds for macOS and Linux (B7 / N-A1).

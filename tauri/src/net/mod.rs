@@ -22,6 +22,7 @@
 pub mod archive;
 pub mod ca;
 mod github;
+pub mod lan;
 mod proxy;
 pub mod resume;
 /// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
