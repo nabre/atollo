@@ -11,7 +11,7 @@ fn batch_runs_through_the_kit_powershell() {
     let script = kit.root().join("it's").join("agy.cmd");
     let dir = kit.projects().join("app");
     let l = pty::command(&kit, &script, &dir);
-    let pwsh = crate::setup::catalog::kit_path(&kit, r"pwsh\pwsh.exe");
+    let pwsh = crate::setup::kit_path(&kit, r"pwsh\pwsh.exe");
     assert_eq!(l.program, pwsh);
     assert_eq!(
         l.args[..5],
@@ -26,10 +26,7 @@ fn batch_runs_through_the_kit_powershell() {
     let quoted = format!("& '{}'; exit $LASTEXITCODE", script.display()).replace("it's", "it''s");
     assert_eq!(l.args[5], quoted);
     assert_eq!(l.title, "app · agy");
-    assert_eq!(
-        l.conpty,
-        Some(crate::setup::catalog::kit_path(&kit, "conpty"))
-    );
+    assert_eq!(l.conpty, Some(crate::setup::kit_path(&kit, "conpty")));
 
     // An exe agent runs directly.
     let claude = kit.apps().join("claude").join("claude.exe");

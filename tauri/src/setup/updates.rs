@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 
 /// How long the versions asked are good for.
 const STALE_SECS: u64 = 24 * 60 * 60;

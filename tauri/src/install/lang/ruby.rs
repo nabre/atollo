@@ -14,7 +14,7 @@ use crate::install::{arch_of, target_of, Ctx, Installer, Progress, Release};
 use crate::kit::Target;
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Ruby: RubyInstaller2 7z on Windows (without MSYS2), or
 /// conda-forge `ruby` by micromamba on macOS and Linux (D-112), in place

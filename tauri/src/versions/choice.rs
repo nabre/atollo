@@ -11,7 +11,7 @@ use super::{default_line, dir_for, find, is_present, saved, valid_line, versione
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Lines chosen per component id.
 pub type Choice = BTreeMap<String, String>;

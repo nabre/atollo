@@ -15,7 +15,7 @@ use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
 use crate::projects::fastcgi::FastCgi;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 use super::pools::vhost_file;
 use super::{serves, AttachedSite, WebServerEngine, WebServerPool, WebServers};

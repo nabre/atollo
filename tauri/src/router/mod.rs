@@ -10,6 +10,12 @@ pub mod fs;
 pub mod probe;
 pub mod target;
 
+// The private and executable files, by a short path
+// (`crate::router::write_private`).
+pub use fs::{
+    restrict_dir_to_owner, restrict_to_owner, set_executable, write_executable, write_private,
+};
+
 use crate::env::KitEnv;
 use crate::kit::{Kit, Target};
 use crate::setup::checkup::Check;

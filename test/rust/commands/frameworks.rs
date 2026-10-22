@@ -57,7 +57,7 @@ fn env_goes_in_gitignore() {
 fn a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel() {
     use crate::kit::Target;
     use crate::projects::frameworks::{official, plan};
-    use crate::setup::catalog::Catalog;
+    use crate::setup::Catalog;
     let catalog = Catalog::get();
     let wordpress = plan(official(), "wordpress", &[]).unwrap();
     let laravel = plan(official(), "laravel", &["mysql".to_owned()]).unwrap();

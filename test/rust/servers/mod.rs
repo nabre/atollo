@@ -21,7 +21,7 @@ use crate::kit::{tests::TempDir, Arch, Os};
 use crate::os::jobs::{self, Job};
 use crate::projects::alias;
 use crate::projects::fastcgi::{FastCgi, FcgiAddr};
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 #[test]
 fn profile_crud_and_vhost_generation() {

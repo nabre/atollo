@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use crate::versions::tests::install_fake;
 use crate::versions::{install_dir, saved_dir, tools};
 

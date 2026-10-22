@@ -53,7 +53,7 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::Job;
 use crate::projects::run::responds;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use access::admin_password;
 pub use backups::Backup;
 pub use data::{data_dir, data_dir_at, migrate_data};

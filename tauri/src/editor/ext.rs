@@ -38,7 +38,7 @@ use crate::net::verify::Expect;
 use crate::net::{github_digest, Net};
 use crate::os::jobs;
 use crate::projects::settings::Extensions;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 const MATRIX: &str = include_str!("../../catalog/extensions.json");
 pub const CODELLDB: &str = "vadimcn.vscode-lldb";

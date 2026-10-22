@@ -15,7 +15,7 @@ use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::github_digest;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// CMake, with Ninja in `tools\`.
 pub struct Cmake;
@@ -231,7 +231,7 @@ pub(crate) fn write_zig_shims(bin: &Path) -> Result<()> {
     for (name, script) in zig_shims() {
         let path = bin.join(name);
         crate::fsx::write_atomic(&path, script.as_bytes())?;
-        crate::router::fs::set_executable(&path)?;
+        crate::router::set_executable(&path)?;
     }
     Ok(())
 }
@@ -359,7 +359,7 @@ impl Installer for Cc {
             )?;
             self.after_conda(ctx, component, &folder, &mut *progress)
         })?;
-        if !crate::setup::catalog::kit_path(ctx.kit, "zig/zig.exe").is_file() {
+        if !crate::setup::kit_path(ctx.kit, "zig/zig.exe").is_file() {
             progress.note(
                 "Zig is not installed: cc, c++, ar and ranlib need it, and stay off the PATH until it is",
             );

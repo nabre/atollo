@@ -69,7 +69,7 @@ fn check_database(database: Option<&String>) -> Result<(), Problem> {
 }
 
 fn check_needs(needs: &[String]) -> Result<(), Problem> {
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     match needs.iter().find(|n| catalog.find(n).is_none()) {
         Some(n) => Err(("Strumento del kit sconosciuto: {0}", vec![n.clone()])),
         None => Ok(()),

@@ -6,7 +6,7 @@ use super::{github_line, github_stable, release_lines};
 use crate::install::{github_single, target_of, Ctx, Installer, Release};
 use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 pub struct Bun;
 

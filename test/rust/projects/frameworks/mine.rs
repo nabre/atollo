@@ -40,7 +40,7 @@ fn real_git_files() {
     let dir = tmp.0.join("shop");
     project(&dir);
     fs::write(dir.join(".gitignore"), "public/\n").unwrap();
-    let git = crate::setup::catalog::kit_path(&kit, r"git\cmd\git.exe");
+    let git = crate::setup::kit_path(&kit, r"git\cmd\git.exe");
     let ok = crate::os::jobs::kit_command(&git, &env)
         .args(["init", "-q"])
         .current_dir(&dir)

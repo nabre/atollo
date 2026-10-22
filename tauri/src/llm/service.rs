@@ -25,7 +25,7 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
 use crate::projects::run::{is_port_free, responds};
-use crate::setup::catalog::{kit_path, Catalog};
+use crate::setup::{kit_path, Catalog};
 
 /// The program, as the catalog writes it.
 pub const SERVER: &str = "llama/llama-server.exe";

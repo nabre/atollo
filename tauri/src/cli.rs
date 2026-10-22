@@ -18,8 +18,8 @@ use windows::Win32::System::Console::{
 use crate::env::KitEnv;
 use crate::i18n::t;
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Choice};
 use crate::setup::runner::{Event, Options, Outcome, Sink};
+use crate::setup::{Catalog, Choice};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Cli {

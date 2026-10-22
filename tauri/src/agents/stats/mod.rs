@@ -42,7 +42,7 @@ use serde_json::Value;
 
 use crate::kit::Kit;
 use crate::net::Net;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use util::{clamp_percent, level, now_ms, Period, Usage, CRITICAL, WARN};
 
 /// Servers asked at most every `ONLINE_EVERY`, at most every

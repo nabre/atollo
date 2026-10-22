@@ -199,7 +199,7 @@ pub fn bash_args(kit: &Kit) -> Vec<String> {
 /// The kit profiles for what is installed now, for the kit's system.
 pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
     let os = kit.os();
-    let app = |rel: &str| crate::setup::catalog::kit_path(kit, rel);
+    let app = |rel: &str| crate::setup::kit_path(kit, rel);
     let mut out = Map::new();
     let pwsh = app(r"pwsh\pwsh.exe");
     if pwsh.is_file() {
@@ -321,7 +321,7 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     if let (false, Some(default)) = (keep_default, default) {
         out.insert(default_key, json!(default));
     }
-    let pwsh = crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe");
+    let pwsh = crate::setup::kit_path(kit, r"pwsh\pwsh.exe");
     if os.is_windows() {
         if pwsh.is_file() {
             // Tasks and debug consoles use the kit's shell too.

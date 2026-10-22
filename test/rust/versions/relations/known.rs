@@ -1,5 +1,5 @@
 use super::*;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use crate::versions::ranges::{Bare, Range};
 use crate::versions::relations::split;
 

@@ -57,7 +57,7 @@ pub fn caddy_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
         .map(PathBuf::from)
         .filter(|d| caddy_exe(kit, d).is_file())
         .unwrap_or_else(|| {
-            let resolved = crate::setup::catalog::kit_path(kit, "caddy");
+            let resolved = crate::setup::kit_path(kit, "caddy");
             if caddy_exe(kit, &resolved).is_file() {
                 resolved
             } else {
@@ -258,7 +258,7 @@ pub fn private_leaf(base: &Path, name: &str) -> std::io::Result<PathBuf> {
     #[cfg(not(unix))]
     fs::DirBuilder::new().create(&leaf)?;
     #[cfg(windows)]
-    if let Err(e) = crate::router::fs::restrict_dir_to_owner(&leaf) {
+    if let Err(e) = crate::router::restrict_dir_to_owner(&leaf) {
         let _ = fs::remove_dir(&leaf);
         return Err(std::io::Error::other(format!("{e:#}")));
     }

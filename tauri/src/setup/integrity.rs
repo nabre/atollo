@@ -22,7 +22,7 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 
 pub const MANIFEST: &str = ".atollo-manifest";
 const HEADER: &str = "# Atollo manifest 1: sha256 size path";

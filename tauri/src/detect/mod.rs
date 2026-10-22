@@ -577,7 +577,7 @@ pub fn requires(dir: &Path) -> Vec<String> {
     }
     found.extend(container::servers(dir).into_keys());
     found.extend(databases(dir));
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())

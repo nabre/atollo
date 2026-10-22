@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use crate::versions::tests::install_fake;
 use crate::versions::{default_dir, install_dir, remove, saved_dir, write_version, Line};
 
@@ -21,10 +21,7 @@ fn choices_rewrite_the_environment() {
     } else {
         main.join("bin").join("node")
     };
-    assert_eq!(
-        crate::setup::catalog::kit_path(&kit, "node/node.exe"),
-        node_exe
-    );
+    assert_eq!(crate::setup::kit_path(&kit, "node/node.exe"), node_exe);
     assert!(node.is_installed(&kit));
     let old = saved_dir(&kit, node, "20.18");
     install_fake(&kit, node, &old);

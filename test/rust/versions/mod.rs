@@ -64,10 +64,7 @@ fn tools_have_a_folder_per_line() {
     } else {
         dir.join("bin").join("git")
     };
-    assert_eq!(
-        crate::setup::catalog::kit_path(&kit, r"git\cmd\git.exe"),
-        git_exe
-    );
+    assert_eq!(crate::setup::kit_path(&kit, r"git\cmd\git.exe"), git_exe);
     assert!(saved(&kit, git).is_empty());
 }
 

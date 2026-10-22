@@ -51,9 +51,7 @@ fn sqlite_from_conda_on_linux_arm64() {
         assert_eq!(Sqlite.custom(t), conda, "{t}");
         assert_eq!(Sqlite.relocatable(t), !conda, "{t}");
     }
-    let sqlite = crate::setup::catalog::Catalog::get()
-        .find("sqlite")
-        .unwrap();
+    let sqlite = crate::setup::Catalog::get().find("sqlite").unwrap();
     assert!(sqlite.is_available_on(Target::LINUX_ARM64));
     assert_eq!(sqlite.unavailable_reason(Target::LINUX_ARM64), None);
     assert_eq!(sqlite.key_for(Target::LINUX_ARM64), "sqlite/sqlite3");

@@ -238,7 +238,7 @@ fn git_is_staged_where_its_target_cannot_run() {
 
     // `should_stage` on this host, for a kit of every target.
     let tmp = crate::kit::tests::TempDir::new("git-stage");
-    let git = crate::setup::catalog::Catalog::get().find("git").unwrap();
+    let git = crate::setup::Catalog::get().find("git").unwrap();
     let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
     let env = crate::env::KitEnv::default();
     let cancel = std::sync::atomic::AtomicBool::new(false);
@@ -330,7 +330,7 @@ fn dugite_links_missing_are_noticed() {
 #[test]
 fn conda_git_is_marked_once_for_reinstall() {
     let tmp = crate::kit::tests::TempDir::new("conda-git");
-    let git = crate::setup::catalog::Catalog::get().find("git").unwrap();
+    let git = crate::setup::Catalog::get().find("git").unwrap();
     for target in [Target::LINUX_X64, Target::DARWIN_ARM64, Target::WIN32_X64] {
         let kit = crate::kit::Kit::at_target(tmp.0.join(target.as_str()), target);
         let store = git.folder_path(&kit).unwrap();

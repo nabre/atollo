@@ -15,7 +15,7 @@ use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::kit::Target;
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// The signer of both files.
 #[cfg_attr(not(windows), allow(dead_code))]

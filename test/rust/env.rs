@@ -463,7 +463,7 @@ fn languages_from_the_folder_of_their_version() {
         ]
     };
     let (_tmp, kit) = fake_kit("env-versions", files);
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     for (id, version) in [
         ("node", "v22.11.0"),
         ("php", "8.4.13"),
@@ -724,7 +724,7 @@ fn cc_variables_on_unix_with_cc_and_zig() {
     use crate::kit::Target;
 
     let tmp = TempDir::new("env-cc");
-    let zig = crate::setup::catalog::Catalog::get().find("zig").unwrap();
+    let zig = crate::setup::Catalog::get().find("zig").unwrap();
     for target in [
         Target::LINUX_X64,
         Target::LINUX_ARM64,
@@ -940,7 +940,7 @@ fn gem_home_per_system_and_line() {
             .join("3.4")
     );
     let tmp = TempDir::new("env-gem-home");
-    let ruby = crate::setup::catalog::Catalog::get().find("ruby").unwrap();
+    let ruby = crate::setup::Catalog::get().find("ruby").unwrap();
     for target in [Target::LINUX_X64, Target::DARWIN_ARM64, Target::WIN32_X64] {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         let bare = KitEnv::build(&kit, &Settings::default(), "en", &host());
@@ -987,7 +987,7 @@ fn gem_home_follows_the_line_the_kit_uses() {
     use crate::kit::Target;
 
     let tmp = TempDir::new("env-gem-lines");
-    let ruby = crate::setup::catalog::Catalog::get().find("ruby").unwrap();
+    let ruby = crate::setup::Catalog::get().find("ruby").unwrap();
     for target in [Target::LINUX_ARM64, Target::DARWIN_X64] {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         touch(&kit, &["ruby/3.3/bin/ruby", "ruby/3.4/bin/ruby"]);
@@ -1135,7 +1135,7 @@ fn conda_environments_give_only_their_programs() {
             "r/4.6/bin/R",
         ],
     );
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     for (id, version) in [("ruby", "4.0.7"), ("mongodb", "8.0.23"), ("r", "4.6.1")] {
         catalog
             .find(id)

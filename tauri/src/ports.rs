@@ -18,7 +18,7 @@ use crate::db::services::{line_ports, load_settings, server_line, server_lines};
 use crate::db::DbEngine;
 use crate::i18n::t;
 use crate::kit::Kit;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// What a port is kept for.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -14,7 +14,7 @@ use crate::install::{target_of, Ctx, Installer, Release};
 use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// MySQL's builds (D-110): Oracle publishes an MD5 and a GPG signature, no
 /// SHA-256. Each line's version and the SHA-256 of each of its files are

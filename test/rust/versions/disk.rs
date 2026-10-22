@@ -13,7 +13,7 @@ fn deleted_by_hand_is_no_longer_chosen() {
     let main = install_dir(&kit, node, "v22.11.0");
     install_fake(&kit, node, &main);
     node.save_version(&kit, "v22.11.0").unwrap();
-    let mut choice = crate::setup::catalog::Choice::defaults(catalog);
+    let mut choice = crate::setup::Choice::defaults(catalog);
     choice.set(catalog, "pnpm", true);
     choice.write(&kit, catalog).unwrap();
     assert!(sync_with_disk(&kit).unwrap().is_empty(), "all there");
@@ -22,13 +22,13 @@ fn deleted_by_hand_is_no_longer_chosen() {
     fs::remove_dir_all(node.folder_path(&kit).unwrap()).unwrap();
     let off = sync_with_disk(&kit).unwrap();
     assert!(off.contains(&"Node.js".to_owned()) && off.contains(&"pnpm, yarn".to_owned()));
-    let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+    let now = crate::setup::Choice::read(&kit, catalog).unwrap();
     assert!(!now.is_chosen("node") && !now.is_chosen("pnpm"));
     assert!(node.installed_version(&kit).is_none());
     assert!(sync_with_disk(&kit).unwrap().is_empty(), "once");
 
     // Chosen and never installed (waiting for Apply): left alone.
-    let mut choice = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+    let mut choice = crate::setup::Choice::read(&kit, catalog).unwrap();
     choice.set(catalog, "go", true);
     choice.write(&kit, catalog).unwrap();
     assert!(sync_with_disk(&kit).unwrap().is_empty());
@@ -52,14 +52,14 @@ fn deleted_need_of_one_target_turns_off_what_needs_it() {
         kit.prepare().unwrap();
         install_fake(&kit, zig, &install_dir(&kit, zig, "0.14.0"));
         zig.save_version(&kit, "0.14.0").unwrap();
-        let mut choice = crate::setup::catalog::Choice::defaults(catalog);
+        let mut choice = crate::setup::Choice::defaults(catalog);
         choice.set(catalog, "cc", true);
         choice.write(&kit, catalog).unwrap();
         assert!(sync_with_disk(&kit).unwrap().is_empty(), "{t}: all there");
 
         fs::remove_dir_all(zig.folder_path(&kit).unwrap()).unwrap();
         let off = sync_with_disk(&kit).unwrap();
-        let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+        let now = crate::setup::Choice::read(&kit, catalog).unwrap();
         assert_eq!(now.is_chosen("cc"), cc_after, "{t}");
         assert!(!now.is_chosen("zig"), "{t}");
         assert_eq!(off.contains(&"C, C++".to_owned()), !cc_after, "{t}");
@@ -67,7 +67,7 @@ fn deleted_need_of_one_target_turns_off_what_needs_it() {
         // D-122: the choice is one for every system, so C and C++ are off
         // on Windows too, accepted.
         let windows = kit.for_target(Target::WIN32_X64);
-        let there = crate::setup::catalog::Choice::read(&windows, catalog).unwrap();
+        let there = crate::setup::Choice::read(&windows, catalog).unwrap();
         assert_eq!(there.is_chosen("cc"), cc_after, "{t}");
     }
 }

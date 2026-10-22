@@ -75,7 +75,7 @@ pub fn ensure_php_ini(data: &Path, php_dir: &Path) -> Result<()> {
 /// kit used), and every line on disk without one gets its own from its
 /// template. At start, with `versions::migrate`, and after PHP is installed.
 pub fn migrate_php_ini(kit: &crate::kit::Kit) -> Result<()> {
-    let Some(php) = crate::setup::catalog::Catalog::get().find("php") else {
+    let Some(php) = crate::setup::Catalog::get().find("php") else {
         return Ok(());
     };
     let data = &kit.data();

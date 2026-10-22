@@ -78,7 +78,7 @@ fn rust_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 /// translated like the other texts.
 #[test]
 fn component_descriptions_are_in_the_catalog() {
-    for c in crate::setup::catalog::Catalog::get().all() {
+    for c in crate::setup::Catalog::get().all() {
         let tr = catalog().get(&c.desc);
         for lang in ["en", "fr", "de"] {
             assert!(

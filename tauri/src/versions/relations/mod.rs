@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ranges::{Range, Version};
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 use checks::{links, runtimes};
 #[cfg(test)]
 pub use known::notes;

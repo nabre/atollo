@@ -18,7 +18,7 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs;
 use crate::projects::caddy;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The folder of MySQL's socket when it does not fit in the data folder
 /// ([`mysql::socket_dir`]): in the first base of

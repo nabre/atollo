@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::tests::TempDir;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// Asks every source for real: the lines of each versioned component,
 /// then the release of each line. Prints `id line version url` for the

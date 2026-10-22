@@ -4,7 +4,7 @@ use crate::install::Dest;
 /// The download target of MySQL on each kit target: x64 on Windows ARM64
 /// (`x64Only`), native elsewhere.
 fn mysql_download_target(t: Target) -> Target {
-    let c = crate::setup::catalog::Catalog::get().find("mysql").unwrap();
+    let c = crate::setup::Catalog::get().find("mysql").unwrap();
     if c.is_emulated_on(t) {
         t.with_arch(Arch::X64)
     } else {

@@ -16,7 +16,7 @@ use crate::kit::{Kit, Target};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::router::target::can_execute_on_host;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// The description of the conda-forge package `pkg`: every file of every
 /// version, with its `attrs.subdir`.

@@ -40,7 +40,7 @@ use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::{self, Expect};
 use crate::net::Net;
 use crate::os::temp::TempWork;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 pub(crate) use lang::xcode_selected;
 pub use lang::{make_launchers, version_key};
@@ -542,7 +542,7 @@ fn install_now(
 pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<String>> {
     let target = kit.target();
     let mut flagged = Vec::new();
-    for c in crate::setup::catalog::Catalog::get().all() {
+    for c in crate::setup::Catalog::get().all() {
         let fixed = installer(&c.id).is_some_and(|i| !i.relocatable(target));
         if !fixed {
             continue;
@@ -572,7 +572,7 @@ pub fn flag_not_relocatable(kit: &Kit, old_root: &str) -> std::io::Result<Vec<St
 /// files are right. A failure is logged, the start goes on.
 pub fn relocate(kit: &Kit) {
     let target = kit.target();
-    for c in crate::setup::catalog::Catalog::get().all() {
+    for c in crate::setup::Catalog::get().all() {
         let Some(inst) = installer(&c.id).filter(|i| i.relocatable(target)) else {
             continue;
         };
@@ -815,7 +815,7 @@ fn place_part(
                     .with_context(|| format!("{name} not found in {}", part.file_name))?;
                 let dest = tools.join(name);
                 put_file(&found, &dest)?;
-                let _ = crate::router::fs::set_executable(&dest);
+                let _ = crate::router::set_executable(&dest);
             }
             Ok(())
         }
@@ -832,7 +832,7 @@ fn place_part(
             fs::create_dir_all(&dir)?;
             let dest = dir.join(name);
             put_file(&src, &dest)?;
-            let _ = crate::router::fs::set_executable(&dest);
+            let _ = crate::router::set_executable(&dest);
             Ok(())
         }
         Dest::Inside(name) => {
@@ -843,7 +843,7 @@ fn place_part(
                 .with_context(|| format!("{name} not found in {}", part.file_name))?;
             let dest = folder.join(name);
             put_file(&found, &dest)?;
-            let _ = crate::router::fs::set_executable(&dest);
+            let _ = crate::router::set_executable(&dest);
             Ok(())
         }
     }

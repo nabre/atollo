@@ -74,7 +74,7 @@ pub fn save(kit: &Kit, token: &str) -> Result<()> {
         bail!("not a Claude Code token");
     }
     let file = path(kit);
-    crate::router::fs::write_private(&file, token)?;
+    crate::router::write_private(&file, token)?;
     // A kit on exFAT or FAT keeps no owner-only mode: anyone could read
     // the token there, so it is not kept (as the Antigravity keyring).
     if !owner_only(&file) {
@@ -248,7 +248,7 @@ pub fn link<R: tauri::Runtime>(
 
     use crate::editor::pty;
 
-    let exe = crate::setup::catalog::kit_path(kit, super::exe_of("claude").unwrap_or_default());
+    let exe = crate::setup::kit_path(kit, super::exe_of("claude").unwrap_or_default());
     if !exe.is_file() {
         bail!(
             "{}",

@@ -7,7 +7,7 @@ use crate::install::{Ctx, Installer, Release};
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Releases `mongo-express-v<version>` of this repository
 /// (`.github/workflows/mongo-express.yml`, `scripts/build-mongo-express`).

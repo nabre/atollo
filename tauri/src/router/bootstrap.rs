@@ -25,7 +25,7 @@ use crate::install::{self, Ctx, Dest, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
 use crate::net::archive::{self, InUse};
 use crate::net::verify::{self, Expect};
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 
 /// `data/apps/<target>/.bootstrap`: what is pre-downloaded for that system.
 fn boot_dir(kit: &Kit) -> PathBuf {

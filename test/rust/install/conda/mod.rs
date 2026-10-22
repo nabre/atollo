@@ -6,7 +6,7 @@ use super::*;
 use crate::install::installer;
 use crate::kit::tests::TempDir;
 use crate::kit::Target;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The SHA-256 of `bytes`, lowercase hex.
 pub(super) fn sha(bytes: &[u8]) -> String {

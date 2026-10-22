@@ -58,7 +58,7 @@ impl ProjectState {
     pub fn private_dir(&self) -> io::Result<PathBuf> {
         let dir = self.dir.join("private");
         fs::create_dir_all(&dir)?;
-        if let Err(e) = crate::router::fs::restrict_dir_to_owner(&dir) {
+        if let Err(e) = crate::router::restrict_dir_to_owner(&dir) {
             crate::log::warn(&format!("{}: permissions: {e:#}", dir.display()));
         }
         Ok(dir)

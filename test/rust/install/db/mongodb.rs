@@ -68,9 +68,7 @@ fn sqlite_and_mongodb_across_targets() {
 fn mongosh_asset_per_target() {
     use crate::kit::Target;
 
-    let mongodb = crate::setup::catalog::Catalog::get()
-        .find("mongodb")
-        .unwrap();
+    let mongodb = crate::setup::Catalog::get().find("mongodb").unwrap();
     let names = [
         (Target::WIN32_X64, "mongosh-2.5.9-win32-x64.zip"),
         (Target::WIN32_ARM64, "mongosh-2.5.9-win32-x64.zip"),
@@ -131,9 +129,7 @@ fn mongodb_server_from_conda_on_linux() {
     );
     assert_eq!(mongodb_server_version("8.0.23"), "8.0.23");
     // The catalog's key of the server is the environment's `bin/mongod`.
-    let mongodb = crate::setup::catalog::Catalog::get()
-        .find("mongodb")
-        .unwrap();
+    let mongodb = crate::setup::Catalog::get().find("mongodb").unwrap();
     assert_eq!(mongodb.key_for(Target::LINUX_ARM64), "mongodb/bin/mongod");
     assert_eq!(
         mongodb.keys_for(Target::LINUX_X64),

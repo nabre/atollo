@@ -1,7 +1,7 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch, Kit, Os, Target};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use std::fs;
 
 #[test]
@@ -37,7 +37,7 @@ fn target_execution_matrix_across_os_and_arch() {
 
 #[test]
 fn rosetta_is_checked_only_for_its_components_on_that_mac() {
-    let mut c: crate::setup::catalog::Component = serde_json::from_value(serde_json::json!({
+    let mut c: crate::setup::Component = serde_json::from_value(serde_json::json!({
         "id": "x", "name": "X", "group": "languages", "def": false, "mb": 1,
         "desc": "x", "home": "https://x", "key": "x/x.exe", "rosetta": true
     }))
@@ -200,7 +200,7 @@ fn probe_all_targets_and_static_health_work_without_spawning() {
 /// PC), and what this host cannot run completes on the first start.
 #[test]
 fn grid_cells_say_chosen_reason_and_first_start() {
-    use crate::setup::catalog::Choice;
+    use crate::setup::Choice;
     let tmp = TempDir::new("router-grid");
     let kit = Kit::at_target(tmp.0.clone(), Target::detect());
     kit.prepare().unwrap();

@@ -10,7 +10,7 @@
 
 use crate::i18n::t;
 use crate::kit::Target;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// "On ARM64 PCs" is said only on a Windows ARM64 PC looking at its own
 /// system: from another one the target is named, as for every system.

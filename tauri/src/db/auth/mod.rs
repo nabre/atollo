@@ -113,7 +113,7 @@ pub fn update_secrets<T>(kit: &Kit, change: impl FnOnce(&mut Secrets) -> Result<
 /// `write_atomic` nor the file is ever readable by others, not even for a
 /// moment (security review of D-74); the file's own DACL is set again after.
 fn write_private(path: &Path, text: &str) -> Result<()> {
-    crate::router::fs::write_private(path, text)
+    crate::router::write_private(path, text)
 }
 
 /// The atomic write and the file's own DACL, in a folder already private

@@ -20,7 +20,7 @@ use crate::kit::Target;
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::settings::Settings;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 fn can_hard_link(dir: &Path) -> bool {
     let a = dir.join(".hardlink-test-a");
@@ -284,9 +284,7 @@ impl Installer for Rust {
         };
         let in_place = rust_plan(installed, kit_links, || false).ok() == Some(RustPlan::InPlace);
         let host = rust_host(ctx);
-        if host_needs_cc(&host)
-            && !crate::setup::catalog::kit_path(ctx.kit, "cc/bin/clang.exe").is_file()
-        {
+        if host_needs_cc(&host) && !crate::setup::kit_path(ctx.kit, "cc/bin/clang.exe").is_file() {
             progress.note("C, C++ is not installed: Rust on Windows ARM64 links with its clang");
         }
         let owned = [ctx.kit.root()];

@@ -76,7 +76,7 @@ fn a_launcher_runs_the_program_with_its_bin_first() {
     let prefix = tmp.0.join("k it").join("r");
     env_with(&prefix, &[("r-base", "4.6.1", &["bin/Rscript"])]);
     let bin = prefix.join("bin");
-    crate::router::fs::write_executable(
+    crate::router::write_executable(
         &bin.join("Rscript"),
         b"#!/bin/sh\necho \"args=$*\"\necho \"path=${PATH%%:*}\"\n",
     )

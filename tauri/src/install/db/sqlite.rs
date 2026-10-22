@@ -10,7 +10,7 @@ use crate::install::{arch_of, pattern, target_of, Ctx, Installer, Progress, Rele
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// From the `PRODUCT,<version>,<path>,<size>,<sha3-256>` lines of
 /// sqlite.org's download page: the command-line tools for Windows `arch`.
@@ -95,7 +95,7 @@ impl Installer for Sqlite {
         }
         let launcher = dir.join("sqlite3");
         crate::fsx::write_atomic(&launcher, SQLITE_CONDA_LAUNCHER.as_bytes())?;
-        crate::router::fs::set_executable(&launcher)?;
+        crate::router::set_executable(&launcher)?;
         Ok(())
     }
 

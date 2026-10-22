@@ -117,7 +117,7 @@ fn php_dir_with(kit: &Kit, env: &KitEnv, program: impl Fn(&Path) -> PathBuf) -> 
         .get("CP_PHP")
         .map(PathBuf::from)
         .filter(|d| program(d).is_file())
-        .unwrap_or_else(|| crate::setup::catalog::kit_path(kit, "php"));
+        .unwrap_or_else(|| crate::setup::kit_path(kit, "php"));
     program(&dir).is_file().then_some(dir)
 }
 

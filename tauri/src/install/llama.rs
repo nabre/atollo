@@ -14,7 +14,7 @@ use super::{target_of, Ctx, Installer, Release};
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 pub struct Llama;
 

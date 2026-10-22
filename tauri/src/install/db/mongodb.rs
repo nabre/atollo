@@ -17,7 +17,7 @@ use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::github_digest;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// The newest production release of a major version (`x.0.y`: minor
 /// releases are rapid releases), its Windows x64 zip and SHA-256.

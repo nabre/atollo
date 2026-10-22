@@ -15,3 +15,7 @@ pub mod runner;
 pub mod self_update;
 pub mod task;
 pub mod updates;
+
+// What the whole crate reads from the catalog, by a short path
+// (`crate::setup::Component`).
+pub use catalog::{kit_path, Catalog, Choice, Component, Group};

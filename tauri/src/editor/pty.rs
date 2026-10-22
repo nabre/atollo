@@ -206,12 +206,12 @@ pub struct Launch {
 fn conpty_dir(kit: &Kit) -> Option<PathBuf> {
     kit.target()
         .is_windows()
-        .then(|| crate::setup::catalog::kit_path(kit, "conpty"))
+        .then(|| crate::setup::kit_path(kit, "conpty"))
 }
 
 /// The kit's PowerShell.
 fn pwsh(kit: &Kit) -> PathBuf {
-    crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe")
+    crate::setup::kit_path(kit, r"pwsh\pwsh.exe")
 }
 
 /// A batch file (`agy.cmd`): Windows runs it with cmd only.

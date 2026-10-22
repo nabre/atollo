@@ -14,7 +14,7 @@ use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::net::{github_digest, GhAsset, GhRelease};
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 pub struct Caddy;
 

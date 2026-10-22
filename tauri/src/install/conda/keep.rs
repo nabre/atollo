@@ -17,7 +17,7 @@ use crate::install::native::run_output;
 use crate::install::{installer, Ctx, Progress};
 use crate::net::verify::{self, Expect};
 use crate::settings::Settings;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// The packages of `component` are kept: it cannot follow the kit on this
 /// target (D-92) and the setting is on (the default).

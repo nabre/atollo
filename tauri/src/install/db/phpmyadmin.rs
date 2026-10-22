@@ -10,7 +10,7 @@ use serde_json::Value;
 use crate::install::{Ctx, Installer, Release};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// phpMyAdmin's list of its releases.
 const PMA_VERSIONS: &str = "https://www.phpmyadmin.net/home_page/version.json";

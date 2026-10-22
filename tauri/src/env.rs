@@ -356,7 +356,7 @@ impl KitEnv {
         let fwd = |p: &Path| p.to_string_lossy().replace('\\', "/");
         // In the folder of a versioned component: that of its default
         // version (versions/mod.rs).
-        let app = |rel: &str| crate::setup::catalog::kit_path(kit, rel);
+        let app = |rel: &str| crate::setup::kit_path(kit, rel);
         let has = |rel: &str| app(rel).is_file();
 
         // Kit folders (_env.cmd:7-16, 22)
@@ -526,7 +526,7 @@ impl KitEnv {
         // Gradle 9 runs on Java 17 to 27: the kit's gradle (data\kit\bin)
         // starts it on the newest JDK, whatever Java a project uses (its
         // toolchain compiles). With `/`: the versions' rewrites leave it.
-        if let Some(java) = crate::setup::catalog::Catalog::get().find("java") {
+        if let Some(java) = crate::setup::Catalog::get().find("java") {
             let newest = crate::versions::newest_line(kit, java);
             let fits = newest
                 .as_deref()
@@ -616,13 +616,11 @@ impl KitEnv {
         let gem_home = if is_win || !has(r"ruby\bin\ruby.exe") {
             None
         } else {
-            crate::setup::catalog::Catalog::get()
-                .find("ruby")
-                .and_then(|ruby| {
-                    let line = crate::versions::newest_line(kit, ruby)?;
-                    let dir = crate::versions::dir_for(kit, ruby, Some(&line))?;
-                    gem_home_for_dir(&data, kit.target(), &dir)
-                })
+            crate::setup::Catalog::get().find("ruby").and_then(|ruby| {
+                let line = crate::versions::newest_line(kit, ruby)?;
+                let dir = crate::versions::dir_for(kit, ruby, Some(&line))?;
+                gem_home_for_dir(&data, kit.target(), &dir)
+            })
         };
         if let Some(gems) = &gem_home {
             env.set_path("GEM_HOME", gems);

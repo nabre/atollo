@@ -10,7 +10,7 @@ use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// PowerShell 7, the official archive (not the "fxdependent" build).
 pub struct Pwsh;

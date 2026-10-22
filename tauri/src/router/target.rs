@@ -9,7 +9,7 @@
 use serde::Serialize;
 
 use crate::kit::{Arch, Os, Target};
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Capabilities of one [`Target`] relative to the current host machine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

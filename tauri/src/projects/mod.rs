@@ -32,7 +32,7 @@ use serde::Serialize;
 use crate::detect::{self, Project};
 use crate::env::KitEnv;
 use crate::kit::{validate_project_name, Kit};
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -82,7 +82,7 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
 
 /// What can be added from "Linguaggi e strumenti": not installed, and
 /// available for the kit's platform (no R on Windows ARM64).
-fn addable(kit: &Kit, c: &crate::setup::catalog::Component) -> bool {
+fn addable(kit: &Kit, c: &crate::setup::Component) -> bool {
     !c.is_installed(kit) && c.is_available_on(kit.target())
 }
 
@@ -482,7 +482,7 @@ pub fn clone(
             tr(lang, "Esiste già una cartella {0} in projects.", &[&name])
         );
     }
-    let git = crate::setup::catalog::kit_path(kit, r"git\cmd\git.exe");
+    let git = crate::setup::kit_path(kit, r"git\cmd\git.exe");
     if !git.is_file() {
         bail!("{}", tr(lang, "Git del kit non è installato.", &[]));
     }

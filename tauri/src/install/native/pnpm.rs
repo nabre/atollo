@@ -10,7 +10,7 @@ use super::run;
 use crate::fsx::join_rel;
 use crate::install::{Ctx, Installer, Progress, Release};
 use crate::kit::Target;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// pnpm and yarn, installed globally with the kit's npm in `data/npm-global`
 /// (their install scripts only print messages: not run).
@@ -50,11 +50,11 @@ impl Installer for Pnpm {
     ) -> Result<()> {
         // npm-cli.js with the kit's node, no cmd.exe: its quoting breaks on
         // kit paths with `&` or parentheses (found in a test kit).
-        let node = crate::setup::catalog::kit_path(ctx.kit, "node/node.exe");
+        let node = crate::setup::kit_path(ctx.kit, "node/node.exe");
         let npm_cli = if ctx.kit.os().is_windows() {
-            crate::setup::catalog::kit_path(ctx.kit, "node/node_modules/npm/bin/npm-cli.js")
+            crate::setup::kit_path(ctx.kit, "node/node_modules/npm/bin/npm-cli.js")
         } else {
-            crate::setup::catalog::kit_path(ctx.kit, "node/lib/node_modules/npm/bin/npm-cli.js")
+            crate::setup::kit_path(ctx.kit, "node/lib/node_modules/npm/bin/npm-cli.js")
         };
         if !node.is_file() || !npm_cli.is_file() {
             bail!("the kit's Node.js is needed for pnpm and yarn");

@@ -8,8 +8,8 @@ use super::availability::{on_arm64_pc, unavailable_reason};
 use super::target::{can_execute_on_host, profile};
 use crate::env::KitEnv;
 use crate::kit::{Arch, Kit, Os, Target};
-use crate::setup::catalog::{kit_path, Catalog, Choice, Component};
 use crate::setup::checkup::{self, Check};
+use crate::setup::{kit_path, Catalog, Choice, Component};
 
 /// Status of one catalog component on a specific [`Target`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
