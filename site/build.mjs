@@ -69,7 +69,18 @@ const keywords = [
   "Tauri",
 ].join(", ");
 
-const template = readFileSync(join(site, "template.html"), "utf8");
+// The pages' models: a page (landing.html, guide.html) includes the
+// partials (partials/head.html, header.html, footer.html) with {{> name}},
+// then its values fill the {{key}}s.
+const partials = Object.fromEntries(
+  ["head", "header", "footer"].map((n) => [n, readFileSync(join(site, "partials", `${n}.html`), "utf8").replace(/\n$/, "")]),
+);
+const model = (file) =>
+  readFileSync(join(site, file), "utf8").replace(/\{\{> (\w+)\}\}/g, (_, n) => {
+    if (!(n in partials)) throw new Error(`${file}: no partial ${n}`);
+    return partials[n];
+  });
+const landing = model("landing.html");
 const strings = Object.fromEntries(
   langs.map((l) => [l, JSON.parse(readFileSync(join(site, "strings", `${l}.json`), "utf8"))]),
 );
@@ -164,11 +175,17 @@ const langDetect =
   `if(l&&l!=="en"&&${JSON.stringify(langs.filter((l) => l !== "en"))}.indexOf(l)>=0)` +
   `location.replace(new URL(l+"/"+location.search+location.hash,location.href))}catch(e){}</script>`;
 
-for (const lang of langs) {
-  const root = lang === "en" ? "" : "../";
+// A page of the site in one language: `path(l)` is its address in language
+// l (from the site's root: "", "it/", "guide/isolation/"), so the language
+// menu, canonical, og:url, the hreflang alternates and the sitemap all
+// follow it; `values` fill its model's own {{key}}s and may replace the
+// common ones (title, description, jsonLd...). (GUI-V7-12)
+function renderPage({ lang, path, model: html, name, values: own }) {
+  const here = path(lang);
+  const root = "../".repeat(here.split("/").length - 1);
   const alternates = langs
-    .map((l) => `<link rel="alternate" hreflang="${l}" href="${base}${pathOf(l)}">`)
-    .concat(`<link rel="alternate" hreflang="x-default" href="${base}">`)
+    .map((l) => `<link rel="alternate" hreflang="${l}" href="${base}${path(l)}">`)
+    .concat(`<link rel="alternate" hreflang="x-default" href="${base}${path("en")}">`)
     .join("\n");
   const ogLocales = [`<meta property="og:locale" content="${locales[lang]}">`]
     .concat(langs.filter((l) => l !== lang).map((l) => `<meta property="og:locale:alternate" content="${locales[l]}">`))
@@ -176,7 +193,7 @@ for (const lang of langs) {
   const item = (l) =>
     l === lang
       ? `<li><span aria-current="page" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</span></li>`
-      : `<li><a href="${root}${pathOf(l)}" hreflang="${l}" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</a></li>`;
+      : `<li><a href="${root}${path(l)}" hreflang="${l}" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</a></li>`;
   const langLinks =
     `<details class="lang-menu"><summary aria-label="${escape(strings[lang].langLabel)}: ${strings[lang].langName}">${flag(lang)}<b>${lang.toUpperCase()}</b>` +
     `${chevron}</summary>` +
@@ -186,26 +203,48 @@ for (const lang of langs) {
     lang,
     root,
     base,
-    path: pathOf(lang),
+    path: here,
     langPath: pathOf(lang),
+    // The way back to the landing page, before the navigation's #anchors:
+    // nothing on the landing page itself.
+    home: here === pathOf(lang) ? "" : `${root}${pathOf(lang)}`,
     alternates,
     ogLocales,
+    ogType: "website",
     keywords: escape(keywords),
     jsonLd: jsonLd(lang),
     langLinks,
-    langDetect: lang === "en" ? langDetect : "",
+    langDetect: "",
+    headExtra: "",
     ...icons,
-    toolsMatrix: matrixHtml(catalog, lang, strings[lang]),
     componentCount: String(catalog.components.length),
     version,
+    ...own,
   };
-  const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-    if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
+  const page = html.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    if (!(key in values)) throw new Error(`${name}: no value for {{${key}}}`);
     return values[key];
   });
-  mkdirSync(join(out, pathOf(lang)), { recursive: true });
-  writeFileSync(join(out, pathOf(lang), "index.html"), html);
+  mkdirSync(join(out, here), { recursive: true });
+  writeFileSync(join(out, here, "index.html"), page);
 }
+
+/** Every page written, for the sitemap: its address in each language. */
+const pages = [];
+
+for (const lang of langs) {
+  renderPage({
+    lang,
+    path: pathOf,
+    model: landing,
+    name: "landing.html",
+    values: {
+      langDetect: lang === "en" ? langDetect : "",
+      toolsMatrix: matrixHtml(catalog, lang, strings[lang]),
+    },
+  });
+}
+pages.push(pathOf);
 
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
 // Files that must sit at the site's root, as they are: the Google Search
@@ -239,16 +278,16 @@ writeFileSync(
   `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Atollo</title>\n<link rel="canonical" href="${base}">\n<meta name="robots" content="noindex">\n<meta http-equiv="refresh" content="0; url=${base}">\n</head>\n<body><a href="${base}">Atollo</a></body>\n</html>\n`,
 );
 
-// Every language's page with its alternates, as the <link>s in the pages:
-// submitted by hand in Google Search Console and Bing Webmaster Tools.
+// Every page in every language with its alternates, as the <link>s in the
+// pages: submitted by hand in Google Search Console and Bing Webmaster Tools.
 const today = new Date().toISOString().slice(0, 10);
-const urlEntry = (lang) =>
-  `  <url>\n    <loc>${base}${pathOf(lang)}</loc>\n    <lastmod>${today}</lastmod>\n` +
-  langs.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${base}${pathOf(l)}"/>\n`).join("") +
-  `    <xhtml:link rel="alternate" hreflang="x-default" href="${base}"/>\n  </url>\n`;
+const urlEntry = (path, lang) =>
+  `  <url>\n    <loc>${base}${path(lang)}</loc>\n    <lastmod>${today}</lastmod>\n` +
+  langs.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${base}${path(l)}"/>\n`).join("") +
+  `    <xhtml:link rel="alternate" hreflang="x-default" href="${base}${path("en")}"/>\n  </url>\n`;
 writeFileSync(
   join(out, "sitemap.xml"),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${langs.map(urlEntry).join("")}</urlset>\n`,
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.flatMap((p) => langs.map((l) => urlEntry(p, l))).join("")}</urlset>\n`,
 );
 
-console.log(`_site: ${langs.length} pages`);
+console.log(`_site: ${pages.length * langs.length} pages`);

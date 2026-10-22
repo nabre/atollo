@@ -1,0 +1,24 @@
+<header class="top">
+  <div class="wrap top-row">
+    <!-- The wordmark alone: its last O is the atoll already (MARKETING.md, section 6). -->
+    <a class="brand" href="{{root}}{{langPath}}" aria-label="Atollo">
+      <img class="logo logo-dark" src="{{root}}assets/wordmark-dark.svg" alt="Atollo" width="100" height="25">
+      <img class="logo logo-light" src="{{root}}assets/wordmark-light.svg" alt="Atollo" width="100" height="25">
+    </a>
+    <nav class="nav" aria-label="Atollo">
+      <a href="{{home}}#features">{{navFeatures}}</a>
+      <a href="{{home}}#how">{{navHow}}</a>
+      <a href="{{home}}#tools">{{navTools}}</a>
+      <a href="{{home}}#platforms">{{navPlatforms}}</a>
+      <a href="{{home}}#todo">{{navTodo}}</a>
+      <a href="https://github.com/nabre/atollo">GitHub</a>
+    </nav>
+    <nav class="langs" aria-label="{{langLabel}}">{{langLinks}}</nav>
+    <!-- The theme: the system's until one is picked; each press goes on to
+         the next (site.js, localStorage). Its label names the current one. -->
+    <button type="button" class="theme-cycle" aria-label="{{themeLabel}}: {{themeSystem}}" title="{{themeLabel}}: {{themeSystem}}"
+      data-label="{{themeLabel}}" data-system="{{themeSystem}}" data-light="{{themeLight}}" data-dark="{{themeDark}}">
+      {{iconSystem}}{{iconLight}}{{iconDark}}
+    </button>
+  </div>
+</header>

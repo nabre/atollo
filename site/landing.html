@@ -1,70 +1,6 @@
-<!doctype html>
-<html lang="{{lang}}">
-<head>
-<meta charset="utf-8">
-{{langDetect}}
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{title}}</title>
-<meta name="description" content="{{description}}">
-<meta name="keywords" content="{{keywords}}">
-<meta name="author" content="nabre">
-<meta name="robots" content="index, follow, max-image-preview:large">
-<meta name="color-scheme" content="dark light">
-<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<link rel="canonical" href="{{base}}{{path}}">
-{{alternates}}
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Atollo">
-<meta property="og:title" content="{{title}}">
-<meta property="og:description" content="{{description}}">
-<meta property="og:url" content="{{base}}{{path}}">
-{{ogLocales}}
-<meta property="og:image" content="{{base}}assets/social.png">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="640">
-<meta property="og:image:alt" content="Atollo — Universal Portable Dev &amp; AI Workspace">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{title}}">
-<meta name="twitter:description" content="{{description}}">
-<meta name="twitter:image" content="{{base}}assets/social.png">
-<link rel="sitemap" type="application/xml" href="{{base}}sitemap.xml">
-<script type="application/ld+json">{{jsonLd}}</script>
-<link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
-<!-- Geist, self-hosted (assets/fonts): the text font is on every first screen. -->
-<link rel="preload" href="{{root}}assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{root}}assets/site.css">
-<!-- Without JavaScript nothing waits for a reveal: .js gates the animations.
-     The theme picked in the header is set here, before the first paint. -->
-<script>document.documentElement.classList.add("js");try{var t=localStorage.getItem("atollo-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
-<script src="{{root}}assets/download.js" defer></script>
-<script src="{{root}}assets/site.js" defer></script>
-</head>
+{{> head}}
 <body>
-<header class="top">
-  <div class="wrap top-row">
-    <!-- The wordmark alone: its last O is the atoll already (MARKETING.md, section 6). -->
-    <a class="brand" href="{{root}}{{langPath}}" aria-label="Atollo">
-      <img class="logo logo-dark" src="{{root}}assets/wordmark-dark.svg" alt="Atollo" width="100" height="25">
-      <img class="logo logo-light" src="{{root}}assets/wordmark-light.svg" alt="Atollo" width="100" height="25">
-    </a>
-    <nav class="nav" aria-label="Atollo">
-      <a href="#features">{{navFeatures}}</a>
-      <a href="#how">{{navHow}}</a>
-      <a href="#tools">{{navTools}}</a>
-      <a href="#platforms">{{navPlatforms}}</a>
-      <a href="#todo">{{navTodo}}</a>
-      <a href="https://github.com/nabre/atollo">GitHub</a>
-    </nav>
-    <nav class="langs" aria-label="{{langLabel}}">{{langLinks}}</nav>
-    <!-- The theme: the system's until one is picked; each press goes on to
-         the next (site.js, localStorage). Its label names the current one. -->
-    <button type="button" class="theme-cycle" aria-label="{{themeLabel}}: {{themeSystem}}" title="{{themeLabel}}: {{themeSystem}}"
-      data-label="{{themeLabel}}" data-system="{{themeSystem}}" data-light="{{themeLight}}" data-dark="{{themeDark}}">
-      {{iconSystem}}{{iconLight}}{{iconDark}}
-    </button>
-  </div>
-</header>
+{{> header}}
 
 <main>
   <section class="hero">
@@ -249,11 +185,6 @@
   </section>
 </main>
 
-<footer class="foot">
-  <div class="wrap foot-row">
-    <span>© Atollo · <a href="https://github.com/nabre/atollo/blob/main/LICENSE">{{footerLicense}}</a></span>
-    <span class="small">{{footerSigning}} <a href="{{signingHref}}">{{signingLink}}</a> · <a href="{{privacyHref}}">{{privacyLink}}</a></span>
-  </div>
-</footer>
+{{> footer}}
 </body>
 </html>

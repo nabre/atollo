@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+{{langDetect}}
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="keywords" content="{{keywords}}">
+<meta name="author" content="nabre">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="{{base}}{{path}}">
+{{alternates}}
+<meta property="og:type" content="{{ogType}}">
+<meta property="og:site_name" content="Atollo">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{base}}{{path}}">
+{{ogLocales}}
+<meta property="og:image" content="{{base}}assets/social.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Atollo — Universal Portable Dev &amp; AI Workspace">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="{{base}}assets/social.png">
+<link rel="sitemap" type="application/xml" href="{{base}}sitemap.xml">
+<script type="application/ld+json">{{jsonLd}}</script>
+<link rel="icon" type="image/svg+xml" href="{{root}}assets/symbol.svg">
+<!-- Geist, self-hosted (assets/fonts): the text font is on every first screen. -->
+<link rel="preload" href="{{root}}assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{root}}assets/site.css">
+<!-- Without JavaScript nothing waits for a reveal: .js gates the animations.
+     The theme picked in the header is set here, before the first paint. -->
+<script>document.documentElement.classList.add("js");try{var t=localStorage.getItem("atollo-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<script src="{{root}}assets/download.js" defer></script>
+<script src="{{root}}assets/site.js" defer></script>{{headExtra}}
+</head>
