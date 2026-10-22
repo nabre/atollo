@@ -268,9 +268,38 @@ fn stage_zip(from: &Path, to: &Path) -> Result<Manifest> {
     Ok(manifest)
 }
 
+/// The moves of the swap, in order: what replaces is aside first, then the
+/// copy in its place.
+fn swap_moves(root: &Path, from: &Path, aside: &Path) -> Vec<(PathBuf, PathBuf)> {
+    let data = root.join("data");
+    let mut moves = Vec::new();
+    if root.join("projects").exists() {
+        moves.push((root.join("projects"), aside.join("projects")));
+    }
+    for e in fs::read_dir(&data).into_iter().flatten().flatten() {
+        let name = e.file_name();
+        if !LOCAL.contains(&name.to_string_lossy().as_ref()) {
+            moves.push((e.path(), aside.join("data").join(&name)));
+        }
+    }
+    if from.join("projects").exists() {
+        moves.push((from.join("projects"), root.join("projects")));
+    }
+    for e in fs::read_dir(from.join("data"))
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        moves.push((e.path(), data.join(e.file_name())));
+    }
+    moves
+}
+
 /// At the start, before anything is opened: the copy waiting takes the
 /// place of `projects\` and of `data\` but [`LOCAL`], which go to
-/// `.atollo-before-import-<stamp>\`. Returns that folder.
+/// `.atollo-before-import-<stamp>\`. All or nothing: a move that fails (a
+/// file held open) puts back those done, the copy keeps waiting for the next
+/// start. Returns that folder.
 pub fn apply_pending(root: &Path) -> Result<Option<PathBuf>> {
     if !pending(root) {
         return Ok(None);
@@ -278,33 +307,24 @@ pub fn apply_pending(root: &Path) -> Result<Option<PathBuf>> {
     let from = staging(root);
     let aside = root.join(format!("{ASIDE}{}", crate::agents::sync::stamp()));
     fs::create_dir_all(aside.join("data"))?;
-    let data = root.join("data");
-    // What is replaced, first out of the way.
-    if root.join("projects").exists() {
-        fs::rename(root.join("projects"), aside.join("projects")).context("projects")?;
-    }
-    for e in fs::read_dir(&data).into_iter().flatten().flatten() {
-        let name = e.file_name().to_string_lossy().into_owned();
-        if !LOCAL.contains(&name.as_str()) {
-            fs::rename(e.path(), aside.join("data").join(&name)).with_context(|| name.clone())?;
+    fs::create_dir_all(root.join("data"))?;
+    let mut done: Vec<(PathBuf, PathBuf)> = Vec::new();
+    for (src, dst) in swap_moves(root, &from, &aside) {
+        if let Err(e) = fs::rename(&src, &dst) {
+            for (back_src, back_dst) in done.iter().rev() {
+                if let Err(undo) = fs::rename(back_dst, back_src) {
+                    crate::log::warn(&format!(
+                        "import: {} not put back: {undo}",
+                        back_dst.display()
+                    ));
+                }
+            }
+            let _ = fs::remove_dir_all(&aside);
+            return Err(e).with_context(|| src.display().to_string());
         }
+        done.push((src, dst));
     }
-    // Then the copy in its place.
-    if from.join("projects").exists() {
-        fs::rename(from.join("projects"), root.join("projects")).context("projects")?;
-    } else {
-        fs::create_dir_all(root.join("projects"))?;
-    }
-    fs::create_dir_all(&data)?;
-    for e in fs::read_dir(from.join("data"))
-        .into_iter()
-        .flatten()
-        .flatten()
-    {
-        let name = e.file_name();
-        fs::rename(e.path(), data.join(&name))
-            .with_context(|| name.to_string_lossy().into_owned())?;
-    }
+    fs::create_dir_all(root.join("projects"))?;
     fs::remove_dir_all(&from)?;
     Ok(Some(aside))
 }

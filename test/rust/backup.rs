@@ -131,6 +131,44 @@ fn export_then_import() {
     assert!(!pending(&b));
 }
 
+/// A move that fails halfway (Windows: a file of `data\db` held open, as by
+/// a database server still running) puts back those done: the kit as
+/// before, the copy still waiting.
+#[cfg(windows)]
+#[test]
+fn a_failed_swap_puts_everything_back() {
+    let tmp = TempDir::new("backup-undo");
+    let (a, b, out) = (tmp.0.join("a"), tmp.0.join("b"), tmp.0.join("out"));
+    kit(&a, "A");
+    kit(&b, "B");
+    fs::create_dir_all(&out).unwrap();
+    let made = export(&a, &out, false).unwrap();
+    stage(&b, Path::new(&made.path)).unwrap();
+    let held = fs::File::open(b.join("data/db/mysql/8.4/ibdata1")).unwrap();
+    assert!(apply_pending(&b).is_err());
+    drop(held);
+    // As before: B's files back, the copy still waiting, no folder aside.
+    assert_eq!(
+        fs::read_to_string(b.join("projects/shop/index.php")).unwrap(),
+        "B"
+    );
+    assert_eq!(
+        fs::read_to_string(b.join("data/app/settings.json")).unwrap(),
+        "B"
+    );
+    assert!(pending(&b));
+    assert!(!fs::read_dir(&b)
+        .unwrap()
+        .flatten()
+        .any(|e| e.file_name().to_string_lossy().starts_with(ASIDE)));
+    // Then it works.
+    apply_pending(&b).unwrap().unwrap();
+    assert_eq!(
+        fs::read_to_string(b.join("data/app/settings.json")).unwrap(),
+        "A"
+    );
+}
+
 /// A zip with paths outside `projects/` and `data/`, or climbing out, is
 /// applied without them.
 #[test]
