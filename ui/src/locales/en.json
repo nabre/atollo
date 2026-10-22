@@ -900,7 +900,7 @@
   "Strumenti di sviluppo": "Development tools",
   "Tutti i tipi": "All types",
   "In esecuzione: {0}": "Running: {0}",
-  "Ferma tutto": "Stop all",
+  "Ferma tutto": "Stop everything",
   "Eliminare il profilo «{0}»?": "Delete the profile “{0}”?",
   "Modelli locali": "Local models",
   "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina Modelli locali.": "The server of the language models on the PC (llama.cpp): Pi and the chat in the browser use them, without the network. The models are downloaded from the Local models page.",
@@ -1000,5 +1000,17 @@
   "{0} file cambiati, {1} mancanti": "{0} files changed, {1} missing",
   "Reinstalla": "Reinstall",
   "Reinstalla tutti": "Reinstall all",
-  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Without a manifest, installed before Atollo kept one: {0}. They are checked from their next installation or update."
+  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Without a manifest, installed before Atollo kept one: {0}. They are checked from their next installation or update.",
+  "progetti, database, modelli locali, server web": "projects, databases, local models, web servers",
+  "la pagina del progetto": "the project's page",
+  "Apri {0} nell'editor": "Open {0} in the editor",
+  "{0} in {1}": "{0} in {1}",
+  "agente": "agent",
+  "database": "database",
+  "Vai a {0}": "Go to {0}",
+  "Comandi": "Commands",
+  "Cosa vuoi fare? Avvia, ferma, apri, un progetto, un agente…": "What do you want to do? Start, stop, open, a project, an agent…",
+  "Nessun comando corrisponde alla ricerca.": "No command matches the search.",
+  "Invio esegue · Esc chiude": "Enter runs · Esc closes",
+  "Comandi trovati": "Commands found"
 }

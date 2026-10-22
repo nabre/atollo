@@ -666,6 +666,14 @@ describe("App", () => {
     fireEvent.keyDown(box.getByRole("option"), { key: "Enter" });
     expect(await screen.findByRole("tab", { name: "sito (1) & co", selected: true })).toBeTruthy();
     expect(screen.queryByRole("dialog", { name: "Apri un progetto" })).toBeNull();
+    // Ctrl+Shift+P: the command palette, a page by its name.
+    fireEvent.keyDown(window, { key: "P", ctrlKey: true, shiftKey: true });
+    const commands = within(await screen.findByRole("dialog", { name: "Comandi" }));
+    fireEvent.change(commands.getByLabelText("Comandi"), { target: { value: "vai impostazioni" } });
+    expect(commands.getAllByRole("option")).toHaveLength(1);
+    fireEvent.keyDown(commands.getByRole("option"), { key: "Enter" });
+    expect(screen.queryByRole("dialog", { name: "Comandi" })).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Impostazioni", level: 1 })).toBeTruthy();
   });
 
   it("opens each way of making a project from the side bar's tree", async () => {
