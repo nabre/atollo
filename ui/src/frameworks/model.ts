@@ -284,7 +284,12 @@ export function useComponents(): ComponentInfo[] {
   const [list, setList] = useState<ComponentInfo[]>([]);
   useEffect(() => {
     let gone = false;
-    catalog ??= componentsList().catch(() => []);
+    // A read that fails is not kept: the next page that needs the tags
+    // asks again, instead of going without names and logos until a restart.
+    catalog ??= componentsList().catch(() => {
+      catalog = null;
+      return [] as ComponentInfo[];
+    });
     void catalog.then((l) => {
       if (!gone) setList(l);
     });
