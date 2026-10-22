@@ -113,6 +113,8 @@ const COMMANDS: &[&str] = &[
     "run_ports",
     "run_set_port",
     "url_open",
+    "diagnostics_export",
+    "issue_open",
     "privacy_open",
     "rust_toolchain_set",
     "settings_get",

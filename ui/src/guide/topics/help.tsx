@@ -817,10 +817,51 @@ export const HELP: TopicTexts = {
               <Code key="c">.\Atollo.exe check | Out-Host</Code>,
             ),
             tr(
-              "Segnala il problema nelle issue del repository GitHub nabre/atollo, allegando le righe del log (le password sono già mascherate).",
-              "Report the problem in the issues of the GitHub repository nabre/atollo, attaching the log lines (passwords are already masked).",
-              "Signalez le problème dans les issues du dépôt GitHub nabre/atollo, en joignant les lignes du journal (les mots de passe sont déjà masqués).",
-              "Melde das Problem in den Issues des GitHub-Repositorys nabre/atollo und füge die Log-Zeilen bei (Passwörter sind bereits maskiert).",
+              "Se ancora non va, segnalalo: la sezione qui sotto dice come.",
+              "If it still does not work, report it: the section below says how.",
+              "Si cela ne marche toujours pas, signalez-le : la section ci-dessous explique comment.",
+              "Wenn es immer noch nicht klappt, melde es: Der Abschnitt unten erklärt, wie.",
+            ),
+          ]}
+        />
+      </Section>
+      <Section title={tr("Segnalare un problema", "Reporting a problem", "Signaler un problème", "Ein Problem melden")}>
+        <P>
+          {tr(
+            "In Impostazioni › «Il kit» › «Segnalare un problema» ci sono due pulsanti, da usare in quest'ordine.",
+            "In Settings › “The kit” › “Reporting a problem” there are two buttons, to use in this order.",
+            "Dans Paramètres › « Le kit » › « Signaler un problème », il y a deux boutons, à utiliser dans cet ordre.",
+            "Unter Einstellungen › „Das Kit“ › „Ein Problem melden“ gibt es zwei Schaltflächen, in dieser Reihenfolge zu verwenden.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            rich(
+              tr(
+                "«Esporta diagnostica» crea sul PC lo zip atollo-diagnostica-<data-ora>.zip in data\\app\\diagnostics: versione e sistema, disco del kit (file system, tipo, spazio libero), RAM, ambiente del kit, la verifica dei programmi, i componenti, le porte e la parte finale di ogni log. «Apri la cartella» lo mostra. Dalla riga di comando fa lo stesso {0}.",
+                "“Export diagnostics” makes the zip atollo-diagnostica-<date-time>.zip on the PC in data\\app\\diagnostics: version and system, the kit's disk (file system, kind, free space), RAM, the kit's environment, the programs' check, the components, the ports and the end of every log. “Open folder” shows it. From the command line {0} does the same.",
+                "« Exporter le diagnostic » crée sur le PC le zip atollo-diagnostica-<date-heure>.zip dans data\\app\\diagnostics : version et système, disque du kit (système de fichiers, type, espace libre), RAM, environnement du kit, la vérification des programmes, les composants, les ports et la fin de chaque journal. « Ouvrir le dossier » l'affiche. En ligne de commande, {0} fait la même chose.",
+                "„Diagnose exportieren“ erstellt auf dem PC das Zip atollo-diagnostica-<Datum-Uhrzeit>.zip in data\\app\\diagnostics: Version und System, Laufwerk des Kits (Dateisystem, Art, freier Platz), RAM, Umgebung des Kits, die Prüfung der Programme, die Komponenten, die Ports und das Ende jedes Logs. „Ordner öffnen“ zeigt es. In der Kommandozeile macht {0} dasselbe.",
+              ),
+              <Code key="d">.\Atollo.exe diagnostics | Out-Host</Code>,
+            ),
+            tr(
+              "Prima di scrivere lo zip, ogni segreto che il kit conserva (le chiavi di data\\app\\secrets, il token di Claude Code, le password dei database, gli accessi degli agenti, il token di GitHub) diventa *** ovunque compaia; la cartella del tuo profilo diventa ~, il tuo nome utente e il nome del PC ***. Aprilo e guardalo comunque prima di allegarlo: un progetto può scrivere nei log cose che il kit non conosce.",
+              "Before the zip is written, every secret the kit keeps (the keys of data\\app\\secrets, Claude Code's token, the database passwords, the agents' sign-ins, the GitHub token) becomes *** wherever it appears; your profile folder becomes ~, your user name and the PC's name ***. Open it and look at it anyway before attaching it: a project can write things into the logs that the kit does not know.",
+              "Avant l'écriture du zip, chaque secret que le kit conserve (les clés de data\\app\\secrets, le jeton de Claude Code, les mots de passe des bases de données, les connexions des agents, le jeton GitHub) devient *** partout où il apparaît ; le dossier de votre profil devient ~, votre nom d'utilisateur et le nom du PC ***. Ouvrez-le et regardez-le quand même avant de le joindre : un projet peut écrire dans les journaux des choses que le kit ne connaît pas.",
+              "Bevor das Zip geschrieben wird, wird jedes Geheimnis, das das Kit aufbewahrt (die Schlüssel in data\\app\\secrets, das Token von Claude Code, die Datenbankpasswörter, die Anmeldungen der Agenten, das GitHub-Token), überall durch *** ersetzt; dein Profilordner wird zu ~, dein Benutzername und der Name des PCs zu ***. Öffne es trotzdem und sieh es dir an, bevor du es anhängst: Ein Projekt kann Dinge in die Logs schreiben, die das Kit nicht kennt.",
+            ),
+            tr(
+              "«Segnala un problema» apre nel browser una segnalazione nuova su github.com/nabre/atollo con il modulo dei problemi: versione di Atollo e sistema (kit, build di Windows, file system e tipo del disco) sono già scritti. Racconta che cosa è successo e i passi per rifarlo, e trascina lo zip nella segnalazione.",
+              "“Report a problem” opens a new issue on github.com/nabre/atollo in the browser with the bug form: Atollo's version and the system (kit, Windows build, the disk's file system and kind) are already filled in. Tell what happened and the steps to reproduce it, and drag the zip into the issue.",
+              "« Signaler un problème » ouvre dans le navigateur une nouvelle issue sur github.com/nabre/atollo avec le formulaire des problèmes : la version d'Atollo et le système (kit, build de Windows, système de fichiers et type du disque) sont déjà remplis. Racontez ce qui s'est passé et les étapes pour le reproduire, et faites glisser le zip dans l'issue.",
+              "„Problem melden“ öffnet im Browser ein neues Issue auf github.com/nabre/atollo mit dem Fehlerformular: Version von Atollo und System (Kit, Windows-Build, Dateisystem und Art des Laufwerks) sind schon eingetragen. Beschreibe, was passiert ist und die Schritte, um es nachzustellen, und zieh das Zip in das Issue.",
+            ),
+            tr(
+              "L'app non manda niente: lo zip resta sul PC finché non lo alleghi tu, e la segnalazione arriva a GitHub solo quando premi «Create» (serve un account GitHub). Da lì valgono le regole sulla privacy di GitHub, e la segnalazione è pubblica.",
+              "The app sends nothing: the zip stays on the PC until you attach it, and the issue reaches GitHub only when you press “Create” (a GitHub account is needed). From then on GitHub's privacy rules apply, and the issue is public.",
+              "L'application n'envoie rien : le zip reste sur le PC tant que vous ne le joignez pas, et l'issue n'arrive à GitHub que lorsque vous appuyez sur « Create » (il faut un compte GitHub). À partir de là, les règles de confidentialité de GitHub s'appliquent, et l'issue est publique.",
+              "Die App sendet nichts: Das Zip bleibt auf dem PC, bis du es anhängst, und das Issue erreicht GitHub erst, wenn du auf „Create“ klickst (ein GitHub-Konto ist nötig). Ab dann gelten die Datenschutzregeln von GitHub, und das Issue ist öffentlich.",
             ),
           ]}
         />

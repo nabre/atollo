@@ -204,7 +204,7 @@ fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str)
     out.join("\n")
 }
 
-/// The lines of `models` and `llm` in `lang`.
+/// The lines of `models`, `llm` and `diagnostics` in `lang`.
 fn models_lines(lang: &str) -> &'static [&'static str] {
     match lang {
         "it" => &[
@@ -213,6 +213,7 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (proprietario/nome:quantizzazione), riprende se interrotto",
             "  models rm <id>          cancella un modello scaricato",
             "  llm start|stop|status   il server dei modelli locali (chat e agenti)",
+            "  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)",
         ],
         "en" => &[
             "  models                  the local models: the catalog's and the downloaded ones",
@@ -220,6 +221,7 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (owner/name:quantization), resumed if interrupted",
             "  models rm <id>          delete a downloaded model",
             "  llm start|stop|status   the server of the local models (chat and agents)",
+            "  diagnostics             make the zip to attach to a problem report (secrets masked)",
         ],
         "fr" => &[
             "  models                  les modèles locaux : ceux du catalogue et les téléchargés",
@@ -227,6 +229,7 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (propriétaire/nom:quantification), reprend s'il est interrompu",
             "  models rm <id>          supprime un modèle téléchargé",
             "  llm start|stop|status   le serveur des modèles locaux (chat et agents)",
+            "  diagnostics             crée le zip à joindre à un signalement (secrets masqués)",
         ],
         _ => &[
             "  models                  die lokalen Modelle: die des Katalogs und die heruntergeladenen",
@@ -234,6 +237,7 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (Besitzer/Name:Quantisierung), setzt nach Abbruch fort",
             "  models rm <id>          löscht ein heruntergeladenes Modell",
             "  llm start|stop|status   der Server der lokalen Modelle (Chat und Agenten)",
+            "  diagnostics             erstellt das Zip für eine Problemmeldung (Geheimnisse maskiert)",
         ],
     }
 }

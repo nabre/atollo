@@ -604,6 +604,14 @@ export const SETTINGS: TopicTexts = {
           )}
         </P>
         {info && <Code>{info.root}</Code>}
+        <P>
+          {tr(
+            "Sotto, «Segnalare un problema» ha due pulsanti. «Esporta diagnostica» crea in data\\app\\diagnostics uno zip con versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit sostituiti da ***, la cartella del tuo profilo come ~ e i nomi tuo e del PC tolti; «Apri la cartella» lo mostra. Lo zip resta sul PC: guardalo e allegalo tu. «Segnala un problema» apre nel browser una segnalazione nuova su GitHub con versione e sistema già scritti; nulla parte finché non la crei.",
+            "Below, “Reporting a problem” has two buttons. “Export diagnostics” makes a zip in data\\app\\diagnostics with version, system, disk, environment, the programs' check, components, ports and the end of the logs, with the kit's keys, tokens and passwords replaced by ***, your profile folder as ~ and your and the PC's names removed; “Open folder” shows it. The zip stays on the PC: look at it and attach it yourself. “Report a problem” opens a new issue on GitHub in the browser with version and system already filled in; nothing leaves until you create it.",
+            "En dessous, « Signaler un problème » a deux boutons. « Exporter le diagnostic » crée dans data\\app\\diagnostics un zip avec la version, le système, le disque, l'environnement, la vérification des programmes, les composants, les ports et la fin des journaux, avec les clés, jetons et mots de passe du kit remplacés par ***, le dossier de votre profil sous la forme ~ et votre nom et celui du PC retirés ; « Ouvrir le dossier » l'affiche. Le zip reste sur le PC : regardez-le et joignez-le vous-même. « Signaler un problème » ouvre dans le navigateur une nouvelle issue sur GitHub avec la version et le système déjà remplis ; rien ne part tant que vous ne la créez pas.",
+            "Darunter hat „Ein Problem melden“ zwei Schaltflächen. „Diagnose exportieren“ erstellt in data\\app\\diagnostics ein Zip mit Version, System, Laufwerk, Umgebung, Prüfung der Programme, Komponenten, Ports und dem Ende der Logs, wobei Schlüssel, Tokens und Passwörter des Kits durch *** ersetzt sind, dein Profilordner als ~ erscheint und dein Name und der des PCs entfernt sind; „Ordner öffnen“ zeigt es. Das Zip bleibt auf dem PC: Sieh es dir an und hänge es selbst an. „Problem melden“ öffnet im Browser ein neues Issue auf GitHub mit bereits eingetragener Version und System; nichts geht weg, bevor du es erstellst.",
+          )}
+        </P>
       </Section>
 
       <Section title={tr("Framework", "Frameworks", "Frameworks", "Frameworks")}>
@@ -651,7 +659,7 @@ export const SETTINGS: TopicTexts = {
         />
       </Under>
 
-      <Related ids={["network", "updates", "frameworks"]} />
+      <Related ids={["network", "updates", "frameworks", "troubleshooting"]} />
     </>
   ),
 

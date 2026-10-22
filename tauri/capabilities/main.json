@@ -123,6 +123,8 @@
     "allow-run-ports",
     "allow-run-set-port",
     "allow-url-open",
+    "allow-diagnostics-export",
+    "allow-issue-open",
     "allow-privacy-open",
     "allow-rust-toolchain-set",
     "allow-settings-get",

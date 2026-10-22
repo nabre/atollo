@@ -1,6 +1,16 @@
 // The sections of Settings about Atollo itself: its updates, where the kit
 // is, what it sends over the network (docs/PRIVACY.md).
-import { privacyOpen, updateCheck, updateStatus, type UpdateStatus, type AppInfo } from "../api";
+import { useState } from "react";
+import {
+  diagnosticsExport,
+  folderOpen,
+  issueOpen,
+  privacyOpen,
+  updateCheck,
+  updateStatus,
+  type UpdateStatus,
+  type AppInfo,
+} from "../api";
 import { BrandSymbol } from "../brand";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
@@ -46,7 +56,58 @@ export function KitInfo({ info }: { info: AppInfo }) {
         </div>
         {info.diskNote ? <p className="mt-2 text-vsc-warning">{info.diskNote}</p> : null}
       </SettingItem>
+      <ProblemReport />
     </SettingsGroup>
+  );
+}
+
+/** «Segnala un problema» and «Esporta diagnostica» (report v6/04, N-1 and
+ * N-2): the zip to attach is made on the PC, its secrets masked; the
+ * issue opens on GitHub in the browser, and nothing is sent until the
+ * user creates it there. */
+function ProblemReport() {
+  const { busy, error, run } = useAction();
+  const [zip, setZip] = useState<string | null>(null);
+  return (
+    <SettingItem
+      title={t("Segnalare un problema")}
+      description={t(
+        "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.",
+      )}
+      keywords="diagnostica segnala problema bug issue github log zip diagnostics report"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          busy={busy === "zip"}
+          onClick={() => {
+            setZip(null);
+            run("zip", () => diagnosticsExport().then(setZip));
+          }}
+        >
+          {t("Esporta diagnostica")}
+        </Button>
+        <Button
+          onClick={() => {
+            run("issue", issueOpen);
+          }}
+        >
+          {t("Segnala un problema")}
+        </Button>
+      </div>
+      {zip && (
+        <p className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[12px] break-all select-text">{zip}</span>
+          <Link
+            onClick={() => {
+              run("folder", () => folderOpen("diagnostics"));
+            }}
+          >
+            {t("Apri la cartella")}
+          </Link>
+        </p>
+      )}
+      <ErrorLine error={error} />
+    </SettingItem>
   );
 }
 

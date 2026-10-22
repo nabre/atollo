@@ -273,6 +273,12 @@
           "markdownDescription": "Enables the db_admin_open command without any pre-configured scope."
         },
         {
+          "description": "Enables the diagnostics_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-diagnostics-export",
+          "markdownDescription": "Enables the diagnostics_export command without any pre-configured scope."
+        },
+        {
           "description": "Enables the downloads_add command without any pre-configured scope.",
           "type": "string",
           "const": "allow-downloads-add",
@@ -427,6 +433,12 @@
           "type": "string",
           "const": "allow-github-status",
           "markdownDescription": "Enables the github_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the issue_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-issue-open",
+          "markdownDescription": "Enables the issue_open command without any pre-configured scope."
         },
         {
           "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
@@ -981,6 +993,12 @@
           "markdownDescription": "Denies the db_admin_open command without any pre-configured scope."
         },
         {
+          "description": "Denies the diagnostics_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-diagnostics-export",
+          "markdownDescription": "Denies the diagnostics_export command without any pre-configured scope."
+        },
+        {
           "description": "Denies the downloads_add command without any pre-configured scope.",
           "type": "string",
           "const": "deny-downloads-add",
@@ -1135,6 +1153,12 @@
           "type": "string",
           "const": "deny-github-status",
           "markdownDescription": "Denies the github_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the issue_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-issue-open",
+          "markdownDescription": "Denies the issue_open command without any pre-configured scope."
         },
         {
           "description": "Denies the privacy_open command without any pre-configured scope.",

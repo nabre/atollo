@@ -20,7 +20,7 @@ Atollo does not collect, send or sell:
 
 - personal data, names, e-mail addresses or device identifiers;
 - usage statistics, clicks, page views or feature usage;
-- crash reports or logs;
+- crash reports or logs (the diagnostics zip of section 4 is made on your device and leaves it only if you attach it yourself);
 - the content of your projects, files, databases or conversations with AI agents.
 
 Nobody running the Atollo project receives any data from the app. The project does not operate servers: updates and releases are hosted on GitHub.
@@ -46,7 +46,7 @@ Every request the app makes itself carries a `User-Agent` of the form `Atollo/<v
 Things that are **not** connections made by Atollo itself:
 
 - programs you run in the editor, in the consoles or through actions (`git`, `npm`, `pip`, `cargo`, the AI agents…) connect wherever they are designed to;
-- links you click open in your own browser.
+- links you click open in your own browser, and so does “Report a problem” (section 4).
 
 Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers. The local models' server (llama.cpp) always listens on `127.0.0.1` only, on a port of its own (9931 and following), and answers only requests that carry its random key; `llm status` does not send that key to whatever listens on the port. The models run on this computer: with a local model nothing goes to the network.
 
@@ -61,6 +61,7 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | The **Gemini API key**, if you enter one (readable by your user only, see below) | `data/app/secrets/gemini-api-key` |
 | The system's root certificates plus your extra PEM file, only when you set one | `data/app/ca-bundle.pem` |
 | App logs (secrets masked), rotated past 1 MB | `data/app/logs/` |
+| Diagnostics zips, only when you make one (secrets masked, see below) | `data/app/diagnostics/` |
 | Installed tools and their versions | `data/apps/`, `data/app/versions/` |
 | Cached answers of the GitHub API | `data/cache/github/` |
 | The interface's own storage (window layout) and web view cache | `data/webview2/` (Windows and Linux) |
@@ -89,6 +90,13 @@ Exceptions, outside the Atollo folder:
 - **Claude Code on macOS** keeps its own login in the Keychain, unless you use "Connect with a token".
 - **macOS web view**: on macOS the system web view keeps its data where macOS decides (in your user Library).
 - **rustup** writes a Windows registry entry at each install; Atollo removes it.
+
+### Reporting a problem
+
+Settings › The kit › “Reporting a problem” has two buttons; nothing in them runs on its own.
+
+- **“Export diagnostics”** (or `Atollo diagnostics` on the command line) makes a zip **on your device**, in `data/app/diagnostics/`: Atollo's version, the kit's and the computer's system (Windows build, RAM), the kit's disk (file system, kind, free space), the kit's folder, the kit's environment, the check of the installed programs, the components, the ports and the last 256 KB of each log of `data/app/logs/`. Before the zip is written, every secret Atollo keeps (the files of `data/app/secrets/`, Claude Code's token, the database passwords, the agents' logins in the kit, the GitHub token) is replaced by `***` wherever it appears, on top of the masking of variables whose name looks secret; your profile folder becomes `~`, and the names of your user and of the computer (`USERNAME`, `COMPUTERNAME`, `HOSTNAME`…) become `***`. **The app never sends the zip**: open it, read it, and attach it yourself if you want to. A project's own output in the logs may still hold things Atollo does not know are private.
+- **“Report a problem”** opens `github.com/nabre/atollo/issues/new` in your browser, with the bug form and two fields filled in through the address: Atollo's version and the system (the kit's system, the Windows build, the file system and kind of the kit's disk). Nothing else from your device is in the address, and nothing reaches GitHub until you sign in and create the issue there. From then on the issue, with whatever you attach, is public and [GitHub's Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) applies.
 
 ## 5. Third-party tools and AI agents
 

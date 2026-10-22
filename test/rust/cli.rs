@@ -292,6 +292,15 @@ fn failed_by_hand_shows_downloads_dir() {
 }
 
 #[test]
+fn diagnostics_command() {
+    assert_eq!(parse(&args(&["diagnostics"])), Cli::Diagnostics);
+    assert_eq!(
+        parse(&args(&["diagnostics", "x"])),
+        Cli::Unknown("diagnostics".into())
+    );
+}
+
+#[test]
 fn llm_commands() {
     for a in ["start", "stop", "status"] {
         assert_eq!(parse(&args(&["llm", a])), Cli::Llm(a.into()));

@@ -11,6 +11,7 @@ mod cli;
 mod commands;
 mod db;
 mod detect;
+mod diagnostics;
 mod editor;
 mod env;
 mod fsx;
@@ -223,6 +224,19 @@ fn run() -> i32 {
             };
             return match result {
                 Ok(()) => 0,
+                Err(e) => {
+                    let _ = writeln!(out, "  x {e:#}");
+                    1
+                }
+            };
+        }
+        Cli::Diagnostics => {
+            let mut out = cli::output();
+            return match diagnostics::export(&kit, &kit_env, lang) {
+                Ok(path) => {
+                    let _ = writeln!(out, "  √ {}", path.display());
+                    0
+                }
                 Err(e) => {
                     let _ = writeln!(out, "  x {e:#}");
                     1
@@ -478,7 +492,7 @@ fn prepare(
 /// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
 /// kit's Antigravity command ([`help_text`]); the target ids
 /// are those of `Target::ALL`.
-const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
 /// The program's name in the help: the file it was started from
 /// (`Atollo-0.2.0-win32-x64.exe`, `Atollo.AppImage`, `Atollo`, ...); on

@@ -634,7 +634,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("settings-gear"),
     keywords:
-      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento gemini il kit privacy telemetria salvataggio settings language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
+      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
   },
   {
@@ -790,7 +790,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("folder-library"),
     keywords:
-      "cartelle disco projects data apps home settings.json components.txt struttura folders disk structure dossiers disque structure ordner festplatte struktur",
+      "cartelle disco projects data apps home settings.json components.txt diagnostics struttura folders disk structure dossiers disque structure ordner festplatte struktur",
   },
   {
     id: "lifecycle",
@@ -843,7 +843,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("symbol-keyword"),
     keywords:
-      "cli riga di comando prepare check components versions env sync models llm powershell command line ligne de commande kommandozeile befehlszeile",
+      "cli riga di comando prepare check components versions env sync models llm diagnostics diagnostica powershell command line ligne de commande kommandozeile befehlszeile",
   },
 
   // 9. Help
@@ -859,14 +859,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti.",
-        "The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins.",
-        "Les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées.",
-        "Die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen.",
+        "I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.",
+        "The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins. And how to report a problem with the diagnostics zip.",
+        "Les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées. Et comment signaler un problème avec le zip du diagnostic.",
+        "Die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen. Und wie du ein Problem mit dem Diagnose-Zip meldest.",
       ),
     icon: codicon("warning"),
     keywords:
-      "problemi errori risoluzione porta occupata download fallito non parte errore problems errors troubleshooting port in use download failed problèmes erreurs dépannage port occupé téléchargement échoué probleme fehler fehlerbehebung port belegt download fehlgeschlagen",
+      "problemi errori risoluzione porta occupata download fallito non parte errore segnala un problema segnalazione diagnostica esporta zip log issue github bug problems errors troubleshooting port in use download failed report a problem export diagnostics problèmes erreurs dépannage port occupé téléchargement échoué signaler un problème signalement exporter le diagnostic probleme fehler fehlerbehebung port belegt download fehlgeschlagen problem melden meldung diagnose exportieren",
   },
   {
     id: "faq",

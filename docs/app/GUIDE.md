@@ -1925,6 +1925,8 @@ Below the account, “Who signs the commits” has the “Name” and “Email�
 
 Read-only information: kit folder, projects folder, data and programs folder, the kit's disk (file system and type: fixed, removable, network), programs' temporary folder, platform, WebView2 and Atollo versions. If the disk has something to report, a warning appears.
 
+Below, “Reporting a problem” has two buttons. “Export diagnostics” makes a zip in `data\app\diagnostics` with version, system, disk, environment, the programs' check, components, ports and the end of the logs, with the kit's keys, tokens and passwords replaced by \*\*\*, your profile folder as ~ and your and the PC's names removed; “Open folder” shows it. The zip stays on the PC: look at it and attach it yourself. “Report a problem” opens a new issue on GitHub in the browser with version and system already filled in; nothing leaves until you create it.
+
 #### Frameworks
 
 The instructions of “New project”: [6.4 The framework instructions](#64-the-framework-instructions).
@@ -1939,7 +1941,7 @@ The instructions of “New project”: [6.4 The framework instructions](#64-the-
 
 </details>
 
-Related topics: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [7.3 Updates and backups](#73-updates-and-backups), [6.4 The framework instructions](#64-the-framework-instructions)
+Related topics: [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [7.3 Updates and backups](#73-updates-and-backups), [6.4 The framework instructions](#64-the-framework-instructions), [9.1 When something goes wrong](#91-when-something-goes-wrong)
 
 ### 6.3 Company network: proxy, certificates, local network
 
@@ -2306,6 +2308,7 @@ Related topics: [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk), [
 | &emsp;`data\` | Everything that belongs to the kit. |
 | &emsp;&emsp;`app\` | The app's state: settings.json (Settings), `secrets\` (the Gemini key, the local models server's key and the Hugging Face token, protected), llm.json and `llm\presets.ini` (the local models server), ca-bundle.pem (the certificates, when Settings has a PEM file), components.txt (chosen components), `versions\` (installed versions), `logs\`, services.json and servers.json (databases and web servers, with the ports of every version and every pool), terminals.json, frameworks.json, root.txt (last kit folder), safe-directory.txt (the last safe.directory the kit wrote). |
 | &emsp;&emsp;&emsp;`app\db\` | Database administrator passwords and mysql logins. Protected: only your user can read it. |
+| &emsp;&emsp;&emsp;`app\diagnostics\` | The zips of “Export diagnostics” (atollo-diagnostica-\<date-time\>.zip), to attach to a report: secrets masked, they stay on the PC. |
 | &emsp;&emsp;`apps\<system>\` | The programs, by system (win32-x64, darwin-arm64…), one folder per component and per version. |
 | &emsp;&emsp;`projects\<project>\` | The kit's data for each project: dev-settings.json (versions, extensions, favorites), ports.json (the ports of its actions), Apache and Caddy configurations (your directives in `apache\conf.d\*.conf` and `caddy\conf.d\*.caddy` apply both to its own server and in a pool), `private\` (database passwords and backups, protected). |
 | &emsp;&emsp;`db\<mysql\|mongodb>\<version>\` | The databases' data, one folder per version. |
@@ -2460,6 +2463,7 @@ Many components are published on GitHub. Without a sign-in, the GitHub API allow
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open. |
 | `huggingface.co` | The local models: the search for GGUF files and the downloads, which huggingface.co redirects to its CDN. Only when you download a model; the token, if any, goes only to huggingface.co. |
 | `github.com/ggml-org/llama.cpp · github.com/earendil-works/pi` | The releases of llama.cpp and Pi, as for the other components published on GitHub (they are in the table of sources below). |
+| `github.com/nabre/atollo/issues` | “Report a problem” opens a new issue here in the browser, with version and system in the address. You open it, in your browser: the app sends nothing, and nothing reaches GitHub until you create the issue. |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Only when the commands of projects and frameworks ask for it. |
 
 #### Complete table of sources (39 components and 5 parts)
@@ -2564,6 +2568,7 @@ cd D:\Atollo
 | `models pull <model>` | Downloads a catalog id or a Hugging Face model (owner/name:quantization); resumes if interrupted. |
 | `models rm <id>` | Deletes a downloaded model. |
 | `llm start \| stop \| status` | The local models server (chat and agents): starts it, stops it or says whether it answers. status does not send the key to whatever listens on the port. |
+| `diagnostics` | Makes the zip to attach to a problem report (secrets masked) in `data\app\diagnostics`, like “Export diagnostics” in Settings, and prints its path. |
 | `version · help` | The version (also --version, -V) and the help (also --help, -h, /?). |
 
 | prepare option | Effect |
@@ -2600,7 +2605,7 @@ Related topics: [5.1 The Tools page](#51-the-tools-page), [7.2 On another PC, an
 
 ### 9.1 When something goes wrong
 
-*The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins.*
+*The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins. And how to report a problem with the diagnostics zip.*
 
 > **In short**
 >
@@ -2739,7 +2744,16 @@ Just information: another kit is open. The two copies share nothing.
 - Read the action's output (“Run” section) or the server's log: the last line usually gives the cause.
 - Close Atollo and open it again: many things (environment, agents, kit files) are regenerated at every start.
 - Check the components with “Verify” on the Tools page, or with `.\Atollo.exe check | Out-Host`.
-- Report the problem in the issues of the GitHub repository nabre/atollo, attaching the log lines (passwords are already masked).
+- If it still does not work, report it: the section below says how.
+
+#### Reporting a problem
+
+In Settings › “The kit” › “Reporting a problem” there are two buttons, to use in this order.
+
+- “Export diagnostics” makes the zip atollo-diagnostica-\<date-time\>.zip on the PC in `data\app\diagnostics`: version and system, the kit's disk (file system, kind, free space), RAM, the kit's environment, the programs' check, the components, the ports and the end of every log. “Open folder” shows it. From the command line `.\Atollo.exe diagnostics | Out-Host` does the same.
+- Before the zip is written, every secret the kit keeps (the keys of `data\app\secrets`, Claude Code's token, the database passwords, the agents' sign-ins, the GitHub token) becomes \*\*\* wherever it appears; your profile folder becomes ~, your user name and the PC's name \*\*\*. Open it and look at it anyway before attaching it: a project can write things into the logs that the kit does not know.
+- “Report a problem” opens a new issue on github.com/nabre/atollo in the browser with the bug form: Atollo's version and the system (kit, Windows build, the disk's file system and kind) are already filled in. Tell what happened and the steps to reproduce it, and drag the zip into the issue.
+- The app sends nothing: the zip stays on the PC until you attach it, and the issue reaches GitHub only when you press “Create” (a GitHub account is needed). From then on GitHub's privacy rules apply, and the issue is public.
 
 Related topics: [9.2 Frequently asked questions](#92-frequently-asked-questions), [6.3 Company network: proxy, certificates, local network](#63-company-network-proxy-certificates-local-network), [8.3 Background processes](#83-background-processes)
 

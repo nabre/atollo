@@ -1,5 +1,11 @@
 # Novità
 
+## Segnalare un problema (22/10/2026)
+
+- **«Esporta diagnostica»** in Impostazioni › «Il kit» (e `Atollo diagnostics` dalla riga di comando) crea uno zip in `data\app\diagnostics` con quello che serve per capire un problema: versione e sistema, disco del kit, RAM, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log. «Apri la cartella» lo mostra (D-153).
+- **Niente segreti nello zip**: chiavi, token e password che il kit conserva (database, agenti, GitHub, Hugging Face, il server dei modelli locali) diventano `***` ovunque compaiano, la cartella del tuo profilo diventa `~`, il tuo nome utente e il nome del PC `***`. Lo zip resta sul PC: lo guardi e lo alleghi tu.
+- **«Segnala un problema»** apre nel browser una segnalazione nuova su GitHub, con versione di Atollo e sistema già scritti: racconti che cosa è successo, i passi per rifarlo, e trascini lo zip. L'app non manda niente; la segnalazione arriva a GitHub solo quando la crei.
+
 ## Modelli locali e Pi, il quarto agente (22/10/2026)
 
 - **Modelli linguistici sul PC**, senza rete e senza account: la nuova pagina «Modelli locali» scarica modelli GGUF dal catalogo di Atollo (Qwen2.5-Coder 7B, Qwen3.5 9B, gpt-oss 20B, Devstral Small 2 24B, Qwen3-Coder 30B-A3B) o da qualunque repository di Hugging Face, e dice se entrano nella RAM o nella memoria video del PC. I modelli stanno in `data\models`, una copia per Windows, macOS e Linux (D-151).

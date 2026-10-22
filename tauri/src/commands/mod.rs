@@ -428,6 +428,8 @@ macro_rules! command_handler {
             $crate::commands::runs::run_ports,
             $crate::commands::runs::run_set_port,
             $crate::commands::app::url_open,
+            $crate::commands::app::diagnostics_export,
+            $crate::commands::app::issue_open,
             $crate::commands::app::privacy_open,
             $crate::commands::setup::rust_toolchain_set,
             $crate::commands::app::settings_get,

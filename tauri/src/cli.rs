@@ -1,6 +1,6 @@
 //! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
 //! `versions`, `check`, `prepare`, `sync`, `keyring`, `serve`, `models`,
-//! `llm`, `version`, `help`. The exe is a GUI program, so output goes
+//! `llm`, `diagnostics`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
 //! console. Step lines use the markers `── N. Name ──`, `√`, `x`, `!` and
 //! `·`.
@@ -53,6 +53,8 @@ pub enum Cli {
     Models(Models),
     /// Their server: `start`, `stop`, `status`.
     Llm(String),
+    /// The zip for a report of a problem (diagnostics.rs).
+    Diagnostics,
     Version,
     Help,
     Unknown(String),
@@ -216,6 +218,7 @@ pub fn parse(args: &[OsString]) -> Cli {
             Some(a @ ("start" | "stop" | "status")) if args.len() == 2 => Cli::Llm(a.to_owned()),
             other => Cli::Unknown(format!("llm {}", other.unwrap_or_default())),
         },
+        "diagnostics" if args.len() == 1 => Cli::Diagnostics,
         "version" | "--version" | "-V" => Cli::Version,
         "help" | "--help" | "-h" | "/?" => Cli::Help,
         other => Cli::Unknown(other.to_owned()),

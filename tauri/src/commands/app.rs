@@ -111,7 +111,8 @@ pub(super) fn apply_env(state: &AppState) -> &'static str {
 
 /// Opens a folder of the kit in File Explorer: `agents` (shared
 /// instructions, skills, MCP), `models` (the local models, D-151),
-/// `projects` or one project.
+/// `diagnostics` (the zips of «Esporta diagnostica»), `projects` or one
+/// project.
 #[tauri::command]
 pub fn folder_open<R: Runtime>(
     webview: Webview<R>,
@@ -124,6 +125,7 @@ pub fn folder_open<R: Runtime>(
         "agents" => state.kit.data().join("agents"),
         "db" => state.kit.data().join("db"),
         "models" => crate::llm::models_dir(&state.kit),
+        "diagnostics" => crate::diagnostics::dir(&state.kit),
         "backup" => {
             let name = project.as_deref().ok_or("no project")?;
             project_dir(&state.kit, Some(name), state.lang())?;
@@ -134,6 +136,32 @@ pub fn folder_open<R: Runtime>(
     };
     std::fs::create_dir_all(&dir).or_fail("folder")?;
     crate::os::jobs::open_with_explorer(&dir).or_fail_chain("explorer")
+}
+
+/// «Esporta diagnostica»: the zip for a report of a problem, secrets
+/// masked (diagnostics.rs); its path.
+#[tauri::command]
+pub async fn diagnostics_export<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<String> {
+    ensure_main(&webview)?;
+    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::diagnostics::export(&kit, &env, lang)
+            .map(|p| p.display().to_string())
+            .or_fail_chain("diagnostics")
+    })
+    .await
+    .or_fail("diagnostics")?
+}
+
+/// «Segnala un problema»: a new issue of Atollo on GitHub, in the browser,
+/// with its version and system filled in (nothing is sent by the app).
+#[tauri::command]
+pub fn issue_open<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    crate::github::open_web(&crate::diagnostics::issue_path(&state.kit)).or_fail_chain("browser")
 }
 
 /// Opens a local address (a project's server) in the PC's browser, outside

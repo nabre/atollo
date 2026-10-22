@@ -965,5 +965,9 @@
   "liberi {0}": "{0} libres",
   "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Atollo lo tiene allineato); Antigravity e Pi usano solo i server del kit.": "Seulement dans ce projet, en plus de ceux du kit. Claude Code les lit dans .mcp.json (il demande confirmation au premier usage), Codex dans .codex\\config.toml (Atollo le garde aligné) ; Antigravity et Pi n'utilisent que les serveurs du kit.",
   "solo chat: con gli agenti non usa bene gli strumenti": "chat seulement : avec les agents il utilise mal les outils",
-  "Modelli in scaricamento: {0}": "Modèles en téléchargement : {0}"
+  "Modelli in scaricamento: {0}": "Modèles en téléchargement : {0}",
+  "Esporta diagnostica": "Exporter le diagnostic",
+  "Segnala un problema": "Signaler un problème",
+  "Segnalare un problema": "Signaler un problème",
+  "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Le zip de diagnostic rassemble version, système, disque, environnement, vérification des programmes, composants, ports et la fin des journaux, sans les clés, jetons et mots de passe du kit et avec votre dossier de profil affiché comme ~. Il reste sur le PC : joignez-le vous-même au signalement, après l'avoir regardé."
 }
