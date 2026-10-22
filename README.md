@@ -106,7 +106,7 @@ Atollo's console is a tab of the app's terminal panel on every system, with the 
 Atollo is in alpha (version 0.5.1). Windows x64 is the most tested system, real installs in CI included; macOS, Linux and Windows ARM64 are built and tested in CI only. The full checklist is in [docs/app/TESTING.md](docs/app/TESTING.md).
 
 - **The alpha, to be tried.** [The 0.5.1 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.5.1) is on GitHub for Windows, macOS and Linux, each on x64 and ARM64. The published files are built and tested in CI: now they need downloading and starting on clean machines.
-- **Alpha testing.** We need people using Atollo on real projects and different PCs, and reporting what goes wrong: component installs, projects, databases, agents.
+- **Alpha testing.** We need people using Atollo on real projects and different PCs, and reporting what goes wrong: component installs, projects, databases, agents. Settings › The kit › “Report a problem” opens a GitHub issue with the version and the system already filled in; attach the zip of “Export diagnostics” next to it (secrets masked, made on your PC, never sent by the app).
 - **macOS on real Macs** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon and Intel are built and started in CI, never on a clean Mac: the zip downloaded with a browser, quarantine and Gatekeeper, App Translocation, a kit on an exFAT stick, the agents' sign-in carried from one Mac to another.
 - **Linux on real machines** ([#5](https://github.com/nabre/atollo/issues/5)). x64 and ARM64 on Ubuntu 24.04, Fedora 42 and Debian 13: AppImage with and without FUSE, the `tar.gz` with WebKitGTK 4.1, exFAT sticks or sticks mounted `noexec`, sign-in with GNOME, KeePassXC or KWallet.
 - **Updates and the kit's builds outside Windows.** Updating the app from one version to the next on macOS and Linux is not tried yet. The kit's Apache (2.4.69, D-116) is in the catalog but tried only in CI; so is the kit's PHP with `pdo_sqlite` (8.4.26 and 8.5.11, D-133), which the app uses from 0.3.0 on.
@@ -172,6 +172,7 @@ Atollo.exe models pull <model>       downloads a catalog id or a Hugging Face mo
                                      (owner/name:quantization), resumed if interrupted
 Atollo.exe models rm <id>            deletes a downloaded model
 Atollo.exe llm start|stop|status     the server of the local models (chat and agents)
+Atollo.exe diagnostics               makes the zip to attach to a problem report (secrets masked)
 Atollo.exe version                   shows the version
 Atollo.exe help                      shows the help
 ```

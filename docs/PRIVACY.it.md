@@ -20,7 +20,7 @@ Atollo non raccoglie, non invia e non vende:
 
 - dati personali, nomi, indirizzi e-mail o identificativi del dispositivo;
 - statistiche d'uso, clic, pagine viste o funzioni usate;
-- report dei crash o log;
+- report dei crash o log (lo zip della diagnostica della sezione 4 si crea sul tuo dispositivo e ne esce solo se lo alleghi tu);
 - il contenuto dei tuoi progetti, file, database o conversazioni con gli agenti AI.
 
 Nessuno di chi gestisce il progetto Atollo riceve dati dall'app. Il progetto non ha server: aggiornamenti e release sono ospitati su GitHub.
@@ -46,7 +46,7 @@ Ogni richiesta che l'app fa da sé porta uno `User-Agent` della forma `Atollo/<v
 **Non** sono connessioni fatte da Atollo:
 
 - i programmi che avvii nell'editor, nelle console o con le azioni (`git`, `npm`, `pip`, `cargo`, gli agenti AI…) si collegano dove sono progettati per farlo;
-- i link che clicchi si aprono nel tuo browser.
+- i link che clicchi si aprono nel tuo browser, e così «Segnala un problema» (sezione 4).
 
 Server locali: l'editor e i server dei progetti ascoltano solo su questo computer (`127.0.0.1`/`localhost`), a meno che tu non attivi **Rete locale** nelle Impostazioni per i server dei progetti. Il server dei modelli locali (llama.cpp) ascolta sempre e solo su `127.0.0.1`, su una porta sua (9931 e seguenti), e risponde solo alle richieste con la sua chiave casuale; `llm status` non manda quella chiave a chi ascolta sulla porta. I modelli girano su questo computer: con un modello locale niente va in rete.
 
@@ -61,6 +61,7 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 | La **chiave API di Gemini**, se la inserisci (leggibile solo dal tuo utente, vedi sotto) | `data/app/secrets/gemini-api-key` |
 | I certificati radice del sistema più il tuo file PEM aggiuntivo, solo se ne imposti uno | `data/app/ca-bundle.pem` |
 | Log dell'app (segreti mascherati), ruotati oltre 1 MB | `data/app/logs/` |
+| Zip della diagnostica, solo quando ne crei uno (segreti mascherati, vedi sotto) | `data/app/diagnostics/` |
 | Strumenti installati e le loro versioni | `data/apps/`, `data/app/versions/` |
 | Risposte dell'API di GitHub in cache | `data/cache/github/` |
 | Memoria dell'interfaccia (disposizione della finestra) e cache della web view | `data/webview2/` (Windows e Linux) |
@@ -89,6 +90,13 @@ Eccezioni, fuori dalla cartella di Atollo:
 - **Claude Code su macOS** tiene il proprio accesso nel Portachiavi, a meno che tu non usi "Collega con un token".
 - **Web view di macOS**: su macOS la web view del sistema tiene i suoi dati dove decide macOS (nella Libreria del tuo utente).
 - **rustup** scrive una voce nel registro di Windows a ogni installazione; Atollo la rimuove.
+
+### Segnalare un problema
+
+Impostazioni › Il kit › «Segnalare un problema» ha due pulsanti; niente parte da solo.
+
+- **«Esporta diagnostica»** (o `Atollo diagnostics` dalla riga di comando) crea uno zip **sul tuo dispositivo**, in `data/app/diagnostics/`: versione di Atollo, sistema del kit e del computer (build di Windows, RAM), disco del kit (file system, tipo, spazio libero), cartella del kit, ambiente del kit, verifica dei programmi installati, componenti, porte e gli ultimi 256 KB di ogni log di `data/app/logs/`. Prima di scrivere lo zip, ogni segreto che Atollo conserva (i file di `data/app/secrets/`, il token di Claude Code, le password dei database, gli accessi degli agenti nel kit, il token di GitHub) diventa `***` ovunque compaia, oltre alla mascheratura delle variabili dal nome segreto; la cartella del tuo profilo diventa `~`, e i nomi del tuo utente e del computer (`USERNAME`, `COMPUTERNAME`, `HOSTNAME`…) diventano `***`. **L'app non manda mai lo zip**: aprilo, leggilo e allegalo tu, se vuoi. L'output di un progetto nei log può contenere comunque cose che Atollo non sa essere private.
+- **«Segnala un problema»** apre nel tuo browser `github.com/nabre/atollo/issues/new`, con il modulo dei problemi e due campi compilati attraverso l'indirizzo: la versione di Atollo e il sistema (sistema del kit, build di Windows, file system e tipo del disco del kit). Nient'altro del tuo dispositivo è nell'indirizzo, e nulla arriva a GitHub finché non accedi e crei la segnalazione. Da lì la segnalazione, con ciò che alleghi, è pubblica e vale l'[informativa sulla privacy di GitHub](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
 
 ## 5. Strumenti e agenti AI di terzi
 

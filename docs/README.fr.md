@@ -108,7 +108,7 @@ La console d'Atollo est un onglet du panneau des terminaux de l'application sur 
 Atollo est en alpha (version 0.5.1). Windows x64 est le système le plus testé, installations réelles en CI comprises ; macOS, Linux et Windows ARM64 ne sont construits et testés qu'en CI. La liste complète est dans [docs/app/TESTING.md](app/TESTING.md) (en anglais).
 
 - **L'alpha, à essayer.** [La 0.5.1 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.5.1) est sur GitHub pour Windows, macOS et Linux, chacun en x64 et ARM64. Les fichiers publiés sont construits et testés en CI : il reste à les télécharger et à les lancer sur des machines vierges.
-- **Tests alpha.** Il faut des personnes qui utilisent Atollo sur de vrais projets et des PC différents, et qui signalent ce qui ne va pas : installation des composants, projets, bases de données, agents.
+- **Tests alpha.** Il faut des personnes qui utilisent Atollo sur de vrais projets et des PC différents, et qui signalent ce qui ne va pas : installation des composants, projets, bases de données, agents. Paramètres › Le kit › « Signaler un problème » ouvre une issue GitHub avec la version et le système déjà remplis ; joignez-y le zip de « Exporter le diagnostic » (secrets masqués, créé sur votre PC, jamais envoyé par l'application).
 - **macOS sur de vrais Mac** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon et Intel sont construits et lancés en CI, jamais sur un Mac vierge : le zip téléchargé avec un navigateur, la quarantaine et Gatekeeper, App Translocation, un kit sur une clé exFAT, les connexions des agents emportées d'un Mac à l'autre.
 - **Linux sur de vraies machines** ([#5](https://github.com/nabre/atollo/issues/5)). x64 et ARM64 sur Ubuntu 24.04, Fedora 42 et Debian 13 : AppImage avec et sans FUSE, le `tar.gz` avec WebKitGTK 4.1, clés exFAT ou montées `noexec`, connexions avec GNOME, KeePassXC ou KWallet.
 - **Mises à jour et builds du kit hors de Windows.** La mise à jour de l'application d'une version à l'autre sur macOS et Linux n'est pas encore essayée. L'Apache du kit (2.4.69, D-116) est dans le catalogue mais essayé seulement en CI ; de même pour le PHP du kit avec `pdo_sqlite` (8.4.26 et 8.5.11, D-133), que l'application utilise à partir de la 0.3.0.
@@ -174,6 +174,7 @@ Atollo.exe models pull <modèle>      télécharge un id du catalogue ou un mod�
                                      (propriétaire/nom:quantification), reprend s'il est interrompu
 Atollo.exe models rm <id>            supprime un modèle téléchargé
 Atollo.exe llm start|stop|status     le serveur des modèles locaux (chat et agents)
+Atollo.exe diagnostics               crée le zip à joindre à un signalement (secrets masqués)
 Atollo.exe version                   affiche la version
 Atollo.exe help                      affiche l'aide
 ```

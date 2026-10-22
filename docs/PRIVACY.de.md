@@ -20,7 +20,7 @@ Atollo erhebt, sendet und verkauft nicht:
 
 - personenbezogene Daten, Namen, E-Mail-Adressen oder Gerätekennungen;
 - Nutzungsstatistiken, Klicks, Seitenaufrufe oder genutzte Funktionen;
-- Absturzberichte oder Protokolle;
+- Absturzberichte oder Protokolle (das Diagnose-Zip aus Abschnitt 4 wird auf deinem Gerät erstellt und verlässt es nur, wenn du es selbst anhängst);
 - den Inhalt deiner Projekte, Dateien, Datenbanken oder Unterhaltungen mit KI-Agenten.
 
 Niemand, der das Projekt Atollo betreibt, erhält Daten von der App. Das Projekt betreibt keine Server: Updates und Releases liegen auf GitHub.
@@ -46,7 +46,7 @@ Jede Anfrage, die die App selbst stellt, trägt einen `User-Agent` der Form `Ato
 **Keine** Verbindungen von Atollo selbst sind:
 
 - Programme, die du im Editor, in den Konsolen oder über Aktionen startest (`git`, `npm`, `pip`, `cargo`, die KI-Agenten…), verbinden sich dorthin, wofür sie gebaut sind;
-- Links, die du anklickst, öffnen sich in deinem Browser.
+- Links, die du anklickst, öffnen sich in deinem Browser, ebenso „Problem melden“ (Abschnitt 4).
 
 Lokale Server: Der Editor und die Server der Projekte lauschen nur auf diesem Computer (`127.0.0.1`/`localhost`), außer du schaltest in den Einstellungen **Lokales Netzwerk** für die Server der Projekte ein. Der Server der lokalen Modelle (llama.cpp) lauscht immer nur auf `127.0.0.1`, auf einem eigenen Port (9931 und folgende), und beantwortet nur Anfragen mit seinem zufälligen Schlüssel; `llm status` sendet diesen Schlüssel nicht an das, was auf dem Port lauscht. Die Modelle laufen auf diesem Computer: Mit einem lokalen Modell geht nichts ins Netz.
 
@@ -61,6 +61,7 @@ Atollo ist portabel: Es hält seine Daten neben der ausführbaren Datei im Ordne
 | Der **Gemini-API-Schlüssel**, falls du einen einträgst (nur für deinen Benutzer lesbar, siehe unten) | `data/app/secrets/gemini-api-key` |
 | Die Stammzertifikate des Systems plus deine zusätzliche PEM-Datei, nur wenn du eine festlegst | `data/app/ca-bundle.pem` |
 | Protokolle der App (Geheimnisse maskiert), rotiert ab 1 MB | `data/app/logs/` |
+| Diagnose-Zips, nur wenn du eines erstellst (Geheimnisse maskiert, siehe unten) | `data/app/diagnostics/` |
 | Installierte Werkzeuge und ihre Versionen | `data/apps/`, `data/app/versions/` |
 | Zwischengespeicherte Antworten der GitHub-API | `data/cache/github/` |
 | Speicher der Oberfläche (Fensteraufteilung) und Cache der Web-View | `data/webview2/` (Windows und Linux) |
@@ -89,6 +90,13 @@ Ausnahmen, außerhalb des Atollo-Ordners:
 - **Claude Code unter macOS** hält seine Anmeldung im Schlüsselbund, außer du nutzt „Mit einem Token verbinden“.
 - **Web-View unter macOS**: Unter macOS speichert die System-Web-View ihre Daten dort, wo macOS es festlegt (in der Library deines Benutzers).
 - **rustup** schreibt bei jeder Installation einen Eintrag in die Windows-Registry; Atollo entfernt ihn.
+
+### Ein Problem melden
+
+Einstellungen › Das Kit › „Ein Problem melden“ hat zwei Schaltflächen; nichts davon läuft von selbst.
+
+- **„Diagnose exportieren“** (oder `Atollo diagnostics` in der Kommandozeile) erstellt ein Zip **auf deinem Gerät**, in `data/app/diagnostics/`: die Version von Atollo, das System des Kits und des Computers (Windows-Build, RAM), das Laufwerk des Kits (Dateisystem, Art, freier Platz), den Ordner des Kits, die Umgebung des Kits, die Prüfung der installierten Programme, die Komponenten, die Ports und die letzten 256 KB jedes Protokolls in `data/app/logs/`. Bevor das Zip geschrieben wird, wird jedes Geheimnis, das Atollo aufbewahrt (die Dateien in `data/app/secrets/`, das Token von Claude Code, die Datenbankpasswörter, die Anmeldungen der Agenten im Kit, das GitHub-Token), überall durch `***` ersetzt, zusätzlich zur Maskierung von Variablen mit geheim wirkendem Namen; dein Profilordner wird zu `~`, und die Namen deines Benutzers und des Computers (`USERNAME`, `COMPUTERNAME`, `HOSTNAME`…) werden zu `***`. **Die App sendet das Zip nie**: Öffne es, lies es und hänge es selbst an, wenn du willst. Die Ausgabe eines Projekts in den Protokollen kann trotzdem Dinge enthalten, von denen Atollo nicht weiß, dass sie privat sind.
+- **„Problem melden“** öffnet in deinem Browser `github.com/nabre/atollo/issues/new`, mit dem Fehlerformular und zwei über die Adresse ausgefüllten Feldern: die Version von Atollo und das System (System des Kits, Windows-Build, Dateisystem und Art des Laufwerks des Kits). Sonst ist nichts von deinem Gerät in der Adresse, und nichts erreicht GitHub, bevor du dich anmeldest und das Issue dort erstellst. Ab dann ist das Issue mit allem, was du anhängst, öffentlich, und die [Datenschutzerklärung von GitHub](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) gilt.
 
 ## 5. Werkzeuge und KI-Agenten Dritter
 

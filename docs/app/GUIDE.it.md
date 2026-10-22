@@ -1925,6 +1925,8 @@ Sotto l'account, «Chi firma i commit» ha i campi «Nome» ed «E-mail» dei co
 
 Informazioni in sola lettura: cartella del kit, cartella dei progetti, cartella dei dati e dei programmi, disco del kit (file system e tipo: fisso, rimovibile, di rete), cartella temporanea dei programmi, piattaforma, versione di WebView2 e di Atollo. Se il disco ha qualcosa da segnalare compare un avviso.
 
+Sotto, «Segnalare un problema» ha due pulsanti. «Esporta diagnostica» crea in `data\app\diagnostics` uno zip con versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit sostituiti da \*\*\*, la cartella del tuo profilo come ~ e i nomi tuo e del PC tolti; «Apri la cartella» lo mostra. Lo zip resta sul PC: guardalo e allegalo tu. «Segnala un problema» apre nel browser una segnalazione nuova su GitHub con versione e sistema già scritti; nulla parte finché non la crei.
+
 #### Framework
 
 Le istruzioni di «Nuovo progetto»: [6.4 Le istruzioni dei framework](#64-le-istruzioni-dei-framework).
@@ -1939,7 +1941,7 @@ Le istruzioni di «Nuovo progetto»: [6.4 Le istruzioni dei framework](#64-le-is
 
 </details>
 
-Argomenti collegati: [6.3 Rete aziendale: proxy, certificati, rete locale](#63-rete-aziendale-proxy-certificati-rete-locale), [7.3 Aggiornamenti e copie di sicurezza](#73-aggiornamenti-e-copie-di-sicurezza), [6.4 Le istruzioni dei framework](#64-le-istruzioni-dei-framework)
+Argomenti collegati: [6.3 Rete aziendale: proxy, certificati, rete locale](#63-rete-aziendale-proxy-certificati-rete-locale), [7.3 Aggiornamenti e copie di sicurezza](#73-aggiornamenti-e-copie-di-sicurezza), [6.4 Le istruzioni dei framework](#64-le-istruzioni-dei-framework), [9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va)
 
 ### 6.3 Rete aziendale: proxy, certificati, rete locale
 
@@ -2306,6 +2308,7 @@ Argomenti collegati: [8.2 Le cartelle del kit su disco](#82-le-cartelle-del-kit-
 | &emsp;`data\` | Tutto ciò che è del kit. |
 | &emsp;&emsp;`app\` | Lo stato dell'app: settings.json (Impostazioni), `secrets\` (la chiave di Gemini, quella del server dei modelli locali e il token di Hugging Face, protetti), llm.json e `llm\presets.ini` (il server dei modelli locali), ca-bundle.pem (i certificati, se le Impostazioni hanno un file PEM), components.txt (componenti scelti), `versions\` (versioni installate), `logs\`, services.json e servers.json (database e server web, con le porte di ogni versione e di ogni pool), terminals.json, frameworks.json, root.txt (ultima cartella del kit), safe-directory.txt (l'ultimo safe.directory scritto dal kit). |
 | &emsp;&emsp;&emsp;`app\db\` | Password di amministratore dei database e accessi di mysql. Protetta: la legge solo il tuo utente. |
+| &emsp;&emsp;&emsp;`app\diagnostics\` | Gli zip di «Esporta diagnostica» (atollo-diagnostica-\<data-ora\>.zip), da allegare a una segnalazione: segreti mascherati, restano sul PC. |
 | &emsp;&emsp;`apps\<sistema>\` | I programmi, per sistema (win32-x64, darwin-arm64…), una cartella per componente e per versione. |
 | &emsp;&emsp;`projects\<progetto>\` | I dati del kit per ogni progetto: dev-settings.json (versioni, estensioni, preferiti), ports.json (le porte delle sue azioni), configurazioni di Apache e Caddy (le tue direttive in `apache\conf.d\*.conf` e `caddy\conf.d\*.caddy` valgono sia per il server tutto suo sia in un pool), `private\` (password e copie dei database, protetta). |
 | &emsp;&emsp;`db\<mysql\|mongodb>\<versione>\` | I dati dei database, una cartella per versione. |
@@ -2460,6 +2463,7 @@ Molti componenti sono pubblicati su GitHub. Senza accesso, l'API di GitHub conse
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura e solo con la pagina Agenti aperta. |
 | `huggingface.co` | I modelli locali: la ricerca dei file GGUF e i download, che huggingface.co reindirizza alla sua CDN. Solo quando scarichi un modello; il token, se c'è, va solo a huggingface.co. |
 | `github.com/ggml-org/llama.cpp · github.com/earendil-works/pi` | Le release di llama.cpp e di Pi, come per gli altri componenti pubblicati su GitHub (sono nella tabella delle fonti qui sotto). |
+| `github.com/nabre/atollo/issues` | «Segnala un problema» apre qui una segnalazione nuova nel browser, con versione e sistema nell'indirizzo. Lo apri tu, nel tuo browser: l'app non manda niente, e nulla arriva a GitHub finché non crei la segnalazione. |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Solo quando lo chiedono i comandi dei progetti e dei framework. |
 
 #### Tabella completa delle fonti (39 componenti e 5 parti)
@@ -2564,6 +2568,7 @@ cd D:\Atollo
 | `models pull <modello>` | Scarica un id del catalogo o un modello di Hugging Face (proprietario/nome:quantizzazione); riprende se interrotto. |
 | `models rm <id>` | Cancella un modello scaricato. |
 | `llm start \| stop \| status` | Il server dei modelli locali (chat e agenti): lo avvia, lo ferma o dice se risponde. status non manda la chiave a chi ascolta sulla porta. |
+| `diagnostics` | Crea lo zip da allegare a una segnalazione (segreti mascherati) in `data\app\diagnostics`, come «Esporta diagnostica» nelle Impostazioni, e ne stampa il percorso. |
 | `version · help` | La versione (anche --version, -V) e l'aiuto (anche --help, -h, /?). |
 
 | Opzione di prepare | Effetto |
@@ -2600,7 +2605,7 @@ Argomenti collegati: [5.1 La pagina Strumenti](#51-la-pagina-strumenti), [7.2 Su
 
 ### 9.1 Quando qualcosa non va
 
-*I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti.*
+*I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.*
 
 > **In breve**
 >
@@ -2739,7 +2744,16 @@ Solo un'informazione: un altro kit è aperto. Le due copie non condividono nient
 - Leggi l'output dell'azione (sezione «Avvio») o il log del server: l'ultima riga di solito dice la causa.
 - Chiudi Atollo e riaprilo: molte cose (ambiente, agenti, file del kit) vengono rigenerate a ogni avvio.
 - Controlla i componenti con «Verifica» nella pagina Strumenti, o con `.\Atollo.exe check | Out-Host`.
-- Segnala il problema nelle issue del repository GitHub nabre/atollo, allegando le righe del log (le password sono già mascherate).
+- Se ancora non va, segnalalo: la sezione qui sotto dice come.
+
+#### Segnalare un problema
+
+In Impostazioni › «Il kit» › «Segnalare un problema» ci sono due pulsanti, da usare in quest'ordine.
+
+- «Esporta diagnostica» crea sul PC lo zip atollo-diagnostica-\<data-ora\>.zip in `data\app\diagnostics`: versione e sistema, disco del kit (file system, tipo, spazio libero), RAM, ambiente del kit, la verifica dei programmi, i componenti, le porte e la parte finale di ogni log. «Apri la cartella» lo mostra. Dalla riga di comando fa lo stesso `.\Atollo.exe diagnostics | Out-Host`.
+- Prima di scrivere lo zip, ogni segreto che il kit conserva (le chiavi di `data\app\secrets`, il token di Claude Code, le password dei database, gli accessi degli agenti, il token di GitHub) diventa \*\*\* ovunque compaia; la cartella del tuo profilo diventa ~, il tuo nome utente e il nome del PC \*\*\*. Aprilo e guardalo comunque prima di allegarlo: un progetto può scrivere nei log cose che il kit non conosce.
+- «Segnala un problema» apre nel browser una segnalazione nuova su github.com/nabre/atollo con il modulo dei problemi: versione di Atollo e sistema (kit, build di Windows, file system e tipo del disco) sono già scritti. Racconta che cosa è successo e i passi per rifarlo, e trascina lo zip nella segnalazione.
+- L'app non manda niente: lo zip resta sul PC finché non lo alleghi tu, e la segnalazione arriva a GitHub solo quando premi «Create» (serve un account GitHub). Da lì valgono le regole sulla privacy di GitHub, e la segnalazione è pubblica.
 
 Argomenti collegati: [9.2 Domande frequenti](#92-domande-frequenti), [6.3 Rete aziendale: proxy, certificati, rete locale](#63-rete-aziendale-proxy-certificati-rete-locale), [8.3 Processi in background](#83-processi-in-background)
 

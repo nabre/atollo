@@ -90,6 +90,16 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       ),
     },
     {
+      path: "app\\diagnostics\\",
+      depth: 3,
+      text: tr(
+        "Gli zip di «Esporta diagnostica» (atollo-diagnostica-<data-ora>.zip), da allegare a una segnalazione: segreti mascherati, restano sul PC.",
+        "The zips of “Export diagnostics” (atollo-diagnostica-<date-time>.zip), to attach to a report: secrets masked, they stay on the PC.",
+        "Les zip de « Exporter le diagnostic » (atollo-diagnostica-<date-heure>.zip), à joindre à un signalement : secrets masqués, ils restent sur le PC.",
+        "Die Zips von „Diagnose exportieren“ (atollo-diagnostica-<Datum-Uhrzeit>.zip), zum Anhängen an eine Meldung: Geheimnisse maskiert, sie bleiben auf dem PC.",
+      ),
+    },
+    {
       path: tr("apps\\<sistema>\\", "apps\\<system>\\", "apps\\<système>\\", "apps\\<System>\\"),
       depth: 2,
       text: tr(
@@ -1392,6 +1402,15 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
+              <Code key="i">github.com/nabre/atollo/issues</Code>,
+              tr(
+                "«Segnala un problema» apre qui una segnalazione nuova nel browser, con versione e sistema nell'indirizzo. Lo apri tu, nel tuo browser: l'app non manda niente, e nulla arriva a GitHub finché non crei la segnalazione.",
+                "“Report a problem” opens a new issue here in the browser, with version and system in the address. You open it, in your browser: the app sends nothing, and nothing reaches GitHub until you create the issue.",
+                "« Signaler un problème » ouvre ici une nouvelle issue dans le navigateur, avec la version et le système dans l'adresse. C'est vous qui l'ouvrez, dans votre navigateur : l'application n'envoie rien, et rien n'arrive à GitHub tant que vous ne créez pas l'issue.",
+                "„Problem melden“ öffnet hier ein neues Issue im Browser, mit Version und System in der Adresse. Du öffnest es in deinem Browser: Die App sendet nichts, und nichts erreicht GitHub, bevor du das Issue erstellst.",
+              ),
+            ],
+            [
               <Code key="d">registry.npmjs.org · pypi.org · packagist.org…</Code>,
               tr(
                 "Solo quando lo chiedono i comandi dei progetti e dei framework.",
@@ -1610,6 +1629,15 @@ export const INSIDE: TopicTexts = {
                 "The local models server (chat and agents): starts it, stops it or says whether it answers. status does not send the key to whatever listens on the port.",
                 "Le serveur des modèles locaux (chat et agents) : le démarre, l'arrête ou dit s'il répond. status n'envoie pas la clé à ce qui écoute sur le port.",
                 "Der Server der lokalen Modelle (Chat und Agenten): startet ihn, stoppt ihn oder sagt, ob er antwortet. status sendet den Schlüssel nicht an das, was auf dem Port lauscht.",
+              ),
+            ],
+            [
+              <Code key="q">diagnostics</Code>,
+              tr(
+                "Crea lo zip da allegare a una segnalazione (segreti mascherati) in data\\app\\diagnostics, come «Esporta diagnostica» nelle Impostazioni, e ne stampa il percorso.",
+                "Makes the zip to attach to a problem report (secrets masked) in data\\app\\diagnostics, like “Export diagnostics” in Settings, and prints its path.",
+                "Crée le zip à joindre à un signalement (secrets masqués) dans data\\app\\diagnostics, comme « Exporter le diagnostic » dans les Paramètres, et en affiche le chemin.",
+                "Erstellt das Zip für eine Problemmeldung (Geheimnisse maskiert) in data\\app\\diagnostics, wie „Diagnose exportieren“ in den Einstellungen, und gibt seinen Pfad aus.",
               ),
             ],
             [

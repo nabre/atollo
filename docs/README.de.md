@@ -108,7 +108,7 @@ Die Konsole von Atollo ist auf jedem System ein Tab im Terminal-Feld der App, mi
 Atollo ist in der Alpha (Version 0.5.1). Windows x64 ist das am meisten getestete System, echte Installationen in der CI eingeschlossen; macOS, Linux und Windows ARM64 werden nur in der CI gebaut und getestet. Die vollständige Checkliste steht in [docs/app/TESTING.md](app/TESTING.md) (auf Englisch).
 
 - **Die Alpha, zum Ausprobieren.** [Die 0.5.1 Alpha](https://github.com/nabre/atollo/releases/tag/app-v0.5.1) ist auf GitHub für Windows, macOS und Linux, jeweils auf x64 und ARM64. Die veröffentlichten Dateien werden in der CI gebaut und getestet: Jetzt müssen sie auf sauberen Rechnern heruntergeladen und gestartet werden.
-- **Alpha-Tests.** Gesucht sind Menschen, die Atollo in echten Projekten und auf verschiedenen PCs nutzen und melden, was nicht klappt: Installation der Komponenten, Projekte, Datenbanken, Agenten.
+- **Alpha-Tests.** Gesucht sind Menschen, die Atollo in echten Projekten und auf verschiedenen PCs nutzen und melden, was nicht klappt: Installation der Komponenten, Projekte, Datenbanken, Agenten. Einstellungen › Das Kit › „Problem melden“ öffnet ein GitHub-Issue mit bereits eingetragener Version und System; häng das Zip von „Diagnose exportieren“ an (Geheimnisse maskiert, auf deinem PC erstellt, nie von der App gesendet).
 - **macOS auf echten Macs** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon und Intel werden in der CI gebaut und gestartet, nie auf einem frischen Mac: das im Browser geladene Zip, Quarantäne und Gatekeeper, App Translocation, ein Kit auf einem exFAT-Stick, die Anmeldungen der Agenten von einem Mac zum anderen mitgenommen.
 - **Linux auf echten Rechnern** ([#5](https://github.com/nabre/atollo/issues/5)). x64 und ARM64 auf Ubuntu 24.04, Fedora 42 und Debian 13: AppImage mit und ohne FUSE, das `tar.gz` mit WebKitGTK 4.1, exFAT-Sticks oder mit `noexec` eingehängte Sticks, Anmeldung mit GNOME, KeePassXC oder KWallet.
 - **Updates und Kit-Builds außerhalb von Windows.** Das Update der App von einer Version zur nächsten ist auf macOS und Linux noch nicht ausprobiert. Das Apache des Kits (2.4.69, D-116) ist im Katalog, aber nur in der CI ausprobiert; ebenso das PHP des Kits mit `pdo_sqlite` (8.4.26 und 8.5.11, D-133), das die App ab 0.3.0 nutzt.
@@ -174,6 +174,7 @@ Atollo.exe models pull <Modell>      lädt eine Katalog-id oder ein Modell von H
                                      (Besitzer/Name:Quantisierung), setzt nach Abbruch fort
 Atollo.exe models rm <id>            löscht ein heruntergeladenes Modell
 Atollo.exe llm start|stop|status     der Server der lokalen Modelle (Chat und Agenten)
+Atollo.exe diagnostics               erstellt das Zip für eine Problemmeldung (Geheimnisse maskiert)
 Atollo.exe version                   zeigt die Version
 Atollo.exe help                      zeigt die Hilfe
 ```

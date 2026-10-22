@@ -20,7 +20,7 @@ Atollo ne collecte, n'envoie et ne vend pas :
 
 - de données personnelles, noms, adresses e-mail ou identifiants d'appareil ;
 - de statistiques d'utilisation, clics, pages vues ou fonctions utilisées ;
-- de rapports de plantage ni de journaux ;
+- de rapports de plantage ni de journaux (le zip du diagnostic de la section 4 est créé sur votre appareil et n'en sort que si vous le joignez vous-même) ;
 - le contenu de vos projets, fichiers, bases de données ou conversations avec les agents IA.
 
 Personne parmi ceux qui gèrent le projet Atollo ne reçoit de données de l'application. Le projet n'exploite aucun serveur : mises à jour et versions sont hébergées sur GitHub.
@@ -46,7 +46,7 @@ Chaque requête que l'application fait d'elle-même porte un `User-Agent` de la 
 Ne sont **pas** des connexions faites par Atollo lui-même :
 
 - les programmes que vous lancez dans l'éditeur, les consoles ou via des actions (`git`, `npm`, `pip`, `cargo`, les agents IA…) se connectent là où ils sont conçus pour le faire ;
-- les liens sur lesquels vous cliquez s'ouvrent dans votre navigateur.
+- les liens sur lesquels vous cliquez s'ouvrent dans votre navigateur, de même que « Signaler un problème » (section 4).
 
 Serveurs locaux : l'éditeur et les serveurs des projets n'écoutent que sur cet ordinateur (`127.0.0.1`/`localhost`), sauf si vous activez **Réseau local** dans les Paramètres pour les serveurs des projets. Le serveur des modèles locaux (llama.cpp) n'écoute toujours que sur `127.0.0.1`, sur son propre port (9931 et suivants), et ne répond qu'aux requêtes portant sa clé aléatoire ; `llm status` n'envoie pas cette clé à ce qui écoute sur le port. Les modèles tournent sur cet ordinateur : avec un modèle local, rien ne part sur le réseau.
 
@@ -61,6 +61,7 @@ Atollo est portable : il garde ses données à côté de l'exécutable, dans le 
 | La **clé API Gemini**, si vous en saisissez une (lisible par votre seul utilisateur, voir ci-dessous) | `data/app/secrets/gemini-api-key` |
 | Les certificats racine du système plus votre fichier PEM supplémentaire, seulement si vous en définissez un | `data/app/ca-bundle.pem` |
 | Journaux de l'application (secrets masqués), renouvelés au-delà de 1 Mo | `data/app/logs/` |
+| Zip du diagnostic, seulement quand vous en créez un (secrets masqués, voir ci-dessous) | `data/app/diagnostics/` |
 | Outils installés et leurs versions | `data/apps/`, `data/app/versions/` |
 | Réponses de l'API GitHub en cache | `data/cache/github/` |
 | Stockage de l'interface (disposition de la fenêtre) et cache de la web view | `data/webview2/` (Windows et Linux) |
@@ -89,6 +90,13 @@ Exceptions, hors du dossier d'Atollo :
 - **Claude Code sur macOS** garde sa propre connexion dans le Trousseau, sauf si vous utilisez « Connecter avec un jeton ».
 - **Web view de macOS** : sur macOS, la web view du système garde ses données là où macOS le décide (dans la Bibliothèque de votre utilisateur).
 - **rustup** écrit une entrée dans le registre de Windows à chaque installation ; Atollo la supprime.
+
+### Signaler un problème
+
+Paramètres › Le kit › « Signaler un problème » a deux boutons ; rien ne s'y lance tout seul.
+
+- **« Exporter le diagnostic »** (ou `Atollo diagnostics` en ligne de commande) crée un zip **sur votre appareil**, dans `data/app/diagnostics/` : la version d'Atollo, le système du kit et de l'ordinateur (build de Windows, RAM), le disque du kit (système de fichiers, type, espace libre), le dossier du kit, l'environnement du kit, la vérification des programmes installés, les composants, les ports et les derniers 256 Ko de chaque journal de `data/app/logs/`. Avant l'écriture du zip, chaque secret qu'Atollo conserve (les fichiers de `data/app/secrets/`, le jeton de Claude Code, les mots de passe des bases de données, les connexions des agents dans le kit, le jeton GitHub) est remplacé par `***` partout où il apparaît, en plus du masquage des variables dont le nom semble secret ; le dossier de votre profil devient `~`, et les noms de votre utilisateur et de l'ordinateur (`USERNAME`, `COMPUTERNAME`, `HOSTNAME`…) deviennent `***`. **L'application n'envoie jamais le zip** : ouvrez-le, lisez-le et joignez-le vous-même si vous le souhaitez. La sortie d'un projet dans les journaux peut quand même contenir des choses qu'Atollo ne sait pas privées.
+- **« Signaler un problème »** ouvre dans votre navigateur `github.com/nabre/atollo/issues/new`, avec le formulaire des problèmes et deux champs remplis via l'adresse : la version d'Atollo et le système (système du kit, build de Windows, système de fichiers et type du disque du kit). Rien d'autre de votre appareil n'est dans l'adresse, et rien n'arrive à GitHub tant que vous ne vous connectez pas et ne créez pas l'issue. Dès lors, l'issue, avec ce que vous joignez, est publique et la [déclaration de confidentialité de GitHub](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) s'applique.
 
 ## 5. Outils et agents IA tiers
 
