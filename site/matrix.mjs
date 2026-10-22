@@ -1,8 +1,9 @@
 // The component × system matrix of the site, from the app's own catalog:
 // tauri/catalog/components.json for what exists where, tauri/i18n/catalog.json
 // for the descriptions and reasons in en/fr/de. Availability follows
-// Component::is_available_on (tauri/src/setup/catalog.rs), as
-// scripts/matrix/gen_matrix.py does for docs/app/TOOLS-MATRIX.html.
+// Component::is_available_on and is_emulated_on (tauri/src/setup/catalog.rs):
+// `status` is written once here, and scripts/matrix/gen_matrix.mjs uses it
+// too for docs/app/TOOLS-MATRIX.html.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -36,28 +37,41 @@ export function loadCatalog(repo) {
   return { components, i18n };
 }
 
-// The status of c on target t, without its needs: [kind, reason].
-function baseStatus(c, t, s) {
-  if (c.targets && !c.targets.includes(t)) return ["no", s.mxNotBuilt];
-  if (c.unavailable && t in c.unavailable) return ["no", { catalog: c.unavailable[t] }];
-  if (t === "win32-arm64" && c.noArm64) return ["no", s.mxNoArm64];
-  if (t === "win32-arm64" && c.x64Only) return ["emu", s.mxEmulated];
-  return ["ok", s.mxNative];
+// The status of c on target t, without its needs: [kind, reason]. `why`
+// gives the reasons: notBuilt(c), unavailable(the catalog's Italian
+// text), noArm64, emulated, rosetta, native, needs(name).
+export function baseStatus(c, t, why) {
+  if (c.targets && !c.targets.includes(t)) return ["no", why.notBuilt(c)];
+  if (c.unavailable && t in c.unavailable) return ["no", why.unavailable(c.unavailable[t])];
+  if (t === "win32-arm64" && c.noArm64) return ["no", why.noArm64];
+  if (t === "win32-arm64" && c.x64Only) return ["emu", why.emulated];
+  if (t === "darwin-arm64" && c.rosetta) return ["emu", why.rosetta];
+  return ["ok", why.native];
 }
 
-function status(c, t, byId, s) {
-  const base = baseStatus(c, t, s);
+// The status of c on target t: "dep" when a component it needs there is
+// not available there.
+export function status(c, t, byId, why) {
+  const base = baseStatus(c, t, why);
   if (base[0] === "no") return base;
   const needs = [...(c.needs || []), ...((c.needsByTarget || {})[t] || [])];
   for (const n of needs) {
-    if (byId[n] && baseStatus(byId[n], t, s)[0] === "no") return ["dep", s.mxNeeds.replace("{0}", byId[n].name)];
+    if (byId[n] && baseStatus(byId[n], t, why)[0] === "no") return ["dep", why.needs(byId[n].name)];
   }
   return base;
 }
 
 export function matrixHtml({ components, i18n }, lang, s) {
   const tr = (it) => (lang === "it" ? it : (i18n[it] && i18n[it][lang]) || it);
-  const reason = (r) => (typeof r === "string" ? r : tr(r.catalog));
+  const why = {
+    notBuilt: () => s.mxNotBuilt,
+    unavailable: tr,
+    noArm64: s.mxNoArm64,
+    emulated: s.mxEmulated,
+    rosetta: s.mxEmulated,
+    native: s.mxNative,
+    needs: (name) => s.mxNeeds.replace("{0}", name),
+  };
   const byId = Object.fromEntries(components.map((c) => [c.id, c]));
   const kindOf = (c) => KIND_OF[c.id] || KIND_OF_GROUP[c.group] || "tools";
 
@@ -70,8 +84,8 @@ export function matrixHtml({ components, i18n }, lang, s) {
     if (!items.length) return "";
     const rows = items.map((c) => {
       const cells = TARGETS.map(([t, os, arch]) => {
-        const [k, why] = status(c, t, byId, s);
-        const tip = `${os} ${arch}: ${reason(why)}`;
+        const [k, reason] = status(c, t, byId, why);
+        const tip = `${os} ${arch}: ${reason}`;
         return `<td class="mx-${k}" data-target="${t}" title="${escape(tip)}"><span aria-hidden="true">${MARK[k]}</span><span class="sr">${escape(tip)}</span></td>`;
       }).join("");
       const name = c.home ? `<a href="${escape(c.home)}">${escape(c.name)}</a>` : escape(c.name);

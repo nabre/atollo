@@ -59,7 +59,7 @@ Nessuno di questi gira in `npm test`; ognuno si esegue a mano dopo la modifica c
 | `python docs/brand/themes.py` | è cambiato un colore (`BRAND`) o una misura (`LAYOUT`) | `ui\src\theme\theme-vscode.css`, `theme-colors.css`, `theme-sizes.css`, `tauri\editor-theme\` |
 | `node scripts/vscodium-css/extract.mjs [archivio o workbench.css]` | il catalogo fissa un altro editor, o l'app legge una chiave `--vscode-*` nuova | `docs\brand\vscodium-1.135\workbench-ref.css` (poi `themes.py`); fallisce su una chiave che VSCodium non conosce |
 | `node scripts/guide-docs.cjs` | è cambiato il testo della Guida | `docs\app\GUIDE.md`, `GUIDE.it.md` |
-| `python -I scripts/matrix/gen_matrix.py` | è cambiato il catalogo | `docs\app\TOOLS-MATRIX.html` |
+| `node scripts/matrix/gen_matrix.mjs` | è cambiato il catalogo | `docs\app\TOOLS-MATRIX.html` |
 | `node site/shots/make.mjs` | sono cambiate le pagine delle schermate | `site\shots\<lingua>\shot-{projects,agents,tools}-{dark,light}.png` per en, it, fr, de |
 | `node site/shots/social.mjs` | dopo `make.mjs` | `docs\brand\social.png` (da `en\shot-projects-dark.png`) |
 | `node scripts/guide-shots/make.mjs` | sono cambiate le pagine della Guida | `ui\public\guide\<lingua>\*.webp` (52 file; Python con Pillow) |

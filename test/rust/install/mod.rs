@@ -66,7 +66,7 @@ fn every_catalog_component_has_an_installer() {
     }
 }
 
-/// The tool matrix (`scripts/matrix/gen_matrix.py`) reads sources and
+/// The tool matrix (`scripts/matrix/gen_matrix.mjs`) reads sources and
 /// relocation from `scripts/matrix/sources.json`: one entry per catalog
 /// component, and `notRelocatable` exactly the targets where the
 /// installer does not follow the kit (D-92, D-118).
