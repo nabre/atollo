@@ -13,3 +13,20 @@ fn ids_are_lowercase_names() {
     assert!(!valid_id(""));
     assert!(!valid_id("a]b"));
 }
+
+/// A token file that cannot be read (here a folder in its place) is an
+/// error for a repository of Hugging Face, and is left out for a download
+/// that needs no token.
+#[test]
+fn an_unreadable_token_does_not_block_a_public_download() {
+    let tmp = crate::kit::tests::TempDir::new("llm-token");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    kit.prepare().unwrap();
+    assert_eq!(hf_token_if_readable(&kit), None);
+    std::fs::create_dir_all(hf_token_file(&kit)).unwrap();
+    assert!(hf_token(&kit).is_err());
+    assert_eq!(hf_token_if_readable(&kit), None);
+    std::fs::remove_dir(hf_token_file(&kit)).unwrap();
+    std::fs::write(hf_token_file(&kit), "hf_abc\n").unwrap();
+    assert_eq!(hf_token_if_readable(&kit).as_deref(), Some("hf_abc"));
+}

@@ -95,7 +95,12 @@ pub fn plan_of(kit: &Kit, net: &Net, spec: &str, token: Option<&str>) -> Result<
 }
 
 pub fn pull(kit: &Kit, net: &Net, spec: &str, lang: &str, out: &mut dyn Write) -> Result<String> {
-    let token = super::hf_token(kit)?;
+    // A catalog model is public: a token that cannot be read does not stop it.
+    let token = if catalog::find(spec.trim()).is_some() {
+        super::hf_token_if_readable(kit)
+    } else {
+        super::hf_token(kit)?
+    };
     let plan = plan_of(kit, net, spec, token.as_deref())?;
     writeln!(
         out,
