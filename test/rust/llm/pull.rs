@@ -170,3 +170,24 @@ fn one_download_per_folder() {
     std::fs::write(dir.join(LOCK), "4294967").unwrap();
     assert!(!busy(&kit, "o--busy"));
 }
+
+/// Two spellings of one folder are one folder on Windows and macOS: the
+/// second download is refused, and Cancel reaches the first.
+#[cfg(any(windows, target_os = "macos"))]
+#[test]
+fn a_folder_is_one_whatever_its_case() {
+    let tmp = TempDir::new("llm-case");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let dir = crate::llm::models_dir(&kit).join("O--Case");
+    let flag = Arc::new(AtomicBool::new(false));
+    let hold = Pulling::take(&dir, "O--Case", "m", Arc::clone(&flag)).unwrap();
+    let other = crate::llm::models_dir(&kit).join("o--case");
+    assert!(Pulling::take(&other, "o--case", "m", Arc::new(AtomicBool::new(false))).is_err());
+    assert!(busy(&kit, "o--case"));
+    assert!(pulling().contains(&"O--Case/m".to_owned()));
+    cancel("o--case/m");
+    assert!(flag.load(std::sync::atomic::Ordering::Relaxed));
+    drop(hold);
+    assert!(!busy(&kit, "o--case"));
+}

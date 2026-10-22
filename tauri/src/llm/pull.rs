@@ -196,15 +196,30 @@ fn existing_parent(path: &Path) -> std::path::PathBuf {
     p
 }
 
+/// A download under way in this process: its model folder as on disk, the
+/// model's id and its Cancel.
+struct Running {
+    folder: String,
+    id: String,
+    cancel: Arc<AtomicBool>,
+}
+
 /// The downloads under way in this process, one per model folder (a
 /// repository: its manifest and its files are written by one download at
-/// a time): the model's id and its Cancel.
-static PULLING: Mutex<BTreeMap<String, (String, Arc<AtomicBool>)>> = Mutex::new(BTreeMap::new());
+/// a time), by [`folder_key`].
+static PULLING: Mutex<BTreeMap<String, Running>> = Mutex::new(BTreeMap::new());
 
-fn pulling_map() -> std::sync::MutexGuard<'static, BTreeMap<String, (String, Arc<AtomicBool>)>> {
+fn pulling_map() -> std::sync::MutexGuard<'static, BTreeMap<String, Running>> {
     PULLING
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// A model folder as the kit's drive compares it: `Qwen--Qwen3-GGUF` and
+/// `qwen--qwen3-gguf` are one folder on NTFS, exFAT and APFS, and must not
+/// be downloaded into twice at once.
+fn folder_key(folder: &str) -> String {
+    crate::os::processes::path_key(folder)
 }
 
 /// The file that tells another process (the command line, the app) that a
@@ -213,30 +228,35 @@ const LOCK: &str = ".pulling";
 
 /// A download's hold on its folder, until dropped.
 struct Pulling {
-    folder: String,
+    key: String,
     lock: PathBuf,
 }
 
 impl Pulling {
     fn take(dir: &Path, folder: &str, id: &str, cancel: Arc<AtomicBool>) -> Result<Pulling> {
         let mut map = pulling_map();
-        if map.contains_key(folder) || locked_elsewhere(dir) {
+        let key = folder_key(folder);
+        if map.contains_key(&key) || locked_elsewhere(dir) {
             bail!("a model of this repository is already being downloaded");
         }
         std::fs::create_dir_all(dir)?;
         let lock = dir.join(LOCK);
         std::fs::write(&lock, std::process::id().to_string())?;
-        map.insert(folder.to_owned(), (id.to_owned(), cancel));
-        Ok(Pulling {
-            folder: folder.to_owned(),
-            lock,
-        })
+        map.insert(
+            key.clone(),
+            Running {
+                folder: folder.to_owned(),
+                id: id.to_owned(),
+                cancel,
+            },
+        );
+        Ok(Pulling { key, lock })
     }
 }
 
 impl Drop for Pulling {
     fn drop(&mut self) {
-        pulling_map().remove(&self.folder);
+        pulling_map().remove(&self.key);
         let _ = std::fs::remove_file(&self.lock);
     }
 }
@@ -253,22 +273,23 @@ fn locked_elsewhere(dir: &Path) -> bool {
 /// A download goes on in `folder` (of `data/models/gguf`), here or in
 /// another process: nothing there may be removed meanwhile.
 pub fn busy(kit: &Kit, folder: &str) -> bool {
-    pulling_map().contains_key(folder) || locked_elsewhere(&super::models_dir(kit).join(folder))
+    pulling_map().contains_key(&folder_key(folder))
+        || locked_elsewhere(&super::models_dir(kit).join(folder))
 }
 
 /// The downloads under way in this process, as `<folder>/<id>`.
 pub fn pulling() -> Vec<String> {
     pulling_map()
-        .iter()
-        .map(|(folder, (id, _))| format!("{folder}/{id}"))
+        .values()
+        .map(|r| format!("{}/{}", r.folder, r.id))
         .collect()
 }
 
 /// Stops the download `<folder>/<id>`; what arrived is kept.
 pub fn cancel(key: &str) {
     let folder = key.split_once('/').map_or(key, |(f, _)| f);
-    if let Some((_, flag)) = pulling_map().get(folder) {
-        flag.store(true, std::sync::atomic::Ordering::Relaxed);
+    if let Some(r) = pulling_map().get(&folder_key(folder)) {
+        r.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -278,8 +299,8 @@ pub fn cancel(key: &str) {
 pub fn cancel_all(limit: std::time::Duration) -> usize {
     let n = {
         let map = pulling_map();
-        for (_, flag) in map.values() {
-            flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        for r in map.values() {
+            r.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
         }
         map.len()
     };
