@@ -582,7 +582,9 @@ function StatusBar({
   /** The app's terminal sessions (macOS and Linux; none on Windows). */
   terminals: Terminals;
 }) {
-  const sessions = terminals.sessions.length;
+  // The panel's sessions only: a detached one is in its own window, and with
+  // only those the toggle would show and hide nothing.
+  const sessions = terminals.docked.length;
   const terminalsLabel = terminals.shown ? t("Nascondi i terminali") : t("Mostra i terminali");
   const installing = setupStatusText(setup);
   const live = running.count;
