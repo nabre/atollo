@@ -1,7 +1,0 @@
-#!/bin/sh
-# Atollo: the kit's MCP servers that need a secret of the kit (see
-# atollo-mcp.cmd): `atollo-mcp github` is GitHub's server with the kit's
-# account. The token is read by Atollo and sent to GitHub only: it is never
-# in the agent's environment, so the MCP servers of a project do not see it.
-# Written by Atollo; edits are replaced at the next start.
-exec "$ATOLLO_EXE" mcp "$@"

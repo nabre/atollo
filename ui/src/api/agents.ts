@@ -225,14 +225,14 @@ export const SAMPLE_PRESETS: McpPreset[] = [
     id: "github",
     scope: "kit",
     engine: null,
-    // The kit's launcher (Windows form), which reads the token itself.
+    // The app by its absolute path, which reads the token itself.
     server: {
       name: "github",
       kind: "stdio",
-      command: "cmd",
-      args: ["/c", "atollo-mcp", "github"],
+      command: "E:\\Atollo\\Atollo.exe",
+      args: ["mcp", "github"],
       url: null,
-      env: { ATOLLO_EXE: "${ATOLLO_EXE}" },
+      env: {},
       headers: {},
     },
   },

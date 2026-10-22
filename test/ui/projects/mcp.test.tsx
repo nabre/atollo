@@ -116,10 +116,10 @@ describe("KitMcpBox", () => {
     await waitFor(() => {
       expect(servers.map((s) => s.name)).toEqual(["playwright", "github"]);
     });
-    // The kit's launcher reads the token itself: no token, not even a
-    // variable of it (SEC-V7-01).
-    expect(servers[1]?.command).toBe("cmd");
-    expect(servers[1]?.args).toEqual(["/c", "atollo-mcp", "github"]);
+    // The app, by its absolute path, reads the token itself: no token, not
+    // even a variable of it (SEC-V7-01).
+    expect(servers[1]?.command).toBe("E:\\Atollo\\Atollo.exe");
+    expect(servers[1]?.args).toEqual(["mcp", "github"]);
     expect(JSON.stringify(servers[1])).not.toContain("GITHUB_PERSONAL_ACCESS_TOKEN");
     const playwright = (await screen.findByText("playwright")).closest("li") as HTMLElement;
     fireEvent.click(within(playwright).getByRole("button", { name: "Togli" }));

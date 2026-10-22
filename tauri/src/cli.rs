@@ -51,7 +51,7 @@ pub enum Cli {
     /// Antigravity's login: `restore` before agy, `save` after.
     Keyring(String),
     /// The kit's GitHub MCP server on stdio (`mcp github`, started by the
-    /// agents through `data\kit\bin\atollo-mcp`): the token stays here.
+    /// agents with the app's absolute path): the token stays here.
     McpGithub,
     /// File server of a static site: `serve <folder> <port>` (projects/run.rs).
     Serve {

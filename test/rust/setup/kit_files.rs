@@ -118,7 +118,7 @@ fn shell_files_lf_and_executable() {
             );
         }
     }
-    for name in ["bin/agy", "bin/claude", "bin/gradle", "bin/atollo-mcp"] {
+    for name in ["bin/agy", "bin/claude", "bin/gradle"] {
         let text = fs::read_to_string(join_rel(&dir, name)).unwrap();
         assert!(text.starts_with("#!/bin/sh\n"), "{name}");
     }

@@ -1,5 +1,5 @@
 //! The kit's GitHub MCP server (D-156, SEC-V7-01): `Atollo mcp github`,
-//! started by the agent through `data\kit\bin\atollo-mcp(.cmd)`.
+//! started by the agent with the app's absolute path (`presets::all`).
 //!
 //! The agent talks MCP over stdio with this program, which passes every
 //! message to GitHub's own remote server (`URL`, MCP's Streamable HTTP)
