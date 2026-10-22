@@ -272,7 +272,7 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 
 ### Ports
 
-`ports.rs` (D-141) tells who has each port, from the files only and without taking any lock, so whoever already holds its own can ask:
+`ports.rs` (D-141) also has the two probes of a port, `responds` and `is_port_free` (IPv4 and IPv6 loopback), used by the actions, the database servers, the local models and the pools. It tells who has each port, from the files only and without taking any lock, so whoever already holds its own can ask:
 
 | Owner (`Owner`) | From | Range |
 | --- | --- | --- |

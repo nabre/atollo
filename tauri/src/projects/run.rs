@@ -17,7 +17,6 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, TcpStream};
 use std::path::Path;
 use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -33,6 +32,7 @@ use crate::env::KitEnv;
 use crate::i18n::t as tr;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
+use crate::ports::{is_port_free, responds};
 use crate::projects::state::{self, ProjectState};
 
 const MAX_LINES: usize = 3000;
@@ -235,30 +235,6 @@ pub(crate) fn saved_ports(kit: &Kit) -> BTreeMap<String, u16> {
 /// `project|action` keys split by project: `(project, action)`.
 fn split_key(key: &str) -> Option<(&str, &str)> {
     key.split_once('|')
-}
-
-/// Something answers on the port (IPv4 or IPv6 loopback).
-pub fn responds(port: u16) -> bool {
-    let t = Duration::from_millis(400);
-    TcpStream::connect_timeout(&SocketAddr::from((Ipv4Addr::LOCALHOST, port)), t).is_ok()
-        || TcpStream::connect_timeout(&SocketAddr::from((Ipv6Addr::LOCALHOST, port)), t).is_ok()
-}
-
-fn can_listen(addr: SocketAddr) -> bool {
-    match TcpListener::bind(addr) {
-        Ok(_) => true,
-        // No IPv6 on this PC: not a reason to skip the port.
-        Err(e) => !matches!(
-            e.kind(),
-            std::io::ErrorKind::AddrInUse | std::io::ErrorKind::PermissionDenied
-        ),
-    }
-}
-
-pub fn is_port_free(port: u16) -> bool {
-    !responds(port)
-        && can_listen(SocketAddr::from((Ipv4Addr::LOCALHOST, port)))
-        && can_listen(SocketAddr::from((Ipv6Addr::LOCALHOST, port)))
 }
 
 /// Text without colours, split in lines (`\r\n`, `\n`, `\r`); the last,

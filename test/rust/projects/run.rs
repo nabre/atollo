@@ -1,5 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
+use std::net::{Ipv4Addr, TcpListener};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[test]

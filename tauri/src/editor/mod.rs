@@ -422,6 +422,9 @@ fn local_agent() -> ureq::Agent {
         .new_agent()
 }
 
+/// The editor's own range, bound on IPv4 only: unlike
+/// [`crate::ports::is_port_free`], which also asks who answers and binds
+/// IPv6; kept as it is, so the editor picks the same ports as before.
 fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())
 }

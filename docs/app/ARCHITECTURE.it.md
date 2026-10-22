@@ -273,7 +273,7 @@ I login degli strumenti dei database (dump e ripristini) sono file con nome `<ex
 
 ### Porte
 
-`ports.rs` (D-141) dice chi ha ogni porta, leggendo solo i file e senza prendere lock, così chi tiene già il suo può chiederlo:
+`ports.rs` (D-141) ha anche le due sonde di una porta, `responds` e `is_port_free` (loopback IPv4 e IPv6), usate dalle azioni, dai server di database, dai modelli locali e dai pool. Dice chi ha ogni porta, leggendo solo i file e senza prendere lock, così chi tiene già il suo può chiederlo:
 
 | Proprietario (`Owner`) | Da | Intervallo |
 | --- | --- | --- |
