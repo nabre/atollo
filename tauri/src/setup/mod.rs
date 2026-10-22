@@ -8,6 +8,7 @@
 pub mod catalog;
 pub mod checkup;
 pub mod downloads;
+pub mod integrity;
 pub mod kit_files;
 pub mod needs;
 pub mod runner;

@@ -295,6 +295,11 @@ fn failed_by_hand_shows_downloads_dir() {
 fn check_of_the_kit() {
     assert_eq!(parse(&args(&["check"])), Cli::Check { kit: false });
     assert_eq!(parse(&args(&["check", "--kit"])), Cli::Check { kit: true });
+    assert_eq!(parse(&args(&["check", "--files"])), Cli::CheckFiles);
+    assert_eq!(
+        parse(&args(&["check", "--files", "x"])),
+        Cli::Unknown("check --files".into())
+    );
     assert_eq!(
         parse(&args(&["check", "--all"])),
         Cli::Unknown("check --all".into())

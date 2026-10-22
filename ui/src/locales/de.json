@@ -992,5 +992,13 @@
   "Mostra il QR": "QR-Code anzeigen",
   "Nascondi il QR": "QR-Code ausblenden",
   "QR di {0}": "QR-Code von {0}",
-  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scanne ihn mit der Kamera des Telefons, im selben Netzwerk wie dieser PC. Öffnet er sich nicht, kann die Windows-Firewall beim ersten Start der Website um Erlaubnis fragen: erlaube sie für private Netzwerke."
+  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scanne ihn mit der Kamera des Telefons, im selben Netzwerk wie dieser PC. Öffnet er sich nicht, kann die Windows-Firewall beim ersten Start der Website um Erlaubnis fragen: erlaube sie für private Netzwerke.",
+  "Verifica i file": "Dateien prüfen",
+  "Confronta i file dei programmi con quelli dell'installazione: trova quelli mancanti o danneggiati": "Vergleicht die Dateien der Programme mit denen ihrer Installation: findet fehlende oder beschädigte",
+  "Nessun file danneggiato: {0} cartelle verificate.": "Keine beschädigte Datei: {0} Ordner geprüft.",
+  "File mancanti o cambiati dall'installazione: la chiavetta può essersi danneggiata. Reinstallare rimette i file del programma, alla stessa versione; progetti e database non si toccano.": "Dateien fehlen oder wurden seit der Installation geändert: der USB-Stick ist vielleicht beschädigt. Neu installieren stellt die Dateien des Programms in derselben Version wieder her; Projekte und Datenbanken bleiben unberührt.",
+  "{0} file cambiati, {1} mancanti": "{0} Dateien geändert, {1} fehlen",
+  "Reinstalla": "Neu installieren",
+  "Reinstalla tutti": "Alle neu installieren",
+  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Ohne Manifest, installiert bevor Atollo eines führte: {0}. Sie werden ab ihrer nächsten Installation oder Aktualisierung geprüft."
 }

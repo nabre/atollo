@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-components-integrity"
+description = "Enables the components_integrity command without any pre-configured scope."
+commands.allow = ["components_integrity"]
+
+[[permission]]
+identifier = "deny-components-integrity"
+description = "Denies the components_integrity command without any pre-configured scope."
+commands.deny = ["components_integrity"]

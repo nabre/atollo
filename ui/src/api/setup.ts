@@ -249,6 +249,57 @@ export function componentsCheck(target?: string): Promise<ComponentCheck[]> {
   return query<ComponentCheck[]>("components_check", [], target ? { target } : undefined);
 }
 
+/** What differs from a folder's manifest (N-5, tauri/src/setup/integrity.rs);
+ * the lists are cut at 20. */
+export interface IntegrityDamage {
+  checked: number;
+  missing: string[];
+  changed: string[];
+}
+
+/** One installed folder of a component against the manifest of its
+ * installation. */
+export interface ComponentIntegrity {
+  id: string;
+  name: string;
+  /** The version's folder, for a component with one per version. */
+  line: string | null;
+  default: boolean;
+  /** null: installed before Atollo kept a manifest. */
+  damage: IntegrityDamage | null;
+  error: string | null;
+}
+
+export const SAMPLE_INTEGRITY: ComponentIntegrity[] = [
+  {
+    id: "node",
+    name: "Node.js",
+    line: "24.11",
+    default: true,
+    damage: { checked: 2410, missing: [], changed: [] },
+    error: null,
+  },
+  {
+    id: "php",
+    name: "PHP",
+    line: "8.4",
+    default: true,
+    damage: { checked: 412, missing: ["ext/php_intl.dll"], changed: ["php8ts.dll"] },
+    error: null,
+  },
+  { id: "git", name: "Git", line: "2.51", default: true, damage: null, error: null },
+];
+
+/** «Verifica i file»: every installed component against its manifest. */
+export function componentsIntegrity(target?: string): Promise<ComponentIntegrity[]> {
+  return query<ComponentIntegrity[]>("components_integrity", SAMPLE_INTEGRITY, target ? { target } : undefined);
+}
+
+/** «Reinstalla» of damaged folders: marked and prepared again at their version. */
+export function componentsRepair(items: { id: string; line: string | null }[], target?: string): Promise<void> {
+  return act("components_repair", target ? { items, target } : { items });
+}
+
 /** The preview's grid: the sample components on the six systems, this PC
  * Windows x64. */
 function sampleGrid(): TargetGrid {

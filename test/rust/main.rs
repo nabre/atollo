@@ -202,6 +202,7 @@ fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str)
         }
         if line.starts_with("  check ") {
             out.push(kit_line(lang));
+            out.push(files_line(lang));
         }
     }
     out.join("\n")
@@ -214,6 +215,16 @@ fn kit_line(lang: &str) -> &'static str {
         "en" => "      --kit               the kit's health: drive, space, path, permissions, libraries",
         "fr" => "      --kit               la santé du kit : disque, espace, chemin, permissions, bibliothèques",
         _ => "      --kit               der Zustand des Kits: Laufwerk, Platz, Pfad, Rechte, Bibliotheken",
+    }
+}
+
+/// The line of `check --files` in `lang`.
+fn files_line(lang: &str) -> &'static str {
+    match lang {
+        "it" => "      --files             i file dei programmi: mancanti o cambiati dall'installazione",
+        "en" => "      --files             the programs' files: missing or changed since the installation",
+        "fr" => "      --files             les fichiers des programmes : manquants ou modifiés depuis l'installation",
+        _ => "      --files             die Dateien der Programme: fehlend oder seit der Installation geändert",
     }
 }
 

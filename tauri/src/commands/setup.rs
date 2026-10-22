@@ -356,6 +356,51 @@ pub fn setup_start<R: Runtime>(
     Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
+/// «Verifica i file» (N-5): every installed component of `target` against
+/// the manifest of its installation.
+#[tauri::command]
+pub async fn components_integrity<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    target: Option<String>,
+) -> CmdResult<Vec<crate::setup::integrity::Integrity>> {
+    ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    tauri::async_runtime::spawn_blocking(move || crate::setup::integrity::check_all(&kit))
+        .await
+        .or_fail("integrity")
+}
+
+/// One damaged folder to install again: the component, and its version's
+/// folder (a saved line, or the default).
+#[derive(Debug, serde::Deserialize)]
+pub struct Repair {
+    pub id: String,
+    pub line: Option<String>,
+}
+
+/// «Reinstalla» of a damaged component: marked to be installed again at
+/// its version (D-92), then prepared now.
+#[tauri::command]
+pub fn components_repair<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    items: Vec<Repair>,
+    target: Option<String>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    let items: Vec<(String, Option<String>)> = items.into_iter().map(|r| (r.id, r.line)).collect();
+    let only = crate::setup::integrity::mark_for_repair(&kit, &items).or_fail_chain("repair")?;
+    let opts = Options {
+        target: Some(kit.target()),
+        only,
+        ..Options::default()
+    };
+    Ok(state.setup.start(opts, false, setup_notify(app))?)
+}
+
 /// Installs `id` now, at its latest version, from the table of the Tools
 /// page: it becomes chosen, the other changes of the page stay pending.
 #[tauri::command]

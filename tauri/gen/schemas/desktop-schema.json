@@ -243,10 +243,22 @@
           "markdownDescription": "Enables the components_install command without any pre-configured scope."
         },
         {
+          "description": "Enables the components_integrity command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-integrity",
+          "markdownDescription": "Enables the components_integrity command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-list",
           "markdownDescription": "Enables the components_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the components_repair command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-repair",
+          "markdownDescription": "Enables the components_repair command without any pre-configured scope."
         },
         {
           "description": "Enables the components_sync command without any pre-configured scope.",
@@ -999,10 +1011,22 @@
           "markdownDescription": "Denies the components_install command without any pre-configured scope."
         },
         {
+          "description": "Denies the components_integrity command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-integrity",
+          "markdownDescription": "Denies the components_integrity command without any pre-configured scope."
+        },
+        {
           "description": "Denies the components_list command without any pre-configured scope.",
           "type": "string",
           "const": "deny-components-list",
           "markdownDescription": "Denies the components_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the components_repair command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-repair",
+          "markdownDescription": "Denies the components_repair command without any pre-configured scope."
         },
         {
           "description": "Denies the components_sync command without any pre-configured scope.",

@@ -30,6 +30,8 @@
     "allow-components-list",
     "allow-components-sync",
     "allow-components-check",
+    "allow-components-integrity",
+    "allow-components-repair",
     "allow-target-profiles",
     "allow-tools-target-set",
     "allow-setup-state",
