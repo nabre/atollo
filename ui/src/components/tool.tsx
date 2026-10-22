@@ -3,7 +3,7 @@
 // at a time (its versions, its details, the projects that use it). The
 // choice is applied with the bar under the page (./applybar.tsx).
 import { useState } from "react";
-import { setupStart, urlOpen, type ComponentInfo, type RelationLink, type SetupSnapshot } from "../api";
+import { componentLinkOpen, setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot } from "../api";
 import { t } from "../i18n";
 import { ByHandBox } from "../byhand";
 import { ComponentLogo } from "../logos";
@@ -176,7 +176,7 @@ export function ToolPage({
               label={t("Sito ufficiale")}
               title={c.home}
               onClick={() => {
-                void urlOpen(c.home);
+                void componentLinkOpen(c.id, "home");
               }}
             />
           </>
@@ -277,7 +277,7 @@ export function ToolPage({
               <dd>
                 <Link
                   onClick={() => {
-                    void urlOpen(c.home);
+                    void componentLinkOpen(c.id, "home");
                   }}
                 >
                   {c.home}

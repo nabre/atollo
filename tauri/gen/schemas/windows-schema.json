@@ -225,6 +225,12 @@
           "markdownDescription": "Enables the app_quit command without any pre-configured scope."
         },
         {
+          "description": "Enables the component_link_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-component-link-open",
+          "markdownDescription": "Enables the component_link_open command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_apply command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-apply",
@@ -909,6 +915,18 @@
           "markdownDescription": "Enables the update_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the updates_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-updates-check",
+          "markdownDescription": "Enables the updates_check command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the updates_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-updates-list",
+          "markdownDescription": "Enables the updates_list command without any pre-configured scope."
+        },
+        {
           "description": "Enables the url_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-url-open",
@@ -991,6 +1009,12 @@
           "type": "string",
           "const": "deny-app-quit",
           "markdownDescription": "Denies the app_quit command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the component_link_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-component-link-open",
+          "markdownDescription": "Denies the component_link_open command without any pre-configured scope."
         },
         {
           "description": "Denies the components_apply command without any pre-configured scope.",
@@ -1663,6 +1687,18 @@
           "type": "string",
           "const": "deny-update-status",
           "markdownDescription": "Denies the update_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the updates_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-updates-check",
+          "markdownDescription": "Denies the updates_check command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the updates_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-updates-list",
+          "markdownDescription": "Denies the updates_list command without any pre-configured scope."
         },
         {
           "description": "Denies the url_open command without any pre-configured scope.",

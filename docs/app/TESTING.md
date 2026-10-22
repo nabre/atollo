@@ -46,6 +46,7 @@ They cover, among other things:
 - the theme (`test\ui\theme\theme.test.ts`): every `--vscode-*` variable read by the components defined in both themes, every size declared once with its utility, the sizes of `docs\brand\vscodium-1.135\workbench-ref.css`, no token of the classic UI, every `--vscode-*` key Atollo reads known to VSCodium 1.135;
 - the Activity panel (`test\ui\activity.test.tsx`): a secondary database version and a pool listed and counted, "Stop everything" stopping everything once confirmed; the Terminals page (`test\ui\terminals.test.tsx`): Esc closes the removal question;
 - the command palette (`test\ui\commands.test.tsx`, D-160): the commands of each project, of the installed agents and database servers and of the other pages, "Stop everything" only while something runs, a project found by two words, every typed word matching in any order and case, a failure shown after it closed; `test\ui\App.test.tsx`: Ctrl+Shift+P, "vai impostazioni", Enter opens Settings;
+- the components with a new version (`test\rust\setup\updates.rs`, D-161): versions compared by numbers, the notes' address with `{version}` or the site, only the installed components behind their source listed; `real_check_of_a_kit` (skipped without `ATOLLO_TEST_KIT`) asks the real sources of the kit it names; `test\ui\components\updates.test.tsx`: the pane's items, "What changes", "Update", "Check now", "Everything up to date" or "Not checked yet", the list read again when a preparation ends;
 - the Guide's documents: `node scripts/guide-docs.cjs --check` (in the `Lint and test` job) fails if `docs\app\GUIDE.md` or `GUIDE.it.md` is behind the in-app Guide.
 
 ## Generated files and screenshots
@@ -342,6 +343,12 @@ Verified by hand on Windows x64: Claude Code 2.1.306 expands `${VAR}` in the hea
 - [ ] **Files: no manifest.** A component installed with a version before D-159 (or with `.atollo-manifest` deleted) appears in “Without a manifest, installed before Atollo kept one: …”; after its update it is checked.
 - [ ] **Files: not damage.** `pip install requests` in the kit's Python, a gem in Ruby, an edit of Apache's `httpd.conf` and the logs of a running server: “Check the files” stays fine.
 - [ ] **Files: command line.** `Atollo.exe check --files | Out-Host` prints `√`, `x` or `-` per folder, the damaged paths under the `x` lines; `$LASTEXITCODE` is 0 when all is fine, 1 with a damaged folder.
+- [ ] **Updates: daily check** (D-161). With Settings › General › “Automatic update” on, a component installed behind its source (e.g. `gh` installed as an older release in a test kit) and no `data\app\updates.json`: about 10 seconds after a start the “Updates” pane of Tools fills (“2.100.0 → 2.103.0”), its title and the Tools icon in the activity bar show the count (“New versions: 1” in the tooltip), `updates.json` has `checked` and the versions. A second start the same day asks nothing (`checked` unchanged).
+- [ ] **Updates: off.** With “Automatic update” off (or `ATOLLO_NO_UPDATE` set) and `updates.json` deleted, after a start nothing is asked: the pane says “Not checked yet…”, no badge, no `updates.json`.
+- [ ] **Updates: Check now.** The circular arrow “Check now” on the pane's title asks at once (also with “Automatic update” off): the list and “Checked on <date>” are updated; with everything current it says “Everything up to date.”.
+- [ ] **Updates: What changes.** “What changes” opens the release notes in the PC's browser (for `gh`, `https://github.com/cli/cli/releases/tag/v<new version>`); for a component without notes in the catalog, its site.
+- [ ] **Updates: Update.** The pane's “Update” updates only that component (like the row's button); when the preparation ends the item disappears from the pane and the badge count goes down.
+- [ ] **Official site.** On a tool's page “Official site” now opens the browser at the component's site (before D-161 it did nothing).
 
 ### Terminals
 - [ ] **Replaced version.** A terminal saved with PHP 8.2, then 8.2 removed: the Terminals page says which one it uses instead (“PHP 8.2 → 8.4”) and the terminal opens with 8.4.

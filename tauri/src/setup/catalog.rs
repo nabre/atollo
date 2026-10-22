@@ -68,6 +68,10 @@ pub struct Component {
     /// Italian; translated by the catalogs.
     pub desc: String,
     pub home: String,
+    /// The release notes of a version, `{version}` replaced (N-9); without,
+    /// the site (`home`).
+    #[serde(default)]
+    pub notes: Option<String>,
     pub key: String,
     /// The other parts (Maven, Ninja, Composer...), same rules as `key`:
     /// installed only when the key and all of these exist.

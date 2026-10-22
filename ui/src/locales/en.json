@@ -1012,5 +1012,12 @@
   "Cosa vuoi fare? Avvia, ferma, apri, un progetto, un agente…": "What do you want to do? Start, stop, open, a project, an agent…",
   "Nessun comando corrisponde alla ricerca.": "No command matches the search.",
   "Invio esegue · Esc chiude": "Enter runs · Esc closes",
-  "Comandi trovati": "Commands found"
+  "Comandi trovati": "Commands found",
+  "Versioni nuove: {0}": "New versions: {0}",
+  "Controlla ora": "Check now",
+  "Chiede adesso l'ultima versione di ogni componente installato": "Asks now for the latest version of every installed component",
+  "Non ancora controllato: «Controlla ora», o si controlla da solo una volta al giorno con l'aggiornamento automatico.": "Not checked yet: “Check now”, or it checks by itself once a day with automatic updates.",
+  "Tutto aggiornato.": "Everything up to date.",
+  "Cosa cambia": "What changes",
+  "Controllato il {0}": "Checked on {0}"
 }

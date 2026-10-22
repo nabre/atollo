@@ -411,7 +411,7 @@
   "Limiti e consumi": "Limits und Verbrauch",
   "Chiudi il pannello": "Panel schließen",
   "Cerca nelle impostazioni": "Einstellungen durchsuchen",
-  "Aggiornamenti": "Updates",
+  "Aggiornamenti": "Aktualisierungen",
   "Condiviso fra gli agenti": "Von den Agenten geteilt",
   "Apre {0} nel progetto {1}": "Öffnet {0} im Projekt {1}",
   "Aggiornamento automatico": "Automatisches Update",
@@ -1012,5 +1012,12 @@
   "Cosa vuoi fare? Avvia, ferma, apri, un progetto, un agente…": "Was möchtest du tun? Starten, stoppen, öffnen, ein Projekt, ein Agent…",
   "Nessun comando corrisponde alla ricerca.": "Kein Befehl passt zur Suche.",
   "Invio esegue · Esc chiude": "Eingabe führt aus · Esc schließt",
-  "Comandi trovati": "Gefundene Befehle"
+  "Comandi trovati": "Gefundene Befehle",
+  "Versioni nuove: {0}": "Neue Versionen: {0}",
+  "Controlla ora": "Jetzt prüfen",
+  "Chiede adesso l'ultima versione di ogni componente installato": "Fragt jetzt die neueste Version jeder installierten Komponente ab",
+  "Non ancora controllato: «Controlla ora», o si controlla da solo una volta al giorno con l'aggiornamento automatico.": "Noch nicht geprüft: „Jetzt prüfen“, oder es prüft selbst einmal am Tag mit der automatischen Aktualisierung.",
+  "Tutto aggiornato.": "Alles aktuell.",
+  "Cosa cambia": "Was sich ändert",
+  "Controllato il {0}": "Geprüft am {0}"
 }

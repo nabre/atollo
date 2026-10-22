@@ -1,5 +1,13 @@
 # Novità
 
+## Riepilogo degli aggiornamenti (22/10/2026)
+
+- **Il riquadro «Aggiornamenti»** nella barra laterale di Strumenti elenca i componenti installati che hanno una versione nuova, con la versione installata e quella nuova (2.100.0 → 2.103.0): invece di «Aggiorna tutto» alla cieca, vedi che cosa è indietro e scegli (D-161).
+- **Il numero** compare sul titolo del riquadro e sull'icona di Strumenti nella barra delle attività («Versioni nuove: 2»).
+- **«Cosa cambia»** apre nel browser le note di rilascio della versione nuova (la pagina dei cambiamenti o delle release del componente), o il suo sito quando non ce ne sono; **«Aggiorna»** aggiorna solo quel componente.
+- **Una volta al giorno**, dopo l'avvio, solo con «Aggiornamento automatico» attivo nelle Impostazioni: Atollo chiede a ogni fonte l'ultima versione dei componenti installati, come farebbe un aggiornamento. «Controlla ora» chiede subito, anche con l'aggiornamento automatico spento. Le versioni si confrontano per numeri: 2.10 viene dopo 2.9.
+- **Corretto**: «Sito ufficiale» nella pagina di uno strumento non apriva niente; ora apre il sito nel browser.
+
 ## Palette dei comandi (22/10/2026)
 
 - **Ctrl+Shift+P** (⌘⇧P su macOS) apre «Comandi» da qualsiasi pagina, anche con il cursore in un terminale: scrivi cosa vuoi fare e premi Invio, come in VSCodium (D-160).

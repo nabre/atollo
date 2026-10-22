@@ -356,6 +356,64 @@ pub fn setup_start<R: Runtime>(
     Ok(state.setup.start(opts, false, setup_notify(app))?)
 }
 
+/// The components with a new version (N-9), from the versions asked last;
+/// nothing is asked here.
+#[tauri::command]
+pub fn updates_list<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::setup::updates::Updates> {
+    ensure_main(&webview)?;
+    Ok(crate::setup::updates::pending(&state.kit))
+}
+
+/// «Controlla ora»: each installed component's source asked now.
+#[tauri::command]
+pub async fn updates_check<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::setup::updates::Updates> {
+    ensure_main(&webview)?;
+    let (kit, env) = (state.kit.clone(), state.env());
+    let token = super::app::github_token(&state.host);
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::setup::updates::check(&kit, &env, token)?;
+        anyhow::Ok(crate::setup::updates::pending(&kit))
+    })
+    .await
+    .or_fail("updates")?
+    .or_fail_chain("updates")
+}
+
+/// A component's site (`home`) or the notes of its new version (`notes`),
+/// in the PC's browser: only the catalog's addresses, never one from the
+/// page.
+#[tauri::command]
+pub fn component_link_open<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+    kind: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let c = Catalog::get()
+        .find(&id)
+        .ok_or_else(|| format!("unknown component: {id}"))?;
+    let url = match kind.as_str() {
+        "home" => c.home.clone(),
+        "notes" => {
+            let latest = crate::setup::updates::load(&state.kit);
+            let version = latest.versions.get(&id).cloned().unwrap_or_default();
+            crate::setup::updates::notes_url(c, &version)
+        }
+        other => return Err(format!("unknown link: {other}").into()),
+    };
+    if !url.starts_with("https://") {
+        return Err(format!("not an https address: {url}").into());
+    }
+    super::app::open_in_browser(&url)
+}
+
 /// «Verifica i file» (N-5): every installed component of `target` against
 /// the manifest of its installation.
 #[tauri::command]

@@ -751,10 +751,22 @@ fn build_app<R: tauri::Runtime>(
             {
                 let (lines_kit, env) = (kit.clone(), app.state::<AppState>().env());
                 let token = github_token(&app.state::<AppState>().host);
+                let events = app.handle().clone();
                 std::thread::spawn(move || {
                     // After the start, not competing with it.
                     std::thread::sleep(std::time::Duration::from_secs(10));
-                    commands::versions::refresh_stale_lines(&lines_kit, &env, token);
+                    commands::versions::refresh_stale_lines(&lines_kit, &env, token.clone());
+                    // The new versions of what is installed (N-9): at most
+                    // once a day, only with «Aggiornamento automatico» on.
+                    let auto = Settings::load(&lines_kit).settings.auto_update;
+                    if auto && setup::updates::stale(&lines_kit) {
+                        match setup::updates::check(&lines_kit, &env, token) {
+                            Ok(_) => {
+                                let _ = events.emit_to(MAIN, "updates", ());
+                            }
+                            Err(e) => log::warn(&format!("new versions: {e:#}")),
+                        }
+                    }
                 });
             }
             start_missing_required(app.handle(), &kit);

@@ -1012,5 +1012,12 @@
   "Cosa vuoi fare? Avvia, ferma, apri, un progetto, un agente…": "Que voulez-vous faire ? Démarrer, arrêter, ouvrir, un projet, un agent…",
   "Nessun comando corrisponde alla ricerca.": "Aucune commande ne correspond à la recherche.",
   "Invio esegue · Esc chiude": "Entrée exécute · Échap ferme",
-  "Comandi trovati": "Commandes trouvées"
+  "Comandi trovati": "Commandes trouvées",
+  "Versioni nuove: {0}": "Nouvelles versions : {0}",
+  "Controlla ora": "Vérifier maintenant",
+  "Chiede adesso l'ultima versione di ogni componente installato": "Demande maintenant la dernière version de chaque composant installé",
+  "Non ancora controllato: «Controlla ora», o si controlla da solo una volta al giorno con l'aggiornamento automatico.": "Pas encore vérifié : « Vérifier maintenant », ou la vérification se fait seule une fois par jour avec la mise à jour automatique.",
+  "Tutto aggiornato.": "Tout est à jour.",
+  "Cosa cambia": "Ce qui change",
+  "Controllato il {0}": "Vérifié le {0}"
 }
