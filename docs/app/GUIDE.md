@@ -1687,11 +1687,14 @@ A click on the name opens the tab. At the top, like the page of an editor extens
 | Details | Kind, version, size, what it requires, what needs it, site. |
 | Projects | The projects that use it and, for languages, the version each one chose. |
 
-#### “Platform”, “Expand” and “Verify”
+#### “Platform”, “Expand”, “Verify” and “Check the files”
 
 - “Platform” chooses which system to view (and prepare) the components for: Windows x64 or ARM64, macOS Apple Silicon or Intel, Linux x64 or ARM64. The same kit on a USB stick opens on all six: from here you can prepare the programs for another system before taking the stick there.
 - “Expand” adds a status column for each of the six systems; “Collapse” goes back to the one of the chosen system.
 - “Verify” asks every installed component to respond with its version, and adds a ✓ or ⚠ mark in the status cell.
+- “Check the files” compares the files of every installed program with those of its installation: it finds the files missing or changed, for example on a damaged USB stick. Every damaged folder shows how many files changed and how many are missing, the first paths and “Reinstall”; with more than one there is also “Reinstall all”. If everything is fine, “No damaged file” appears with the number of folders checked.
+- “Reinstall” puts the program's files back at the same version; projects and databases are not touched. Files added after the installation (pip packages, gems, workloads) and those the kit or the programs change on purpose (httpd.conf, config.inc.php, the logs) are not damage. Rust, Android and TinyTeX are not checked: their folder is theirs to change.
+- A component installed before Atollo kept the manifest appears in the “Without a manifest” list: it is checked from its next installation or update.
 
 <details>
 <summary>Under the hood</summary>
@@ -1700,6 +1703,7 @@ A click on the name opens the tab. At the top, like the page of an editor extens
 - The programs are in `data\apps\<system>\<component>`; the installed version in `data\app\versions\<system>\<component>.txt`.
 - A removed component is also removed from the folders of the other systems that have it on disk.
 - The “to update” status corresponds to a \<component\>.reinstall file, written when the kit changes folder and a conda environment (R, Ruby, MongoDB and SQLite on Linux, make) cannot follow it.
+- “Check the files” reads .atollo-manifest, written at the end of every installation in the component's (or the version's) folder: size and SHA-256 of every file. “Reinstall” writes the same \<component\>.reinstall mark (or \<component\>@\<version\>.reinstall) and prepares the component again.
 
 </details>
 
@@ -2593,6 +2597,7 @@ cd D:\Atollo
 | `versions [<id>]` | Without id: the versions on disk of the installed tools. With an id: asks the source for the versions offered and saves them. |
 | `check` | Asks every installed component for its version and marks ✓ or ✗. |
 | `check --kit` | The kit's health: drive, space, path, permissions, libraries, like “Kit health” in Settings. One line per check (√, ! or x) with what to do under it; ends with 1 if a check is an error. |
+| `check --files` | The programs' files, like “Check the files” on the Tools page: one line per folder (√ fine, x damaged with the paths missing or changed, - without a manifest); ends with 1 if a folder is damaged. |
 | `prepare [options]` | Installs, updates and removes components according to the choice. The options are in the table below. |
 | `sync [--project <folder>] [--verbose]` | Syncs the agents' instructions, skills and MCP servers. |
 | `serve <folder> <port>` | Serves a folder as a static site (the kit's file server). |
@@ -2680,6 +2685,12 @@ Wait for it to finish (the status bar shows the step) or press “Cancel” in t
 On macOS and Linux, after the kit is moved, some components must be reinstalled: the kit does it by itself at start. If it stays that way, press “Update all” at the bottom of the Tools page.
 
 Learn more: [7.2 On another PC, another letter, another folder](#72-on-another-pc-another-letter-another-folder)
+
+**A program crashes or a library is missing, with the kit on a USB stick.**
+
+One of the program's files may be damaged on the stick. Press “Check the files” on the Tools page (or run check --files): it lists the folders with files missing or changed since the installation, and “Reinstall” puts them back at the same version, without touching projects and databases.
+
+Learn more: [5.1 The Tools page](#51-the-tools-page)
 
 #### Projects and sites
 

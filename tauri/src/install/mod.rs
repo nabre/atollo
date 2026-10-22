@@ -516,6 +516,19 @@ fn install_now(
     component.clear_reinstall(ctx.kit);
     // A tool always at its latest version keeps only the new line.
     crate::versions::drop_old_lines(ctx.kit, component);
+    // What «Verifica i file» compares with (N-5): the folder as installed.
+    let own = if component.per_line() {
+        Some(crate::versions::install_dir(
+            ctx.kit,
+            component,
+            &release.version,
+        ))
+    } else {
+        component.folder_path(ctx.kit)
+    };
+    if let Some(dir) = own {
+        crate::setup::integrity::after_install(ctx.kit, component, &dir, true);
+    }
     Ok(())
 }
 
@@ -647,6 +660,7 @@ fn install_line_now(
         crate::versions::write_version(&target, &release.version)?;
         // Installed for this root: no longer to be installed again (D-92).
         component.clear_line_reinstall(ctx.kit, &line);
+        crate::setup::integrity::after_install(ctx.kit, component, &target, false);
         return Ok(line);
     }
     if !release.parts.iter().any(|p| p.dest == Dest::Own) {
@@ -680,6 +694,7 @@ fn install_line_now(
     }
     crate::versions::write_version(&target, &release.version)?;
     component.clear_line_reinstall(ctx.kit, &line);
+    crate::setup::integrity::after_install(ctx.kit, component, &target, false);
     Ok(line)
 }
 

@@ -544,7 +544,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("extensions"),
     keywords:
-      "strumenti componenti tabella tipi sistema ed editor agenti ai modelli locali llama.cpp local models modèles locaux lokale modelle linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
+      "strumenti componenti tabella tipi sistema ed editor agenti ai modelli locali llama.cpp local models modèles locaux lokale modelle linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato verifica i file reinstalla reinstalla tutti manifesto file danneggiati chiavetta danneggiata check the files reinstall reinstall all manifest damaged files damaged usb stick vérifier les fichiers réinstaller tout réinstaller manifeste fichiers endommagés dateien prüfen neu installieren alle neu installieren manifest beschädigte dateien tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
     targetPage: "components",
   },
   {
@@ -843,7 +843,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("symbol-keyword"),
     keywords:
-      "cli riga di comando prepare check check --kit salute del kit kit health components versions env sync models llm diagnostics diagnostica powershell command line ligne de commande kommandozeile befehlszeile",
+      "cli riga di comando prepare check check --kit check --files verifica i file salute del kit kit health components versions env sync models llm diagnostics diagnostica powershell command line ligne de commande kommandozeile befehlszeile",
   },
 
   // 9. Help
@@ -866,7 +866,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("warning"),
     keywords:
-      "problemi errori risoluzione salute del kit kit health santé du kit zustand des kits pc nuovo new pc fat32 exfat noexec spazio libero free space percorso path permessi permissions takeown icacls chown librerie libraries libaio libnuma libicu libvulkan1 porta occupata download fallito non parte errore segnala un problema segnalazione diagnostica esporta zip log issue github bug problems errors troubleshooting port in use download failed report a problem export diagnostics problèmes erreurs dépannage port occupé téléchargement échoué signaler un problème signalement exporter le diagnostic probleme fehler fehlerbehebung port belegt download fehlgeschlagen problem melden meldung diagnose exportieren",
+      "problemi errori risoluzione salute del kit kit health santé du kit zustand des kits pc nuovo new pc fat32 exfat noexec spazio libero free space percorso path permessi permissions takeown icacls chown librerie libraries libaio libnuma libicu libvulkan1 porta occupata programma si chiude libreria mancante chiavetta danneggiata verifica i file reinstalla program crashes missing library damaged usb stick check the files reinstall programme plante bibliothèque manquante vérifier les fichiers programm stürzt ab fehlende bibliothek dateien prüfen download fallito non parte errore segnala un problema segnalazione diagnostica esporta zip log issue github bug problems errors troubleshooting port in use download failed report a problem export diagnostics problèmes erreurs dépannage port occupé téléchargement échoué signaler un problème signalement exporter le diagnostic probleme fehler fehlerbehebung port belegt download fehlgeschlagen problem melden meldung diagnose exportieren",
   },
   {
     id: "faq",

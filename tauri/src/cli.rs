@@ -40,6 +40,9 @@ pub enum Cli {
     Check {
         kit: bool,
     },
+    /// `check --files`: the installed programs' files against the manifest
+    /// of their installation (setup/integrity.rs).
+    CheckFiles,
     /// Aligns the agents (`--project <folder>`, `--verbose`).
     Sync {
         project: Option<std::path::PathBuf>,
@@ -146,6 +149,7 @@ pub fn parse(args: &[OsString]) -> Cli {
         {
             None => Cli::Check { kit: false },
             Some("--kit") if args.len() == 2 => Cli::Check { kit: true },
+            Some("--files") if args.len() == 2 => Cli::CheckFiles,
             Some(other) => Cli::Unknown(format!("check {other}")),
         },
         "sync" => {
@@ -318,6 +322,70 @@ pub fn print_health(findings: &[crate::health::Finding], out: &mut dyn Write) ->
         }
     }
     out.flush()
+}
+
+/// `check --files`: one line per installed folder, the damaged files under
+/// it. Returns whether something is damaged.
+pub fn print_integrity(
+    report: &[crate::setup::integrity::Integrity],
+    lang: &str,
+    out: &mut dyn Write,
+) -> io::Result<bool> {
+    let mut damaged = false;
+    for i in report {
+        let name = match &i.line {
+            Some(line) => format!("{} {line}", i.name),
+            None => i.name.clone(),
+        };
+        match (&i.damage, &i.error) {
+            (_, Some(e)) => {
+                damaged = true;
+                writeln!(out, "  x {name}: {e}")?;
+            }
+            (None, None) => writeln!(
+                out,
+                "  - {name}: {}",
+                t(
+                    lang,
+                    "installato prima del manifesto, si verifica dalla prossima installazione",
+                    &[]
+                )
+            )?,
+            (Some(d), None) if !d.is_damaged() => writeln!(
+                out,
+                "  √ {name}: {}",
+                t(lang, "{0} file a posto", &[&d.checked.to_string()])
+            )?,
+            (Some(d), None) => {
+                damaged = true;
+                writeln!(
+                    out,
+                    "  x {name}: {}",
+                    t(
+                        lang,
+                        "{0} file cambiati, {1} mancanti",
+                        &[&d.changed.len().to_string(), &d.missing.len().to_string()]
+                    )
+                )?;
+                for p in d.changed.iter().chain(&d.missing) {
+                    writeln!(out, "      {p}")?;
+                }
+            }
+        }
+    }
+    if damaged {
+        writeln!(
+            out,
+            "\n  → {}",
+            t(
+                lang,
+                "Reinstalla i componenti danneggiati da Strumenti › «Verifica i file».",
+                &[]
+            )
+        )?;
+    }
+    out.flush()?;
+    Ok(damaged)
 }
 
 /// The final check, one line per component: `√ Name   answer`.

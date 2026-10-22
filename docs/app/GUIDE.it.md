@@ -1687,11 +1687,14 @@ Un clic sul nome apre la scheda. In alto, come la pagina di un'estensione dell'e
 | Dettagli | Tipo, versione, dimensione, che cosa richiede, a chi serve, sito. |
 | Progetti | I progetti che lo usano e, per i linguaggi, la versione scelta da ciascuno. |
 
-#### «Piattaforma», «Espandi» e «Verifica»
+#### «Piattaforma», «Espandi», «Verifica» e «Verifica i file»
 
 - «Piattaforma» sceglie per quale sistema guardare (e preparare) i componenti: Windows x64 o ARM64, macOS Apple Silicon o Intel, Linux x64 o ARM64. Lo stesso kit su una chiavetta si apre su tutti e sei: da qui puoi preparare i programmi per un altro sistema prima di portarci la chiavetta.
 - «Espandi» aggiunge una colonna di stato per ognuno dei sei sistemi; «Riduci» torna a quella del sistema scelto.
 - «Verifica» chiede a ogni componente installato di rispondere con la sua versione, e aggiunge un segno ✓ o ⚠ nella cella dello stato.
+- «Verifica i file» confronta i file di ogni programma installato con quelli della sua installazione: trova i file mancanti o cambiati, per esempio su una chiavetta danneggiata. Ogni cartella danneggiata mostra quanti file sono cambiati e quanti mancano, i primi percorsi e «Reinstalla»; con più di una c'è anche «Reinstalla tutti». Se va tutto bene compare «Nessun file danneggiato» con il numero di cartelle verificate.
+- «Reinstalla» rimette i file del programma alla stessa versione; progetti e database non si toccano. I file aggiunti dopo l'installazione (pacchetti pip, gem, workload) e quelli che il kit o i programmi cambiano apposta (httpd.conf, config.inc.php, i log) non sono un danno. Rust, Android e TinyTeX non si verificano: la loro cartella la cambiano loro.
+- Un componente installato prima che Atollo tenesse il manifesto compare nell'elenco «Senza manifesto»: si verifica dalla sua prossima installazione o aggiornamento.
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -1700,6 +1703,7 @@ Un clic sul nome apre la scheda. In alto, come la pagina di un'estensione dell'e
 - I programmi sono in `data\apps\<sistema>\<componente>`; la versione installata in `data\app\versions\<sistema>\<componente>.txt`.
 - Un componente tolto viene tolto anche dalle cartelle degli altri sistemi che lo hanno su disco.
 - Lo stato «da aggiornare» corrisponde a un file \<componente\>.reinstall, scritto quando il kit cambia cartella e un ambiente conda (R, Ruby, MongoDB e SQLite su Linux, make) non può seguirlo.
+- «Verifica i file» legge .atollo-manifest, scritto alla fine di ogni installazione nella cartella del componente (o della versione): dimensione e SHA-256 di ogni file. «Reinstalla» scrive lo stesso segno \<componente\>.reinstall (o \<componente\>@\<versione\>.reinstall) e prepara di nuovo il componente.
 
 </details>
 
@@ -2593,6 +2597,7 @@ cd D:\Atollo
 | `versions [<id>]` | Senza id: le versioni su disco degli strumenti installati. Con un id: chiede alla fonte le versioni offerte e le salva. |
 | `check` | Chiede a ogni componente installato la sua versione e segna ✓ o ✗. |
 | `check --kit` | La salute del kit: disco, spazio, percorso, permessi, librerie, come «Salute del kit» nelle Impostazioni. Una riga per controllo (√, ! o x) con sotto che cosa fare; finisce con 1 se un controllo è un errore. |
+| `check --files` | I file dei programmi, come «Verifica i file» nella pagina Strumenti: una riga per cartella (√ a posto, x danneggiata con i percorsi mancanti o cambiati, - senza manifesto); finisce con 1 se una cartella è danneggiata. |
 | `prepare [opzioni]` | Installa, aggiorna e toglie i componenti secondo la scelta. Le opzioni sono nella tabella sotto. |
 | `sync [--project <cartella>] [--verbose]` | Allinea istruzioni, skill e server MCP degli agenti. |
 | `serve <cartella> <porta>` | Serve una cartella come sito statico (il server di file del kit). |
@@ -2680,6 +2685,12 @@ Aspetta che finisca (la barra di stato mostra il passo) o premi «Annulla» nell
 Su macOS e Linux, dopo uno spostamento del kit, alcuni componenti vanno reinstallati: il kit lo fa da solo all'avvio. Se resta così, premi «Aggiorna tutto» in fondo alla pagina Strumenti.
 
 Approfondisci: [7.2 Su un altro PC, un'altra lettera, un'altra cartella](#72-su-un-altro-pc-unaltra-lettera-unaltra-cartella)
+
+**Un programma si chiude da solo o manca una libreria, con il kit su una chiavetta.**
+
+Un file del programma può essersi danneggiato sulla chiavetta. Premi «Verifica i file» nella pagina Strumenti (o esegui check --files): elenca le cartelle con file mancanti o cambiati dall'installazione, e «Reinstalla» le rimette alla stessa versione, senza toccare progetti e database.
+
+Approfondisci: [5.1 La pagina Strumenti](#51-la-pagina-strumenti)
 
 #### Progetti e siti
 

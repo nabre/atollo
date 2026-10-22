@@ -992,5 +992,13 @@
   "Mostra il QR": "Afficher le QR code",
   "Nascondi il QR": "Masquer le QR code",
   "QR di {0}": "QR code de {0}",
-  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scannez-le avec l'appareil photo du téléphone, connecté au même réseau que ce PC. S'il ne s'ouvre pas, le pare-feu de Windows peut demander l'autorisation au premier démarrage du site : autorisez-le pour les réseaux privés."
+  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scannez-le avec l'appareil photo du téléphone, connecté au même réseau que ce PC. S'il ne s'ouvre pas, le pare-feu de Windows peut demander l'autorisation au premier démarrage du site : autorisez-le pour les réseaux privés.",
+  "Verifica i file": "Vérifier les fichiers",
+  "Confronta i file dei programmi con quelli dell'installazione: trova quelli mancanti o danneggiati": "Compare les fichiers des programmes avec ceux de leur installation : trouve ceux qui manquent ou sont endommagés",
+  "Nessun file danneggiato: {0} cartelle verificate.": "Aucun fichier endommagé : {0} dossiers vérifiés.",
+  "File mancanti o cambiati dall'installazione: la chiavetta può essersi danneggiata. Reinstallare rimette i file del programma, alla stessa versione; progetti e database non si toccano.": "Fichiers manquants ou modifiés depuis l'installation : la clé USB est peut-être endommagée. Réinstaller remet les fichiers du programme, à la même version ; les projets et les bases de données ne sont pas touchés.",
+  "{0} file cambiati, {1} mancanti": "{0} fichiers modifiés, {1} manquants",
+  "Reinstalla": "Réinstaller",
+  "Reinstalla tutti": "Tout réinstaller",
+  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Sans manifeste, installés avant qu'Atollo n'en garde un : {0}. Ils sont vérifiés à partir de leur prochaine installation ou mise à jour."
 }

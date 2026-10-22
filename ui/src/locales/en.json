@@ -992,5 +992,13 @@
   "Mostra il QR": "Show the QR code",
   "Nascondi il QR": "Hide the QR code",
   "QR di {0}": "QR code of {0}",
-  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scan it with the phone's camera, on the same network as this PC. If it does not open, Windows' firewall may ask for permission when the site first starts: allow it for private networks."
+  "Inquadralo con la fotocamera del telefono, collegato alla stessa rete di questo PC. Se non si apre, il firewall di Windows può chiedere il permesso al primo avvio del sito: consentilo per le reti private.": "Scan it with the phone's camera, on the same network as this PC. If it does not open, Windows' firewall may ask for permission when the site first starts: allow it for private networks.",
+  "Verifica i file": "Check the files",
+  "Confronta i file dei programmi con quelli dell'installazione: trova quelli mancanti o danneggiati": "Compares the programs' files with those of their installation: finds the missing or damaged ones",
+  "Nessun file danneggiato: {0} cartelle verificate.": "No damaged file: {0} folders checked.",
+  "File mancanti o cambiati dall'installazione: la chiavetta può essersi danneggiata. Reinstallare rimette i file del programma, alla stessa versione; progetti e database non si toccano.": "Files missing or changed since the installation: the USB stick may be damaged. Reinstalling puts the program's files back, at the same version; projects and databases are not touched.",
+  "{0} file cambiati, {1} mancanti": "{0} files changed, {1} missing",
+  "Reinstalla": "Reinstall",
+  "Reinstalla tutti": "Reinstall all",
+  "Senza manifesto, installati prima che Atollo lo tenesse: {0}. Si verificano dalla prossima installazione o aggiornamento.": "Without a manifest, installed before Atollo kept one: {0}. They are checked from their next installation or update."
 }

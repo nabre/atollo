@@ -335,6 +335,8 @@ macro_rules! command_handler {
             $crate::commands::setup::components_list,
             $crate::commands::setup::components_sync,
             $crate::commands::setup::components_check,
+            $crate::commands::setup::components_integrity,
+            $crate::commands::setup::components_repair,
             $crate::commands::setup::target_profiles,
             $crate::commands::setup::tools_target_set,
             $crate::commands::setup::setup_state,

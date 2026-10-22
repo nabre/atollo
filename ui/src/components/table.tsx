@@ -26,6 +26,7 @@ import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } fro
 import { Checkbox, Codicon, codicon, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
 import { groups, linesOf, matches, sizeText } from "./model";
 import type { ComponentsState } from "./state";
+import { IntegrityReport, useIntegrity } from "./integrity";
 import { TOOL_STATES, ToolStateIcon, otherStatus, shownStatus, toolStateLabel } from "./status";
 import { targetLabel, targetName } from "./targets";
 
@@ -125,6 +126,7 @@ export function ToolsTable({
   const { chosen, choose, neededBy, target, setTarget, checks, checking, verifyTarget, grid, host } = state;
   const activeTarget = (target ?? host ?? setup?.target ?? "win32-x64") as TargetId;
   const running = setup?.running ?? false;
+  const integrity = useIntegrity(target);
   // The state is a column per system, as in the «Matrice» overview: the
   // system shown, and with "Expand" each of the others.
   const [expanded, setExpanded] = useState(false);
@@ -358,10 +360,23 @@ export function ToolsTable({
           disabled={running || checking}
           onClick={verifyTarget}
         />
+        <ActionButton
+          icon={codicon("file-binary")}
+          label={t("Verifica i file")}
+          title={t("Confronta i file dei programmi con quelli dell'installazione: trova quelli mancanti o danneggiati")}
+          busy={integrity.busy === "check"}
+          disabled={running || integrity.busy !== null}
+          onClick={integrity.check}
+        />
         <span className="ml-auto text-[12px] text-vsc-desc" role="status">
           {t("{0} di {1}", rows.length, list.length)}
         </span>
       </div>
+      {(integrity.report !== null || integrity.error) && (
+        <div className="px-5 pb-2">
+          <IntegrityReport state={integrity} running={running} />
+        </div>
+      )}
       {kit.error && (
         <div className="px-5 pb-2">
           <ErrorLine

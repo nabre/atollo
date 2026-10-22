@@ -1569,6 +1569,15 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
+              <Code key="d3">check --files</Code>,
+              tr(
+                "I file dei programmi, come «Verifica i file» nella pagina Strumenti: una riga per cartella (√ a posto, x danneggiata con i percorsi mancanti o cambiati, - senza manifesto); finisce con 1 se una cartella è danneggiata.",
+                "The programs' files, like “Check the files” on the Tools page: one line per folder (√ fine, x damaged with the paths missing or changed, - without a manifest); ends with 1 if a folder is damaged.",
+                "Les fichiers des programmes, comme « Vérifier les fichiers » dans la page Outils : une ligne par dossier (√ en ordre, x endommagé avec les chemins manquants ou modifiés, - sans manifeste) ; se termine par 1 si un dossier est endommagé.",
+                "Die Dateien der Programme, wie „Dateien prüfen“ auf der Seite Werkzeuge: eine Zeile pro Ordner (√ in Ordnung, x beschädigt mit den fehlenden oder geänderten Pfaden, - ohne Manifest); endet mit 1, wenn ein Ordner beschädigt ist.",
+              ),
+            ],
+            [
               <Code key="e">{`prepare ${tr("[opzioni]", "[options]", "[options]", "[Optionen]")}`}</Code>,
               tr(
                 "Installa, aggiorna e toglie i componenti secondo la scelta. Le opzioni sono nella tabella sotto.",
