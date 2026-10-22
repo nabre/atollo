@@ -1401,7 +1401,7 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 
 | Server pronto | Che cosa fa | Dove |
 | --- | --- | --- |
-| `github` | Issue, pull request e repository su GitHub, con l'account GitHub del kit. È il server di GitHub stesso, in rete (api.githubcopilot.com/mcp): niente da scaricare. | il kit |
+| `github` | Issue, pull request e repository su GitHub, con l'account GitHub del kit. È il server di GitHub stesso, in rete (api.githubcopilot.com/mcp), raggiunto attraverso Atollo, che tiene il token: niente da scaricare. | il kit |
 | `playwright` | Un browser che l'agente apre e usa: pagine, clic, moduli, schermate. | il kit |
 | `fetch` | Legge una pagina web e la dà all'agente come testo. | il kit |
 | `filesystem` | Legge e scrive i file, solo nella cartella del progetto. | il progetto |
@@ -1411,7 +1411,7 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 > [!NOTE]
 > **Nessun segreto nei file**
 >
-> Il token di GitHub e gli indirizzi dei database non sono mai scritti in mcp.json o in .mcp.json: il server legge una variabile (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) che Atollo dà all'agente quando lo avvia. Il token di GitHub va solo ai server del kit, mai a quelli che il .mcp.json di un progetto chiede: un repository clonato potrebbe mandarlo ovunque. Per GitHub serve l'accesso a GitHub del kit. Un agente avviato da un terminale dell'editor, invece che dall'app, non ha queste variabili.
+> Il token di GitHub e gli indirizzi dei database non sono mai scritti in mcp.json o in .mcp.json. Il server github è Atollo stesso, con il suo percorso completo («Atollo mcp github»): Atollo legge il token dall'accesso a GitHub del kit e lo manda solo a GitHub, senza metterlo nell'ambiente dell'agente, dove i server MCP di un repository clonato lo leggerebbero. Per GitHub serve l'accesso a GitHub del kit. I server dei database leggono una variabile (${DSN}, ${MDB_MCP_CONNECTION_STRING}) che Atollo dà all'agente quando lo avvia; un agente avviato da un terminale dell'editor, invece che dall'app, non ha queste variabili.
 
 #### Come avviene l'allineamento
 

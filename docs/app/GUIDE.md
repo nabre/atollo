@@ -1401,7 +1401,7 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 
 | Ready server | What it does | Where |
 | --- | --- | --- |
-| `github` | Issues, pull requests and repositories on GitHub, with the kit's GitHub account. It is GitHub's own server, online (api.githubcopilot.com/mcp): nothing to download. | the kit |
+| `github` | Issues, pull requests and repositories on GitHub, with the kit's GitHub account. It is GitHub's own server, online (api.githubcopilot.com/mcp), reached through Atollo, which keeps the token: nothing to download. | the kit |
 | `playwright` | A browser the agent opens and uses: pages, clicks, forms, screenshots. | the kit |
 | `fetch` | Reads a web page and gives it to the agent as text. | the kit |
 | `filesystem` | Reads and writes files, only in the project's folder. | the project |
@@ -1411,7 +1411,7 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 > [!NOTE]
 > **No secret in the files**
 >
-> The GitHub token and the databases' addresses are never written in mcp.json or in .mcp.json: the server reads a variable (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) that Atollo gives the agent when it starts it. The GitHub token goes only to the kit's servers, never to those a project's .mcp.json asks for: a cloned repository could send it anywhere. GitHub needs the kit to be signed in to GitHub. An agent started from an editor terminal, rather than from the app, does not have these variables.
+> The GitHub token and the databases' addresses are never written in mcp.json or in .mcp.json. The github server is Atollo itself, by its full path (“Atollo mcp github”): Atollo reads the token from the kit's GitHub sign-in and sends it to GitHub only, without putting it in the agent's environment, where the MCP servers of a cloned repository would read it. GitHub needs the kit to be signed in to GitHub. The database servers read a variable (${DSN}, ${MDB_MCP_CONNECTION_STRING}) that Atollo gives the agent when it starts it; an agent started from an editor terminal, rather than from the app, does not have these variables.
 
 #### How the sync works
 
