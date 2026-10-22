@@ -130,6 +130,8 @@ tauri\src\
     keyring  relocate         accesso di Antigravity (D-115; keyring\portable: le parti provate su ogni sistema);
                               percorsi riscritti dopo uno spostamento
     claude_token              token di Claude Code su macOS (D-115)
+    presets  github_mcp       server MCP pronti (D-156); `Atollo mcp github`, il ponte stdio verso il server di GitHub
+                              che tiene il token fuori dall'ambiente dell'agente (SEC-V7-01)
   db\                         database
     engine                    DbEngine: MySQL, MongoDB (D-110)
     services\                 server del kit (D-73): mod (impostazioni, avvio, arresto, un'operazione alla volta

@@ -194,6 +194,12 @@ impl Net {
         self
     }
 
+    /// The agent with the proxy and certificates of the Settings, for a
+    /// protocol of its own (the kit's GitHub MCP server, `agents::github_mcp`).
+    pub fn agent(&self) -> &Agent {
+        &self.agent
+    }
+
     fn get(&self, url: &str) -> Result<ureq::http::Response<ureq::Body>> {
         self.request(url)
             .call()

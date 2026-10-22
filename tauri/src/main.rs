@@ -233,6 +233,17 @@ fn run() -> i32 {
                 }
             };
         }
+        Cli::McpGithub => {
+            // Standard output is the agent's MCP channel: errors on stderr.
+            return match agents::github_mcp::run(&kit, &kit_env, &loaded.settings) {
+                Ok(()) => 0,
+                Err(e) => {
+                    log::warn(&format!("mcp github: {e:#}"));
+                    eprintln!("{e:#}");
+                    1
+                }
+            };
+        }
         Cli::Serve { dir, port } => {
             return match projects::serve::run(&dir, port, lang) {
                 Ok(()) => 0,

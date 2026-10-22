@@ -23,6 +23,7 @@
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
 
 pub mod claude_token;
+pub mod github_mcp;
 pub mod keyring;
 pub mod presets;
 pub mod relocate;
