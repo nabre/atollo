@@ -1,7 +1,10 @@
 use super::*;
+use crate::cli::{help_text, program_name, HELP};
+use crate::commands::MAIN;
 use crate::kit::Arch;
 use tauri::test::{get_ipc_response, mock_builder, INVOKE_KEY};
 use tauri::webview::InvokeRequest;
+use tauri::{WebviewUrl, WebviewWindowBuilder};
 
 fn state() -> AppState {
     let kit = Kit::at(std::env::temp_dir().join("atollo-ipc-test"), Arch::X64);

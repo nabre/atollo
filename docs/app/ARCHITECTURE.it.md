@@ -60,14 +60,14 @@ Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`cli.
 
 | Livello | Moduli | Cosa fanno |
 | --- | --- | --- |
-| Avvio | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
+| Avvio | `main.rs`, `app.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
 | Comandi | `commands\` | l'unico ingresso dell'interfaccia: controllano la finestra, traducono gli errori, chiamano il dominio |
 | Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, modelli locali, database, server web, GitHub |
 | Infrastruttura | `kit\`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, orologio, ambiente, impostazioni, log, lingue, chi ha ogni porta, rete e controlli, processi, sistemi operativi di destinazione |
 
 ```
 tauri\src\
-  main.rs  cli.rs             avvio, finestre, chiusura; riga di comando
+  main.rs  app.rs  cli.rs     avvio; l'app, le sue finestre e la chiusura; riga di comando e i suoi comandi
   kit\                        mod (percorsi, primo avvio, spostamento), target (Os, Arch, Target), root
                               (bundle, AppImage), names (nomi validi dei progetti)
   env\                        ambiente del kit: mod (Host, KitEnv, build per parti), langs, unix (D-112),

@@ -9,17 +9,20 @@ use std::ffi::OsString;
 #[cfg(windows)]
 use std::fs::OpenOptions;
 use std::io::{self, Write};
+use std::path::Path;
 
 #[cfg(windows)]
 use windows::Win32::System::Console::{
     AttachConsole, GetStdHandle, ATTACH_PARENT_PROCESS, STD_OUTPUT_HANDLE,
 };
 
-use crate::env::KitEnv;
+use crate::env::{Host, KitEnv};
 use crate::i18n::t;
 use crate::kit::Kit;
+use crate::settings::Settings;
 use crate::setup::runner::{Event, Options, Outcome, Sink};
 use crate::setup::{Catalog, Choice};
+use crate::{i18n, install, kit, llm, log, net, os, setup, versions};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Cli {
@@ -551,6 +554,186 @@ impl Sink for Printer<'_> {
         let _ = writeln!(self.out, "{line}");
         let _ = self.out.flush();
     }
+}
+
+/// `Atollo.exe prepare`: 0 all good, 1 some component failed, 3 another
+/// preparation is running.
+pub(crate) fn prepare(
+    kit: &Kit,
+    kit_env: &KitEnv,
+    settings: &Settings,
+    host: &Host,
+    lang: &str,
+    args: &PrepareArgs,
+) -> i32 {
+    let kit_scoped;
+    let kit = match args.target {
+        Some(t) => {
+            kit_scoped = kit.for_target(t);
+            &kit_scoped
+        }
+        None => kit,
+    };
+    let mut out = output();
+    if let Err(e) = os::jobs::init() {
+        log::warn(&format!("child processes: {e:#}"));
+    }
+    let net = match net::Net::new(settings, crate::github_token(host)) {
+        Ok(net) => net.with_github_cache(kit.data().join("cache").join("github")),
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            return 1;
+        }
+    };
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let ctx = install::Ctx {
+        kit,
+        net: &net,
+        env: kit_env,
+        cancel: &cancel,
+    };
+    log::info(&format!("prepare {args:?}"));
+    let mut printer = Printer::new(&mut *out, lang).with_downloads_dir(setup::downloads::dir(kit));
+    let results = match setup::runner::run(&ctx, &args.options(), &mut printer) {
+        Ok(results) => results,
+        Err(e) if e.is::<setup::runner::Busy>() => {
+            let _ = writeln!(
+                out,
+                "  x {}",
+                i18n::t(
+                    lang,
+                    "Un'altra preparazione è già in corso in questo kit.",
+                    &[]
+                )
+            );
+            return 3;
+        }
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            return 1;
+        }
+    };
+    let failed = results.iter().filter(|(_, o)| o.is_failure()).count();
+    // The final check of what this run installed (`Test-Installation`).
+    let touched: Vec<&str> = results
+        .iter()
+        .filter(|(_, o)| matches!(o, setup::runner::Outcome::Installed { .. }))
+        .map(|(id, _)| id.as_str())
+        .collect();
+    let checks: Vec<_> = setup::catalog::Catalog::get()
+        .all()
+        .iter()
+        .filter(|c| touched.contains(&c.id.as_str()))
+        .filter_map(|c| setup::checkup::check(kit, kit_env, c))
+        .collect();
+    if !checks.is_empty() {
+        let _ = writeln!(out, "\n── {} ──", i18n::t(lang, "Verifica", &[]));
+        let _ = print_checks(&checks, &mut *out);
+    }
+    for (id, outcome) in &results {
+        log::info(&format!("prepare {id}: {outcome:?}"));
+    }
+    i32::from(failed > 0)
+}
+
+/// Help text of the command line (Italian source; translated by the
+/// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
+/// kit's Antigravity command ([`help_text`]); the target ids
+/// are those of `Target::ALL`.
+pub(crate) const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, win32-arm64,\n                          darwin-arm64, darwin-x64, linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+
+/// The program's name in the help: the file it was started from
+/// (`Atollo-0.2.0-win32-x64.exe`, `Atollo.AppImage`, `Atollo`, ...); on
+/// Windows only an `.exe` name, else `Atollo.exe`; elsewhere `Atollo`
+/// when that is unknown.
+pub(crate) fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
+    let name = exe
+        .and_then(Path::file_name)
+        .map(|n| n.to_string_lossy().into_owned())
+        .filter(|n| !n.is_empty());
+    if os.is_windows() {
+        // A Windows path read anywhere: `\` separates there, not on Unix.
+        return name
+            .and_then(|n| n.rsplit(['\\', '/']).next().map(str::to_owned))
+            .filter(|n| n.to_ascii_lowercase().ends_with(".exe"))
+            .unwrap_or_else(|| "Atollo.exe".to_owned());
+    }
+    name.unwrap_or_else(|| "Atollo".to_owned())
+}
+
+/// The help for `os`; `{1}` is the kit's Antigravity command (`agy.cmd`
+/// on Windows, as always; `agy` elsewhere).
+pub(crate) fn help_text(lang: &str, os: kit::Os, exe: Option<&Path>) -> String {
+    let agy = if os.is_windows() { "agy.cmd" } else { "agy" };
+    i18n::t(lang, HELP, &[&program_name(os, exe), agy])
+}
+
+/// `models`: the local models, a download, a removal (D-151).
+pub(crate) fn models(kit: &Kit, settings: &Settings, host: &Host, lang: &str, cmd: Models) -> i32 {
+    let mut out = output();
+    let result = match cmd {
+        Models::List => llm::cli::list(kit, lang, &mut *out).map_err(Into::into),
+        Models::Pull(spec) => net::Net::new(settings, crate::github_token(host))
+            .and_then(|net| llm::cli::pull(kit, &net, &spec, lang, &mut *out))
+            .map(drop),
+        Models::Remove(id) => llm::cli::remove(kit, &id, lang, &mut *out),
+    };
+    match result {
+        Ok(()) => 0,
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            1
+        }
+    }
+}
+
+/// `versions <id>`: the lines of `id` its source offers.
+pub(crate) fn version_lines(
+    kit: &Kit,
+    kit_env: &KitEnv,
+    settings: &Settings,
+    host: &Host,
+    id: &str,
+) -> i32 {
+    let mut out = output();
+    let result = (|| -> anyhow::Result<Vec<String>> {
+        versions::check(id, None)?;
+        let c = setup::catalog::Catalog::get()
+            .find(id)
+            .ok_or_else(|| anyhow::anyhow!("{id}"))?;
+        let installer = install::installer(id).ok_or_else(|| anyhow::anyhow!("{id}"))?;
+        let net = net::Net::new(settings, crate::github_token(host))?
+            .with_github_cache(kit.data().join("cache").join("github"));
+        let cancel = std::sync::atomic::AtomicBool::new(false);
+        let ctx = install::Ctx {
+            kit,
+            net: &net,
+            env: kit_env,
+            cancel: &cancel,
+        };
+        let lines = installer.lines(&ctx, c)?;
+        let _ = versions::save_offered(kit, id, &lines);
+        Ok(lines)
+    })();
+    match result {
+        Ok(lines) => {
+            for l in lines {
+                let _ = writeln!(out, "  {l}");
+            }
+            0
+        }
+        Err(e) => {
+            let _ = writeln!(out, "  x {e:#}");
+            1
+        }
+    }
+}
+
+/// The help for this program: [`kit::app_exe`] names the AppImage when the
+/// app runs from one, not the inner program of its temporary mount, which
+/// the user cannot start.
+pub(crate) fn help(lang: &str) -> String {
+    help_text(lang, kit::Os::current(), kit::app_exe().as_deref())
 }
 
 #[cfg(test)]
