@@ -261,15 +261,30 @@ pub fn spawn_in(cmd: &mut Command, job: &Job) -> Result<Child> {
 
 /// Starts a program that must stay open after the app (browser, file
 /// manager): its own process group, never stopped by the app. `flags` are
-/// Windows creation flags, ignored here.
+/// Windows creation flags, ignored here. Returns its pid: the program is
+/// still the app's child, and a thread waits for it, or every `open` and
+/// `xdg-open` (which end at once) would stay a zombie until the app exits
+/// (BUG-V7-20).
 #[cfg(unix)]
-pub fn spawn_detached(cmd: &mut Command, _flags: u32) -> Result<Child> {
+pub fn spawn_detached(cmd: &mut Command, _flags: u32) -> Result<u32> {
     cmd.process_group(0);
-    let child = cmd
+    let mut child = cmd
         .spawn()
         .with_context(|| format!("starting {:?}", cmd.get_program()))?;
-    claim(child.id(), 0);
-    Ok(child)
+    let pid = child.id();
+    claim(pid, 0);
+    std::thread::spawn(move || {
+        let _ = child.wait();
+        // Its pid can now go to another program: the mark it left (no job)
+        // goes too, unless a later program has claimed the pid since.
+        if let Ok(pid) = i32::try_from(pid) {
+            let mut owners = OWNERS.lock().unwrap_or_else(|e| e.into_inner());
+            if owners.get(&pid) == Some(&0) {
+                owners.remove(&pid);
+            }
+        }
+    });
+    Ok(pid)
 }
 
 /// Opens a web address or a folder with the system's handler (`open` on

@@ -58,6 +58,22 @@ struct Server {
     _job: Job,
 }
 
+impl Server {
+    /// Ends the server and its tree. The killed program is then waited
+    /// for, on a thread of its own (a kit on a slow disk can keep it a
+    /// moment): never reaped, it would stay a zombie on macOS and Linux
+    /// until the app exits (BUG-V7-20).
+    fn end(self) {
+        let Server {
+            mut child, _job, ..
+        } = self;
+        let _ = child.kill();
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
+    }
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
@@ -167,14 +183,14 @@ impl Editor {
         }
         let stops = self.stops.load(Ordering::SeqCst);
         // Without the server lock: status() answers "not running" meanwhile.
-        let mut server = self.start()?;
+        let server = self.start()?;
         let out = (server.port, server.token.clone());
         {
             let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
             if self.stops.load(Ordering::SeqCst) != stops {
                 // Stopped while it started (an update, the app closing):
                 // what was asked for no longer holds.
-                let _ = server.child.kill();
+                server.end();
                 bail!("the editor was stopped while it started");
             }
             *guard = Some(server);
@@ -226,8 +242,8 @@ impl Editor {
         // Under the server lock, so a start in progress either stored its
         // server before (ended here) or sees the count change after.
         self.stops.fetch_add(1, Ordering::SeqCst);
-        if let Some(mut s) = guard.take() {
-            let _ = s.child.kill();
+        if let Some(s) = guard.take() {
+            s.end();
         }
         // Closing the job ends the install and what it started; it is
         // retried at the next start.
@@ -338,6 +354,8 @@ impl Editor {
             }
             if started.elapsed() > START_TIMEOUT {
                 let _ = child.kill();
+                // Reaped here, on the start's own thread (BUG-V7-20).
+                let _ = child.wait();
                 bail!(
                     "the editor server did not answer within {} s; see {}",
                     START_TIMEOUT.as_secs(),
