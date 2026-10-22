@@ -319,7 +319,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("code"),
     keywords:
-      "editor vscodium terminale console estensioni open vsx impostazioni mcp progetto editor terminal extensions settings éditeur terminal extensions paramètres editor terminal erweiterungen einstellungen",
+      "editor vscodium terminale console estensioni open vsx impostazioni mcp progetto server pronti filesystem dbhub mysql mongodb editor terminal extensions settings ready servers éditeur terminal extensions paramètres serveurs prêts editor terminal erweiterungen einstellungen fertige server",
     targetPage: "projects",
   },
   {
@@ -482,7 +482,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("sync"),
     keywords:
-      "agents.md claude.md skill mcp mcp.json sincronizzazione condiviso istruzioni conflitti shared instructions skills sync conflicts instructions partagées synchronisation conflits gemeinsame anweisungen synchronisierung konflikte",
+      "agents.md claude.md skill mcp mcp.json sincronizzazione condiviso istruzioni conflitti server pronti github playwright fetch filesystem dbhub mysql mongodb token shared instructions skills sync conflicts ready servers instructions partagées synchronisation conflits serveurs prêts gemeinsame anweisungen synchronisierung konflikte fertige server",
     targetPage: "agents",
   },
   {

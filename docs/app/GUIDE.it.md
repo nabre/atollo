@@ -764,7 +764,7 @@ Due riquadri.
 
 «Salva» le scrive nel file `.vscode\settings.json` del progetto; le altre impostazioni del file restano. Se il file contiene commenti o non è JSON semplice, Atollo non lo riscrive e ti chiede di modificarlo nell'editor.
 
-Il secondo riquadro, «Server MCP del progetto», aggiunge server MCP che valgono solo in questo progetto, oltre a quelli del kit. Come funzionano e come si aggiungono: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi).
+Il secondo riquadro, «Server MCP del progetto», aggiunge server MCP che valgono solo in questo progetto, oltre a quelli del kit. In «Server pronti» bastano un clic per filesystem (i file, solo nella cartella del progetto) e, quando il database del progetto è stato creato, per mysql (DBHub) o mongodb: il database arriva al server all'avvio dell'agente, mai scritto in .mcp.json. Come funzionano e come si aggiungono: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi).
 
 Argomenti collegati: [3.4 Terminali del kit](#34-terminali-del-kit), [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi), [5.3 Panoramiche: matrice, relazioni, estensioni, requisiti](#53-panoramiche-matrice-relazioni-estensioni-requisiti)
 
@@ -1320,6 +1320,7 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 > - Istruzioni, skill e server MCP si scrivono una volta sola, nella cartella `data\agents`, e valgono per tutti gli agenti.
 > - Il kit li allinea all'avvio dell'app, prima e dopo ogni agente e quando un agente termina.
 > - Puoi modificare anche i file di un agente: la modifica passa agli altri.
+> - I server MCP del kit si aggiungono anche dalla pagina Agenti, riquadro «Server MCP del kit», con i server pronti GitHub, Playwright e Fetch a un clic.
 > - I server MCP di un solo progetto si aggiungono nella sezione «Editor» del progetto.
 
 #### Che cosa si condivide
@@ -1356,6 +1357,26 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 >
 > I programmi dei server MCP si installano da soli all'avvio di un agente: npx e node portano Node.js, uvx e uv portano uv, python porta Python.
 
+#### Server MCP del kit e server pronti
+
+1. Nella pagina Agenti, sotto la cartella condivisa, c'è il riquadro «Server MCP del kit»: l'elenco di `data\agents\mcp.json`.
+2. In «Server pronti» premi «Aggiungi» accanto al server che ti serve; per un altro server premi «Aggiungi un server» e compila nome, tipo e programma o indirizzo.
+3. Atollo scrive mcp.json e allinea subito gli agenti: Claude Code, Codex, Antigravity e Pi hanno il server senza aspettare il prossimo avvio. «Togli» su una riga lo rimuove.
+
+| Server pronto | Che cosa fa | Dove |
+| --- | --- | --- |
+| `github` | Issue, pull request e repository su GitHub, con l'account GitHub del kit. È il server di GitHub stesso, in rete (api.githubcopilot.com/mcp): niente da scaricare. | il kit |
+| `playwright` | Un browser che l'agente apre e usa: pagine, clic, moduli, schermate. | il kit |
+| `fetch` | Legge una pagina web e la dà all'agente come testo. | il kit |
+| `filesystem` | Legge e scrive i file, solo nella cartella del progetto. | il progetto |
+| `mysql` | Interroga il database MySQL del progetto (DBHub), quando è stato creato. | il progetto |
+| `mongodb` | Interroga il database MongoDB del progetto, quando è stato creato. | il progetto |
+
+> [!NOTE]
+> **Nessun segreto nei file**
+>
+> Il token di GitHub e gli indirizzi dei database non sono mai scritti in mcp.json o in .mcp.json: il server legge una variabile (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) che Atollo dà all'agente quando lo avvia. Il token di GitHub va solo ai server del kit, mai a quelli che il .mcp.json di un progetto chiede: un repository clonato potrebbe mandarlo ovunque. Per GitHub serve l'accesso a GitHub del kit. Un agente avviato da un terminale dell'editor, invece che dall'app, non ha queste variabili.
+
 #### Come avviene l'allineamento
 
 - Istruzioni: AGENTS.md viene copiato come CLAUDE.md per Claude Code e come AGENTS.md per Codex, Antigravity e Pi. Se modifichi uno di quei file, la modifica torna in AGENTS.md e passa agli altri. Se cambiano entrambe le parti, vince la più recente e l'altra viene conservata nella cartella dei conflitti.
@@ -1370,11 +1391,12 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 #### Server MCP di un solo progetto
 
 1. Apri il progetto, sezione «Editor», riquadro «Server MCP del progetto».
-2. Premi «Aggiungi un server».
-3. Scrivi il «Nome» (lettere, cifre, - e _) e scegli il «Tipo»: «programma» (con «Programma», per esempio npx, e gli «Argomenti, uno per riga») oppure «indirizzo (http)» (con l'«Indirizzo»).
-4. Premi «Aggiungi». «Togli» su una riga lo rimuove.
+2. Per un server pronto premi «Aggiungi» accanto a lui in «Server pronti»: filesystem (i file, solo nella cartella del progetto) e, quando il database del progetto è stato creato con «Crea database e utente», mysql o mongodb. Per un altro server continua dal passo seguente.
+3. Premi «Aggiungi un server».
+4. Scrivi il «Nome» (lettere, cifre, - e _) e scegli il «Tipo»: «programma» (con «Programma», per esempio npx, e gli «Argomenti, uno per riga») oppure «indirizzo (http)» (con l'«Indirizzo»).
+5. Premi «Aggiungi». «Togli» su una riga lo rimuove.
 
-Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da `.codex\config.toml`, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit.
+Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da `.codex\config.toml`, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit. I programmi che servono (Node per npx, uv per uvx) si installano all'avvio dell'agente; il database del progetto arriva al server mysql o mongodb come variabile, mai scritto in .mcp.json, che può stare nel repository.
 
 <details>
 <summary>Sotto il cofano</summary>
