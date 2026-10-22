@@ -51,6 +51,30 @@ fn added_files_are_used_by_checksum() {
     assert!(dir(&kit).join("other.zip").exists(), "another file is kept");
 }
 
+/// A file kept in Downloads for more than a month is added with its month
+/// starting now: the next `add` does not prune it before an installation
+/// uses it.
+#[test]
+fn an_old_file_added_is_not_pruned_at_once() {
+    let tmp = TempDir::new("downloads-old");
+    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    kit.prepare().unwrap();
+    let outside = tmp.0.join("Downloads");
+    fs::create_dir_all(&outside).unwrap();
+    let old = outside.join("old.zip");
+    fs::write(&old, b"old").unwrap();
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&old)
+        .unwrap()
+        .set_modified(SystemTime::now() - KEEP - Duration::from_secs(3600))
+        .unwrap();
+    fs::write(outside.join("new.zip"), b"new").unwrap();
+    add(&kit, std::slice::from_ref(&old)).unwrap();
+    add(&kit, &[outside.join("new.zip")]).unwrap();
+    assert!(dir(&kit).join("old.zip").is_file());
+}
+
 /// With the PC's temporary folder, the files are kept there; those left
 /// in `data\downloads` move there and are still found by checksum.
 #[test]

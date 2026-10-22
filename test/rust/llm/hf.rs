@@ -98,3 +98,15 @@ fn file_addresses_are_at_the_commit() {
         "https://huggingface.co/o/r/resolve/abc/Q8_0/m%20Q8.gguf"
     );
 }
+
+/// The repository's name is Hugging Face's spelling, not the one typed: it
+/// names the model's folder. An answer for another repository, or with a
+/// name the kit refuses, leaves the typed one.
+#[test]
+fn the_repository_is_named_as_hugging_face_spells_it() {
+    let meta = json!({ "id": "Qwen/Qwen3-8B-GGUF" });
+    assert_eq!(canonical(&meta, "qwen/qwen3-8b-gguf"), "Qwen/Qwen3-8B-GGUF");
+    assert_eq!(canonical(&meta, "other/repo"), "other/repo");
+    assert_eq!(canonical(&json!({}), "o/r"), "o/r");
+    assert_eq!(canonical(&json!({ "id": "O/R/x" }), "o/r/x"), "o/r/x");
+}

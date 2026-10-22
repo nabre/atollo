@@ -2004,6 +2004,21 @@
     "fr": "Espace insuffisant sur le disque du kit : {0} Go nécessaires, {1} Go libres.",
     "de": "Nicht genug Platz auf dem Laufwerk des Kits: {0} GB nötig, {1} GB frei."
   },
+  "Un modello di questo repository si sta già scaricando.": {
+    "en": "A model of this repository is already being downloaded.",
+    "fr": "Un modèle de ce dépôt est déjà en cours de téléchargement.",
+    "de": "Ein Modell dieses Repositorys wird bereits heruntergeladen."
+  },
+  "Nel kit c'è già un modello chiamato {0}.": {
+    "en": "A model called {0} is already in the kit.",
+    "fr": "Un modèle nommé {0} est déjà dans le kit.",
+    "de": "Ein Modell namens {0} ist bereits im Kit."
+  },
+  "Token di Hugging Face non valido.": {
+    "en": "Not a valid Hugging Face token.",
+    "fr": "Jeton Hugging Face non valide.",
+    "de": "Ungültiges Hugging-Face-Token."
+  },
   "per il codice, leggero: entra in 8 GB di RAM o di memoria video": {
     "en": "for code, light: fits in 8 GB of RAM or video memory",
     "fr": "pour le code, léger : tient dans 8 Go de RAM ou de mémoire vidéo",
