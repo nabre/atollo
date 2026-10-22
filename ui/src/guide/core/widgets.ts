@@ -5,7 +5,6 @@
 // widget is a type error; one that forgets to register gets a clear error,
 // never an empty page.
 import { createElement, type ReactNode } from "react";
-import type { IconType } from "react-icons";
 import type { AppPageTarget, GuideTopicId } from "../model";
 
 export interface GuideWidgetProps {
@@ -43,7 +42,8 @@ export interface GuideWidgetProps {
   GuideShot: { src: string; title: string; caption: string; example?: ReactNode; scenario?: string };
   /** A card with an icon, a title and an action. */
   GuideCard: {
-    icon: IconType;
+    /** A codicon's name. */
+    icon: string;
     badge?: string;
     title: string;
     children: ReactNode;

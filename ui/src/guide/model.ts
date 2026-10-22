@@ -4,8 +4,6 @@
 // topics/, one file per chapter. The order follows the user: first steps,
 // daily work, services, agents, tools, settings, carrying the kit, how it
 // works inside, and help when something goes wrong.
-import type { IconType } from "react-icons";
-import { codicon } from "../workbench";
 import { tr } from "./core/lang";
 
 export type GuideGroupId =
@@ -77,7 +75,9 @@ export interface GuideTopic {
   group: GuideGroupId;
   title: () => string;
   subtitle: () => string;
-  icon: IconType;
+  /** A codicon's name (`home`, `rocket`): the app draws it with its
+   * font, the site with the SVG of @vscode/codicons. */
+  icon: string;
   /** Extra words the search finds the topic by, in every language. */
   keywords: string;
   targetPage?: AppPageTarget;
@@ -142,7 +142,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qu'est Atollo, ce que vous y trouvez et comment ce guide est organisé. Le point de départ si c'est votre première fois.",
         "Was Atollo ist, was du darin findest und wie diese Anleitung aufgebaut ist. Der Ausgangspunkt, wenn du zum ersten Mal hier bist.",
       ),
-    icon: codicon("home"),
+    icon: "home",
     keywords:
       "welcome start overview introduzione cos'è portabile chiavetta usb kit introduction portable usb stick bienvenue introduction clé portable willkommen einführung portabel usb-stick",
   },
@@ -157,7 +157,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Où placer le kit, la page « Bienvenue », quels composants choisir et ce qui se passe pendant leur téléchargement.",
         "Wohin das Kit gehört, die Seite „Willkommen“, welche Komponenten du wählst und was passiert, während sie heruntergeladen werden.",
       ),
-    icon: codicon("rocket"),
+    icon: "rocket",
     keywords:
       "first run benvenuto installa componenti scaricare download primo avvio setup first start install components welcome premier lancement installer composants télécharger erster start installieren komponenten herunterladen",
     targetPage: "components",
@@ -174,7 +174,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Barre d'activité, barre latérale, onglets, barre d'état et panneau « Activité » : où se trouvent les choses et à quoi elles servent.",
         "Aktivitätsleiste, Seitenleiste, Tabs, Statusleiste und Bereich „Aktivität“: wo sich alles befindet und wozu es dient.",
       ),
-    icon: codicon("layout-sidebar-left"),
+    icon: "layout-sidebar-left",
     keywords:
       "window finestra barra attività stato pannello schede layout interfaccia ctrl+p ctrl+shift+p palette comandi palette dei comandi scorciatoie command palette commands shortcuts palette de commandes raccourcis befehlspalette befehle tastenkürzel activity bar status bar sidebar tabs panel fenêtre barre d'activité barre d'état panneau onglets fenster aktivitätsleiste statusleiste seitenleiste tabs bereich mostra nascondi pannello show hide panel afficher masquer panneau anzeigen ausblenden",
   },
@@ -195,7 +195,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Un parcours complet en dix minutes : créer un projet, le démarrer, le voir dans le navigateur et l'ouvrir dans l'éditeur.",
         "Ein vollständiger Durchgang in zehn Minuten: ein Projekt erstellen, starten, im Browser ansehen und im Editor öffnen.",
       ),
-    icon: codicon("debug-start"),
+    icon: "debug-start",
     keywords:
       "tutorial esempio primo progetto passo passo vite laravel avviare browser example first project step by step start exemple premier projet pas à pas démarrer beispiel erstes projekt schritt für schritt starten",
     targetPage: "new",
@@ -213,7 +213,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les trois voies : un dossier vide, un dépôt Git, ou une base de framework ou de CMS avec ses ajouts. Plus vos dépôts GitHub.",
         "Die drei Wege: ein leerer Ordner, ein Git-Repository oder eine Framework- oder CMS-Basis mit ihren Ergänzungen. Dazu deine GitHub-Repositorys.",
       ),
-    icon: codicon("new-folder"),
+    icon: "new-folder",
     keywords:
       "nuovo progetto wizard framework cms clona git vuoto base aggiunte laravel vite django wordpress le mie basi salva come base modello new project clone empty base additions my bases save as a base template nouveau projet cloner vide base ajouts mes bases enregistrer comme base modèle neues projekt klonen leer basis ergänzungen meine basen als basis speichern vorlage",
     targetPage: "new",
@@ -235,7 +235,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "La liste des projets, le « Panneau rapide » avec les favoris et les récents, l'ouverture rapide avec Ctrl+P, les commandes avec Ctrl+Shift+P et les sept sections d'un projet.",
         "Die Liste der Projekte, die „Schnellübersicht“ mit Favoriten und zuletzt verwendeten, das schnelle Öffnen mit Ctrl+P, die Befehle mit Ctrl+Shift+P und die sieben Abschnitte eines Projekts.",
       ),
-    icon: codicon("folder-library"),
+    icon: "folder-library",
     keywords:
       "progetti pannello rapido preferiti recenti quick open ctrl+p ctrl+shift+p palette comandi command palette avvia ferma start stop palette de commandes befehlspalette salva come base save as a base enregistrer comme base als basis speichern sezioni scheda progetto projects quick panel favorites recent sections projets panneau rapide favoris récents sections projekte schnellübersicht favoriten zuletzt abschnitte",
     targetPage: "projects",
@@ -257,7 +257,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qu'est une action, comment la démarrer et l'arrêter, la sortie, le port, l'action par défaut et comment ajouter les vôtres dans le fichier panel.json.",
         "Was eine Aktion ist, wie man sie startet und beendet, die Ausgabe, der Port, die Standardaktion und wie du eigene in der Datei panel.json hinzufügst.",
       ),
-    icon: codicon("debug-start"),
+    icon: "debug-start",
     keywords:
       "avvio azioni porta output predefinita panel.json avvia ferma comando npm run dev indirizzo dal telefono qr rete locale lan start actions port default stop command address phone qr code local network démarrer actions port par défaut arrêter commande adresse téléphone réseau local starten aktionen port standard beenden befehl adresse telefon lokales netzwerk",
     targetPage: "projects",
@@ -279,7 +279,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les outils dont un projet a besoin, la version de chaque langage choisie pour lui seul et comment le kit la reconnaît à partir des fichiers du projet.",
         "Die Werkzeuge, die ein Projekt braucht, die nur für es gewählte Version jeder Sprache und wie das Kit sie an den Dateien des Projekts erkennt.",
       ),
-    icon: codicon("versions"),
+    icon: "versions",
     keywords:
       "versioni componenti linguaggi node php python progetto dev-settings.json nvmrc versions components languages project versions composants langages projet versionen komponenten sprachen projekt",
     targetPage: "projects",
@@ -301,7 +301,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ouvrir le projet dans l'éditeur ou dans une console du kit, choisir les extensions, les paramètres de l'éditeur et les serveurs MCP du projet.",
         "Das Projekt im Editor oder in einer Konsole des Kits öffnen, die Erweiterungen wählen, die Editor-Einstellungen und die MCP-Server des Projekts.",
       ),
-    icon: codicon("code"),
+    icon: "code",
     keywords:
       "editor vscodium terminale console estensioni open vsx impostazioni mcp progetto server pronti filesystem dbhub mysql mongodb editor terminal extensions settings ready servers éditeur terminal extensions paramètres serveurs prêts editor terminal erweiterungen einstellungen fertige server",
     targetPage: "projects",
@@ -317,7 +317,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce que montre la section « Git », où faire les commits et les push, et pourquoi le kit lit l'état sans exécuter Git.",
         "Was der Abschnitt „Git“ zeigt, wo Commits und Pushes gemacht werden und warum das Kit den Status liest, ohne Git auszuführen.",
       ),
-    icon: codicon("git-merge"),
+    icon: "git-merge",
     keywords:
       "git ramo branch remoto commit push sincronizzato repository branch remote sync branche dépôt distant synchronisé branch remote synchron",
     targetPage: "projects",
@@ -339,7 +339,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qui est supprimé et ce qui reste, et comment relier ou nettoyer les données d'un projet renommé ou supprimé en dehors de l'application.",
         "Was gelöscht wird und was bleibt, und wie du die Daten eines außerhalb der App umbenannten oder gelöschten Projekts wieder verknüpfst oder aufräumst.",
       ),
-    icon: codicon("trash"),
+    icon: "trash",
     keywords:
       "elimina progetto dati senza progetto orfani collega pulizia rinominato delete project orphan data link cleanup renamed supprimer projet données sans projet lier nettoyage renommé löschen projekt daten ohne projekt verknüpfen aufräumen umbenannt",
     targetPage: "projects",
@@ -358,7 +358,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "MySQL et MongoDB du kit : les démarrer, les mots de passe, les ports, plusieurs versions ensemble, phpMyAdmin, mongo-express et l'explorateur de données.",
         "MySQL und MongoDB des Kits: sie starten, die Passwörter, die Ports, mehrere Versionen gleichzeitig, phpMyAdmin, mongo-express und der Daten-Explorer.",
       ),
-    icon: codicon("database"),
+    icon: "database",
     keywords:
       "database mysql mongodb phpmyadmin mongo-express porta password versione server dati database server port password version bases de données serveur port mot de passe version datenbank server port passwort version",
     targetPage: "databases",
@@ -380,7 +380,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Une base de données et un utilisateur rien que pour le projet, la connexion écrite dans le fichier .env, les sauvegardes et la restauration.",
         "Eine Datenbank und ein Benutzer nur für das Projekt, die in die Datei .env geschriebene Verbindung, Sicherungskopien und Wiederherstellung.",
       ),
-    icon: codicon("key"),
+    icon: "key",
     keywords:
       "database progetto utente password .env database_url db_host copie backup ripristino sqlite copia di sicurezza prima-del-ripristino prima-del-cambio-di-versione cambio versione copia blocco .env mongodb_uri stringa di connessione appunti copy .env block connection string clipboard copier le bloc chaîne de connexion presse-papiers block kopieren verbindungszeichenfolge zwischenablage project database user password backup restore safety copy version change base de données projet utilisateur mot de passe sauvegarde restauration projektdatenbank benutzer passwort sicherung wiederherstellung",
     targetPage: "projects",
@@ -402,7 +402,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Servir un dossier comme site : fichiers statiques, PHP, Caddy ou Apache. Les serveurs partagés de la page « Serveurs web », les domaines .localhost et les alias.",
         "Einen Ordner als Website bereitstellen: statische Dateien, PHP, Caddy oder Apache. Die gemeinsamen Server der Seite „Webserver“, die .localhost-Domains und die Aliasse.",
       ),
-    icon: codicon("globe"),
+    icon: "globe",
     keywords:
       "sito web server caddy apache pool profilo localhost dominio alias php lan rete locale qr telefono website web server domain local network phone site web serveur domaine réseau local website webserver domain lokales netzwerk conf.d",
     targetPage: "servers",
@@ -418,7 +418,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Des consoles avec les outils du kit dans n'importe quel dossier du PC, et vos propres terminaux avec les outils et versions de votre choix.",
         "Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs und eigene Terminals mit Werkzeugen und Versionen deiner Wahl.",
       ),
-    icon: codicon("terminal"),
+    icon: "terminal",
     keywords:
       "terminali console powershell bash prompt strumenti versioni path terminals console tools versions terminaux console outils versions terminals konsole werkzeuge versionen",
     targetPage: "terminals",
@@ -442,7 +442,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qu'ils sont, comment les installer, comment les ouvrir dans un projet, la connexion à votre compte et la déconnexion.",
         "Was sie sind, wie man sie installiert, wie man sie in einem Projekt öffnet, die Anmeldung bei deinem Konto und die Abmeldung.",
       ),
-    icon: codicon("hubot"),
+    icon: "hubot",
     keywords:
       "agenti claude code codex antigravity gemini pi earendil accesso login token chiave api agents sign in login api key agents connexion clé api agenten anmeldung api-schlüssel",
     targetPage: "agents",
@@ -464,7 +464,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Un seul dossier pour instruire les agents ensemble : AGENTS.md, les skills, les serveurs MCP du kit et ceux d'un projet.",
         "Ein einziger Ordner, um alle Agenten gemeinsam anzuleiten: AGENTS.md, die Skills, die MCP-Server des Kits und die eines Projekts.",
       ),
-    icon: codicon("sync"),
+    icon: "sync",
     keywords:
       "agents.md claude.md skill mcp mcp.json sincronizzazione condiviso istruzioni conflitti server pronti github playwright fetch filesystem dbhub mysql mongodb token shared instructions skills sync conflicts ready servers instructions partagées synchronisation conflits serveurs prêts gemeinsame anweisungen synchronisierung konflikte fertige server",
     targetPage: "agents",
@@ -486,7 +486,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Quelle part de votre forfait vous avez utilisée, quand elle se réinitialise, et les tokens et sessions d'aujourd'hui et des sept derniers jours.",
         "Wie viel deines Plans du verbraucht hast, wann er zurückgesetzt wird, und die Tokens und Sitzungen von heute und den letzten sieben Tagen.",
       ),
-    icon: codicon("graph"),
+    icon: "graph",
     keywords:
       "limiti quote consumi token sessioni piano 5 ore settimana statistiche limits quota usage tokens sessions plan week limites quota consommation tokens sessions forfait semaine limits kontingent verbrauch tokens sitzungen plan woche",
     targetPage: "agents",
@@ -508,7 +508,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Des modèles de langage sur le PC, sans réseau et sans compte : le serveur, le chat dans le navigateur, le modèle de Pi, télécharger depuis le catalogue ou depuis Hugging Face.",
         "Sprachmodelle auf dem PC, ohne Netzwerk und ohne Konto: der Server, der Chat im Browser, das Modell von Pi, Herunterladen aus dem Katalog oder von Hugging Face.",
       ),
-    icon: codicon("chip"),
+    icon: "chip",
     keywords:
       "modelli locali llm llama.cpp llama-server gguf hugging face quantizzazione qwen gpt-oss devstral pi chat gpu vulkan metal ram memoria video scarica sospendi riprendi token chiave local models quantization download pause resume video memory key modèles locaux quantification télécharger suspendre reprendre mémoire vidéo clé lokale modelle quantisierung herunterladen anhalten fortsetzen grafikspeicher schlüssel",
     targetPage: "models",
@@ -526,7 +526,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Le tableau de tous les outils réparti en huit types, les cinq états, installer et mettre à jour tout de suite ou choisir puis « Appliquer ».",
         "Die Tabelle aller Werkzeuge, nach den acht Arten aufgeteilt, die fünf Zustände, sofort installieren und aktualisieren oder erst auswählen und dann „Übernehmen“.",
       ),
-    icon: codicon("extensions"),
+    icon: "extensions",
     keywords:
       "strumenti componenti tabella tipi sistema ed editor agenti ai modelli locali llama.cpp local models modèles locaux lokale modelle linguaggi strumenti di sviluppo server web database scegli tutti stati installa aggiorna rimuovi applica aggiorna tutto pre-installato verifica i file reinstalla reinstalla tutti manifesto file danneggiati chiavetta danneggiata check the files reinstall reinstall all manifest damaged files damaged usb stick vérifier les fichiers réinstaller tout réinstaller manifeste fichiers endommagés dateien prüfen neu installieren alle neu installieren manifest beschädigte dateien aggiornamenti versioni nuove controlla ora cosa cambia note di rilascio changelog tutto aggiornato updates new versions check now what changes release notes up to date mises à jour nouvelles versions vérifier maintenant ce qui change notes de version aktualisierungen neue versionen jetzt prüfen was sich ändert versionshinweise tools components table kinds types system and editor ai agents languages development tools web server databases choose all states install update remove apply outils composants tableau types système et éditeur agents ia langages outils de développement serveur web bases de données tout choisir états installer mettre à jour retirer appliquer werkzeuge komponenten tabelle arten typ system und editor ki-agenten sprachen entwicklungswerkzeuge webserver datenbanken alle wählen zustände installieren aktualisieren entfernen übernehmen",
     targetPage: "components",
@@ -548,7 +548,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Garder PHP 8.3 et 8.4 ou Node 20 et 24 côte à côte : ajouter, retirer, versions verrouillées et laquelle le kit utilise.",
         "PHP 8.3 und 8.4 oder Node 20 und 24 nebeneinander behalten: hinzufügen, entfernen, gesperrte Versionen und welche das Kit verwendet.",
       ),
-    icon: codicon("library"),
+    icon: "library",
     keywords:
       "versioni linee multi-versione aggiungi versione bloccata più recente composer versions lines multi-version add pinned latest versions lignes plusieurs versions ajouter verrouillée plus récente versionen linien mehrere versionen hinzufügen gesperrt neueste python php rust compilatore compiler compilateur msvc gnu",
     targetPage: "components",
@@ -570,7 +570,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les vues d'ensemble de la page Outils : les six systèmes, qui requiert qui, les extensions par langage et ce dont le PC a besoin.",
         "Die Gesamtansichten der Seite Werkzeuge: die sechs Systeme, wer wen benötigt, die Erweiterungen je Sprache und was der PC braucht.",
       ),
-    icon: codicon("table"),
+    icon: "table",
     keywords:
       "matrice relazioni estensioni requisiti pc piattaforma sistemi windows macos linux arm64 matrix relations extensions requirements platform systems matrice relations extensions prérequis plateforme systèmes matrix beziehungen erweiterungen anforderungen plattform systeme",
     targetPage: "components",
@@ -594,7 +594,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Pourquoi le connecter, comment se connecter, ce qu'il débloque (dépôts, Git, GitHub CLI) et ce qui fonctionne aussi sans lui.",
         "Warum du es verbinden solltest, wie du dich anmeldest, was es freischaltet (Repositorys, Git, GitHub CLI) und was auch ohne es funktioniert.",
       ),
-    icon: codicon("github"),
+    icon: "github",
     keywords:
       "github account accesso login gh codice dispositivo repository clona permesso delete_repo github account sign in device code permission compte connexion code appareil autorisation konto anmeldung gerätecode berechtigung git identity identità user.name user.email noreply firma commit signs safe.directory",
     targetPage: "settings",
@@ -616,7 +616,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Enregistrement automatique et les sept sections : langue et thème, fichiers temporaires, réseau, clé Gemini, mise à jour automatique, qui signe les commits, confidentialité et les informations sur le kit.",
         "Automatisches Speichern und die sieben Abschnitte: Sprache und Design, temporäre Dateien, Netzwerk, Gemini-Schlüssel, automatische Aktualisierung, wer die Commits signiert, Datenschutz und die Informationen zum Kit.",
       ),
-    icon: codicon("settings-gear"),
+    icon: "settings-gear",
     keywords:
       "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento aggiornamento automatico versioni dei componenti automatic update automatische aktualisierung gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema salute del kit copia del kit esporta importa zip copy of the kit export import copie du kit exporter importer kopie des kits exportieren importieren kit health santé du kit zustand des kits settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
@@ -638,7 +638,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Quand ils sont nécessaires, comment les remplir et à quoi ils s'appliquent. Plus comment rendre vos sites visibles aux autres PC du réseau.",
         "Wann du sie brauchst, wie du sie ausfüllst und wofür sie gelten. Dazu, wie andere PCs im Netzwerk deine Websites sehen können.",
       ),
-    icon: codicon("remote"),
+    icon: "remote",
     keywords:
       "rete proxy https http certificati pem ca aziendale lan rete locale no_proxy qr telefono cellulare network proxy certificates company local network phone mobile qr code réseau proxy certificats entreprise réseau local téléphone netzwerk proxy zertifikate firma lokales netzwerk telefon handy",
     targetPage: "settings",
@@ -660,7 +660,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Modifier les recettes de « Nouveau projet » : bases, ajouts, commandes, variables .env, actions. Et essayer une combinaison avant de l'utiliser.",
         "Die Rezepte von „Neues Projekt“ bearbeiten: Basen, Ergänzungen, Befehle, .env-Variablen, Aktionen. Und eine Kombination ausprobieren, bevor du sie verwendest.",
       ),
-    icon: codicon("wand"),
+    icon: "wand",
     keywords:
       "framework ricette istruzioni basi aggiunte prova una combinazione frameworks.json template mine le mie basi my bases mes bases meine basen framework recipes instructions bases additions try combination recettes instructions bases ajouts essayer combinaison rezepte anweisungen basen ergänzungen ausprobieren kombination",
     targetPage: "settings",
@@ -684,7 +684,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Fermer tout ce que le kit a ouvert avant de débrancher la clé ou le disque, sans perdre de données.",
         "Alles schließen, was das Kit geöffnet hat, bevor du den USB-Stick oder die Festplatte abziehst, ohne Daten zu verlieren.",
       ),
-    icon: codicon("debug-disconnect"),
+    icon: "debug-disconnect",
     keywords:
       "rimuovi unità espelli chiavetta usb sicura chiudi tutto remove drive eject usb stick safe close all retirer lecteur éjecter clé usb sécurité fermer tout laufwerk entfernen auswerfen usb-stick sicher alles schließen",
     targetPage: "eject",
@@ -706,7 +706,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qui se passe quand le kit change de place, et comment il se comporte sur le même disque ouvert depuis Windows, macOS et Linux.",
         "Was passiert, wenn das Kit seinen Ort wechselt, und wie es sich auf derselben Festplatte verhält, die unter Windows, macOS und Linux geöffnet wird.",
       ),
-    icon: codicon("layers"),
+    icon: "layers",
     keywords:
       "spostare kit altro pc lettera unità cartella rilocazione macos linux windows stesso disco copia del kit importa move kit another pc drive letter folder relocation same disk copy of the kit import déplacer kit autre pc lettre lecteur dossier même disque verschieben kit anderer pc laufwerksbuchstabe ordner gleiche festplatte",
   },
@@ -727,7 +727,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Mettre à jour Atollo et ses outils, et ce qu'il faut copier pour avoir une sauvegarde complète de votre travail.",
         "Atollo und seine Werkzeuge aktualisieren, und was du kopieren musst, um eine vollständige Sicherung deiner Arbeit zu haben.",
       ),
-    icon: codicon("cloud-download"),
+    icon: "cloud-download",
     keywords:
       "aggiornamenti aggiorna atollo release backup copia sicurezza copia del kit esporta importa zip atollo-before-import copy of the kit export import copie du kit exporter importer kopie des kits exportieren importieren updates update backup copy mises à jour mettre à jour sauvegarde copie aktualisierungen aktualisieren sicherung kopie",
     targetPage: "settings",
@@ -751,7 +751,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Pourquoi le kit ne s'installe pas, ne demande pas de droits d'administrateur et ne touche pas au PC qui l'héberge. Et les exceptions.",
         "Warum sich das Kit nicht installiert, keine Administratorrechte verlangt und den PC, auf dem es läuft, nicht verändert. Und die Ausnahmen.",
       ),
-    icon: codicon("shield"),
+    icon: "shield",
     keywords:
       "portabile isolamento variabili ambiente registro amministratore tracce env portable isolation environment variables registry administrator traces portable isolement variables d'environnement registre administrateur traces portabel isolierung umgebungsvariablen registrierung administrator spuren",
   },
@@ -772,7 +772,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "projects et data : ce qu'il y a dans chaque dossier, quels fichiers sont à vous, lesquels sont au kit et lesquels sont protégés.",
         "projects und data: was in jedem Ordner liegt, welche Dateien dir gehören, welche dem Kit und welche geschützt sind.",
       ),
-    icon: codicon("folder-library"),
+    icon: "folder-library",
     keywords:
       "cartelle disco projects data apps home settings.json components.txt diagnostics struttura folders disk structure dossiers disque structure ordner festplatte struktur",
   },
@@ -788,7 +788,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Ce qui démarre avec l'application, ce qui s'arrête quand vous la fermez, et pourquoi aucun programme ne reste allumé à votre insu.",
         "Was mit der App startet, was beim Schließen beendet wird und warum keine Programme ohne dein Wissen weiterlaufen.",
       ),
-    icon: codicon("pulse"),
+    icon: "pulse",
     keywords:
       "processi background job avvio chiusura istanza singola server demoni processes background startup shutdown single instance daemons processus arrière-plan démarrage fermeture instance unique prozesse hintergrund start beenden einzelinstanz",
   },
@@ -809,7 +809,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les sources officielles de chaque composant, les vérifications cryptographiques, le téléchargement à la main et le tableau complet des sources.",
         "Die offiziellen Quellen jeder Komponente, die kryptografischen Prüfungen, der Download von Hand und die vollständige Tabelle der Quellen.",
       ),
-    icon: codicon("lock"),
+    icon: "lock",
     keywords:
       "fonti download verifica sha-256 hash firma sicurezza tabella fonti a mano by hand sources download verification signature security sources téléchargement vérification signature sécurité quellen download prüfung signatur sicherheit",
     targetPage: "components",
@@ -825,7 +825,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les commandes de l'exécutable d'Atollo pour préparer, vérifier et synchroniser le kit sans ouvrir la fenêtre.",
         "Die Befehle der Atollo-Programmdatei, um das Kit vorzubereiten, zu prüfen und zu synchronisieren, ohne das Fenster zu öffnen.",
       ),
-    icon: codicon("symbol-keyword"),
+    icon: "symbol-keyword",
     keywords:
       "cli riga di comando prepare check check --kit check --files verifica i file salute del kit kit health components versions env sync models llm diagnostics diagnostica powershell command line ligne de commande kommandozeile befehlszeile",
   },
@@ -848,7 +848,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Sur un nouveau PC, d'abord la « Santé du kit ». Puis les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées. Et comment signaler un problème avec le zip du diagnostic.",
         "Auf einem neuen PC zuerst der „Zustand des Kits“. Dann die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen. Und wie du ein Problem mit dem Diagnose-Zip meldest.",
       ),
-    icon: codicon("warning"),
+    icon: "warning",
     keywords:
       "problemi errori risoluzione salute del kit kit health santé du kit zustand des kits pc nuovo new pc fat32 exfat noexec spazio libero free space percorso path permessi permissions takeown icacls chown librerie libraries libaio libnuma libicu libvulkan1 porta occupata programma si chiude libreria mancante chiavetta danneggiata verifica i file reinstalla program crashes missing library damaged usb stick check the files reinstall programme plante bibliothèque manquante vérifier les fichiers programm stürzt ab fehlende bibliothek dateien prüfen download fallito non parte errore segnala un problema segnalazione diagnostica esporta zip log issue github bug problems errors troubleshooting port in use download failed report a problem export diagnostics problèmes erreurs dépannage port occupé téléchargement échoué signaler un problème signalement exporter le diagnostic probleme fehler fehlerbehebung port belegt download fehlgeschlagen problem melden meldung diagnose exportieren",
   },
@@ -863,7 +863,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Des réponses courtes aux questions qui reviennent le plus souvent.",
         "Kurze Antworten auf die Fragen, die am häufigsten gestellt werden.",
       ),
-    icon: codicon("question"),
+    icon: "question",
     keywords:
       "faq domande frequenti risposte frequently asked questions answers questions fréquentes réponses häufige fragen antworten",
   },
@@ -878,7 +878,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
         "Les mots du guide expliqués simplement, de A à Z.",
         "Die Begriffe der Anleitung einfach erklärt, von A bis Z.",
       ),
-    icon: codicon("book"),
+    icon: "book",
     keywords:
       "glossario parole termini definizioni glossary words terms definitions glossaire mots termes définitions glossar begriffe definitionen",
   },

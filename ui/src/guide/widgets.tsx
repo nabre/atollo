@@ -163,14 +163,14 @@ export function GuideCode({ title, path, code }: W["GuideCode"]) {
 }
 
 /** An architectural principle or feature card. */
-export function GuideCard({ icon: Icon, badge, title, children, actionLabel, onAction }: W["GuideCard"]) {
+export function GuideCard({ icon, badge, title, children, actionLabel, onAction }: W["GuideCard"]) {
   return (
     <div className="flex flex-col justify-between gap-2.5 rounded-md border border-vsc-border bg-vsc-sidebar/40 p-3.5">
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="flex size-6 shrink-0 items-center justify-center rounded bg-vsc-badge/20 text-vsc-focus">
-              <Icon size={16} aria-hidden="true" />
+              <Codicon name={icon} size={16} />
             </span>
             <h4 className="m-0 text-[13px] font-semibold text-vsc-settings-header">{title}</h4>
           </div>

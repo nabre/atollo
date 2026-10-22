@@ -1,8 +1,7 @@
 // Chapter 1 of the Guide, «Primi passi»: what Atollo is, the first start,
 // the window and a first project from start to finish.
 import { Tag } from "../../shared/tags";
-import type { IconType } from "react-icons";
-import { codicon, Properties } from "../../workbench";
+import { Properties } from "../../workbench";
 import { rich, tr } from "../core/lang";
 import { GUIDE_GROUPS, GUIDE_TOPICS, type AppPageTarget, type GuideTopicId } from "../model";
 import {
@@ -57,9 +56,9 @@ function ChapterMap() {
 /** The pages of the activity bar, each with a button that opens it. */
 function PageMap() {
   const nav = useContext(GuideNavContext);
-  const pages: { icon: IconType; name: string; text: string; page?: AppPageTarget; topic: GuideTopicId }[] = [
+  const pages: { icon: string; name: string; text: string; page?: AppPageTarget; topic: GuideTopicId }[] = [
     {
-      icon: codicon("folder-library"),
+      icon: "folder-library",
       name: tr("Progetti", "Projects", "Projets", "Projekte"),
       text: tr(
         "Il centro del lavoro: l'elenco dei progetti, il «Pannello rapido», la creazione di progetti nuovi e la pagina di ogni progetto.",
@@ -71,7 +70,7 @@ function PageMap() {
       topic: "project-page",
     },
     {
-      icon: codicon("hubot"),
+      icon: "hubot",
       name: tr("Agenti", "Agents", "Agents", "Agenten"),
       text: tr(
         "Gli agenti IA installati: accesso al tuo account, limiti del piano e consumi, cartella condivisa.",
@@ -83,7 +82,7 @@ function PageMap() {
       topic: "agents",
     },
     {
-      icon: codicon("chip"),
+      icon: "chip",
       name: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
       text: tr(
         "Modelli linguistici sul PC per Pi e la chat nel browser: il server llama.cpp, i download dal catalogo e da Hugging Face.",
@@ -95,7 +94,7 @@ function PageMap() {
       topic: "models",
     },
     {
-      icon: codicon("database"),
+      icon: "database",
       name: tr("Database", "Databases", "Bases de données", "Datenbanken"),
       text: tr(
         "I server MySQL e MongoDB del kit: avvio, password, porte, versioni, phpMyAdmin e mongo-express.",
@@ -107,7 +106,7 @@ function PageMap() {
       topic: "databases",
     },
     {
-      icon: codicon("globe"),
+      icon: "globe",
       name: tr("Server Web", "Web Servers", "Serveurs web", "Webserver"),
       text: tr(
         "I server Caddy e Apache condivisi fra i progetti e i siti .localhost che servono.",
@@ -119,7 +118,7 @@ function PageMap() {
       topic: "websites",
     },
     {
-      icon: codicon("terminal"),
+      icon: "terminal",
       name: tr("Terminali", "Terminals", "Terminaux", "Terminals"),
       text: tr(
         "Console con gli strumenti del kit, in qualsiasi cartella del PC.",
@@ -131,7 +130,7 @@ function PageMap() {
       topic: "terminals",
     },
     {
-      icon: codicon("extensions"),
+      icon: "extensions",
       name: tr("Strumenti", "Tools", "Outils", "Werkzeuge"),
       text: tr(
         "Linguaggi, agenti, database e programmi del kit: installare, aggiornare, togliere, più versioni.",
@@ -143,7 +142,7 @@ function PageMap() {
       topic: "tools",
     },
     {
-      icon: codicon("book"),
+      icon: "book",
       name: tr("Guida", "Guide", "Guide", "Anleitung"),
       text: tr(
         "Questa guida. Ogni pagina ha anche un'icona a forma di libro che apre l'argomento giusto.",
@@ -154,7 +153,7 @@ function PageMap() {
       topic: "welcome",
     },
     {
-      icon: codicon("settings-gear"),
+      icon: "settings-gear",
       name: tr("Impostazioni", "Settings", "Paramètres", "Einstellungen"),
       text: tr(
         "Lingua, tema, rete, account GitHub e chi firma i commit, chiave di Gemini, aggiornamenti, privacy e istruzioni dei framework, salvati da soli.",
@@ -166,7 +165,7 @@ function PageMap() {
       topic: "settings",
     },
     {
-      icon: codicon("debug-disconnect"),
+      icon: "debug-disconnect",
       name: tr("Rimuovi l'unità", "Remove drive", "Retirer le lecteur", "Laufwerk entfernen"),
       text: tr(
         "Chiude tutto ciò che il kit ha aperto, prima di staccare la chiavetta.",
@@ -398,7 +397,7 @@ export const START: TopicTexts = {
       >
         <Cards>
           <GuideCard
-            icon={codicon("folder-library")}
+            icon="folder-library"
             title={tr(
               "Tutto in una cartella",
               "Everything in one folder",
@@ -414,7 +413,7 @@ export const START: TopicTexts = {
             )}
           </GuideCard>
           <GuideCard
-            icon={codicon("extensions")}
+            icon="extensions"
             title={tr(
               "Il kit pensa agli strumenti",
               "The kit takes care of the tools",
@@ -430,7 +429,7 @@ export const START: TopicTexts = {
             )}
           </GuideCard>
           <GuideCard
-            icon={codicon("globe")}
+            icon="globe"
             title={tr("Solo su questo PC", "Only on this PC", "Uniquement sur ce PC", "Nur auf diesem PC")}
           >
             {tr(

@@ -92,7 +92,6 @@ export function GuidePage({
 
   const nav = useMemo<GuideNav>(() => ({ select: setTopicId, open: onNavigate }), [onNavigate]);
 
-  const TopicIcon = topic.icon;
   const searching = search.trim() !== "";
 
   return (
@@ -143,7 +142,6 @@ export function GuidePage({
                   >
                     <List label={g.title()}>
                       {items.map((x) => {
-                        const Icon = x.icon;
                         return (
                           <ListRow
                             key={x.id}
@@ -151,7 +149,7 @@ export function GuidePage({
                             onSelect={() => {
                               setTopicId(x.id);
                             }}
-                            icon={<Icon size={15} aria-hidden="true" />}
+                            icon={<Codicon name={x.icon} size={15} />}
                             label={x.title()}
                             decorations={<span className="font-mono text-[11px] opacity-70">{sectionCode(x)}</span>}
                           />
@@ -185,7 +183,7 @@ export function GuidePage({
           actions={<Tag tone="focus">{`${String(index + 1)} / ${String(GUIDE_TOPICS.length)}`}</Tag>}
         />
         <EditorHeader
-          icon={<TopicIcon size={44} aria-hidden="true" className="text-vsc-focus" />}
+          icon={<Codicon name={topic.icon} size={44} className="text-vsc-focus" />}
           title={topic.title()}
           meta={[
             <Tag key="sec" tone="focus">
