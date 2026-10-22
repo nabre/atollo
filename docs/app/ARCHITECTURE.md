@@ -313,7 +313,7 @@ In the modules `anyhow::Result`, with the context the log needs. Commands return
 | --- | --- | --- |
 | Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar |
 | Toward Rust | `api\` | one file per area, like `commands\` (above); `index.ts` re-exports them, pages import from `./api`; `preview-runs.ts` plays the actions in the browser preview |
-| Shared helpers | `shared\`: `hooks.ts`, `common.tsx`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | helpers without a page, used by several folders: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below); `ActionButton`, `ErrorLine`, `editorHint`; tags, the brands' logos, the brand; the quick pick of Quick Open and of the command palette |
+| Shared helpers | `shared\`: `hooks.ts`, `common.tsx`, `format.ts`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | helpers without a page, used by several folders: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below); `ActionButton`, `ErrorLine`, `editorHint`, the port fields (`usePortField`, `validPort`); sizes as text (`formatBytes`, `gb`, `sizeText`); tags, the brands' logos, the brand; the quick pick of Quick Open and of the command palette |
 | Base components | `workbench\` | the VSCodium controls (`@vscode-elements/elements`), the codicons and the workbench parts (below); from the rest of the app it imports only `i18n` |
 | Theme | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | fonts, the codicon font and brand touches; `--vsc-*` colors for Tailwind; all the VS Code `--vscode-*` variables; VSCodium 1.135's sizes and the `--vsc-size-*` measures (the last three generated, below) |
 | Pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `models\`, `servers\`, `terminal\`, `guide\` | one folder per page or part, with an `index.ts` that exports only what the other pages use |
@@ -325,7 +325,7 @@ The page folders:
 | Folder | Files |
 | --- | --- |
 | `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx`, `extensions.tsx` (editor extensions by language: the kit's matrix and a project's own) |
-| `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases) |
+| `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases), `engines.ts` (the engines' names, `ENGINE_NAMES`) |
 | `agents\` | `page.tsx` (Agents page, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limits and consumption), `token.tsx` (Claude Code's token on macOS) |
 | `models\` | `page.tsx` (Local models page: server, Pi's model, Atollo's catalog, Hugging Face, this PC; D-151) |
 | `frameworks\` | `model.ts` (data and hooks), `fields.tsx` (instruction fields), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
