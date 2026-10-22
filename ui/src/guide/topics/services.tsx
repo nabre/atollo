@@ -615,6 +615,12 @@ export const SERVICES: TopicTexts = {
               "Um zu einer Kopie zurückzukehren, drück „Wiederherstellen…“ neben der Datei und bestätige: „Die aktuellen Daten werden ersetzt.“",
             ),
             tr(
+              "Prima di ripristinare, il kit copia ciò che il database contiene ora, in <database>-prima-del-ripristino-<data e ora>: se la copia non riesce, il ripristino non si fa. Così un ripristino del file sbagliato si annulla ripristinando quella copia.",
+              "Before restoring, the kit copies what the database holds now, into <database>-prima-del-ripristino-<date and time>: if the copy fails, the restore is not done. So a restore of the wrong file is undone by restoring that copy.",
+              "Avant de restaurer, le kit copie ce que la base contient maintenant, dans <base>-prima-del-ripristino-<date et heure> : si la copie échoue, la restauration n'a pas lieu. Ainsi, la restauration du mauvais fichier s'annule en restaurant cette copie.",
+              "Vor dem Wiederherstellen kopiert das Kit, was die Datenbank jetzt enthält, nach <Datenbank>-prima-del-ripristino-<Datum und Uhrzeit>: Gelingt die Kopie nicht, wird nicht wiederhergestellt. So machst du die Wiederherstellung der falschen Datei rückgängig, indem du diese Kopie wiederherstellst.",
+            ),
+            tr(
               "«Apri la cartella delle copie» apre la cartella: per ripristinare una copia arrivata da fuori (da un collega, da un altro kit) mettila lì e comparirà nell'elenco.",
               "“Open the copies folder” opens the folder: to restore a copy that came from outside (from a colleague, from another kit), put it there and it will appear in the list.",
               "« Ouvrir le dossier des copies » ouvre le dossier : pour restaurer une copie venue de l'extérieur (d'un collègue, d'un autre kit), placez-la là et elle apparaîtra dans la liste.",
@@ -630,6 +636,14 @@ export const SERVICES: TopicTexts = {
             "Die Kopien liegen im Kit, unter data\\projects\\<Projekt>\\private\\backups. Bewahr zur Sicherheit auch eine außerhalb des Kits auf: Wenn du den USB-Stick verlierst, verlierst du auch die Kopien.",
           )}
         </Callout>
+        <P>
+          {tr(
+            "Delle copie di sicurezza («prima-del-ripristino» e «prima-del-cambio-di-versione») il kit tiene le ultime 3 di ogni tipo ed elimina le più vecchie. Le copie fatte con «Esporta» non vengono mai eliminate.",
+            "Of the safety copies (“prima-del-ripristino” and “prima-del-cambio-di-versione”) the kit keeps the last 3 of each kind and deletes the older ones. The copies made with “Export” are never deleted.",
+            "Des copies de sécurité (« prima-del-ripristino » et « prima-del-cambio-di-versione »), le kit garde les 3 dernières de chaque type et supprime les plus anciennes. Les copies faites avec « Exporter » ne sont jamais supprimées.",
+            "Von den Sicherheitskopien („prima-del-ripristino“ und „prima-del-cambio-di-versione“) behält das Kit die letzten 3 jeder Art und löscht die älteren. Die mit „Exportieren“ erstellten Kopien werden nie gelöscht.",
+          )}
+        </P>
       </Section>
 
       <Section
@@ -642,10 +656,10 @@ export const SERVICES: TopicTexts = {
       >
         <P>
           {tr(
-            "Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie su quale gira il database del progetto. Cambiandola, database e utente si creano anche sulla nuova versione, vuoti: i dati si portano con una copia (Esporta sulla vecchia, Ripristina sulla nuova). Se la versione scelta non è installata, compare «Installa …».",
-            "If you have several versions of MySQL or MongoDB, the “Server version” menu chooses which one the project's database runs on. When you change it, the database and user are also created on the new version, empty: you carry the data over with a copy (Export on the old one, Restore on the new one). If the chosen version is not installed, “Install …” appears.",
-            "Si vous avez plusieurs versions de MySQL ou MongoDB, le menu « Version du serveur » choisit sur laquelle tourne la base de données du projet. Quand vous la changez, la base et l'utilisateur sont créés aussi sur la nouvelle version, vides : les données se transfèrent avec une copie (Exporter sur l'ancienne, Restaurer sur la nouvelle). Si la version choisie n'est pas installée, « Installer … » apparaît.",
-            "Wenn du mehrere Versionen von MySQL oder MongoDB hast, wählt das Menü „Serverversion“, auf welcher die Datenbank des Projekts läuft. Wenn du sie wechselst, werden Datenbank und Benutzer auch auf der neuen Version angelegt, leer: Die Daten überträgst du mit einer Kopie (Exportieren auf der alten, Wiederherstellen auf der neuen). Ist die gewählte Version nicht installiert, erscheint „… installieren“.",
+            "Se hai più versioni di MySQL o MongoDB, il menu «Versione del server» sceglie su quale gira il database del progetto. Cambiandola, database e utente si creano anche sulla nuova versione, vuoti: i dati si portano con una copia (Esporta sulla vecchia, Ripristina sulla nuova). Se la versione scelta non è installata, compare «Installa …». Prima del cambio il kit copia il database sulla versione che lascia, in <database>-prima-del-cambio-di-versione-<data e ora>: se la copia non riesce, la versione non cambia (se quella versione non è più installata, non c'è niente da copiare e il cambio si fa).",
+            "If you have several versions of MySQL or MongoDB, the “Server version” menu chooses which one the project's database runs on. When you change it, the database and user are also created on the new version, empty: you carry the data over with a copy (Export on the old one, Restore on the new one). If the chosen version is not installed, “Install …” appears. Before the change the kit copies the database on the version it leaves, into <database>-prima-del-cambio-di-versione-<date and time>: if the copy fails, the version does not change (if that version is no longer installed, there is nothing to copy and the change goes ahead).",
+            "Si vous avez plusieurs versions de MySQL ou MongoDB, le menu « Version du serveur » choisit sur laquelle tourne la base de données du projet. Quand vous la changez, la base et l'utilisateur sont créés aussi sur la nouvelle version, vides : les données se transfèrent avec une copie (Exporter sur l'ancienne, Restaurer sur la nouvelle). Si la version choisie n'est pas installée, « Installer … » apparaît. Avant le changement, le kit copie la base sur la version qu'il quitte, dans <base>-prima-del-cambio-di-versione-<date et heure> : si la copie échoue, la version ne change pas (si cette version n'est plus installée, il n'y a rien à copier et le changement se fait).",
+            "Wenn du mehrere Versionen von MySQL oder MongoDB hast, wählt das Menü „Serverversion“, auf welcher die Datenbank des Projekts läuft. Wenn du sie wechselst, werden Datenbank und Benutzer auch auf der neuen Version angelegt, leer: Die Daten überträgst du mit einer Kopie (Exportieren auf der alten, Wiederherstellen auf der neuen). Ist die gewählte Version nicht installiert, erscheint „… installieren“. Vor dem Wechsel kopiert das Kit die Datenbank auf der Version, die es verlässt, nach <Datenbank>-prima-del-cambio-di-versione-<Datum und Uhrzeit>: Gelingt die Kopie nicht, ändert sich die Version nicht (ist diese Version nicht mehr installiert, gibt es nichts zu kopieren, und der Wechsel erfolgt).",
           )}
         </P>
       </Section>
@@ -670,6 +684,12 @@ export const SERVICES: TopicTexts = {
               "MySQL copies are .sql files made with mysqldump (--single-transaction, with routines, triggers and events); MongoDB copies are .archive.gz files made with mongodump. The MySQL restore runs with the project's user and without client commands; the MongoDB one touches only the project's database.",
               "Les copies MySQL sont des fichiers .sql faits avec mysqldump (--single-transaction, avec routines, triggers et événements) ; celles de MongoDB des fichiers .archive.gz faits avec mongodump. La restauration MySQL tourne avec l'utilisateur du projet et sans commandes du client ; celle de MongoDB ne touche que la base du projet.",
               "MySQL-Kopien sind .sql-Dateien, erstellt mit mysqldump (--single-transaction, mit Routinen, Triggern und Events); MongoDB-Kopien sind .archive.gz-Dateien, erstellt mit mongodump. Die MySQL-Wiederherstellung läuft mit dem Benutzer des Projekts und ohne Client-Befehle; die MongoDB-Wiederherstellung betrifft nur die Datenbank des Projekts.",
+            ),
+            tr(
+              "Le copie di sicurezza MySQL usano mysqldump --force: un oggetto rotto (una vista su una tabella eliminata) non ferma la copia del resto. Prima di un ripristino MySQL l'amministratore toglie viste, trigger, routine ed eventi del solo database del progetto (quelli di root l'utente del progetto non potrebbe sostituirli); la copia li ricrea come utente del progetto.",
+              "MySQL safety copies use mysqldump --force: a broken object (a view on a dropped table) does not stop the copy of the rest. Before a MySQL restore the administrator drops the views, triggers, routines and events of the project's database only (the project's user could not replace those of root); the copy creates them again as the project's user.",
+              "Les copies de sécurité MySQL utilisent mysqldump --force : un objet cassé (une vue sur une table supprimée) n'arrête pas la copie du reste. Avant une restauration MySQL, l'administrateur supprime les vues, triggers, routines et événements de la seule base du projet (l'utilisateur du projet ne pourrait pas remplacer ceux de root) ; la copie les recrée en tant qu'utilisateur du projet.",
+              "MySQL-Sicherheitskopien verwenden mysqldump --force: Ein defektes Objekt (eine View auf einer gelöschten Tabelle) hält die Kopie des Rests nicht auf. Vor einer MySQL-Wiederherstellung entfernt der Administrator Views, Trigger, Routinen und Events nur der Datenbank des Projekts (die von root könnte der Benutzer des Projekts nicht ersetzen); die Kopie legt sie als Benutzer des Projekts neu an.",
             ),
             tr(
               "Eliminando il progetto dall'app, il kit elimina anche database e utente su ogni versione in cui li aveva creati.",
