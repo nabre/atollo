@@ -322,7 +322,7 @@ export function ProjectPage({
         {section === "editor" && (
           <>
             <EditorSettingsBox project={p.id} />
-            <ProjectMcpBox project={p.id} />
+            <ProjectMcpBox project={p.id} engines={dbs?.dbs.map((d) => d.engine) ?? []} />
           </>
         )}
         {section === "git" && <Git status={status} />}

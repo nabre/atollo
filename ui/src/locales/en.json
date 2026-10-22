@@ -973,5 +973,16 @@
   "Salute del kit": "Kit health",
   "Disco, spazio libero, percorso del kit, file resi privati da un altro account, librerie di sistema.": "Drive, free space, the kit's path, files made private by another account, system libraries.",
   "Controllo in corso…": "Checking…",
-  "Controlla di nuovo": "Check again"
+  "Controlla di nuovo": "Check again",
+  "Issue, pull request e repository su GitHub, con l'account GitHub del kit.": "Issues, pull requests and repositories on GitHub, with the kit's GitHub account.",
+  "Un browser che l'agente apre e usa: pagine, clic, moduli, schermate.": "A browser the agent opens and uses: pages, clicks, forms, screenshots.",
+  "Legge una pagina web e la dà all'agente come testo.": "Reads a web page and gives it to the agent as text.",
+  "Legge e scrive i file, solo nella cartella del progetto.": "Reads and writes files, only in the project's folder.",
+  "Interroga il database MySQL del progetto (DBHub).": "Queries the project's MySQL database (DBHub).",
+  "Interroga il database MongoDB del progetto.": "Queries the project's MongoDB database.",
+  "Server pronti": "Ready servers",
+  "Server MCP del kit": "The kit's MCP servers",
+  "Nessuno.": "None.",
+  "data\\agents\\mcp.json non è JSON valido: Atollo non lo riscrive. Correggilo nell'editor.": "data\\agents\\mcp.json is not valid JSON: Atollo does not rewrite it. Fix it in the editor.",
+  "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.": "For every agent in every project: Atollo carries them to Claude Code, Codex, Antigravity and Pi. The programs they need (Node for npx, uv for uvx) are installed when the agent first starts; the GitHub token and the project's databases reach the agent when it starts, never written in the files."
 }

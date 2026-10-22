@@ -20,6 +20,7 @@ import { ActionButton, ErrorLine } from "../common";
 import { ComponentLogo, componentIcon } from "../logos";
 import { AgentUsage, useStats } from "./stats";
 import { TokenLink } from "./token";
+import { KitMcpBox } from "../projects/mcp";
 import { useAction, useLoad } from "../hooks";
 import {
   Button,
@@ -272,6 +273,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                 {t("Apri la cartella condivisa")}
               </Button>
             </EditorSection>
+            <KitMcpBox />
           </EditorBody>
         </div>
       ) : (

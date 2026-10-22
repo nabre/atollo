@@ -416,6 +416,14 @@ fn tools(p: &Paths) -> Vec<Tool> {
     ]
 }
 
+/// `work` with the sync's lock held: a change of the shared files (the kit's
+/// MCP servers from the page) never meets a sync halfway.
+pub fn locked<T>(kit: &Kit, work: impl FnOnce(&Paths) -> Result<T>) -> Result<T> {
+    let p = Paths::of(kit);
+    let _lock = Lock::take(&p.state)?;
+    work(&p)
+}
+
 /// The whole sync. `project`: also the project skills of that folder.
 pub fn run(kit: &Kit, project: Option<&Path>) -> Report {
     let p = Paths::of(kit);

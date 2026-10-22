@@ -1,8 +1,18 @@
-// A project's own MCP servers (DECISIONS.md D-78): in its .mcp.json for
-// Claude Code, copied to .codex\config.toml for Codex; Antigravity has only
-// the kit's servers.
+// MCP servers: a project's own (DECISIONS.md D-78), in its .mcp.json for
+// Claude Code, copied to .codex\config.toml for Codex; and the kit's, in
+// data\agents\mcp.json, that the alignment carries to every agent. Both
+// lists offer the ready servers of their kind (N-7, D-156).
 import { useCallback, useState, type SyntheticEvent } from "react";
-import { projectMcp, projectMcpSet, type McpServer, type McpView } from "../api";
+import {
+  kitMcp,
+  kitMcpSet,
+  mcpPresets,
+  projectMcp,
+  projectMcpSet,
+  type McpPreset,
+  type McpServer,
+  type McpView,
+} from "../api";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine, LoadError } from "../common";
 import { useAction, useLoad } from "../hooks";
@@ -10,6 +20,24 @@ import { codicon, Select, TextArea, TextField } from "../workbench";
 
 function describe(s: McpServer): string {
   return s.kind === "http" ? (s.url ?? "") : [s.command ?? "", ...s.args].join(" ");
+}
+
+/** What a ready server does, in the user's language. */
+function presetText(id: McpPreset["id"]): string {
+  switch (id) {
+    case "github":
+      return t("Issue, pull request e repository su GitHub, con l'account GitHub del kit.");
+    case "playwright":
+      return t("Un browser che l'agente apre e usa: pagine, clic, moduli, schermate.");
+    case "fetch":
+      return t("Legge una pagina web e la dà all'agente come testo.");
+    case "filesystem":
+      return t("Legge e scrive i file, solo nella cartella del progetto.");
+    case "mysql":
+      return t("Interroga il database MySQL del progetto (DBHub).");
+    case "mongodb":
+      return t("Interroga il database MongoDB del progetto.");
+  }
 }
 
 function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCancel: () => void }) {
@@ -37,6 +65,7 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
           : [],
       url: kind === "http" ? url.trim() : null,
       env: {},
+      headers: {},
     });
   };
   return (
@@ -95,34 +124,47 @@ function AddServer({ onAdd, onCancel }: { onAdd: (s: McpServer) => void; onCance
   );
 }
 
-export function ProjectMcpBox({ project }: { project: string }) {
-  const read = useCallback(() => projectMcp(project), [project]);
+function McpBox({
+  id,
+  title,
+  read,
+  write,
+  presets,
+  empty,
+  readOnly,
+  note,
+}: {
+  id: string;
+  title: string;
+  read: () => Promise<McpView>;
+  write: (servers: McpServer[]) => Promise<void>;
+  /** The ready servers this list may take. */
+  presets: McpPreset[];
+  empty: string;
+  readOnly: string;
+  note: string;
+}) {
   const { data: view, error: loadErr, reload: load, retry } = useLoad<McpView | null>(read, null, { onError: "show" });
   const [adding, setAdding] = useState(false);
   const { busy, error, run } = useAction(load);
   const loadError = <LoadError error={loadErr} onRetry={retry} className="px-3 py-2" />;
   if (!view) return loadError;
-  const save = (servers: McpServer[]) => {
-    run("save", () => projectMcpSet(project, servers));
+  const save = (key: string, servers: McpServer[]) => {
+    run(key, () => write(servers));
   };
+  // A ready server already in the list (by name) is not offered again.
+  const ready = presets.filter((p) => !view.servers.some((s) => s.name === p.server.name));
   return (
-    <section aria-labelledby="project-mcp" className="border-t border-vsc-border">
-      <h2
-        id="project-mcp"
-        className="flex h-8 items-center gap-2 px-3 text-[12px] font-semibold text-vsc-sidebar-title"
-      >
-        {t("Server MCP del progetto")}
+    <section aria-labelledby={id} className="border-t border-vsc-border">
+      <h2 id={id} className="flex h-8 items-center gap-2 px-3 text-[12px] font-semibold text-vsc-sidebar-title">
+        {title}
       </h2>
       {view.readOnly ? (
-        <p className="px-3 py-2 text-vsc-desc">
-          {t(".mcp.json non è JSON semplice: Atollo non lo riscrive. Modificalo nell'editor.")}
-        </p>
+        <p className="px-3 py-2 text-vsc-desc">{readOnly}</p>
       ) : (
         <>
           <ul className="divide-y divide-vsc-border">
-            {view.servers.length === 0 && (
-              <li className="px-3 py-1.5 text-vsc-desc">{t("Nessuno: solo quelli del kit.")}</li>
-            )}
+            {view.servers.length === 0 && <li className="px-3 py-1.5 text-vsc-desc">{empty}</li>}
             {view.servers.map((s) => (
               <li key={s.name} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
                 <span className="font-semibold">{s.name}</span>
@@ -130,19 +172,46 @@ export function ProjectMcpBox({ project }: { project: string }) {
                 <ActionButton
                   icon={codicon("trash")}
                   label={t("Togli")}
-                  busy={busy === "save"}
+                  busy={busy === `remove-${s.name}`}
+                  disabled={busy !== null}
                   onClick={() => {
-                    save(view.servers.filter((x) => x.name !== s.name));
+                    save(
+                      `remove-${s.name}`,
+                      view.servers.filter((x) => x.name !== s.name),
+                    );
                   }}
                 />
               </li>
             ))}
           </ul>
+          {ready.length > 0 && (
+            <div className="border-t border-vsc-border">
+              <h3 className="px-3 pt-2 text-[12px] font-semibold text-vsc-desc">{t("Server pronti")}</h3>
+              <ul className="divide-y divide-vsc-border">
+                {ready.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
+                    <span className="font-semibold">{p.server.name}</span>
+                    <span className="min-w-0 flex-1 text-[12px] text-vsc-desc">{presetText(p.id)}</span>
+                    <ActionButton
+                      icon={codicon("add")}
+                      label={t("Aggiungi")}
+                      small
+                      busy={busy === `add-${p.id}`}
+                      disabled={busy !== null}
+                      onClick={() => {
+                        save(`add-${p.id}`, [...view.servers, p.server]);
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {adding ? (
             <AddServer
               onAdd={(s) => {
                 setAdding(false);
-                save([...view.servers.filter((x) => x.name !== s.name), s]);
+                save("add", [...view.servers.filter((x) => x.name !== s.name), s]);
               }}
               onCancel={() => {
                 setAdding(false);
@@ -159,15 +228,59 @@ export function ProjectMcpBox({ project }: { project: string }) {
               />
             </div>
           )}
-          <p className="px-4 pb-3 text-[12px] text-vsc-desc">
-            {t(
-              "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Atollo lo tiene allineato); Antigravity e Pi usano solo i server del kit.",
-            )}
-          </p>
+          <p className="px-4 pb-3 text-[12px] text-vsc-desc">{note}</p>
         </>
       )}
       {loadError}
       <ErrorLine error={error} />
     </section>
+  );
+}
+
+/** The ready servers of `scope`; none while they load or if they fail
+ * (the list itself still works). */
+function usePresets(scope: McpPreset["scope"]): McpPreset[] {
+  const { data } = useLoad<McpPreset[] | null>(mcpPresets, null, { onError: "keep" });
+  return (data ?? []).filter((p) => p.scope === scope);
+}
+
+/** `engines`: the databases created for the project, whose ready servers
+ * it is offered. */
+export function ProjectMcpBox({ project, engines }: { project: string; engines: string[] }) {
+  const read = useCallback(() => projectMcp(project), [project]);
+  const write = useCallback((servers: McpServer[]) => projectMcpSet(project, servers), [project]);
+  const presets = usePresets("project").filter((p) => p.engine === null || engines.includes(p.engine));
+  return (
+    <McpBox
+      id="project-mcp"
+      title={t("Server MCP del progetto")}
+      read={read}
+      write={write}
+      presets={presets}
+      empty={t("Nessuno: solo quelli del kit.")}
+      readOnly={t(".mcp.json non è JSON semplice: Atollo non lo riscrive. Modificalo nell'editor.")}
+      note={t(
+        "Solo in questo progetto, oltre a quelli del kit. Claude Code li legge da .mcp.json (chiede conferma al primo uso), Codex da .codex\\config.toml (Atollo lo tiene allineato); Antigravity e Pi usano solo i server del kit.",
+      )}
+    />
+  );
+}
+
+/** The kit's servers, on the Agents page. */
+export function KitMcpBox() {
+  const presets = usePresets("kit");
+  return (
+    <McpBox
+      id="kit-mcp"
+      title={t("Server MCP del kit")}
+      read={kitMcp}
+      write={kitMcpSet}
+      presets={presets}
+      empty={t("Nessuno.")}
+      readOnly={t("data\\agents\\mcp.json non è JSON valido: Atollo non lo riscrive. Correggilo nell'editor.")}
+      note={t(
+        "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.",
+      )}
+    />
   );
 }

@@ -973,5 +973,16 @@
   "Salute del kit": "Zustand des Kits",
   "Disco, spazio libero, percorso del kit, file resi privati da un altro account, librerie di sistema.": "Laufwerk, freier Platz, Pfad des Kits, von einem anderen Konto privat gemachte Dateien, Systembibliotheken.",
   "Controllo in corso…": "Prüfung läuft…",
-  "Controlla di nuovo": "Erneut prüfen"
+  "Controlla di nuovo": "Erneut prüfen",
+  "Issue, pull request e repository su GitHub, con l'account GitHub del kit.": "Issues, Pull Requests und Repositorys auf GitHub, mit dem GitHub-Konto des Kits.",
+  "Un browser che l'agente apre e usa: pagine, clic, moduli, schermate.": "Ein Browser, den der Agent öffnet und bedient: Seiten, Klicks, Formulare, Bildschirmfotos.",
+  "Legge una pagina web e la dà all'agente come testo.": "Liest eine Webseite und gibt sie dem Agenten als Text.",
+  "Legge e scrive i file, solo nella cartella del progetto.": "Liest und schreibt Dateien, nur im Ordner des Projekts.",
+  "Interroga il database MySQL del progetto (DBHub).": "Fragt die MySQL-Datenbank des Projekts ab (DBHub).",
+  "Interroga il database MongoDB del progetto.": "Fragt die MongoDB-Datenbank des Projekts ab.",
+  "Server pronti": "Fertige Server",
+  "Server MCP del kit": "MCP-Server des Kits",
+  "Nessuno.": "Keiner.",
+  "data\\agents\\mcp.json non è JSON valido: Atollo non lo riscrive. Correggilo nell'editor.": "data\\agents\\mcp.json ist kein gültiges JSON: Atollo schreibt es nicht neu. Korrigiere es im Editor.",
+  "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.": "Für alle Agenten in allen Projekten: Atollo bringt sie zu Claude Code, Codex, Antigravity und Pi. Die nötigen Programme (Node für npx, uv für uvx) werden beim ersten Start des Agenten installiert; das GitHub-Token und die Datenbanken des Projekts erreichen den Agenten beim Start, nie in die Dateien geschrieben."
 }
