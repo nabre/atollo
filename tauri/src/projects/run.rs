@@ -877,14 +877,7 @@ impl Runner {
                 Ok(n) => n,
             };
             pending.extend_from_slice(&buf[..n]);
-            // Keep an incomplete UTF-8 sequence for the next read.
-            let valid = match std::str::from_utf8(&pending) {
-                Ok(_) => pending.len(),
-                Err(e) if e.error_len().is_none() => e.valid_up_to(),
-                Err(_) => pending.len(),
-            };
-            let text = String::from_utf8_lossy(&pending[..valid]).into_owned();
-            pending.drain(..valid);
+            let text = take_utf8(&mut pending);
             let lines = split_lines(&mut rest, &text);
             if !lines.is_empty() {
                 self.append_to(key, Some(run), lines, true);
@@ -1218,6 +1211,21 @@ impl Runner {
             saved.insert(to.to_owned(), p);
         }
     }
+}
+
+/// The text of the bytes read so far from a pipe, taken out of `pending`,
+/// but an incomplete UTF-8 sequence at its end: a character split across
+/// two reads is kept for the next one, never shown as U+FFFD. Invalid bytes
+/// elsewhere are replaced.
+pub(crate) fn take_utf8(pending: &mut Vec<u8>) -> String {
+    let valid = match std::str::from_utf8(pending) {
+        Ok(_) => pending.len(),
+        Err(e) if e.error_len().is_none() => e.valid_up_to(),
+        Err(_) => pending.len(),
+    };
+    let text = String::from_utf8_lossy(&pending[..valid]).into_owned();
+    pending.drain(..valid);
+    text
 }
 
 fn tr(lang: &str, source: &str, args: &[&str]) -> String {

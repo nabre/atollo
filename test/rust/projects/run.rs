@@ -33,6 +33,23 @@ fn local_network_keeps_client_urls() {
     );
 }
 
+/// BUG-V7-13: a character split across two reads of a pipe is whole once
+/// the second one comes, never U+FFFD; invalid bytes are still replaced.
+#[test]
+fn utf8_split_across_reads() {
+    let bytes = "già ✓".as_bytes();
+    let cut = bytes.len() - 2;
+    let mut pending = bytes[..cut].to_vec();
+    assert_eq!(take_utf8(&mut pending), "già ");
+    assert_eq!(pending.len(), 1);
+    pending.extend_from_slice(&bytes[cut..]);
+    assert_eq!(take_utf8(&mut pending), "✓");
+    assert!(pending.is_empty());
+    let mut bad = vec![b'a', 0xff, b'b'];
+    assert_eq!(take_utf8(&mut bad), "a\u{fffd}b");
+    assert!(bad.is_empty());
+}
+
 /// The DB_PORT of a project's `.env` is read (it wins over the kit's).
 #[test]
 fn dotenv_values() {
