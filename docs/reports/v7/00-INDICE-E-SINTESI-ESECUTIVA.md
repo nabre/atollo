@@ -15,7 +15,7 @@
 | **01** | [`01-BUG-SICUREZZA-PORTABILITA.md`](./01-BUG-SICUREZZA-PORTABILITA.md) | i 39 rilievi `BUG-V7-xx`, nei quattro gruppi d'esecuzione A-D; osservazione `TEST-V7-01`; punti controllati senza rilievi |
 | **02** | [`02-INCONGRUENZE-DOCUMENTAZIONE.md`](./02-INCONGRUENZE-DOCUMENTAZIONE.md) | le 13 incongruenze `DOC-V7-xx`; la decisione sulle funzioni non ancora rilasciate (`DOC-V7-02`) |
 | **03** | [`03-STRUTTURA-DUPLICATI-ALIAS.md`](./03-STRUTTURA-DUPLICATI-ALIAS.md) | i 22 rilievi `STR-V7-xx`; struttura di destinazione di `ui/src`; alias `@/`, `@guide`, `@test`; riesportazioni Rust |
-| **04** | [`04-GUIDA-NEUTRA-E-SITO.md`](./04-GUIDA-NEUTRA-E-SITO.md) | i 12 rilievi `GUI-V7-xx`; progetto della Guida in `guide/` con due renderer (app e sito), **senza più Markdown**; D-155 |
+| **04** | [`04-GUIDA-NEUTRA-E-SITO.md`](./04-GUIDA-NEUTRA-E-SITO.md) | i 12 rilievi `GUI-V7-xx`; progetto della Guida in `guide/` con due renderer (app e sito), **senza più Markdown**; D-164 |
 | **05** | [`05-PIANO-ESECUTIVO-V7.md`](./05-PIANO-ESECUTIVO-V7.md) | quattro ondate (bug, struttura, Guida e sito, documenti), regole per non ricadere negli stessi schemi, decisioni da prendere |
 
 ---
@@ -74,11 +74,11 @@ I cinque MEDIA del codice:
 ### 3.2 Richieste di questa revisione
 
 - **Struttura**: i file più grandi di Rust (`projects/run.rs` 1256 righe, `env.rs` 1289) e dell'interfaccia (`workbench/controls.tsx` 878, 20 file sciolti nella radice di `ui/src`) si dividono senza cambiare comportamento, con `pub use` in Rust e gli alias `@/`, `@guide`, `@test` in TypeScript (circa 115 relativi profondi in meno). Documento [03](./03-STRUTTURA-DUPLICATI-ALIAS.md).
-- **Guida neutra e sito**: il contenuto si sposta in `guide/` alla radice, con un contratto di widget e due renderer, l'app e il sito (`/guide/<argomento>/` in inglese, `/it/guide/…`, `/fr/guide/…`, `/de/guide/…`: 148 pagine con ricerca, hreflang e sitemap). **Per decisione del proprietario il renderer Markdown si toglie**: spariscono `scripts/guide-docs.cjs`, `docs/app/GUIDE*.md`, la prova `docs.test.ts` e il passo `--check` della CI; i link puntano a https://nabre.github.io/atollo/guide/. Nuova decisione D-155. Documento [04](./04-GUIDA-NEUTRA-E-SITO.md).
+- **Guida neutra e sito**: il contenuto si sposta in `guide/` alla radice, con un contratto di widget e due renderer, l'app e il sito (`/guide/<argomento>/` in inglese, `/it/guide/…`, `/fr/guide/…`, `/de/guide/…`: 148 pagine con ricerca, hreflang e sitemap). **Per decisione del proprietario il renderer Markdown si toglie**: spariscono `scripts/guide-docs.cjs`, `docs/app/GUIDE*.md`, la prova `docs.test.ts` e il passo `--check` della CI; i link puntano a https://nabre.github.io/atollo/guide/. Nuova decisione D-164. Documento [04](./04-GUIDA-NEUTRA-E-SITO.md).
 - **Piano**: quattro ondate su quattro rami (`fix/v7-bugs` con i gruppi A-D in worktree paralleli, `refactor/v7-structure`, `feature/v7-guide-site`, `docs/v7-consistency`), un commit per rilievo, merge solo con le prove verdi. Documento [05](./05-PIANO-ESECUTIVO-V7.md).
 
 ### 3.3 Decisioni per il proprietario
 
 1. **`DOC-V7-02`**: segnare Pi, modelli locali e diagnostica come «in arrivo nel prossimo rilascio» in README e sito finché non esce un rilascio (proposta), oppure tagliare il rilascio prima di pubblicare il sito.
 2. **Schermate della Guida** in `guide/shots/` (facoltativo, dopo l'ondata 3).
-3. Il numero della decisione sulla Guida è **D-155**, non D-153: D-153 (diagnostica) e D-154 (copie di sicurezza) sono già in `main`.
+3. Il numero della decisione sulla Guida è **D-164**, non D-153: D-153 (diagnostica) e D-154 (copie di sicurezza) sono già in `main`. Il report proponeva D-155; D-155..D-163 sono poi andati alle funzioni entrate prima della Guida (correzione dell'ondata 4).
