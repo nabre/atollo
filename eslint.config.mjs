@@ -4,7 +4,8 @@ import reactHooks from "eslint-plugin-react-hooks";
 // The interface's sources (ui\src), the Guide's content (guide, D-164) and
 // their tests (test\ui); each folder has its tsconfig.json.
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "tauri", "docs"] },
+  // guide/render/load.cjs is Node's CommonJS for the site, as scripts\.
+  { ignores: ["dist", "node_modules", "tauri", "docs", "guide/render"] },
   ...tseslint.configs.strictTypeChecked,
   {
     files: ["ui/src/**/*.{ts,tsx}", "guide/**/*.{ts,tsx}", "test/ui/**/*.{ts,tsx}"],

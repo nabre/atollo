@@ -115,5 +115,14 @@
   "themeLight": "Clair",
   "themeDark": "Sombre",
   "langLabel": "Langue",
-  "mxKind_ai": "Modèles locaux"
+  "mxKind_ai": "Modèles locaux",
+  "navGuide": "Guide",
+  "guideTitle": "Guide d'Atollo",
+  "guideDescription": "Le guide d'Atollo, pas à pas : premier lancement, projets, bases de données et sites, agents IA, outils, paramètres, emporter le kit, comment il fonctionne à l'intérieur, aide.",
+  "guideChapters": "Chapitres",
+  "guideSearch": "Rechercher dans le guide",
+  "guideNoResult": "Aucun sujet ne correspond à la recherche.",
+  "guidePrev": "Précédent",
+  "guideNext": "Suivant",
+  "guideInApp": "Dans l'application"
 }

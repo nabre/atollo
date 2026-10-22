@@ -115,5 +115,14 @@
   "themeLight": "Hell",
   "themeDark": "Dunkel",
   "langLabel": "Sprache",
-  "mxKind_ai": "Lokale Modelle"
+  "mxKind_ai": "Lokale Modelle",
+  "navGuide": "Anleitung",
+  "guideTitle": "Atollo-Anleitung",
+  "guideDescription": "Die Anleitung zu Atollo, Schritt für Schritt: erster Start, Projekte, Datenbanken und Websites, KI-Agenten, Werkzeuge, Einstellungen, das Kit mitnehmen, wie es innen funktioniert, Hilfe.",
+  "guideChapters": "Kapitel",
+  "guideSearch": "In der Anleitung suchen",
+  "guideNoResult": "Kein Thema entspricht der Suche.",
+  "guidePrev": "Zurück",
+  "guideNext": "Weiter",
+  "guideInApp": "In der App"
 }

@@ -10,12 +10,15 @@
 // in the app, drawn here into plain SVG: the page runs no React. After
 // npm ci (the ui workspace's react, react-dom and react-icons):
 // node site/build.mjs. Published by .github/workflows/site.yml.
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// The Guide's pages, one per topic and language, come from site/guide.mjs
+// (D-164). `--check` also checks the pages, the sitemap and the links.
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RiArrowDownSLine, RiComputerLine, RiMoonLine, RiSunLine } from "react-icons/ri";
+import { guidePages, topicPath } from "./guide.mjs";
 import { loadCatalog, matrixHtml } from "./matrix.mjs";
 import { LANGS } from "../scripts/lib/shots.mjs";
 
@@ -138,8 +141,7 @@ mkdirSync(join(out, "assets"), { recursive: true });
 
 // The app as search engines describe it (schema.org SoftwareApplication),
 // in the page's language; "<" escaped so no string can close the script.
-const jsonLd = (lang) =>
-  JSON.stringify({
+const appLd = (lang) => ({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "Atollo",
@@ -162,7 +164,8 @@ const jsonLd = (lang) =>
     screenshot: `${base}assets/shots/${lang}/shot-projects-dark.png`,
     author: { "@type": "Person", name: "nabre", url: "https://github.com/nabre" },
     keywords,
-  }).replaceAll("<", "\\u003c");
+  });
+const jsonLd = (lang) => JSON.stringify(appLd(lang)).replaceAll("<", "\\u003c");
 
 // The root page (English, x-default) follows the system's language: the
 // first of navigator.languages the site speaks, English if none, unless a
@@ -216,6 +219,7 @@ function renderPage({ lang, path, model: html, name, values: own }) {
     langLinks,
     langDetect: "",
     headExtra: "",
+    guideCurrent: "",
     ...icons,
     componentCount: String(catalog.components.length),
     version,
@@ -245,6 +249,11 @@ for (const lang of langs) {
   });
 }
 pages.push(pathOf);
+
+// The Guide, one page per topic and language (site/guide.mjs, D-164).
+const guide = guidePages({ langs, strings, pathOf, out, model: model("guide.html"), base, jsonLdApp: appLd });
+for (const page of guide.pages) renderPage(page);
+for (const id of guide.topics) pages.push((l) => topicPath(pathOf, l, id));
 
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
 // Files that must sit at the site's root, as they are: the Google Search
@@ -291,3 +300,36 @@ writeFileSync(
 );
 
 console.log(`_site: ${pages.length * langs.length} pages`);
+
+// --check (the ui job of app.yml): the site built, then checked without
+// publishing anything: every page in every language is there and in the
+// sitemap, no {{key}} is left, and every relative link and image of the
+// pages leads to a file of _site.
+if (process.argv.includes("--check")) {
+  const problems = [];
+  const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
+  for (const path of pages) {
+    for (const l of langs) {
+      const file = join(out, path(l), "index.html");
+      if (!existsSync(file)) {
+        problems.push(`missing ${path(l)}index.html`);
+        continue;
+      }
+      if (!sitemap.includes(`<loc>${base}${path(l)}</loc>`)) problems.push(`not in sitemap.xml: ${path(l)}`);
+      const html = readFileSync(file, "utf8");
+      if (/\{\{[\w> ]+\}\}/.test(html)) problems.push(`${path(l)}: a {{key}} is left`);
+      for (const m of html.matchAll(/\s(?:href|src|srcset)="([^"]*)"/g)) {
+        const link = (m[1] ?? "").split(/[?#]/)[0];
+        if (link === "" || /^[a-z][\w+.-]*:/i.test(link)) continue; // an anchor, another site
+        const target = join(out, path(l), link);
+        const found = existsSync(target) && (!statSync(target).isDirectory() || existsSync(join(target, "index.html")));
+        if (!found) problems.push(`${path(l)}: broken link ${link}`);
+      }
+    }
+  }
+  if (problems.length > 0) {
+    console.error(problems.join("\n"));
+    process.exit(1);
+  }
+  console.log(`check: ${pages.length * langs.length} pages, sitemap and links in order`);
+}

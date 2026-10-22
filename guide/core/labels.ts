@@ -29,6 +29,7 @@ export function guideLabels() {
     copy: tr("Copia", "Copy", "Copier", "Kopieren"),
     copied: tr("Copiata", "Copied", "Copiée", "Kopiert"),
     learnMore: tr("Approfondisci:", "Learn more:", "En savoir plus :", "Mehr dazu:"),
+    read: tr("Leggi", "Read", "Lire", "Lesen"),
     kit: {
       title: tr("Il tuo kit", "Your kit", "Votre kit", "Dein Kit"),
       version: tr("Versione", "Version", "Version", "Version"),
