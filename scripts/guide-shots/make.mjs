@@ -1,5 +1,5 @@
-// The screenshots of the in-app guide and of docs/app/GUIDE*.md
-// (ui/public/guide/<lang>/*.webp, D-136): the browser preview on its sample
+// The screenshots of the Guide, in the app and on the site
+// (ui/public/guide/<lang>/*.webp, D-136, D-164): the browser preview on its sample
 // data, in the light theme, 1280×800 at 1.25× (1600×1000), without the
 // preview's badge, in each
 // of the four languages (?lang=, the sample data's engine texts too).
@@ -49,11 +49,8 @@ async function shoot(lang) {
   // Projects: the quick panel.
   await shot("projects-home");
 
-  // A new project from a framework: Laravel chosen.
-  await page
-    .getByRole("button", { name: tr("Web con PHP") })
-    .first()
-    .click();
+  // A new project from a base: Laravel, from the quick panel's Web group.
+  await page.getByRole("button", { name: "Laravel", exact: true }).first().click();
   await settle();
   await shot("project-new");
 
@@ -70,6 +67,7 @@ async function shoot(lang) {
 
   for (const [name, label] of [
     ["agents", "Agenti"],
+    ["models", "Modelli locali"],
     ["databases", "Database"],
     ["servers", "Server Web"],
     ["terminals", "Terminali"],

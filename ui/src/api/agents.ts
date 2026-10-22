@@ -53,12 +53,14 @@ export const SAMPLE_AGENTS: AgentInfo[] = [
     tokenLink: false,
   },
   {
+    // Installed on a local model, so the screenshots show the fourth agent
+    // (DOC-V7-05).
     id: "pi",
     name: "Pi",
-    installed: false,
-    version: null,
-    signedIn: false,
-    signInKind: null,
+    installed: true,
+    version: "0.70.2",
+    signedIn: true,
+    signInKind: "local",
     running: false,
     tokenLink: false,
   },

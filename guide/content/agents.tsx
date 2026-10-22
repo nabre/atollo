@@ -1127,6 +1127,22 @@ export const AGENTS: TopicTexts = {
         ]}
       />
 
+      <GuideShot
+        src="models.webp"
+        title={tr(
+          "La pagina Modelli locali",
+          "The Local models page",
+          "La page Modèles locaux",
+          "Die Seite Lokale Modelle",
+        )}
+        caption={tr(
+          "A sinistra il server e i modelli nel kit; a destra il server con l'indirizzo e la chiave, il modello di Pi, il catalogo di Atollo con un download sospeso e Hugging Face.",
+          "On the left the server and the models in the kit; on the right the server with its address and key, Pi's model, Atollo's catalog with a paused download, and Hugging Face.",
+          "À gauche le serveur et les modèles du kit ; à droite le serveur avec son adresse et sa clé, le modèle de Pi, le catalogue d'Atollo avec un téléchargement suspendu et Hugging Face.",
+          "Links der Server und die Modelle im Kit; rechts der Server mit Adresse und Schlüssel, das Modell von Pi, der Katalog von Atollo mit einem angehaltenen Download und Hugging Face.",
+        )}
+      />
+
       <Section
         title={tr(
           "Che cosa sono e che cosa serve",
