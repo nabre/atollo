@@ -96,7 +96,10 @@ pub(super) fn run_tool(mut cmd: Command, limit: Duration) -> Result<()> {
             };
         }
         if start.elapsed() > limit {
+            // Reaped too: a killed child left unwaited stays a zombie on
+            // macOS and Linux until the app exits (BUG-V7-14).
             let _ = child.kill();
+            let _ = child.wait();
             bail!("{:?}: no answer", cmd.get_program());
         }
         std::thread::sleep(Duration::from_millis(100));
@@ -131,6 +134,7 @@ pub(super) fn run_logged(mut cmd: Command, log: &std::path::Path, limit: Duratio
         }
         if start.elapsed() > limit {
             let _ = child.kill();
+            let _ = child.wait();
             bail!("{:?}: no answer", cmd.get_program());
         }
         std::thread::sleep(Duration::from_millis(100));
