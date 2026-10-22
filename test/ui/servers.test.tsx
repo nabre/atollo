@@ -256,4 +256,39 @@ describe("ServersPage", () => {
     const lines = [...line.querySelectorAll("vscode-option")].map((o) => o.value);
     expect(lines).toEqual(["", "2.4"]);
   });
+
+  it("clears a failed read's error once a read works, and drops an older read answering last", async () => {
+    let calls = 0;
+    let first: (v: WebServersView) => void = () => undefined;
+    invoke.mockImplementation((cmd) => {
+      if (cmd !== "servers_list") return Promise.reject(new Error(`unexpected ${cmd}`));
+      calls += 1;
+      if (calls === 1) return Promise.reject(new Error("busy"));
+      if (calls === 2)
+        return new Promise((resolve) => {
+          first = resolve;
+        });
+      return Promise.resolve(VIEW);
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText(/busy/)).toBeTruthy();
+    // The second read waits; a fresh rescan answers first.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Aggiorna" }));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.queryByText(/busy/)).toBeNull();
+    expect(screen.getByText("public")).toBeTruthy();
+    await act(async () => {
+      first({ ...VIEW, pools: [] });
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText("public")).toBeTruthy();
+  });
 });

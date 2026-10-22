@@ -56,8 +56,8 @@ const PRELOAD: Partial<Record<PageId, () => Promise<unknown>>> = {
   settings: loadSettings,
   components: loadTools,
 };
-// The terminal panel brings xterm.js: read when a session first opens
-// (macOS and Linux), never on Windows.
+// The terminal panel brings xterm.js: read when a session first opens, on
+// every system (D-148, the kit's ConPTY on Windows).
 const TerminalPanel = lazy(() => import("./terminal/panel").then((m) => ({ default: m.TerminalPanel })));
 
 type PageId =
@@ -256,6 +256,9 @@ export function App() {
               <Sash
                 vertical={false}
                 label={t("Ridimensiona i terminali")}
+                size={terminalHeight}
+                min={120}
+                max={800}
                 onDrag={(d) => {
                   setTerminalHeight((h) => h - d);
                 }}
@@ -273,6 +276,9 @@ export function App() {
               <Sash
                 vertical={false}
                 label={t("Ridimensiona il pannello")}
+                size={panelHeight}
+                min={120}
+                max={600}
                 onDrag={(d) => {
                   setPanelHeight((h) => h - d);
                 }}
@@ -579,10 +585,12 @@ function StatusBar({
   running: Running;
   panelOpen: boolean;
   onPanel: () => void;
-  /** The app's terminal sessions (macOS and Linux; none on Windows). */
+  /** The app's terminal sessions (every system, D-148). */
   terminals: Terminals;
 }) {
-  const sessions = terminals.sessions.length;
+  // The panel's sessions only: a detached one is in its own window, and with
+  // only those the toggle would show and hide nothing.
+  const sessions = terminals.docked.length;
   const terminalsLabel = terminals.shown ? t("Nascondi i terminali") : t("Mostra i terminali");
   const installing = setupStatusText(setup);
   const live = running.count;

@@ -1,5 +1,5 @@
 // The Terminals page: removing a terminal asks first, and Esc answers no
-// (UX-V5-02).
+// (UX-V5-02); a new terminal that saves but does not open says why.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { TerminalsView } from "../../ui/src/api";
@@ -50,5 +50,19 @@ describe("TerminalsPage", () => {
     await waitFor(() => {
       expect(invoke).toHaveBeenCalledWith("terminal_remove", { id: "legacy-php" });
     });
+  });
+
+  it("shows why a new terminal saved with «Salva e apri» did not open", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "terminals_list") return Promise.resolve(VIEW);
+      if (cmd === "terminal_save") return Promise.resolve("legacy-php-2");
+      if (cmd === "terminal_launch") return Promise.reject(new Error("no shell"));
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<TerminalsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Duplica" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salva e apri" }));
+    expect(await screen.findByText(/no shell/)).toBeTruthy();
+    expect(invoke).toHaveBeenCalledWith("terminal_launch", { id: "legacy-php-2", dir: null });
   });
 });

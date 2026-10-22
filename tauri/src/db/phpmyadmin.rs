@@ -36,7 +36,7 @@ use super::web_admin::address;
 // Its test does not run on macOS, whose loopback answers on 127.0.0.1 only.
 #[cfg(all(test, not(target_os = "macos")))]
 use super::web_admin::private_loopback;
-use super::web_admin::{free_address, wait_ready, Served, Slot};
+use super::web_admin::{abandon, free_address, wait_ready, Served, Slot};
 use crate::env::KitEnv;
 use crate::fsx::write_atomic;
 use crate::kit::Kit;
@@ -150,7 +150,10 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> R
         .stderr(Stdio::from(out));
     let job = Job::new()?;
     let mut child = jobs::spawn_in(&mut cmd, &job).context("spawn php -S for phpMyAdmin")?;
-    wait_ready(&mut child, host, port, &log, "PHP's server")?;
+    if let Err(e) = wait_ready(&mut child, host, port, &log, "PHP's server") {
+        abandon(job, child);
+        return Err(e);
+    }
     crate::log::info(&format!("phpmyadmin: started on {host}:{port}"));
     Ok(Served {
         child,

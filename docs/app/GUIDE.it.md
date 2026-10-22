@@ -764,7 +764,7 @@ Due riquadri.
 
 «Salva» le scrive nel file `.vscode\settings.json` del progetto; le altre impostazioni del file restano. Se il file contiene commenti o non è JSON semplice, Atollo non lo riscrive e ti chiede di modificarlo nell'editor.
 
-Il secondo riquadro, «Server MCP del progetto», aggiunge server MCP che valgono solo in questo progetto, oltre a quelli del kit. Come funzionano e come si aggiungono: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi).
+Il secondo riquadro, «Server MCP del progetto», aggiunge server MCP che valgono solo in questo progetto, oltre a quelli del kit. In «Server pronti» bastano un clic per filesystem (i file, solo nella cartella del progetto) e, quando il database del progetto è stato creato, per mysql (DBHub) o mongodb: il database arriva al server all'avvio dell'agente, mai scritto in .mcp.json. Come funzionano e come si aggiungono: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi).
 
 Argomenti collegati: [3.4 Terminali del kit](#34-terminali-del-kit), [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi), [5.3 Panoramiche: matrice, relazioni, estensioni, requisiti](#53-panoramiche-matrice-relazioni-estensioni-requisiti)
 
@@ -1320,6 +1320,7 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 > - Istruzioni, skill e server MCP si scrivono una volta sola, nella cartella `data\agents`, e valgono per tutti gli agenti.
 > - Il kit li allinea all'avvio dell'app, prima e dopo ogni agente e quando un agente termina.
 > - Puoi modificare anche i file di un agente: la modifica passa agli altri.
+> - I server MCP del kit si aggiungono anche dalla pagina Agenti, riquadro «Server MCP del kit», con i server pronti GitHub, Playwright e Fetch a un clic.
 > - I server MCP di un solo progetto si aggiungono nella sezione «Editor» del progetto.
 
 #### Che cosa si condivide
@@ -1356,6 +1357,26 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 >
 > I programmi dei server MCP si installano da soli all'avvio di un agente: npx e node portano Node.js, uvx e uv portano uv, python porta Python.
 
+#### Server MCP del kit e server pronti
+
+1. Nella pagina Agenti, sotto la cartella condivisa, c'è il riquadro «Server MCP del kit»: l'elenco di `data\agents\mcp.json`.
+2. In «Server pronti» premi «Aggiungi» accanto al server che ti serve; per un altro server premi «Aggiungi un server» e compila nome, tipo e programma o indirizzo.
+3. Atollo scrive mcp.json e allinea subito gli agenti: Claude Code, Codex, Antigravity e Pi hanno il server senza aspettare il prossimo avvio. «Togli» su una riga lo rimuove.
+
+| Server pronto | Che cosa fa | Dove |
+| --- | --- | --- |
+| `github` | Issue, pull request e repository su GitHub, con l'account GitHub del kit. È il server di GitHub stesso, in rete (api.githubcopilot.com/mcp): niente da scaricare. | il kit |
+| `playwright` | Un browser che l'agente apre e usa: pagine, clic, moduli, schermate. | il kit |
+| `fetch` | Legge una pagina web e la dà all'agente come testo. | il kit |
+| `filesystem` | Legge e scrive i file, solo nella cartella del progetto. | il progetto |
+| `mysql` | Interroga il database MySQL del progetto (DBHub), quando è stato creato. | il progetto |
+| `mongodb` | Interroga il database MongoDB del progetto, quando è stato creato. | il progetto |
+
+> [!NOTE]
+> **Nessun segreto nei file**
+>
+> Il token di GitHub e gli indirizzi dei database non sono mai scritti in mcp.json o in .mcp.json: il server legge una variabile (${GITHUB_PERSONAL_ACCESS_TOKEN}, ${DSN}, ${MDB_MCP_CONNECTION_STRING}) che Atollo dà all'agente quando lo avvia. Il token di GitHub va solo ai server del kit, mai a quelli che il .mcp.json di un progetto chiede: un repository clonato potrebbe mandarlo ovunque. Per GitHub serve l'accesso a GitHub del kit. Un agente avviato da un terminale dell'editor, invece che dall'app, non ha queste variabili.
+
 #### Come avviene l'allineamento
 
 - Istruzioni: AGENTS.md viene copiato come CLAUDE.md per Claude Code e come AGENTS.md per Codex, Antigravity e Pi. Se modifichi uno di quei file, la modifica torna in AGENTS.md e passa agli altri. Se cambiano entrambe le parti, vince la più recente e l'altra viene conservata nella cartella dei conflitti.
@@ -1370,11 +1391,12 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 #### Server MCP di un solo progetto
 
 1. Apri il progetto, sezione «Editor», riquadro «Server MCP del progetto».
-2. Premi «Aggiungi un server».
-3. Scrivi il «Nome» (lettere, cifre, - e _) e scegli il «Tipo»: «programma» (con «Programma», per esempio npx, e gli «Argomenti, uno per riga») oppure «indirizzo (http)» (con l'«Indirizzo»).
-4. Premi «Aggiungi». «Togli» su una riga lo rimuove.
+2. Per un server pronto premi «Aggiungi» accanto a lui in «Server pronti»: filesystem (i file, solo nella cartella del progetto) e, quando il database del progetto è stato creato con «Crea database e utente», mysql o mongodb. Per un altro server continua dal passo seguente.
+3. Premi «Aggiungi un server».
+4. Scrivi il «Nome» (lettere, cifre, - e _) e scegli il «Tipo»: «programma» (con «Programma», per esempio npx, e gli «Argomenti, uno per riga») oppure «indirizzo (http)» (con l'«Indirizzo»).
+5. Premi «Aggiungi». «Togli» su una riga lo rimuove.
 
-Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da `.codex\config.toml`, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit.
+Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da `.codex\config.toml`, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit. I programmi che servono (Node per npx, uv per uvx) si installano all'avvio dell'agente; il database del progetto arriva al server mysql o mongodb come variabile, mai scritto in .mcp.json, che può stare nel repository.
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -1928,6 +1950,8 @@ Sotto l'account, «Chi firma i commit» ha i campi «Nome» ed «E-mail» dei co
 #### Il kit
 
 Informazioni in sola lettura: cartella del kit, cartella dei progetti, cartella dei dati e dei programmi, disco del kit (file system e tipo: fisso, rimovibile, di rete), cartella temporanea dei programmi, piattaforma, versione di WebView2 e di Atollo. Se il disco ha qualcosa da segnalare compare un avviso.
+
+«Salute del kit» controlla ciò che del PC e del disco può fermare il kit: il disco (FAT32, exFAT, noexec), lo spazio libero, i caratteri a rischio nel percorso del kit, i file resi privati da un altro account e, su Linux, le librerie di sistema. Ogni riga è verde, gialla o rossa, con sotto che cosa fare; «Controlla di nuovo» rifà i controlli ([9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va)).
 
 Sotto, «Segnalare un problema» ha due pulsanti. «Esporta diagnostica» crea in `data\app\diagnostics` uno zip con versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit sostituiti da \*\*\*, la cartella del tuo profilo come ~ e i nomi tuo e del PC tolti; «Apri la cartella» lo mostra. Lo zip resta sul PC: guardalo e allegalo tu. «Segnala un problema» apre nel browser una segnalazione nuova su GitHub con versione e sistema già scritti; nulla parte finché non la crei.
 
@@ -2564,6 +2588,7 @@ cd D:\Atollo
 | `components [--target <sistema>]` | Elenca i componenti: scelto o no, gruppo, versione installata o perché non è disponibile. |
 | `versions [<id>]` | Senza id: le versioni su disco degli strumenti installati. Con un id: chiede alla fonte le versioni offerte e le salva. |
 | `check` | Chiede a ogni componente installato la sua versione e segna ✓ o ✗. |
+| `check --kit` | La salute del kit: disco, spazio, percorso, permessi, librerie, come «Salute del kit» nelle Impostazioni. Una riga per controllo (√, ! o x) con sotto che cosa fare; finisce con 1 se un controllo è un errore. |
 | `prepare [opzioni]` | Installa, aggiorna e toglie i componenti secondo la scelta. Le opzioni sono nella tabella sotto. |
 | `sync [--project <cartella>] [--verbose]` | Allinea istruzioni, skill e server MCP degli agenti. |
 | `serve <cartella> <porta>` | Serve una cartella come sito statico (il server di file del kit). |
@@ -2609,13 +2634,24 @@ Argomenti collegati: [5.1 La pagina Strumenti](#51-la-pagina-strumenti), [7.2 Su
 
 ### 9.1 Quando qualcosa non va
 
-*I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.*
+*Su un PC nuovo, prima la «Salute del kit». Poi i problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.*
 
 > **In breve**
 >
 > - Cerca il messaggio che vedi nella casella qui sotto: la guida ne raccoglie i più comuni, con il rimedio.
 > - Quasi ogni errore ha un suggerimento al passaggio del mouse e una riga di output o di log che dice di più.
 > - Il log dell'app è in `data\app\logs\app.log`; quelli dei server accanto.
+
+#### Salute del kit
+
+Su un PC nuovo, o con il kit su un'altra chiavetta, guarda prima Impostazioni › «Il kit» › «Salute del kit»: una riga per controllo, verde se va bene, gialla per un avviso, rossa per un errore, e sotto che cosa fare. «Controlla di nuovo» rifà i controlli dopo una correzione.
+
+- Il disco. FAT32 tiene file fino a 4 GB (niente modelli locali né copie di database grandi) e niente collegamenti: per un kit su chiavetta è meglio exFAT, o NTFS se resta su Windows. Su macOS e Linux un disco montato noexec (o FAT32 con showexec su Linux) non lascia partire i programmi: la riga dà il comando per rimontarlo.
+- Lo spazio libero: sotto 5 GB un avviso, sotto 1 GB un errore (installazioni, download e copie dei database non riescono). Libera spazio o sposta il kit su un disco più grande.
+- Il percorso del kit: &, %, !, ^, apici e lettere accentate o fuori dall'alfabeto latino confondono cmd, PowerShell, Maven e Gradle. Sposta il kit in una cartella con solo lettere, cifre, trattini e spazi.
+- File resi privati da un altro account, spesso su un altro PC: il kit non li legge (impostazioni, chiavi, accessi degli agenti). La riga dà il comando per riprenderli, da eseguire in un terminale da amministratore: takeown e icacls su Windows, sudo chown su macOS e Linux. L'app non lo esegue da sé perché servono i diritti di amministratore.
+- Su Linux, le librerie del sistema: libaio e libnuma per MySQL, libicu per .NET, libvulkan1 per la scheda video dei modelli locali (senza, restano sulla CPU). La riga dà il comando per installarle, per esempio con apt.
+- Dalla riga di comando gli stessi controlli li fa `.\Atollo.exe check --kit | Out-Host`, che finisce con 1 se uno è un errore.
 
 #### Download e installazione
 

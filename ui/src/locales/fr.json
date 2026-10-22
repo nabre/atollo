@@ -969,5 +969,20 @@
   "Segnala un problema": "Signaler un problème",
   "Segnalare un problema": "Signaler un problème",
   "Lo zip della diagnostica raccoglie versione, sistema, disco, ambiente, verifica dei programmi, componenti, porte e la parte finale dei log, con chiavi, token e password del kit tolti e la cartella del tuo profilo come ~. Resta sul PC: allegalo tu alla segnalazione, dopo averlo guardato.": "Le zip de diagnostic rassemble version, système, disque, environnement, vérification des programmes, composants, ports et la fin des journaux, sans les clés, jetons et mots de passe du kit et avec votre dossier de profil affiché comme ~. Il reste sur le PC : joignez-le vous-même au signalement, après l'avoir regardé.",
-  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "Restaurer {0} ? Le kit copie d'abord ce que la base contient maintenant."
+  "Ripristinare {0}? Prima il kit copia ciò che il database contiene ora.": "Restaurer {0} ? Le kit copie d'abord ce que la base contient maintenant.",
+  "Salute del kit": "Santé du kit",
+  "Disco, spazio libero, percorso del kit, file resi privati da un altro account, librerie di sistema.": "Disque, espace libre, chemin du kit, fichiers rendus privés par un autre compte, bibliothèques du système.",
+  "Controllo in corso…": "Vérification en cours…",
+  "Controlla di nuovo": "Vérifier à nouveau",
+  "Issue, pull request e repository su GitHub, con l'account GitHub del kit.": "Issues, pull requests et dépôts sur GitHub, avec le compte GitHub du kit.",
+  "Un browser che l'agente apre e usa: pagine, clic, moduli, schermate.": "Un navigateur que l'agent ouvre et utilise : pages, clics, formulaires, captures d'écran.",
+  "Legge una pagina web e la dà all'agente come testo.": "Lit une page web et la donne à l'agent sous forme de texte.",
+  "Legge e scrive i file, solo nella cartella del progetto.": "Lit et écrit les fichiers, uniquement dans le dossier du projet.",
+  "Interroga il database MySQL del progetto (DBHub).": "Interroge la base de données MySQL du projet (DBHub).",
+  "Interroga il database MongoDB del progetto.": "Interroge la base de données MongoDB du projet.",
+  "Server pronti": "Serveurs prêts",
+  "Server MCP del kit": "Serveurs MCP du kit",
+  "Nessuno.": "Aucun.",
+  "data\\agents\\mcp.json non è JSON valido: Atollo non lo riscrive. Correggilo nell'editor.": "data\\agents\\mcp.json n'est pas du JSON valide : Atollo ne le réécrit pas. Corrigez-le dans l'éditeur.",
+  "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.": "Pour tous les agents dans tous les projets : Atollo les apporte à Claude Code, Codex, Antigravity et Pi. Les programmes nécessaires (Node pour npx, uv pour uvx) s'installent au premier démarrage de l'agent ; le jeton GitHub et les bases de données du projet arrivent à l'agent quand il démarre, jamais écrits dans les fichiers."
 }

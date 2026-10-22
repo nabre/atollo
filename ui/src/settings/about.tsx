@@ -5,18 +5,20 @@ import {
   diagnosticsExport,
   folderOpen,
   issueOpen,
+  kitHealth,
   privacyOpen,
   updateCheck,
   updateStatus,
   type UpdateStatus,
   type AppInfo,
+  type HealthFinding,
 } from "../api";
 import { BrandSymbol } from "../brand";
 import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import { updateText } from "../update";
-import { Button, Link, Properties, SettingItem, SettingsGroup } from "../workbench";
+import { Button, Dot, Link, Properties, SettingItem, SettingsGroup } from "../workbench";
 
 /** Where the kit is (was on the Home, D-76). */
 export function KitInfo({ info }: { info: AppInfo }) {
@@ -56,8 +58,58 @@ export function KitInfo({ info }: { info: AppInfo }) {
         </div>
         {info.diskNote ? <p className="mt-2 text-vsc-warning">{info.diskNote}</p> : null}
       </SettingItem>
+      <KitHealth />
       <ProblemReport />
     </SettingsGroup>
+  );
+}
+
+const HEALTH_TONE: Record<HealthFinding["level"], "ok" | "warn" | "err"> = { ok: "ok", warn: "warn", err: "err" };
+
+/** «Salute del kit» (report v6/04, N-3): what of the PC and of the drive
+ * may stop the kit, each with what to do. */
+function KitHealth() {
+  const { data, error, setData } = useLoad<HealthFinding[] | null>(kitHealth, null, { onError: "show" });
+  const { busy, error: again, run } = useAction();
+  return (
+    <SettingItem
+      title={t("Salute del kit")}
+      description={t(
+        "Disco, spazio libero, percorso del kit, file resi privati da un altro account, librerie di sistema.",
+      )}
+      keywords="salute disco spazio fat32 exfat noexec permessi librerie health disk space permissions libraries"
+    >
+      {data === null ? (
+        <p className="text-vsc-desc">{error ? null : t("Controllo in corso…")}</p>
+      ) : (
+        <ul className="m-0 list-none space-y-1.5 p-0">
+          {data.map((f) => (
+            <li key={f.id} className="flex items-start gap-2">
+              <span className="pt-1">
+                <Dot tone={HEALTH_TONE[f.level]} />
+              </span>
+              <span className="min-w-0">
+                <span className="whitespace-pre-line">{f.text}</span>
+                {f.fix && (
+                  <span className="block font-mono text-[12px] break-all text-vsc-desc select-text">{f.fix}</span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-2">
+        <Button
+          busy={busy === "health"}
+          onClick={() => {
+            run("health", () => kitHealth().then(setData));
+          }}
+        >
+          {t("Controlla di nuovo")}
+        </Button>
+      </div>
+      <ErrorLine error={error ?? again} />
+    </SettingItem>
   );
 }
 

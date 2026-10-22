@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kit-mcp"
+description = "Enables the kit_mcp command without any pre-configured scope."
+commands.allow = ["kit_mcp"]
+
+[[permission]]
+identifier = "deny-kit-mcp"
+description = "Denies the kit_mcp command without any pre-configured scope."
+commands.deny = ["kit_mcp"]

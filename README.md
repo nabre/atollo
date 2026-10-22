@@ -48,7 +48,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 - **Isolated editor and terminals.** Built-in VSCodium with the Atollo dark and light themes, in a window measured on VSCodium 1.135's own workbench: the same sizes, colors and codicon icons. Terminals see only the kit's `PATH` and variables: programs on the host PC don't interfere, and the PC stays clean.
 - **Languages and tools on demand.** 20+ languages and tools (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), downloaded when needed and verified by SHA-256 checksum or signature. Side-by-side versions, one per project.
 - **Local databases and web servers.** MySQL with phpMyAdmin, MongoDB with mongo-express, and SQLite, started and stopped with one click, with a database, user and password for each project; several versions side by side, each keeping its own port. Caddy and Apache for sites at `<project>.localhost`, on every system, on their own or in a server shared by several projects. A port already in use is refused, naming whoever holds it. No system services.
-- **Four AI agents, one configuration.** Claude Code, Codex, Antigravity and Pi: install, sign in and start. Write instructions, skills and MCP servers once in `data/agents` and `atollo sync` keeps all four aligned. Plan limits and usage for today and the last 7 days.
+- **Four AI agents, one configuration.** Claude Code, Codex, Antigravity and Pi: install, sign in and start. Write instructions, skills and MCP servers once in `data/agents` and `atollo sync` keeps all four aligned. Ready MCP servers are one click away: GitHub, Playwright and Fetch for the whole kit, the project's files and its MySQL or MongoDB database for a project, with no token or password written in the files. Plan limits and usage for today and the last 7 days.
 - **Local AI models.** Language models that run on the PC, with no network and no account: GGUF models from Atollo's catalog or from any Hugging Face repository, downloads that resume where they stopped (even after closing Atollo) and are verified by SHA-256. The llama.cpp server (CPU, or GPU with Vulkan or Metal) listens on 127.0.0.1 only, with a key; Pi uses it out of the box, and its chat opens in the browser. One copy in `data/models`, shared by Windows, macOS and Linux.
 - **One folder for six systems.** The same folder, or the same external SSD, moves from Windows to macOS to Linux with projects, databases and agent settings intact: each machine runs the native programs of its system. "Remove drive" closes everything Atollo opened and lets you eject the disk.
 
@@ -154,6 +154,7 @@ Atollo.exe components [--target <system>]
                                      lists languages and tools, with the installed ones
 Atollo.exe versions [<id>]           the versions on disk; with an id, the ones to download
 Atollo.exe check                     checks that the installed programs answer
+    --kit                            the kit's health: drive, space, path, permissions, libraries
 Atollo.exe prepare [options]         installs and updates the chosen components
                                      and removes the ones not chosen
     --only a,b                       only these (and what they need), removes nothing

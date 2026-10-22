@@ -44,6 +44,17 @@ pub fn hf_token(kit: &Kit) -> anyhow::Result<Option<String>> {
     crate::settings::read_secret(&hf_token_file(kit))
 }
 
+/// The Hugging Face token for a download that does not need one (the
+/// catalog's models are public): a token file this account cannot read
+/// (owner-only, made by another account or PC) is left out with a warning
+/// instead of blocking the download.
+pub fn hf_token_if_readable(kit: &Kit) -> Option<String> {
+    hf_token(kit).unwrap_or_else(|e| {
+        crate::log::warn(&format!("Hugging Face token left out: {e:#}"));
+        None
+    })
+}
+
 /// A model id the kit makes from a file name: lowercase letters, digits
 /// and `.`, `_`, `-` (the name of a section of the server's presets and of
 /// a model for the agents).

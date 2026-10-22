@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mcp-presets"
+description = "Enables the mcp_presets command without any pre-configured scope."
+commands.allow = ["mcp_presets"]
+
+[[permission]]
+identifier = "deny-mcp-presets"
+description = "Denies the mcp_presets command without any pre-configured scope."
+commands.deny = ["mcp_presets"]

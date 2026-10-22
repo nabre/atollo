@@ -7,6 +7,130 @@ fn local_network_setting() {
     let cmd = "php -S 127.0.0.1:7101 -t public".to_owned();
     assert_eq!(on_network(cmd.clone(), false), cmd);
     assert_eq!(on_network(cmd, true), "php -S 0.0.0.0:7101 -t public");
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    assert_eq!(lan("--host 127.0.0.1"), "--host 0.0.0.0");
+    assert_eq!(lan("--host=127.0.0.1 --port"), "--host=0.0.0.0 --port");
+}
+
+/// BUG-V7-10: the bind forms the detectors write (and the usual servers
+/// take) move to 0.0.0.0 in LAN mode.
+#[test]
+fn local_network_moves_bind_forms() {
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    for (from, to) in [
+        (
+            "vite --port 7101 --strictPort --host 127.0.0.1",
+            "vite --port 7101 --strictPort --host 0.0.0.0",
+        ),
+        (
+            "next dev -p 7101 -H 127.0.0.1",
+            "next dev -p 7101 -H 0.0.0.0",
+        ),
+        (
+            "http-server -p 7101 -a 127.0.0.1",
+            "http-server -p 7101 -a 0.0.0.0",
+        ),
+        (
+            "trunk serve --port 7101 --address 127.0.0.1",
+            "trunk serve --port 7101 --address 0.0.0.0",
+        ),
+        (
+            "streamlit run app.py --server.address 127.0.0.1",
+            "streamlit run app.py --server.address 0.0.0.0",
+        ),
+        (
+            "serve -l tcp://127.0.0.1:7101",
+            "serve -l tcp://0.0.0.0:7101",
+        ),
+        (
+            "python manage.py runserver 127.0.0.1:7101",
+            "python manage.py runserver 0.0.0.0:7101",
+        ),
+        (
+            "php artisan serve --host=127.0.0.1 --port=7101",
+            "php artisan serve --host=0.0.0.0 --port=7101",
+        ),
+        (
+            "gunicorn app:app --bind 127.0.0.1:7101",
+            "gunicorn app:app --bind 0.0.0.0:7101",
+        ),
+        (
+            "jupyter lab --ip=\"127.0.0.1\"",
+            "jupyter lab --ip=\"0.0.0.0\"",
+        ),
+        ("HOST=127.0.0.1 npm run dev", "HOST=0.0.0.0 npm run dev"),
+    ] {
+        assert_eq!(lan(from), to);
+    }
+}
+
+/// BUG-V7-10: a client's address is never a bind, in a command or in a
+/// variable that is not a bind one.
+#[test]
+fn local_network_keeps_client_settings() {
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    for kept in [
+        "mysql -h 127.0.0.1 -P 3306",
+        "mysql --host=127.0.0.1 < dump.sql",
+        "curl 127.0.0.1:8000",
+        "redis-cli -h 127.0.0.1",
+        "127.0.0.1",
+        "DB_HOST=127.0.0.1 php artisan migrate",
+    ] {
+        assert_eq!(lan(kept), kept);
+    }
+    assert_eq!(
+        lan("vite --host 127.0.0.1 && mysql --host 127.0.0.1"),
+        "vite --host 0.0.0.0 && mysql --host 127.0.0.1"
+    );
+    let env = |k: &str, v: &str| env_on_network(k, v.to_owned(), true);
+    assert_eq!(env("DB_HOST", "127.0.0.1"), "127.0.0.1");
+    assert_eq!(env("REDIS_HOST", "127.0.0.1"), "127.0.0.1");
+    assert_eq!(env("DATABASE_HOST", "127.0.0.1:3306"), "127.0.0.1:3306");
+    assert_eq!(env("GRADIO_SERVER_NAME", "127.0.0.1"), "0.0.0.0");
+    assert_eq!(env("HOST", "127.0.0.1:7101"), "0.0.0.0:7101");
+    assert_eq!(env("HOST", "127.0.0.10"), "127.0.0.10");
+    assert_eq!(
+        env_on_network("HOST", "127.0.0.1".to_owned(), false),
+        "127.0.0.1"
+    );
+}
+
+/// BUG-V7-10: in LAN mode the address a client connects to stays, only the
+/// one a server binds to moves to 0.0.0.0.
+#[test]
+fn local_network_keeps_client_urls() {
+    let lan = |s: &str| on_network(s.to_owned(), true);
+    for kept in [
+        "mysql://u:p@127.0.0.1:3306/db",
+        "redis://127.0.0.1:6379",
+        "curl http://127.0.0.1:8000/health",
+        "127.0.0.10",
+        "10.127.0.0.1",
+    ] {
+        assert_eq!(lan(kept), kept);
+    }
+    assert_eq!(
+        lan("serve --host 127.0.0.1 --api http://127.0.0.1:9000"),
+        "serve --host 0.0.0.0 --api http://127.0.0.1:9000"
+    );
+}
+
+/// BUG-V7-13: a character split across two reads of a pipe is whole once
+/// the second one comes, never U+FFFD; invalid bytes are still replaced.
+#[test]
+fn utf8_split_across_reads() {
+    let bytes = "già ✓".as_bytes();
+    let cut = bytes.len() - 2;
+    let mut pending = bytes[..cut].to_vec();
+    assert_eq!(take_utf8(&mut pending), "già ");
+    assert_eq!(pending.len(), 1);
+    pending.extend_from_slice(&bytes[cut..]);
+    assert_eq!(take_utf8(&mut pending), "✓");
+    assert!(pending.is_empty());
+    let mut bad = vec![b'a', 0xff, b'b'];
+    assert_eq!(take_utf8(&mut bad), "a\u{fffd}b");
+    assert!(bad.is_empty());
 }
 
 /// The DB_PORT of a project's `.env` is read (it wins over the kit's).
@@ -250,9 +374,9 @@ fn runs_and_stops_commands() {
     assert_eq!(done.state, State::Error);
     assert_eq!(done.code, Some(3));
     assert!(
-        r.log(&key).iter().any(|l| l.contains("hello")),
+        r.log(&key).lines.iter().any(|l| l.contains("hello")),
         "{:?}",
-        r.log(&key)
+        r.log(&key).lines
     );
     assert!(events.load(Ordering::Relaxed) >= 3);
 
@@ -400,6 +524,59 @@ fn pool_run_stops_without_a_process() {
     assert!(r.list().is_empty());
 }
 
+/// BUG-V7-30: the lines of a log are numbered over all the actions; a read
+/// gives the last number, the later events higher ones, the same line
+/// written again included.
+#[test]
+fn log_lines_are_numbered() {
+    let tmp = TempDir::new("run-log-seq");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&events);
+    let r = Runner::new(
+        kit,
+        Arc::new(move |e| {
+            if let Event::Log { key, lines, seq } = e {
+                seen.lock().unwrap().push((key, lines, seq));
+            }
+        }),
+    );
+    let a = site_action(false, Some("legacy"));
+    let shop = r.attach_pool("shop", &a, "legacy", 8095, "http://s:8095", "it");
+    r.note(&shop.key, "same");
+    let read = r.log(&shop.key);
+    assert_eq!(read.lines.len(), 2);
+    assert_eq!(read.seq, 2);
+    r.note(&shop.key, "same");
+    let blog = r.attach_pool("blog", &a, "legacy", 8095, "http://b:8095", "it");
+    r.note(&shop.key, "same");
+    r.note("nobody|x", "lost");
+    let seqs: Vec<(String, u64)> = events
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|(k, lines, seq)| {
+            assert_eq!(lines.len(), 1);
+            (k.clone(), *seq)
+        })
+        .collect();
+    let (s, b) = (shop.key.clone(), blog.key.clone());
+    assert_eq!(
+        seqs,
+        [
+            (s.clone(), 1),
+            (s.clone(), 2),
+            (s.clone(), 3),
+            (b, 4),
+            (s.clone(), 5)
+        ]
+    );
+    let after = r.log(&s);
+    assert_eq!(after.lines[2..], ["[Atollo] same", "[Atollo] same"]);
+    assert_eq!(after.seq, 5);
+}
+
 /// I2: a run served by a pool stopped from the "Server Web" page (or dead)
 /// is marked stopped, and can then be cleared; one whose pool runs is not.
 #[test]
@@ -494,7 +671,7 @@ fn site_stops_when_its_php_cgi_ends() {
         let start = std::time::Instant::now();
         let code = r.wait_with_php(&info.key, run, &mut server, php, "it");
         assert!(start.elapsed() < Duration::from_secs(20));
-        (code, r.log(&info.key))
+        (code, r.log(&info.key).lines)
     };
 
     let (code, log) = run("shop", false);

@@ -319,7 +319,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("code"),
     keywords:
-      "editor vscodium terminale console estensioni open vsx impostazioni mcp progetto editor terminal extensions settings éditeur terminal extensions paramètres editor terminal erweiterungen einstellungen",
+      "editor vscodium terminale console estensioni open vsx impostazioni mcp progetto server pronti filesystem dbhub mysql mongodb editor terminal extensions settings ready servers éditeur terminal extensions paramètres serveurs prêts editor terminal erweiterungen einstellungen fertige server",
     targetPage: "projects",
   },
   {
@@ -482,7 +482,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("sync"),
     keywords:
-      "agents.md claude.md skill mcp mcp.json sincronizzazione condiviso istruzioni conflitti shared instructions skills sync conflicts instructions partagées synchronisation conflits gemeinsame anweisungen synchronisierung konflikte",
+      "agents.md claude.md skill mcp mcp.json sincronizzazione condiviso istruzioni conflitti server pronti github playwright fetch filesystem dbhub mysql mongodb token shared instructions skills sync conflicts ready servers instructions partagées synchronisation conflits serveurs prêts gemeinsame anweisungen synchronisierung konflikte fertige server",
     targetPage: "agents",
   },
   {
@@ -634,7 +634,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("settings-gear"),
     keywords:
-      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
+      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema salute del kit kit health santé du kit zustand des kits settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
   },
   {
@@ -843,7 +843,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("symbol-keyword"),
     keywords:
-      "cli riga di comando prepare check components versions env sync models llm diagnostics diagnostica powershell command line ligne de commande kommandozeile befehlszeile",
+      "cli riga di comando prepare check check --kit salute del kit kit health components versions env sync models llm diagnostics diagnostica powershell command line ligne de commande kommandozeile befehlszeile",
   },
 
   // 9. Help
@@ -859,14 +859,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "I problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.",
-        "The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins. And how to report a problem with the diagnostics zip.",
-        "Les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées. Et comment signaler un problème avec le zip du diagnostic.",
-        "Die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen. Und wie du ein Problem mit dem Diagnose-Zip meldest.",
+        "Su un PC nuovo, prima la «Salute del kit». Poi i problemi più comuni, il messaggio che vedi e che cosa fare: download, porte occupate, server che non partono, accessi scaduti. E come segnalare un problema con lo zip della diagnostica.",
+        "On a new PC, “Kit health” first. Then the most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins. And how to report a problem with the diagnostics zip.",
+        "Sur un nouveau PC, d'abord la « Santé du kit ». Puis les problèmes les plus courants, le message que vous voyez et quoi faire : téléchargements, ports occupés, serveurs qui ne démarrent pas, connexions expirées. Et comment signaler un problème avec le zip du diagnostic.",
+        "Auf einem neuen PC zuerst der „Zustand des Kits“. Dann die häufigsten Probleme, die Meldung, die du siehst, und was zu tun ist: Downloads, belegte Ports, Server, die nicht starten, abgelaufene Anmeldungen. Und wie du ein Problem mit dem Diagnose-Zip meldest.",
       ),
     icon: codicon("warning"),
     keywords:
-      "problemi errori risoluzione porta occupata download fallito non parte errore segnala un problema segnalazione diagnostica esporta zip log issue github bug problems errors troubleshooting port in use download failed report a problem export diagnostics problèmes erreurs dépannage port occupé téléchargement échoué signaler un problème signalement exporter le diagnostic probleme fehler fehlerbehebung port belegt download fehlgeschlagen problem melden meldung diagnose exportieren",
+      "problemi errori risoluzione salute del kit kit health santé du kit zustand des kits pc nuovo new pc fat32 exfat noexec spazio libero free space percorso path permessi permissions takeown icacls chown librerie libraries libaio libnuma libicu libvulkan1 porta occupata download fallito non parte errore segnala un problema segnalazione diagnostica esporta zip log issue github bug problems errors troubleshooting port in use download failed report a problem export diagnostics problèmes erreurs dépannage port occupé téléchargement échoué signaler un problème signalement exporter le diagnostic probleme fehler fehlerbehebung port belegt download fehlgeschlagen problem melden meldung diagnose exportieren",
   },
   {
     id: "faq",

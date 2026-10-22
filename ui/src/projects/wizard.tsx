@@ -77,7 +77,7 @@ function EnvRows({
             value={r.key}
             readOnly={!r.added}
             disabled={disabled}
-            placeholder="CHIAVE"
+            placeholder="KEY"
             mono
             onChange={(key) => {
               onValue(r, { key });

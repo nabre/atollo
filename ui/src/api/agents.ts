@@ -3,6 +3,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, engineText, query } from "./core";
+import type { McpServer, McpView } from "./projects";
 
 export type AgentId = "claude" | "codex" | "antigravity" | "pi";
 
@@ -197,6 +198,87 @@ export function agentsStats(force: boolean): Promise<StatsReport> {
 /** Opens the agent in a kit console in the project (only there). */
 export function agentLaunch(agent: AgentId, project: string): Promise<void> {
   return act("agent_launch", { agent, project });
+}
+
+/** A ready MCP server (N-7, tauri/src/agents/presets.rs). */
+export interface McpPreset {
+  id: "github" | "playwright" | "fetch" | "filesystem" | "mysql" | "mongodb";
+  /** `kit`: data\agents\mcp.json; `project`: its .mcp.json. */
+  scope: "kit" | "project";
+  /** The project's database it reads: offered only when the project has one. */
+  engine: "mysql" | "mongodb" | null;
+  server: McpServer;
+}
+
+const npx = (name: string, args: string[], env: Record<string, string> = {}): McpServer => ({
+  name,
+  kind: "stdio",
+  command: "npx",
+  args,
+  url: null,
+  env,
+  headers: {},
+});
+
+export const SAMPLE_PRESETS: McpPreset[] = [
+  {
+    id: "github",
+    scope: "kit",
+    engine: null,
+    server: {
+      name: "github",
+      kind: "http",
+      command: null,
+      args: [],
+      url: "https://api.githubcopilot.com/mcp/",
+      env: {},
+      headers: { Authorization: "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}" },
+    },
+  },
+  { id: "playwright", scope: "kit", engine: null, server: npx("playwright", ["-y", "@playwright/mcp@latest"]) },
+  {
+    id: "fetch",
+    scope: "kit",
+    engine: null,
+    server: { ...npx("fetch", ["mcp-server-fetch"]), command: "uvx" },
+  },
+  {
+    id: "filesystem",
+    scope: "project",
+    engine: null,
+    server: npx("filesystem", ["-y", "@modelcontextprotocol/server-filesystem", "."]),
+  },
+  {
+    id: "mysql",
+    scope: "project",
+    engine: "mysql",
+    server: npx("mysql", ["-y", "@bytebase/dbhub", "--transport", "stdio"], { DSN: "${DSN}" }),
+  },
+  {
+    id: "mongodb",
+    scope: "project",
+    engine: "mongodb",
+    server: npx("mongodb", ["-y", "mongodb-mcp-server@latest"], {
+      MDB_MCP_CONNECTION_STRING: "${MDB_MCP_CONNECTION_STRING}",
+    }),
+  },
+];
+
+export function mcpPresets(): Promise<McpPreset[]> {
+  return query<McpPreset[]>("mcp_presets", SAMPLE_PRESETS);
+}
+
+/** The kit's MCP servers (data\agents\mcp.json), every agent's. */
+export function kitMcp(): Promise<McpView> {
+  return query<McpView>("kit_mcp", {
+    servers: SAMPLE_PRESETS.filter((p) => p.id === "playwright").map((p) => p.server),
+    readOnly: false,
+  });
+}
+
+/** Writes the kit's MCP servers and aligns the agents. */
+export function kitMcpSet(servers: McpServer[]): Promise<void> {
+  return act("kit_mcp_set", { servers });
 }
 
 export function agentSignOut(agent: AgentId): Promise<void> {

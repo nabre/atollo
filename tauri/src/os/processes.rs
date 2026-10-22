@@ -38,7 +38,7 @@ pub(crate) fn path_key(path: &str) -> String {
 }
 
 /// `folder` as a prefix ending with the separator ([`path_key`]).
-fn prefix_of(folder: &Path) -> String {
+pub(crate) fn prefix_of(folder: &Path) -> String {
     format!(
         "{}{MAIN_SEPARATOR}",
         path_key(
@@ -50,7 +50,7 @@ fn prefix_of(folder: &Path) -> String {
     )
 }
 
-fn is_under(p: &Proc, prefix: &str) -> bool {
+pub(crate) fn is_under(p: &Proc, prefix: &str) -> bool {
     path_key(&p.path.display().to_string()).starts_with(prefix)
 }
 

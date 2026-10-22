@@ -305,11 +305,12 @@ fn apps_folder_per_platform() {
 }
 
 #[test]
-fn id_ignores_case() {
+fn id_ignores_case_where_the_disk_does() {
     let a = Kit::at(PathBuf::from(r"E:\Kit"), Arch::X64);
     let b = Kit::at(PathBuf::from(r"e:\kit"), Arch::X64);
-    assert_eq!(a.id(), b.id());
     assert_eq!(a.id().len(), 16);
+    // Two folders on Linux: two kits, two ids (BUG-V7-18).
+    assert_eq!(a.id() == b.id(), cfg!(any(windows, target_os = "macos")));
 }
 
 #[test]

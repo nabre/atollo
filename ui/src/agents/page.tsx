@@ -20,6 +20,7 @@ import { ActionButton, ErrorLine } from "../common";
 import { ComponentLogo, componentIcon } from "../logos";
 import { AgentUsage, useStats } from "./stats";
 import { TokenLink } from "./token";
+import { KitMcpBox } from "../projects/mcp";
 import { useAction, useLoad } from "../hooks";
 import {
   Button,
@@ -41,10 +42,12 @@ import {
   WelcomeView,
 } from "../workbench";
 
-/** The agents' state, refreshed every few seconds (running, signed in). */
+/** The agents' state, refreshed every few seconds (running, signed in). A
+ * poll that fails keeps what the last one read: an empty list would show
+ * the welcome page and hide the project's agents until the next poll. */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {
   const { data: agents, reload } = useLoad<AgentInfo[] | null>(agentsStatus, null, {
-    onError: { fallback: [] },
+    onError: "keep",
     every: 5000,
   });
   return { agents, reload };
@@ -270,6 +273,7 @@ export function AgentsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
                 {t("Apri la cartella condivisa")}
               </Button>
             </EditorSection>
+            <KitMcpBox />
           </EditorBody>
         </div>
       ) : (

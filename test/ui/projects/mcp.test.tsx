@@ -2,9 +2,9 @@
 // shown, with "Riprova" to read again, instead of an empty box. The focus
 // is not lost when what has it goes: after Riprova, after Salva.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { EditorSettingsView, McpView } from "../../../ui/src/api";
-import { ProjectMcpBox } from "../../../ui/src/projects/mcp";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "../../../ui/src/api";
+import { KitMcpBox, ProjectMcpBox } from "../../../ui/src/projects/mcp";
 import { EditorSettingsBox } from "../../../ui/src/projects/editorsettings";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
@@ -19,7 +19,9 @@ afterEach(() => {
 });
 
 const MCP: McpView = {
-  servers: [{ name: "playwright", kind: "stdio", command: "npx", args: ["@playwright/mcp"], url: null, env: {} }],
+  servers: [
+    { name: "playwright", kind: "stdio", command: "npx", args: ["@playwright/mcp"], url: null, env: {}, headers: {} },
+  ],
   readOnly: false,
 };
 
@@ -43,14 +45,84 @@ function failOnce(cmd: string, value: unknown) {
 describe("ProjectMcpBox", () => {
   it("shows a failed read and reads again on Riprova", async () => {
     failOnce("project_mcp", MCP);
-    render(<ProjectMcpBox project="sito" />);
+    render(<ProjectMcpBox project="sito" engines={[]} />);
     expect((await screen.findByRole("alert")).textContent).toContain("file non leggibile");
     expect(screen.queryByText("playwright")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Riprova" }));
     expect(await screen.findByText("playwright")).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(invoke).toHaveBeenCalledTimes(2);
-    expect(invoke).toHaveBeenLastCalledWith("project_mcp", { project: "sito" });
+    const reads = invoke.mock.calls.filter(([c]) => c === "project_mcp");
+    expect(reads).toEqual([
+      ["project_mcp", { project: "sito" }],
+      ["project_mcp", { project: "sito" }],
+    ]);
+  });
+
+  it("offers the project's ready servers, those of its databases only", async () => {
+    let servers: McpServer[] = [];
+    invoke.mockImplementation((c, args) => {
+      if (c === "mcp_presets") return Promise.resolve(SAMPLE_PRESETS);
+      if (c === "project_mcp") return Promise.resolve({ servers, readOnly: false });
+      if (c === "project_mcp_set") {
+        servers = (args as { servers: McpServer[] }).servers;
+        return Promise.resolve(undefined);
+      }
+      return Promise.reject(new Error(`unexpected ${c}`));
+    });
+    render(<ProjectMcpBox project="sito" engines={["mysql"]} />);
+    expect(await screen.findByText("Legge e scrive i file, solo nella cartella del progetto.")).toBeTruthy();
+    expect(screen.getByText("Interroga il database MySQL del progetto (DBHub).")).toBeTruthy();
+    // No MongoDB database, no MongoDB server; the kit's are on the Agents page.
+    expect(screen.queryByText("Interroga il database MongoDB del progetto.")).toBeNull();
+    expect(screen.queryByText("playwright")).toBeNull();
+    const row = screen.getByText("Interroga il database MySQL del progetto (DBHub).").closest("li") as HTMLElement;
+    fireEvent.click(within(row).getByRole("button", { name: "Aggiungi" }));
+    await waitFor(() => {
+      expect(servers.map((s) => s.name)).toEqual(["mysql"]);
+    });
+    expect(servers[0]?.env).toEqual({ DSN: "${DSN}" });
+    // Added: listed, no longer offered.
+    await waitFor(() => {
+      expect(screen.queryByText("Interroga il database MySQL del progetto (DBHub).")).toBeNull();
+    });
+    expect(screen.getByText("npx -y @bytebase/dbhub --transport stdio")).toBeTruthy();
+  });
+});
+
+describe("KitMcpBox", () => {
+  it("lists the kit's servers and adds a ready one to data\\agents\\mcp.json", async () => {
+    let servers: McpServer[] = SAMPLE_PRESETS.filter((p) => p.id === "playwright").map((p) => p.server);
+    invoke.mockImplementation((c, args) => {
+      if (c === "mcp_presets") return Promise.resolve(SAMPLE_PRESETS);
+      if (c === "kit_mcp") return Promise.resolve({ servers, readOnly: false });
+      if (c === "kit_mcp_set") {
+        servers = (args as { servers: McpServer[] }).servers;
+        return Promise.resolve(undefined);
+      }
+      return Promise.reject(new Error(`unexpected ${c}`));
+    });
+    render(<KitMcpBox />);
+    expect(await screen.findByRole("heading", { name: "Server MCP del kit" })).toBeTruthy();
+    expect(
+      await screen.findByText("Issue, pull request e repository su GitHub, con l'account GitHub del kit."),
+    ).toBeTruthy();
+    // Playwright is there already; the project's ones are on its page.
+    expect(screen.queryByText("Un browser che l'agente apre e usa: pagine, clic, moduli, schermate.")).toBeNull();
+    expect(screen.queryByText("Legge e scrive i file, solo nella cartella del progetto.")).toBeNull();
+    const row = screen
+      .getByText("Issue, pull request e repository su GitHub, con l'account GitHub del kit.")
+      .closest("li") as HTMLElement;
+    fireEvent.click(within(row).getByRole("button", { name: "Aggiungi" }));
+    await waitFor(() => {
+      expect(servers.map((s) => s.name)).toEqual(["playwright", "github"]);
+    });
+    // The token is a variable, never a value.
+    expect(servers[1]?.headers).toEqual({ Authorization: "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}" });
+    const playwright = (await screen.findByText("playwright")).closest("li") as HTMLElement;
+    fireEvent.click(within(playwright).getByRole("button", { name: "Togli" }));
+    await waitFor(() => {
+      expect(servers.map((s) => s.name)).toEqual(["github"]);
+    });
   });
 });
 

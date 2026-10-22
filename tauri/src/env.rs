@@ -139,6 +139,19 @@ impl Host {
             .map(|(_, v)| v.as_str())
     }
 
+    /// The host's temporary folder (D-90): `CP_HOST_TEMP` when started from
+    /// a kit console, whose TEMP is the kit's; then `TEMP`, `TMP` and, the
+    /// only one macOS and Linux desktops set, `TMPDIR`. One lookup for the
+    /// app's own `Kit::with_host` and for the consoles it passes it to, so
+    /// an Atollo started from Finder and one started from a kit console
+    /// agree (BUG-V7-17).
+    pub fn temp(&self) -> Option<&str> {
+        self.get("CP_HOST_TEMP")
+            .or(self.get("TEMP"))
+            .or(self.get("TMP"))
+            .or(self.get("TMPDIR"))
+    }
+
     fn system_root(&self) -> String {
         self.get("SystemRoot").unwrap_or(r"C:\Windows").to_owned()
     }
@@ -411,12 +424,7 @@ impl KitEnv {
         }
         // The host's temporary folder for files in transit (D-90), kept for a
         // Atollo.exe started from the kit's own consoles, whose TEMP is the kit's.
-        if let Some(real) = host
-            .get("CP_HOST_TEMP")
-            .or(host.get("TEMP"))
-            .or(host.get("TMP"))
-            .or(host.get("TMPDIR"))
-        {
+        if let Some(real) = host.temp() {
             env.set("CP_HOST_TEMP", real);
         }
         env.set_path("HOME", &home);

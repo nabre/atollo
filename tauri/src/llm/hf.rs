@@ -194,12 +194,27 @@ fn get(net: &Net, url: &str, repo: &str, token: Option<&str>) -> Result<Value> {
         })
 }
 
+/// The repository's name as Hugging Face spells it (`id` of its answer),
+/// for `repo` as typed: Hugging Face finds a repository whatever the case,
+/// and the name becomes the model's folder, so two spellings of one
+/// repository would be two folders on Linux and two downloads into the same
+/// files on Windows and macOS.
+pub fn canonical(meta: &Value, repo: &str) -> String {
+    meta.get("id")
+        .and_then(Value::as_str)
+        .filter(|id| valid_repo(id) && id.eq_ignore_ascii_case(repo))
+        .unwrap_or(repo)
+        .to_owned()
+}
+
 /// The repository's last commit and its GGUF models.
 pub fn inspect(net: &Net, repo: &str, token: Option<&str>) -> Result<RepoInfo> {
     if !valid_repo(repo) {
         bail!(HfError::BadName(repo.to_owned()));
     }
     let meta = get(net, &format!("{API}/{repo}"), repo, token)?;
+    let repo = canonical(&meta, repo);
+    let repo = repo.as_str();
     let commit = meta
         .get("sha")
         .and_then(Value::as_str)

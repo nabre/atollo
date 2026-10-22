@@ -90,8 +90,24 @@ fn agents_need_their_mcp_programs() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     assert_eq!(
-        of_agent(&kit, "codex").into_iter().collect::<Vec<_>>(),
+        of_agent(&kit, "codex", None)
+            .into_iter()
+            .collect::<Vec<_>>(),
         ["codex"]
+    );
+    // A project's own servers count too.
+    let project = tmp.0.join("projects").join("p");
+    std::fs::create_dir_all(&project).unwrap();
+    std::fs::write(
+        project.join(".mcp.json"),
+        r#"{"mcpServers": {"db": {"command": "npx", "args": ["-y", "@bytebase/dbhub"]}}}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        of_agent(&kit, "codex", Some(&project))
+            .into_iter()
+            .collect::<Vec<_>>(),
+        ["codex", "node"]
     );
     let file = crate::agents::sync::Paths::of(&kit).mcp_file();
     std::fs::create_dir_all(file.parent().unwrap()).unwrap();
@@ -101,7 +117,9 @@ fn agents_need_their_mcp_programs() {
     )
     .unwrap();
     assert_eq!(
-        of_agent(&kit, "claude").into_iter().collect::<Vec<_>>(),
+        of_agent(&kit, "claude", None)
+            .into_iter()
+            .collect::<Vec<_>>(),
         ["claude", "node", "uv"]
     );
 }

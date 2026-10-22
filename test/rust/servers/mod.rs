@@ -79,7 +79,8 @@ fn profile_crud_and_vhost_generation() {
         &portale.join("public"),
         &site,
         None,
-    );
+    )
+    .unwrap();
     assert!(vhost.contains("<VirtualHost *:8095>"));
     assert!(vhost.contains("ServerName portale.localhost"));
     assert!(vhost.contains("ServerAlias admin.portale.localhost\r\n"));
@@ -106,13 +107,21 @@ fn profile_crud_and_vhost_generation() {
         &portale.join("public"),
         &site,
         Some(&conf_d),
-    );
+    )
+    .unwrap();
     let include = format!(
         "    IncludeOptional \"{}/*.conf\"\r\n</VirtualHost>",
         crate::projects::apache::fwd(&conf_d)
     );
     assert!(with.contains(&include) && !include.contains('\\'), "{with}");
     assert_eq!(with.matches("Include").count(), 1, "{with}");
+
+    // BUG-V7-09: a site folder whose name would end the quoted argument
+    // (legal on macOS and Linux) is left out, never written in the vhost.
+    let evil = portale.join("pub\"\r\nLoadModule x y\r\n#");
+    assert!(apache_vhost_conf(8095, &portale, &projects, &evil, &site, None).is_none());
+    let vars = portale.join("${SRVROOT}");
+    assert!(apache_vhost_conf(8095, &portale, &projects, &vars, &site, None).is_none());
 
     servers.remove_profile("legacy-apache-5.6").unwrap();
     assert!(servers.list("it", false).pools.is_empty());

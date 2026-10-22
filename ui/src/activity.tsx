@@ -24,8 +24,8 @@ import { t } from "./i18n";
 import { alive, stateText } from "./projects";
 import { SetupProgress, setupStatusText } from "./setup";
 import { ActionBar, Button, codicon, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "./workbench";
-import { ActionButton } from "./common";
-import { useLoad } from "./hooks";
+import { ActionButton, ErrorLine } from "./common";
+import { useAction, useLoad } from "./hooks";
 
 /** A version of a database server that is not stopped: the one it runs, or
  * another one on its own port (`line` set, D-102). */
@@ -150,7 +150,8 @@ export function ActivityPanel({
 }) {
   const [selected, setSelected] = useState<Selected>(null);
   const [confirmStop, setConfirmStop] = useState(false);
-  const [stopping, setStopping] = useState(false);
+  // The stops, with why one failed: a process in use or a port held.
+  const { busy, error, run } = useAction();
   const { liveRuns, lines: liveServices, pools, llm, setServices, reloadServices, reloadPools, reloadLlm } = running;
   const logRef = useRef<HTMLPreElement>(null);
 
@@ -191,20 +192,24 @@ export function ActivityPanel({
 
   /** Stops the actions, the pools, the database versions and the server of
    * the local models, then reads them again (the actions come back through
-   * their events). */
+   * their events). What failed to stop is said, each on its line. */
   const stopAll = () => {
     setConfirmStop(false);
-    setStopping(true);
-    void Promise.allSettled([
-      ...liveRuns.map((r) => onStop(r.key)),
-      ...pools.map((p) => serverStop(p.id)),
-      ...liveServices.map((s) => serviceStop(s.id, s.line)),
-      ...(llm ? [llmStop()] : []),
-    ]).then(() => {
-      setStopping(false);
+    run("all", async () => {
+      const results = await Promise.allSettled([
+        ...liveRuns.map((r) => onStop(r.key)),
+        ...pools.map((p) => serverStop(p.id)),
+        ...liveServices.map((s) => serviceStop(s.id, s.line)),
+        ...(llm ? [llmStop()] : []),
+      ]);
       reloadServices();
       reloadPools();
       reloadLlm();
+      const failed = results.flatMap((r) => (r.status === "rejected" ? [String(r.reason)] : []));
+      if (failed.length > 0) {
+        const why: unknown = failed.join("\n");
+        throw why;
+      }
     });
   };
 
@@ -220,7 +225,7 @@ export function ActivityPanel({
             <IconButton
               icon={codicon("stop-circle")}
               label={t("Ferma tutto")}
-              busy={stopping}
+              busy={busy === "all"}
               onClick={() => {
                 setConfirmStop(true);
               }}
@@ -262,6 +267,11 @@ export function ActivityPanel({
                 </>
               }
             />
+          )}
+          {error && (
+            <div className="shrink-0 border-b border-vsc-border px-3 py-1">
+              <ErrorLine error={error} />
+            </div>
           )}
           <div className="flex min-h-0 flex-1">
             <div className="w-[260px] shrink-0 overflow-auto border-r border-vsc-border">
@@ -348,8 +358,9 @@ export function ActivityPanel({
                         <IconButton
                           icon={codicon("debug-stop")}
                           label={t("Ferma")}
+                          busy={busy === `run:${currentRun.key}`}
                           onClick={() => {
-                            void onStop(currentRun.key);
+                            run(`run:${currentRun.key}`, () => onStop(currentRun.key));
                           }}
                         />
                       ) : (
@@ -384,8 +395,16 @@ export function ActivityPanel({
                       <IconButton
                         icon={codicon("debug-stop")}
                         label={t("Ferma")}
+                        busy={busy === `service:${currentService.key}`}
                         onClick={() => {
-                          serviceStop(currentService.id, currentService.line).then(setServices, () => undefined);
+                          run(`service:${currentService.key}`, () =>
+                            serviceStop(currentService.id, currentService.line).then((list) => {
+                              setServices(list);
+                              // A poll already on its way would bring back the
+                              // state from before the stop: read again.
+                              reloadServices();
+                            }),
+                          );
                         }}
                       />
                     )}
@@ -409,8 +428,9 @@ export function ActivityPanel({
                     <IconButton
                       icon={codicon("debug-stop")}
                       label={t("Ferma")}
+                      busy={busy === "llm"}
                       onClick={() => {
-                        llmStop().then(reloadLlm, () => undefined);
+                        run("llm", () => llmStop().then(reloadLlm));
                       }}
                     />
                   </div>
@@ -431,8 +451,9 @@ export function ActivityPanel({
                     <IconButton
                       icon={codicon("debug-stop")}
                       label={t("Ferma")}
+                      busy={busy === `pool:${currentPool.id}`}
                       onClick={() => {
-                        serverStop(currentPool.id).then(reloadPools, () => undefined);
+                        run(`pool:${currentPool.id}`, () => serverStop(currentPool.id).then(reloadPools));
                       }}
                     />
                   </div>

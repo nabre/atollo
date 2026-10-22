@@ -53,16 +53,66 @@ pub async fn agent_launch<R: Runtime>(
         s.agent = Some(agent.clone());
     });
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
-        let wanted: Vec<&str> = crate::setup::needs::of_agent(&kit, &agent)
+        let wanted: Vec<&str> = crate::setup::needs::of_agent(&kit, &agent, Some(&dir))
             .into_iter()
             .collect();
-        let env =
+        let mut env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
+        // The GitHub token and the project's databases of the ready MCP
+        // servers (N-7): in the agent's environment, never in a file.
+        for (var, value) in
+            crate::agents::presets::launch_vars(&kit, &env, &dir, || services.project_dbs(&project))
+        {
+            env.set(var, value);
+        }
         crate::agents::launch(&app, &kit, &env, &agent, &dir, lang).or_fail_chain("agent")
     })
     .await
     .or_fail("agent")?
+}
+
+/// The ready MCP servers (N-7, D-156), the kit's and the projects'.
+#[tauri::command]
+pub fn mcp_presets<R: Runtime>(
+    webview: Webview<R>,
+) -> CmdResult<Vec<crate::agents::presets::Preset>> {
+    ensure_main(&webview)?;
+    Ok(crate::agents::presets::all())
+}
+
+/// The kit's MCP servers (`data\agents\mcp.json`), every agent's.
+#[tauri::command]
+pub fn kit_mcp<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::projects::mcp::McpView> {
+    ensure_main(&webview)?;
+    Ok(crate::projects::mcp::kit_get(&state.kit))
+}
+
+/// Writes the kit's MCP servers, then aligns the agents so that each has
+/// them at once (not only at its next start).
+#[tauri::command]
+pub async fn kit_mcp_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    servers: Vec<crate::projects::mcp::McpServer>,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::projects::mcp::kit_set(&kit, &servers)?;
+        let report = crate::agents::sync::run(&kit, None);
+        for w in &report.warnings {
+            crate::log::warn(w);
+        }
+        anyhow::Ok(())
+    })
+    .await
+    .or_fail("kit mcp")?
+    .or_fail_chain("kit mcp")
 }
 
 /// "Collega con un token" (Claude Code on macOS, D-115): `claude

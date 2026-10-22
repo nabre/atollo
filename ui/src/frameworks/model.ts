@@ -213,11 +213,14 @@ export function useFrameworks() {
     frameworksGet().then(
       (v) => {
         setView(v);
+        setError(null);
+        // An edit made while the read ran is newer than its answer: keep it
+        // on screen and unsaved, so the next save sends it.
+        if (edits.current !== at) return;
         setPieces(v.pieces);
         latest.current = v.pieces;
         savedEdits.current = at;
         setDirty(false);
-        setError(null);
       },
       (e: unknown) => {
         setError(String(e));
@@ -281,7 +284,12 @@ export function useComponents(): ComponentInfo[] {
   const [list, setList] = useState<ComponentInfo[]>([]);
   useEffect(() => {
     let gone = false;
-    catalog ??= componentsList().catch(() => []);
+    // A read that fails is not kept: the next page that needs the tags
+    // asks again, instead of going without names and logos until a restart.
+    catalog ??= componentsList().catch(() => {
+      catalog = null;
+      return [] as ComponentInfo[];
+    });
     void catalog.then((l) => {
       if (!gone) setList(l);
     });

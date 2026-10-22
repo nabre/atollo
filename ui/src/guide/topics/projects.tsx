@@ -1775,10 +1775,10 @@ export const PROJECTS: TopicTexts = {
         <P>
           {rich(
             tr(
-              "Il secondo riquadro, «Server MCP del progetto», aggiunge server MCP che valgono solo in questo progetto, oltre a quelli del kit. Come funzionano e come si aggiungono: {0}.",
-              "The second pane, “Project MCP servers”, adds MCP servers that apply only in this project, on top of the kit's. How they work and how to add them: {0}.",
-              "Le second volet, « Serveurs MCP du projet », ajoute des serveurs MCP qui valent seulement dans ce projet, en plus de ceux du kit. Comment ils fonctionnent et comment les ajouter : {0}.",
-              "Der zweite Bereich, „MCP-Server des Projekts“, fügt MCP-Server hinzu, die nur in diesem Projekt gelten, zusätzlich zu denen des Kits. Wie sie funktionieren und wie man sie hinzufügt: {0}.",
+              "Il secondo riquadro, «Server MCP del progetto», aggiunge server MCP che valgono solo in questo progetto, oltre a quelli del kit. In «Server pronti» bastano un clic per filesystem (i file, solo nella cartella del progetto) e, quando il database del progetto è stato creato, per mysql (DBHub) o mongodb: il database arriva al server all'avvio dell'agente, mai scritto in .mcp.json. Come funzionano e come si aggiungono: {0}.",
+              "The second pane, “Project MCP servers”, adds MCP servers that apply only in this project, on top of the kit's. Under “Ready servers” one click is enough for filesystem (the files, only in the project's folder) and, once the project's database has been created, for mysql (DBHub) or mongodb: the database reaches the server when the agent starts, never written in .mcp.json. How they work and how to add them: {0}.",
+              "Le second volet, « Serveurs MCP du projet », ajoute des serveurs MCP qui valent seulement dans ce projet, en plus de ceux du kit. Dans « Serveurs prêts », un clic suffit pour filesystem (les fichiers, seulement dans le dossier du projet) et, une fois la base de données du projet créée, pour mysql (DBHub) ou mongodb : la base de données arrive au serveur au lancement de l'agent, jamais écrite dans .mcp.json. Comment ils fonctionnent et comment les ajouter : {0}.",
+              "Der zweite Bereich, „MCP-Server des Projekts“, fügt MCP-Server hinzu, die nur in diesem Projekt gelten, zusätzlich zu denen des Kits. Unter „Fertige Server“ genügt ein Klick für filesystem (die Dateien, nur im Ordner des Projekts) und, sobald die Datenbank des Projekts angelegt ist, für mysql (DBHub) oder mongodb: Die Datenbank erreicht den Server beim Start des Agenten, nie in .mcp.json geschrieben. Wie sie funktionieren und wie man sie hinzufügt: {0}.",
             ),
             <See key="a" id="agents-shared" />,
           )}

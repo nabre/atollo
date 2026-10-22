@@ -225,16 +225,21 @@ pub async fn llm_pull<R: Runtime>(
         use tauri::Manager;
         let net =
             crate::net::Net::new(&Settings::load(&kit).settings, None).or_fail_chain("llm")?;
-        let token = crate::llm::hf_token(&kit).or_fail_chain("llm")?;
-        let plan = match (catalog.as_deref(), repo.as_deref(), choice.as_deref()) {
-            (Some(id), None, None) => crate::llm::catalog::find(id)
-                .map(crate::llm::pull::Plan::from_catalog)
-                .ok_or_else(|| fail("llm", format!("unknown model {id}")))?,
+        let (plan, token) = match (catalog.as_deref(), repo.as_deref(), choice.as_deref()) {
+            // Public: a token that cannot be read does not stop it.
+            (Some(id), None, None) => (
+                crate::llm::catalog::find(id)
+                    .map(crate::llm::pull::Plan::from_catalog)
+                    .ok_or_else(|| fail("llm", format!("unknown model {id}")))?,
+                crate::llm::hf_token_if_readable(&kit),
+            ),
             (None, Some(repo), Some(choice)) => {
+                let token = crate::llm::hf_token(&kit).or_fail_chain("llm")?;
                 let info = crate::llm::hf::inspect(&net, repo.trim(), token.as_deref())
                     .or_fail_chain("llm")?;
-                let c = crate::llm::hf::pick(&info, Some(choice)).or_fail_chain("llm")?;
-                crate::llm::pull::Plan::from_choice(&info, c)
+                let plan =
+                    crate::llm::pull::Plan::of_choice(&kit, &info, choice).or_fail_chain("llm")?;
+                (plan, token)
             }
             _ => return Err(fail("llm", "catalog, or repo and choice")),
         };
@@ -348,6 +353,7 @@ pub async fn llm_hf_token_set<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let kit = state.kit.clone();
+    let invalid = tr(&state, "Token di Hugging Face non valido.", &[]);
     tauri::async_runtime::spawn_blocking(move || {
         let file = crate::llm::hf_token_file(&kit);
         let token = token.trim();
@@ -363,7 +369,7 @@ pub async fn llm_hf_token_set<R: Runtime>(
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'-'))
         {
-            return Err(fail("llm", "not a Hugging Face token"));
+            return Err(fail("llm", invalid));
         }
         crate::router::fs::write_private(&file, token).or_fail_chain("llm")
     })

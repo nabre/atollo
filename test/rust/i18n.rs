@@ -139,9 +139,13 @@ fn literals<'a>(re: &regex::Regex, code: &'a str) -> Vec<&'a str> {
 /// blocks are ignored.
 #[test]
 fn sources_are_in_the_catalog() {
-    let calls =
-        regex::Regex::new(r#"\b(?:tr|i18n::t)\(\s*(?:"[^"]*"|[^,()"]+),\s*"((?:[^"\\]|\\.)*)""#)
-            .unwrap();
+    // A bare `t(lang, "…")` too (the command line, the volume and port
+    // messages), and a language that is itself a call (`state.lang()`):
+    // BUG-V7-36. Not after a `.`: a method's `t` is `methods` below.
+    let calls = regex::Regex::new(
+        r#"(?:^|[^.\w])(?:tr|t|i18n::t)\(\s*(?:"[^"]*"|[^,"]+?),\s*"((?:[^"\\]|\\.)*)""#,
+    )
+    .unwrap();
     let methods = regex::Regex::new(r#"\b[a-z_][a-z0-9_]*\.t\(\s*"((?:[^"\\]|\\.)*)""#).unwrap();
     let labels = regex::Regex::new(r#"\blabel\(\s*"((?:[^"\\]|\\.)*)""#).unwrap();
     let help = regex::Regex::new(r#"\bconst HELP: &str = "((?:[^"\\]|\\.)*)";"#).unwrap();
@@ -158,6 +162,9 @@ fn sources_are_in_the_catalog() {
         let code = std::fs::read_to_string(path).expect("source is readable");
         let code = &code[..tests.find(&code).map_or(code.len(), |m| m.start())];
         let mut sources = literals(&calls, code);
+        if path.ends_with("cli.rs") && path.parent().is_some_and(|p| p.ends_with("src")) {
+            assert!(sources.len() >= 5, "command line texts: {sources:?}");
+        }
         sources.extend(literals(&methods, code));
         if path.ends_with("settings.rs") || path.components().any(|c| c.as_os_str() == "frameworks")
         {

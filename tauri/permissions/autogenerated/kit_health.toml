@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kit-health"
+description = "Enables the kit_health command without any pre-configured scope."
+commands.allow = ["kit_health"]
+
+[[permission]]
+identifier = "deny-kit-health"
+description = "Denies the kit_health command without any pre-configured scope."
+commands.deny = ["kit_health"]

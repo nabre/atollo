@@ -132,7 +132,9 @@ function TerminalEditor({
   view: TerminalsView;
   /** The terminal as saved; a new one has an empty id. */
   saved: TerminalInfo;
-  onSaved: (id: string) => void;
+  /** `then` is what follows the save of a new terminal, run by the page:
+   * this editor gives way to the saved terminal's own. */
+  onSaved: (id: string, then?: () => Promise<void>) => void;
   onRemoved: () => void;
   onDuplicate: (draft: TerminalInfo) => void;
   onTools?: (() => void) | undefined;
@@ -159,12 +161,21 @@ function TerminalEditor({
       tools: included ? Object.fromEntries(view.tools.map((x) => [x.id, d.tools[x.id] ?? null])) : {},
     }));
   };
-  /** Saves the changes first, when there are any; resolves to the id. */
-  const persist = async (): Promise<string> => {
-    if (!dirty) return saved.id;
+  /** Saves the changes first, when there are any, then runs `then` with
+   * the id. A new terminal's editor is replaced once it is saved, and an
+   * error shown here would be lost: the page runs `then` instead. */
+  const persist = async (then?: (id: string) => Promise<void>): Promise<void> => {
+    if (!dirty) {
+      await then?.(saved.id);
+      return;
+    }
     const id = await terminalSave(draft);
+    if (isNew && then) {
+      onSaved(id, () => then(id));
+      return;
+    }
     onSaved(id);
-    return id;
+    await then?.(id);
   };
   const open = (pick: boolean) => {
     run(pick ? "open-in" : "open", async () => {
@@ -173,8 +184,7 @@ function TerminalEditor({
         dir = await terminalDirPick(draft.dir ?? view.projects);
         if (dir === null) return;
       }
-      const id = await persist();
-      await terminalLaunch(id, dir);
+      await persist((id) => terminalLaunch(id, dir));
     });
   };
   const chooseDir = () => {
@@ -585,10 +595,11 @@ export function TerminalsPage({
           key={draft ? `new:${draft.name}` : current.id}
           view={view}
           saved={current}
-          onSaved={(id) => {
+          onSaved={(id, then) => {
             setDraft(null);
             setChosen(id);
             reload();
+            if (then) run("launch", then);
           }}
           onRemoved={() => {
             setChosen(null);

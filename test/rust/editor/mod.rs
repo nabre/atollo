@@ -202,6 +202,51 @@ fn real_server_token_redirect_and_stop() {
     );
 }
 
+/// A start asked for before a stop gives up at once: nothing written to
+/// the kit, no server (BUG-V7-15).
+#[test]
+fn a_stop_ends_a_start_in_progress() {
+    let tmp = crate::kit::tests::TempDir::new("editor-stop");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let editor = Editor::new(kit.clone(), KitEnv::default());
+    let stops = editor.stops.load(Ordering::SeqCst);
+    editor.stop();
+    let err = editor.start(stops).err().expect("the start gives up");
+    assert!(err.to_string().contains("stopped"), "{err:#}");
+    assert!(!kit.data().join("vscodium-server").exists(), "no token");
+}
+
+/// The eject waits for a start in progress; `status()` never does.
+#[test]
+fn stop_and_wait_waits_for_the_start_status_does_not() {
+    let tmp = crate::kit::tests::TempDir::new("editor-wait");
+    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let editor = std::sync::Arc::new(Editor::new(kit, KitEnv::default()));
+    // The catalog read once, outside the time measured.
+    editor.status();
+    let (held, release) = std::sync::mpsc::channel::<()>();
+    let start = {
+        let editor = std::sync::Arc::clone(&editor);
+        std::thread::spawn(move || {
+            // A start in progress, as `ensure_running()` holds it.
+            let _starting = editor.starting.lock().unwrap();
+            held.send(()).unwrap();
+            std::thread::sleep(Duration::from_millis(300));
+        })
+    };
+    release.recv().unwrap();
+    let t = Instant::now();
+    assert!(!editor.status().running);
+    assert!(t.elapsed() < Duration::from_millis(200), "status() waited");
+    editor.stop_and_wait();
+    assert!(
+        t.elapsed() >= Duration::from_millis(250),
+        "the start not waited"
+    );
+    assert_eq!(editor.stops.load(Ordering::SeqCst), 1);
+    start.join().unwrap();
+}
+
 #[test]
 fn ports_in_range() {
     let p = free_ports().next().unwrap();

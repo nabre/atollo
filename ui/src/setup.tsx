@@ -192,10 +192,13 @@ export function SetupProgress({ snapshot, title }: { snapshot: SetupSnapshot; ti
         )}
       </header>
       <ol className="space-y-1 px-3 py-2">
-        {snapshot.steps.map((step) => {
+        {snapshot.steps.map((step, i) => {
           const p = step.outcome ? null : percent(step);
+          // A run can touch a component twice (removed, then installed; two
+          // lines patched): the steps only append, so their place tells
+          // them apart.
           return (
-            <li key={step.id} className="flex items-start gap-2">
+            <li key={`${String(i)}:${step.id}`} className="flex items-start gap-2">
               <span className="mt-0.5 shrink-0">
                 <StepIcon step={step} running={snapshot.running} />
               </span>

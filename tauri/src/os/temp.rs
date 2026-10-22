@@ -71,6 +71,26 @@ impl Drop for TempWork {
     }
 }
 
+/// The host's temporary folder can hold the kit's `Atollo\<id>`. Windows
+/// gives each account its own `%TEMP%`.
+#[cfg(windows)]
+pub fn private_base(_base: &Path) -> bool {
+    true
+}
+
+/// On macOS `TMPDIR` is the account's own `/var/folders/.../T` (0700). On
+/// Linux it may be the shared `/tmp`, where another account could create
+/// `Atollo/<id>` first (or a link in its place), and `TempWork::at` would
+/// then write the kit's downloads there: only a folder this user owns and
+/// nobody else can write in.
+#[cfg(unix)]
+pub fn private_base(base: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    // SAFETY: geteuid has no preconditions and cannot fail.
+    let me = unsafe { libc::geteuid() };
+    fs::metadata(base).is_ok_and(|m| m.is_dir() && m.uid() == me && m.mode() & 0o022 == 0)
+}
+
 /// Shared for reading and writing but not for delete: while this handle
 /// lives, `sweep` cannot remove the lock, which marks the folder as in use.
 #[cfg(windows)]

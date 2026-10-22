@@ -271,7 +271,8 @@ export interface SiteOptions {
   aliases?: Record<string, string>;
 }
 
-/** A project's own MCP server (.mcp.json, D-78). */
+/** An MCP server: a project's own (.mcp.json, D-78) or the kit's
+ * (data\agents\mcp.json). */
 export interface McpServer {
   name: string;
   kind: "stdio" | "http";
@@ -279,11 +280,13 @@ export interface McpServer {
   args: string[];
   url: string | null;
   env: Record<string, string>;
+  /** An address's headers (`Authorization: Bearer ${VAR}`). */
+  headers: Record<string, string>;
 }
 
 export interface McpView {
   servers: McpServer[];
-  /** .mcp.json is not plain JSON: never written. */
+  /** The file is not plain JSON: never written. */
   readOnly: boolean;
 }
 
@@ -291,7 +294,17 @@ export function projectMcp(project: string): Promise<McpView> {
   return query<McpView>(
     "project_mcp",
     {
-      servers: [{ name: "playwright", kind: "stdio", command: "npx", args: ["@playwright/mcp"], url: null, env: {} }],
+      servers: [
+        {
+          name: "filesystem",
+          kind: "stdio",
+          command: "npx",
+          args: ["-y", "@modelcontextprotocol/server-filesystem", "."],
+          url: null,
+          env: {},
+          headers: {},
+        },
+      ],
       readOnly: false,
     },
     { project },
