@@ -64,6 +64,8 @@ export interface FrameworksView {
 export interface FrameworkPlan {
   needs: string[];
   create: string[];
+  /** Of a base saved from a project (N-10): its folder, copied instead of `create`. */
+  template?: string | undefined;
   steps: string[];
   actions: FrameworkAction[];
   /** The kit's database server where the project gets its database. */

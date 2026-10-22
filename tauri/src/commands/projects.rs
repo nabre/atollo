@@ -136,6 +136,45 @@ pub fn project_action_save<R: Runtime>(
     Ok(())
 }
 
+/// «Salva come base» (N-10): what would be copied, by top folder and file.
+#[tauri::command]
+pub async fn project_base_preview<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> CmdResult<Vec<crate::projects::frameworks::mine::Entry>> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let (kit, env) = (state.kit.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::projects::frameworks::mine::preview(&kit, &env, &dir)
+    })
+    .await
+    .or_fail("base")
+}
+
+/// Saves the project's files (but the top entries in `skip`) as a base of
+/// «Le mie basi»; returns its id.
+#[tauri::command]
+pub async fn project_save_base<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    name: String,
+    desc: String,
+    skip: Vec<String>,
+) -> CmdResult<String> {
+    ensure_main(&webview)?;
+    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    let (kit, env) = (state.kit.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::projects::frameworks::mine::save(&kit, &env, &dir, &name, &desc, &skip)
+    })
+    .await
+    .or_fail("base")?
+    .or_fail_chain("base")
+}
+
 /// The project's own MCP servers (.mcp.json, D-78).
 #[tauri::command]
 pub fn project_mcp<R: Runtime>(

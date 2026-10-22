@@ -37,6 +37,7 @@ import { COMPONENT_NAMES, Needs } from "./needs";
 import { Databases } from "./databases";
 import { Git } from "./git";
 import { DeleteProjectDialog } from "./delete";
+import { SaveBaseDialog } from "./savebase";
 
 export type ProjectSection = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
 type Section = ProjectSection;
@@ -78,6 +79,7 @@ export function ProjectPage({
   const [chosen, setChosen] = useState<string | null>(initial?.action ?? null);
   /** The confirmation of the deletion is open. */
   const [deleting, setDeleting] = useState(false);
+  const [savingBase, setSavingBase] = useState(false);
   const readStatus = useCallback(() => projectStatus(p.id), [p.id]);
   const readDbs = useCallback(() => projectDatabases(p.id), [p.id]);
   const { data: status, reload: reloadStatus } = useLoad<ProjectStatus | null>(readStatus, null, { onError: "keep" });
@@ -217,8 +219,24 @@ export function ProjectPage({
                   run("folder", () => folderOpen("projects", p.id));
                 }}
               />
+              <IconButton
+                icon={codicon("save-as")}
+                label={t("Salva come base")}
+                title={t("Salva i file del progetto come base per i nuovi progetti (Le mie basi)")}
+                onClick={() => {
+                  setSavingBase(true);
+                }}
+              />
               <IconButton icon={codicon("refresh")} label={t("Aggiorna")} onClick={changed} />
             </ActionBar>
+            {savingBase && (
+              <SaveBaseDialog
+                project={p.id}
+                onClose={() => {
+                  setSavingBase(false);
+                }}
+              />
+            )}
           </>
         }
       />

@@ -253,6 +253,23 @@ pub async fn frameworks_create<R: Runtime>(
     let pieces = crate::projects::frameworks::load(&kit).pieces;
     let plan = crate::projects::frameworks::plan(&pieces, &base, &addons)
         .map_err(|p| problem_text(lang, p))?;
+    // A base of «Le mie basi» (N-10): its folder, copied.
+    let template = pieces
+        .iter()
+        .find(|p| p.id == base)
+        .and_then(|p| p.template.as_deref())
+        .map(|t| {
+            crate::projects::frameworks::mine::template_dir(&kit, t)
+                .filter(|d| d.is_dir())
+                .ok_or_else(|| {
+                    tr(
+                        &state,
+                        "La cartella della base non c'è più: salvala di nuovo dal progetto.",
+                        &[],
+                    )
+                })
+        })
+        .transpose()?;
     tauri::async_runtime::spawn_blocking(move || {
         use crate::projects::frameworks::Existing;
         let _busy = busy;
@@ -318,6 +335,10 @@ pub async fn frameworks_create<R: Runtime>(
             )
         };
         let result = (|| -> CmdResult<()> {
+            if let Some(from) = &template {
+                emit(0, Some(from.display().to_string()), None);
+                crate::net::archive::copy_tree(from, &make_at.join(&name)).or_fail("frameworks")?;
+            }
             for (i, line) in plan.create.iter().enumerate() {
                 run(i + 1, line, &make_at, &[])?;
             }

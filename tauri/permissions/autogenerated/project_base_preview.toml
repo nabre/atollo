@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-base-preview"
+description = "Enables the project_base_preview command without any pre-configured scope."
+commands.allow = ["project_base_preview"]
+
+[[permission]]
+identifier = "deny-project-base-preview"
+description = "Denies the project_base_preview command without any pre-configured scope."
+commands.deny = ["project_base_preview"]

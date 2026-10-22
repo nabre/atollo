@@ -8,7 +8,7 @@ use super::{Action, EnvVar, Kind, Piece, CATEGORIES};
 /// A problem: the Italian source and its argument (translated by the caller).
 pub type Problem = (&'static str, Vec<String>);
 
-fn valid_id(id: &str) -> bool {
+pub(super) fn valid_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 40
         && id.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit())
@@ -112,7 +112,11 @@ pub fn validate(pieces: &[Piece]) -> Result<(), Problem> {
         check_database(p.database.as_ref())?;
         match p.kind {
             Kind::Base => {
-                if p.create.is_empty() {
+                // A base saved from a project copies its folder instead.
+                if p.template.as_deref().is_some_and(|t| !valid_id(t)) {
+                    return Err(("{0}: cartella della base non valida.", vec![p.name.clone()]));
+                }
+                if p.create.is_empty() && p.template.is_none() {
                     return Err((
                         "{0}: manca il comando che crea il progetto.",
                         vec![p.name.clone()],

@@ -12,6 +12,7 @@
 //! the combinations in `plan`, the project's folder in `target`, running
 //! the lines in `runner`.
 
+pub mod mine;
 mod plan;
 mod runner;
 mod target;
@@ -33,7 +34,8 @@ use crate::fsx::write_atomic;
 use crate::kit::Kit;
 
 /// The groups of the bases, in the order of the wizard's tree.
-pub const CATEGORIES: [&str; 10] = [
+pub const CATEGORIES: [&str; 11] = [
+    "mine",
     "web-php",
     "web-js",
     "web-python",
@@ -115,6 +117,10 @@ pub struct Piece {
     /// Run in `projects\`: makes the folder `{name}`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub create: Vec<String>,
+    /// Of a base saved from a project (`mine`, N-10): the folder of
+    /// `data\frameworks\mine` copied instead of `create`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template: Option<String>,
     /// Run inside the project.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub steps: Vec<String>,
@@ -271,6 +277,8 @@ pub fn save(kit: &Kit, mut pieces: Vec<Piece>) -> Result<(), Problem> {
         .filter(|p| official().iter().all(|o| o != p))
         .collect();
     let path = user_file(kit);
+    // The folders of «Le mie basi» removed from the list go too.
+    mine::prune(kit, &own);
     let result = if own.is_empty() {
         match fs::remove_file(&path) {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e),

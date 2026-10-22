@@ -58,6 +58,7 @@ export function bases(pieces: FrameworkPiece[]): FrameworkPiece[] {
 /** The groups of the bases, in the order of the trees (CATEGORIES in
  * tauri/src/projects/frameworks/mod.rs). */
 export const CATEGORIES = [
+  "mine",
   "web-php",
   "web-js",
   "web-python",
@@ -73,6 +74,8 @@ export const CATEGORIES = [
 /** The name of a group of bases; one made in Settings without a group is «Altro». */
 export function categoryLabel(category: string | undefined): string {
   switch (category) {
+    case "mine":
+      return t("Le mie basi");
     case "web-php":
       return t("Web con PHP");
     case "web-js":
@@ -111,11 +114,12 @@ export function basesByCategory(pieces: FrameworkPiece[]): { id: string; label: 
     .filter((g) => g.bases.length > 0);
 }
 
-/** The four groups of the ways to make a project from a base, each with
+/** The groups of the ways to make a project from a base, each with
  * its categories (the quick panel's blocks, the tree's branches): static
  * sites and documentation are web; bases without a known category are in
  * «Altro». */
 export const GROUPS = [
+  { id: "mine", categories: ["mine"] },
   { id: "web", categories: ["web-php", "web-js", "web-python", "web-other", "docs"] },
   { id: "cms", categories: ["cms"] },
   { id: "app", categories: ["desktop", "mobile"] },
@@ -125,7 +129,7 @@ export const GROUPS = [
 export type GroupId = (typeof GROUPS)[number]["id"];
 
 export function groupLabel(group: GroupId): string {
-  return { web: t("Web"), cms: t("CMS"), app: t("App"), other: t("Altro") }[group];
+  return { mine: t("Le mie basi"), web: t("Web"), cms: t("CMS"), app: t("App"), other: t("Altro") }[group];
 }
 
 export interface BaseGroup {

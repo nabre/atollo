@@ -525,6 +525,12 @@
           "markdownDescription": "Enables the project_backups command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_base_preview command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-base-preview",
+          "markdownDescription": "Enables the project_base_preview command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_clone command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-clone",
@@ -643,6 +649,12 @@
           "type": "string",
           "const": "allow-project-pin",
           "markdownDescription": "Enables the project_pin command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_save_base command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-save-base",
+          "markdownDescription": "Enables the project_save_base command without any pre-configured scope."
         },
         {
           "description": "Enables the project_site command without any pre-configured scope.",
@@ -1305,6 +1317,12 @@
           "markdownDescription": "Denies the project_backups command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_base_preview command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-base-preview",
+          "markdownDescription": "Denies the project_base_preview command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_clone command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-clone",
@@ -1423,6 +1441,12 @@
           "type": "string",
           "const": "deny-project-pin",
           "markdownDescription": "Denies the project_pin command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_save_base command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-save-base",
+          "markdownDescription": "Denies the project_save_base command without any pre-configured scope."
         },
         {
           "description": "Denies the project_site command without any pre-configured scope.",

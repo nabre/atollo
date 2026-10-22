@@ -315,6 +315,33 @@ export function projectMcpSet(project: string, servers: McpServer[]): Promise<vo
   return act("project_mcp_set", { project, servers });
 }
 
+/** A top folder or file of a project, with what «Salva come base» would
+ * copy of it (N-10). */
+export interface BaseEntry {
+  name: string;
+  dir: boolean;
+  files: number;
+  bytes: number;
+}
+
+export function projectBasePreview(project: string): Promise<BaseEntry[]> {
+  return query<BaseEntry[]>(
+    "project_base_preview",
+    [
+      { name: "src", dir: true, files: 42, bytes: 180_000 },
+      { name: "public", dir: true, files: 8, bytes: 2_400_000 },
+      { name: "composer.json", dir: false, files: 1, bytes: 1_800 },
+    ],
+    { project },
+  );
+}
+
+/** Saves the project's files (but the top entries in `skip`) as a base of
+ * «Le mie basi»; returns its id. */
+export function projectSaveBase(project: string, name: string, desc: string, skip: string[]): Promise<string> {
+  return query<string>("project_save_base", "mine-base", { project, name, desc, skip });
+}
+
 /** An action as the project page edits it (panel.json, D-78). */
 export interface ActionEdit {
   id: string;
