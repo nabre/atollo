@@ -278,7 +278,8 @@ pub fn link<R: tauri::Runtime>(
             fed.lock()
                 .unwrap_or_else(PoisonError::into_inner)
                 .push(&chunk.data);
-            let _ = out.emit_to(main, &pty::output_event(id), chunk);
+            // Also to its own window, should it be detached (BUG-V7-16).
+            crate::editor::terminal::emit_output(&out, id, chunk);
         },
         move |info| {
             let token = scan.lock().unwrap_or_else(PoisonError::into_inner).token();
@@ -290,7 +291,7 @@ pub fn link<R: tauri::Runtime>(
                 Some(Err(e)) => crate::log::warn(&format!("claude: token not saved: {e:#}")),
                 None => crate::log::warn("claude: setup-token ended without a token"),
             }
-            let _ = end.emit_to(main, pty::EXIT_EVENT, &info);
+            crate::editor::terminal::emit_exit(&end, &info);
         },
     )?;
     Ok(())
