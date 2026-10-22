@@ -1560,6 +1560,15 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
+              <Code key="d2">check --kit</Code>,
+              tr(
+                "La salute del kit: disco, spazio, percorso, permessi, librerie, come «Salute del kit» nelle Impostazioni. Una riga per controllo (√, ! o x) con sotto che cosa fare; finisce con 1 se un controllo è un errore.",
+                "The kit's health: drive, space, path, permissions, libraries, like “Kit health” in Settings. One line per check (√, ! or x) with what to do under it; ends with 1 if a check is an error.",
+                "La santé du kit : disque, espace, chemin, permissions, bibliothèques, comme « Santé du kit » dans les Paramètres. Une ligne par contrôle (√, ! ou x) avec en dessous ce qu'il faut faire ; se termine par 1 si un contrôle est une erreur.",
+                "Der Zustand des Kits: Laufwerk, Platz, Pfad, Rechte, Bibliotheken, wie „Zustand des Kits“ in den Einstellungen. Eine Zeile pro Prüfung (√, ! oder x), darunter, was zu tun ist; endet mit 1, wenn eine Prüfung ein Fehler ist.",
+              ),
+            ],
+            [
               <Code key="e">{`prepare ${tr("[opzioni]", "[options]", "[options]", "[Optionen]")}`}</Code>,
               tr(
                 "Installa, aggiorna e toglie i componenti secondo la scelta. Le opzioni sono nella tabella sotto.",

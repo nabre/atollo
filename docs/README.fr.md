@@ -156,6 +156,7 @@ Atollo.exe components [--target <système>]
                                      liste les langages et outils, avec ceux installés
 Atollo.exe versions [<id>]           les versions sur le disque ; avec un id, celles à télécharger
 Atollo.exe check                     vérifie que les programmes installés répondent
+    --kit                            la santé du kit : disque, espace, chemin, permissions, bibliothèques
 Atollo.exe prepare [options]         installe et met à jour les composants choisis
                                      et supprime ceux qui ne le sont pas
     --only a,b                       seulement ceux-ci (et ce dont ils ont besoin), ne supprime rien

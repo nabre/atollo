@@ -1929,6 +1929,8 @@ Below the account, “Who signs the commits” has the “Name” and “Email�
 
 Read-only information: kit folder, projects folder, data and programs folder, the kit's disk (file system and type: fixed, removable, network), programs' temporary folder, platform, WebView2 and Atollo versions. If the disk has something to report, a warning appears.
 
+“Kit health” checks what of the PC and the drive may stop the kit: the drive (FAT32, exFAT, noexec), the free space, risky characters in the kit's path, files made private by another account and, on Linux, the system's libraries. Each line is green, yellow or red, with what to do under it; “Check again” runs the checks again ([9.1 When something goes wrong](#91-when-something-goes-wrong)).
+
 Below, “Reporting a problem” has two buttons. “Export diagnostics” makes a zip in `data\app\diagnostics` with version, system, disk, environment, the programs' check, components, ports and the end of the logs, with the kit's keys, tokens and passwords replaced by \*\*\*, your profile folder as ~ and your and the PC's names removed; “Open folder” shows it. The zip stays on the PC: look at it and attach it yourself. “Report a problem” opens a new issue on GitHub in the browser with version and system already filled in; nothing leaves until you create it.
 
 #### Frameworks
@@ -2564,6 +2566,7 @@ cd D:\Atollo
 | `components [--target <system>]` | Lists the components: chosen or not, group, installed version or why it is not available. |
 | `versions [<id>]` | Without id: the versions on disk of the installed tools. With an id: asks the source for the versions offered and saves them. |
 | `check` | Asks every installed component for its version and marks ✓ or ✗. |
+| `check --kit` | The kit's health: drive, space, path, permissions, libraries, like “Kit health” in Settings. One line per check (√, ! or x) with what to do under it; ends with 1 if a check is an error. |
 | `prepare [options]` | Installs, updates and removes components according to the choice. The options are in the table below. |
 | `sync [--project <folder>] [--verbose]` | Syncs the agents' instructions, skills and MCP servers. |
 | `serve <folder> <port>` | Serves a folder as a static site (the kit's file server). |
@@ -2609,13 +2612,24 @@ Related topics: [5.1 The Tools page](#51-the-tools-page), [7.2 On another PC, an
 
 ### 9.1 When something goes wrong
 
-*The most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins. And how to report a problem with the diagnostics zip.*
+*On a new PC, “Kit health” first. Then the most common problems, the message you see and what to do: downloads, ports in use, servers that won't start, expired sign-ins. And how to report a problem with the diagnostics zip.*
 
 > **In short**
 >
 > - Search for the message you see in the box below: the guide collects the most common ones, with the remedy.
 > - Almost every error has a tooltip on mouse-over and a line of output or log that tells you more.
 > - The app's log is in `data\app\logs\app.log`; the servers' logs are next to it.
+
+#### Kit health
+
+On a new PC, or with the kit on another stick, look first at Settings › “The kit” › “Kit health”: one line per check, green when fine, yellow for a warning, red for an error, and under it what to do. “Check again” runs the checks again after a fix.
+
+- The drive. FAT32 holds files up to 4 GB (no large local models or database copies) and no links: for a kit on a stick exFAT is better, or NTFS if it stays on Windows. On macOS and Linux a drive mounted noexec (or FAT32 with showexec on Linux) lets no program start: the line gives the command to remount it.
+- The free space: under 5 GB a warning, under 1 GB an error (installs, downloads and database copies fail). Free up space or move the kit to a larger drive.
+- The kit's path: &, %, !, ^, quotes and accented or non-Latin letters confuse cmd, PowerShell, Maven and Gradle. Move the kit to a folder with only letters, digits, hyphens and spaces.
+- Files made private by another account, often on another PC: the kit cannot read them (settings, keys, the agents' sign-ins). The line gives the command to take them back, to run in an administrator terminal: takeown and icacls on Windows, sudo chown on macOS and Linux. The app does not run it itself because it needs administrator rights.
+- On Linux, the system's libraries: libaio and libnuma for MySQL, libicu for .NET, libvulkan1 for the graphics card of the local models (without it they stay on the CPU). The line gives the command to install them, for example with apt.
+- From the command line `.\Atollo.exe check --kit | Out-Host` runs the same checks, and ends with 1 if one is an error.
 
 #### Download and installation
 

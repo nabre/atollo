@@ -784,6 +784,59 @@ export const HELP: TopicTexts = {
           ),
         ]}
       />
+      <Section title={tr("Salute del kit", "Kit health", "Santé du kit", "Zustand des Kits")}>
+        <P>
+          {tr(
+            "Su un PC nuovo, o con il kit su un'altra chiavetta, guarda prima Impostazioni › «Il kit» › «Salute del kit»: una riga per controllo, verde se va bene, gialla per un avviso, rossa per un errore, e sotto che cosa fare. «Controlla di nuovo» rifà i controlli dopo una correzione.",
+            "On a new PC, or with the kit on another stick, look first at Settings › “The kit” › “Kit health”: one line per check, green when fine, yellow for a warning, red for an error, and under it what to do. “Check again” runs the checks again after a fix.",
+            "Sur un nouveau PC, ou avec le kit sur une autre clé, regardez d'abord Paramètres › « Le kit » › « Santé du kit » : une ligne par contrôle, verte si tout va bien, jaune pour un avertissement, rouge pour une erreur, et en dessous ce qu'il faut faire. « Vérifier à nouveau » refait les contrôles après une correction.",
+            "Auf einem neuen PC, oder mit dem Kit auf einem anderen Stick, sieh zuerst unter Einstellungen › „Das Kit“ › „Zustand des Kits“ nach: eine Zeile pro Prüfung, grün wenn alles passt, gelb für eine Warnung, rot für einen Fehler, und darunter, was zu tun ist. „Erneut prüfen“ wiederholt die Prüfungen nach einer Korrektur.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "Il disco. FAT32 tiene file fino a 4 GB (niente modelli locali né copie di database grandi) e niente collegamenti: per un kit su chiavetta è meglio exFAT, o NTFS se resta su Windows. Su macOS e Linux un disco montato noexec (o FAT32 con showexec su Linux) non lascia partire i programmi: la riga dà il comando per rimontarlo.",
+              "The drive. FAT32 holds files up to 4 GB (no large local models or database copies) and no links: for a kit on a stick exFAT is better, or NTFS if it stays on Windows. On macOS and Linux a drive mounted noexec (or FAT32 with showexec on Linux) lets no program start: the line gives the command to remount it.",
+              "Le disque. FAT32 accepte des fichiers jusqu'à 4 Go (pas de grands modèles locaux ni de grandes copies de bases de données) et aucun lien : pour un kit sur clé, exFAT est préférable, ou NTFS s'il reste sous Windows. Sous macOS et Linux, un disque monté noexec (ou FAT32 avec showexec sous Linux) ne laisse démarrer aucun programme : la ligne donne la commande pour le remonter.",
+              "Das Laufwerk. FAT32 nimmt Dateien bis 4 GB (keine großen lokalen Modelle oder Datenbankkopien) und keine Links: Für ein Kit auf einem Stick ist exFAT besser, oder NTFS, wenn es unter Windows bleibt. Unter macOS und Linux lässt ein mit noexec eingehängtes Laufwerk (oder FAT32 mit showexec unter Linux) kein Programm starten: Die Zeile nennt den Befehl, um es neu einzuhängen.",
+            ),
+            tr(
+              "Lo spazio libero: sotto 5 GB un avviso, sotto 1 GB un errore (installazioni, download e copie dei database non riescono). Libera spazio o sposta il kit su un disco più grande.",
+              "The free space: under 5 GB a warning, under 1 GB an error (installs, downloads and database copies fail). Free up space or move the kit to a larger drive.",
+              "L'espace libre : sous 5 Go un avertissement, sous 1 Go une erreur (installations, téléchargements et copies des bases de données échouent). Libérez de l'espace ou déplacez le kit sur un disque plus grand.",
+              "Der freie Platz: unter 5 GB eine Warnung, unter 1 GB ein Fehler (Installationen, Downloads und Datenbankkopien schlagen fehl). Schaffe Platz oder verschiebe das Kit auf ein größeres Laufwerk.",
+            ),
+            tr(
+              "Il percorso del kit: &, %, !, ^, apici e lettere accentate o fuori dall'alfabeto latino confondono cmd, PowerShell, Maven e Gradle. Sposta il kit in una cartella con solo lettere, cifre, trattini e spazi.",
+              "The kit's path: &, %, !, ^, quotes and accented or non-Latin letters confuse cmd, PowerShell, Maven and Gradle. Move the kit to a folder with only letters, digits, hyphens and spaces.",
+              "Le chemin du kit : &, %, !, ^, les apostrophes et guillemets, les lettres accentuées ou hors de l'alphabet latin perturbent cmd, PowerShell, Maven et Gradle. Déplacez le kit dans un dossier avec seulement des lettres, des chiffres, des tirets et des espaces.",
+              "Der Pfad des Kits: &, %, !, ^, Anführungszeichen sowie Umlaute und Buchstaben außerhalb des lateinischen Alphabets bringen cmd, PowerShell, Maven und Gradle durcheinander. Verschiebe das Kit in einen Ordner mit nur Buchstaben, Ziffern, Bindestrichen und Leerzeichen.",
+            ),
+            tr(
+              "File resi privati da un altro account, spesso su un altro PC: il kit non li legge (impostazioni, chiavi, accessi degli agenti). La riga dà il comando per riprenderli, da eseguire in un terminale da amministratore: takeown e icacls su Windows, sudo chown su macOS e Linux. L'app non lo esegue da sé perché servono i diritti di amministratore.",
+              "Files made private by another account, often on another PC: the kit cannot read them (settings, keys, the agents' sign-ins). The line gives the command to take them back, to run in an administrator terminal: takeown and icacls on Windows, sudo chown on macOS and Linux. The app does not run it itself because it needs administrator rights.",
+              "Des fichiers rendus privés par un autre compte, souvent sur un autre PC : le kit ne peut pas les lire (paramètres, clés, connexions des agents). La ligne donne la commande pour les récupérer, à lancer dans un terminal administrateur : takeown et icacls sous Windows, sudo chown sous macOS et Linux. L'application ne la lance pas elle-même car il faut les droits d'administrateur.",
+              "Von einem anderen Konto privat gemachte Dateien, oft auf einem anderen PC: Das Kit kann sie nicht lesen (Einstellungen, Schlüssel, Anmeldungen der Agenten). Die Zeile nennt den Befehl, um sie zurückzuholen, auszuführen in einem Administrator-Terminal: takeown und icacls unter Windows, sudo chown unter macOS und Linux. Die App führt ihn nicht selbst aus, weil Administratorrechte nötig sind.",
+            ),
+            tr(
+              "Su Linux, le librerie del sistema: libaio e libnuma per MySQL, libicu per .NET, libvulkan1 per la scheda video dei modelli locali (senza, restano sulla CPU). La riga dà il comando per installarle, per esempio con apt.",
+              "On Linux, the system's libraries: libaio and libnuma for MySQL, libicu for .NET, libvulkan1 for the graphics card of the local models (without it they stay on the CPU). The line gives the command to install them, for example with apt.",
+              "Sous Linux, les bibliothèques du système : libaio et libnuma pour MySQL, libicu pour .NET, libvulkan1 pour la carte graphique des modèles locaux (sans elle, ils restent sur le CPU). La ligne donne la commande pour les installer, par exemple avec apt.",
+              "Unter Linux die Bibliotheken des Systems: libaio und libnuma für MySQL, libicu für .NET, libvulkan1 für die Grafikkarte der lokalen Modelle (ohne sie bleiben sie auf der CPU). Die Zeile nennt den Befehl, um sie zu installieren, zum Beispiel mit apt.",
+            ),
+            rich(
+              tr(
+                "Dalla riga di comando gli stessi controlli li fa {0}, che finisce con 1 se uno è un errore.",
+                "From the command line {0} runs the same checks, and ends with 1 if one is an error.",
+                "En ligne de commande, {0} fait les mêmes contrôles, et se termine par 1 si l'un d'eux est une erreur.",
+                "In der Kommandozeile macht {0} dieselben Prüfungen und endet mit 1, wenn eine davon ein Fehler ist.",
+              ),
+              <Code key="k">.\Atollo.exe check --kit | Out-Host</Code>,
+            ),
+          ]}
+        />
+      </Section>
       <Problems />
       <Section
         title={tr(
