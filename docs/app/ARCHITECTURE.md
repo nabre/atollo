@@ -350,7 +350,7 @@ Reads still written by hand, because `useLoad` would change what the user sees: 
 
 ### `workbench\`
 
-The controls are VSCodium's: `@vscode-elements/elements` (D-88), registered once in `elements.ts` with their ES modules, never with `dist/bundled.js` (the React wrappers import the same modules). Pages use only the components of `workbench\`, with the same props as before.
+The controls are VSCodium's: `@vscode-elements/elements` (D-88), registered once in `elements.ts` with their ES modules, never with `dist/bundled.js` (the React wrappers import the same modules). Pages use only the components of `workbench\`, with the same props as before. The controls are in `buttons.tsx`, `inputs.tsx` and `indicators.tsx` (what fields and buttons share in `fields.ts`, not exported); `index.ts` exports them all.
 
 | Component | Drawn with |
 | --- | --- |

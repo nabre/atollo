@@ -12,7 +12,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { t } from "../i18n";
-import { ActionBar, CountBadge } from "./controls";
+import { ActionBar } from "./buttons";
+import { CountBadge } from "./indicators";
 import { Codicon } from "./codicon";
 
 /** A floating part: rounded, its own border, its own background. */
