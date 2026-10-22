@@ -27,6 +27,21 @@ pub fn fwd(p: &Path) -> String {
     p.display().to_string().replace('\\', "/")
 }
 
+/// A folder as a quoted argument of `httpd.conf`: with `/`, in double
+/// quotes. `None` when its name holds what Apache would read as something
+/// else: `"` ends the argument and a line break starts a new directive (a
+/// folder of a cloned repository, legal on macOS and Linux, could write
+/// `CustomLog "|cmd"` or `LoadModule`), `\` escapes the next character and
+/// `${` expands a variable. Such a folder is not served, as with Caddy
+/// ([`crate::projects::caddy::quoted_path`]).
+pub fn quoted_path(path: &Path) -> Option<String> {
+    let text = fwd(path);
+    if text.is_empty() || text.contains(['"', '\\', '\n', '\r']) || text.contains("${") {
+        return None;
+    }
+    Some(format!("\"{text}\""))
+}
+
 /// PHP in `kit.conf` of an older kit, `${CP_APPS_FWD}/php/`: its folder now
 /// holds one folder per version (versions/mod.rs), the default is
 /// `${CP_PHP_FWD}`. Also updates migrated `httpd.conf` files from
@@ -338,7 +353,13 @@ pub fn project_conf_with_site(
     fcgi: Option<&FastCgi>,
 ) -> Result<String> {
     let kit_part = strip_kit_tail(base)?;
-    let (root, dir) = (fwd(root), fwd(dir));
+    let quoted_root = quoted_path(root).ok_or_else(|| {
+        anyhow!(
+            "{}: this folder cannot be served by Apache (its path holds \" \\ ${{ or a line break)",
+            root.display()
+        )
+    })?;
+    let (root, dir) = (quoted_root, fwd(dir));
     let listen = if lan {
         port.to_string()
     } else {
@@ -373,8 +394,8 @@ pub fn project_conf_with_site(
         "<IfModule log_config_module>".to_owned(),
         format!("    CustomLog \"{dir}/access.log\" common"),
         "</IfModule>".to_owned(),
-        format!("DocumentRoot \"{root}\""),
-        format!("<Directory \"{root}\">"),
+        format!("DocumentRoot {root}"),
+        format!("<Directory {root}>"),
         "    Options Indexes FollowSymLinks".to_owned(),
         "    AllowOverride All".to_owned(),
         "    Require all granted".to_owned(),

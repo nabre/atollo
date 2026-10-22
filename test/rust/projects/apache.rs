@@ -49,6 +49,31 @@ fn conf_of_a_project() {
     assert!(!with_site.contains("/up") && !with_site.contains(".."));
 }
 
+/// BUG-V7-09: a document root whose name would end the quoted argument or
+/// start a new directive (a repository's folder, legal on macOS and Linux)
+/// is refused, never written in `httpd.conf`.
+#[test]
+fn document_root_that_breaks_quotes_is_refused() {
+    let base = "Define SRVROOT \"${CP_APACHE_FWD}\"\r\n";
+    let dir = Path::new("/kit/data/projects/shop/apache");
+    for bad in [
+        "/kit/projects/shop/a\"b",
+        "/kit/projects/shop/a\nCustomLog \"|sh\" common",
+        "/kit/projects/shop/a\rb",
+        "/kit/projects/shop/${SRVROOT}",
+    ] {
+        assert!(
+            project_conf(base, Path::new(bad), dir, 7105, false).is_err(),
+            "{bad}"
+        );
+        assert!(quoted_path(Path::new(bad)).is_none(), "{bad}");
+    }
+    assert_eq!(
+        quoted_path(Path::new("/kit/projects/My App’s {shop}/public")).as_deref(),
+        Some("\"/kit/projects/My App’s {shop}/public\"")
+    );
+}
+
 /// BUG-V6-08: the `ServerAlias` of a project with a hard name is its DNS
 /// label, like the pools, never the raw name split on a space.
 #[test]
