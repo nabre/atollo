@@ -1,5 +1,13 @@
 # Novità
 
+## Modelli locali e Pi, il quarto agente (22/10/2026)
+
+- **Modelli linguistici sul PC**, senza rete e senza account: la nuova pagina «Modelli locali» scarica modelli GGUF dal catalogo di Atollo (Qwen2.5-Coder 7B, Qwen3.5 9B, gpt-oss 20B, Devstral Small 2 24B, Qwen3-Coder 30B-A3B) o da qualunque repository di Hugging Face, e dice se entrano nella RAM o nella memoria video del PC. I modelli stanno in `data\models`, una copia per Windows, macOS e Linux (D-151).
+- **Download che riprendono**: un modello di molti GB si può sospendere e riprende da dove si è fermato, anche dopo aver chiuso Atollo; ogni file è controllato col suo SHA-256. Su un disco FAT32 i file oltre i 4 GB sono rifiutati prima di iniziare, con cosa fare.
+- **Il server dei modelli** (llama.cpp, su CPU o GPU con Vulkan o Metal) ascolta solo su questo PC, con una chiave; carica il modello quando serve e lo libera dopo dieci minuti. Compare in Attività, si ferma con «Ferma tutto» e «Rimuovi l'unità»; «Apri la chat» apre la sua chat nel browser.
+- **Pi**, l'agente da terminale di Earendil, si aggiunge da Strumenti e parte dai progetti come gli altri: usa da solo un modello locale che sa usare gli strumenti, oppure un provider in cloud con `/login`. Istruzioni, skill e server MCP sono condivisi con Claude Code, Codex e Antigravity (D-152).
+- **Riga di comando**: `Atollo models`, `models pull`, `models rm`, `llm start|stop|status`.
+
 ## Terminali staccabili (22/10/2026)
 
 - **«Sposta in una nuova finestra»** nel pannello dei terminali: la scheda scelta continua in una finestra di Atollo tutta sua, da spostare su un altro schermo o ingrandire, con la stessa sessione e la sua uscita. «Riporta nel pannello» la rimette tra le schede; chiudere la finestra fa lo stesso e non ferma il programma. «Chiudi il terminale» lo ferma, dalla finestra o dal pannello (D-149).

@@ -215,7 +215,7 @@ export function App() {
             ) : page === "agents" ? (
               <AgentsPage onGuide={openGuide} />
             ) : page === "models" ? (
-              <ModelsPage />
+              <ModelsPage onGuide={openGuide} />
             ) : page === "components" ? (
               <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
             ) : page === "databases" ? (

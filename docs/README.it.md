@@ -11,7 +11,7 @@
 
 <p align="center">
   Un ambiente di sviluppo portabile e senza installazione per Windows, macOS e Linux, su x64 e ARM64.<br>
-  Editor, più di 20 linguaggi e runtime, database locali e gli agenti AI Claude Code, Codex e Antigravity in una cartella da portare su una chiavetta USB.
+  Editor, più di 20 linguaggi e runtime, database locali, modelli AI locali e gli agenti AI Claude Code, Codex, Antigravity e Pi in una cartella da portare su una chiavetta USB.
 </p>
 
 <p align="center">
@@ -34,7 +34,7 @@
 
 <p align="center"><a href="../README.md">English</a> · Italiano · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a></p>
 
-**Atollo** è un *Universal Portable Dev & AI Workspace* autonomo (`Atollo.exe`) che unisce **Editor** (VSCodium integrato), **Toolchain/Runtime Manager** (più di 20 linguaggi e strumenti scaricati su richiesta), **Server/Database locali** (MySQL, MongoDB, SQLite, Caddy/Apache) e **Orchestratore di Agenti AI** (Claude Code, Codex e Antigravity con istruzioni, skill e server MCP sincronizzati) in una singola cartella portabile. Niente installazione, niente diritti di amministratore, nessun servizio di sistema fuori dalla cartella del workspace.
+**Atollo** è un *Universal Portable Dev & AI Workspace* autonomo (`Atollo.exe`) che unisce **Editor** (VSCodium integrato), **Toolchain/Runtime Manager** (più di 20 linguaggi e strumenti scaricati su richiesta), **Server/Database locali** (MySQL, MongoDB, SQLite, Caddy/Apache) e **Orchestratore di Agenti AI** (Claude Code, Codex, Antigravity e Pi con istruzioni, skill e server MCP sincronizzati, più i modelli linguistici locali con llama.cpp) in una singola cartella portabile. Niente installazione, niente diritti di amministratore, nessun servizio di sistema fuori dalla cartella del workspace.
 
 Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitHub CLI e l'editor. Il resto si sceglie nella pagina «Strumenti», oppure arriva quando serve: Node.js con un'azione `npm`, uv con un server MCP `uvx`, e così via.
 
@@ -48,7 +48,8 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 - **Editor e terminali isolati.** VSCodium integrato con i temi Atollo scuro e chiaro, in una finestra misurata sul workbench di VSCodium 1.135: le stesse dimensioni, gli stessi colori e le icone codicon. I terminali vedono solo il `PATH` e le variabili del kit: i programmi del PC ospite non interferiscono, e il PC non si sporca.
 - **Linguaggi e strumenti su richiesta.** Più di 20 linguaggi e strumenti (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), scaricati quando servono e verificati con checksum SHA-256 o firma. Più versioni affiancate, una per progetto.
 - **Database e server web locali.** MySQL con phpMyAdmin, MongoDB con mongo-express e SQLite, avviati e fermati con un clic, con database, utente e password per ogni progetto; più versioni affiancate, ognuna con la sua porta. Caddy e Apache per i siti su `<progetto>.localhost`, su ogni sistema, da soli o in un server condiviso da più progetti. Una porta già occupata viene rifiutata, dicendo chi la tiene. Nessun servizio di sistema.
-- **Tre agenti AI, una sola configurazione.** Claude Code, Codex e Antigravity: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in `data/agents` e `atollo sync` li allinea per tutti e tre. Limiti del piano e consumi di oggi e degli ultimi 7 giorni.
+- **Quattro agenti AI, una sola configurazione.** Claude Code, Codex, Antigravity e Pi: installazione, accesso e avvio. Istruzioni, skill e server MCP si scrivono una volta in `data/agents` e `atollo sync` li allinea per tutti e quattro. Limiti del piano e consumi di oggi e degli ultimi 7 giorni.
+- **Modelli AI locali.** Modelli linguistici che girano sul PC, senza rete e senza account: modelli GGUF dal catalogo di Atollo o da qualunque repository di Hugging Face, download che riprendono da dove si sono fermati (anche dopo aver chiuso Atollo) e controllati con lo SHA-256. Il server di llama.cpp (CPU, o GPU con Vulkan o Metal) ascolta solo su 127.0.0.1, con una chiave; Pi lo usa senza altre impostazioni, e la sua chat si apre nel browser. Una copia sola in `data/models`, condivisa da Windows, macOS e Linux.
 - **Una cartella per sei sistemi.** La stessa cartella, o lo stesso SSD esterno, passa da Windows a macOS a Linux con progetti, database e configurazioni degli agenti intatti: su ogni macchina girano i programmi nativi di quel sistema. «Rimuovi l'unità» chiude tutto ciò che Atollo ha aperto e lascia espellere il disco.
 
 ## Documentazione
@@ -86,11 +87,12 @@ Senza il passo 2 macOS avvia l'app da una copia temporanea (App Translocation) e
 | Pagina | Cosa c'è |
 | --- | --- |
 | **Progetti** | il **pannello rapido** (cosa è in esecuzione, preferiti e recenti con Avvia, Editor, Terminale e agente, cosa c'è da sistemare), la lista dei progetti con ▶ su ogni riga, Ctrl+P per aprirne uno per nome; **Nuovo progetto**, una scheda accanto ai progetti: vuoto, dai tuoi repository GitHub (con clone, rinomina ed eliminazione su GitHub), da un indirizzo Git o da una delle 63 basi in gruppi (Laravel, Next.js, Django, WordPress, Astro, Tauri…); avvisi sull'ambiente. Ogni progetto ha la sua pagina, con Avvia, Editor, Terminale e agente in alto e sette sezioni: **Avvio** (azioni, porte e il loro output), **Sito web**, **Componenti** (con le versioni), **Database** (database del progetto con utente e password, copie), **Estensioni**, **Editor** (impostazioni e server MCP), **Git** |
-| **Agenti** | Claude Code, Codex e Antigravity installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
+| **Agenti** | Claude Code, Codex, Antigravity e Pi installati: versione, accesso, limiti del piano e consumi di oggi e degli ultimi 7 giorni; istruzioni, skill e server MCP condivisi in `data\agents` |
+| **Modelli locali** | il server di llama.cpp (avvio e arresto, indirizzo, la chat nel browser e la sua chiave), il modello di Pi, il catalogo di Atollo dei modelli GGUF con «entra / al limite / troppo grande» per la RAM o la memoria video di questo PC, qualunque repository di Hugging Face (con un token facoltativo per i modelli ad accesso controllato), download da sospendere e riprendere; modelli in `data\models`, solo su questo PC |
 | **Database** | i server MySQL (con phpMyAdmin) e MongoDB (con mongo-express) di Atollo: avvio e arresto, password dell'amministratore, porta, più versioni affiancate ognuna con la sua porta, dati in `data\db`, solo su questo PC; SQLite senza server |
 | **Server Web** | i server Caddy e Apache condivisi dai progetti (pool) e i tuoi profili, con i siti `<progetto>.localhost` che servono; solo su questo PC, o sulla rete locale se le Impostazioni lo permettono |
 | **Terminali** | console con gli strumenti del kit in qualunque cartella del PC: «Tutti gli strumenti» e terminali tuoi, con gli strumenti e le versioni che scegli |
-| **Strumenti** | linguaggi e strumenti divisi per tipo (sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database), con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove, più versioni; il compilatore di Rust (GNU o MSVC) nella pagina di Rust; la matrice delle estensioni dell'editor |
+| **Strumenti** | linguaggi e strumenti divisi per tipo (sistema ed editor, agenti AI, modelli locali, linguaggi, strumenti di sviluppo, server web, database), con il loro logo, le dipendenze, lo spazio su disco; installa, aggiorna e rimuove, più versioni; il compilatore di Rust (GNU o MSVC) nella pagina di Rust; la matrice delle estensioni dell'editor |
 | **Guida** | la guida dell'app, in nove capitoli; ogni pagina apre il suo argomento |
 | **Impostazioni** | salvate mentre le cambi: lingua, tema, i file temporanei dei programmi, i pacchetti tenuti per reinstallare senza rete, rete (proxy, certificati, rete locale), chiave di Gemini, aggiornamenti dell'app, privacy; l'**account GitHub** di Atollo, uno per tutto (app, Git, editor, console, agenti, GitHub CLI), e chi firma i commit; dove si trova la cartella di Atollo; le istruzioni dei framework; **Il kit**, in sola lettura: le sue cartelle, il suo disco, la piattaforma e le versioni |
 | **Rimuovi l'unità** | chiude tutto ciò che Atollo ha aperto, riporta in `data\` l'accesso di Antigravity e lascia espellere l'unità |
@@ -118,7 +120,7 @@ Hai un Mac, un PC Linux o un PC con Windows ARM64? Prova Atollo e raccontaci com
 - Su Linux MySQL vuole due librerie del sistema, `libaio` e `libnuma`: su Ubuntu 24.04 e Debian 13 `sudo apt install libaio1t64 libnuma1` (su versioni precedenti `libaio1`), su Fedora e RHEL `sudo dnf install libaio numactl-libs`. Se mancano, Atollo lo dice con il comando da eseguire.
 - Su macOS e Linux una cartella di Atollo su exFAT o FAT (una chiavetta formattata per Windows) funziona, ma quei file system non hanno link: dove un programma ne porta, Atollo copia i file (per esempio i 142 link interni di Git), con più spazio occupato. Su una chiavetta solo per Mac o Linux conviene APFS o ext4.
 - Fuori dalla cartella di Atollo restano solo le tracce di Windows, i file temporanei di passaggio nel temp di sistema (rimossi automaticamente alla chiusura; con Impostazioni › Generale › Temporanei dei programmi, anche i programmi possono usarlo mentre girano), l'accesso di GitHub CLI nella Gestione credenziali se lo fai in una console con `gh auth login` (quello fatto nelle Impostazioni resta in `data\gh`), quello di Antigravity mentre `agy` è aperto (solo per la sessione), su macOS l'accesso di Claude Code nel Portachiavi (se non ti colleghi con un token) e i dati della webview nella tua Libreria, e la voce del registro che rustup scrive su Windows, che Atollo rimuove. L'elenco completo è in [PRIVACY §4](PRIVACY.it.md#4-i-dati-salvati-sul-tuo-dispositivo).
-- La cartella di un progetto diventa attendibile per Claude Code e Codex quando vi apri un agente da Atollo (le altre cartelle di `projects\` no): apri un agente solo nei progetti di cui ti fidi. I token degli agenti (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) vanno solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
+- La cartella di un progetto diventa attendibile per Claude Code, Codex e Pi quando vi apri un agente da Atollo (le altre cartelle di `projects\` no): apri un agente solo nei progetti di cui ti fidi. I token degli agenti (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`, `LLAMA_API_KEY` dei modelli locali) vanno solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. L'editor invece chiede alla prima apertura di ogni progetto e apre in «Restricted Mode» quelli di cui non ti fidi.
 - I limiti d'uso degli agenti vengono da interfacce non documentate dei fornitori e possono smettere di funzionare dopo un loro aggiornamento.
 - «Rimuovi l'unità» non vede i programmi del PC che tengono aperto solo un file della cartella di Atollo.
 
@@ -162,9 +164,14 @@ Atollo.exe prepare [opzioni]         installa e aggiorna i componenti scelti
     --target <sistema>               prepara per un altro sistema: win32-x64, win32-arm64,
                                      darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <cartella>] [--verbose]
-                                     allinea istruzioni, skill e MCP dei tre agenti
-Atollo.exe keyring restore|save      accesso di Antigravity (usato da agy.cmd)
+                                     allinea istruzioni, skill e server MCP degli agenti
+Atollo.exe keyring restore|save      accesso di Antigravity (lo usa agy.cmd del kit)
 Atollo.exe serve <cartella> <porta>  server di file per un sito statico
+Atollo.exe models                    i modelli locali: del catalogo e scaricati
+Atollo.exe models pull <modello>     scarica un id del catalogo o un modello di Hugging Face
+                                     (proprietario/nome:quantizzazione), riprende se interrotto
+Atollo.exe models rm <id>            cancella un modello scaricato
+Atollo.exe llm start|stop|status     il server dei modelli locali (chat e agenti)
 Atollo.exe version                   mostra la versione
 Atollo.exe help                      mostra l'aiuto
 ```
@@ -213,7 +220,7 @@ Il testo completo, con ogni connessione di rete e ogni file che l'app conserva, 
 
 - **Nessuna telemetria o raccolta dati:** l'applicazione non raccoglie dati personali, statistiche d'uso, telemetria o report di crash, e non contatta alcun server gestito dall'autore del progetto. Disattiva inoltre la telemetria predefinita dei componenti gestiti (come PowerShell 7 e il server di VSCodium).
 - **Archiviazione locale:** impostazioni, progetti, database locali, log e credenziali sono salvati in locale nella cartella `data\` (e `projects\`) di Atollo sul dispositivo dell'utente; le poche eccezioni (file temporanei, l'accesso di Antigravity mentre è in esecuzione) sono elencate nell'informativa.
-- **Connessioni di rete:** l'applicazione si collega solo a GitHub per cercare i propri aggiornamenti (Impostazioni › Generale › Aggiornamento automatico, oppure `ATOLLO_NO_UPDATE`), alle fonti ufficiali dei componenti che scarica, al registro Open VSX per le estensioni dell'editor e, quando l'utente fa l'accesso a GitHub (Impostazioni › Account GitHub) o apre la pagina Agenti, a GitHub e ai fornitori degli agenti (**Claude Code**, **Codex**, **Antigravity**) secondo le loro informative sulla privacy.
+- **Connessioni di rete:** l'applicazione si collega solo a GitHub per cercare i propri aggiornamenti (Impostazioni › Generale › Aggiornamento automatico, oppure `ATOLLO_NO_UPDATE`), alle fonti ufficiali dei componenti che scarica, al registro Open VSX per le estensioni dell'editor e, quando l'utente fa l'accesso a GitHub (Impostazioni › Account GitHub) o apre la pagina Agenti, a GitHub e ai fornitori degli agenti (**Claude Code**, **Codex**, **Antigravity** e il provider in cloud scelto in **Pi**) secondo le loro informative sulla privacy. I modelli locali arrivano da Hugging Face (`huggingface.co` e la sua CDN), i programmi llama.cpp e Pi dalle loro release su GitHub (`ggml-org/llama.cpp`, `earendil-works/pi`); un modello locale gira sul PC, e i suoi prompt non lo lasciano mai.
 
 ## Licenza
 

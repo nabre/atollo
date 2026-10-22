@@ -25,9 +25,10 @@ Atollo è un ambiente di sviluppo completo che vive in una sola cartella: su una
    - [3.3 Siti web e indirizzi .localhost](#33-siti-web-e-indirizzi-localhost)
    - [3.4 Terminali del kit](#34-terminali-del-kit)
 4. [Agenti IA](#4-agenti-ia)
-   - [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-agenti-claude-code-codex-antigravity)
+   - [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi)
    - [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi)
    - [4.3 Limiti e consumi degli agenti](#43-limiti-e-consumi-degli-agenti)
+   - [4.4 Modelli locali: llama.cpp e i GGUF](#44-modelli-locali-llamacpp-e-i-gguf)
 5. [Strumenti e linguaggi](#5-strumenti-e-linguaggi)
    - [5.1 La pagina Strumenti](#51-la-pagina-strumenti)
    - [5.2 Più versioni dello stesso strumento](#52-più-versioni-dello-stesso-strumento)
@@ -62,7 +63,7 @@ Atollo è un ambiente di sviluppo completo che vive in una sola cartella: su una
 >
 > - Atollo è un ambiente di sviluppo completo che vive in una sola cartella: su una chiavetta, un disco esterno o il disco del PC.
 > - Non si installa e non chiede diritti di amministratore: copi la cartella su un altro PC e ritrovi tutto, progetti compresi.
-> - Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, e tre agenti IA.
+> - Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, quattro agenti IA e i modelli linguistici locali.
 > - Questa guida va dalle cose più semplici a quelle più tecniche: puoi leggerla in ordine o saltare dove ti serve.
 
 #### Che cos'è, in parole semplici
@@ -87,7 +88,8 @@ Atollo è quello zaino. È un unico programma che sta in una cartella insieme a 
 | Editor | VSCodium, la versione libera di Visual Studio Code, in una finestra di Atollo. | Progetti › Editor |
 | Console | PowerShell 7 con tutti gli strumenti del kit già pronti. | Terminali |
 | Git e GitHub | Git e GitHub CLI con un solo accesso al tuo account per tutto il kit. | Impostazioni › Account GitHub |
-| Agenti IA | Claude Code, Codex e Antigravity, con istruzioni, skill e server MCP condivisi. | Agenti |
+| Agenti IA | Claude Code, Codex, Antigravity e Pi, con istruzioni, skill e server MCP condivisi. | Agenti |
+| Modelli locali | Modelli linguistici sul PC, senza rete e senza account, per Pi e per una chat nel browser. | Modelli locali |
 
 #### Tre idee da tenere a mente
 
@@ -106,7 +108,7 @@ In ogni argomento trovi: un riquadro «In breve» all'inizio, i passaggi da segu
 1. **[Primi passi](#1-primi-passi)** — Benvenuto in Atollo · Il primo avvio · Conoscere la finestra · Il primo progetto, passo per passo
 2. **[Progetti](#2-progetti)** — Creare un progetto · La pagina Progetti e il «Pannello rapido» · Avviare un progetto: azioni e porte · Componenti e versioni di un progetto · Editor, terminale ed estensioni · Git di un progetto · Eliminare un progetto e i «Dati senza progetto»
 3. **[Database, siti e terminali](#3-database-siti-e-terminali)** — I server di database · Il database di un progetto · Siti web e indirizzi .localhost · Terminali del kit
-4. **[Agenti IA](#4-agenti-ia)** — Gli agenti: Claude Code, Codex, Antigravity · Istruzioni, skill e server MCP condivisi · Limiti e consumi degli agenti
+4. **[Agenti IA](#4-agenti-ia)** — Gli agenti: Claude Code, Codex, Antigravity, Pi · Istruzioni, skill e server MCP condivisi · Limiti e consumi degli agenti · Modelli locali: llama.cpp e i GGUF
 5. **[Strumenti e linguaggi](#5-strumenti-e-linguaggi)** — La pagina Strumenti · Più versioni dello stesso strumento · Panoramiche: matrice, relazioni, estensioni, requisiti
 6. **[Account e impostazioni](#6-account-e-impostazioni)** — L'account GitHub del kit · Le Impostazioni, una per una · Rete aziendale: proxy, certificati, rete locale · Le istruzioni dei framework
 7. **[Portare il kit con sé](#7-portare-il-kit-con-sé)** — Rimuovere l'unità in sicurezza · Su un altro PC, un'altra lettera, un'altra cartella · Aggiornamenti e copie di sicurezza
@@ -155,18 +157,19 @@ Al primo avvio, al posto delle solite pagine, compare la scheda «Benvenuto», c
 
 In cima ci sono due gruppi di impostazioni, salvate da sole mentre le cambi (come nella pagina Impostazioni, dove le ritrovi): «Prima di iniziare», con «Lingua», «Tema» e «Aggiornamento automatico», e «Rete», con proxy, certificati aggiuntivi e rete locale. Compila «Rete» solo se la tua rete passa da un proxy o ispeziona il traffico HTTPS: dato che niente si scarica prima di «Installa», anche i primi download li useranno.
 
-Sotto c'è l'elenco dei componenti, diviso in sei tipi (ognuno con la sua descrizione), con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.
+Sotto c'è l'elenco dei componenti, diviso in otto tipi (ognuno con la sua descrizione), con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.
 
 | Tipo | Che cosa contiene | Cosa scegliere |
 | --- | --- | --- |
 | Sistema ed editor | L'editor, PowerShell 7 (la console del kit), GitHub CLI e Git. Sotto, i requisiti del PC. | Sono sempre installati, insieme agli altri, quando premi «Installa»: le caselle sono bloccate. |
-| Agenti AI | Claude Code, Codex e Antigravity. | Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore. |
+| Agenti AI | Claude Code, Codex, Antigravity e Pi. | Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore. Pi non è spuntato: spuntalo se vuoi un agente sui modelli locali, senza account. |
+| Modelli locali | llama.cpp, il server dei modelli linguistici sul PC. | Facoltativo e non spuntato. Si installa anche da solo al primo avvio del server, dalla pagina Modelli locali, dove si scaricano i modelli (molti GB). |
 | Linguaggi | Tutti i linguaggi e i runtime: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, il compilatore C/C++ e gli altri. Python, Node.js, PHP, Go e Java possono avere più versioni; gli altri restano all'ultima. | Quelli che usi. Altri si aggiungono quando servono. |
 | Strumenti di sviluppo | uv, pnpm e yarn, CMake e Ninja, Android SDK, Typst, TinyTeX: una sola versione, sempre l'ultima. | Di solito niente: il kit li installa da solo quando un progetto o un agente li chiede. |
 | Server web | Apache e Caddy, per i siti dei progetti e i Server Web condivisi. | Quello che usano i tuoi progetti; Apache è già nella scelta proposta. |
 | Database | MySQL, MongoDB, SQLite; nel browser phpMyAdmin e mongo-express. | Solo se ti servono. MySQL si installa anche al primo avvio del server. |
 
-La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).
+La scelta proposta comprende Claude Code, Codex e Antigravity (non Pi né llama.cpp), Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).
 
 1. In «Prima di iniziare» scegli la lingua e, se vuoi, il tema; se sei dietro un proxy aziendale, compila anche «Rete».
 2. Togli la spunta a ciò che non ti interessa e aggiungi ciò che usi.
@@ -237,14 +240,16 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 | 2 · Barra delle attività | Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database e pool dei server web. |
 | 3 · Barra laterale | Il titolo della pagina con le sue icone (tra cui il libro «Apri la guida di questa pagina»), spesso una casella di ricerca, e dei riquadri che si aprono e si chiudono con un clic sul titolo. |
 | 4 · Area delle schede | Ciò che hai scelto nella barra laterale si apre in una scheda. La prima scheda di alcune pagine è fissa: il «Pannello rapido» in Progetti, «Tutti gli strumenti» in Strumenti. |
-| 5 · Pannello «Attività» | Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma. |
+| 5 · Pannello «Attività» | Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi, il server dei modelli locali e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma. |
 | 6 · Barra di stato | A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori, che mostra o nasconde il pannello «Attività»; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64) e, per ultima, la versione di Atollo: un clic cerca gli aggiornamenti, e accanto compare l'esito (un segno di spunta, la versione nuova o un avviso). |
 
 #### Le pagine
 
 **Progetti** — Il centro del lavoro: l'elenco dei progetti, il «Pannello rapido», la creazione di progetti nuovi e la pagina di ogni progetto. [Come funziona](#22-la-pagina-progetti-e-il-pannello-rapido)
 
-**Agenti** — Gli agenti IA installati: accesso al tuo account, limiti del piano e consumi, cartella condivisa. [Come funziona](#41-gli-agenti-claude-code-codex-antigravity)
+**Agenti** — Gli agenti IA installati: accesso al tuo account, limiti del piano e consumi, cartella condivisa. [Come funziona](#41-gli-agenti-claude-code-codex-antigravity-pi)
+
+**Modelli locali** — Modelli linguistici sul PC per Pi e la chat nel browser: il server llama.cpp, i download dal catalogo e da Hugging Face. [Come funziona](#44-modelli-locali-llamacpp-e-i-gguf)
 
 **Database** — I server MySQL e MongoDB del kit: avvio, password, porte, versioni, phpMyAdmin e mongo-express. [Come funziona](#31-i-server-di-database)
 
@@ -272,7 +277,7 @@ Argomenti collegati: [1.3 Conoscere la finestra](#13-conoscere-la-finestra), [1.
 | win32-x64, darwin-arm64… | Il sistema e il processore su cui gira il kit. | — |
 | v0.x.y | La versione di Atollo. | — |
 
-Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database e i server web in esecuzione?» e poi ferma azioni, database e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.
+Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma»; per i modelli locali l'indirizzo, i modelli in memoria e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database, i modelli locali e i server web in esecuzione?» e poi ferma azioni, database, modelli locali e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.
 
 #### Scorciatoie e abitudini utili
 
@@ -331,7 +336,7 @@ Argomenti collegati: [2.2 La pagina Progetti e il «Pannello rapido»](#22-la-pa
 
 - Mettere il progetto su GitHub o clonarne uno: [6.1 L'account GitHub del kit](#61-laccount-github-del-kit).
 - Dare al progetto un database: [3.2 Il database di un progetto](#32-il-database-di-un-progetto).
-- Farti aiutare da un agente IA nel progetto: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-agenti-claude-code-codex-antigravity).
+- Farti aiutare da un agente IA nel progetto: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi).
 - Provare altre basi (Laravel, Django, WordPress, Astro…): [2.1 Creare un progetto](#21-creare-un-progetto).
 
 Argomenti collegati: [2.1 Creare un progetto](#21-creare-un-progetto), [2.3 Avviare un progetto: azioni e porte](#23-avviare-un-progetto-azioni-e-porte), [2.5 Editor, terminale ed estensioni](#25-editor-terminale-ed-estensioni)
@@ -636,7 +641,7 @@ Le azioni tue, la stella e il sito web stanno nel file panel.json nella cartella
 <details>
 <summary>Sotto il cofano</summary>
 
-- Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto. I token degli agenti (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) non ci sono: arrivano solo agli agenti avviati da Atollo.
+- Il comando viene eseguito con cmd.exe su Windows e /bin/sh su macOS e Linux, nella cartella dell'azione, con l'ambiente del kit e le versioni del progetto. I token degli agenti (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY, LLAMA_API_KEY) non ci sono: arrivano solo agli agenti avviati da Atollo.
 - Le azioni web ricevono le variabili PORT (e ROCKET_PORT) con la porta; tutte ricevono BROWSER=none, PYTHONUNBUFFERED=1 e ATOLLO_LANG. Se il progetto ha un database MySQL del kit e il suo .env non dice un'altra porta, ricevono anche DB_PORT.
 - Le porte assegnate e quelle scelte da te sono in `data\projects\<progetto>\ports.json`, fuori dal progetto.
 - Ogni azione gira in un suo gruppo di processi (un Job Object su Windows): «Ferma» chiude anche i processi figli, per esempio il server avviato da npm.
@@ -788,7 +793,7 @@ Argomenti collegati: [3.4 Terminali del kit](#34-terminali-del-kit), [4.2 Istruz
 
 - Nell'editor: il pannello «Controllo del codice sorgente» per commit, push, pull, rami e confronti.
 - Nel terminale del progetto o dell'editor: i comandi git e gh, già autenticati.
-- Con un agente: Claude Code, Codex e Antigravity possono fare commit, creare rami e aprire pull request.
+- Con un agente: Claude Code, Codex, Antigravity e Pi possono fare commit, creare rami e aprire pull request.
 
 > [!WARNING]
 > **Prima del primo commit**
@@ -802,7 +807,7 @@ Atollo legge lo stato direttamente dai file della cartella .git (HEAD, config, r
 
 </details>
 
-Argomenti collegati: [6.1 L'account GitHub del kit](#61-laccount-github-del-kit), [2.5 Editor, terminale ed estensioni](#25-editor-terminale-ed-estensioni), [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-agenti-claude-code-codex-antigravity)
+Argomenti collegati: [6.1 L'account GitHub del kit](#61-laccount-github-del-kit), [2.5 Editor, terminale ed estensioni](#25-editor-terminale-ed-estensioni), [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi)
 
 ### 2.7 Eliminare un progetto e i «Dati senza progetto»
 
@@ -1198,14 +1203,15 @@ Argomenti collegati: [2.5 Editor, terminale ed estensioni](#25-editor-terminale-
 
 ## 4. Agenti IA
 
-### 4.1 Gli agenti: Claude Code, Codex, Antigravity
+### 4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi
 
 *Che cosa sono, come si installano, come si aprono in un progetto, l'accesso al proprio account e l'uscita.*
 
 > **In breve**
 >
 > - Un agente IA è un assistente che lavora nella cartella del progetto: legge il codice, lo modifica, esegue comandi.
-> - Il kit ne offre tre: Claude Code (Anthropic), Codex (OpenAI) e Antigravity (Google). Si installano da Strumenti.
+> - Il kit ne offre quattro: Claude Code (Anthropic), Codex (OpenAI), Antigravity (Google) e Pi (Earendil). Si installano da Strumenti.
+> - Pi funziona anche senza account, sui modelli locali del kit, che girano sul tuo PC.
 > - Si aprono sempre dentro un progetto, dalla pagina Progetti, con il pulsante che porta il logo dell'agente.
 > - L'accesso al tuo account si fa al primo avvio dell'agente e resta nel kit, anche su un altro PC.
 
@@ -1215,22 +1221,28 @@ Argomenti collegati: [2.5 Editor, terminale ed estensioni](#25-editor-terminale-
 
 #### Che cosa sono e che cosa serve
 
-Un agente è un programma a riga di comando che dialoga con un modello di intelligenza artificiale del fornitore. Gli chiedi in italiano che cosa fare («aggiungi una pagina di contatto», «perché questo test fallisce?») e lui legge i file, propone modifiche, esegue comandi e ti mostra i risultati. Per usarlo serve un account del fornitore con un piano che lo comprenda, oppure una chiave API.
+Un agente è un programma a riga di comando che dialoga con un modello di intelligenza artificiale del fornitore. Gli chiedi in italiano che cosa fare («aggiungi una pagina di contatto», «perché questo test fallisce?») e lui legge i file, propone modifiche, esegue comandi e ti mostra i risultati. Per usarlo serve un account del fornitore con un piano che lo comprenda, oppure una chiave API; Pi può usare invece un modello locale, senza account.
 
 | Agente | Fornitore | Accesso |
 | --- | --- | --- |
 | Claude Code | Anthropic | Account Claude (abbonamento); su macOS anche un token di claude setup-token. |
 | Codex | OpenAI | Account ChatGPT oppure chiave API salvata da Codex con codex login --with-api-key. |
 | Antigravity | Google | Account Google oppure chiave API di Gemini, da scrivere in Impostazioni › Agenti. |
+| Pi | Earendil (Mario Zechner) | Nessuno con i modelli locali del kit; per un provider in cloud, /login dentro Pi. |
 
-Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio li propone già). Seguono sempre l'ultima versione e portano con sé ciò che serve; Git, che usano tutti, è già tra i componenti sempre installati.
+Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio propone già Claude Code, Codex e Antigravity; Pi non è tra quelli proposti, si spunta a mano). Seguono sempre l'ultima versione e portano con sé ciò che serve; Git, che usano tutti, è già tra i componenti sempre installati.
+
+> [!NOTE]
+> **Pi**
+>
+> Pi è un agente da terminale che lavora con molti fornitori. Nel kit parte da solo su un modello locale: quello scelto nella pagina «Modelli locali», altrimenti il primo del kit che sa usare gli strumenti, e prima di aprirlo il kit avvia il server dei modelli. Se in Pi scegli un provider in cloud con /login, resta su quello; i modelli locali restano nel suo elenco (/model). Su Windows Pi usa il Git Bash del kit come shell. Vedi [4.4 Modelli locali: llama.cpp e i GGUF](#44-modelli-locali-llamacpp-e-i-gguf).
 
 #### Aprire un agente in un progetto
 
 La pagina Agenti non avvia gli agenti: un agente lavora sempre nella cartella di un progetto, quindi si apre dalla pagina Progetti.
 
 1. Apri il progetto.
-2. In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Antigravity»). Fai clic su quello dell'agente che vuoi usare.
+2. In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Antigravity», «Apri Pi»). Fai clic su quello dell'agente che vuoi usare.
 3. L'agente parte subito, nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo (su ogni sistema).
 
 Gli stessi pulsanti sono nella riga del progetto (barra laterale o «Pannello rapido»): un clic sul logo apre quell'agente nel progetto. Un agente non installato non ha il suo pulsante; se non ne è installato nessuno, non ci sono pulsanti degli agenti.
@@ -1262,15 +1274,16 @@ In cima alla barra laterale: «Aggiorna i consumi», «Apri la cartella condivis
 | --- | --- |
 | accesso non fatto: si fa al primo avvio dell'agente | Apri l'agente in un progetto e segui le sue istruzioni (di solito una pagina nel browser). |
 | accesso fatto | L'agente ha un accesso con il tuo account, salvato nel kit. |
-| accesso con chiave API | Codex con la chiave salvata da codex login --with-api-key, o Antigravity con la chiave di Gemini delle Impostazioni: niente limiti di piano, paghi a consumo. |
+| accesso con chiave API | Codex con la chiave salvata da codex login --with-api-key, Antigravity con la chiave di Gemini delle Impostazioni, o Pi con una chiave API salvata nel suo auth.json: niente limiti di piano, paghi a consumo. |
 | accesso con un token | Solo Claude Code su macOS, collegato con un token (vedi sotto). |
+| modelli locali del kit, senza accesso | Solo Pi: nessun provider in cloud, usa un modello scaricato nella pagina «Modelli locali». Non c'è niente da cui uscire. |
 
 L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi rifarlo. «Esci» toglie l'accesso salvato nel kit dopo una domanda («Togliere l'accesso salvato nel kit?», Esc annulla), con l'agente chiuso: mentre è aperto il pulsante dice «Chiudi prima l'agente». Con una chiave API «Esci» non c'è.
 
 > [!WARNING]
 > **Se perdi la chiavetta**
 >
-> Gli accessi degli agenti e di GitHub sono salvati nel kit, in chiaro. «Esci» non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account di Anthropic, OpenAI, Google e GitHub.
+> Gli accessi degli agenti e di GitHub sono salvati nel kit, in chiaro. «Esci» non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account di Anthropic, OpenAI, Google e GitHub (e del provider che usi con Pi).
 
 > [!NOTE]
 > **Claude Code su macOS**
@@ -1285,21 +1298,22 @@ L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi 
 | Claude Code | `data\home\.claude\.credentials.json` |
 | Codex | `data\home\.codex\auth.json` |
 | Antigravity | `data\antigravity\keyring.json` |
+| Pi (provider in cloud; «Esci» lo toglie) | `data\home\.pi\agent\auth.json` |
 | Claude Code, token su macOS | `data\agents\claude\oauth-token` |
 
 Antigravity salva il suo accesso solo nel portachiavi del sistema (Gestione credenziali su Windows, Portachiavi su macOS, Secret Service su Linux). Il kit ce lo mette prima dell'avvio e lo riporta in keyring.json alla fine, rimettendo a posto le eventuali credenziali di Antigravity del PC (conservate, cifrate, in keyring-before.json). Su Windows l'accesso nel sistema vive solo per la sessione di Windows.
 
 </details>
 
-Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi), [4.3 Limiti e consumi degli agenti](#43-limiti-e-consumi-degli-agenti), [6.2 Le Impostazioni, una per una](#62-le-impostazioni-una-per-una)
+Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi), [4.3 Limiti e consumi degli agenti](#43-limiti-e-consumi-degli-agenti), [4.4 Modelli locali: llama.cpp e i GGUF](#44-modelli-locali-llamacpp-e-i-gguf), [6.2 Le Impostazioni, una per una](#62-le-impostazioni-una-per-una)
 
 ### 4.2 Istruzioni, skill e server MCP condivisi
 
-*Un'unica cartella per istruire i tre agenti insieme: AGENTS.md, le skill, i server MCP del kit e quelli di un progetto.*
+*Un'unica cartella per istruire gli agenti insieme: AGENTS.md, le skill, i server MCP del kit e quelli di un progetto.*
 
 > **In breve**
 >
-> - Istruzioni, skill e server MCP si scrivono una volta sola, nella cartella `data\agents`, e valgono per tutti e tre gli agenti.
+> - Istruzioni, skill e server MCP si scrivono una volta sola, nella cartella `data\agents`, e valgono per tutti gli agenti.
 > - Il kit li allinea all'avvio dell'app, prima e dopo ogni agente e quando un agente termina.
 > - Puoi modificare anche i file di un agente: la modifica passa agli altri.
 > - I server MCP di un solo progetto si aggiungono nella sezione «Editor» del progetto.
@@ -1340,14 +1354,14 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 
 #### Come avviene l'allineamento
 
-- Istruzioni: AGENTS.md viene copiato come CLAUDE.md per Claude Code, AGENTS.md per Codex e AGENTS.md per Antigravity. Se modifichi uno di quei file, la modifica torna in AGENTS.md e passa agli altri. Se cambiano entrambe le parti, vince la più recente e l'altra viene conservata nella cartella dei conflitti.
+- Istruzioni: AGENTS.md viene copiato come CLAUDE.md per Claude Code e come AGENTS.md per Codex, Antigravity e Pi. Se modifichi uno di quei file, la modifica torna in AGENTS.md e passa agli altri. Se cambiano entrambe le parti, vince la più recente e l'altra viene conservata nella cartella dei conflitti.
 - Skill: ogni agente vede la cartella skills attraverso un collegamento (copie sui dischi FAT32 ed exFAT). Una skill creata dentro un agente viene spostata in `data\agents\skills` e diventa di tutti; una skill cancellata in un agente viene messa da parte e si può recuperare.
-- Server MCP: mcp.json viene tradotto nel formato di ciascun agente. Con Claude Code vale in entrambe le direzioni: un server aggiunto con claude mcp add -s user torna in mcp.json. Codex e Antigravity ricevono i server del kit e lasciano stare quelli che hai aggiunto a mano nelle loro configurazioni.
+- Server MCP: mcp.json viene tradotto nel formato di ciascun agente. Con Claude Code vale in entrambe le direzioni: un server aggiunto con claude mcp add -s user torna in mcp.json. Codex, Antigravity e Pi ricevono i server del kit e lasciano stare quelli che hai aggiunto a mano nelle loro configurazioni. Pi non accetta i server SSE: il kit li lascia fuori dal suo mcp.json, con un avviso.
 
 > [!NOTE]
 > **La regola del kit**
 >
-> A ogni allineamento il kit dà agli agenti una regola comune: nei progetti i file CLAUDE.md, AGENTS.md e GEMINI.md sono equivalenti, e le skill di un progetto stanno nella sua cartella .agents/skills.
+> A ogni allineamento il kit dà agli agenti una regola comune: nei progetti i file CLAUDE.md, AGENTS.md e GEMINI.md sono equivalenti, e le skill di un progetto stanno nella sua cartella .agents/skills. Per Pi la regola sta in un blocco marcato di APPEND_SYSTEM.md, riscritto a ogni allineamento: il testo che ci scrivi tu, fuori dal blocco, resta.
 
 #### Server MCP di un solo progetto
 
@@ -1356,26 +1370,27 @@ Argomenti collegati: [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzio
 3. Scrivi il «Nome» (lettere, cifre, - e _) e scegli il «Tipo»: «programma» (con «Programma», per esempio npx, e gli «Argomenti, uno per riga») oppure «indirizzo (http)» (con l'«Indirizzo»).
 4. Premi «Aggiungi». «Togli» su una riga lo rimuove.
 
-Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da `.codex\config.toml`, che Atollo tiene allineato; Antigravity usa solo i server del kit.
+Questi server valgono solo in quel progetto, oltre a quelli del kit. Claude Code li legge dal file .mcp.json del progetto (e chiede conferma al primo uso); Codex da `.codex\config.toml`, che Atollo tiene allineato; Antigravity e Pi usano solo i server del kit.
 
 <details>
 <summary>Sotto il cofano</summary>
 
 | Originale | Copie per gli agenti |
 | --- | --- |
-| `data\agents\AGENTS.md` | `data\home\.claude\CLAUDE.md · data\home\.codex\AGENTS.md · data\home\.gemini\AGENTS.md` |
-| `data\agents\skills` | `data\home\.claude\skills · data\home\.codex\skills · data\home\.gemini\antigravity-cli\skills` |
-| `data\agents\mcp.json` | `data\home\.claude\.claude.json · data\home\.codex\config.toml · data\home\.gemini\config\mcp_config.json` |
+| `data\agents\AGENTS.md` | `data\home\.claude\CLAUDE.md · data\home\.codex\AGENTS.md · data\home\.gemini\AGENTS.md · data\home\.pi\agent\AGENTS.md` |
+| `data\agents\skills` | `data\home\.claude\skills · data\home\.codex\skills · data\home\.gemini\antigravity-cli\skills · data\home\.pi\agent\skills` |
+| `data\agents\mcp.json` | `data\home\.claude\.claude.json · data\home\.codex\config.toml · data\home\.gemini\config\mcp_config.json · data\home\.pi\agent\mcp.json` |
 
 - Lo stato dell'allineamento, i conflitti e le skill cancellate sono in `data\agents\.sync` (conflicts, deleted).
 - Gli avvisi dell'allineamento finiscono nel log dell'app, `data\app\logs\app.log`.
 - L'allineamento si può lanciare anche dalla riga di comando: `Atollo.exe sync [--project <cartella>] [--verbose]`.
-- Claude Code e Codex considerano attendibile la cartella di un progetto solo dopo che vi hai aperto un agente da Atollo: da lì possono eseguire comandi senza chiedere la fiducia ogni volta. Le altre cartelle di projects non sono attendibili in anticipo.
+- Claude Code, Codex e Pi considerano attendibile la cartella di un progetto solo dopo che vi hai aperto un agente da Atollo: da lì possono eseguire comandi senza chiedere la fiducia ogni volta. Le altre cartelle di projects non sono attendibili in anticipo.
 - In Codex le variabili ${VAR} non vengono espanse: il kit le traduce dove Codex ha una chiave apposita, altrimenti le copia così come sono con un commento.
+- Pi tiene tutto in `data\home\.pi\agent` (la variabile PI_CODING_AGENT_DIR). Oltre a istruzioni, skill e server MCP, il kit vi scrive models.json (il provider «atollo»: i modelli locali su disco, con la porta e la chiave del server, solo per il proprietario) e settings.json (su Windows il Git Bash del kit come shell, la fiducia nei progetti «ask» se non l'hai impostata, il modello locale come predefinito finché non scegli un altro provider). I tuoi provider e le tue impostazioni restano.
 
 </details>
 
-Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-agenti-claude-code-codex-antigravity), [2.5 Editor, terminale ed estensioni](#25-editor-terminale-ed-estensioni), [8.5 La riga di comando](#85-la-riga-di-comando)
+Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi), [2.5 Editor, terminale ed estensioni](#25-editor-terminale-ed-estensioni), [8.5 La riga di comando](#85-la-riga-di-comando)
 
 ### 4.3 Limiti e consumi degli agenti
 
@@ -1389,7 +1404,7 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-a
 
 #### Limiti del piano
 
-Per ogni finestra di limite c'è una casella con la percentuale usata, una barra e «si azzera …». Le finestre sono «5 ore» e «Settimana» per Claude Code, «… ore» e «Settimana» per Codex, e quote per modello per Antigravity. Sopra, il piano, la fonte dei dati e quando sono stati letti.
+Per ogni finestra di limite c'è una casella con la percentuale usata, una barra e «si azzera …». Le finestre sono «5 ore» e «Settimana» per Claude Code, «… ore» e «Settimana» per Codex, e quote per modello per Antigravity. Sopra, il piano, la fonte dei dati e quando sono stati letti. Pi non ha finestre di limite: i modelli locali non ne hanno, e il kit non interroga i provider in cloud che Pi può usare.
 
 | Colore | Quando |
 | --- | --- |
@@ -1404,6 +1419,8 @@ Il valore più alto compare anche nella riga dell'agente nella barra laterale. P
 | accesso non fatto: apri … per vedere limiti e consumi | Apri l'agente in un progetto e fai l'accesso. |
 | accesso scaduto: apri Claude Code per rinnovarlo | Apri l'agente: rinnova l'accesso da solo. |
 | chiave API: nessun limite di piano | Con una chiave API non ci sono finestre di limite. |
+| Modelli locali: nessun limite di piano | Pi sui modelli locali del kit: girano sul tuo PC, senza piano. I consumi qui sotto ci sono comunque. |
+| I limiti dei provider di Pi non sono letti dal kit | Pi con un provider in cloud: i limiti si vedono nel sito del provider o in Pi. |
 | nessun dato ancora: i limiti arrivano con la prossima risposta di Codex | Usa Codex una volta: i limiti arrivano con la risposta. |
 | Il server chiede di aspettare: nuova lettura … | Il fornitore ha limitato le letture: il kit riprova da solo più tardi. |
 
@@ -1413,6 +1430,7 @@ Il valore più alto compare anche nella riga dell'agente nella barra laterale. P
 - «Sessioni · Oggi» con le sessioni di oggi e degli ultimi 7 giorni.
 - Un grafico a barre per i 7 giorni, l'ultima attività e i tre modelli più usati.
 - Antigravity non salva i token: per lui si contano solo le sessioni.
+- Per Pi i token si leggono dalle sue sessioni, anche quelle sui modelli locali.
 
 > [!NOTE]
 > **Da sapere**
@@ -1424,21 +1442,135 @@ Il valore più alto compare anche nella riga dell'agente nella barra laterale. P
 
 - Fonti dei limiti: per Claude Code il server di Anthropic, per Codex quello di OpenAI (o, in mancanza, l'ultima risposta di Codex), per Antigravity quello di Google. Il kit usa l'accesso salvato, solo per leggere: non lo rinnova e non lo manda altrove.
 - Letture al massimo ogni 2 minuti, ogni 20 secondi con «Aggiorna i consumi»; dopo una risposta «troppe richieste» aspetta quanto chiesto dal server (da 2 a 30 minuti).
-- File delle sessioni: `data\home\.claude\projects`, `data\home\.codex\sessions`, `data\home\.gemini` (conversazioni di Antigravity).
+- File delle sessioni: `data\home\.claude\projects`, `data\home\.codex\sessions`, `data\home\.gemini` (conversazioni di Antigravity), `data\home\.pi\agent\sessions` (Pi).
 
 </details>
 
-Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-agenti-claude-code-codex-antigravity), [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi)
+Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi), [4.2 Istruzioni, skill e server MCP condivisi](#42-istruzioni-skill-e-server-mcp-condivisi), [4.4 Modelli locali: llama.cpp e i GGUF](#44-modelli-locali-llamacpp-e-i-gguf)
+
+### 4.4 Modelli locali: llama.cpp e i GGUF
+
+*Modelli linguistici sul PC, senza rete e senza account: il server, la chat nel browser, il modello di Pi, scaricare dal catalogo o da Hugging Face.*
+
+> **In breve**
+>
+> - Un modello locale è un modello linguistico che gira sul tuo PC: niente rete, niente account, niente piano. Va sulla CPU o sulla scheda video (Vulkan su Windows e Linux, Metal su macOS).
+> - Il server è llama.cpp, i modelli sono file GGUF: si scaricano dalla pagina «Modelli locali», dal catalogo di Atollo o da Hugging Face.
+> - Li usano Pi e una chat nel browser. Il server ascolta solo su questo PC, con una chiave.
+> - Un download sospeso o interrotto riprende da dove si era fermato, anche dopo aver chiuso Atollo.
+
+#### Che cosa sono e che cosa serve
+
+Un modello GGUF è un unico file (a volte diviso in parti) con i pesi del modello già compressi: la «quantizzazione» (Q4_K_M, Q8_0, MXFP4…) dice quanto, e più è bassa più il file è piccolo e meno è preciso. Il server llama.cpp carica il modello nella memoria della scheda video, se ce n'è abbastanza, altrimenti lo divide fra scheda video e RAM o usa solo la CPU. La scelta è automatica: llama.cpp si installa la prima volta che avvii il server, una sola versione per sistema, verificata con il suo SHA-256.
+
+I modelli occupano molti GB e chiedono memoria: un modello da 7-9 miliardi di parametri sta in circa 8 GB, uno da 30 miliardi ne vuole più di 20. Sono meno capaci dei modelli in cloud di Claude Code o Codex, ma restano sul tuo PC.
+
+#### La pagina «Modelli locali»
+
+Si apre dalla barra delle attività (l'icona del chip). A sinistra, «Nel kit»: il server llama.cpp con il suo stato e la porta, e i modelli scaricati («modello di Pi», «in memoria», «scaricamento sospeso»). In alto, «Avvia» o «Ferma», «Apri la chat» e «Copia la chiave». Sotto, le sezioni:
+
+| Sezione | Che cosa contiene |
+| --- | --- |
+| Server | L'indirizzo (http://127.0.0.1:\<porta\>), i modelli in memoria e «Avvia con Atollo», per accendere il server all'apertura dell'app. «Avvia» resta spento finché non c'è almeno un modello scaricato. |
+| Modello di Pi | «Pi parte con»: un modello scaricato, oppure «il primo modello del kit». Con un provider in cloud scelto in Pi (/login), Pi resta su quello; i modelli locali restano nel suo elenco (/model). |
+| Catalogo di Atollo | I modelli scelti per il kit, ognuno con quantizzazione, dimensione, licenza, la memoria che chiede, se entra in questo PC e se usa gli strumenti. «Scarica», poi «Sospendi» o «Riprendi»; il cestino lo cancella. |
+| Altri modelli nel kit | I modelli presi da Hugging Face e i file .gguf messi a mano nella cartella dei modelli. |
+| Da Hugging Face | Un repository qualsiasi (proprietario/nome), la scelta della quantizzazione e il token per i modelli ad accesso controllato. |
+| Questo PC | La RAM, le schede video con la loro memoria (si vedono dopo l'installazione di llama.cpp), il file system del disco del kit con lo spazio libero, e la cartella dei modelli. |
+
+#### Scegliere e scaricare un modello
+
+Accanto a ogni modello la pagina dice se entra nel PC, confrontando la memoria che chiede con la più grande fra la RAM e la memoria della scheda video:
+
+| Testo | Significato |
+| --- | --- |
+| entra | Chiede al massimo l'80% di quella memoria: c'è margine. |
+| al limite | Ci sta, ma lascia poco al resto del sistema: può essere lento. |
+| troppo grande per questo PC | Chiede più memoria di quella che il PC ha. |
+
+«usa gli strumenti (adatto agli agenti)» vuol dire che il modello sa chiamare i comandi e leggere i file quando lavora con Pi; «solo chat» vuol dire che con gli agenti non li usa bene (scrive la chiamata come testo), ma va bene per chiacchierare nel browser.
+
+| Modello del catalogo | Memoria | Uso |
+| --- | --- | --- |
+| Qwen2.5-Coder 7B | circa 7 GB | solo chat; in due parti, entra anche su FAT32 |
+| Qwen3.5 9B | circa 8 GB | usa gli strumenti |
+| gpt-oss 20B | circa 15 GB | usa gli strumenti |
+| Devstral Small 2 24B | circa 18 GB | usa gli strumenti |
+| Qwen3-Coder 30B-A3B | circa 22 GB | usa gli strumenti |
+
+1. Nel «Catalogo di Atollo» scegli un modello che «entra» e «usa gli strumenti», se lo vuoi per Pi.
+2. Premi «Scarica». La barra mostra percentuale e GB; il download continua anche se cambi pagina.
+3. «Sospendi» lo ferma e tiene la parte già scaricata; «Riprendi» riparte da lì, anche dopo aver chiuso Atollo o dopo un errore di rete.
+4. Alla fine il modello compare in «Nel kit» con «nel kit»; se il server è acceso, si riavvia per vederlo.
+
+> [!NOTE]
+> **Controlli**
+>
+> Ogni file del catalogo ha il suo SHA-256: il kit lo calcola mentre i byte arrivano e cancella un file che non corrisponde. Prima di scrivere un byte, rifiuta un modello più grande dello spazio libero e, su un disco FAT32, un file oltre i 4 GB, dicendo che cosa fare.
+
+> [!WARNING]
+> **Dischi FAT32**
+>
+> FAT32 non tiene file oltre i 4 GB: la pagina lo avvisa e scrive «non entra su FAT32» accanto ai modelli troppo grandi. Qwen2.5-Coder 7B, in due parti più piccole, entra comunque. Per tutti gli altri formatta il disco in exFAT o NTFS.
+
+#### Da Hugging Face
+
+1. In «Repository di Hugging Face» scrivi proprietario/nome del repository, per esempio unsloth/Qwen3-8B-GGUF.
+2. Premi «Cerca i file GGUF»: il kit legge l'ultimo commit e raggruppa i file per quantizzazione, con dimensione, numero di parti, se entra nel PC e la licenza.
+3. Premi «Scarica» sulla quantizzazione che vuoi: il kit scarica tutte le sue parti da quel commit, o nessuna. Q4_K_M è di solito un buon compromesso.
+
+Alcuni modelli sono ad accesso controllato: si accettano le condizioni sulla pagina del modello e serve un token di Hugging Face. Scrivilo in «Token di Hugging Face» e premi «Salva il token»; «Togli il token» lo cancella. Il token è salvato nel kit, leggibile solo dal tuo utente, e va solo a huggingface.co: non segue il reindirizzamento verso la CDN da cui arrivano i file.
+
+> [!TIP]
+> **Consiglio**
+>
+> Un file .gguf copiato a mano in una cartella di `data\models\gguf` è un modello anche lui: compare in «Altri modelli nel kit» con il nome del file.
+
+#### La chat nel browser
+
+1. Premi «Avvia» (o lascia fare a «Avvia con Atollo»). La prima volta il kit installa llama.cpp.
+2. Premi «Copia la chiave»: la chiave del server va negli appunti.
+3. Premi «Apri la chat»: si apre la chat di llama.cpp nel browser. Nelle sue impostazioni incolla la chiave, poi scegli il modello e scrivi.
+
+Pi non ha bisogno di questi passi: il kit gli scrive porta e chiave nella sua configurazione e accende il server prima di aprirlo, quando usa un modello locale.
+
+#### Sicurezza e risorse
+
+- Il server ascolta solo su 127.0.0.1: nessun altro PC della rete lo raggiunge, anche con la rete locale attiva nelle Impostazioni.
+- Ogni richiesta vuole la chiave del server, creata al primo avvio e data al server come file, mai sulla riga di comando (dove altri programmi del PC la vedrebbero). Senza chiave il server risponde 401.
+- Un modello si carica quando Pi o la chat lo chiede, uno alla volta, e si libera dopo dieci minuti senza richieste: la memoria torna al PC.
+- Il server compare nel pannello «Attività» (con «Ferma» e i modelli in memoria) e si ferma con «Ferma tutto», con «Rimuovi l'unità» e alla chiusura dell'app.
+- Mentre cancelli un modello il server si ferma: su Windows un file aperto non si può cancellare.
+
+<details>
+<summary>Sotto il cofano</summary>
+
+| File o cartella | Che cosa contiene |
+| --- | --- |
+| `data\models\gguf\<proprietario>--<nome>\` | I modelli, una cartella per repository, una sola copia per Windows, macOS e Linux. atollo.json dice che cosa ha scaricato il kit (file, commit, se è completo); un download a metà lascia un file .part. |
+| `data\app\secrets\llama-key` | La chiave del server, solo per il proprietario. |
+| `data\app\secrets\hf-token` | Il token di Hugging Face, solo per il proprietario. |
+| `data\app\llm.json` | La porta del server (9931 o la prima libera dopo), «Avvia con Atollo» e il modello di Pi. |
+| `data\app\llm\presets.ini` | I modelli che il server offre, con i percorsi assoluti: si riscrive a ogni avvio, perché il kit può essersi spostato. |
+| `data\app\logs\llm.log` | L'uscita del server, da leggere se non parte. |
+
+- llama.cpp è fissato a una build (b11669) con lo SHA-256 dell'archivio di ogni sistema: la build Vulkan su Windows e Linux (che contiene anche i motori per la CPU), quella Metal su macOS.
+- I modelli del catalogo sono fissati a un commit di Hugging Face, ogni file con SHA-256 e dimensione; quelli presi da Hugging Face si scaricano dall'ultimo commit al momento della ricerca.
+- Dalla riga di comando: `models` elenca i modelli, `models pull <modello>` ne scarica uno (un id del catalogo o proprietario/nome:quantizzazione, riprende se interrotto), `models rm <id>` lo cancella, `llm start|stop|status` comanda il server.
+
+</details>
+
+Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi), [5.1 La pagina Strumenti](#51-la-pagina-strumenti), [8.5 La riga di comando](#85-la-riga-di-comando), [7.1 Rimuovere l'unità in sicurezza](#71-rimuovere-lunità-in-sicurezza)
 
 ## 5. Strumenti e linguaggi
 
 ### 5.1 La pagina Strumenti
 
-*La tabella di tutti gli strumenti divisa nei sei tipi, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».*
+*La tabella di tutti gli strumenti divisa negli otto tipi, i cinque stati, installare e aggiornare subito o scegliere e poi «Applica».*
 
 > **In breve**
 >
-> - La pagina Strumenti elenca tutti i componenti che il kit sa installare, divisi in sei tipi come nel sito: sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database.
+> - La pagina Strumenti elenca tutti i componenti che il kit sa installare, divisi in otto tipi come nel sito: sistema ed editor, agenti AI, modelli locali, linguaggi, strumenti di sviluppo, server web, database, visualizzazione database.
 > - Le icone delle righe agiscono subito: «Installa» e «Aggiorna» partono appena le premi.
 > - Le caselle invece preparano una scelta, che si conferma con «Applica»: così si installano e tolgono più cose insieme.
 > - Ogni riga mostra lo stato su disco con un'icona: non esiste, pre-installato, installato, da aggiornare, errore.
@@ -1452,7 +1584,7 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-a
 | Parte | Che cosa contiene |
 | --- | --- |
 | Cerca negli strumenti | Cerca nel nome, nella descrizione e nell'identificativo. |
-| Riquadro «Componenti» | Un albero con i sei tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente. |
+| Riquadro «Componenti» | Un albero con gli otto tipi e i loro componenti, con quanti sono installati. Un clic apre la scheda del componente. |
 | Riquadro «Panoramica» | Le viste d'insieme: «Tutti gli strumenti», «Matrice», «Estensioni dell'editor», «Relazioni», «Requisiti del PC» ([5.3 Panoramiche: matrice, relazioni, estensioni, requisiti](#53-panoramiche-matrice-relazioni-estensioni-requisiti)). |
 | Scheda «Tutti gli strumenti» | La prima scheda, sempre aperta: la tabella di tutti i componenti. |
 | Barra «Applica» | In fondo, sempre visibile: le modifiche in attesa, «Aggiorna tutto», «Applica». |
@@ -1460,7 +1592,8 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-a
 | Tipo | Che cosa contiene |
 | --- | --- |
 | Sistema ed editor | Editor, PowerShell 7, GitHub CLI, Git: sempre installati. |
-| Agenti AI | Claude Code, Codex, Antigravity: facoltativi, sempre all'ultima versione. |
+| Agenti AI | Claude Code, Codex, Antigravity, Pi: facoltativi, sempre all'ultima versione. |
+| Modelli locali | llama.cpp, il server dei modelli linguistici sul PC: li usano Pi e la chat nel browser, senza rete. Facoltativo, a una versione fissata; i modelli si scaricano dalla pagina Modelli locali ([4.4 Modelli locali: llama.cpp e i GGUF](#44-modelli-locali-llamacpp-e-i-gguf)). |
 | Linguaggi | Tutti i linguaggi e i runtime: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. Tutti possono avere più versioni una accanto all'altra, tranne Rust e C/C++, che restano all'ultima versione. |
 | Strumenti di sviluppo | uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: una sola versione, sempre l'ultima (solo Typst può tenerne più d'una); quelli che servono si installano da soli. |
 | Server web | Apache e Caddy, per i siti dei progetti e i Server Web condivisi. |
@@ -1469,7 +1602,7 @@ Argomenti collegati: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-a
 
 #### La tabella «Tutti gli strumenti»
 
-Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Tipo» («Tutti i tipi» o uno dei sei) e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.
+Sopra la tabella ci sono i filtri: la ricerca, «Piattaforma», «Tipo» («Tutti i tipi» o uno degli otto) e «Stato» (Tutti, Installati, Non installati, Da applicare, Usati dai progetti), più i pulsanti «Espandi» e «Verifica». Le colonne: nome, versione, versioni su disco, dimensione, stato, progetti che lo usano, che cosa richiede e le azioni.
 
 Le righe sono divise per tipo. Ogni tipo ha una riga di titolo: la freccia per chiuderlo o riaprirlo, il nome, quanti componenti contiene («3», oppure «2 di 5» quando un filtro ne nasconde qualcuno), la sua descrizione e una casella «Scegli tutti: …» che sceglie tutti i suoi componenti che si possono scegliere; la casella nell'intestazione, «Scegli tutti quelli mostrati», fa lo stesso con tutte le righe visibili. Un clic sull'intestazione di una colonna ordina le righe dentro ogni tipo (all'inizio per nome).
 
@@ -1606,7 +1739,7 @@ Argomenti collegati: [2.4 Componenti e versioni di un progetto](#24-componenti-e
 
 #### Matrice
 
-Una tabella con un componente per riga, divisa negli stessi sei tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».
+Una tabella con un componente per riga, divisa negli stessi otto tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».
 
 > [!NOTE]
 > **Da sapere**
@@ -1940,7 +2073,7 @@ Un database spento di colpo può perdere gli ultimi dati scritti, e un programma
 #### Passo per passo
 
 1. Salva il lavoro aperto nell'editor e negli altri programmi.
-2. Apri «Rimuovi l'unità» (l'ultima icona in basso nella barra delle attività). La parte «Aperti adesso» elenca che cosa è aperto: installazione in corso, editor, console, progetti avviati, database avviati e i programmi del kit avviati fuori dall'app, con nome e PID.
+2. Apri «Rimuovi l'unità» (l'ultima icona in basso nella barra delle attività). La parte «Aperti adesso» elenca che cosa è aperto: installazione in corso, editor, console, progetti avviati, database avviati, il server dei modelli locali e i programmi del kit avviati fuori dall'app, con nome e PID.
 3. Premi «Chiudi tutto e prepara la rimozione».
 4. Quando compare «Programmi del kit chiusi e accesso di Antigravity salvato nel kit.», premi «Chiudi Atollo». Se qualcosa è rimasto aperto, è elencato sotto «Ancora aperti (chiudili a mano)».
 5. Rimuovi l'unità dal sistema: su Windows con l'icona «Rimozione sicura dell'hardware»; su macOS espellendola dal Finder.
@@ -2065,7 +2198,7 @@ In Impostazioni › «Aggiornamenti» vedi lo stato («Atollo … è la versione
 | `projects\` | I tuoi progetti. |
 | `data\` | Impostazioni, accessi, istruzioni degli agenti, dati dei database, copie dei database, dati dei progetti. |
 
-Dentro data puoi lasciare fuori `data\apps` (i programmi) e `data\cache` (file scaricati che si possono riscaricare): sono la parte più grande e il kit li ricostruisce. Per copiare i dati dei database in modo coerente, spegni prima i server (o usa «Rimuovi l'unità»).
+Dentro data puoi lasciare fuori `data\apps` (i programmi) e `data\cache` (file scaricati che si possono riscaricare): sono la parte più grande e il kit li ricostruisce. Anche `data\models` (i modelli locali, molti GB) si può riscaricare dalla pagina Modelli locali, tranne i file .gguf messi a mano. Per copiare i dati dei database in modo coerente, spegni prima i server (o usa «Rimuovi l'unità»).
 
 > [!WARNING]
 > **Attenzione**
@@ -2110,7 +2243,7 @@ Questo succede perché ogni programma avviato dal kit riceve un ambiente costrui
 | --- | --- | --- |
 | Cartella utente | `HOME, USERPROFILE, APPDATA, LOCALAPPDATA` | `data\home` |
 | File temporanei | `TEMP, TMP (TMPDIR su macOS e Linux)` | `data\tmp\system` o la cartella temporanea del sistema, secondo le Impostazioni |
-| Agenti | `CLAUDE_CONFIG_DIR, CODEX_HOME` | `data\home\.claude, data\home\.codex` |
+| Agenti | `CLAUDE_CONFIG_DIR, CODEX_HOME, PI_CODING_AGENT_DIR` | `data\home\.claude, data\home\.codex, data\home\.pi\agent` |
 | GitHub CLI | `GH_CONFIG_DIR` | `data\gh` |
 | Cache dei pacchetti | `NPM_CONFIG_CACHE, PIP_CACHE_DIR, UV_CACHE_DIR, COMPOSER_CACHE_DIR, GOCACHE, NUGET_PACKAGES` | `data\cache\…` |
 | Pacchetti globali | `NPM_CONFIG_PREFIX, PYTHONUSERBASE, COMPOSER_HOME, GOPATH, GRADLE_USER_HOME, CARGO_HOME` | `data\npm-global, data\python-user, data\composer, data\go, data\gradle…` |
@@ -2171,15 +2304,16 @@ Argomenti collegati: [8.2 Le cartelle del kit su disco](#82-le-cartelle-del-kit-
 | &emsp;`Atollo.exe` | L'unico programma: è l'app con la finestra e anche la riga di comando. Su macOS Atollo.app, su Linux l'AppImage. |
 | &emsp;`projects\` | I tuoi progetti, una cartella ciascuno. È tuo: il kit non ci scrive senza che tu lo chieda. |
 | &emsp;`data\` | Tutto ciò che è del kit. |
-| &emsp;&emsp;`app\` | Lo stato dell'app: settings.json (Impostazioni), `secrets\` (la chiave di Gemini, protetta), ca-bundle.pem (i certificati, se le Impostazioni hanno un file PEM), components.txt (componenti scelti), `versions\` (versioni installate), `logs\`, services.json e servers.json (database e server web, con le porte di ogni versione e di ogni pool), terminals.json, frameworks.json, root.txt (ultima cartella del kit), safe-directory.txt (l'ultimo safe.directory scritto dal kit). |
+| &emsp;&emsp;`app\` | Lo stato dell'app: settings.json (Impostazioni), `secrets\` (la chiave di Gemini, quella del server dei modelli locali e il token di Hugging Face, protetti), llm.json e `llm\presets.ini` (il server dei modelli locali), ca-bundle.pem (i certificati, se le Impostazioni hanno un file PEM), components.txt (componenti scelti), `versions\` (versioni installate), `logs\`, services.json e servers.json (database e server web, con le porte di ogni versione e di ogni pool), terminals.json, frameworks.json, root.txt (ultima cartella del kit), safe-directory.txt (l'ultimo safe.directory scritto dal kit). |
 | &emsp;&emsp;&emsp;`app\db\` | Password di amministratore dei database e accessi di mysql. Protetta: la legge solo il tuo utente. |
 | &emsp;&emsp;`apps\<sistema>\` | I programmi, per sistema (win32-x64, darwin-arm64…), una cartella per componente e per versione. |
 | &emsp;&emsp;`projects\<progetto>\` | I dati del kit per ogni progetto: dev-settings.json (versioni, estensioni, preferiti), ports.json (le porte delle sue azioni), configurazioni di Apache e Caddy (le tue direttive in `apache\conf.d\*.conf` e `caddy\conf.d\*.caddy` valgono sia per il server tutto suo sia in un pool), `private\` (password e copie dei database, protetta). |
 | &emsp;&emsp;`db\<mysql\|mongodb>\<versione>\` | I dati dei database, una cartella per versione. |
+| &emsp;&emsp;`models\gguf\<proprietario>--<nome>\` | I modelli locali (file GGUF), una cartella per repository di Hugging Face, una sola copia per Windows, macOS e Linux; atollo.json dice che cosa ha scaricato il kit. |
 | &emsp;&emsp;`servers\<pool>\` | Le configurazioni generate dei server web condivisi. |
-| &emsp;&emsp;`agents\` | Ciò che i tre agenti condividono: AGENTS.md, `skills\`, mcp.json, e lo stato dell'allineamento in `.sync\`. |
+| &emsp;&emsp;`agents\` | Ciò che gli agenti condividono: AGENTS.md, `skills\`, mcp.json, e lo stato dell'allineamento in `.sync\`. |
 | &emsp;&emsp;`antigravity\` | L'accesso di Antigravity conservato nel kit (keyring.json). |
-| &emsp;&emsp;`home\` | La «cartella utente» dei programmi del kit: .claude, .codex, .gemini (profili degli agenti), .gitconfig, .npmrc, AppData (su Windows). |
+| &emsp;&emsp;`home\` | La «cartella utente» dei programmi del kit: .claude, .codex, .gemini, .pi (profili degli agenti), .gitconfig, .npmrc, AppData (su Windows). |
 | &emsp;&emsp;`gh\` | L'accesso di GitHub CLI (hosts.yml). |
 | &emsp;&emsp;`vscodium-server\` | Impostazioni ed estensioni del server dell'editor. |
 | &emsp;&emsp;`kit\` | File che il kit riscrive a ogni avvio: profilo della PowerShell, comandi di supporto (agy, mysql, gradle). |
@@ -2250,12 +2384,13 @@ Argomenti collegati: [8.1 Portabile e isolato: che cosa vuol dire](#81-portabile
 | Database | Con «Avvia», «Avvia con Atollo» o quando un progetto li chiede | Con «Ferma», o alla chiusura (arresto ordinato) |
 | Editor | Con il primo «Editor» | Alla chiusura dell'app |
 | Console e agenti | Con «Terminale», «Apri», i loghi degli agenti | Quando le chiudi, o alla chiusura dell'app |
+| Server dei modelli locali | Con «Avvia», «Avvia con Atollo» o aprendo Pi su un modello locale | Con «Ferma», «Ferma tutto», o alla chiusura; un modello lascia la memoria dopo dieci minuti senza richieste |
 
-Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata e i pool attivi; «Ferma tutto» li ferma dopo una conferma.
+Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata, i pool attivi e il server dei modelli locali; «Ferma tutto» li ferma dopo una conferma.
 
 #### Alla chiusura
 
-Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e spegne con ordine i database, poi esce. Prima di staccare l'unità usa [7.1 Rimuovere l'unità in sicurezza](#71-rimuovere-lunità-in-sicurezza).
+Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e il server dei modelli locali e spegne con ordine i database, poi esce. Prima di staccare l'unità usa [7.1 Rimuovere l'unità in sicurezza](#71-rimuovere-lunità-in-sicurezza).
 
 <details>
 <summary>Sotto il cofano</summary>
@@ -2263,7 +2398,7 @@ Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi
 - Su Windows tutti i programmi del kit vivono in un Job Object con l'opzione «chiudi alla chiusura»: se l'app termina in qualsiasi modo, Windows chiude anche loro. Editor e azioni hanno un Job loro, dentro quello dell'app.
 - Su macOS e Linux un piccolo processo di guardia si accorge se l'app muore e chiude i gruppi di processi del kit (SIGTERM, poi SIGKILL dopo 5 secondi).
 - L'istanza unica usa un identificativo ricavato dalla cartella del kit (un mutex su Windows, un lock su macOS e Linux): due kit diversi non si disturbano.
-- Ogni porta ha un solo proprietario: un pool (di base da 8081 a 8999), una versione di database, un'azione di un progetto (di base da 7100 a 7999); da 7000 a 7099 sono dell'editor. Una porta già presa viene rifiutata con il nome di chi la tiene (per esempio «La porta 3306 è già del database MySQL 8.4: scegline un'altra.»), e la porta automatica di un nuovo pool le evita tutte.
+- Ogni porta ha un solo proprietario: un pool (di base da 8081 a 8999), una versione di database, un'azione di un progetto (di base da 7100 a 7999), il server dei modelli locali (9931 e seguenti); da 7000 a 7099 sono dell'editor. Una porta già presa viene rifiutata con il nome di chi la tiene (per esempio «La porta 3306 è già del database MySQL 8.4: scegline un'altra.»), e la porta automatica di un nuovo pool le evita tutte.
 - Ogni versione di un database tiene la sua porta, anche quando cambi la versione del server; due avvii della stessa versione fanno partire un solo server, sulla stessa porta.
 - Browser ed Esplora file vengono aperti fuori dal Job: restano aperti anche dopo la chiusura di Atollo.
 - Alla chiusura, se c'è un aggiornamento pronto, l'eseguibile viene sostituito.
@@ -2323,6 +2458,8 @@ Molti componenti sono pubblicati su GitHub. Senza accesso, l'API di GitHub conse
 | `api.github.com/repos/nabre/atollo/releases` | Gli aggiornamenti di Atollo. |
 | `open-vsx.org` | Le estensioni dell'editor. |
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura e solo con la pagina Agenti aperta. |
+| `huggingface.co` | I modelli locali: la ricerca dei file GGUF e i download, che huggingface.co reindirizza alla sua CDN. Solo quando scarichi un modello; il token, se c'è, va solo a huggingface.co. |
+| `github.com/ggml-org/llama.cpp · github.com/earendil-works/pi` | Le release di llama.cpp e di Pi, come per gli altri componenti pubblicati su GitHub (sono nella tabella delle fonti qui sotto). |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Solo quando lo chiedono i comandi dei progetti e dei framework. |
 
 #### Tabella completa delle fonti (39 componenti e 5 parti)
@@ -2423,6 +2560,10 @@ cd D:\Atollo
 | `sync [--project <cartella>] [--verbose]` | Allinea istruzioni, skill e server MCP degli agenti. |
 | `serve <cartella> <porta>` | Serve una cartella come sito statico (il server di file del kit). |
 | `keyring restore \| save` | Usato dal kit attorno ad Antigravity: rimette o salva il suo accesso. |
+| `models` | I modelli locali: quelli del catalogo e quelli scaricati. |
+| `models pull <modello>` | Scarica un id del catalogo o un modello di Hugging Face (proprietario/nome:quantizzazione); riprende se interrotto. |
+| `models rm <id>` | Cancella un modello scaricato. |
+| `llm start \| stop \| status` | Il server dei modelli locali (chat e agenti): lo avvia, lo ferma o dice se risponde. status non manda la chiave a chi ascolta sulla porta. |
 | `version · help` | La versione (anche --version, -V) e l'aiuto (anche --help, -h, /?). |
 
 | Opzione di prepare | Effetto |
@@ -2555,7 +2696,7 @@ Approfondisci: [3.2 Il database di un progetto](#32-il-database-di-un-progetto)
 
 Apri l'agente in un progetto: rinnova l'accesso, o te lo fa rifare.
 
-Approfondisci: [4.1 Gli agenti: Claude Code, Codex, Antigravity](#41-gli-agenti-claude-code-codex-antigravity)
+Approfondisci: [4.1 Gli agenti: Claude Code, Codex, Antigravity, Pi](#41-gli-agenti-claude-code-codex-antigravity-pi)
 
 **Git dice «Please tell me who you are» al primo commit.**
 
@@ -2678,7 +2819,7 @@ Argomenti collegati: [9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va), [
 #### Dalla A alla Z
 
 - **.env** — Un file di testo nel progetto con impostazioni e segreti (come la password del database), una riga CHIAVE=valore ciascuna. Non va messo in Git.
-- **Agente IA** — Un assistente a riga di comando che lavora nella cartella del progetto: legge, modifica, esegue comandi. Nel kit: Claude Code, Codex, Antigravity.
+- **Agente IA** — Un assistente a riga di comando che lavora nella cartella del progetto: legge, modifica, esegue comandi. Nel kit: Claude Code, Codex, Antigravity, Pi.
 - **Aggiunta** — Nella procedura «Da una base», un pezzo in più da aggiungere alla base (Tailwind, React, un database, le prove).
 - **Alias di percorso** — Un indirizzo del sito che serve una cartella diversa, per esempio /media → storage/uploads.
 - **Azione** — Un comando del progetto con un nome, che si avvia e si ferma dalla sezione «Avvio».
@@ -2693,13 +2834,16 @@ Argomenti collegati: [9.1 Quando qualcosa non va](#91-quando-qualcosa-non-va), [
 - **Estensione** — Un componente aggiuntivo dell'editor che lo rende capace di capire un linguaggio o di fare cose nuove.
 - **exFAT, FAT32, NTFS** — Formati dei dischi. NTFS (Windows) permette di proteggere le cartelle; exFAT è letto da Windows, macOS e Linux; FAT32 non accetta file oltre 4 GB.
 - **Framework** — Una struttura pronta per costruire un tipo di applicazione (Laravel per i siti PHP, Django per Python…).
+- **GGUF** — Il formato dei file dei modelli locali che usa llama.cpp: un file (a volte in parti) con i pesi del modello compressi secondo una «quantizzazione», per esempio Q4_K_M.
 - **Git** — Il programma che tiene la storia delle modifiche di un progetto.
 - **GitHub, GitHub CLI** — GitHub è il servizio online che ospita repository Git; GitHub CLI (gh) è il suo programma a riga di comando.
 - **Impronta (hash)** — Un codice calcolato dal contenuto di un file: se il file cambia anche di un byte, l'impronta cambia. Serve a verificare che un download sia quello giusto.
 - **localhost, 127.0.0.1** — Il nome e l'indirizzo con cui un computer chiama sé stesso. Un nome che finisce in .localhost porta sempre a questo PC.
 - **MCP (server MCP)** — Model Context Protocol: un modo standard per dare agli agenti nuovi strumenti, attraverso un programma o un servizio.
+- **Modelli locali** — Modelli linguistici che girano sul PC, senza rete e senza account, con il server llama.cpp del kit. Si scaricano dalla pagina «Modelli locali» e li usano Pi e la chat nel browser.
 - **Open VSX** — Il catalogo libero di estensioni usato da VSCodium.
 - **PATH** — L'elenco di cartelle in cui il sistema cerca i programmi quando scrivi un comando.
+- **Pi** — L'agente da terminale di Earendil (Mario Zechner), il quarto del kit: lavora con i modelli locali, senza account, o con un provider in cloud scelto con /login.
 - **Pool** — Un server web (Caddy o Apache) condiviso da più progetti, ognuno con il suo nome .localhost e la sua cartella conf.d.
 - **Porta** — Un numero che distingue i servizi sullo stesso computer: http://localhost:7100 e http://localhost:7101 sono due siti diversi. Nel kit ogni porta è di una cosa sola (un'azione, un pool, una versione di un database); 7000-7099 sono dell'editor.
 - **Profilo server** — Un pool creato da te nella pagina Server Web, con le versioni e la porta che scegli.

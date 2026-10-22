@@ -25,9 +25,10 @@ Atollo is a complete development environment that lives in a single folder: on a
    - [3.3 Websites and .localhost addresses](#33-websites-and-localhost-addresses)
    - [3.4 The kit's terminals](#34-the-kits-terminals)
 4. [AI agents](#4-ai-agents)
-   - [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity)
+   - [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi)
    - [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers)
    - [4.3 Agent limits and usage](#43-agent-limits-and-usage)
+   - [4.4 Local models: llama.cpp and GGUF](#44-local-models-llamacpp-and-gguf)
 5. [Tools and languages](#5-tools-and-languages)
    - [5.1 The Tools page](#51-the-tools-page)
    - [5.2 Several versions of the same tool](#52-several-versions-of-the-same-tool)
@@ -62,7 +63,7 @@ Atollo is a complete development environment that lives in a single folder: on a
 >
 > - Atollo is a complete development environment that lives in a single folder: on a USB stick, an external disk or the PC's own disk.
 > - It does not install and does not ask for administrator rights: copy the folder to another PC and you find everything again, projects included.
-> - Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, and three AI agents.
+> - Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, four AI agents and local language models.
 > - This guide goes from the simplest things to the most technical ones: you can read it in order or jump to what you need.
 
 #### What it is, in simple words
@@ -87,7 +88,8 @@ Atollo is that backpack. It is a single program that sits in a folder together w
 | Editor | VSCodium, the free version of Visual Studio Code, in an Atollo window. | Projects › Editor |
 | Console | PowerShell 7 with all the kit's tools ready to use. | Terminals |
 | Git and GitHub | Git and GitHub CLI with a single sign-in to your account for the whole kit. | Settings › GitHub account |
-| AI agents | Claude Code, Codex and Antigravity, with shared instructions, skills and MCP servers. | Agents |
+| AI agents | Claude Code, Codex, Antigravity and Pi, with shared instructions, skills and MCP servers. | Agents |
+| Local models | Language models on the PC, with no network and no account, for Pi and for a chat in the browser. | Local models |
 
 #### Three ideas to keep in mind
 
@@ -106,7 +108,7 @@ In every topic you find: an “In short” box at the start, the steps to follow
 1. **[First steps](#1-first-steps)** — Welcome to Atollo · The first start · Getting to know the window · The first project, step by step
 2. **[Projects](#2-projects)** — Creating a project · The Projects page and the “Quick panel” · Starting a project: actions and ports · Components and versions of a project · Editor, terminal and extensions · A project's Git · Deleting a project and the “Data without a project”
 3. **[Databases, websites and terminals](#3-databases-websites-and-terminals)** — The database servers · A project's database · Websites and .localhost addresses · The kit's terminals
-4. **[AI agents](#4-ai-agents)** — The agents: Claude Code, Codex, Antigravity · Shared instructions, skills and MCP servers · Agent limits and usage
+4. **[AI agents](#4-ai-agents)** — The agents: Claude Code, Codex, Antigravity, Pi · Shared instructions, skills and MCP servers · Agent limits and usage · Local models: llama.cpp and GGUF
 5. **[Tools and languages](#5-tools-and-languages)** — The Tools page · Several versions of the same tool · Overviews: matrix, relations, extensions, requirements
 6. **[Account and settings](#6-account-and-settings)** — The kit's GitHub account · The Settings, one by one · Company network: proxy, certificates, local network · The framework instructions
 7. **[Taking the kit with you](#7-taking-the-kit-with-you)** — Safely removing the drive · On another PC, another letter, another folder · Updates and backups
@@ -155,18 +157,19 @@ At the first start, instead of the usual pages, the “Welcome” tab appears, w
 
 At the top there are two groups of settings, saved by themselves as you change them (as on the Settings page, where you will find them again): “Before you start”, with “Language”, “Theme” and “Automatic update”, and “Network”, with proxy, additional certificates and local network. Fill in “Network” only if your network goes through a proxy or inspects HTTPS traffic: since nothing is downloaded before “Install”, the very first downloads will use them too.
 
-Below is the list of components, split into six kinds (each with its description), with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.
+Below is the list of components, split into eight kinds (each with its description), with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.
 
 | Type | What it contains | What to choose |
 | --- | --- | --- |
 | System and editor | The editor, PowerShell 7 (the kit's console), GitHub CLI and Git. Below, the PC requirements. | They are always installed, together with the others, when you press “Install”: the checkboxes are locked. |
-| AI agents | Claude Code, Codex and Antigravity. | Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. |
+| AI agents | Claude Code, Codex, Antigravity and Pi. | Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. Pi is not ticked: tick it if you want an agent on the local models, with no account. |
+| Local models | llama.cpp, the server of the language models on the PC. | Optional and not ticked. It also installs itself the first time you start the server, from the Local models page, where you download the models (many GB). |
 | Languages | All languages and runtimes: Python, Node.js, PHP, Java, Go, .NET, Rust, Ruby, the C/C++ compiler and the others. Python, Node.js, PHP, Go and Java can have several versions; the others stay at the latest. | The ones you use. Others can be added when needed. |
 | Development tools | uv, pnpm and yarn, CMake and Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest. | Usually nothing: the kit installs them by itself when a project or an agent asks for them. |
 | Web server | Apache and Caddy, for the projects' sites and the shared Web Servers. | The one your projects use; Apache is already in the suggested choice. |
 | Databases | MySQL, MongoDB, SQLite; in the browser phpMyAdmin and mongo-express. | Only if you need them. MySQL is also installed the first time the server starts. |
 
-The suggested choice includes the three agents, Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
+The suggested choice includes Claude Code, Codex and Antigravity (not Pi or llama.cpp), Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).
 
 1. In “Before you start” choose the language and, if you like, the theme; if you are behind a company proxy, also fill in “Network”.
 2. Untick what does not interest you and add what you use.
@@ -237,14 +240,16 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | 2 · Activity bar | The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions and web server pools. |
 | 3 · Sidebar | The page title with its icons (including the book “Open the guide for this page”), often a search box, and panes that open and close with a click on their title. |
 | 4 · Tab area | What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools. |
-| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools and the project actions, each with its output; “Stop all” stops them all after a confirmation. |
+| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools, the local models server and the project actions, each with its output; “Stop all” stops them all after a confirmation. |
 | 6 · Status bar | On the left the Atollo item and the counter of what is running and of the errors, which shows or hides the “Activity” panel; on the right the open terminals, the editor status, the system (for example win32-x64) and, last, the Atollo version: a click checks for updates, and the result appears beside it (a check mark, the new version or a warning). |
 
 #### The pages
 
 **Projects** — The heart of the work: the list of projects, the “Quick panel”, creating new projects and the page of each project. [How it works](#22-the-projects-page-and-the-quick-panel)
 
-**Agents** — The installed AI agents: signing in to your account, plan limits and usage, shared folder. [How it works](#41-the-agents-claude-code-codex-antigravity)
+**Agents** — The installed AI agents: signing in to your account, plan limits and usage, shared folder. [How it works](#41-the-agents-claude-code-codex-antigravity-pi)
+
+**Local models** — Language models on the PC for Pi and the chat in the browser: the llama.cpp server, downloads from the catalog and from Hugging Face. [How it works](#44-local-models-llamacpp-and-gguf)
 
 **Databases** — The kit's MySQL and MongoDB servers: starting, passwords, ports, versions, phpMyAdmin and mongo-express. [How it works](#31-the-database-servers)
 
@@ -272,7 +277,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | win32-x64, darwin-arm64… | The system and the processor the kit runs on. | — |
 | v0.x.y | The Atollo version. | — |
 
-In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks “Stop the running project actions, databases and web servers?” and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
+In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”; for the local models the address, the models in memory and “Stop”. “Stop all”, at the top, asks “Stop the projects' actions, the databases, the local models and the web servers that are running?” and then stops actions, databases, local models and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
 
 #### Useful shortcuts and habits
 
@@ -331,7 +336,7 @@ Related topics: [2.2 The Projects page and the “Quick panel”](#22-the-projec
 
 - Putting the project on GitHub or cloning one: [6.1 The kit's GitHub account](#61-the-kits-github-account).
 - Giving the project a database: [3.2 A project's database](#32-a-projects-database).
-- Getting help from an AI agent in the project: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity).
+- Getting help from an AI agent in the project: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi).
 - Trying other bases (Laravel, Django, WordPress, Astro…): [2.1 Creating a project](#21-creating-a-project).
 
 Related topics: [2.1 Creating a project](#21-creating-a-project), [2.3 Starting a project: actions and ports](#23-starting-a-project-actions-and-ports), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions)
@@ -636,7 +641,7 @@ Your own actions, the star and the website live in the panel.json file in the pr
 <details>
 <summary>Under the hood</summary>
 
-- The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions. The agents' tokens (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY) are not in it: only the agents Atollo launches get them.
+- The command is run with cmd.exe on Windows and /bin/sh on macOS and Linux, in the action's folder, with the kit's environment and the project's versions. The agents' tokens (CLAUDE_CODE_OAUTH_TOKEN, GEMINI_API_KEY, LLAMA_API_KEY) are not in it: only the agents Atollo launches get them.
 - Web actions get the PORT (and ROCKET_PORT) variables with the port; all of them get BROWSER=none, PYTHONUNBUFFERED=1 and ATOLLO_LANG. If the project has a kit MySQL database and its .env does not name another port, they also get DB_PORT.
 - The assigned ports and the ones you chose are in `data\projects\<project>\ports.json`, outside the project.
 - Each action runs in its own process group (a Job Object on Windows): “Stop” also closes the child processes, for example the server started by npm.
@@ -788,7 +793,7 @@ Related topics: [3.4 The kit's terminals](#34-the-kits-terminals), [4.2 Shared i
 
 - In the editor: the “Source Control” panel for commits, push, pull, branches and comparisons.
 - In the project or editor terminal: the git and gh commands, already authenticated.
-- With an agent: Claude Code, Codex and Antigravity can commit, create branches and open pull requests.
+- With an agent: Claude Code, Codex, Antigravity and Pi can commit, create branches and open pull requests.
 
 > [!WARNING]
 > **Before the first commit**
@@ -802,7 +807,7 @@ Atollo reads the status directly from the files in the .git folder (HEAD, config
 
 </details>
 
-Related topics: [6.1 The kit's GitHub account](#61-the-kits-github-account), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity)
+Related topics: [6.1 The kit's GitHub account](#61-the-kits-github-account), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi)
 
 ### 2.7 Deleting a project and the “Data without a project”
 
@@ -1198,14 +1203,15 @@ Related topics: [2.5 Editor, terminal and extensions](#25-editor-terminal-and-ex
 
 ## 4. AI agents
 
-### 4.1 The agents: Claude Code, Codex, Antigravity
+### 4.1 The agents: Claude Code, Codex, Antigravity, Pi
 
 *What they are, how to install them, how to open them in a project, signing in to your account and signing out.*
 
 > **In short**
 >
 > - An AI agent is an assistant that works in the project folder: it reads the code, changes it, runs commands.
-> - The kit offers three: Claude Code (Anthropic), Codex (OpenAI) and Antigravity (Google). You install them from Tools.
+> - The kit offers four: Claude Code (Anthropic), Codex (OpenAI), Antigravity (Google) and Pi (Earendil). You install them from Tools.
+> - Pi also works without an account, on the kit's local models, which run on your PC.
 > - They always open inside a project, from the Projects page, with the button that shows the agent's logo.
 > - You sign in to your account the first time the agent starts, and the sign-in stays in the kit, even on another PC.
 
@@ -1215,22 +1221,28 @@ Related topics: [2.5 Editor, terminal and extensions](#25-editor-terminal-and-ex
 
 #### What they are and what you need
 
-An agent is a command-line program that talks with an artificial intelligence model from its provider. You tell it in plain English what to do (“add a contact page”, “why does this test fail?”) and it reads the files, proposes changes, runs commands and shows you the results. To use it you need an account with the provider and a plan that includes it, or an API key.
+An agent is a command-line program that talks with an artificial intelligence model from its provider. You tell it in plain English what to do (“add a contact page”, “why does this test fail?”) and it reads the files, proposes changes, runs commands and shows you the results. To use it you need an account with the provider and a plan that includes it, or an API key; Pi can use a local model instead, with no account.
 
 | Agent | Provider | Sign-in |
 | --- | --- | --- |
 | Claude Code | Anthropic | Claude account (subscription); on macOS also a token from claude setup-token. |
 | Codex | OpenAI | ChatGPT account or an API key saved by Codex with codex login --with-api-key. |
 | Antigravity | Google | Google account or a Gemini API key, to enter in Settings › Agents. |
+| Pi | Earendil (Mario Zechner) | None with the kit's local models; for a cloud provider, /login inside Pi. |
 
-Agents are installed from the Tools page, “AI agents” kind (the first start already suggests them). They always follow the latest version and bring along what they need; Git, which they all use, is already among the components that are always installed.
+Agents are installed from the Tools page, “AI agents” kind (the first start already suggests Claude Code, Codex and Antigravity; Pi is not among the suggested ones, you tick it by hand). They always follow the latest version and bring along what they need; Git, which they all use, is already among the components that are always installed.
+
+> [!NOTE]
+> **Pi**
+>
+> Pi is a terminal agent that works with many providers. In the kit it starts by itself on a local model: the one chosen on the “Local models” page, otherwise the kit's first one that can use tools, and before opening it the kit starts the models server. If you choose a cloud provider in Pi with /login, it stays on that one; the local models remain in its list (/model). On Windows Pi uses the kit's Git Bash as its shell. See [4.4 Local models: llama.cpp and GGUF](#44-local-models-llamacpp-and-gguf).
 
 #### Opening an agent in a project
 
 The Agents page does not start agents: an agent always works in a project's folder, so you open it from the Projects page.
 
 1. Open the project.
-2. At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Antigravity”). Click the one of the agent you want to use.
+2. At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Antigravity”, “Open Pi”). Click the one of the agent you want to use.
 3. The agent starts right away, in the project folder, in a tab of the terminal panel inside Atollo (on every system).
 
 The same buttons are on the project's row (sidebar or “Quick panel”): a click on a logo opens that agent in the project. An agent that is not installed has no button; if none is installed, there are no agent buttons.
@@ -1262,15 +1274,16 @@ At the top of the sidebar: “Refresh usage”, “Open shared folder” (`data\
 | --- | --- |
 | not signed in: you sign in the first time the agent starts | Open the agent in a project and follow its instructions (usually a page in the browser). |
 | signed in | The agent is signed in with your account, saved in the kit. |
-| signed in with an API key | Codex with the key saved by codex login --with-api-key, or Antigravity with the Gemini key from Settings: no plan limits, you pay for what you use. |
+| signed in with an API key | Codex with the key saved by codex login --with-api-key, Antigravity with the Gemini key from Settings, or Pi with an API key saved in its auth.json: no plan limits, you pay for what you use. |
 | signed in with a token | Only Claude Code on macOS, connected with a token (see below). |
+| the kit's local models, no sign-in | Only Pi: no cloud provider, it uses a model downloaded on the “Local models” page. There is nothing to sign out of. |
 
 The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit after a question (“Remove the sign-in saved in the kit?”, Esc cancels), with the agent closed: while it is open the button says “Close the agent first”. With an API key there is no “Sign out”.
 
 > [!WARNING]
 > **If you lose the USB stick**
 >
-> The sign-ins of the agents and of GitHub are saved in the kit, unencrypted. “Sign out” does not revoke the sessions on the provider's site: if you lose the USB stick, revoke them from your account settings at Anthropic, OpenAI, Google and GitHub.
+> The sign-ins of the agents and of GitHub are saved in the kit, unencrypted. “Sign out” does not revoke the sessions on the provider's site: if you lose the USB stick, revoke them from your account settings at Anthropic, OpenAI, Google and GitHub (and at the provider you use with Pi).
 
 > [!NOTE]
 > **Claude Code on macOS**
@@ -1285,21 +1298,22 @@ The sign-in stays in the kit folder: when you take the kit to another PC you do 
 | Claude Code | `data\home\.claude\.credentials.json` |
 | Codex | `data\home\.codex\auth.json` |
 | Antigravity | `data\antigravity\keyring.json` |
+| Pi (cloud provider; “Sign out” removes it) | `data\home\.pi\agent\auth.json` |
 | Claude Code, token on macOS | `data\agents\claude\oauth-token` |
 
 Antigravity saves its sign-in only in the system keychain (Credential Manager on Windows, Keychain on macOS, Secret Service on Linux). The kit puts it there before the start and brings it back into keyring.json at the end, restoring any Antigravity credentials of the PC (kept, encrypted, in keyring-before.json). On Windows the sign-in in the system lasts only for the Windows session.
 
 </details>
 
-Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers), [4.3 Agent limits and usage](#43-agent-limits-and-usage), [6.2 The Settings, one by one](#62-the-settings-one-by-one)
+Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers), [4.3 Agent limits and usage](#43-agent-limits-and-usage), [4.4 Local models: llama.cpp and GGUF](#44-local-models-llamacpp-and-gguf), [6.2 The Settings, one by one](#62-the-settings-one-by-one)
 
 ### 4.2 Shared instructions, skills and MCP servers
 
-*A single folder to instruct all three agents at once: AGENTS.md, the skills, the kit's MCP servers and those of a project.*
+*A single folder to instruct all the agents at once: AGENTS.md, the skills, the kit's MCP servers and those of a project.*
 
 > **In short**
 >
-> - Instructions, skills and MCP servers are written only once, in the `data\agents` folder, and apply to all three agents.
+> - Instructions, skills and MCP servers are written only once, in the `data\agents` folder, and apply to all the agents.
 > - The kit syncs them when the app starts, before and after each agent and when an agent ends.
 > - You can also edit an agent's files: the change passes to the others.
 > - MCP servers for a single project are added in the project's “Editor” section.
@@ -1340,14 +1354,14 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 
 #### How the sync works
 
-- Instructions: AGENTS.md is copied as CLAUDE.md for Claude Code, AGENTS.md for Codex and AGENTS.md for Antigravity. If you edit one of those files, the change goes back into AGENTS.md and on to the others. If both sides change, the most recent wins and the other is kept in the conflicts folder.
+- Instructions: AGENTS.md is copied as CLAUDE.md for Claude Code and as AGENTS.md for Codex, Antigravity and Pi. If you edit one of those files, the change goes back into AGENTS.md and on to the others. If both sides change, the most recent wins and the other is kept in the conflicts folder.
 - Skills: each agent sees the skills folder through a link (copies on FAT32 and exFAT drives). A skill created inside an agent is moved to `data\agents\skills` and becomes everyone's; a skill deleted in an agent is set aside and can be recovered.
-- MCP servers: mcp.json is translated into each agent's format. With Claude Code it works in both directions: a server added with claude mcp add -s user goes back into mcp.json. Codex and Antigravity receive the kit's servers and leave alone the ones you added by hand in their configurations.
+- MCP servers: mcp.json is translated into each agent's format. With Claude Code it works in both directions: a server added with claude mcp add -s user goes back into mcp.json. Codex, Antigravity and Pi receive the kit's servers and leave alone the ones you added by hand in their configurations. Pi does not accept SSE servers: the kit leaves them out of its mcp.json, with a warning.
 
 > [!NOTE]
 > **The kit's rule**
 >
-> At every sync the kit gives the agents a common rule: in projects the files CLAUDE.md, AGENTS.md and GEMINI.md are equivalent, and a project's skills are in its .agents/skills folder.
+> At every sync the kit gives the agents a common rule: in projects the files CLAUDE.md, AGENTS.md and GEMINI.md are equivalent, and a project's skills are in its .agents/skills folder. For Pi the rule is in a marked block of APPEND_SYSTEM.md, rewritten at every sync: the text you write there, outside the block, stays.
 
 #### MCP servers for a single project
 
@@ -1356,26 +1370,27 @@ Related topics: [4.2 Shared instructions, skills and MCP servers](#42-shared-ins
 3. Write the “Name” (letters, digits, - and _) and choose the “Type”: “program” (with “Program”, for example npx, and the “Arguments, one per line”) or “address (http)” (with the “Address”).
 4. Press “Add”. “Remove” on a row removes it.
 
-These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from `.codex\config.toml`, which Atollo keeps in sync; Antigravity uses only the kit's servers.
+These servers apply only in that project, in addition to the kit's. Claude Code reads them from the project's .mcp.json file (and asks for confirmation on first use); Codex from `.codex\config.toml`, which Atollo keeps in sync; Antigravity and Pi use only the kit's servers.
 
 <details>
 <summary>Under the hood</summary>
 
 | Original | Copies for the agents |
 | --- | --- |
-| `data\agents\AGENTS.md` | `data\home\.claude\CLAUDE.md · data\home\.codex\AGENTS.md · data\home\.gemini\AGENTS.md` |
-| `data\agents\skills` | `data\home\.claude\skills · data\home\.codex\skills · data\home\.gemini\antigravity-cli\skills` |
-| `data\agents\mcp.json` | `data\home\.claude\.claude.json · data\home\.codex\config.toml · data\home\.gemini\config\mcp_config.json` |
+| `data\agents\AGENTS.md` | `data\home\.claude\CLAUDE.md · data\home\.codex\AGENTS.md · data\home\.gemini\AGENTS.md · data\home\.pi\agent\AGENTS.md` |
+| `data\agents\skills` | `data\home\.claude\skills · data\home\.codex\skills · data\home\.gemini\antigravity-cli\skills · data\home\.pi\agent\skills` |
+| `data\agents\mcp.json` | `data\home\.claude\.claude.json · data\home\.codex\config.toml · data\home\.gemini\config\mcp_config.json · data\home\.pi\agent\mcp.json` |
 
 - The sync state, the conflicts and the deleted skills are in `data\agents\.sync` (conflicts, deleted).
 - Sync warnings end up in the app's log, `data\app\logs\app.log`.
 - You can also run the sync from the command line: `Atollo.exe sync [--project <folder>] [--verbose]`.
-- Claude Code and Codex trust a project's folder only after you open an agent in that project from Atollo: from then on they can run commands there without asking for trust every time. The other folders in projects are not trusted in advance.
+- Claude Code, Codex and Pi trust a project's folder only after you open an agent in that project from Atollo: from then on they can run commands there without asking for trust every time. The other folders in projects are not trusted in advance.
 - In Codex ${VAR} variables are not expanded: the kit translates them where Codex has a dedicated key, otherwise it copies them as they are with a comment.
+- Pi keeps everything in `data\home\.pi\agent` (the PI_CODING_AGENT_DIR variable). Besides instructions, skills and MCP servers, the kit writes there models.json (the “atollo” provider: the local models on disk, with the server's port and key, owner-only) and settings.json (on Windows the kit's Git Bash as the shell, project trust “ask” if you have not set it, the local model as the default until you choose another provider). Your own providers and settings stay.
 
 </details>
 
-Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [8.5 The command line](#85-the-command-line)
+Related topics: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi), [2.5 Editor, terminal and extensions](#25-editor-terminal-and-extensions), [8.5 The command line](#85-the-command-line)
 
 ### 4.3 Agent limits and usage
 
@@ -1389,7 +1404,7 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 
 #### Plan limits
 
-For each limit window there is a box with the percentage used, a bar and “resets …”. The windows are “5 hours” and “Week” for Claude Code, “… hours” and “Week” for Codex, and per-model quotas for Antigravity. Above: the plan, the data source and when the data was read.
+For each limit window there is a box with the percentage used, a bar and “resets …”. The windows are “5 hours” and “Week” for Claude Code, “… hours” and “Week” for Codex, and per-model quotas for Antigravity. Above: the plan, the data source and when the data was read. Pi has no limit windows: the local models have none, and the kit does not query the cloud providers Pi may use.
 
 | Color | When |
 | --- | --- |
@@ -1404,6 +1419,8 @@ The highest value also appears on the agent's row in the sidebar. For Claude Cod
 | not signed in: open … to see limits and usage | Open the agent in a project and sign in. |
 | sign-in expired: open Claude Code to renew it | Open the agent: it renews the sign-in by itself. |
 | API key: no plan limits | With an API key there are no limit windows. |
+| Local models: no plan limits | Pi on the kit's local models: they run on your PC, with no plan. The usage below is still there. |
+| The limits of Pi's providers are not read by the kit | Pi with a cloud provider: you see the limits on the provider's site or in Pi. |
 | no data yet: the limits arrive with Codex's next reply | Use Codex once: the limits arrive with the response. |
 | The server asks to wait: next reading … | The provider has limited the readings: the kit tries again by itself later. |
 
@@ -1413,6 +1430,7 @@ The highest value also appears on the agent's row in the sidebar. For Claude Cod
 - “Sessions · Today” with the sessions of today and the last 7 days.
 - A bar chart for the 7 days, the last activity and the three most used models.
 - Antigravity does not save tokens: for it only sessions are counted.
+- For Pi the tokens are read from its sessions, including those on the local models.
 
 > [!NOTE]
 > **Good to know**
@@ -1424,21 +1442,135 @@ The highest value also appears on the agent's row in the sidebar. For Claude Cod
 
 - Sources of the limits: for Claude Code the Anthropic server, for Codex the OpenAI one (or, failing that, Codex's last response), for Antigravity the Google one. The kit uses the saved sign-in only to read: it does not renew it and does not send it anywhere else.
 - Readings at most every 2 minutes, every 20 seconds with “Refresh usage”; after a “too many requests” response it waits as long as the server asks (from 2 to 30 minutes).
-- Session files: `data\home\.claude\projects`, `data\home\.codex\sessions`, `data\home\.gemini` (Antigravity conversations).
+- Session files: `data\home\.claude\projects`, `data\home\.codex\sessions`, `data\home\.gemini` (Antigravity conversations), `data\home\.pi\agent\sessions` (Pi).
 
 </details>
 
-Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity), [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers)
+Related topics: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi), [4.2 Shared instructions, skills and MCP servers](#42-shared-instructions-skills-and-mcp-servers), [4.4 Local models: llama.cpp and GGUF](#44-local-models-llamacpp-and-gguf)
+
+### 4.4 Local models: llama.cpp and GGUF
+
+*Language models on the PC, with no network and no account: the server, the chat in the browser, Pi's model, downloading from the catalog or from Hugging Face.*
+
+> **In short**
+>
+> - A local model is a language model that runs on your PC: no network, no account, no plan. It runs on the CPU or on the graphics card (Vulkan on Windows and Linux, Metal on macOS).
+> - The server is llama.cpp, the models are GGUF files: you download them from the “Local models” page, from Atollo's catalog or from Hugging Face.
+> - Pi and a chat in the browser use them. The server listens only on this PC, with a key.
+> - A paused or interrupted download resumes where it stopped, even after closing Atollo.
+
+#### What they are and what you need
+
+A GGUF model is a single file (sometimes split into parts) with the model's weights already compressed: the “quantization” (Q4_K_M, Q8_0, MXFP4…) says how much, and the lower it is, the smaller the file and the less precise it is. The llama.cpp server loads the model into the graphics card's memory if there is enough, otherwise it splits it between the graphics card and the RAM or uses the CPU only. The choice is automatic: llama.cpp installs itself the first time you start the server, a single version per system, verified with its SHA-256.
+
+Models take up many GB and need memory: a model with 7-9 billion parameters fits in about 8 GB, one with 30 billion needs more than 20. They are less capable than the cloud models of Claude Code or Codex, but they stay on your PC.
+
+#### The “Local models” page
+
+It opens from the activity bar (the chip icon). On the left, “In the kit”: the llama.cpp server with its status and port, and the downloaded models (“Pi's model”, “in memory”, “download paused”). At the top, “Start” or “Stop”, “Open the chat” and “Copy the key”. Below, the sections:
+
+| Section | What it contains |
+| --- | --- |
+| Server | The address (http://127.0.0.1:\<port\>), the models in memory and “Start with Atollo”, to turn the server on when the app opens. “Start” stays disabled until at least one model is downloaded. |
+| Pi's model | “Pi starts with”: a downloaded model, or “the kit's first model”. With a cloud provider chosen in Pi (/login), Pi stays on that one; the local models remain in its list (/model). |
+| Atollo's catalog | The models chosen for the kit, each with quantization, size, license, the memory it needs, whether it fits this PC and whether it uses tools. “Download”, then “Pause” or “Resume”; the bin deletes it. |
+| Other models in the kit | The models taken from Hugging Face and the .gguf files put by hand in the models folder. |
+| From Hugging Face | Any repository (owner/name), the choice of quantization and the token for gated models. |
+| This PC | The RAM, the graphics cards with their memory (visible after llama.cpp is installed), the file system of the kit's drive with the free space, and the models folder. |
+
+#### Choosing and downloading a model
+
+Next to each model the page says whether it fits the PC, comparing the memory it needs with the larger of the RAM and the graphics card's memory:
+
+| Text | Meaning |
+| --- | --- |
+| fits | It needs at most 80% of that memory: there is room to spare. |
+| just fits | It fits, but leaves little for the rest of the system: it may be slow. |
+| too large for this PC | It needs more memory than the PC has. |
+
+“uses tools (suited to the agents)” means the model can call commands and read files when it works with Pi; “chat only” means it does not use them well with the agents (it writes the call as text), but it is fine for chatting in the browser.
+
+| Catalog model | Memory | Use |
+| --- | --- | --- |
+| Qwen2.5-Coder 7B | about 7 GB | chat only; in two parts, it fits on FAT32 too |
+| Qwen3.5 9B | about 8 GB | uses tools |
+| gpt-oss 20B | about 15 GB | uses tools |
+| Devstral Small 2 24B | about 18 GB | uses tools |
+| Qwen3-Coder 30B-A3B | about 22 GB | uses tools |
+
+1. In “Atollo's catalog” choose a model that “fits” and “uses tools”, if you want it for Pi.
+2. Press “Download”. The bar shows the percentage and the GB; the download goes on even if you change page.
+3. “Pause” stops it and keeps the part already downloaded; “Resume” starts again from there, even after closing Atollo or after a network error.
+4. At the end the model appears in “In the kit” marked “in the kit”; if the server is on, it restarts to see it.
+
+> [!NOTE]
+> **Checks**
+>
+> Every file in the catalog has its SHA-256: the kit computes it while the bytes arrive and deletes a file that does not match. Before writing a byte, it refuses a model larger than the free space and, on a FAT32 drive, a file over 4 GB, telling you what to do.
+
+> [!WARNING]
+> **FAT32 drives**
+>
+> FAT32 cannot hold files over 4 GB: the page warns about it and writes “does not fit on FAT32” next to the models that are too large. Qwen2.5-Coder 7B, in two smaller parts, fits anyway. For all the others, format the drive as exFAT or NTFS.
+
+#### From Hugging Face
+
+1. In “Hugging Face repository” write the repository's owner/name, for example unsloth/Qwen3-8B-GGUF.
+2. Press “Find the GGUF files”: the kit reads the latest commit and groups the files by quantization, with size, number of parts, whether it fits the PC and the license.
+3. Press “Download” on the quantization you want: the kit downloads all its parts from that commit, or none. Q4_K_M is usually a good compromise.
+
+Some models are gated: you accept the conditions on the model's page and you need a Hugging Face token. Write it in “Hugging Face token” and press “Save the token”; “Remove the token” deletes it. The token is saved in the kit, readable only by your user, and goes only to huggingface.co: it does not follow the redirect to the CDN the files come from.
+
+> [!TIP]
+> **Tip**
+>
+> A .gguf file copied by hand into a folder of `data\models\gguf` is a model too: it appears in “Other models in the kit” with the file's name.
+
+#### The chat in the browser
+
+1. Press “Start” (or let “Start with Atollo” do it). The first time, the kit installs llama.cpp.
+2. Press “Copy the key”: the server's key goes to the clipboard.
+3. Press “Open the chat”: llama.cpp's chat opens in the browser. Paste the key in its settings, then choose the model and write.
+
+Pi does not need these steps: the kit writes the port and the key into its configuration and turns the server on before opening it, when it uses a local model.
+
+#### Security and resources
+
+- The server listens only on 127.0.0.1: no other PC on the network reaches it, even with the local network enabled in Settings.
+- Every request needs the server's key, created at the first start and given to the server as a file, never on the command line (where other programs on the PC would see it). Without the key the server answers 401.
+- A model loads when Pi or the chat asks for it, one at a time, and is unloaded after ten minutes without requests: the memory goes back to the PC.
+- The server appears in the “Activity” panel (with “Stop” and the models in memory) and stops with “Stop all”, with “Remove drive” and when the app closes.
+- While you delete a model the server stops: on Windows an open file cannot be deleted.
+
+<details>
+<summary>Under the hood</summary>
+
+| File or folder | What it contains |
+| --- | --- |
+| `data\models\gguf\<owner>--<name>\` | The models, one folder per repository, a single copy for Windows, macOS and Linux. atollo.json says what the kit downloaded (files, commit, whether it is complete); a half-done download leaves a .part file. |
+| `data\app\secrets\llama-key` | The server's key, owner-only. |
+| `data\app\secrets\hf-token` | The Hugging Face token, owner-only. |
+| `data\app\llm.json` | The server's port (9931 or the first free one after it), “Start with Atollo” and Pi's model. |
+| `data\app\llm\presets.ini` | The models the server offers, with absolute paths: it is rewritten at every start, because the kit may have moved. |
+| `data\app\logs\llm.log` | The server's output, to read if it does not start. |
+
+- llama.cpp is pinned to one build (b11669) with the SHA-256 of each system's archive: the Vulkan build on Windows and Linux (which also contains the CPU engines), the Metal one on macOS.
+- The catalog's models are pinned to a Hugging Face commit, each file with SHA-256 and size; those taken from Hugging Face are downloaded from the latest commit at the time of the search.
+- From the command line: `models` lists the models, `models pull <model>` downloads one (a catalog id or owner/name:quantization, resumes if interrupted), `models rm <id>` deletes it, `llm start|stop|status` controls the server.
+
+</details>
+
+Related topics: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi), [5.1 The Tools page](#51-the-tools-page), [8.5 The command line](#85-the-command-line), [7.1 Safely removing the drive](#71-safely-removing-the-drive)
 
 ## 5. Tools and languages
 
 ### 5.1 The Tools page
 
-*The table of all the tools split into the six kinds, the five states, installing and updating right away or choosing first and then “Apply”.*
+*The table of all the tools split into the eight kinds, the five states, installing and updating right away or choosing first and then “Apply”.*
 
 > **In short**
 >
-> - The Tools page lists all the components the kit can install, divided into six kinds as on the site: system and editor, AI agents, languages, development tools, web servers, databases.
+> - The Tools page lists all the components the kit can install, divided into eight kinds as on the site: system and editor, AI agents, local models, languages, development tools, web servers, databases, database viewers.
 > - The icons on the rows act right away: “Install” and “Update” start as soon as you press them.
 > - The checkboxes, instead, prepare a choice that you confirm with “Apply”: this way you install and remove several things at once.
 > - Each row shows the status on disk with an icon: not present, pre-installed, installed, to update, error.
@@ -1452,7 +1584,7 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 | Part | What it contains |
 | --- | --- |
 | Search tools | Searches the name, the description and the identifier. |
-| “Components” box | A tree with the six kinds and their components, with how many are installed. A click opens the component's tab. |
+| “Components” box | A tree with the eight kinds and their components, with how many are installed. A click opens the component's tab. |
 | “Overview” box | The overall views: “All tools”, “Matrix”, “Editor extensions”, “Relations”, “PC requirements” ([5.3 Overviews: matrix, relations, extensions, requirements](#53-overviews-matrix-relations-extensions-requirements)). |
 | “All tools” tab | The first tab, always open: the table of all components. |
 | “Apply” bar | At the bottom, always visible: the pending changes, “Update all”, “Apply”. |
@@ -1460,7 +1592,8 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 | Type | What it contains |
 | --- | --- |
 | System and editor | Editor, PowerShell 7, GitHub CLI, Git: always installed. |
-| AI agents | Claude Code, Codex, Antigravity: optional, always at the latest version. |
+| AI agents | Claude Code, Codex, Antigravity, Pi: optional, always at the latest version. |
+| Local models | llama.cpp, the server of the language models on the PC: Pi and the chat in the browser use them, with no network. Optional, at a pinned version; the models are downloaded from the Local models page ([4.4 Local models: llama.cpp and GGUF](#44-local-models-llamacpp-and-gguf)). |
 | Languages | All languages and runtimes: Python, Node.js, PHP, Go, Java, Rust, Kotlin, .NET, Dart, Zig, Julia, Bun, Deno, C/C++, Ruby, R. All of them can have several versions side by side, except Rust and C/C++, which stay at the latest version. |
 | Development tools | uv, pnpm/yarn, CMake/Ninja, Android SDK, Typst, TinyTeX: a single version, always the latest (only Typst can keep more than one); the ones that are needed install themselves. |
 | Web server | Apache and Caddy, for the projects' sites and the shared Web Servers. |
@@ -1469,7 +1602,7 @@ Related topics: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents
 
 #### The “All tools” table
 
-Above the table are the filters: the search, “Platform”, “Type” (“All types” or one of the six) and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, version, versions on disk, size, status, projects that use it, what it requires and the actions.
+Above the table are the filters: the search, “Platform”, “Type” (“All types” or one of the eight) and “Status” (All, Installed, Not installed, To apply, Used by projects), plus the “Expand” and “Verify” buttons. The columns: name, version, versions on disk, size, status, projects that use it, what it requires and the actions.
 
 The rows are divided by kind. Each kind has a title row: the arrow to fold or unfold it, its name, how many components it holds (“3”, or “2 of 5” when a filter hides some), its description and a “Choose all: …” checkbox that chooses all its components that can be chosen; the checkbox in the header, “Choose all those shown”, does the same with all the visible rows. A click on a column header sorts the rows inside each kind (by name at first).
 
@@ -1606,7 +1739,7 @@ Related topics: [2.4 Components and versions of a project](#24-components-and-ve
 
 #### Matrix
 
-A table with one component per row, split into the same six kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
+A table with one component per row, split into the same eight kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.
 
 > [!NOTE]
 > **Good to know**
@@ -1940,7 +2073,7 @@ A database switched off abruptly can lose the last data written, and a program w
 #### Step by step
 
 1. Save the open work in the editor and the other programs.
-2. Open “Remove drive” (the last icon at the bottom of the activity bar). The “Open now” part lists what is open: installation in progress, editor, consoles, running projects, running databases and the kit programs started outside the app, with name and PID.
+2. Open “Remove drive” (the last icon at the bottom of the activity bar). The “Open now” part lists what is open: installation in progress, editor, consoles, running projects, running databases, the local models server and the kit programs started outside the app, with name and PID.
 3. Press “Close everything and prepare for removal”.
 4. When “Kit programs closed and Antigravity sign-in saved in the kit.” appears, press “Close Atollo”. If something is still open, it is listed under “Still open (close them manually)”.
 5. Remove the drive from the system: on Windows with the “Safely Remove Hardware” icon; on macOS by ejecting it from the Finder.
@@ -2065,7 +2198,7 @@ In Settings › “Updates” you see the state (“Atollo … is the latest ver
 | `projects\` | Your projects. |
 | `data\` | Settings, sign-ins, agent instructions, database data, database backups, project data. |
 
-Inside data you can leave out `data\apps` (the programs) and `data\cache` (downloaded files that can be downloaded again): they are the biggest part and the kit rebuilds them. To copy the database data consistently, shut down the servers first (or use “Remove drive”).
+Inside data you can leave out `data\apps` (the programs) and `data\cache` (downloaded files that can be downloaded again): they are the biggest part and the kit rebuilds them. `data\models` (the local models, many GB) can also be downloaded again from the Local models page, except the .gguf files put there by hand. To copy the database data consistently, shut down the servers first (or use “Remove drive”).
 
 > [!WARNING]
 > **Watch out**
@@ -2110,7 +2243,7 @@ This happens because every program started by the kit receives an environment bu
 | --- | --- | --- |
 | User folder | `HOME, USERPROFILE, APPDATA, LOCALAPPDATA` | `data\home` |
 | Temporary files | `TEMP, TMP (TMPDIR su macOS e Linux)` | `data\tmp\system` or the system's temporary folder, depending on Settings |
-| Agents | `CLAUDE_CONFIG_DIR, CODEX_HOME` | `data\home\.claude, data\home\.codex` |
+| Agents | `CLAUDE_CONFIG_DIR, CODEX_HOME, PI_CODING_AGENT_DIR` | `data\home\.claude, data\home\.codex, data\home\.pi\agent` |
 | GitHub CLI | `GH_CONFIG_DIR` | `data\gh` |
 | Package caches | `NPM_CONFIG_CACHE, PIP_CACHE_DIR, UV_CACHE_DIR, COMPOSER_CACHE_DIR, GOCACHE, NUGET_PACKAGES` | `data\cache\…` |
 | Global packages | `NPM_CONFIG_PREFIX, PYTHONUSERBASE, COMPOSER_HOME, GOPATH, GRADLE_USER_HOME, CARGO_HOME` | `data\npm-global, data\python-user, data\composer, data\go, data\gradle…` |
@@ -2171,15 +2304,16 @@ Related topics: [8.2 The kit's folders on disk](#82-the-kits-folders-on-disk), [
 | &emsp;`Atollo.exe` | The only program: it is the app with the window and also the command line. On macOS Atollo.app, on Linux the AppImage. |
 | &emsp;`projects\` | Your projects, one folder each. It is yours: the kit does not write there unless you ask. |
 | &emsp;`data\` | Everything that belongs to the kit. |
-| &emsp;&emsp;`app\` | The app's state: settings.json (Settings), `secrets\` (the Gemini key, protected), ca-bundle.pem (the certificates, when Settings has a PEM file), components.txt (chosen components), `versions\` (installed versions), `logs\`, services.json and servers.json (databases and web servers, with the ports of every version and every pool), terminals.json, frameworks.json, root.txt (last kit folder), safe-directory.txt (the last safe.directory the kit wrote). |
+| &emsp;&emsp;`app\` | The app's state: settings.json (Settings), `secrets\` (the Gemini key, the local models server's key and the Hugging Face token, protected), llm.json and `llm\presets.ini` (the local models server), ca-bundle.pem (the certificates, when Settings has a PEM file), components.txt (chosen components), `versions\` (installed versions), `logs\`, services.json and servers.json (databases and web servers, with the ports of every version and every pool), terminals.json, frameworks.json, root.txt (last kit folder), safe-directory.txt (the last safe.directory the kit wrote). |
 | &emsp;&emsp;&emsp;`app\db\` | Database administrator passwords and mysql logins. Protected: only your user can read it. |
 | &emsp;&emsp;`apps\<system>\` | The programs, by system (win32-x64, darwin-arm64…), one folder per component and per version. |
 | &emsp;&emsp;`projects\<project>\` | The kit's data for each project: dev-settings.json (versions, extensions, favorites), ports.json (the ports of its actions), Apache and Caddy configurations (your directives in `apache\conf.d\*.conf` and `caddy\conf.d\*.caddy` apply both to its own server and in a pool), `private\` (database passwords and backups, protected). |
 | &emsp;&emsp;`db\<mysql\|mongodb>\<version>\` | The databases' data, one folder per version. |
+| &emsp;&emsp;`models\gguf\<owner>--<name>\` | The local models (GGUF files), one folder per Hugging Face repository, a single copy for Windows, macOS and Linux; atollo.json says what the kit downloaded. |
 | &emsp;&emsp;`servers\<pool>\` | The generated configurations of the shared web servers. |
-| &emsp;&emsp;`agents\` | What the three agents share: AGENTS.md, `skills\`, mcp.json, and the sync state in `.sync\`. |
+| &emsp;&emsp;`agents\` | What the agents share: AGENTS.md, `skills\`, mcp.json, and the sync state in `.sync\`. |
 | &emsp;&emsp;`antigravity\` | The Antigravity sign-in kept in the kit (keyring.json). |
-| &emsp;&emsp;`home\` | The “user folder” of the kit's programs: .claude, .codex, .gemini (agent profiles), .gitconfig, .npmrc, AppData (on Windows). |
+| &emsp;&emsp;`home\` | The “user folder” of the kit's programs: .claude, .codex, .gemini, .pi (agent profiles), .gitconfig, .npmrc, AppData (on Windows). |
 | &emsp;&emsp;`gh\` | The GitHub CLI sign-in (hosts.yml). |
 | &emsp;&emsp;`vscodium-server\` | Settings and extensions of the editor server. |
 | &emsp;&emsp;`kit\` | Files the kit rewrites at every start: the PowerShell profile, helper commands (agy, mysql, gradle). |
@@ -2250,12 +2384,13 @@ Related topics: [8.1 Portable and isolated: what it means](#81-portable-and-isol
 | Databases | With “Start”, “Start with Atollo” or when a project asks for them | With “Stop”, or on closing (orderly shutdown) |
 | Editor | With the first “Editor” | When the app closes |
 | Consoles and agents | With “Terminal”, “Open”, the agent logos | When you close them, or when the app closes |
+| Local models server | With “Start”, “Start with Atollo” or by opening Pi on a local model | With “Stop”, “Stop all”, or on closing; a model leaves the memory after ten minutes without requests |
 
-Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version and the active pools; “Stop all” stops them after a confirmation.
+Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version, the active pools and the local models server; “Stop all” stops them after a confirmation.
 
 #### On closing
 
-If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions and the web servers and shuts down the databases neatly, then exits. Before unplugging the drive use [7.1 Safely removing the drive](#71-safely-removing-the-drive).
+If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions, the web servers and the local models server and shuts down the databases neatly, then exits. Before unplugging the drive use [7.1 Safely removing the drive](#71-safely-removing-the-drive).
 
 <details>
 <summary>Under the hood</summary>
@@ -2263,7 +2398,7 @@ If something is open, Atollo asks “Close Atollo?” with the list; “Close ev
 - On Windows all the kit's programs live in a Job Object with the “kill on close” option: if the app ends in any way, Windows closes them too. The editor and actions have their own Job, inside the app's.
 - On macOS and Linux a small watchdog process notices if the app dies and closes the kit's process groups (SIGTERM, then SIGKILL after 5 seconds).
 - The single instance uses an identifier derived from the kit folder (a mutex on Windows, a lock on macOS and Linux): two different kits do not get in each other's way.
-- Every port has only one owner: a pool (by default 8081 to 8999), a database version, a project action (by default 7100 to 7999); 7000 to 7099 belong to the editor. A port already taken is refused with the name of whoever holds it (for example “Port 3306 already belongs to database MySQL 8.4: choose another one.”), and a new pool's automatic port avoids them all.
+- Every port has only one owner: a pool (by default 8081 to 8999), a database version, a project action (by default 7100 to 7999), the local models server (9931 and the following ones); 7000 to 7099 belong to the editor. A port already taken is refused with the name of whoever holds it (for example “Port 3306 already belongs to database MySQL 8.4: choose another one.”), and a new pool's automatic port avoids them all.
 - Every version of a database keeps its own port, also when you change the server's version; two starts of the same version run only one server, on the same port.
 - The browser and File Explorer are opened outside the Job: they stay open even after Atollo closes.
 - On closing, if an update is ready, the executable is replaced.
@@ -2323,6 +2458,8 @@ Many components are published on GitHub. Without a sign-in, the GitHub API allow
 | `api.github.com/repos/nabre/atollo/releases` | Atollo's updates. |
 | `open-vsx.org` | The editor's extensions. |
 | `api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com` | The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open. |
+| `huggingface.co` | The local models: the search for GGUF files and the downloads, which huggingface.co redirects to its CDN. Only when you download a model; the token, if any, goes only to huggingface.co. |
+| `github.com/ggml-org/llama.cpp · github.com/earendil-works/pi` | The releases of llama.cpp and Pi, as for the other components published on GitHub (they are in the table of sources below). |
 | `registry.npmjs.org · pypi.org · packagist.org…` | Only when the commands of projects and frameworks ask for it. |
 
 #### Complete table of sources (39 components and 5 parts)
@@ -2423,6 +2560,10 @@ cd D:\Atollo
 | `sync [--project <folder>] [--verbose]` | Syncs the agents' instructions, skills and MCP servers. |
 | `serve <folder> <port>` | Serves a folder as a static site (the kit's file server). |
 | `keyring restore \| save` | Used by the kit around Antigravity: restores or saves its sign-in. |
+| `models` | The local models: those of the catalog and those downloaded. |
+| `models pull <model>` | Downloads a catalog id or a Hugging Face model (owner/name:quantization); resumes if interrupted. |
+| `models rm <id>` | Deletes a downloaded model. |
+| `llm start \| stop \| status` | The local models server (chat and agents): starts it, stops it or says whether it answers. status does not send the key to whatever listens on the port. |
 | `version · help` | The version (also --version, -V) and the help (also --help, -h, /?). |
 
 | prepare option | Effect |
@@ -2555,7 +2696,7 @@ Learn more: [3.2 A project's database](#32-a-projects-database)
 
 Open the agent in a project: it renews the sign-in, or has you sign in again.
 
-Learn more: [4.1 The agents: Claude Code, Codex, Antigravity](#41-the-agents-claude-code-codex-antigravity)
+Learn more: [4.1 The agents: Claude Code, Codex, Antigravity, Pi](#41-the-agents-claude-code-codex-antigravity-pi)
 
 **Git says “Please tell me who you are” at the first commit.**
 
@@ -2680,7 +2821,7 @@ Related topics: [9.1 When something goes wrong](#91-when-something-goes-wrong), 
 - **.env** — A text file in the project with settings and secrets (like the database password), one KEY=value line each. It must not go into Git.
 - **Action** — A named project command, started and stopped from the “Run” section.
 - **Addition** — In the “From a base” wizard, an extra piece to add to the base (Tailwind, React, a database, tests).
-- **AI agent** — A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity.
+- **AI agent** — A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity, Pi.
 - **API key** — A secret code that lets you use a service (for example an AI model) paying as you go, without a subscription.
 - **Backup** — A file with the whole content of a database, to put it back as it was.
 - **Base** — The starting point of a project created with a framework or a CMS: Laravel, Vite, Django, WordPress…
@@ -2691,16 +2832,19 @@ Related topics: [9.1 When something goes wrong](#91-when-something-goes-wrong), 
 - **exFAT, FAT32, NTFS** — Disk formats. NTFS (Windows) lets you protect folders; exFAT is read by Windows, macOS and Linux; FAT32 does not accept files over 4 GB.
 - **Extension** — An add-on for the editor that makes it able to understand a language or do new things.
 - **Framework** — A ready-made structure for building a type of application (Laravel for PHP sites, Django for Python…).
+- **GGUF** — The file format of the local models llama.cpp uses: a file (sometimes in parts) with the model's weights compressed according to a “quantization”, for example Q4_K_M.
 - **Git** — The program that keeps the history of a project's changes.
 - **GitHub, GitHub CLI** — GitHub is the online service that hosts Git repositories; GitHub CLI (gh) is its command-line program.
 - **Hash** — A code computed from a file's content: if the file changes by even one byte, the hash changes. It is used to verify that a download is the right one.
 - **Kit folder** — The folder that contains the Atollo executable, projects and data.
+- **Local models** — Language models that run on the PC, with no network and no account, with the kit's llama.cpp server. You download them from the “Local models” page; Pi and the chat in the browser use them.
 - **localhost, 127.0.0.1** — The name and address a computer uses to call itself. A name ending in .localhost always leads to this PC.
 - **MCP (MCP server)** — Model Context Protocol: a standard way to give agents new tools, through a program or a service.
 - **Minor version** — The first two parts of a version: for PHP 8.4.3 the minor version is 8.4. The kit keeps one folder per minor version.
 - **Open VSX** — The free extension catalog used by VSCodium.
 - **PATH** — The list of folders where the system looks for programs when you type a command.
 - **Path alias** — An address of the site that serves a different folder, for example /media → storage/uploads.
+- **Pi** — The terminal agent by Earendil (Mario Zechner), the kit's fourth: it works with the local models, with no account, or with a cloud provider chosen with /login.
 - **Pool** — A web server (Caddy or Apache) shared by several projects, each with its own .localhost name and its own conf.d folder.
 - **Port** — A number that tells services apart on the same computer: http://localhost:7100 and http://localhost:7101 are two different sites. In the kit each port belongs to one thing only (an action, a pool, a version of a database); 7000-7099 belong to the editor.
 - **Project** — A folder inside projects. The kit recognizes its type from the files.

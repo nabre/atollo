@@ -11,7 +11,7 @@
 
 <p align="center">
   Eine portable Entwicklungsumgebung ohne Installation für Windows, macOS und Linux, auf x64 und ARM64.<br>
-  Editor, über 20 Sprachen und Runtimes, lokale Datenbanken und die KI-Agenten Claude Code, Codex und Antigravity in einem Ordner, den du auf einem USB-Stick mitnimmst.
+  Editor, über 20 Sprachen und Runtimes, lokale Datenbanken, lokale KI-Modelle und die KI-Agenten Claude Code, Codex, Antigravity und Pi in einem Ordner, den du auf einem USB-Stick mitnimmst.
 </p>
 
 <p align="center">
@@ -34,7 +34,7 @@
 
 <p align="center"><a href="../README.md">English</a> · <a href="README.it.md">Italiano</a> · <a href="README.fr.md">Français</a> · Deutsch</p>
 
-**Atollo** ist ein eigenständiger *Universal Portable Dev & AI Workspace* (`Atollo.exe`), der **Editor** (integriertes VSCodium), **Toolchain-/Runtime-Manager** (über 20 bei Bedarf heruntergeladene Sprachen und Werkzeuge), **lokale Server/Datenbanken** (MySQL, MongoDB, SQLite, Caddy/Apache) und **KI-Agenten-Orchestrierung** (Claude Code, Codex und Antigravity mit synchronisierten Anweisungen, Skills und MCP-Servern) in einem einzigen portablen Ordner vereint. Keine Installation, keine Administratorrechte, keine Systemdienste außerhalb des Workspace-Ordners.
+**Atollo** ist ein eigenständiger *Universal Portable Dev & AI Workspace* (`Atollo.exe`), der **Editor** (integriertes VSCodium), **Toolchain-/Runtime-Manager** (über 20 bei Bedarf heruntergeladene Sprachen und Werkzeuge), **lokale Server/Datenbanken** (MySQL, MongoDB, SQLite, Caddy/Apache) und **KI-Agenten-Orchestrierung** (Claude Code, Codex, Antigravity und Pi mit synchronisierten Anweisungen, Skills und MCP-Servern, dazu lokale Sprachmodelle mit llama.cpp) in einem einzigen portablen Ordner vereint. Keine Installation, keine Administratorrechte, keine Systemdienste außerhalb des Workspace-Ordners.
 
 Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShell 7, GitHub CLI und den Editor. Alles andere wird auf der Seite „Werkzeuge“ gewählt oder kommt, wenn es gebraucht wird: Node.js mit einer `npm`-Aktion, uv mit einem `uvx`-MCP-Server und so weiter.
 
@@ -48,7 +48,8 @@ Beim ersten Start lädt die App die Systemkomponenten selbst herunter: PowerShel
 - **Isolierter Editor und Terminals.** Integriertes VSCodium mit den Atollo-Themes dunkel und hell, in einem Fenster, das am Workbench von VSCodium 1.135 gemessen ist: dieselben Größen, dieselben Farben und die Codicon-Icons. Die Terminals sehen nur den `PATH` und die Variablen des Kits: Programme des Gastrechners stören nicht, und der PC bleibt sauber.
 - **Sprachen und Werkzeuge bei Bedarf.** Über 20 Sprachen und Werkzeuge (Node.js, Python, uv, PHP, Rust, Go, Java, .NET, Dart, Julia, Ruby, C/C++, Bun, Deno, Typst, TinyTeX, R, Android SDK…), heruntergeladen, wenn sie gebraucht werden, und per SHA-256-Prüfsumme oder Signatur geprüft. Mehrere Versionen nebeneinander, eine pro Projekt.
 - **Lokale Datenbanken und Webserver.** MySQL mit phpMyAdmin, MongoDB mit mongo-express und SQLite, mit einem Klick gestartet und gestoppt, mit Datenbank, Benutzer und Passwort für jedes Projekt; mehrere Versionen nebeneinander, jede behält ihren Port. Caddy und Apache für Websites unter `<Projekt>.localhost`, auf jedem System, allein oder in einem Server, den sich mehrere Projekte teilen. Ein schon belegter Port wird abgelehnt, mit dem Namen dessen, der ihn hält. Keine Systemdienste.
-- **Drei KI-Agenten, eine Konfiguration.** Claude Code, Codex und Antigravity: Installation, Anmeldung und Start. Anweisungen, Skills und MCP-Server schreibst du einmal in `data/agents`, und `atollo sync` hält alle drei gleich. Tariflimits und Verbrauch von heute und den letzten 7 Tagen.
+- **Vier KI-Agenten, eine Konfiguration.** Claude Code, Codex, Antigravity und Pi: Installation, Anmeldung und Start. Anweisungen, Skills und MCP-Server schreibst du einmal in `data/agents`, und `atollo sync` hält alle vier gleich. Tariflimits und Verbrauch von heute und den letzten 7 Tagen.
+- **Lokale KI-Modelle.** Sprachmodelle, die auf dem PC laufen, ohne Netzwerk und ohne Konto: GGUF-Modelle aus dem Katalog von Atollo oder aus jedem Hugging-Face-Repository, Downloads, die dort weitermachen, wo sie aufgehört haben (auch nach dem Schließen von Atollo), und per SHA-256 geprüft werden. Der Server von llama.cpp (CPU, oder GPU mit Vulkan oder Metal) lauscht nur auf 127.0.0.1, mit einem Schlüssel; Pi nutzt ihn ohne weitere Einstellungen, und sein Chat öffnet sich im Browser. Eine einzige Kopie in `data/models`, gemeinsam für Windows, macOS und Linux.
 - **Ein Ordner für sechs Systeme.** Derselbe Ordner oder dieselbe externe SSD wechselt von Windows zu macOS zu Linux, Projekte, Datenbanken und Agenten-Einstellungen bleiben erhalten: Jeder Rechner führt die nativen Programme seines Systems aus. „Laufwerk entfernen“ schließt alles, was Atollo geöffnet hat, und lässt das Laufwerk auswerfen.
 
 ## Dokumentation
@@ -88,11 +89,12 @@ Ohne Schritt 2 startet macOS die App aus einer temporären Kopie (App Translocat
 | Seite | Inhalt |
 | --- | --- |
 | **Projekte** | die **Schnellübersicht** (was läuft, Favoriten und zuletzt benutzte Projekte mit Starten, Editor, Terminal und Agent, was zu beheben ist), die Projektliste mit ▶ in jeder Zeile, Strg+P, um eines nach Namen zu öffnen; **Neues Projekt**, ein Tab neben den Projekten: leer, aus deinen GitHub-Repositories (mit Klonen, Umbenennen und Löschen auf GitHub), von einer Git-Adresse oder aus einer von 63 Basen in Gruppen (Laravel, Next.js, Django, WordPress, Astro, Tauri…); Hinweise zum Workspace. Jedes Projekt hat eine eigene Seite, oben mit Starten, Editor, Terminal und Agent und darunter sieben Abschnitten: **Start** (Aktionen, Ports und ihre Ausgabe), **Website**, **Komponenten** (mit den Versionen), **Datenbanken** (die Datenbank des Projekts mit Benutzer und Passwort, Sicherungen), **Erweiterungen**, **Editor** (Einstellungen und MCP-Server), **Git** |
-| **Agenten** | die installierten Claude Code, Codex und Antigravity: Version, Anmeldung, Tariflimits und Verbrauch von heute und den letzten 7 Tagen; Anweisungen, Skills und MCP-Server gemeinsam in `data\agents` |
+| **Agenten** | die installierten Claude Code, Codex, Antigravity und Pi: Version, Anmeldung, Tariflimits und Verbrauch von heute und den letzten 7 Tagen; Anweisungen, Skills und MCP-Server gemeinsam in `data\agents` |
+| **Lokale Modelle** | der Server von llama.cpp (Starten und Stoppen, Adresse, der Chat im Browser und sein Schlüssel), das Modell von Pi, der Katalog von Atollo mit GGUF-Modellen und „passt / an der Grenze / zu groß“ für RAM oder Videospeicher dieses PCs, jedes Hugging-Face-Repository (mit einem optionalen Token für zugangsbeschränkte Modelle), Downloads zum Anhalten und Fortsetzen; Modelle in `data\models`, nur auf diesem PC |
 | **Datenbanken** | die MySQL- (mit phpMyAdmin) und MongoDB-Server (mit mongo-express) von Atollo: Starten und Stoppen, Administratorpasswort, Port, mehrere Versionen nebeneinander mit je eigenem Port, Daten in `data\db`, nur auf diesem PC; SQLite ohne Server |
 | **Webserver** | die Caddy- und Apache-Server, die sich die Projekte teilen (Pools), und deine eigenen Profile, mit den `<Projekt>.localhost`-Websites, die sie ausliefern; nur auf diesem PC oder im lokalen Netzwerk, wenn die Einstellungen es erlauben |
 | **Terminals** | Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs: „Alle Werkzeuge“ und eigene Terminals mit den Werkzeugen und Versionen, die du wählst |
-| **Werkzeuge** | Sprachen und Werkzeuge nach Art (System und Editor, KI-Agenten, Sprachen, Entwicklungswerkzeuge, Webserver, Datenbanken), mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen, mehrere Versionen; der Rust-Compiler (GNU oder MSVC) auf der Seite von Rust; die Matrix der Editor-Erweiterungen |
+| **Werkzeuge** | Sprachen und Werkzeuge nach Art (System und Editor, KI-Agenten, lokale Modelle, Sprachen, Entwicklungswerkzeuge, Webserver, Datenbanken), mit Logo, Abhängigkeiten und Speicherplatz; installieren, aktualisieren, entfernen, mehrere Versionen; der Rust-Compiler (GNU oder MSVC) auf der Seite von Rust; die Matrix der Editor-Erweiterungen |
 | **Anleitung** | die Anleitung in der App, in neun Kapiteln; jede Seite öffnet ihr eigenes Thema |
 | **Einstellungen** | gespeichert, sobald du sie änderst: Sprache, Design, die temporären Dateien der Programme, die Pakete zum Neuinstallieren ohne Netzwerk, Netzwerk (Proxy, Zertifikate, lokales Netzwerk), Gemini-Schlüssel, Updates der App, Datenschutz; das **GitHub-Konto** von Atollo, eines für alles (App, Git, Editor, Konsolen, Agenten, GitHub CLI), und wer die Commits signiert; wo der Ordner von Atollo liegt; die Anweisungen der Frameworks; **Das Kit**, nur zum Lesen: seine Ordner, sein Laufwerk, die Plattform und die Versionen |
 | **Laufwerk entfernen** | schließt alles, was Atollo geöffnet hat, holt die Anmeldung von Antigravity nach `data\` zurück und lässt das Laufwerk auswerfen |
@@ -120,7 +122,7 @@ Du hast einen Mac, einen Linux-PC oder einen PC mit Windows ARM64? Probier Atoll
 - Unter Linux braucht MySQL zwei Systembibliotheken, `libaio` und `libnuma`: auf Ubuntu 24.04 und Debian 13 `sudo apt install libaio1t64 libnuma1` (auf älteren Versionen `libaio1`), auf Fedora und RHEL `sudo dnf install libaio numactl-libs`. Fehlen sie, sagt Atollo es mit dem auszuführenden Befehl.
 - Unter macOS und Linux funktioniert ein Atollo-Ordner auf exFAT oder FAT (ein für Windows formatiertes Laufwerk), aber diese Dateisysteme kennen keine Links: Wo ein Programm welche mitbringt, kopiert Atollo die Dateien (etwa die 142 internen Links von Git), was mehr Platz belegt. Auf einem Laufwerk nur für Mac oder Linux ist APFS oder ext4 besser.
 - Außerhalb des Atollo-Ordners bleiben nur die Spuren von Windows, temporäre Übergangsdateien im System-Temp-Ordner (werden beim Beenden automatisch gelöscht; mit Einstellungen › Allgemein › Temporäre Dateien der Programme können ihn auch die Programme benutzen, solange sie laufen), die Anmeldung von GitHub CLI in der Anmeldeinformationsverwaltung, wenn du dich in einer Konsole mit `gh auth login` anmeldest (die in den Einstellungen bleibt in `data\gh`), die von Antigravity, solange `agy` geöffnet ist (nur für die Sitzung), auf macOS die Anmeldung von Claude Code im Schlüsselbund (außer du verbindest dich mit einem Token) und die Daten der Webansicht in deiner Library, und der Registry-Eintrag, den rustup unter Windows schreibt und Atollo entfernt. Die vollständige Liste steht in [PRIVACY §4](PRIVACY.de.md#4-auf-deinem-gerät-gespeicherte-daten).
-- Der Ordner eines Projekts wird für Claude Code und Codex vertrauenswürdig, sobald du darin einen Agenten aus Atollo öffnest (die anderen Ordner in `projects\` nicht): Öffne einen Agenten nur in Projekten, denen du vertraust. Die Token der Agenten (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`) gehen nur an die von Atollo gestarteten Agenten, nicht an die Aktionen der Projekte, Skripte, Terminals oder den Editor. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
+- Der Ordner eines Projekts wird für Claude Code, Codex und Pi vertrauenswürdig, sobald du darin einen Agenten aus Atollo öffnest (die anderen Ordner in `projects\` nicht): Öffne einen Agenten nur in Projekten, denen du vertraust. Die Token der Agenten (`CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`, `LLAMA_API_KEY` der lokalen Modelle) gehen nur an die von Atollo gestarteten Agenten, nicht an die Aktionen der Projekte, Skripte, Terminals oder den Editor. Der Editor fragt dagegen beim ersten Öffnen jedes Projekts und öffnet nicht vertrauenswürdige im „eingeschränkten Modus“.
 - Die Nutzungslimits der Agenten stammen aus nicht dokumentierten Schnittstellen der Anbieter und können nach einem ihrer Updates nicht mehr funktionieren.
 - „Laufwerk entfernen“ sieht keine PC-Programme, die nur eine Datei im Ordner von Atollo geöffnet halten.
 
@@ -164,9 +166,14 @@ Atollo.exe prepare [Optionen]        installiert und aktualisiert die gewählten
     --target <System>                bereitet für ein anderes System vor: win32-x64, win32-arm64,
                                      darwin-arm64, darwin-x64, linux-x64, linux-arm64
 Atollo.exe sync [--project <Ordner>] [--verbose]
-                                     gleicht Anweisungen, Skills und MCP der drei Agenten ab
-Atollo.exe keyring restore|save      Anmeldung von Antigravity (von agy.cmd benutzt)
+                                     gleicht Anweisungen, Skills und MCP-Server der Agenten ab
+Atollo.exe keyring restore|save      Anmeldung von Antigravity (von agy.cmd des Kits benutzt)
 Atollo.exe serve <Ordner> <Port>     Dateiserver für eine statische Website
+Atollo.exe models                    die lokalen Modelle: die des Katalogs und die heruntergeladenen
+Atollo.exe models pull <Modell>      lädt eine Katalog-id oder ein Modell von Hugging Face herunter
+                                     (Besitzer/Name:Quantisierung), setzt nach Abbruch fort
+Atollo.exe models rm <id>            löscht ein heruntergeladenes Modell
+Atollo.exe llm start|stop|status     der Server der lokalen Modelle (Chat und Agenten)
 Atollo.exe version                   zeigt die Version
 Atollo.exe help                      zeigt die Hilfe
 ```
@@ -215,7 +222,7 @@ Der vollständige Text, mit jeder Netzwerkverbindung und jeder Datei, die die Ap
 
 - **Keine Telemetrie oder Datenerhebung:** Die Anwendung erhebt keine personenbezogenen Daten, Nutzungsstatistiken, Telemetriedaten oder Absturzberichte und kontaktiert keinerlei Server des Projektautors. Zudem deaktiviert sie die standardmäßige Telemetrie verwalteter Komponenten (wie PowerShell 7 und des VSCodium-Servers).
 - **Lokale Speicherung:** Einstellungen, Projekte, lokale Datenbanken, Protokolle und Anmeldeinformationen werden lokal im Ordner `data\` (und `projects\`) von Atollo auf dem Gerät des Nutzers gespeichert; die wenigen Ausnahmen (temporäre Dateien, Antigravitys Anmeldung während es läuft) stehen in der Erklärung.
-- **Netzwerkverbindungen:** Die Anwendung verbindet sich nur mit GitHub, um nach eigenen Updates zu suchen (Einstellungen › Allgemein › Automatisches Update, oder `ATOLLO_NO_UPDATE`), mit den offiziellen Quellen der Komponenten, die sie herunterlädt, mit der Open-VSX-Registry für Editor-Erweiterungen und – wenn der Nutzer sich bei GitHub anmeldet (Einstellungen › GitHub-Konto) oder die Seite Agenten öffnet – mit GitHub und den Anbietern der Agenten (**Claude Code**, **Codex**, **Antigravity**) gemäß deren eigenen Datenschutzrichtlinien.
+- **Netzwerkverbindungen:** Die Anwendung verbindet sich nur mit GitHub, um nach eigenen Updates zu suchen (Einstellungen › Allgemein › Automatisches Update, oder `ATOLLO_NO_UPDATE`), mit den offiziellen Quellen der Komponenten, die sie herunterlädt, mit der Open-VSX-Registry für Editor-Erweiterungen und – wenn der Nutzer sich bei GitHub anmeldet (Einstellungen › GitHub-Konto) oder die Seite Agenten öffnet – mit GitHub und den Anbietern der Agenten (**Claude Code**, **Codex**, **Antigravity** und dem in **Pi** gewählten Cloud-Anbieter) gemäß deren eigenen Datenschutzrichtlinien. Lokale Modelle kommen von Hugging Face (`huggingface.co` und sein CDN), die Programme llama.cpp und Pi aus ihren GitHub-Releases (`ggml-org/llama.cpp`, `earendil-works/pi`); ein lokales Modell läuft auf dem PC, und seine Prompts verlassen ihn nie.
 
 ## Lizenz
 

@@ -2,7 +2,7 @@
 
 [English](PRIVACY.md) · [Italiano](PRIVACY.it.md) · [Français](PRIVACY.fr.md) · Deutsch
 
-Gültig ab: 21. Oktober 2026
+Gültig ab: 22. Oktober 2026
 
 Diese Seite erklärt, was die Desktop-App Atollo (`Atollo.exe`, die macOS-`.app` und das Linux-AppImage) und ihre Website mit deinen Daten tun. Atollo ist Open Source: Alles, was hier steht, lässt sich im Code dieses Repositorys überprüfen.
 
@@ -11,7 +11,8 @@ Diese Seite erklärt, was die Desktop-App Atollo (`Atollo.exe`, die macOS-`.app`
 - Atollo hat **keine Telemetrie, keine Nutzungsstatistiken und keine Absturzberichte**. Es gibt kein Konto und keinen eigenen Server.
 - Alles, was Atollo speichert, bleibt **im Atollo-Ordner** auf deinem Gerät (`data/` und `projects/`), mit den wenigen Ausnahmen aus Abschnitt 4.
 - Atollo verbindet sich nur mit dem Netz, um **nach eigenen Updates zu suchen**, um **die Werkzeuge, die du nutzt, von ihren offiziellen Quellen herunterzuladen**, und um **mit GitHub und den Anbietern der KI-Agenten zu sprechen, wenn du diese Funktionen nutzt**. Die Tabelle in Abschnitt 3 listet jede Verbindung und wie du sie abschaltest.
-- Die Werkzeuge und KI-Agenten, die du in Atollo startest (Claude Code, Codex, Antigravity, Git, npm…), sind Programme Dritter mit eigenen Datenschutzerklärungen.
+- Die Werkzeuge und KI-Agenten, die du in Atollo startest (Claude Code, Codex, Antigravity, Pi, Git, npm…), sind Programme Dritter mit eigenen Datenschutzerklärungen.
+- **Lokale KI-Modelle** laufen auf deinem Computer: Mit einem lokalen Modell verlassen deine Prompts und Dateien ihn nie.
 
 ## 2. Was Atollo nicht erhebt
 
@@ -24,7 +25,7 @@ Atollo erhebt, sendet und verkauft nicht:
 
 Niemand, der das Projekt Atollo betreibt, erhält Daten von der App. Das Projekt betreibt keine Server: Updates und Releases liegen auf GitHub.
 
-Atollo schaltet außerdem in seiner eigenen Umgebung die Telemetrie und Update-Prüfungen mehrerer Programme ab, die es verwaltet: Der integrierte Editor (VSCodium) startet mit abgeschalteter Telemetrie und ohne automatische Erweiterungs-Updates; die Umgebung setzt `GOTELEMETRY=off`, `DOTNET_CLI_TELEMETRY_OPTOUT=1`, `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`, `PIP_DISABLE_PIP_VERSION_CHECK=1`, `GH_NO_UPDATE_NOTIFIER=1` (für die Aufrufe der App an GitHub CLI), `DISABLE_UPDATES=1` (Claude Code) und `AGY_CLI_DISABLE_AUTO_UPDATE=true` (Antigravity). Andere Programme behalten ihre Voreinstellungen.
+Atollo schaltet außerdem in seiner eigenen Umgebung die Telemetrie und Update-Prüfungen mehrerer Programme ab, die es verwaltet: Der integrierte Editor (VSCodium) startet mit abgeschalteter Telemetrie und ohne automatische Erweiterungs-Updates; die Umgebung setzt `GOTELEMETRY=off`, `DOTNET_CLI_TELEMETRY_OPTOUT=1`, `POWERSHELL_TELEMETRY_OPTOUT=1`, `POWERSHELL_UPDATECHECK=Off`, `PIP_DISABLE_PIP_VERSION_CHECK=1`, `GH_NO_UPDATE_NOTIFIER=1` (für die Aufrufe der App an GitHub CLI), `DISABLE_UPDATES=1` (Claude Code), `AGY_CLI_DISABLE_AUTO_UPDATE=true` (Antigravity), `PI_SKIP_VERSION_CHECK=1` und `PI_TELEMETRY=0` (Pi). Andere Programme behalten ihre Voreinstellungen.
 
 ## 3. Die Netzwerkverbindungen der App
 
@@ -35,7 +36,8 @@ Jede Anfrage, die die App selbst stellt, trägt einen `User-Agent` der Form `Ato
 | Etwa 20 Sekunden nach dem Start und wenn du „Nach Updates suchen“ drückst | GitHub (`api.github.com`, dann der Release-Download von `github.com`) | Die Abfrage der Release-Liste von `nabre/atollo`; gibt es eine neuere Version, deren Download. Ist auf dem Computer eine Variable `GITHUB_TOKEN` oder `GH_TOKEN` gesetzt, wird sie nur an `api.github.com` gesendet (gegen GitHubs Anfragelimit). | Einstellungen › Allgemein › **Automatisches Update** aus, oder die Variable `ATOLLO_NO_UPDATE` auf dem Computer setzen. Der Knopf funktioniert weiterhin auf Anfrage. |
 | Etwa 10 Sekunden nach dem Start, höchstens einmal am Tag pro Werkzeug | Die offizielle Quelle jedes Werkzeugs mit mehreren Versionen (zum Beispiel `nodejs.org`, `go.dev`, `api.adoptium.net`, `api.github.com`) | Die Abfrage der verfügbaren Versionen. Nur an `api.github.com`: das Token oben oder das deines GitHub-Kontos, wenn du angemeldet bist (Abschnitt 4). | Die Variable `ATOLLO_NO_UPDATE`. |
 | Beim ersten Start, wenn du die Startseite bestätigst (nach der Wahl von Sprache und Netzwerk); danach automatisch, wenn eine erforderliche Komponente fehlt oder ein App-Update neuere braucht | Offizielle Quellen von PowerShell 7, GitHub CLI und dem Editor (Releases auf GitHub) | Download-Anfragen. | Kein Schalter: Diese Komponenten sind erforderlich. Sonst wird nichts ohne dein Zutun installiert. |
-| Wenn du ein Werkzeug installierst oder aktualisierst (Seite Werkzeuge) oder eine Aktion eines braucht (zum Beispiel Node.js für `npm`) | Die offizielle Quelle des Werkzeugs, zum Beispiel `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `api.anaconda.org`, `dl.google.com`, `storage.googleapis.com`, `raw.githubusercontent.com`, `www.apachelounge.com`, `dl.static-php.dev`, `curl.se`, `aka.ms`, `api.nuget.org`, `julialang-s3.julialang.org`, `ziglang.org`, Googles Update-Server für Antigravity, Releases auf GitHub | Download-Anfragen; Prüfsummen werden lokal geprüft. | Das Werkzeug nicht installieren. |
+| Wenn du ein Werkzeug installierst oder aktualisierst (Seite Werkzeuge) oder eine Aktion eines braucht (zum Beispiel Node.js für `npm`) | Die offizielle Quelle des Werkzeugs, zum Beispiel `nodejs.org`, `registry.npmjs.org`, `go.dev`, `static.rust-lang.org`, `api.adoptium.net`, `repo.maven.apache.org`, `services.gradle.org`, `builds.dotnet.microsoft.com`, `windows.php.net`, `getcomposer.org`, `cdn.mysql.com`, `downloads.mongodb.org`, `sqlite.org`, `files.phpmyadmin.net`, `conda.anaconda.org`, `api.anaconda.org`, `dl.google.com`, `storage.googleapis.com`, `raw.githubusercontent.com`, `www.apachelounge.com`, `dl.static-php.dev`, `curl.se`, `aka.ms`, `api.nuget.org`, `julialang-s3.julialang.org`, `ziglang.org`, Googles Update-Server für Antigravity, Releases auf GitHub (darunter `ggml-org/llama.cpp` für den Server der lokalen Modelle und `earendil-works/pi` für Pi) | Download-Anfragen; Prüfsummen werden lokal geprüft. | Das Werkzeug nicht installieren. |
+| Nur wenn du ein lokales Modell herunterlädst (Seite Lokale Modelle oder `models pull`) oder ein Hugging-Face-Repository nachschlägst | Hugging Face: `huggingface.co` (die API, für den letzten Commit eines Repositorys und seine GGUF-Dateien), dann sein CDN für die Dateien des Modells | Anfragen für die Liste des Repositorys und für die Dateien des Modells bei einem festen Commit; ein angehaltener oder abgebrochener Download wird mit einer `Range`-Anfrage fortgesetzt. Dein Hugging-Face-Token, nur wenn du eines für zugangsbeschränkte Modelle gespeichert hast, und nur an `huggingface.co` (es geht nicht an das CDN). Das SHA-256 jeder Datei wird lokal geprüft. | Keine Modelle herunterladen. |
 | Im Hintergrund nach dem Start des Editors und beim Öffnen eines Projekts | Die Erweiterungsgalerie des Editors (Open VSX); CodeLLDB aus seinem GitHub-Release | Die Anfragen der Erweiterungen, die das Kit und deine Projekte nutzen. | Den Editor nicht öffnen oder die Erweiterungen im Editor entfernen. |
 | Nur wenn du dich bei GitHub anmeldest (Einstellungen › GitHub-Konto) und deine Repositorys nutzt (Projekte › „Aus deinen GitHub-Repositories“) | GitHub (`github.com`, `api.github.com`), über GitHub CLI | Die Anmeldung (ein Einmalcode, den du auf `github.com/login/device` eingibst), dann das Token deines Kontos mit den Anfragen zum Auflisten, Klonen, Umbenennen oder Löschen deiner Repositorys. | Nicht anmelden oder in Einstellungen › GitHub-Konto abmelden. |
 | Einmal, bei der Anmeldung oder einem Start mit Anmeldung, nur wenn Name und E-Mail der Commits leer sind | GitHub (`api.github.com/user`), über GitHub CLI | Das Token deines Kontos, um Name, Login und Nummer des Kontos zu lesen: Sie werden der Name deiner Commits und die private `noreply`-Adresse von GitHub. | Einstellungen › GitHub-Konto › „Wer die Commits signiert“ ausfüllen, oder nicht anmelden. |
@@ -46,7 +48,7 @@ Jede Anfrage, die die App selbst stellt, trägt einen `User-Agent` der Form `Ato
 - Programme, die du im Editor, in den Konsolen oder über Aktionen startest (`git`, `npm`, `pip`, `cargo`, die KI-Agenten…), verbinden sich dorthin, wofür sie gebaut sind;
 - Links, die du anklickst, öffnen sich in deinem Browser.
 
-Lokale Server: Der Editor und die Server der Projekte lauschen nur auf diesem Computer (`127.0.0.1`/`localhost`), außer du schaltest in den Einstellungen **Lokales Netzwerk** für die Server der Projekte ein.
+Lokale Server: Der Editor und die Server der Projekte lauschen nur auf diesem Computer (`127.0.0.1`/`localhost`), außer du schaltest in den Einstellungen **Lokales Netzwerk** für die Server der Projekte ein. Der Server der lokalen Modelle (llama.cpp) lauscht immer nur auf `127.0.0.1`, auf einem eigenen Port (9931 und folgende), und beantwortet nur Anfragen mit seinem zufälligen Schlüssel; `llm status` sendet diesen Schlüssel nicht an das, was auf dem Port lauscht. Die Modelle laufen auf diesem Computer: Mit einem lokalen Modell geht nichts ins Netz.
 
 ## 4. Auf deinem Gerät gespeicherte Daten
 
@@ -68,12 +70,17 @@ Atollo ist portabel: Es hält seine Daten neben der ausführbaren Datei im Ordne
 | Antigravitys Google-Anmeldung, nach jedem Lauf aus dem Anmeldespeicher des Systems entfernt | `data/antigravity/keyring.json` |
 | Das langlebige Token von Claude Code, wenn du „Mit einem Token verbinden“ nutzt (macOS) | `data/agents/claude/oauth-token` |
 | Datenbank-Passwörter (zufällig, von Atollo erzeugt) | `data/app/db/secrets.json`, `data/app/db/mysql.cnf`, `data/projects/<Projekt>/private/db.json` |
+| Lokale Modelle (GGUF-Dateien) und was Atollo davon heruntergeladen hat | `data/models/gguf/<Besitzer>--<Repository>/` (mit `atollo.json`) |
+| Einstellungen der lokalen Modelle (Port, automatischer Start, das Modell von Pi) und die Presets des Servers | `data/app/llm.json`, `data/app/llm/presets.ini` |
+| Der **Schlüssel des Servers der lokalen Modelle** (zufällig, von Atollo erzeugt, nur für deinen Benutzer lesbar) | `data/app/secrets/llama-key` |
+| Das **Hugging-Face-Token**, falls du eines für zugangsbeschränkte Modelle einträgst (nur für deinen Benutzer lesbar) | `data/app/secrets/hf-token` |
+| Einstellungen, Anmeldungen (`auth.json`) und Sitzungen von Pi und die `models.json` des Kits mit Adresse und Schlüssel des lokalen Servers (nur für deinen Benutzer lesbar) | `data/home/.pi/agent/` |
 | Daten des Editor-Servers und sein Zugriffstoken pro Sitzung | `data/vscodium-server/` |
 | Deine Projekte | `projects/` |
 
-Die Datenbank-Passwörter, der Gemini-API-Schlüssel und die Datei des Claude-Tokens werden nur für deinen Benutzer lesbar angelegt, wo das Laufwerk Berechtigungen kennt (NTFS, APFS, ext4…). Die übrigen Dateien, `settings.json` eingeschlossen, sind gewöhnliche Dateien. Auf USB-Sticks mit FAT32 oder exFAT gibt es keine Berechtigungen: **Wer den Stick hat, kann alle oben genannten Dateien lesen**. Bewahre den Stick sicher auf oder nutze ein Laufwerk mit Berechtigungen.
+Die Datenbank-Passwörter, der Gemini-API-Schlüssel, die Datei des Claude-Tokens, der Schlüssel der lokalen Modelle und das Hugging-Face-Token werden nur für deinen Benutzer lesbar angelegt, wo das Laufwerk Berechtigungen kennt (NTFS, APFS, ext4…). Die übrigen Dateien, `settings.json` eingeschlossen, sind gewöhnliche Dateien. Auf USB-Sticks mit FAT32 oder exFAT gibt es keine Berechtigungen: **Wer den Stick hat, kann alle oben genannten Dateien lesen**. Bewahre den Stick sicher auf oder nutze ein Laufwerk mit Berechtigungen.
 
-Das Claude-Token und der Gemini-API-Schlüssel werden (als `CLAUDE_CODE_OAUTH_TOKEN` und `GEMINI_API_KEY`) nur den von Atollo gestarteten Agenten übergeben, nicht den Aktionen der Projekte, Skripten, Terminals oder dem Editor.
+Das Claude-Token und der Gemini-API-Schlüssel werden (als `CLAUDE_CODE_OAUTH_TOKEN` und `GEMINI_API_KEY`) nur den von Atollo gestarteten Agenten übergeben, nicht den Aktionen der Projekte, Skripten, Terminals oder dem Editor. Der Schlüssel der lokalen Modelle geht an Pi, wenn Atollo es startet (`LLAMA_API_KEY`), und in die `models.json` von Pi, damit `pi` auch in den Terminals des Kits funktioniert. Das Hugging-Face-Token wird nur an `huggingface.co` gesendet.
 
 Ausnahmen, außerhalb des Atollo-Ordners:
 
@@ -90,11 +97,14 @@ Atollo installiert und startet Programme anderer Hersteller. Wenn du sie nutzt, 
 - **Claude Code** (Anthropic): [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
 - **Codex** (OpenAI): [openai.com/policies/privacy-policy](https://openai.com/policies/privacy-policy/)
 - **Antigravity** und die Gemini-API (Google): [policies.google.com/privacy](https://policies.google.com/privacy)
+- **Pi** (Earendil): [pi.dev](https://pi.dev); mit einem Cloud-Anbieter (Anmeldung mit `/login`) gilt dessen Erklärung
+- **Hugging Face**, von wo die lokalen Modelle heruntergeladen werden: [huggingface.co/privacy](https://huggingface.co/privacy)
+- **llama.cpp** (ggml-org), der Server der lokalen Modelle: Er läuft auf deinem Computer und sendet nichts; [github.com/ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)
 - **GitHub** und GitHub CLI: [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
 - **VSCodium** und Open VSX: [open-vsx.org](https://open-vsx.org/)
 - Die Paket-Registries (npm, PyPI, crates.io, Maven Central, NuGet…) und die Download-Seiten der einzelnen Werkzeuge, nach ihren eigenen Regeln.
 
-Die KI-Agenten senden deine Prompts und die Dateien, die sie lesen, an ihre Anbieter: So funktionieren sie. Entscheide selbst, was du mit ihnen öffnest.
+Die KI-Agenten senden deine Prompts und die Dateien, die sie lesen, an ihre Anbieter: So funktionieren sie. Entscheide selbst, was du mit ihnen öffnest. Ausnahme ist Pi mit einem lokalen Modell: Dann bleiben Prompts und Dateien auf deinem Computer; mit einem in Pi gewählten Cloud-Anbieter gehen sie an diesen Anbieter.
 
 ## 6. Website
 

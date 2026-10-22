@@ -16,7 +16,7 @@
 | **00** | questo file | sintesi, stato delle prove, numeri dei rilievi |
 | **01** | [`01-BUG-SICUREZZA-PORTABILITA.md`](./01-BUG-SICUREZZA-PORTABILITA.md) | rilievi `BUG/SEC/PORT/UX/TEST-V6-xx` ancora aperti (oggi nessuno), rami che li hanno chiusi, verifiche manuali |
 | **02** | [`02-INCONGRUENZE-DOCUMENTAZIONE.md`](./02-INCONGRUENZE-DOCUMENTAZIONE.md) | incongruenze `DOC-V6-xx` ancora aperte (oggi nessuna), strategia contro la deriva |
-| **03** | [`03-LLM-LOCALI-GGUF-E-PI.md`](./03-LLM-LOCALI-GGUF-E-PI.md) | progetto: modelli GGUF locali con llama.cpp e Pi come quarto agente |
+| **03** | [`03-LLM-LOCALI-GGUF-E-PI.md`](./03-LLM-LOCALI-GGUF-E-PI.md) | progetto: modelli GGUF locali con llama.cpp e Pi come quarto agente; **fatto** (F0-F4, D-151, D-152; esito nel §7) |
 | **04** | [`04-NUOVE-FUNZIONALITA.md`](./04-NUOVE-FUNZIONALITA.md) | 12 funzionalità semplici e di impatto, con stima di sforzo |
 | **05** | [`05-PIANO-ESECUTIVO-V6.md`](./05-PIANO-ESECUTIVO-V6.md) | ondate di correzione, regole di codice per non ricadere negli stessi errori, decisioni da prendere |
 

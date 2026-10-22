@@ -83,6 +83,18 @@ function PageMap() {
       topic: "agents",
     },
     {
+      icon: codicon("chip"),
+      name: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
+      text: tr(
+        "Modelli linguistici sul PC per Pi e la chat nel browser: il server llama.cpp, i download dal catalogo e da Hugging Face.",
+        "Language models on the PC for Pi and the chat in the browser: the llama.cpp server, downloads from the catalog and from Hugging Face.",
+        "Des modèles de langage sur le PC pour Pi et le chat dans le navigateur : le serveur llama.cpp, les téléchargements depuis le catalogue et Hugging Face.",
+        "Sprachmodelle auf dem PC für Pi und den Chat im Browser: der llama.cpp-Server, Downloads aus dem Katalog und von Hugging Face.",
+      ),
+      page: "models",
+      topic: "models",
+    },
+    {
       icon: codicon("database"),
       name: tr("Database", "Databases", "Bases de données", "Datenbanken"),
       text: tr(
@@ -209,10 +221,10 @@ export const START: TopicTexts = {
             "Es wird nicht installiert und verlangt keine Administratorrechte: Kopiere den Ordner auf einen anderen PC und du findest alles wieder, einschließlich der Projekte.",
           ),
           tr(
-            "Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, e tre agenti IA.",
-            "Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, and three AI agents.",
-            "À l'intérieur, vous trouvez des langages en plusieurs versions, des bases de données, des serveurs web, un éditeur, des consoles, Git et GitHub, et trois agents IA.",
-            "Darin findest du Sprachen in mehreren Versionen, Datenbanken, Webserver, einen Editor, Konsolen, Git und GitHub sowie drei KI-Agenten.",
+            "Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, quattro agenti IA e i modelli linguistici locali.",
+            "Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, four AI agents and local language models.",
+            "À l'intérieur, vous trouvez des langages en plusieurs versions, des bases de données, des serveurs web, un éditeur, des consoles, Git et GitHub, quatre agents IA et des modèles de langage locaux.",
+            "Darin findest du Sprachen in mehreren Versionen, Datenbanken, Webserver, einen Editor, Konsolen, Git und GitHub, vier KI-Agenten und lokale Sprachmodelle.",
           ),
           tr(
             "Questa guida va dalle cose più semplici a quelle più tecniche: puoi leggerla in ordine o saltare dove ti serve.",
@@ -355,12 +367,22 @@ export const START: TopicTexts = {
             [
               tr("Agenti IA", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
-                "Claude Code, Codex e Antigravity, con istruzioni, skill e server MCP condivisi.",
-                "Claude Code, Codex and Antigravity, with shared instructions, skills and MCP servers.",
-                "Claude Code, Codex et Antigravity, avec instructions, skills et serveurs MCP partagés.",
-                "Claude Code, Codex und Antigravity, mit gemeinsamen Anweisungen, Skills und MCP-Servern.",
+                "Claude Code, Codex, Antigravity e Pi, con istruzioni, skill e server MCP condivisi.",
+                "Claude Code, Codex, Antigravity and Pi, with shared instructions, skills and MCP servers.",
+                "Claude Code, Codex, Antigravity et Pi, avec instructions, skills et serveurs MCP partagés.",
+                "Claude Code, Codex, Antigravity und Pi, mit gemeinsamen Anweisungen, Skills und MCP-Servern.",
               ),
               tr("Agenti", "Agents", "Agents", "Agenten"),
+            ],
+            [
+              tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
+              tr(
+                "Modelli linguistici sul PC, senza rete e senza account, per Pi e per una chat nel browser.",
+                "Language models on the PC, with no network and no account, for Pi and for a chat in the browser.",
+                "Des modèles de langage sur le PC, sans réseau et sans compte, pour Pi et pour un chat dans le navigateur.",
+                "Sprachmodelle auf dem PC, ohne Netzwerk und ohne Konto, für Pi und für einen Chat im Browser.",
+              ),
+              tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
             ],
           ]}
         />
@@ -631,10 +653,10 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Sotto c'è l'elenco dei componenti, diviso in sei tipi (ognuno con la sua descrizione), con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.",
-            "Below is the list of components, split into six kinds (each with its description), with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.",
-            "En dessous se trouve la liste des composants, divisée en six types (chacun avec sa description), avec un champ de recherche et un index à gauche. Chaque ligne a une case à cocher, le logo, le nom, une description, la taille et des étiquettes qui disent de quoi il a besoin ou à quoi il sert.",
-            "Darunter steht die Liste der Komponenten, in sechs Arten aufgeteilt (jede mit ihrer Beschreibung), mit einem Suchfeld und einem Index links. Jede Zeile hat ein Kontrollkästchen, das Logo, den Namen, eine Beschreibung, die Größe und Etiketten, die sagen, was sie braucht oder wozu sie dient.",
+            "Sotto c'è l'elenco dei componenti, diviso in otto tipi (ognuno con la sua descrizione), con una casella di ricerca e un indice a sinistra. Ogni riga ha una casella da spuntare, il logo, il nome, una descrizione, la dimensione e delle etichette che dicono di che cosa ha bisogno o a che cosa serve.",
+            "Below is the list of components, split into eight kinds (each with its description), with a search box and an index on the left. Each row has a checkbox, the logo, the name, a description, the size and some tags that say what it needs or what it is for.",
+            "En dessous se trouve la liste des composants, divisée en huit types (chacun avec sa description), avec un champ de recherche et un index à gauche. Chaque ligne a une case à cocher, le logo, le nom, une description, la taille et des étiquettes qui disent de quoi il a besoin ou à quoi il sert.",
+            "Darunter steht die Liste der Komponenten, in acht Arten aufgeteilt (jede mit ihrer Beschreibung), mit einem Suchfeld und einem Index links. Jede Zeile hat ein Kontrollkästchen, das Logo, den Namen, eine Beschreibung, die Größe und Etiketten, die sagen, was sie braucht oder wozu sie dient.",
           )}
         </P>
         <Table
@@ -662,16 +684,31 @@ export const START: TopicTexts = {
             [
               tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
-                "Claude Code, Codex e Antigravity.",
-                "Claude Code, Codex and Antigravity.",
-                "Claude Code, Codex et Antigravity.",
-                "Claude Code, Codex und Antigravity.",
+                "Claude Code, Codex, Antigravity e Pi.",
+                "Claude Code, Codex, Antigravity and Pi.",
+                "Claude Code, Codex, Antigravity et Pi.",
+                "Claude Code, Codex, Antigravity und Pi.",
               ),
               tr(
-                "Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore.",
-                "Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider.",
-                "Facultatifs. Gardez ceux pour lesquels vous avez un compte ; il faut un abonnement ou une clé API du fournisseur.",
-                "Optional. Behalte die, für die du ein Konto hast; sie erfordern ein Abonnement oder einen API-Schlüssel des Anbieters.",
+                "Facoltativi. Tieni quelli di cui hai un account; servono un abbonamento o una chiave API del fornitore. Pi non è spuntato: spuntalo se vuoi un agente sui modelli locali, senza account.",
+                "Optional. Keep the ones you have an account for; they require a subscription or an API key from the provider. Pi is not ticked: tick it if you want an agent on the local models, with no account.",
+                "Facultatifs. Gardez ceux pour lesquels vous avez un compte ; il faut un abonnement ou une clé API du fournisseur. Pi n'est pas coché : cochez-le si vous voulez un agent sur les modèles locaux, sans compte.",
+                "Optional. Behalte die, für die du ein Konto hast; sie erfordern ein Abonnement oder einen API-Schlüssel des Anbieters. Pi ist nicht angekreuzt: Kreuze ihn an, wenn du einen Agenten mit den lokalen Modellen willst, ohne Konto.",
+              ),
+            ],
+            [
+              tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
+              tr(
+                "llama.cpp, il server dei modelli linguistici sul PC.",
+                "llama.cpp, the server of the language models on the PC.",
+                "llama.cpp, le serveur des modèles de langage sur le PC.",
+                "llama.cpp, der Server der Sprachmodelle auf dem PC.",
+              ),
+              tr(
+                "Facoltativo e non spuntato. Si installa anche da solo al primo avvio del server, dalla pagina Modelli locali, dove si scaricano i modelli (molti GB).",
+                "Optional and not ticked. It also installs itself the first time you start the server, from the Local models page, where you download the models (many GB).",
+                "Facultatif et non coché. Il s'installe aussi tout seul au premier démarrage du serveur, depuis la page Modèles locaux, où se téléchargent les modèles (de nombreux Go).",
+                "Optional und nicht angekreuzt. Er installiert sich auch von selbst beim ersten Start des Servers, auf der Seite Lokale Modelle, wo die Modelle heruntergeladen werden (viele GB).",
               ),
             ],
             [
@@ -738,10 +775,10 @@ export const START: TopicTexts = {
         />
         <P>
           {tr(
-            "La scelta proposta comprende i tre agenti, Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
-            "The suggested choice includes the three agents, Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
-            "Le choix proposé comprend les trois agents, Python, PHP avec Apache et les composants de « Système et éditeur », Git compris. En tout, environ 1,8 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
-            "Die vorgeschlagene Auswahl umfasst die drei Agenten, Python, PHP mit Apache und die Komponenten von „System und Editor“, Git inklusive. Insgesamt etwa 1,8 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
+            "La scelta proposta comprende Claude Code, Codex e Antigravity (non Pi né llama.cpp), Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
+            "The suggested choice includes Claude Code, Codex and Antigravity (not Pi or llama.cpp), Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
+            "Le choix proposé comprend Claude Code, Codex et Antigravity (ni Pi ni llama.cpp), Python, PHP avec Apache et les composants de « Système et éditeur », Git compris. En tout, environ 1,8 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
+            "Die vorgeschlagene Auswahl umfasst Claude Code, Codex und Antigravity (weder Pi noch llama.cpp), Python, PHP mit Apache und die Komponenten von „System und Editor“, Git inklusive. Insgesamt etwa 1,8 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
           )}
         </P>
         <Steps
@@ -1010,10 +1047,10 @@ export const START: TopicTexts = {
                 "5 · Bereich „Aktivität“",
               ),
               tr(
-                "Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma.",
-                "It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools and the project actions, each with its output; “Stop all” stops them all after a confirmation.",
-                "Il s'ouvre depuis la barre d'état. Il liste l'installation en cours, les versions des bases de données allumées, les pools de serveurs web allumés et les actions des projets, chacune avec sa sortie ; « Tout arrêter » les arrête toutes après une confirmation.",
-                "Er öffnet sich über die Statusleiste. Er listet die laufende Installation, die eingeschalteten Datenbankversionen, die eingeschalteten Webserver-Pools und die Aktionen der Projekte auf, jede mit ihrer Ausgabe; „Alle beenden“ beendet sie alle nach einer Bestätigung.",
+                "Si apre dalla barra di stato. Elenca l'installazione in corso, le versioni dei database accese, i pool dei server web accesi, il server dei modelli locali e le azioni dei progetti, ognuna con il suo output; «Ferma tutto» le ferma tutte dopo una conferma.",
+                "It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools, the local models server and the project actions, each with its output; “Stop all” stops them all after a confirmation.",
+                "Il s'ouvre depuis la barre d'état. Il liste l'installation en cours, les versions des bases de données allumées, les pools de serveurs web allumés, le serveur des modèles locaux et les actions des projets, chacune avec sa sortie ; « Tout arrêter » les arrête toutes après une confirmation.",
+                "Er öffnet sich über die Statusleiste. Er listet die laufende Installation, die eingeschalteten Datenbankversionen, die eingeschalteten Webserver-Pools, den Server der lokalen Modelle und die Aktionen der Projekte auf, jede mit ihrer Ausgabe; „Alle beenden“ beendet sie alle nach einer Bestätigung.",
               ),
             ],
             [
@@ -1132,10 +1169,10 @@ export const START: TopicTexts = {
         />
         <P>
           {tr(
-            "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database e i server web in esecuzione?» e poi ferma azioni, database e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
-            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”. “Stop all”, at the top, asks “Stop the running project actions, databases and web servers?” and then stops actions, databases and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
-            "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter » ; pour un pool de serveurs web, l'adresse, les VirtualHosts rattachés et « Arrêter ». « Tout arrêter », en haut, demande « Arrêter les actions des projets, les bases de données et les serveurs web en cours d'exécution ? » puis arrête actions, bases de données et pools. S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
-            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“. „Alle beenden“ oben fragt „Die laufenden Projektaktionen, Datenbanken und Webserver beenden?“ und beendet dann Aktionen, Datenbanken und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
+            "Nel pannello «Attività» ogni voce si seleziona per vederne i dettagli: per un'azione di progetto lo stato, l'indirizzo e l'output in diretta, con «Apri nel browser», «Ferma» o, se è finita, «Togli»; per un database il nome, l'indirizzo, eventuali errori, il file di log e «Ferma»; per un pool dei server web l'indirizzo, i VirtualHost collegati e «Ferma»; per i modelli locali l'indirizzo, i modelli in memoria e «Ferma». «Ferma tutto», in alto, chiede «Fermare le azioni dei progetti, i database, i modelli locali e i server web in esecuzione?» e poi ferma azioni, database, modelli locali e pool. Se non c'è niente compare «niente in corso». Il pannello si ridimensiona trascinandone il bordo; un doppio clic sul bordo lo riporta all'altezza iniziale.",
+            "In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”; for the local models the address, the models in memory and “Stop”. “Stop all”, at the top, asks “Stop the projects' actions, the databases, the local models and the web servers that are running?” and then stops actions, databases, local models and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.",
+            "Dans le panneau « Activité », chaque entrée se sélectionne pour en voir les détails : pour une action de projet, l'état, l'adresse et la sortie en direct, avec « Ouvrir dans le navigateur », « Arrêter » ou, si elle est terminée, « Retirer » ; pour une base de données, le nom, l'adresse, les éventuelles erreurs, le fichier de log et « Arrêter » ; pour un pool de serveurs web, l'adresse, les VirtualHosts rattachés et « Arrêter » ; pour les modèles locaux, l'adresse, les modèles en mémoire et « Arrêter ». « Tout arrêter », en haut, demande « Arrêter les actions des projets, les bases de données, les modèles locaux et les serveurs web en cours ? » puis arrête actions, bases de données, modèles locaux et pools. S'il n'y a rien, « rien en cours » s'affiche. Le panneau se redimensionne en faisant glisser son bord ; un double-clic sur le bord le ramène à sa hauteur initiale.",
+            "Im Bereich „Aktivität“ wählst du jeden Eintrag aus, um seine Details zu sehen: bei einer Projektaktion den Status, die Adresse und die Live-Ausgabe, mit „Im Browser öffnen“, „Beenden“ oder, wenn sie fertig ist, „Entfernen“; bei einer Datenbank den Namen, die Adresse, eventuelle Fehler, die Logdatei und „Beenden“; bei einem Webserver-Pool die Adresse, die verbundenen VirtualHosts und „Beenden“; bei den lokalen Modellen die Adresse, die Modelle im Speicher und „Beenden“. „Alle beenden“ oben fragt „Die laufenden Aktionen der Projekte, Datenbanken, lokalen Modelle und Webserver beenden?“ und beendet dann Aktionen, Datenbanken, lokale Modelle und Pools. Wenn nichts da ist, erscheint „nichts läuft“. Die Größe des Bereichs änderst du, indem du seinen Rand ziehst; ein Doppelklick auf den Rand stellt die ursprüngliche Höhe wieder her.",
           )}
         </P>
       </Section>

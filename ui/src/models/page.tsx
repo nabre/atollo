@@ -29,6 +29,7 @@ import {
   type PullEvent,
   type ServiceState,
 } from "../api";
+import type { GuideTopicId } from "../guide";
 import { locale, t } from "../i18n";
 import { ComponentLogo } from "../logos";
 import { ActionButton, ErrorLine } from "../common";
@@ -138,7 +139,7 @@ function Progress({ done, total, label }: { done: number; total: number; label: 
   );
 }
 
-export function ModelsPage() {
+export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => void } = {}) {
   const {
     data: info,
     error: infoError,
@@ -353,6 +354,15 @@ export function ModelsPage() {
                 run("folder", () => folderOpen("models"));
               }}
             />
+            {onGuide && (
+              <IconButton
+                icon={codicon("book")}
+                label={t("Apri la guida di questa pagina")}
+                onClick={() => {
+                  onGuide("models");
+                }}
+              />
+            )}
           </>
         }
       />
