@@ -222,6 +222,9 @@ function renderPage({ lang, path, model: html, name, values: own }) {
     guideCurrent: "",
     ...icons,
     componentCount: String(catalog.components.length),
+    // The agents are the catalog's "agents" group, like agents::IDS in
+    // Rust: never a number written by hand (DOC-V7-01).
+    agentCount: String(catalog.components.filter((c) => c.group === "agents").length),
     version,
     ...own,
   };
