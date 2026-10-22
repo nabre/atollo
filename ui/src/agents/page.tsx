@@ -40,6 +40,7 @@ import {
   ViewContainer,
   ViewPane,
   WelcomeView,
+  type DotTone,
 } from "../workbench";
 
 /** The agents' state, refreshed every few seconds (running, signed in). A
@@ -60,7 +61,7 @@ function signInText(a: AgentInfo): string {
   return a.signInKind === "token" ? t("accesso con un token") : t("accesso fatto");
 }
 
-const TONE: Record<Level, "ok" | "warn" | "err" | "off"> = { none: "off", ok: "ok", warning: "warn", critical: "err" };
+const TONE: Record<Level, DotTone> = { none: "off", ok: "ok", warning: "warn", critical: "err" };
 
 /** The footer of an agent's row: running, and its most used limit. */
 function AgentFooter({ agent, stats }: { agent: AgentInfo; stats: AgentStats | undefined }) {

@@ -23,7 +23,18 @@ import {
 import { t } from "../i18n";
 import { alive, stateText } from "../projects";
 import { SetupProgress, setupStatusText } from "../components/setup";
-import { ActionBar, Button, codicon, Dot, IconButton, InlineConfirm, List, ListRow, Panel } from "../workbench";
+import {
+  ActionBar,
+  Button,
+  codicon,
+  Dot,
+  type DotTone,
+  IconButton,
+  InlineConfirm,
+  List,
+  ListRow,
+  Panel,
+} from "../workbench";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 
@@ -121,7 +132,7 @@ type Selected =
   | { kind: "setup" }
   | null;
 
-function runTone(r: RunInfo): "ok" | "warn" | "err" | "off" {
+function runTone(r: RunInfo): DotTone {
   if (r.state === "error") return "err";
   if (r.state === "starting") return "warn";
   return alive(r.state) ? "ok" : "off";

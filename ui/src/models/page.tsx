@@ -56,6 +56,7 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
+  type DotTone,
 } from "../workbench";
 
 /** Memory (RAM, video) in GB of 1024³ bytes, as the system shows it. */
@@ -101,7 +102,7 @@ function FitText({ fit }: { fit: Fit }) {
   );
 }
 
-function stateText(info: LlmInfo | null): { tone: "ok" | "warn" | "err" | "off"; text: string } {
+function stateText(info: LlmInfo | null): { tone: DotTone; text: string } {
   const state: ServiceState = info?.state ?? "stopped";
   if (info && !info.installed) return { tone: "off", text: t("Non installato: si installa al primo avvio") };
   switch (state) {

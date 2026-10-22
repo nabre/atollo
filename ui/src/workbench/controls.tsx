@@ -863,8 +863,11 @@ export function Link({ onClick, children }: { onClick: () => void; children: Rea
   );
 }
 
+/** The tones of a Dot. */
+export type DotTone = "ok" | "warn" | "err" | "off";
+
 /** A state dot: green running, orange starting, red error, gray stopped. */
-export function Dot({ tone, label }: { tone: "ok" | "warn" | "err" | "off"; label?: string | undefined }) {
+export function Dot({ tone, label }: { tone: DotTone; label?: string | undefined }) {
   const color = { ok: "bg-vsc-success", warn: "bg-vsc-warning", err: "bg-vsc-error", off: "bg-vsc-desc" }[tone];
   return (
     <span

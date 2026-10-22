@@ -41,6 +41,7 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
+  type DotTone,
 } from "../workbench";
 
 function stateLabel(state: ServiceState): string {
@@ -56,7 +57,7 @@ function stateLabel(state: ServiceState): string {
   }
 }
 
-function stateTone(state: ServiceState): "ok" | "warn" | "err" | "off" {
+function stateTone(state: ServiceState): DotTone {
   switch (state) {
     case "running":
       return "ok";
