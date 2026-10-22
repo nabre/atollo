@@ -987,10 +987,10 @@ export const START: TopicTexts = {
             [
               tr("2 · Barra delle attività", "2 · Activity bar", "2 · Barre d'activité", "2 · Aktivitätsleiste"),
               tr(
-                "Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database e pool dei server web.",
-                "The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions and web server pools.",
-                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Bases de données, Serveurs web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données et pools de serveurs web.",
-                "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, Agenten, Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Dinge laufen: Projektaktionen, Datenbankversionen und Webserver-Pools.",
+                "Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Modelli locali, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database, pool dei server web e il server dei modelli locali.",
+                "The page icons. At the top the working ones: Projects, Agents, Local models, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions, web server pools and the local models server.",
+                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Modèles locaux, Bases de données, Serveurs web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données, pools de serveurs web et le serveur des modèles locaux.",
+                "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, Agenten, Lokale Modelle, Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Dinge laufen: Projektaktionen, Datenbankversionen, Webserver-Pools und der Server der lokalen Modelle.",
               ),
             ],
             [
@@ -1070,10 +1070,10 @@ export const START: TopicTexts = {
             [
               tr("▶ numero · ⨯ numero", "▶ number · ⨯ number", "▶ nombre · ⨯ nombre", "▶ Zahl · ⨯ Zahl"),
               tr(
-                "Quante cose sono in esecuzione (azioni dei progetti, ogni versione dei database accesa, anche più d'una dello stesso database, e i pool dei server web accesi) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore.",
-                "How many things are running (project actions, every running database version, even several of the same database, and the running web server pools) and how many actions stopped with an error. It turns red if there is at least one error.",
-                "Combien de choses sont en cours d'exécution (actions de projet, chaque version de base de données allumée, même plusieurs de la même base, et les pools de serveurs web allumés) et combien d'actions se sont arrêtées sur une erreur. Il devient rouge s'il y a au moins une erreur.",
-                "Wie viele Dinge laufen (Projektaktionen, jede eingeschaltete Datenbankversion, auch mehrere derselben Datenbank, und die eingeschalteten Webserver-Pools) und wie viele Aktionen mit einem Fehler beendet wurden. Es wird rot, wenn es mindestens einen Fehler gibt.",
+                "Quante cose sono in esecuzione (azioni dei progetti, ogni versione dei database accesa, anche più d'una dello stesso database, i pool dei server web accesi e il server dei modelli locali) e quante azioni si sono fermate con un errore. Diventa rosso se c'è almeno un errore.",
+                "How many things are running (project actions, every running database version, even several of the same database, the running web server pools and the local models server) and how many actions stopped with an error. It turns red if there is at least one error.",
+                "Combien de choses sont en cours d'exécution (actions de projet, chaque version de base de données allumée, même plusieurs de la même base, les pools de serveurs web allumés et le serveur des modèles locaux) et combien d'actions se sont arrêtées sur une erreur. Il devient rouge s'il y a au moins une erreur.",
+                "Wie viele Dinge laufen (Projektaktionen, jede eingeschaltete Datenbankversion, auch mehrere derselben Datenbank, die eingeschalteten Webserver-Pools und der Server der lokalen Modelle) und wie viele Aktionen mit einem Fehler beendet wurden. Es wird rot, wenn es mindestens einen Fehler gibt.",
               ),
               tr(
                 "Apre o chiude il pannello «Attività».",
