@@ -36,11 +36,7 @@ fn file(kit: &Kit) -> PathBuf {
     kit.app_dir().join("updates.json")
 }
 
-fn now() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs())
-}
+use crate::time::now_secs as now;
 
 pub fn load(kit: &Kit) -> Latest {
     crate::fsx::read_json(&file(kit)).unwrap_or_default()

@@ -48,9 +48,7 @@ const STALE_SECS: u64 = 24 * 60 * 60;
 /// missing or older than a day.
 pub fn stale_offers(kit: &Kit) -> Vec<String> {
     let all = offered(kit);
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+    let now = crate::time::now_secs();
     super::versioned()
         .filter(|c| crate::install::installer(&c.id).is_some_and(|i| i.has_lines()))
         .filter(|c| {
@@ -72,9 +70,7 @@ pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
         return Ok(());
     }
     let mut all = offered(kit);
-    let checked = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+    let checked = crate::time::now_secs();
     all.insert(
         id.to_owned(),
         Offered {

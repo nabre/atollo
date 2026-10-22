@@ -31,6 +31,7 @@ mod router;
 mod servers;
 mod settings;
 mod setup;
+mod time;
 mod tray;
 mod versions;
 

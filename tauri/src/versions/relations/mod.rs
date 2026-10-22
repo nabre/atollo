@@ -310,9 +310,7 @@ pub fn build(kit: &Kit, lang: &str) -> Matrix {
         .collect();
     Matrix {
         fingerprint: fingerprint(kit, lang),
-        generated: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |d| d.as_secs()),
+        generated: crate::time::now_secs(),
         platform: target.as_str().to_owned(),
         links: sorted_links(links(lang, &here)),
         runtimes: {

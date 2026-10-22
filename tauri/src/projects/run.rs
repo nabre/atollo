@@ -22,7 +22,7 @@ use std::path::Path;
 use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Result};
 use regex::Regex;
@@ -201,11 +201,7 @@ pub fn key_of(project: &str, action: &str) -> String {
     format!("{project}|{action}")
 }
 
-fn now_ms() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_millis() as u64)
-}
+use crate::time::now_ms;
 
 /// The ports files of all projects, in memory under `project|action` keys,
 /// and as they are on disk.

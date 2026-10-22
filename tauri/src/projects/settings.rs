@@ -93,9 +93,7 @@ pub fn update(kit: &Kit, project: &str, change: impl FnOnce(&mut ProjectSettings
 
 /// The project was opened now (editor, console, agent).
 pub fn opened(kit: &Kit, project: &str) {
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+    let now = crate::time::now_secs();
     update(kit, project, |s| s.last_opened = Some(now));
 }
 

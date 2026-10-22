@@ -63,7 +63,7 @@ A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`cli.r
 | Startup | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | startup order ("Startup", above), command line, single instance, WebView2 |
 | Commands | `commands\` | the interface's only entry point: they check the window, translate the errors, call the domain |
 | Domain | the folders per area (below) | components, versions, projects, editor and console, agents, local models, databases, web servers, GitHub |
-| Infrastructure | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
+| Infrastructure | `kit.rs`, `fsx.rs`, `time.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, clock, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
 
 ```
 tauri\src\
@@ -71,6 +71,7 @@ tauri\src\
   kit.rs                      root, paths, first run, move, valid names
   env.rs                      kit environment and PATH
   fsx.rs                      kit files: reading, JSON, atomic writes (below)
+  time.rs                     the clock: now_secs, now_ms since the Unix epoch
   settings.rs                 data\app\settings.json (one change at a time, `Settings::update`), Gemini key file
   log.rs  i18n.rs             log with masked secrets; language and catalogs
   ports.rs                    who has each port: pools, database versions, actions, editor, local models (D-141, below)

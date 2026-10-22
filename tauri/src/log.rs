@@ -6,7 +6,6 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::env::mask_secrets;
 
@@ -43,10 +42,7 @@ fn append(path: &Path, line: &str, max: u64) {
 fn write(level: &str, message: &str) {
     let Ok(guard) = FILE.lock() else { return };
     let Some(path) = guard.as_ref() else { return };
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+    let secs = crate::time::now_secs();
     let line = format!(
         "{secs} {level} {}\n",
         mask_secrets(message).replace('\n', " | ")

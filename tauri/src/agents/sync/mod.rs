@@ -36,7 +36,7 @@ mod trust;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use anyhow::{bail, Result};
 use serde_json::Value;
@@ -144,9 +144,7 @@ pub fn canonical(v: &Value) -> String {
 
 /// `yyyymmdd-hhmmss` (UTC), for kept copies.
 pub fn stamp() -> String {
-    let secs = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+    let secs = crate::time::now_secs();
     let days = secs / 86_400;
     let (y, m, d) = civil_from_days(days as i64);
     let rem = secs % 86_400;

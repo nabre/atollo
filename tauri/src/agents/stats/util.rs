@@ -17,10 +17,9 @@ pub const DAY_MS: i64 = 24 * 3600 * 1000;
 /// Larger session files are skipped.
 const MAX_FILE: u64 = 64 * 1024 * 1024;
 
+/// `crate::time::now_ms` as the i64 the agents' files and limits use.
 pub fn now_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_millis() as i64)
+    crate::time::now_ms() as i64
 }
 
 fn ms_of(time: SystemTime) -> i64 {
