@@ -73,6 +73,35 @@ describe("project databases", () => {
     });
   });
 
+  it("copies the connection as .env lines, read only when asked", async () => {
+    const block = "DB_CONNECTION=mysql\nDB_PASSWORD=pw1\n";
+    invoke.mockImplementation((c) => Promise.resolve(c === "project_env_block" ? block : null));
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const withDb: ProjectDatabases = {
+      ...dbs(null, ["8.4"]),
+      dbs: [
+        {
+          engine: "mysql",
+          database: "shop",
+          user: "shop",
+          password: "pw1",
+          host: "127.0.0.1",
+          port: 3306,
+          url: "mysql://shop:pw1@127.0.0.1:3306/shop",
+        },
+      ],
+    };
+    render(<Databases p={P} dbs={withDb} onChanged={() => undefined} />);
+    expect(invoke).not.toHaveBeenCalledWith("project_env_block", expect.anything());
+    fireEvent.click(screen.getByRole("button", { name: "Copia blocco .env" }));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(block);
+    });
+    expect(invoke).toHaveBeenCalledWith("project_env_block", { project: "shop", engine: "mysql" });
+    expect(await screen.findByText("Copiato")).toBeTruthy();
+  });
+
   it("says nothing while the version is installed", () => {
     render(<Databases p={P} dbs={dbs("10.6", ["11.4", "10.6"])} onChanged={() => undefined} />);
     expect(screen.queryByText(/non è installata/)).toBeNull();

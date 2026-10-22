@@ -984,5 +984,7 @@
   "Server MCP del kit": "Serveurs MCP du kit",
   "Nessuno.": "Aucun.",
   "data\\agents\\mcp.json non è JSON valido: Atollo non lo riscrive. Correggilo nell'editor.": "data\\agents\\mcp.json n'est pas du JSON valide : Atollo ne le réécrit pas. Corrigez-le dans l'éditeur.",
-  "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.": "Pour tous les agents dans tous les projets : Atollo les apporte à Claude Code, Codex, Antigravity et Pi. Les programmes nécessaires (Node pour npx, uv pour uvx) s'installent au premier démarrage de l'agent ; le jeton GitHub et les bases de données du projet arrivent à l'agent quand il démarre, jamais écrits dans les fichiers."
+  "Per tutti gli agenti in tutti i progetti: Atollo li porta a Claude Code, Codex, Antigravity e Pi. I programmi che servono (Node per npx, uv per uvx) si installano al primo avvio dell'agente; il token di GitHub e i database del progetto arrivano all'agente quando parte, mai scritti nei file.": "Pour tous les agents dans tous les projets : Atollo les apporte à Claude Code, Codex, Antigravity et Pi. Les programmes nécessaires (Node pour npx, uv pour uvx) s'installent au premier démarrage de l'agent ; le jeton GitHub et les bases de données du projet arrivent à l'agent quand il démarre, jamais écrits dans les fichiers.",
+  "Copia blocco .env": "Copier le bloc .env",
+  "Copiato": "Copié"
 }

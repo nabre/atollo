@@ -12,6 +12,21 @@ fn env_for_laravel_with_mongodb() {
     );
 }
 
+/// «Copia blocco .env»: every line of the connection, whatever the file
+/// already has, in the shape the project's `.env` uses.
+#[test]
+fn block_to_copy() {
+    let db = project_db("mysql", "shop", "pw1", 3307);
+    assert_eq!(env_block("", &db), format!("DATABASE_URL={}\n", db.url));
+    let laravel = env_block("DB_CONNECTION=sqlite\nDB_DATABASE=shop\n", &db);
+    assert_eq!(
+        laravel,
+        "DB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3307\nDB_DATABASE=shop\nDB_USERNAME=shop\nDB_PASSWORD=pw1\n"
+    );
+    let mongo = project_db("mongodb", "shop", "pw2", 27017);
+    assert!(env_block("", &mongo).starts_with("MONGODB_URI=mongodb://shop:pw2@"));
+}
+
 #[test]
 fn env_for_laravel_and_others() {
     let db = project_db("mysql", "shop", "pw1", 3307);

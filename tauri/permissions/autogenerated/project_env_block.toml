@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-env-block"
+description = "Enables the project_env_block command without any pre-configured scope."
+commands.allow = ["project_env_block"]
+
+[[permission]]
+identifier = "deny-project-env-block"
+description = "Denies the project_env_block command without any pre-configured scope."
+commands.deny = ["project_env_block"]

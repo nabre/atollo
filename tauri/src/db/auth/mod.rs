@@ -35,8 +35,8 @@ use serde::{Deserialize, Serialize};
 use crate::fsx::try_read_json;
 use crate::kit::Kit;
 pub use env::{
-    env_apply, env_changes, env_ignored, env_set, env_source, env_wanted, project_db, EnvChange,
-    ProjectDb,
+    env_apply, env_block, env_changes, env_ignored, env_set, env_source, env_wanted, project_db,
+    EnvChange, ProjectDb,
 };
 pub(crate) use lock::db_json_lock;
 #[allow(unused_imports)] // the tests, here and elsewhere

@@ -85,6 +85,15 @@ pub fn env_wanted(text: &str, db: &ProjectDb) -> Vec<(String, String)> {
     pairs.into_iter().map(|(k, v)| (k.to_owned(), v)).collect()
 }
 
+/// «Copia blocco .env» (report v6/04, N-11): the lines of `db` for a `.env`
+/// like `text`, to paste where the user wants.
+pub fn env_block(text: &str, db: &ProjectDb) -> String {
+    env_wanted(text, db)
+        .iter()
+        .map(|(k, v)| format!("{k}={v}\n"))
+        .collect()
+}
+
 pub fn env_changes(text: &str, db: &ProjectDb) -> Vec<EnvChange> {
     env_wanted(text, db)
         .into_iter()
