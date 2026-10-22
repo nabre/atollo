@@ -80,8 +80,12 @@ Atollo ist portabel: Es hält seine Daten neben der ausführbaren Datei im Ordne
 | Einstellungen, Anmeldungen (`auth.json`) und Sitzungen von Pi und die `models.json` des Kits mit Adresse und Schlüssel des lokalen Servers (nur für deinen Benutzer lesbar) | `data/home/.pi/agent/` |
 | Daten des Editor-Servers und sein Zugriffstoken pro Sitzung | `data/vscodium-server/` |
 | Deine Projekte | `projects/` |
+| Eine Kopie des Kits, die auf den Import wartet, nur nach „Aus … importieren“ | `.atollo-import/` |
+| Was eine importierte Kopie ersetzt hat, bis du es löschst | `.atollo-before-import-<Datum-Uhrzeit>/` |
 
 Die Datenbank-Passwörter, der Gemini-API-Schlüssel, die Datei des Claude-Tokens, der Schlüssel der lokalen Modelle und das Hugging-Face-Token werden nur für deinen Benutzer lesbar angelegt, wo das Laufwerk Berechtigungen kennt (NTFS, APFS, ext4…). Die übrigen Dateien, `settings.json` eingeschlossen, sind gewöhnliche Dateien. Auf USB-Sticks mit FAT32 oder exFAT gibt es keine Berechtigungen: **Wer den Stick hat, kann alle oben genannten Dateien lesen**. Bewahre den Stick sicher auf oder nutze ein Laufwerk mit Berechtigungen.
+
+Einstellungen › Das Kit › **„Kopie des Kits“** schreibt `projects/` und `data/` (ohne Programme, Caches und lokale Modelle) in einen Ordner oder ein Zip, **das du wählst**, auch außerhalb des Atollo-Ordners. Die Kopie enthält die Geheimnisse des Kits **im Klartext** (`data/app/db/secrets.json`, `data/app/secrets/`, die Anmeldungen der Agenten und von GitHub): bewahre sie sicher auf. Atollo sendet sie nie irgendwohin.
 
 Das Claude-Token und der Gemini-API-Schlüssel werden (als `CLAUDE_CODE_OAUTH_TOKEN` und `GEMINI_API_KEY`) nur den von Atollo gestarteten Agenten übergeben, nicht den Aktionen der Projekte, Skripten, Terminals oder dem Editor. Der Schlüssel der lokalen Modelle geht an Pi, wenn Atollo es startet (`LLAMA_API_KEY`), und in die `models.json` von Pi, damit `pi` auch in den Terminals des Kits funktioniert. Das Hugging-Face-Token wird nur an `huggingface.co` gesendet.
 

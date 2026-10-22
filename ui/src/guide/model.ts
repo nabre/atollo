@@ -634,7 +634,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("settings-gear"),
     keywords:
-      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento aggiornamento automatico versioni dei componenti automatic update automatische aktualisierung gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema salute del kit kit health santé du kit zustand des kits settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
+      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento aggiornamento automatico versioni dei componenti automatic update automatische aktualisierung gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema salute del kit copia del kit esporta importa zip copy of the kit export import copie du kit exporter importer kopie des kits exportieren importieren kit health santé du kit zustand des kits settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
   },
   {
@@ -724,7 +724,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("layers"),
     keywords:
-      "spostare kit altro pc lettera unità cartella rilocazione macos linux windows stesso disco move kit another pc drive letter folder relocation same disk déplacer kit autre pc lettre lecteur dossier même disque verschieben kit anderer pc laufwerksbuchstabe ordner gleiche festplatte",
+      "spostare kit altro pc lettera unità cartella rilocazione macos linux windows stesso disco copia del kit importa move kit another pc drive letter folder relocation same disk copy of the kit import déplacer kit autre pc lettre lecteur dossier même disque verschieben kit anderer pc laufwerksbuchstabe ordner gleiche festplatte",
   },
   {
     id: "updates",
@@ -745,7 +745,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("cloud-download"),
     keywords:
-      "aggiornamenti aggiorna atollo release backup copia sicurezza updates update backup copy mises à jour mettre à jour sauvegarde copie aktualisierungen aktualisieren sicherung kopie",
+      "aggiornamenti aggiorna atollo release backup copia sicurezza copia del kit esporta importa zip atollo-before-import copy of the kit export import copie du kit exporter importer kopie des kits exportieren importieren updates update backup copy mises à jour mettre à jour sauvegarde copie aktualisierungen aktualisieren sicherung kopie",
     targetPage: "settings",
   },
 

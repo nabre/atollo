@@ -136,7 +136,7 @@ Atollo\
                   (die Einstellungen jedes Projekts: data\projects\<Projekt>\dev-settings.json)
 ```
 
-Für eine Sicherung genügt es, `projects\` und `data\` zu kopieren (ohne `data\apps\` und `data\cache\`, die neu heruntergeladen werden).
+Für eine Sicherung gibt es Einstellungen › Das Kit › **Kopie des Kits**: Sie exportiert `projects\` und `data\` in einen Ordner oder ein Zip, ohne `data\apps\`, `data\cache\` und `data\models\` (die neu heruntergeladen werden), mit den Datenbanken für die Kopie angehalten, und importiert eine solche Kopie beim nächsten Start in ein Kit. Von Hand kopierst du dieselben Ordner bei geschlossenem Atollo. Die Kopie enthält die Passwörter des Kits: bewahre sie sicher auf.
 
 ## Deinstallation
 

@@ -134,7 +134,7 @@ Atollo\
                   (le impostazioni di ogni progetto: data\projects\<progetto>\dev-settings.json)
 ```
 
-Per un backup basta copiare `projects\` e `data\` (meno `data\apps\` e `data\cache\`, che si riscaricano).
+Per un backup c'è Impostazioni › Il kit › **Copia del kit**: esporta `projects\` e `data\` in una cartella o in uno zip, senza `data\apps\`, `data\cache\` e `data\models\` (si riscaricano), con i database fermi per la copia, e importa una copia così in un kit al suo avvio successivo. A mano, copia le stesse cartelle con Atollo chiuso. La copia contiene le password del kit: tienila al sicuro.
 
 ## Disinstallazione
 
