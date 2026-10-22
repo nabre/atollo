@@ -215,3 +215,34 @@ fn the_lock_is_taken_once() {
     drop(hold);
     assert!(dir.join(LOCK).exists());
 }
+
+/// A model whose id got the publisher's name after it is resumed by that
+/// id: its choice is found by its files, and the plan keeps the id.
+#[test]
+fn a_renamed_model_is_resumed() {
+    let tmp = TempDir::new("llm-renamed");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    entry_for(&kit, &plan(&[1])).unwrap();
+    let mut elsewhere = plan(&[1]);
+    elsewhere.repo = "bartowski/r".into();
+    assert_eq!(entry_for(&kit, &elsewhere).unwrap().id, "m-bartowski");
+    let info = RepoInfo {
+        repo: "bartowski/r".into(),
+        commit: "c".repeat(40),
+        license: None,
+        choices: vec![Choice {
+            id: "m".into(),
+            label: "Q/m".into(),
+            quant: None,
+            files: elsewhere.files.clone(),
+            bytes: 1,
+        }],
+    };
+    assert_eq!(
+        Plan::of_choice(&kit, &info, "m-bartowski").unwrap().id,
+        "m-bartowski"
+    );
+    assert_eq!(Plan::of_choice(&kit, &info, "m").unwrap().id, "m");
+    assert!(Plan::of_choice(&kit, &info, "x").is_err());
+}

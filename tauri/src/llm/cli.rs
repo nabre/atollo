@@ -81,20 +81,22 @@ pub fn list(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<()> {
 }
 
 /// The plan of `spec`: a catalog id, or `owner/repo[:quant]` read from
-/// Hugging Face.
-pub fn plan_of(net: &Net, spec: &str, token: Option<&str>) -> Result<Plan> {
+/// Hugging Face (the quantization, or the id the model has in the kit).
+pub fn plan_of(kit: &Kit, net: &Net, spec: &str, token: Option<&str>) -> Result<Plan> {
     if let Some(m) = catalog::find(spec.trim()) {
         return Ok(Plan::from_catalog(m));
     }
     let (repo, quant) = hf::parse_spec(spec)?;
     let info = hf::inspect(net, &repo, token)?;
-    let choice = hf::pick(&info, quant.as_deref())?;
-    Ok(Plan::from_choice(&info, choice))
+    match quant {
+        Some(q) => Plan::of_choice(kit, &info, &q),
+        None => Ok(Plan::from_choice(&info, hf::pick(&info, None)?)),
+    }
 }
 
 pub fn pull(kit: &Kit, net: &Net, spec: &str, lang: &str, out: &mut dyn Write) -> Result<String> {
     let token = super::hf_token(kit)?;
-    let plan = plan_of(net, spec, token.as_deref())?;
+    let plan = plan_of(kit, net, spec, token.as_deref())?;
     writeln!(
         out,
         "  · {}",

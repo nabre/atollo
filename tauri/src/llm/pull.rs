@@ -64,6 +64,34 @@ impl Plan {
         }
     }
 
+    /// The plan of the choice `name` of `info`: its quantization or its id
+    /// ([`super::hf::pick`]), or the id a model of the repository has in the
+    /// kit. An id that got the publisher's name after it ([`entry_for`]) is
+    /// no choice's, so a download of it left halfway is resumed by its
+    /// files, under its own id.
+    pub fn of_choice(kit: &Kit, info: &RepoInfo, name: &str) -> Result<Plan> {
+        let dir = super::models_dir(kit).join(local::folder_of(&info.repo));
+        let manifest = local::read_manifest(&dir).unwrap_or_default();
+        let names = |fs: &[ModelFile]| -> Vec<String> {
+            fs.iter().map(|f| disk_name(&f.name).to_owned()).collect()
+        };
+        let known = manifest.models.iter().find_map(|e| {
+            let c = info
+                .choices
+                .iter()
+                .find(|c| e.id.eq_ignore_ascii_case(name) && names(&c.files) == names(&e.files))?;
+            Some((e, c))
+        });
+        if let Some((e, c)) = known {
+            return Ok(Plan {
+                id: e.id.clone(),
+                ..Plan::from_choice(info, c)
+            });
+        }
+        let c = super::hf::pick(info, Some(name))?;
+        Ok(Plan::from_choice(info, c))
+    }
+
     pub fn bytes(&self) -> u64 {
         self.files.iter().map(|f| f.bytes).sum()
     }

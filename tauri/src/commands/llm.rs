@@ -233,8 +233,7 @@ pub async fn llm_pull<R: Runtime>(
             (None, Some(repo), Some(choice)) => {
                 let info = crate::llm::hf::inspect(&net, repo.trim(), token.as_deref())
                     .or_fail_chain("llm")?;
-                let c = crate::llm::hf::pick(&info, Some(choice)).or_fail_chain("llm")?;
-                crate::llm::pull::Plan::from_choice(&info, c)
+                crate::llm::pull::Plan::of_choice(&kit, &info, choice).or_fail_chain("llm")?
             }
             _ => return Err(fail("llm", "catalog, or repo and choice")),
         };
