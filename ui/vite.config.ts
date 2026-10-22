@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
     // The paths of ui/tsconfig.json: the app, the Guide, the tests' helpers.
     alias: {
       "@": folder("./src"),
-      "@guide": folder("./src/guide"),
+      "@guide": folder("../guide"),
       "@test": folder("../test/ui"),
     },
     // Vitest resolves packages for Node: Lit and @lit/react would load their
@@ -50,14 +50,20 @@ export default defineConfig(({ mode }) => ({
             {
               // Only the Guide's own modules: what they import from the app
               // stays where the app has it (never read at start through
-              // them). The chapters' common parts get a chunk of their own,
-              // so no two chunks import each other.
+              // them). The chapters (guide/content/*.tsx, D-164) one chunk
+              // each; their common parts (guide/core, the sources and
+              // folders, the app's widgets) a chunk of their own, so no two
+              // chunks import each other. content/index.ts, which imports
+              // every chapter, stays with the page. The ui job checks the
+              // chunks after the build (scripts/guide-chunks.mjs).
               name: (id: string) => {
-                const topic = /[\\/]src[\\/]guide[\\/]topics[\\/](\w+)\.tsx$/.exec(id)?.[1];
-                if (topic) return `guide-${topic}`;
-                return /[\\/]src[\\/]guide[\\/](model|sources|widgets|core[\\/]\w+)\.tsx?$/.test(id)
-                  ? "guide-base"
-                  : null;
+                const chapter = /[\\/]guide[\\/]content[\\/](\w+)\.tsx$/.exec(id)?.[1];
+                if (chapter) return `guide-${chapter}`;
+                const base =
+                  /[\\/]guide[\\/]core[\\/]\w+\.ts$/.test(id) ||
+                  /[\\/]guide[\\/]content[\\/](sources|folders)\.ts$/.test(id) ||
+                  /[\\/]src[\\/]guide[\\/](widgets|live)\.tsx$/.test(id);
+                return base ? "guide-base" : null;
               },
               includeDependenciesRecursively: false,
             },

@@ -1,13 +1,13 @@
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 
-// The interface's sources (ui\src) and their tests (test\ui); each folder has
-// its tsconfig.json.
+// The interface's sources (ui\src), the Guide's content (guide, D-164) and
+// their tests (test\ui); each folder has its tsconfig.json.
 export default tseslint.config(
   { ignores: ["dist", "node_modules", "tauri", "docs"] },
   ...tseslint.configs.strictTypeChecked,
   {
-    files: ["ui/src/**/*.{ts,tsx}", "test/ui/**/*.{ts,tsx}"],
+    files: ["ui/src/**/*.{ts,tsx}", "guide/**/*.{ts,tsx}", "test/ui/**/*.{ts,tsx}"],
     languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } },
     plugins: { "react-hooks": reactHooks },
     rules: { ...reactHooks.configs.recommended.rules },

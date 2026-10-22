@@ -1,6 +1,6 @@
 // The kit's key folders, as the Guide names them: the app opens them, the
 // site lists them.
-import { tr } from "./core/lang";
+import { tr } from "../core/lang";
 
 export interface KitFolder {
   /** What the app's folderOpen takes. */

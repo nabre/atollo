@@ -17,11 +17,12 @@
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["vite/client"],
-    // Aliases, also in vite.config.ts: the app (@/), the Guide (@guide/) and
-    // the tests' helpers (@test/), in place of deep relative paths.
+    // Aliases, also in vite.config.ts: the app (@/), the Guide's content
+    // at the root (@guide/, D-164) and the tests' helpers (@test/), in
+    // place of deep relative paths.
     "paths": {
       "@/*": ["./src/*"],
-      "@guide/*": ["./src/guide/*"],
+      "@guide/*": ["../guide/*"],
       "@test/*": ["../test/ui/*"]
     }
   },

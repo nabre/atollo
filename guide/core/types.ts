@@ -1,7 +1,7 @@
 // What a topic receives from whoever draws it, as plain shapes: the app
 // passes its own objects (they have these fields and more), the site null.
 import type { ReactNode } from "react";
-import type { GuideTopicId } from "../model";
+import type { GuideTopicId } from "./model";
 
 /** The kit the Guide describes, when the app knows it. */
 export interface GuideKitInfo {

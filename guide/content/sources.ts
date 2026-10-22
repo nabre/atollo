@@ -1,7 +1,7 @@
 // Reference catalogs of the Guide: the external sources of every catalog
 // component and part (verified by test/ui/guide/sources.test.ts).
-import { tr } from "./core/lang";
-import type { SourceCategory, ToolSourceRow } from "./core/types";
+import { tr } from "../core/lang";
+import type { SourceCategory, ToolSourceRow } from "../core/types";
 
 export type { SourceCategory, ToolSourceRow };
 

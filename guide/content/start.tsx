@@ -1,7 +1,7 @@
 // Chapter 1 of the Guide, «Primi passi»: what Atollo is, the first start,
 // the window and a first project from start to finish.
 import { rich, tr } from "../core/lang";
-import { GUIDE_GROUPS, GUIDE_TOPICS, type AppPageTarget, type GuideTopicId } from "../model";
+import { GUIDE_GROUPS, GUIDE_TOPICS, type AppPageTarget, type GuideTopicId } from "../core/model";
 import {
   Bullets,
   Callout,

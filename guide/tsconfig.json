@@ -1,0 +1,6 @@
+{
+  // The Guide is neutral: no Vite types, nothing of the app (D-164).
+  "extends": "../ui/tsconfig.json",
+  "compilerOptions": { "types": [] },
+  "include": ["."]
+}

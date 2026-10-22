@@ -5,10 +5,10 @@ import { render } from "@testing-library/react";
 import { afterAll, describe, expect, it } from "vitest";
 import { setLang, type Lang } from "@/i18n";
 import "@/guide/register";
-import { GUIDE_GROUPS, GUIDE_TOPICS } from "@/guide/model";
+import { GUIDE_GROUPS, GUIDE_TOPICS } from "@guide/core/model";
 import { GuideTopicContent, TOPIC_TEXTS } from "@/guide/sections";
 
-const raw = import.meta.glob<string>(["../../../ui/src/guide/**/*.ts", "../../../ui/src/guide/**/*.tsx"], {
+const raw = import.meta.glob<string>(["../../../guide/**/*.ts", "../../../guide/**/*.tsx"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -53,6 +53,13 @@ describe("guide text", () => {
         GUIDE_TOPICS.some((x) => x.group === g.id),
         g.id,
       ).toBe(true);
+  });
+
+  it("reads the Guide's sources", () => {
+    // guide/core and guide/content: a glob that finds nothing would pass
+    // every check below.
+    expect(Object.keys(files).length).toBeGreaterThan(10);
+    expect(Object.keys(files).some((p) => p.endsWith("/core/lang.ts"))).toBe(true);
   });
 
   it("leaves no draft text", () => {

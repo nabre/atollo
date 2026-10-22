@@ -1,7 +1,7 @@
 // Chapter 8 of the Guide, «Come funziona dentro»: isolation, the folders on
 // disk, background processes, download sources and checks, the command line.
 import { rich, tr } from "../core/lang";
-import { sourceCategories, sourceCounts, TOOL_SOURCES } from "../sources";
+import { sourceCategories, sourceCounts, TOOL_SOURCES } from "./sources";
 import {
   Bullets,
   Callout,

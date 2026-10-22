@@ -22,8 +22,8 @@ import {
   ViewContainer,
   ViewPane,
 } from "../workbench";
-import { tr } from "./core/lang";
-import { matches, searchWords, topicHaystack } from "./core/search";
+import { tr } from "@guide/core/lang";
+import { matches, searchWords, topicHaystack } from "@guide/core/search";
 import {
   chapterTitle,
   GUIDE_GROUPS,
@@ -33,7 +33,7 @@ import {
   type AppPageTarget,
   type GuideGroupId,
   type GuideTopicId,
-} from "./model";
+} from "@guide/core/model";
 import { GuideTopicContent } from "./sections";
 import { GuideNavContext, type GuideNav } from "./widgets";
 

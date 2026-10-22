@@ -110,6 +110,10 @@ jobs:
                   rust=true ;;
                 ui/* | test/ui/* | eslint.config.mjs | .prettierrc.json)
                   ui=true ;;
+                # The Guide's content, drawn by the app (D-164), and the
+                # check of its chunks.
+                guide/* | scripts/guide-chunks.mjs)
+                  ui=true ;;
                 # VSCodium 1.135's rules, which test/ui/theme compares the
                 # tokens with, and the script that extracts them (D-142).
                 docs/brand/vscodium-1.135/* | scripts/vscodium-css/*)
@@ -173,6 +177,11 @@ jobs:
       # Also for cargo: tauri::generate_context! needs the frontend in dist/.
       - name: Frontend build
         run: npm -w ui run build
+      # A chunk pattern of vite.config.ts that stops matching fails nothing
+      # by itself (GUI-V7-08): one chunk per chapter of the Guide.
+      - name: Guide chunks
+        if: needs.changes.outputs.ui == 'true'
+        run: node scripts/guide-chunks.mjs
       # Always: it takes seconds and needs no build.
       - name: cargo fmt
         run: cargo fmt --check

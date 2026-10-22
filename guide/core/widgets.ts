@@ -5,7 +5,7 @@
 // widget is a type error; one that forgets to register gets a clear error,
 // never an empty page.
 import { createElement, type ReactNode } from "react";
-import type { AppPageTarget, GuideTopicId } from "../model";
+import type { AppPageTarget, GuideTopicId } from "./model";
 import type { GuideComponentState, GuideKitInfo, GuideProblem, SourceCategory, ToolSourceRow } from "./types";
 
 /** Where a link of the Guide leads: never a function, so every renderer

@@ -4,7 +4,7 @@
 // topics/, one file per chapter. The order follows the user: first steps,
 // daily work, services, agents, tools, settings, carrying the kit, how it
 // works inside, and help when something goes wrong.
-import { tr } from "./core/lang";
+import { tr } from "./lang";
 
 export type GuideGroupId =
   "start" | "projects" | "services" | "agents" | "tools" | "settings" | "portable" | "inside" | "help";

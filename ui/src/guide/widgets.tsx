@@ -8,10 +8,10 @@ import { useCopy } from "../shared/hooks";
 import { lang } from "../i18n";
 import { Tag } from "../shared/tags";
 import { Button, Codicon, codicon, DataTable, EditorSection, IconButton, Link, useModalFocus } from "../workbench";
-import { guideLabels } from "./core/labels";
-import type { GuideWidgetProps as W } from "./core/widgets";
-import { kitFolders } from "./folders";
-import { sectionCode, topicOf, type AppPageTarget, type GuideTopicId } from "./model";
+import { guideLabels } from "@guide/core/labels";
+import type { GuideWidgetProps as W } from "@guide/core/widgets";
+import { kitFolders } from "@guide/content/folders";
+import { sectionCode, topicOf, type AppPageTarget, type GuideTopicId } from "@guide/core/model";
 
 /** A screenshot of the app from /guide/<lang>/*.webp (taken in the browser preview,
  * on its sample data) with a caption, an optional example and a zoom. */

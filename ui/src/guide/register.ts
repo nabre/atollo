@@ -1,8 +1,8 @@
 // The app as the Guide's renderer: its language and its widgets. Imported
 // once, by the Guide's entry (index.ts) and by the tests that draw topics.
 import { lang } from "../i18n";
-import { bindGuideLang } from "./core/lang";
-import { registerGuideWidgets, type GuideWidgetImpl } from "./core/widgets";
+import { bindGuideLang } from "@guide/core/lang";
+import { registerGuideWidgets, type GuideWidgetImpl } from "@guide/core/widgets";
 import { Badge, FilterList, KitInfo, SourcesTable } from "./live";
 import * as W from "./widgets";
 

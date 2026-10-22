@@ -7,10 +7,10 @@ import { urlOpen } from "../api";
 import { ComponentLogo } from "../shared/logos";
 import { Tag } from "../shared/tags";
 import { Button, Codicon, Properties, SearchBox } from "../workbench";
-import { guideLabels } from "./core/labels";
-import { rich } from "./core/lang";
-import type { SourceCategory } from "./core/types";
-import type { GuideWidgetProps as W } from "./core/widgets";
+import { guideLabels } from "@guide/core/labels";
+import { rich } from "@guide/core/lang";
+import type { SourceCategory } from "@guide/core/types";
+import type { GuideWidgetProps as W } from "@guide/core/widgets";
 import { Code, P, QA, Section, See, Table } from "./widgets";
 
 /** A short label: the app's tag. */
