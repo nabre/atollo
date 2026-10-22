@@ -43,7 +43,12 @@ export function kindOf(c: { id: string; group: Group }): Kind {
  * the site's kinds, each with its title and what to know about it. */
 export function groups(): { id: Kind; title: string; hint: string; has: (c: ComponentInfo) => boolean }[] {
   const text: Record<Kind, [string, string]> = {
-    system: [t("Sistema ed editor"), t("Sempre installati: l'editor, la shell del kit, GitHub CLI e Git.")],
+    system: [
+      t("Sistema ed editor"),
+      t(
+        "Sempre installati: l'editor, la shell del kit e GitHub CLI. Git arriva con Claude Code e Pi, o si sceglie qui.",
+      ),
+    ],
     agents: [t("Agenti AI"), t("Facoltativi: il kit funziona anche senza. Sempre all'ultima versione.")],
     ai: [
       t("Modelli locali"),

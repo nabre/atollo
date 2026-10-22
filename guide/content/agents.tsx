@@ -153,10 +153,10 @@ export const AGENTS: TopicTexts = {
         />
         <P>
           {tr(
-            "Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio propone già Claude Code, Codex e Antigravity; Pi non è tra quelli proposti, si spunta a mano). Seguono sempre l'ultima versione e portano con sé ciò che serve; Git, che usano tutti, è già tra i componenti sempre installati.",
-            "Agents are installed from the Tools page, “AI agents” kind (the first start already suggests Claude Code, Codex and Antigravity; Pi is not among the suggested ones, you tick it by hand). They always follow the latest version and bring along what they need; Git, which they all use, is already among the components that are always installed.",
-            "Les agents s'installent depuis la page Outils, type « Agents IA » (le premier démarrage propose déjà Claude Code, Codex et Antigravity ; Pi ne fait pas partie des agents proposés, il se coche à la main). Ils suivent toujours la dernière version et apportent ce dont ils ont besoin ; Git, qu'ils utilisent tous, fait déjà partie des composants toujours installés.",
-            "Die Agenten werden auf der Seite Werkzeuge in der Art „KI-Agenten“ installiert (der erste Start schlägt Claude Code, Codex und Antigravity bereits vor; Pi gehört nicht dazu, du kreuzt ihn von Hand an). Sie folgen immer der neuesten Version und bringen mit, was sie brauchen; Git, das sie alle verwenden, gehört schon zu den immer installierten Komponenten.",
+            "Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio propone già Claude Code, Codex e Antigravity; Pi non è tra quelli proposti, si spunta a mano). Seguono sempre l'ultima versione e portano con sé ciò che serve: Claude Code e Pi usano Git, che il kit installa con loro.",
+            "Agents are installed from the Tools page, “AI agents” kind (the first start already suggests Claude Code, Codex and Antigravity; Pi is not among the suggested ones, you tick it by hand). They always follow the latest version and bring along what they need: Claude Code and Pi use Git, which the kit installs with them.",
+            "Les agents s'installent depuis la page Outils, type « Agents IA » (le premier démarrage propose déjà Claude Code, Codex et Antigravity ; Pi ne fait pas partie des agents proposés, il se coche à la main). Ils suivent toujours la dernière version et apportent ce dont ils ont besoin : Claude Code et Pi utilisent Git, que le kit installe avec eux.",
+            "Die Agenten werden auf der Seite Werkzeuge in der Art „KI-Agenten“ installiert (der erste Start schlägt Claude Code, Codex und Antigravity bereits vor; Pi gehört nicht dazu, du kreuzt ihn von Hand an). Sie folgen immer der neuesten Version und bringen mit, was sie brauchen: Claude Code und Pi verwenden Git, das das Kit mit ihnen installiert.",
           )}
         </P>
         <Callout tone="info" title={tr("Pi", "Pi", "Pi", "Pi")}>

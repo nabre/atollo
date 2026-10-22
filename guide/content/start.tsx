@@ -652,10 +652,10 @@ export const START: TopicTexts = {
                 "Der Editor, PowerShell 7 (die Konsole des Kits), GitHub CLI und Git. Darunter die Anforderungen an den PC.",
               ),
               tr(
-                "Sono sempre installati, insieme agli altri, quando premi «Installa»: le caselle sono bloccate.",
-                "They are always installed, together with the others, when you press “Install”: the checkboxes are locked.",
-                "Ils sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : les cases sont verrouillées.",
-                "Sie werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Die Kontrollkästchen sind gesperrt.",
+                "L'editor, PowerShell 7 e GitHub CLI sono sempre installati, insieme agli altri, quando premi «Installa»: le loro caselle sono bloccate. Git si sceglie, e arriva comunque con Claude Code e Pi.",
+                "The editor, PowerShell 7 and GitHub CLI are always installed, together with the others, when you press “Install”: their checkboxes are locked. Git is your choice, and it comes anyway with Claude Code and Pi.",
+                "L'éditeur, PowerShell 7 et GitHub CLI sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : leurs cases sont verrouillées. Git est à choisir, et il arrive de toute façon avec Claude Code et Pi.",
+                "Der Editor, PowerShell 7 und GitHub CLI werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Ihre Kontrollkästchen sind gesperrt. Git wählst du selbst, und es kommt ohnehin mit Claude Code und Pi.",
               ),
             ],
             [

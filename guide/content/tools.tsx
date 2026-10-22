@@ -159,10 +159,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor"),
               tr(
-                "Editor, PowerShell 7, GitHub CLI, Git: sempre installati.",
-                "Editor, PowerShell 7, GitHub CLI, Git: always installed.",
-                "Éditeur, PowerShell 7, GitHub CLI, Git : toujours installés.",
-                "Editor, PowerShell 7, GitHub CLI, Git: immer installiert.",
+                "Editor, PowerShell 7, GitHub CLI: sempre installati. Git: si sceglie, e arriva con Claude Code e Pi.",
+                "Editor, PowerShell 7, GitHub CLI: always installed. Git: your choice, and it comes with Claude Code and Pi.",
+                "Éditeur, PowerShell 7, GitHub CLI : toujours installés. Git : à choisir, et il arrive avec Claude Code et Pi.",
+                "Editor, PowerShell 7, GitHub CLI: immer installiert. Git: frei wählbar, und es kommt mit Claude Code und Pi.",
               ),
             ],
             [
