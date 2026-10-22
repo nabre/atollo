@@ -663,7 +663,7 @@ Ogni strumento sta in una cartella col nome della sua versione minore, e una cor
 
 ## Guida operativa e pagina «Guida» nell'app (16/10/2026)
 
-Manuale completo del kit in [`GUIDE.it.md`](GUIDE.it.md) (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
+Manuale completo del kit in `GUIDE.it.md` (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
 
 **Fatto**
 - **5 capitoli e 16 sezioni navigabili** nello stile Workbench di VSCodium (`ui/src/guide/`): architettura portabile e layout su disco, 36 fonti ufficiali con tabella ricercabile e stato live dei componenti installati, account GitHub unificato (D-70), panoramica visiva di tutte le viste e 12 ricette di configurazione passo-passo.

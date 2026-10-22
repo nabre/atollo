@@ -2,7 +2,7 @@
 
 English · [Italiano](ARCHITECTURE.it.md)
 
-How Atollo's code is organized and where a new change goes. The reasons behind the choices are in [DECISIONS.md](DECISIONS.md) (in Italian), usage in [GUIDE.md](GUIDE.md), what is new in [CHANGELOG.md](CHANGELOG.md) (in Italian), tests in [TESTING.md](TESTING.md). Open work is in the [GitHub issues](https://github.com/nabre/atollo/issues).
+How Atollo's code is organized and where a new change goes. The reasons behind the choices are in [DECISIONS.md](DECISIONS.md) (in Italian), usage in the [Guide](https://nabre.github.io/atollo/guide/), what is new in [CHANGELOG.md](CHANGELOG.md) (in Italian), tests in [TESTING.md](TESTING.md). Open work is in the [GitHub issues](https://github.com/nabre/atollo/issues).
 
 ## Requirements
 
@@ -42,7 +42,7 @@ ui\src\                       React + TypeScript interface (below)
 test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src
 runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
-scripts\                      dev-ui.mjs (npm run dev), guide-docs.cjs, guide-shots\, vscodium-css\, matrix\,
+scripts\                      dev-ui.mjs (npm run dev), guide-shots\, vscodium-css\, matrix\,
                               test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
                               preview, languages and labels shared by the screenshot scripts and the site)
 site\                         the site (build.mjs, strings\, template.html); shots\ (screenshots per language)
@@ -408,7 +408,7 @@ The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.
 | --- | --- |
 | `site/shots/make.mjs` | the site's six screenshots (Projects with Activity, Agents, Tools matrix; dark and light; 1280×820 at 2×) in `site/shots/<lang>/` for en, it, fr, de (`SHOTS_LANGS` limits them, D-143); `site/build.mjs` copies them to `assets/shots/<lang>/` for the page of that language, and each README shows its own |
 | `site/shots/social.mjs` | `docs/brand/social.png` (1280×640), the social card, from `en/shot-projects-dark.png`: it stays in English |
-| `scripts/guide-shots/make.mjs` | the Guide's 52 screenshots, `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which `docs/app/GUIDE*.md` reuse |
+| `scripts/guide-shots/make.mjs` | the Guide's 52 screenshots, `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which the site's Guide copies |
 
 `npm run dev` (`tauri dev`) starts `scripts/dev-ui.mjs` as `beforeDevCommand`: Vite runs in that process and the process ends when the shell that started it is gone, when the stdin pipe Tauri hands down closes, or on SIGINT/SIGTERM/SIGHUP, so closing the app frees port 5173 (D-138). A port already taken is reported with who has it, never stopped.
 

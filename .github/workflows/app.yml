@@ -110,9 +110,6 @@ jobs:
                   rust=true ;;
                 ui/* | test/ui/* | eslint.config.mjs | .prettierrc.json)
                   ui=true ;;
-                # The guide's documents, written from the in-app Guide.
-                docs/app/GUIDE.md | docs/app/GUIDE.it.md | scripts/guide-docs.cjs)
-                  ui=true ;;
                 # VSCodium 1.135's rules, which test/ui/theme compares the
                 # tokens with, and the script that extracts them (D-142).
                 docs/brand/vscodium-1.135/* | scripts/vscodium-css/*)
@@ -173,9 +170,6 @@ jobs:
       - name: Frontend tests
         if: needs.changes.outputs.ui == 'true'
         run: npm -w ui test
-      - name: Guide documents
-        if: needs.changes.outputs.ui == 'true'
-        run: node scripts/guide-docs.cjs --check
       # Also for cargo: tauri::generate_context! needs the frontend in dist/.
       - name: Frontend build
         run: npm -w ui run build

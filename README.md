@@ -27,7 +27,7 @@
 <p align="center">
   <a href="https://nabre.github.io/atollo/"><b>Website</b></a> ·
   <a href="https://github.com/nabre/atollo/releases/latest"><b>Download</b></a> ·
-  <a href="docs/app/GUIDE.md"><b>User guide</b></a> ·
+  <a href="https://nabre.github.io/atollo/guide/"><b>User guide</b></a> ·
   <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a> ·
   <a href="docs/PRIVACY.md"><b>Privacy</b></a>
 </p>
@@ -56,7 +56,7 @@ On first start the app downloads the system components by itself: PowerShell 7, 
 
 | Document | What it covers |
 | --- | --- |
-| [User guide](docs/app/GUIDE.md) | every page of the app, step by step, with screenshots |
+| [User guide](https://nabre.github.io/atollo/guide/) | every page of the app, step by step, with screenshots, on the website (also inside the app) |
 | [Component catalog](docs/app/CATALOG.md) | the components, where each one is downloaded from, availability per system |
 | [Tools × systems matrix](docs/app/TOOLS-MATRIX.html) | every component on each of the six targets: native, emulated or missing |
 | [Architecture](docs/app/ARCHITECTURE.md) | how the code is organized and where a change goes |

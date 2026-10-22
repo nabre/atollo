@@ -2,7 +2,7 @@
 
 [English](ARCHITECTURE.md) · Italiano
 
-Com'è organizzato il codice di Atollo e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), l'uso in [GUIDE.it.md](GUIDE.it.md), le novità in [CHANGELOG.md](CHANGELOG.md), le prove in [TESTING.it.md](TESTING.it.md). Il lavoro aperto sta nelle [issue di GitHub](https://github.com/nabre/atollo/issues).
+Com'è organizzato il codice di Atollo e dove va una modifica nuova. Il perché delle scelte è in [DECISIONS.md](DECISIONS.md), l'uso nella [Guida](https://nabre.github.io/atollo/it/guide/), le novità in [CHANGELOG.md](CHANGELOG.md), le prove in [TESTING.it.md](TESTING.it.md). Il lavoro aperto sta nelle [issue di GitHub](https://github.com/nabre/atollo/issues).
 
 ## Requisiti
 
@@ -42,7 +42,7 @@ ui\src\                       interfaccia React + TypeScript (sotto)
 test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src
 runtime\                      file scritti in data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
-scripts\                      dev-ui.mjs (npm run dev), guide-docs.cjs, guide-shots\, vscodium-css\, matrix\,
+scripts\                      dev-ui.mjs (npm run dev), guide-shots\, vscodium-css\, matrix\,
                               test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
                               anteprima, lingue ed etichette comuni agli script delle schermate e al sito)
 site\                         il sito (build.mjs, strings\, template.html); shots\ (schermate per lingua)
@@ -409,7 +409,7 @@ Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0
 | --- | --- |
 | `site/shots/make.mjs` | le sei schermate del sito (Progetti con Attività, Agenti, Matrice degli strumenti; scuro e chiaro; 1280×820 a 2×) in `site/shots/<lingua>/` per en, it, fr, de (`SHOTS_LANGS` le limita, D-143); `site/build.mjs` le copia in `assets/shots/<lingua>/` per la pagina di quella lingua, e ogni README mostra le sue |
 | `site/shots/social.mjs` | `docs/brand/social.png` (1280×640), la social card, da `en/shot-projects-dark.png`: resta in inglese |
-| `scripts/guide-shots/make.mjs` | le 52 schermate della Guida, `ui/public/guide/<lingua>/*.webp` (tema chiaro, 1280×800 a 1,25×, senza il badge dell'anteprima; webp con Pillow; `GUIDE_SHOTS_LANGS` limita le lingue), che `docs/app/GUIDE*.md` riusano |
+| `scripts/guide-shots/make.mjs` | le 52 schermate della Guida, `ui/public/guide/<lingua>/*.webp` (tema chiaro, 1280×800 a 1,25×, senza il badge dell'anteprima; webp con Pillow; `GUIDE_SHOTS_LANGS` limita le lingue), che la Guida del sito copia |
 
 `npm run dev` (`tauri dev`) avvia `scripts/dev-ui.mjs` come `beforeDevCommand`: Vite gira in quel processo e il processo finisce quando la shell che l'ha avviato non c'è più, quando si chiude la pipe dello stdin che Tauri gli passa, o con SIGINT/SIGTERM/SIGHUP, così chiudendo l'app la porta 5173 si libera (D-138). Una porta già occupata viene segnalata con chi la tiene, mai fermata.
 

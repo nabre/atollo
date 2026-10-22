@@ -27,7 +27,7 @@
 <p align="center">
   <a href="https://nabre.github.io/atollo/it/"><b>Sito</b></a> ·
   <a href="https://github.com/nabre/atollo/releases/latest"><b>Download</b></a> ·
-  <a href="app/GUIDE.it.md"><b>Guida</b></a> ·
+  <a href="https://nabre.github.io/atollo/it/guide/"><b>Guida</b></a> ·
   <a href="https://github.com/nabre/atollo/issues"><b>Segnalazioni</b></a> ·
   <a href="PRIVACY.it.md"><b>Privacy</b></a>
 </p>
@@ -56,14 +56,14 @@ Al primo avvio l'app scarica da sola i componenti di sistema: PowerShell 7, GitH
 
 | Documento | Cosa contiene |
 | --- | --- |
-| [Guida](app/GUIDE.it.md) | ogni pagina dell'app, passo per passo, con le schermate |
+| [Guida](https://nabre.github.io/atollo/it/guide/) | ogni pagina dell'app, passo per passo, con le schermate, sul sito (anche dentro l'app) |
 | [Catalogo dei componenti](app/CATALOG.it.md) | i componenti, da dove si scarica ciascuno, la disponibilità per sistema |
 | [Matrice strumenti × sistemi](app/TOOLS-MATRIX.html) | ogni componente sui sei target: nativo, emulato o assente (in inglese) |
 | [Architettura](app/ARCHITECTURE.it.md) | com'è organizzato il codice e dove va una modifica |
 | [Prove](app/TESTING.it.md) | controlli automatici e checklist manuale per sistema |
 | [Decisioni](app/DECISIONS.md) e [novità](app/CHANGELOG.md) | il perché di ogni scelta e cosa è cambiato |
 
-Il lavoro aperto è nelle [segnalazioni](https://github.com/nabre/atollo/issues). La documentazione principale è in inglese: [README](../README.md), [guide](app/GUIDE.md).
+Il lavoro aperto è nelle [segnalazioni](https://github.com/nabre/atollo/issues). La documentazione principale è in inglese: [README](../README.md), [guide](https://nabre.github.io/atollo/guide/).
 
 ## Come si usa
 

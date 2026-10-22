@@ -27,7 +27,7 @@
 <p align="center">
   <a href="https://nabre.github.io/atollo/de/"><b>Website</b></a> ·
   <a href="https://github.com/nabre/atollo/releases/latest"><b>Download</b></a> ·
-  <a href="app/GUIDE.md"><b>Anleitung (auf Englisch)</b></a> ·
+  <a href="https://nabre.github.io/atollo/de/guide/"><b>Anleitung</b></a> ·
   <a href="https://github.com/nabre/atollo/issues"><b>Issues</b></a> ·
   <a href="PRIVACY.de.md"><b>Datenschutz</b></a>
 </p>
@@ -58,7 +58,7 @@ Die ausführliche Dokumentation ist auf Englisch (und Italienisch):
 
 | Dokument | Inhalt |
 | --- | --- |
-| [Anleitung](app/GUIDE.md) | jede Seite der App, Schritt für Schritt, mit Screenshots |
+| [Anleitung](https://nabre.github.io/atollo/de/guide/) | jede Seite der App, Schritt für Schritt, mit Screenshots, auf Deutsch auf der Website (auch in der App) |
 | [Komponentenkatalog](app/CATALOG.md) | die Komponenten, woher jede geladen wird, Verfügbarkeit pro System |
 | [Matrix Werkzeuge × Systeme](app/TOOLS-MATRIX.html) | jede Komponente auf den sechs Zielen: nativ, emuliert oder nicht vorhanden |
 | [Architektur](app/ARCHITECTURE.md) | wie der Code aufgebaut ist und wohin eine Änderung gehört |
