@@ -3,25 +3,9 @@ use crate::db::services::{
     bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_client_env,
     project_db_port, project_line, server_lines, Setting,
 };
-use crate::kit::{tests::TempDir, Arch};
-
-/// `id` installed at `version`, the default folder of its line, with the
-/// key paths of the kit's target (`bin/mysqld.exe` on Windows,
-/// `bin/mysqld` elsewhere).
-fn fake_server(kit: &Kit, id: &str, version: &str) {
-    let c = Catalog::get().find(id).unwrap();
-    let dir = crate::versions::install_dir(kit, c, version);
-    let folder = c.folder.as_deref().unwrap();
-    let target = kit.target();
-    for k in std::iter::once(c.key_for(target)).chain(c.keys_for(target)) {
-        if let Some(rel) = k.strip_prefix(folder) {
-            let file = crate::fsx::join_rel(&dir, rel);
-            fs::create_dir_all(file.parent().unwrap()).unwrap();
-            fs::write(&file, b"").unwrap();
-        }
-    }
-    c.save_version(kit, version).unwrap();
-}
+use crate::test_support::{fake_server, prepared_kit};
+#[cfg(unix)]
+use crate::{kit::Arch, test_support::TempDir};
 
 /// The MySQL programs of a line folder of an older version, as the
 /// kit's target names them.
@@ -35,9 +19,7 @@ fn fake_mysql_line(kit: &Kit, dir: &std::path::Path) {
 
 #[test]
 fn each_version_has_its_data() {
-    let tmp = TempDir::new("services-lines");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-lines");
     // Data of an older kit, then the server's own folder per version.
     fake_server(&kit, "mysql", "8.4.5");
     let root = kit.data().join("db").join("mysql");
@@ -102,9 +84,7 @@ fn each_version_has_its_data() {
 /// copy left goes at the next try.
 #[test]
 fn a_copy_cut_short_is_no_data() {
-    let tmp = TempDir::new("services-seed-partial");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-seed-partial");
     let root = kit.data().join("db").join("mysql");
     let old = root.join("8.0");
     fs::create_dir_all(old.join("shop")).unwrap();
@@ -169,9 +149,7 @@ fn a_copy_cut_short_is_no_data() {
 /// The data of a running version is never copied (D-102).
 #[test]
 fn no_copy_of_a_running_version() {
-    let tmp = TempDir::new("services-seed-running");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-seed-running");
     let root = kit.data().join("db").join("mysql");
     fs::create_dir_all(root.join("8.0")).unwrap();
     fs::write(root.join("8.0").join("mysql.ibd"), b"").unwrap();
@@ -192,9 +170,7 @@ fn no_copy_of_a_running_version() {
 /// database on the version chosen for it, at that version's port.
 #[test]
 fn versions_side_by_side() {
-    let tmp = TempDir::new("services-side");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-side");
     fake_server(&kit, "mysql", "9.3.1");
     let c = Catalog::get().find("mysql").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "8.0");
@@ -278,9 +254,7 @@ fn versions_side_by_side() {
 /// a port it already has stays its own.
 #[test]
 fn ports_of_pools_projects_and_editor_refused() {
-    let tmp = TempDir::new("services-ports-taken");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-ports-taken");
     fake_server(&kit, "mysql", "9.3.1");
     let c = Catalog::get().find("mysql").unwrap();
     fake_mysql_line(&kit, &crate::versions::saved_dir(&kit, c, "8.0"));
@@ -325,9 +299,7 @@ fn ports_of_pools_projects_and_editor_refused() {
 #[test]
 fn autostart_lines_follow_the_projects() {
     use crate::db::auth;
-    let tmp = TempDir::new("services-autostart");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-autostart");
     fake_server(&kit, "mysql", "9.3.1");
     let c = Catalog::get().find("mysql").unwrap();
     let older = crate::versions::saved_dir(&kit, c, "8.0");
@@ -383,9 +355,7 @@ fn autostart_lines_follow_the_projects() {
 #[test]
 fn mysql_is_the_kits_sql_server() {
     use crate::db::auth;
-    let tmp = TempDir::new("services-mysql");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-mysql");
     let s = Services::new(kit.clone());
     // A new kit: MySQL and MongoDB on the page.
     let ids: Vec<String> = s.list().into_iter().map(|i| i.id).collect();
@@ -469,9 +439,7 @@ fn ports_stay_when_the_server_changes_version() {
     assert_eq!(before, after);
     assert_eq!((after["9.7"], after["8.4"]), (3306, 3307));
 
-    let tmp = TempDir::new("services-main-ports");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-main-ports");
     fake_server(&kit, "mysql", "9.3.1");
     let c = Catalog::get().find("mysql").unwrap();
     fake_mysql_line(&kit, &crate::versions::saved_dir(&kit, c, "8.0"));

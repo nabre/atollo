@@ -1,13 +1,12 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
+use crate::test_support::prepared_kit;
 
 /// A junction in projects\ is not a project, and a junction inside a
 /// project is not read by the detection (D-77).
 #[test]
 fn junctions_are_not_projects_nor_read() {
-    let tmp = TempDir::new("proj-links");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("proj-links");
     let real = kit.projects().join("real");
     fs::create_dir_all(&real).unwrap();
     fs::write(real.join("index.html"), "<h1>x</h1>").unwrap();
@@ -142,9 +141,7 @@ fn sources() {
 
 #[test]
 fn create_list_delete() {
-    let tmp = TempDir::new("projects");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects");
     create(&kit, "site", "it").unwrap();
     assert!(create(&kit, "site", "it").is_err());
     assert!(create(&kit, "..", "it").is_err());
@@ -169,9 +166,7 @@ fn create_list_delete() {
 /// opened first, then by name; hidden folders are not projects.
 #[test]
 fn recent_follows_the_order_of_list() {
-    let tmp = TempDir::new("projects-recent");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-recent");
     for name in ["alpha", "beta", "gamma"] {
         create(&kit, name, "it").unwrap();
     }
@@ -229,9 +224,7 @@ impl ProjectDatabases for FakeDbs {
 /// touched; forced, no server is touched at all.
 #[test]
 fn delete_refused_when_another_project_has_the_same_database() {
-    let tmp = TempDir::new("projects-delete-same");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-delete-same");
     for name in ["my-app", "my_app"] {
         create(&kit, name, "it").unwrap();
         crate::db::auth::set_project_password(&kit, name, "mysql", "pw").unwrap();
@@ -272,9 +265,7 @@ fn delete_refused_when_another_project_has_the_same_database() {
 /// of the server's own never dropped.
 #[test]
 fn delete_drops_the_names_in_use() {
-    let tmp = TempDir::new("projects-delete-names");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-delete-names");
     // an orphan of before the names, adopted by "Nuovo"
     let old = kit
         .project_data()
@@ -333,9 +324,7 @@ fn project_with_dbs(kit: &Kit, name: &str) -> state::ProjectState {
 
 #[test]
 fn delete_plan_with_and_without_databases() {
-    let tmp = TempDir::new("projects-plan");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-plan");
     create(&kit, "plain", "it").unwrap();
     let plan = delete_plan(&kit, "plain", "it").unwrap();
     assert_eq!(
@@ -381,9 +370,7 @@ fn delete_plan_with_and_without_databases() {
 
 #[test]
 fn delete_drops_the_databases_first() {
-    let tmp = TempDir::new("projects-delete-dbs");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-delete-dbs");
     let state = project_with_dbs(&kit, "shop");
     let dbs = FakeDbs::new(&["mysql", "mongodb"]);
     delete(&kit, "shop", "it", &dbs, false).unwrap();
@@ -412,9 +399,7 @@ fn delete_drops_the_databases_first() {
 
 #[test]
 fn an_orphan_without_a_folder_is_deleted_with_its_databases() {
-    let tmp = TempDir::new("projects-delete-orphan");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-delete-orphan");
     let state = project_with_dbs(&kit, "gone");
     fs::remove_dir(kit.projects().join("gone")).unwrap();
     let dbs = FakeDbs::new(&["mysql", "mongodb"]);
@@ -427,9 +412,7 @@ fn an_orphan_without_a_folder_is_deleted_with_its_databases() {
 
 #[test]
 fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
-    let tmp = TempDir::new("projects-delete-fail");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("projects-delete-fail");
     let state = project_with_dbs(&kit, "shop");
     let mut dbs = FakeDbs::new(&["mysql", "mongodb"]);
     dbs.failing.push("mongodb");

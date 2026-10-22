@@ -1,11 +1,9 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn sign_in_detection() {
-    let tmp = TempDir::new("agents");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("agents");
     let env = KitEnv::default();
     assert!(status(&kit).iter().all(|a| !a.signed_in && !a.installed));
     fs::create_dir_all(kit.home().join(".claude")).unwrap();
@@ -32,9 +30,7 @@ fn sign_in_detection() {
 /// with a token; "Esci" deletes it.
 #[test]
 fn claude_token_sign_in() {
-    let tmp = TempDir::new("agents-token");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("agents-token");
     let env = KitEnv::default();
     assert_eq!(sign_in(&kit, "claude"), None);
     let token = format!("sk-ant-oat01-{}", "a".repeat(90));
@@ -58,9 +54,7 @@ fn claude_token_sign_in() {
 /// other agents' (SEC-V6-02).
 #[test]
 fn gemini_key_for_antigravity_only() {
-    let tmp = TempDir::new("agents-gemini");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("agents-gemini");
     let env = KitEnv::default();
     assert_eq!(sign_in(&kit, "antigravity"), None);
     assert_eq!(launch_env(&kit, &env, "antigravity").get(GEMINI_VAR), None);

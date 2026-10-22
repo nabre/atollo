@@ -1,5 +1,6 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Target};
+use crate::kit::{tests::TempDir, Target};
+use crate::test_support::prepared_kit;
 use std::collections::HashSet;
 
 #[test]
@@ -286,9 +287,7 @@ fn page_order_is_by_section_then_name() {
 
 #[test]
 fn installed_and_versions() {
-    let tmp = TempDir::new("catalog");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("catalog");
     let catalog = Catalog::get();
     let pwsh = catalog.find("pwsh").unwrap();
     assert!(!pwsh.is_installed(&kit));
@@ -329,9 +328,7 @@ fn touch(path: &std::path::Path) {
 
 #[test]
 fn every_part_must_be_installed() {
-    let tmp = TempDir::new("catalog-parts");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("catalog-parts");
     let catalog = Catalog::get();
     for (id, parts) in [
         ("java", &["maven/bin/mvn.cmd", "gradle/bin/gradle.bat"][..]),

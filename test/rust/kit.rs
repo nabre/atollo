@@ -1,27 +1,8 @@
 use super::*;
 use super::{names::*, root::*};
 
-/// A fresh folder under the system temp, removed on drop.
-pub struct TempDir(pub PathBuf);
-impl TempDir {
-    pub fn new(name: &str) -> TempDir {
-        let dir = std::env::temp_dir().join(format!(
-            "atollo-test-{}-{}-{name}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        fs::create_dir_all(&dir).unwrap();
-        TempDir(dir)
-    }
-}
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
+/// Kept here for the tests that name it by this path.
+pub use crate::test_support::TempDir;
 
 #[test]
 fn arch_follows_env_rule() {

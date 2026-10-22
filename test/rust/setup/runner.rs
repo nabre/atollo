@@ -3,6 +3,7 @@ use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch, Kit};
 use crate::net::Net;
 use crate::settings::Settings;
+use crate::test_support::prepared_kit;
 use std::fs;
 use std::sync::atomic::AtomicBool;
 
@@ -418,9 +419,7 @@ fn removal_and_cancel() {
 
 #[test]
 fn one_run_at_a_time() {
-    let tmp = TempDir::new("runner-lock");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("runner-lock");
     let first = lock(&kit).unwrap();
     assert!(lock(&kit).unwrap_err().is::<Busy>());
     // The same root for another target is the same kit.
@@ -436,9 +435,7 @@ fn one_run_at_a_time() {
 #[test]
 fn another_process_holds_the_lock() {
     use std::os::fd::AsRawFd;
-    let tmp = TempDir::new("runner-flock");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("runner-flock");
     // A descriptor of its own: to `flock` it is another holder, as another
     // process would be.
     let held = fs::OpenOptions::new()

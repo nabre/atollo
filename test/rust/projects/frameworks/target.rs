@@ -1,11 +1,10 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
+use crate::test_support::prepared_kit;
 
 #[test]
 fn existing_folders() {
-    let tmp = TempDir::new("frameworks-targets");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("frameworks-targets");
     let p = kit.projects();
     fs::create_dir_all(p.join("empty")).unwrap();
     fs::create_dir_all(p.join("files")).unwrap();

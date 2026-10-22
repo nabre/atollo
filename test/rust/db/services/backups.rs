@@ -1,12 +1,11 @@
 use super::*;
 use crate::db::auth::tests::assert_owner_only;
-use crate::kit::{tests::TempDir, Arch, Kit};
+use crate::kit::tests::TempDir;
+use crate::test_support::prepared_kit;
 
 #[test]
 fn copies_in_the_private_folder() {
-    let tmp = TempDir::new("db-backups");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("db-backups");
     let s = Services::new(kit);
     assert!(s.backup_dir("..").is_err());
     assert!(s.backups(r"..\x").is_empty());
@@ -71,9 +70,7 @@ fn copies_in_the_private_folder() {
 /// database the kit made for the project, never one it shares.
 #[test]
 fn only_the_projects_own_database() {
-    let tmp = TempDir::new("db-backups-own");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("db-backups-own");
     let s = Services::new(kit.clone());
     let db_json = |p: &str, json: &str| {
         let file = kit.project_data().join(p).join("private").join("db.json");
@@ -95,9 +92,7 @@ fn only_the_projects_own_database() {
 /// leaves nothing; two in the same second get two names (BUG-V6-06).
 #[test]
 fn a_copy_is_listed_only_when_whole() {
-    let tmp = TempDir::new("db-backups-part");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("db-backups-part");
     let s = Services::new(kit);
     let dir = s.backup_dir("shop").unwrap();
 

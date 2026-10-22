@@ -22,12 +22,11 @@ use crate::os::jobs::{self, Job};
 use crate::projects::alias;
 use crate::projects::fastcgi::{FastCgi, FcgiAddr};
 use crate::setup::Catalog;
+use crate::test_support::{fake_server, prepared_kit};
 
 #[test]
 fn profile_crud_and_vhost_generation() {
-    let tmp = TempDir::new("servers-pool");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-pool");
     let servers = WebServers::new(kit.clone());
 
     servers
@@ -170,9 +169,7 @@ fn site(project: &str, folder: &str, port: u16) -> AttachedSite {
 /// at all (never the project root in its place, with `.env` and `.git`).
 #[test]
 fn pool_skips_site_with_missing_or_linked_docroot() {
-    let tmp = TempDir::new("servers-docroot");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("servers-docroot");
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
 
@@ -209,9 +206,7 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
 /// never loses a profile: every read-modify-write holds `store_lock`.
 #[test]
 fn concurrent_list_and_save_profile_keep_profile() {
-    let tmp = TempDir::new("servers-store-lock");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-store-lock");
     let servers = WebServers::new(kit.clone());
     std::thread::scope(|s| {
         s.spawn(|| {
@@ -248,9 +243,7 @@ fn concurrent_list_and_save_profile_keep_profile() {
 /// then stops its pool and drops it from `servers.json` in one go.
 #[test]
 fn remove_profile_stops_and_forgets_under_op_lock() {
-    let tmp = TempDir::new("servers-remove-op");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-remove-op");
     let servers = WebServers::new(kit.clone());
     servers
         .save_profile(
@@ -303,9 +296,7 @@ fn remove_profile_stops_and_forgets_under_op_lock() {
 /// not reported as used by another program; one kept taken still is.
 #[test]
 fn start_waits_for_a_port_being_released() {
-    let tmp = TempDir::new("servers-start-port");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-start-port");
     let servers = WebServers::new(kit.clone());
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -352,9 +343,7 @@ fn start_waits_for_a_port_being_released() {
 /// through `WebServers` read `servers.json` and the projects again.
 #[test]
 fn list_uses_cache_until_invalidated() {
-    let tmp = TempDir::new("servers-list-cache");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-list-cache");
     let servers = WebServers::new(kit.clone());
     assert!(servers.list("it", false).pools.is_empty());
 
@@ -438,9 +427,7 @@ fn wait_port_released_true_after_listener_dropped() {
 /// cached poll leaves `servers.json` as it is.
 #[test]
 fn fresh_list_prunes_ports_of_gone_pools() {
-    let tmp = TempDir::new("servers-prune-ports");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-prune-ports");
     let servers = WebServers::new(kit.clone());
     let mut ports = BTreeMap::new();
     ports.insert("apache-2.2-php-5.6".to_owned(), 8123);
@@ -472,9 +459,7 @@ fn fresh_list_prunes_ports_of_gone_pools() {
 /// profile: saving it drops the ports of the pools that no longer exist.
 #[test]
 fn save_profile_takes_the_port_of_a_gone_pool() {
-    let tmp = TempDir::new("servers-gone-port");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-gone-port");
     let servers = WebServers::new(kit.clone());
     let mut store = StoredServers::default();
     store.ports.insert("apache-2.2_php-5.6".to_owned(), 8124);
@@ -514,9 +499,7 @@ fn save_profile_takes_the_port_of_a_gone_pool() {
 /// refused, the file stays as it is.
 #[test]
 fn unreadable_servers_json_is_never_overwritten() {
-    let tmp = TempDir::new("servers-damaged");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-damaged");
     let servers = WebServers::new(kit.clone());
     let damaged = r#"{"profiles": [{"id": "mine", "#;
     fs::create_dir_all(store_path(&kit).parent().unwrap()).unwrap();
@@ -598,31 +581,11 @@ fn apache_pool_conf_refuses_foreign_hosts() {
     assert!(!conf.contains("*.localhost"));
 }
 
-/// `id` installed at `version`, the default folder of its line, with the
-/// key paths of the kit's target (`caddy.exe` on Windows, `caddy`
-/// elsewhere).
-fn fake_server(kit: &Kit, id: &str, version: &str) {
-    let c = Catalog::get().find(id).unwrap();
-    let dir = crate::versions::install_dir(kit, c, version);
-    let folder = c.folder.as_deref().unwrap();
-    let target = kit.target();
-    for k in std::iter::once(c.key_for(target)).chain(c.keys_for(target)) {
-        if let Some(rel) = k.strip_prefix(folder) {
-            let file = crate::fsx::join_rel(&dir, rel);
-            fs::create_dir_all(file.parent().unwrap()).unwrap();
-            fs::write(&file, b"").unwrap();
-        }
-    }
-    c.save_version(kit, version).unwrap();
-}
-
 /// BUG-05r: with Caddy and PHP installed but no project, the default pool
 /// starts no php-cgi; nor does a manual profile without a chosen PHP.
 #[test]
 fn default_caddy_pool_has_no_php_without_php_projects() {
-    let tmp = TempDir::new("servers-default-php");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-default-php");
     fake_server(&kit, "caddy", "2.11.7");
     fake_server(&kit, "php", "8.4.13");
     let servers = WebServers::new(kit.clone());
@@ -740,9 +703,7 @@ fn pool_with_dead_php_cgi_is_not_running() {
 /// GAP-RUN: the pool of a project's site is the profile it was assigned to.
 #[test]
 fn pool_of_finds_assigned_project() {
-    let tmp = TempDir::new("servers-pool-of");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-pool-of");
     let servers = WebServers::new(kit.clone());
     servers
         .save_profile(
@@ -862,9 +823,7 @@ fn reload_restarts_when_php_or_port_changes() {
 /// site blocks with their own name in the Caddyfile; a stale vhost file goes.
 #[test]
 fn two_actions_of_one_project_get_distinct_vhosts() {
-    let tmp = TempDir::new("servers-two-actions");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-two-actions");
     let servers = WebServers::new(kit.clone());
     servers
         .save_profile(
@@ -967,9 +926,7 @@ fn pooled_actions_drop_detected_duplicates() {
 /// of another one, and a new pool never falls back on a pool's port.
 #[test]
 fn ports_are_unique_among_pools() {
-    let tmp = TempDir::new("servers-unique-ports");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-unique-ports");
     let servers = WebServers::new(kit.clone());
     let profile = |id: &str, port: u16| WebServerProfileInput {
         id: id.into(),
@@ -1026,9 +983,7 @@ fn ports_are_unique_among_pools() {
 /// database version is never set on a pool's.
 #[test]
 fn pool_ports_are_not_those_of_databases_projects_or_editor() {
-    let tmp = TempDir::new("servers-ports-taken");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-ports-taken");
     fs::write(
         kit.app_dir().join("services.json"),
         r#"{ "mysql": { "ports": { "8.4": 3307, "8.0": 8081 } } }"#,
@@ -1087,9 +1042,7 @@ fn pool_ports_are_not_those_of_databases_projects_or_editor() {
 /// start (never the default line in its place), with an error naming it.
 #[test]
 fn start_refuses_a_line_not_installed() {
-    let tmp = TempDir::new("servers-missing-line");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-missing-line");
     fake_server(&kit, "caddy", "2.11.7");
     fake_server(&kit, "php", "8.4.13");
     let servers = WebServers::new(kit.clone());
@@ -1148,9 +1101,7 @@ fn fake_running(servers: &WebServers, started: WebServerPool) {
 /// stopped; it serves no new run and is not reloaded.
 #[test]
 fn orphan_running_pool_is_listed_until_stopped() {
-    let tmp = TempDir::new("servers-orphan");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-orphan");
     let servers = WebServers::new(kit.clone());
     fake_running(
         &servers,
@@ -1176,9 +1127,7 @@ fn orphan_running_pool_is_listed_until_stopped() {
 /// serves it (never the others) and reports its failure.
 #[test]
 fn assign_project_reloads_only_its_pool_and_reports_errors() {
-    let tmp = TempDir::new("servers-assign-reload");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-assign-reload");
     let servers = WebServers::new(kit.clone());
     let free = || {
         let l = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
@@ -1305,9 +1254,7 @@ fn profile_options_default_and_round_trip() {
     assert!(old.profiles[0].keep_alive);
     assert!(!old.profiles[0].autostart);
 
-    let tmp = TempDir::new("servers-options");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-options");
     let servers = WebServers::new(kit.clone());
     let mut profile = old.profiles[0].clone();
     profile.keep_alive = false;
@@ -1333,9 +1280,7 @@ fn profile_options_default_and_round_trip() {
 /// automatic pool started by projects stops with the last of them.
 #[test]
 fn detach_leaves_the_pool_and_stops_an_empty_automatic_one() {
-    let tmp = TempDir::new("servers-detach");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-detach");
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
     fs::create_dir_all(projects.join("shop").join("public")).unwrap();
@@ -1941,9 +1886,7 @@ fn name_sites_keeps_names_unique() {
 /// that was only offered a site (Caddy since D-111).
 #[test]
 fn automatic_pools_list_chosen_or_started_sites() {
-    let tmp = TempDir::new("servers-chosen-sites");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-chosen-sites");
     fake_server(&kit, "caddy", "2.11.7");
     let servers = WebServers::new(kit.clone());
     let projects = kit.projects();
@@ -2112,9 +2055,7 @@ fn caddy_site_block_of_a_pool() {
 /// key, its admin endpoint, the user's snippets only when there are some.
 #[test]
 fn caddy_pool_writes_one_caddyfile() {
-    let tmp = TempDir::new("servers-caddy-pool");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("servers-caddy-pool");
     let servers = WebServers::new(kit.clone());
     for p in ["shop", "blog"] {
         fs::create_dir_all(kit.projects().join(p).join("public")).unwrap();
@@ -2157,9 +2098,7 @@ fn caddy_pool_writes_one_caddyfile() {
 /// of the pool once it holds a `.caddy` file, not before, and only there.
 #[test]
 fn caddy_pool_imports_the_project_conf_d() {
-    let tmp = TempDir::new("servers-caddy-project-conf-d");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-caddy-project-conf-d");
     let servers = WebServers::new(kit.clone());
     for p in ["shop", "blog"] {
         fs::create_dir_all(kit.projects().join(p).join("public")).unwrap();
@@ -2193,9 +2132,7 @@ fn caddy_pool_imports_the_project_conf_d() {
 /// project's own `apache\conf.d` once it is there.
 #[test]
 fn apache_pool_includes_the_project_conf_d() {
-    let tmp = TempDir::new("servers-apache-project-conf-d");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-apache-project-conf-d");
     let servers = WebServers::new(kit.clone());
     let conf = super::config::component_dir(&kit, "apache", None).join("conf");
     fs::create_dir_all(&conf).unwrap();
@@ -2233,9 +2170,7 @@ fn apache_pool_includes_the_project_conf_d() {
 /// pool); a new profile never takes an id a site's `server` means otherwise.
 #[test]
 fn dedicated_sites_and_reserved_profile_ids() {
-    let tmp = TempDir::new("servers-dedicated");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-dedicated");
     let servers = WebServers::new(kit.clone());
     let shop = kit.projects().join("shop");
     fs::create_dir_all(shop.join("public")).unwrap();
@@ -2383,9 +2318,7 @@ fn ports_move_to_the_new_automatic_ids() {
 /// a site of Nginx's (`"nginx"` in `panel.json`) is a Caddy one.
 #[test]
 fn automatic_pools_come_back_from_their_ids() {
-    let tmp = TempDir::new("servers-stable-ids");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("servers-stable-ids");
     fake_server(&kit, "caddy", "2.11.7");
     let servers = WebServers::new(kit.clone());
     fake_running(&servers, caddy_pool("caddy-2.9", 8083, Vec::new()));

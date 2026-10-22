@@ -1,5 +1,7 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
+#[cfg(unix)]
+use crate::{kit::Arch, test_support::TempDir};
 use std::process::Command;
 use std::time::Duration;
 
@@ -33,9 +35,7 @@ fn a_kit_through_a_link_lists_its_programs() {
 
 #[test]
 fn lists_and_stops_a_kit_program() {
-    let tmp = TempDir::new("sessions");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("sessions");
     // A "program of the kit": a copy of a program of the system in
     // data/apps, that waits 30 s (ping on Windows, sleep elsewhere).
     let (source, name, args): (PathBuf, &str, &[&str]) = if cfg!(windows) {

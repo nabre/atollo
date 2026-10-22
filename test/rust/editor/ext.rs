@@ -1,5 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn user_list_format() {
@@ -143,9 +144,7 @@ fn a_project_hides_what_it_does_not_use() {
 
 #[test]
 fn pending_follows_projects_programs_offered_and_installed() {
-    let tmp = TempDir::new("ext");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("ext");
     let none = BTreeSet::new();
     let has = |p: &[String], id: &str| p.iter().any(|x| x == id);
     let p = pending(&kit, &none);

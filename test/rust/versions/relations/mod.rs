@@ -1,5 +1,6 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Os};
+use crate::kit::{tests::TempDir, Os};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn windows_runtimes_only_on_windows() {
@@ -48,9 +49,7 @@ fn fake(kit: &Kit, id: &str, version: &str) {
 
 #[test]
 fn links_and_projects() {
-    let tmp = TempDir::new("relations");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("relations");
     fake(&kit, "java", "11.0.25+9 (Maven 3.9.11, Gradle 9.1.0)");
     fake(&kit, "node", "v20.19.5");
     let node = Catalog::get().find("node").unwrap();

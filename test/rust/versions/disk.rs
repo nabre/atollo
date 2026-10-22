@@ -1,13 +1,12 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 use crate::versions::tests::{install_fake, key_rel};
 use crate::versions::{dir_name, VERSION_FILE};
 
 #[test]
 fn deleted_by_hand_is_no_longer_chosen() {
-    let tmp = TempDir::new("versions-sync");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-sync");
     let catalog = Catalog::get();
     let node = catalog.find("node").unwrap();
     let main = install_dir(&kit, node, "v22.11.0");
@@ -74,9 +73,7 @@ fn deleted_need_of_one_target_turns_off_what_needs_it() {
 
 #[test]
 fn folders_of_an_older_kit_move() {
-    let tmp = TempDir::new("versions-migrate");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-migrate");
     let node = Catalog::get().find("node").unwrap();
     // Older kit: node\node.exe the default, versions\node\20.18 saved,
     // versions\typst\0.13 of a component no longer versioned.
@@ -246,9 +243,7 @@ fn github_cli_and_uv_leave_tools() {
 /// kept of it goes at start, nothing else.
 #[test]
 fn retired_windows_terminal_goes() {
-    let tmp = TempDir::new("versions-retired");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-retired");
     let wt = kit.apps().join("terminal").join("1.25").join("settings");
     fs::create_dir_all(&wt).unwrap();
     fs::write(wt.join("settings.json"), "{}").unwrap();
@@ -283,9 +278,7 @@ fn retired_windows_terminal_goes() {
 /// version, router, sessions and log go at start.
 #[test]
 fn retired_adminer_goes() {
-    let tmp = TempDir::new("versions-retired-adminer");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-retired-adminer");
     let line = kit.apps().join("adminer").join("6.1");
     fs::create_dir_all(&line).unwrap();
     fs::write(line.join("adminer.php"), "<?php").unwrap();

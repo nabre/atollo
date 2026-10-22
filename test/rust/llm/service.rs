@@ -2,6 +2,7 @@ use super::*;
 
 use crate::kit::tests::TempDir;
 use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 #[test]
 fn devices_of_llama_server() {
@@ -58,9 +59,7 @@ fn the_server_listens_on_this_pc_only() {
 /// starting.
 #[test]
 fn a_start_needs_the_server_and_a_model() {
-    let tmp = TempDir::new("llm-start");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-start");
     let llm = Llm::new(kit.clone());
     let err = llm.start(&KitEnv::default(), "it").unwrap_err();
     assert!(err.to_string().contains("llama.cpp"), "{err:#}");

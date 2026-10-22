@@ -2,6 +2,7 @@ use super::*;
 
 use crate::kit::tests::TempDir;
 use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 fn project(dir: &Path) {
     for (rel, text) in [
@@ -96,9 +97,7 @@ fn files_of_a_folder() {
 /// a template; the same name replaces it; removed, its folder goes.
 #[test]
 fn a_project_saved_as_a_base() {
-    let tmp = TempDir::new("mine-save");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("mine-save");
     let dir = tmp.0.join("projects").join("shop");
     project(&dir);
     let env = KitEnv::default();

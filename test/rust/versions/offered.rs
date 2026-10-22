@@ -1,14 +1,12 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
 use crate::setup::Catalog;
+use crate::test_support::prepared_kit;
 use crate::versions::tests::install_fake;
 use crate::versions::{install_dir, saved_dir, tools};
 
 #[test]
 fn stale_lists_are_asked_for_again() {
-    let tmp = TempDir::new("versions-stale");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-stale");
     // Installed or not, every list that can be asked for is missing.
     let missing = stale_offers(&kit);
     assert!(missing.iter().any(|id| id == "mongodb"));
@@ -40,9 +38,7 @@ fn stale_lists_are_asked_for_again() {
 
 #[test]
 fn offered_lines_and_downloads() {
-    let tmp = TempDir::new("versions-offered");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-offered");
     let node = Catalog::get().find("node").unwrap();
 
     // Nothing installed: nothing to download.

@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 #[test]
 fn free_space_levels() {
@@ -50,9 +50,7 @@ fn files_the_account_reads() {
 /// Every check answers on a fresh kit, in its order, with a text.
 #[test]
 fn a_fresh_kit_is_checked() {
-    let tmp = TempDir::new("health-kit");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("health-kit");
     let all = check(&kit, "it");
     let ids: Vec<&str> = all.iter().map(|f| f.id).collect();
     assert_eq!(ids[0], "disk");

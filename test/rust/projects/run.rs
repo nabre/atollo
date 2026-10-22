@@ -8,7 +8,8 @@ use super::*;
 use super::{output::*, start::*};
 use crate::detect::Action;
 use crate::env::KitEnv;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
+use crate::test_support::prepared_kit;
 
 #[test]
 fn local_network_setting() {
@@ -172,9 +173,7 @@ fn lines_and_colours() {
 /// No free port in the range: an error naming the runner's own range.
 #[test]
 fn no_free_port_names_the_range() {
-    let tmp = TempDir::new("run-ports-none");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-ports-none");
     let busy = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     let p = busy.local_addr().unwrap().port();
     let r = Runner::new(kit, Arc::new(|_| {})).with_port_range(p, p);
@@ -184,9 +183,7 @@ fn no_free_port_names_the_range() {
 
 #[test]
 fn ports_are_kept_and_locked() {
-    let tmp = TempDir::new("run-ports");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-ports");
     // TEST-V6-01: ports no other test takes, so that `a` is still free
     // when asked again under a parallel `cargo test`.
     let (from, to) = (7640, 7679);
@@ -226,9 +223,7 @@ fn ports_are_kept_and_locked() {
 /// version or the editor's, and the owner is named.
 #[test]
 fn set_port_refuses_ports_of_pools_databases_and_editor() {
-    let tmp = TempDir::new("run-ports-taken");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-ports-taken");
     std::fs::write(
         kit.app_dir().join("servers.json"),
         r#"{ "ports": { "legacy": 8095 } }"#,
@@ -265,9 +260,7 @@ fn set_port_refuses_ports_of_pools_databases_and_editor() {
 /// also when nothing listens there now (BUG-V5-07).
 #[test]
 fn automatic_port_skips_pools_and_databases() {
-    let tmp = TempDir::new("run-auto-port");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-auto-port");
     std::fs::write(
         kit.app_dir().join("servers.json"),
         r#"{ "ports": { "legacy": 7100 } }"#,
@@ -286,9 +279,7 @@ fn automatic_port_skips_pools_and_databases() {
 
 #[test]
 fn ports_per_project_file() {
-    let tmp = TempDir::new("run-ports-files");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("run-ports-files");
     let file = |p: &str| {
         tmp.0
             .join("data")
@@ -349,9 +340,7 @@ fn runs_and_stops_commands() {
     } else {
         ("echo $PORT hello; exit 3", "sleep 60")
     };
-    let tmp = TempDir::new("run-cmd");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-cmd");
     let proj = kit.projects().join("demo");
     std::fs::create_dir_all(&proj).unwrap();
     let events = Arc::new(AtomicUsize::new(0));
@@ -413,9 +402,7 @@ fn replaced_run_does_not_end_the_new_one() {
     } else {
         "sleep 60"
     };
-    let tmp = TempDir::new("run-replaced");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-replaced");
     let proj = kit.projects().join("My App’s {demo}");
     std::fs::create_dir_all(&proj).unwrap();
     let env = KitEnv::build(
@@ -501,9 +488,7 @@ fn site_mode_auto_or_dedicated_otherwise() {
 /// marks it stopped (the shared pool is not this action's to end).
 #[test]
 fn pool_run_stops_without_a_process() {
-    let tmp = TempDir::new("run-pool");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-pool");
     let r = Runner::new(kit, Arc::new(|_| {}));
     let a = site_action(false, Some("legacy"));
     let info = r.attach_pool(
@@ -537,9 +522,7 @@ fn pool_run_stops_without_a_process() {
 /// written again included.
 #[test]
 fn log_lines_are_numbered() {
-    let tmp = TempDir::new("run-log-seq");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-log-seq");
     let events = Arc::new(Mutex::new(Vec::new()));
     let seen = Arc::clone(&events);
     let r = Runner::new(
@@ -589,9 +572,7 @@ fn log_lines_are_numbered() {
 /// is marked stopped, and can then be cleared; one whose pool runs is not.
 #[test]
 fn pool_runs_follow_their_pool() {
-    let tmp = TempDir::new("run-pool-reconcile");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-pool-reconcile");
     let events = Arc::new(Mutex::new(Vec::new()));
     let seen = Arc::clone(&events);
     let r = Runner::new(
@@ -644,9 +625,7 @@ fn pool_runs_follow_their_pool() {
 #[test]
 fn site_stops_when_its_php_cgi_ends() {
     use crate::os::jobs;
-    let tmp = TempDir::new("run-php-cgi");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("run-php-cgi");
     let r = Runner::new(kit, Arc::new(|_| {}));
     let cmd = |args: &str| {
         use std::os::windows::process::CommandExt;

@@ -1,6 +1,7 @@
 use super::*;
 use crate::editor::pty::{Launch, Sessions};
 use crate::kit::tests::TempDir;
+use crate::test_support::wait_for;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -61,17 +62,6 @@ fn cmd(args: &[&str]) -> Launch {
         title: "test".into(),
         // Windows' own ConPTY: no kit here.
         conpty: None,
-    }
-}
-
-fn wait_for(sessions: &Sessions, id: u64, text: &str) -> String {
-    let until = Instant::now() + Duration::from_secs(20);
-    loop {
-        let data = sessions.backlog(id).unwrap().data;
-        if data.contains(text) || Instant::now() > until {
-            return data;
-        }
-        std::thread::sleep(Duration::from_millis(20));
     }
 }
 

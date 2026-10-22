@@ -2,7 +2,7 @@ use super::*;
 
 use crate::agents::sync::codex::codex_server;
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 fn value(p: &Preset) -> serde_json::Value {
     let dir = TempDir::new(&format!("preset-{}", p.id));
@@ -113,9 +113,7 @@ fn db(engine: &str, url: &str) -> ProjectDb {
 /// a variable already set stays.
 #[test]
 fn variables_at_the_agent_start() {
-    let tmp = TempDir::new("preset-launch");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("preset-launch");
     let dir = tmp.0.join("projects").join("p");
     std::fs::create_dir_all(&dir).unwrap();
     let env = KitEnv::default();

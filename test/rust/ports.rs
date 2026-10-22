@@ -1,14 +1,12 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 /// Every owner read from its file: the pools, the stored ports of the
 /// database versions, the projects' actions, the editor's range; a port
 /// two of them have goes to the first, but [`refuse_taken`] sees both.
 #[test]
 fn every_owner_from_its_file() {
-    let tmp = TempDir::new("ports-taken");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("ports-taken");
     assert_eq!(ports_taken(&kit).len(), crate::editor::PORTS.count());
     std::fs::write(
         kit.app_dir().join("servers.json"),
@@ -57,9 +55,7 @@ fn every_owner_from_its_file() {
 /// The port of the local models is kept for them (`llm.json`).
 #[test]
 fn the_local_models_keep_their_port() {
-    let tmp = TempDir::new("ports-llm");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("ports-llm");
     std::fs::write(kit.app_dir().join("llm.json"), r#"{ "port": 9931 }"#).unwrap();
     assert_eq!(ports_taken(&kit)[&9931], Owner::Llm);
     let err = refuse_taken(&kit, 9931, |_| false, "it").unwrap_err();

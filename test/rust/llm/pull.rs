@@ -2,6 +2,7 @@ use super::*;
 
 use crate::kit::tests::TempDir;
 use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 fn plan(sizes: &[u64]) -> Plan {
     Plan {
@@ -104,9 +105,7 @@ fn plans_of_the_catalog_and_of_a_repository() {
 /// by other files of the same repository is refused.
 #[test]
 fn an_entry_is_reused_not_doubled() {
-    let tmp = TempDir::new("llm-entry");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-entry");
     let first = entry_for(&kit, &plan(&[1]), "en").unwrap();
     let mut again = plan(&[1]);
     again.id = "other".into();
@@ -126,9 +125,7 @@ fn an_entry_is_reused_not_doubled() {
 /// the same commit is kept.
 #[test]
 fn a_part_of_an_older_commit_starts_again() {
-    let tmp = TempDir::new("llm-commit");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-commit");
     let old = plan(&[10]);
     let dir = old.dir(&kit);
     entry_for(&kit, &old, "en").unwrap();
@@ -153,9 +150,7 @@ fn a_part_of_an_older_commit_starts_again() {
 /// refused meanwhile.
 #[test]
 fn one_download_per_folder() {
-    let tmp = TempDir::new("llm-busy");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-busy");
     let dir = crate::llm::models_dir(&kit).join("o--busy");
     let flag = Arc::new(AtomicBool::new(false));
     let hold = Pulling::take(&dir, "o--busy", "m", Arc::clone(&flag), "en").unwrap();
@@ -182,9 +177,7 @@ fn one_download_per_folder() {
 #[cfg(any(windows, target_os = "macos"))]
 #[test]
 fn a_folder_is_one_whatever_its_case() {
-    let tmp = TempDir::new("llm-case");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-case");
     let dir = crate::llm::models_dir(&kit).join("O--Case");
     let flag = Arc::new(AtomicBool::new(false));
     let hold = Pulling::take(&dir, "O--Case", "m", Arc::clone(&flag), "en").unwrap();
@@ -210,9 +203,7 @@ fn a_folder_is_one_whatever_its_case() {
 /// go only of its own lock.
 #[test]
 fn the_lock_is_taken_once() {
-    let tmp = TempDir::new("llm-lock");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-lock");
     let dir = crate::llm::models_dir(&kit).join("o--lock");
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join(LOCK), "").unwrap();
@@ -233,9 +224,7 @@ fn the_lock_is_taken_once() {
 /// id: its choice is found by its files, and the plan keeps the id.
 #[test]
 fn a_renamed_model_is_resumed() {
-    let tmp = TempDir::new("llm-renamed");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("llm-renamed");
     entry_for(&kit, &plan(&[1]), "en").unwrap();
     let mut elsewhere = plan(&[1]);
     elsewhere.repo = "bartowski/r".into();

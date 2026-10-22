@@ -1,6 +1,7 @@
 use super::files::files_in;
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
+use crate::test_support::prepared_kit;
 
 #[test]
 fn names() {
@@ -82,8 +83,5 @@ pub(super) fn item(target: &str, secret: &str) -> Item {
 }
 
 pub(super) fn kit() -> (TempDir, Kit) {
-    let tmp = TempDir::new("keyring-fake");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    (tmp, kit)
+    prepared_kit("keyring-fake")
 }

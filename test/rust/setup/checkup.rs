@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn every_check_names_an_installed_file() {
@@ -151,9 +152,7 @@ fn a_long_answer_does_not_wait_for_the_limit() {
 /// Half installed: in the check, failed, with the missing part.
 #[test]
 fn half_installed_fails_the_check() {
-    let tmp = TempDir::new("checkup-half");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("checkup-half");
     let cmake = Catalog::get().find("cmake").unwrap();
     assert!(check(&kit, &KitEnv::default(), cmake).is_none(), "absent");
     let key = &cmake.key_paths(&kit)[0];

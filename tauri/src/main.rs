@@ -458,5 +458,9 @@ fn github_token(host: &Host) -> Option<String> {
 }
 
 #[cfg(test)]
+#[path = "../../test/rust/support.rs"]
+mod test_support;
+
+#[cfg(test)]
 #[path = "../../test/rust/main.rs"]
 mod tests;
