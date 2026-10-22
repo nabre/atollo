@@ -145,4 +145,25 @@ describe("ActivityPanel", () => {
     expect(invoke).toHaveBeenCalledWith("server_stop", { id: "caddy-2.11" });
     expect(invoke).not.toHaveBeenCalledWith("service_stop", { id: "mysql" });
   });
+
+  it("says why a stop failed, alone or among «Ferma tutto»", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "services_list") return Promise.resolve([]);
+      if (cmd === "servers_list")
+        return Promise.resolve({ pools: [POOL], apacheLines: [], caddyLines: [], phpLines: [] });
+      if (cmd === "server_stop") return Promise.reject(new Error("port 8090 held"));
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    const onStop = vi.fn<(key: string) => Promise<void>>(() => Promise.reject(new Error("process in use")));
+    render(<Harness runs={{ [RUN.key]: RUN }} onStop={onStop} />);
+    const list = within(screen.getByRole("list", { name: "Attività" }));
+    fireEvent.click(await list.findByText("blog: dev"));
+    fireEvent.click(screen.getByRole("button", { name: "Ferma" }));
+    expect(await screen.findByText(/process in use/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ferma tutto" }));
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Ferma tutto" }));
+    expect(await screen.findByText(/port 8090 held/)).toBeTruthy();
+    expect(screen.getByText(/process in use/)).toBeTruthy();
+  });
 });

@@ -5,7 +5,7 @@
 // the editor. Downloads go on in the background, resume where they
 // stopped, and are checked against the drive and their SHA-256.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   folderOpen,
   llmHfInspect,
@@ -157,6 +157,8 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
   const [confirm, setConfirm] = useState<string | null>(null);
   const [repo, setRepo] = useState("");
   const [found, setFound] = useState<HfRepo | null>(null);
+  // Counts the searches on Hugging Face: only the latest one's answer is shown.
+  const hfSeq = useRef(0);
   const [token, setToken] = useState("");
   const [listOpen, setListOpen] = useState(true);
   const { copied, copy } = useCopy(1500);
@@ -170,6 +172,9 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
     action().then(
       (i) => {
         setInfo(i);
+        // A status poll already on its way holds the state from before the
+        // action: a new read makes its answer the stale one, dropped.
+        reloadInfo();
         reloadView();
       },
       (e: unknown) => {
@@ -591,7 +596,12 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
               onSubmit={(e) => {
                 e.preventDefault();
                 setFound(null);
-                run("hf", () => llmHfInspect(repo.trim()).then(setFound));
+                const id = ++hfSeq.current;
+                run("hf", () =>
+                  llmHfInspect(repo.trim()).then((f) => {
+                    if (id === hfSeq.current) setFound(f);
+                  }),
+                );
               }}
             >
               <TextField

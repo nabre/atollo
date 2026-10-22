@@ -84,7 +84,23 @@ pub struct RunInfo {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Event {
     State(RunInfo),
-    Log { key: String, lines: Vec<String> },
+    /// `seq`: the number of the last of `lines` (see [`RunLog`]).
+    Log {
+        key: String,
+        lines: Vec<String>,
+        seq: u64,
+    },
+}
+
+/// The log of an action as read, for a reload merged with the events
+/// that came while it was read (BUG-V7-30): every line written to a log
+/// is numbered, over all the actions, and `seq` is the last number given
+/// when it was read. The lines of a later event have higher numbers, by
+/// position, never by content: a log repeats lines.
+#[derive(Debug, Clone, Serialize)]
+pub struct RunLog {
+    pub lines: Vec<String>,
+    pub seq: u64,
 }
 
 pub type Notify = Arc<dyn Fn(Event) + Send + Sync>;
@@ -172,6 +188,9 @@ pub struct Runner {
     port_range: (u16, u16),
     /// The id of the last run started.
     runs: AtomicU64,
+    /// The number of the last line written to a log ([`RunLog`]), only
+    /// moved with `entries` held.
+    seq: AtomicU64,
     /// One gate per action: its starts happen one after the other.
     starts: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     notify: Notify,
@@ -279,6 +298,7 @@ impl Runner {
             pending: Mutex::new(HashSet::new()),
             port_range: (PORT_FROM, PORT_TO),
             runs: AtomicU64::new(0),
+            seq: AtomicU64::new(0),
             starts: Mutex::new(HashMap::new()),
             notify,
         }
@@ -301,6 +321,12 @@ impl Runner {
         self.runs.fetch_add(1, Ordering::Relaxed) + 1
     }
 
+    /// Numbers `count` lines written to a log, `entries` held: the number
+    /// of the last.
+    fn number_lines(&self, count: usize) -> u64 {
+        self.seq.fetch_add(count as u64, Ordering::Relaxed) + count as u64
+    }
+
     /// The gate of the action `key`, held for a whole start.
     fn start_gate(&self, key: &str) -> Arc<Mutex<()>> {
         let mut starts = self.starts.lock().unwrap_or_else(PoisonError::into_inner);
@@ -313,11 +339,17 @@ impl Runner {
         out
     }
 
-    pub fn log(&self, key: &str) -> Vec<String> {
-        self.entries()
-            .get(key)
-            .map(|e| e.lines.clone())
-            .unwrap_or_default()
+    /// The log of `key` with the number of the last line written to any
+    /// log (BUG-V7-30).
+    pub fn log(&self, key: &str) -> RunLog {
+        let entries = self.entries();
+        RunLog {
+            lines: entries
+                .get(key)
+                .map(|e| e.lines.clone())
+                .unwrap_or_default(),
+            seq: self.seq.load(Ordering::Relaxed),
+        }
     }
 
     pub fn ports(&self) -> Ports {
@@ -726,22 +758,27 @@ impl Runner {
                     "[!] {}",
                     tr(lang, "Avvio non riuscito: {0}", &[&format!("{e:#}")])
                 ));
-                self.entries().insert(
-                    key.clone(),
-                    Entry {
-                        info: info.clone(),
-                        lines: header.clone(),
-                        job: None,
-                        stopped: false,
-                        actual_port: None,
-                        detected_url: None,
-                        pool: None,
-                        run,
-                    },
-                );
+                let seq = {
+                    let mut entries = self.entries();
+                    entries.insert(
+                        key.clone(),
+                        Entry {
+                            info: info.clone(),
+                            lines: header.clone(),
+                            job: None,
+                            stopped: false,
+                            actual_port: None,
+                            detected_url: None,
+                            pool: None,
+                            run,
+                        },
+                    );
+                    self.number_lines(header.len())
+                };
                 (self.notify)(Event::Log {
                     key: key.clone(),
                     lines: header,
+                    seq,
                 });
                 (self.notify)(Event::State(info.clone()));
                 return Ok(info);
@@ -903,7 +940,7 @@ impl Runner {
     /// Like [`Self::append`], only while the entry is still the one of
     /// `run` (`None`: whichever run it is).
     fn append_to(&self, key: &str, run: Option<u64>, lines: Vec<String>, scan: bool) {
-        {
+        let seq = {
             let mut entries = self.entries();
             let Some(e) = entries
                 .get_mut(key)
@@ -940,10 +977,12 @@ impl Runner {
                     }
                 }
             }
-        }
+            self.number_lines(lines.len())
+        };
         (self.notify)(Event::Log {
             key: key.to_owned(),
             lines,
+            seq,
         });
     }
 

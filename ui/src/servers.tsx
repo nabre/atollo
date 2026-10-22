@@ -2,7 +2,7 @@
 // (automatic by engine + PHP version or manual profiles), with .localhost
 // VirtualHosts and portable relative path aliases.
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   serverReload,
   serverRemove,
@@ -304,10 +304,25 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   const [newKeepAlive, setNewKeepAlive] = useState(true);
   const [newAutostart, setNewAutostart] = useState(false);
 
+  // The error of the last read, apart from the actions' own: a read that
+  // works clears it.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Counts the reads: an older one answering last (a poll after a rescan or
+  // an action's refresh) would bring back the pools as they were.
+  const reads = useRef(0);
   const load = useCallback((fresh: boolean) => {
-    serversList(fresh).then(setView, (e: unknown) => {
-      setError(String(e));
-    });
+    const id = ++reads.current;
+    serversList(fresh).then(
+      (v) => {
+        if (id !== reads.current) return;
+        setView(v);
+        setLoadError(null);
+      },
+      (e: unknown) => {
+        if (id !== reads.current) return;
+        setLoadError(String(e));
+      },
+    );
   }, []);
   const refresh = useCallback(() => {
     load(false);
@@ -545,7 +560,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   return (
     <ViewContainer id="servers" side={side}>
       <div className="px-5 pt-3 empty:hidden">
-        <ErrorLine error={error} />
+        <ErrorLine error={error ?? loadError} />
       </div>
       {activePool ? (
         <PoolDetails

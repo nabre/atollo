@@ -130,7 +130,7 @@ pub fn run_log<R: Runtime>(
     webview: Webview<R>,
     runner: State<'_, Arc<Runner>>,
     key: String,
-) -> CmdResult<Vec<String>> {
+) -> CmdResult<crate::projects::run::RunLog> {
     ensure_main(&webview)?;
     Ok(runner.log(&key))
 }

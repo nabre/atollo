@@ -1,8 +1,9 @@
 // The Local models page (D-151): what fits the PC, a download with its
-// progress and Pause, FAT32 refusing a file over 4 GB, Pi's model.
+// progress and Pause, FAT32 refusing a file over 4 GB, Pi's model, the
+// server's state after «Avvia».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { SAMPLE_LLM, SAMPLE_MODELS, type ModelsView, type PullEvent } from "../../ui/src/api/llm";
+import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "../../ui/src/api/llm";
 import { fitOf, ModelsPage } from "../../ui/src/models";
 
 const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
@@ -102,5 +103,43 @@ describe("ModelsPage", () => {
     fireEvent.click(screen.getByText("Riprendi"));
     expect(invoke).toHaveBeenCalledWith("llm_pull", { catalog: "gpt-oss-20b" });
     expect(screen.getByText("Pi parte con")).toBeTruthy();
+  });
+
+  it("a status read from before «Avvia» does not undo the start", async () => {
+    const stopped: LlmInfo = { ...SAMPLE_LLM, state: "stopped", loaded: [] };
+    let state = stopped;
+    let held: ((v: unknown) => void) | null = null;
+    let hold = false;
+    invoke.mockImplementation((cmd: string) => {
+      switch (cmd) {
+        case "llm_status":
+          if (hold) {
+            hold = false;
+            return new Promise((resolve) => {
+              held = resolve;
+            });
+          }
+          return Promise.resolve(state);
+        case "llm_models":
+          return Promise.resolve(SAMPLE_MODELS);
+        case "llm_start":
+          state = SAMPLE_LLM;
+          return Promise.resolve(SAMPLE_LLM);
+        default:
+          return Promise.resolve(null);
+      }
+    });
+    render(<ModelsPage />);
+    await screen.findAllByText("Avvia");
+    // A read of the status starts, and answers only after the start.
+    hold = true;
+    fireEvent.click(screen.getByRole("button", { name: "Aggiorna" }));
+    fireEvent.click(screen.getAllByText("Avvia")[0] as HTMLElement);
+    expect((await screen.findAllByText("Ferma")).length).toBeGreaterThan(0);
+    await act(async () => {
+      held?.(stopped);
+      await Promise.resolve();
+    });
+    expect(screen.queryAllByText("Avvia")).toHaveLength(0);
   });
 });

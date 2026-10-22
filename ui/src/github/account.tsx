@@ -11,26 +11,31 @@ import {
   type GithubStatus,
 } from "../api";
 import { useAction, useCopy, useLoad } from "../hooks";
-import { ActionButton, ErrorLine } from "../common";
+import { ActionButton, ErrorLine, LoadError } from "../common";
 import { useSubscription } from "../hooks";
 import { rich, t } from "../i18n";
 import { Codicon, codicon, InlineConfirm } from "../workbench";
 
-/** The account's state, kept current by the "github" events of the sign-in. */
+/** The account's state, kept current by the "github" events of the sign-in;
+ * `error` is why it could not be read, `retry` reads it again. */
 export function useGithub() {
   const {
     data: status,
+    error,
     setData: setStatus,
     reload,
-  } = useLoad<GithubStatus | null>(githubStatus, null, { onError: { fallback: null } });
+    retry,
+  } = useLoad<GithubStatus | null>(githubStatus, null, { onError: "show" });
   useSubscription(onGithub, setStatus);
-  return { status, setStatus, reload };
+  return { status, error, setStatus, reload, retry };
 }
 
 /** The GitHub account of the kit, in the Settings (D-76). */
 export function GithubAccount() {
-  const { status, setStatus, reload } = useGithub();
+  const { status, error, setStatus, reload, retry } = useGithub();
   const signIn = (deleteScope: boolean) => githubSignIn(deleteScope).then(setStatus);
+  // Not read: why, with «Riprova», instead of a «Caricamento…» that never ends.
+  if (!status && error) return <LoadError error={error} onRetry={retry} className="mx-3 my-2" />;
   return <Account status={status} onSignIn={signIn} onChanged={reload} />;
 }
 

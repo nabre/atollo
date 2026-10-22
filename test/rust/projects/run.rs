@@ -374,9 +374,9 @@ fn runs_and_stops_commands() {
     assert_eq!(done.state, State::Error);
     assert_eq!(done.code, Some(3));
     assert!(
-        r.log(&key).iter().any(|l| l.contains("hello")),
+        r.log(&key).lines.iter().any(|l| l.contains("hello")),
         "{:?}",
-        r.log(&key)
+        r.log(&key).lines
     );
     assert!(events.load(Ordering::Relaxed) >= 3);
 
@@ -524,6 +524,59 @@ fn pool_run_stops_without_a_process() {
     assert!(r.list().is_empty());
 }
 
+/// BUG-V7-30: the lines of a log are numbered over all the actions; a read
+/// gives the last number, the later events higher ones, the same line
+/// written again included.
+#[test]
+fn log_lines_are_numbered() {
+    let tmp = TempDir::new("run-log-seq");
+    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    kit.prepare().unwrap();
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&events);
+    let r = Runner::new(
+        kit,
+        Arc::new(move |e| {
+            if let Event::Log { key, lines, seq } = e {
+                seen.lock().unwrap().push((key, lines, seq));
+            }
+        }),
+    );
+    let a = site_action(false, Some("legacy"));
+    let shop = r.attach_pool("shop", &a, "legacy", 8095, "http://s:8095", "it");
+    r.note(&shop.key, "same");
+    let read = r.log(&shop.key);
+    assert_eq!(read.lines.len(), 2);
+    assert_eq!(read.seq, 2);
+    r.note(&shop.key, "same");
+    let blog = r.attach_pool("blog", &a, "legacy", 8095, "http://b:8095", "it");
+    r.note(&shop.key, "same");
+    r.note("nobody|x", "lost");
+    let seqs: Vec<(String, u64)> = events
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|(k, lines, seq)| {
+            assert_eq!(lines.len(), 1);
+            (k.clone(), *seq)
+        })
+        .collect();
+    let (s, b) = (shop.key.clone(), blog.key.clone());
+    assert_eq!(
+        seqs,
+        [
+            (s.clone(), 1),
+            (s.clone(), 2),
+            (s.clone(), 3),
+            (b, 4),
+            (s.clone(), 5)
+        ]
+    );
+    let after = r.log(&s);
+    assert_eq!(after.lines[2..], ["[Atollo] same", "[Atollo] same"]);
+    assert_eq!(after.seq, 5);
+}
+
 /// I2: a run served by a pool stopped from the "Server Web" page (or dead)
 /// is marked stopped, and can then be cleared; one whose pool runs is not.
 #[test]
@@ -618,7 +671,7 @@ fn site_stops_when_its_php_cgi_ends() {
         let start = std::time::Instant::now();
         let code = r.wait_with_php(&info.key, run, &mut server, php, "it");
         assert!(start.elapsed() < Duration::from_secs(20));
-        (code, r.log(&info.key))
+        (code, r.log(&info.key).lines)
     };
 
     let (code, log) = run("shop", false);

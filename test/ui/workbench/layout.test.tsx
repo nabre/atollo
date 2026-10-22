@@ -10,6 +10,7 @@ import {
   NavBar,
   Panel,
   PaneStack,
+  Sash,
   useStoredSize,
   ViewPane,
 } from "../../../ui/src/workbench/layout";
@@ -96,6 +97,26 @@ describe("useStoredSize", () => {
 });
 
 /** The classes of an element, as a list. */
+describe("Sash", () => {
+  it("tells its size and limits, and stops dragging when the pointer is cancelled", () => {
+    const onDrag = vi.fn<(d: number) => void>();
+    render(<Sash vertical={false} label="Panel" size={240} min={120} max={600} onDrag={onDrag} onReset={vi.fn()} />);
+    const sash = screen.getByRole("separator", { name: "Panel" });
+    expect([
+      sash.getAttribute("aria-valuenow"),
+      sash.getAttribute("aria-valuemin"),
+      sash.getAttribute("aria-valuemax"),
+    ]).toEqual(["240", "120", "600"]);
+    sash.setPointerCapture = vi.fn();
+    fireEvent.pointerDown(sash, { clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(sash, { clientY: 90 });
+    expect(onDrag).toHaveBeenCalledWith(-10);
+    fireEvent.pointerCancel(sash);
+    fireEvent.pointerMove(sash, { clientY: 50 });
+    expect(onDrag).toHaveBeenCalledTimes(1);
+  });
+});
+
 const classes = (el: Element | null | undefined) => (el?.getAttribute("class") ?? "").split(/\s+/);
 
 describe("EditorTabs", () => {
