@@ -109,11 +109,14 @@ fn profiles_left_by_an_earlier_kit_go() {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     let old_pwsh = kit.apps().join(r"pwsh\7.5\pwsh.exe");
     let python = kit.apps().join(r"python\python.exe");
+    // Today's cmd profile as the kit writes it (on macOS and Linux a
+    // Windows folder joins with `/`: the same value as the code makes).
+    let cmd = kit_profiles(&kit, Path::new(r"C:\Windows"))["Atollo - cmd"].clone();
     let old = json!({
         "terminal.integrated.defaultProfile.windows": "Old shell",
         "terminal.integrated.profiles.windows": {
             "Old shell": {"path": old_pwsh, "args": [], "icon": "terminal-powershell", "overrideName": true},
-            "Old cmd": {"path": r"C:\Windows\System32\cmd.exe", "args": ["/d", "/k"], "icon": "terminal-cmd", "overrideName": true},
+            "Old cmd": cmd,
             "Mine": {"path": r"C:\tools\nu.exe"},
             "My Python": {"path": python}
         }

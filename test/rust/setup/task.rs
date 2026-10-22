@@ -138,10 +138,11 @@ fn run_reports_steps_and_ends() {
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
     let catalog = Catalog::get();
+    // Those of this system only: ConPTY is a part of the app on Windows.
     let required: Vec<_> = catalog
         .all()
         .iter()
-        .filter(|c| catalog.is_locked(&c.id))
+        .filter(|c| catalog.is_locked(&c.id) && c.is_available_on(kit.target()))
         .collect();
     for c in &required {
         for key in c.key_paths(&kit) {

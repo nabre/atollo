@@ -40,7 +40,7 @@ pub fn total_ram() -> Option<u64> {
 }
 
 /// `MemTotal: <n> kB` of a `/proc/meminfo` text, in bytes.
-#[cfg_attr(windows, allow(dead_code))]
+#[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
 pub(crate) fn mem_total(meminfo: &str) -> Option<u64> {
     meminfo.lines().find_map(|l| {
         let kb = l.strip_prefix("MemTotal:")?.trim().strip_suffix("kB")?;
