@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{bail, Result};
 
 use super::catalog::{CatalogModel, ModelFile};
-use super::hf::{Choice, RepoInfo};
+use super::hf::{Choice, HfError, RepoInfo};
 use super::local::{self, Entry};
 use crate::kit::Kit;
 use crate::net::Net;
@@ -497,6 +497,26 @@ fn already_there(dest: &Path, entry: &Entry, f: &ModelFile) -> Result<bool> {
     Ok(false)
 }
 
+/// A file of `repo` refused (401, 403) as [`HfError::Gated`]: `inspect`
+/// lets a gated repository through with any token, since its list can be
+/// read, and only the download finds that the token has no access to it
+/// (its licence not accepted on Hugging Face). The user then reads what to
+/// do instead of a bare HTTP status.
+fn refused_to_gated(e: anyhow::Error, repo: &str) -> anyhow::Error {
+    let refused = e.chain().any(|cause| {
+        matches!(
+            cause.downcast_ref::<ureq::Error>(),
+            Some(ureq::Error::StatusCode(401 | 403))
+        )
+    });
+    if refused {
+        crate::log::warn(&format!("{repo}: {e:#}"));
+        HfError::Gated(repo.to_owned()).into()
+    } else {
+        e
+    }
+}
+
 fn mark_complete(kit: &Kit, plan: &Plan, id: &str) -> Result<()> {
     local::update_manifest(&plan.dir(kit), |manifest| {
         let mut found = false;
@@ -573,7 +593,8 @@ pub fn pull(
             &headers,
             &cancel,
             &mut |done, _| progress(before + done, total),
-        )?;
+        )
+        .map_err(|e| refused_to_gated(e, &plan.repo))?;
         before += f.bytes;
     }
     mark_complete(kit, plan, &entry.id)?;

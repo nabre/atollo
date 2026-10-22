@@ -287,3 +287,17 @@ fn a_file_of_the_right_size_is_checked() {
     assert!(!dest.exists());
     assert!(!already_there(&dest, &entry, &f).unwrap());
 }
+
+/// A file refused to the token is a gated repository the token has no
+/// access to; other failures stay as they are.
+#[test]
+fn a_refused_file_says_the_repository_is_gated() {
+    let refused =
+        anyhow::Error::new(ureq::Error::StatusCode(403)).context("GET https://huggingface.co/x");
+    let e = refused_to_gated(refused, "o/r");
+    assert!(matches!(e.downcast_ref::<HfError>(), Some(HfError::Gated(r)) if r == "o/r"));
+    let missing = anyhow::Error::new(ureq::Error::StatusCode(404)).context("GET x");
+    assert!(refused_to_gated(missing, "o/r")
+        .downcast_ref::<HfError>()
+        .is_none());
+}
