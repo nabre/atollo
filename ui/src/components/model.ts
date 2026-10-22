@@ -1,7 +1,7 @@
 // The data of the Tools page: its sections, the choice that follows the
 // dependencies, the lines of a versioned tool, sizes as text.
 import type { ComponentInfo, Group, VersionedTool } from "../api";
-import { locale, t } from "../i18n";
+import { t } from "../i18n";
 
 /** The kinds of tool, as the site's matrix (site/matrix.mjs, KINDS and
  * KIND_OF: a test keeps them equal). The catalog's groups are coarser:
@@ -131,8 +131,4 @@ export function linesOf(tool: VersionedTool | undefined): string[] {
   return [...(tool.default ? [tool.default.line] : []), ...tool.saved.map((s) => s.line)];
 }
 
-export function sizeText(mb: number): string {
-  if (mb < 1000) return `${String(mb)} MB`;
-  const gb = new Intl.NumberFormat(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mb / 1000);
-  return `${gb} GB`;
-}
+export { sizeText } from "../shared/format";

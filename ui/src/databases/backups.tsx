@@ -3,17 +3,11 @@
 // copied into that folder first: the app has no file picker, D-15).
 import { useCallback, useState } from "react";
 import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "../api";
-import { locale, t } from "../i18n";
+import { t } from "../i18n";
+import { formatBytes } from "../shared/format";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { codicon, InlineConfirm, Notice } from "../workbench";
-
-function size(bytes: number): string {
-  const kb = bytes / 1024;
-  return kb < 1024
-    ? `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(Math.max(1, kb))} KB`
-    : `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(kb / 1024)} MB`;
-}
 
 export function DatabaseCopies({ project, engine }: { project: string; engine: Backup["engine"] }) {
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -58,7 +52,7 @@ export function DatabaseCopies({ project, engine }: { project: string; engine: B
           {list.map((b) => (
             <li key={b.file} className="flex flex-wrap items-center gap-2 px-2 py-1">
               <span className="min-w-0 flex-1 truncate font-mono text-[12px]">{b.file}</span>
-              <span className="text-[12px] text-vsc-desc">{size(b.size)}</span>
+              <span className="text-[12px] text-vsc-desc">{formatBytes(b.size)}</span>
               {confirm === b.file ? (
                 <InlineConfirm
                   row
