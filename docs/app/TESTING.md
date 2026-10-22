@@ -344,7 +344,7 @@ Verified by hand on Windows x64: Claude Code 2.1.306 expands `${VAR}` in the hea
 - [ ] **Ctrl+P unchanged.** Ctrl+P still opens “Open a project” as before: Enter opens the page, Shift+Enter starts the default action, Esc closes.
 
 ### Tools
-- [ ] **Kinds** (D-139). “All tools” has the blocks System and editor, AI agents, Local models, Languages, Development tools, Web server, Databases, each with its title, count, description and a box to choose them all, and closes with a click; the same kinds in the side bar's tree, in the matrix and at the first start.
+- [ ] **Kinds** (D-139). “All tools” has the blocks System and editor, AI agents, Local models, Languages, Development tools, Web server, Databases, Database viewers, each with its title, count, description and a box to choose them all, and closes with a click; the same kinds in the side bar's tree, in the matrix and at the first start.
 - [ ] **Logos.** Every component has its logo, readable in the light theme and in the dark one; the projects show the language labels.
 - [ ] **Dependencies.** Apache shows the “PHP” dependency; with Claude Code chosen, Git shows “for Claude Code”. Removing PHP also removes Apache.
 - [ ] **PATH after an installation.** After installing a language from this page, Home › Terminal opens the kit console with the kit's PowerShell 7 and the new program is in the PATH, without restarting the app.

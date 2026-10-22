@@ -344,7 +344,7 @@ Provato a mano su Windows x64: Claude Code 2.1.306 espande `${VAR}` nelle intest
 - [ ] **Ctrl+P invariato.** Ctrl+P apre ancora «Apri un progetto» come prima: Invio apre la pagina, Maiusc+Invio avvia l'azione predefinita, Esc chiude.
 
 ### Strumenti
-- [ ] **Tipi** (D-139). «Tutti gli strumenti» ha i blocchi Sistema ed editor, Agenti AI, Modelli locali, Linguaggi, Strumenti di sviluppo, Server web, Database, ognuno con titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic; gli stessi tipi nell'albero della barra laterale, nella matrice e al primo avvio.
+- [ ] **Tipi** (D-139). «Tutti gli strumenti» ha i blocchi Sistema ed editor, Agenti AI, Modelli locali, Linguaggi, Strumenti di sviluppo, Server web, Database, Visualizzazione database, ognuno con titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic; gli stessi tipi nell'albero della barra laterale, nella matrice e al primo avvio.
 - [ ] **Loghi.** Ogni componente ha il suo logo, leggibile nel tema chiaro e in quello scuro; i progetti mostrano le etichette dei linguaggi.
 - [ ] **Dipendenze.** Apache mostra la dipendenza «PHP»; con Claude Code scelto, Git mostra «per Claude Code». Togliendo PHP si toglie anche Apache.
 - [ ] **PATH dopo un'installazione.** Dopo l'installazione di un linguaggio da questa pagina, Home › Terminale apre la console del kit con PowerShell 7 del kit e il programma nuovo è nel PATH, senza riavviare l'app.
