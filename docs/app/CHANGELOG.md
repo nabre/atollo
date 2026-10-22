@@ -1,5 +1,11 @@
 # Novità
 
+## La Guida sul sito (23/10/2026)
+
+- **La Guida si legge sul sito**, senza installare Atollo: una pagina per argomento e per lingua su https://nabre.github.io/atollo/guide/ (inglese) e `it/guide/`, `fr/guide/`, `de/guide/`, con i capitoli a lato, la ricerca nei titoli e nelle parole chiave, le schermate da ingrandire e il link «Guida» nell'intestazione del sito (D-164).
+- **Niente più `GUIDE.md` e `GUIDE.it.md`**: i README rimandano al sito, che ha la Guida in quattro lingue invece di due. Nell'app la Guida è la stessa di prima.
+- Il testo della Guida sta in `guide/` alla radice, letto dall'app e dal sito; la CI costruisce e controlla il sito a ogni modifica, prima del merge.
+
 ## Copia del kit (22/10/2026)
 
 - **«Copia del kit»** in Impostazioni › «Il kit»: «Esporta in una cartella…» o «Esporta in uno zip…» copia i progetti e i dati (impostazioni, database, agenti) in `Atollo-<data-ora>`, senza i programmi, le cache e i modelli locali, che si riscaricano. È la copia di sicurezza del README, fatta da Atollo (D-163).

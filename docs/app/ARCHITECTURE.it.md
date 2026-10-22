@@ -39,13 +39,16 @@ tauri\
                               (allow-local-models, D-151), il terminale dell'app (D-148)
   build.rs                    elenco dei comandi (COMMANDS) e manifesto asInvoker
 ui\src\                       interfaccia React + TypeScript (sotto)
+guide\                        il testo della Guida, neutro: core\ (contratto, modello, lingua), content\ (i
+                              capitoli), render\load.cjs (il caricatore del sito); lo disegnano l'app e il sito (sotto)
 test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src
 runtime\                      file scritti in data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
-scripts\                      dev-ui.mjs (npm run dev), guide-shots\, vscodium-css\, matrix\,
+scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
                               test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
                               anteprima, lingue ed etichette comuni agli script delle schermate e al sito)
-site\                         il sito (build.mjs, strings\, landing.html, partials\); shots\ (schermate per lingua)
+site\                         il sito (build.mjs, strings\, landing.html, partials\; guide.mjs e guide.html,
+                              le pagine della Guida); shots\ (schermate per lingua)
 docs\app\                     decisioni, architettura, catalogo, prove, novità, guida, TOOLS-MATRIX.html
 docs\brand\                   logo, temi, script che li generano; vscodium-1.135\ (il riferimento del
                               workbench); social.png (la social card), brand.png (la tavola del brand)
@@ -215,7 +218,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`. Ciò che tutto il crate legge da una cartella è riesportato per nome nel suo `mod.rs` e si scrive con il percorso corto: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `editor\ext.rs` resta intero; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02), ed `env\` uno per parte di `KitEnv::build`, che chiama in ordine una funzione per sezione (STR-V7-03). Gli altri file dovrebbero restare sotto le 900 righe. I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
+- un file si divide quando ha parti che si leggono da sole; `editor\ext.rs` resta intero; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02), ed `env\` uno per parte di `KitEnv::build`, che chiama in ordine una funzione per sezione (STR-V7-03). Gli altri file dovrebbero restare sotto le 900 righe. I testi della Guida (`guide\content\`) sono testo, non codice.
 
 ### Comandi Tauri (`commands\`)
 
@@ -338,9 +341,9 @@ Le cartelle delle pagine:
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (un blocco per tipo, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (il compilatore di Rust su Windows), `matrix.tsx` (la matrice, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (matrice delle relazioni), `setup.tsx` (la preparazione in corso), `byhand.tsx` (file scaricati a mano) |
 | `servers\` | `page.tsx` (pagina Server Web: pool Caddy e Apache) |
 | `terminal\` | `page.tsx` (pagina Terminali: le console del kit salvate); il terminale nell'app su ogni sistema (D-109, D-148): `state.ts` (sessioni), `panel.tsx` (caricato con xterm.js solo quando serve), `view.tsx`, `font.ts` (Geist Mono prima che xterm.js misuri), `api.ts`; `window.tsx` è la pagina della finestra di una sessione staccata (`terminal.html`, D-149) |
-| `guide\` | `model.ts` (capitoli, argomenti, parole di ricerca), `topics\` (il testo, un file per capitolo), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
+| `guide\` | il renderer della Guida dell'app (il testo è in `guide\` alla radice, sotto): `page.tsx` (D-136), `widgets.tsx` (i widget del contratto, `GuideNavContext`), `live.tsx` (la scheda del kit, la tabella delle fonti con lo stato dei componenti, la ricerca dei problemi), `register.ts` (la lingua dell'app e `APP_WIDGETS`), `sections.tsx` |
 
-Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `shared\` se lo usano più cartelle. Un import che salirebbe di più di una cartella si scrive con l'alias `@/` (`ui\tsconfig.json`, `ui\vite.config.ts`), tranne dentro `guide\`.
+Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `shared\` se lo usano più cartelle. Un import che salirebbe di più di una cartella si scrive con l'alias `@/` (`ui\tsconfig.json`, `ui\vite.config.ts`); il testo della Guida con `@guide/` (la cartella `guide\` alla radice).
 
 ### `api\`
 
@@ -412,6 +415,22 @@ Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0
 | `scripts/guide-shots/make.mjs` | le 52 schermate della Guida, `ui/public/guide/<lingua>/*.webp` (tema chiaro, 1280×800 a 1,25×, senza il badge dell'anteprima; webp con Pillow; `GUIDE_SHOTS_LANGS` limita le lingue), che la Guida del sito copia |
 
 `npm run dev` (`tauri dev`) avvia `scripts/dev-ui.mjs` come `beforeDevCommand`: Vite gira in quel processo e il processo finisce quando la shell che l'ha avviato non c'è più, quando si chiude la pipe dello stdin che Tauri gli passa, o con SIGINT/SIGTERM/SIGHUP, così chiudendo l'app la porta 5173 si libera (D-138). Una porta già occupata viene segnalata con chi la tiene, mai fermata.
+
+## La Guida (`guide\`) e il sito
+
+Il testo della Guida sta in `guide\` alla radice e non importa niente dall'app né dal sito, solo React e i suoi file (D-164). Lo disegnano due renderer: l'app (`ui\src\guide`, la pagina Guida) e il sito (`site\guide.mjs`, una pagina statica per argomento e per lingua su https://nabre.github.io/atollo/guide/). Non c'è una copia in Markdown.
+
+| Cartella | Che cosa contiene |
+| --- | --- |
+| `guide\core\` | `lang.ts` (`tr()` con i quattro testi, `rich()`, la lingua che ogni renderer lega con `bindGuideLang`), `model.ts` (capitoli, argomenti con il nome di una codicon, parole chiave e la pagina che descrivono; `pageTopic`, `chapterTitle`), `widgets.ts` (**il contratto**: nomi e props dei widget, segnaposto che disegnano il widget del renderer registrato), `labels.ts` (le parole che i widget scrivono), `search.ts` (la regola della ricerca, una per app e sito), `types.ts` |
+| `guide\content\` | un file per capitolo (`start.tsx` … `help.tsx`), `sources.ts` (la tabella delle fonti, D-108), `folders.ts`, `index.ts` (il testo di ogni argomento) |
+| `guide\render\load.cjs` | il caricatore del sito: `typescript.transpileModule`, JSX automatico di React; rifiuta ogni import fuori da `guide\` |
+
+Regole per il testo: niente `className` né `style` (un widget al loro posto: `Terms`, `WindowSketch`, `Code` con `indent`); il kit (`info`) solo dentro `KitInfo`; i link sono `See`, `Go` e il `to` di una scheda, mai una funzione; una frase vera solo nell'app o solo sul sito va in `Only`. Niente tiene il risultato di un `tr()` dal caricamento: il sito disegna le quattro lingue in un processo. `test\ui\guide\contract.test.ts` controlla import e classi, e che app e sito disegnino ogni widget del contratto.
+
+Il sito (`site\build.mjs`) disegna descrittori di pagina: lingua, indirizzo in ogni lingua, modello (`landing.html` o `guide.html`, entrambi con `partials\head.html`, `header.html`, `footer.html`) e valori; da questi scrive il menu delle lingue (verso la stessa pagina), canonical, hreflang, og:url e `sitemap.xml`. Per la Guida `site\guide.mjs` aggiunge `<percorso della lingua>guide\search.json` (titoli, sottotitoli, codici e parole chiave), copia le schermate di `ui\public\guide\<lingua>\` in `assets\guide\<lingua>\` e disegna le codicon da `@vscode/codicons`; `site\assets\guide.css` e `guide.js` (ricerca, copia, ingrandimento, filtri). `node site/build.mjs --check` controlla anche le pagine, la sitemap e i link relativi.
+
+Nella build dell'app ogni capitolo è un chunk suo (`guide-<capitolo>`), `guide\core` e le fonti `guide-base` (`ui\vite.config.ts`); `scripts\guide-chunks.mjs` fallisce dopo la build se ne manca uno.
 
 ## Opportunità individuate, non ancora fatte
 

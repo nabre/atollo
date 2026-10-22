@@ -39,13 +39,16 @@ tauri\
                               (allow-local-models, D-151), the in-app terminal (D-148)
   build.rs                    list of commands (COMMANDS) and asInvoker manifest
 ui\src\                       React + TypeScript interface (below)
+guide\                        the Guide's text, neutral: core\ (contract, model, language), content\ (the
+                              chapters), render\load.cjs (the site's loader); drawn by the app and the site (below)
 test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src
 runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
-scripts\                      dev-ui.mjs (npm run dev), guide-shots\, vscodium-css\, matrix\,
+scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
                               test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
                               preview, languages and labels shared by the screenshot scripts and the site)
-site\                         the site (build.mjs, strings\, landing.html, partials\); shots\ (screenshots per language)
+site\                         the site (build.mjs, strings\, landing.html, partials\; guide.mjs and guide.html,
+                              the Guide's pages); shots\ (screenshots per language)
 docs\app\                     decisions, architecture, catalog, tests, changelog, guide, TOOLS-MATRIX.html
 docs\brand\                   logo, themes, the scripts that generate them; vscodium-1.135\ (the workbench
                               reference); social.png (the social card), brand.png (the brand board)
@@ -214,7 +217,7 @@ Folder rules:
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `editor\ext.rs` stays whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`ui\src\guide\topics\`) are text, not code.
+- a file is split when it has parts that read on their own; `editor\ext.rs` stays whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`guide\content\`) are text, not code.
 
 ### Tauri commands (`commands\`)
 
@@ -337,9 +340,9 @@ The page folders:
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (relations matrix), `setup.tsx` (the setup in progress), `byhand.tsx` (files downloaded by hand) |
 | `servers\` | `page.tsx` (Web server page: Caddy and Apache pools) |
 | `terminal\` | `page.tsx` (Terminals page: the saved kit consoles); the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `font.ts` (Geist Mono before xterm.js measures), `api.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |
-| `guide\` | `model.ts` (chapters, topics, search words), `topics\` (the text, one file per chapter), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
+| `guide\` | the app's renderer of the Guide (the text is in `guide\` at the root, below): `page.tsx` (D-136), `widgets.tsx` (the contract's widgets, `GuideNavContext`), `live.tsx` (the kit's card, the sources table with the components' state, the problems' search), `register.ts` (the app's language and `APP_WIDGETS`), `sections.tsx` |
 
-A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `shared\` if several folders use it. An import that would climb more than one folder is written with the `@/` alias (`ui\tsconfig.json`, `ui\vite.config.ts`), except inside `guide\`.
+A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `shared\` if several folders use it. An import that would climb more than one folder is written with the `@/` alias (`ui\tsconfig.json`, `ui\vite.config.ts`); the Guide's text with `@guide/` (the `guide\` folder at the root).
 
 ### `api\`
 
@@ -411,6 +414,22 @@ The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.
 | `scripts/guide-shots/make.mjs` | the Guide's 52 screenshots, `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which the site's Guide copies |
 
 `npm run dev` (`tauri dev`) starts `scripts/dev-ui.mjs` as `beforeDevCommand`: Vite runs in that process and the process ends when the shell that started it is gone, when the stdin pipe Tauri hands down closes, or on SIGINT/SIGTERM/SIGHUP, so closing the app frees port 5173 (D-138). A port already taken is reported with who has it, never stopped.
+
+## The Guide (`guide\`) and the site
+
+The Guide's text lives in `guide\` at the root and imports nothing from the app or the site, only React and its own files (D-164). Two renderers draw it: the app (`ui\src\guide`, the Guide page) and the site (`site\guide.mjs`, one static page per topic and language at https://nabre.github.io/atollo/guide/). There is no Markdown copy.
+
+| Folder | What it holds |
+| --- | --- |
+| `guide\core\` | `lang.ts` (`tr()` with the four texts, `rich()`, the language each renderer binds with `bindGuideLang`), `model.ts` (chapters, topics with a codicon name, keywords and the page they describe; `pageTopic`, `chapterTitle`), `widgets.ts` (**the contract**: the widgets' names and props, stand-ins that draw the registered renderer's widget), `labels.ts` (the words the widgets write), `search.ts` (the search rule, one for the app and the site), `types.ts` |
+| `guide\content\` | one file per chapter (`start.tsx` … `help.tsx`), `sources.ts` (the table of sources, D-108), `folders.ts`, `index.ts` (every topic's text) |
+| `guide\render\load.cjs` | the site's loader: `typescript.transpileModule`, React's automatic JSX; it refuses any import outside `guide\` |
+
+Rules for the text: no `className` or `style` (a widget instead: `Terms`, `WindowSketch`, `Code` with `indent`); the kit (`info`) only inside `KitInfo`; links are `See`, `Go` and a card's `to`, never a function; a sentence true only in the app or only on the site goes in `Only`. Nothing keeps a `tr()` result from load time: the site draws the four languages in one process. `test\ui\guide\contract.test.ts` checks the imports and the classes, and that the app and the site draw every widget of the contract.
+
+The site (`site\build.mjs`) renders page descriptors: language, address in every language, model (`landing.html` or `guide.html`, both with `partials\head.html`, `header.html`, `footer.html`) and values; from them it writes the language menu (to the same page), canonical, hreflang, og:url and `sitemap.xml`. For the Guide, `site\guide.mjs` adds `<lang path>guide\search.json` (titles, subtitles, codes and keywords), copies the screenshots of `ui\public\guide\<lang>\` to `assets\guide\<lang>\` and draws the codicons from `@vscode/codicons`; `site\assets\guide.css` and `guide.js` (search, copy, zoom, filters). `node site/build.mjs --check` also checks the pages, the sitemap and the relative links.
+
+In the app's build each chapter is a chunk of its own (`guide-<chapter>`), `guide\core` and the sources `guide-base` (`ui\vite.config.ts`); `scripts\guide-chunks.mjs` fails after the build when one is missing.
 
 ## Opportunities found, not yet done
 
