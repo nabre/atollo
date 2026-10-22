@@ -96,7 +96,8 @@ tauri\src\
     state  migrate            data\projects\<p>\ (D-89): paths, orphans, adoption; migration 1 → 2 at startup
     alias                     site aliases: validated URL and target, a single resolver (D-77)
     settings  mcp  vscode     dev-settings.json (D-63), MCP servers, .vscode\settings.json (D-78)
-    run  serve  apache        started actions and ports (D-50); file server (D-51); the project's Apache
+    run\                      started actions (D-50): mod (Runner, state, stop), ports, output, start, pool
+    serve  apache             file server (D-51); the project's Apache
     caddy  fastcgi            the project's Caddy and Caddyfile text, admin on a socket (D-111); php-cgi and php-fpm
     frameworks\               "New project" (D-83): mod (catalog and edits), validate, plan, target, runner,
                               mine (the bases saved from a project, "Le mie basi", D-162)
@@ -206,7 +207,7 @@ Folder rules:
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `env.rs` (a single algorithm, `KitEnv::build`), `projects\run.rs` (a state machine) and `editor\ext.rs` stay whole. The other files should stay under 900 lines; today only `install\mod.rs` goes over (below, "Opportunities"). The Guide's texts (`ui\src\guide\topics\`) are text, not code.
+- a file is split when it has parts that read on their own; `env.rs` (a single algorithm, `KitEnv::build`) and `editor\ext.rs` stay whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02). The other files should stay under 900 lines; today only `install\mod.rs` goes over (below, "Opportunities"). The Guide's texts (`ui\src\guide\topics\`) are text, not code.
 
 ### Tauri commands (`commands\`)
 

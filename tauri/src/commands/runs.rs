@@ -1,4 +1,4 @@
-//! Projects' actions started by the kit (projects/run.rs): start, stop, log, ports.
+//! Projects' actions started by the kit (projects/run/): start, stop, log, ports.
 
 use super::*;
 use crate::projects::run::{site_mode, SiteMode};

@@ -96,7 +96,8 @@ tauri\src\
     state  migrate            data\projects\<p>\ (D-89): percorsi, orfani, adozione; migrazione 1 → 2 all'avvio
     alias                     alias dei siti: URL e destinazione validati, un solo risolutore (D-77)
     settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
-    run  serve  apache        azioni avviate e porte (D-50); server di file (D-51); Apache del progetto
+    run\                      azioni avviate (D-50): mod (Runner, stato, arresto), ports, output, start, pool
+    serve  apache             server di file (D-51); Apache del progetto
     caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner,
                               mine (le basi salvate da un progetto, «Le mie basi», D-162)
@@ -207,7 +208,7 @@ Regole delle cartelle:
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`. Ciò che tutto il crate legge da una cartella è riesportato per nome nel suo `mod.rs` e si scrive con il percorso corto: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
-- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`), `projects\run.rs` (una macchina a stati) ed `editor\ext.rs` restano interi. Gli altri file dovrebbero restare sotto le 900 righe; oggi solo `install\mod.rs` le supera (sotto, «Opportunità»). I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
+- un file si divide quando ha parti che si leggono da sole; `env.rs` (un solo algoritmo, `KitEnv::build`) ed `editor\ext.rs` restano interi; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02). Gli altri file dovrebbero restare sotto le 900 righe; oggi solo `install\mod.rs` le supera (sotto, «Opportunità»). I testi della Guida (`ui\src\guide\topics\`) sono testo, non codice.
 
 ### Comandi Tauri (`commands\`)
 

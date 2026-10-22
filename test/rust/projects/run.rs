@@ -1,7 +1,14 @@
-use super::*;
-use crate::kit::{tests::TempDir, Arch};
 use std::net::{Ipv4Addr, TcpListener};
+#[cfg(windows)]
+use std::process::Stdio;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
+
+use super::*;
+use super::{output::*, start::*};
+use crate::detect::Action;
+use crate::env::KitEnv;
+use crate::kit::{tests::TempDir, Arch};
 
 #[test]
 fn local_network_setting() {
@@ -636,6 +643,7 @@ fn pool_runs_follow_their_pool() {
 #[cfg(windows)]
 #[test]
 fn site_stops_when_its_php_cgi_ends() {
+    use crate::os::jobs;
     let tmp = TempDir::new("run-php-cgi");
     let kit = Kit::at(tmp.0.clone(), Arch::X64);
     kit.prepare().unwrap();
