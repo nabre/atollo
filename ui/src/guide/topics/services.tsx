@@ -411,6 +411,12 @@ export const SERVICES: TopicTexts = {
             "„In .env schreiben“ trägt die Verbindung in die .env-Datei des Projekts ein, nachdem es dir gezeigt hat, was sich ändert.",
           ),
           tr(
+            "«Copia blocco .env» copia le stesse righe, da incollare dove vuoi tu.",
+            "“Copy .env block” copies the same lines, to paste wherever you want.",
+            "« Copier le bloc .env » copie les mêmes lignes, à coller où vous voulez.",
+            "„.env-Block kopieren“ kopiert dieselben Zeilen, zum Einfügen, wo du willst.",
+          ),
+          tr(
             "«Esporta» salva una copia del database; «Ripristina…» la rimette.",
             "“Export” saves a copy of the database; “Restore…” puts it back.",
             "« Exporter » enregistre une copie de la base de données ; « Restaurer… » la remet en place.",
@@ -584,6 +590,12 @@ export const SERVICES: TopicTexts = {
               "If the connection is already the right one: “The .env file already has this connection.”",
               "Si la connexion est déjà la bonne : « Le fichier .env contient déjà cette connexion. »",
               "Ist die Verbindung bereits die richtige: „Die Datei .env hat diese Verbindung bereits.“",
+            ),
+            tr(
+              "«Copia blocco .env», accanto, non tocca il file: copia le righe della tabella (DB_* per Laravel, altrimenti DATABASE_URL o MONGODB_URI) da incollare in un altro .env, in un file di configurazione o in un terminale; compare «Copiato». Le righe contengono la password: il kit le legge solo quando premi il pulsante.",
+              "“Copy .env block”, next to it, does not touch the file: it copies the lines of the table (DB_* for Laravel, otherwise DATABASE_URL or MONGODB_URI) to paste into another .env, a configuration file or a terminal; “Copied” appears. The lines contain the password: the kit reads them only when you press the button.",
+              "« Copier le bloc .env », juste à côté, ne touche pas le fichier : il copie les lignes du tableau (DB_* pour Laravel, sinon DATABASE_URL ou MONGODB_URI) à coller dans un autre .env, un fichier de configuration ou un terminal ; « Copié » apparaît. Les lignes contiennent le mot de passe : le kit ne les lit que lorsque vous appuyez sur le bouton.",
+              "„.env-Block kopieren“ daneben ändert die Datei nicht: Es kopiert die Zeilen der Tabelle (DB_* für Laravel, sonst DATABASE_URL oder MONGODB_URI) zum Einfügen in eine andere .env, eine Konfigurationsdatei oder ein Terminal; „Kopiert“ erscheint. Die Zeilen enthalten das Passwort: Das Kit liest sie erst, wenn du den Knopf drückst.",
             ),
           ]}
         />

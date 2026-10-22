@@ -1,5 +1,10 @@
 # Novità
 
+## Copia blocco .env (22/10/2026)
+
+- **«Copia blocco .env»** nella sezione «Database» della pagina del progetto, accanto a «Scrivi in .env»: copia la connessione come righe di `.env`, da incollare dove vuoi (un altro `.env`, un file di configurazione, un terminale); compare «Copiato» (D-157).
+- **Le righe giuste per il progetto**: `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` e `DB_PASSWORD` per un progetto Laravel (il suo `.env` ha `DB_CONNECTION=`), altrimenti `DATABASE_URL` (MySQL) o `MONGODB_URI` (MongoDB). Il blocco contiene la password: Atollo lo legge solo quando premi il pulsante.
+
 ## Server MCP pronti (22/10/2026)
 
 - **«Server MCP del kit»** nella pagina Agenti: l'elenco dei server di `data\agents\mcp.json`, con «Togli», «Aggiungi un server» e i **server pronti** da aggiungere con un clic: **github** (issue, pull request e repository con l'account GitHub del kit, il server di GitHub stesso), **playwright** (un browser che l'agente apre e usa) e **fetch** (una pagina web come testo). Arrivano subito a Claude Code, Codex, Antigravity e Pi (D-156).
