@@ -3,8 +3,8 @@
 // notice is read from the row of C and C++.
 import { describe, expect, it } from "vitest";
 import catalog from "../../../tauri/catalog/components.json";
-import type { ComponentInfo, Group } from "../../../ui/src/api";
-import { KIND_OF, KIND_OF_GROUP, KINDS, groups, kindOf, toggle, xcodeMissing } from "../../../ui/src/components/model";
+import type { ComponentInfo, Group } from "@/api";
+import { KIND_OF, KIND_OF_GROUP, KINDS, groups, kindOf, toggle, xcodeMissing } from "@/components/model";
 
 function row(id: string, needs: string[] = [], more: Partial<ComponentInfo> = {}): ComponentInfo {
   return {

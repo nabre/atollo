@@ -14,7 +14,7 @@ npm -w ui run build
 
 Tutte le prove stanno in `test\`, con la struttura dei sorgenti:
 - `test\rust\<percorso>.rs`: le prove di `tauri\src\<percorso>.rs`. Restano un modulo figlio di quel file, che le dichiara in fondo con `#[cfg(test)] #[path = "…/test/rust/<percorso>.rs"] mod tests;`: vedono le sue funzioni private (`use super::*`), come prima. Una prova nuova va nel file di `test\rust` del modulo; un modulo che non ne ha ancora aggiunge le tre righe.
-- `test\ui\<percorso>.test.ts(x)`: le prove di `ui\src\<percorso>`, che importano da `../../ui/src/…`; `test\ui\setup.ts` prepara jsdom (Vitest, `ui\vite.config.ts`).
+- `test\ui\<percorso>.test.ts(x)`: le prove di `ui\src\<percorso>`, che importano da `@/…` (la Guida da `@guide/…`, gli aiuti delle prove da `@test/…`: gli alias di `ui\tsconfig.json` e `ui\vite.config.ts`); `test\ui\setup.ts` prepara jsdom (Vitest, `ui\vite.config.ts`). Una prova che chiama il motore finge Tauri con `vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"))` e guida `invoke` da `@test/support/tauri`.
 
 Filtri: `cargo test ports::` o `cargo test db::services` (solo le prove Rust il cui percorso corrisponde); `npm -w ui test -- activity` (solo i file di prova dell'interfaccia il cui nome corrisponde).
 

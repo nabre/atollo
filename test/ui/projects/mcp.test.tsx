@@ -3,15 +3,12 @@
 // is not lost when what has it goes: after Riprova, after Salva.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "../../../ui/src/api";
-import { KitMcpBox, ProjectMcpBox } from "../../../ui/src/projects/mcp";
-import { EditorSettingsBox } from "../../../ui/src/projects/editorsettings";
+import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "@/api";
+import { KitMcpBox, ProjectMcpBox } from "@/projects/mcp";
+import { EditorSettingsBox } from "@/projects/editorsettings";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

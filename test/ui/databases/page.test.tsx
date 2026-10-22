@@ -3,14 +3,11 @@
 // not bring back the old list.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { SAMPLE_SERVICES, type ServiceInfo } from "../../../ui/src/api";
-import { DatabasesPage } from "../../../ui/src/databases";
+import { SAMPLE_SERVICES, type ServiceInfo } from "@/api";
+import { DatabasesPage } from "@/databases";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 /** Both servers stopped. */
 const STOPPED: ServiceInfo[] = SAMPLE_SERVICES.map((s) => ({ ...s, state: "stopped" }));

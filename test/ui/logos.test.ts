@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../tauri/catalog/components.json";
-import { hasLogo } from "../../ui/src/logos";
+import { hasLogo } from "@/logos";
 
 // Every component of the catalog shows its logo in Tools, the matrix and
 // the pages that list it (MySQL had none).

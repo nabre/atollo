@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { Codicon, codicon } from "../../../ui/src/workbench/codicon";
+import { Codicon, codicon } from "@/workbench/codicon";
 import codiconCss from "../../../node_modules/@vscode/codicons/dist/codicon.css?raw";
-import themeCss from "../../../ui/src/theme/theme.css?raw";
+import themeCss from "@/theme/theme.css?raw";
 
 // The app's sources, as text.
 const sources = import.meta.glob<string>("../../../ui/src/**/*.{ts,tsx}", {

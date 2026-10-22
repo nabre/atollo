@@ -1,7 +1,7 @@
 // The terminal's monospace font (font.ts, D-149): a view opens once Geist
 // Mono's faces are loaded, and one opened on a fallback measures again.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { monoLoaded, monoReady, remeasured, whenMonoLoads } from "../../../ui/src/terminal/font";
+import { monoLoaded, monoReady, remeasured, whenMonoLoads } from "@/terminal/font";
 
 const FAMILY = '"Geist Mono Variable", "Geist Mono", ui-monospace, Consolas, monospace';
 

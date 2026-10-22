@@ -2,8 +2,8 @@
 // (scripts/guide-docs.cjs): every topic is there with its title and
 // subtitle. When this fails, run `node scripts/guide-docs.cjs`.
 import { afterAll, describe, expect, it } from "vitest";
-import { setLang } from "../../../ui/src/i18n";
-import { GUIDE_TOPICS, sectionCode } from "../../../ui/src/guide/model";
+import { setLang } from "@/i18n";
+import { GUIDE_TOPICS, sectionCode } from "@/guide/model";
 
 const docs = import.meta.glob<string>("../../../docs/app/GUIDE*.md", {
   query: "?raw",

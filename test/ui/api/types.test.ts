@@ -2,7 +2,7 @@
 // extensions being installed (editor::Status), and the settings never carry
 // the Gemini key (skipped when Rust serializes them).
 import { describe, expect, it } from "vitest";
-import { editorStatus, settingsGet, type EditorStatus, type Settings } from "../../../ui/src/api";
+import { editorStatus, settingsGet, type EditorStatus, type Settings } from "@/api";
 
 describe("api types", () => {
   it("reads the extensions of the editor's status", async () => {

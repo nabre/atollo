@@ -4,8 +4,8 @@
 // the theme's colors.
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import themeCss from "../../../ui/src/theme/theme.css?raw";
-import { DataTable, List, ListItem, ListRow, PaneStack, ViewPane } from "../../../ui/src/workbench";
+import themeCss from "@/theme/theme.css?raw";
+import { DataTable, List, ListItem, ListRow, PaneStack, ViewPane } from "@/workbench";
 
 afterEach(cleanup);
 

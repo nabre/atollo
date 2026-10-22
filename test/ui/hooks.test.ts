@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import { useAction, useCopy, useLoad, type LoadOptions } from "../../ui/src/hooks";
+import { useAction, useCopy, useLoad, type LoadOptions } from "@/hooks";
 
 /** A promise settled by the test. */
 function deferred<T>() {

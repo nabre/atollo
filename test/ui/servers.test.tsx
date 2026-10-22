@@ -2,14 +2,11 @@
 // pool are two VirtualHosts, each with its own row (key project:action).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { WebServersView } from "../../ui/src/api/servers";
-import { ServersPage } from "../../ui/src/servers";
+import type { WebServersView } from "@/api/servers";
+import { ServersPage } from "@/servers";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 const site = (action: string, folder: string) => ({
   project: "shop",

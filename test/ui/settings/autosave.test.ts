@@ -3,14 +3,11 @@
 // a read that works clears the error of the failed one.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { SAMPLE_SETTINGS } from "../../../ui/src/api";
-import { useSettingsAutosave } from "../../../ui/src/settings/autosave";
+import { SAMPLE_SETTINGS } from "@/api";
+import { useSettingsAutosave } from "@/settings/autosave";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

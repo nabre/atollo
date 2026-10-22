@@ -2,17 +2,14 @@
 // few words, Enter runs the first, a failure is told after it closed.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_AGENTS, SAMPLE_PROJECTS, SAMPLE_SERVICES, type RunInfo } from "../../ui/src/api";
-import type { Running } from "../../ui/src/activity";
-import { CommandPalette } from "../../ui/src/commands";
-import { filterItems } from "../../ui/src/palette";
-import { codicon } from "../../ui/src/workbench";
+import { SAMPLE_AGENTS, SAMPLE_PROJECTS, SAMPLE_SERVICES, type RunInfo } from "@/api";
+import type { Running } from "@/activity";
+import { CommandPalette } from "@/commands";
+import { filterItems } from "@/palette";
+import { codicon } from "@/workbench";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

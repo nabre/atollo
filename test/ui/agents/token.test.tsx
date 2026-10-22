@@ -3,14 +3,11 @@
 // saves a token pasted by hand.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { AgentInfo } from "../../../ui/src/api";
-import { TokenLink, tokenOffered } from "../../../ui/src/agents/token";
+import type { AgentInfo } from "@/api";
+import { TokenLink, tokenOffered } from "@/agents/token";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
-import { codicon } from "../../../ui/src/workbench/codicon";
+import { codicon } from "@/workbench/codicon";
 import {
   Button,
   Checkbox,
@@ -19,7 +19,7 @@ import {
   SuggestField,
   TextField,
   ToggleButton,
-} from "../../../ui/src/workbench";
+} from "@/workbench";
 // VSCodium 1.135's workbench, vendored by scripts/vscodium-css/extract.mjs.
 import referenceCss from "../../../docs/brand/vscodium-1.135/workbench-ref.css?raw";
 

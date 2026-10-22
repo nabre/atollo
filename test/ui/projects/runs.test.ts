@@ -2,14 +2,11 @@
 // the lines that come as events while it is read are not lost, nor doubled.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import { mergeLog, useRuns } from "../../../ui/src/projects/runs";
+import { mergeLog, useRuns } from "@/projects/runs";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 const handlers = new Map<string, (e: { payload: unknown }) => void>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: (event: string, h: (e: { payload: unknown }) => void) => {
     handlers.set(event, h);

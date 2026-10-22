@@ -2,14 +2,11 @@
 // version, the ones without a manifest named, all well said once.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_INTEGRITY, type ComponentIntegrity } from "../../../ui/src/api";
-import { IntegrityReport, useIntegrity } from "../../../ui/src/components/integrity";
+import { SAMPLE_INTEGRITY, type ComponentIntegrity } from "@/api";
+import { IntegrityReport, useIntegrity } from "@/components/integrity";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

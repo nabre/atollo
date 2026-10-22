@@ -2,10 +2,10 @@
 // Altro): the quick panel's blocks and the side bar's tree.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { FrameworkPiece } from "../../../ui/src/api";
-import { basesByGroup, type Frameworks } from "../../../ui/src/frameworks";
-import { ProjectsHome, type HomeHandlers } from "../../../ui/src/projects/home";
-import { NewProjectTree } from "../../../ui/src/projects/new";
+import type { FrameworkPiece } from "@/api";
+import { basesByGroup, type Frameworks } from "@/frameworks";
+import { ProjectsHome, type HomeHandlers } from "@/projects/home";
+import { NewProjectTree } from "@/projects/new";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: () => Promise.reject(new Error("no backend")),

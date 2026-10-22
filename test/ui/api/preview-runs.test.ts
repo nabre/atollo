@@ -2,8 +2,8 @@
 // to «running» on a port with its output, a stop ends it, and the page hears
 // it through the preview's "run" events.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { previewEmit } from "../../../ui/src/api/core";
-import { previewLog, previewRuns, previewStart, previewStop } from "../../../ui/src/api/preview-runs";
+import { previewEmit } from "@/api/core";
+import { previewLog, previewRuns, previewStart, previewStop } from "@/api/preview-runs";
 
 describe("preview runs", () => {
   beforeEach(() => {

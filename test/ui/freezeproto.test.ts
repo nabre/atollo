@@ -3,7 +3,7 @@
 // assigns `toString` to its own: with a plain freeze the terminal panel
 // did not load, D-148).
 import { describe, expect, it } from "vitest";
-import { freezeOverridable } from "../../ui/src/freezeproto";
+import { freezeOverridable } from "@/freezeproto";
 
 function makeProto() {
   const proto = {

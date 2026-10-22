@@ -3,15 +3,12 @@
 // server's state after «Avvia».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "../../ui/src/api/llm";
-import { fitOf, ModelsPage } from "../../ui/src/models";
+import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "@/api/llm";
+import { fitOf, ModelsPage } from "@/models";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
 const handlers = new Map<string, (e: { payload: unknown }) => void>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: (event: string, h: (e: { payload: unknown }) => void) => {
     handlers.set(event, h);

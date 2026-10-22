@@ -3,14 +3,11 @@
 // listed, and "Ferma tutto", once confirmed, stops actions, lines and pools.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { RunInfo, ServiceInfo, WebServerPool } from "../../ui/src/api";
-import { ActivityPanel, liveLines, useRunning } from "../../ui/src/activity";
+import type { RunInfo, ServiceInfo, WebServerPool } from "@/api";
+import { ActivityPanel, liveLines, useRunning } from "@/activity";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 const MYSQL: ServiceInfo = {
   id: "mysql",

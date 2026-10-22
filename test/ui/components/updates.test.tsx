@@ -2,14 +2,11 @@
 // «Aggiorna», «Controlla ora», read again when a preparation ends.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_UPDATES, type Updates } from "../../../ui/src/api";
-import { UpdatesPane } from "../../../ui/src/components/updates";
+import { SAMPLE_UPDATES, type Updates } from "@/api";
+import { UpdatesPane } from "@/components/updates";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: () => Promise.resolve(() => undefined),
 }));

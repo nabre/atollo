@@ -3,9 +3,9 @@
 // languages with the same placeholders.
 import { render } from "@testing-library/react";
 import { afterAll, describe, expect, it } from "vitest";
-import { setLang, type Lang } from "../../../ui/src/i18n";
-import { GUIDE_GROUPS, GUIDE_TOPICS } from "../../../ui/src/guide/model";
-import { GuideTopicContent, TOPIC_TEXTS } from "../../../ui/src/guide/sections";
+import { setLang, type Lang } from "@/i18n";
+import { GUIDE_GROUPS, GUIDE_TOPICS } from "@/guide/model";
+import { GuideTopicContent, TOPIC_TEXTS } from "@/guide/sections";
 
 const raw = import.meta.glob<string>(["../../../ui/src/guide/**/*.ts", "../../../ui/src/guide/**/*.tsx"], {
   query: "?raw",
