@@ -304,7 +304,7 @@ I login degli strumenti dei database (dump e ripristini) sono file con nome `<ex
 ### Host locali e `conf.d` del progetto
 
 - Il server di file statici (`projects\serve.rs`, `is_local_host_header`) e `php -S` (`runtime\php-router.php`) rispondono a `localhost`, `*.localhost`, `127.0.0.1` e `[::1]`; con «Rete locale» (`ATOLLO_ALLOW_LAN=1`) anche a un indirizzo IP scritto per esteso, così gli altri dispositivi della rete li raggiungono con l'IP del PC. Ogni altro nome riceve 403 dal server di file e 421 da `php -S` (il DNS rebinding non legge il progetto).
-- `data\projects\<p>\apache\conf.d\*.conf` e `caddy\conf.d\*.caddy` tengono le direttive dell'utente. L'Apache dedicato le include (`IncludeOptional`), e così il vHost del sito in un pool Apache (`servers\config.rs`); il Caddy proprio del progetto (`projects::caddy::project_conf`) e un pool Caddy le importano solo quando la cartella ha un file `.caddy` (`caddy::has_snippets`: un `import` che non trova nulla ferma Caddy).
+- `data\projects\<p>\apache\conf.d\*.conf` e `caddy\conf.d\*.caddy` tengono le direttive dell'utente. L'Apache dedicato le include (`IncludeOptional`), e così il vHost del sito in un pool Apache (`servers\config.rs`); il Caddy proprio del progetto (`projects::caddy::project_conf`) e un pool Caddy le importano solo quando la cartella ha un file `.caddy` (`caddy::has_snippets`: un `import` che non trova nulla ferma Caddy). Una cartella scritta in `httpd.conf` o in un Caddyfile passa da `apache::quoted_path` o `caddy::quoted_path`, che rifiutano un nome con `"`, `\`, un a capo o `${` (la cartella allora non si serve): il nome della cartella di un repository clonato non diventa mai una direttiva (BUG-V7-09).
 
 ### Processi
 
@@ -417,7 +417,7 @@ Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0
 | --- | --- |
 | `site/shots/make.mjs` | le sei schermate del sito (Progetti con Attività, Agenti, Matrice degli strumenti; scuro e chiaro; 1280×820 a 2×) in `site/shots/<lingua>/` per en, it, fr, de (`SHOTS_LANGS` le limita, D-143); `site/build.mjs` le copia in `assets/shots/<lingua>/` per la pagina di quella lingua, e ogni README mostra le sue |
 | `site/shots/social.mjs` | `docs/brand/social.png` (1280×640), la social card, da `en/shot-projects-dark.png`: resta in inglese |
-| `scripts/guide-shots/make.mjs` | le 52 schermate della Guida, `ui/public/guide/<lingua>/*.webp` (tema chiaro, 1280×800 a 1,25×, senza il badge dell'anteprima; webp con Pillow; `GUIDE_SHOTS_LANGS` limita le lingue), che la Guida del sito copia |
+| `scripts/guide-shots/make.mjs` | le schermate della Guida (ogni pagina della barra delle attività, le schede del progetto, il nuovo progetto), `ui/public/guide/<lingua>/*.webp` (tema chiaro, 1280×800 a 1,25×, senza il badge dell'anteprima; webp con Pillow; `GUIDE_SHOTS_LANGS` limita le lingue), che la Guida del sito copia |
 
 `npm run dev` (`tauri dev`) avvia `scripts/dev-ui.mjs` come `beforeDevCommand`: Vite gira in quel processo e il processo finisce quando la shell che l'ha avviato non c'è più, quando si chiude la pipe dello stdin che Tauri gli passa, o con SIGINT/SIGTERM/SIGHUP, così chiudendo l'app la porta 5173 si libera (D-138). Una porta già occupata viene segnalata con chi la tiene, mai fermata.
 

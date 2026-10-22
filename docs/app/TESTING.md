@@ -61,7 +61,7 @@ None of these runs in `npm test`; each one is run by hand after the change it fo
 | `node scripts/matrix/gen_matrix.mjs` | the catalog changed | `docs\app\TOOLS-MATRIX.html` |
 | `node site/shots/make.mjs` | the pages in the screenshots changed | `site\shots\<lang>\shot-{projects,agents,tools}-{dark,light}.png` for en, it, fr, de |
 | `node site/shots/social.mjs` | after `make.mjs` | `docs\brand\social.png` (from `en\shot-projects-dark.png`) |
-| `node scripts/guide-shots/make.mjs` | the pages in the Guide changed | `ui\public\guide\<lang>\*.webp` (52 files; Python with Pillow) |
+| `node scripts/guide-shots/make.mjs` | the pages in the Guide changed | `ui\public\guide\<lang>\*.webp` (14 per language; Python with Pillow) |
 
 The screenshot scripts read the browser preview: first `npm -w ui run dev` (`127.0.0.1:5173`), with `playwright-core` installed next to the script or in a folder of its own and the system's Edge or Chrome (`SHOTS_BROWSER=msedge|chrome`, no download). `SHOTS_LANGS=en,it` (site) and `GUIDE_SHOTS_LANGS=en,it` (Guide) limit the languages; `SHOTS_URL=http://127.0.0.1:5199` takes the preview from another address, for both. Before committing, look at each language: the labels come from `ui\src\locales`, the engine's texts from `engineText`.
 

@@ -303,7 +303,7 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 ### Local hosts and the project's `conf.d`
 
 - The static file server (`projects\serve.rs`, `is_local_host_header`) and `php -S` (`runtime\php-router.php`) answer `localhost`, `*.localhost`, `127.0.0.1` and `[::1]`; with "Local network" (`ATOLLO_ALLOW_LAN=1`) also a literal IP address, so the other devices of the network reach them by the PC's IP. Any other name gets 403 from the file server and 421 from `php -S` (DNS rebinding cannot read the project).
-- `data\projects\<p>\apache\conf.d\*.conf` and `caddy\conf.d\*.caddy` hold the user's own directives. The dedicated Apache includes them (`IncludeOptional`), and so does the site's vHost in an Apache pool (`servers\config.rs`); the project's own Caddy (`projects::caddy::project_conf`) and a Caddy pool import them only when the folder has a `.caddy` file (`caddy::has_snippets`: an `import` that matches nothing stops Caddy).
+- `data\projects\<p>\apache\conf.d\*.conf` and `caddy\conf.d\*.caddy` hold the user's own directives. The dedicated Apache includes them (`IncludeOptional`), and so does the site's vHost in an Apache pool (`servers\config.rs`); the project's own Caddy (`projects::caddy::project_conf`) and a Caddy pool import them only when the folder has a `.caddy` file (`caddy::has_snippets`: an `import` that matches nothing stops Caddy). A folder written into `httpd.conf` or a Caddyfile goes through `apache::quoted_path` or `caddy::quoted_path`, which refuse a name with `"`, `\`, a line break or `${` (the folder is then not served): a cloned repository's folder name never becomes a directive (BUG-V7-09).
 
 ### Processes
 
@@ -416,7 +416,7 @@ The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.
 | --- | --- |
 | `site/shots/make.mjs` | the site's six screenshots (Projects with Activity, Agents, Tools matrix; dark and light; 1280×820 at 2×) in `site/shots/<lang>/` for en, it, fr, de (`SHOTS_LANGS` limits them, D-143); `site/build.mjs` copies them to `assets/shots/<lang>/` for the page of that language, and each README shows its own |
 | `site/shots/social.mjs` | `docs/brand/social.png` (1280×640), the social card, from `en/shot-projects-dark.png`: it stays in English |
-| `scripts/guide-shots/make.mjs` | the Guide's 52 screenshots, `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which the site's Guide copies |
+| `scripts/guide-shots/make.mjs` | the Guide's screenshots (every page of the activity bar, the project's tabs, the new project), `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which the site's Guide copies |
 
 `npm run dev` (`tauri dev`) starts `scripts/dev-ui.mjs` as `beforeDevCommand`: Vite runs in that process and the process ends when the shell that started it is gone, when the stdin pipe Tauri hands down closes, or on SIGINT/SIGTERM/SIGHUP, so closing the app frees port 5173 (D-138). A port already taken is reported with who has it, never stopped.
 
