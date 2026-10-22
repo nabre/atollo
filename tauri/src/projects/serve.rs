@@ -317,6 +317,15 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
             ]
         )
     );
+    serve(&root, &listener, lan);
+    Ok(())
+}
+
+/// The connections of `listener`, each in a thread of its own, at most
+/// `MAX_CONNS` at a time. The tests give it a listener already bound to a
+/// free port: a port found free and bound again later could be taken by
+/// another test's server in between (TEST-V7-02).
+fn serve(root: &Path, listener: &TcpListener, lan: bool) {
     let active = Arc::new(AtomicUsize::new(0));
     for stream in listener.incoming().flatten() {
         let prev = active.fetch_add(1, Ordering::AcqRel);
@@ -324,13 +333,12 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
         if prev >= MAX_CONNS {
             continue;
         }
-        let root = root.clone();
+        let root = root.to_path_buf();
         std::thread::spawn(move || {
             let _guard = guard;
             let _ = handle(&root, lan, stream);
         });
     }
-    Ok(())
 }
 
 #[cfg(test)]
