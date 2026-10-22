@@ -13,27 +13,25 @@
 // SHOTS_LANGS=en,it limits the languages, SHOTS_URL=http://127.0.0.1:5199
 // takes the preview from another address.
 import { chromium } from "playwright-core";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { catalog, langsFrom, launch, nav as navOf, openPreview } from "../../scripts/lib/shots.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const langs = (process.env.SHOTS_LANGS ?? "en,it,fr,de").split(",");
-const preview = process.env.SHOTS_URL ?? "http://127.0.0.1:5173";
-const channel = process.env.SHOTS_BROWSER ?? (process.platform === "win32" ? "msedge" : "chrome");
-const browser = await chromium.launch({ channel });
+const langs = langsFrom("SHOTS_LANGS");
+const browser = await launch(chromium);
 
 async function shoot(lang, scheme) {
-  // The app's labels in that language (ui/src/locales: Italian key -> text).
-  const catalog =
-    lang === "it" ? {} : JSON.parse(readFileSync(join(here, "..", "..", "ui", "src", "locales", `${lang}.json`), "utf8"));
-  const tr = (it) => catalog[it] ?? it;
+  const tr = catalog(lang);
   const out = join(here, lang);
   mkdirSync(out, { recursive: true });
-  const page = await browser.newPage({ viewport: { width: 1280, height: 820 }, deviceScaleFactor: 2, colorScheme: scheme });
-  await page.goto(`${preview}/?lang=${lang}`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
-  const nav = (name) => page.getByRole("navigation", { name: tr("Pagine") }).getByRole("button", { name: tr(name), exact: true });
+  const page = await openPreview(browser, lang, {
+    viewport: { width: 1280, height: 820 },
+    deviceScaleFactor: 2,
+    colorScheme: scheme,
+  });
+  const nav = (name) => navOf(page, tr, name);
   const settle = () => page.waitForTimeout(700);
   const activity = new RegExp(`^${tr("Attività")}`);
 

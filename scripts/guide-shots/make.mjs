@@ -14,39 +14,28 @@
 // takes the preview from another address.
 import { chromium } from "playwright-core";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { catalog, langsFrom, launch, nav as navOf, openPreview, REPO as repo } from "../lib/shots.mjs";
 
-const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const langs = (process.env.GUIDE_SHOTS_LANGS ?? "it,en,fr,de").split(",");
-const preview = process.env.SHOTS_URL ?? "http://127.0.0.1:5173";
-const channel = process.env.SHOTS_BROWSER ?? (process.platform === "win32" ? "msedge" : "chrome");
-const browser = await chromium.launch({ channel });
+const langs = langsFrom("GUIDE_SHOTS_LANGS", ["it", "en", "fr", "de"]);
+const browser = await launch(chromium);
 const png = mkdtempSync(join(tmpdir(), "guide-shots-"));
 
 async function shoot(lang) {
-  // The app's labels in that language (ui/src/locales: Italian key -> text).
-  const catalog =
-    lang === "it" ? {} : JSON.parse(readFileSync(join(repo, "ui", "src", "locales", `${lang}.json`), "utf8"));
-  const tr = (it) => catalog[it] ?? it;
-  const page = await browser.newPage({
+  const tr = catalog(lang);
+  const page = await openPreview(browser, lang, {
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1.25,
     colorScheme: "light",
   });
-  await page.goto(`${preview}/?lang=${lang}`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(800);
   await page.getByText(tr("Anteprima nel browser: dati di esempio"), { exact: true }).evaluate((el) => {
     el.style.visibility = "hidden";
   });
   const settle = () => page.waitForTimeout(700);
   const nav = async (name) => {
-    await page
-      .getByRole("navigation", { name: tr("Pagine") })
-      .getByRole("button", { name: tr(name), exact: true })
-      .click();
+    await navOf(page, tr, name).click();
     await settle();
   };
   const shot = async (name) => {

@@ -9,6 +9,8 @@ on:
     paths:
       - 'site/**'
       - 'docs/brand/**'
+      # The languages (site/build.mjs) and the screenshots helpers.
+      - 'scripts/lib/**'
       # The tool matrix (site/matrix.mjs) follows the app's catalog.
       - 'tauri/catalog/components.json'
       - 'tauri/i18n/catalog.json'

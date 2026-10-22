@@ -43,7 +43,8 @@ test\rust\  test\ui\          tests, with the same structure as tauri\src and ui
 runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
 scripts\                      dev-ui.mjs (npm run dev), guide-docs.cjs, guide-shots\, vscodium-css\, matrix\,
-                              test-linux.sh, cross-check\, build-httpd\, build-php\
+                              test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
+                              preview, languages and labels shared by the screenshot scripts and the site)
 site\                         the site (build.mjs, strings\, template.html); shots\ (screenshots per language)
 docs\app\                     decisions, architecture, catalog, tests, changelog, guide, TOOLS-MATRIX.html
 docs\brand\                   logo, themes, the scripts that generate them; vscodium-1.135\ (the workbench

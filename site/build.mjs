@@ -17,13 +17,14 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RiArrowDownSLine, RiComputerLine, RiMoonLine, RiSunLine } from "react-icons/ri";
 import { loadCatalog, matrixHtml } from "./matrix.mjs";
+import { LANGS } from "../scripts/lib/shots.mjs";
 
 const site = dirname(fileURLToPath(import.meta.url));
 const repo = dirname(site);
 const out = join(repo, "_site");
 const base = "https://nabre.github.io/atollo/";
 // English first: the root page, x-default and the keys every language must have.
-const langs = ["en", "it", "fr", "de"];
+const langs = LANGS;
 const pathOf = (lang) => (lang === "en" ? "" : `${lang}/`);
 // og:locale of each page.
 const locales = { en: "en_US", it: "it_IT", fr: "fr_FR", de: "de_DE" };
