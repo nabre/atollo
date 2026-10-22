@@ -4,7 +4,7 @@
 //!
 //! Caddy is the web server proposed on every system (D-111): it reads
 //! no `.htaccess`, and gets the rules of a front controller instead
-//! (`projects/caddy.rs`), which is what the stock `.htaccess` of WordPress
+//! (`projects/caddy/`), which is what the stock `.htaccess` of WordPress
 //! and Laravel say (Drupal's denies more). Apache is proposed too where the
 //! catalog has it (D-116: every system once the kit's macOS and Linux build
 //! is pinned) and only for a project whose `.htaccess` has rules of its

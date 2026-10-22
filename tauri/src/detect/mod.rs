@@ -12,7 +12,7 @@
 //!   (`Atollo.exe serve`), instead of a command;
 //! - `apache`: a folder of the project served by an Apache of its own
 //!   (`projects/apache.rs`), instead of a command; `caddy` the same with
-//!   Caddy (`projects/caddy.rs`).
+//!   Caddy (`projects/caddy/`).
 //!
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.

@@ -99,7 +99,9 @@ tauri\src\
     settings  mcp  vscode     dev-settings.json (D-63), server MCP, .vscode\settings.json (D-78)
     run\                      azioni avviate (D-50): mod (Runner, stato, arresto), ports, output, start, pool
     serve  apache             server di file (D-51); Apache del progetto
-    caddy  fastcgi            Caddy del progetto e testo dei Caddyfile, admin su socket (D-111); php-cgi e php-fpm
+    caddy\                    Caddy del progetto (D-111): mod, socket (socket privati dell'admin e di
+                              php-fpm), conf (testo dei Caddyfile), command
+    fastcgi                   php-cgi e php-fpm
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner,
                               mine (le basi salvate da un progetto, «Le mie basi», D-162)
   detect\                     tipo, linguaggi e azioni di un progetto: mod, node, php, python, rust, go,
