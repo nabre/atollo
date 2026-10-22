@@ -1,7 +1,7 @@
 // Chapter 9 of the Guide, «Aiuto»: common problems with their message and
 // remedy, frequent questions, a glossary.
 import { rich, tr } from "../core/lang";
-import { Bullets, Callout, Code, FilterList, InBrief, P, QA, Related, Section, See } from "../core/widgets";
+import { Bullets, Callout, Code, FilterList, InBrief, P, QA, Related, Section, See, Terms } from "../core/widgets";
 import type { GuideProblem, TopicTexts } from "../core/types";
 
 /** The problems by area: what the user sees (the message or the
@@ -1142,16 +1142,7 @@ export const HELP: TopicTexts = {
         ]}
       />
       <Section title={tr("Dalla A alla Z", "From A to Z", "De A à Z", "Von A bis Z")}>
-        <dl className="m-0 grid grid-cols-1 gap-x-6 gap-y-2 text-[12px] md:grid-cols-[max-content_minmax(0,1fr)]">
-          {glossary()
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([term, text]) => (
-              <div key={term} className="contents">
-                <dt className="font-semibold text-vsc-settings-header">{term}</dt>
-                <dd className="m-0 leading-relaxed text-vsc-fg/90">{text}</dd>
-              </div>
-            ))}
-        </dl>
+        <Terms items={glossary().sort((a, b) => a[0].localeCompare(b[0]))} />
       </Section>
       <Related ids={["welcome", "faq"]} />
     </>

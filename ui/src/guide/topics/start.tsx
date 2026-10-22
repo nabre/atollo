@@ -18,6 +18,7 @@ import {
   Steps,
   Table,
   Under,
+  WindowSketch,
 } from "../core/widgets";
 import type { TopicTexts } from "../core/types";
 
@@ -938,33 +939,19 @@ export const START: TopicTexts = {
           "Die Teile des Fensters",
         )}
       >
-        <div className="grid grid-cols-[48px_1fr] grid-rows-[22px_1fr_22px] gap-0.5 overflow-hidden rounded-md border border-vsc-border text-[11px]">
-          <div className="col-span-2 flex items-center bg-vsc-titlebar px-2 text-vsc-titlebar-fg">
-            {tr("1 · Barra del titolo", "1 · Title bar", "1 · Barre de titre", "1 · Titelleiste")}
-          </div>
-          <div className="flex items-start justify-center bg-vsc-activitybar pt-2 text-center text-vsc-activitybar-fg [writing-mode:vertical-rl]">
-            {tr("2 · Barra delle attività", "2 · Activity bar", "2 · Barre d'activité", "2 · Aktivitätsleiste")}
-          </div>
-          <div className="grid min-h-40 grid-cols-[34%_1fr] grid-rows-[1fr_44px] gap-0.5">
-            <div className="row-span-2 bg-vsc-sidebar p-2 text-vsc-sidebar-fg">
-              {tr("3 · Barra laterale", "3 · Sidebar", "3 · Barre latérale", "3 · Seitenleiste")}
-            </div>
-            <div className="bg-vsc-bg p-2">
-              {tr("4 · Area delle schede", "4 · Tab area", "4 · Zone des onglets", "4 · Tab-Bereich")}
-            </div>
-            <div className="border-t border-vsc-panel-border bg-vsc-panel p-2">
-              {tr(
-                "5 · Pannello «Attività»",
-                "5 · “Activity” panel",
-                "5 · Panneau « Activité »",
-                "5 · Bereich „Aktivität“",
-              )}
-            </div>
-          </div>
-          <div className="col-span-2 flex items-center bg-vsc-statusbar px-2 text-vsc-statusbar-fg">
-            {tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste")}
-          </div>
-        </div>
+        <WindowSketch
+          title={tr("1 · Barra del titolo", "1 · Title bar", "1 · Barre de titre", "1 · Titelleiste")}
+          activity={tr("2 · Barra delle attività", "2 · Activity bar", "2 · Barre d'activité", "2 · Aktivitätsleiste")}
+          sidebar={tr("3 · Barra laterale", "3 · Sidebar", "3 · Barre latérale", "3 · Seitenleiste")}
+          tabs={tr("4 · Area delle schede", "4 · Tab area", "4 · Zone des onglets", "4 · Tab-Bereich")}
+          panel={tr(
+            "5 · Pannello «Attività»",
+            "5 · “Activity” panel",
+            "5 · Panneau « Activité »",
+            "5 · Bereich „Aktivität“",
+          )}
+          status={tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste")}
+        />
         <Table
           columns={[
             tr("Parte", "Part", "Partie", "Teil"),

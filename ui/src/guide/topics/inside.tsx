@@ -566,13 +566,9 @@ export const INSIDE: TopicTexts = {
             tr("Che cosa contiene", "What it contains", "Ce qu'il contient", "Was er enthält"),
           ]}
           rows={diskTree().map((n) => [
-            <code
-              key="p"
-              className="font-mono text-[12px] text-vsc-settings-header select-text"
-              style={{ paddingLeft: `${String(n.depth * 14)}px` }}
-            >
+            <Code key="p" indent={n.depth}>
               {n.path}
-            </code>,
+            </Code>,
             n.text,
           ])}
         />

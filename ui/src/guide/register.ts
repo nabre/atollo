@@ -29,6 +29,8 @@ export const APP_WIDGETS: GuideWidgetImpl = {
   Related: W.Related,
   Go: W.Go,
   KitFoldersBar: W.KitFoldersBar,
+  Terms: W.Terms,
+  WindowSketch: W.WindowSketch,
   Badge,
   KitInfo,
   SourcesTable,

@@ -37,8 +37,9 @@ export interface GuideWidgetProps {
   Key: { children: ReactNode };
   /** A label of the interface as the user sees it. */
   Ui: { children: ReactNode };
-  /** A path, a file name, a command or a value to type. */
-  Code: { children: ReactNode };
+  /** A path, a file name, a command or a value to type; `indent`, a
+   * level of a tree of folders (a table's first column). */
+  Code: { children: ReactNode; indent?: number };
   /** A group of cards. */
   Cards: { children: ReactNode };
   /** A code or configuration snippet to copy. */
@@ -80,6 +81,10 @@ export interface GuideWidgetProps {
   };
   /** Questions and answers by group with a search box over them. */
   FilterList: { groups: { title: string; items: GuideProblem[] }[]; placeholder: string };
+  /** Words and what they mean, A to Z (the glossary). */
+  Terms: { items: [string, string][] };
+  /** The window of the app drawn as boxes, one label per part. */
+  WindowSketch: { title: string; activity: string; sidebar: string; tabs: string; panel: string; status: string };
 }
 
 export type WidgetName = keyof GuideWidgetProps;
@@ -111,6 +116,8 @@ export const WIDGET_NAMES = [
   "KitInfo",
   "SourcesTable",
   "FilterList",
+  "Terms",
+  "WindowSketch",
 ] as const satisfies readonly WidgetName[];
 
 /** A renderer: a function for every widget of the contract. */
@@ -158,3 +165,5 @@ export const Badge = widget("Badge");
 export const KitInfo = widget("KitInfo");
 export const SourcesTable = widget("SourcesTable");
 export const FilterList = widget("FilterList");
+export const Terms = widget("Terms");
+export const WindowSketch = widget("WindowSketch");

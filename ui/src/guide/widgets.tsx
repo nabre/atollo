@@ -284,7 +284,16 @@ export function Ui({ children }: W["Ui"]) {
 }
 
 /** A path, a file name, a command or a value to type. */
-export function Code({ children }: W["Code"]) {
+export function Code({ children, indent }: W["Code"]) {
+  if (indent !== undefined)
+    return (
+      <code
+        className="font-mono text-[12px] text-vsc-settings-header select-text"
+        style={{ paddingLeft: `${String(indent * 14)}px` }}
+      >
+        {children}
+      </code>
+    );
   return (
     <code className="rounded bg-vsc-input px-1 py-px font-mono text-[11px] break-all text-vsc-fg select-text">
       {children}
@@ -422,6 +431,38 @@ export function Key({ children }: W["Key"]) {
     <kbd className="rounded border border-b-2 border-vsc-keybinding-border border-b-vsc-keybinding-bottom bg-vsc-keybinding px-1 font-mono text-[11px] text-vsc-keybinding-fg">
       {children}
     </kbd>
+  );
+}
+
+/** The glossary: terms and meanings, side by side on wide windows. */
+export function Terms({ items }: W["Terms"]) {
+  return (
+    <dl className="m-0 grid grid-cols-1 gap-x-6 gap-y-2 text-[12px] md:grid-cols-[max-content_minmax(0,1fr)]">
+      {items.map(([term, text]) => (
+        <div key={term} className="contents">
+          <dt className="font-semibold text-vsc-settings-header">{term}</dt>
+          <dd className="m-0 leading-relaxed text-vsc-fg/90">{text}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** The window drawn with the workbench's own colors. */
+export function WindowSketch({ title, activity, sidebar, tabs, panel, status }: W["WindowSketch"]) {
+  return (
+    <div className="grid grid-cols-[48px_1fr] grid-rows-[22px_1fr_22px] gap-0.5 overflow-hidden rounded-md border border-vsc-border text-[11px]">
+      <div className="col-span-2 flex items-center bg-vsc-titlebar px-2 text-vsc-titlebar-fg">{title}</div>
+      <div className="flex items-start justify-center bg-vsc-activitybar pt-2 text-center text-vsc-activitybar-fg [writing-mode:vertical-rl]">
+        {activity}
+      </div>
+      <div className="grid min-h-40 grid-cols-[34%_1fr] grid-rows-[1fr_44px] gap-0.5">
+        <div className="row-span-2 bg-vsc-sidebar p-2 text-vsc-sidebar-fg">{sidebar}</div>
+        <div className="bg-vsc-bg p-2">{tabs}</div>
+        <div className="border-t border-vsc-panel-border bg-vsc-panel p-2">{panel}</div>
+      </div>
+      <div className="col-span-2 flex items-center bg-vsc-statusbar px-2 text-vsc-statusbar-fg">{status}</div>
+    </div>
   );
 }
 
