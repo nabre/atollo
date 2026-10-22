@@ -685,3 +685,7 @@ impl WebServers {
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/servers/pools.rs"]
+mod tests;

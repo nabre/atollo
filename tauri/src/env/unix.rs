@@ -289,3 +289,7 @@ pub(super) fn libicu_present() -> bool {
 pub(super) fn libicu_present() -> bool {
     true
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/env/unix.rs"]
+mod tests;

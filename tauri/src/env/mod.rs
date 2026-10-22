@@ -668,5 +668,5 @@ fn write_python_shim(dir: &Path) -> std::io::Result<()> {
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/env.rs"]
+#[path = "../../../test/rust/env/mod.rs"]
 mod tests;

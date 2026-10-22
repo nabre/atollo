@@ -62,3 +62,7 @@ pub fn mask_secrets(text: &str) -> String {
     out.push_str(rest);
     out
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/env/secrets.rs"]
+mod tests;

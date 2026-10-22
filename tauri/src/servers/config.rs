@@ -340,3 +340,7 @@ impl WebServers {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/servers/config.rs"]
+mod tests;

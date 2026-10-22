@@ -301,3 +301,7 @@ fn subdirs_starting_with(dir: &Path, prefix: &str) -> impl Iterator<Item = PathB
     dirs.sort();
     dirs.into_iter()
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/env/path.rs"]
+mod tests;

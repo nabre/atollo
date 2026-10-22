@@ -386,4 +386,4 @@ impl WebServers {
 
 #[cfg(test)]
 #[path = "../../../test/rust/servers/mod.rs"]
-mod tests;
+pub(crate) mod tests;

@@ -152,3 +152,7 @@ pub(super) fn language_vars(env: &mut KitEnv, cx: &Cx) -> LangDirs {
         pnpm,
     }
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/env/langs.rs"]
+mod tests;

@@ -777,3 +777,7 @@ impl WebServers {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/servers/process.rs"]
+mod tests;
