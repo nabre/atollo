@@ -18,6 +18,7 @@ import { useAction, useLoad } from "../hooks";
 import { ErrorLine } from "../common";
 import { t } from "../i18n";
 import { updateText } from "../update";
+import { KitBackup } from "./backup";
 import { Button, Dot, Link, Properties, SettingItem, SettingsGroup } from "../workbench";
 
 /** Where the kit is (was on the Home, D-76). */
@@ -59,6 +60,7 @@ export function KitInfo({ info }: { info: AppInfo }) {
         {info.diskNote ? <p className="mt-2 text-vsc-warning">{info.diskNote}</p> : null}
       </SettingItem>
       <KitHealth />
+      <KitBackup />
       <ProblemReport />
     </SettingsGroup>
   );

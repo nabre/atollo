@@ -459,10 +459,34 @@
           "markdownDescription": "Enables the issue_open command without any pre-configured scope."
         },
         {
+          "description": "Enables the kit_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-export",
+          "markdownDescription": "Enables the kit_export command without any pre-configured scope."
+        },
+        {
           "description": "Enables the kit_health command without any pre-configured scope.",
           "type": "string",
           "const": "allow-kit-health",
           "markdownDescription": "Enables the kit_health command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_import command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-import",
+          "markdownDescription": "Enables the kit_import command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_import_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-import-cancel",
+          "markdownDescription": "Enables the kit_import_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_import_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-import-pending",
+          "markdownDescription": "Enables the kit_import_pending command without any pre-configured scope."
         },
         {
           "description": "Enables the kit_mcp command without any pre-configured scope.",
@@ -1257,10 +1281,34 @@
           "markdownDescription": "Denies the issue_open command without any pre-configured scope."
         },
         {
+          "description": "Denies the kit_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-export",
+          "markdownDescription": "Denies the kit_export command without any pre-configured scope."
+        },
+        {
           "description": "Denies the kit_health command without any pre-configured scope.",
           "type": "string",
           "const": "deny-kit-health",
           "markdownDescription": "Denies the kit_health command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_import command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-import",
+          "markdownDescription": "Denies the kit_import command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_import_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-import-cancel",
+          "markdownDescription": "Denies the kit_import_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_import_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-import-pending",
+          "markdownDescription": "Denies the kit_import_pending command without any pre-configured scope."
         },
         {
           "description": "Denies the kit_mcp command without any pre-configured scope.",

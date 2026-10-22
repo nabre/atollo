@@ -7,6 +7,7 @@
 #![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used))]
 
 mod agents;
+mod backup;
 mod cli;
 mod commands;
 mod db;
@@ -111,6 +112,30 @@ fn run() -> i32 {
             return 1;
         }
     };
+    // A copy of a kit imported (N-12): in place before anything of `data\`
+    // is opened, only by the app's window and only when no other app of
+    // this kit runs (its guard, taken here for the swap).
+    let mut imported = None;
+    if matches!(command, cli::Cli::Gui) && backup::pending(kit.root()) {
+        if let Ok(os::instance::Instance::Primary(guard)) = os::instance::acquire(&kit) {
+            let result = backup::apply_pending(kit.root());
+            drop(guard);
+            match result {
+                Ok(aside) => imported = aside,
+                Err(e) => {
+                    fatal(
+                        early_lang,
+                        &i18n::t(
+                            early_lang,
+                            "Importazione della copia del kit non riuscita: {0}",
+                            &[&format!("{e:#}")],
+                        ),
+                    );
+                    return 1;
+                }
+            }
+        }
+    }
     let moved_from = match kit.prepare() {
         Ok(moved) => moved,
         Err(e) => {
@@ -122,6 +147,12 @@ fn run() -> i32 {
     };
 
     log::init(&kit.logs());
+    if let Some(aside) = &imported {
+        log::info(&format!(
+            "kit copy imported; what it replaced: {}",
+            aside.display()
+        ));
+    }
     // Before the environment points at them: one folder per version.
     versions::migrate(&kit);
     // The versions side by side, known to Gradle, Maven and dotnet.

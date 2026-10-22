@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-kit-export"
+description = "Enables the kit_export command without any pre-configured scope."
+commands.allow = ["kit_export"]
+
+[[permission]]
+identifier = "deny-kit-export"
+description = "Denies the kit_export command without any pre-configured scope."
+commands.deny = ["kit_export"]

@@ -1030,5 +1030,19 @@
   "Nessun file da salvare.": "Keine Datei zu speichern.",
   "Cosa copiare": "Was kopiert wird",
   "{0} file": "{0} Dateien",
-  "In tutto: {0} file, {1}": "Insgesamt: {0} Dateien, {1}"
+  "In tutto: {0} file, {1}": "Insgesamt: {0} Dateien, {1}",
+  "Copia del kit": "Kopie des Kits",
+  "Progetti e dati (impostazioni, database, agenti) in una cartella o in uno zip, senza i programmi, le cache e i modelli locali, che si riscaricano. I database si fermano per la copia. La copia contiene le password del kit: tienila al sicuro.": "Projekte und Daten (Einstellungen, Datenbanken, Agenten) in einen Ordner oder ein Zip, ohne die Programme, die Caches und die lokalen Modelle, die erneut heruntergeladen werden. Die Datenbanken halten für die Kopie an. Die Kopie enthält die Passwörter des Kits: bewahre sie sicher auf.",
+  "Esporta in una cartella…": "In einen Ordner exportieren…",
+  "Esporta in uno zip…": "In ein Zip exportieren…",
+  "Importa da una cartella…": "Aus einem Ordner importieren…",
+  "Importa da uno zip…": "Aus einem Zip importieren…",
+  "Copia fatta: {0} file, {1}.": "Kopie erstellt: {0} Dateien, {1}.",
+  "Copia pronta: {0} file, {1}, fatta il {2}.": "Kopie bereit: {0} Dateien, {1}, erstellt am {2}.",
+  "Una copia aspetta di essere importata.": "Eine Kopie wartet auf den Import.",
+  "Al prossimo avvio prende il posto dei progetti e dei dati di questo kit; quelli di adesso vanno nella cartella .atollo-before-import, non si cancellano. I programmi che mancano si riscaricano.": "Beim nächsten Start ersetzt sie die Projekte und Daten dieses Kits; die jetzigen kommen in den Ordner .atollo-before-import, sie werden nicht gelöscht. Fehlende Programme werden erneut heruntergeladen.",
+  "Chiudi Atollo per importarla": "Atollo schließen, um sie zu importieren",
+  "Annulla l'importazione": "Import abbrechen",
+  "Apri la cartella del kit": "Ordner des Kits öffnen",
+  "Poi riapri Atollo: la copia si applica all'avvio.": "Dann Atollo wieder öffnen: die Kopie wird beim Start angewendet."
 }
