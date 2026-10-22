@@ -22,12 +22,10 @@ import {
   Under,
 } from "../core/widgets";
 import type { TopicTexts } from "../core/types";
-import { useContext, type ReactNode } from "react";
-import { GuideNavContext } from "../widgets";
+import type { ReactNode } from "react";
 
 /** The cards of the chapters, each opening its first topic. */
 function ChapterMap() {
-  const nav = useContext(GuideNavContext);
   return (
     <Cards>
       {GUIDE_GROUPS.map((g, i) => {
@@ -41,9 +39,7 @@ function ChapterMap() {
             badge={String(i + 1)}
             title={g.title()}
             actionLabel={tr("Inizia da qui", "Start here", "Commencer ici", "Hier beginnen")}
-            onAction={() => {
-              nav.select(first.id);
-            }}
+            to={{ topic: first.id }}
           >
             {topics.map((x) => x.title()).join(" · ")}
           </GuideCard>
@@ -55,7 +51,6 @@ function ChapterMap() {
 
 /** The pages of the activity bar, each with a button that opens it. */
 function PageMap() {
-  const nav = useContext(GuideNavContext);
   const pages: { icon: string; name: string; text: string; page?: AppPageTarget; topic: GuideTopicId }[] = [
     {
       icon: "folder-library",
@@ -189,10 +184,7 @@ function PageMap() {
               ? tr("Apri la pagina", "Open the page", "Ouvrir la page", "Seite öffnen")
               : tr("Leggi", "Read", "Lire", "Lesen")
           }
-          onAction={() => {
-            if (p.page) nav.open(p.page);
-            else nav.select(p.topic);
-          }}
+          to={p.page ? { page: p.page } : { topic: p.topic }}
         >
           {p.text}{" "}
           <See id={p.topic}>{tr("Come funziona", "How it works", "Comment ça marche", "Wie es funktioniert")}</See>

@@ -163,7 +163,14 @@ export function GuideCode({ title, path, code }: W["GuideCode"]) {
 }
 
 /** An architectural principle or feature card. */
-export function GuideCard({ icon, badge, title, children, actionLabel, onAction }: W["GuideCard"]) {
+export function GuideCard({ icon, badge, title, children, to, actionLabel }: W["GuideCard"]) {
+  const nav = useContext(GuideNavContext);
+  const onAction = to
+    ? () => {
+        if ("topic" in to) nav.select(to.topic);
+        else nav.open(to.page);
+      }
+    : undefined;
   return (
     <div className="flex flex-col justify-between gap-2.5 rounded-md border border-vsc-border bg-vsc-sidebar/40 p-3.5">
       <div className="space-y-1.5">

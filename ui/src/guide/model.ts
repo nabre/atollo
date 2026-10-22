@@ -891,6 +891,56 @@ export function topicOf(id: GuideTopicId): GuideTopic {
   return GUIDE_TOPICS.find((x) => x.id === id) ?? DEFAULT_GUIDE_TOPIC;
 }
 
+/** The topic that describes a page of the app: where a link to that page
+ * leads when there is no app (the site). */
+export function pageTopic(page: AppPageTarget): GuideTopicId {
+  const topics: Record<AppPageTarget, GuideTopicId> = {
+    new: "project-new",
+    projects: "project-page",
+    agents: "agents",
+    models: "models",
+    databases: "databases",
+    servers: "websites",
+    terminals: "terminals",
+    components: "tools",
+    settings: "settings",
+    eject: "eject",
+  };
+  return topics[page];
+}
+
+/** A page of the app by the name it has there. */
+export function pageName(page: AppPageTarget): string {
+  switch (page) {
+    case "new":
+      return tr("Nuovo progetto", "New project", "Nouveau projet", "Neues Projekt");
+    case "projects":
+      return tr("Progetti", "Projects", "Projets", "Projekte");
+    case "agents":
+      return tr("Agenti", "Agents", "Agents", "Agenten");
+    case "models":
+      return tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle");
+    case "databases":
+      return tr("Database", "Databases", "Bases de données", "Datenbanken");
+    case "servers":
+      return tr("Server Web", "Web Servers", "Serveurs web", "Webserver");
+    case "terminals":
+      return tr("Terminali", "Terminals", "Terminaux", "Terminals");
+    case "components":
+      return tr("Strumenti", "Tools", "Outils", "Werkzeuge");
+    case "settings":
+      return tr("Impostazioni", "Settings", "Paramètres", "Einstellungen");
+    case "eject":
+      return tr("Rimuovi l'unità", "Remove drive", "Retirer le lecteur", "Laufwerk entfernen");
+  }
+}
+
+/** A chapter's title with its number: "3. Database, siti e terminali". */
+export function chapterTitle(id: GuideGroupId): string {
+  const i = GUIDE_GROUPS.findIndex((g) => g.id === id);
+  return `${String(i + 1)}. ${GUIDE_GROUPS[i]?.title() ?? ""}`;
+}
+
 /** The chapter number of a group (1-based) and a topic's "n.m" code. */
 export function sectionCode(topic: GuideTopic): string {
   const g = GUIDE_GROUPS.findIndex((x) => x.id === topic.group) + 1;

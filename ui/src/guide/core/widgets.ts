@@ -7,6 +7,10 @@
 import { createElement, type ReactNode } from "react";
 import type { AppPageTarget, GuideTopicId } from "../model";
 
+/** Where a link of the Guide leads: never a function, so every renderer
+ * can draw it (the app opens the topic or the page, the site links). */
+export type GuideTarget = { topic: GuideTopicId } | { page: AppPageTarget };
+
 export interface GuideWidgetProps {
   /** A paragraph of the running text. */
   P: { children: ReactNode };
@@ -40,15 +44,16 @@ export interface GuideWidgetProps {
   GuideCode: { title: string; path?: string; code: string };
   /** A screenshot of the app (a file name of the screenshots' folder). */
   GuideShot: { src: string; title: string; caption: string; example?: ReactNode; scenario?: string };
-  /** A card with an icon, a title and an action. */
+  /** A card with an icon, a title and where its action leads: another
+   * topic, or a page of the app (on the site, the topic of that page). */
   GuideCard: {
     /** A codicon's name. */
     icon: string;
     badge?: string;
     title: string;
     children: ReactNode;
+    to?: GuideTarget;
     actionLabel?: string;
-    onAction?: () => void;
   };
   /** A link to another topic, named by its title unless told otherwise. */
   See: { id: GuideTopicId; children?: ReactNode };

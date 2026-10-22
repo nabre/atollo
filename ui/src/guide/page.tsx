@@ -24,6 +24,7 @@ import {
 } from "../workbench";
 import { tr } from "./core/lang";
 import {
+  chapterTitle,
   GUIDE_GROUPS,
   GUIDE_TOPICS,
   sectionCode,
@@ -34,12 +35,6 @@ import {
 } from "./model";
 import { GuideTopicContent } from "./sections";
 import { GuideNavContext, type GuideNav } from "./widgets";
-
-/** A chapter's title with its number: "3. Database, siti e terminali". */
-function chapterTitle(id: GuideGroupId): string {
-  const i = GUIDE_GROUPS.findIndex((g) => g.id === id);
-  return `${String(i + 1)}. ${GUIDE_GROUPS[i]?.title() ?? ""}`;
-}
 
 export function GuidePage({
   info,
