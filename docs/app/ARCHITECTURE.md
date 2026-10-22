@@ -80,6 +80,10 @@ tauri\src\
   settings.rs                 data\app\settings.json (one change at a time, `Settings::update`), Gemini key file
   log.rs  i18n.rs             log with masked secrets; language and catalogs
   ports.rs                    who has each port: pools, database versions, actions, editor, local models (D-141, below)
+  diagnostics.rs              "Export diagnostics", `Atollo diagnostics`: the zip in data\app\diagnostics, secrets masked (D-153)
+  health.rs                   "Kit health", `Atollo check --kit`: drive, free space, path, permissions, libraries (D-155)
+  backup.rs                   "Copy of the kit": export to a folder or a zip; an import applied at the next start (D-163)
+  tray.rs                     the icon in the notification area: show, projects, quit (D-145)
   commands\                   Tauri commands (below)
   setup\                      components and installation
     catalog  needs            embedded catalog, components.txt; what agents, clone, actions need (D-59)
@@ -175,6 +179,7 @@ data\
     secrets\                  gemini-api-key, llama-key (the local models' server), hf-token (Hugging Face),
                               readable by the owner only (D-137, D-151)
     llm.json                  the local models' settings: port, automatic start, Pi's model (D-151)
+    diagnostics\              the zips of "Export diagnostics" (D-153)
     llm\presets.ini           the local models' server presets, written at every start
     conda\<target>\           packages and lists to recreate the conda environments without the network (D-118)
     db\                       secrets.json (root and admin only), mysql.cnf and mysql-lines\<line>\mysql.cnf
@@ -217,7 +222,7 @@ Folder rules:
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `editor\ext.rs` stays whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`guide\content\`) are text, not code.
+- a file is split when it has parts that read on their own; `editor\ext.rs` and `editor\pty.rs` (the PTY sessions on every system, over 900 lines) stay whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`guide\content\`) are text, not code.
 
 ### Tauri commands (`commands\`)
 
@@ -442,6 +447,6 @@ From the analysis of October 15, 2026, checked again on October 21. Done: comman
 5. ~~**Interface bundle**~~: done on October 21, 2026. Only the components in use are registered; Settings, Tools (with the first start) and the wizard load when opened, and pointing at their activity-bar item preloads them; React, logos, translations and each Guide chapter in separate files (`ui\vite.config.ts`). Main file from 1,190 kB (357 compressed) to 258 kB (73). Loading only the active language would save about 140 kB more, but switching language would become asynchronous.
 6. ~~**Controls still native**~~: done on October 21, 2026, `ToggleButton`, `Meter` and `SuggestField` (above, "These stay native").
 7. ~~**`projectmcp.tsx`** not imported~~: it was already used by the project page; since October 17, 2026 it is `projects\mcp.tsx`.
-8. ~~**Files over 900 lines**~~: done on October 21, 2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` and `agents\keyring.rs` are folders with one file per part, the longest 447 lines; the tests in `test\rust\` follow the same split.
+8. ~~**Files over 900 lines**~~: done on October 21, 2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` and `agents\keyring.rs` are folders with one file per part; the tests in `test\rust\` follow the same split.
 9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in `topics\`, one file per chapter; the longest ones (`topics\projects.tsx`) are text.
-10. ~~**`install\mod.rs`** (956 lines)~~: done in the v7 report's wave 2 (STR-V7-05), split into `flow.rs`, `parts.rs` and `keys.rs`.
+10. ~~**`install\mod.rs`**~~: done in the v7 report's wave 2 (STR-V7-05), split into `flow.rs`, `parts.rs` and `keys.rs`.
