@@ -97,7 +97,9 @@ pub async fn eject_run<R: Runtime>(
         crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
-        editor.stop();
+        // A start in progress gives up before the sweep below, not after
+        // it with a server from the drive (BUG-V7-15).
+        editor.stop_and_wait();
         // The app's terminal sessions hung up first, as at the app's exit;
         // what is left of them is stopped below by their pids.
         handle.state::<terminal::Consoles>().close_all();

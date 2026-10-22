@@ -452,6 +452,10 @@ pub fn listen(kit: &Kit, on_message: impl Fn(String) + Send + 'static) {
                 crate::log::warn("instance socket: a connection of another user, ignored");
                 continue;
             };
+            // One thread serves every connection: a peer that never closes
+            // (a stopped second start, any local tool) must not hold back
+            // the focus requests after it, as on the TCP path (BUG-V7-21).
+            let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
             let mut buf = Vec::new();
             if (&mut stream).take(4096).read_to_end(&mut buf).is_ok() {
                 on_message(String::from_utf8_lossy(&buf).into_owned());

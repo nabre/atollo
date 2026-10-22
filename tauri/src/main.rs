@@ -94,11 +94,13 @@ fn run() -> i32 {
     let kit = match Kit::from_exe(&exe) {
         // The host's TEMP, before the profile folders move into data\ (D-04,
         // D-90); CP_HOST_TEMP when started from the kit's own environment.
+        // On macOS and Linux only a folder of this user that nobody else
+        // can write in: a shared `/tmp` would let another account prepare
+        // `Atollo/<id>` before the app.
         Ok(kit) => kit.with_host(
-            host.get("CP_HOST_TEMP")
-                .or(host.get("TEMP"))
-                .or(host.get("TMP"))
-                .map(Path::new),
+            host.temp()
+                .map(Path::new)
+                .filter(|t| os::temp::private_base(t)),
         ),
         Err(e) => {
             fatal(
@@ -357,6 +359,9 @@ fn run() -> i32 {
                     // it: their programs run outside the kit's folder, where
                     // `stop_children` does not look. None on Windows.
                     handle.state::<editor::terminal::Consoles>().close_all();
+                    // An editor start in progress gives up before the sweep
+                    // below (the windows are gone: waiting freezes nothing).
+                    handle.state::<AppState>().editor.stop_and_wait();
                     // The programs' temp left on the PC goes (D-90): the
                     // programs are ended first, or they would still hold it.
                     if update_kit.system_temp().is_some() {

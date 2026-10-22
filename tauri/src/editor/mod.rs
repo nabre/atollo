@@ -34,6 +34,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -57,6 +58,22 @@ struct Server {
     _job: Job,
 }
 
+impl Server {
+    /// Ends the server and its tree. The killed program is then waited
+    /// for, on a thread of its own (a kit on a slow disk can keep it a
+    /// moment): never reaped, it would stay a zombie on macOS and Linux
+    /// until the app exits (BUG-V7-20).
+    fn end(self) {
+        let Server {
+            mut child, _job, ..
+        } = self;
+        let _ = child.kill();
+        std::thread::spawn(move || {
+            let _ = child.wait();
+        });
+    }
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
@@ -72,7 +89,17 @@ pub struct Status {
 pub struct Editor {
     kit: Kit,
     env: Mutex<KitEnv>,
+    /// Held only to look at, clear or store the server, never across a
+    /// start: `status()` runs on the main thread (the 5 s poll, the close
+    /// button) and must not wait up to 90 s for a slow start (BUG-V7-15).
     server: Mutex<Option<Server>>,
+    /// Held for a whole start, so that two opens start one server; waited
+    /// for by `stop_and_wait()`, never by `status()`.
+    starting: Mutex<()>,
+    /// Bumped by `stop()`: a start that was running when the server was
+    /// stopped gives up (no next port, no files written) and ends the
+    /// server it made instead of storing it.
+    stops: AtomicU64,
     extensions: std::sync::Arc<Mutex<ext::ExtState>>,
     /// The background install of extensions: ends with the server, which
     /// it shares the program folder with (an update could not replace it).
@@ -100,6 +127,8 @@ impl Editor {
             kit,
             env: Mutex::new(env),
             server: Mutex::new(None),
+            starting: Mutex::new(()),
+            stops: AtomicU64::new(0),
             extensions: std::sync::Arc::default(),
             extensions_job: ext::JobSlot::default(),
             on_installed: Mutex::new(None),
@@ -142,18 +171,32 @@ impl Editor {
 
     /// The server's base URL and token, starting it when needed.
     pub fn ensure_running(&self) -> Result<(u16, String)> {
-        let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(s) = guard.as_mut() {
-            if matches!(s.child.try_wait(), Ok(None)) {
-                // A project opened: its extensions may be new.
-                self.sync_extensions_now(false);
-                return Ok((s.port, s.token.clone()));
+        let _starting = self.starting.lock().unwrap_or_else(|e| e.into_inner());
+        {
+            let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(s) = guard.as_mut() {
+                if matches!(s.child.try_wait(), Ok(None)) {
+                    // A project opened: its extensions may be new.
+                    self.sync_extensions_now(false);
+                    return Ok((s.port, s.token.clone()));
+                }
             }
+            *guard = None;
         }
-        *guard = None;
-        let server = self.start()?;
+        let stops = self.stops.load(Ordering::SeqCst);
+        // Without the server lock: status() answers "not running" meanwhile.
+        let server = self.start(stops)?;
         let out = (server.port, server.token.clone());
-        *guard = Some(server);
+        {
+            let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
+            if self.stops.load(Ordering::SeqCst) != stops {
+                // Stopped while it started (an update, the app closing):
+                // what was asked for no longer holds.
+                server.end();
+                bail!("the editor was stopped while it started");
+            }
+            *guard = Some(server);
+        }
         self.sync_extensions_now(true);
         Ok(out)
     }
@@ -198,8 +241,11 @@ impl Editor {
 
     pub fn stop(&self) {
         let mut guard = self.server.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(mut s) = guard.take() {
-            let _ = s.child.kill();
+        // Under the server lock, so a start in progress either stored its
+        // server before (ended here) or sees the count change after.
+        self.stops.fetch_add(1, Ordering::SeqCst);
+        if let Some(s) = guard.take() {
+            s.end();
         }
         // Closing the job ends the install and what it started; it is
         // retried at the next start.
@@ -211,7 +257,26 @@ impl Editor {
         );
     }
 
-    fn start(&self) -> Result<Server> {
+    /// `stop()`, then the start in progress, if any, waited for: it gives
+    /// up within a few seconds and its server is ended. For the eject and
+    /// the app's exit, off the main thread, before the kit's processes are
+    /// swept: no server is started from the drive after that (BUG-V7-15).
+    pub fn stop_and_wait(&self) {
+        self.stop();
+        drop(self.starting.lock().unwrap_or_else(|e| e.into_inner()));
+    }
+
+    /// A `stop()` came after `stops` was read.
+    fn stopped(&self, stops: u64) -> bool {
+        self.stops.load(Ordering::SeqCst) != stops
+    }
+
+    /// `stops`: the count when the start was asked for; when it changes the
+    /// start gives up before its next step.
+    fn start(&self, stops: u64) -> Result<Server> {
+        if self.stopped(stops) {
+            bail!("the editor was stopped while it started");
+        }
         if !is_installed(&self.kit) {
             bail!("the editor is not installed");
         }
@@ -223,8 +288,14 @@ impl Editor {
             }
             other => crate::log::info(&format!("editor settings: {other:?}")),
         }
+        if self.stopped(stops) {
+            bail!("the editor was stopped while it started");
+        }
         if let Err(e) = theme::ensure(&self.kit, &env) {
             crate::log::warn(&format!("editor theme: {e:#}"));
+        }
+        if self.stopped(stops) {
+            bail!("the editor was stopped while it started");
         }
         let data_dir = self.kit.data().join("vscodium-server");
         fs::create_dir_all(&data_dir)?;
@@ -239,7 +310,10 @@ impl Editor {
         let mut last_error = None;
         // A port found free can be taken a moment later: try a few.
         for port in free_ports().take(3) {
-            match self.start_on(port, &token, &token_file, &data_dir, &log_path) {
+            if self.stopped(stops) {
+                bail!("the editor was stopped while it started");
+            }
+            match self.start_on(port, stops, &token, &token_file, &data_dir, &log_path) {
                 Ok(server) => return Ok(server),
                 Err(e) => {
                     crate::log::warn(&format!("editor on port {port}: {e:#}"));
@@ -253,6 +327,7 @@ impl Editor {
     fn start_on(
         &self,
         port: u16,
+        stops: u64,
         token: &str,
         token_file: &Path,
         data_dir: &Path,
@@ -290,6 +365,13 @@ impl Editor {
         let agent = local_agent();
         let started = Instant::now();
         loop {
+            if self.stopped(stops) {
+                // Ended and reaped here, as at the timeout: the job closing
+                // with this function ends what it started.
+                let _ = child.kill();
+                let _ = child.wait();
+                bail!("the editor was stopped while it started");
+            }
             if let Ok(Some(status)) = child.try_wait() {
                 bail!(
                     "the editor server stopped at start ({status}); see {}",
@@ -310,6 +392,8 @@ impl Editor {
             }
             if started.elapsed() > START_TIMEOUT {
                 let _ = child.kill();
+                // Reaped here, on the start's own thread (BUG-V7-20).
+                let _ = child.wait();
                 bail!(
                     "the editor server did not answer within {} s; see {}",
                     START_TIMEOUT.as_secs(),
@@ -323,7 +407,8 @@ impl Editor {
 
 impl Drop for Editor {
     fn drop(&mut self) {
-        self.stop();
+        // At the app's exit: a start in progress, if any, ends first.
+        self.stop_and_wait();
     }
 }
 

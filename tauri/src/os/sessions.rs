@@ -39,21 +39,11 @@ pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
         .collect();
     let roots = kit_roots(kit);
     let ours: Vec<&Proc> = {
-        let prefixes: Vec<String> = roots
-            .iter()
-            .map(|r| {
-                format!(
-                    "{}{}",
-                    r.display().to_string().to_lowercase(),
-                    std::path::MAIN_SEPARATOR
-                )
-            })
-            .collect();
+        // As the PC compares paths (D-123): on Linux a kit whose root
+        // differs only in case is another kit, its programs not ours.
+        let prefixes: Vec<String> = roots.iter().map(|r| processes::prefix_of(r)).collect();
         all.iter()
-            .filter(|p| {
-                let path = p.path.display().to_string().to_lowercase();
-                prefixes.iter().any(|prefix| path.starts_with(prefix))
-            })
+            .filter(|p| prefixes.iter().any(|prefix| processes::is_under(p, prefix)))
             .collect()
     };
     // The app is not a parent that hides: what it started is listed.
@@ -146,10 +136,24 @@ pub fn stop_children(kit: &Kit) {
     }
     // The guard stays until the app is gone: it then ends what is left.
     let guard = super::guard::pid();
+    // Under each spelling of the root: on macOS a kit reached through a
+    // link has children named by the real path (BUG-V7-19).
+    let roots = kit_roots(kit);
+    let inside: Vec<String> = roots.iter().map(|r| processes::prefix_of(r)).collect();
+    let webviews: Vec<String> = match webview.strip_prefix(kit.root()) {
+        Ok(rel) => roots
+            .iter()
+            .map(|r| processes::prefix_of(&r.join(rel)))
+            .collect(),
+        Err(_) => vec![processes::prefix_of(&webview)],
+    };
     let pids: Vec<u32> = all
         .iter()
         .filter(|p| p.pid != me && Some(p.pid) != guard && ours.contains(&p.pid))
-        .filter(|p| p.path.starts_with(kit.root()) && !p.path.starts_with(&webview))
+        .filter(|p| {
+            inside.iter().any(|r| processes::is_under(p, r))
+                && !webviews.iter().any(|w| processes::is_under(p, w))
+        })
         .map(|p| p.pid)
         .collect();
     if pids.is_empty() {
@@ -324,15 +328,13 @@ fn kit_root_of(path: &Path, name: &str, is_kit: impl Fn(&Path) -> bool) -> Optio
 
 /// Roots of other kits with programs running now.
 pub fn other_kits(kit: &Kit) -> Vec<PathBuf> {
-    let mine: Vec<String> = kit_roots(kit)
-        .iter()
-        .map(|r| r.display().to_string().to_lowercase())
-        .collect();
+    let key = |r: &Path| processes::path_key(&r.display().to_string());
+    let mine: Vec<String> = kit_roots(kit).iter().map(|r| key(r)).collect();
     let mut out = BTreeSet::new();
     for p in processes::all() {
         let root = kit_root_of(&p.path, &p.name, |d| d.join("data").join("app").is_dir());
         if let Some(root) = root {
-            if !mine.contains(&root.display().to_string().to_lowercase()) {
+            if !mine.contains(&key(&root)) {
                 out.insert(root);
             }
         }

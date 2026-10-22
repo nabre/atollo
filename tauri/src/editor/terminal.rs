@@ -81,20 +81,28 @@ fn open<R: Runtime>(
             crate::log::info(&format!("terminal {}: {}", info.id, info.title));
             let _ = app.emit_to(main, pty::OPENED_EVENT, info);
         },
-        // To the panel and to the session's own window: only the one that
-        // listens (the view that shows it) receives it.
-        move |id, chunk| {
-            let event = pty::output_event(id);
-            let _ = out.emit_to(main, &event, chunk);
-            let _ = out.emit_to(label(id).as_str(), &event, chunk);
-        },
+        move |id, chunk| emit_output(&out, id, chunk),
         move |info| {
-            let _ = end.emit_to(main, pty::EXIT_EVENT, &info);
-            let _ = end.emit_to(label(info.id).as_str(), pty::EXIT_EVENT, &info);
+            emit_exit(&end, &info);
             on_exit();
         },
     )?;
     Ok(())
+}
+
+/// A session's output, to the panel and to the session's own window: only
+/// the one that listens (the view that shows it) receives it. Every session
+/// goes through here, since any of them can be detached (D-149).
+pub fn emit_output<R: Runtime>(app: &AppHandle<R>, id: u64, chunk: &pty::Chunk) {
+    let event = pty::output_event(id);
+    let _ = app.emit_to(crate::commands::MAIN, &event, chunk);
+    let _ = app.emit_to(label(id).as_str(), &event, chunk);
+}
+
+/// A session's end, to the panel and to the session's own window.
+pub fn emit_exit<R: Runtime>(app: &AppHandle<R>, info: &pty::PtyInfo) {
+    let _ = app.emit_to(crate::commands::MAIN, pty::EXIT_EVENT, info);
+    let _ = app.emit_to(label(info.id).as_str(), pty::EXIT_EVENT, info);
 }
 
 /// Runs `command` (an agent, or a `.cmd` wrapper) in a new session of the

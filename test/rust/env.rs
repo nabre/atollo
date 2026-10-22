@@ -166,6 +166,38 @@ fn program_temp_decision_table() {
 }
 
 #[test]
+fn host_temp_order_ends_with_tmpdir() {
+    let of = |pairs: &[(&str, &str)]| {
+        Host::from_pairs(pairs.iter().map(|(k, v)| ((*k).into(), (*v).into())))
+            .temp()
+            .map(str::to_owned)
+    };
+    // macOS and Linux desktops set TMPDIR only (BUG-V7-17).
+    assert_eq!(
+        of(&[("TMPDIR", "/var/folders/x/T")]),
+        Some("/var/folders/x/T".into())
+    );
+    assert_eq!(
+        of(&[("TMPDIR", "/t"), ("TMP", "/tmp2")]),
+        Some("/tmp2".into())
+    );
+    assert_eq!(
+        of(&[("TMP", "/tmp2"), ("TEMP", "/tmp1")]),
+        Some("/tmp1".into())
+    );
+    assert_eq!(
+        of(&[("TEMP", "/tmp1"), ("CP_HOST_TEMP", "/host")]),
+        Some("/host".into())
+    );
+    assert_eq!(of(&[]), None);
+    // The environment passes on the same folder the app itself uses.
+    let (_tmp, kit) = fake_kit("env-hosttemp", &[]);
+    let host = Host::from_pairs([("TMPDIR".into(), "/var/folders/x/T".into())]);
+    let env = KitEnv::build(&kit, &Settings::default(), "it", &host);
+    assert_eq!(env.get("CP_HOST_TEMP"), Some("/var/folders/x/T"));
+}
+
+#[test]
 fn system_temp_reaches_the_environment() {
     let (tmp, kit) = fake_kit("env-systemtemp", &[]);
     let kit = kit.with_host(Some(&tmp.0.join("host")));

@@ -503,11 +503,15 @@ impl Kit {
         self.app_dir().join("projects")
     }
 
-    /// First 16 hex chars of SHA-256 of the lower-case root: the same scheme
-    /// earlier kits used for their per-kit mutex names.
+    /// First 16 hex chars of SHA-256 of the root as this PC compares it
+    /// (lower-case on Windows and macOS: the same scheme earlier kits used
+    /// for their per-kit mutex names). Exact on Linux, where `/media/u/Kit`
+    /// and `/media/u/kit` are two kits and must not share the instance
+    /// socket or `<TEMP>/Atollo/<id>` (BUG-V7-18). The keyring seal keeps
+    /// the id it was made with (`SEAL_ID_FILE`).
     pub fn id(&self) -> String {
-        let lower = self.root.to_string_lossy().to_lowercase();
-        let digest = Sha256::digest(lower.as_bytes());
+        let key = crate::os::processes::path_key(&self.root.to_string_lossy());
+        let digest = Sha256::digest(key.as_bytes());
         digest.iter().take(8).map(|b| format!("{b:02x}")).collect()
     }
 
