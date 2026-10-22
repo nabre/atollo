@@ -5,14 +5,13 @@
 // then "Elimina senza i database" deletes the folders and leaves the
 // databases on the servers (named in the log).
 import { useCallback, useState } from "react";
-import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan, type PlannedDb } from "../api";
+import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan } from "../api";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import { formatBytes } from "../shared/format";
+import { ENGINE_NAMES } from "../databases";
 import { codicon, ConfirmDialog } from "../workbench";
-
-const ENGINE_NAMES: Record<PlannedDb["engine"], string> = { mysql: "MySQL", mongodb: "MongoDB" };
 
 export function DeleteProjectDialog({
   project,

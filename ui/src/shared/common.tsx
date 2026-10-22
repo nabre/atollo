@@ -145,3 +145,23 @@ export function editorHint(status: EditorStatus | null): string | undefined {
   if (status.emulated) return t("Su questo PC (ARM64) l'editor gira in emulazione x64: può essere più lento.");
   return undefined;
 }
+
+/** The ports a page lets the user choose: above the system's own, up to the last. */
+export const PORT_MIN = 1024;
+export const PORT_MAX = 65535;
+
+export function validPort(n: number): boolean {
+  return Number.isInteger(n) && n >= PORT_MIN && n <= PORT_MAX;
+}
+
+/** What a port field says when the port is not valid. */
+export function portRangeText(): string {
+  return t("Una porta fra 1024 e 65535.");
+}
+
+/** A port typed in a field: the text, its number and whether it is valid. */
+export function usePortField(initial: number) {
+  const [text, setText] = useState(String(initial));
+  const value = Number(text);
+  return { text, setText, value, valid: validPort(value) };
+}

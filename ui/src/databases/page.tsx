@@ -20,7 +20,7 @@ import {
 } from "../api";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
-import { ActionButton, ErrorLine } from "../shared/common";
+import { ActionButton, ErrorLine, portRangeText, usePortField } from "../shared/common";
 import { useAction, useCopy, useLoad } from "../shared/hooks";
 import {
   Button,
@@ -163,10 +163,8 @@ function OtherLine({
   viewer?: DbViewer | null;
   onViewer?: (() => void) | undefined;
 }) {
-  const [port, setPort] = useState(String(o.port));
+  const { text: port, setText: setPort, value: portValue, valid: portValid } = usePortField(o.port);
   const on = o.state === "running" || o.state === "starting";
-  const portValue = Number(port);
-  const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${id}-${o.line}`;
   return (
     <div className="space-y-2 rounded border border-vsc-border p-3">
@@ -227,7 +225,7 @@ function OtherLine({
           className="w-24"
         />
         <span className="text-vsc-desc">
-          {portValid ? (on ? t("Vale dal prossimo avvio.") : null) : t("Una porta fra 1024 e 65535.")}
+          {portValid ? (on ? t("Vale dal prossimo avvio.") : null) : portRangeText()}
         </span>
       </div>
       <code className="block font-mono text-[12px] break-all text-vsc-desc select-text">{o.dataDir}</code>
@@ -265,10 +263,8 @@ function ServiceDetails({
   onLineStop: (line: string) => void;
   onLinePort: (line: string, port: number) => void;
 }) {
-  const [port, setPort] = useState(String(s.port));
+  const { text: port, setText: setPort, value: portValue, valid: portValid } = usePortField(s.port);
   const on = s.state === "running" || s.state === "starting";
-  const portValue = Number(port);
-  const portValid = Number.isInteger(portValue) && portValue >= 1024 && portValue <= 65535;
   const portId = `port-${s.id}`;
   const viewer = dbViewer(s.id);
   // The content is in the server's web admin (D-107, D-147, D-150): the
@@ -368,9 +364,7 @@ function ServiceDetails({
               <label htmlFor={portId} className="block font-semibold">
                 {t("Porta")}
               </label>
-              <p className="text-vsc-desc">
-                {portValid ? t("Vale dal prossimo avvio.") : t("Una porta fra 1024 e 65535.")}
-              </p>
+              <p className="text-vsc-desc">{portValid ? t("Vale dal prossimo avvio.") : portRangeText()}</p>
               <TextField
                 id={portId}
                 inputMode="numeric"
