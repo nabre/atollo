@@ -3,8 +3,8 @@
 // the damaged ones with «Reinstalla», at their version.
 import { useCallback, useState } from "react";
 import { componentsIntegrity, componentsRepair, type ComponentIntegrity } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, Dot, Notice } from "../workbench";
 

@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn remotes_and_pages() {
@@ -77,9 +77,7 @@ fn repository_from_the_api() {
 
 #[test]
 fn local_clones() {
-    let tmp = TempDir::new("github-clones");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("github-clones");
     let repo = |dir: &str, url: &str| {
         let git = kit.projects().join(dir).join(".git");
         fs::create_dir_all(&git).unwrap();

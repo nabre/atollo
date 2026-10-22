@@ -1,0 +1,32 @@
+{{> head}}
+<body class="guide-page">
+{{> header}}
+
+<main class="wrap guide">
+  <!-- The chapters and their topics; on a phone, folded (details). The
+       search box needs JavaScript (guide.js): without it, only the list. -->
+  <aside class="g-side">
+    <details class="g-toc" open>
+      <summary>{{guideChapters}}</summary>
+      <input type="search" class="g-search" placeholder="{{guideSearch}}" aria-label="{{guideSearch}}" data-index="{{guideIndex}}" data-base="{{guideBase}}">
+      <nav class="g-chapters" aria-label="{{guideChapters}}">{{guideNav}}</nav>
+      <ol class="g-results" hidden></ol>
+      <p class="g-noresult muted" hidden>{{guideNoResult}}</p>
+    </details>
+  </aside>
+
+  <article class="g-article">
+    <p class="g-chapter">{{guideChapter}}</p>
+    <h1><span class="g-code">{{guideCode}}</span> {{guideHeading}}</h1>
+    <p class="g-subtitle">{{guideSubtitle}}</p>
+{{guideInAppLine}}
+    <div class="g-body">
+{{guideBody}}
+    </div>
+    <nav class="g-pager" aria-label="{{guideTitle}}">{{guidePager}}</nav>
+  </article>
+</main>
+
+{{> footer}}
+</body>
+</html>

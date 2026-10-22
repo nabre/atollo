@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { VscodeTextfield } from "../../../ui/src/workbench/elements";
+import { VscodeTextfield } from "@/workbench/elements";
 
 afterEach(cleanup);
 

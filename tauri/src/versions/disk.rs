@@ -11,7 +11,7 @@ use super::{
     saved, saved_dir, store, valid_line, version_in, versioned, write_version, Line,
 };
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 
 /// Removes a line. The default goes only while another one stays, which
 /// becomes the default (the newest); the last one goes with the component
@@ -78,7 +78,7 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
         }
     }
     let _one = crate::setup::catalog::choice_lock();
-    let Some(mut choice) = crate::setup::catalog::Choice::read(kit, catalog) else {
+    let Some(mut choice) = crate::setup::Choice::read(kit, catalog) else {
         return Ok(Vec::new());
     };
     let gone: Vec<&Component> = catalog

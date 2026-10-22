@@ -52,11 +52,7 @@ pub struct Manifest {
     pub bytes: u64,
 }
 
-fn now() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs())
-}
+use crate::time::now_secs as now;
 
 /// Every file of `projects\` and `data\` a copy takes (links skipped), as
 /// `/` paths from the root, sorted.

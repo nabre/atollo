@@ -1,7 +1,7 @@
 // Confirmations: the modal one over the whole window (VSCodium's dialog
 // box) and the inline one under the button that asked it.
 import { Children, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
-import { Button } from "./controls";
+import { Button } from "./buttons";
 
 // What Tab reaches: not a hidden control nor one out of the tab order (as
 // the native submit button next to a Button with `submit`).

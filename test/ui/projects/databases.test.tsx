@@ -3,14 +3,11 @@
 // versions to move to; the section is read again when the install ends.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SAMPLE_SETUP, type ProjectDatabases, type ProjectInfo, type SetupSnapshot } from "../../../ui/src/api";
-import { Databases } from "../../../ui/src/projects/databases";
+import { SAMPLE_SETUP, type ProjectDatabases, type ProjectInfo, type SetupSnapshot } from "@/api";
+import { Databases } from "@/projects/databases";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 const listeners: ((e: { payload: SetupSnapshot }) => void)[] = [];
 vi.mock("@tauri-apps/api/event", () => ({

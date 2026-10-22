@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { componentsList, folderOpen, type AppInfo, type ComponentInfo } from "../api";
 import { t } from "../i18n";
-import { Tag } from "../tags";
+import { Tag } from "../shared/tags";
 import {
   Button,
   Codicon,
@@ -22,24 +22,20 @@ import {
   ViewContainer,
   ViewPane,
 } from "../workbench";
+import { tr } from "@guide/core/lang";
+import { matches, searchWords, topicHaystack } from "@guide/core/search";
 import {
+  chapterTitle,
   GUIDE_GROUPS,
   GUIDE_TOPICS,
   sectionCode,
   topicOf,
-  tr,
   type AppPageTarget,
   type GuideGroupId,
   type GuideTopicId,
-} from "./model";
+} from "@guide/core/model";
 import { GuideTopicContent } from "./sections";
 import { GuideNavContext, type GuideNav } from "./widgets";
-
-/** A chapter's title with its number: "3. Database, siti e terminali". */
-function chapterTitle(id: GuideGroupId): string {
-  const i = GUIDE_GROUPS.findIndex((g) => g.id === id);
-  return `${String(i + 1)}. ${GUIDE_GROUPS[i]?.title() ?? ""}`;
-}
 
 export function GuidePage({
   info,
@@ -82,17 +78,13 @@ export function GuidePage({
   const next = index < GUIDE_TOPICS.length - 1 ? GUIDE_TOPICS[index + 1] : undefined;
 
   const found = useMemo(() => {
-    const words = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const words = searchWords(search);
     if (words.length === 0) return GUIDE_TOPICS;
-    return GUIDE_TOPICS.filter((x) => {
-      const text = `${x.title()} ${x.subtitle()} ${sectionCode(x)} ${x.keywords}`.toLowerCase();
-      return words.every((w) => text.includes(w));
-    });
+    return GUIDE_TOPICS.filter((x) => matches(words, topicHaystack(x)));
   }, [search]);
 
   const nav = useMemo<GuideNav>(() => ({ select: setTopicId, open: onNavigate }), [onNavigate]);
 
-  const TopicIcon = topic.icon;
   const searching = search.trim() !== "";
 
   return (
@@ -143,7 +135,6 @@ export function GuidePage({
                   >
                     <List label={g.title()}>
                       {items.map((x) => {
-                        const Icon = x.icon;
                         return (
                           <ListRow
                             key={x.id}
@@ -151,7 +142,7 @@ export function GuidePage({
                             onSelect={() => {
                               setTopicId(x.id);
                             }}
-                            icon={<Icon size={15} aria-hidden="true" />}
+                            icon={<Codicon name={x.icon} size={15} />}
                             label={x.title()}
                             decorations={<span className="font-mono text-[11px] opacity-70">{sectionCode(x)}</span>}
                           />
@@ -185,7 +176,7 @@ export function GuidePage({
           actions={<Tag tone="focus">{`${String(index + 1)} / ${String(GUIDE_TOPICS.length)}`}</Tag>}
         />
         <EditorHeader
-          icon={<TopicIcon size={44} aria-hidden="true" className="text-vsc-focus" />}
+          icon={<Codicon name={topic.icon} size={44} className="text-vsc-focus" />}
           title={topic.title()}
           meta={[
             <Tag key="sec" tone="focus">

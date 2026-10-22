@@ -15,7 +15,7 @@ use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Java: Temurin JDK (the newest with a build for the kit), with Maven and
 /// Gradle in their folders.

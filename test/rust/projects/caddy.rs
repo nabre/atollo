@@ -1,7 +1,11 @@
+use std::collections::BTreeMap;
+
 use super::*;
+use super::{conf::*, socket::*};
 use crate::kit::tests::TempDir;
 use crate::kit::Target;
 use crate::os::safe_path::tests::junction;
+use crate::projects::fastcgi::FastCgi;
 
 /// A FastCGI server on `port` with a fixed key.
 fn cgi(port: u16) -> FastCgi {
@@ -16,7 +20,7 @@ fn caddy_program_per_target() {
     for t in Target::ALL {
         let want = if t.is_windows() { "caddy.exe" } else { "caddy" };
         assert_eq!(caddy_exe_for(t.os, dir), dir.join(want), "{t}");
-        let key = crate::setup::catalog::Catalog::get()
+        let key = crate::setup::Catalog::get()
             .find("caddy")
             .unwrap()
             .key_for(t);

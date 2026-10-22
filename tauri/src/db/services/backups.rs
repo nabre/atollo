@@ -63,12 +63,7 @@ fn new_copy(
     name: &str,
     kind: DbEngine,
 ) -> Result<(PathBuf, PathBuf, fs::File)> {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let millis = || {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_millis())
-    };
+    let millis = crate::time::now_ms;
     for _ in 0..1000 {
         // The stamp and the milliseconds of the same second.
         let before = millis();

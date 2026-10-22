@@ -240,7 +240,7 @@ impl Settings {
     pub fn save(&self, kit: &Kit) -> anyhow::Result<()> {
         let key = gemini_file(kit);
         match self.gemini_api_key.as_deref().filter(|k| !k.is_empty()) {
-            Some(k) => crate::router::fs::write_private(&key, k)?,
+            Some(k) => crate::router::write_private(&key, k)?,
             None if self.gemini_unreadable => {}
             None => match std::fs::remove_file(&key) {
                 Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),

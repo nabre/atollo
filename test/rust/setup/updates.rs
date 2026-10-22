@@ -1,7 +1,7 @@
 use super::*;
 
-use crate::kit::tests::TempDir;
 use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 /// The kit given by ATOLLO_TEST_KIT asked for real: each installed
 /// component's source answers, and what is behind is listed.
@@ -63,9 +63,7 @@ fn notes_of_a_version() {
 /// is asked to list them.
 #[test]
 fn pending_updates() {
-    let tmp = TempDir::new("updates");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("updates");
     assert!(stale(&kit));
     let empty = pending(&kit);
     assert_eq!(empty.checked, None);

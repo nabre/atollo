@@ -464,7 +464,7 @@ pub fn apache_dir(kit: &Kit, env: &KitEnv) -> PathBuf {
         .map(PathBuf::from)
         .filter(|d| httpd_exe(kit, d).is_file())
         .unwrap_or_else(|| {
-            let resolved = crate::setup::catalog::kit_path(kit, "apache");
+            let resolved = crate::setup::kit_path(kit, "apache");
             if httpd_exe(kit, &resolved).is_file() {
                 resolved
             } else {

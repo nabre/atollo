@@ -3,8 +3,8 @@
 import { useCallback, useState, type SyntheticEvent } from "react";
 import { projectEditorSettings, projectEditorSettingsSet, type EditorSettings, type EditorSettingsView } from "../api";
 import { t } from "../i18n";
-import { ActionButton, ErrorLine, LoadError, useRetryFocus } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine, LoadError, useRetryFocus } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { codicon, Select, TextArea } from "../workbench";
 
 type Tri = "default" | "yes" | "no";

@@ -5,8 +5,8 @@
 import { useState, type ReactNode, type SyntheticEvent } from "react";
 import { projectClone, projectCreate, type FrameworkPiece } from "../api";
 import { basesByGroup, PieceLogo, textOf, type Frameworks, type GroupId } from "../frameworks";
-import { useAction } from "../hooks";
-import { ErrorLine } from "../common";
+import { useAction } from "../shared/hooks";
+import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { Button, Codicon, EditorBody, EditorHeader, List, ListRow, TextField } from "../workbench";
 

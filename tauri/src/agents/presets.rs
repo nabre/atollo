@@ -3,9 +3,14 @@
 //! project) or in a project's `.mcp.json`, as if written by hand.
 //!
 //! - no secret in the files (`.mcp.json` is in the repository): a server
-//!   reads the GitHub token or the project's database from a variable,
-//!   `KEY: ${KEY}` (Codex passes it on as `env_vars`, Claude Code expands it),
-//!   that the app sets when it starts the agent ([`launch_vars`]);
+//!   reads the project's database from a variable, `KEY: ${KEY}` (Codex
+//!   passes it on as `env_vars`, Claude Code expands it), that the app sets
+//!   when it starts the agent ([`launch_vars`]);
+//! - the GitHub token is in no file and in no environment of the agent
+//!   (SEC-V7-01): the github server is the app itself by its absolute
+//!   path, `<app> mcp github` (`agents::github_mcp`), which reads the token
+//!   itself and sends it to GitHub only. In the agent's environment the MCP
+//!   servers of a cloned project, which inherit it, would read it;
 //! - their programs (`npx` → Node, `uvx` → uv) are installed when the agent
 //!   starts, as for any server (`setup::needs::of_agent`).
 
@@ -19,8 +24,6 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::projects::mcp::McpServer;
 
-/// The kit account's GitHub token, for the GitHub server.
-pub const GITHUB_VAR: &str = "GITHUB_PERSONAL_ACCESS_TOKEN";
 /// The project's MySQL database, for DBHub.
 pub const MYSQL_VAR: &str = "DSN";
 /// The project's MongoDB database, for MongoDB's server.
@@ -53,34 +56,39 @@ fn stdio(name: &str, command: &str, args: &[&str], env: &[&str]) -> McpServer {
     }
 }
 
-/// The ready servers, in the order of the page.
+/// The github server: the app itself by its absolute path, `<app> mcp
+/// github` (`agents::github_mcp`). Never a name looked up when the agent
+/// starts it: the agent runs in the project's folder, and Windows (cmd,
+/// libuv) looks there before the PATH, so a cloned repository's
+/// `atollo-mcp.cmd` or `cmd.exe` would run as the kit's trusted server
+/// (SEC-V7-01). The app is inside the kit's root, so when the kit moves
+/// `agents::relocate` rewrites the path in `mcp.json` and the agents'
+/// files like every other path of the kit.
+fn github(exe: &Path) -> McpServer {
+    stdio("github", &exe.to_string_lossy(), &["mcp", "github"], &[])
+}
+
+/// The ready servers, in the order of the page; github with this app's path.
 pub fn all() -> Vec<Preset> {
+    all_for(crate::kit::app_exe().as_deref())
+}
+
+/// The ready servers with `exe` as the app (no github without it).
+pub fn all_for(exe: Option<&Path>) -> Vec<Preset> {
     let preset = |id, scope, engine, server| Preset {
         id,
         scope,
         engine,
         server,
     };
-    vec![
-        // GitHub's own server, on GitHub (the local one is a program of its
-        // own to download); the kit's account, never a token in the file.
-        preset(
-            "github",
-            "kit",
-            None,
-            McpServer {
-                name: "github".into(),
-                kind: "http".into(),
-                command: None,
-                args: Vec::new(),
-                url: Some("https://api.githubcopilot.com/mcp/".into()),
-                env: BTreeMap::new(),
-                headers: BTreeMap::from([(
-                    "Authorization".to_owned(),
-                    format!("Bearer ${{{GITHUB_VAR}}}"),
-                )]),
-            },
-        ),
+    let mut out = Vec::new();
+    // GitHub's own server, on GitHub (the local one is a program of its own
+    // to download), through the app: the kit's account, the token neither
+    // in the file nor in the agent's environment.
+    if let Some(exe) = exe.filter(|e| e.is_absolute()) {
+        out.push(preset("github", "kit", None, github(exe)));
+    }
+    out.extend([
         preset(
             "playwright",
             "kit",
@@ -128,13 +136,14 @@ pub fn all() -> Vec<Preset> {
                 &[MONGODB_VAR],
             ),
         ),
-    ]
+    ]);
+    out
 }
 
 /// Which of the variables of the ready servers `texts` (the MCP files the
 /// agent reads) use as `${NAME}`.
 pub fn used_vars(texts: &[String]) -> Vec<&'static str> {
-    [GITHUB_VAR, MYSQL_VAR, MONGODB_VAR]
+    [MYSQL_VAR, MONGODB_VAR]
         .into_iter()
         .filter(|v| {
             let var = format!("${{{v}}}");
@@ -143,12 +152,13 @@ pub fn used_vars(texts: &[String]) -> Vec<&'static str> {
         .collect()
 }
 
-/// The variables to give the agent: those of the kit's servers, and the
-/// project's servers' but the GitHub token.
+/// The variables to give the agent: those the kit's servers and the
+/// project's use. Only the project's own databases: the GitHub token is
+/// never one (SEC-V7-01), whoever asks for it.
 pub fn wanted_vars(kit: &[String], project: &[String]) -> Vec<&'static str> {
     let mut wanted = used_vars(kit);
     for v in used_vars(project) {
-        if v != GITHUB_VAR && !wanted.contains(&v) {
+        if !wanted.contains(&v) {
             wanted.push(v);
         }
     }
@@ -156,10 +166,10 @@ pub fn wanted_vars(kit: &[String], project: &[String]) -> Vec<&'static str> {
 }
 
 /// The values of the variables the agent's servers use, to set when the
-/// agent starts in `dir`: the GitHub token (when the kit's account is
-/// signed in), the project's databases (when created). One already set
-/// stays. The token only for the kit's own servers: a cloned repository's
-/// `.mcp.json` asking for it would send it wherever it likes.
+/// agent starts in `dir`: the project's databases (when created). One
+/// already set stays. Never the GitHub token: the kit's github server reads
+/// it itself (`agents::github_mcp`), and in the agent's environment the MCP
+/// servers of a cloned repository, which inherit it, would read it too.
 pub fn launch_vars(
     kit: &Kit,
     env: &KitEnv,
@@ -178,11 +188,6 @@ pub fn launch_vars(
     );
     wanted.retain(|v| env.get(v).is_none());
     let mut out = Vec::new();
-    if wanted.contains(&GITHUB_VAR) {
-        if let Some(token) = crate::github::token(kit, env) {
-            out.push((GITHUB_VAR, token));
-        }
-    }
     if wanted.contains(&MYSQL_VAR) || wanted.contains(&MONGODB_VAR) {
         for db in dbs() {
             let var = match db.engine.as_str() {

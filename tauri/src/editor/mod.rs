@@ -116,7 +116,7 @@ pub fn server_dir(kit: &Kit) -> PathBuf {
 /// The files started (`out\server-main.js`, `node.exe`) are there: the
 /// catalog's key and keys of `vscodium-server`.
 pub fn is_installed(kit: &Kit) -> bool {
-    crate::setup::catalog::Catalog::get()
+    crate::setup::Catalog::get()
         .find("vscodium-server")
         .is_some_and(|c| c.is_installed(kit))
 }
@@ -158,7 +158,7 @@ impl Editor {
             port: guard.as_ref().map(|s| s.port),
             // The x64 build only where the catalog says so (Windows ARM64):
             // native on macOS and Linux ARM64.
-            emulated: crate::setup::catalog::Catalog::get()
+            emulated: crate::setup::Catalog::get()
                 .find("vscodium-server")
                 .is_some_and(|c| c.is_emulated_on(self.kit.target())),
             extensions: self
@@ -422,6 +422,9 @@ fn local_agent() -> ureq::Agent {
         .new_agent()
 }
 
+/// The editor's own range, bound on IPv4 only: unlike
+/// [`crate::ports::is_port_free`], which also asks who answers and binds
+/// IPv6; kept as it is, so the editor picks the same ports as before.
 fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())
 }
@@ -440,18 +443,13 @@ pub fn random_token() -> Result<String> {
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
-/// Protected DACL with full access for the owner only (mode 600 on Unix).
-/// Fails on disks without permissions (FAT32/exFAT): the caller only logs it.
-pub(crate) fn restrict_to_owner(path: &Path) -> Result<()> {
-    crate::router::fs::restrict_to_owner(path)
-}
-
-/// The same for a folder, inherited by every file and folder created in it
-/// afterwards (temporary files included): they are private from the start.
-/// On Unix the folder gets mode 700: what is inside cannot be reached.
-pub(crate) fn restrict_dir_to_owner(path: &Path) -> Result<()> {
-    crate::router::fs::restrict_dir_to_owner(path)
-}
+// restrict_to_owner: protected DACL with full access for the owner only
+// (mode 600 on Unix); it fails on disks without permissions (FAT32/exFAT):
+// the caller only logs it. restrict_dir_to_owner: the same for a folder,
+// inherited by every file and folder created in it afterwards (temporary
+// files included), so they are private from the start; on Unix the folder
+// gets mode 700 and what is inside cannot be reached.
+pub(crate) use crate::router::{restrict_dir_to_owner, restrict_to_owner};
 
 fn append_log(path: &Path, line: &str) {
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {

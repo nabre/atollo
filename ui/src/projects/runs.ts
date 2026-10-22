@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { onRun, runClear, runLog, runList, type RunInfo, type RunLog, type RunState } from "../api";
 import { t } from "../i18n";
-import { useLoad, useSubscription } from "../hooks";
+import { useLoad, useSubscription } from "../shared/hooks";
 
 const MAX_LINES = 3000;
 

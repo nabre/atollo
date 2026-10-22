@@ -93,16 +93,40 @@ fn paths() {
     assert!(matches!(resolve(&root, "/x~.txt"), Answer::Status(404, _)));
 }
 
-/// Starts `run` on a free port in a background thread.
+/// Serves `root` on a free port in a background thread. The port stays
+/// bound from the moment it is chosen (TEST-V7-02): found free, let go and
+/// bound again by `run`, it could be taken in between by the server of
+/// another test running alongside (the slowloris one, full of silent
+/// connections, closes a new one at once: a reset).
 fn start(root: &Path) -> u16 {
-    let port = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
-        .unwrap()
-        .local_addr()
-        .unwrap()
-        .port();
-    let root = root.to_path_buf();
-    std::thread::spawn(move || run(&root, port, "it"));
+    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let root = crate::os::safe_path::lexical(root).unwrap();
+    std::thread::spawn(move || serve(&root, &listener, false));
     port
+}
+
+/// One request and the whole answer. A connection error (refused, reset,
+/// aborted: a loaded machine) is tried again a few times with a short wait;
+/// an answer, right or wrong, is returned as it is.
+fn request(port: u16, host: &str) -> String {
+    let mut errors = Vec::new();
+    for attempt in 1..=5u64 {
+        let answer = (|| -> std::io::Result<String> {
+            let mut s = TcpStream::connect((Ipv4Addr::LOCALHOST, port))?;
+            s.set_read_timeout(Some(Duration::from_secs(10)))?;
+            s.write_all(format!("GET / HTTP/1.1\r\nHost: {host}\r\n\r\n").as_bytes())?;
+            let mut out = String::new();
+            s.read_to_string(&mut out)?;
+            Ok(out)
+        })();
+        match answer {
+            Ok(out) => return out,
+            Err(e) => errors.push(format!("attempt {attempt}: {e}")),
+        }
+        std::thread::sleep(Duration::from_millis(100 * attempt));
+    }
+    panic!("no answer from the server: {errors:#?}");
 }
 
 #[test]
@@ -110,18 +134,7 @@ fn serves_over_http() {
     let tmp = TempDir::new("serve-http");
     fs::write(tmp.0.join("index.html"), "<h1>ok</h1>").unwrap();
     let port = start(&tmp.0);
-    let get = |host: &str| {
-        for _ in 0..50 {
-            if let Ok(mut s) = TcpStream::connect((Ipv4Addr::LOCALHOST, port)) {
-                write!(s, "GET / HTTP/1.1\r\nHost: {host}\r\n\r\n").unwrap();
-                let mut out = String::new();
-                s.read_to_string(&mut out).unwrap();
-                return out;
-            }
-            std::thread::sleep(Duration::from_millis(50));
-        }
-        panic!("server did not start");
-    };
+    let get = |host: &str| request(port, host);
     let ok = get(&format!("localhost:{port}"));
     assert!(
         ok.starts_with("HTTP/1.1 200") && ok.ends_with("<h1>ok</h1>"),

@@ -2,14 +2,11 @@
 // modules, shown on demand, and nothing when «Rete locale» is off.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { LanLink } from "../../../ui/src/api";
-import { LanAddress, QrCode, useLanLink } from "../../../ui/src/projects/lan";
+import type { LanLink } from "@/api";
+import { LanAddress, QrCode, useLanLink } from "@/projects/lan";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

@@ -27,8 +27,8 @@ import { AgentButtons } from "../agents";
 import { groupOf, useFrameworks } from "../frameworks";
 import { GithubRepositories } from "../github";
 import type { GuideTopicId } from "../guide";
-import { useAction, useLoad } from "../hooks";
-import { ErrorLine } from "../common";
+import { useAction, useLoad } from "../shared/hooks";
+import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import {
   Button,

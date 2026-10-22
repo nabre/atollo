@@ -13,10 +13,10 @@ import {
   type VersionedTool,
 } from "../api";
 import { t } from "../i18n";
-import { ComponentLogo } from "../logos";
-import { useAction, useLoad } from "../hooks";
-import { ErrorLine, LoadError } from "../common";
-import { useSetup } from "../setup";
+import { ComponentLogo } from "../shared/logos";
+import { useAction, useLoad } from "../shared/hooks";
+import { ErrorLine, LoadError } from "../shared/common";
+import { useSetup } from "../components/setup";
 import { Codicon, EditorSection, Link, Notice } from "../workbench";
 import { isPresent, useOffers, useReloadOnSteps } from "./model";
 import { LineSelect, LineState, RefreshLines } from "./lines";

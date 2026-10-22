@@ -2,14 +2,11 @@
 // with what each one holds, "Collega a…" and "Elimina".
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { Holdings, ProjectInfo } from "../../../ui/src/api";
-import { Orphans } from "../../../ui/src/projects/orphans";
+import type { Holdings, ProjectInfo } from "@/api";
+import { Orphans } from "@/projects/orphans";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

@@ -1,14 +1,13 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
+use crate::test_support::prepared_kit;
 use std::fs;
 use std::sync::mpsc;
 use std::time::Duration;
 
 #[test]
 fn missing_required_lists_only_installable_ones() {
-    let tmp = TempDir::new("task-missing");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("task-missing");
     let missing = missing_required(&kit);
     assert_eq!(
         missing,
@@ -32,9 +31,7 @@ fn missing_required_lists_only_installable_ones() {
 /// at start, but it does not block the editor and the consoles.
 #[test]
 fn editor_of_another_release_is_updated_at_start() {
-    let tmp = TempDir::new("task-pinned");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("task-pinned");
     let editor = Catalog::get().find("vscodium-server").unwrap();
     for key in editor.key_paths(&kit) {
         fs::create_dir_all(key.parent().unwrap()).unwrap();
@@ -86,9 +83,7 @@ fn component_marked_after_a_move_is_reinstalled_at_start() {
 /// an error: the next one is not refused as "already running".
 #[test]
 fn a_panic_in_the_run_does_not_leave_it_running() {
-    let tmp = TempDir::new("task-panic");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("task-panic");
     let catalog = Catalog::get();
     for c in catalog.all().iter().filter(|c| catalog.is_locked(&c.id)) {
         for key in c.key_paths(&kit) {
@@ -134,9 +129,7 @@ fn a_panic_in_the_run_does_not_leave_it_running() {
 /// No network: every required component is already installed.
 #[test]
 fn run_reports_steps_and_ends() {
-    let tmp = TempDir::new("task-run");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("task-run");
     let catalog = Catalog::get();
     // Those of this system only: ConPTY is a part of the app on Windows.
     let required: Vec<_> = catalog

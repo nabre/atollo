@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 /// A certificate of this PC's store, as DER (none on a machine without
 /// roots: the tests that need one stop there).
@@ -34,9 +34,7 @@ fn a_file_without_certificates_is_refused() {
 #[test]
 fn bundle_follows_the_setting() {
     let Some(der) = a_root() else { return };
-    let tmp = TempDir::new("ca-bundle");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("ca-bundle");
     let extra = tmp.0.join("company.pem");
     fs::write(&extra, pem(&[Certificate::from_der(&der)])).unwrap();
     let mut settings = Settings::default();

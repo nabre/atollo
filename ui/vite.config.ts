@@ -2,6 +2,12 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+// A folder next to this file as an absolute path, which the aliases need
+// (without Node's types, which this project does not load): the URL's path
+// with the drive's leading slash dropped on Windows.
+const folder = (rel: string) =>
+  decodeURIComponent(new URL(rel, import.meta.url).pathname).replace(/^\/(?=[A-Za-z]:)/, "");
+
 // The app window loads the built files from the exe; no CDN, no remote
 // resources (CSP in tauri/tauri.conf.json).
 export default defineConfig(({ mode }) => ({
@@ -10,10 +16,18 @@ export default defineConfig(({ mode }) => ({
   // Dependencies live in the root node_modules (npm workspace); keep the cache there too.
   cacheDir: "../node_modules/.vite",
   server: { host: "127.0.0.1", port: 5173, strictPort: true },
-  // Vitest resolves packages for Node: Lit and @lit/react would load their
-  // server-rendering builds, which never set a property on an element.
-  // Under jsdom they take their browser builds, as in the app.
-  ...(mode === "test" && { resolve: { conditions: ["browser"] } }),
+  resolve: {
+    // The paths of ui/tsconfig.json: the app, the Guide, the tests' helpers.
+    alias: {
+      "@": folder("./src"),
+      "@guide": folder("../guide"),
+      "@test": folder("../test/ui"),
+    },
+    // Vitest resolves packages for Node: Lit and @lit/react would load their
+    // server-rendering builds, which never set a property on an element.
+    // Under jsdom they take their browser builds, as in the app.
+    ...(mode === "test" && { conditions: ["browser"] }),
+  },
   build: {
     target: "es2022",
     outDir: "../dist",
@@ -36,12 +50,20 @@ export default defineConfig(({ mode }) => ({
             {
               // Only the Guide's own modules: what they import from the app
               // stays where the app has it (never read at start through
-              // them). The chapters' common parts get a chunk of their own,
-              // so no two chunks import each other.
+              // them). The chapters (guide/content/*.tsx, D-164) one chunk
+              // each; their common parts (guide/core, the sources and
+              // folders, the app's widgets) a chunk of their own, so no two
+              // chunks import each other. content/index.ts, which imports
+              // every chapter, stays with the page. The ui job checks the
+              // chunks after the build (scripts/guide-chunks.mjs).
               name: (id: string) => {
-                const topic = /[\\/]src[\\/]guide[\\/]topics[\\/](\w+)\.tsx$/.exec(id)?.[1];
-                if (topic) return `guide-${topic}`;
-                return /[\\/]src[\\/]guide[\\/](model|sources|widgets)\.tsx?$/.test(id) ? "guide-base" : null;
+                const chapter = /[\\/]guide[\\/]content[\\/](\w+)\.tsx$/.exec(id)?.[1];
+                if (chapter) return `guide-${chapter}`;
+                const base =
+                  /[\\/]guide[\\/]core[\\/]\w+\.ts$/.test(id) ||
+                  /[\\/]guide[\\/]content[\\/](sources|folders)\.ts$/.test(id) ||
+                  /[\\/]src[\\/]guide[\\/](widgets|live)\.tsx$/.test(id);
+                return base ? "guide-base" : null;
               },
               includeDependenciesRecursively: false,
             },

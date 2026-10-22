@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 
 /// How long the versions asked are good for.
 const STALE_SECS: u64 = 24 * 60 * 60;
@@ -36,11 +36,7 @@ fn file(kit: &Kit) -> PathBuf {
     kit.app_dir().join("updates.json")
 }
 
-fn now() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs())
-}
+use crate::time::now_secs as now;
 
 pub fn load(kit: &Kit) -> Latest {
     crate::fsx::read_json(&file(kit)).unwrap_or_default()

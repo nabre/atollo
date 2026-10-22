@@ -2,7 +2,7 @@
 //! the agents, the editor and the Python tools into their files, is replaced
 //! with the current one.
 //!
-//! `kit.rs` notices the move at start and saves the old root in
+//! `kit/` notices the move at start and saves the old root in
 //! `data\app\old-root.txt` (`old-root-<os>.txt` on macOS and Linux,
 //! `Kit::old_root_file`); it is removed here once the paths are updated,
 //! so a move is never lost if this step does not run at that start. Files

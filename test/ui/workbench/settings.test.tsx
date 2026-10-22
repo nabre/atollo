@@ -3,7 +3,7 @@
 // tokens; the search hides what does not match.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { SettingItem, SettingsEditor, SettingsGroup } from "../../../ui/src/workbench";
+import { SettingItem, SettingsEditor, SettingsGroup } from "@/workbench";
 
 afterEach(cleanup);
 

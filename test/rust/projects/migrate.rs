@@ -6,6 +6,7 @@ use serde_json::json;
 use super::*;
 use crate::db::auth::tests::assert_owner_only;
 use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 thread_local! {
     /// Stops the migration right after the ports, as a crash would.
@@ -190,9 +191,7 @@ fn v1_kit_to_v2_nothing_lost() {
 
 #[test]
 fn a_new_kit_has_nothing_to_move() {
-    let tmp = TempDir::new("migrate-new");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("migrate-new");
     write(&auth::secrets_path(&kit), r#"{"mysqlRoot":"r00t"}"#);
     run(&kit);
     assert_eq!(read(&layout_file(&kit)), "2");

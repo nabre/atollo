@@ -4,8 +4,8 @@
 // the focus.
 import { useState } from "react";
 import { gitIdentityGet, gitIdentitySet, type GitIdentity } from "../api";
-import { ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import { SettingItem, TextField } from "../workbench";
 

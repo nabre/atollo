@@ -12,9 +12,9 @@ import {
   type GithubRepo,
   type GithubRepos,
 } from "../api";
-import { useAction } from "../hooks";
-import { ActionButton, ErrorLine } from "../common";
-import { Mark } from "../tags";
+import { useAction } from "../shared/hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { Mark } from "../shared/tags";
 import { t } from "../i18n";
 import { Codicon, codicon, List, ListRow, SearchBox } from "../workbench";
 import { useGithub } from "./account";

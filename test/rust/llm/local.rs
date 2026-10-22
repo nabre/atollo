@@ -1,13 +1,10 @@
 use super::*;
 
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 fn kit() -> (TempDir, Kit) {
-    let tmp = TempDir::new("llm-local");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    (tmp, kit)
+    prepared_kit("llm-local")
 }
 
 fn file(name: &str, bytes: u64) -> ModelFile {

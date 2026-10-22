@@ -78,7 +78,7 @@ fn rust_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
 /// translated like the other texts.
 #[test]
 fn component_descriptions_are_in_the_catalog() {
-    for c in crate::setup::catalog::Catalog::get().all() {
+    for c in crate::setup::Catalog::get().all() {
         let tr = catalog().get(&c.desc);
         for lang in ["en", "fr", "de"] {
             assert!(
@@ -175,7 +175,7 @@ fn sources_are_in_the_catalog() {
             assert!(found.len() >= 8, "editor window labels: {found:?}");
             sources.extend(found);
         }
-        if path.ends_with("main.rs") && path.parent().is_some_and(|p| p.ends_with("src")) {
+        if path.ends_with("cli.rs") && path.parent().is_some_and(|p| p.ends_with("src")) {
             let found = literals(&help, code);
             assert_eq!(found.len(), 1, "HELP not found in {}", path.display());
             sources.extend(found);

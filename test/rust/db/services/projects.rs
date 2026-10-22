@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 use std::fs;
 
 /// Deleting a project drops its database from every version it was created
@@ -7,9 +7,7 @@ use std::fs;
 /// has only the one it is on.
 #[test]
 fn drop_lines_cover_every_version_used() {
-    let tmp = TempDir::new("services-drop-lines");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-drop-lines");
     let file = kit
         .project_data()
         .join("shop")

@@ -9,7 +9,7 @@ use crate::kit::Os;
 use crate::net::archive::{Inner, Kind};
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 pub struct Dart;
 

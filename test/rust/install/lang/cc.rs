@@ -59,7 +59,7 @@ fn shims_translate_target_triples() {
     fs::create_dir_all(&fake).unwrap();
     let zig = fake.join("zig");
     fs::write(&zig, "#!/bin/sh\nfor a do echo \"$a\"; done\n").unwrap();
-    crate::router::fs::set_executable(&zig).unwrap();
+    crate::router::set_executable(&zig).unwrap();
     let path = format!("{}:/usr/bin:/bin", fake.display());
     let run = |shim: &str, args: &[&str]| -> Vec<String> {
         let out = std::process::Command::new(bin.join(shim))
@@ -110,7 +110,7 @@ fn shims_translate_target_triples() {
     let line = apps.join("zig").join("0.17");
     fs::create_dir_all(&line).unwrap();
     fs::copy(&zig, line.join("zig")).unwrap();
-    crate::router::fs::set_executable(&line.join("zig")).unwrap();
+    crate::router::set_executable(&line.join("zig")).unwrap();
     for (shim, first) in [("cc", "cc"), ("ranlib", "ranlib")] {
         let out = std::process::Command::new(kit_bin.join(shim))
             .arg("x")
@@ -143,7 +143,7 @@ fn shims_take_the_newest_kit_zig() {
         fs::create_dir_all(dir).unwrap();
         let zig = dir.join("zig");
         fs::write(&zig, format!("#!/bin/sh\necho {name}\n")).unwrap();
-        crate::router::fs::set_executable(&zig).unwrap();
+        crate::router::set_executable(&zig).unwrap();
     };
     let run = || -> String {
         let out = std::process::Command::new(bin.join("cc"))

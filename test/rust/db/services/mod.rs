@@ -1,13 +1,12 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
 use crate::os::jobs;
+use crate::test_support::prepared_kit;
 use std::time::Duration;
 
 #[test]
 fn settings_round_trip_and_defaults() {
-    let tmp = TempDir::new("services");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services");
     let s = Services::new(kit.clone());
     assert_eq!(line_port(&kit, "mysql", None), 3306);
     assert_eq!(line_port(&kit, "mongodb", None), 27017);
@@ -60,9 +59,7 @@ fn settings_round_trip_and_defaults() {
 /// BUG-V5-02: ports stored by starts at the same time are all kept.
 #[test]
 fn keep_port_loses_no_entry() {
-    let tmp = TempDir::new("services-keep-port");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-keep-port");
     let s = Services::new(kit.clone());
     s.set("mysql", None, true, "it").unwrap();
     std::thread::scope(|scope| {
@@ -81,9 +78,7 @@ fn keep_port_loses_no_entry() {
 /// empty (SEC-V6-01): the change is refused, the file stays.
 #[test]
 fn unreadable_settings_are_never_overwritten() {
-    let tmp = TempDir::new("services-damaged");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-damaged");
     let s = Services::new(kit.clone());
     let path = kit.app_dir().join("services.json");
     fs::write(&path, r#"{"mysql": {"port": 3307,"#).unwrap();
@@ -101,9 +96,7 @@ fn unreadable_settings_are_never_overwritten() {
 /// so the next start tries again.
 #[test]
 fn mongodb_admin_password_stored_first() {
-    let tmp = TempDir::new("services-mongo-admin");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-mongo-admin");
     let s = Services::new(kit.clone());
     let env = KitEnv::default();
     // no mongosh in this kit: the creation fails
@@ -158,9 +151,7 @@ fn mongodb_admin_password_stored_first() {
 #[test]
 fn operations_on_a_server_take_turns() {
     use std::sync::atomic::{AtomicUsize, Ordering};
-    let tmp = TempDir::new("services-turns");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("services-turns");
     let s = Services::new(kit);
     let done = AtomicUsize::new(0);
     std::thread::scope(|scope| {

@@ -297,7 +297,7 @@ pub fn static_php_fpm_in_place(dir: &Path) -> Result<()> {
     let fpm = sbin.join("php-fpm");
     let _ = fs::remove_file(&fpm);
     fs::rename(&loose, &fpm).context("sbin/php-fpm")?;
-    let _ = crate::router::fs::set_executable(&fpm);
+    let _ = crate::router::set_executable(&fpm);
     Ok(())
 }
 

@@ -94,10 +94,7 @@ fn native_on_every_target() {
 #[test]
 fn catalog_entry() {
     let caddy = Catalog::get().find("caddy").unwrap();
-    assert!(matches!(
-        caddy.group,
-        crate::setup::catalog::Group::Languages
-    ));
+    assert!(matches!(caddy.group, crate::setup::Group::Languages));
     assert_eq!(caddy.home, "https://caddyserver.com");
     assert!(caddy.versioned);
     assert_eq!(caddy.key, "caddy/caddy.exe");

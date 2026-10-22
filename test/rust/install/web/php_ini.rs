@@ -38,7 +38,7 @@ fn php_ini_from_older_templates() {
 /// A PHP folder of `kit` (its key for the kit's target: `php.exe` on
 /// Windows, `bin/php` elsewhere) with its `php.ini-development`.
 fn fake_php(kit: &crate::kit::Kit, dir: &Path, template: &str) {
-    let php = crate::setup::catalog::Catalog::get().find("php").unwrap();
+    let php = crate::setup::Catalog::get().find("php").unwrap();
     let key = php.key_for(kit.target());
     let file = crate::fsx::join_rel(dir, key.strip_prefix("php/").unwrap());
     fs::create_dir_all(file.parent().unwrap()).unwrap();
@@ -53,7 +53,7 @@ fn fake_php(kit: &crate::kit::Kit, dir: &Path, template: &str) {
 #[test]
 fn one_php_ini_per_line() {
     use crate::kit::{Kit, Target};
-    use crate::setup::catalog::Catalog;
+    use crate::setup::Catalog;
 
     let tmp = TempDir::new("php-ini-lines");
     let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
@@ -199,7 +199,7 @@ fn php_ini_shared_kit_both_orders() {
     let tmp = TempDir::new("php-ini-legacy-unix");
     let linux = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
     linux.prepare().unwrap();
-    let php = crate::setup::catalog::Catalog::get().find("php").unwrap();
+    let php = crate::setup::Catalog::get().find("php").unwrap();
     let version = "8.5.8 (Composer 2.8.12)";
     let main = crate::versions::install_dir(&linux, php, version);
     fake_php(&linux, &main, "");

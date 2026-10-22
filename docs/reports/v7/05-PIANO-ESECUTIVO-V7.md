@@ -89,7 +89,7 @@ Un commit per rilievo `DOC-V7-xx`, poi i commit d'aggiornamento:
 | Documenti tecnici | ARCHITECTURE, TESTING, CATALOG in en e it: moduli e cartelle nuove delle ondate 2-3, prove nuove, alias |
 | README ×4, PRIVACY | link alla Guida sul sito (verifica), funzioni nuove, host di rete nuovi se ci sono (`nabre.github.io` per la Guida) |
 | CHANGELOG | voce «Rilievi del report v7» con i rami e i rilievi chiusi |
-| DECISIONS | **D-155** «Guida neutra, pubblicata sul sito; niente più GUIDE.md» (testo nel documento 04, §10.1). La richiesta indicava D-153, ma D-153 e D-154 sono già usati (diagnostica, copie di sicurezza dei database) |
+| DECISIONS | **D-164** «Guida neutra, pubblicata sul sito; niente più GUIDE.md» (testo nel documento 04, §10.1). La richiesta indicava D-153, ma D-153 e D-154 sono già usati (diagnostica, copie di sicurezza dei database) |
 
 ```mermaid
 gantt
@@ -145,7 +145,7 @@ Le date sono indicative (una persona con l'aiuto di agenti). Le ondate 2 e 3 son
 |---|---|---|---|
 | 1 | Pi, modelli locali e diagnostica sono in `main` ma non nel rilascio 0.5.1, che README e sito fanno scaricare | **nota «in arrivo nel prossimo rilascio»** nei README (×4), nel sito e nel CHANGELOG finché non esce un rilascio; in alternativa tagliare il prossimo rilascio prima di pubblicare il sito (documento 02, §3) | `DOC-V7-02` |
 | 2 | Spostare le schermate della Guida da `ui/public/guide/<lang>/` a `guide/shots/<lang>/` | **facoltativo, dopo**: la fase 1 le lascia dove sono e il sito le copia; spostarle completa la neutralità ma tocca Vite, `make.mjs`, ARCHITECTURE, TESTING e D-136 | documento 04, §6.4 |
-| 3 | Numero della decisione sulla Guida | **D-155** (D-153 e D-154 sono già in `main`) | documento 04, §10.1 |
+| 3 | Numero della decisione sulla Guida | **D-164** (D-153 e D-154 sono già in `main`; D-155..D-163 sono andati alle funzioni entrate prima della Guida) | documento 04, §10.1 |
 | 4 | `TMPDIR` su macOS/Linux: aggiungerlo all'avvio o toglierlo dall'ambiente del kit | **aggiungerlo**, con cartella `0700` e controllo del proprietario; D-90 vale così anche fuori da Windows | `BUG-V7-17` |
 | 5 | Pagina di benvenuto di Apache | **neutra** (`<h1>Apache</h1>` e il percorso): si scrive una volta e non seguirebbe un cambio di lingua | `BUG-V7-38` |
 | 6 | Ricerca nel testo sul sito | prima solo titoli e parole chiave (come l'app); il testo (~25 kB per lingua) dopo, se serve | documento 04, §6.3 |

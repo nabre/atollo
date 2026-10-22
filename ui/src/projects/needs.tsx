@@ -1,12 +1,12 @@
 // The Componenti section of a project's page: the kit's components it
 // needs, and how it was recognised.
 import type { ProjectInfo } from "../api";
-import { useAction } from "../hooks";
-import { ActionButton, ErrorLine } from "../common";
+import { useAction } from "../shared/hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { codicon, List, ListRow } from "../workbench";
 import { projectInstallMissing } from "../api";
-import { ComponentLogo } from "../logos";
+import { ComponentLogo } from "../shared/logos";
 import { EditorSection, Notice } from "../workbench";
 
 /** Names of the kit's components (tauri/catalog/components.json). */

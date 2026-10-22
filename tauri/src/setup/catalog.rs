@@ -554,7 +554,7 @@ impl Component {
     }
 
     /// To be installed again although it is on disk: set when the kit moved
-    /// (`kit.rs` `check_moved`), cleared by a successful installation.
+    /// (`kit/` `check_moved`), cleared by a successful installation.
     pub fn needs_reinstall(&self, kit: &Kit) -> bool {
         Self::reinstall_file(kit, &self.id).is_file()
     }

@@ -225,6 +225,12 @@
           "markdownDescription": "Enables the app_quit command without any pre-configured scope."
         },
         {
+          "description": "Enables the component_link_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-component-link-open",
+          "markdownDescription": "Enables the component_link_open command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_apply command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-apply",
@@ -243,10 +249,22 @@
           "markdownDescription": "Enables the components_install command without any pre-configured scope."
         },
         {
+          "description": "Enables the components_integrity command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-integrity",
+          "markdownDescription": "Enables the components_integrity command without any pre-configured scope."
+        },
+        {
           "description": "Enables the components_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-components-list",
           "markdownDescription": "Enables the components_list command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the components_repair command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-components-repair",
+          "markdownDescription": "Enables the components_repair command without any pre-configured scope."
         },
         {
           "description": "Enables the components_sync command without any pre-configured scope.",
@@ -273,16 +291,10 @@
           "markdownDescription": "Enables the db_admin_open command without any pre-configured scope."
         },
         {
-          "description": "Enables the db_browse_rows command without any pre-configured scope.",
+          "description": "Enables the diagnostics_export command without any pre-configured scope.",
           "type": "string",
-          "const": "allow-db-browse-rows",
-          "markdownDescription": "Enables the db_browse_rows command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the db_browse_tree command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-db-browse-tree",
-          "markdownDescription": "Enables the db_browse_tree command without any pre-configured scope."
+          "const": "allow-diagnostics-export",
+          "markdownDescription": "Enables the diagnostics_export command without any pre-configured scope."
         },
         {
           "description": "Enables the downloads_add command without any pre-configured scope.",
@@ -375,6 +387,18 @@
           "markdownDescription": "Enables the frameworks_targets command without any pre-configured scope."
         },
         {
+          "description": "Enables the git_identity_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-git-identity-get",
+          "markdownDescription": "Enables the git_identity_get command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the git_identity_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-git-identity-set",
+          "markdownDescription": "Enables the git_identity_set command without any pre-configured scope."
+        },
+        {
           "description": "Enables the github_clone command without any pre-configured scope.",
           "type": "string",
           "const": "allow-github-clone",
@@ -429,6 +453,78 @@
           "markdownDescription": "Enables the github_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the issue_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-issue-open",
+          "markdownDescription": "Enables the issue_open command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-export",
+          "markdownDescription": "Enables the kit_export command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_health command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-health",
+          "markdownDescription": "Enables the kit_health command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_import command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-import",
+          "markdownDescription": "Enables the kit_import command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_import_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-import-cancel",
+          "markdownDescription": "Enables the kit_import_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_import_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-import-pending",
+          "markdownDescription": "Enables the kit_import_pending command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_mcp command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-mcp",
+          "markdownDescription": "Enables the kit_mcp command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the kit_mcp_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-kit-mcp-set",
+          "markdownDescription": "Enables the kit_mcp_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the lan_link command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-lan-link",
+          "markdownDescription": "Enables the lan_link command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
+          "type": "string",
+          "const": "allow-local-models",
+          "markdownDescription": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key."
+        },
+        {
+          "description": "Enables the mcp_presets command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-mcp-presets",
+          "markdownDescription": "Enables the mcp_presets command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the privacy_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-privacy-open",
+          "markdownDescription": "Enables the privacy_open command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_action_default command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-action-default",
@@ -451,6 +547,12 @@
           "type": "string",
           "const": "allow-project-backups",
           "markdownDescription": "Enables the project_backups command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_base_preview command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-base-preview",
+          "markdownDescription": "Enables the project_base_preview command without any pre-configured scope."
         },
         {
           "description": "Enables the project_clone command without any pre-configured scope.",
@@ -525,6 +627,12 @@
           "markdownDescription": "Enables the project_env_apply command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_env_block command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-env-block",
+          "markdownDescription": "Enables the project_env_block command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_env_preview command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-env-preview",
@@ -567,6 +675,12 @@
           "markdownDescription": "Enables the project_pin command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_save_base command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-save-base",
+          "markdownDescription": "Enables the project_save_base command without any pre-configured scope."
+        },
+        {
           "description": "Enables the project_site command without any pre-configured scope.",
           "type": "string",
           "const": "allow-project-site",
@@ -603,10 +717,10 @@
           "markdownDescription": "Enables the projects_orphans command without any pre-configured scope."
         },
         {
-          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close.",
+          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock.",
           "type": "string",
           "const": "allow-pty-sessions",
-          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close."
+          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock."
         },
         {
           "description": "Enables the relations_matrix command without any pre-configured scope.",
@@ -655,6 +769,12 @@
           "type": "string",
           "const": "allow-run-stop",
           "markdownDescription": "Enables the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the rust_toolchain_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-rust-toolchain-set",
+          "markdownDescription": "Enables the rust_toolchain_set command without any pre-configured scope."
         },
         {
           "description": "Enables the server_assign_project command without any pre-configured scope.",
@@ -831,6 +951,18 @@
           "markdownDescription": "Enables the update_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the updates_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-updates-check",
+          "markdownDescription": "Enables the updates_check command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the updates_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-updates-list",
+          "markdownDescription": "Enables the updates_list command without any pre-configured scope."
+        },
+        {
           "description": "Enables the url_open command without any pre-configured scope.",
           "type": "string",
           "const": "allow-url-open",
@@ -915,6 +1047,12 @@
           "markdownDescription": "Denies the app_quit command without any pre-configured scope."
         },
         {
+          "description": "Denies the component_link_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-component-link-open",
+          "markdownDescription": "Denies the component_link_open command without any pre-configured scope."
+        },
+        {
           "description": "Denies the components_apply command without any pre-configured scope.",
           "type": "string",
           "const": "deny-components-apply",
@@ -933,10 +1071,22 @@
           "markdownDescription": "Denies the components_install command without any pre-configured scope."
         },
         {
+          "description": "Denies the components_integrity command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-integrity",
+          "markdownDescription": "Denies the components_integrity command without any pre-configured scope."
+        },
+        {
           "description": "Denies the components_list command without any pre-configured scope.",
           "type": "string",
           "const": "deny-components-list",
           "markdownDescription": "Denies the components_list command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the components_repair command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-components-repair",
+          "markdownDescription": "Denies the components_repair command without any pre-configured scope."
         },
         {
           "description": "Denies the components_sync command without any pre-configured scope.",
@@ -963,16 +1113,10 @@
           "markdownDescription": "Denies the db_admin_open command without any pre-configured scope."
         },
         {
-          "description": "Denies the db_browse_rows command without any pre-configured scope.",
+          "description": "Denies the diagnostics_export command without any pre-configured scope.",
           "type": "string",
-          "const": "deny-db-browse-rows",
-          "markdownDescription": "Denies the db_browse_rows command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the db_browse_tree command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-db-browse-tree",
-          "markdownDescription": "Denies the db_browse_tree command without any pre-configured scope."
+          "const": "deny-diagnostics-export",
+          "markdownDescription": "Denies the diagnostics_export command without any pre-configured scope."
         },
         {
           "description": "Denies the downloads_add command without any pre-configured scope.",
@@ -1065,6 +1209,18 @@
           "markdownDescription": "Denies the frameworks_targets command without any pre-configured scope."
         },
         {
+          "description": "Denies the git_identity_get command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-git-identity-get",
+          "markdownDescription": "Denies the git_identity_get command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the git_identity_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-git-identity-set",
+          "markdownDescription": "Denies the git_identity_set command without any pre-configured scope."
+        },
+        {
           "description": "Denies the github_clone command without any pre-configured scope.",
           "type": "string",
           "const": "deny-github-clone",
@@ -1119,6 +1275,72 @@
           "markdownDescription": "Denies the github_status command without any pre-configured scope."
         },
         {
+          "description": "Denies the issue_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-issue-open",
+          "markdownDescription": "Denies the issue_open command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_export command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-export",
+          "markdownDescription": "Denies the kit_export command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_health command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-health",
+          "markdownDescription": "Denies the kit_health command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_import command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-import",
+          "markdownDescription": "Denies the kit_import command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_import_cancel command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-import-cancel",
+          "markdownDescription": "Denies the kit_import_cancel command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_import_pending command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-import-pending",
+          "markdownDescription": "Denies the kit_import_pending command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_mcp command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-mcp",
+          "markdownDescription": "Denies the kit_mcp command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the kit_mcp_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-kit-mcp-set",
+          "markdownDescription": "Denies the kit_mcp_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the lan_link command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-lan-link",
+          "markdownDescription": "Denies the lan_link command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the mcp_presets command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-mcp-presets",
+          "markdownDescription": "Denies the mcp_presets command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the privacy_open command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-privacy-open",
+          "markdownDescription": "Denies the privacy_open command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_action_default command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-action-default",
@@ -1141,6 +1363,12 @@
           "type": "string",
           "const": "deny-project-backups",
           "markdownDescription": "Denies the project_backups command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_base_preview command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-base-preview",
+          "markdownDescription": "Denies the project_base_preview command without any pre-configured scope."
         },
         {
           "description": "Denies the project_clone command without any pre-configured scope.",
@@ -1215,6 +1443,12 @@
           "markdownDescription": "Denies the project_env_apply command without any pre-configured scope."
         },
         {
+          "description": "Denies the project_env_block command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-env-block",
+          "markdownDescription": "Denies the project_env_block command without any pre-configured scope."
+        },
+        {
           "description": "Denies the project_env_preview command without any pre-configured scope.",
           "type": "string",
           "const": "deny-project-env-preview",
@@ -1255,6 +1489,12 @@
           "type": "string",
           "const": "deny-project-pin",
           "markdownDescription": "Denies the project_pin command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_save_base command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-save-base",
+          "markdownDescription": "Denies the project_save_base command without any pre-configured scope."
         },
         {
           "description": "Denies the project_site command without any pre-configured scope.",
@@ -1339,6 +1579,12 @@
           "type": "string",
           "const": "deny-run-stop",
           "markdownDescription": "Denies the run_stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the rust_toolchain_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-rust-toolchain-set",
+          "markdownDescription": "Denies the rust_toolchain_set command without any pre-configured scope."
         },
         {
           "description": "Denies the server_assign_project command without any pre-configured scope.",
@@ -1513,6 +1759,18 @@
           "type": "string",
           "const": "deny-update-status",
           "markdownDescription": "Denies the update_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the updates_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-updates-check",
+          "markdownDescription": "Denies the updates_check command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the updates_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-updates-list",
+          "markdownDescription": "Denies the updates_list command without any pre-configured scope."
         },
         {
           "description": "Denies the url_open command without any pre-configured scope.",

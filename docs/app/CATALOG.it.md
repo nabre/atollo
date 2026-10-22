@@ -20,7 +20,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`agents/keyring.rs`) |
 | | `pi` | Pi | no | 120 | `git` | **nuovo** (D-152); l'agente da terminale di Earendil, build autonoma (Bun, senza Node.js); modelli locali o un provider in cloud; impostazioni in `data\home\.pi\agent` |
 | modelli locali (`ai`) | `llama` | llama.cpp | no | 90 | | **nuovo** (D-151); il server dei modelli locali (`llama-server`, modalità router) e `llama-cli`; build fissata nel catalogo (`version`, `sha256ByTarget`); build Vulkan su Windows e Linux (CPU senza driver della GPU), Metal su macOS; i modelli non ne fanno parte (§1, «Catalogo dei modelli») |
-| linguaggi e strumenti (`languages`) | `git` | Git (Git Bash su Windows) | quando serve (con Claude Code) | 350 | | Git Bash è la shell dei comandi degli agenti su Windows; arriva con Claude Code, un clone o un progetto (D-81) |
+| linguaggi e strumenti (`languages`) | `git` | Git (Git Bash su Windows) | quando serve (con Claude Code e Pi) | 350 | | Git Bash è la shell dei comandi degli agenti su Windows; arriva con Claude Code, Pi, un clone o un progetto (D-81) |
 | | `python` | Python + pip | sì | 70 | | l'ultima linea minore stabile; le altre dal menu delle versioni in Strumenti, e ogni progetto sceglie la sua (D-80, D-137) |
 | | `node` | Node.js LTS + npm | no | 110 | | quando serve: azioni con `npm`, server MCP con `npx` (D-59) |
 | | `uv` | uv, uvx | no | 35 | | quando serve: azioni con `uv`, server MCP con `uvx` (D-59) |
@@ -51,9 +51,9 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `mongo-express` | mongo-express | no | 40 | `node`, `mongodb` | **nuovo** (D-147); MongoDB nel browser, build del kit, dove c'è MongoDB; in Strumenti sotto «Visualizzazione database» con phpMyAdmin |
 | | `sqlite` | SQLite (sqlite3) | no | 15 | | **nuovo** (D-73); su Linux ARM64 da conda-forge, non rilocabile |
 
-I gruppi, i predefiniti (`def`) e le dimensioni sono quelli di `components.json` (39 componenti). Proposta del primo avvio: obbligatori, editor, tre agenti (Claude Code, Codex, Antigravity: Pi e llama.cpp sono offerti ma non scelti per default), Python, PHP, Apache, più Git, che serve a Claude Code: circa 1,8 GB (1845 MB, di cui 250 dell'editor), su ogni sistema (anche Apache, da D-116).
+I gruppi, i predefiniti (`def`) e le dimensioni sono quelli di `components.json` (39 componenti). Proposta del primo avvio: obbligatori, editor, tre agenti (Claude Code, Codex, Antigravity: Pi e llama.cpp sono offerti ma non scelti per default), Python, PHP, Apache, più Git, che serve a Claude Code: circa 1,8 GB (1845 MB, di cui 250 dell'editor; 1848 MB su Windows, con ConPTY), su ogni sistema (anche Apache, da D-116).
 
-Le pagine non mostrano i gruppi del catalogo ma i tipi della matrice del sito (D-139; `ui/src/components/model.ts` e `site/matrix.mjs`, che un test tiene uguali): Sistema ed editor (`required`, `app`, più Git), Agenti AI, Modelli locali (`ai`: llama.cpp), Linguaggi, Strumenti di sviluppo (uv, pnpm, CMake, Android SDK, Typst, TinyTeX), Server web (Apache, Caddy), Database.
+Le pagine non mostrano i gruppi del catalogo ma gli otto tipi della matrice del sito (D-139; `ui/src/components/model.ts` e `site/matrix.mjs`, che un test tiene uguali): Sistema ed editor (`required`, `app`, più Git), Agenti AI, Modelli locali (`ai`: llama.cpp), Linguaggi, Strumenti di sviluppo (uv, pnpm, CMake, Android SDK, Typst, TinyTeX), Server web (Apache, Caddy), Database, Visualizzazione database (phpMyAdmin, mongo-express; D-147).
 
 Gli altri cataloghi in `tauri/catalog/`: `models.json`, i modelli locali (sotto); `frameworks.json`, la procedura «Nuovo progetto» (D-83, D-131): 81 pezzi, 63 basi e 18 aggiunte; `extensions.json`, le estensioni dell'editor per linguaggio (D-71); `relations.json`, la matrice delle relazioni (D-81).
 
@@ -65,7 +65,7 @@ Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un compon
 
 | Campo | Cosa dice | Esempio |
 | --- | --- | --- |
-| `targets` | i soli target dove il componente c'è; vuoto = tutti | nessuno oggi (Apache fino a D-116: `["win32-x64", "win32-arm64"]`) |
+| `targets` | i soli target dove il componente c'è; vuoto = tutti | ConPTY: `["win32-x64", "win32-arm64"]` (D-148; anche Apache fino a D-116) |
 | `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
 | `noArm64` | nessuna build gira su Windows ARM64, nemmeno in emulazione | nessuno oggi (R fino a D-132) |
 | `x64Only` | build x64 in emulazione solo su Windows ARM64 | PHP, Apache, Android SDK, Julia, TinyTeX, R, MySQL, MongoDB, editor |

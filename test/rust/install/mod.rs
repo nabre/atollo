@@ -1,6 +1,11 @@
+use std::fs;
+
+use super::flow::{keeping_taken, taken, Taken};
+use super::keys::check_key;
 use super::*;
 use crate::kit::tests::TempDir;
-use crate::setup::catalog::Catalog;
+use crate::net::verify;
+use crate::setup::Catalog;
 
 /// Asks every source for real: the lines of each versioned component,
 /// then the release of each line. Prints `id line version url` for the
@@ -61,7 +66,7 @@ fn every_catalog_component_has_an_installer() {
     }
 }
 
-/// The tool matrix (`scripts/matrix/gen_matrix.py`) reads sources and
+/// The tool matrix (`scripts/matrix/gen_matrix.mjs`) reads sources and
 /// relocation from `scripts/matrix/sources.json`: one entry per catalog
 /// component, and `notRelocatable` exactly the targets where the
 /// installer does not follow the kit (D-92, D-118).

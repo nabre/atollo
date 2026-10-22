@@ -3,7 +3,7 @@
 // app (tauri/src/net/lan.rs), never by a service on the internet.
 import { useCallback, useState } from "react";
 import { lanLink, type LanLink, type Qr } from "../api";
-import { useCopy, useLoad } from "../hooks";
+import { useCopy, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, IconButton } from "../workbench";
 

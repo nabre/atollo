@@ -63,7 +63,7 @@ pub fn files_of(kit: &Kit, env: &KitEnv, dir: &Path) -> Vec<String> {
 /// What Git would commit: the tracked files and the new ones `.gitignore`
 /// does not leave out. `None` when Git is missing or fails.
 fn git_files(kit: &Kit, env: &KitEnv, dir: &Path) -> Option<Vec<String>> {
-    let git = crate::setup::catalog::kit_path(kit, r"git\cmd\git.exe");
+    let git = crate::setup::kit_path(kit, r"git\cmd\git.exe");
     if !git.is_file() {
         return None;
     }

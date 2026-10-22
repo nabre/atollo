@@ -1,5 +1,5 @@
 use super::*;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The tests below look from a Windows ARM64 PC: the only host that says
 /// "ARM64 PCs" (see `seen_from_another_pc_windows_arm64_is_named`).
@@ -7,7 +7,7 @@ const HOST: Target = Target::WIN32_ARM64;
 
 /// A component limited by `targets` to Windows: none in the catalog is
 /// since Apache came to macOS and Linux (D-116).
-fn windows_only() -> crate::setup::catalog::Component {
+fn windows_only() -> crate::setup::Component {
     serde_json::from_value(serde_json::json!({
         "id": "w", "name": "W", "group": "languages", "def": false, "mb": 1,
         "desc": "w", "home": "https://w", "key": "w/w.exe",
@@ -18,7 +18,7 @@ fn windows_only() -> crate::setup::catalog::Component {
 
 /// A `noArm64` component: none in the catalog is since R runs emulated on
 /// Windows ARM64 (`x64Only`).
-fn no_arm64() -> crate::setup::catalog::Component {
+fn no_arm64() -> crate::setup::Component {
     serde_json::from_value(serde_json::json!({
         "id": "n", "name": "N", "group": "languages", "def": false, "mb": 1,
         "desc": "n", "home": "https://n", "key": "n/n.exe", "noArm64": true

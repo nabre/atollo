@@ -11,7 +11,7 @@ use super::{conda_info, conda_versions, micromamba_create, micromamba_release};
 use crate::fsx::{join_rel, write_atomic};
 use crate::install::{target_of, Ctx, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// R from conda-forge (OpenBLAS), installed by micromamba in the work
 /// folder and moved into the kit; launchers `bin/R(.cmd)`, `bin/Rscript(.cmd)`
@@ -233,7 +233,7 @@ impl Installer for R {
                     continue;
                 };
                 if let Some(new) = plain_r_sed(&text) {
-                    crate::router::fs::write_executable(&path, new.as_bytes())
+                    crate::router::write_executable(&path, new.as_bytes())
                         .with_context(|| path.display().to_string())?;
                 }
             }

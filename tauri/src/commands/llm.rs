@@ -371,7 +371,7 @@ pub async fn llm_hf_token_set<R: Runtime>(
         {
             return Err(fail("llm", invalid));
         }
-        crate::router::fs::write_private(&file, token).or_fail_chain("llm")
+        crate::router::write_private(&file, token).or_fail_chain("llm")
     })
     .await
     .or_fail("llm")?

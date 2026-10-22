@@ -2,7 +2,7 @@ use super::super::status;
 use super::*;
 use crate::kit::Target;
 use crate::settings::Settings;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 struct Print;
 

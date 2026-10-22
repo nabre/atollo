@@ -1,5 +1,5 @@
 // The Git section of a project's page: its state, read from .git.
-import { ActionButton } from "../common";
+import { ActionButton } from "../shared/common";
 import { t } from "../i18n";
 import { urlOpen, type ProjectStatus } from "../api";
 import { codicon, EditorSection, Properties } from "../workbench";

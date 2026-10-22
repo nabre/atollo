@@ -1,5 +1,5 @@
 use super::*;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The kit's build: the release of this repository named after the
 /// version, the zip with the tree at its root.
@@ -61,7 +61,7 @@ fn catalog_entry() {
         .find("mongo-express")
         .expect("mongo-express in the catalog");
     let mongodb = catalog.find("mongodb").unwrap();
-    assert_eq!(c.group, crate::setup::catalog::Group::Databases);
+    assert_eq!(c.group, crate::setup::Group::Databases);
     assert!(!c.def);
     for need in ["node", "mongodb"] {
         assert!(c.needs_on_every_target().any(|n| n == need), "{need}");

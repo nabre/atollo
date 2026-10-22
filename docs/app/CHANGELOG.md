@@ -1,5 +1,32 @@
 # Novità
 
+## Non ancora rilasciato
+
+Tutto ciò che sta sopra «Rilascio 0.5.1 alpha» è nel codice ma in nessun rilascio: la 0.5.1 (`app-v0.5.1`, 21/10/2026), l'unica da scaricare, non lo contiene. README e sito, nelle quattro lingue, segnano le funzioni principali come «in arrivo nel prossimo rilascio»; la nota si toglie nel commit che alza la versione (`DOC-V7-02`). In breve:
+
+- **Agenti e modelli**: Pi, il quarto agente (D-152); i modelli locali GGUF con il server llama.cpp (D-151); i server MCP pronti per il kit e i progetti (D-156); un pulsante per agente (D-146).
+- **Il kit**: «Esporta diagnostica» e «Segnala un problema» (D-153); «Salute del kit» e `Atollo check --kit` (D-155); «Verifica i file» e `Atollo check --files` (D-159); «Copia del kit», esportazione e importazione (D-163); l'icona nell'area di notifica (D-145).
+- **Progetti e database**: copie di sicurezza prima di un ripristino o di un cambio di versione (D-154); «Copia blocco .env» (D-157); il QR del sito in rete locale (D-158); «Salva come base» e «Le mie basi» (D-162); i nuovi progetti in quattro gruppi; mongo-express (D-147) e MongoDB senza la scheda «Contenuto» (D-150).
+- **Interfaccia**: il terminale dentro l'app anche su Windows, con ConPTY (D-148), e i terminali staccabili (D-149); la palette dei comandi (D-160); il riepilogo degli aggiornamenti (D-161); un clic sulla versione cerca gli aggiornamenti; un solo interruttore per «Attività».
+- **Guida**: sul sito, una pagina per argomento in quattro lingue (D-164).
+- **Correzioni**: i rilievi del report v7 (voce qui sotto).
+
+## Rilievi del report v7 (23/10/2026)
+
+Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per rilievo; la verifica della chiusura è in `docs/reports/v8/00-VERIFICA-CHIUSURA-V7.md`.
+
+- **Ondata 1, `fix/v7-bugs`** (con `fix/v7-llm-setup`, `fix/v7-projects-db`, `fix/v7-core` e `fix/v7-ui`, uno per gruppo, in worktree paralleli): i 39 rilievi del codice `BUG-V7-01..39`. Un download di un modello ripreso dopo un cambio di commit riparte dai file giusti e un file della dimensione giusta si accetta solo con lo SHA giusto; un lock per cartella del modello, preso in modo atomico; il nome di una cartella con `"` o un a capo non entra più in `httpd.conf`; l'editor che parte piano non blocca la finestra; «Salva e apri» e i «Ferma» del pannello Attività dicono perché non sono riusciti; processi raccolti su macOS e Linux, `TMPDIR` letto all'avvio, percorsi confrontati con le regole del sistema; testi nella lingua dell'utente e la prova i18n che li vede tutti.
+- **`fix/v7-followups`**: il token di GitHub non è più nell'ambiente dell'agente, dove i server MCP di un repository clonato lo leggevano; il server github del kit è `Atollo mcp github`, un ponte che lo manda solo al server MCP di GitHub (`SEC-V7-01`); una prova del file server che cadeva sotto carico (`TEST-V7-02`); metà delle CPU come worker di Vitest (`TEST-V7-01`).
+- **Ondata 2, `refactor/v7-structure`**: senza cambiare comportamento, `projects/run.rs`, `env.rs`, `projects/caddy.rs`, `install/mod.rs`, `kit.rs` e `main.rs` divisi in parti; riesportazioni al posto delle funzioni che inoltrano, un solo orologio, le sonde delle porte in `crate::ports`; in `ui/src` le cartelle `shared/`, `shell/`, `servers/` e gli alias `@/`, `@guide`, `@test`; la matrice degli strumenti in JavaScript; un aiuto comune per gli script delle schermate e per le prove Rust (`STR-V7-01..22`).
+- **Ondata 3, `feature/v7-guide-site`**: la Guida in `guide/` alla radice, letta dall'app e dal sito con un contratto di widget, senza più `GUIDE.md`; la Guida sul sito in quattro lingue, la CI che costruisce e controlla il sito a ogni modifica (`GUI-V7-01..12`, D-164).
+- **Ondata 4, `docs/v7-consistency`**: il numero degli agenti del sito dal catalogo; Pi, modelli locali e diagnostica «in arrivo nel prossimo rilascio» e la voce «Non ancora rilasciato» qui sopra; Git che arriva con Claude Code e Pi; «Modelli locali» negli elenchi delle pagine; schermate rifatte con Pi e la pagina dei modelli; otto tipi in Strumenti, ConPTY e i MB del primo avvio su Windows; `diagnostics.rs`, `health.rs`, `backup.rs` e `tray.rs` nell'architettura; la chiave dei modelli locali nel `models.json` di Pi; «Il kit» con le sue azioni; quattro agenti in MARKETING (`DOC-V7-01..13`); l'informativa con il server MCP di GitHub e le pagine della Guida.
+
+## La Guida sul sito (23/10/2026)
+
+- **La Guida si legge sul sito**, senza installare Atollo: una pagina per argomento e per lingua su https://nabre.github.io/atollo/guide/ (inglese) e `it/guide/`, `fr/guide/`, `de/guide/`, con i capitoli a lato, la ricerca nei titoli e nelle parole chiave, le schermate da ingrandire e il link «Guida» nell'intestazione del sito (D-164).
+- **Niente più `GUIDE.md` e `GUIDE.it.md`**: i README rimandano al sito, che ha la Guida in quattro lingue invece di due. Nell'app la Guida è la stessa di prima.
+- Il testo della Guida sta in `guide/` alla radice, letto dall'app e dal sito; la CI costruisce e controlla il sito a ogni modifica, prima del merge.
+
 ## Copia del kit (22/10/2026)
 
 - **«Copia del kit»** in Impostazioni › «Il kit»: «Esporta in una cartella…» o «Esporta in uno zip…» copia i progetti e i dati (impostazioni, database, agenti) in `Atollo-<data-ora>`, senza i programmi, le cache e i modelli locali, che si riscaricano. È la copia di sicurezza del README, fatta da Atollo (D-163).
@@ -663,7 +690,7 @@ Ogni strumento sta in una cartella col nome della sua versione minore, e una cor
 
 ## Guida operativa e pagina «Guida» nell'app (16/10/2026)
 
-Manuale completo del kit in [`GUIDE.it.md`](GUIDE.it.md) (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
+Manuale completo del kit in `GUIDE.it.md` (con 16 schermate commentate in `images\`) e pagina interattiva **Guida** (`VscBook`) in basso a sinistra nella barra delle attività.
 
 **Fatto**
 - **5 capitoli e 16 sezioni navigabili** nello stile Workbench di VSCodium (`ui/src/guide/`): architettura portabile e layout su disco, 36 fonti ufficiali con tabella ricercabile e stato live dei componenti installati, account GitHub unificato (D-70), panoramica visiva di tutte le viste e 12 ricette di configurazione passo-passo.

@@ -14,8 +14,8 @@ import {
   type McpView,
 } from "../api";
 import { t } from "../i18n";
-import { ActionButton, ErrorLine, LoadError } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine, LoadError } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { codicon, Select, TextArea, TextField } from "../workbench";
 
 function describe(s: McpServer): string {

@@ -20,7 +20,7 @@ use crate::install::{fetch, pattern, target_of, Ctx, Dest, Installer, Part, Rele
 use crate::net::archive::{Inner, Kind};
 use crate::net::hash_in_list;
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// PHP Thread Safe x64 (the Apache module needs it), newest branch or the
 /// one in the settings; in each of its folders, the Composer that runs on it.
@@ -332,7 +332,7 @@ impl Installer for Php {
 pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
     let tools = kit.apps().join("tools");
     let old = tools.join("composer.phar");
-    let Some(php) = crate::setup::catalog::Catalog::get().find("php") else {
+    let Some(php) = crate::setup::Catalog::get().find("php") else {
         return Ok(());
     };
     if !old.is_file() {
@@ -356,7 +356,7 @@ pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
 }
 
 /// The launcher of Composer in `bin/` of static-php-cli's PHP (macOS and
-/// Linux), on the PATH with `php` (env.rs): the `php` beside it runs the
+/// Linux), on the PATH with `php` (env/path.rs): the `php` beside it runs the
 /// `composer.phar` of its own folder.
 pub const COMPOSER_UNIX: &[u8] =
     b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nexec \"$d/php\" \"$d/../composer.phar\" \"$@\"\n";
@@ -376,12 +376,12 @@ pub fn composer_launchers(dir: &Path) -> Result<()> {
         &sh,
         b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nif [ -x \"$d/bin/php\" ]; then\n  exec \"$d/bin/php\" \"$d/composer.phar\" \"$@\"\nfi\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
     )?;
-    let _ = crate::router::fs::set_executable(&sh);
+    let _ = crate::router::set_executable(&sh);
     let bin = dir.join("bin");
     if bin.join("php").is_file() {
         let launcher = bin.join("composer");
         write_atomic(&launcher, COMPOSER_UNIX)?;
-        let _ = crate::router::fs::set_executable(&launcher);
+        let _ = crate::router::set_executable(&launcher);
     }
     Ok(())
 }

@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use crate::env::KitEnv;
 use crate::fsx::{read_json, write_json};
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component, Group};
+use crate::setup::{Catalog, Component, Group};
 
 /// The id of the default terminal.
 pub const DEFAULT_ID: &str = "default";

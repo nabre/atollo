@@ -42,6 +42,7 @@ Chaque requête que l'application fait d'elle-même porte un `User-Agent` de la 
 | En arrière-plan après le démarrage de l'éditeur, et à l'ouverture d'un projet | La galerie d'extensions de l'éditeur (Open VSX) ; CodeLLDB depuis sa version sur GitHub | Les demandes des extensions utilisées par le kit et vos projets. | Ne pas ouvrir l'éditeur, ou retirer les extensions de l'éditeur. |
 | Seulement quand vous vous connectez à GitHub (Paramètres › Compte GitHub) et utilisez vos dépôts (Projets › « Depuis vos dépôts GitHub ») | GitHub (`github.com`, `api.github.com`), via GitHub CLI | La connexion (un code à usage unique à saisir sur `github.com/login/device`), puis le jeton de votre compte avec les requêtes pour lister, cloner, renommer ou supprimer vos dépôts. | Ne pas vous connecter, ou vous déconnecter dans Paramètres › Compte GitHub. |
 | Une fois, à la connexion ou à un démarrage avec la connexion faite, seulement si le nom et l'e-mail des commits sont vides | GitHub (`api.github.com/user`), via GitHub CLI | Le jeton de votre compte, pour lire le nom, l'identifiant et le numéro du compte : ils deviennent le nom de vos commits et l'adresse privée `noreply` de GitHub. | Remplir Paramètres › Compte GitHub › « Qui signe les commits », ou ne pas vous connecter. |
+| Quand un agent utilise le serveur MCP **github** du kit (Agents › Serveurs MCP du kit), seulement si vous êtes connecté à GitHub | Le serveur MCP de GitHub (`api.githubcopilot.com`), via `Atollo mcp github`, le pont que l'agent lance | Les requêtes de l'agent aux outils de GitHub (issues, pull requests, dépôts) avec le jeton de votre compte GitHub, que le pont ajoute lui-même : l'agent ne le voit jamais. | N'ajoutez pas le serveur github, ou retirez-le des serveurs MCP du kit. |
 | Seulement tant que la page Agents est affichée (à l'ouverture, puis toutes les 2 minutes), pour chaque agent auquel vous êtes connecté | Claude Code : `api.anthropic.com` ; Codex : `chatgpt.com` ; Antigravity : `cloudcode-pa.googleapis.com` | Le jeton de connexion de l'agent, envoyé uniquement au fournisseur de cet agent, pour lire les limites d'utilisation de votre forfait. Le jeton est seulement lu, jamais renouvelé, et jamais écrit dans le journal. | Ne pas ouvrir la page Agents, ou ne pas vous connecter à l'agent. |
 
 Ne sont **pas** des connexions faites par Atollo lui-même :
@@ -122,7 +123,7 @@ Les agents IA envoient à leurs fournisseurs vos requêtes et les fichiers qu'il
 
 ## 6. Le site
 
-Le site [nabre.github.io/atollo](https://nabre.github.io/atollo/fr/) est une page statique hébergée sur GitHub Pages.
+Le site [nabre.github.io/atollo](https://nabre.github.io/atollo/fr/) est une page statique hébergée sur GitHub Pages, avec les pages du Guide sous [`/fr/guide/`](https://nabre.github.io/atollo/fr/guide/) (le même Guide que dans l'application, qui le lit depuis l'application elle-même, sans connexion).
 
 - Ni statistiques, ni pistage, ni cookies, ni publicité. Polices et images sont servies par le site lui-même.
 - Le site retient le thème et la langue choisis dans le `localStorage` de votre navigateur (`atollo-theme`, `atollo-lang`) ; ils ne quittent pas le navigateur.

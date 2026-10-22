@@ -4,7 +4,7 @@
 // control under it, a bar on the left when changed. The search hides what
 // does not match; a group with nothing left hides itself.
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { SearchBox } from "./controls";
+import { SearchBox } from "./inputs";
 
 const Query = createContext<string[]>([]);
 

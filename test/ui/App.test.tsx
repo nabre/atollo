@@ -20,7 +20,8 @@ import {
   type ServiceInfo,
   type SetupSnapshot,
   type WebServerPool,
-} from "../../ui/src/api";
+} from "@/api";
+import { invoke } from "@test/support/tauri";
 
 // The answers start from the browser preview's (ui/src/api): a test
 // changes only what it is about.
@@ -62,11 +63,7 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
   return (cmd) => (cmd in base ? Promise.resolve(base[cmd]) : Promise.reject(new Error(`unexpected ${cmd}`)));
 }
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 let setupListener: ((e: { payload: SetupSnapshot }) => void) | null = null;
 let runListener: ((e: { payload: RunEvent }) => void) | null = null;
@@ -108,8 +105,8 @@ const running: RunInfo = {
   skippedAliases: [],
 };
 
-const { App } = await import("../../ui/src/App");
-const { setLang } = await import("../../ui/src/i18n");
+const { App } = await import("@/App");
+const { setLang } = await import("@/i18n");
 
 afterEach(() => {
   cleanup();

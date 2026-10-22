@@ -895,7 +895,7 @@
   "Gestori di pacchetti, build e documenti, sempre all'ultima versione. Quelli che servono a un agente o a un progetto si installano da soli.": "Gestionnaires de paquets, outils de build et de documents, toujours à leur dernière version. Ceux dont un agent ou un projet a besoin s'installent seuls.",
   "Linguaggi e runtime. Ognuno tiene più versioni una accanto all'altra, una per versione minore, tranne Rust e C/C++ che restano all'ultima: il kit usa la più recente, ogni progetto la sua.": "Langages et environnements d'exécution. Chacun garde plusieurs versions côte à côte, une par version mineure, sauf Rust et C/C++, qui restent à la dernière : le kit utilise la plus récente, chaque projet la sienne.",
   "Scegli tutti: {0}": "Tout choisir : {0}",
-  "Sempre installati: l'editor, la shell del kit, GitHub CLI e Git.": "Toujours installés : l'éditeur, le shell du kit, GitHub CLI et Git.",
+  "Sempre installati: l'editor, la shell del kit e GitHub CLI. Git arriva con Claude Code e Pi, o si sceglie qui.": "Toujours installés : l'éditeur, le shell du kit et GitHub CLI. Git arrive avec Claude Code et Pi, ou se choisit ici.",
   "Sistema ed editor": "Système et éditeur",
   "Strumenti di sviluppo": "Outils de développement",
   "Tutti i tipi": "Tous les types",

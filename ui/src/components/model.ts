@@ -1,7 +1,7 @@
 // The data of the Tools page: its sections, the choice that follows the
 // dependencies, the lines of a versioned tool, sizes as text.
 import type { ComponentInfo, Group, VersionedTool } from "../api";
-import { locale, t } from "../i18n";
+import { t } from "../i18n";
 
 /** The kinds of tool, as the site's matrix (site/matrix.mjs, KINDS and
  * KIND_OF: a test keeps them equal). The catalog's groups are coarser:
@@ -43,7 +43,12 @@ export function kindOf(c: { id: string; group: Group }): Kind {
  * the site's kinds, each with its title and what to know about it. */
 export function groups(): { id: Kind; title: string; hint: string; has: (c: ComponentInfo) => boolean }[] {
   const text: Record<Kind, [string, string]> = {
-    system: [t("Sistema ed editor"), t("Sempre installati: l'editor, la shell del kit, GitHub CLI e Git.")],
+    system: [
+      t("Sistema ed editor"),
+      t(
+        "Sempre installati: l'editor, la shell del kit e GitHub CLI. Git arriva con Claude Code e Pi, o si sceglie qui.",
+      ),
+    ],
     agents: [t("Agenti AI"), t("Facoltativi: il kit funziona anche senza. Sempre all'ultima versione.")],
     ai: [
       t("Modelli locali"),
@@ -131,8 +136,4 @@ export function linesOf(tool: VersionedTool | undefined): string[] {
   return [...(tool.default ? [tool.default.line] : []), ...tool.saved.map((s) => s.line)];
 }
 
-export function sizeText(mb: number): string {
-  if (mb < 1000) return `${String(mb)} MB`;
-  const gb = new Intl.NumberFormat(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(mb / 1000);
-  return `${gb} GB`;
-}
+export { sizeText } from "../shared/format";

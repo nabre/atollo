@@ -12,7 +12,7 @@
 //!   (`Atollo.exe serve`), instead of a command;
 //! - `apache`: a folder of the project served by an Apache of its own
 //!   (`projects/apache.rs`), instead of a command; `caddy` the same with
-//!   Caddy (`projects/caddy.rs`).
+//!   Caddy (`projects/caddy/`).
 //!
 //! `panel.json` in the project (old name `pannello.json`) corrects or
 //! replaces what was detected (`overrides.rs`). One file per platform.
@@ -31,6 +31,8 @@ use std::fs;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+
+use crate::i18n::t as tr;
 
 pub use overrides::{
     remove_action, save_action, set_default_action, set_site_with_options, ActionEdit, SiteKind,
@@ -216,10 +218,6 @@ const MANIFESTS: [&str; 7] = [
 ];
 
 pub const OVERRIDE_FILES: [&str; 2] = ["panel.json", "pannello.json"];
-
-fn tr(lang: &str, source: &str, args: &[&str]) -> String {
-    crate::i18n::t(lang, source, args)
-}
 
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
@@ -577,7 +575,7 @@ pub fn requires(dir: &Path) -> Vec<String> {
     }
     found.extend(container::servers(dir).into_keys());
     found.extend(databases(dir));
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())

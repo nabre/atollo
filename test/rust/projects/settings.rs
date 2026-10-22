@@ -1,11 +1,9 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn saved_in_data_and_kept() {
-    let tmp = TempDir::new("project-settings");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("project-settings");
     assert_eq!(load(&kit, "app"), ProjectSettings::default());
     update(&kit, "app", |s| s.agent = Some("codex".into()));
     opened(&kit, "app");

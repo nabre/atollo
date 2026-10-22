@@ -14,7 +14,7 @@ use crate::install::{arch_of, target_of, Ctx, Installer, Progress, Release};
 use crate::kit::Target;
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Ruby: RubyInstaller2 7z on Windows (without MSYS2), or
 /// conda-forge `ruby` by micromamba on macOS and Linux (D-112), in place
@@ -109,7 +109,7 @@ pub fn ruby_conda_spec(version: &str) -> String {
 
 /// conda-forge's `etc/gemrc` without its `gemhome:` line, which sends
 /// `gem install` into the environment and wins over `GEM_HOME`: the
-/// kit's gems belong in `GEM_HOME` (env.rs, `data/ruby-gems`), outside
+/// kit's gems belong in `GEM_HOME` (env/unix.rs, `data/ruby-gems`), outside
 /// the environment that is installed again when the kit moves. The bundled
 /// gems stay visible (Ruby's default dir). `None` when there is none.
 pub fn gemrc_without_gemhome(text: &str) -> Option<String> {
@@ -258,7 +258,7 @@ fn ruby_release(ctx: &Ctx, component: &Component, line: Option<&str>) -> Result<
 /// (D-81). macOS and Linux (D-112): conda-forge `ruby` in an environment
 /// created by micromamba in the folder of its line, like R; it has its
 /// folder written inside, so it is installed again when the kit moves
-/// (D-92), and gems belong outside it (`GEM_HOME`, env.rs).
+/// (D-92), and gems belong outside it (`GEM_HOME`, env/unix.rs).
 impl Installer for Ruby {
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
         ruby_release(ctx, component, None)

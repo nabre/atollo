@@ -47,7 +47,7 @@ pub async fn service_start<R: Runtime>(
 
 pub(super) fn start_error(lang: &str, e: &anyhow::Error) -> CmdError {
     if let Some(m) = e.downcast_ref::<crate::db::services::LineMissing>() {
-        let name = crate::setup::catalog::Catalog::get()
+        let name = crate::setup::Catalog::get()
             .find(&m.id)
             .map_or_else(|| m.id.clone(), |c| c.name.clone());
         return crate::i18n::t(

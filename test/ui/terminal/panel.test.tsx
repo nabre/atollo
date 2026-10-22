@@ -5,10 +5,10 @@
 // of its own and back (D-149).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { PtyBackend, PtyChunk, PtyInfo } from "../../../ui/src/terminal";
-import { useTerminals } from "../../../ui/src/terminal";
-import { TerminalPanel } from "../../../ui/src/terminal/panel";
-import { clipboardKey, sequencer } from "../../../ui/src/terminal/view";
+import type { PtyBackend, PtyChunk, PtyInfo } from "@/terminal";
+import { useTerminals } from "@/terminal";
+import { TerminalPanel } from "@/terminal/panel";
+import { clipboardKey, sequencer } from "@/terminal/view";
 
 // The fake xterm.js, made before the mocks (vi.mock is hoisted); every
 // one made is kept, with what was written to it.

@@ -4,15 +4,12 @@
 // only for an action of panel.json; the backend's refusal is shown.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ProjectAction, ProjectInfo } from "../../../ui/src/api";
-import { ProjectPage } from "../../../ui/src/projects/page";
-import { actionId } from "../../../ui/src/projects/actionform";
+import type { ProjectAction, ProjectInfo } from "@/api";
+import { ProjectPage } from "@/projects/page";
+import { actionId } from "@/projects/actionform";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

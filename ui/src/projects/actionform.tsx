@@ -3,8 +3,8 @@
 // corrected by it (the one in panel.json takes its place).
 import { useState, type SyntheticEvent } from "react";
 import { projectActionSave, type ActionEdit, type ActionKind, type ProjectAction, type ProjectInfo } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, Select, TextArea, TextField } from "../workbench";
 

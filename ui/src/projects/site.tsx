@@ -2,8 +2,8 @@
 // own port or attached to a pooled Caddy/Apache VirtualHost.
 import { useState, type SyntheticEvent } from "react";
 import { projectSite, serversList, type ProjectInfo, type SiteKind } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, Select, TextField } from "../workbench";
 

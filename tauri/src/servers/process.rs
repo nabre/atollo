@@ -15,11 +15,11 @@ use anyhow::{anyhow, bail, Context, Result};
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
+use crate::ports::is_port_free;
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
 use crate::projects::fastcgi::{self, FastCgi, FcgiAddr};
-use crate::projects::run::is_port_free;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 use super::config::component_dir;
 use super::pools::load_store;
@@ -777,3 +777,7 @@ impl WebServers {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/servers/process.rs"]
+mod tests;

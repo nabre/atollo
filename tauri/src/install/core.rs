@@ -14,13 +14,13 @@ use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::net::{github_digest, hash_in_list};
 use crate::os::jobs;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux
 /// the relocatable build of GitHub Desktop (`desktop/dugite-native`, D-112):
 /// `bin/git`, `libexec/git-core`, `share/git-core/templates` and its own
 /// `etc/gitconfig`. It finds them through the kit's environment
-/// (`GIT_EXEC_PATH`, `GIT_TEMPLATE_DIR`, `GIT_CONFIG_SYSTEM`, env.rs), so the
+/// (`GIT_EXEC_PATH`, `GIT_TEMPLATE_DIR`, `GIT_CONFIG_SYSTEM`, env/unix.rs), so the
 /// folder follows the kit when it moves, like PortableGit.
 pub struct Git;
 

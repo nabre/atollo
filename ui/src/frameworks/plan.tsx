@@ -2,7 +2,7 @@
 // tried in Settings, shown by the wizard.
 import type { ReactNode } from "react";
 import type { FrameworkPiece, FrameworkPlan, FrameworksView } from "../api";
-import { ErrorLine } from "../common";
+import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { CheckboxLabel, Notice, Select, SettingItem, SettingsGroup } from "../workbench";
 import { bases, slotLabel, textOf, useCombination, useComponents, usePlan, type Frameworks } from "./model";

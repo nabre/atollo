@@ -7,9 +7,9 @@
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "build": "tsc -b && vite build",
     "test": "vitest run",
-    "lint": "eslint . ../test/ui && tsc --noEmit -p ../test/ui",
-    "format": "prettier --write . ../test/ui",
-    "format:check": "prettier --check . ../test/ui"
+    "lint": "eslint . ../test/ui ../guide && tsc --noEmit -p ../test/ui && tsc --noEmit -p ../guide",
+    "format": "prettier --write . ../test/ui ../guide",
+    "format:check": "prettier --check . ../test/ui ../guide"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",

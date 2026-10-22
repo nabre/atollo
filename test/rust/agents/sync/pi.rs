@@ -1,14 +1,11 @@
 use super::*;
 
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
 use crate::llm::local::{write_manifest, Entry, Manifest};
+use crate::test_support::prepared_kit;
 
 fn kit() -> (TempDir, Kit) {
-    let tmp = TempDir::new("sync-pi");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    (tmp, kit)
+    prepared_kit("sync-pi")
 }
 
 /// One complete model on disk, `id`, of the catalog's `catalog`.

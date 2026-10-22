@@ -10,11 +10,11 @@ import {
   type VersionedTool,
 } from "../api";
 import { t } from "../i18n";
-import { useAction, useLoad } from "../hooks";
-import { ActionButton, ErrorLine } from "../common";
-import { ItemBar, ItemStatus, itemState } from "../setup";
-import { ByHandBox } from "../byhand";
-import { Tag } from "../tags";
+import { useAction, useLoad } from "../shared/hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { ItemBar, ItemStatus, itemState } from "../components/setup";
+import { ByHandBox } from "../components/byhand";
+import { Tag } from "../shared/tags";
 import { isPresent, lineText, offered, splitVersion, useOffers, useReloadOnSteps } from "./model";
 import { LineState, RefreshLines } from "./lines";
 import { Codicon, codicon } from "../workbench";

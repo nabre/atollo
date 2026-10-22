@@ -2,15 +2,12 @@
 // its pool (name_sites), not `<project>.localhost` written by the page.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { ProjectAction, ProjectInfo } from "../../../ui/src/api";
-import type { AttachedSite, WebServersView } from "../../../ui/src/api/servers";
-import { SiteForm } from "../../../ui/src/projects/site";
+import type { ProjectAction, ProjectInfo } from "@/api";
+import type { AttachedSite, WebServersView } from "@/api/servers";
+import { SiteForm } from "@/projects/site";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

@@ -161,7 +161,7 @@ fn without_store(f: &Files, detail: &str, os: crate::kit::Os, mode: Option<u32>)
     eprintln!("  [!] Antigravity: {NO_STORE}.");
     if f.store.exists() {
         // Owner-only even when it came from another system.
-        let _ = crate::router::fs::restrict_to_owner(&f.store);
+        let _ = crate::router::restrict_to_owner(&f.store);
     }
     Ok(())
 }

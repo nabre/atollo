@@ -3,7 +3,7 @@
 // still used. The sources are read through Vite's import.meta.glob (raw), so
 // the test needs no Node types.
 import { describe, expect, it } from "vitest";
-import { CATALOGS } from "../../ui/src/i18n";
+import { CATALOGS } from "@/i18n";
 
 const files = import.meta.glob<string>(["../../ui/src/**/*.ts", "../../ui/src/**/*.tsx", "!../../ui/src/i18n.ts"], {
   query: "?raw",

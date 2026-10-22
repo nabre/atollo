@@ -13,17 +13,11 @@ import {
   type KitCopy,
   type KitExported,
 } from "../api";
-import { ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { locale, t } from "../i18n";
+import { formatLargeBytes } from "../shared/format";
 import { Button, Notice, SettingItem } from "../workbench";
-
-function size(bytes: number): string {
-  const mb = bytes / 1024 / 1024;
-  return mb < 1024
-    ? `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(Math.max(1, mb))} MB`
-    : `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(mb / 1024)} GB`;
-}
 
 export function KitBackup() {
   const { data: pending, setData: setPending } = useLoad<boolean>(kitImportPending, false, { onError: "keep" });
@@ -93,7 +87,7 @@ export function KitBackup() {
       </div>
       {exported && (
         <p className="mt-2">
-          {t("Copia fatta: {0} file, {1}.", String(exported.files), size(exported.bytes))}{" "}
+          {t("Copia fatta: {0} file, {1}.", String(exported.files), formatLargeBytes(exported.bytes))}{" "}
           <span className="font-mono text-[12px] break-all select-text">{exported.path}</span>
         </p>
       )}
@@ -105,7 +99,7 @@ export function KitBackup() {
                 ? t(
                     "Copia pronta: {0} file, {1}, fatta il {2}.",
                     String(staged.files),
-                    size(staged.bytes),
+                    formatLargeBytes(staged.bytes),
                     new Date(staged.created * 1000).toLocaleString(locale()),
                   )
                 : t("Una copia aspetta di essere importata.")}{" "}

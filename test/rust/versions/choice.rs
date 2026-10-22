@@ -1,14 +1,13 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
-use crate::setup::catalog::Catalog;
+use crate::kit::tests::TempDir;
+use crate::setup::Catalog;
+use crate::test_support::prepared_kit;
 use crate::versions::tests::install_fake;
 use crate::versions::{default_dir, install_dir, remove, saved_dir, write_version, Line};
 
 #[test]
 fn choices_rewrite_the_environment() {
-    let tmp = TempDir::new("versions");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions");
     let node = Catalog::get().find("node").unwrap();
     let main = install_dir(&kit, node, "v22.11.0");
     assert!(main.ends_with(std::path::Path::new("node").join("22.11")));
@@ -21,10 +20,7 @@ fn choices_rewrite_the_environment() {
     } else {
         main.join("bin").join("node")
     };
-    assert_eq!(
-        crate::setup::catalog::kit_path(&kit, "node/node.exe"),
-        node_exe
-    );
+    assert_eq!(crate::setup::kit_path(&kit, "node/node.exe"), node_exe);
     assert!(node.is_installed(&kit));
     let old = saved_dir(&kit, node, "20.18");
     install_fake(&kit, node, &old);
@@ -151,9 +147,7 @@ fn choices_rewrite_the_environment() {
 /// (PHPRC, and Apache's CP_PHPRC_FWD), not the default line's.
 #[test]
 fn a_php_line_brings_its_php_ini() {
-    let tmp = TempDir::new("versions-php-ini");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-php-ini");
     let php = Catalog::get().find("php").unwrap();
     let version = "8.4.13 (Composer 2.8.12)";
     let main = install_dir(&kit, php, version);

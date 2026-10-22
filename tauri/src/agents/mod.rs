@@ -23,6 +23,7 @@
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
 
 pub mod claude_token;
+pub mod github_mcp;
 pub mod keyring;
 pub mod presets;
 pub mod relocate;
@@ -40,7 +41,7 @@ use serde_json::Value;
 
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 pub const IDS: [&str; 4] = ["claude", "codex", "antigravity", "pi"];
 
@@ -193,7 +194,7 @@ pub fn running(kit: &Kit) -> BTreeSet<String> {
     let procs = crate::os::processes::running_under(&kit.apps());
     IDS.iter()
         .filter(|id| {
-            let exe = crate::setup::catalog::kit_path(kit, exe_of(id).unwrap_or_default());
+            let exe = crate::setup::kit_path(kit, exe_of(id).unwrap_or_default());
             procs.iter().any(|p| {
                 p.path
                     .display()
@@ -231,7 +232,7 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     let Some(rel) = exe_of(id) else {
         bail!("unknown agent: {id}")
     };
-    let exe = crate::setup::catalog::kit_path(kit, rel);
+    let exe = crate::setup::kit_path(kit, rel);
     if !exe.is_file() {
         let name = Catalog::get().find(id).map_or(id, |c| c.name.as_str());
         bail!("{}", crate::i18n::t(lang, "{0} non è installato.", &[name]));
@@ -302,7 +303,7 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str, lang: &str) -> Result<()> {
             claude_token::remove(kit)
         }
         "codex" => {
-            let codex = crate::setup::catalog::kit_path(kit, "codex/bin/codex.exe");
+            let codex = crate::setup::kit_path(kit, "codex/bin/codex.exe");
             if codex.is_file() && codex_logout(&codex, env)? {
                 return Ok(());
             }

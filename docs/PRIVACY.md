@@ -42,6 +42,7 @@ Every request the app makes itself carries a `User-Agent` of the form `Atollo/<v
 | In the background after the editor starts, and when a project is opened | The editor's extension gallery (Open VSX); CodeLLDB from its GitHub release | Requests for the extensions the kit and your projects use. | Do not open the editor, or remove the extensions from it. |
 | Only when you sign in to GitHub (Settings › GitHub account) and use your repositories (Projects › “From your GitHub repositories”) | GitHub (`github.com`, `api.github.com`), through GitHub CLI | The sign-in (a one-time code you type at `github.com/login/device`), then your account's token with requests to list, clone, rename or delete your repositories. | Do not sign in, or sign out in Settings › GitHub account. |
 | Once, at sign-in or at a start while signed in, only if the commit name and email are empty | GitHub (`api.github.com/user`), through GitHub CLI | Your account's token, to read the account's name, login and number: they become the name of your commits and GitHub's private `noreply` address. | Fill in Settings › GitHub account › “Who signs the commits”, or do not sign in. |
+| When an agent uses the kit's **github** MCP server (Agents › The kit's MCP servers), only while you are signed in to GitHub | GitHub's MCP server (`api.githubcopilot.com`), through `Atollo mcp github`, the bridge the agent starts | The agent's requests to GitHub's tools (issues, pull requests, repositories) with your GitHub account's token, which the bridge adds itself: the agent never sees it. | Do not add the github server, or remove it from the kit's MCP servers. |
 | Only while the Agents page is shown (on opening, then every 2 minutes), for each agent you are signed in to | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | The agent's own login token, sent only to that agent's provider, to read your plan's usage limits. The token is only read, never refreshed, and never written to the log. | Do not open the Agents page, or do not sign in to the agent. |
 
 Things that are **not** connections made by Atollo itself:
@@ -122,7 +123,7 @@ The AI agents send your prompts and the files they read to their providers: that
 
 ## 6. Website
 
-The website [nabre.github.io/atollo](https://nabre.github.io/atollo/) is a static page hosted on GitHub Pages.
+The website [nabre.github.io/atollo](https://nabre.github.io/atollo/) is a static page hosted on GitHub Pages, with the Guide's pages under [`/guide/`](https://nabre.github.io/atollo/guide/) (the same Guide that is inside the app, which reads it from the app itself, with no connection).
 
 - No analytics, no tracking, no cookies, no advertising. Fonts and images are served from the site itself.
 - The site remembers your theme and language choice in your browser's `localStorage` (`atollo-theme`, `atollo-lang`); it never leaves your browser.

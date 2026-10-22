@@ -4,16 +4,7 @@
 // VSCodium 1.135's modern UI with the size tokens.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import {
-  EditorHeader,
-  EditorTabs,
-  NavBar,
-  Panel,
-  PaneStack,
-  Sash,
-  useStoredSize,
-  ViewPane,
-} from "../../../ui/src/workbench/layout";
+import { EditorHeader, EditorTabs, NavBar, Panel, PaneStack, Sash, useStoredSize, ViewPane } from "@/workbench/layout";
 
 beforeEach(() => {
   vi.useFakeTimers();

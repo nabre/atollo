@@ -3,15 +3,12 @@
 // is not lost when what has it goes: after Riprova, after Salva.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "../../../ui/src/api";
-import { KitMcpBox, ProjectMcpBox } from "../../../ui/src/projects/mcp";
-import { EditorSettingsBox } from "../../../ui/src/projects/editorsettings";
+import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "@/api";
+import { KitMcpBox, ProjectMcpBox } from "@/projects/mcp";
+import { EditorSettingsBox } from "@/projects/editorsettings";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();
@@ -116,8 +113,11 @@ describe("KitMcpBox", () => {
     await waitFor(() => {
       expect(servers.map((s) => s.name)).toEqual(["playwright", "github"]);
     });
-    // The token is a variable, never a value.
-    expect(servers[1]?.headers).toEqual({ Authorization: "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}" });
+    // The app, by its absolute path, reads the token itself: no token, not
+    // even a variable of it (SEC-V7-01).
+    expect(servers[1]?.command).toBe("E:\\Atollo\\Atollo.exe");
+    expect(servers[1]?.args).toEqual(["mcp", "github"]);
+    expect(JSON.stringify(servers[1])).not.toContain("GITHUB_PERSONAL_ACCESS_TOKEN");
     const playwright = (await screen.findByText("playwright")).closest("li") as HTMLElement;
     fireEvent.click(within(playwright).getByRole("button", { name: "Togli" }));
     await waitFor(() => {

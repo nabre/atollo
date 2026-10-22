@@ -2,14 +2,11 @@
 // the last one read, so the page and the projects' agent buttons stay.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import type { AgentInfo } from "../../../ui/src/api";
-import { useAgents } from "../../../ui/src/agents";
+import type { AgentInfo } from "@/api";
+import { useAgents } from "@/agents";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

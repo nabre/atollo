@@ -9,7 +9,7 @@ use serde_json::Value;
 
 use crate::install::installer;
 use crate::kit::Kit;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The folder of a conda environment with the launchers of the
 /// component's own programs (D-125): on the PATH in place of `bin`, which
@@ -75,7 +75,7 @@ pub fn write_launchers(prefix: &Path, package: &str) -> Result<()> {
     }
     for program in &programs {
         let path = dir.join(program);
-        crate::router::fs::write_executable(&path, launcher_text(program).as_bytes())
+        crate::router::write_executable(&path, launcher_text(program).as_bytes())
             .with_context(|| path.display().to_string())?;
     }
     Ok(())

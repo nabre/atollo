@@ -13,7 +13,7 @@ use crate::detect::{self, set_site_with_options, SiteKind, SiteOptions};
 use crate::env::KitEnv;
 use crate::fsx::{read_json, try_read_json, write_json};
 use crate::kit::{validate_project_name, Kit};
-use crate::projects::run::is_port_free;
+use crate::ports::is_port_free;
 
 use super::{
     AttachedSite, WebServerEngine, WebServerPool, WebServerProfileInput, WebServers, WebServersView,
@@ -685,3 +685,7 @@ impl WebServers {
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "../../../test/rust/servers/pools.rs"]
+mod tests;

@@ -5,7 +5,6 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
@@ -17,7 +16,7 @@ use crate::install::native::run_output;
 use crate::install::{installer, Ctx, Progress};
 use crate::net::verify::{self, Expect};
 use crate::settings::Settings;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// The packages of `component` are kept: it cannot follow the kit on this
 /// target (D-92) and the setting is on (the default).
@@ -96,12 +95,7 @@ fn store(src: &Path, dest: &Path, sha256: &str) -> Result<()> {
     Ok(())
 }
 
-fn now() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0)
-}
+use crate::time::now_secs as now;
 
 fn keep_lists(
     ctx: &Ctx,

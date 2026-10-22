@@ -5,20 +5,19 @@
 // (./delete.tsx). Nothing is deleted by itself.
 import { useCallback, useState } from "react";
 import { projectOrphanAdopt, projectsOrphans, type Holdings, type ProjectInfo } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
+import { engineName } from "../databases";
 import { codicon, ConfirmDialog, Select, ViewPane } from "../workbench";
 import { DeleteProjectDialog } from "./delete";
-
-const ENGINE_NAMES: Record<string, string> = { mysql: "MySQL", mongodb: "MongoDB" };
 
 /** What an orphan holds, as one line. */
 function holds(h: Holdings): string {
   const parts: string[] = [];
   if (h.settings) parts.push(t("impostazioni"));
   if (h.ports > 0) parts.push(t("porte: {0}", h.ports));
-  if (h.databases.length > 0) parts.push(t("database: {0}", h.databases.map((e) => ENGINE_NAMES[e] ?? e).join(", ")));
+  if (h.databases.length > 0) parts.push(t("database: {0}", h.databases.map(engineName).join(", ")));
   if (h.backups > 0) parts.push(t("copie: {0}", h.backups));
   return parts.length > 0 ? parts.join(", ") : t("file del kit");
 }

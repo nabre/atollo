@@ -4,22 +4,13 @@
 // remembered between sessions.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from "@testing-library/react";
-import {
-  TARGETS,
-  type ComponentInfo,
-  type TargetGrid,
-  type TargetProfile,
-  type TargetToolStatus,
-} from "../../../ui/src/api";
-import { TargetMatrix } from "../../../ui/src/components/matrix";
-import { useComponents, type ComponentsState } from "../../../ui/src/components/state";
-import { cellState, targetLabel, targetName } from "../../../ui/src/components/targets";
+import { TARGETS, type ComponentInfo, type TargetGrid, type TargetProfile, type TargetToolStatus } from "@/api";
+import { TargetMatrix } from "@/components/matrix";
+import { useComponents, type ComponentsState } from "@/components/state";
+import { cellState, targetLabel, targetName } from "@/components/targets";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

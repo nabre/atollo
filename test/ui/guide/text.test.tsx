@@ -3,11 +3,12 @@
 // languages with the same placeholders.
 import { render } from "@testing-library/react";
 import { afterAll, describe, expect, it } from "vitest";
-import { setLang, type Lang } from "../../../ui/src/i18n";
-import { GUIDE_GROUPS, GUIDE_TOPICS } from "../../../ui/src/guide/model";
-import { GuideTopicContent, TOPIC_TEXTS } from "../../../ui/src/guide/sections";
+import { setLang, type Lang } from "@/i18n";
+import "@/guide/register";
+import { GUIDE_GROUPS, GUIDE_TOPICS } from "@guide/core/model";
+import { GuideTopicContent, TOPIC_TEXTS } from "@/guide/sections";
 
-const raw = import.meta.glob<string>(["../../../ui/src/guide/**/*.ts", "../../../ui/src/guide/**/*.tsx"], {
+const raw = import.meta.glob<string>(["../../../guide/**/*.ts", "../../../guide/**/*.tsx"], {
   query: "?raw",
   import: "default",
   eager: true,
@@ -54,17 +55,24 @@ describe("guide text", () => {
       ).toBe(true);
   });
 
+  it("reads the Guide's sources", () => {
+    // guide/core and guide/content: a glob that finds nothing would pass
+    // every check below.
+    expect(Object.keys(files).length).toBeGreaterThan(10);
+    expect(Object.keys(files).some((p) => p.endsWith("/core/lang.ts"))).toBe(true);
+  });
+
   it("leaves no draft text", () => {
     for (const [path, code] of Object.entries(files)) {
       const calls = [...code.matchAll(/\bL\(/g)].length;
-      const definition = path.endsWith("/model.ts") ? 1 : 0;
+      const definition = path.endsWith("/core/lang.ts") ? 1 : 0;
       expect(calls, path).toBe(definition);
     }
   });
 
   it("gives every tr() four languages with the same placeholders", () => {
     for (const [path, code] of Object.entries(files)) {
-      const all = [...code.matchAll(/\btr\(/g)].length - (path.endsWith("/model.ts") ? 1 : 0);
+      const all = [...code.matchAll(/\btr\(/g)].length - (path.endsWith("/core/lang.ts") ? 1 : 0);
       const full = [...code.matchAll(TR)];
       expect(full.length, `${path}: tr() without four string literals`).toBe(all);
       for (const m of full) {

@@ -2,14 +2,11 @@
 // a read that fails is asked again by the next page, not kept as empty.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { ComponentInfo } from "../../../ui/src/api";
-import { useComponents } from "../../../ui/src/frameworks/model";
+import type { ComponentInfo } from "@/api";
+import { useComponents } from "@/frameworks/model";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

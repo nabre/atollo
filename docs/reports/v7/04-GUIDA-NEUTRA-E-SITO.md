@@ -23,7 +23,7 @@
 - i link a `GUIDE*.md` nei README (×4), in ARCHITECTURE, TESTING e MARKETING puntano a **https://nabre.github.io/atollo/guide/** (e `…/it/guide/`, `…/fr/guide/`, `…/de/guide/`);
 - `GUI-V7-04` e `GUI-V7-05` sono **superati: il renderer Markdown viene tolto**;
 - `guide/render/markdown.cjs` non esiste; il caricatore del TSX (`guide/render/load.cjs`) serve **solo al sito**;
-- nuova decisione **D-155** in `DECISIONS.md` (§10). Il numero D-153 indicato nella richiesta è già usato dalla diagnostica e D-154 dalle copie di sicurezza dei database, entrambe in `main`: la prima libera è D-155.
+- nuova decisione **D-164** in `DECISIONS.md` (§10). Il numero D-153 indicato nella richiesta è già usato dalla diagnostica e D-154 dalle copie di sicurezza dei database, entrambe in `main`. La prima libera era D-155, ma D-155..D-163 sono andati alle funzioni entrate prima della Guida (D-155 è «Salute del kit»): la Guida è D-164 (correzione dell'ondata 4).
 
 Che cosa si perde: una versione della Guida leggibile su GitHub senza rete verso il sito e un confronto testuale riga per riga a ogni modifica. Il primo lo copre il sito (e l'app stessa, che ha la Guida dentro); il secondo lo coprono le prove di §8 (rendering di ogni argomento in ogni lingua, nessun widget mancante, link e immagini verificati).
 
@@ -255,10 +255,10 @@ Tutto avviene in un ramo, con merge in `main` solo alla fine: gli stati intermed
 
 Rischi complessivi: (1) un registro a livello di modulo: chi dimentica di registrarsi riceve un errore chiaro, non una pagina vuota; (2) un processo disegna quattro lingue di fila, quindi nessun `tr()` memorizzato al caricamento; (3) il testo deve restare vero fuori dall'app (`Only`); (4) i ripieghi di `Go` non devono produrre link alla pagina corrente.
 
-### 10.1 Testo proposto per D-155
+### 10.1 Testo proposto per D-164
 
 ```markdown
-## D-155 Guida neutra, pubblicata sul sito; niente più GUIDE.md
+## D-164 Guida neutra, pubblicata sul sito; niente più GUIDE.md
 
 - **Richiesta dell'utente** (22/10/2026): portare la Guida fuori dall'app e pubblicarla sul sito, una pagina per argomento e per lingua; togliere la versione Markdown.
 - **Cosa.** Il contenuto sta in `guide/` alla radice (`core/` modello, lingua, etichette, ricerca e contratto dei widget; `content/` i capitoli), senza import da `ui/` né da `site/`. Due renderer: l'app (`ui/src/guide`, widget interattivi) e il sito (`site/guide.mjs`, HTML statico con `renderToStaticMarkup`), pagine `/guide/<argomento>/` in inglese e `/<lingua>/guide/<argomento>/` per it, fr, de, con ricerca lato client, hreflang e sitemap.

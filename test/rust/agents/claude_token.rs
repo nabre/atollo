@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 /// A made-up token of the length `claude setup-token` prints.
 fn sample() -> String {
@@ -53,9 +53,7 @@ fn kit_env(kit: &Kit) -> KitEnv {
 /// `Atollo env` nor in `KitEnv`'s `Debug`.
 #[test]
 fn environment_with_and_without_token() {
-    let tmp = TempDir::new("claude-token");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("claude-token");
     let claude_env = |kit: &Kit| crate::agents::launch_env(kit, &kit_env(kit), "claude");
     assert_eq!(claude_env(&kit).get(VAR), None);
     assert_eq!(read(&kit), None);
@@ -96,9 +94,7 @@ fn environment_with_and_without_token() {
 #[test]
 fn token_file_is_private() {
     use std::os::unix::fs::PermissionsExt;
-    let tmp = TempDir::new("claude-token-mode");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("claude-token-mode");
     save(&kit, &sample()).unwrap();
     let mode = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
     assert_eq!(mode(&path(&kit)), 0o600);

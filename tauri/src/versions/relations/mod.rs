@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ranges::{Range, Version};
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 use checks::{links, runtimes};
 #[cfg(test)]
 pub use known::notes;
@@ -310,9 +310,7 @@ pub fn build(kit: &Kit, lang: &str) -> Matrix {
         .collect();
     Matrix {
         fingerprint: fingerprint(kit, lang),
-        generated: std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |d| d.as_secs()),
+        generated: crate::time::now_secs(),
         platform: target.as_str().to_owned(),
         links: sorted_links(links(lang, &here)),
         runtimes: {

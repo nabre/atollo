@@ -1,5 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 use std::fs;
 
 #[test]
@@ -54,9 +55,7 @@ fn validation() {
 
 #[test]
 fn round_trip_and_partial_file() {
-    let tmp = TempDir::new("settings-rt");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("settings-rt");
     let s = Settings {
         lang: Some("de".into()),
         network: Network {
@@ -86,9 +85,7 @@ fn broken_file_is_reported_not_replaced() {
 
 #[test]
 fn keys_of_a_newer_version_are_kept() {
-    let tmp = TempDir::new("settings-other");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("settings-other");
     fs::write(
         kit.settings_file(),
         r#"{"lang":"it","theme":"dark","network":{"allowLan":true,"pac":"http://wpad/"}}"#,
@@ -109,9 +106,7 @@ fn keys_of_a_newer_version_are_kept() {
 
 #[test]
 fn update_refused_leaves_the_file() {
-    let tmp = TempDir::new("settings-refused");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("settings-refused");
     fs::write(kit.settings_file(), "{\"lang\":\"de\"}").unwrap();
     let refused = Settings::update(&kit, |s, _| {
         s.lang = Some("es".into());
@@ -126,9 +121,7 @@ fn update_refused_leaves_the_file() {
 
 #[test]
 fn gemini_key_lives_in_its_own_file() {
-    let tmp = TempDir::new("settings-gemini");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("settings-gemini");
     let s = Settings {
         gemini_api_key: Some("AIza-secret".into()),
         ..Settings::default()
@@ -183,9 +176,7 @@ fn unreadable_gemini_key_is_not_absent() {
 
 #[test]
 fn gemini_key_of_an_older_version_moves() {
-    let tmp = TempDir::new("settings-gemini-old");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("settings-gemini-old");
     fs::write(
         kit.settings_file(),
         "{\"lang\":\"fr\",\"geminiApiKey\":\"AIza-old\"}",
@@ -203,9 +194,7 @@ fn gemini_key_of_an_older_version_moves() {
 
 #[test]
 fn pem_file_in_the_kit_is_saved_relative() {
-    let tmp = TempDir::new("settings-pem");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("settings-pem");
     let pem = kit.data().join("certs").join("company.pem");
     let mut s = Settings::default();
     s.network.extra_ca_certs = Some(pem.display().to_string());

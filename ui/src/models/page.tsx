@@ -31,9 +31,10 @@ import {
 } from "../api";
 import type { GuideTopicId } from "../guide";
 import { locale, t } from "../i18n";
-import { ComponentLogo } from "../logos";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useCopy, useLoad, useSubscription } from "../hooks";
+import { gb } from "../shared/format";
+import { ComponentLogo } from "../shared/logos";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useCopy, useLoad, useSubscription } from "../shared/hooks";
 import {
   Button,
   CheckboxLabel,
@@ -55,13 +56,8 @@ import {
   TextField,
   ViewContainer,
   ViewPane,
+  type DotTone,
 } from "../workbench";
-
-/** Bytes as GB with one decimal, in the interface's language. */
-export function gb(bytes: number): string {
-  const n = new Intl.NumberFormat(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(bytes / 1e9);
-  return `${n} GB`;
-}
 
 /** Memory (RAM, video) in GB of 1024³ bytes, as the system shows it. */
 export function mem(bytes: number): string {
@@ -106,7 +102,7 @@ function FitText({ fit }: { fit: Fit }) {
   );
 }
 
-function stateText(info: LlmInfo | null): { tone: "ok" | "warn" | "err" | "off"; text: string } {
+function stateText(info: LlmInfo | null): { tone: DotTone; text: string } {
   const state: ServiceState = info?.state ?? "stopped";
   if (info && !info.installed) return { tone: "off", text: t("Non installato: si installa al primo avvio") };
   switch (state) {

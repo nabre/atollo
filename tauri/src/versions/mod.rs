@@ -58,7 +58,7 @@ use serde::Serialize;
 
 use crate::fsx::{read_text, write_atomic};
 use crate::kit::Kit;
-use crate::setup::catalog::{Catalog, Component};
+use crate::setup::{Catalog, Component};
 
 /// The file with the full version, inside a saved folder.
 const VERSION_FILE: &str = ".atollo-version";

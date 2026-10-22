@@ -8,7 +8,9 @@ import en from "./locales/en.json";
 import fr from "./locales/fr.json";
 import de from "./locales/de.json";
 
-export type Lang = "it" | "en" | "fr" | "de";
+// One list of languages: the Guide's (a type, nothing loaded at start).
+import type { Lang } from "@guide/core/lang";
+export type { Lang };
 
 export const LANGS: { id: Lang; name: string }[] = [
   { id: "it", name: "Italiano" },

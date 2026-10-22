@@ -7,11 +7,9 @@
 //                                 playwright-core and the browser as make.mjs)
 import { chromium } from "playwright-core";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { launch, REPO as repo } from "../../scripts/lib/shots.mjs";
 
-const shots = dirname(fileURLToPath(import.meta.url));
-const repo = join(shots, "..", "..");
 // Inline: a page set from a string loads no file:// URL.
 const url = (...p) => {
   const type = p.at(-1).endsWith(".png") ? "image/png" : "font/woff2";
@@ -46,8 +44,7 @@ p { margin-top: 22px; font-size: 21px; line-height: 1.45; color: #b8b8b8; }
 <div class="shot"><img src="${url("site", "shots", "en", "shot-projects-dark.png")}"></div>
 </body></html>`;
 
-const channel = process.env.SHOTS_BROWSER ?? (process.platform === "win32" ? "msedge" : "chrome");
-const browser = await chromium.launch({ channel });
+const browser = await launch(chromium);
 const page = await browser.newPage({ viewport: { width: 1280, height: 640 }, deviceScaleFactor: 1 });
 await page.setContent(html, { waitUntil: "load" });
 await page.evaluate(() => document.fonts.ready);

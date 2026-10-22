@@ -1,5 +1,5 @@
 use super::*;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 #[test]
 fn processes_of_the_old_editor() {

@@ -6,7 +6,7 @@
 // and points at the list and its active option through ARIA's element
 // references, which reach the page from a shadow root (ids do not).
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { TextField } from "./controls";
+import { TextField } from "./inputs";
 
 export interface Suggestion {
   value: string;

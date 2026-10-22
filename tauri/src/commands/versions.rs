@@ -128,8 +128,8 @@ pub(super) fn install_now<R: Runtime>(
     }
     {
         let _one = crate::setup::catalog::choice_lock();
-        let mut choice = crate::setup::catalog::Choice::read(&kit, catalog)
-            .unwrap_or_else(|| crate::setup::catalog::Choice::defaults(catalog));
+        let mut choice = crate::setup::Choice::read(&kit, catalog)
+            .unwrap_or_else(|| crate::setup::Choice::defaults(catalog));
         choice.set(catalog, &id, true);
         choice.write(&kit, catalog).or_fail_chain("components")?;
     }

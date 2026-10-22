@@ -8,7 +8,7 @@ use crate::install::{target_of, Ctx, Installer, Release};
 use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// .NET SDK of the active LTS channel.
 pub struct Dotnet;

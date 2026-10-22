@@ -2,8 +2,8 @@
 // the kit's servers, written in .env, and their copies.
 import { useRef, useState } from "react";
 import type { ProjectInfo } from "../api";
-import { useAction, useCopy, useSubscription } from "../hooks";
-import { ActionButton, ErrorLine } from "../common";
+import { useAction, useCopy, useSubscription } from "../shared/hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import {
   onSetup,

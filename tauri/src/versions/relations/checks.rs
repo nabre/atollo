@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use super::known::known;
 use super::{admits, name_of, split, version_of, Have, Link, LinkStatus, RuntimeState};
 use crate::kit::{Kit, Os};
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use crate::versions::ranges::{Bare, Range};
 
 pub(super) fn links(lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Link> {

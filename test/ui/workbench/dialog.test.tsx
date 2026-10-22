@@ -7,15 +7,12 @@
 import { useRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { ConfirmDialog, InlineConfirm, useModalFocus } from "../../../ui/src/workbench";
-import { GuideShot } from "../../../ui/src/guide/widgets";
-import { DatabaseCopies } from "../../../ui/src/databases";
+import { ConfirmDialog, InlineConfirm, useModalFocus } from "@/workbench";
+import { GuideShot } from "@/guide/widgets";
+import { DatabaseCopies } from "@/databases";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

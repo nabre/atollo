@@ -4,17 +4,11 @@
 // out one by one.
 import { useCallback, useState } from "react";
 import { projectBasePreview, projectSaveBase, type BaseEntry } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
-import { locale, t } from "../i18n";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
+import { t } from "../i18n";
+import { formatBytes } from "../shared/format";
 import { CheckboxLabel, codicon, ConfirmDialog, Notice, TextField } from "../workbench";
-
-function size(bytes: number): string {
-  const kb = bytes / 1024;
-  return kb < 1024
-    ? `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(Math.max(1, kb))} KB`
-    : `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(kb / 1024)} MB`;
-}
 
 export function SaveBaseDialog({
   project,
@@ -106,12 +100,14 @@ export function SaveBaseDialog({
                     </CheckboxLabel>
                     <span className="flex-1" />
                     <span className="text-[12px] text-vsc-desc">
-                      {t("{0} file", String(e.files))} · {size(e.bytes)}
+                      {t("{0} file", String(e.files))} · {formatBytes(e.bytes)}
                     </span>
                   </li>
                 ))}
               </ul>
-              <p className="text-[12px] text-vsc-desc">{t("In tutto: {0} file, {1}", String(files), size(bytes))}</p>
+              <p className="text-[12px] text-vsc-desc">
+                {t("In tutto: {0} file, {1}", String(files), formatBytes(bytes))}
+              </p>
             </fieldset>
           )}
         </div>

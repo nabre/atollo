@@ -24,10 +24,10 @@ use crate::install;
 use crate::kit::{validate_project_name, Kit};
 use crate::projects::run::{Runner, State as RunState};
 use crate::settings::Settings;
-use crate::setup::catalog::{Catalog, Choice, Group};
 use crate::setup::runner::Options;
 use crate::setup::self_update::Updater;
 use crate::setup::task::{Notify, SetupTask, Snapshot};
+use crate::setup::{Catalog, Choice, Group};
 
 pub(crate) mod agents;
 pub(crate) mod app;
@@ -277,7 +277,7 @@ fn with_needs<'a>(
     catalog: &'a Catalog,
     ids: &[&str],
     target: crate::kit::Target,
-) -> Vec<&'a crate::setup::catalog::Component> {
+) -> Vec<&'a crate::setup::Component> {
     let found = catalog.with_needs_on(ids, target);
     catalog
         .all()

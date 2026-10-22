@@ -1,7 +1,7 @@
 // One base or addition as a group of settings (a tab of Settings, or a
 // search result), with the bar of a modified setting and «Ripristina».
 import { urlOpen, type FrameworkPiece, type FrameworksView } from "../api";
-import { ErrorLine } from "../common";
+import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { Link, Select, SettingItem, SettingsGroup } from "../workbench";
 import { bases, cleaned, pieceTab, slotLabel, textOf, type Frameworks } from "./model";

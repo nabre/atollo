@@ -2,15 +2,12 @@
 // the name and the description sent, then where to find it.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { BaseEntry } from "../../../ui/src/api";
-import { SaveBaseDialog } from "../../../ui/src/projects/savebase";
-import { basesByGroup, categoryLabel } from "../../../ui/src/frameworks/model";
+import type { BaseEntry } from "@/api";
+import { SaveBaseDialog } from "@/projects/savebase";
+import { basesByGroup, categoryLabel } from "@/frameworks/model";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

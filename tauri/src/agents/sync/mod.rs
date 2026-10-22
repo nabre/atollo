@@ -36,7 +36,7 @@ mod trust;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use anyhow::{bail, Result};
 use serde_json::Value;
@@ -104,6 +104,8 @@ impl Report {
 }
 
 /// Missing or empty file: `None`. Damaged: an error that says where.
+/// `fsx::try_read_json` on a [`Value`], the agents' files of other
+/// programs, so the callers name no type.
 pub fn read_json(file: &Path) -> Result<Option<Value>> {
     crate::fsx::try_read_json(file)
 }
@@ -116,9 +118,7 @@ pub fn read_state(file: &Path) -> Value {
         .unwrap_or(Value::Object(Default::default()))
 }
 
-pub fn write_json(file: &Path, v: &Value) -> Result<()> {
-    crate::fsx::write_json(file, v)
-}
+pub use crate::fsx::write_json;
 
 /// JSON with sorted keys: two servers are equal when their settings are.
 pub fn canonical(v: &Value) -> String {
@@ -144,9 +144,7 @@ pub fn canonical(v: &Value) -> String {
 
 /// `yyyymmdd-hhmmss` (UTC), for kept copies.
 pub fn stamp() -> String {
-    let secs = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs());
+    let secs = crate::time::now_secs();
     let days = secs / 86_400;
     let (y, m, d) = civil_from_days(days as i64);
     let rem = secs % 86_400;

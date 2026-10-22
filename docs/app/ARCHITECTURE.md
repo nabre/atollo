@@ -2,7 +2,7 @@
 
 English · [Italiano](ARCHITECTURE.it.md)
 
-How Atollo's code is organized and where a new change goes. The reasons behind the choices are in [DECISIONS.md](DECISIONS.md) (in Italian), usage in [GUIDE.md](GUIDE.md), what is new in [CHANGELOG.md](CHANGELOG.md) (in Italian), tests in [TESTING.md](TESTING.md). Open work is in the [GitHub issues](https://github.com/nabre/atollo/issues).
+How Atollo's code is organized and where a new change goes. The reasons behind the choices are in [DECISIONS.md](DECISIONS.md) (in Italian), usage in the [Guide](https://nabre.github.io/atollo/guide/), what is new in [CHANGELOG.md](CHANGELOG.md) (in Italian), tests in [TESTING.md](TESTING.md). Open work is in the [GitHub issues](https://github.com/nabre/atollo/issues).
 
 ## Requirements
 
@@ -13,7 +13,7 @@ From the initial prompt (October 13-14, 2026), valid for every change; each one 
 3. **No writes outside the kit**: no registry, system `PATH`, real `%APPDATA%`, `%LOCALAPPDATA%` or `%TEMP%`; the only exceptions are the ones declared in the README (D-41, D-70, D-90, D-115).
 4. **Paths relative to the kit root**, which works from any folder (spaces, parentheses, `&`) and after a move (relocation at startup).
 5. **WebView in the kit**: the system WebView2 or a fixed one in `data\apps\…\webview2\`, never the bootstrapper; WebView data in `data\webview2\` (on macOS it stays in `~/Library/WebKit`, a declared trace).
-6. **Always the kit's environment**: every process started gets the environment from `env.rs`, never the user's `PATH` unfiltered.
+6. **Always the kit's environment**: every process started gets the environment from `env\`, never the user's `PATH` unfiltered.
 7. **A single instance per kit**, with a notice about the other open copies.
 8. **No orphan processes**, even if the app is force-closed (Job Object on Windows, groups and a guard on macOS and Linux: D-07, D-105).
 9. **Security**: Tauri commands only for the `main` window, editor windows without IPC, strict CSP; servers only on `127.0.0.1` with a token; arguments as a vector, never a line for the shell; validated names; downloads with a checksum or signature; secrets never in the logs.
@@ -39,12 +39,16 @@ tauri\
                               (allow-local-models, D-151), the in-app terminal (D-148)
   build.rs                    list of commands (COMMANDS) and asInvoker manifest
 ui\src\                       React + TypeScript interface (below)
+guide\                        the Guide's text, neutral: core\ (contract, model, language), content\ (the
+                              chapters), render\load.cjs (the site's loader); drawn by the app and the site (below)
 test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src
 runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
-scripts\                      dev-ui.mjs (npm run dev), guide-docs.cjs, guide-shots\, vscodium-css\, matrix\,
-                              test-linux.sh, cross-check\, build-httpd\, build-php\
-site\                         the site (build.mjs, strings\, template.html); shots\ (screenshots per language)
+scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
+                              test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
+                              preview, languages and labels shared by the screenshot scripts and the site)
+site\                         the site (build.mjs, strings\, landing.html, partials\; guide.mjs and guide.html,
+                              the Guide's pages); shots\ (screenshots per language)
 docs\app\                     decisions, architecture, catalog, tests, changelog, guide, TOOLS-MATRIX.html
 docs\brand\                   logo, themes, the scripts that generate them; vscodium-1.135\ (the workbench
                               reference); social.png (the social card), brand.png (the brand board)
@@ -59,20 +63,27 @@ A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`cli.r
 
 | Layer | Modules | What they do |
 | --- | --- | --- |
-| Startup | `main.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | startup order ("Startup", above), command line, single instance, WebView2 |
+| Startup | `main.rs`, `app.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | startup order ("Startup", above), command line, single instance, WebView2 |
 | Commands | `commands\` | the interface's only entry point: they check the window, translate the errors, call the domain |
 | Domain | the folders per area (below) | components, versions, projects, editor and console, agents, local models, databases, web servers, GitHub |
-| Infrastructure | `kit.rs`, `fsx.rs`, `env.rs`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
+| Infrastructure | `kit\`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, clock, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
 
 ```
 tauri\src\
-  main.rs  cli.rs             startup, windows, shutdown; command line
-  kit.rs                      root, paths, first run, move, valid names
-  env.rs                      kit environment and PATH
+  main.rs  app.rs  cli.rs     startup; the app, its windows and shutdown; command line and its commands
+  kit\                        mod (paths, first run, move), target (Os, Arch, Target), root (bundle,
+                              AppImage), names (valid project names)
+  env\                        kit environment: mod (Host, KitEnv, build in parts), langs, unix (D-112),
+                              path (PATH), secrets (masking)
   fsx.rs                      kit files: reading, JSON, atomic writes (below)
+  time.rs                     the clock: now_secs, now_ms since the Unix epoch
   settings.rs                 data\app\settings.json (one change at a time, `Settings::update`), Gemini key file
   log.rs  i18n.rs             log with masked secrets; language and catalogs
   ports.rs                    who has each port: pools, database versions, actions, editor, local models (D-141, below)
+  diagnostics.rs              "Export diagnostics", `Atollo diagnostics`: the zip in data\app\diagnostics, secrets masked (D-153)
+  health.rs                   "Kit health", `Atollo check --kit`: drive, free space, path, permissions, libraries (D-155)
+  backup.rs                   "Copy of the kit": export to a folder or a zip; an import applied at the next start (D-163)
+  tray.rs                     the icon in the notification area: show, projects, quit (D-145)
   commands\                   Tauri commands (below)
   setup\                      components and installation
     catalog  needs            embedded catalog, components.txt; what agents, clone, actions need (D-59)
@@ -81,7 +92,8 @@ tauri\src\
     kit_files  self_update    files written to data\kit\; new version of the exe
   install\                    one installer per family: core, agents (Pi too), llama (llama.cpp, D-151), web, caddy,
                               native, editor, db, android;
-                              conda (packages kept to reinstall without the network, D-118)
+                              conda (packages kept to reinstall without the network, D-118); the shared path:
+                              mod (types, Installer, registry), flow, parts, keys
     lang\                     one file per language or family: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
   versions\                   saved versions (D-80)
@@ -94,8 +106,11 @@ tauri\src\
     state  migrate            data\projects\<p>\ (D-89): paths, orphans, adoption; migration 1 → 2 at startup
     alias                     site aliases: validated URL and target, a single resolver (D-77)
     settings  mcp  vscode     dev-settings.json (D-63), MCP servers, .vscode\settings.json (D-78)
-    run  serve  apache        started actions and ports (D-50); file server (D-51); the project's Apache
-    caddy  fastcgi            the project's Caddy and Caddyfile text, admin on a socket (D-111); php-cgi and php-fpm
+    run\                      started actions (D-50): mod (Runner, state, stop), ports, output, start, pool
+    serve  apache             file server (D-51); the project's Apache
+    caddy\                    the project's Caddy (D-111): mod, socket (private sockets of the admin endpoint
+                              and php-fpm), conf (Caddyfile text), command
+    fastcgi                   php-cgi and php-fpm
     frameworks\               "New project" (D-83): mod (catalog and edits), validate, plan, target, runner,
                               mine (the bases saved from a project, "Le mie basi", D-162)
   detect\                     type, languages and actions of a project: mod, node, php, python, rust, go,
@@ -122,6 +137,8 @@ tauri\src\
     keyring  relocate         Antigravity sign-in (D-115; keyring\portable: the parts tested on every system);
                               paths rewritten after a move
     claude_token              Claude Code token on macOS (D-115)
+    presets  github_mcp       ready MCP servers (D-156); `Atollo mcp github`, the stdio bridge to GitHub's server
+                              that keeps the token out of the agent's environment (SEC-V7-01)
   db\                         databases
     engine                    DbEngine: MySQL, MongoDB (D-110)
     services\                 kit servers (D-73): mod (settings, start, stop, one operation at a time per engine:
@@ -162,6 +179,7 @@ data\
     secrets\                  gemini-api-key, llama-key (the local models' server), hf-token (Hugging Face),
                               readable by the owner only (D-137, D-151)
     llm.json                  the local models' settings: port, automatic start, Pi's model (D-151)
+    diagnostics\              the zips of "Export diagnostics" (D-153)
     llm\presets.ini           the local models' server presets, written at every start
     conda\<target>\           packages and lists to recreate the conda environments without the network (D-118)
     db\                       secrets.json (root and admin only), mysql.cnf and mysql-lines\<line>\mysql.cnf
@@ -202,9 +220,9 @@ In the system temp, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<st
 Folder rules:
 - a module named after its area is the folder's `mod.rs` (`editor\mod.rs`, not `editor\editor.rs`: clippy rejects it), so `crate::editor::Editor` and `crate::versions::*` stay short; folders without logic of their own (`db\`, `setup\`, `os\`) hold only the description of the area in `mod.rs`;
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
-- paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`;
+- paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `env.rs` (a single algorithm, `KitEnv::build`), `projects\run.rs` (a state machine) and `editor\ext.rs` stay whole. The other files should stay under 900 lines; today only `install\mod.rs` goes over (below, "Opportunities"). The Guide's texts (`ui\src\guide\topics\`) are text, not code.
+- a file is split when it has parts that read on their own; `editor\ext.rs` and `editor\pty.rs` (the PTY sessions on every system, over 900 lines) stay whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`guide\content\`) are text, not code.
 
 ### Tauri commands (`commands\`)
 
@@ -270,7 +288,7 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 
 ### Ports
 
-`ports.rs` (D-141) tells who has each port, from the files only and without taking any lock, so whoever already holds its own can ask:
+`ports.rs` (D-141) also has the two probes of a port, `responds` and `is_port_free` (IPv4 and IPv6 loopback), used by the actions, the database servers, the local models and the pools. It tells who has each port, from the files only and without taking any lock, so whoever already holds its own can ask:
 
 | Owner (`Owner`) | From | Range |
 | --- | --- | --- |
@@ -285,7 +303,7 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 ### Local hosts and the project's `conf.d`
 
 - The static file server (`projects\serve.rs`, `is_local_host_header`) and `php -S` (`runtime\php-router.php`) answer `localhost`, `*.localhost`, `127.0.0.1` and `[::1]`; with "Local network" (`ATOLLO_ALLOW_LAN=1`) also a literal IP address, so the other devices of the network reach them by the PC's IP. Any other name gets 403 from the file server and 421 from `php -S` (DNS rebinding cannot read the project).
-- `data\projects\<p>\apache\conf.d\*.conf` and `caddy\conf.d\*.caddy` hold the user's own directives. The dedicated Apache includes them (`IncludeOptional`), and so does the site's vHost in an Apache pool (`servers\config.rs`); the project's own Caddy (`projects::caddy::project_conf`) and a Caddy pool import them only when the folder has a `.caddy` file (`caddy::has_snippets`: an `import` that matches nothing stops Caddy).
+- `data\projects\<p>\apache\conf.d\*.conf` and `caddy\conf.d\*.caddy` hold the user's own directives. The dedicated Apache includes them (`IncludeOptional`), and so does the site's vHost in an Apache pool (`servers\config.rs`); the project's own Caddy (`projects::caddy::project_conf`) and a Caddy pool import them only when the folder has a `.caddy` file (`caddy::has_snippets`: an `import` that matches nothing stops Caddy). A folder written into `httpd.conf` or a Caddyfile goes through `apache::quoted_path` or `caddy::quoted_path`, which refuse a name with `"`, `\`, a line break or `${` (the folder is then not served): a cloned repository's folder name never becomes a directive (BUG-V7-09).
 
 ### Processes
 
@@ -305,32 +323,31 @@ In the modules `anyhow::Result`, with the context the log needs. Commands return
 | --- | --- | --- |
 | Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar |
 | Toward Rust | `api\` | one file per area, like `commands\` (above); `index.ts` re-exports them, pages import from `./api`; `preview-runs.ts` plays the actions in the browser preview |
-| Shared hooks | `hooks.ts` | `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below) |
-| Shared pieces | `common.tsx` | `ActionButton`, `ErrorLine`, `editorHint` |
+| Shared helpers | `shared\`: `hooks.ts`, `common.tsx`, `format.ts`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | helpers without a page, used by several folders: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below); `ActionButton`, `ErrorLine`, `editorHint`, the port fields (`usePortField`, `validPort`); sizes as text (`formatBytes`, `gb`, `sizeText`); tags, the brands' logos, the brand; the quick pick of Quick Open and of the command palette |
 | Base components | `workbench\` | the VSCodium controls (`@vscode-elements/elements`), the codicons and the workbench parts (below); from the rest of the app it imports only `i18n` |
 | Theme | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | fonts, the codicon font and brand touches; `--vsc-*` colors for Tailwind; all the VS Code `--vscode-*` variables; VSCodium 1.135's sizes and the `--vsc-size-*` measures (the last three generated, below) |
-| Large pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `models\`, `terminal\`, `guide\` | one folder per page or part, with an `index.ts` that exports only what the other pages use |
-| Other pages | `servers.tsx`, `terminals.tsx`, `relations.tsx`, `extensions.tsx`, `eject.tsx`, `setup.tsx` | one page or one section per file |
-| Window and brand pieces | `titlebar.tsx`, `activity.tsx`, `brand.tsx`, `logos.tsx`, `tags.tsx`, `byhand.tsx`, `freeze.ts` | used by several folders, so in the root of `ui\src`; `activity.tsx` has the Activity panel and `useRunning`, the one count of what runs (actions, database versions, local models, pools) for the status bar, the Projects badge and the panel, with "Stop all" after a confirmation; `freeze.ts` freezes the prototypes of the main window only |
+| Pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `models\`, `servers\`, `terminal\`, `guide\` | one folder per page or part, with an `index.ts` that exports only what the other pages use |
+| Window frame | `shell\`: `titlebar.tsx`, `activity.tsx`, `commands.tsx`, `eject.tsx`, `update.ts`, `freeze.ts`, `freezeproto.ts` | the title bar; `activity.tsx` has the Activity panel and `useRunning`, the one count of what runs (actions, database versions, local models, pools) for the status bar, the Projects badge and the panel, with "Stop all" after a confirmation; the command palette (D-160); "Remove the drive" and closing; the update's words; `freeze.ts` freezes the prototypes of the main window only |
 | Texts | `i18n.ts`, `locales\*.json` | `t("Italian sentence")`; the test checks the four languages |
 
 The page folders:
 
 | Folder | Files |
 | --- | --- |
-| `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx` |
-| `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases) |
+| `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx`, `extensions.tsx` (editor extensions by language: the kit's matrix and a project's own) |
+| `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases), `engines.ts` (the engines' names, `ENGINE_NAMES`) |
 | `agents\` | `page.tsx` (Agents page, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limits and consumption), `token.tsx` (Claude Code's token on macOS) |
 | `models\` | `page.tsx` (Local models page: server, Pi's model, Atollo's catalog, Hugging Face, this PC; D-151) |
 | `frameworks\` | `model.ts` (data and hooks), `fields.tsx` (instruction fields), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (kit versions), `project.tsx` (versions of a project), `lines.tsx` (line choice) |
 | `github\` | `account.tsx`, `identity.tsx` (who signs the commits), `repos.tsx`, `details.tsx` |
 | `settings\` | `page.tsx` (seven sections: General, Network, Agents, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `about.tsx` (kit and updates) |
-| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts` |
-| `terminal\` | the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `font.ts` (Geist Mono before xterm.js measures), `api.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |
-| `guide\` | `model.ts` (chapters, topics, search words), `topics\` (the text, one file per chapter), `sections.tsx`, `widgets.tsx`, `sources.ts`, `page.tsx` (D-136) |
+| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (relations matrix), `setup.tsx` (the setup in progress), `byhand.tsx` (files downloaded by hand) |
+| `servers\` | `page.tsx` (Web server page: Caddy and Apache pools) |
+| `terminal\` | `page.tsx` (Terminals page: the saved kit consoles); the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `font.ts` (Geist Mono before xterm.js measures), `api.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |
+| `guide\` | the app's renderer of the Guide (the text is in `guide\` at the root, below): `page.tsx` (D-136), `widgets.tsx` (the contract's widgets, `GuideNavContext`), `live.tsx` (the kit's card, the sources table with the components' state, the problems' search), `register.ts` (the app's language and `APP_WIDGETS`), `sections.tsx` |
 
-A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `common.tsx` if several folders use it.
+A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `shared\` if several folders use it. An import that would climb more than one folder is written with the `@/` alias (`ui\tsconfig.json`, `ui\vite.config.ts`); the Guide's text with `@guide/` (the `guide\` folder at the root).
 
 ### `api\`
 
@@ -338,7 +355,7 @@ A module does not import whoever imports it: no cycle among the files of `ui\src
 - A computed preview (`sampleStats()`) is written as `browserPreview ? … : invoke(…)`, so that it is not computed when the app is running.
 - The types mirror the Rust structs with `serde(rename_all = "camelCase")`.
 
-### Hooks (`hooks.ts`)
+### Hooks (`shared\hooks.ts`)
 
 - `useSubscription(onRun, handler)` registers a listener only once, passes every event to the latest `handler` and removes it on unmount even if the registration finishes later.
 - `useEvery(read, ms)` reads right away and then every `ms`; `read` must be kept stable with `useCallback`.
@@ -346,11 +363,11 @@ A module does not import whoever imports it: no cycle among the files of `ui\src
 - `useAction(onDone)` runs an action with the wait state and the last error.
 - `useCopy(resetMs)` copies to the clipboard; `copied` goes back to false after `resetMs`, if given.
 
-Reads still written by hand, because `useLoad` would change what the user sees: an error that stays even after a successful read (`App.tsx` for the information, `eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, where the same error also covers start and stop); chained reads or reads that fill a form (`components\page.tsx`, `projects\editorsettings.tsx`); reads with arguments or with their own requests and wait state (`frameworks\model.ts`, `github\repos.tsx`, `relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `setup.tsx`).
+Reads still written by hand, because `useLoad` would change what the user sees: an error that stays even after a successful read (`App.tsx` for the information, `shell\eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, where the same error also covers start and stop); chained reads or reads that fill a form (`components\page.tsx`, `projects\editorsettings.tsx`); reads with arguments or with their own requests and wait state (`frameworks\model.ts`, `github\repos.tsx`, `components\relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `components\setup.tsx`).
 
 ### `workbench\`
 
-The controls are VSCodium's: `@vscode-elements/elements` (D-88), registered once in `elements.ts` with their ES modules, never with `dist/bundled.js` (the React wrappers import the same modules). Pages use only the components of `workbench\`, with the same props as before.
+The controls are VSCodium's: `@vscode-elements/elements` (D-88), registered once in `elements.ts` with their ES modules, never with `dist/bundled.js` (the React wrappers import the same modules). Pages use only the components of `workbench\`, with the same props as before. The controls are in `buttons.tsx`, `inputs.tsx` and `indicators.tsx` (what fields and buttons share in `fields.ts`, not exported); `index.ts` exports them all.
 
 | Component | Drawn with |
 | --- | --- |
@@ -369,12 +386,12 @@ The controls are VSCodium's: `@vscode-elements/elements` (D-88), registered once
 Rules for whoever adds a control:
 - fields and selects send a `change` that does not bubble: React's `onChange` on a hand-written `<vscode-*>` tag never fires. Use the wrappers (`VscodeTextfield`…) or a `workbench\` primitive;
 - on a hand-written `<vscode-*>` tag write `class` and `for`, not `className` and `htmlFor`; the JSX types are in `elements.ts`;
-- an icon is a codicon (`Codicon` or `codicon(name)`); `react-icons` gives only the brand logos (`logos.tsx`, Simple Icons) and the `IconType` type, and nothing imports `react-icons/vsc` (a test checks it);
+- an icon is a codicon (`Codicon` or `codicon(name)`); `react-icons` gives only the brand logos (`shared\logos.tsx`, Simple Icons) and the `IconType` type, and nothing imports `react-icons/vsc` (a test checks it);
 - `vscode-icon` needs the codicon CSS with the id `vscode-codicon-stylesheet` (`elements.ts` adds it, disabled in the page) and takes its color from `--vscode-icon-foreground`: for the color of the surrounding text, `[--vscode-icon-foreground:currentColor]`;
 - a color always comes from a theme variable (`--vscode-*` or a `vsc-*` token), never written by hand; the exceptions are VSCodium's fixed values (the red of the Close button) and the logo colors;
 - a measure (height, width, padding, radius, shadow) always comes from `theme-sizes.css`: a `--vscode-*` size of VSCodium's registry or a `--vsc-size-*` token with its utility (`h-vsc-*`, `w-vsc-*`, `size-vsc-*`), never a number written in a component (D-142).
 
-These stay native, with the reason in the file: the window buttons (`titlebar.tsx`), activity bar and status bar (`App.tsx`), the agent choice with the logos (`agents\page.tsx`, `radio` role), the locked menu button in `versions\kit.tsx`. Since October 21, 2026 the workbench also has `ToggleButton` (text and `aria-pressed`, the wizard's choices), `Meter` (`meter` role with a value, the limits in `agents\stats.tsx`) and `SuggestField` (`workbench\suggest.tsx`, a `TextField` with the suggestion list drawn under it, replacing the `<datalist>` of `extensions.tsx`, which does not cross the shadow root). `workbench\elements.ts` registers only the `vscode-elements` components in use, each from its own module; `elements.test.tsx` checks that every tag drawn is registered.
+These stay native, with the reason in the file: the window buttons (`shell\titlebar.tsx`), activity bar and status bar (`App.tsx`), the agent choice with the logos (`agents\page.tsx`, `radio` role), the locked menu button in `versions\kit.tsx`. Since October 21, 2026 the workbench also has `ToggleButton` (text and `aria-pressed`, the wizard's choices), `Meter` (`meter` role with a value, the limits in `agents\stats.tsx`) and `SuggestField` (`workbench\suggest.tsx`, a `TextField` with the suggestion list drawn under it, replacing the `<datalist>` of `projects\extensions.tsx`, which does not cross the shadow root). `workbench\elements.ts` registers only the `vscode-elements` components in use, each from its own module; `elements.test.tsx` checks that every tag drawn is registered.
 
 Tests: `test\ui\workbench\controls.test.tsx` (events that really fire, controlled values, Enter, accessible names), `elements.test.tsx` (registration), `codicon.test.tsx` (glyphs of the bundled font, sizes, no `react-icons/vsc`), `layout.test.tsx`, `list.test.tsx`, `dialog.test.tsx`, `settings.test.tsx`. jsdom has no `adoptedStyleSheets`: `test\ui\setup.ts` provides an empty version of it, which draws nothing.
 
@@ -399,21 +416,37 @@ The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.
 | --- | --- |
 | `site/shots/make.mjs` | the site's six screenshots (Projects with Activity, Agents, Tools matrix; dark and light; 1280×820 at 2×) in `site/shots/<lang>/` for en, it, fr, de (`SHOTS_LANGS` limits them, D-143); `site/build.mjs` copies them to `assets/shots/<lang>/` for the page of that language, and each README shows its own |
 | `site/shots/social.mjs` | `docs/brand/social.png` (1280×640), the social card, from `en/shot-projects-dark.png`: it stays in English |
-| `scripts/guide-shots/make.mjs` | the Guide's 52 screenshots, `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which `docs/app/GUIDE*.md` reuse |
+| `scripts/guide-shots/make.mjs` | the Guide's screenshots (every page of the activity bar, the project's tabs, the new project), `ui/public/guide/<lang>/*.webp` (light theme, 1280×800 at 1.25×, without the preview badge; webp with Pillow; `GUIDE_SHOTS_LANGS` limits the languages), which the site's Guide copies |
 
 `npm run dev` (`tauri dev`) starts `scripts/dev-ui.mjs` as `beforeDevCommand`: Vite runs in that process and the process ends when the shell that started it is gone, when the stdin pipe Tauri hands down closes, or on SIGINT/SIGTERM/SIGHUP, so closing the app frees port 5173 (D-138). A port already taken is reported with who has it, never stopped.
 
+## The Guide (`guide\`) and the site
+
+The Guide's text lives in `guide\` at the root and imports nothing from the app or the site, only React and its own files (D-164). Two renderers draw it: the app (`ui\src\guide`, the Guide page) and the site (`site\guide.mjs`, one static page per topic and language at https://nabre.github.io/atollo/guide/). There is no Markdown copy.
+
+| Folder | What it holds |
+| --- | --- |
+| `guide\core\` | `lang.ts` (`tr()` with the four texts, `rich()`, the language each renderer binds with `bindGuideLang`), `model.ts` (chapters, topics with a codicon name, keywords and the page they describe; `pageTopic`, `chapterTitle`), `widgets.ts` (**the contract**: the widgets' names and props, stand-ins that draw the registered renderer's widget), `labels.ts` (the words the widgets write), `search.ts` (the search rule, one for the app and the site), `types.ts` |
+| `guide\content\` | one file per chapter (`start.tsx` … `help.tsx`), `sources.ts` (the table of sources, D-108), `folders.ts`, `index.ts` (every topic's text) |
+| `guide\render\load.cjs` | the site's loader: `typescript.transpileModule`, React's automatic JSX; it refuses any import outside `guide\` |
+
+Rules for the text: no `className` or `style` (a widget instead: `Terms`, `WindowSketch`, `Code` with `indent`); the kit (`info`) only inside `KitInfo`; links are `See`, `Go` and a card's `to`, never a function; a sentence true only in the app or only on the site goes in `Only`. Nothing keeps a `tr()` result from load time: the site draws the four languages in one process. `test\ui\guide\contract.test.ts` checks the imports and the classes, and that the app and the site draw every widget of the contract.
+
+The site (`site\build.mjs`) renders page descriptors: language, address in every language, model (`landing.html` or `guide.html`, both with `partials\head.html`, `header.html`, `footer.html`) and values; from them it writes the language menu (to the same page), canonical, hreflang, og:url and `sitemap.xml`. For the Guide, `site\guide.mjs` adds `<lang path>guide\search.json` (titles, subtitles, codes and keywords), copies the screenshots of `ui\public\guide\<lang>\` to `assets\guide\<lang>\` and draws the codicons from `@vscode/codicons`; `site\assets\guide.css` and `guide.js` (search, copy, zoom, filters). `node site/build.mjs --check` also checks the pages, the sitemap and the relative links.
+
+In the app's build each chapter is a chunk of its own (`guide-<chapter>`), `guide\core` and the sources `guide-base` (`ui\vite.config.ts`); `scripts\guide-chunks.mjs` fails after the build when one is missing.
+
 ## Opportunities found, not yet done
 
-From the analysis of October 15, 2026, checked again on October 21. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88); VSCodium 1.135's measures as tokens and the codicons from their font (D-142). Only item 10 remains:
+From the analysis of October 15, 2026, checked again on October 21. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88); VSCodium 1.135's measures as tokens and the codicons from their font (D-142). All of them are done:
 
-1. ~~**Read error that stays on screen**~~: done on October 21, 2026. The error already cleared after a successful read; what was missing was protection from an older read answering late. The kit's information (`App.tsx`), the "Remove the drive" list (`eject.tsx`) and the settings (`settings\autosave.ts`) go through `useLoad` with `"show"`; Settings and the first start have "Retry". `databases\page.tsx` already used it.
+1. ~~**Read error that stays on screen**~~: done on October 21, 2026. The error already cleared after a successful read; what was missing was protection from an older read answering late. The kit's information (`App.tsx`), the "Remove the drive" list (`shell\eject.tsx`) and the settings (`settings\autosave.ts`) go through `useLoad` with `"show"`; Settings and the first start have "Retry". `databases\page.tsx` already used it.
 2. ~~**In-page confirmations without `alertdialog`**~~: done on October 17, 2026 (D-106), the four confirmations use `InlineConfirm`.
 3. ~~**Preview reused by the tests**~~: done on October 21, 2026. `api\` exports the preview's data (`SAMPLE_*`, `NOTHING_OPEN`) and `App.test.tsx`, `autosave.test.ts`, `program-temp.test.tsx` and `databases.test.tsx` start from it. Only the cases the preview lacks stay hand-written (components unavailable on ARM64, the frameworks plan, `RunInfo`).
 4. ~~**`tool-versions.json` in the matrix fingerprint**~~: done on October 21, 2026, the file is no longer part of the fingerprint and the `_doc` of `tauri\catalog\relations.json` names `versions\relations\`.
 5. ~~**Interface bundle**~~: done on October 21, 2026. Only the components in use are registered; Settings, Tools (with the first start) and the wizard load when opened, and pointing at their activity-bar item preloads them; React, logos, translations and each Guide chapter in separate files (`ui\vite.config.ts`). Main file from 1,190 kB (357 compressed) to 258 kB (73). Loading only the active language would save about 140 kB more, but switching language would become asynchronous.
 6. ~~**Controls still native**~~: done on October 21, 2026, `ToggleButton`, `Meter` and `SuggestField` (above, "These stay native").
 7. ~~**`projectmcp.tsx`** not imported~~: it was already used by the project page; since October 17, 2026 it is `projects\mcp.tsx`.
-8. ~~**Files over 900 lines**~~: done on October 21, 2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` and `agents\keyring.rs` are folders with one file per part, the longest 447 lines; the tests in `test\rust\` follow the same split.
+8. ~~**Files over 900 lines**~~: done on October 21, 2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` and `agents\keyring.rs` are folders with one file per part; the tests in `test\rust\` follow the same split.
 9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in `topics\`, one file per chapter; the longest ones (`topics\projects.tsx`) are text.
-10. **`install\mod.rs`** (956 lines): the last code file over 900 lines, to be split like the installers above.
+10. ~~**`install\mod.rs`**~~: done in the v7 report's wave 2 (STR-V7-05), split into `flow.rs`, `parts.rs` and `keys.rs`.

@@ -16,7 +16,15 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    // Aliases, also in vite.config.ts: the app (@/), the Guide's content
+    // at the root (@guide/, D-164) and the tests' helpers (@test/), in
+    // place of deep relative paths.
+    "paths": {
+      "@/*": ["./src/*"],
+      "@guide/*": ["../guide/*"],
+      "@test/*": ["../test/ui/*"]
+    }
   },
   "include": ["src", "vite.config.ts"]
 }

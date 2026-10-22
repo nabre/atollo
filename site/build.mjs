@@ -10,20 +10,24 @@
 // in the app, drawn here into plain SVG: the page runs no React. After
 // npm ci (the ui workspace's react, react-dom and react-icons):
 // node site/build.mjs. Published by .github/workflows/site.yml.
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+// The Guide's pages, one per topic and language, come from site/guide.mjs
+// (D-164). `--check` also checks the pages, the sitemap and the links.
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { RiArrowDownSLine, RiComputerLine, RiMoonLine, RiSunLine } from "react-icons/ri";
+import { guidePages, topicPath } from "./guide.mjs";
 import { loadCatalog, matrixHtml } from "./matrix.mjs";
+import { LANGS } from "../scripts/lib/shots.mjs";
 
 const site = dirname(fileURLToPath(import.meta.url));
 const repo = dirname(site);
 const out = join(repo, "_site");
 const base = "https://nabre.github.io/atollo/";
 // English first: the root page, x-default and the keys every language must have.
-const langs = ["en", "it", "fr", "de"];
+const langs = LANGS;
 const pathOf = (lang) => (lang === "en" ? "" : `${lang}/`);
 // og:locale of each page.
 const locales = { en: "en_US", it: "it_IT", fr: "fr_FR", de: "de_DE" };
@@ -68,7 +72,18 @@ const keywords = [
   "Tauri",
 ].join(", ");
 
-const template = readFileSync(join(site, "template.html"), "utf8");
+// The pages' models: a page (landing.html, guide.html) includes the
+// partials (partials/head.html, header.html, footer.html) with {{> name}},
+// then its values fill the {{key}}s.
+const partials = Object.fromEntries(
+  ["head", "header", "footer"].map((n) => [n, readFileSync(join(site, "partials", `${n}.html`), "utf8").replace(/\n$/, "")]),
+);
+const model = (file) =>
+  readFileSync(join(site, file), "utf8").replace(/\{\{> (\w+)\}\}/g, (_, n) => {
+    if (!(n in partials)) throw new Error(`${file}: no partial ${n}`);
+    return partials[n];
+  });
+const landing = model("landing.html");
 const strings = Object.fromEntries(
   langs.map((l) => [l, JSON.parse(readFileSync(join(site, "strings", `${l}.json`), "utf8"))]),
 );
@@ -126,8 +141,7 @@ mkdirSync(join(out, "assets"), { recursive: true });
 
 // The app as search engines describe it (schema.org SoftwareApplication),
 // in the page's language; "<" escaped so no string can close the script.
-const jsonLd = (lang) =>
-  JSON.stringify({
+const appLd = (lang) => ({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "Atollo",
@@ -150,7 +164,8 @@ const jsonLd = (lang) =>
     screenshot: `${base}assets/shots/${lang}/shot-projects-dark.png`,
     author: { "@type": "Person", name: "nabre", url: "https://github.com/nabre" },
     keywords,
-  }).replaceAll("<", "\\u003c");
+  });
+const jsonLd = (lang) => JSON.stringify(appLd(lang)).replaceAll("<", "\\u003c");
 
 // The root page (English, x-default) follows the system's language: the
 // first of navigator.languages the site speaks, English if none, unless a
@@ -163,11 +178,17 @@ const langDetect =
   `if(l&&l!=="en"&&${JSON.stringify(langs.filter((l) => l !== "en"))}.indexOf(l)>=0)` +
   `location.replace(new URL(l+"/"+location.search+location.hash,location.href))}catch(e){}</script>`;
 
-for (const lang of langs) {
-  const root = lang === "en" ? "" : "../";
+// A page of the site in one language: `path(l)` is its address in language
+// l (from the site's root: "", "it/", "guide/isolation/"), so the language
+// menu, canonical, og:url, the hreflang alternates and the sitemap all
+// follow it; `values` fill its model's own {{key}}s and may replace the
+// common ones (title, description, jsonLd...). (GUI-V7-12)
+function renderPage({ lang, path, model: html, name, values: own }) {
+  const here = path(lang);
+  const root = "../".repeat(here.split("/").length - 1);
   const alternates = langs
-    .map((l) => `<link rel="alternate" hreflang="${l}" href="${base}${pathOf(l)}">`)
-    .concat(`<link rel="alternate" hreflang="x-default" href="${base}">`)
+    .map((l) => `<link rel="alternate" hreflang="${l}" href="${base}${path(l)}">`)
+    .concat(`<link rel="alternate" hreflang="x-default" href="${base}${path("en")}">`)
     .join("\n");
   const ogLocales = [`<meta property="og:locale" content="${locales[lang]}">`]
     .concat(langs.filter((l) => l !== lang).map((l) => `<meta property="og:locale:alternate" content="${locales[l]}">`))
@@ -175,7 +196,7 @@ for (const lang of langs) {
   const item = (l) =>
     l === lang
       ? `<li><span aria-current="page" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</span></li>`
-      : `<li><a href="${root}${pathOf(l)}" hreflang="${l}" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</a></li>`;
+      : `<li><a href="${root}${path(l)}" hreflang="${l}" lang="${l}">${flag(l)}<b>${l.toUpperCase()}</b>${strings[l].langName}</a></li>`;
   const langLinks =
     `<details class="lang-menu"><summary aria-label="${escape(strings[lang].langLabel)}: ${strings[lang].langName}">${flag(lang)}<b>${lang.toUpperCase()}</b>` +
     `${chevron}</summary>` +
@@ -185,26 +206,57 @@ for (const lang of langs) {
     lang,
     root,
     base,
-    path: pathOf(lang),
+    path: here,
     langPath: pathOf(lang),
+    // The way back to the landing page, before the navigation's #anchors:
+    // nothing on the landing page itself.
+    home: here === pathOf(lang) ? "" : `${root}${pathOf(lang)}`,
     alternates,
     ogLocales,
+    ogType: "website",
     keywords: escape(keywords),
     jsonLd: jsonLd(lang),
     langLinks,
-    langDetect: lang === "en" ? langDetect : "",
+    langDetect: "",
+    headExtra: "",
+    guideCurrent: "",
     ...icons,
-    toolsMatrix: matrixHtml(catalog, lang, strings[lang]),
     componentCount: String(catalog.components.length),
+    // The agents are the catalog's "agents" group, like agents::IDS in
+    // Rust: never a number written by hand (DOC-V7-01).
+    agentCount: String(catalog.components.filter((c) => c.group === "agents").length),
     version,
+    ...own,
   };
-  const html = template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-    if (!(key in values)) throw new Error(`template.html: no value for {{${key}}}`);
+  const page = html.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    if (!(key in values)) throw new Error(`${name}: no value for {{${key}}}`);
     return values[key];
   });
-  mkdirSync(join(out, pathOf(lang)), { recursive: true });
-  writeFileSync(join(out, pathOf(lang), "index.html"), html);
+  mkdirSync(join(out, here), { recursive: true });
+  writeFileSync(join(out, here, "index.html"), page);
 }
+
+/** Every page written, for the sitemap: its address in each language. */
+const pages = [];
+
+for (const lang of langs) {
+  renderPage({
+    lang,
+    path: pathOf,
+    model: landing,
+    name: "landing.html",
+    values: {
+      langDetect: lang === "en" ? langDetect : "",
+      toolsMatrix: matrixHtml(catalog, lang, strings[lang]),
+    },
+  });
+}
+pages.push(pathOf);
+
+// The Guide, one page per topic and language (site/guide.mjs, D-164).
+const guide = guidePages({ langs, strings, pathOf, out, model: model("guide.html"), base, jsonLdApp: appLd });
+for (const page of guide.pages) renderPage(page);
+for (const id of guide.topics) pages.push((l) => topicPath(pathOf, l, id));
 
 cpSync(join(site, "assets"), join(out, "assets"), { recursive: true });
 // Files that must sit at the site's root, as they are: the Google Search
@@ -238,16 +290,49 @@ writeFileSync(
   `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Atollo</title>\n<link rel="canonical" href="${base}">\n<meta name="robots" content="noindex">\n<meta http-equiv="refresh" content="0; url=${base}">\n</head>\n<body><a href="${base}">Atollo</a></body>\n</html>\n`,
 );
 
-// Every language's page with its alternates, as the <link>s in the pages:
-// submitted by hand in Google Search Console and Bing Webmaster Tools.
+// Every page in every language with its alternates, as the <link>s in the
+// pages: submitted by hand in Google Search Console and Bing Webmaster Tools.
 const today = new Date().toISOString().slice(0, 10);
-const urlEntry = (lang) =>
-  `  <url>\n    <loc>${base}${pathOf(lang)}</loc>\n    <lastmod>${today}</lastmod>\n` +
-  langs.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${base}${pathOf(l)}"/>\n`).join("") +
-  `    <xhtml:link rel="alternate" hreflang="x-default" href="${base}"/>\n  </url>\n`;
+const urlEntry = (path, lang) =>
+  `  <url>\n    <loc>${base}${path(lang)}</loc>\n    <lastmod>${today}</lastmod>\n` +
+  langs.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${base}${path(l)}"/>\n`).join("") +
+  `    <xhtml:link rel="alternate" hreflang="x-default" href="${base}${path("en")}"/>\n  </url>\n`;
 writeFileSync(
   join(out, "sitemap.xml"),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${langs.map(urlEntry).join("")}</urlset>\n`,
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.flatMap((p) => langs.map((l) => urlEntry(p, l))).join("")}</urlset>\n`,
 );
 
-console.log(`_site: ${langs.length} pages`);
+console.log(`_site: ${pages.length * langs.length} pages`);
+
+// --check (the ui job of app.yml): the site built, then checked without
+// publishing anything: every page in every language is there and in the
+// sitemap, no {{key}} is left, and every relative link and image of the
+// pages leads to a file of _site.
+if (process.argv.includes("--check")) {
+  const problems = [];
+  const sitemap = readFileSync(join(out, "sitemap.xml"), "utf8");
+  for (const path of pages) {
+    for (const l of langs) {
+      const file = join(out, path(l), "index.html");
+      if (!existsSync(file)) {
+        problems.push(`missing ${path(l)}index.html`);
+        continue;
+      }
+      if (!sitemap.includes(`<loc>${base}${path(l)}</loc>`)) problems.push(`not in sitemap.xml: ${path(l)}`);
+      const html = readFileSync(file, "utf8");
+      if (/\{\{[\w> ]+\}\}/.test(html)) problems.push(`${path(l)}: a {{key}} is left`);
+      for (const m of html.matchAll(/\s(?:href|src|srcset)="([^"]*)"/g)) {
+        const link = (m[1] ?? "").split(/[?#]/)[0];
+        if (link === "" || /^[a-z][\w+.-]*:/i.test(link)) continue; // an anchor, another site
+        const target = join(out, path(l), link);
+        const found = existsSync(target) && (!statSync(target).isDirectory() || existsSync(join(target, "index.html")));
+        if (!found) problems.push(`${path(l)}: broken link ${link}`);
+      }
+    }
+  }
+  if (problems.length > 0) {
+    console.error(problems.join("\n"));
+    process.exit(1);
+  }
+  console.log(`check: ${pages.length * langs.length} pages, sitemap and links in order`);
+}

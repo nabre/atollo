@@ -17,7 +17,7 @@ use crate::install::{pattern, target_of, Ctx, Installer, Release};
 use crate::kit::{Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// Apache httpd: Apache Lounge on Windows (the maintained Windows build),
 /// the kit's own build on macOS and Linux (D-116). Port, site and PHP live

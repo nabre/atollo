@@ -1,26 +1,8 @@
 use super::*;
+use super::{names::*, root::*};
 
-/// A fresh folder under the system temp, removed on drop.
-pub struct TempDir(pub PathBuf);
-impl TempDir {
-    pub fn new(name: &str) -> TempDir {
-        let dir = std::env::temp_dir().join(format!(
-            "atollo-test-{}-{}-{name}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        fs::create_dir_all(&dir).unwrap();
-        TempDir(dir)
-    }
-}
-impl Drop for TempDir {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.0);
-    }
-}
+/// Kept here for the tests that name it by this path.
+pub use crate::test_support::TempDir;
 
 #[test]
 fn arch_follows_env_rule() {
@@ -376,7 +358,7 @@ fn prepare_creates_only_inside_root_and_detects_move() {
 /// moves with the kit.
 #[test]
 fn moving_the_kit_flags_the_conda_components_off_windows() {
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     let flagged = |kit: &Kit| -> Vec<&str> {
         ["git", "r", "ruby", "python", "node"]
             .into_iter()
@@ -449,7 +431,7 @@ fn case_only_move_is_a_move_off_windows() {
     assert!(!same_root(Os::Darwin, "/Volumes/U/Kit", "/Volumes/U/kit"));
     assert!(same_root(Os::Linux, "/media/u/kit", "/media/u/kit"));
 
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     for (target, moves) in [(Target::LINUX_X64, true), (Target::WIN32_X64, false)] {
         let tmp = TempDir::new(&format!("case-{target}"));
         let first = Kit::at_target(tmp.0.join("Kit"), target);
@@ -473,7 +455,7 @@ fn case_only_move_is_a_move_off_windows() {
 /// default one) is marked too, and the start reinstalls it at its line.
 #[test]
 fn saved_r_line_is_marked_when_the_kit_moves() {
-    let catalog = crate::setup::catalog::Catalog::get();
+    let catalog = crate::setup::Catalog::get();
     let r = catalog.find("r").unwrap();
     let tmp = TempDir::new("moved-r-line");
     let first = Kit::at_target(tmp.0.join("one"), Target::LINUX_X64);

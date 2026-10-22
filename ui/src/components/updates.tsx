@@ -3,8 +3,8 @@
 // notes) and «Aggiorna», instead of «Aggiorna tutto» blindly.
 import { useCallback, useEffect, useRef } from "react";
 import { componentLinkOpen, onUpdates, setupStart, updatesCheck, updatesList, type Updates } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad, useSubscription } from "../hooks";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad, useSubscription } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, IconButton, Link, ViewPane } from "../workbench";
 

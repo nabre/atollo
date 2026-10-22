@@ -1,7 +1,7 @@
 use super::*;
 use crate::agents::keyring::files::{files, read, save_file};
 use crate::agents::keyring::{restore, save};
-use crate::kit::{tests::TempDir, Arch, Kit};
+use crate::test_support::prepared_kit;
 use std::fs;
 use std::time::Duration;
 use windows::Win32::Security::Credentials::CRED_PERSIST_SESSION;
@@ -21,9 +21,7 @@ fn dpapi_roundtrip() {
 #[cfg(windows)]
 #[test]
 fn restore_and_save_round_trip() {
-    let tmp = TempDir::new("keyring");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("keyring");
     let target = format!("antigravity-atollo-test-{}:user", std::process::id());
     let f = files(&kit);
     let blob = base64::engine::general_purpose::STANDARD.encode(b"token-1");

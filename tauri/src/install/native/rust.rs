@@ -20,7 +20,7 @@ use crate::kit::Target;
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
 use crate::settings::Settings;
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 fn can_hard_link(dir: &Path) -> bool {
     let a = dir.join(".hardlink-test-a");
@@ -182,7 +182,7 @@ fn restore_rustup_key(_before: Option<Vec<(String, Option<String>)>>, _owned: &[
 /// `rust/` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
 /// default on Windows x64 (own linker), `aarch64-pc-windows-gnullvm` on
 /// Windows ARM64 (linked by the clang of llvm-mingw, the `cc` component:
-/// `CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER` in env.rs), `msvc` from
+/// `CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER` in env/unix.rs), `msvc` from
 /// the settings on both, the native Rust target triple on macOS and Linux.
 pub struct Rust;
 
@@ -284,9 +284,7 @@ impl Installer for Rust {
         };
         let in_place = rust_plan(installed, kit_links, || false).ok() == Some(RustPlan::InPlace);
         let host = rust_host(ctx);
-        if host_needs_cc(&host)
-            && !crate::setup::catalog::kit_path(ctx.kit, "cc/bin/clang.exe").is_file()
-        {
+        if host_needs_cc(&host) && !crate::setup::kit_path(ctx.kit, "cc/bin/clang.exe").is_file() {
             progress.note("C, C++ is not installed: Rust on Windows ARM64 links with its clang");
         }
         let owned = [ctx.kit.root()];

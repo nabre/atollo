@@ -3,8 +3,8 @@
 // the keyboard and give it back to their button on Esc.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { VersionedTool } from "../../../ui/src/api";
-import { AddLine, ToolVersions, type KitVersions } from "../../../ui/src/versions";
+import type { VersionedTool } from "@/api";
+import { AddLine, ToolVersions, type KitVersions } from "@/versions";
 
 afterEach(cleanup);
 

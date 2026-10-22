@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 #[test]
 fn one_archive_per_target() {

@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
 

@@ -1,5 +1,5 @@
 use super::*;
-use crate::setup::catalog::{Catalog, Group};
+use crate::setup::{Catalog, Group};
 
 #[test]
 fn the_package_is_fixed_by_the_catalog() {

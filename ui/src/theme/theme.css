@@ -156,7 +156,7 @@ body {
     var(--vsc-bg);
 }
 
-/* Marks drawn twice, for light and for dark (brand.tsx). */
+/* Marks drawn twice, for light and for dark (shared/brand.tsx). */
 .only-light {
   display: none;
 }

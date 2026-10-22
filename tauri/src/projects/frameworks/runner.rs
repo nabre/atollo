@@ -67,7 +67,7 @@ pub fn run_line(
          if ($LASTEXITCODE) {{ exit $LASTEXITCODE }}"
     );
     let utf16: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
-    let mut cmd = jobs::kit_command(crate::setup::catalog::kit_path(kit, r"pwsh\pwsh.exe"), env);
+    let mut cmd = jobs::kit_command(crate::setup::kit_path(kit, r"pwsh\pwsh.exe"), env);
     cmd.args([
         "-NoLogo",
         "-NoProfile",

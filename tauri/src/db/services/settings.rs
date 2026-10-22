@@ -9,7 +9,7 @@ use anyhow::{bail, Result};
 use super::{check_line, default_port, Services, Setting};
 use crate::db::DbEngine;
 use crate::kit::Kit;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The version of `id` the server runs: the one in its settings while it is
 /// on disk, otherwise the newest on disk.

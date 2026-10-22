@@ -170,7 +170,7 @@ pub fn sync_models(kit: &Kit, p: &Paths) -> Result<()> {
     }
     let text = serde_json::to_string_pretty(&cfg)?;
     // The server's key is in it: owner-only, as auth.json.
-    crate::router::fs::write_private(&file, &text)
+    crate::router::write_private(&file, &text)
 }
 
 /// `settings.json`: the keys the kit manages (see the module).
@@ -188,7 +188,7 @@ pub fn sync_settings(kit: &Kit, p: &Paths) -> Result<()> {
     let ours =
         |obj: &Map<String, Value>, k: &str| obj.get(k).is_none() || obj.get(k) == written.get(k);
     if kit.os().is_windows() {
-        let bash = crate::setup::catalog::kit_path(kit, "git/bin/bash.exe");
+        let bash = crate::setup::kit_path(kit, "git/bin/bash.exe");
         if bash.is_file() && ours(obj, "shellPath") {
             let v = Value::String(bash.display().to_string());
             obj.insert("shellPath".into(), v.clone());

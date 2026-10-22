@@ -12,7 +12,7 @@ use crate::install::native::{mamba_envs, micromamba_path, run};
 use crate::install::{installer, work_dir, Ctx, Installer, Progress};
 use crate::kit::Kit;
 use crate::net::verify::{self, Expect};
-use crate::setup::catalog::Component;
+use crate::setup::Component;
 
 /// The version, folder and line of `line` of `c` (`None`: the default).
 fn located(kit: &Kit, c: &Component, line: Option<&str>) -> Option<(String, PathBuf, String)> {

@@ -10,7 +10,7 @@ use serde_json::Value;
 use super::known::{known, ProjectSpec};
 use super::{admits, Have, Need, NeedStatus, ProjectNeeds};
 use crate::kit::Kit;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use crate::versions::ranges::{Bare, Range, Version};
 
 /// The version text `spec` reads in `dir`, if the file says one.

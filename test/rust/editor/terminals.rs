@@ -2,6 +2,7 @@ use super::*;
 use crate::fsx::join_rel;
 use crate::kit::{tests::TempDir, Arch};
 use crate::setup::catalog::translate_rel;
+use crate::test_support::prepared_kit;
 use crate::versions::{install_dir, saved_dir, write_version};
 use std::fs;
 use std::path::Path;
@@ -17,10 +18,7 @@ fn install_fake(kit: &Kit, c: &Component, dir: &Path) {
 }
 
 fn kit(name: &str) -> (TempDir, Kit) {
-    let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    (tmp, kit)
+    prepared_kit(name)
 }
 
 /// `entries` as a PATH of this system.

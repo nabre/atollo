@@ -2,8 +2,8 @@
 // its port and its output.
 import { useEffect, useRef, useState } from "react";
 import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
-import { useAction } from "../hooks";
-import { ErrorLine } from "../common";
+import { useAction } from "../shared/hooks";
+import { ErrorLine, PORT_MAX, PORT_MIN, validPort } from "../shared/common";
 import { t } from "../i18n";
 import {
   CheckboxLabel,
@@ -19,7 +19,7 @@ import {
   TextField,
 } from "../workbench";
 import { projectActionDefault, projectActionRemove, urlOpen } from "../api";
-import { ActionButton } from "../common";
+import { ActionButton } from "../shared/common";
 import { ActionBar, EditorSection, Properties } from "../workbench";
 import { ActionForm } from "./actionform";
 import { alive, stateText } from "./runs";
@@ -317,8 +317,8 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
     const text = value.trim();
     const port = text === "" ? null : Number(text);
     if (port === (locked ? (current ?? null) : null)) return;
-    if (port !== null && (!Number.isInteger(port) || port < 1024 || port > 65535)) {
-      setError(t("Porta tra {0} e {1}", 1024, 65535));
+    if (port !== null && !validPort(port)) {
+      setError(t("Porta tra {0} e {1}", PORT_MIN, PORT_MAX));
       return;
     }
     runSetPort(actionKey, port).then(

@@ -2,15 +2,12 @@
 // a moment after the last edit, or when Settings closes before that.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import type { FrameworkPiece, FrameworksView } from "../../../ui/src/api";
-import { useFrameworks, useFrameworksAutosave } from "../../../ui/src/frameworks";
-import { useAction } from "../../../ui/src/hooks";
+import type { FrameworkPiece, FrameworksView } from "@/api";
+import { useFrameworks, useFrameworksAutosave } from "@/frameworks";
+import { useAction } from "@/shared/hooks";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

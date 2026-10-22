@@ -5,20 +5,13 @@
 // then "Elimina senza i database" deletes the folders and leaves the
 // databases on the servers (named in the log).
 import { useCallback, useState } from "react";
-import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan, type PlannedDb } from "../api";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
-import { locale, t } from "../i18n";
+import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan } from "../api";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
+import { t } from "../i18n";
+import { formatBytes } from "../shared/format";
+import { ENGINE_NAMES } from "../databases";
 import { codicon, ConfirmDialog } from "../workbench";
-
-const ENGINE_NAMES: Record<PlannedDb["engine"], string> = { mysql: "MySQL", mongodb: "MongoDB" };
-
-function size(bytes: number): string {
-  const kb = bytes / 1024;
-  return kb < 1024
-    ? `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(Math.max(1, kb))} KB`
-    : `${new Intl.NumberFormat(locale(), { maximumFractionDigits: 1 }).format(kb / 1024)} MB`;
-}
 
 export function DeleteProjectDialog({
   project,
@@ -105,7 +98,7 @@ export function DeleteProjectDialog({
         {plan !== null && plan.backups > 0 && (
           <li>
             <span className="flex flex-wrap items-center gap-2">
-              {t("Copie dei database: {0} ({1})", plan.backups, size(plan.backupsSize))}
+              {t("Copie dei database: {0} ({1})", plan.backups, formatBytes(plan.backupsSize))}
               <ActionButton
                 icon={codicon("folder-opened")}
                 label={t("Apri la cartella delle copie")}

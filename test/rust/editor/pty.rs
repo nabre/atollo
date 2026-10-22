@@ -471,16 +471,7 @@ mod real {
         }
     }
 
-    fn wait_for(sessions: &Sessions, id: u64, text: &str) -> String {
-        let until = Instant::now() + Duration::from_secs(20);
-        loop {
-            let data = sessions.backlog(id).unwrap().data;
-            if data.contains(text) || Instant::now() > until {
-                return data;
-            }
-            std::thread::sleep(Duration::from_millis(20));
-        }
-    }
+    use crate::test_support::wait_for;
 
     #[test]
     fn echo_comes_back_with_the_kit_env() {

@@ -3,13 +3,10 @@ use super::*;
 use std::io::Read;
 
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
+use crate::test_support::prepared_kit;
 
 fn kit() -> (TempDir, Kit) {
-    let tmp = TempDir::new("diagnostics");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
-    (tmp, kit)
+    prepared_kit("diagnostics")
 }
 
 /// The text of every entry of the zip at `path`.

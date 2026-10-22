@@ -2,7 +2,9 @@
 // components, so every page is built from the same pieces.
 import "./elements";
 export * from "./codicon";
-export * from "./controls";
+export * from "./buttons";
+export * from "./indicators";
+export * from "./inputs";
 export * from "./dialog";
 export * from "./layout";
 export * from "./list";

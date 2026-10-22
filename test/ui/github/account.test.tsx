@@ -2,14 +2,11 @@
 // why, with «Riprova», instead of loading for ever.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { GithubStatus } from "../../../ui/src/api";
-import { GithubAccount } from "../../../ui/src/github/account";
+import type { GithubStatus } from "@/api";
+import { GithubAccount } from "@/github/account";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 vi.mock("@tauri-apps/api/event", () => ({
   listen: () => Promise.resolve(() => undefined),
 }));

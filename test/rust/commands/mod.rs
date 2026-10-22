@@ -1,12 +1,10 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 use std::fs;
 
 #[test]
 fn project_names_cannot_escape() {
-    let tmp = TempDir::new("cmd-proj");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("cmd-proj");
     fs::create_dir_all(kit.projects().join("app")).unwrap();
     assert_eq!(project_dir(&kit, None, "it").unwrap(), kit.projects());
     assert_eq!(

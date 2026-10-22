@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn official_catalog_is_valid() {
@@ -51,9 +51,7 @@ fn a_database_of_before_is_mysql() {
 
 #[test]
 fn saves_only_the_changes() {
-    let tmp = TempDir::new("frameworks");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("frameworks");
     assert_eq!(load(&kit).pieces, official());
 
     let mut all = official().to_vec();
@@ -91,9 +89,7 @@ fn saves_only_the_changes() {
 
 #[test]
 fn broken_file_is_reported_not_replaced() {
-    let tmp = TempDir::new("frameworks-bad");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("frameworks-bad");
     fs::write(user_file(&kit), "{ \"pieces\": ").unwrap();
     let loaded = load(&kit);
     assert!(loaded.problem.is_some());

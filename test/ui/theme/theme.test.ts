@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import vscodeCss from "../../../ui/src/theme/theme-vscode.css?raw";
-import tokensCss from "../../../ui/src/theme/theme-colors.css?raw";
-import sizesCss from "../../../ui/src/theme/theme-sizes.css?raw";
+import vscodeCss from "@/theme/theme-vscode.css?raw";
+import tokensCss from "@/theme/theme-colors.css?raw";
+import sizesCss from "@/theme/theme-sizes.css?raw";
 // VSCodium 1.135's workbench, vendored by scripts/vscodium-css/extract.mjs.
 import referenceCss from "../../../docs/brand/vscodium-1.135/workbench-ref.css?raw";
 

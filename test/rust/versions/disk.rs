@@ -1,19 +1,18 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 use crate::versions::tests::{install_fake, key_rel};
 use crate::versions::{dir_name, VERSION_FILE};
 
 #[test]
 fn deleted_by_hand_is_no_longer_chosen() {
-    let tmp = TempDir::new("versions-sync");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-sync");
     let catalog = Catalog::get();
     let node = catalog.find("node").unwrap();
     let main = install_dir(&kit, node, "v22.11.0");
     install_fake(&kit, node, &main);
     node.save_version(&kit, "v22.11.0").unwrap();
-    let mut choice = crate::setup::catalog::Choice::defaults(catalog);
+    let mut choice = crate::setup::Choice::defaults(catalog);
     choice.set(catalog, "pnpm", true);
     choice.write(&kit, catalog).unwrap();
     assert!(sync_with_disk(&kit).unwrap().is_empty(), "all there");
@@ -22,13 +21,13 @@ fn deleted_by_hand_is_no_longer_chosen() {
     fs::remove_dir_all(node.folder_path(&kit).unwrap()).unwrap();
     let off = sync_with_disk(&kit).unwrap();
     assert!(off.contains(&"Node.js".to_owned()) && off.contains(&"pnpm, yarn".to_owned()));
-    let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+    let now = crate::setup::Choice::read(&kit, catalog).unwrap();
     assert!(!now.is_chosen("node") && !now.is_chosen("pnpm"));
     assert!(node.installed_version(&kit).is_none());
     assert!(sync_with_disk(&kit).unwrap().is_empty(), "once");
 
     // Chosen and never installed (waiting for Apply): left alone.
-    let mut choice = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+    let mut choice = crate::setup::Choice::read(&kit, catalog).unwrap();
     choice.set(catalog, "go", true);
     choice.write(&kit, catalog).unwrap();
     assert!(sync_with_disk(&kit).unwrap().is_empty());
@@ -52,14 +51,14 @@ fn deleted_need_of_one_target_turns_off_what_needs_it() {
         kit.prepare().unwrap();
         install_fake(&kit, zig, &install_dir(&kit, zig, "0.14.0"));
         zig.save_version(&kit, "0.14.0").unwrap();
-        let mut choice = crate::setup::catalog::Choice::defaults(catalog);
+        let mut choice = crate::setup::Choice::defaults(catalog);
         choice.set(catalog, "cc", true);
         choice.write(&kit, catalog).unwrap();
         assert!(sync_with_disk(&kit).unwrap().is_empty(), "{t}: all there");
 
         fs::remove_dir_all(zig.folder_path(&kit).unwrap()).unwrap();
         let off = sync_with_disk(&kit).unwrap();
-        let now = crate::setup::catalog::Choice::read(&kit, catalog).unwrap();
+        let now = crate::setup::Choice::read(&kit, catalog).unwrap();
         assert_eq!(now.is_chosen("cc"), cc_after, "{t}");
         assert!(!now.is_chosen("zig"), "{t}");
         assert_eq!(off.contains(&"C, C++".to_owned()), !cc_after, "{t}");
@@ -67,16 +66,14 @@ fn deleted_need_of_one_target_turns_off_what_needs_it() {
         // D-122: the choice is one for every system, so C and C++ are off
         // on Windows too, accepted.
         let windows = kit.for_target(Target::WIN32_X64);
-        let there = crate::setup::catalog::Choice::read(&windows, catalog).unwrap();
+        let there = crate::setup::Choice::read(&windows, catalog).unwrap();
         assert_eq!(there.is_chosen("cc"), cc_after, "{t}");
     }
 }
 
 #[test]
 fn folders_of_an_older_kit_move() {
-    let tmp = TempDir::new("versions-migrate");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-migrate");
     let node = Catalog::get().find("node").unwrap();
     // Older kit: node\node.exe the default, versions\node\20.18 saved,
     // versions\typst\0.13 of a component no longer versioned.
@@ -246,9 +243,7 @@ fn github_cli_and_uv_leave_tools() {
 /// kept of it goes at start, nothing else.
 #[test]
 fn retired_windows_terminal_goes() {
-    let tmp = TempDir::new("versions-retired");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-retired");
     let wt = kit.apps().join("terminal").join("1.25").join("settings");
     fs::create_dir_all(&wt).unwrap();
     fs::write(wt.join("settings.json"), "{}").unwrap();
@@ -283,9 +278,7 @@ fn retired_windows_terminal_goes() {
 /// version, router, sessions and log go at start.
 #[test]
 fn retired_adminer_goes() {
-    let tmp = TempDir::new("versions-retired-adminer");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("versions-retired-adminer");
     let line = kit.apps().join("adminer").join("6.1");
     fs::create_dir_all(&line).unwrap();
     fs::write(line.join("adminer.php"), "<?php").unwrap();

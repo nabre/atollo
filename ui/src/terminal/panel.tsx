@@ -9,7 +9,7 @@ import type { PtyBackend, PtyInfo } from "./api";
 import type { Terminals } from "./state";
 import { TerminalView } from "./view";
 import { t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
+import { ActionButton, ErrorLine } from "../shared/common";
 import { codicon, ConfirmDialog, IconButton, Panel } from "../workbench";
 
 export function TerminalPanel({

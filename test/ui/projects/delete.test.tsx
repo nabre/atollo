@@ -3,14 +3,11 @@
 // the folder, and only after an error "Elimina senza i database" appears.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { DeletePlan } from "../../../ui/src/api";
-import { DeleteProjectDialog } from "../../../ui/src/projects/delete";
+import type { DeletePlan } from "@/api";
+import { DeleteProjectDialog } from "@/projects/delete";
+import { invoke } from "@test/support/tauri";
 
-const invoke = vi.fn<(cmd: string, args?: unknown) => Promise<unknown>>();
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: (cmd: string, args?: unknown) => invoke(cmd, args),
-  isTauri: () => true,
-}));
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 afterEach(() => {
   cleanup();

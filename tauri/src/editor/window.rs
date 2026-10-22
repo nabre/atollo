@@ -449,11 +449,7 @@ fn hidden_key(project: &str) -> String {
     format!("atollo-hidden:{project}")
 }
 
-fn now_ms() -> u128 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |d| d.as_millis())
-}
+use crate::time::now_ms;
 
 /// Sends each open editor window the extensions its project hides now: a
 /// language or a choice changed. They apply at the window's next reload.
@@ -472,7 +468,8 @@ pub fn refresh_hidden<R: Runtime>(app: &AppHandle<R>, kit: &crate::kit::Kit) {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let value = serde_json::json!({ "t": now_ms() as u64, "ids": crate::editor::ext::hidden_of(kit, &dir) });
+        let value =
+            serde_json::json!({ "t": now_ms(), "ids": crate::editor::ext::hidden_of(kit, &dir) });
         let key = serde_json::to_string(&hidden_key(&name)).unwrap_or_default();
         let value = serde_json::to_string(&value.to_string()).unwrap_or_default();
         let _ = window.eval(format!(

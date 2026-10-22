@@ -40,6 +40,7 @@ use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::env::KitEnv;
+use crate::i18n::t as tr;
 use crate::kit::Kit;
 use crate::os::jobs;
 
@@ -54,16 +55,12 @@ pub const DELETE_SCOPE: &str = "delete_repo";
 const HELPER: &str = "!gh auth git-credential";
 const HELPER_HOSTS: [&str; 2] = ["https://github.com", "https://gist.github.com"];
 
-fn tr(lang: &str, source: &str, args: &[&str]) -> String {
-    crate::i18n::t(lang, source, args)
-}
-
 pub fn gh_exe(kit: &Kit) -> PathBuf {
-    crate::setup::catalog::kit_path(kit, r"gh\bin\gh.exe")
+    crate::setup::kit_path(kit, r"gh\bin\gh.exe")
 }
 
 fn git_exe(kit: &Kit) -> PathBuf {
-    crate::setup::catalog::kit_path(kit, r"git\cmd\git.exe")
+    crate::setup::kit_path(kit, r"git\cmd\git.exe")
 }
 
 /// `gh` with the kit's environment and never a question.

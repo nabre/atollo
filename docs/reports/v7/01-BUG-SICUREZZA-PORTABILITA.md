@@ -381,3 +381,23 @@ Tema comune: errori inghiottiti e letture concorrenti senza numero di sequenza. 
 - **Marchio**: nessun residuo dei nomi di prima nelle cartelle esaminate.
 
 Non riportati perché minori o scelte di progetto: token HF e chiave Gemini scritti su FAT/exFAT senza il controllo «solo proprietario» di `claude_token`; ripiego del terminale su `/bin/bash` fisso; `links.rs` e `agents::running` che ignorano le maiuscole su Linux; minima finestra di riuso del pid in `hang_up`; la pipe con nome di Windows che un altro processo può creare prima.
+
+---
+
+## 8. Rilievi emersi durante l'ondata 1
+
+Due rilievi nati dal lavoro dell'ondata 1, fuori dalla tabella del § 1; corretti nel ramo `fix/v7-followups`.
+
+### `SEC-V7-01` [MEDIA] — Il token di GitHub nell'ambiente dell'agente, letto dai server MCP di un repository clonato
+
+- **Dove**: [`tauri/src/agents/presets.rs`](../../../tauri/src/agents/presets.rs) `launch_vars`, [`tauri/src/commands/agents.rs`](../../../tauri/src/commands/agents.rs) `agent_launch` (D-156).
+- **Problema**: con il server github pronto in `mcp.json` del kit, `launch_vars` metteva `GITHUB_PERSONAL_ACCESS_TOKEN` (il token di `gh auth token`) nell'ambiente dell'agente. I server MCP che sono programmi li avvia l'agente e ereditano il suo ambiente: un server stdio del `.mcp.json` di un repository clonato leggeva il token, e un suo indirizzo http lo riceveva espanso nelle intestazioni. `wanted_vars` escludeva solo la richiesta esplicita del progetto, non l'eredità.
+- **Impatto**: il token dell'account GitHub del kit consegnato a codice del repository, appena l'utente ne approva i server.
+- **Correzione**: il server github è ora `Atollo mcp github` ([`agents/github_mcp.rs`](../../../tauri/src/agents/github_mcp.rs)), avviato dall'agente con il percorso completo dell'app (mai un nome da cercare: su Windows la cartella del progetto, dove gira l'agente, è cercata prima del `PATH`, e un `atollo-mcp.cmd` o `cmd.exe` di un repository clonato partirebbe al suo posto; `agents::relocate` riscrive il percorso quando il kit si sposta): un ponte fra stdio e lo Streamable HTTP di GitHub che legge il token da sé e lo manda solo a `api.githubcopilot.com`. `launch_vars` non dà più il token a nessuno; nessun segreto nei file, come prima. Resta il rischio, scritto in D-156, che un programma eseguito a nome dell'utente chieda il token al `gh` del kit. Prove: `test/rust/agents/presets.rs` `the_token_never_in_the_agents_environment` (fallisce sul codice di prima), `test/rust/agents/github_mcp.rs`.
+
+### `TEST-V7-02` [BASSA] — `serves_over_http` fallisce sotto carico con una connessione chiusa (reset)
+
+- **Dove**: [`test/rust/projects/serve.rs`](../../../test/rust/projects/serve.rs) `start` e `serves_over_http`.
+- **Problema**: `start` cercava una porta libera, la lasciava e poi `run` la riprendeva in un altro thread. Nel frattempo il server di un'altra prova del file, in parallelo, poteva prendersi la stessa porta: `run` allora non partiva, e la richiesta arrivava al server di `slowloris_does_not_block`, pieno di connessioni mute, che chiude subito le nuove (reset). `read_to_string(...).unwrap()` cadeva su quel reset.
+- **Impatto**: una prova rossa a caso con la macchina carica, nessun difetto del server statico.
+- **Correzione**: `run` è diviso in `run` (la porta e il messaggio) e `serve` (il ciclo delle connessioni); le prove danno a `serve` un listener già legato alla porta scelta, che non resta mai libera. In più la richiesta di `serves_over_http` riprova fino a 5 volte, con un'attesa breve, solo sugli errori di connessione (rifiutata, reset, interrotta): una risposta sbagliata fallisce come prima, e se il server non risponde mai la prova fallisce con gli errori di ogni tentativo. `sources_are_in_the_catalog` (i18n) non ha stato condiviso: legge i sorgenti di `tauri/src` mentre gira, con il catalogo compilato dentro la prova, quindi fallisce solo se un sorgente cambia durante il giro (un'altra sessione che lavora nella stessa copia); lasciata com'è.

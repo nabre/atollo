@@ -4,14 +4,11 @@
 // they take and «Libera». Only on a system where some component cannot
 // follow the kit.
 import { condaKept, condaKeptFree, type CondaKept, type Settings } from "../api";
-import { locale, t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { useAction, useLoad } from "../hooks";
+import { t } from "../i18n";
+import { megabytes } from "../shared/format";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { useAction, useLoad } from "../shared/hooks";
 import { CheckboxLabel, codicon, SettingItem } from "../workbench";
-
-function megabytes(bytes: number): string {
-  return new Intl.NumberFormat(locale(), { maximumFractionDigits: 0 }).format(Math.ceil(bytes / 1024 / 1024));
-}
 
 export function CondaSettings({
   category,

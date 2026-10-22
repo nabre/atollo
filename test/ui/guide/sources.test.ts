@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../../tauri/catalog/components.json";
-import { sourceCounts, TOOL_SOURCES } from "../../../ui/src/guide/sources";
+import { sourceCounts, TOOL_SOURCES } from "@guide/content/sources";
 
 // The guide's table of sources lists the catalog (D-108): one row per
 // component, plus the parts that have their own download (Composer, Maven…).

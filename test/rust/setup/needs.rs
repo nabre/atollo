@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::test_support::prepared_kit;
 
 #[test]
 fn commands() {
@@ -86,9 +86,7 @@ fn every_id_is_in_the_catalog() {
 
 #[test]
 fn agents_need_their_mcp_programs() {
-    let tmp = TempDir::new("needs-agent");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (tmp, kit) = prepared_kit("needs-agent");
     assert_eq!(
         of_agent(&kit, "codex", None)
             .into_iter()

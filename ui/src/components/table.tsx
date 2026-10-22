@@ -18,10 +18,10 @@ import {
   type TargetId,
 } from "../api";
 import { t } from "../i18n";
-import { ActionButton, ErrorLine } from "../common";
-import { ComponentLogo } from "../logos";
-import { itemState } from "../setup";
-import { Tag } from "../tags";
+import { ActionButton, ErrorLine } from "../shared/common";
+import { ComponentLogo } from "../shared/logos";
+import { itemState } from "./setup";
+import { Tag } from "../shared/tags";
 import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } from "../versions";
 import { Checkbox, Codicon, codicon, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
 import { groups, linesOf, matches, sizeText } from "./model";

@@ -4,9 +4,9 @@ use std::path::Path;
 use serde_json::{json, Value};
 
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Kit};
 use crate::servers::pools::{load_store, store_path};
 use crate::servers::{WebServerEngine, WebServers};
+use crate::test_support::prepared_kit;
 
 fn read_json(path: &Path) -> Value {
     serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap()
@@ -24,9 +24,7 @@ fn write_json(path: &Path, value: &Value) {
 /// pool of Nginx waits for Caddy and is never pruned meanwhile.
 #[test]
 fn nginx_pools_and_sites_become_caddy() {
-    let tmp = TempDir::new("nginx-to-caddy");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
-    kit.prepare().unwrap();
+    let (_tmp, kit) = prepared_kit("nginx-to-caddy");
 
     let servers_json = json!({
         "profiles": [

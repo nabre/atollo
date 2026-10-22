@@ -129,8 +129,7 @@ pub(super) fn save_file(path: &std::path::Path, items: &[Item]) -> Result<()> {
     }
     let text = serde_json::to_string_pretty(items)?;
     #[cfg(unix)]
-    return crate::router::fs::write_private(path, &text)
-        .with_context(|| path.display().to_string());
+    return crate::router::write_private(path, &text).with_context(|| path.display().to_string());
     #[cfg(not(unix))]
     crate::fsx::write_atomic(path, text.as_bytes()).with_context(|| path.display().to_string())
 }

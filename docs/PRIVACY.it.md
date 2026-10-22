@@ -42,6 +42,7 @@ Ogni richiesta che l'app fa da sé porta uno `User-Agent` della forma `Atollo/<v
 | In background dopo l'avvio dell'editor, e quando si apre un progetto | La galleria delle estensioni dell'editor (Open VSX); CodeLLDB dalla sua release su GitHub | Le richieste delle estensioni usate dal kit e dai tuoi progetti. | Non aprire l'editor, oppure rimuovere le estensioni dall'editor. |
 | Solo quando fai l'accesso a GitHub (Impostazioni › Account GitHub) e usi i tuoi repository (Progetti › «Dai tuoi repository GitHub») | GitHub (`github.com`, `api.github.com`), tramite GitHub CLI | L'accesso (un codice monouso da digitare su `github.com/login/device`), poi il token del tuo account con le richieste per elencare, clonare, rinominare o eliminare i tuoi repository. | Non fare l'accesso, oppure esci in Impostazioni › Account GitHub. |
 | Una volta, all'accesso o a un avvio con l'accesso fatto, solo se nome ed e-mail dei commit sono vuoti | GitHub (`api.github.com/user`), tramite GitHub CLI | Il token del tuo account, per leggere nome, login e numero dell'account: diventano il nome dei tuoi commit e l'indirizzo privato `noreply` di GitHub. | Compila Impostazioni › Account GitHub › «Chi firma i commit», oppure non fare l'accesso. |
+| Quando un agente usa il server MCP **github** del kit (Agenti › Server MCP del kit), solo se hai fatto l'accesso a GitHub | Il server MCP di GitHub (`api.githubcopilot.com`), tramite `Atollo mcp github`, il ponte che l'agente avvia | Le richieste dell'agente agli strumenti di GitHub (issue, pull request, repository) con il token del tuo account GitHub, che il ponte aggiunge da sé: l'agente non lo vede mai. | Non aggiungere il server github, o toglilo dai server MCP del kit. |
 | Solo mentre è aperta la pagina Agenti (all'apertura, poi ogni 2 minuti), per ogni agente in cui hai fatto l'accesso | Claude Code: `api.anthropic.com`; Codex: `chatgpt.com`; Antigravity: `cloudcode-pa.googleapis.com` | Il token di accesso dell'agente, inviato solo al fornitore di quell'agente, per leggere i limiti d'uso del tuo piano. Il token viene solo letto, mai rinnovato, e mai scritto nel log. | Non aprire la pagina Agenti, oppure non fare l'accesso all'agente. |
 
 **Non** sono connessioni fatte da Atollo:
@@ -122,7 +123,7 @@ Gli agenti AI inviano ai loro fornitori i tuoi prompt e i file che leggono: è c
 
 ## 6. Il sito
 
-Il sito [nabre.github.io/atollo](https://nabre.github.io/atollo/it/) è una pagina statica ospitata su GitHub Pages.
+Il sito [nabre.github.io/atollo](https://nabre.github.io/atollo/it/) è una pagina statica ospitata su GitHub Pages, con le pagine della Guida sotto [`/it/guide/`](https://nabre.github.io/atollo/it/guide/) (la stessa Guida che c'è nell'app, che la legge dall'app stessa, senza connessioni).
 
 - Niente statistiche, tracciamento, cookie o pubblicità. Font e immagini sono serviti dal sito stesso.
 - Il sito ricorda il tema e la lingua scelti nel `localStorage` del tuo browser (`atollo-theme`, `atollo-lang`); non escono dal browser.

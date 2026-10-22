@@ -12,8 +12,8 @@ import {
   type Usage,
 } from "../api";
 import { locale, t } from "../i18n";
-import { ActionButton } from "../common";
-import { Badge } from "../tags";
+import { ActionButton } from "../shared/common";
+import { Badge } from "../shared/tags";
 import { Codicon, codicon, Meter } from "../workbench";
 
 /** Read again every 2 minutes, as often as the app asks the servers. */

@@ -14,7 +14,7 @@ use super::{lock_name, locks_dir, pkgs_dir, root};
 use crate::install::installer;
 use crate::kit::Kit;
 use crate::settings::Settings;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 
 /// The environment the list `<id>@<line>` was written for is still on
 /// disk on the kit's target (moved or not: a moved one is what it is for).

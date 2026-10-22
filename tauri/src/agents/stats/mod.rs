@@ -42,7 +42,7 @@ use serde_json::Value;
 
 use crate::kit::Kit;
 use crate::net::Net;
-use crate::setup::catalog::Catalog;
+use crate::setup::Catalog;
 use util::{clamp_percent, level, now_ms, Period, Usage, CRITICAL, WARN};
 
 /// Servers asked at most every `ONLINE_EVERY`, at most every
@@ -277,6 +277,8 @@ fn host_of(url: &str) -> &str {
     url.split('/').nth(2).unwrap_or(url)
 }
 
+/// `fsx::read_json` on a [`Value`]: the agents' own files, read as they
+/// are, so the callers name no type.
 pub fn read_json(path: &Path) -> Option<Value> {
     crate::fsx::read_json(path)
 }
