@@ -1,5 +1,13 @@
 # Novità
 
+## Palette dei comandi (22/10/2026)
+
+- **Ctrl+Shift+P** (⌘⇧P su macOS) apre «Comandi» da qualsiasi pagina, anche con il cursore in un terminale: scrivi cosa vuoi fare e premi Invio, come in VSCodium (D-160).
+- **Per ogni progetto**, dal più recente: «Avvia» o «Ferma» (la sua azione predefinita), «Apri» (la sua pagina), «Apri … nell'editor» e ogni agente installato nel progetto («Claude Code in shop»). Poi «Avvia» o «Ferma» per MySQL e MongoDB, «Vai a» per le altre pagine e, quando qualcosa è in corso, «Ferma tutto», che qui non chiede conferma: sceglierlo è già la conferma.
+- **Più parole, in qualsiasi ordine**: «avvia shop» e «shop avvia» trovano la stessa voce. ↑ e ↓ scelgono, Esc o un clic fuori chiudono; se un comando non riesce, l'errore compare sotto la barra del titolo.
+- **Ctrl+P** apre ancora «Apri un progetto» come prima; in un terminale Ctrl+P resta della shell.
+- In inglese e in tedesco il pulsante «Ferma tutto» del pannello «Attività» ora si chiama «Stop everything» e «Alles stoppen».
+
 ## Verifica dei file dei componenti (22/10/2026)
 
 - **«Verifica i file»** nella pagina Strumenti, accanto a «Verifica»: confronta i file di ogni programma installato con quelli della sua installazione e trova quelli mancanti o cambiati, per esempio su una chiavetta danneggiata. «Verifica» dice solo se un programma risponde; questa trova la libreria rotta che lo fa chiudere più tardi (D-159).

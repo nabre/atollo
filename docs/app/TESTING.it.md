@@ -45,6 +45,7 @@ Coprono, fra l'altro:
 - controlli dell'interfaccia su `vscode-elements` (`test\ui\workbench\controls.test.tsx`, `elements.test.tsx`): eventi che scattano davvero, valori controllati, Invio nei moduli, nomi accessibili; i codicon (`codicon.test.tsx`): glifi del font incluso, misure dai token, nessun `react-icons/vsc` rimasto;
 - il tema (`test\ui\theme\theme.test.ts`): ogni variabile `--vscode-*` letta dai componenti definita nei due temi, ogni misura dichiarata una volta con la sua classe, le misure di `docs\brand\vscodium-1.135\workbench-ref.css`, nessun token della UI classica, ogni chiave `--vscode-*` letta da Atollo nota a VSCodium 1.135;
 - il pannello Attività (`test\ui\activity.test.tsx`): una versione secondaria di un database e un pool elencati e contati, «Ferma tutto» che ferma ogni cosa dopo la conferma; la pagina Terminali (`test\ui\terminals.test.tsx`): Esc chiude la domanda di rimozione;
+- la palette dei comandi (`test\ui\commands.test.tsx`, D-160): i comandi di ogni progetto, degli agenti e dei server di database installati e delle altre pagine, «Ferma tutto» solo mentre qualcosa è in corso, un progetto trovato con due parole, ogni parola scritta che deve comparire in qualsiasi ordine, maiuscole o minuscole, un errore mostrato dopo la chiusura; `test\ui\App.test.tsx`: Ctrl+Shift+P, «vai impostazioni», Invio apre le Impostazioni;
 - i documenti della Guida: `node scripts/guide-docs.cjs --check` (nel job `Lint and test`) fallisce se `docs\app\GUIDE.md` o `GUIDE.it.md` è rimasto indietro rispetto alla Guida dell'app.
 
 ## File generati e schermate
@@ -316,6 +317,19 @@ Provato a mano su Windows x64: Claude Code 2.1.306 espande `${VAR}` nelle intest
 - [ ] **Nessun token per un repository clonato.** Un repository clonato il cui `.mcp.json` ha un server che chiede `${GITHUB_PERSONAL_ACCESS_TOKEN}` (per esempio in `env` o in un'intestazione) non riceve niente: con il server github assente da `mcp.json` del kit, quel server riceve un valore vuoto o non espanso, mai il token.
 - [ ] **Codex.** In un terminale del kit `codex mcp list` mostra i server del kit (github con `bearer_token_env_var`, playwright, fetch) e, in un progetto, quelli del progetto (mysql con `env_vars`).
 - [ ] **Subito, e a mano.** «Togli» su un server del kit lo toglie da `.claude.json` di Claude Code, `config.toml` di Codex, `mcp_config.json` di Antigravity e `mcp.json` di Pi senza riavviare l'app. Un `data\agents\mcp.json` che non è JSON valido mostra l'avviso e non viene riscritto.
+
+### Palette dei comandi (D-160)
+**Non ancora provato a mano**: che WebView2 (Windows), WKWebView (macOS) e WebKitGTK (Linux) lascino Ctrl+Shift+P alla pagina invece di usarlo loro (il gestore chiama `preventDefault`).
+- [ ] **Dai Progetti.** Ctrl+Shift+P (⌘⇧P su macOS) nella pagina Progetti apre «Comandi» con la casella «Cosa vuoi fare? Avvia, ferma, apri, un progetto, un agente…»; i progetti sono dal più recente, «Vai a» elenca tutte le pagine tranne Progetti.
+- [ ] **Da un'altra pagina.** In Impostazioni (o Strumenti) Ctrl+Shift+P apre la stessa finestra; «Vai a Impostazioni» non c'è, «Vai a Progetti» sì. «vai impostazioni» scritto in un'altra pagina trova «Vai a Impostazioni» (le parole in qualsiasi ordine, maiuscole o minuscole).
+- [ ] **Da un terminale.** Con il cursore in un terminale del kit (pagina Terminali o terminale dell'editor nella pagina), Ctrl+Shift+P apre «Comandi» e il terminale non riceve niente; Ctrl+P nel terminale resta della shell (in PowerShell o Bash, la riga precedente della cronologia).
+- [ ] **Avviare e fermare un progetto.** «Avvia <progetto>» avvia la sua azione predefinita (compare in Attività); riaprendo la palette, la voce è «Ferma <progetto>» e lo ferma. Un errore dell'avvio (per esempio una porta occupata) compare sotto la barra del titolo, con la X che lo chiude.
+- [ ] **Aprire.** «Apri <progetto>» porta alla sua pagina; «Apri <progetto> nell'editor» (solo con l'editor installato) apre l'editor nella sua cartella.
+- [ ] **Un agente nel progetto.** «Claude Code in <progetto>» (o un altro agente installato) apre l'agente nella cartella del progetto, come il pulsante della pagina del progetto; un agente non installato non ha voci.
+- [ ] **Database.** Con MySQL installato, «Avvia MySQL» lo avvia e la voce diventa «Ferma MySQL»; lo stesso per MongoDB. Un server non installato non ha voci.
+- [ ] **Ferma tutto.** Con un'azione, un database e un pool in corso, «Ferma tutto» (presente solo allora) li ferma senza chiedere conferma; il pannello Attività resta vuoto. Senza niente in corso la voce non c'è.
+- [ ] **Chiudere.** Esc, o un clic fuori dalla finestra, chiude senza fare niente; ↑/↓ spostano la scelta, Invio esegue quella evidenziata.
+- [ ] **Ctrl+P invariato.** Ctrl+P apre ancora «Apri un progetto» come prima: Invio apre la pagina, Maiusc+Invio avvia l'azione predefinita, Esc chiude.
 
 ### Strumenti
 - [ ] **Tipi** (D-139). «Tutti gli strumenti» ha i blocchi Sistema ed editor, Agenti AI, Modelli locali, Linguaggi, Strumenti di sviluppo, Server web, Database, ognuno con titolo, numero, descrizione e una casella per sceglierli tutti, e si chiude con un clic; gli stessi tipi nell'albero della barra laterale, nella matrice e al primo avvio.

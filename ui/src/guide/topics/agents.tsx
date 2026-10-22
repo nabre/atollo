@@ -1504,9 +1504,9 @@ export const AGENTS: TopicTexts = {
             ),
             tr(
               "Il server compare nel pannello «Attività» (con «Ferma» e i modelli in memoria) e si ferma con «Ferma tutto», con «Rimuovi l'unità» e alla chiusura dell'app.",
-              "The server appears in the “Activity” panel (with “Stop” and the models in memory) and stops with “Stop all”, with “Remove drive” and when the app closes.",
+              "The server appears in the “Activity” panel (with “Stop” and the models in memory) and stops with “Stop everything”, with “Remove drive” and when the app closes.",
               "Le serveur apparaît dans le panneau « Activité » (avec « Arrêter » et les modèles en mémoire) et s'arrête avec « Tout arrêter », avec « Retirer le lecteur » et à la fermeture de l'application.",
-              "Der Server erscheint im Bereich „Aktivität“ (mit „Beenden“ und den Modellen im Speicher) und stoppt mit „Alle beenden“, mit „Laufwerk entfernen“ und beim Schließen der App.",
+              "Der Server erscheint im Bereich „Aktivität“ (mit „Beenden“ und den Modellen im Speicher) und stoppt mit „Alles stoppen“, mit „Laufwerk entfernen“ und beim Schließen der App.",
             ),
             tr(
               "Mentre cancelli un modello il server si ferma: su Windows un file aperto non si può cancellare.",

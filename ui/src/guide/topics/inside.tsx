@@ -1032,9 +1032,9 @@ export const INSIDE: TopicTexts = {
               ),
               tr(
                 "Con «Ferma», «Ferma tutto», o alla chiusura; un modello lascia la memoria dopo dieci minuti senza richieste",
-                "With “Stop”, “Stop all”, or on closing; a model leaves the memory after ten minutes without requests",
+                "With “Stop”, “Stop everything”, or on closing; a model leaves the memory after ten minutes without requests",
                 "Avec « Arrêter », « Tout arrêter », ou à la fermeture ; un modèle quitte la mémoire après dix minutes sans requêtes",
-                "Mit „Beenden“, „Alle beenden“ oder beim Schließen; ein Modell verlässt den Speicher nach zehn Minuten ohne Anfragen",
+                "Mit „Beenden“, „Alles stoppen“ oder beim Schließen; ein Modell verlässt den Speicher nach zehn Minuten ohne Anfragen",
               ),
             ],
           ]}
@@ -1042,9 +1042,9 @@ export const INSIDE: TopicTexts = {
         <P>
           {tr(
             "Chiudere una console non spegne i database: restano accesi finché non li fermi o chiudi l'app. Il pannello Attività (dalla barra di stato) elenca le azioni dei progetti, ogni versione di database avviata, i pool attivi e il server dei modelli locali; «Ferma tutto» li ferma dopo una conferma.",
-            "Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version, the active pools and the local models server; “Stop all” stops them after a confirmation.",
+            "Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version, the active pools and the local models server; “Stop everything” stops them after a confirmation.",
             "Fermer une console n'arrête pas les bases de données : elles restent allumées jusqu'à ce que vous les arrêtiez ou fermiez l'application. Le panneau Activité (depuis la barre d'état) liste les actions des projets, chaque version de base de données démarrée, les pools actifs et le serveur des modèles locaux ; « Tout arrêter » les arrête après une confirmation.",
-            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt. Das Panel Aktivität (über die Statusleiste) listet die Aktionen der Projekte, jede gestartete Datenbankversion, die aktiven Pools und den Server der lokalen Modelle auf; „Alle beenden“ stoppt sie nach einer Bestätigung.",
+            "Das Schließen einer Konsole fährt die Datenbanken nicht herunter: Sie bleiben an, bis du sie stoppst oder die App schließt. Das Panel Aktivität (über die Statusleiste) listet die Aktionen der Projekte, jede gestartete Datenbankversion, die aktiven Pools und den Server der lokalen Modelle auf; „Alles stoppen“ stoppt sie nach einer Bestätigung.",
           )}
         </P>
       </Section>

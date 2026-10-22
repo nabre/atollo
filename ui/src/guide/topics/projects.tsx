@@ -701,6 +701,17 @@ export const PROJECTS: TopicTexts = {
             <Key key="s">{tr("Maiusc+Invio", "Shift+Enter", "Maj+Entrée", "Umschalt+Enter")}</Key>,
           )}
         </P>
+        <P>
+          {rich(
+            tr(
+              "Per fare qualcosa con un progetto senza aprirlo, {0} (⌘⇧P su macOS) apre «Comandi», da qualsiasi pagina e anche da un terminale. Per ogni progetto, dal più recente: «Avvia» o «Ferma» (la sua azione predefinita), «Apri» (la sua pagina), «Apri … nell'editor» quando l'editor è installato e «<agente> in <progetto>» per ogni agente installato. Ci sono anche «Avvia» o «Ferma» per i server MySQL e MongoDB installati, «Vai a» per le altre pagine e, quando qualcosa è in corso, «Ferma tutto»: lo stesso pulsante del pannello «Attività», senza la sua domanda, perché sceglierlo è già la conferma. Scrivi più parole, per esempio «avvia shop»: ognuna deve comparire, in qualsiasi ordine. Se un comando non riesce dopo la chiusura, l'errore compare sotto la barra del titolo.",
+              "To do something with a project without opening it, {0} (⌘⇧P on macOS) opens “Commands”, from any page and also from a terminal. For each project, newest first: “Start” or “Stop” (its default action), “Open” (its page), “Open … in the editor” when the editor is installed and “<agent> in <project>” for each installed agent. There are also “Start” or “Stop” for the installed MySQL and MongoDB servers, “Go to” for the other pages and, when something is running, “Stop everything”: the same button as in the “Activity” panel, without its question, because choosing it is already the confirmation. Type several words, for example “start shop”: each one must appear, in any order. If a command fails after the palette closed, the error appears under the title bar.",
+              "Pour faire quelque chose avec un projet sans l'ouvrir, {0} (⌘⇧P sur macOS) ouvre « Commandes », depuis n'importe quelle page et aussi depuis un terminal. Pour chaque projet, du plus récent au plus ancien : « Démarrer » ou « Arrêter » (son action par défaut), « Ouvrir » (sa page), « Ouvrir … dans l'éditeur » quand l'éditeur est installé et « <agent> dans <projet> » pour chaque agent installé. Il y a aussi « Démarrer » ou « Arrêter » pour les serveurs MySQL et MongoDB installés, « Aller à » pour les autres pages et, quand quelque chose tourne, « Tout arrêter » : le même bouton que dans le panneau « Activité », sans sa question, car le choisir est déjà la confirmation. Tapez plusieurs mots, par exemple « démarrer shop » : chacun doit apparaître, dans n'importe quel ordre. Si une commande échoue après la fermeture, l'erreur apparaît sous la barre de titre.",
+              "Um etwas mit einem Projekt zu tun, ohne es zu öffnen, öffnet {0} (⌘⇧P unter macOS) „Befehle“, von jeder Seite und auch aus einem Terminal. Für jedes Projekt, das neueste zuerst: „Starten“ oder „Stoppen“ (seine Standardaktion), „Öffnen“ (seine Seite), „… im Editor öffnen“, wenn der Editor installiert ist, und „<Agent> in <Projekt>“ für jeden installierten Agenten. Dazu „Starten“ oder „Stoppen“ für die installierten MySQL- und MongoDB-Server, „Zu … wechseln“ für die anderen Seiten und, wenn etwas läuft, „Alles stoppen“: dieselbe Schaltfläche wie im Bereich „Aktivität“, ohne ihre Frage, denn sie zu wählen ist schon die Bestätigung. Gib mehrere Wörter ein, zum Beispiel „starten shop“: Jedes muss vorkommen, in beliebiger Reihenfolge. Schlägt ein Befehl nach dem Schließen fehl, erscheint der Fehler unter der Titelleiste.",
+            ),
+            <Key key="c">Ctrl+Shift+P</Key>,
+          )}
+        </P>
       </Section>
 
       <Section
@@ -1103,9 +1114,9 @@ export const PROJECTS: TopicTexts = {
             ),
             tr(
               "Le azioni avviate compaiono anche nel pannello «Attività» e nel contatore della barra di stato; nel pannello «Ferma tutto», dopo una conferma, le ferma insieme ai database e ai server web in esecuzione.",
-              "Running actions also appear in the “Activity” panel and in the status bar counter; in the panel “Stop all”, after a confirmation, stops them together with the running databases and web servers.",
+              "Running actions also appear in the “Activity” panel and in the status bar counter; in the panel “Stop everything”, after a confirmation, stops them together with the running databases and web servers.",
               "Les actions démarrées apparaissent aussi dans le panneau « Activité » et dans le compteur de la barre d'état ; dans le panneau, « Tout arrêter », après une confirmation, les arrête avec les bases de données et les serveurs web en cours d'exécution.",
-              "Gestartete Aktionen erscheinen auch im Bereich „Aktivität“ und im Zähler der Statusleiste; im Bereich beendet „Alle beenden“ sie nach einer Bestätigung zusammen mit den laufenden Datenbanken und Webservern.",
+              "Gestartete Aktionen erscheinen auch im Bereich „Aktivität“ und im Zähler der Statusleiste; im Bereich beendet „Alles stoppen“ sie nach einer Bestätigung zusammen mit den laufenden Datenbanken und Webservern.",
             ),
           ]}
         />

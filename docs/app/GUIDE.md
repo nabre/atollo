@@ -218,6 +218,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 > - On the left the activity bar changes page; next to it, the sidebar shows lists and trees.
 > - In the center the tabs; at the bottom the status bar and the “Activity” panel with what is in progress.
 > - <kbd>Ctrl+P</kbd> opens a project by name from any page.
+> - <kbd>Ctrl+Shift+P</kbd> opens the command palette from any page, even from a terminal: start or stop a project, open it, launch an agent in it, change page.
 
 #### The parts of the window
 
@@ -240,7 +241,7 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | 2 · Activity bar | The page icons. At the top the working ones: Projects, Agents, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions and web server pools. |
 | 3 · Sidebar | The page title with its icons (including the book “Open the guide for this page”), often a search box, and panes that open and close with a click on their title. |
 | 4 · Tab area | What you choose in the sidebar opens in a tab. The first tab of some pages is fixed: the “Quick panel” in Projects, “All tools” in Tools. |
-| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools, the local models server and the project actions, each with its output; “Stop all” stops them all after a confirmation. |
+| 5 · “Activity” panel | It opens from the status bar. It lists the installation in progress, the running database versions, the running web server pools, the local models server and the project actions, each with its output; “Stop everything” stops them all after a confirmation. |
 | 6 · Status bar | On the left the Atollo item and the counter of what is running and of the errors, which shows or hides the “Activity” panel; on the right the open terminals, the editor status, the system (for example win32-x64) and, last, the Atollo version: a click checks for updates, and the result appears beside it (a check mark, the new version or a warning). |
 
 #### The pages
@@ -277,14 +278,15 @@ Related topics: [1.3 Getting to know the window](#13-getting-to-know-the-window)
 | win32-x64, darwin-arm64… | The system and the processor the kit runs on. | — |
 | v0.x.y | The Atollo version. | — |
 
-In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”; for the local models the address, the models in memory and “Stop”. “Stop all”, at the top, asks “Stop the projects' actions, the databases, the local models and the web servers that are running?” and then stops actions, databases, local models and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
+In the “Activity” panel you select each item to see its details: for a project action the status, the address and the live output, with “Open in the browser”, “Stop” or, if it has finished, “Remove”; for a database the name, the address, any errors, the log file and “Stop”; for a web server pool the address, the attached VirtualHosts and “Stop”; for the local models the address, the models in memory and “Stop”. “Stop everything”, at the top, asks “Stop the projects' actions, the databases, the local models and the web servers that are running?” and then stops actions, databases, local models and pools. If there is nothing, “nothing running” appears. You resize the panel by dragging its edge; a double-click on the edge brings it back to its initial height.
 
 #### Useful shortcuts and habits
 
 | Keys | What it does |
 | --- | --- |
 | <kbd>Ctrl+P</kbd> | Opens “Open a project” (⌘P on macOS): type part of the name, the platform or the language. Enter opens the project's page, Shift+Enter starts its default action, Esc closes. |
-| <kbd>Esc</kbd> | Closes confirmation dialogs and image zoom, and cancels the questions in the page (for example the one of “Stop all” or of removing a terminal). |
+| <kbd>Ctrl+Shift+P</kbd> | Opens “Commands”, the command palette (⌘⇧P on macOS), from any page and also from a terminal. It offers “Start” or “Stop” and “Open” for each project, “Open … in the editor”, each installed agent in a project, “Start” or “Stop” for MySQL and MongoDB, “Go to” for the other pages and, when something is running, “Stop everything”. Every word you type must appear, in any order; ↑ and ↓ choose, Enter runs, Esc closes. |
+| <kbd>Esc</kbd> | Closes confirmation dialogs and image zoom, and cancels the questions in the page (for example the one of “Stop everything” or of removing a terminal). |
 
 - Hover the mouse over icons, dots and tags: almost everything has a tooltip that explains what it is or what it does.
 - The language and the theme are changed in Settings › General › “Language” and “Theme”: by default the light or dark theme follows the operating system's, and it applies to the editor and the terminals too.
@@ -452,7 +454,7 @@ Related topics: [1.4 The first project, step by step](#14-the-first-project-step
 
 ### 2.2 The Projects page and the “Quick panel”
 
-*The list of projects, the “Quick panel” with favorites and recent ones, quick open with Ctrl+P and the seven sections of a project.*
+*The list of projects, the “Quick panel” with favorites and recent ones, quick open with Ctrl+P, commands with Ctrl+Shift+P and the seven sections of a project.*
 
 > **In short**
 >
@@ -494,6 +496,8 @@ It is the first tab of the page, always there. It only shows the parts that have
 #### Opening a project by name
 
 From any page press <kbd>Ctrl+P</kbd> (⌘P on macOS): “Open a project” appears. Type part of the name, the platform or a language; projects are sorted by recent use. <kbd>Enter</kbd> opens the page, <kbd>Shift+Enter</kbd> immediately starts the default action.
+
+To do something with a project without opening it, <kbd>Ctrl+Shift+P</kbd> (⌘⇧P on macOS) opens “Commands”, from any page and also from a terminal. For each project, newest first: “Start” or “Stop” (its default action), “Open” (its page), “Open … in the editor” when the editor is installed and “\<agent\> in \<project\>” for each installed agent. There are also “Start” or “Stop” for the installed MySQL and MongoDB servers, “Go to” for the other pages and, when something is running, “Stop everything”: the same button as in the “Activity” panel, without its question, because choosing it is already the confirmation. Type several words, for example “start shop”: each one must appear, in any order. If a command fails after the palette closed, the error appears under the title bar.
 
 #### A project's page
 
@@ -569,7 +573,7 @@ Below the detail is the “Output of …” pane with the “Follow” checkbox,
 - The browser does not open by itself: use “Open in the browser” (here, in the “Quick panel” or in the “Activity” panel). The address is usually http://localhost:\<port\>/.
 - If the program ignores the assigned port and prints another one in the output, the kit follows that one.
 - “Stop” closes the action's whole process tree. Closing Atollo stops all actions.
-- Running actions also appear in the “Activity” panel and in the status bar counter; in the panel “Stop all”, after a confirmation, stops them together with the running databases and web servers.
+- Running actions also appear in the “Activity” panel and in the status bar counter; in the panel “Stop everything”, after a confirmation, stops them together with the running databases and web servers.
 
 #### The port
 
@@ -1568,7 +1572,7 @@ Pi does not need these steps: the kit writes the port and the key into its confi
 - The server listens only on 127.0.0.1: no other PC on the network reaches it, even with the local network enabled in Settings.
 - Every request needs the server's key, created at the first start and given to the server as a file, never on the command line (where other programs on the PC would see it). Without the key the server answers 401.
 - A model loads when Pi or the chat asks for it, one at a time, and is unloaded after ten minutes without requests: the memory goes back to the PC.
-- The server appears in the “Activity” panel (with “Stop” and the models in memory) and stops with “Stop all”, with “Remove drive” and when the app closes.
+- The server appears in the “Activity” panel (with “Stop” and the models in memory) and stops with “Stop everything”, with “Remove drive” and when the app closes.
 - While you delete a model the server stops: on Windows an open file cannot be deleted.
 
 <details>
@@ -2423,9 +2427,9 @@ Related topics: [8.1 Portable and isolated: what it means](#81-portable-and-isol
 | Databases | With “Start”, “Start with Atollo” or when a project asks for them | With “Stop”, or on closing (orderly shutdown) |
 | Editor | With the first “Editor” | When the app closes |
 | Consoles and agents | With “Terminal”, “Open”, the agent logos | When you close them, or when the app closes |
-| Local models server | With “Start”, “Start with Atollo” or by opening Pi on a local model | With “Stop”, “Stop all”, or on closing; a model leaves the memory after ten minutes without requests |
+| Local models server | With “Start”, “Start with Atollo” or by opening Pi on a local model | With “Stop”, “Stop everything”, or on closing; a model leaves the memory after ten minutes without requests |
 
-Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version, the active pools and the local models server; “Stop all” stops them after a confirmation.
+Closing a console does not shut down the databases: they stay on until you stop them or close the app. The Activity panel (from the status bar) lists the project actions, every running database version, the active pools and the local models server; “Stop everything” stops them after a confirmation.
 
 #### On closing
 

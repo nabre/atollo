@@ -192,7 +192,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: codicon("layout-sidebar-left"),
     keywords:
-      "window finestra barra attività stato pannello schede layout interfaccia ctrl+p activity bar status bar sidebar tabs panel fenêtre barre d'activité barre d'état panneau onglets fenster aktivitätsleiste statusleiste seitenleiste tabs bereich mostra nascondi pannello show hide panel afficher masquer panneau anzeigen ausblenden",
+      "window finestra barra attività stato pannello schede layout interfaccia ctrl+p ctrl+shift+p palette comandi palette dei comandi scorciatoie command palette commands shortcuts palette de commandes raccourcis befehlspalette befehle tastenkürzel activity bar status bar sidebar tabs panel fenêtre barre d'activité barre d'état panneau onglets fenster aktivitätsleiste statusleiste seitenleiste tabs bereich mostra nascondi pannello show hide panel afficher masquer panneau anzeigen ausblenden",
   },
   {
     id: "first-project",
@@ -246,14 +246,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "L'elenco dei progetti, il «Pannello rapido» con preferiti e recenti, l'apertura veloce con Ctrl+P e le sette sezioni di un progetto.",
-        "The list of projects, the “Quick panel” with favorites and recent ones, quick open with Ctrl+P and the seven sections of a project.",
-        "La liste des projets, le « Panneau rapide » avec les favoris et les récents, l'ouverture rapide avec Ctrl+P et les sept sections d'un projet.",
-        "Die Liste der Projekte, die „Schnellübersicht“ mit Favoriten und zuletzt verwendeten, das schnelle Öffnen mit Ctrl+P und die sieben Abschnitte eines Projekts.",
+        "L'elenco dei progetti, il «Pannello rapido» con preferiti e recenti, l'apertura veloce con Ctrl+P, i comandi con Ctrl+Shift+P e le sette sezioni di un progetto.",
+        "The list of projects, the “Quick panel” with favorites and recent ones, quick open with Ctrl+P, commands with Ctrl+Shift+P and the seven sections of a project.",
+        "La liste des projets, le « Panneau rapide » avec les favoris et les récents, l'ouverture rapide avec Ctrl+P, les commandes avec Ctrl+Shift+P et les sept sections d'un projet.",
+        "Die Liste der Projekte, die „Schnellübersicht“ mit Favoriten und zuletzt verwendeten, das schnelle Öffnen mit Ctrl+P, die Befehle mit Ctrl+Shift+P und die sieben Abschnitte eines Projekts.",
       ),
     icon: codicon("folder-library"),
     keywords:
-      "progetti pannello rapido preferiti recenti quick open ctrl+p sezioni scheda progetto projects quick panel favorites recent sections projets panneau rapide favoris récents sections projekte schnellübersicht favoriten zuletzt abschnitte",
+      "progetti pannello rapido preferiti recenti quick open ctrl+p ctrl+shift+p palette comandi command palette avvia ferma start stop palette de commandes befehlspalette sezioni scheda progetto projects quick panel favorites recent sections projets panneau rapide favoris récents sections projekte schnellübersicht favoriten zuletzt abschnitte",
     targetPage: "projects",
   },
   {
