@@ -26,12 +26,12 @@ import { updateFound, updateText } from "./shell/update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";
 import { TitleBar } from "./shell/titlebar";
-import { AgentsPage, useAgents } from "./agents";
+import { useAgents } from "./agents";
+import { AiPage, type AiPane } from "./ai";
 import { setupStatusText, useSetup } from "./components/setup";
 import { CloseDialog, EjectPage } from "./shell/eject";
 import { setLang, t, type Lang } from "./i18n";
 import { DatabasesPage } from "./databases";
-import { ModelsPage } from "./models";
 import { ServersPage } from "./servers";
 import { tauriPty, TerminalsPage, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
@@ -61,17 +61,7 @@ const PRELOAD: Partial<Record<PageId, () => Promise<unknown>>> = {
 // every system (D-148, the kit's ConPTY on Windows).
 const TerminalPanel = lazy(() => import("./terminal/panel").then((m) => ({ default: m.TerminalPanel })));
 
-type PageId =
-  | "projects"
-  | "agents"
-  | "models"
-  | "databases"
-  | "servers"
-  | "terminals"
-  | "components"
-  | "guide"
-  | "settings"
-  | "eject";
+type PageId = "projects" | "ai" | "databases" | "servers" | "terminals" | "components" | "guide" | "settings" | "eject";
 
 interface Page {
   id: PageId;
@@ -82,8 +72,7 @@ interface Page {
 function pages(): Page[] {
   return [
     { id: "projects", label: t("Progetti"), icon: codicon("folder-library") },
-    { id: "agents", label: t("Agenti"), icon: codicon("hubot") },
-    { id: "models", label: t("Modelli locali"), icon: codicon("chip") },
+    { id: "ai", label: t("AI"), icon: codicon("sparkle") },
     { id: "databases", label: t("Database"), icon: codicon("database") },
     { id: "servers", label: t("Server Web"), icon: codicon("globe") },
     { id: "terminals", label: t("Terminali"), icon: codicon("terminal") },
@@ -97,6 +86,13 @@ function pages(): Page[] {
 export function App() {
   const [page, setPage] = useState<PageId>("projects");
   const [guideTopic, setGuideTopic] = useState<GuideTopicId>("welcome");
+  /** The pane of AI a link of the Guide leads to. */
+  const [aiFocus, setAiFocus] = useState<AiPane>("agents");
+  /** A page chosen in the activity bar or the palette: AI on its agents. */
+  const showPage = useCallback((id: PageId) => {
+    if (id === "ai") setAiFocus("agents");
+    setPage(id);
+  }, []);
   const openGuide = useCallback((topic: GuideTopicId = "welcome") => {
     setGuideTopic(topic);
     setPage("guide");
@@ -214,7 +210,7 @@ export function App() {
         <ActivityBar
           pages={all}
           page={page}
-          onSelect={setPage}
+          onSelect={showPage}
           badges={{
             projects: { count: live, label: t("In esecuzione: {0}", String(live)) },
             components: { count: newVersions, label: t("Versioni nuove: {0}", String(newVersions)) },
@@ -242,10 +238,8 @@ export function App() {
                 quickOpen={quickOpen}
                 onQuickOpen={setQuickOpen}
               />
-            ) : page === "agents" ? (
-              <AgentsPage onGuide={openGuide} />
-            ) : page === "models" ? (
-              <ModelsPage onGuide={openGuide} />
+            ) : page === "ai" ? (
+              <AiPage key={aiFocus} focus={aiFocus} onGuide={openGuide} />
             ) : page === "components" ? (
               <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
             ) : page === "databases" ? (
@@ -267,7 +261,9 @@ export function App() {
                 onNavigate={(target) => {
                   // The wizard is a tab of Projects.
                   if (target === "new") projectTabs.show(WIZARD_TAB);
-                  setPage(target === "new" ? "projects" : target);
+                  // Agents and local models are the two panes of AI.
+                  if (target === "agents" || target === "models") setAiFocus(target);
+                  setPage(target === "new" ? "projects" : target === "agents" || target === "models" ? "ai" : target);
                 }}
               />
             ) : page === "settings" ? (
@@ -353,7 +349,7 @@ export function App() {
           runs={runs}
           running={running}
           onPage={(id) => {
-            setPage(id as PageId);
+            showPage(id as PageId);
           }}
           onOpenProject={(id) => {
             setPage("projects");

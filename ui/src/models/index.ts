@@ -1,2 +1,1 @@
-export { ModelsPage, fitOf } from "./page";
-export { gb } from "../shared/format";
+export { ModelsEditor, ModelsPane, fitOf, useModels, type Models } from "./page";

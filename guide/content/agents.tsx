@@ -1,5 +1,6 @@
-// Chapter 4 of the Guide, «Agenti IA»: the four agents, what they share,
-// their limits and usage, and the local models Pi runs on.
+// Chapter 4 of the Guide, «AI: agenti e modelli locali»: the four agents,
+// what they share, their limits and usage, and the local models Pi runs on.
+// Both are the two panes of the AI page (D-165).
 import { rich, tr } from "../core/lang";
 import {
   Bullets,
@@ -72,12 +73,12 @@ export const AGENTS: TopicTexts = {
 
       <GuideShot
         src="agents.webp"
-        title={tr("La pagina Agenti", "The Agents page", "La page Agents", "Die Seite Agenten")}
+        title={tr("La pagina AI: agenti", "The AI page: agents", "La page IA : agents", "Die Seite KI: Agenten")}
         caption={tr(
-          "Gli agenti installati con accesso e limite più alto; a destra limiti e consumi, accesso e cartella condivisa.",
-          "The installed agents with sign-in and highest limit; on the right limits and usage, sign-in and shared folder.",
-          "Les agents installés avec connexion et limite la plus haute ; à droite limites et consommation, connexion et dossier partagé.",
-          "Die installierten Agenten mit Anmeldung und höchstem Limit; rechts Limits und Verbrauch, Anmeldung und gemeinsamer Ordner.",
+          "Nel riquadro Agenti gli agenti installati con accesso e limite più alto, poi la riga «Condiviso fra gli agenti»; a destra limiti e consumi e accesso dell'agente scelto.",
+          "In the Agents pane the installed agents with sign-in and highest limit, then the “Shared by the agents” row; on the right the chosen agent's limits and usage and sign-in.",
+          "Dans le volet Agents, les agents installés avec connexion et limite la plus haute, puis la ligne « Partagé entre les agents » ; à droite limites et consommation et connexion de l'agent choisi.",
+          "Im Bereich Agenten die installierten Agenten mit Anmeldung und höchstem Limit, dann die Zeile „Von den Agenten geteilt“; rechts Limits und Verbrauch und Anmeldung des gewählten Agenten.",
         )}
       />
 
@@ -128,10 +129,10 @@ export const AGENTS: TopicTexts = {
               tr("Antigravity", "Antigravity", "Antigravity", "Antigravity"),
               tr("Google", "Google", "Google", "Google"),
               tr(
-                "Account Google oppure chiave API di Gemini, da scrivere in Impostazioni › Agenti.",
-                "Google account or a Gemini API key, to enter in Settings › Agents.",
-                "Compte Google ou clé API de Gemini, à saisir dans Paramètres › Agents.",
-                "Google-Konto oder API-Schlüssel von Gemini, einzutragen unter Einstellungen › Agenten.",
+                "Account Google oppure chiave API di Gemini, da scrivere nella pagina AI, Antigravity › Accesso.",
+                "Google account or a Gemini API key, to enter on the AI page, Antigravity › Sign-in.",
+                "Compte Google ou clé API de Gemini, à saisir dans la page IA, Antigravity › Connexion.",
+                "Google-Konto oder API-Schlüssel von Gemini, einzutragen auf der Seite KI, Antigravity › Anmeldung.",
               ),
             ],
             [
@@ -162,10 +163,10 @@ export const AGENTS: TopicTexts = {
         <Callout tone="info" title={tr("Pi", "Pi", "Pi", "Pi")}>
           {rich(
             tr(
-              "Pi è un agente da terminale che lavora con molti fornitori. Nel kit parte da solo su un modello locale: quello scelto nella pagina «Modelli locali», altrimenti il primo del kit che sa usare gli strumenti, e prima di aprirlo il kit avvia il server dei modelli. Se in Pi scegli un provider in cloud con /login, resta su quello; i modelli locali restano nel suo elenco (/model). Su Windows Pi usa il Git Bash del kit come shell. Vedi {0}.",
-              "Pi is a terminal agent that works with many providers. In the kit it starts by itself on a local model: the one chosen on the “Local models” page, otherwise the kit's first one that can use tools, and before opening it the kit starts the models server. If you choose a cloud provider in Pi with /login, it stays on that one; the local models remain in its list (/model). On Windows Pi uses the kit's Git Bash as its shell. See {0}.",
-              "Pi est un agent de terminal qui fonctionne avec de nombreux fournisseurs. Dans le kit, il démarre tout seul sur un modèle local : celui choisi dans la page « Modèles locaux », sinon le premier du kit qui sait utiliser les outils, et avant de l'ouvrir le kit démarre le serveur des modèles. Si vous choisissez dans Pi un fournisseur dans le cloud avec /login, il reste sur celui-ci ; les modèles locaux restent dans sa liste (/model). Sur Windows, Pi utilise le Git Bash du kit comme shell. Voir {0}.",
-              "Pi ist ein Terminal-Agent, der mit vielen Anbietern arbeitet. Im Kit startet er von selbst mit einem lokalen Modell: dem auf der Seite „Lokale Modelle“ gewählten, sonst dem ersten des Kits, das Werkzeuge nutzen kann, und bevor er geöffnet wird, startet das Kit den Server der Modelle. Wählst du in Pi mit /login einen Cloud-Anbieter, bleibt er bei diesem; die lokalen Modelle bleiben in seiner Liste (/model). Unter Windows verwendet Pi die Git Bash des Kits als Shell. Siehe {0}.",
+              "Pi è un agente da terminale che lavora con molti fornitori. Nel kit parte da solo su un modello locale: quello scelto nella pagina AI, riquadro «Modelli locali», altrimenti il primo del kit che sa usare gli strumenti, e prima di aprirlo il kit avvia il server dei modelli. Se in Pi scegli un provider in cloud con /login, resta su quello; i modelli locali restano nel suo elenco (/model). Su Windows Pi usa il Git Bash del kit come shell. Vedi {0}.",
+              "Pi is a terminal agent that works with many providers. In the kit it starts by itself on a local model: the one chosen on the AI page, “Local models” pane, otherwise the kit's first one that can use tools, and before opening it the kit starts the models server. If you choose a cloud provider in Pi with /login, it stays on that one; the local models remain in its list (/model). On Windows Pi uses the kit's Git Bash as its shell. See {0}.",
+              "Pi est un agent de terminal qui fonctionne avec de nombreux fournisseurs. Dans le kit, il démarre tout seul sur un modèle local : celui choisi dans la page IA, volet « Modèles locaux », sinon le premier du kit qui sait utiliser les outils, et avant de l'ouvrir le kit démarre le serveur des modèles. Si vous choisissez dans Pi un fournisseur dans le cloud avec /login, il reste sur celui-ci ; les modèles locaux restent dans sa liste (/model). Sur Windows, Pi utilise le Git Bash du kit comme shell. Voir {0}.",
+              "Pi ist ein Terminal-Agent, der mit vielen Anbietern arbeitet. Im Kit startet er von selbst mit einem lokalen Modell: dem auf der Seite KI im Bereich „Lokale Modelle“ gewählten, sonst dem ersten des Kits, das Werkzeuge nutzen kann, und bevor er geöffnet wird, startet das Kit den Server der Modelle. Wählst du in Pi mit /login einen Cloud-Anbieter, bleibt er bei diesem; die lokalen Modelle bleiben in seiner Liste (/model). Unter Windows verwendet Pi die Git Bash des Kits als Shell. Siehe {0}.",
             ),
             <See key="m" id="models" />,
           )}
@@ -182,10 +183,10 @@ export const AGENTS: TopicTexts = {
       >
         <P>
           {tr(
-            "La pagina Agenti non avvia gli agenti: un agente lavora sempre nella cartella di un progetto, quindi si apre dalla pagina Progetti.",
-            "The Agents page does not start agents: an agent always works in a project's folder, so you open it from the Projects page.",
-            "La page Agents ne lance pas les agents : un agent travaille toujours dans le dossier d'un projet, il s'ouvre donc depuis la page Projets.",
-            "Die Seite Agenten startet keine Agenten: Ein Agent arbeitet immer im Ordner eines Projekts, daher wird er auf der Seite Projekte geöffnet.",
+            "La pagina AI non avvia gli agenti: un agente lavora sempre nella cartella di un progetto, quindi si apre dalla pagina Progetti.",
+            "The AI page does not start agents: an agent always works in a project's folder, so you open it from the Projects page.",
+            "La page IA ne lance pas les agents : un agent travaille toujours dans le dossier d'un projet, il s'ouvre donc depuis la page Projets.",
+            "Die Seite KI startet keine Agenten: Ein Agent arbeitet immer im Ordner eines Projekts, daher wird er auf der Seite Projekte geöffnet.",
           )}
         </P>
         <Steps
@@ -239,13 +240,31 @@ export const AGENTS: TopicTexts = {
         </Under>
       </Section>
 
-      <Section title={tr("La pagina Agenti", "The Agents page", "La page Agents", "Die Seite Agenten")}>
+      <Section
+        title={tr(
+          "La pagina AI: il riquadro Agenti",
+          "The AI page: the Agents pane",
+          "La page IA : le volet Agents",
+          "Die Seite KI: der Bereich Agenten",
+        )}
+      >
+        <P>
+          {rich(
+            tr(
+              "La pagina AI si apre dalla barra delle attività (l'icona della scintilla) e raccoglie agenti e modelli locali. A sinistra due riquadri: «Agenti», il primo, e «Modelli locali» ({0}). A destra c'è la riga scelta; all'apertura il primo agente installato, o i modelli se non c'è nessun agente.",
+              "The AI page opens from the activity bar (the sparkle icon) and gathers agents and local models. On the left, two panes: “Agents”, the first one, and “Local models” ({0}). On the right is the row you chose; when the page opens, the first installed agent, or the models if there is no agent.",
+              "La page IA s'ouvre depuis la barre d'activité (l'icône de l'étincelle) et réunit agents et modèles locaux. À gauche, deux volets : « Agents », le premier, et « Modèles locaux » ({0}). À droite se trouve la ligne choisie ; à l'ouverture, le premier agent installé, ou les modèles s'il n'y a aucun agent.",
+              "Die Seite KI öffnet sich über die Aktivitätsleiste (das Funken-Symbol) und vereint Agenten und lokale Modelle. Links zwei Bereiche: „Agenten“, der erste, und „Lokale Modelle“ ({0}). Rechts steht die gewählte Zeile; beim Öffnen der erste installierte Agent oder die Modelle, wenn kein Agent da ist.",
+            ),
+            <See key="m" id="models" />,
+          )}
+        </P>
         <P>
           {tr(
-            "A sinistra il riquadro «Installati» elenca gli agenti con la versione, lo stato dell'accesso, «in esecuzione» quando sono aperti e il limite più alto raggiunto (per esempio «5 ore 42%»). A destra, per l'agente scelto, tre parti:",
-            "On the left, the “Installed” box lists the agents with their version, sign-in status, “running” when they are open and the highest limit reached (for example “5 hours 42%”). On the right, for the chosen agent, three parts:",
-            "À gauche, le panneau « Installés » liste les agents avec la version, l'état de la connexion, « en cours d'exécution » quand ils sont ouverts et la limite la plus haute atteinte (par exemple « 5 heures 42% »). À droite, pour l'agent choisi, trois parties :",
-            "Links listet der Bereich „Installiert“ die Agenten mit Version, Anmeldestatus, „läuft“, wenn sie geöffnet sind, und dem höchsten erreichten Limit auf (zum Beispiel „5 Stunden 42%“). Rechts, für den gewählten Agenten, drei Teile:",
+            "Il riquadro «Agenti» (il numero accanto conta quelli installati) elenca gli agenti con la versione, lo stato dell'accesso, «in esecuzione» quando sono aperti e il limite più alto raggiunto (per esempio «5 ore 42%»). L'ultima riga è «Condiviso fra gli agenti» (istruzioni, skill e server MCP). A destra, per l'agente scelto, due parti:",
+            "The “Agents” pane (the number beside it counts the installed ones) lists the agents with their version, sign-in status, “running” when they are open and the highest limit reached (for example “5 hours 42%”). The last row is “Shared by the agents” (instructions, skills and MCP servers). On the right, for the chosen agent, two parts:",
+            "Le volet « Agents » (le nombre à côté compte ceux qui sont installés) liste les agents avec la version, l'état de la connexion, « en cours d'exécution » quand ils sont ouverts et la limite la plus haute atteinte (par exemple « 5 heures 42% »). La dernière ligne est « Partagé entre les agents » (instructions, skills et serveurs MCP). À droite, pour l'agent choisi, deux parties :",
+            "Der Bereich „Agenten“ (die Zahl daneben zählt die installierten) listet die Agenten mit Version, Anmeldestatus, „läuft“, wenn sie geöffnet sind, und dem höchsten erreichten Limit auf (zum Beispiel „5 Stunden 42%“). Die letzte Zeile ist „Von den Agenten geteilt“ (Anweisungen, Skills und MCP-Server). Rechts, für den gewählten Agenten, zwei Teile:",
           )}
         </P>
         <Table
@@ -261,33 +280,40 @@ export const AGENTS: TopicTexts = {
             [
               tr("Accesso", "Sign-in", "Connexion", "Anmeldung"),
               tr(
-                "Lo stato dell'accesso, «Esci» e, su macOS per Claude Code, «Collega con un token».",
-                "The sign-in status, “Sign out” and, on macOS for Claude Code, “Connect with a token”.",
-                "L'état de la connexion, « Se déconnecter » et, sur macOS pour Claude Code, « Connecter avec un jeton ».",
-                "Der Anmeldestatus, „Abmelden“ und unter macOS für Claude Code „Mit einem Token verbinden“.",
+                "Lo stato dell'accesso, «Esci», su macOS per Claude Code «Collega con un token» e, per Antigravity, la chiave API di Gemini.",
+                "The sign-in status, “Sign out”, on macOS for Claude Code “Connect with a token” and, for Antigravity, the Gemini API key.",
+                "L'état de la connexion, « Se déconnecter », sur macOS pour Claude Code « Connecter avec un jeton » et, pour Antigravity, la clé API de Gemini.",
+                "Der Anmeldestatus, „Abmelden“, unter macOS für Claude Code „Mit einem Token verbinden“ und für Antigravity der API-Schlüssel von Gemini.",
               ),
-            ],
-            [
-              tr(
-                "Condiviso fra gli agenti",
-                "Shared by the agents",
-                "Partagé entre les agents",
-                "Von den Agenten geteilt",
-              ),
-              <See key="s" id="agents-shared" />,
             ],
           ]}
         />
         <P>
+          {rich(
+            tr(
+              "La riga «Condiviso fra gli agenti» apre a destra la sezione «Istruzioni e skill» (AGENTS.md, skill, mcp.json e «Apri la cartella condivisa») e il riquadro «Server MCP del kit»: {0}.",
+              "The “Shared by the agents” row opens on the right the “Instructions and skills” section (AGENTS.md, skills, mcp.json and “Open shared folder”) and the “The kit's MCP servers” box: {0}.",
+              "La ligne « Partagé entre les agents » ouvre à droite la section « Instructions et skills » (AGENTS.md, skills, mcp.json et « Ouvrir le dossier partagé ») et le panneau « Serveurs MCP du kit » : {0}.",
+              "Die Zeile „Von den Agenten geteilt“ öffnet rechts den Abschnitt „Anweisungen und Skills“ (AGENTS.md, Skills, mcp.json und „Gemeinsamen Ordner öffnen“) und den Bereich „MCP-Server des Kits“: {0}.",
+            ),
+            <See key="s" id="agents-shared" />,
+          )}
+        </P>
+        <P>
           {tr(
-            "In cima alla barra laterale: «Aggiorna i consumi», «Apri la cartella condivisa» (data\\agents) e il libro della guida. Se non c'è nessun agente: «Nessun agente installato: aggiungili da Strumenti.»",
-            "At the top of the sidebar: “Refresh usage”, “Open shared folder” (data\\agents) and the guide's book. If there is no agent: “No agent installed: add them from Tools.”",
-            "En haut de la barre latérale : « Actualiser la consommation », « Ouvrir le dossier partagé » (data\\agents) et le livre du guide. S'il n'y a aucun agent : « Aucun agent installé : ajoutez-les depuis Outils. »",
-            "Oben in der Seitenleiste: „Verbrauch aktualisieren“, „Gemeinsamen Ordner öffnen“ (data\\agents) und das Buch der Anleitung. Wenn kein Agent vorhanden ist: „Kein Agent installiert: über Werkzeuge hinzufügen.“",
+            "Passando con il mouse sul titolo del riquadro compaiono «Aggiorna i consumi» e «Apri la cartella condivisa» (data\\agents); in cima alla barra laterale c'è il libro della guida. Se non c'è nessun agente, sopra la riga condivisa: «Nessun agente installato: aggiungili da Strumenti.»",
+            "Hovering over the pane's title shows “Refresh usage” and “Open shared folder” (data\\agents); at the top of the sidebar there is the guide's book. If there is no agent, above the shared row: “No agent installed: add them from Tools.”",
+            "Au survol du titre du volet apparaissent « Actualiser la consommation » et « Ouvrir le dossier partagé » (data\\agents) ; en haut de la barre latérale se trouve le livre du guide. S'il n'y a aucun agent, au-dessus de la ligne partagée : « Aucun agent installé : ajoutez-les depuis Outils. »",
+            "Fährst du mit der Maus über den Titel des Bereichs, erscheinen „Verbrauch aktualisieren“ und „Gemeinsamen Ordner öffnen“ (data\\agents); oben in der Seitenleiste ist das Buch der Anleitung. Wenn kein Agent vorhanden ist, über der geteilten Zeile: „Kein Agent installiert: über Werkzeuge hinzufügen.“",
           )}
         </P>
         <Go page="agents">
-          {tr("Apri la pagina Agenti", "Open the Agents page", "Ouvrir la page Agents", "Seite Agenten öffnen")}
+          {tr(
+            "Apri la pagina AI, riquadro Agenti",
+            "Open the AI page, Agents pane",
+            "Ouvrir la page IA, volet Agents",
+            "Seite KI öffnen, Bereich Agenten",
+          )}
         </Go>
       </Section>
 
@@ -333,10 +359,10 @@ export const AGENTS: TopicTexts = {
                 "mit API-Schlüssel angemeldet",
               ),
               tr(
-                "Codex con la chiave salvata da codex login --with-api-key, Antigravity con la chiave di Gemini delle Impostazioni, o Pi con una chiave API salvata nel suo auth.json: niente limiti di piano, paghi a consumo.",
-                "Codex with the key saved by codex login --with-api-key, Antigravity with the Gemini key from Settings, or Pi with an API key saved in its auth.json: no plan limits, you pay for what you use.",
-                "Codex avec la clé enregistrée par codex login --with-api-key, Antigravity avec la clé Gemini des Paramètres, ou Pi avec une clé API enregistrée dans son auth.json : pas de limites d'abonnement, vous payez à la consommation.",
-                "Codex mit dem von codex login --with-api-key gespeicherten Schlüssel, Antigravity mit dem Gemini-Schlüssel aus den Einstellungen oder Pi mit einem in seiner auth.json gespeicherten API-Schlüssel: keine Tariflimits, du zahlst nach Verbrauch.",
+                "Codex con la chiave salvata da codex login --with-api-key, Antigravity con la chiave di Gemini scritta nel suo «Accesso» (vedi sotto), o Pi con una chiave API salvata nel suo auth.json: niente limiti di piano, paghi a consumo.",
+                "Codex with the key saved by codex login --with-api-key, Antigravity with the Gemini key entered in its “Sign-in” (see below), or Pi with an API key saved in its auth.json: no plan limits, you pay for what you use.",
+                "Codex avec la clé enregistrée par codex login --with-api-key, Antigravity avec la clé Gemini saisie dans sa « Connexion » (voir plus bas), ou Pi avec une clé API enregistrée dans son auth.json : pas de limites d'abonnement, vous payez à la consommation.",
+                "Codex mit dem von codex login --with-api-key gespeicherten Schlüssel, Antigravity mit dem in seiner „Anmeldung“ eingetragenen Gemini-Schlüssel (siehe unten) oder Pi mit einem in seiner auth.json gespeicherten API-Schlüssel: keine Tariflimits, du zahlst nach Verbrauch.",
               ),
             ],
             [
@@ -361,10 +387,10 @@ export const AGENTS: TopicTexts = {
                 "lokale Modelle des Kits, ohne Anmeldung",
               ),
               tr(
-                "Solo Pi: nessun provider in cloud, usa un modello scaricato nella pagina «Modelli locali». Non c'è niente da cui uscire.",
-                "Only Pi: no cloud provider, it uses a model downloaded on the “Local models” page. There is nothing to sign out of.",
-                "Uniquement Pi : aucun fournisseur dans le cloud, il utilise un modèle téléchargé dans la page « Modèles locaux ». Il n'y a rien dont se déconnecter.",
-                "Nur Pi: kein Cloud-Anbieter, er verwendet ein auf der Seite „Lokale Modelle“ heruntergeladenes Modell. Es gibt nichts, wovon man sich abmelden müsste.",
+                "Solo Pi: nessun provider in cloud, usa un modello scaricato nella pagina AI, riquadro «Modelli locali». Non c'è niente da cui uscire.",
+                "Only Pi: no cloud provider, it uses a model downloaded on the AI page, “Local models” pane. There is nothing to sign out of.",
+                "Uniquement Pi : aucun fournisseur dans le cloud, il utilise un modèle téléchargé dans la page IA, volet « Modèles locaux ». Il n'y a rien dont se déconnecter.",
+                "Nur Pi: kein Cloud-Anbieter, er verwendet ein auf der Seite KI im Bereich „Lokale Modelle“ heruntergeladenes Modell. Es gibt nichts, wovon man sich abmelden müsste.",
               ),
             ],
           ]}
@@ -402,6 +428,22 @@ export const AGENTS: TopicTexts = {
             "On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”. The token reaches, as CLAUDE_CODE_OAUTH_TOKEN, only the Claude Code that Atollo launches: not project actions, scripts, terminals or the editor.",
             "Sur macOS, Claude Code enregistrerait la connexion dans le Trousseau, qui reste sur ce Mac. « Connecter avec un jeton » ouvre claude setup-token dans le terminal de l'application : vous terminez la connexion dans le navigateur et le jeton (valable un an) est enregistré dans le kit, il fonctionne ainsi sur chaque Mac. S'il n'est pas reconnu, collez-le dans le champ « Jeton de Claude Code » et appuyez sur « Enregistrer le jeton ». Le jeton n'arrive, comme CLAUDE_CODE_OAUTH_TOKEN, qu'au Claude Code lancé par Atollo : ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur.",
             "Unter macOS würde Claude Code die Anmeldung im Schlüsselbund speichern, der auf diesem Mac bleibt. „Mit einem Token verbinden“ öffnet claude setup-token im Terminal der App: Du schließt die Anmeldung im Browser ab, und das Token (ein Jahr gültig) wird im Kit gespeichert, sodass es auf jedem Mac funktioniert. Wird es nicht erkannt, füge es in das Feld „Token von Claude Code“ ein und drück „Token speichern“. Das Token erhält, als CLAUDE_CODE_OAUTH_TOKEN, nur das von Atollo gestartete Claude Code: nicht die Aktionen der Projekte, Skripte, Terminals oder der Editor.",
+          )}
+        </Callout>
+        <Callout
+          tone="info"
+          title={tr(
+            "Antigravity con una chiave API di Gemini",
+            "Antigravity with a Gemini API key",
+            "Antigravity avec une clé API Gemini",
+            "Antigravity mit einem Gemini-API-Schlüssel",
+          )}
+        >
+          {tr(
+            "Senza account Google, Antigravity usa una chiave API di Gemini. Nella pagina AI scegli Antigravity: in «Accesso» c'è il campo «Chiave API di Gemini (Antigravity senza account Google)». Incolla la chiave e passa ad altro (un clic fuori dal campo o Tab): si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata: scrivi per sostituirla», e la chiave non viene più mostrata. «Togli la chiave» la cancella subito. Antigravity mostrerà «accesso con chiave API». La chiave è salvata a parte, in data\\app\\secrets\\gemini-api-key, leggibile solo dal tuo utente dove il disco ha i permessi, e passata come GEMINI_API_KEY solo ad Antigravity avviato da Atollo: non alle azioni dei progetti, agli script, ai terminali né all'editor. Prima stava in Impostazioni › Agenti, che non c'è più.",
+            "Without a Google account, Antigravity uses a Gemini API key. On the AI page choose Antigravity: in “Sign-in” there is the “Gemini API key (Antigravity without a Google account)” field. Paste the key and move on (a click outside the field, or Tab): it is saved when the field loses focus, then the field empties and shows “saved: type to replace it”, and the key is no longer shown. “Remove the key” deletes it at once. Antigravity will show “signed in with an API key”. The key is saved on its own, in data\\app\\secrets\\gemini-api-key, readable by your user only where the disk has permissions, and passed as GEMINI_API_KEY only to the Antigravity that Atollo launches: not to project actions, scripts, terminals or the editor. It used to be in Settings › Agents, which no longer exists.",
+            "Sans compte Google, Antigravity utilise une clé API Gemini. Dans la page IA, choisissez Antigravity : dans « Connexion » se trouve le champ « Clé API Gemini (Antigravity sans compte Google) ». Collez la clé et passez à autre chose (un clic hors du champ, ou Tab) : elle est enregistrée quand le champ perd le focus, puis le champ se vide et affiche « enregistrée : saisissez-en une autre pour la remplacer », et la clé n'est plus affichée. « Supprimer la clé » l'efface tout de suite. Antigravity affichera « connecté avec une clé API ». La clé est enregistrée à part, dans data\\app\\secrets\\gemini-api-key, lisible par votre seul utilisateur là où le disque gère les permissions, et transmise comme GEMINI_API_KEY au seul Antigravity lancé par Atollo : ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur. Elle se trouvait avant dans Paramètres › Agents, qui n'existe plus.",
+            "Ohne Google-Konto verwendet Antigravity einen Gemini-API-Schlüssel. Wähle auf der Seite KI Antigravity: Unter „Anmeldung“ gibt es das Feld „Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“. Füge den Schlüssel ein und mach woanders weiter (ein Klick außerhalb des Felds oder Tab): Er wird gespeichert, wenn das Feld den Fokus verliert; dann leert sich das Feld und zeigt „gespeichert: zum Ersetzen neu eingeben“, und der Schlüssel wird nicht mehr angezeigt. „Schlüssel entfernen“ löscht ihn sofort. Antigravity zeigt dann „mit API-Schlüssel angemeldet“. Der Schlüssel wird getrennt in data\\app\\secrets\\gemini-api-key gespeichert, nur für deinen Benutzer lesbar, wo das Laufwerk Berechtigungen kennt, und als GEMINI_API_KEY nur dem von Atollo gestarteten Antigravity übergeben: nicht den Aktionen der Projekte, Skripten, Terminals oder dem Editor. Früher stand er unter Einstellungen › Agenten, die es nicht mehr gibt.",
           )}
         </Callout>
         <Under>
@@ -483,10 +525,10 @@ export const AGENTS: TopicTexts = {
             "Du kannst auch die Dateien eines Agenten ändern: Die Änderung geht an die anderen über.",
           ),
           tr(
-            "I server MCP del kit si aggiungono anche dalla pagina Agenti, riquadro «Server MCP del kit», con i server pronti GitHub, Playwright e Fetch a un clic.",
-            "The kit's MCP servers can also be added from the Agents page, “The kit's MCP servers” box, with the ready servers GitHub, Playwright and Fetch one click away.",
-            "Les serveurs MCP du kit s'ajoutent aussi depuis la page Agents, panneau « Serveurs MCP du kit », avec les serveurs prêts GitHub, Playwright et Fetch en un clic.",
-            "Die MCP-Server des Kits lassen sich auch auf der Seite Agenten im Bereich „MCP-Server des Kits“ hinzufügen, mit den fertigen Servern GitHub, Playwright und Fetch per Klick.",
+            "I server MCP del kit si aggiungono anche dalla pagina AI, riga «Condiviso fra gli agenti», riquadro «Server MCP del kit», con i server pronti GitHub, Playwright e Fetch a un clic.",
+            "The kit's MCP servers can also be added from the AI page, “Shared by the agents” row, “The kit's MCP servers” box, with the ready servers GitHub, Playwright and Fetch one click away.",
+            "Les serveurs MCP du kit s'ajoutent aussi depuis la page IA, ligne « Partagé entre les agents », panneau « Serveurs MCP du kit », avec les serveurs prêts GitHub, Playwright et Fetch en un clic.",
+            "Die MCP-Server des Kits lassen sich auch auf der Seite KI hinzufügen, Zeile „Von den Agenten geteilt“, Bereich „MCP-Server des Kits“, mit den fertigen Servern GitHub, Playwright und Fetch per Klick.",
           ),
           tr(
             "I server MCP di un solo progetto si aggiungono nella sezione «Editor» del progetto.",
@@ -542,10 +584,10 @@ export const AGENTS: TopicTexts = {
         <Steps
           steps={[
             tr(
-              "Nella pagina Agenti premi «Apri la cartella condivisa».",
-              "On the Agents page, press “Open shared folder”.",
-              "Dans la page Agents, appuyez sur « Ouvrir le dossier partagé ».",
-              "Drück auf der Seite Agenten „Gemeinsamen Ordner öffnen“.",
+              "Nella pagina AI scegli la riga «Condiviso fra gli agenti» e premi «Apri la cartella condivisa» (c'è anche sul titolo del riquadro Agenti).",
+              "On the AI page, choose the “Shared by the agents” row and press “Open shared folder” (it is also on the Agents pane's title).",
+              "Dans la page IA, choisissez la ligne « Partagé entre les agents » et appuyez sur « Ouvrir le dossier partagé » (il se trouve aussi sur le titre du volet Agents).",
+              "Wähle auf der Seite KI die Zeile „Von den Agenten geteilt“ und drück „Gemeinsamen Ordner öffnen“ (die Schaltfläche gibt es auch am Titel des Bereichs Agenten).",
             ),
             tr(
               "Modifica AGENTS.md con un editor di testo, aggiungi cartelle in skills o server in mcp.json.",
@@ -587,10 +629,10 @@ export const AGENTS: TopicTexts = {
         <Steps
           steps={[
             tr(
-              "Nella pagina Agenti, sotto la cartella condivisa, c'è il riquadro «Server MCP del kit»: l'elenco di data\\agents\\mcp.json.",
-              "On the Agents page, below the shared folder, there is the “The kit's MCP servers” box: the list of data\\agents\\mcp.json.",
-              "Dans la page Agents, sous le dossier partagé, se trouve le panneau « Serveurs MCP du kit » : la liste de data\\agents\\mcp.json.",
-              "Auf der Seite Agenten gibt es unter dem gemeinsamen Ordner den Bereich „MCP-Server des Kits“: die Liste von data\\agents\\mcp.json.",
+              "Nella pagina AI scegli la riga «Condiviso fra gli agenti»: sotto «Istruzioni e skill» c'è il riquadro «Server MCP del kit», l'elenco di data\\agents\\mcp.json.",
+              "On the AI page, choose the “Shared by the agents” row: below “Instructions and skills” there is the “The kit's MCP servers” box, the list of data\\agents\\mcp.json.",
+              "Dans la page IA, choisissez la ligne « Partagé entre les agents » : sous « Instructions et skills » se trouve le panneau « Serveurs MCP du kit », la liste de data\\agents\\mcp.json.",
+              "Wähle auf der Seite KI die Zeile „Von den Agenten geteilt“: Unter „Anweisungen und Skills“ gibt es den Bereich „MCP-Server des Kits“, die Liste von data\\agents\\mcp.json.",
             ),
             tr(
               "In «Server pronti» premi «Aggiungi» accanto al server che ti serve; per un altro server premi «Aggiungi un server» e compila nome, tipo e programma o indirizzo.",
@@ -1107,10 +1149,10 @@ export const AGENTS: TopicTexts = {
             "Ein lokales Modell ist ein Sprachmodell, das auf deinem PC läuft: kein Netzwerk, kein Konto, kein Tarif. Es läuft auf der CPU oder auf der Grafikkarte (Vulkan unter Windows und Linux, Metal unter macOS).",
           ),
           tr(
-            "Il server è llama.cpp, i modelli sono file GGUF: si scaricano dalla pagina «Modelli locali», dal catalogo di Atollo o da Hugging Face.",
-            "The server is llama.cpp, the models are GGUF files: you download them from the “Local models” page, from Atollo's catalog or from Hugging Face.",
-            "Le serveur est llama.cpp, les modèles sont des fichiers GGUF : ils se téléchargent depuis la page « Modèles locaux », depuis le catalogue d'Atollo ou depuis Hugging Face.",
-            "Der Server ist llama.cpp, die Modelle sind GGUF-Dateien: Du lädst sie auf der Seite „Lokale Modelle“ herunter, aus dem Katalog von Atollo oder von Hugging Face.",
+            "Il server è llama.cpp, i modelli sono file GGUF: si scaricano dalla pagina AI, riquadro «Modelli locali», dal catalogo di Atollo o da Hugging Face.",
+            "The server is llama.cpp, the models are GGUF files: you download them from the AI page, “Local models” pane, from Atollo's catalog or from Hugging Face.",
+            "Le serveur est llama.cpp, les modèles sont des fichiers GGUF : ils se téléchargent depuis la page IA, volet « Modèles locaux », depuis le catalogue d'Atollo ou depuis Hugging Face.",
+            "Der Server ist llama.cpp, die Modelle sind GGUF-Dateien: Du lädst sie auf der Seite KI im Bereich „Lokale Modelle“ herunter, aus dem Katalog von Atollo oder von Hugging Face.",
           ),
           tr(
             "Li usano Pi e una chat nel browser. Il server ascolta solo su questo PC, con una chiave.",
@@ -1130,10 +1172,10 @@ export const AGENTS: TopicTexts = {
       <GuideShot
         src="models.webp"
         title={tr(
-          "La pagina Modelli locali",
-          "The Local models page",
-          "La page Modèles locaux",
-          "Die Seite Lokale Modelle",
+          "La pagina AI: modelli locali",
+          "The AI page: local models",
+          "La page IA : modèles locaux",
+          "Die Seite KI: lokale Modelle",
         )}
         caption={tr(
           "A sinistra il server e i modelli nel kit; a destra il server con l'indirizzo e la chiave, il modello di Pi, il catalogo di Atollo con un download sospeso e Hugging Face.",
@@ -1171,18 +1213,18 @@ export const AGENTS: TopicTexts = {
 
       <Section
         title={tr(
-          "La pagina «Modelli locali»",
-          "The “Local models” page",
-          "La page « Modèles locaux »",
-          "Die Seite „Lokale Modelle“",
+          "La pagina AI: il riquadro «Modelli locali»",
+          "The AI page: the “Local models” pane",
+          "La page IA : le volet « Modèles locaux »",
+          "Die Seite KI: der Bereich „Lokale Modelle“",
         )}
       >
         <P>
           {tr(
-            "Si apre dalla barra delle attività (l'icona del chip). A sinistra, «Nel kit»: il server llama.cpp con il suo stato e la porta, e i modelli scaricati («modello di Pi», «in memoria», «scaricamento sospeso»). In alto, «Avvia» o «Ferma», «Apri la chat» e «Copia la chiave». Sotto, le sezioni:",
-            "It opens from the activity bar (the chip icon). On the left, “In the kit”: the llama.cpp server with its status and port, and the downloaded models (“Pi's model”, “in memory”, “download paused”). At the top, “Start” or “Stop”, “Open the chat” and “Copy the key”. Below, the sections:",
-            "Elle s'ouvre depuis la barre d'activité (l'icône de la puce). À gauche, « Dans le kit » : le serveur llama.cpp avec son état et son port, et les modèles téléchargés (« modèle de Pi », « en mémoire », « téléchargement suspendu »). En haut, « Démarrer » ou « Arrêter », « Ouvrir le chat » et « Copier la clé ». En dessous, les sections :",
-            "Sie öffnet sich über die Aktivitätsleiste (das Chip-Symbol). Links „Im Kit“: der llama.cpp-Server mit Status und Port und die heruntergeladenen Modelle („Modell von Pi“, „im Speicher“, „Download angehalten“). Oben „Starten“ oder „Beenden“, „Chat öffnen“ und „Schlüssel kopieren“. Darunter die Abschnitte:",
+            "È il secondo riquadro della pagina AI, che si apre dalla barra delle attività (l'icona della scintilla), sotto gli agenti. Il numero accanto al titolo conta i modelli completi. Le righe: il server llama.cpp con il suo stato, la porta e il pulsante «Avvia» o «Ferma», poi i modelli scaricati («modello di Pi», «in memoria», «scaricamento sospeso»). Passando con il mouse sul titolo compaiono «Aggiorna i modelli» e «Apri la cartella dei modelli». Scegliendo il server o un modello, a destra in alto ci sono «Avvia» o «Ferma», «Apri la chat» e «Copia la chiave». Sotto, le sezioni:",
+            "It is the AI page's second pane, below the agents; the page opens from the activity bar (the sparkle icon). The number beside the title counts the complete models. The rows: the llama.cpp server with its status, its port and the “Start” or “Stop” button, then the downloaded models (“Pi's model”, “in memory”, “download paused”). Hovering over the title shows “Refresh models” and “Open the models folder”. When you choose the server or a model, at the top right there are “Start” or “Stop”, “Open the chat” and “Copy the key”. Below, the sections:",
+            "C'est le deuxième volet de la page IA, sous les agents ; la page s'ouvre depuis la barre d'activité (l'icône de l'étincelle). Le nombre à côté du titre compte les modèles complets. Les lignes : le serveur llama.cpp avec son état, son port et le bouton « Démarrer » ou « Arrêter », puis les modèles téléchargés (« modèle de Pi », « en mémoire », « téléchargement suspendu »). Au survol du titre apparaissent « Actualiser les modèles » et « Ouvrir le dossier des modèles ». Quand vous choisissez le serveur ou un modèle, en haut à droite se trouvent « Démarrer » ou « Arrêter », « Ouvrir le chat » et « Copier la clé ». En dessous, les sections :",
+            "Es ist der zweite Bereich der Seite KI, unter den Agenten; die Seite öffnet sich über die Aktivitätsleiste (das Funken-Symbol). Die Zahl neben dem Titel zählt die vollständigen Modelle. Die Zeilen: der llama.cpp-Server mit Status, Port und der Schaltfläche „Starten“ oder „Beenden“, dann die heruntergeladenen Modelle („Modell von Pi“, „im Speicher“, „Download angehalten“). Fährst du mit der Maus über den Titel, erscheinen „Modelle aktualisieren“ und „Ordner der Modelle öffnen“. Wählst du den Server oder ein Modell, stehen rechts oben „Starten“ oder „Beenden“, „Chat öffnen“ und „Schlüssel kopieren“. Darunter die Abschnitte:",
           )}
         </P>
         <Table
@@ -1254,10 +1296,10 @@ export const AGENTS: TopicTexts = {
         />
         <Go page="models">
           {tr(
-            "Apri la pagina Modelli locali",
-            "Open the Local models page",
-            "Ouvrir la page Modèles locaux",
-            "Seite Lokale Modelle öffnen",
+            "Apri la pagina AI, riquadro Modelli locali",
+            "Open the AI page, Local models pane",
+            "Ouvrir la page IA, volet Modèles locaux",
+            "Seite KI öffnen, Bereich Lokale Modelle",
           )}
         </Go>
       </Section>

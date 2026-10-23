@@ -53,7 +53,7 @@ export function groups(): { id: Kind; title: string; hint: string; has: (c: Comp
     ai: [
       t("Modelli locali"),
       t(
-        "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina Modelli locali.",
+        "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina AI.",
       ),
     ],
     languages: [

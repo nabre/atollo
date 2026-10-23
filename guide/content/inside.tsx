@@ -1227,10 +1227,10 @@ export const INSIDE: TopicTexts = {
             [
               <Code key="c">api.anthropic.com · chatgpt.com · cloudcode-pa.googleapis.com</Code>,
               tr(
-                "I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura e solo con la pagina Agenti aperta.",
-                "The limits of the agents' plans, with the saved sign-in, read-only and only with the Agents page open.",
-                "Les limites des forfaits des agents, avec la connexion enregistrée, en lecture seule et seulement avec la page Agents ouverte.",
-                "Die Limits der Tarife der Agenten, mit der gespeicherten Anmeldung, nur lesend und nur bei geöffneter Seite Agenten.",
+                "I limiti dei piani degli agenti, con l'accesso salvato, solo in lettura e solo con la pagina AI aperta.",
+                "The limits of the agents' plans, with the saved sign-in, read-only and only with the AI page open.",
+                "Les limites des forfaits des agents, avec la connexion enregistrée, en lecture seule et seulement avec la page IA ouverte.",
+                "Die Limits der Tarife der Agenten, mit der gespeicherten Anmeldung, nur lesend und nur bei geöffneter Seite KI.",
               ),
             ],
             [

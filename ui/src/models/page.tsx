@@ -1,9 +1,9 @@
-// The Local models page (D-151): the llama.cpp server of the kit, on this PC
-// only, and the GGUF models in data\models (shared by every system of the
-// kit), from Atollo's catalog or any Hugging Face repository. As the
-// Database page: the server and the models in the side bar, what to do in
-// the editor. Downloads go on in the background, resume where they
-// stopped, and are checked against the drive and their SHA-256.
+// The local models of the AI page (D-151, D-165): the llama.cpp server of
+// the kit, on this PC only, and the GGUF models in data\models (shared by
+// every system of the kit), from Atollo's catalog or any Hugging Face
+// repository. The server and the models are a pane of the AI side bar, what
+// to do with them its editor. Downloads go on in the background, resume
+// where they stopped, and are checked against the drive and their SHA-256.
 
 import { useRef, useState } from "react";
 import {
@@ -29,7 +29,6 @@ import {
   type PullEvent,
   type ServiceState,
 } from "../api";
-import type { GuideTopicId } from "../guide";
 import { locale, t } from "../i18n";
 import { gb } from "../shared/format";
 import { ComponentLogo } from "../shared/logos";
@@ -49,12 +48,9 @@ import {
   ListItem,
   Meter,
   Notice,
-  PaneStack,
   Properties,
   Select,
-  SideBarTitle,
   TextField,
-  ViewContainer,
   ViewPane,
   type DotTone,
 } from "../workbench";
@@ -135,7 +131,10 @@ function Progress({ done, total, label }: { done: number; total: number; label: 
   );
 }
 
-export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => void } = {}) {
+/** The server and the models, read for the pane and the editor of the AI
+ * page together: one poll, one action at a time, the downloads' progress
+ * kept while the editor shows something else. */
+export function useModels() {
   const {
     data: info,
     error: infoError,
@@ -150,14 +149,6 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
   } = useLoad<ModelsView | null>(llmModels, null, { onError: "show", every: 10000 });
   const { busy, error, run } = useAction();
   const [events, setEvents] = useState<Record<string, PullEvent>>({});
-  const [confirm, setConfirm] = useState<string | null>(null);
-  const [repo, setRepo] = useState("");
-  const [found, setFound] = useState<HfRepo | null>(null);
-  // Counts the searches on Hugging Face: only the latest one's answer is shown.
-  const hfSeq = useRef(0);
-  const [token, setToken] = useState("");
-  const [listOpen, setListOpen] = useState(true);
-  const { copied, copy } = useCopy(1500);
 
   useSubscription(onLlmPull, (e) => {
     setEvents((all) => ({ ...all, [e.key]: e }));
@@ -204,6 +195,144 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
     return e && (e.state === "running" || pulling.has(key)) ? e : undefined;
   };
   const fat32 = view?.fs?.toUpperCase() === "FAT32";
+  const reload = () => {
+    reloadInfo();
+    reloadView();
+  };
+  /** Starts or stops the server. */
+  const toggle = () => {
+    run("server", onInfo(on ? llmStop : llmStart));
+  };
+
+  return {
+    info,
+    view,
+    setView,
+    loadError: infoError ?? viewError,
+    busy,
+    error,
+    run,
+    onInfo,
+    pull,
+    reload,
+    toggle,
+    st,
+    on,
+    local,
+    complete,
+    pulling,
+    live,
+    fat32,
+  };
+}
+
+export type Models = ReturnType<typeof useModels>;
+
+/** The pane of the local models: the server, with Avvia and Ferma, and the
+ * models in the kit. A row opens the models' editor. */
+export function ModelsPane({
+  models,
+  selected,
+  onSelect,
+  expanded,
+  onToggle,
+}: {
+  models: Models;
+  /** The server (null), a model, or undefined: none of this pane's rows. */
+  selected: string | null | undefined;
+  onSelect: (id: string | null) => void;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const { info, local, complete, st, on, busy, toggle, reload, run } = models;
+  return (
+    <ViewPane
+      fill
+      title={t("Modelli locali")}
+      badge={complete.length > 0 ? complete.length : undefined}
+      expanded={expanded}
+      onToggle={onToggle}
+      actions={
+        <>
+          <IconButton icon={codicon("refresh")} label={t("Aggiorna i modelli")} onClick={reload} />
+          <IconButton
+            icon={codicon("folder-opened")}
+            label={t("Apri la cartella dei modelli")}
+            onClick={() => {
+              run("folder", () => folderOpen("models"));
+            }}
+          />
+        </>
+      }
+    >
+      <List label={t("Modelli locali")}>
+        <ListItem
+          icon={<ComponentLogo id="llama" size={32} />}
+          name="llama.cpp"
+          meta={info ? `:${String(info.port)}` : undefined}
+          description={
+            <span className="flex items-center gap-1.5">
+              <Dot tone={st.tone} />
+              {st.text}
+            </span>
+          }
+          footer={info?.loaded.length ? t("In memoria: {0}", info.loaded.join(", ")) : undefined}
+          actions={
+            <Button
+              small
+              variant={on ? "secondary" : "primary"}
+              busy={busy === "server"}
+              disabled={!on && complete.length === 0}
+              onClick={toggle}
+            >
+              {on ? t("Ferma") : t("Avvia")}
+            </Button>
+          }
+          selected={selected === null}
+          onSelect={() => {
+            onSelect(null);
+          }}
+        />
+        {local.map((m) => (
+          <ListItem
+            key={`${m.folder}/${m.id}`}
+            icon={<ComponentLogo id="llama" size={24} />}
+            name={m.name}
+            meta={gb(m.bytes)}
+            description={m.repo || m.folder}
+            footer={
+              !m.complete
+                ? t("scaricamento sospeso")
+                : info?.piModel === m.id
+                  ? t("modello di Pi")
+                  : info?.loaded.includes(m.id)
+                    ? t("in memoria")
+                    : undefined
+            }
+            selected={selected === m.id}
+            onSelect={() => {
+              onSelect(m.id);
+            }}
+          />
+        ))}
+      </List>
+    </ViewPane>
+  );
+}
+
+/** The editor of the local models: the server, Pi's model, the catalog,
+ * Hugging Face and what this PC has. */
+export function ModelsEditor({ models }: { models: Models }) {
+  const { info, view, setView, loadError, busy, error, run, onInfo, pull, toggle } = models;
+  const { st, on, local, complete, pulling, live, fat32 } = models;
+  const [confirm, setConfirm] = useState<string | null>(null);
+  const [repo, setRepo] = useState("");
+  const [found, setFound] = useState<HfRepo | null>(null);
+  // Counts the searches on Hugging Face: only the latest one's answer is shown.
+  const hfSeq = useRef(0);
+  const [token, setToken] = useState("");
+  const { copied, copy } = useCopy(1500);
+  const reloadView = models.reload;
 
   /** Download, progress with «Sospendi», or what is on disk. */
   const downloadControls = (key: string, start: () => void, partial: LocalModel | undefined) => {
@@ -334,388 +463,290 @@ export function ModelsPage({ onGuide }: { onGuide?: (topic: GuideTopicId) => voi
 
   const others = local.filter((m) => !view?.catalog.some((c) => c.id === m.catalog || c.id === m.id));
 
-  const side = (
-    <>
-      <SideBarTitle
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <EditorHeader
+        icon={<ComponentLogo id="llama" size={56} />}
         title={t("Modelli locali")}
+        meta={[
+          <span key="state" className="flex items-center gap-1">
+            <Dot tone={st.tone} />
+            {st.text}
+          </span>,
+          info ? <span key="url">{info.url}</span> : null,
+        ]}
+        description={t(
+          "I modelli linguistici sul PC, senza rete e senza account: li usa Pi, e una chat nel browser. Il server ascolta solo su questo PC (127.0.0.1), con una chiave.",
+        )}
         actions={
           <>
-            <IconButton
-              icon={codicon("refresh")}
-              label={t("Aggiorna")}
+            <ActionButton
+              icon={codicon(on ? "debug-stop" : "play")}
+              label={on ? t("Ferma") : t("Avvia")}
+              primary={!on}
+              busy={busy === "server"}
+              disabled={!on && complete.length === 0}
+              title={complete.length === 0 ? t("Scarica prima un modello") : undefined}
+              onClick={toggle}
+            />
+            <ActionButton
+              icon={codicon("comment-discussion")}
+              label={t("Apri la chat")}
+              disabled={info?.state !== "running"}
+              title={t("La chat di llama.cpp nel browser: nelle sue impostazioni incolla la chiave copiata qui")}
               onClick={() => {
-                reloadInfo();
-                reloadView();
+                if (info) run("chat", () => urlOpen(info.url));
               }}
             />
-            <IconButton
-              icon={codicon("folder-opened")}
-              label={t("Apri la cartella dei modelli")}
+            <ActionButton
+              icon={codicon("key")}
+              label={copied ? t("Copiata") : t("Copia la chiave")}
               onClick={() => {
-                run("folder", () => folderOpen("models"));
+                run("key", () => llmKey().then(copy));
               }}
             />
-            {onGuide && (
-              <IconButton
-                icon={codicon("book")}
-                label={t("Apri la guida di questa pagina")}
-                onClick={() => {
-                  onGuide("models");
-                }}
-              />
-            )}
           </>
         }
       />
-      <PaneStack>
-        <ViewPane
-          first
-          fill
-          title={t("Nel kit")}
-          badge={complete.length > 0 ? complete.length : undefined}
-          expanded={listOpen}
-          onToggle={() => {
-            setListOpen(!listOpen);
-          }}
-        >
-          <List label={t("Modelli locali")}>
-            <ListItem
-              icon={<ComponentLogo id="llama" size={32} />}
-              name="llama.cpp"
-              meta={info ? `:${String(info.port)}` : undefined}
-              description={
-                <span className="flex items-center gap-1.5">
-                  <Dot tone={st.tone} />
-                  {st.text}
-                </span>
-              }
-              footer={info?.loaded.length ? t("In memoria: {0}", info.loaded.join(", ")) : undefined}
-              actions={
-                <Button
-                  small
-                  variant={on ? "secondary" : "primary"}
-                  busy={busy === "server"}
-                  disabled={!on && complete.length === 0}
-                  onClick={() => {
-                    run("server", onInfo(on ? llmStop : llmStart));
-                  }}
-                >
-                  {on ? t("Ferma") : t("Avvia")}
-                </Button>
-              }
-            />
-            {local.map((m) => (
-              <ListItem
-                key={`${m.folder}/${m.id}`}
-                icon={<ComponentLogo id="llama" size={24} />}
-                name={m.name}
-                meta={gb(m.bytes)}
-                description={m.repo || m.folder}
-                footer={
-                  !m.complete
-                    ? t("scaricamento sospeso")
-                    : info?.piModel === m.id
-                      ? t("modello di Pi")
-                      : info?.loaded.includes(m.id)
-                        ? t("in memoria")
-                        : undefined
-                }
-              />
-            ))}
-          </List>
-        </ViewPane>
-      </PaneStack>
-    </>
-  );
+      <EditorBody>
+        <ErrorLine error={loadError} />
+        <ErrorLine error={error} />
+        {info?.error && <Notice tone="error">{info.error}</Notice>}
 
-  return (
-    <ViewContainer id="models" side={side}>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <EditorHeader
-          icon={<ComponentLogo id="llama" size={56} />}
-          title={t("Modelli locali")}
-          meta={[
-            <span key="state" className="flex items-center gap-1">
-              <Dot tone={st.tone} />
-              {st.text}
-            </span>,
-            info ? <span key="url">{info.url}</span> : null,
-          ]}
-          description={t(
-            "I modelli linguistici sul PC, senza rete e senza account: li usa Pi, e una chat nel browser. Il server ascolta solo su questo PC (127.0.0.1), con una chiave.",
-          )}
-          actions={
-            <>
-              <ActionButton
-                icon={codicon(on ? "debug-stop" : "play")}
-                label={on ? t("Ferma") : t("Avvia")}
-                primary={!on}
-                busy={busy === "server"}
-                disabled={!on && complete.length === 0}
-                title={complete.length === 0 ? t("Scarica prima un modello") : undefined}
-                onClick={() => {
-                  run("server", onInfo(on ? llmStop : llmStart));
-                }}
-              />
-              <ActionButton
-                icon={codicon("comment-discussion")}
-                label={t("Apri la chat")}
-                disabled={info?.state !== "running"}
-                title={t("La chat di llama.cpp nel browser: nelle sue impostazioni incolla la chiave copiata qui")}
-                onClick={() => {
-                  if (info) run("chat", () => urlOpen(info.url));
-                }}
-              />
-              <ActionButton
-                icon={codicon("key")}
-                label={copied ? t("Copiata") : t("Copia la chiave")}
-                onClick={() => {
-                  run("key", () => llmKey().then(copy));
-                }}
-              />
-            </>
-          }
-        />
-        <EditorBody>
-          <ErrorLine error={infoError ?? viewError} />
-          <ErrorLine error={error} />
-          {info?.error && <Notice tone="error">{info.error}</Notice>}
-
-          <EditorSection id="llm-server" title={t("Server")}>
-            <Properties
-              rows={[
-                [t("Indirizzo"), <span className="font-mono">{info?.url ?? "-"}</span>],
-                [t("In memoria"), info?.loaded.length ? info.loaded.join(", ") : t("nessun modello")],
-                [
-                  t("Avvio"),
-                  <CheckboxLabel
-                    checked={info?.autostart ?? false}
-                    onChange={(v) => {
-                      run(
-                        "autostart",
-                        onInfo(() => llmSet({ autostart: v })),
-                      );
-                    }}
-                  >
-                    {t("Avvia con Atollo")}
-                  </CheckboxLabel>,
-                ],
-              ]}
-            />
-            <p className="text-[12px] text-vsc-desc">
-              {t(
-                "Un modello si carica quando un agente o la chat lo chiede, uno alla volta, e si libera dopo dieci minuti senza richieste.",
-              )}
-            </p>
-          </EditorSection>
-
-          <EditorSection id="llm-pi" title={t("Modello di Pi")}>
-            {complete.length === 0 ? (
-              <p className="text-vsc-desc">{t("Scarica un modello qui sotto: Pi lo usa senza altre impostazioni.")}</p>
-            ) : (
-              <label className="flex flex-wrap items-center gap-2">
-                <span>{t("Pi parte con")}</span>
-                <Select
-                  value={info?.piModel ?? ""}
+        <EditorSection id="llm-server" title={t("Server")}>
+          <Properties
+            rows={[
+              [t("Indirizzo"), <span className="font-mono">{info?.url ?? "-"}</span>],
+              [t("In memoria"), info?.loaded.length ? info.loaded.join(", ") : t("nessun modello")],
+              [
+                t("Avvio"),
+                <CheckboxLabel
+                  checked={info?.autostart ?? false}
                   onChange={(v) => {
                     run(
-                      "pi",
-                      onInfo(() => llmSet({ piModel: v })),
+                      "autostart",
+                      onInfo(() => llmSet({ autostart: v })),
                     );
                   }}
-                  options={[
-                    { value: "", label: t("il primo modello del kit") },
-                    ...complete.map((m) => ({ value: m.id, label: m.name })),
-                  ]}
-                />
-              </label>
+                >
+                  {t("Avvia con Atollo")}
+                </CheckboxLabel>,
+              ],
+            ]}
+          />
+          <p className="text-[12px] text-vsc-desc">
+            {t(
+              "Un modello si carica quando un agente o la chat lo chiede, uno alla volta, e si libera dopo dieci minuti senza richieste.",
             )}
-            <p className="text-[12px] text-vsc-desc">
+          </p>
+        </EditorSection>
+
+        <EditorSection id="llm-pi" title={t("Modello di Pi")}>
+          {complete.length === 0 ? (
+            <p className="text-vsc-desc">{t("Scarica un modello qui sotto: Pi lo usa senza altre impostazioni.")}</p>
+          ) : (
+            <label className="flex flex-wrap items-center gap-2">
+              <span>{t("Pi parte con")}</span>
+              <Select
+                value={info?.piModel ?? ""}
+                onChange={(v) => {
+                  run(
+                    "pi",
+                    onInfo(() => llmSet({ piModel: v })),
+                  );
+                }}
+                options={[
+                  { value: "", label: t("il primo modello del kit") },
+                  ...complete.map((m) => ({ value: m.id, label: m.name })),
+                ]}
+              />
+            </label>
+          )}
+          <p className="text-[12px] text-vsc-desc">
+            {t(
+              "Con un provider in cloud scelto in Pi (/login), Pi resta su quello; i modelli locali restano nel suo elenco (/model).",
+            )}
+          </p>
+        </EditorSection>
+
+        <EditorSection id="llm-catalog" title={t("Catalogo di Atollo")}>
+          {fat32 && (
+            <Notice tone="warning">
               {t(
-                "Con un provider in cloud scelto in Pi (/login), Pi resta su quello; i modelli locali restano nel suo elenco (/model).",
+                "Il disco del kit è FAT32: non tiene file oltre i 4 GB. Su exFAT o NTFS entrano tutti; qui solo i modelli in parti più piccole.",
               )}
-            </p>
-          </EditorSection>
+            </Notice>
+          )}
+          {view === null ? (
+            <p className="text-vsc-desc">{t("Caricamento…")}</p>
+          ) : (
+            <ul className="m-0 list-none p-0">{view.catalog.map(catalogRow)}</ul>
+          )}
+        </EditorSection>
 
-          <EditorSection id="llm-catalog" title={t("Catalogo di Atollo")}>
-            {fat32 && (
-              <Notice tone="warning">
-                {t(
-                  "Il disco del kit è FAT32: non tiene file oltre i 4 GB. Su exFAT o NTFS entrano tutti; qui solo i modelli in parti più piccole.",
-                )}
-              </Notice>
-            )}
-            {view === null ? (
-              <p className="text-vsc-desc">{t("Caricamento…")}</p>
-            ) : (
-              <ul className="m-0 list-none p-0">{view.catalog.map(catalogRow)}</ul>
-            )}
+        {others.length > 0 && (
+          <EditorSection id="llm-others" title={t("Altri modelli nel kit")}>
+            <ul className="m-0 list-none p-0">
+              {others.map((m) => {
+                const key = pullKey(m.repo || m.folder, m.id);
+                return (
+                  <li
+                    key={`${m.folder}/${m.id}`}
+                    className="flex flex-wrap items-center gap-3 border-b border-vsc-border py-2 last:border-b-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">
+                        {m.name} <span className="font-normal text-vsc-desc">{gb(m.bytes)}</span>
+                      </p>
+                      <p className="text-[12px] text-vsc-desc">
+                        {m.byHand ? t("messo a mano in {0}", m.folder) : m.repo}
+                      </p>
+                    </div>
+                    {m.complete || m.byHand
+                      ? removeControls(m)
+                      : downloadControls(
+                          key,
+                          () => {
+                            if (m.repo) pull(key, { repo: m.repo, choice: m.id });
+                          },
+                          m,
+                        )}
+                  </li>
+                );
+              })}
+            </ul>
           </EditorSection>
+        )}
 
-          {others.length > 0 && (
-            <EditorSection id="llm-others" title={t("Altri modelli nel kit")}>
+        <EditorSection id="llm-hf" title={t("Da Hugging Face")}>
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setFound(null);
+              const id = ++hfSeq.current;
+              run("hf", () =>
+                llmHfInspect(repo.trim()).then((f) => {
+                  if (id === hfSeq.current) setFound(f);
+                }),
+              );
+            }}
+          >
+            <TextField
+              value={repo}
+              onChange={setRepo}
+              label={t("Repository di Hugging Face")}
+              placeholder="unsloth/Qwen3-8B-GGUF"
+              mono
+              className="w-80"
+            />
+            <ActionButton
+              icon={codicon("search")}
+              label={t("Cerca i file GGUF")}
+              submit
+              busy={busy === "hf"}
+              disabled={!repo.includes("/")}
+              onClick={() => undefined}
+            />
+          </form>
+          {found && (
+            <div className="space-y-1">
+              <p className="text-[12px] text-vsc-desc">
+                {found.license
+                  ? t("Licenza: {0}", found.license)
+                  : t("Licenza non indicata: leggila sulla pagina del modello")}
+              </p>
               <ul className="m-0 list-none p-0">
-                {others.map((m) => {
-                  const key = pullKey(m.repo || m.folder, m.id);
+                {found.choices.map((c) => {
+                  const key = pullKey(found.repo, c.id);
+                  const partial = local.find((m) => m.repo === found.repo && m.id === c.id);
+                  const tooBig = fat32 && c.files.some((f) => f.bytes > 4294967295);
                   return (
                     <li
-                      key={`${m.folder}/${m.id}`}
-                      className="flex flex-wrap items-center gap-3 border-b border-vsc-border py-2 last:border-b-0"
+                      key={c.id}
+                      className="flex flex-wrap items-center gap-3 border-b border-vsc-border py-1.5 last:border-b-0"
                     >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold">
-                          {m.name} <span className="font-normal text-vsc-desc">{gb(m.bytes)}</span>
-                        </p>
-                        <p className="text-[12px] text-vsc-desc">
-                          {m.byHand ? t("messo a mano in {0}", m.folder) : m.repo}
-                        </p>
-                      </div>
-                      {m.complete || m.byHand
-                        ? removeControls(m)
-                        : downloadControls(
-                            key,
-                            () => {
-                              if (m.repo) pull(key, { repo: m.repo, choice: m.id });
-                            },
-                            m,
-                          )}
+                      <span className="min-w-0 flex-1">
+                        <span className="font-mono">{c.quant ?? c.label}</span>{" "}
+                        <span className="text-vsc-desc">
+                          {gb(c.bytes)}
+                          {c.files.length > 1 ? ` · ${t("{0} parti", String(c.files.length))}` : ""}
+                        </span>{" "}
+                        {view && <FitText fit={fitOf(needOf(c), view.hardware)} />}
+                      </span>
+                      {partial?.complete ? (
+                        <span className="text-vsc-desc">{t("nel kit")}</span>
+                      ) : tooBig ? (
+                        <span className="text-[12px] text-vsc-desc">{t("non entra su FAT32")}</span>
+                      ) : (
+                        downloadControls(
+                          key,
+                          () => {
+                            pull(key, { repo: found.repo, choice: c.id });
+                          },
+                          partial,
+                        )
+                      )}
                     </li>
                   );
                 })}
               </ul>
-            </EditorSection>
+            </div>
           )}
-
-          <EditorSection id="llm-hf" title={t("Da Hugging Face")}>
-            <form
-              className="flex flex-wrap items-center gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setFound(null);
-                const id = ++hfSeq.current;
-                run("hf", () =>
-                  llmHfInspect(repo.trim()).then((f) => {
-                    if (id === hfSeq.current) setFound(f);
-                  }),
-                );
-              }}
-            >
-              <TextField
-                value={repo}
-                onChange={setRepo}
-                label={t("Repository di Hugging Face")}
-                placeholder="unsloth/Qwen3-8B-GGUF"
-                mono
-                className="w-80"
-              />
-              <ActionButton
-                icon={codicon("search")}
-                label={t("Cerca i file GGUF")}
-                submit
-                busy={busy === "hf"}
-                disabled={!repo.includes("/")}
-                onClick={() => undefined}
-              />
-            </form>
-            {found && (
-              <div className="space-y-1">
-                <p className="text-[12px] text-vsc-desc">
-                  {found.license
-                    ? t("Licenza: {0}", found.license)
-                    : t("Licenza non indicata: leggila sulla pagina del modello")}
-                </p>
-                <ul className="m-0 list-none p-0">
-                  {found.choices.map((c) => {
-                    const key = pullKey(found.repo, c.id);
-                    const partial = local.find((m) => m.repo === found.repo && m.id === c.id);
-                    const tooBig = fat32 && c.files.some((f) => f.bytes > 4294967295);
-                    return (
-                      <li
-                        key={c.id}
-                        className="flex flex-wrap items-center gap-3 border-b border-vsc-border py-1.5 last:border-b-0"
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="font-mono">{c.quant ?? c.label}</span>{" "}
-                          <span className="text-vsc-desc">
-                            {gb(c.bytes)}
-                            {c.files.length > 1 ? ` · ${t("{0} parti", String(c.files.length))}` : ""}
-                          </span>{" "}
-                          {view && <FitText fit={fitOf(needOf(c), view.hardware)} />}
-                        </span>
-                        {partial?.complete ? (
-                          <span className="text-vsc-desc">{t("nel kit")}</span>
-                        ) : tooBig ? (
-                          <span className="text-[12px] text-vsc-desc">{t("non entra su FAT32")}</span>
-                        ) : (
-                          downloadControls(
-                            key,
-                            () => {
-                              pull(key, { repo: found.repo, choice: c.id });
-                            },
-                            partial,
-                          )
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run("token", () =>
+                llmHfTokenSet(token).then(() => {
+                  setToken("");
+                  reloadView();
+                }),
+              );
+            }}
+          >
+            <TextField
+              value={token}
+              onChange={setToken}
+              type="password"
+              label={t("Token di Hugging Face")}
+              placeholder={view?.hfToken ? t("salvato nel kit") : "hf_…"}
+              className="w-80"
+            />
+            <Button submit busy={busy === "token"} disabled={token.trim() === "" && !view?.hfToken}>
+              {token.trim() === "" && view?.hfToken ? t("Togli il token") : t("Salva il token")}
+            </Button>
+          </form>
+          <p className="text-[12px] text-vsc-desc">
+            {t(
+              "Il token serve solo per i modelli ad accesso controllato; va solo a huggingface.co ed è salvato nel kit, leggibile solo dal tuo utente.",
             )}
-            <form
-              className="flex flex-wrap items-center gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                run("token", () =>
-                  llmHfTokenSet(token).then(() => {
-                    setToken("");
-                    reloadView();
-                  }),
-                );
-              }}
-            >
-              <TextField
-                value={token}
-                onChange={setToken}
-                type="password"
-                label={t("Token di Hugging Face")}
-                placeholder={view?.hfToken ? t("salvato nel kit") : "hf_…"}
-                className="w-80"
-              />
-              <Button submit busy={busy === "token"} disabled={token.trim() === "" && !view?.hfToken}>
-                {token.trim() === "" && view?.hfToken ? t("Togli il token") : t("Salva il token")}
-              </Button>
-            </form>
-            <p className="text-[12px] text-vsc-desc">
-              {t(
-                "Il token serve solo per i modelli ad accesso controllato; va solo a huggingface.co ed è salvato nel kit, leggibile solo dal tuo utente.",
-              )}
-            </p>
-          </EditorSection>
+          </p>
+        </EditorSection>
 
-          {view && (
-            <EditorSection id="llm-pc" title={t("Questo PC")}>
-              <Properties
-                rows={[
-                  [t("Memoria (RAM)"), view.hardware.ram ? mem(view.hardware.ram) : "-"],
-                  [
-                    t("Schede video"),
-                    view.hardware.gpus.length
-                      ? view.hardware.gpus.map((g) => `${g.name} (${mem(g.memory)})`).join(", ")
-                      : info?.installed
-                        ? t("nessuna usabile: si usa la CPU")
-                        : t("si vedono dopo l'installazione di llama.cpp"),
-                  ],
-                  [
-                    t("Disco del kit"),
-                    `${view.fs ?? "-"}${view.free !== null ? ` · ${t("liberi {0}", gb(view.free))}` : ""}`,
-                  ],
-                  [t("Cartella"), <span className="font-mono">{view.folder}</span>],
-                ]}
-              />
-            </EditorSection>
-          )}
-        </EditorBody>
-      </div>
-    </ViewContainer>
+        {view && (
+          <EditorSection id="llm-pc" title={t("Questo PC")}>
+            <Properties
+              rows={[
+                [t("Memoria (RAM)"), view.hardware.ram ? mem(view.hardware.ram) : "-"],
+                [
+                  t("Schede video"),
+                  view.hardware.gpus.length
+                    ? view.hardware.gpus.map((g) => `${g.name} (${mem(g.memory)})`).join(", ")
+                    : info?.installed
+                      ? t("nessuna usabile: si usa la CPU")
+                      : t("si vedono dopo l'installazione di llama.cpp"),
+                ],
+                [
+                  t("Disco del kit"),
+                  `${view.fs ?? "-"}${view.free !== null ? ` · ${t("liberi {0}", gb(view.free))}` : ""}`,
+                ],
+                [t("Cartella"), <span className="font-mono">{view.folder}</span>],
+              ]}
+            />
+          </EditorSection>
+        )}
+      </EditorBody>
+    </div>
   );
 }

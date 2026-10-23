@@ -266,7 +266,7 @@ export function ProjectMcpBox({ project, engines }: { project: string; engines: 
   );
 }
 
-/** The kit's servers, on the Agents page. */
+/** The kit's servers, on the shared row of the AI page. */
 export function KitMcpBox() {
   const presets = usePresets("kit");
   return (

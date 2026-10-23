@@ -178,10 +178,10 @@ export const TOOLS: TopicTexts = {
               tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
               rich(
                 tr(
-                  "llama.cpp, il server dei modelli linguistici sul PC: li usano Pi e la chat nel browser, senza rete. Facoltativo, a una versione fissata; i modelli si scaricano dalla pagina Modelli locali ({0}).",
-                  "llama.cpp, the server of the language models on the PC: Pi and the chat in the browser use them, with no network. Optional, at a pinned version; the models are downloaded from the Local models page ({0}).",
-                  "llama.cpp, le serveur des modèles de langage sur le PC : Pi et le chat dans le navigateur les utilisent, sans réseau. Facultatif, à une version figée ; les modèles se téléchargent depuis la page Modèles locaux ({0}).",
-                  "llama.cpp, der Server der Sprachmodelle auf dem PC: Pi und der Chat im Browser verwenden sie, ohne Netzwerk. Optional, in einer festgelegten Version; die Modelle werden auf der Seite Lokale Modelle heruntergeladen ({0}).",
+                  "llama.cpp, il server dei modelli linguistici sul PC: li usano Pi e la chat nel browser, senza rete. Facoltativo, a una versione fissata; i modelli si scaricano dalla pagina AI, riquadro Modelli locali ({0}).",
+                  "llama.cpp, the server of the language models on the PC: Pi and the chat in the browser use them, with no network. Optional, at a pinned version; the models are downloaded from the AI page, Local models pane ({0}).",
+                  "llama.cpp, le serveur des modèles de langage sur le PC : Pi et le chat dans le navigateur les utilisent, sans réseau. Facultatif, à une version figée ; les modèles se téléchargent depuis la page IA, volet Modèles locaux ({0}).",
+                  "llama.cpp, der Server der Sprachmodelle auf dem PC: Pi und der Chat im Browser verwenden sie, ohne Netzwerk. Optional, in einer festgelegten Version; die Modelle werden auf der Seite KI im Bereich Lokale Modelle heruntergeladen ({0}).",
                 ),
                 <See key="m" id="models" />,
               ),

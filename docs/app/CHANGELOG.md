@@ -7,9 +7,16 @@ Tutto ciò che sta sopra «Rilascio 0.5.1 alpha» è nel codice ma in nessun ril
 - **Agenti e modelli**: Pi, il quarto agente (D-152); i modelli locali GGUF con il server llama.cpp (D-151); i server MCP pronti per il kit e i progetti (D-156); un pulsante per agente (D-146).
 - **Il kit**: «Esporta diagnostica» e «Segnala un problema» (D-153); «Salute del kit» e `Atollo check --kit` (D-155); «Verifica i file» e `Atollo check --files` (D-159); «Copia del kit», esportazione e importazione (D-163); l'icona nell'area di notifica (D-145).
 - **Progetti e database**: copie di sicurezza prima di un ripristino o di un cambio di versione (D-154); «Copia blocco .env» (D-157); il QR del sito in rete locale (D-158); «Salva come base» e «Le mie basi» (D-162); i nuovi progetti in quattro gruppi; mongo-express (D-147) e MongoDB senza la scheda «Contenuto» (D-150).
-- **Interfaccia**: il terminale dentro l'app anche su Windows, con ConPTY (D-148), e i terminali staccabili (D-149); la palette dei comandi (D-160); il riepilogo degli aggiornamenti (D-161); un clic sulla versione cerca gli aggiornamenti; un solo interruttore per «Attività».
+- **Interfaccia**: la pagina AI, con agenti e modelli locali insieme (D-165); il terminale dentro l'app anche su Windows, con ConPTY (D-148), e i terminali staccabili (D-149); la palette dei comandi (D-160); il riepilogo degli aggiornamenti (D-161); un clic sulla versione cerca gli aggiornamenti; un solo interruttore per «Attività».
 - **Guida**: sul sito, una pagina per argomento in quattro lingue (D-164).
 - **Correzioni**: i rilievi del report v7 (voce qui sotto).
+
+## La pagina AI (23/10/2026)
+
+- **Una pagina «AI»** (icona scintilla) al posto delle pagine «Agenti» e «Modelli locali» (D-165). A sinistra due riquadri: «Agenti», con gli agenti installati e per ultima la riga «Condiviso fra gli agenti» (istruzioni, skill e server MCP), e «Modelli locali», con il server llama.cpp e i modelli nel kit. A destra la riga scelta; all'apertura il primo agente installato, o i modelli se non ce n'è nessuno.
+- **Ciò che gli agenti condividono ha una riga sua**: AGENTS.md, skill, mcp.json e il riquadro «Server MCP del kit» non si ripetono più sotto ogni agente.
+- **La chiave API di Gemini** è in AI › Antigravity › «Accesso», accanto agli altri accessi: le Impostazioni non hanno più la sezione «Agenti» e passano a sei sezioni.
+- Le azioni dei riquadri («Aggiorna i consumi», «Apri la cartella condivisa», «Aggiorna i modelli», «Apri la cartella dei modelli») compaiono sul titolo del riquadro. I link della guida ad Agenti e a Modelli locali aprono la pagina AI sul riquadro giusto; il capitolo 4 della guida è «AI: agenti e modelli locali».
 
 ## Rilievi del report v7 (23/10/2026)
 

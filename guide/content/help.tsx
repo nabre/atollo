@@ -401,10 +401,10 @@ function glossary(): [string, string][] {
     [
       tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
       tr(
-        "Modelli linguistici che girano sul PC, senza rete e senza account, con il server llama.cpp del kit. Si scaricano dalla pagina «Modelli locali» e li usano Pi e la chat nel browser.",
-        "Language models that run on the PC, with no network and no account, with the kit's llama.cpp server. You download them from the “Local models” page; Pi and the chat in the browser use them.",
-        "Des modèles de langage qui tournent sur le PC, sans réseau et sans compte, avec le serveur llama.cpp du kit. Ils se téléchargent depuis la page « Modèles locaux » et Pi et le chat dans le navigateur les utilisent.",
-        "Sprachmodelle, die auf dem PC laufen, ohne Netzwerk und ohne Konto, mit dem llama.cpp-Server des Kits. Du lädst sie auf der Seite „Lokale Modelle“ herunter; Pi und der Chat im Browser verwenden sie.",
+        "Modelli linguistici che girano sul PC, senza rete e senza account, con il server llama.cpp del kit. Si scaricano dalla pagina AI, riquadro «Modelli locali», e li usano Pi e la chat nel browser.",
+        "Language models that run on the PC, with no network and no account, with the kit's llama.cpp server. You download them from the AI page, “Local models” pane; Pi and the chat in the browser use them.",
+        "Des modèles de langage qui tournent sur le PC, sans réseau et sans compte, avec le serveur llama.cpp du kit. Ils se téléchargent depuis la page IA, volet « Modèles locaux », et Pi et le chat dans le navigateur les utilisent.",
+        "Sprachmodelle, die auf dem PC laufen, ohne Netzwerk und ohne Konto, mit dem llama.cpp-Server des Kits. Du lädst sie auf der Seite KI im Bereich „Lokale Modelle“ herunter; Pi und der Chat im Browser verwenden sie.",
       ),
     ],
     [
@@ -1098,18 +1098,18 @@ export const HELP: TopicTexts = {
         </QA>
         <QA
           q={tr(
-            "Perché la pagina Agenti non apre gli agenti?",
-            "Why doesn't the Agents page open the agents?",
-            "Pourquoi la page Agents n'ouvre-t-elle pas les agents ?",
-            "Warum öffnet die Seite Agenten die Agenten nicht?",
+            "Perché la pagina AI non apre gli agenti?",
+            "Why doesn't the AI page open the agents?",
+            "Pourquoi la page IA n'ouvre-t-elle pas les agents ?",
+            "Warum öffnet die Seite KI die Agenten nicht?",
           )}
         >
           <P>
             {tr(
-              "Perché un agente lavora sempre in un progetto: si apre dalla pagina Progetti, con il pulsante che porta il logo dell'agente. La pagina Agenti serve per accesso, limiti e cartella condivisa.",
-              "Because an agent always works in a project: you open it from the Projects page, with the button that shows the agent's logo. The Agents page is for sign-in, limits and the shared folder.",
-              "Parce qu'un agent travaille toujours dans un projet : il s'ouvre depuis la page Projets, avec le bouton qui porte le logo de l'agent. La page Agents sert pour la connexion, les limites et le dossier partagé.",
-              "Weil ein Agent immer in einem Projekt arbeitet: Er wird auf der Seite Projekte mit der Schaltfläche geöffnet, die das Logo des Agenten trägt. Die Seite Agenten dient für Anmeldung, Limits und den gemeinsamen Ordner.",
+              "Perché un agente lavora sempre in un progetto: si apre dalla pagina Progetti, con il pulsante che porta il logo dell'agente. La pagina AI, riquadro Agenti, serve per accesso, limiti e ciò che gli agenti condividono; si installano da Strumenti.",
+              "Because an agent always works in a project: you open it from the Projects page, with the button that shows the agent's logo. The AI page, Agents pane, is for sign-in, limits and what the agents share; you install them from Tools.",
+              "Parce qu'un agent travaille toujours dans un projet : il s'ouvre depuis la page Projets, avec le bouton qui porte le logo de l'agent. La page IA, volet Agents, sert pour la connexion, les limites et ce que les agents partagent ; ils s'installent depuis Outils.",
+              "Weil ein Agent immer in einem Projekt arbeitet: Er wird auf der Seite Projekte mit der Schaltfläche geöffnet, die das Logo des Agenten trägt. Die Seite KI, Bereich Agenten, dient für Anmeldung, Limits und das, was die Agenten teilen; installiert werden sie über Werkzeuge.",
             )}
           </P>
         </QA>

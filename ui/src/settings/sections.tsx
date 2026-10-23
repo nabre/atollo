@@ -1,11 +1,10 @@
-// The sections of Settings that are fields: general, network, agents.
+// The sections of Settings that are fields: general, network.
 // The lines of the languages are chosen in Tools and per project, Rust's
 // compiler on Rust's page in Tools (D-137). Each change is saved as it is made (D-137);
 // the first-start page shows some of them too (setup.tsx).
-import { useEffect, useRef, useState } from "react";
 import { LANGS, t } from "../i18n";
-import type { Settings, SettingsView } from "../api";
-import { CheckboxLabel, Link, Select, SettingItem, SettingsGroup, TextField } from "../workbench";
+import type { Settings } from "../api";
+import { CheckboxLabel, Select, SettingItem, SettingsGroup, TextField } from "../workbench";
 import { CondaSettings } from "./conda";
 
 const empty = (s: string) => (s.trim() === "" ? null : s.trim());
@@ -253,74 +252,6 @@ export function NetworkSettings({
         >
           {t("Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete")}
         </CheckboxLabel>
-      </SettingItem>
-    </SettingsGroup>
-  );
-}
-
-/** Agenti: the Gemini key, saved apart and never shown. A key typed is
- * saved when the field loses the focus, then the field empties. */
-export function AgentSettings({
-  view,
-  onGemini,
-}: {
-  view: SettingsView;
-  /** A new key, or "" to remove it. */
-  onGemini: (key: string) => void;
-}) {
-  const agents = t("Agenti");
-  const [typed, setTyped] = useState("");
-  const commit = () => {
-    if (typed.trim() === "") return;
-    onGemini(typed);
-    setTyped("");
-  };
-  // A key typed and not committed is saved when the section closes.
-  const left = useRef({ typed, onGemini });
-  useEffect(() => {
-    left.current = { typed, onGemini };
-  }, [typed, onGemini]);
-  useEffect(
-    () => () => {
-      const { typed: key, onGemini: save } = left.current;
-      if (key.trim() !== "") save(key);
-    },
-    [],
-  );
-  return (
-    <SettingsGroup id="s-agents" title={agents}>
-      <SettingItem
-        category={agents}
-        title={t("Chiave API di Gemini (Antigravity senza account Google)")}
-        description={t(
-          "Resta nel kit, in data/app/secrets, leggibile solo dal tuo utente, e arriva solo ai programmi del kit.",
-        )}
-        modified={view.geminiKeySet}
-      >
-        <TextField
-          id="gemini-key"
-          type="password"
-          // No saved passwords for the key.
-          autoComplete="off"
-          label={t("Chiave API di Gemini (Antigravity senza account Google)")}
-          value={typed}
-          placeholder={view.geminiKeySet ? t("salvata: scrivi per sostituirla") : t("nessuna")}
-          onChange={setTyped}
-          onBlur={commit}
-          className="w-full"
-        />
-        {view.geminiKeySet && (
-          <div className="mt-1.5">
-            <Link
-              onClick={() => {
-                setTyped("");
-                onGemini("");
-              }}
-            >
-              {t("Togli la chiave")}
-            </Link>
-          </div>
-        )}
       </SettingItem>
     </SettingsGroup>
   );
