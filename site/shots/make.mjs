@@ -42,8 +42,8 @@ async function shoot(lang, scheme) {
   await page.getByRole("button", { name: activity }).click();
   await settle();
 
-  // Agents: limits and usage of Claude Code.
-  await nav("Agenti").click();
+  // AI (D-165): the agents pane, limits and usage of Claude Code.
+  await nav("AI").click();
   await settle();
   await page.screenshot({ path: `${out}/shot-agents-${scheme}.png` });
 
