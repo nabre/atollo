@@ -64,28 +64,16 @@ function PageMap() {
       topic: "project-page",
     },
     {
-      icon: "hubot",
-      name: tr("Agenti", "Agents", "Agents", "Agenten"),
+      icon: "sparkle",
+      name: tr("AI", "AI", "IA", "KI"),
       text: tr(
-        "Gli agenti IA installati: accesso al tuo account, limiti del piano e consumi, cartella condivisa.",
-        "The installed AI agents: signing in to your account, plan limits and usage, shared folder.",
-        "Les agents IA installés : connexion à votre compte, limites du forfait et consommation, dossier partagé.",
-        "Die installierten KI-Agenten: Anmeldung bei deinem Konto, Limits des Plans und Verbrauch, gemeinsamer Ordner.",
+        "Tutta l'IA del kit in due riquadri. «Agenti»: accesso al tuo account, limiti del piano e consumi, e ciò che gli agenti condividono (istruzioni, skill, server MCP). «Modelli locali»: i modelli linguistici sul PC per Pi e la chat nel browser, il server llama.cpp, i download dal catalogo e da Hugging Face.",
+        "All of the kit's AI in two panes. “Agents”: signing in to your account, plan limits and usage, and what the agents share (instructions, skills, MCP servers). “Local models”: the language models on the PC for Pi and the chat in the browser, the llama.cpp server, downloads from the catalog and from Hugging Face.",
+        "Toute l'IA du kit en deux volets. « Agents » : connexion à votre compte, limites du forfait et consommation, et ce que les agents partagent (instructions, skills, serveurs MCP). « Modèles locaux » : les modèles de langage sur le PC pour Pi et le chat dans le navigateur, le serveur llama.cpp, les téléchargements depuis le catalogue et Hugging Face.",
+        "Die ganze KI des Kits in zwei Bereichen. „Agenten“: Anmeldung bei deinem Konto, Limits des Plans und Verbrauch und das, was die Agenten teilen (Anweisungen, Skills, MCP-Server). „Lokale Modelle“: die Sprachmodelle auf dem PC für Pi und den Chat im Browser, der llama.cpp-Server, Downloads aus dem Katalog und von Hugging Face.",
       ),
       page: "agents",
       topic: "agents",
-    },
-    {
-      icon: "chip",
-      name: tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
-      text: tr(
-        "Modelli linguistici sul PC per Pi e la chat nel browser: il server llama.cpp, i download dal catalogo e da Hugging Face.",
-        "Language models on the PC for Pi and the chat in the browser: the llama.cpp server, downloads from the catalog and from Hugging Face.",
-        "Des modèles de langage sur le PC pour Pi et le chat dans le navigateur : le serveur llama.cpp, les téléchargements depuis le catalogue et Hugging Face.",
-        "Sprachmodelle auf dem PC für Pi und den Chat im Browser: der llama.cpp-Server, Downloads aus dem Katalog und von Hugging Face.",
-      ),
-      page: "models",
-      topic: "models",
     },
     {
       icon: "database",
@@ -150,10 +138,10 @@ function PageMap() {
       icon: "settings-gear",
       name: tr("Impostazioni", "Settings", "Paramètres", "Einstellungen"),
       text: tr(
-        "Lingua, tema, rete, account GitHub e chi firma i commit, chiave di Gemini, aggiornamenti, privacy e istruzioni dei framework, salvati da soli; «Il kit», con la sua salute, la sua copia e la diagnostica.",
-        "Language, theme, network, GitHub account and who signs the commits, Gemini key, updates, privacy and framework instructions, saved by themselves; “The kit”, with its health, its copy and the diagnostics.",
-        "Langue, thème, réseau, compte GitHub et qui signe les commits, clé Gemini, mises à jour, confidentialité et instructions des frameworks, enregistrés tout seuls ; « Le kit », avec sa santé, sa copie et le diagnostic.",
-        "Sprache, Design, Netzwerk, GitHub-Konto und wer die Commits signiert, Gemini-Schlüssel, Aktualisierungen, Datenschutz und Anweisungen der Frameworks, die sich von selbst speichern; „Das Kit“ mit seinem Zustand, seiner Kopie und der Diagnose.",
+        "Lingua, tema, rete, account GitHub e chi firma i commit, aggiornamenti, privacy e istruzioni dei framework, salvati da soli; «Il kit», con la sua salute, la sua copia e la diagnostica.",
+        "Language, theme, network, GitHub account and who signs the commits, updates, privacy and framework instructions, saved by themselves; “The kit”, with its health, its copy and the diagnostics.",
+        "Langue, thème, réseau, compte GitHub et qui signe les commits, mises à jour, confidentialité et instructions des frameworks, enregistrés tout seuls ; « Le kit », avec sa santé, sa copie et le diagnostic.",
+        "Sprache, Design, Netzwerk, GitHub-Konto und wer die Commits signiert, Aktualisierungen, Datenschutz und Anweisungen der Frameworks, die sich von selbst speichern; „Das Kit“ mit seinem Zustand, seiner Kopie und der Diagnose.",
       ),
       page: "settings",
       topic: "settings",
@@ -362,7 +350,7 @@ export const START: TopicTexts = {
                 "Claude Code, Codex, Antigravity et Pi, avec instructions, skills et serveurs MCP partagés.",
                 "Claude Code, Codex, Antigravity und Pi, mit gemeinsamen Anweisungen, Skills und MCP-Servern.",
               ),
-              tr("Agenti", "Agents", "Agents", "Agenten"),
+              tr("AI › Agenti", "AI › Agents", "IA › Agents", "KI › Agenten"),
             ],
             [
               tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
@@ -372,7 +360,7 @@ export const START: TopicTexts = {
                 "Des modèles de langage sur le PC, sans réseau et sans compte, pour Pi et pour un chat dans le navigateur.",
                 "Sprachmodelle auf dem PC, ohne Netzwerk und ohne Konto, für Pi und für einen Chat im Browser.",
               ),
-              tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle"),
+              tr("AI › Modelli locali", "AI › Local models", "IA › Modèles locaux", "KI › Lokale Modelle"),
             ],
           ]}
         />
@@ -682,10 +670,10 @@ export const START: TopicTexts = {
                 "llama.cpp, der Server der Sprachmodelle auf dem PC.",
               ),
               tr(
-                "Facoltativo e non spuntato. Si installa anche da solo al primo avvio del server, dalla pagina Modelli locali, dove si scaricano i modelli (molti GB).",
-                "Optional and not ticked. It also installs itself the first time you start the server, from the Local models page, where you download the models (many GB).",
-                "Facultatif et non coché. Il s'installe aussi tout seul au premier démarrage du serveur, depuis la page Modèles locaux, où se téléchargent les modèles (de nombreux Go).",
-                "Optional und nicht angekreuzt. Er installiert sich auch von selbst beim ersten Start des Servers, auf der Seite Lokale Modelle, wo die Modelle heruntergeladen werden (viele GB).",
+                "Facoltativo e non spuntato. Si installa anche da solo al primo avvio del server, dalla pagina AI, riquadro Modelli locali, dove si scaricano i modelli (molti GB).",
+                "Optional and not ticked. It also installs itself the first time you start the server, from the AI page, Local models pane, where you download the models (many GB).",
+                "Facultatif et non coché. Il s'installe aussi tout seul au premier démarrage du serveur, depuis la page IA, volet Modèles locaux, où se téléchargent les modèles (de nombreux Go).",
+                "Optional und nicht angekreuzt. Er installiert sich auch von selbst beim ersten Start des Servers, auf der Seite KI im Bereich Lokale Modelle, wo die Modelle heruntergeladen werden (viele GB).",
               ),
             ],
             [
@@ -987,10 +975,10 @@ export const START: TopicTexts = {
             [
               tr("2 · Barra delle attività", "2 · Activity bar", "2 · Barre d'activité", "2 · Aktivitätsleiste"),
               tr(
-                "Le icone delle pagine. In alto quelle di lavoro: Progetti, Agenti, Modelli locali, Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database, pool dei server web e il server dei modelli locali.",
-                "The page icons. At the top the working ones: Projects, Agents, Local models, Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions, web server pools and the local models server.",
-                "Les icônes des pages. En haut, celles de travail : Projets, Agents, Modèles locaux, Bases de données, Serveurs web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données, pools de serveurs web et le serveur des modèles locaux.",
-                "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, Agenten, Lokale Modelle, Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Dinge laufen: Projektaktionen, Datenbankversionen, Webserver-Pools und der Server der lokalen Modelle.",
+                "Le icone delle pagine. In alto quelle di lavoro: Progetti, AI (agenti e modelli locali), Database, Server Web, Terminali, Strumenti. In basso: Guida, Impostazioni, Rimuovi l'unità. Un numero sull'icona di Progetti dice quante cose sono in esecuzione: azioni dei progetti, versioni dei database, pool dei server web e il server dei modelli locali.",
+                "The page icons. At the top the working ones: Projects, AI (agents and local models), Databases, Web Servers, Terminals, Tools. At the bottom: Guide, Settings, Remove drive. A number on the Projects icon tells how many things are running: project actions, database versions, web server pools and the local models server.",
+                "Les icônes des pages. En haut, celles de travail : Projets, IA (agents et modèles locaux), Bases de données, Serveurs web, Terminaux, Outils. En bas : Guide, Paramètres, Retirer le lecteur. Un nombre sur l'icône Projets indique combien de choses sont en cours d'exécution : actions de projet, versions des bases de données, pools de serveurs web et le serveur des modèles locaux.",
+                "Die Symbole der Seiten. Oben die für die Arbeit: Projekte, KI (Agenten und lokale Modelle), Datenbanken, Webserver, Terminals, Werkzeuge. Unten: Anleitung, Einstellungen, Laufwerk entfernen. Eine Zahl auf dem Symbol von Projekte zeigt, wie viele Dinge laufen: Projektaktionen, Datenbankversionen, Webserver-Pools und der Server der lokalen Modelle.",
               ),
             ],
             [

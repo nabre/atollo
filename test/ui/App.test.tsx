@@ -143,9 +143,9 @@ describe("App", () => {
   it("switches pages from the activity bar", () => {
     invoke.mockImplementation(answers());
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Agenti");
-    expect(screen.getByRole("button", { name: "Agenti" }).getAttribute("aria-current")).toBe("page");
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("AI");
+    expect(screen.getByRole("button", { name: "AI" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("measures its frame with VSCodium's size tokens", async () => {
@@ -502,12 +502,13 @@ describe("App", () => {
     expect(await screen.findByText("Salvato.")).toBeTruthy();
   });
 
-  it("saves a Gemini key typed when the field loses the focus", async () => {
-    invoke.mockImplementation(answers());
+  it("saves a Gemini key typed on Antigravity's page when the field loses the focus", async () => {
+    const agents = SAMPLE_AGENTS.map((a) => (a.id === "antigravity" ? { ...a, installed: true } : a));
+    invoke.mockImplementation(answers({ agents_status: agents }));
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
-    const sections = within(await screen.findByRole("list", { name: "Impostazioni" }));
-    fireEvent.click(sections.getByRole("button", { name: "Agenti" }));
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    const panes = within(await screen.findByRole("list", { name: "Agenti" }));
+    fireEvent.click(await panes.findByText("Antigravity"));
     const key = await screen.findByLabelText("Chiave API di Gemini (Antigravity senza account Google)");
     fireEvent.change(key, { target: { value: "AIza-key" } });
     expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
@@ -758,7 +759,7 @@ describe("App", () => {
   it("opens the project chosen in the tray menu, from any page", async () => {
     invoke.mockImplementation(answers({ projects_list: [project("negozio"), project("blog")] }));
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
     act(() => {
       openProjectListener?.({ payload: "negozio" });
     });
@@ -1036,7 +1037,7 @@ describe("App", () => {
     const agents = SAMPLE_AGENTS.map((a) => ({ ...a, running: false }));
     invoke.mockImplementation(answers({ agents_status: agents, agent_launch: null, agent_sign_out: null }));
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Agenti" }));
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
     expect((await screen.findAllByText("2.1.299")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("accesso fatto").length).toBeGreaterThan(0);
 

@@ -1,4 +1,4 @@
-// Plan limits and usage of each agent (Agents page), from
+// Plan limits and usage of each agent (AI page), from
 // tauri/src/stats: every limit as "% used" with the time it resets,
 // tokens of today and of the last 7 days, sessions, last activity.
 import { useCallback, useEffect, useRef, useState } from "react";

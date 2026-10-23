@@ -50,15 +50,14 @@ import {
 } from "../workbench";
 import { KitInfo, Privacy, Updates } from "./about";
 import { useSettingsAutosave } from "./autosave";
-import { AgentSettings, GeneralSettings, NetworkSettings } from "./sections";
+import { GeneralSettings, NetworkSettings } from "./sections";
 
-type SectionId = "general" | "network" | "agents" | "update" | "github" | "privacy" | "kit";
+type SectionId = "general" | "network" | "update" | "github" | "privacy" | "kit";
 
 function sections(): { id: SectionId; label: string; icon: IconType }[] {
   return [
     { id: "general", label: t("Generale"), icon: codicon("settings") },
     { id: "network", label: t("Rete"), icon: codicon("globe") },
-    { id: "agents", label: t("Agenti"), icon: codicon("hubot") },
     { id: "update", label: t("Aggiornamenti"), icon: codicon("cloud-download") },
     { id: "github", label: t("Account GitHub"), icon: codicon("github") },
     { id: "privacy", label: t("Privacy"), icon: codicon("shield") },
@@ -79,18 +78,7 @@ export function SettingsPage({
   info: AppInfo | null;
   onGuide?: (topic: GuideTopicId) => void;
 }) {
-  const {
-    view,
-    s,
-    loadError,
-    retry,
-    error: saveError,
-    status,
-    needsRestart,
-    set,
-    net,
-    setGemini,
-  } = useSettingsAutosave(onSaved);
+  const { view, s, loadError, retry, error: saveError, status, needsRestart, set, net } = useSettingsAutosave(onSaved);
   const [search, setSearch] = useState("");
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["settings", "frameworks"]));
   const tabs = useTabs(["general"]);
@@ -123,8 +111,6 @@ export function SettingsPage({
         return <GeneralSettings key={id} s={s} set={set} platform={info?.platform} />;
       case "network":
         return <NetworkSettings key={id} s={s} net={net} platform={info?.platform} />;
-      case "agents":
-        return <AgentSettings key={id} view={view} onGemini={setGemini} />;
       case "update":
         return <Updates key={id} />;
       case "github":

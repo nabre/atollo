@@ -101,7 +101,16 @@ export const GUIDE_GROUPS: GuideGroup[] = [
         "Datenbanken, Websites und Terminals",
       ),
   },
-  { id: "agents", title: () => tr("Agenti IA", "AI agents", "Agents IA", "KI-Agenten") },
+  {
+    id: "agents",
+    title: () =>
+      tr(
+        "AI: agenti e modelli locali",
+        "AI: agents and local models",
+        "IA : agents et modèles locaux",
+        "KI: Agenten und lokale Modelle",
+      ),
+  },
   {
     id: "tools",
     title: () => tr("Strumenti e linguaggi", "Tools and languages", "Outils et langages", "Werkzeuge und Sprachen"),
@@ -444,7 +453,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: "hubot",
     keywords:
-      "agenti claude code codex antigravity gemini pi earendil accesso login token chiave api agents sign in login api key agents connexion clé api agenten anmeldung api-schlüssel",
+      "pagina ai page ia ki agenti claude code codex antigravity gemini chiave di gemini gemini key pi earendil accesso login token chiave api agents sign in login api key agents connexion clé api agenten anmeldung api-schlüssel",
     targetPage: "agents",
   },
   {
@@ -510,7 +519,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     icon: "chip",
     keywords:
-      "modelli locali llm llama.cpp llama-server gguf hugging face quantizzazione qwen gpt-oss devstral pi chat gpu vulkan metal ram memoria video scarica sospendi riprendi token chiave local models quantization download pause resume video memory key modèles locaux quantification télécharger suspendre reprendre mémoire vidéo clé lokale modelle quantisierung herunterladen anhalten fortsetzen grafikspeicher schlüssel",
+      "pagina ai page ia ki modelli locali llm llama.cpp llama-server gguf hugging face quantizzazione qwen gpt-oss devstral pi chat gpu vulkan metal ram memoria video scarica sospendi riprendi token chiave local models quantization download pause resume video memory key modèles locaux quantification télécharger suspendre reprendre mémoire vidéo clé lokale modelle quantisierung herunterladen anhalten fortsetzen grafikspeicher schlüssel",
     targetPage: "models",
   },
 
@@ -611,14 +620,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Salvataggio automatico e le sette sezioni: lingua e tema, file temporanei, rete, chiave di Gemini, aggiornamento automatico, chi firma i commit, privacy e le informazioni sul kit.",
-        "Automatic saving and the seven sections: language and theme, temporary files, network, Gemini key, automatic updates, who signs the commits, privacy and the information about the kit.",
-        "Enregistrement automatique et les sept sections : langue et thème, fichiers temporaires, réseau, clé Gemini, mise à jour automatique, qui signe les commits, confidentialité et les informations sur le kit.",
-        "Automatisches Speichern und die sieben Abschnitte: Sprache und Design, temporäre Dateien, Netzwerk, Gemini-Schlüssel, automatische Aktualisierung, wer die Commits signiert, Datenschutz und die Informationen zum Kit.",
+        "Salvataggio automatico e le sei sezioni: lingua e tema, file temporanei, rete, aggiornamento automatico, chi firma i commit, privacy e le informazioni sul kit.",
+        "Automatic saving and the six sections: language and theme, temporary files, network, automatic updates, who signs the commits, privacy and the information about the kit.",
+        "Enregistrement automatique et les six sections : langue et thème, fichiers temporaires, réseau, mise à jour automatique, qui signe les commits, confidentialité et les informations sur le kit.",
+        "Automatisches Speichern und die sechs Abschnitte: Sprache und Design, temporäre Dateien, Netzwerk, automatische Aktualisierung, wer die Commits signiert, Datenschutz und die Informationen zum Kit.",
       ),
     icon: "settings-gear",
     keywords:
-      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento aggiornamento automatico versioni dei componenti automatic update automatische aktualisierung gemini il kit privacy telemetria salvataggio esporta diagnostica segnala un problema salute del kit copia del kit esporta importa zip copy of the kit export import copie du kit exporter importer kopie des kits exportieren importieren kit health santé du kit zustand des kits settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
+      "impostazioni lingua tema chiaro scuro theme light dark thème clair sombre design hell dunkel git identity identità user.name user.email temporanei aggiornamento aggiornamento automatico versioni dei componenti automatic update automatische aktualisierung il kit privacy telemetria salvataggio esporta diagnostica segnala un problema salute del kit copia del kit esporta importa zip copy of the kit export import copie du kit exporter importer kopie des kits exportieren importieren kit health santé du kit zustand des kits settings export diagnostics report a problem language temporary update privacy telemetry save paramètres langue temporaires mise à jour confidentialité télémétrie enregistrement einstellungen sprache temporär aktualisierung datenschutz telemetrie speichern",
     targetPage: "settings",
   },
   {
@@ -916,10 +925,11 @@ export function pageName(page: AppPageTarget): string {
       return tr("Nuovo progetto", "New project", "Nouveau projet", "Neues Projekt");
     case "projects":
       return tr("Progetti", "Projects", "Projets", "Projekte");
+    // Agents and local models are the two panes of the AI page (D-165).
     case "agents":
-      return tr("Agenti", "Agents", "Agents", "Agenten");
+      return tr("AI › Agenti", "AI › Agents", "IA › Agents", "KI › Agenten");
     case "models":
-      return tr("Modelli locali", "Local models", "Modèles locaux", "Lokale Modelle");
+      return tr("AI › Modelli locali", "AI › Local models", "IA › Modèles locaux", "KI › Lokale Modelle");
     case "databases":
       return tr("Database", "Databases", "Bases de données", "Datenbanken");
     case "servers":

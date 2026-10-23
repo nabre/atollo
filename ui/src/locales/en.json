@@ -867,7 +867,7 @@
   "Atollo non ha telemetria e non raccoglie dati: nessun account, nessuna statistica d'uso. Impostazioni, chiavi e accessi restano nella cartella del kit; le poche eccezioni sono nell'informativa.": "Atollo has no telemetry and collects no data: no account, no usage statistics. Settings, keys and sign-ins stay in the kit's folder; the few exceptions are in the policy.",
   "Automatico usa la cartella temporanea del sistema se il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT, altrimenti la cartella data/tmp del kit. Nel sistema i file restano sul computer finché chiudi l'app.": "Automatic uses the system's temporary folder if the kit is on a USB stick, a network drive or FAT32/exFAT, otherwise the kit's data/tmp folder. In the system, the files stay on the computer until you close the app.",
   "Cerca gli aggiornamenti di Atollo su GitHub, se l'aggiornamento automatico è attivo.": "Checks GitHub for Atollo updates, if automatic updates are on.",
-  "Con la pagina Agenti aperta, ogni 2 minuti legge i limiti del piano di ogni agente collegato, mandandone il token solo al suo fornitore; con l'account GitHub collegato ne usa il token con api.github.com.": "While the Agents page is open, every 2 minutes it reads the plan limits of each signed-in agent, sending that agent's token only to its provider; with the GitHub account signed in it uses that account's token with api.github.com.",
+  "Con la pagina AI aperta, ogni 2 minuti legge i limiti del piano di ogni agente collegato, mandandone il token solo al suo fornitore; con l'account GitHub collegato ne usa il token con api.github.com.": "While the AI page is open, every 2 minutes it reads the plan limits of each signed-in agent, sending that agent's token only to its provider; with the GitHub account signed in it uses that account's token with api.github.com.",
   "Cosa fa Atollo con i tuoi dati": "What Atollo does with your data",
   "Gli agenti AI, GitHub e i registri dei pacchetti parlano direttamente con i loro servizi, con le loro regole sulla privacy.": "AI agents, GitHub and package registries talk directly to their own services, under their own privacy rules.",
   "Le impostazioni in {0} non sono leggibili: uso quelle predefinite. Il file verrà riscritto alla prima modifica.": "The settings in {0} cannot be read: using the defaults. The file will be rewritten at the first change.",
@@ -903,7 +903,7 @@
   "Ferma tutto": "Stop everything",
   "Eliminare il profilo «{0}»?": "Delete the profile “{0}”?",
   "Modelli locali": "Local models",
-  "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina Modelli locali.": "The server of the language models on the PC (llama.cpp): Pi and the chat in the browser use them, without the network. The models are downloaded from the Local models page.",
+  "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina AI.": "The server of the language models on the PC (llama.cpp): Pi and the chat in the browser use them, without the network. The models are downloaded from the AI page.",
   "Attività: progetti avviati, database, modelli locali, server web, installazioni": "Activity: started projects, databases, local models, web servers, installations",
   "Fermare le azioni dei progetti, i database, i modelli locali e i server web in esecuzione?": "Stop the projects' actions, the databases, the local models and the web servers that are running?",
   "In memoria: {0}": "In memory: {0}",
@@ -1044,5 +1044,10 @@
   "Chiudi Atollo per importarla": "Close Atollo to import it",
   "Annulla l'importazione": "Cancel the import",
   "Apri la cartella del kit": "Open the kit's folder",
-  "Poi riapri Atollo: la copia si applica all'avvio.": "Then open Atollo again: the copy is applied at the start."
+  "Poi riapri Atollo: la copia si applica all'avvio.": "Then open Atollo again: the copy is applied at the start.",
+  "AI": "AI",
+  "Aggiorna i modelli": "Refresh models",
+  "Istruzioni, skill e server MCP": "Instructions, skills and MCP servers",
+  "Istruzioni, skill e server MCP valgono per tutti gli agenti del kit.": "Instructions, skills and MCP servers apply to all of the kit's agents.",
+  "Istruzioni e skill": "Instructions and skills"
 }

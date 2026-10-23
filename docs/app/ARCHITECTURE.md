@@ -336,12 +336,13 @@ The page folders:
 | --- | --- |
 | `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx`, `extensions.tsx` (editor extensions by language: the kit's matrix and a project's own) |
 | `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases), `engines.ts` (the engines' names, `ENGINE_NAMES`) |
-| `agents\` | `page.tsx` (Agents page, `AgentPicker`, `AgentButton`, `useAgents`), `stats.tsx` (limits and consumption), `token.tsx` (Claude Code's token on macOS) |
-| `models\` | `page.tsx` (Local models page: server, Pi's model, Atollo's catalog, Hugging Face, this PC; D-151) |
+| `ai\` | `page.tsx` (AI page, D-165: the Agents pane and the Local models pane in one side bar, the editor shows the row chosen) |
+| `agents\` | `page.tsx` (`AgentsPane` with the "Shared by the agents" row, `AgentEditor`, `SharedEditor` with the kit's MCP servers, `AgentButtons`, `useAgents`), `stats.tsx` (limits and consumption), `token.tsx` (Claude Code's token on macOS), `gemini.tsx` (Antigravity's Gemini key) |
+| `models\` | `page.tsx` (`ModelsPane` and `ModelsEditor`: server, Pi's model, Atollo's catalog, Hugging Face, this PC; D-151) |
 | `frameworks\` | `model.ts` (data and hooks), `fields.tsx` (instruction fields), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (kit versions), `project.tsx` (versions of a project), `lines.tsx` (line choice) |
 | `github\` | `account.tsx`, `identity.tsx` (who signs the commits), `repos.tsx`, `details.tsx` |
-| `settings\` | `page.tsx` (seven sections: General, Network, Agents, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `about.tsx` (kit and updates) |
+| `settings\` | `page.tsx` (six sections: General, Network, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `about.tsx` (kit and updates) |
 | `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (relations matrix), `setup.tsx` (the setup in progress), `byhand.tsx` (files downloaded by hand) |
 | `servers\` | `page.tsx` (Web server page: Caddy and Apache pools) |
 | `terminal\` | `page.tsx` (Terminals page: the saved kit consoles); the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `font.ts` (Geist Mono before xterm.js measures), `api.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |

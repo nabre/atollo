@@ -87,7 +87,7 @@ Alla domanda «in cosa è diverso?» non si risponde con un confronto (Direttiva
 | Aspetto | Cosa dire | Fatti da citare |
 | :--- | :--- | :--- |
 | **Isolato, con i programmi nativi** | Nessun container e nessuna macchina virtuale: ogni sistema esegue i propri programmi, direttamente. | Nessun diritto di amministratore, nessun servizio di sistema, registro e `PATH` del sistema mai toccati; avvio anche da chiavetta USB o SSD esterno. |
-| **Tutto da una finestra** | Ogni area del lavoro ha la sua pagina, e ciò che succede si vede in un posto solo. | Pagine **Progetti**, **Agenti**, **Modelli locali**, **Database**, **Strumenti**, **Impostazioni**; pannello **Attività** con output ed errori; riga di comando per gli script (`atollo check`, `atollo prepare`, `atollo sync`). |
+| **Tutto da una finestra** | Ogni area del lavoro ha la sua pagina, e ciò che succede si vede in un posto solo. | Pagine **Progetti**, **AI** (agenti e modelli locali), **Database**, **Strumenti**, **Impostazioni**; pannello **Attività** con output ed errori; riga di comando per gli script (`atollo check`, `atollo prepare`, `atollo sync`). |
 | **La cartella viaggia con te** | Cambiano unità, cartella o sistema: il lavoro resta lo stesso. | Percorsi riallineati al cambio di lettera o cartella; su ognuno dei 6 target i programmi di quel sistema; progetti, database, accessi e configurazioni degli agenti intatti. |
 | **Ogni componente verificato** | Nulla si usa senza essere controllato, e le versioni non si pestano i piedi. | Checksum SHA-256 o firma su ogni download; versioni *side-by-side* per progetto; matrice delle relazioni che avvisa delle incompatibilità. |
 
@@ -190,7 +190,7 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 ### Persona 1: Lo Sviluppatore "AI-First"
 * **Dolore:** Usa Claude Code, Codex, Antigravity e Pi, ma deve mantenere 4 cartelle di configurazione diverse, 4 file di istruzioni, 4 elenchi di server MCP e non sa mai quanto budget/token sta consumando su ciascun fornitore; per il codice riservato vorrebbe un modello che non esca dal PC.
 * **Hook:** *"Quattro agenti AI. Una sola mente. Sul tuo disco."*
-* **Funzionalità da evidenziare:** Pagina **Agenti**, comando `atollo sync`, allineamento automatico di istruzioni/skill/MCP in `data/agents`, grafico dei consumi giornalieri e settimanali, salvataggio delle credenziali nel kit; pagina **Modelli locali** (Pi su un modello che gira sul PC, senza rete).
+* **Funzionalità da evidenziare:** Pagina **AI**, riquadro **Agenti**, comando `atollo sync`, allineamento automatico di istruzioni/skill/MCP in `data/agents`, grafico dei consumi giornalieri e settimanali, salvataggio delle credenziali nel kit; nella stessa pagina il riquadro **Modelli locali** (Pi su un modello che gira sul PC, senza rete).
 
 ### Persona 2: Lo Sviluppatore Full-Stack / Poliglotta
 * **Dolore:** Ha il PC lento e il `PATH` inquinato da 4 versioni di Node, 3 di Python, Java, PHP, servizi di MySQL e MongoDB che partono all'avvio di Windows/macOS, oppure una macchina virtuale che consuma 8 GB di RAM solo per far girare un sito locale.
@@ -242,7 +242,7 @@ Quando un agente prepara materiali per il lancio pubblico, deve dare priorità a
 * **Scuole, Università, Bootcamp e Formazione IT:**
   * Proporre **Atollo** come soluzione definitiva al *"Laboratorio bloccato"*: gli studenti tengono `Atollo` sulla propria chiavetta USB o cartella profilo, lavorano in aula senza chiedere la password di amministratore al tecnico IT e continuano a casa sullo stesso identico ambiente.
 * **Community AI & Developer (`r/ClaudeAI`, `r/LocalLLaMA`, `r/rust`, `r/webdev`, X/Twitter):**
-  * Mostrare screenshot reali della pagina **Agenti** (con i consumi di oggi/7 giorni e la sincronizzazione MCP/skill tra i 4 agenti) e della matrice **Strumenti** multipiattaforma, nella lingua del pubblico: `site/shots/<lingua>/` ha le stesse sei schermate in `en`, `it`, `fr`, `de` (D-143). Per un link condiviso basta la social card `docs/brand/social.png`, in inglese.
+  * Mostrare screenshot reali della pagina **AI** (con i consumi di oggi/7 giorni e la sincronizzazione MCP/skill tra i 4 agenti) e della matrice **Strumenti** multipiattaforma, nella lingua del pubblico: `site/shots/<lingua>/` ha le stesse sei schermate in `en`, `it`, `fr`, `de` (D-143). Per un link condiviso basta la social card `docs/brand/social.png`, in inglese.
 
 ---
 

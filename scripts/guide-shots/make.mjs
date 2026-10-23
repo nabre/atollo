@@ -65,9 +65,15 @@ async function shoot(lang) {
   await tab("Database");
   await shot("project-db");
 
+  // AI (D-165): the agents pane with the first agent, then the server of
+  // the local models in the same side bar.
+  await nav("AI");
+  await shot("agents");
+  await page.getByText("llama.cpp", { exact: true }).first().click();
+  await settle();
+  await shot("models");
+
   for (const [name, label] of [
-    ["agents", "Agenti"],
-    ["models", "Modelli locali"],
     ["databases", "Database"],
     ["servers", "Server Web"],
     ["terminals", "Terminali"],

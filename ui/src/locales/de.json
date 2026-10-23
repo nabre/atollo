@@ -867,7 +867,7 @@
   "Atollo non ha telemetria e non raccoglie dati: nessun account, nessuna statistica d'uso. Impostazioni, chiavi e accessi restano nella cartella del kit; le poche eccezioni sono nell'informativa.": "Atollo hat keine Telemetrie und sammelt keine Daten: kein Konto, keine Nutzungsstatistiken. Einstellungen, Schlüssel und Anmeldungen bleiben im Ordner des Kits; die wenigen Ausnahmen stehen in der Datenschutzerklärung.",
   "Automatico usa la cartella temporanea del sistema se il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT, altrimenti la cartella data/tmp del kit. Nel sistema i file restano sul computer finché chiudi l'app.": "Automatisch verwendet den temporären Ordner des Systems, wenn das Kit auf einem USB-Stick, einem Netzlaufwerk oder FAT32/exFAT liegt, sonst den Ordner data/tmp des Kits. Im System bleiben die Dateien auf dem Computer, bis du die App schließt.",
   "Cerca gli aggiornamenti di Atollo su GitHub, se l'aggiornamento automatico è attivo.": "Sucht auf GitHub nach Updates von Atollo, wenn die automatische Aktualisierung aktiv ist.",
-  "Con la pagina Agenti aperta, ogni 2 minuti legge i limiti del piano di ogni agente collegato, mandandone il token solo al suo fornitore; con l'account GitHub collegato ne usa il token con api.github.com.": "Solange die Seite Agenten offen ist, liest es alle 2 Minuten die Planlimits jedes angemeldeten Agenten und schickt dessen Token nur an seinen Anbieter; mit angemeldetem GitHub-Konto verwendet es dessen Token mit api.github.com.",
+  "Con la pagina AI aperta, ogni 2 minuti legge i limiti del piano di ogni agente collegato, mandandone il token solo al suo fornitore; con l'account GitHub collegato ne usa il token con api.github.com.": "Solange die Seite KI offen ist, liest es alle 2 Minuten die Planlimits jedes angemeldeten Agenten und schickt dessen Token nur an seinen Anbieter; mit angemeldetem GitHub-Konto verwendet es dessen Token mit api.github.com.",
   "Cosa fa Atollo con i tuoi dati": "Was Atollo mit deinen Daten macht",
   "Gli agenti AI, GitHub e i registri dei pacchetti parlano direttamente con i loro servizi, con le loro regole sulla privacy.": "KI-Agenten, GitHub und Paketregister sprechen direkt mit ihren eigenen Diensten, nach deren Datenschutzregeln.",
   "Le impostazioni in {0} non sono leggibili: uso quelle predefinite. Il file verrà riscritto alla prima modifica.": "Die Einstellungen in {0} sind nicht lesbar: Es gelten die Standardwerte. Die Datei wird bei der ersten Änderung neu geschrieben.",
@@ -903,7 +903,7 @@
   "Ferma tutto": "Alles stoppen",
   "Eliminare il profilo «{0}»?": "Profil „{0}“ löschen?",
   "Modelli locali": "Lokale Modelle",
-  "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina Modelli locali.": "Der Server der Sprachmodelle auf dem PC (llama.cpp): Pi und der Chat im Browser nutzen sie, ohne Netzwerk. Die Modelle werden auf der Seite Lokale Modelle heruntergeladen.",
+  "Il server dei modelli linguistici sul PC (llama.cpp): li usano Pi e la chat nel browser, senza rete. I modelli si scaricano dalla pagina AI.": "Der Server der Sprachmodelle auf dem PC (llama.cpp): Pi und der Chat im Browser nutzen sie, ohne Netzwerk. Die Modelle werden auf der Seite KI heruntergeladen.",
   "Attività: progetti avviati, database, modelli locali, server web, installazioni": "Aktivität: gestartete Projekte, Datenbanken, lokale Modelle, Webserver, Installationen",
   "Fermare le azioni dei progetti, i database, i modelli locali e i server web in esecuzione?": "Die laufenden Aktionen der Projekte, Datenbanken, lokalen Modelle und Webserver beenden?",
   "In memoria: {0}": "Im Speicher: {0}",
@@ -1044,5 +1044,10 @@
   "Chiudi Atollo per importarla": "Atollo schließen, um sie zu importieren",
   "Annulla l'importazione": "Import abbrechen",
   "Apri la cartella del kit": "Ordner des Kits öffnen",
-  "Poi riapri Atollo: la copia si applica all'avvio.": "Dann Atollo wieder öffnen: die Kopie wird beim Start angewendet."
+  "Poi riapri Atollo: la copia si applica all'avvio.": "Dann Atollo wieder öffnen: die Kopie wird beim Start angewendet.",
+  "AI": "KI",
+  "Aggiorna i modelli": "Modelle aktualisieren",
+  "Istruzioni, skill e server MCP": "Anweisungen, Skills und MCP-Server",
+  "Istruzioni, skill e server MCP valgono per tutti gli agenti del kit.": "Anweisungen, Skills und MCP-Server gelten für alle Agenten des Kits.",
+  "Istruzioni e skill": "Anweisungen und Skills"
 }

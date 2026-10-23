@@ -1,10 +1,11 @@
-// The Local models page (D-151): what fits the PC, a download with its
-// progress and Pause, FAT32 refusing a file over 4 GB, Pi's model, the
-// server's state after «Avvia».
+// The local models of the AI page (D-151, D-165): what fits the PC, a
+// download with its progress and Pause, FAT32 refusing a file over 4 GB,
+// Pi's model, the server's state after «Avvia».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "@/api/llm";
-import { fitOf, ModelsPage } from "@/models";
+import { AiPage } from "@/ai";
+import { fitOf } from "@/models";
 import { invoke } from "@test/support/tauri";
 
 const handlers = new Map<string, (e: { payload: unknown }) => void>();
@@ -54,10 +55,10 @@ describe("fitOf", () => {
   });
 });
 
-describe("ModelsPage", () => {
+describe("AiPage, local models", () => {
   it("shows the catalog with what fits, and a download's progress with Pause", async () => {
     answer({ ...SAMPLE_MODELS, local: [] });
-    render(<ModelsPage />);
+    render(<AiPage focus="models" />);
     const row = (await screen.findByText("gpt-oss 20B", { exact: false })).closest("li");
     expect(row).not.toBeNull();
     const r = within(row as HTMLElement);
@@ -87,7 +88,7 @@ describe("ModelsPage", () => {
       local: [],
       catalog: SAMPLE_MODELS.catalog.map((c) => ({ ...c, files: [big] })),
     });
-    render(<ModelsPage />);
+    render(<AiPage focus="models" />);
     expect(await screen.findByText(/non tiene file oltre i 4 GB/)).toBeTruthy();
     expect(screen.getAllByText("non entra su FAT32").length).toBe(SAMPLE_MODELS.catalog.length);
     expect(screen.queryByText("Scarica")).toBeNull();
@@ -95,7 +96,7 @@ describe("ModelsPage", () => {
 
   it("a download left halfway resumes, a model in the kit can be Pi's", async () => {
     answer(SAMPLE_MODELS);
-    render(<ModelsPage />);
+    render(<AiPage focus="models" />);
     expect(await screen.findByText("Riprendi")).toBeTruthy();
     fireEvent.click(screen.getByText("Riprendi"));
     expect(invoke).toHaveBeenCalledWith("llm_pull", { catalog: "gpt-oss-20b" });
@@ -126,11 +127,11 @@ describe("ModelsPage", () => {
           return Promise.resolve(null);
       }
     });
-    render(<ModelsPage />);
+    render(<AiPage focus="models" />);
     await screen.findAllByText("Avvia");
     // A read of the status starts, and answers only after the start.
     hold = true;
-    fireEvent.click(screen.getByRole("button", { name: "Aggiorna" }));
+    fireEvent.click(screen.getByRole("button", { name: "Aggiorna i modelli" }));
     fireEvent.click(screen.getAllByText("Avvia")[0] as HTMLElement);
     expect((await screen.findAllByText("Ferma")).length).toBeGreaterThan(0);
     await act(async () => {

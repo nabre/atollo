@@ -1,6 +1,6 @@
-// The settings saved as they change (D-137): a Gemini key whose save was
-// refused goes again with the next change, never dropped as «unchanged»;
-// a read that works clears the error of the failed one.
+// The settings saved as they change (D-137): the Gemini key is not theirs
+// (the AI page saves it, D-165), a refused change tries again with the next
+// one, a read that works clears the error of the failed one.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { SAMPLE_SETTINGS } from "@/api";
@@ -33,7 +33,26 @@ const wait = () =>
   });
 
 describe("useSettingsAutosave", () => {
-  it("sends a refused Gemini key again with the next change, then forgets it", async () => {
+  it("never sends a Gemini key: every save keeps the one saved (D-165)", async () => {
+    vi.useFakeTimers();
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "settings_get") return Promise.resolve(VIEW);
+      return Promise.resolve();
+    });
+    const { result } = renderHook(() => useSettingsAutosave());
+    await wait();
+    act(() => {
+      result.current.set({ autoUpdate: false });
+    });
+    await wait();
+    act(() => {
+      result.current.set({ autoUpdate: true });
+    });
+    await wait();
+    expect(geminiSent()).toEqual([null, null]);
+  });
+
+  it("tries a refused change again with the next one", async () => {
     vi.useFakeTimers();
     let refuse = true;
     invoke.mockImplementation((cmd) => {
@@ -44,48 +63,17 @@ describe("useSettingsAutosave", () => {
     const { result } = renderHook(() => useSettingsAutosave());
     await wait();
     act(() => {
-      result.current.setGemini("AIza-1");
+      result.current.set({ autoUpdate: false });
     });
     await wait();
     expect(result.current.error).toBe("Error: no");
     refuse = false;
     act(() => {
-      result.current.set({ autoUpdate: false });
+      result.current.set({ theme: "dark" });
     });
     await wait();
     expect(result.current.error).toBeNull();
-    expect(result.current.view?.geminiKeySet).toBe(true);
-    act(() => {
-      result.current.set({ autoUpdate: true });
-    });
-    await wait();
-    expect(geminiSent()).toEqual(["AIza-1", "AIza-1", null]);
-  });
-
-  it("lets a newer key win over the refused one", async () => {
-    vi.useFakeTimers();
-    let refuse = true;
-    invoke.mockImplementation((cmd) => {
-      if (cmd === "settings_get") return Promise.resolve(VIEW);
-      if (cmd === "settings_set") return refuse ? Promise.reject(new Error("no")) : Promise.resolve();
-      return Promise.resolve();
-    });
-    const { result } = renderHook(() => useSettingsAutosave());
-    await wait();
-    act(() => {
-      result.current.setGemini("AIza-1");
-    });
-    await wait();
-    refuse = false;
-    act(() => {
-      result.current.setGemini("AIza-2");
-    });
-    await wait();
-    act(() => {
-      result.current.set({ autoUpdate: false });
-    });
-    await wait();
-    expect(geminiSent()).toEqual(["AIza-1", "AIza-2", null]);
+    expect(result.current.status).toBe("saved");
   });
 
   it("clears a failed read when the next one works", async () => {
