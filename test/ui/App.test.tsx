@@ -82,6 +82,8 @@ vi.mock("@tauri-apps/api/event", () => ({
 const [SITE] = SAMPLE_PROJECTS as [ProjectInfo, ...ProjectInfo[]];
 const [MYSQL] = SAMPLE_SERVICES as [ServiceInfo, ...ServiceInfo[]];
 const [POOL] = SAMPLE_SERVERS.pools as [WebServerPool, ...WebServerPool[]];
+/** How long a lazily loaded page may take to appear the first time. */
+const LAZY = 5000;
 
 /** The preview's static site under another name, never opened. */
 function project(name: string): ProjectInfo {
@@ -1009,7 +1011,9 @@ describe("App", () => {
       answers({ app_info: { ...SAMPLE_INFO, firstRun: true }, components_list: comps, components_apply: null }),
     );
     render(<App />);
-    expect(await screen.findByText("Benvenuto in Atollo")).toBeTruthy();
+    // The first start is a lazily loaded page: its first import can take
+    // over the default second on a Windows runner.
+    expect(await screen.findByText("Benvenuto in Atollo", {}, { timeout: LAZY })).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
     expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
@@ -1057,7 +1061,7 @@ describe("App", () => {
     const [guideBtn] = screen.getAllByRole("button", { name: "Guida" });
     if (guideBtn) fireEvent.click(guideBtn);
     // It opens on the welcome topic, with a card per chapter
-    expect(await screen.findByText("Che cos'è, in parole semplici")).toBeTruthy();
+    expect(await screen.findByText("Che cos'è, in parole semplici", {}, { timeout: LAZY })).toBeTruthy();
     expect(screen.getByText("Come funziona dentro")).toBeTruthy();
 
     // The search narrows the topics; the sources table counts its rows
