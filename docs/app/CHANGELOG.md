@@ -1,15 +1,17 @@
 # Novità
 
-## Non ancora rilasciato
+## Rilascio 0.6.0 alpha (24/10/2026)
 
-Tutto ciò che sta sopra «Rilascio 0.5.1 alpha» è nel codice ma in nessun rilascio: la 0.5.1 (`app-v0.5.1`, 21/10/2026), l'unica da scaricare, non lo contiene. README e sito, nelle quattro lingue, segnano le funzioni principali come «in arrivo nel prossimo rilascio»; la nota si toglie nel commit che alza la versione (`DOC-V7-02`). In breve:
-
-- **Agenti e modelli**: Pi, il quarto agente (D-152); i modelli locali GGUF con il server llama.cpp (D-151); i server MCP pronti per il kit e i progetti (D-156); un pulsante per agente (D-146).
-- **Il kit**: «Esporta diagnostica» e «Segnala un problema» (D-153); «Salute del kit» e `Atollo check --kit` (D-155); «Verifica i file» e `Atollo check --files` (D-159); «Copia del kit», esportazione e importazione (D-163); l'icona nell'area di notifica (D-145).
-- **Progetti e database**: copie di sicurezza prima di un ripristino o di un cambio di versione (D-154); «Copia blocco .env» (D-157); il QR del sito in rete locale (D-158); «Salva come base» e «Le mie basi» (D-162); i nuovi progetti in quattro gruppi; mongo-express (D-147) e MongoDB senza la scheda «Contenuto» (D-150).
-- **Interfaccia**: la pagina AI, con agenti e modelli locali insieme (D-165); il terminale dentro l'app anche su Windows, con ConPTY (D-148), e i terminali staccabili (D-149); la palette dei comandi (D-160); il riepilogo degli aggiornamenti (D-161); un clic sulla versione cerca gli aggiornamenti; un solo interruttore per «Attività».
-- **Guida**: sul sito, una pagina per argomento in quattro lingue (D-164).
-- **Correzioni**: i rilievi del report v7 (voce qui sotto).
+- **Versione 0.6.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.6.0` pubblica i file per i sei sistemi.
+- **«In arrivo nel prossimo rilascio» tolto** da README e sito, nelle quattro lingue (`DOC-V7-02`): le funzioni qui sotto sono nella 0.6.0; «C'è ancora da fare» parla della 0.6.0.
+- **Corretti prima del rilascio**: `docs/app/DECISIONS.md` torna al suo testo (il commit di D-165 aveva ripetuto una riga prima di ogni carattere, 78 MB); in `test/ui/App.test.tsx` la prima apertura della scelta iniziale e della Guida, pagine caricate al bisogno, ha 5 secondi invece di uno, come serve al runner Windows.
+- **Cosa porta**, rispetto alla 0.5.1:
+  - **Agenti e modelli**: Pi, il quarto agente (D-152); i modelli locali GGUF con il server llama.cpp (D-151); i server MCP pronti per il kit e i progetti (D-156); un pulsante per agente (D-146).
+  - **Il kit**: «Esporta diagnostica» e «Segnala un problema» (D-153); «Salute del kit» e `Atollo check --kit` (D-155); «Verifica i file» e `Atollo check --files` (D-159); «Copia del kit», esportazione e importazione (D-163); l'icona nell'area di notifica (D-145).
+  - **Progetti e database**: copie di sicurezza prima di un ripristino o di un cambio di versione (D-154); «Copia blocco .env» (D-157); il QR del sito in rete locale (D-158); «Salva come base» e «Le mie basi» (D-162); i nuovi progetti in quattro gruppi; mongo-express (D-147) e MongoDB senza la scheda «Contenuto» (D-150).
+  - **Interfaccia**: la pagina AI, con agenti e modelli locali insieme (D-165); il terminale dentro l'app anche su Windows, con ConPTY (D-148), e i terminali staccabili (D-149); la palette dei comandi (D-160); il riepilogo degli aggiornamenti (D-161); un clic sulla versione cerca gli aggiornamenti; un solo interruttore per «Attività».
+  - **Guida**: sul sito, una pagina per argomento in quattro lingue (D-164).
+  - **Correzioni**: i rilievi del report v7 (voce qui sotto).
 
 ## La pagina AI (23/10/2026)
 
