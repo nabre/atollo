@@ -125,8 +125,11 @@ pub fn copy_file(from: &Path, to: &Path) -> Result<()> {
 /// missing twice, before and after this wait, it was deleted (BUG-V6-16).
 #[cfg(not(test))]
 const SETTLE: std::time::Duration = std::time::Duration::from_millis(1500);
+/// In the tests, long enough for a thread that writes the file back after
+/// a 2 ms sleep: Windows rounds that sleep up to its 15.6 ms timer tick,
+/// and a busy ARM64 runner took longer than 20 ms.
 #[cfg(test)]
-const SETTLE: std::time::Duration = std::time::Duration::from_millis(20);
+const SETTLE: std::time::Duration = std::time::Duration::from_millis(200);
 
 /// Deletes `file` after a copy in `.sync\deleted\<stamp>-<label>`, as the
 /// skills deleted by an agent are kept: a deletion can always be undone.
