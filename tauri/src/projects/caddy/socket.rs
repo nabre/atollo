@@ -81,7 +81,10 @@ pub fn is_private_dir(path: &Path) -> bool {
     let Ok(meta) = fs::symlink_metadata(path) else {
         return false;
     };
-    if !meta.is_dir() || meta.file_type().is_symlink() || crate::os::safe_path::is_reparse(&meta) {
+    if !meta.is_dir()
+        || meta.file_type().is_symlink()
+        || crate::platform::safe_path::is_reparse(&meta)
+    {
         return false;
     }
     #[cfg(unix)]

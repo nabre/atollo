@@ -13,7 +13,7 @@ use crate::common::ports::responds;
 use crate::common::time::now_ms;
 use crate::detect::{self, Action, Kind};
 use crate::env::KitEnv;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 
 use super::output::{env_on_network, on_network};
 use super::{key_of, Entry, Event, RunInfo, Runner, State, PORT_FROM};
@@ -21,7 +21,7 @@ use super::{key_of, Entry, Event, RunInfo, Runner, State, PORT_FROM};
 /// The value of `key` in the `.env` of `dir` (`KEY=value`, `export KEY=`,
 /// quotes taken off), when set there.
 pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
-    let text = crate::os::safe_path::read_text(dir, &dir.join(".env"))?;
+    let text = crate::platform::safe_path::read_text(dir, &dir.join(".env"))?;
     text.lines().rev().find_map(|line| {
         let line = line.trim();
         let line = line.strip_prefix("export ").unwrap_or(line);

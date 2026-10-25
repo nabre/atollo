@@ -14,18 +14,7 @@ pub enum Os {
 impl Os {
     /// Operating system of the running binary.
     pub const fn current() -> Os {
-        #[cfg(target_os = "macos")]
-        {
-            Os::Darwin
-        }
-        #[cfg(target_os = "linux")]
-        {
-            Os::Linux
-        }
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            Os::Win32
-        }
+        crate::platform::OS
     }
 
     pub const fn as_str(self) -> &'static str {

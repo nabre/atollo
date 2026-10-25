@@ -117,14 +117,14 @@ fn migrate_panel(kit: &Kit, dir: &Path, caddy: Option<&str>) -> Result<bool> {
     let Some(path) = crate::detect::OVERRIDE_FILES
         .iter()
         .map(|f| dir.join(f))
-        .find(|p| crate::os::safe_path::is_file(dir, p))
+        .find(|p| crate::platform::safe_path::is_file(dir, p))
     else {
         return Ok(false);
     };
-    if crate::os::safe_path::is_link(&path) {
+    if crate::platform::safe_path::is_link(&path) {
         return Ok(false);
     }
-    let Some(text) = crate::os::safe_path::read_text(dir, &path) else {
+    let Some(text) = crate::platform::safe_path::read_text(dir, &path) else {
         return Ok(false);
     };
     let Ok(Value::Object(mut panel)) = serde_json::from_str::<Value>(&text) else {

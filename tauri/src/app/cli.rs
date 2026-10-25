@@ -23,7 +23,7 @@ use crate::env::{Host, KitEnv};
 use crate::kit::Kit;
 use crate::setup::runner::{Event, Options, Outcome, Sink};
 use crate::setup::{Catalog, Choice};
-use crate::{install, kit, llm, net, os, setup, versions};
+use crate::{install, kit, llm, net, platform, setup, versions};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Cli {
@@ -590,7 +590,7 @@ pub(crate) fn prepare(
         None => kit,
     };
     let mut out = output();
-    if let Err(e) = os::jobs::init() {
+    if let Err(e) = platform::jobs::init() {
         log::warn(&format!("child processes: {e:#}"));
     }
     let net = match net::Net::new(settings, crate::github_token(host)) {

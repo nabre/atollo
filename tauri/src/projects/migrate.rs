@@ -32,7 +32,7 @@ use super::state::{has_files, remove_empty_dirs, ProjectState};
 use crate::common::fsx::{read_text, try_read_json, write_atomic, write_json};
 use crate::db::auth;
 use crate::kit::Kit;
-use crate::os::safe_path::is_link;
+use crate::platform::safe_path::is_link;
 
 const LAYOUT: &str = "2";
 

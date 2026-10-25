@@ -12,7 +12,7 @@ use serde::Serialize;
 use super::catalog::{kit_path, Catalog, Component};
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs;
+use crate::platform::jobs;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

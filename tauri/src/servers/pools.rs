@@ -630,7 +630,7 @@ impl WebServers {
     ) -> Result<()> {
         validate_project_name(project).map_err(|e| anyhow!(e.to_string()))?;
         let proj_dir = self.kit.projects().join(project);
-        if !crate::os::safe_path::is_dir(&self.kit.projects(), &proj_dir) {
+        if !crate::platform::safe_path::is_dir(&self.kit.projects(), &proj_dir) {
             bail!(
                 "{}",
                 crate::common::i18n::t(lang, "Progetto non trovato: {0}", &[project])

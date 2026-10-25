@@ -130,7 +130,7 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBu
     validate_project_name(name).map_err(|e| e.to_string())?;
     let dir = kit.projects().join(name);
     // A link or junction is never a project (D-77).
-    if crate::os::safe_path::is_dir(&kit.projects(), &dir) {
+    if crate::platform::safe_path::is_dir(&kit.projects(), &dir) {
         Ok(dir)
     } else {
         Err(crate::common::i18n::t(lang, "Progetto non trovato: {0}", &[name]).into())

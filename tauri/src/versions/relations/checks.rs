@@ -117,15 +117,15 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
                     );
                     (dll.is_file(), None)
                 }
-                "webview2" => match crate::os::webview::found(kit) {
-                    Some(crate::os::webview::Runtime::System(v)) => (true, Some(v)),
-                    Some(crate::os::webview::Runtime::Fixed { version, .. }) => {
+                "webview2" => match crate::platform::webview::found(kit) {
+                    Some(crate::platform::webview::Runtime::System(v)) => (true, Some(v)),
+                    Some(crate::platform::webview::Runtime::Fixed { version, .. }) => {
                         (true, Some(version))
                     }
                     None => (false, None),
                 },
                 "x64-emulation" => {
-                    let build = crate::os::windows_build();
+                    let build = crate::platform::windows_build();
                     (
                         build.is_none_or(|b| b >= 22000),
                         build.map(|b| format!("Windows build {b}")),

@@ -9,7 +9,7 @@ use super::tools::run_with_input;
 use super::{auth, check_line, client_at, line_port, project_line, Services};
 use crate::db::DbEngine;
 use crate::env::KitEnv;
-use crate::os::jobs;
+use crate::platform::jobs;
 
 pub(super) fn admin_password(secrets: &auth::Secrets, engine: DbEngine) -> Option<String> {
     match engine {

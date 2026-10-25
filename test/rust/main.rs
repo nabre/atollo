@@ -70,7 +70,7 @@ fn invoke_cmd(
 /// (FAT32, exFAT) and no notice let it go on.
 #[test]
 fn disk_stop_only_for_blocking_notices() {
-    use os::volume::DiskNotice;
+    use platform::volume::DiskNotice;
     let notice = |blocking| DiskNotice {
         blocking,
         text: "noexec".into(),
@@ -81,7 +81,7 @@ fn disk_stop_only_for_blocking_notices() {
 }
 
 /// The checks at start change nothing on Windows: no launch problem, no
-/// notice on the kit's disk, the old texts (`kit::tests`, `os::webview`).
+/// notice on the kit's disk, the old texts (`kit::tests`, `platform::webview`).
 #[test]
 fn start_checks_silent_on_windows() {
     let exe = std::path::Path::new(
@@ -92,7 +92,7 @@ fn start_checks_silent_on_windows() {
     assert!(kit::launch_problem(kit::Os::Darwin, exe, "it").is_some());
     if cfg!(windows) {
         let kit = Kit::at(std::env::temp_dir().join("atollo-ipc-test"), Arch::X64);
-        assert_eq!(os::volume::disk_notice(&kit, "it"), None);
+        assert_eq!(platform::volume::disk_notice(&kit, "it"), None);
     }
 }
 

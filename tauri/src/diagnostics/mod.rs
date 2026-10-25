@@ -183,10 +183,10 @@ fn summary(kit: &Kit) -> String {
         "Host",
         crate::kit::Target::detect().as_str().to_owned(),
     );
-    if let Some(build) = crate::os::windows_build() {
+    if let Some(build) = crate::platform::windows_build() {
         line(&mut s, "Windows build", build.to_string());
     }
-    if let Some(ram) = crate::os::memory::total_ram() {
+    if let Some(ram) = crate::platform::memory::total_ram() {
         line(&mut s, "RAM", format!("{} MB", ram / (1024 * 1024)));
     }
     match kit.volume() {
@@ -300,7 +300,7 @@ pub fn issue_path(kit: &Kit) -> String {
     if host != kit_target {
         system.push_str(&format!(" on {}", host.as_str()));
     }
-    if let Some(build) = crate::os::windows_build() {
+    if let Some(build) = crate::platform::windows_build() {
         system.push_str(&format!(", Windows build {build}"));
     }
     if let Some(v) = kit.volume() {

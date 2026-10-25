@@ -174,7 +174,7 @@ impl System {
 
 /// An `agy.exe` (`agy` on macOS and Linux) of this kit is running.
 pub fn kit_agy_running(kit: &Kit) -> bool {
-    crate::os::processes::running_under(&kit.apps())
+    crate::platform::processes::running_under(&kit.apps())
         .iter()
         .any(|p| p.name.eq_ignore_ascii_case("agy.exe") || p.name == "agy")
 }

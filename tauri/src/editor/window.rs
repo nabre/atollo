@@ -27,7 +27,7 @@ use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
 #[cfg(windows)]
 use windows::core::Interface;
 
-use crate::os::jobs;
+use crate::platform::jobs;
 
 pub const LABEL_PREFIX: &str = "editor-";
 

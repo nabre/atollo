@@ -20,7 +20,7 @@ use serde::Serialize;
 use super::tools::{run_for_output, run_with_input, run_with_reader};
 use super::{auth, project_line, Services};
 use crate::db::DbEngine;
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::projects::state::ProjectState;
 
 /// The options of a MySQL dump (D-78): one consistent snapshot, with the
@@ -138,7 +138,7 @@ impl Services {
             .flatten()
             .filter(|e| {
                 e.metadata()
-                    .is_ok_and(|m| m.is_file() && !crate::os::safe_path::is_reparse(&m))
+                    .is_ok_and(|m| m.is_file() && !crate::platform::safe_path::is_reparse(&m))
             })
             .filter_map(|e| {
                 let name = e.file_name().to_string_lossy().into_owned();
@@ -236,7 +236,7 @@ impl Services {
         }
         let dir = self.backup_dir(project)?;
         let path = dir.join(file);
-        if !crate::os::safe_path::is_file(&dir, &path) {
+        if !crate::platform::safe_path::is_file(&dir, &path) {
             bail!("copy not found: {file}");
         }
         let Some(engine) = DbEngine::of_backup(file) else {

@@ -7,7 +7,7 @@ use super::*;
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenNow {
-    pub processes: Vec<crate::os::sessions::KitProcess>,
+    pub processes: Vec<crate::platform::sessions::KitProcess>,
     pub editor: bool,
     pub terminals: usize,
     pub actions: usize,
@@ -39,7 +39,7 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
     let actions =
         app.try_state::<Arc<Runner>>().map_or(0, |r| r.running()) + state.servers.running_count();
     OpenNow {
-        processes: crate::os::sessions::foreign_processes(&state.kit),
+        processes: crate::platform::sessions::foreign_processes(&state.kit),
         editor: state.editor.status().running,
         terminals: app.state::<terminal::Consoles>().count(),
         actions,
@@ -103,12 +103,12 @@ pub async fn eject_run<R: Runtime>(
         // The app's terminal sessions hung up first, as at the app's exit;
         // what is left of them is stopped below by their pids.
         handle.state::<terminal::Consoles>().close_all();
-        crate::os::sessions::stop(&consoles);
-        let pids: Vec<u32> = crate::os::sessions::kit_processes(&kit)
+        crate::platform::sessions::stop(&consoles);
+        let pids: Vec<u32> = crate::platform::sessions::kit_processes(&kit)
             .iter()
             .map(|p| p.pid)
             .collect();
-        crate::os::sessions::stop(&pids);
+        crate::platform::sessions::stop(&pids);
         // The installation ends at the end of its step: waited a little.
         for _ in 0..100 {
             if !setup.snapshot().running {

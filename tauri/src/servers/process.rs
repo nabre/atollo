@@ -15,7 +15,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use crate::common::ports::is_port_free;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
 use crate::projects::fastcgi::{self, FastCgi, FcgiAddr};

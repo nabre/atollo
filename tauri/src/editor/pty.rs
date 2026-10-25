@@ -6,7 +6,7 @@
 //!   the system's `/bin/bash` with the kit's `bashrc`), or an agent; with
 //!   the kit environment only, in the chosen folder;
 //! - on macOS and Linux its program leads a session and a process group of
-//!   its own (`setsid` of the PTY), put in a job (`os/jobs.rs`); on Windows
+//!   its own (`setsid` of the PTY), put in a job (`platform/jobs.rs`); on Windows
 //!   it runs on the kit's ConPTY (`conpty.rs`) in a Job Object of its own.
 //!   Closing the session hangs it up (`SIGHUP`, or the console closing),
 //!   then ends what is left of its tree, its group and its session (the
@@ -779,7 +779,7 @@ mod unix {
 
     use super::{Io, Launch};
     use crate::env::KitEnv;
-    use crate::os::jobs::Job;
+    use crate::platform::jobs::Job;
 
     pub struct Spawned {
         pub io: PtyIo,
@@ -920,7 +920,7 @@ mod unix {
             };
             // Zombies are not listed (no program path): a job that ended
             // but was not reaped yet does not hold the session up.
-            let procs: Vec<(u32, u32)> = crate::os::processes::all()
+            let procs: Vec<(u32, u32)> = crate::platform::processes::all()
                 .iter()
                 .filter_map(|p| {
                     let pid = libc::pid_t::try_from(p.pid).ok()?;
@@ -933,7 +933,7 @@ mod unix {
         }
 
         fn kill(&self, pids: &[u32]) {
-            crate::os::sessions::stop(pids);
+            crate::platform::sessions::stop(pids);
         }
 
         fn release(&self) {

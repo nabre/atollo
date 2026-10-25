@@ -145,7 +145,7 @@ fn typed_input_reaches_the_program_and_close_ends_its_tree() {
         sessions.backlog(info.id).unwrap().data
     );
     sessions.close(info.id, Duration::from_millis(500)).unwrap();
-    let all = crate::os::processes::all();
+    let all = crate::platform::processes::all();
     for pid in pids {
         assert!(!all.iter().any(|p| p.pid == pid), "{pid} still runs");
     }

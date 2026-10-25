@@ -40,8 +40,8 @@ use super::web_admin::{abandon, free_address, wait_ready, Served, Slot};
 use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
-use crate::os::temp::TempWork;
+use crate::platform::jobs::{self, Job};
+use crate::platform::temp::TempWork;
 use crate::setup::catalog;
 
 /// phpMyAdmin's `config.inc.php`, written into its folder.

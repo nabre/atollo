@@ -17,7 +17,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
 use crate::kit::{Kit, Os};
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
 use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
 use crate::servers::host_label;

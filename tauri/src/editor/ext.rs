@@ -36,7 +36,7 @@ use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::net::verify::Expect;
 use crate::net::{github_digest, Net};
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::projects::settings::Extensions;
 use crate::setup::Catalog;
 
@@ -537,7 +537,7 @@ fn install(
     let mut gallery: Vec<String> = Vec::new();
     let mut sources: Vec<(String, PathBuf)> = Vec::new();
     // In the host's temporary folder (D-90), removed when `work` is dropped.
-    let work = crate::os::temp::TempWork::new(kit, "extensions")?;
+    let work = crate::platform::temp::TempWork::new(kit, "extensions")?;
     for id in ids {
         if id == CODELLDB {
             match net.map(|n| codelldb_vsix(kit, n, work.path())) {

@@ -9,7 +9,7 @@ fn processes_of_the_old_editor() {
     } else {
         Path::new("/media/u/Kit/data/apps/linux-x64").to_path_buf()
     };
-    let proc = |pid, rel: &[&str]| crate::os::processes::Proc {
+    let proc = |pid, rel: &[&str]| crate::platform::processes::Proc {
         pid,
         parent: 0,
         name: String::new(),
@@ -30,7 +30,10 @@ fn processes_of_the_old_editor() {
     } else {
         &[1, 2]
     };
-    assert_eq!(crate::os::processes::running_from(&all, &old), expected);
+    assert_eq!(
+        crate::platform::processes::running_from(&all, &old),
+        expected
+    );
 }
 
 #[test]

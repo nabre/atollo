@@ -243,7 +243,7 @@ pub fn adopt(kit: &Kit, lang: &str, orphan: &str, project: &str) -> io::Result<P
     let from = ProjectState::of(kit, orphan).ok_or_else(|| invalid("not a project name"))?;
     let to = ProjectState::of(kit, project).ok_or_else(|| invalid("not a project name"))?;
     for state in [&from, &to] {
-        if crate::os::safe_path::is_link(state.dir()) {
+        if crate::platform::safe_path::is_link(state.dir()) {
             return Err(invalid(&format!(
                 "{}: a link, left alone",
                 state.dir().display()

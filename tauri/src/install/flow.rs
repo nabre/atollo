@@ -8,7 +8,7 @@ use anyhow::{bail, Context, Result};
 
 use crate::kit::Kit;
 use crate::net::verify::{self, Expect};
-use crate::os::temp::TempWork;
+use crate::platform::temp::TempWork;
 use crate::setup::Component;
 
 use super::keys::target_of;

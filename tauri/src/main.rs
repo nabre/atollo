@@ -21,6 +21,7 @@ mod kit;
 mod llm;
 mod net;
 mod os;
+mod platform;
 mod projects;
 mod router;
 mod servers;
@@ -98,7 +99,7 @@ fn run() -> i32 {
         Ok(kit) => kit.with_host(
             host.temp()
                 .map(Path::new)
-                .filter(|t| os::temp::private_base(t)),
+                .filter(|t| platform::temp::private_base(t)),
         ),
         Err(e) => {
             fatal(
@@ -113,7 +114,8 @@ fn run() -> i32 {
     // this kit runs (its guard, taken here for the swap).
     let mut imported = None;
     if matches!(command, cli::Cli::Gui) && backup::pending(kit.root()) {
-        if let Ok(os::instance::Instance::Primary(guard)) = os::instance::acquire(&kit) {
+        if let Ok(platform::instance::Instance::Primary(guard)) = platform::instance::acquire(&kit)
+        {
             let result = backup::apply_pending(kit.root());
             drop(guard);
             match result {
@@ -165,7 +167,7 @@ fn run() -> i32 {
     // A kit disk that runs no program (noexec, showexec) stops the app and
     // every command, `prepare` included (D-105); FAT32 and exFAT are only
     // logged. Nothing on Windows.
-    if let Some(text) = disk_stop(os::volume::disk_notice(&kit, lang)) {
+    if let Some(text) = disk_stop(platform::volume::disk_notice(&kit, lang)) {
         fatal(lang, &text);
         return 1;
     }
@@ -314,10 +316,10 @@ fn run() -> i32 {
         }
     }
 
-    let guard = match os::instance::acquire(&kit) {
-        Ok(os::instance::Instance::Primary(guard)) => guard,
-        Ok(os::instance::Instance::Secondary) => {
-            if let Err(e) = os::instance::notify_primary(&kit, "focus") {
+    let guard = match platform::instance::acquire(&kit) {
+        Ok(platform::instance::Instance::Primary(guard)) => guard,
+        Ok(platform::instance::Instance::Secondary) => {
+            if let Err(e) = platform::instance::notify_primary(&kit, "focus") {
                 log::warn(&format!("second start, focus request failed: {e:#}"));
             }
             return 0;
@@ -341,30 +343,30 @@ fn run() -> i32 {
     servers::migrate::run(&kit);
     // Leftovers of files in transit (D-90): only here, as the one app of the
     // kit (D-08); a command line run would race the open app's programs.
-    os::temp::sweep(&kit);
+    platform::temp::sweep(&kit);
     // The kept conda packages no list names any more (D-118); left for the
     // end of a preparation that runs now.
     let _ = setup::runner::while_idle(&kit, || install::conda::sweep(&kit));
 
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
-    let runtime = os::webview::locate(&kit);
+    let runtime = platform::webview::locate(&kit);
     let Some(runtime) = runtime else {
         log::error("web view runtime not found");
         // WebView2 on Windows (same text as before), WebKitGTK on Linux
         // with the command of the distribution.
         let os_release = std::fs::read_to_string("/etc/os-release").ok();
-        let text = os::webview::missing_message(&kit, os_release.as_deref(), lang);
+        let text = platform::webview::missing_message(&kit, os_release.as_deref(), lang);
         fatal(lang, &text);
         return 1;
     };
     let webview_desc = match &runtime {
-        os::webview::Runtime::System(v) => format!("system {v}"),
-        os::webview::Runtime::Fixed { folder, version } => {
+        platform::webview::Runtime::System(v) => format!("system {v}"),
+        platform::webview::Runtime::Fixed { folder, version } => {
             format!("fixed {version} ({})", folder.display())
         }
     };
 
-    match os::jobs::init() {
+    match platform::jobs::init() {
         Ok(None) => {}
         Ok(Some(note)) => log::warn(&format!("child processes: {note}")),
         Err(e) => log::error(&format!("child processes: {e:#}")),
@@ -414,8 +416,8 @@ fn run() -> i32 {
                     // The programs' temp left on the PC goes (D-90): the
                     // programs are ended first, or they would still hold it.
                     if update_kit.system_temp().is_some() {
-                        os::sessions::stop_children(&update_kit);
-                        os::temp::cleanup_at_exit(&update_kit);
+                        platform::sessions::stop_children(&update_kit);
+                        platform::temp::cleanup_at_exit(&update_kit);
                     }
                     match setup::self_update::apply_staged(&update_kit, &update_exe) {
                         Ok(true) => log::info("update applied"),
@@ -443,7 +445,7 @@ use std::io::Write as _;
 
 /// What the notice on the kit's disk means at start (D-105): the text
 /// that stops the app, logged as an error; a warning is only logged.
-fn disk_stop(notice: Option<os::volume::DiskNotice>) -> Option<String> {
+fn disk_stop(notice: Option<platform::volume::DiskNotice>) -> Option<String> {
     let notice = notice?;
     if notice.blocking {
         log::error(&format!("kit disk: {}", notice.text));

@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use crate::kit::validate_project_name;
-use crate::os::safe_path;
+use crate::platform::safe_path;
 
 /// RFC 6761 `.localhost` domain (`mio-sito.localhost`).
 pub fn valid_domain(d: &str) -> bool {

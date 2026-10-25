@@ -222,11 +222,11 @@ pub const OVERRIDE_FILES: [&str; 2] = ["panel.json", "pannello.json"];
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
 fn exists(dir: &Path, rel: &str) -> bool {
-    crate::os::safe_path::exists(dir, &dir.join(&*native(rel)))
+    crate::platform::safe_path::exists(dir, &dir.join(&*native(rel)))
 }
 
 fn read(dir: &Path, rel: &str) -> String {
-    crate::os::safe_path::read_text(dir, &dir.join(&*native(rel))).unwrap_or_default()
+    crate::platform::safe_path::read_text(dir, &dir.join(&*native(rel))).unwrap_or_default()
 }
 
 /// A relative path written with `\` (as the detection writes them), with
@@ -244,7 +244,7 @@ fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
 }
 
 fn list_dir(dir: &Path) -> Vec<String> {
-    if crate::os::safe_path::is_link(dir) {
+    if crate::platform::safe_path::is_link(dir) {
         return Vec::new();
     }
     let mut names: Vec<String> = fs::read_dir(dir)
@@ -325,7 +325,7 @@ fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
         // Below the root, links are not entered (a DirEntry's type is the
         // link's own); the root itself is checked here.
-        if depth > 3 || *seen > 3000 || (depth == 0 && crate::os::safe_path::is_link(d)) {
+        if depth > 3 || *seen > 3000 || (depth == 0 && crate::platform::safe_path::is_link(d)) {
             return;
         }
         let Ok(entries) = fs::read_dir(d) else {
@@ -624,7 +624,7 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             continue;
         }
         let sub_dir = dir.join(&sub);
-        if !crate::os::safe_path::is_dir(dir, &sub_dir)
+        if !crate::platform::safe_path::is_dir(dir, &sub_dir)
             || !MANIFESTS.iter().any(|m| exists(&sub_dir, m))
         {
             continue;

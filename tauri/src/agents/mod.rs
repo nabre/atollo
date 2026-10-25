@@ -191,7 +191,7 @@ fn pi_sign_in(kit: &Kit) -> Option<&'static str> {
 
 /// Ids of the agents of this kit running now.
 pub fn running(kit: &Kit) -> BTreeSet<String> {
-    let procs = crate::os::processes::running_under(&kit.apps());
+    let procs = crate::platform::processes::running_under(&kit.apps());
     IDS.iter()
         .filter(|id| {
             let exe = crate::setup::kit_path(kit, exe_of(id).unwrap_or_default());
@@ -339,7 +339,7 @@ const CODEX_LOGOUT_WITHIN: Duration = Duration::from_secs(20);
 /// `codex logout`; `false` when it failed or did not end in time.
 fn codex_logout(codex: &Path, env: &KitEnv) -> Result<bool> {
     use std::process::Stdio;
-    let mut child = crate::os::jobs::kit_command(codex, env)
+    let mut child = crate::platform::jobs::kit_command(codex, env)
         .arg("logout")
         .stdin(Stdio::null())
         .stdout(Stdio::null())

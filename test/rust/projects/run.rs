@@ -624,12 +624,14 @@ fn pool_runs_follow_their_pool() {
 #[cfg(windows)]
 #[test]
 fn site_stops_when_its_php_cgi_ends() {
-    use crate::os::jobs;
+    use crate::platform::jobs;
     let (_tmp, kit) = prepared_kit("run-php-cgi");
     let r = Runner::new(kit, Arc::new(|_| {}));
     let cmd = |args: &str| {
         use std::os::windows::process::CommandExt;
-        let mut c = std::process::Command::new(jobs::system_root().join(r"System32\cmd.exe"));
+        let mut c = std::process::Command::new(
+            crate::os::windows::jobs::system_root().join(r"System32\cmd.exe"),
+        );
         c.raw_arg(format!("/d /c \"{args}\""))
             .stdin(Stdio::null())
             .stdout(Stdio::null())

@@ -30,14 +30,14 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "under System32, inside `if is_win`",
     ),
     (
-        "os/jobs.rs",
+        "os/windows/jobs.rs",
         r#"r"System32\cmd.exe""#,
-        "under %SystemRoot%, inside #[cfg(windows)]",
+        "under %SystemRoot%, in os/windows (built for Windows only)",
     ),
     (
-        "os/jobs.rs",
+        "os/windows/jobs.rs",
         r#"r"System32\rundll32.exe""#,
-        "under %SystemRoot%, inside #[cfg(windows)]",
+        "under %SystemRoot%, in os/windows (built for Windows only)",
     ),
     (
         "install/web/vcruntime.rs",

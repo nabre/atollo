@@ -61,15 +61,15 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
         path_entries: env.path_entries().len(),
         watcher_unsafe_folder: crate::kit::watcher_unsafe_folder(kit.root()),
         first_run: Choice::read(kit, Catalog::get()).is_none(),
-        other_kits: crate::os::sessions::other_kits(kit)
+        other_kits: crate::platform::sessions::other_kits(kit)
             .iter()
             .map(|p| p.display().to_string())
             .collect(),
         disk_fs: kit.volume().map(|v| v.fs.as_str()),
         disk_kind: kit.volume().map(|v| v.drive.as_str()),
         disk_noexec: (!crate::kit::Os::current().is_windows())
-            .then(|| crate::os::volume::kit_noexec(kit)),
-        disk_note: crate::os::volume::disk_notice(kit, state.lang()).map(|n| n.text),
+            .then(|| crate::platform::volume::kit_noexec(kit)),
+        disk_note: crate::platform::volume::disk_notice(kit, state.lang()).map(|n| n.text),
         system_temp,
     })
 }
@@ -137,7 +137,7 @@ pub fn folder_open<R: Runtime>(
         _ => return Err(format!("unknown folder: {which}").into()),
     };
     std::fs::create_dir_all(&dir).or_fail("folder")?;
-    crate::os::jobs::open_with_explorer(&dir).or_fail_chain("explorer")
+    crate::platform::jobs::open_with_explorer(&dir).or_fail_chain("explorer")
 }
 
 /// «Esporta diagnostica»: the zip for a report of a problem, secrets
@@ -325,7 +325,7 @@ pub fn privacy_open<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>)
 
 /// The PC's browser.
 pub(super) fn open_in_browser(url: &str) -> CmdResult<()> {
-    crate::os::jobs::open_url(url).or_fail_chain("browser")
+    crate::platform::jobs::open_url(url).or_fail_chain("browser")
 }
 
 /// `http://localhost:<port>/…`, `http://127.0.0.1:<port>/…` or a name under

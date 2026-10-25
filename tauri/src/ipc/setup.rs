@@ -212,7 +212,7 @@ pub(super) fn save_tools_target(kit: &Kit, target: Option<&str>) -> anyhow::Resu
 /// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
 /// on ARM emulates x86 only). An unknown build counts as yes.
 pub(super) fn emulates_x64() -> bool {
-    crate::os::windows_build().is_none_or(|b| b >= 22000)
+    crate::platform::windows_build().is_none_or(|b| b >= 22000)
 }
 
 /// The Xcode Command Line Tools are missing on this Mac, for a kit of
@@ -628,7 +628,7 @@ pub fn setup_by_hand_open<R: Runtime>(
         })
         .filter(|u| u.starts_with("https://") || u.starts_with("http://"))
         .ok_or_else(|| format!("{id}: no download to do by hand"))?;
-    crate::os::jobs::open_url(&url).or_fail_chain("browser")
+    crate::platform::jobs::open_url(&url).or_fail_chain("browser")
 }
 
 /// The packages kept to reinstall the conda environments without the

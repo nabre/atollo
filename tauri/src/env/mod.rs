@@ -30,7 +30,7 @@ use std::path::{Path, PathBuf};
 use crate::common::fsx::join_rel;
 use crate::common::settings::{ProgramTemp, Settings};
 use crate::kit::Kit;
-use crate::os::volume::{DriveKind, VolumeInfo};
+use crate::platform::volume::{DriveKind, VolumeInfo};
 use langs::language_vars;
 use path::path_var;
 pub use secrets::{mask_secrets, masked};

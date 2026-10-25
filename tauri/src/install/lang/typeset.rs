@@ -142,7 +142,7 @@ fn tlmgr_packages(ctx: &Ctx, root: &Path) -> Option<Vec<String>> {
     if !tlmgr.is_file() {
         return None;
     }
-    let out = crate::os::jobs::kit_command(&tlmgr, ctx.env)
+    let out = crate::platform::jobs::kit_command(&tlmgr, ctx.env)
         .args(["info", "--list", "--only-installed", "--data", "name"])
         .stdin(std::process::Stdio::null())
         .output()
@@ -244,7 +244,7 @@ impl Installer for TinyTex {
         if missing.is_empty() {
             return Ok(());
         }
-        let ok = crate::os::jobs::kit_command(tlmgr_path(ctx, dest), ctx.env)
+        let ok = crate::platform::jobs::kit_command(tlmgr_path(ctx, dest), ctx.env)
             .arg("install")
             .args(&missing)
             .stdin(std::process::Stdio::null())

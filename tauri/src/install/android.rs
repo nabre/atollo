@@ -121,9 +121,9 @@ fn sdkmanager(
     let quoted: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
     let quoted: Vec<&str> = quoted.iter().map(String::as_str).collect();
     let mut cmd = if ctx.kit.os().is_windows() {
-        crate::os::jobs::batch_command(&script, &quoted, ctx.env)
+        crate::platform::jobs::batch_command(&script, &quoted, ctx.env)
     } else {
-        let mut c = crate::os::jobs::kit_command(&script, ctx.env);
+        let mut c = crate::platform::jobs::kit_command(&script, ctx.env);
         c.args(args);
         c
     };

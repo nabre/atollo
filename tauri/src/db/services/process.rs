@@ -16,7 +16,7 @@ use super::{
 use crate::common::ports::{is_port_free, responds};
 use crate::db::DbEngine;
 use crate::env::KitEnv;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 
 const READY_WITHIN: Duration = Duration::from_secs(90);
 const STOP_WITHIN: Duration = Duration::from_secs(20);

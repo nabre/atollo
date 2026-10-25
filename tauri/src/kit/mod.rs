@@ -25,7 +25,7 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 use crate::common::fsx::{read_text, write_atomic};
-use crate::os::volume::VolumeInfo;
+use crate::platform::volume::VolumeInfo;
 
 pub use names::validate_project_name;
 use root::running_appimage;
@@ -96,7 +96,7 @@ impl Kit {
                 None => t.join(&mine),
             })
             .filter(|t| !t.starts_with(&self.root));
-        self.volume = crate::os::volume::info(&self.root).ok();
+        self.volume = crate::platform::volume::info(&self.root).ok();
         self
     }
 
@@ -188,7 +188,7 @@ impl Kit {
     /// socket or `<TEMP>/Atollo/<id>` (BUG-V7-18). The keyring seal keeps
     /// the id it was made with (`SEAL_ID_FILE`).
     pub fn id(&self) -> String {
-        let key = crate::os::processes::path_key(&self.root.to_string_lossy());
+        let key = crate::platform::processes::path_key(&self.root.to_string_lossy());
         let digest = Sha256::digest(key.as_bytes());
         digest.iter().take(8).map(|b| format!("{b:02x}")).collect()
     }

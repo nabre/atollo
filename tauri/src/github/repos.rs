@@ -14,7 +14,7 @@ use super::{git_exe, tr, DELETE_SCOPE};
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::net::{ApiError, Net};
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::projects::{self, Source};
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

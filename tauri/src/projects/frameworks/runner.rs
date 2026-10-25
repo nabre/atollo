@@ -7,7 +7,7 @@ use std::sync::Mutex;
 
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::projects::run::{split_lines, take_utf8};
 
 /// The job of the command running now: dropping it ends the whole tree.

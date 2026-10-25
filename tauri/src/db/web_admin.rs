@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 
 use crate::kit::Kit;
-use crate::os::jobs::Job;
-use crate::os::temp::TempWork;
+use crate::platform::jobs::Job;
+use crate::platform::temp::TempWork;
 
 const READY_WITHIN: Duration = Duration::from_secs(15);
 

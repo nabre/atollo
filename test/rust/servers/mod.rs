@@ -12,7 +12,7 @@ use super::process::RunningPool;
 use super::*;
 use crate::env::KitEnv;
 use crate::kit::Arch;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 #[cfg(unix)]
 use crate::projects::fastcgi::FcgiAddr;
 use crate::setup::Catalog;

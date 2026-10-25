@@ -47,7 +47,7 @@ use windows::Win32::System::Threading::{
 
 use super::pty::Io;
 use crate::env::KitEnv;
-use crate::os::jobs::{self, Job};
+use crate::os::windows::jobs::{self, Job};
 
 /// The kit's ConPTY: both files in the component's folder.
 pub const FILES: [&str; 2] = ["conpty.dll", "OpenConsole.exe"];
@@ -293,7 +293,7 @@ impl Io for ConIo {
     }
 
     fn kill(&self, pids: &[u32]) {
-        crate::os::sessions::stop(pids);
+        crate::platform::sessions::stop(pids);
     }
 
     fn release(&self) {

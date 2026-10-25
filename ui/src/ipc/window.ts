@@ -1,4 +1,4 @@
-// Removing the drive and closing (tauri/src/os/sessions.rs), the tray menu,
+// Removing the drive and closing (tauri/src/platform/sessions.rs), the tray menu,
 // the controls of the window's own title bar (shell/titlebar.tsx). Rust:
 // tauri/src/ipc/window.rs, tauri/src/app/tray.rs; the window's controls are
 // Tauri's (capabilities/main.json).

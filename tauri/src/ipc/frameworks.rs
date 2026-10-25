@@ -165,7 +165,7 @@ pub(super) fn ignore_env(dir: &std::path::Path) -> anyhow::Result<()> {
     let path = dir.join(".gitignore");
     if !dir.join(".env").is_file()
         || crate::db::auth::env_ignored(dir)
-        || crate::os::safe_path::is_link(&path)
+        || crate::platform::safe_path::is_link(&path)
     {
         return Ok(());
     }
@@ -208,7 +208,7 @@ fn merge_copy(
                 }
             }
             Err(e) => return Err(e),
-            Ok(m) if m.is_dir() && !crate::os::safe_path::is_reparse(&m) && kind.is_dir() => {
+            Ok(m) if m.is_dir() && !crate::platform::safe_path::is_reparse(&m) && kind.is_dir() => {
                 merge_copy(&src, &dst, &rel, kept)?;
             }
             Ok(_) => kept.push(rel.to_string_lossy().into_owned()),
@@ -294,7 +294,7 @@ pub async fn frameworks_create<R: Runtime>(
             .map_or(0, |d| d.as_nanos());
         let staging = if existing == Existing::Files {
             let rel = format!("frameworks/{stamp}");
-            Some(crate::os::temp::TempWork::new(&kit, &rel).or_fail("frameworks")?)
+            Some(crate::platform::temp::TempWork::new(&kit, &rel).or_fail("frameworks")?)
         } else {
             None
         };
@@ -353,7 +353,7 @@ pub async fn frameworks_create<R: Runtime>(
                 }
                 let mut kept = Vec::new();
                 // Moved on the same disk; copied from the PC's disk.
-                if crate::os::volume::same_volume(&made, &dir) {
+                if crate::platform::volume::same_volume(&made, &dir) {
                     crate::projects::frameworks::merge_into(&made, &dir, &mut kept)
                 } else {
                     merge_copy(&made, &dir, std::path::Path::new(""), &mut kept)

@@ -61,7 +61,7 @@ pub fn existing(kit: &Kit, name: &str) -> Result<Existing, Problem> {
     crate::kit::validate_project_name(name)
         .map_err(|e| ("Nome non valido: {0}", vec![e.to_string()]))?;
     let dir = kit.projects().join(name);
-    if dir.exists() && !crate::os::safe_path::is_dir(&kit.projects(), &dir) {
+    if dir.exists() && !crate::platform::safe_path::is_dir(&kit.projects(), &dir) {
         return Err((
             "{0} non è una cartella dei progetti.",
             vec![name.to_owned()],
@@ -92,7 +92,7 @@ fn merge_at(from: &Path, to: &Path, rel: &Path, kept: &mut Vec<String>) -> std::
             Err(e) => return Err(e),
             Ok(m)
                 if m.is_dir()
-                    && !crate::os::safe_path::is_reparse(&m)
+                    && !crate::platform::safe_path::is_reparse(&m)
                     && entry.file_type()?.is_dir() =>
             {
                 merge_at(&src, &dst, &rel, kept)?;

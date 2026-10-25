@@ -3,7 +3,7 @@
 //! obscure error later. In Settings › Il kit and `Atollo check --kit`.
 //!
 //! - the drive: FAT32 (files of 4 GB at most, no links), exFAT, mounted
-//!   `noexec` or `showexec` (`os::volume::notice_for`, D-105);
+//!   `noexec` or `showexec` (`platform::volume::notice_for`, D-105);
 //! - the free space on it;
 //! - characters in the kit's folder that some tools mishandle (`&`, `%`,
 //!   `!`, `^`, quotes, letters outside ASCII: cmd, PowerShell, Maven,
@@ -20,7 +20,7 @@ use serde::Serialize;
 
 use crate::common::i18n::t;
 use crate::kit::{Kit, Os};
-use crate::os::volume::FsKind;
+use crate::platform::volume::FsKind;
 
 /// How serious a finding is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -127,7 +127,7 @@ fn path_finding(root: &Path, lang: &str) -> Finding {
 
 /// The drive's file system (and on macOS and Linux its mount).
 fn disk_finding(kit: &Kit, lang: &str) -> Finding {
-    if let Some(n) = crate::os::volume::disk_notice(kit, lang) {
+    if let Some(n) = crate::platform::volume::disk_notice(kit, lang) {
         let level = if n.blocking { Level::Err } else { Level::Warn };
         return finding("disk", level, n.text, None);
     }

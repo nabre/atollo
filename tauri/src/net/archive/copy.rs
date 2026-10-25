@@ -102,7 +102,7 @@ fn human(bytes: u64) -> String {
 /// 4 GiB or more. Checked before the installed version is touched. When the
 /// disk cannot be read, nothing is refused (a copy that fails still does).
 pub fn check_fits(tree: &Path, dest: &Path) -> Result<()> {
-    match crate::os::volume::info(existing_ancestor(dest)) {
+    match crate::platform::volume::info(existing_ancestor(dest)) {
         Ok(v) => fits(tree, v.fs.max_file_size(), v.fs.as_str()),
         Err(e) => {
             crate::common::log::warn(&format!("{}: {e}", dest.display()));
@@ -136,7 +136,7 @@ fn fits(tree: &Path, limit: Option<u64>, fs_name: &str) -> Result<()> {
 /// The disk of `dest` has room for a copy of `tree`. When the disk cannot be
 /// read, nothing is refused (a copy that fails still does).
 pub fn check_space(tree: &Path, dest: &Path) -> Result<()> {
-    match crate::os::volume::free_space(existing_ancestor(dest)) {
+    match crate::platform::volume::free_space(existing_ancestor(dest)) {
         Ok(free) => has_space(tree, free, dest),
         Err(e) => {
             crate::common::log::warn(&format!("{}: {e}", dest.display()));

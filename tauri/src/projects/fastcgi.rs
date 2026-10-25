@@ -18,7 +18,7 @@ use std::sync::Arc;
 use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
 use crate::kit::{Kit, Os};
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::projects::apache::fwd;
 use crate::projects::caddy::{self, PrivateSocket};
 

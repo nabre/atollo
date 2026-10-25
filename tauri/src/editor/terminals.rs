@@ -417,7 +417,7 @@ fn owned_dirs(kit: &Kit, c: &Component, env: &KitEnv) -> Vec<PathBuf> {
 
 /// `p` with one separator, compared as the PC's file system does.
 fn norm(p: &str) -> String {
-    crate::os::processes::path_key(p.replace('/', "\\").trim_end_matches('\\'))
+    crate::platform::processes::path_key(p.replace('/', "\\").trim_end_matches('\\'))
 }
 
 /// `path` is one of `dirs` or inside one.

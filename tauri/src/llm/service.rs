@@ -24,7 +24,7 @@ use crate::common::ports::{is_port_free, responds};
 use crate::db::services::State;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::setup::{kit_path, Catalog};
 
 /// The program, as the catalog writes it.
@@ -399,7 +399,7 @@ impl Llm {
             });
         }
         Hardware {
-            ram: crate::os::memory::total_ram(),
+            ram: crate::platform::memory::total_ram(),
             gpus: gpus.clone().unwrap_or_default(),
         }
     }
@@ -444,7 +444,7 @@ fn kit_servers(kit: &Kit) -> Vec<u32> {
         .parent()
         .map(std::path::Path::to_path_buf)
         .unwrap_or_else(|| kit.apps().join("llama"));
-    crate::os::processes::running_under(&dir)
+    crate::platform::processes::running_under(&dir)
         .iter()
         .map(|p| p.pid)
         .collect()
@@ -454,7 +454,7 @@ fn kit_servers(kit: &Kit) -> Vec<u32> {
 /// of the command line); how many.
 pub fn stop_everywhere(kit: &Kit) -> usize {
     let pids = kit_servers(kit);
-    crate::os::sessions::stop(&pids);
+    crate::platform::sessions::stop(&pids);
     pids.len()
 }
 

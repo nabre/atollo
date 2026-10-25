@@ -49,7 +49,8 @@ pub(crate) fn has_venv(dir: &Path, os: Os, venv: &str) -> bool {
         return exists(dir, &venv_python(os, venv));
     }
     let bin = dir.join(venv).join("bin");
-    crate::os::safe_path::is_dir(dir, &bin) && std::fs::symlink_metadata(bin.join("python")).is_ok()
+    crate::platform::safe_path::is_dir(dir, &bin)
+        && std::fs::symlink_metadata(bin.join("python")).is_ok()
 }
 
 /// The project's Python: its virtual environment, uv, or the kit's.

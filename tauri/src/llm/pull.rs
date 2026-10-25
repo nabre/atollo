@@ -199,7 +199,7 @@ fn done_of(kit: &Kit, plan: &Plan) -> u64 {
 pub fn check_room(kit: &Kit, plan: &Plan, lang: &str) -> Result<()> {
     let root = super::models_dir(kit);
     let at = existing_parent(&root);
-    let info = crate::os::volume::info(&at)?;
+    let info = crate::platform::volume::info(&at)?;
     let room = room_for(
         plan,
         info.fs.as_str(),
@@ -247,7 +247,7 @@ fn pulling_map() -> std::sync::MutexGuard<'static, BTreeMap<String, Running>> {
 /// `qwen--qwen3-gguf` are one folder on NTFS, exFAT and APFS, and must not
 /// be downloaded into twice at once.
 fn folder_key(folder: &str) -> String {
-    crate::os::processes::path_key(folder)
+    crate::platform::processes::path_key(folder)
 }
 
 /// The file that tells another process (the command line, the app) that a

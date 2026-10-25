@@ -36,7 +36,9 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
     if had_old && fs::rename(dest, &old).is_err() {
         // A running program could be moved too (Windows allows renaming a
         // running exe), and would then load the new files with the old ones.
-        if !crate::os::processes::running_from(&crate::os::processes::all(), dest).is_empty() {
+        if !crate::platform::processes::running_from(&crate::platform::processes::all(), dest)
+            .is_empty()
+        {
             return Err(InUse(dest.to_path_buf()).into());
         }
         if let Err(e) = move_tree(dest, &old) {
@@ -81,7 +83,7 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
 pub fn stage_into(tree: &Path, dest: &Path) -> Result<()> {
     let parent = dest.parent().context("no parent folder")?;
     fs::create_dir_all(parent)?;
-    let same = crate::os::volume::same_volume(tree, parent);
+    let same = crate::platform::volume::same_volume(tree, parent);
     stage_with(tree, dest, same)
 }
 

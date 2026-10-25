@@ -224,7 +224,7 @@ fn prepare_flock(kit: &Kit) -> Result<std::fs::File> {
         if e.kind() == std::io::ErrorKind::WouldBlock {
             return Err(Busy.into());
         }
-        // No silent fallback: as `os::instance::acquire`, a file system
+        // No silent fallback: as `platform::instance::acquire`, a file system
         // without `flock` stops the run instead of preparing unguarded.
         return Err(e).with_context(|| format!("flock {}", path.display()));
     }

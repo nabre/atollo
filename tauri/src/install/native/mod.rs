@@ -16,7 +16,7 @@ use std::process::Stdio;
 use anyhow::{bail, Context, Result};
 
 use crate::install::{Ctx, Progress};
-use crate::os::jobs;
+use crate::platform::jobs;
 
 pub use micromamba::conda_versions;
 /// For the tests of Ruby (`lang/ruby.rs`).

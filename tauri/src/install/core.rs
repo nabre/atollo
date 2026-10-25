@@ -13,7 +13,7 @@ use crate::kit::{Arch, Kit, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
 use crate::net::{github_digest, hash_in_list};
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::setup::Component;
 
 /// Git: Git for Windows Portable (`.7z.exe`) on Windows; on macOS and Linux

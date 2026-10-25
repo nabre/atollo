@@ -14,7 +14,7 @@ use crate::common::log;
 use crate::common::settings::Settings;
 use crate::ipc::{AppState, MAIN};
 use crate::kit::Kit;
-use crate::{agents, editor, github, ipc, llm, net, os, projects, setup};
+use crate::{agents, editor, github, ipc, llm, net, platform, projects, setup};
 
 /// The app's context, expanded once for the app and its tests: on macOS
 /// `generate_context!` embeds the Info.plist under a global symbol, so a
@@ -209,7 +209,7 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                 agents::watch(background, closing);
             });
             let handle = app.handle().clone();
-            os::instance::listen(&kit, move |message| {
+            platform::instance::listen(&kit, move |message| {
                 if message.trim() == "focus" {
                     tray::show_main(&handle);
                 }

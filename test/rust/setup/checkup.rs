@@ -25,7 +25,7 @@ fn every_check_names_an_installed_file() {
 #[cfg(windows)]
 #[test]
 fn file_version_reads_the_resources() {
-    let cmd = crate::os::jobs::system_root().join(r"System32\cmd.exe");
+    let cmd = crate::os::windows::jobs::system_root().join(r"System32\cmd.exe");
     let v = file_version(&cmd).unwrap();
     assert!(v.starts_with("10.0."), "{v}");
     assert!(file_version(std::path::Path::new(r"C:\nope\x.exe")).is_err());

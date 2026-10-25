@@ -39,7 +39,7 @@ fn paths() {
     fs::write(root.join("sub/index.html"), "sub").unwrap();
     fs::write(root.join(".env"), "secret").unwrap();
     fs::write(outside.join("secret.txt"), "leaked").unwrap();
-    crate::os::safe_path::tests::junction(&root.join("lnk"), &outside);
+    crate::platform::safe_path::tests::junction(&root.join("lnk"), &outside);
     assert!(matches!(resolve(&root, "/"), Answer::File(p) if p.ends_with("index.html")));
     assert!(matches!(resolve(&root, "/sub?x=1"), Answer::Redirect(l) if l == "/sub/?x=1"));
     // BUG-V6-28: never a protocol-relative `Location` (`//sub/` is the
@@ -101,7 +101,7 @@ fn paths() {
 fn start(root: &Path) -> u16 {
     let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
-    let root = crate::os::safe_path::lexical(root).unwrap();
+    let root = crate::platform::safe_path::lexical(root).unwrap();
     std::thread::spawn(move || serve(&root, &listener, false));
     port
 }

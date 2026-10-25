@@ -150,7 +150,7 @@ fn orphans_by_files_and_adopted() {
 /// orphan whose `db.json` cannot be read.
 #[test]
 fn adopt_refuses_links_and_unreadable_passwords() {
-    use crate::os::safe_path::tests::{junction, remove_junction};
+    use crate::platform::safe_path::tests::{junction, remove_junction};
     let (tmp, kit) = prepared_kit("project-adopt-links");
     let write = |p: &str, rel: &str, text: &str| {
         let path = crate::common::fsx::join_rel(kit.project_data().join(p), rel);

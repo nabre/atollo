@@ -7,7 +7,7 @@ use anyhow::Result;
 use super::*;
 use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch};
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::projects::fastcgi::{FastCgi, FcgiAddr};
 use crate::servers::tests::*;
 use crate::servers::*;

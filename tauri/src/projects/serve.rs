@@ -125,7 +125,7 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
         return Answer::Status(403, "Forbidden");
     }
     let mut file = root.join(rel_path);
-    if crate::os::safe_path::is_dir(root, &file) {
+    if crate::platform::safe_path::is_dir(root, &file) {
         if !rel.ends_with('/') {
             let q = if query.is_empty() {
                 String::new()
@@ -141,14 +141,14 @@ pub fn resolve(root: &Path, target: &str) -> Answer {
     }
     // A link inside the folder is refused without ever following it (D-77).
     let Some((base, real)) =
-        crate::os::safe_path::lexical(root).zip(crate::os::safe_path::lexical(&file))
+        crate::platform::safe_path::lexical(root).zip(crate::platform::safe_path::lexical(&file))
     else {
         return Answer::Status(403, "Forbidden");
     };
-    if !real.starts_with(&base) || !crate::os::safe_path::no_links(&base, &real) {
+    if !real.starts_with(&base) || !crate::platform::safe_path::no_links(&base, &real) {
         return Answer::Status(403, "Forbidden");
     }
-    if crate::os::safe_path::is_file(&base, &real) {
+    if crate::platform::safe_path::is_file(&base, &real) {
         Answer::File(real)
     } else {
         Answer::Status(404, "Not Found")
@@ -238,7 +238,7 @@ fn handle(root: &Path, lan: bool, mut stream: TcpStream) -> Result<()> {
         resolve(root, target)
     };
     let (status, kind, body, extra) = match answer {
-        Answer::File(path) => match crate::os::safe_path::read(root, &path) {
+        Answer::File(path) => match crate::platform::safe_path::read(root, &path) {
             Some(bytes) => ("200 OK".to_owned(), mime(&path), bytes, String::new()),
             None => (
                 "404 Not Found".to_owned(),
@@ -296,8 +296,8 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
             .with_context(|| root.display().to_string())?
             .join(root)
     };
-    let root = crate::os::safe_path::lexical(&abs)
-        .filter(|r| crate::os::safe_path::is_dir(r, r))
+    let root = crate::platform::safe_path::lexical(&abs)
+        .filter(|r| crate::platform::safe_path::is_dir(r, r))
         .with_context(|| root.display().to_string())?;
     let lan = std::env::var("ATOLLO_ALLOW_LAN").is_ok_and(|v| v == "1");
     let ip = if lan {

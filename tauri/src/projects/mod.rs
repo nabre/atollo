@@ -73,7 +73,7 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
         // reach a network share (D-77).
         .filter(|e| {
             e.metadata()
-                .is_ok_and(|m| m.is_dir() && !crate::os::safe_path::is_reparse(&m))
+                .is_ok_and(|m| m.is_dir() && !crate::platform::safe_path::is_reparse(&m))
         })
         .map(|e| e.path())
         .collect();
@@ -225,7 +225,7 @@ pub struct DeletePlan {
 /// it is empty; `None` when missing.
 fn folder_state(dir: &Path) -> Option<(bool, bool)> {
     let meta = fs::symlink_metadata(dir).ok()?;
-    let folder = meta.is_dir() && !crate::os::safe_path::is_reparse(&meta);
+    let folder = meta.is_dir() && !crate::platform::safe_path::is_reparse(&meta);
     Some((
         folder,
         folder && fs::read_dir(dir).is_ok_and(|mut d| d.next().is_none()),
@@ -256,7 +256,7 @@ pub fn delete_plan(kit: &Kit, name: &str, lang: &str) -> Result<DeletePlan> {
         .flatten()
         .flatten()
         .filter_map(|e| e.metadata().ok())
-        .filter(|m| m.is_file() && !crate::os::safe_path::is_reparse(m))
+        .filter(|m| m.is_file() && !crate::platform::safe_path::is_reparse(m))
         .fold((0, 0), |(n, size), m| (n + 1, size + m.len()));
     Ok(DeletePlan {
         folder_exists,
@@ -369,7 +369,7 @@ pub fn delete(
 /// Only an empty folder, never a link, is deleted from the app.
 fn check_deletable(dir: &Path, name: &str, lang: &str) -> Result<()> {
     let meta = fs::symlink_metadata(dir).with_context(|| name.to_owned())?;
-    if !meta.is_dir() || crate::os::safe_path::is_reparse(&meta) {
+    if !meta.is_dir() || crate::platform::safe_path::is_reparse(&meta) {
         bail!(
             "{}",
             tr(
@@ -484,7 +484,7 @@ pub fn clone(
         bail!("{}", tr(lang, "Git del kit non è installato.", &[]));
     }
     fs::create_dir_all(kit.projects())?;
-    let mut cmd = crate::os::jobs::kit_command(&git, env);
+    let mut cmd = crate::platform::jobs::kit_command(&git, env);
     cmd.args(["clone", "--"])
         .arg(src.url())
         .arg(&dir)
@@ -532,12 +532,12 @@ pub struct GitInfo {
     pub remote: Option<String>,
 }
 
-use crate::os::safe_path::{lexical, no_links};
+use crate::platform::safe_path::{lexical, no_links};
 
 /// A file of the repository, read only when it is inside `root` and no link
 /// leads to it (`safe_path`).
 fn read_plain(root: &Path, path: &Path) -> Option<String> {
-    crate::os::safe_path::read_text(root, path)
+    crate::platform::safe_path::read_text(root, path)
 }
 
 /// `.git` of `dir`: the folder, or the one a `.git` file points to
@@ -551,7 +551,7 @@ fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
     if !dot.starts_with(root) || !no_links(root, &dot) {
         return None;
     }
-    if crate::os::safe_path::is_dir(root, &dot) {
+    if crate::platform::safe_path::is_dir(root, &dot) {
         return Some(dot);
     }
     let text = read_plain(root, &dot)?;
@@ -572,7 +572,7 @@ fn git_dir(dir: &Path, root: &Path) -> Option<PathBuf> {
     {
         return None;
     }
-    crate::os::safe_path::is_dir(root, &path).then_some(path)
+    crate::platform::safe_path::is_dir(root, &path).then_some(path)
 }
 
 /// `key` of section `[name "sub"]` in a Git config file (simple form only).
@@ -666,7 +666,7 @@ pub fn status(dir: &Path, root: &Path) -> ProjectStatus {
         ".github/copilot-instructions.md",
     ]
     .iter()
-    .filter(|f| crate::os::safe_path::is_file(dir, &dir.join(f)))
+    .filter(|f| crate::platform::safe_path::is_file(dir, &dir.join(f)))
     .map(|f| (*f).to_owned())
     .collect();
     ProjectStatus {

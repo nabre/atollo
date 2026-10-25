@@ -90,7 +90,7 @@ fn profile_and_temp_inside_kit() {
 
 #[test]
 fn program_temp_decision_table() {
-    use crate::os::volume::FsKind;
+    use crate::platform::volume::FsKind;
     let vol = |fs, drive| {
         Some(VolumeInfo {
             fs,

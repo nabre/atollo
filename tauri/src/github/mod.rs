@@ -42,7 +42,7 @@ use serde::{Deserialize, Serialize};
 use crate::common::i18n::t as tr;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs;
+use crate::platform::jobs;
 
 /// Where the one-time code of the sign-in is typed.
 pub const DEVICE_PATH: &str = "login/device";

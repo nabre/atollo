@@ -16,7 +16,7 @@ fn check_fits_refuses_a_file_too_large_for_fat32() {
     let tmp = TempDir::new("fits");
     let new = tmp.0.join("x");
     tree(&new, "small");
-    let fat32 = crate::os::volume::FsKind::Fat32.max_file_size();
+    let fat32 = crate::platform::volume::FsKind::Fat32.max_file_size();
     fits(&new, fat32, "FAT32").unwrap();
     check_fits(&new, &tmp.0.join("apps").join("tool")).unwrap();
 

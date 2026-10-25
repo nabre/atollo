@@ -59,7 +59,7 @@ fn view(state: &AppState) -> ModelsView {
             None => break,
         }
     }
-    let volume = crate::os::volume::info(&at).ok();
+    let volume = crate::platform::volume::info(&at).ok();
     ModelsView {
         catalog: crate::llm::catalog::all()
             .iter()
