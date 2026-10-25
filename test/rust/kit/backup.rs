@@ -57,6 +57,9 @@ fn what_a_copy_leaves_out() {
         "data/app/logs/a.log",
         "data/app/diagnostics/d.zip",
         "data/app/conda/linux-x64/x",
+        // The VMs' images and disks (D-175): made again from their kits.
+        "data/home/AppData/Local/DockerSandboxes/sandboxes/state/sandboxd",
+        "data/home/.local/state/sandboxes/state/sandboxd",
     ] {
         assert!(left_out(rel), "{rel}");
     }
@@ -66,6 +69,8 @@ fn what_a_copy_leaves_out() {
         "data/db/mysql/8.4/ibdata1",
         "data/home/.claude/x",
         "data/applications/x",
+        "data/home/AppData/Local/DockerSandboxes/sandboxes/settings.json",
+        "projects/shop/state/sandboxd",
     ] {
         assert!(!left_out(rel), "{rel}");
     }

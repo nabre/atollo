@@ -2303,5 +2303,15 @@
     "en": "{0} has no Docker Sandboxes sandbox: in the VM use Claude Code or Codex.",
     "fr": "{0} n'a pas de sandbox Docker Sandboxes : dans la VM, utilisez Claude Code ou Codex.",
     "de": "{0} hat keine Sandbox von Docker Sandboxes: In der VM nutzt du Claude Code oder Codex."
+  },
+  "l'alias {0} punta a un altro progetto, che non è nella VM di questo: non servito": {
+    "en": "alias {0} points to another project, which is not in this one's VM: not served",
+    "fr": "l'alias {0} pointe vers un autre projet, qui n'est pas dans la VM de celui-ci : non servi",
+    "de": "der Alias {0} zeigt auf ein anderes Projekt, das nicht in der VM dieses Projekts ist: nicht ausgeliefert"
+  },
+  "nella VM il sito usa Apache con PHP {0} al posto di Caddy: le regole proprie di Caddy non valgono": {
+    "en": "in the VM the site uses Apache with PHP {0} instead of Caddy: Caddy's own rules do not apply",
+    "fr": "dans la VM le site utilise Apache avec PHP {0} au lieu de Caddy : les règles propres à Caddy ne s'appliquent pas",
+    "de": "in der VM nutzt die Website Apache mit PHP {0} statt Caddy: Caddys eigene Regeln gelten nicht"
   }
 }

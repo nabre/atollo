@@ -5,7 +5,9 @@
 //! - the terminal: `sbx exec -it -w <folder> <vm> … bash -l`, the kit's
 //!   tools for Linux first on the `PATH` (D-170, [`kit_terminal_args`]);
 //! - an action's command line: `sbx exec -e … <vm> sh -lc '<line>'`, its
-//!   port published on the PC's `127.0.0.1` (`sbx ports`);
+//!   process group noted in the VM ([`tracked`]) so that a stop ends it
+//!   there ([`stop_args`]), its port published on the PC's `127.0.0.1`, or
+//!   on the local network when Settings allow it (`sbx ports`);
 //! - the web servers: containers of the VM's own Docker on the versions
 //!   the project chose (`php:<line>-apache`, `httpd:2.4`);
 //! - its databases stay on the PC, the kit's servers (D-171): the VM never
@@ -247,14 +249,79 @@ pub fn agent_args(project: &str, agent: &str, dir: &Path) -> Option<Vec<String>>
     ])
 }
 
-/// Publishes `port` of the VM on the PC's `127.0.0.1:<port>`.
-pub fn publish_args(vm: &str, port: u16) -> Vec<String> {
+/// The PC's address a port of the VM is published on: `127.0.0.1`, or
+/// every card of the PC (`0.0.0.0`) when Settings let the projects'
+/// servers be reached from the local network (`lan`, tried with sbx
+/// 0.49.2).
+fn host_ip(lan: bool) -> &'static str {
+    if lan {
+        "0.0.0.0"
+    } else {
+        "127.0.0.1"
+    }
+}
+
+/// Publishes `port` of the VM on the PC's [`host_ip`]`:<port>`.
+pub fn publish_args(vm: &str, port: u16, lan: bool) -> Vec<String> {
     vec![
         "ports".into(),
         vm.into(),
         "--publish".into(),
-        format!("127.0.0.1:{port}:{port}"),
+        format!("{}:{port}:{port}", host_ip(lan)),
     ]
+}
+
+/// Takes `port` back from the PC (idempotent: nothing published is fine).
+pub fn unpublish_args(vm: &str, port: u16, lan: bool) -> Vec<String> {
+    vec![
+        "ports".into(),
+        vm.into(),
+        "--unpublish".into(),
+        format!("{}:{port}:{port}", host_ip(lan)),
+    ]
+}
+
+/// Where the actions running in a VM note their process group.
+pub const RUNS: &str = "/tmp/atollo-runs";
+
+/// The name of an action's note in [`RUNS`]: its id readable, then 12 hex
+/// digits of its SHA-256 (two ids never share a note).
+pub fn run_tag(action: &str) -> String {
+    let readable: String = action
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .take(40)
+        .collect();
+    let hash = Sha256::digest(action.as_bytes());
+    format!("{readable}-{}", crate::common::hex(&hash[..6]))
+}
+
+/// `line` noting its process group first: the `sh -lc` of `sbx exec` leads
+/// a group of its own, which ending `sbx exec` on the PC does **not** stop
+/// (tried with sbx 0.49.2); [`stop_args`] stops it from inside the VM.
+pub fn tracked(tag: &str, line: &str) -> String {
+    format!("mkdir -p {RUNS} && echo $$ > {RUNS}/{tag} && {line}")
+}
+
+/// Stops the action noted as `tag` inside `vm`: its whole process group,
+/// `TERM` then `KILL` after five seconds, then its web container if it had
+/// one (`container`). A note that is not a number above 1 is left alone:
+/// the project's code can write it, and `kill -1` would reach every process
+/// of the VM.
+pub fn stop_args(vm: &str, tag: &str, container: Option<&str>) -> Vec<String> {
+    let note = shell_quote_posix(&format!("{RUNS}/{tag}"));
+    let mut script = format!(
+        r#"f={note}; g=$(cat "$f" 2>/dev/null); rm -f "$f"; case "$g" in ''|*[!0-9]*|0|1) ;; *) kill -TERM -$g 2>/dev/null; i=0; while kill -0 -$g 2>/dev/null && [ $i -lt 5 ]; do sleep 1; i=$((i+1)); done; kill -KILL -$g 2>/dev/null ;; esac"#
+    );
+    if let Some(c) = container {
+        script.push_str(&format!(
+            "; docker rm -f {} >/dev/null 2>&1",
+            shell_quote_posix(c)
+        ));
+    }
+    script.push_str("; true");
+    vec!["exec".into(), vm.into(), "sh".into(), "-c".into(), script]
 }
 
 /// A command line run in the VM: `sbx exec -e K=V … <vm> sh -lc '<line>'`,
@@ -304,32 +371,77 @@ pub enum Web {
     Static,
 }
 
+/// The name of the web container of `action` in its VM.
+pub fn web_container(action: &str) -> String {
+    format!("{PREFIX}web-{action}")
+}
+
 /// The container of a web action, in the foreground of `sh -lc` (it ends
 /// with the action): `folder` of the workspace (relative, `/`; `.` the
 /// whole) as Apache's document root, on `port` of the VM's network, a
 /// container of the same name left by an earlier start removed first.
-pub fn web_line(action: &str, web: &Web, folder: &str, port: u16) -> String {
-    let container = shell_quote_posix(&format!("{PREFIX}web-{action}"));
+///
+/// `aliases`: the URL and the folder in the VM of each path alias of the
+/// site (`/media` → `/d/kit/projects/shop/storage/uploads`), checked by
+/// `projects::alias` and only of the project itself (another project is
+/// not in its VM): each mounted at `/srv/alias/<n>` with an `Alias` of
+/// Apache. The `.localhost` domains need nothing: Apache answers every
+/// name, and a browser takes `*.localhost` to the PC, where the port is
+/// published.
+pub fn web_line(
+    action: &str,
+    web: &Web,
+    folder: &str,
+    port: u16,
+    aliases: &[(String, String)],
+) -> String {
+    let container = shell_quote_posix(&web_container(action));
     let root = format!("\"$PWD\"/{}", shell_quote_posix(folder));
-    let (image, docroot) = match web {
-        Web::Php { line } => (format!("php:{line}-apache"), "/var/www/html"),
-        Web::Static => ("httpd:2.4".to_owned(), "/usr/local/apache2/htdocs"),
+    let (image, docroot, conf) = match web {
+        Web::Php { line } => (
+            format!("php:{line}-apache"),
+            "/var/www/html",
+            "/etc/apache2/conf-enabled/atollo-aliases.conf",
+        ),
+        Web::Static => (
+            "httpd:2.4".to_owned(),
+            "/usr/local/apache2/htdocs",
+            "/usr/local/apache2/conf/httpd.conf",
+        ),
+    };
+    let mut mounts = String::new();
+    let mut alias_conf = String::new();
+    for (n, (url, dir)) in aliases.iter().enumerate() {
+        let inside = format!("/srv/alias/{n}");
+        mounts.push_str(" -v ");
+        mounts.push_str(&shell_quote_posix(&format!("{dir}:{inside}")));
+        alias_conf.push_str(&format!(
+            "Alias \"{url}\" \"{inside}\"\n<Directory \"{inside}\">\n    Require all granted\n</Directory>\n"
+        ));
+    }
+    let aliases_in = if alias_conf.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "printf '%s' {} >> {conf} && ",
+            shell_quote_posix(&alias_conf)
+        )
     };
     let listen = match web {
         Web::Php { .. } => format!(
-            "sed -i 's/^Listen 80$/Listen {port}/' /etc/apache2/ports.conf && \
+            "{aliases_in}sed -i 's/^Listen 80$/Listen {port}/' /etc/apache2/ports.conf && \
              sed -i 's/:80>/:{port}>/' /etc/apache2/sites-enabled/000-default.conf && \
              exec apache2-foreground"
         ),
         Web::Static => format!(
-            "sed -i 's/^Listen 80$/Listen {port}/' /usr/local/apache2/conf/httpd.conf && \
+            "{aliases_in}sed -i 's/^Listen 80$/Listen {port}/' /usr/local/apache2/conf/httpd.conf && \
              exec httpd-foreground"
         ),
     };
     format!(
         "docker rm -f {container} >/dev/null 2>&1; \
          exec docker run --rm --init --name {container} --network host \
-         -v {root}:{docroot} {image} sh -c {}",
+         -v {root}:{docroot}{mounts} {image} sh -c {}",
         shell_quote_posix(&listen)
     )
 }

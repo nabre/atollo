@@ -2,6 +2,10 @@
 
 ## Solo il Docker Sandboxes del kit (25/10/2026)
 
+- **«Ferma» ferma davvero un'azione nella VM**: prima il programma restava acceso dentro la VM e teneva la porta; ora si ferma lì (anche se ignora la richiesta, dopo cinque secondi) e la porta torna libera. Riavviare un'azione sulla stessa porta non dà più errore.
+- **Rete locale, domini `.localhost` e alias anche nella VM**: con «Permetti ai server dei progetti…» il sito nella VM si apre dal telefono come quello sul PC; gli alias del progetto funzionano anche lì. Un sito Caddy nella VM diventa Apache, e il log lo dice.
+- **Kit spostato su un'altra lettera o cartella**: la VM di un progetto si ricrea da sola invece di chiedere di rimuoverla; file, database e strumenti restano dove sono.
+- **«Copia del kit» più leggera**: non copia più immagini e dischi delle VM (decine di GB); le VM si ricreano da sole.
 - **Niente esce dal kit** (D-175): Atollo usa solo il Docker Sandboxes installato nel kit, mai uno installato sul PC; sandbox, dischi, immagini e impostazioni stanno in `data` e viaggiano con il kit. Le poche tracce che restano sul PC (accesso a Docker, hypervisor, file temporanei del daemon) sono elencate nelle decisioni.
 - **La VM non apre il browser del PC** e Docker Sandboxes non invia pacchetti di diagnostica: impostazioni fissate dal kit.
 - **Cosa gira dove**: nella VM il codice dei progetti, sul PC solo i programmi del kit (database, editor, modelli locali), senza VM tutto sul PC con l'avviso «Senza VM». La guida e la documentazione lo dicono pagina per pagina.

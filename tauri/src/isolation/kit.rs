@@ -165,6 +165,22 @@ pub fn mark_host_ports(kit: &Kit, sandbox: &str, ports: &[u16]) -> Result<()> {
     std::fs::write(&path, text).with_context(|| path.display().to_string())
 }
 
+/// Forgets what `sbx` had of `sandbox` (`.applied`, `.mounts`, `.ports`),
+/// once it removed it: its kit (`spec.yaml`, `atollo.json`) stays for the
+/// sandbox made again.
+pub fn forget(kit: &Kit, sandbox: &str) -> Result<()> {
+    for mark in [".applied", ".mounts", ".ports"] {
+        let path = dir(kit, sandbox).join(mark);
+        match std::fs::remove_file(&path) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+                return Err(e).with_context(|| path.display().to_string());
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
 /// The owner of `sandbox`, from its kit, if Atollo wrote one.
 pub fn owner(kit: &Kit, sandbox: &str) -> Option<Owner> {
     let text = std::fs::read_to_string(dir(kit, sandbox).join("atollo.json")).ok()?;

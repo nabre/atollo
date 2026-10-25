@@ -76,3 +76,24 @@ fn a_kit_is_written_listed_and_removed_in_data() {
     remove(&kit, "atollo-t-legacy-1").unwrap();
     assert_eq!(all(&kit).len(), 1);
 }
+
+/// A sandbox made again (the kit moved, D-175) starts from its kit alone:
+/// what `sbx` had of the old one is forgotten, the kit kept.
+#[test]
+fn a_sandbox_made_again_keeps_its_kit_only() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-kit-forget");
+    let name = "atollo-p-shop-0123456789abcdef01234567";
+    let mine = Owner::Project {
+        project: "shop".into(),
+    };
+    write(&kit, name, &mine).unwrap();
+    mark_applied(&kit, name, "print").unwrap();
+    mark_mounts(&kit, name, "/old/projects/shop\n").unwrap();
+    mark_host_ports(&kit, name, &[3307]).unwrap();
+    forget(&kit, name).unwrap();
+    assert_eq!(applied(&kit, name), None);
+    assert_eq!(mounts(&kit, name), None);
+    assert!(host_ports(&kit, name).is_empty());
+    assert_eq!(owner(&kit, name), Some(mine.clone()));
+    forget(&kit, name).unwrap();
+}
