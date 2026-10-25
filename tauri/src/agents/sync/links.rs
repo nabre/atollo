@@ -218,6 +218,6 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
     Ok(true)
 }
 
-#[cfg(all(test, windows))]
+#[cfg(test)]
 #[path = "../../../../test/rust/agents/sync/links.rs"]
 mod tests;
