@@ -41,9 +41,13 @@ pub async fn terminal_remove<R: Runtime>(
     id: String,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = state.kit.clone();
+    let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || {
-        terminals::remove(&kit, &id).or_fail_chain("terminals")
+        terminals::remove(&kit, &id).or_fail_chain("terminals")?;
+        // Its sandboxes, one per folder, and their disks go with it (D-169).
+        let names = crate::isolation::terminal_sandboxes(&kit, &id);
+        crate::isolation::remove_owned(&kit, &host, &env, &names);
+        Ok(())
     })
     .await
     .or_fail("terminals")?
@@ -219,6 +223,16 @@ pub async fn terminal_dir_pick<R: Runtime>(
 // detached session (`terminal-<id>`, D-149), for that session only.
 
 /// The main window, or the window of session `id`.
+/// A web link of session `id`'s output, clicked: the PC's browser, with
+/// the PC's environment (`sbx login`'s page, D-169); `http` and `https`
+/// only.
+#[tauri::command]
+pub fn pty_link_open<R: Runtime>(webview: Webview<R>, id: u64, url: String) -> CmdResult<()> {
+    ensure_pty(&webview, id)?;
+    let url: tauri::Url = url.parse().or_fail("link")?;
+    crate::editor::window::open_in_browser(&url).or_fail_chain("browser")
+}
+
 fn ensure_pty<R: Runtime>(webview: &Webview<R>, id: u64) -> CmdResult<()> {
     if webview.label() == MAIN || terminal::session_of(webview.label()) == Some(id) {
         Ok(())

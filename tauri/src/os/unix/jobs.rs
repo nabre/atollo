@@ -211,8 +211,13 @@ pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
     spawn_detached(Command::new(crate::os::current::OPENER).arg(target)).map(|_| ())
 }
 
-pub fn open_url(url: &str) -> Result<()> {
-    open_with_explorer(url)
+pub fn open_url(url: &str, env: Option<&[(String, String)]>) -> Result<()> {
+    let mut cmd = Command::new(crate::os::current::OPENER);
+    cmd.arg(url);
+    if let Some(env) = env {
+        cmd.env_clear().envs(env.iter().map(|(k, v)| (k, v)));
+    }
+    spawn_detached(&mut cmd).map(|_| ())
 }
 
 /// A command line of the user (a project's action) through `/bin/sh -c

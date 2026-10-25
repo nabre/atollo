@@ -306,6 +306,8 @@ macro_rules! command_handler {
             $crate::ipc::app::app_info,
             $crate::ipc::isolation::isolation_status,
             $crate::ipc::isolation::isolation_run,
+            $crate::ipc::isolation::vms_list,
+            $crate::ipc::isolation::vm_remove,
             $crate::ipc::editing::editor_status,
             $crate::ipc::editing::editor_open,
             $crate::ipc::editing::editor_restart,
@@ -325,6 +327,7 @@ macro_rules! command_handler {
             $crate::ipc::terminals::pty_close,
             $crate::ipc::terminals::pty_detach,
             $crate::ipc::terminals::pty_dock,
+            $crate::ipc::terminals::pty_link_open,
             // The local models; permission `allow-local-models`
             // (permissions/llm.toml).
             $crate::ipc::llm::llm_status,

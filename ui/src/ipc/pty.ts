@@ -39,6 +39,9 @@ export interface PtyBackend {
   detach(id: number): Promise<void>;
   /** Back to the panel, closing its window. */
   dock(id: number): Promise<void>;
+  /** A web link of the session's output, clicked: the PC's browser, with
+   * the PC's profile (`sbx login`'s page, D-169). */
+  openLink(id: number, url: string): Promise<void>;
   onOpened(handler: (info: PtyInfo) => void): Promise<() => void>;
   onExit(handler: (info: PtyInfo) => void): Promise<() => void>;
   /** Detached or docked: the session's new state. */
@@ -57,6 +60,7 @@ export const tauriPty: PtyBackend = {
   close: (id) => act("pty_close", { id }),
   detach: (id) => act("pty_detach", { id }),
   dock: (id) => act("pty_dock", { id }),
+  openLink: (id, url) => act("pty_link_open", { id, url }),
   onOpened: (handler) => subscribe<PtyInfo>(PTY_OPENED, handler),
   onExit: (handler) => subscribe<PtyInfo>(PTY_EXIT, handler),
   onMoved: (handler) => subscribe<PtyInfo>(PTY_MOVED, handler),

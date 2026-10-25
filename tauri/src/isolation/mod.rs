@@ -23,6 +23,8 @@ use crate::env::{Host, KitEnv};
 use crate::kit::{Kit, Os};
 use crate::platform::virt::{self, Gap};
 
+pub mod daemon;
+pub mod kit;
 pub mod vm;
 
 /// How long a status stays good: `sbx` is asked at most once a minute.
@@ -98,6 +100,16 @@ pub enum Blocker {
     /// The PC's `sbx` has no global network policy yet: no VM starts.
     /// The kit's gets `balanced` by itself ([`vm::POLICY_ARGS`]).
     PolicyUnset,
+    /// The daemon running is another `sbx`'s (the PC's, another kit's):
+    /// the kit's VMs would go into its state, out of the kit
+    /// ([`daemon::Daemon::Other`]).
+    ForeignDaemon,
+    /// The kit's disk has no sparse files nor permissions (FAT32, exFAT):
+    /// each VM's disks (20 + 10 GB, sparse on NTFS) would not fit or would
+    /// take their whole size.
+    KitDisk {
+        fs: String,
+    },
 }
 
 impl From<Gap> for Blocker {
@@ -187,12 +199,111 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
     match &sbx {
         None => blockers.push(Blocker::SbxMissing),
         Some(sbx) => {
-            if let Err(b) = ask(sbx, host, env).and_then(|()| policy(sbx, host, env)) {
+            if let Err(b) = kit_daemon(kit, sbx, host, env)
+                .and_then(|()| ask(sbx, host, env))
+                .and_then(|()| policy(sbx, host, env))
+            {
                 blockers.push(b);
+            } else if let Sbx::Kit(_) = sbx {
+                daemon_settings(sbx, host, env);
             }
         }
     }
     Status::of(blockers, sbx.map(|s| s.path().display().to_string()))
+}
+
+/// Where the kit's `sbx` keeps its VMs (D-169): in the kit, so on a disk
+/// with sparse files, and with a daemon of its own. The PC's `sbx` keeps
+/// its own where the user installed it: nothing to check.
+fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
+    let Sbx::Kit(exe) = sbx else {
+        return Ok(());
+    };
+    if let Some(volume) = kit.volume().filter(|v| !v.fs.has_permissions()) {
+        return Err(Blocker::KitDisk {
+            fs: volume.fs.as_str().to_owned(),
+        });
+    }
+    match daemon::current(kit, exe) {
+        daemon::Daemon::Other => Err(Blocker::ForeignDaemon),
+        daemon::Daemon::Kit => Ok(()),
+        daemon::Daemon::None => {
+            // Started here, its output to nothing: a daemon started by a
+            // command whose output is read keeps that pipe open, and the
+            // reader waits for it until its limit.
+            daemon_call(sbx, host, env, &["daemon", "start"]);
+            Ok(())
+        }
+    }
+}
+
+/// `sbx <args>` of the daemon (`daemon start`, `daemon restart`), its
+/// output to nothing, waited for at most a minute.
+fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) {
+    let mut cmd = sbx.command(env, host);
+    cmd.args(args)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    let child = match crate::platform::jobs::spawn(&mut cmd) {
+        Ok(child) => child,
+        Err(e) => {
+            crate::common::log::warn(&format!("sbx {}: {e}", args.join(" ")));
+            return;
+        }
+    };
+    let (tx, rx) = mpsc::channel();
+    let mut child = child;
+    std::thread::spawn(move || {
+        let _ = tx.send(child.wait());
+    });
+    match rx.recv_timeout(Duration::from_secs(60)) {
+        Ok(Ok(status)) if status.success() => {}
+        Ok(Ok(status)) => crate::common::log::warn(&format!("sbx {}: {status}", args.join(" "))),
+        Ok(Err(e)) => crate::common::log::warn(&format!("sbx {}: {e}", args.join(" "))),
+        Err(_) => crate::common::log::warn(&format!("sbx {}: no end in 60 s", args.join(" "))),
+    }
+}
+
+/// The kit daemon's settings ([`daemon::SETTINGS`]): set when they differ,
+/// then the daemon restarted for them when no sandbox runs (a running one
+/// would stop; the next status tries again). Failures only go to the log:
+/// the VMs work without them.
+fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
+    let mut changed = false;
+    for (key, value) in daemon::SETTINGS {
+        let now = run(sbx, host, env, &["settings", "get", key], ASK_LIMIT)
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned());
+        if now.as_deref() == Ok(value) {
+            continue;
+        }
+        match run(sbx, host, env, &["settings", "set", key, value], ASK_LIMIT) {
+            Ok(out) if out.status.success() => changed = true,
+            Ok(out) => crate::common::log::warn(&format!(
+                "sbx settings set {key}: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            )),
+            Err(e) => crate::common::log::warn(&format!("sbx settings set {key}: {e}")),
+        }
+    }
+    if !changed {
+        return;
+    }
+    let running = run(sbx, host, env, &["ls", "--json"], ASK_LIMIT)
+        .map(|o| sandboxes_running(&String::from_utf8_lossy(&o.stdout)))
+        .unwrap_or(true);
+    if running {
+        crate::common::log::info("sbx settings changed: restart when no sandbox runs");
+        return;
+    }
+    daemon_call(sbx, host, env, &["daemon", "restart"]);
+}
+
+/// True when `sbx ls --json` lists a running sandbox.
+pub(crate) fn sandboxes_running(json: &str) -> bool {
+    serde_json::from_str::<Vec<serde_json::Value>>(json)
+        .map(|list| list.iter().any(|s| s["status"] == "running"))
+        .unwrap_or(true)
 }
 
 /// The `sbx` the projects' microVMs run with.
@@ -256,6 +367,9 @@ impl Sbx {
                         out.set(name, temp);
                     }
                 }
+                for (name, value) in daemon::ENV {
+                    out.set(name, value);
+                }
             }
             Sbx::Pc(_) => {
                 let names: Vec<String> = out.iter().map(|(k, _)| k.to_owned()).collect();
@@ -306,7 +420,14 @@ pub fn fix_launch(
 ) -> Option<(crate::editor::pty::Launch, KitEnv)> {
     let sbx = Sbx::find(kit, host)?;
     let launch = crate::editor::pty::program(kit, sbx.path(), fix.args(), dir, "sbx");
-    Some((launch, sbx.session_env(env, host)))
+    let mut env = sbx.session_env(env, host);
+    if fix == Fix::Login {
+        // The sign-in page is not opened by `sbx`, whose environment is the
+        // kit's (its browser would make its profile in the kit): its link
+        // is in the terminal, and a click opens it with the PC's (D-169).
+        env.set("SBX_NO_BROWSER_OPEN", "1");
+    }
+    Some((launch, env))
 }
 
 /// The component of the kit's `sbx`: required, but the editor and the
@@ -456,6 +577,132 @@ pub struct Vm {
     /// Folders of the PC mounted where the VM cannot change them (the
     /// kit's tools for Linux, for the kit's terminals).
     pub read_only: Vec<PathBuf>,
+    /// The kit the sandbox's own kit is written in (`data\app\sandboxes`).
+    kit: Kit,
+    /// Whose sandbox it is, written in its kit.
+    owner: kit::Owner,
+}
+
+/// A sandbox of Atollo, for the list of the VMs (D-169).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmInfo {
+    pub name: String,
+    /// Whose it is, from its kit; `None` for an agent's sandbox (`sbx`'s
+    /// own kit) or one made before the kits.
+    pub owner: Option<kit::Owner>,
+    /// `running`, `stopped`… as `sbx` says it.
+    pub status: String,
+    pub last_used: Option<String>,
+}
+
+/// The sandboxes of Atollo and the room their state takes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmList {
+    pub vms: Vec<VmInfo>,
+    /// Bytes the kit daemon's state takes on the disk (images, the VMs'
+    /// disks, sparse): `None` for the PC's `sbx`, which keeps them where
+    /// the user installed it.
+    pub disk: Option<u64>,
+}
+
+/// Atollo's sandboxes in `sbx ls --json` (`atollo-…`), with their owner
+/// from their kits.
+pub(crate) fn vms_of(kit: &Kit, json: &str) -> Vec<VmInfo> {
+    let list: Vec<serde_json::Value> = serde_json::from_str(json).unwrap_or_default();
+    list.iter()
+        .filter_map(|s| {
+            let name = s["name"].as_str()?;
+            name.starts_with(vm::PREFIX).then(|| VmInfo {
+                name: name.to_owned(),
+                owner: kit::owner(kit, name),
+                status: s["status"].as_str().unwrap_or_default().to_owned(),
+                last_used: s["last_used_at"].as_str().map(str::to_owned),
+            })
+        })
+        .collect()
+}
+
+/// The sandboxes of Atollo `sbx` has, and the room the kit's take.
+pub fn vm_list(kit: &Kit, host: &Host, env: &KitEnv) -> anyhow::Result<VmList> {
+    let Some(sbx) = Sbx::find(kit, host) else {
+        return Ok(VmList {
+            vms: Vec::new(),
+            disk: None,
+        });
+    };
+    let out = run(&sbx, host, env, &["ls", "--json"], ASK_LIMIT).map_err(anyhow::Error::msg)?;
+    anyhow::ensure!(
+        out.status.success(),
+        "sbx ls: {}",
+        String::from_utf8_lossy(&out.stderr).trim()
+    );
+    let disk = match sbx {
+        Sbx::Kit(_) => daemon::state_dir(kit).map(|d| crate::platform::files::allocated_size(&d)),
+        Sbx::Pc(_) => None,
+    };
+    Ok(VmList {
+        vms: vms_of(kit, &String::from_utf8_lossy(&out.stdout)),
+        disk,
+    })
+}
+
+/// A name of one of Atollo's sandboxes: `atollo-` and `[a-z0-9.-]`.
+pub fn is_atollos(name: &str) -> bool {
+    name.strip_prefix(vm::PREFIX).is_some_and(|rest| {
+        !rest.is_empty()
+            && rest
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-')
+    })
+}
+
+/// Removes the sandbox `name` of Atollo (`sbx rm -f`: its disk with it),
+/// then its kit.
+pub fn remove_vm(kit: &Kit, host: &Host, env: &KitEnv, name: &str) -> anyhow::Result<()> {
+    anyhow::ensure!(is_atollos(name), "not a sandbox of Atollo: {name}");
+    if let Some(sbx) = Sbx::find(kit, host) {
+        let out =
+            run(&sbx, host, env, &["rm", "-f", name], START_LIMIT).map_err(anyhow::Error::msg)?;
+        let text = String::from_utf8_lossy(&out.stderr).to_lowercase();
+        anyhow::ensure!(
+            out.status.success() || text.contains("not found") || text.contains("no such"),
+            "sbx rm: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    kit::remove(kit, name)
+}
+
+/// The sandboxes of `project`: its own and its agents'.
+pub fn project_sandboxes(project: &str) -> Vec<String> {
+    let mut names = vec![vm::name(project)];
+    names.extend(["claude", "codex"].map(|a| vm::agent_name(project, a)));
+    names
+}
+
+/// The sandboxes of the kit terminal `terminal`, one per folder, from
+/// their kits.
+pub fn terminal_sandboxes(kit: &Kit, terminal: &str) -> Vec<String> {
+    kit::all(kit)
+        .into_iter()
+        .filter(
+            |(_, owner)| matches!(owner, kit::Owner::Terminal { terminal: t, .. } if t == terminal),
+        )
+        .map(|(name, _)| name)
+        .collect()
+}
+
+/// Removes `names` with their owner gone (a project deleted, a terminal
+/// removed): a failure only goes to the log, the list of the VMs still
+/// shows what is left.
+pub fn remove_owned(kit: &Kit, host: &Host, env: &KitEnv, names: &[String]) {
+    for name in names {
+        if let Err(e) = remove_vm(kit, host, env, name) {
+            crate::common::log::warn(&format!("sandbox {name}: {e:#}"));
+        }
+    }
 }
 
 /// The microVM of `project` (folder `dir`) when every project runs in one
@@ -470,6 +717,10 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
         name: vm::name(project),
         dir: dir.to_path_buf(),
         read_only: Vec::new(),
+        kit: kit.clone(),
+        owner: kit::Owner::Project {
+            project: project.to_owned(),
+        },
     })
 }
 
@@ -494,6 +745,11 @@ pub fn kit_terminal_vm(
         name: vm::terminal_name(terminal, dir),
         dir: dir.to_path_buf(),
         read_only: vec![apps.to_path_buf()],
+        kit: kit.clone(),
+        owner: kit::Owner::Terminal {
+            terminal: terminal.to_owned(),
+            dir: dir.display().to_string(),
+        },
     })
 }
 
@@ -641,12 +897,48 @@ impl Vm {
     }
 
     /// Creates the sandbox the first time, starts it again when stopped.
+    /// Writes the sandbox's kit (D-169), then: the first time the sandbox
+    /// is made with it (`--kit`); after, a changed kit goes in with
+    /// `sbx kit add` (its disk kept); then it starts again when stopped.
     pub fn start(&self, env: &KitEnv) -> anyhow::Result<()> {
+        let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
+        if self.exists(env)? {
+            if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
+                let args = vec![
+                    "kit".to_owned(),
+                    "add".to_owned(),
+                    self.name.clone(),
+                    kit_dir.display().to_string(),
+                ];
+                self.call(env, &args, START_LIMIT)?;
+                kit::mark_applied(&self.kit, &self.name, &print)?;
+            }
+            return self.call(
+                env,
+                &vm::start_args(&self.name, &self.dir, &self.read_only, None),
+                START_LIMIT,
+            );
+        }
         self.call(
             env,
-            &vm::start_args(&self.name, &self.dir, &self.read_only),
+            &vm::start_args(&self.name, &self.dir, &self.read_only, Some(&kit_dir)),
             START_LIMIT,
-        )
+        )?;
+        kit::mark_applied(&self.kit, &self.name, &print)
+    }
+
+    /// True when `sbx` has this sandbox.
+    fn exists(&self, env: &KitEnv) -> anyhow::Result<bool> {
+        let out = run(&self.sbx, &self.host, env, &["ls", "-q"], ASK_LIMIT)
+            .map_err(anyhow::Error::msg)?;
+        anyhow::ensure!(
+            out.status.success(),
+            "sbx ls: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+        Ok(String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .any(|l| l.trim() == self.name))
     }
 
     /// Publishes `port` of the VM on the PC's `127.0.0.1`.

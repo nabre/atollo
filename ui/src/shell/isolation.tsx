@@ -1,17 +1,23 @@
 // How shut in the projects' programs are (D-167): the status bar's item,
 // a warning while the projects run without the VM, and the box that says
-// why the VM is off and what makes it work, one step per reason.
+// why the VM is off and what makes it work, one step per reason, with
+// Atollo's sandboxes and the room they take (D-169).
 import { useEffect, useRef, useState } from "react";
 
 import {
   componentsInstall,
   isolationRun,
   isolationStatus,
+  vmRemove,
+  vmsList,
   type IsolationBlocker,
   type IsolationFix,
   type IsolationStatus,
+  type VmInfo,
+  type VmList,
 } from "../ipc";
-import { useCopy, useLoad } from "../shared/hooks";
+import { formatLargeBytes } from "../shared/format";
+import { useAction, useCopy, useLoad } from "../shared/hooks";
 import { Button, ConfirmDialog } from "../workbench";
 import { t } from "../i18n";
 
@@ -150,6 +156,22 @@ export function explain(b: IsolationBlocker, system: System): Explained {
         ),
         command: "sbx policy init balanced",
         run: "policy",
+      };
+    case "foreign_daemon":
+      return {
+        why: t(
+          "Sul PC è già attivo un altro Docker Sandboxes (quello del PC o di un altro kit): le VM del kit finirebbero nei suoi dati, fuori dal kit.",
+        ),
+        fix: t("Fermalo, se non ti serve, poi premi «Ricontrolla»; le sue sandbox restano dove sono:"),
+        command: "sbx daemon stop",
+      };
+    case "kit_disk":
+      return {
+        why: t(
+          "Il kit è su un disco {0}: i dischi delle VM (fino a 30 GB ciascuna, che su NTFS occupano solo quello che si scrive) non ci stanno o lo riempirebbero.",
+          b.fs,
+        ),
+        fix: t("Sposta il kit su un disco NTFS (o APFS, ext4 su macOS e Linux), poi riaprilo da lì."),
       };
   }
 }
@@ -292,7 +314,85 @@ export function IsolationDialog({
           </ol>
         </>
       )}
+      {status.sbx !== null && <VmSection />}
     </ConfirmDialog>
+  );
+}
+
+/** Whose sandbox it is, as the list says it. */
+export function vmLabel(v: VmInfo): string {
+  if (v.owner?.kind === "project") return t("Progetto {0}", v.owner.project);
+  if (v.owner?.kind === "terminal") return t("Terminale {0} in {1}", v.owner.terminal, v.owner.dir);
+  return v.name;
+}
+
+/** Atollo's sandboxes (D-169): whose each is, whether it runs, the room
+ * their state takes in the kit, and «Rimuovi» after a second click, since
+ * it deletes the sandbox's disk. */
+export function VmSection() {
+  const { data, error, reload } = useLoad<VmList | null>(vmsList, null, { onError: "show" });
+  const { busy, error: failed, run } = useAction(reload);
+  const [asked, setAsked] = useState<string | null>(null);
+  if (!data) return error ? <p className="text-vsc-error">{error}</p> : null;
+  return (
+    <section aria-label={t("Sandbox delle VM")} className="space-y-vsc-size40">
+      <p className="font-vsc-semibold text-vsc-fg">{t("Sandbox delle VM")}</p>
+      {data.disk !== null && <p>{t("Spazio occupato nel kit: {0}", formatLargeBytes(data.disk))}</p>}
+      {data.vms.length === 0 ? (
+        <p>{t("Nessuna sandbox.")}</p>
+      ) : (
+        <ul className="space-y-vsc-size40">
+          {data.vms.map((v) => (
+            <li key={v.name} className="flex items-center gap-vsc-size80">
+              <span className="min-w-0 flex-1 truncate text-vsc-fg" title={v.name}>
+                {vmLabel(v)}
+              </span>
+              <span className="text-vsc-desc">{v.status === "running" ? t("accesa") : t("spenta")}</span>
+              {asked === v.name ? (
+                <>
+                  <Button
+                    small
+                    variant="primary"
+                    onClick={() => {
+                      setAsked(null);
+                      run(v.name, () => vmRemove(v.name));
+                    }}
+                  >
+                    {t("Rimuovi davvero")}
+                  </Button>
+                  <Button
+                    small
+                    onClick={() => {
+                      setAsked(null);
+                    }}
+                  >
+                    {t("Annulla")}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  small
+                  busy={busy === v.name}
+                  onClick={() => {
+                    setAsked(v.name);
+                  }}
+                >
+                  {t("Rimuovi")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {asked !== null && (
+        <p>
+          {t(
+            "Si cancella il disco della sandbox: la sua home, /tmp e i database della VM. I file del progetto restano.",
+          )}
+        </p>
+      )}
+      {failed && <p className="text-vsc-error">{failed}</p>}
+    </section>
   );
 }
 

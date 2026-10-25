@@ -326,13 +326,13 @@ pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
 /// Opens a web address in the PC's browser, outside the job. Not through
 /// `explorer.exe`: Windows 11 drops an address with a query (`?atollo=…`)
 /// without opening the browser.
-pub fn open_url(url: &str) -> Result<()> {
-    spawn_detached(
-        Command::new(system_root().join(r"System32\rundll32.exe"))
-            .args(["url.dll,FileProtocolHandler", url]),
-        0,
-    )
-    .map(|_| ())
+pub fn open_url(url: &str, env: Option<&[(String, String)]>) -> Result<()> {
+    let mut cmd = Command::new(system_root().join(r"System32\rundll32.exe"));
+    cmd.args(["url.dll,FileProtocolHandler", url]);
+    if let Some(env) = env {
+        cmd.env_clear().envs(env.iter().map(|(k, v)| (k, v)));
+    }
+    spawn_detached(&mut cmd, 0).map(|_| ())
 }
 
 /// No guard on Windows: the job does its work.

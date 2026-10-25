@@ -72,14 +72,18 @@ pub async fn project_delete<R: Runtime>(
     ensure_main(&webview)?;
     let (kit, lang, env) = (state.kit.clone(), state.lang(), state.env());
     let (services, servers) = (Arc::clone(&state.services), Arc::clone(&state.servers));
+    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let dbs = crate::db::services::ProjectDrops {
             services: &services,
-            env,
+            env: env.clone(),
             project: project.clone(),
         };
         crate::projects::delete(&kit, &project, lang, &dbs, force_without_db == Some(true))
             .or_fail_chain("project delete")?;
+        // Its sandboxes and their disks go with it (D-169).
+        let names = crate::isolation::project_sandboxes(&project);
+        crate::isolation::remove_owned(&kit, &host, &env, &names);
         // Its site leaves the pools' list now, not after `LIST_TTL`.
         servers.invalidate();
         Ok(())

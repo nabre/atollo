@@ -183,6 +183,27 @@ pub fn program_version(exe: &Path) -> Result<String> {
     imp::program_version(exe)
 }
 
+/// The bytes the files under `path` take on the disk, links not followed:
+/// a sparse file (a VM's disk, 20 GB of which a few are written) counts
+/// what is written, not its size.
+pub fn allocated_size(path: &Path) -> u64 {
+    let Ok(meta) = fs::symlink_metadata(path) else {
+        return 0;
+    };
+    if meta.is_file() {
+        return imp::allocated(path, &meta);
+    }
+    if !meta.is_dir() {
+        return 0;
+    }
+    fs::read_dir(path)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| allocated_size(&e.path()))
+        .sum()
+}
+
 /// The files of the Windows Installer package `msi`, extracted into `dest`
 /// without installing it (Docker Sandboxes, D-167); an error elsewhere.
 pub fn extract_msi(msi: &Path, dest: &Path) -> Result<()> {

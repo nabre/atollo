@@ -729,10 +729,10 @@
           "markdownDescription": "Enables the projects_orphans command without any pre-configured scope."
         },
         {
-          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock.",
+          "description": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock, open a link.",
           "type": "string",
           "const": "allow-pty-sessions",
-          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock."
+          "markdownDescription": "Enables the commands of the app's terminal sessions: list, backlog, write, resize, close, detach, dock, open a link."
         },
         {
           "description": "Enables the relations_matrix command without any pre-configured scope.",
@@ -1009,6 +1009,18 @@
           "type": "string",
           "const": "allow-versions-remove",
           "markdownDescription": "Enables the versions_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the vm_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-vm-remove",
+          "markdownDescription": "Enables the vm_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the vms_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-vms-list",
+          "markdownDescription": "Enables the vms_list command without any pre-configured scope."
         },
         {
           "description": "Denies the agent_launch command without any pre-configured scope.",
@@ -1831,6 +1843,18 @@
           "type": "string",
           "const": "deny-versions-remove",
           "markdownDescription": "Denies the versions_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the vm_remove command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-vm-remove",
+          "markdownDescription": "Denies the vm_remove command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the vms_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-vms-list",
+          "markdownDescription": "Denies the vms_list command without any pre-configured scope."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

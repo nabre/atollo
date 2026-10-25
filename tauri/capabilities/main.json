@@ -17,6 +17,8 @@
     "allow-app-info",
     "allow-isolation-status",
     "allow-isolation-run",
+    "allow-vms-list",
+    "allow-vm-remove",
     "allow-editor-status",
     "allow-editor-open",
     "allow-editor-restart",

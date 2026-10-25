@@ -16,7 +16,9 @@ export type IsolationBlocker =
   | { code: "sbx_missing" }
   | { code: "sbx_signed_out" }
   | { code: "sbx_failed"; message: string }
-  | { code: "policy_unset" };
+  | { code: "policy_unset" }
+  | { code: "foreign_daemon" }
+  | { code: "kit_disk"; fs: string };
 
 export interface IsolationStatus {
   /** `vm`: a Docker Sandboxes microVM per project; `env`: the kit's
@@ -41,6 +43,37 @@ export type IsolationFix = "login" | "ls" | "policy";
 /** Opens `fix` with the `sbx` found in a new session of the app's terminal. */
 export function isolationRun(fix: IsolationFix): Promise<void> {
   return act("isolation_run", { fix });
+}
+
+/** Whose sandbox it is, from the kit Atollo wrote for it (D-169). */
+export type VmOwner = { kind: "project"; project: string } | { kind: "terminal"; terminal: string; dir: string };
+
+/** One of Atollo's sandboxes. */
+export interface VmInfo {
+  name: string;
+  /** Null for an agent's sandbox or one made before the kits. */
+  owner: VmOwner | null;
+  /** `running`, `stopped`… as `sbx` says it. */
+  status: string;
+  lastUsed: string | null;
+}
+
+/** Atollo's sandboxes and the room the kit daemon's state takes. */
+export interface VmList {
+  vms: VmInfo[];
+  /** Bytes on the disk (sparse VM disks count what is written); null for
+   * the PC's `sbx`. */
+  disk: number | null;
+}
+
+export function vmsList(): Promise<VmList> {
+  return query<VmList>("vms_list", { vms: [], disk: null });
+}
+
+/** Removes a sandbox with its disk (home, `/tmp`, the VM's databases) and
+ * its kit; the project's files stay. */
+export function vmRemove(name: string): Promise<void> {
+  return act("vm_remove", { name });
 }
 
 /** `force`: ask `sbx` again now, not the answer of the last minute. */

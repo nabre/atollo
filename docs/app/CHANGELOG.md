@@ -1,5 +1,13 @@
 # Novità
 
+## Lo stato delle VM nel kit (25/10/2026)
+
+- **Le VM restano nel kit** (D-169): Atollo usa solo un daemon di Docker Sandboxes avviato da lui, con immagini e dischi delle VM in `data`. Se sul PC ne gira un altro, l'avviso «Senza VM» lo dice invece di mettere le VM nei suoi dati; su un disco FAT32 o exFAT dice di spostare il kit.
+- **Un kit per ogni sandbox** in `data\app\sandboxes`: la descrizione di com'è fatta, data a Docker Sandboxes alla creazione e aggiornata senza perdere i dati della VM.
+- **Sandbox delle VM**: nella finestra della VM l'elenco delle sandbox, di chi sono, se sono accese, lo spazio che occupano davvero, e «Rimuovi». Eliminare un progetto o un terminale toglie anche le sue sandbox.
+- **Niente più file inutili**: `llmman` non scarica più llama.cpp (713 MB), la telemetria di Docker è spenta, le VM non usano le chiavi SSH del PC.
+- **Link nel terminale**: gli indirizzi web si aprono con un clic, e il browser si apre con il tuo profilo, non con quello del kit (vale per tutti i link di Atollo). Il login di Docker passa da lì.
+
 ## Terminali del kit nella VM (25/10/2026)
 
 - **Il terminale del kit nella VM** (D-168): con la VM attiva, «Tutti gli strumenti» e i terminali personalizzati si aprono in una microVM loro, una per cartella, con gli strumenti del kit per Linux alle stesse versioni (scaricati la prima volta in `data\apps\linux-x64`, montati in sola lettura). Senza VM restano sul PC, con l'avviso «Senza VM».

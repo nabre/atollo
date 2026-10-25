@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-vm-remove"
+description = "Enables the vm_remove command without any pre-configured scope."
+commands.allow = ["vm_remove"]
+
+[[permission]]
+identifier = "deny-vm-remove"
+description = "Denies the vm_remove command without any pre-configured scope."
+commands.deny = ["vm_remove"]

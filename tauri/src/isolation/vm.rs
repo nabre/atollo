@@ -78,17 +78,22 @@ pub fn terminal_name(terminal: &str, dir: &Path) -> String {
 }
 
 /// Creates the sandbox the first time, starts it again when stopped:
-/// `sbx run -d --name <vm> shell <dir> [<folder>:ro…]`, the `read_only`
-/// folders mounted too, where the VM cannot change them.
-pub fn start_args(vm: &str, dir: &Path, read_only: &[std::path::PathBuf]) -> Vec<String> {
-    let mut args: Vec<String> = vec![
-        "run".into(),
-        "-d".into(),
-        "--name".into(),
-        vm.into(),
-        "shell".into(),
-        dir.display().to_string(),
-    ];
+/// `sbx run -d --name <vm> [--kit <kit>] shell <dir> [<folder>:ro…]`, its
+/// own kit when it is made (`kit`, D-169), the `read_only` folders mounted
+/// too, where the VM cannot change them.
+pub fn start_args(
+    vm: &str,
+    dir: &Path,
+    read_only: &[std::path::PathBuf],
+    kit: Option<&Path>,
+) -> Vec<String> {
+    let mut args: Vec<String> = vec!["run".into(), "-d".into(), "--name".into(), vm.into()];
+    if let Some(kit) = kit {
+        args.push("--kit".into());
+        args.push(kit.display().to_string());
+    }
+    args.push("shell".into());
+    args.push(dir.display().to_string());
     args.extend(read_only.iter().map(|p| format!("{}:ro", p.display())));
     args
 }

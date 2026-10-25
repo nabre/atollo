@@ -105,7 +105,7 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
 fn the_sandbox_starts_with_the_project_as_its_workspace() {
     let dir = Path::new("/kit/projects/shop");
     assert_eq!(
-        start_args("atollo-shop", dir, &[]),
+        start_args("atollo-shop", dir, &[], None),
         [
             "run",
             "-d",
@@ -116,11 +116,30 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         ]
     );
     assert_eq!(
-        start_args("atollo-t", dir, &["/kit/data/apps/linux-x64".into()])
+        start_args("atollo-t", dir, &["/kit/data/apps/linux-x64".into()], None)
             .last()
             .map(String::as_str),
         Some("/kit/data/apps/linux-x64:ro"),
         "the kit's tools are mounted where the VM cannot change them"
+    );
+    // Made with its own kit, before the agent (`sbx run [flags] AGENT`).
+    assert_eq!(
+        start_args(
+            "atollo-shop",
+            dir,
+            &[],
+            Some(Path::new("/kit/data/app/sandboxes/atollo-shop"))
+        ),
+        [
+            "run",
+            "-d",
+            "--name",
+            "atollo-shop",
+            "--kit",
+            "/kit/data/app/sandboxes/atollo-shop",
+            "shell",
+            "/kit/projects/shop"
+        ]
     );
     assert_eq!(
         terminal_args("atollo-shop"),

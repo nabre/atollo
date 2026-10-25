@@ -58,6 +58,7 @@ fn run() -> i32 {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let command = cli::parse(&args);
     let host = Host::capture();
+    platform::jobs::set_browser_env(&host);
     let windows_lang = platform::host::locale();
     // Language before settings exist: for the "cannot write" message.
     let early_lang = i18n::resolve(None, host.get("ATOLLO_LANG"), windows_lang.as_deref());

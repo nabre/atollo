@@ -24,6 +24,24 @@ pub fn is_reparse(meta: &fs::Metadata) -> bool {
     meta.file_type().is_symlink() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
 }
 
+/// The bytes the file `path` takes on the disk: what a sparse or
+/// compressed file has written (`GetCompressedFileSizeW`), its size when
+/// that cannot be read.
+pub fn allocated(path: &Path, meta: &fs::Metadata) -> u64 {
+    let mut high = 0u32;
+    // SAFETY: `high` lives for the call; the name is a valid wide string.
+    let low = unsafe {
+        windows::Win32::Storage::FileSystem::GetCompressedFileSizeW(
+            &HSTRING::from(path.as_os_str()),
+            Some(&mut high),
+        )
+    };
+    if low == u32::MAX && io::Error::last_os_error().raw_os_error().unwrap_or(0) != 0 {
+        return meta.len();
+    }
+    (u64::from(high) << 32) | u64::from(low)
+}
+
 /// Protected DACL with full access for the owner only.
 pub fn restrict_to_owner(path: &Path) -> Result<()> {
     set_dacl(path, "D:P(A;;FA;;;OW)")

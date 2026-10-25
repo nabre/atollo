@@ -17,6 +17,37 @@ pub async fn isolation_status<R: Runtime>(
         .or_fail("isolation")
 }
 
+/// Atollo's sandboxes and the room their state takes (D-169).
+#[tauri::command]
+pub async fn vms_list<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<crate::isolation::VmList> {
+    ensure_main(&webview)?;
+    let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::isolation::vm_list(&kit, &host, &env).or_fail_chain("vms")
+    })
+    .await
+    .or_fail("vms")?
+}
+
+/// Removes one of Atollo's sandboxes with its disk and kit (D-169).
+#[tauri::command]
+pub async fn vm_remove<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    name: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::isolation::remove_vm(&kit, &host, &env, &name).or_fail_chain("vms")
+    })
+    .await
+    .or_fail("vms")?
+}
+
 /// The notice's «Lancia»: `fix` with the `sbx` found, in a new session of
 /// the app's terminal in the projects' folder.
 #[tauri::command]

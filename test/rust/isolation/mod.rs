@@ -132,6 +132,62 @@ fn a_vm_never_gets_the_kit_or_the_profile_writable() {
     assert_eq!(allowed(&linked.join("x")), None, "under a junction");
 }
 
+/// The list of the VMs: Atollo's sandboxes only, with their owner from
+/// their kits; the sandboxes a project or a terminal takes with it.
+#[test]
+fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-vms");
+    let shop = vm::name("shop");
+    let owner = kit::Owner::Project {
+        project: "shop".into(),
+    };
+    kit::write(&kit, &shop, &owner).unwrap();
+    let json = format!(
+        r#"[{{"name":"{shop}","status":"running","last_used_at":"2026-10-25T17:40:30Z"}},
+            {{"name":"claude-mine","status":"stopped"}},
+            {{"name":"atollo-a-claude-shop-0123","status":"stopped"}}]"#
+    );
+    let vms = vms_of(&kit, &json);
+    assert_eq!(vms.len(), 2, "the user's own sandbox is not Atollo's");
+    assert_eq!(vms[0].name, shop);
+    assert_eq!(vms[0].owner, Some(owner));
+    assert_eq!(vms[0].status, "running");
+    assert_eq!(vms[0].last_used.as_deref(), Some("2026-10-25T17:40:30Z"));
+    assert_eq!(
+        vms[1].owner, None,
+        "an agent's sandbox has no kit of Atollo"
+    );
+    assert!(vms_of(&kit, "not json").is_empty());
+
+    assert!(is_atollos(&shop) && is_atollos("atollo-t-x-1"));
+    for name in [
+        "atollo-",
+        "claude-mine",
+        "atollo-X",
+        "atollo-a b",
+        "atollo-a;rm",
+    ] {
+        assert!(!is_atollos(name), "{name}");
+    }
+
+    let names = project_sandboxes("shop");
+    assert_eq!(names[0], shop);
+    assert!(names.contains(&vm::agent_name("shop", "claude")));
+    assert!(names.contains(&vm::agent_name("shop", "codex")));
+
+    let legacy = |dir: &str| kit::Owner::Terminal {
+        terminal: "legacy".into(),
+        dir: dir.into(),
+    };
+    kit::write(&kit, "atollo-t-legacy-a", &legacy("/a")).unwrap();
+    kit::write(&kit, "atollo-t-legacy-b", &legacy("/b")).unwrap();
+    assert_eq!(
+        terminal_sandboxes(&kit, "legacy"),
+        ["atollo-t-legacy-a", "atollo-t-legacy-b"]
+    );
+    assert!(terminal_sandboxes(&kit, "default").is_empty());
+}
+
 #[test]
 fn no_blocker_is_the_vm() {
     assert_eq!(Status::of(Vec::new(), None).level, Level::Vm);
