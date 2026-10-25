@@ -150,6 +150,23 @@ pub fn mark_mounts(kit: &Kit, sandbox: &str, mounts: &str) -> Result<()> {
     std::fs::write(&path, mounts).with_context(|| path.display().to_string())
 }
 
+/// The PC's ports `sandbox` may reach, as noted when they were opened
+/// (`.ports`, one per line).
+pub fn host_ports(kit: &Kit, sandbox: &str) -> Vec<u16> {
+    std::fs::read_to_string(dir(kit, sandbox).join(".ports"))
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|l| l.trim().parse().ok())
+        .collect()
+}
+
+/// Notes the PC's ports `sandbox` may reach.
+pub fn mark_host_ports(kit: &Kit, sandbox: &str, ports: &[u16]) -> Result<()> {
+    let path = dir(kit, sandbox).join(".ports");
+    let text: String = ports.iter().map(|p| format!("{p}\n")).collect();
+    std::fs::write(&path, text).with_context(|| path.display().to_string())
+}
+
 /// The owner of `sandbox`, from its kit, if Atollo wrote one.
 pub fn owner(kit: &Kit, sandbox: &str) -> Option<Owner> {
     let text = std::fs::read_to_string(dir(kit, sandbox).join("atollo.json")).ok()?;

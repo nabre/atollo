@@ -30,19 +30,20 @@ pub async fn run_start<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let (runner, servers) = (Arc::clone(&runner), Arc::clone(&state.servers));
     let (host, kit_env) = (state.host.clone(), state.env());
+    let services = Arc::clone(&state.services);
     tauri::async_runtime::spawn_blocking(move || {
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::common::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
         // Every project in its microVM (D-167): the action there, its web
-        // server a container of the VM, never a pool of the PC.
-        let env = crate::versions::project_env(&kit, &project, kit_env);
+        // server a container of the VM, never a pool of the PC; the kit's
+        // tools and its databases on the PC (D-170, D-171).
+        let env = crate::versions::project_env(&kit, &project, kit_env.clone());
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
-            // The kit's tools for Linux, at the project's lines (D-170).
-            let tools =
-                super::terminals::project_vm_tools(&app, &task, &kit, &host, lang, &project)?;
-            let vm = vm.with_tools(tools);
+            let vm = super::terminals::project_vm_ready(
+                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+            )?;
             return runner
                 .start_in(&project, &dir, a, &env, lang, Some(&vm))
                 .or_fail_chain("run");

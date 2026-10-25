@@ -1,5 +1,10 @@
 # Novità
 
+## Il database del progetto resta sul PC (25/10/2026)
+
+- **La VM non tocca il server** (D-171): il database di un progetto nella VM è quello del kit, sul PC, come senza VM. La VM ne raggiunge solo la porta, aperta per quella sola sandbox, e vi entra come l'utente del progetto: legge e scrive i suoi dati, non gli altri database né la configurazione del server. Pagina Database, copie di sicurezza e phpMyAdmin restano gli stessi.
+- **La password non passa da una riga di comando**: le variabili del database arrivano nella VM da un file leggibile solo da te.
+
 ## I progetti nella VM con gli strumenti del kit (25/10/2026)
 
 - **Strumenti del kit nella VM del progetto** (D-170): terminale e azioni di un progetto nella VM usano Node, PHP, Python e gli altri strumenti scelti nel kit, alle versioni scelte dal progetto, come sul PC. Arrivano per Linux, la prima volta scaricati in `data\apps\linux-x64`, e la VM non li può modificare.
@@ -25,7 +30,7 @@
 - **Docker Sandboxes obbligatorio**: si installa sempre, come PowerShell 7 e GitHub CLI, sui sistemi dove Docker lo pubblica (non Windows su Arm né i Mac Intel). Editor e console non lo aspettano: se manca o non c'è l'accesso a Docker, l'avviso «Senza VM» lo dice.
 - **Docker Sandboxes nel kit**: il componente `sandboxes` mette `sbx` in `data\apps` (su Windows l'MSI estratto senza installarlo, senza amministratore); sandbox, impostazioni e registri restano in `data\home` e viaggiano con il kit; il demone si ferma all'uscita e con «Rimuovi l'unità».
 - **Ambiente sigillato**: terminale, azioni e agenti non ricevono più il percorso del profilo vero, l'agente SSH, il bus di sessione né il login root di MySQL; `mysql` entra con l'utente del progetto. Git lanciato dall'app in un progetto ignora `core.fsmonitor`.
-- **Tutto nella VM** (acceso appena il PC è pronto; prova con un account Docker in corso): terminale, comandi, server web e MySQL come container della VM sulle versioni del progetto, Claude Code e Codex negli agenti di `sbx`, porte su `127.0.0.1`.
+- **Tutto nella VM** (acceso appena il PC è pronto; prova con un account Docker in corso): terminale, comandi e server web come container della VM sulle versioni del progetto (il database resta sul PC: D-171), Claude Code e Codex negli agenti di `sbx`, porte su `127.0.0.1`.
 
 ## Rilascio 0.6.0 alpha (24/10/2026)
 

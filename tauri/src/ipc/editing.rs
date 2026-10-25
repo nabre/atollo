@@ -78,16 +78,16 @@ pub async fn terminal_open<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::opened(&state.kit, &project);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
-    let host = state.host.clone();
+    let (host, services) = (state.host.clone(), Arc::clone(&state.services));
     tauri::async_runtime::spawn_blocking(move || {
-        let env =
-            crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &[])?);
-        // In the project's microVM when every project runs in one (D-167).
+        let kit_env = ensure(&app, &task, &kit, lang, &[])?;
+        let env = crate::versions::project_env(&kit, &project, kit_env.clone());
+        // In the project's microVM when every project runs in one (D-167),
+        // with the kit's tools and its databases on the PC (D-170, D-171).
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
-            // The kit's tools for Linux, at the project's lines (D-170).
-            let tools =
-                super::terminals::project_vm_tools(&app, &task, &kit, &host, lang, &project)?;
-            let vm = vm.with_tools(tools);
+            let vm = super::terminals::project_vm_ready(
+                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+            )?;
             vm.start(&env, lang).or_fail_chain("vm")?;
             let guest_dir = crate::isolation::vm::guest_path(kit.target().is_windows(), &dir)
                 .ok_or_else(|| {
@@ -97,12 +97,7 @@ pub async fn terminal_open<R: Runtime>(
                     &[&dir.display().to_string()],
                 )
                 })?;
-            let args = crate::isolation::vm::kit_terminal_args(
-                &vm.name,
-                &guest_dir,
-                &vm.tools().path,
-                &vm.tools().vars,
-            );
+            let args = crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, vm.tools());
             let launch = vm.launch(&kit, args, "VM");
             return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
                 .or_fail_chain("terminal");

@@ -53,7 +53,7 @@ fn a_kit_terminal_gets_the_kits_tools_for_linux() {
     }
     let terminal = crate::editor::terminals::find(&kit, "default", "it").unwrap();
     let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
-    let GuestTools { path, vars } = guest_tools(&kit, &guest, &terminal, base);
+    let GuestTools { path, vars, .. } = guest_tools(&kit, &guest, &terminal, base);
     let windows = kit.target().is_windows();
     let apps = vm::guest_path(windows, &guest.apps()).unwrap();
     assert!(!path.is_empty(), "node's folder on the PATH");
@@ -259,6 +259,52 @@ fn an_unnoted_sandbox_has_the_workspace_sbx_says() {
     assert_eq!(workspace_of(json, "atollo-p-b"), None);
     assert_eq!(workspace_of(json, "atollo-p-c"), None);
     assert_eq!(workspace_of("not json", "atollo-p-a"), None);
+}
+
+/// A project's database as a program in its VM reaches it (D-171): the
+/// same user, database and password, through the VM's way to the PC; the
+/// `.env` keys the kit writes for it point there; the ports opened noted.
+#[test]
+fn a_projects_database_is_reached_from_its_vm_on_the_pc() {
+    let db = crate::db::auth::project_db("mysql", "shop", "pw", 3307);
+    let vm_db = db_in_vm(&db, 3308);
+    assert_eq!(vm_db.host, "host.docker.internal");
+    assert_eq!(vm_db.port, 3308);
+    assert_eq!(vm_db.user, "shop");
+    assert_eq!(vm_db.url, "mysql://shop:pw@host.docker.internal:3308/shop");
+    let laravel = "APP_NAME=x\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\n";
+    let keys = crate::db::auth::env_wanted(laravel, &vm_db);
+    assert!(keys.contains(&("DB_HOST".into(), "host.docker.internal".into())));
+    assert!(keys.contains(&("DB_PORT".into(), "3308".into())));
+    let plain = crate::db::auth::env_wanted("", &vm_db);
+    assert_eq!(
+        plain,
+        [(
+            "DATABASE_URL".to_owned(),
+            "mysql://shop:pw@host.docker.internal:3308/shop".to_owned()
+        )]
+    );
+    let mongo = db_in_vm(
+        &crate::db::auth::project_db("mongodb", "shop", "pw", 27018),
+        27018,
+    );
+    assert_eq!(
+        mongo.url,
+        "mongodb://shop:pw@host.docker.internal:27018/shop?authSource=shop"
+    );
+
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-ports");
+    kit::write(
+        &kit,
+        "atollo-p-shop-1",
+        &kit::Owner::Project {
+            project: "shop".into(),
+        },
+    )
+    .unwrap();
+    assert!(kit::host_ports(&kit, "atollo-p-shop-1").is_empty());
+    kit::mark_host_ports(&kit, "atollo-p-shop-1", &[3307, 27018]).unwrap();
+    assert_eq!(kit::host_ports(&kit, "atollo-p-shop-1"), [3307, 27018]);
 }
 
 #[test]

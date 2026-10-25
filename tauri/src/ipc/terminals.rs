@@ -111,12 +111,7 @@ pub async fn terminal_launch<R: Runtime>(
                 let base = KitEnv::build(&guest, &Settings::load(&kit).settings, lang, &host);
                 let tools = crate::isolation::guest_tools(&kit, &guest, &terminal, base);
                 vm.start(&env, lang).or_fail_chain("vm")?;
-                let args = crate::isolation::vm::kit_terminal_args(
-                    &vm.name,
-                    &guest_dir,
-                    &tools.path,
-                    &tools.vars,
-                );
+                let args = crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, &tools);
                 let launch = vm.launch(&kit, args, "VM");
                 return terminal::open_launch(&app, &vm.session_env(&env), &workspace, launch)
                     .or_fail_chain("terminal");
@@ -203,6 +198,77 @@ pub(crate) fn ensure_guest_tools<R: Runtime>(
             ..Options::default()
         });
     }
+}
+
+/// The databases of `project` (folder `dir`) for its VM (D-171): their
+/// servers started on the PC (the kit's, never in the VM: their programs,
+/// settings and data are out of its reach), the PC's ports its sandbox may
+/// reach, and the file of the variables that point its programs there as
+/// the project's user: the keys the kit writes in a `.env` like the
+/// project's (`env_wanted`), with the VM's way to the PC, plus the MySQL
+/// client's. A file readable by its owner only (`db.env` beside the
+/// sandbox's kit), given with `--env-file`: the password is never on a
+/// command line. The project's `.env` keeps its own lines: a variable of
+/// the session comes first (Laravel, dotenv, Django).
+pub(crate) fn project_vm_dbs(
+    services: &crate::db::services::Services,
+    kit: &Kit,
+    project: &str,
+    dir: &std::path::Path,
+    env: &KitEnv,
+) -> CmdResult<(Vec<u16>, Option<std::path::PathBuf>)> {
+    let dbs = services.project_dbs(project);
+    if dbs.is_empty() {
+        return Ok((Vec::new(), None));
+    }
+    let text = crate::platform::safe_path::read_text(dir, &dir.join(".env")).unwrap_or_default();
+    let mut ports = Vec::new();
+    let mut lines = String::new();
+    for db in dbs {
+        let port = services
+            .start_for(project, &db.engine, env)
+            .or_fail_chain("database")?;
+        ports.push(port);
+        let in_vm = crate::isolation::db_in_vm(&db, port);
+        for (k, v) in crate::db::auth::env_wanted(&text, &in_vm) {
+            lines.push_str(&format!("{k}={v}\n"));
+        }
+        if crate::db::DbEngine::from_id(&db.engine) == Some(crate::db::DbEngine::MySql) {
+            lines.push_str(&format!(
+                "MYSQL_HOST={}\nMYSQL_TCP_PORT={port}\n",
+                crate::isolation::vm::HOST
+            ));
+        }
+    }
+    let file = crate::isolation::kit::dir(kit, &crate::isolation::vm::name(project)).join("db.env");
+    if let Some(parent) = file.parent() {
+        std::fs::create_dir_all(parent).or_fail("database")?;
+    }
+    crate::platform::files::replace_private(&file, &lines).or_fail_chain("database")?;
+    Ok((ports, Some(file)))
+}
+
+/// `vm` of `project` (folder `dir`) ready for a session or an action: the
+/// kit's tools for Linux at the project's lines (D-170), its databases on
+/// the PC's servers and the ports to them (D-171). One way for the
+/// terminal and the actions.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn project_vm_ready<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    services: &crate::db::services::Services,
+    kit: &Kit,
+    host: &crate::env::Host,
+    lang: &str,
+    project: &str,
+    dir: &std::path::Path,
+    env: &KitEnv,
+    vm: crate::isolation::Vm,
+) -> CmdResult<crate::isolation::Vm> {
+    let mut tools = project_vm_tools(app, task, kit, host, lang, project)?;
+    let (ports, file) = project_vm_dbs(services, kit, project, dir, env)?;
+    tools.env_file = file;
+    Ok(vm.with_tools(tools).with_host_ports(ports))
 }
 
 /// The kit's tools for `project` in its VM (D-170): those the kit chose, at

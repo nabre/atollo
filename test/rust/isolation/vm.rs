@@ -90,15 +90,15 @@ fn the_vm_is_linux_of_the_pcs_processor() {
 /// tools first on the PATH, their variables passed.
 #[test]
 fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
-    let args = kit_terminal_args(
-        "atollo-t-x",
-        "/d/sites/shop",
-        &[
+    let tools = crate::isolation::GuestTools {
+        path: vec![
             "/d/kit/data/apps/linux-x64/node/24.22/bin".into(),
             "/d/kit/data/apps/linux-x64/python/3.15/bin".into(),
         ],
-        &[("JAVA_HOME".into(), "/d/kit/data/apps/linux-x64/java".into())],
-    );
+        vars: vec![("JAVA_HOME".into(), "/d/kit/data/apps/linux-x64/java".into())],
+        env_file: Some("/kit/data/app/sandboxes/x/db.env".into()),
+    };
+    let args = kit_terminal_args("atollo-t-x", "/d/sites/shop", &tools);
     assert_eq!(
         args,
         [
@@ -106,6 +106,8 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
             "-it",
             "-w",
             "/d/sites/shop",
+            "--env-file",
+            "/kit/data/app/sandboxes/x/db.env",
             "-e",
             "ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24.22/bin:/d/kit/data/apps/linux-x64/python/3.15/bin",
             "-e",
@@ -187,8 +189,9 @@ fn only_sbx_agents_have_a_sandbox() {
 #[test]
 fn a_command_line_runs_in_the_vm() {
     let env = vec![("PORT".to_owned(), "7101".to_owned())];
+    let none = crate::isolation::GuestTools::default();
     assert_eq!(
-        exec_args("atollo-shop", None, "npm run dev", &env, &[]),
+        exec_args("atollo-shop", None, "npm run dev", &env, &none),
         [
             "exec",
             "-e",
@@ -199,25 +202,31 @@ fn a_command_line_runs_in_the_vm() {
             "npm run dev"
         ]
     );
-    let args = exec_args("atollo-shop", Some("web app"), "npm start", &[], &[]);
+    let args = exec_args("atollo-shop", Some("web app"), "npm start", &[], &none);
     assert_eq!(args.last().unwrap(), "cd 'web app' && npm start");
-    let args = exec_args("atollo-shop", Some("a'b"), "x", &[], &[]);
+    let args = exec_args("atollo-shop", Some("a'b"), "x", &[], &none);
     assert_eq!(args.last().unwrap(), r"cd 'a'\''b' && x");
-    // With the kit's tools (D-170): first on the PATH, set before the `cd`.
-    let args = exec_args(
-        "atollo-shop",
-        Some("web"),
-        "npm start",
-        &env,
-        &["/d/kit/data/apps/linux-x64/node/24.22/bin".into()],
-    );
+    // With the kit's tools (D-170): first on the PATH, set before the
+    // `cd`; the database's login from a file, never on the line (D-171);
+    // the tools' variables before the action's.
+    let tools = crate::isolation::GuestTools {
+        path: vec!["/d/kit/data/apps/linux-x64/node/24.22/bin".into()],
+        vars: vec![("JAVA_HOME".into(), "/d/j".into())],
+        env_file: Some("/kit/db.env".into()),
+    };
+    let args = exec_args("atollo-shop", Some("web"), "npm start", &env, &tools);
     assert_eq!(
-        args[..4],
+        args[..9],
         [
             "exec",
+            "--env-file",
+            "/kit/db.env",
             "-e",
             "ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24.22/bin",
-            "-e"
+            "-e",
+            "JAVA_HOME=/d/j",
+            "-e",
+            "PORT=7101"
         ]
     );
     assert_eq!(
@@ -246,23 +255,36 @@ fn a_php_site_is_apache_of_its_line_on_its_port() {
     assert!(line.contains("httpd-foreground"), "{line}");
 }
 
-/// The project's MySQL keeps its data in a volume of the VM, its user and
-/// database as on the PC, on the port of its `DB_PORT`.
+/// The project's database stays on the PC (D-171): its sandbox, and it
+/// only, reaches that one port over TCP; the rule goes again without a
+/// question on a terminal (sbx 0.49.2 asks one without `--force`).
 #[test]
-fn the_projects_mysql_starts_once() {
-    let line = mysql_line("8.4", "shop", "pw'1", 3307);
-    assert!(
-        line.starts_with("docker start 'atollo-mysql' >/dev/null 2>&1 || docker run -d"),
-        "{line}"
+fn a_sandbox_reaches_only_its_databases_port_on_the_pc() {
+    assert_eq!(
+        host_port_allow("atollo-p-shop", 3307),
+        [
+            "policy",
+            "allow",
+            "network",
+            "--sandbox",
+            "atollo-p-shop",
+            "--protocol",
+            "tcp",
+            "localhost:3307"
+        ]
     );
-    assert!(
-        line.contains("-v 'atollo-mysql-data':/var/lib/mysql"),
-        "{line}"
+    assert_eq!(
+        host_port_close("atollo-p-shop", 3307),
+        [
+            "policy",
+            "rm",
+            "network",
+            "--sandbox",
+            "atollo-p-shop",
+            "--resource",
+            "localhost:3307",
+            "--force"
+        ]
     );
-    assert!(line.contains("-e MYSQL_USER='shop'"), "{line}");
-    assert!(line.contains(r"-e MYSQL_PASSWORD='pw'\''1'"), "{line}");
-    assert!(line.contains("mysql:'8.4' --port=3307"), "{line}");
-    // A root password nobody knows: the project has its user only.
-    assert!(line.contains("MYSQL_RANDOM_ROOT_PASSWORD=yes"), "{line}");
-    assert!(!line.contains("MYSQL_ROOT_PASSWORD="), "{line}");
+    assert_eq!(HOST, "host.docker.internal");
 }

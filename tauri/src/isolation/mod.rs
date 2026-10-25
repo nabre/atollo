@@ -583,6 +583,8 @@ pub struct Vm {
     owner: kit::Owner,
     /// The kit's tools a session gets ([`Vm::with_tools`]).
     tools: GuestTools,
+    /// The PC's ports it may reach ([`Vm::with_host_ports`]).
+    host_ports: Vec<u16>,
 }
 
 /// A sandbox of Atollo, for the list of the VMs (D-169).
@@ -740,6 +742,7 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
             project: project.to_owned(),
         },
         tools: GuestTools::default(),
+        host_ports: Vec::new(),
     })
 }
 
@@ -770,6 +773,7 @@ pub fn kit_terminal_vm(
             dir: dir.display().to_string(),
         },
         tools: GuestTools::default(),
+        host_ports: Vec::new(),
     })
 }
 
@@ -860,12 +864,30 @@ fn plain(path: &Path) -> PathBuf {
     }
 }
 
-/// The kit's tools in a VM: the `PATH` entries (first, before the VM's
-/// own) and the variables (`JAVA_HOME`…), as the VM sees them.
+/// What a session or an action in a VM gets: the kit's tools' `PATH`
+/// entries (first, before the VM's own) and variables (`JAVA_HOME`…), as
+/// the VM sees them, and a file of variables on the PC with what must not
+/// be on a command line (the project's database login, D-171).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct GuestTools {
     pub path: Vec<String>,
     pub vars: Vec<(String, String)>,
+    pub env_file: Option<PathBuf>,
+}
+
+/// `db` (a project's database on the kit's server, at `port`) as a
+/// program in the VM reaches it: through [`vm::HOST`].
+pub fn db_in_vm(db: &crate::db::auth::ProjectDb, port: u16) -> crate::db::auth::ProjectDb {
+    let engine = crate::db::DbEngine::from_id(&db.engine).unwrap_or(crate::db::DbEngine::MySql);
+    let url = engine
+        .project_url(&db.database, &db.password, port)
+        .replacen("@127.0.0.1:", &format!("@{}:", vm::HOST), 1);
+    crate::db::auth::ProjectDb {
+        host: vm::HOST.to_owned(),
+        port,
+        url,
+        ..db.clone()
+    }
 }
 
 /// The kit's tools for the VM's Linux in the kit's terminal `terminal`
@@ -916,7 +938,11 @@ pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
         .filter(|(name, _)| !name.eq_ignore_ascii_case("PATH"))
         .filter_map(|(name, value)| Some((name.to_owned(), in_vm(value)?)))
         .collect();
-    GuestTools { path, vars }
+    GuestTools {
+        path,
+        vars,
+        env_file: None,
+    }
 }
 
 impl Vm {
@@ -963,11 +989,12 @@ impl Vm {
                 self.call(env, &args, START_LIMIT)?;
                 kit::mark_applied(&self.kit, &self.name, &print)?;
             }
-            return self.call(
+            self.call(
                 env,
                 &vm::start_args(&self.name, &self.dir, &self.read_only, None),
                 START_LIMIT,
-            );
+            )?;
+            return self.sync_host_ports(env, false);
         }
         self.call(
             env,
@@ -975,7 +1002,8 @@ impl Vm {
             START_LIMIT,
         )?;
         kit::mark_mounts(&self.kit, &self.name, &mounts)?;
-        kit::mark_applied(&self.kit, &self.name, &print)
+        kit::mark_applied(&self.kit, &self.name, &print)?;
+        self.sync_host_ports(env, true)
     }
 
     /// Mounts the read-only folders an existing sandbox lacks, after those
@@ -1094,14 +1122,31 @@ impl Vm {
         self.sbx.session_env(env, &self.host)
     }
 
-    /// Runs the shell `line` in the VM to its end (a container started
-    /// in the background).
-    pub fn run_line(&self, env: &KitEnv, line: &str) -> anyhow::Result<()> {
-        self.call(
-            env,
-            &vm::exec_args(&self.name, None, line, &[], &[]),
-            START_LIMIT,
-        )
+    /// The PC's ports this sandbox may reach (its databases on the kit's
+    /// servers, D-171), opened by [`Vm::start`].
+    pub fn with_host_ports(mut self, ports: Vec<u16>) -> Vm {
+        self.host_ports = ports;
+        self
+    }
+
+    /// Opens the PC's ports of this sandbox, closes those it had and has
+    /// no more (a database moved to another version's server), and notes
+    /// them; `made`: the sandbox was just made, nothing open before.
+    fn sync_host_ports(&self, env: &KitEnv, made: bool) -> anyhow::Result<()> {
+        let before = if made {
+            Vec::new()
+        } else {
+            kit::host_ports(&self.kit, &self.name)
+        };
+        for port in &self.host_ports {
+            self.call(env, &vm::host_port_allow(&self.name, *port), ASK_LIMIT)?;
+        }
+        for port in before.iter().filter(|p| !self.host_ports.contains(p)) {
+            if let Err(e) = self.call(env, &vm::host_port_close(&self.name, *port), ASK_LIMIT) {
+                crate::common::log::warn(&format!("{}: port {port}: {e:#}", self.name));
+            }
+        }
+        kit::mark_host_ports(&self.kit, &self.name, &self.host_ports)
     }
 }
 
@@ -1113,19 +1158,6 @@ pub fn php_line(kit: &Kit, project: &str) -> String {
         .cloned()
         .or_else(|| crate::versions::kit_choice(kit).get("php").cloned())
         .unwrap_or_else(|| "8.4".to_owned())
-}
-
-/// The line that starts the project's MySQL in its VM, when the project
-/// has a MySQL user: its version (or `8.4`), its user and password, on the
-/// port its `DB_PORT` names.
-pub fn mysql_start_line(kit: &Kit, project: &str) -> Option<String> {
-    let id = crate::db::DbEngine::MySql.id();
-    let password = crate::db::auth::try_project_password(kit, project, id).ok()??;
-    let user = crate::db::auth::project_db_name(kit, project, id).ok()?;
-    let port = crate::db::services::project_db_port(kit, project)?;
-    let line =
-        crate::db::services::project_line(kit, project, id).unwrap_or_else(|| "8.4".to_owned());
-    Some(vm::mysql_line(&line, &user, &password, port))
 }
 
 /// Stops the daemon of the kit's `sbx` and the microVMs it runs, at the

@@ -6,10 +6,11 @@
 //!   tools for Linux first on the `PATH` (D-170, [`kit_terminal_args`]);
 //! - an action's command line: `sbx exec -e … <vm> sh -lc '<line>'`, its
 //!   port published on the PC's `127.0.0.1` (`sbx ports`);
-//! - the web servers and MySQL: containers of the VM's own Docker on the
-//!   versions the project chose (`php:<line>-apache`, `httpd:2.4`,
-//!   `mysql:<line>`), on the VM's network, so `127.0.0.1:<DB_PORT>` of the
-//!   project's `.env` reaches its database there as it does on the PC;
+//! - the web servers: containers of the VM's own Docker on the versions
+//!   the project chose (`php:<line>-apache`, `httpd:2.4`);
+//! - its databases stay on the PC, the kit's servers (D-171): the VM never
+//!   sees their programs, settings or data, and reaches only their ports
+//!   (`host.docker.internal`, [`host_port_allow`]) as the project's user;
 //! - Claude Code and Codex: `sbx`'s own agents, a sandbox each
 //!   (`atollo-a-claude-<project>-<hash>`), whose keys the proxy of `sbx` adds to
 //!   their requests. The other agents have no sandbox: not started.
@@ -99,6 +100,45 @@ pub fn start_args(
     args
 }
 
+/// The PC as the VM reaches it: through the proxy of `sbx`, only on the
+/// ports a sandbox is allowed ([`host_port_allow`]); `127.0.0.1` in the VM
+/// is the VM.
+pub const HOST: &str = "host.docker.internal";
+
+/// Lets the sandbox `vm`, and it only, reach the PC's `127.0.0.1:<port>`
+/// over TCP (a database server of the kit, D-171): every other port of the
+/// PC stays closed. Adding it again is fine (`Already covered`).
+pub fn host_port_allow(vm: &str, port: u16) -> Vec<String> {
+    [
+        "policy",
+        "allow",
+        "network",
+        "--sandbox",
+        vm,
+        "--protocol",
+        "tcp",
+        &format!("localhost:{port}"),
+    ]
+    .map(String::from)
+    .into()
+}
+
+/// Closes that port again for `vm` (`--force`: no question on a terminal).
+pub fn host_port_close(vm: &str, port: u16) -> Vec<String> {
+    [
+        "policy",
+        "rm",
+        "network",
+        "--sandbox",
+        vm,
+        "--resource",
+        &format!("localhost:{port}"),
+        "--force",
+    ]
+    .map(String::from)
+    .into()
+}
+
 /// Mounts `host` read-only in the existing sandbox `vm`, at `guest` (its
 /// path in the VM, [`guest_path`]): `sbx mount <vm> <host>:<guest>:ro`,
 /// kept across restarts. The short `<host>:ro` names `ro` as the target.
@@ -147,22 +187,32 @@ pub fn guest_path(windows: bool, path: &Path) -> Option<String> {
     Some(format!("/{}{rest}", drive.to_ascii_lowercase()))
 }
 
-/// The kit's terminal in its VM: a login bash in `dir` (the VM's path),
-/// the kit's tools for Linux first on the `PATH` (`path`, VM paths) and
-/// their variables (`vars`), the VM's own programs after them.
-pub fn kit_terminal_args(
-    vm: &str,
-    dir: &str,
-    path: &[String],
-    vars: &[(String, String)],
-) -> Vec<String> {
-    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
-    args.push("-e".into());
-    args.push(format!("ATOLLO_PATH={}", path.join(":")));
-    for (k, v) in vars {
+/// The `sbx exec` options of `tools` (D-170, D-171): the file of the
+/// variables that are never on a command line, the tools' `PATH`
+/// (`ATOLLO_PATH`, put first by the line), their variables.
+fn tools_options(tools: &crate::isolation::GuestTools) -> Vec<String> {
+    let mut args = Vec::new();
+    if let Some(file) = &tools.env_file {
+        args.push("--env-file".into());
+        args.push(file.display().to_string());
+    }
+    if !tools.path.is_empty() {
+        args.push("-e".into());
+        args.push(format!("ATOLLO_PATH={}", tools.path.join(":")));
+    }
+    for (k, v) in &tools.vars {
         args.push("-e".into());
         args.push(format!("{k}={v}"));
     }
+    args
+}
+
+/// The kit's terminal in its VM: a login bash in `dir` (the VM's path),
+/// with `tools` ([`tools_options`]): the kit's tools for Linux first on the
+/// `PATH`, the VM's own programs after them.
+pub fn kit_terminal_args(vm: &str, dir: &str, tools: &crate::isolation::GuestTools) -> Vec<String> {
+    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
+    args.extend(tools_options(tools));
     args.push(vm.into());
     args.extend(
         [
@@ -208,23 +258,21 @@ pub fn publish_args(vm: &str, port: u16) -> Vec<String> {
 }
 
 /// A command line run in the VM: `sbx exec -e K=V … <vm> sh -lc '<line>'`,
-/// in `folder` of the workspace when given (relative, `/`), with the
-/// action's variables, and the kit's tools (`path`, D-170) first on the
-/// `PATH`, set before the `cd`: a folder that is not there stops the line.
-/// A server in the VM listens on every card of the VM (`HOST=0.0.0.0`):
-/// only the published port reaches the PC.
+/// in `folder` of the workspace when given (relative, `/`), with `tools`
+/// ([`tools_options`]) then the action's variables (`env`), the kit's
+/// tools first on the `PATH`, set before the `cd`: a folder that is not
+/// there stops the line. A server in the VM listens on every card of the
+/// VM (`HOST=0.0.0.0`): only the published port reaches the PC.
 pub fn exec_args(
     vm: &str,
     folder: Option<&str>,
     line: &str,
     env: &[(String, String)],
-    path: &[String],
+    tools: &crate::isolation::GuestTools,
 ) -> Vec<String> {
+    let path = &tools.path;
     let mut args: Vec<String> = vec!["exec".into()];
-    if !path.is_empty() {
-        args.push("-e".into());
-        args.push(format!("ATOLLO_PATH={}", path.join(":")));
-    }
+    args.extend(tools_options(tools));
     for (k, v) in env {
         args.push("-e".into());
         args.push(format!("{k}={v}"));
@@ -283,25 +331,6 @@ pub fn web_line(action: &str, web: &Web, folder: &str, port: u16) -> String {
          exec docker run --rm --init --name {container} --network host \
          -v {root}:{docroot} {image} sh -c {}",
         shell_quote_posix(&listen)
-    )
-}
-
-/// The project's MySQL in the VM, started once and kept (its data in a
-/// volume of the VM): the version `line`, the project's database and user
-/// with its password, on `port` of the VM's network.
-pub fn mysql_line(line: &str, user: &str, password: &str, port: u16) -> String {
-    let q = |s: &str| shell_quote_posix(s);
-    let container = format!("{PREFIX}mysql");
-    format!(
-        "docker start {c} >/dev/null 2>&1 || docker run -d --name {c} --network host \
-         -v {v}:/var/lib/mysql -e MYSQL_RANDOM_ROOT_PASSWORD=yes \
-         -e MYSQL_DATABASE={u} -e MYSQL_USER={u} -e MYSQL_PASSWORD={p} \
-         mysql:{l} --port={port} --bind-address=127.0.0.1 >/dev/null",
-        c = q(&container),
-        v = q(&format!("{container}-data")),
-        u = q(user),
-        p = q(password),
-        l = q(line),
     )
 }
 

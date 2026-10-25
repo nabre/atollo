@@ -38,9 +38,6 @@ impl Runner {
         if let Some(p) = port {
             vm.publish(env, p)?;
         }
-        if let Some(line) = crate::isolation::mysql_start_line(&self.kit, id) {
-            vm.run_line(env, &line)?;
-        }
         let rel = cwd
             .strip_prefix(dir)
             .ok()
@@ -55,11 +52,8 @@ impl Runner {
             vars.push(("PORT".into(), p.to_string()));
             vars.push(("ROCKET_PORT".into(), p.to_string()));
         }
-        if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
-            vars.push(("DB_PORT".into(), p.to_string()));
-        }
-        // The kit's tools' variables (`JAVA_HOME`…), the action's after.
-        vars.extend(vm.tools().vars.iter().cloned());
+        // The database's way (`DB_HOST`, `DB_PORT`…) is in the tools' file
+        // (D-171); the kit's tools' variables come before the action's.
         for (k, v) in &action.env {
             vars.push((k.clone(), fill(v)));
         }
@@ -75,7 +69,7 @@ impl Runner {
         } else {
             fill(&action.command)
         };
-        let args = exec_args(&vm.name, rel.as_deref(), &line, &vars, &vm.tools().path);
+        let args = exec_args(&vm.name, rel.as_deref(), &line, &vars, vm.tools());
         let shown = format!("sbx exec {} {line}", vm.name);
         Ok((vm.command(env, &args), shown))
     }
