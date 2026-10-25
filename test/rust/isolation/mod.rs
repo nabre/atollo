@@ -306,7 +306,7 @@ fn a_projects_database_is_reached_from_its_vm_on_the_pc() {
 fn no_blocker_is_the_vm() {
     assert_eq!(Status::of(Vec::new(), None).level, Level::Vm);
     assert_eq!(
-        Status::of(vec![Blocker::SbxMissing], None).level,
+        Status::of(vec![Blocker::SbxMissing { failed: None }], None).level,
         Level::Env
     );
 }
@@ -371,7 +371,7 @@ fn sbx_signed_out_is_told_apart_from_other_errors() {
 fn an_unsupported_system_is_the_only_reason_given() {
     assert!(Blocker::Processor.unsupported());
     assert!(!Blocker::HypervisorOff.unsupported());
-    assert!(!Blocker::SbxMissing.unsupported());
+    assert!(!Blocker::SbxMissing { failed: None }.unsupported());
 }
 
 /// The blockers reach the interface by `code`, with their details.
@@ -441,4 +441,41 @@ fn a_legacy_pc_note_moves_to_the_real_name() {
         "cmd"
     );
     assert!(mine_github(&kit, LEGACY_PC, "other", || true).is_none());
+}
+
+/// A failed installation of Docker Sandboxes is said in the notice, until
+/// one succeeds.
+#[test]
+fn a_failed_installation_of_sbx_is_told() {
+    use crate::setup::runner::Outcome;
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-install-failed");
+    assert_eq!(install_failure(&kit), None);
+    note_install(
+        &kit,
+        &Outcome::Failed {
+            message: "checksum mismatch".into(),
+            by_hand: None,
+        },
+    );
+    assert_eq!(install_failure(&kit).as_deref(), Some("checksum mismatch"));
+    assert_eq!(
+        serde_json::to_value(Blocker::SbxMissing {
+            failed: install_failure(&kit)
+        })
+        .unwrap(),
+        serde_json::json!({ "code": "sbx_missing", "failed": "checksum mismatch" })
+    );
+    note_install(&kit, &Outcome::Cancelled);
+    assert!(install_failure(&kit).is_some(), "a cancel says nothing");
+    note_install(
+        &kit,
+        &Outcome::Installed {
+            version: "0.49.2".into(),
+        },
+    );
+    assert_eq!(install_failure(&kit), None);
+    assert_eq!(
+        serde_json::to_value(Blocker::SbxMissing { failed: None }).unwrap(),
+        serde_json::json!({ "code": "sbx_missing" })
+    );
 }

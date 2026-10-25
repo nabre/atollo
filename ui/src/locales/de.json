@@ -1106,5 +1106,6 @@
   "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi.": "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber der Code des Projekts könnte auf GitHub in deinem Namen handeln: Schalte es nur für Projekte ein, denen du vertraust.",
   "nella VM": "in der VM",
   "Con la VM attiva gira nella VM, con la build per Linux: su questo sistema non serve.": "Mit aktiver VM läuft es in der VM, mit dem Build für Linux: Auf diesem System wird es nicht gebraucht.",
-  "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": "Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. Die gemeinsamen Server dienen der Arbeit ohne VM."
+  "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": "Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. Die gemeinsamen Server dienen der Arbeit ohne VM.",
+  "Docker Sandboxes (sbx) non è nel kit: l'ultima installazione non è riuscita ({0}).": "Docker Sandboxes (sbx) ist nicht im Kit: seine letzte Installation ist fehlgeschlagen ({0})."
 }

@@ -93,8 +93,11 @@ pub enum Blocker {
         shim: String,
     },
     /// The kit's Docker Sandboxes is not installed (one of the PC is
-    /// never used, D-175).
-    SbxMissing,
+    /// never used, D-175); `failed`: why its last installation failed.
+    SbxMissing {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        failed: Option<String>,
+    },
     /// `sbx` is there but not signed in to Docker.
     SbxSignedOut,
     /// `sbx` answered with an error (its text).
@@ -248,7 +251,9 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
         return Status::of(blockers, None);
     }
     match &sbx {
-        None => blockers.push(Blocker::SbxMissing),
+        None => blockers.push(Blocker::SbxMissing {
+            failed: install_failure(kit),
+        }),
         Some(sbx) => {
             if let Err(b) = kit_daemon(kit, sbx, host, env)
                 .and_then(|()| ask(sbx, host, env))
@@ -669,6 +674,39 @@ pub fn fix_launch(
 /// The component of the kit's `sbx`: required, but the editor and the
 /// consoles never wait for it (the notice says it is missing).
 pub const COMPONENT: &str = "sandboxes";
+
+fn install_failure_file(kit: &Kit) -> PathBuf {
+    kit::root(kit).join("install-failed.txt")
+}
+
+/// Notes the outcome of an installation of [`COMPONENT`] (`setup::runner`):
+/// a failure's message, for the notice to say why the VM is still missing;
+/// taken away once it is installed.
+pub fn note_install(kit: &Kit, outcome: &crate::setup::runner::Outcome) {
+    use crate::setup::runner::Outcome;
+    let file = install_failure_file(kit);
+    let done = match outcome {
+        Outcome::Failed { message, .. } => {
+            std::fs::create_dir_all(kit::root(kit)).and_then(|()| std::fs::write(&file, message))
+        }
+        Outcome::Installed { .. } | Outcome::UpToDate { .. } => match std::fs::remove_file(&file) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e),
+            _ => Ok(()),
+        },
+        _ => Ok(()),
+    };
+    if let Err(e) = done {
+        crate::common::log::warn(&format!("{}: {e}", file.display()));
+    }
+}
+
+/// Why the last installation of [`COMPONENT`] failed, if it did.
+pub fn install_failure(kit: &Kit) -> Option<String> {
+    std::fs::read_to_string(install_failure_file(kit))
+        .ok()
+        .map(|t| t.trim().to_owned())
+        .filter(|t| !t.is_empty())
+}
 
 /// The kit's `sbx` (`data/apps/<target>/sandboxes/bin/sbx`), when the
 /// component is installed.
