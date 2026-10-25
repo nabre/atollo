@@ -40,6 +40,8 @@
   --vsc-statusbar-active: var(--vscode-statusBarItem-activeBackground);
   --vsc-statusbar-error: var(--vscode-statusBarItem-errorBackground);
   --vsc-statusbar-error-fg: var(--vscode-statusBarItem-errorForeground);
+  --vsc-statusbar-warning: var(--vscode-statusBarItem-warningBackground);
+  --vsc-statusbar-warning-fg: var(--vscode-statusBarItem-warningForeground);
   --vsc-settings-header: var(--vscode-settings-headerForeground);
   --vsc-settings-modified: var(--vscode-settings-modifiedItemIndicator);
   --vsc-surface-border: var(--vscode-surface-border);
@@ -151,6 +153,8 @@
   --color-vsc-statusbar-active: var(--vsc-statusbar-active);
   --color-vsc-statusbar-error: var(--vsc-statusbar-error);
   --color-vsc-statusbar-error-fg: var(--vsc-statusbar-error-fg);
+  --color-vsc-statusbar-warning: var(--vsc-statusbar-warning);
+  --color-vsc-statusbar-warning-fg: var(--vsc-statusbar-warning-fg);
   --color-vsc-settings-header: var(--vsc-settings-header);
   --color-vsc-settings-modified: var(--vsc-settings-modified);
   --color-vsc-surface-border: var(--vsc-surface-border);

@@ -17,6 +17,7 @@ mod env;
 mod github;
 mod install;
 mod ipc;
+mod isolation;
 mod kit;
 mod llm;
 mod net;

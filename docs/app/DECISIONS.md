@@ -1630,3 +1630,32 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
 - **Scartata.** Trait per ogni capacità (`impl Jobs for Windows`): più codice, nessun controllo in più rispetto alla stessa firma compilata su ogni sistema. Lasciare i `#[cfg]` riga per riga nei file comuni: è ciò che l'utente chiedeva di togliere.
 - **Limiti.** I parser puri di un sistema (`/proc`, `mountinfo`, `scutil`, `gsettings`, `PROCESSOR_ARCHITECTURE`, AppleLanguages) prima si compilavano ovunque per le prove: ora stanno nella cartella del loro sistema e le loro prove girano lì (CI macOS e Linux, `scripts/test-linux.sh`). Fanno eccezione le parti pure del portachiavi (`agents/keyring/portable.rs`, D-115), ancora provate ovunque. Una build per un sistema diverso da Windows, macOS e Linux si ferma con un `compile_error!` (prima avrebbe avuto ripieghi mai provati).
 - **Prove.** `test/rust/os/rule.rs`, `test/rust/ipc/events.rs`, `test/rust/platform/lock.rs`; la CI su Windows, macOS e Linux.
+
+## D-167 Isolamento dei progetti: la VM quando c'è, altrimenti un avviso
+
+- **Richiesta dell'utente** (25/10/2026): ogni progetto aperto in Atollo isolato del tutto, con il terminale e tutto ciò che Atollo contiene; lo stato automatico, che dica esattamente perché la VM non è attiva e cosa serve per attivarla, con un avviso chiaro nella barra di stato quando si lavora senza VM; relazioni fra le parti semplici, coerenti e funzionanti.
+- **Prima.** Nessun isolamento a livello del sistema: ogni programma del kit gira con l'utente del PC. Proteggevano solo l'ambiente filtrato (D-01, D-49), la HOME spostata in `data\home` (una convenzione, non una barriera), i server su `127.0.0.1` e i Job (D-07). Docker era letto solo per suggerire le versioni (`detect/container.rs`).
+- **Scelta: due livelli, scelti da soli.**
+  - **VM**: una microVM di Docker Sandboxes (`sbx`) per progetto. Kernel suo, rete negata salvo le regole, credenziali iniettate dal proxy di `sbx` (mai dentro la VM), Docker suo. È l'unico livello che isola davvero.
+  - **Ambiente**: i programmi sul PC con l'ambiente del kit. L'interfaccia lo dice sempre: «Senza VM» nella barra di stato, sul colore di avviso, accanto ad Attività; un clic apre i motivi e, per ciascuno, cosa fare e il comando da copiare; «Ricontrolla» chiede di nuovo.
+  - Niente interruttore nelle impostazioni: il livello è quello che il PC permette (`isolation::status`, rifatto al più una volta al minuto).
+- **Perché la VM può mancare** (`platform::virt` e `isolation`), in quest'ordine:
+  - il sistema: Windows 11 x64; macOS 14+ su Apple silicon; Ubuntu 24.04+ (non le derivate). Un sistema non supportato è l'unico motivo detto: il resto non servirebbe;
+  - l'hypervisor: Windows Hypervisor Platform attivo (letto senza amministratore: `WinHvPlatform.dll` e `WHvGetCapability`), `/dev/kvm` presente e scrivibile dall'utente (gruppo `kvm`);
+  - `sbx` assente (cercato nel `PATH` del PC, nei link di WinGet, in Homebrew e `/usr/bin`), senza accesso a Docker (`sbx login`), o in errore (`sbx ls --json` entro 15 s).
+- **Traccia dichiarata.** `sbx` è un programma del PC, non del kit: gira con l'ambiente del PC, dove tiene il suo accesso, e salva le sue VM fuori dal kit. Atollo non lo installa e non lo scrive: è facoltativo, come Docker Desktop prima.
+- **Relazioni, semplificate.** Un progetto ha un solo confine: la sua cartella in lettura e scrittura, i programmi del kit in sola lettura, una HOME sua; i segreti passano solo da Atollo. Ciò che oggi è condiviso fra progetti diventa del progetto o resta fuori dal suo confine:
+  - la HOME (`data\projects\<p>\home`) al posto di `data\home`;
+  - il database: l'utente del progetto, mai il root (`ATOLLO_MYSQL_CNF` solo a chi gestisce i server);
+  - PHP: `open_basedir` sulla cartella del progetto nei pool;
+  - GitHub, agenti, chiavi: il ponte `Atollo mcp github` e il proxy di `sbx`, non file leggibili.
+- **Fasi.**
+  1. Stato automatico, motivi, passi, avviso nella barra di stato (questa voce).
+  2. Ambiente pulito per ogni livello: fuori dall'ambiente dei progetti `CP_USER_PROFILE`, `SSH_AUTH_SOCK`, la sessione grafica e D-Bus, il login root di MySQL; `open_basedir`; Git senza `core.fsmonitor` del progetto.
+  3. Terminale, azioni e agenti nella VM: `sbx exec` nel PTY, porte pubblicate con `sbx ports`, il kit Linux preparato da `Atollo prepare --target linux-<arch>` montato in sola lettura.
+  Finché la fase 3 non c'è, un PC pronto mostra il motivo «pending»: la VM non è attiva e l'avviso resta.
+- **Scartate.**
+  - Gabbia del sistema (AppContainer, Seatbelt, Landlock) come livello a sé: su Windows l'AppContainer non riceve connessioni su `127.0.0.1` senza un'eccezione da amministratore, e su FAT32/exFAT (le chiavette) non ci sono ACL per separare i progetti; avrebbe dato un terzo stato con garanzie diverse per sistema, difficile da spiegare. Resta un'idea per dopo la fase 3.
+  - Docker Desktop o Windows Sandbox: richiedono un amministratore a ogni uso o non hanno un'interfaccia da programma.
+  - Installare `sbx` dal kit: serve un amministratore per l'hypervisor e un account Docker; lo fa l'utente, una volta.
+- **Prove.** `test/rust/isolation/mod.rs` (livello, risposte di `sbx`, cartelle di ricerca, forma JSON), `test/rust/os/{windows,macos,linux}/virt.rs` (sistemi e hypervisor), `test/rust/platform/virt.rs`, `test/ui/shell/isolation.test.tsx` (ogni motivo spiegato su ogni sistema, comandi, finestra).

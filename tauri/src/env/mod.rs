@@ -148,6 +148,12 @@ impl Host {
         Host { vars }
     }
 
+    /// Every variable, to run a program of the PC with the PC's
+    /// environment (`sbx`, D-167).
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.vars.iter().map(|(k, v)| (k.as_str(), v.as_str()))
+    }
+
     /// Case-insensitive lookup, as Windows does.
     pub fn get(&self, name: &str) -> Option<&str> {
         self.vars

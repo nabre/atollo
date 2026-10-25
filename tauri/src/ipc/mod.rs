@@ -39,6 +39,7 @@ mod error;
 pub mod events;
 pub(crate) mod frameworks;
 pub(crate) mod github;
+pub(crate) mod isolation;
 pub(crate) mod llm;
 pub(crate) mod orphans;
 pub(crate) mod projects;
@@ -303,6 +304,7 @@ macro_rules! command_handler {
     () => {
         tauri::generate_handler![
             $crate::ipc::app::app_info,
+            $crate::ipc::isolation::isolation_status,
             $crate::ipc::editing::editor_status,
             $crate::ipc::editing::editor_open,
             $crate::ipc::editing::editor_restart,

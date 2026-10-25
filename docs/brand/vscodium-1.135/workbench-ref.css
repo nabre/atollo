@@ -217,6 +217,8 @@
    --vscode-statusBarItem-remoteBackground
    --vscode-statusBarItem-remoteForeground
    --vscode-statusBarItem-remoteHoverBackground
+   --vscode-statusBarItem-warningBackground
+   --vscode-statusBarItem-warningForeground
    --vscode-strokeThickness
    --vscode-surface-border
    --vscode-textBlockQuote-background

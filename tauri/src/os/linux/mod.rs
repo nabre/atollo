@@ -10,6 +10,7 @@ pub mod memory;
 pub mod process_info;
 pub mod processes;
 pub mod proxy;
+pub mod virt;
 pub mod volume;
 pub mod webview;
 

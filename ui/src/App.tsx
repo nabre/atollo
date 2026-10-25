@@ -26,6 +26,7 @@ import { updateFound, updateText } from "./shell/update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";
 import { TitleBar } from "./shell/titlebar";
+import { IsolationDialog, systemOf, useIsolation } from "./shell/isolation";
 import { useAgents } from "./agents";
 import { AiPage, type AiPane } from "./ai";
 import { setupStatusText, useSetup } from "./components/setup";
@@ -522,7 +523,7 @@ function Banner({
 /** A status bar entry, as VSCodium's label: the bar's height, 5px beside
  * the text and 3px apart, rounded, a hover and a pressed state; a button
  * when it acts. `last` is the right edge's item, 6px beside the text and 2px
- * from the edge. `tone` paints it as the editor's error items. */
+ * from the edge. `tone` paints it as the editor's error or warning items. */
 function StatusItem({
   children,
   title,
@@ -537,10 +538,15 @@ function StatusItem({
   onClick?: () => void;
   className?: string;
   pressed?: boolean;
-  tone?: "error" | undefined;
+  tone?: "error" | "warning" | undefined;
   last?: boolean;
 }) {
-  const color = tone === "error" ? "bg-vsc-statusbar-error text-vsc-statusbar-error-fg" : "";
+  const color =
+    tone === "error"
+      ? "bg-vsc-statusbar-error text-vsc-statusbar-error-fg"
+      : tone === "warning"
+        ? "bg-vsc-statusbar-warning text-vsc-statusbar-warning-fg"
+        : "";
   const space = last ? "mr-vsc-size20 px-vsc-size60" : "mx-vsc-statusbar-item-margin px-vsc-statusbar-item-padding";
   const look = `flex h-full items-center gap-vsc-size40 rounded-vsc-small whitespace-nowrap ${space} ${color} ${className}`;
   return onClick ? (
@@ -561,6 +567,47 @@ function StatusItem({
     <span title={title} className={look}>
       {children}
     </span>
+  );
+}
+
+/** How shut in the projects are (D-167), right after the Activity item:
+ * "VM" when every project runs in its microVM; otherwise "Senza VM" on the
+ * warning color, always in sight. A click opens why and what to do. */
+function IsolationItem({ platform }: { platform: string }) {
+  const { status, checking, check } = useIsolation();
+  const [open, setOpen] = useState(false);
+  if (!status) return null;
+  const vm = status.level === "vm";
+  const label = vm ? t("Progetti nella VM") : t("Lavori senza VM: i progetti girano sul PC");
+  return (
+    <>
+      <StatusItem
+        title={`${label}
+${t("Dettagli e cosa serve per la VM")}`}
+        onClick={() => {
+          setOpen(true);
+        }}
+        pressed={open}
+        tone={vm ? undefined : "warning"}
+      >
+        <Codicon name={vm ? "vm" : "warning"} size={14} />
+        <span>{vm ? t("VM") : t("Senza VM")}</span>
+        <span role="status" className="sr-only">
+          {label}
+        </span>
+      </StatusItem>
+      {open && (
+        <IsolationDialog
+          status={status}
+          system={systemOf(platform)}
+          checking={checking}
+          onCheck={check}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -673,6 +720,7 @@ function StatusBar({
         <Codicon name="error" size={14} className="ml-1" />
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
+      {info && <IsolationItem platform={info.platform} />}
       {installing && (
         <StatusItem>
           {/* The item's color, as the editor's status-bar codicons. */}

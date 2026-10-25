@@ -21,6 +21,7 @@ pub mod sessions;
 pub mod signature;
 pub mod sockets;
 pub mod temp;
+pub mod virt;
 pub mod volume;
 pub mod webview;
 
