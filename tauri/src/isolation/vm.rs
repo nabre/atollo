@@ -99,6 +99,17 @@ pub fn start_args(
     args
 }
 
+/// Mounts `host` read-only in the existing sandbox `vm`, at `guest` (its
+/// path in the VM, [`guest_path`]): `sbx mount <vm> <host>:<guest>:ro`,
+/// kept across restarts. The short `<host>:ro` names `ro` as the target.
+pub fn mount_args(vm: &str, host: &Path, guest: &str) -> Vec<String> {
+    vec![
+        "mount".into(),
+        vm.into(),
+        format!("{}:{guest}:ro", host.display()),
+    ]
+}
+
 /// The global network policy Atollo gives the kit's `sbx` before its first
 /// VM (scelta dell'utente, D-167): Docker's recommended one, the usual
 /// traffic of development (AI services, package registries) and nothing

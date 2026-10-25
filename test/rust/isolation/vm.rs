@@ -23,6 +23,24 @@ fn the_sandbox_is_named_after_the_project() {
     assert_eq!(name("shop"), shop);
 }
 
+/// A folder added read-only to an existing sandbox: the full form (the
+/// short `<host>:ro` names `ro` as the target), the drive's `:` kept.
+#[test]
+fn a_folder_is_mounted_read_only_in_an_existing_sandbox() {
+    assert_eq!(
+        mount_args(
+            "atollo-p-shop",
+            Path::new(r"D:\kit\data\apps\linux-x64"),
+            "/d/kit/data/apps/linux-x64"
+        ),
+        [
+            "mount",
+            "atollo-p-shop",
+            r"D:\kit\data\apps\linux-x64:/d/kit/data/apps/linux-x64:ro"
+        ]
+    );
+}
+
 /// A kit's terminal has a sandbox per folder, in its own namespace.
 #[test]
 fn a_kit_terminal_has_a_sandbox_per_folder() {

@@ -933,21 +933,14 @@ impl Vm {
     /// is made with it (`--kit`); after, a changed kit goes in with
     /// `sbx kit add` (its disk kept); then it starts again when stopped.
     ///
-    /// The folders mounted are fixed when the sandbox is made: one made
-    /// with others (before the kit's tools were mounted, D-170) is never
-    /// made again here, which would delete its disk; the error says to
-    /// remove it in the list of the VMs.
+    /// A read-only folder an existing sandbox lacks (one made before the
+    /// kit's tools were mounted, D-170) is mounted with `sbx mount`, its
+    /// disk kept ([`Vm::mount_missing`]).
     pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
         let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
         let mounts = self.mounts();
         if self.exists(env)? {
-            if kit::mounts(&self.kit, &self.name).as_deref() != Some(mounts.as_str()) {
-                anyhow::bail!(crate::common::i18n::t(
-                    lang,
-                    "La sandbox {0} è stata creata con altre cartelle: per avere gli strumenti del kit va creata di nuovo. Rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.",
-                    &[&self.name],
-                ));
-            }
+            self.mount_missing(env, lang)?;
             if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
                 let args = vec![
                     "kit".to_owned(),
@@ -971,6 +964,51 @@ impl Vm {
         )?;
         kit::mark_mounts(&self.kit, &self.name, &mounts)?;
         kit::mark_applied(&self.kit, &self.name, &print)
+    }
+
+    /// Mounts the read-only folders an existing sandbox lacks, after those
+    /// noted at its making (`.mounts`; none noted: a sandbox made before,
+    /// every one tried, one mounted already is fine), then notes them. The
+    /// workspace never changes (the sandbox's name comes from it): another
+    /// one noted is an error, never a sandbox made again, which would delete
+    /// its disk.
+    fn mount_missing(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
+        let noted = kit::mounts(&self.kit, &self.name).unwrap_or_default();
+        let lines: Vec<&str> = noted.lines().collect();
+        if let Some(workspace) = lines.first() {
+            if *workspace != self.dir.display().to_string() {
+                anyhow::bail!(crate::common::i18n::t(
+                    lang,
+                    "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.",
+                    &[&self.name],
+                ));
+            }
+        }
+        let windows = self.kit.target().is_windows();
+        let mut changed = noted.is_empty();
+        for folder in &self.read_only {
+            let shown = folder.display().to_string();
+            if lines.iter().skip(1).any(|l| *l == shown) {
+                continue;
+            }
+            let guest = vm::guest_path(windows, folder)
+                .ok_or_else(|| anyhow::anyhow!("{shown}: no path in the VM"))?;
+            let args = vm::mount_args(&self.name, folder, &guest);
+            let args: Vec<&str> = args.iter().map(String::as_str).collect();
+            let out =
+                run(&self.sbx, &self.host, env, &args, START_LIMIT).map_err(anyhow::Error::msg)?;
+            let text = String::from_utf8_lossy(&out.stderr);
+            anyhow::ensure!(
+                out.status.success() || text.to_lowercase().contains("already"),
+                "sbx mount: {}",
+                text.trim()
+            );
+            changed = true;
+        }
+        if changed {
+            kit::mark_mounts(&self.kit, &self.name, &self.mounts())?;
+        }
+        Ok(())
     }
 
     /// The folders this sandbox mounts, one per line: the workspace, then

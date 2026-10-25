@@ -729,10 +729,10 @@
     "fr": "Le dossier {0} ne s'ouvre pas dans la VM : c'est la racine d'un disque, un lien, un dossier système, ou il est dans le kit ou dans ton profil (sauf les projets du kit). Choisis le dossier d'un projet.",
     "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Er ist das Stammverzeichnis eines Laufwerks, ein Link, ein Systemordner oder liegt im Kit oder in deinem Profil (außer den Projekten des Kits). Wähle den Ordner eines Projekts."
   },
-  "La sandbox {0} è stata creata con altre cartelle: per avere gli strumenti del kit va creata di nuovo. Rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.": {
-    "en": "The sandbox {0} was made with other folders: to get the kit's tools it must be made again. Remove it in «VM sandboxes» (its disk is deleted, not the project's files) and open again.",
-    "fr": "La sandbox {0} a été créée avec d'autres dossiers : pour avoir les outils du kit, elle doit être recréée. Supprime-la dans «Sandbox des VM» (son disque est supprimé, pas les fichiers du projet) et rouvre.",
-    "de": "Die Sandbox {0} wurde mit anderen Ordnern erstellt: Um die Werkzeuge des Kits zu bekommen, muss sie neu erstellt werden. Entferne sie unter «Sandboxes der VMs» (ihre Festplatte wird gelöscht, nicht die Dateien des Projekts) und öffne erneut."
+  "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.": {
+    "en": "The sandbox {0} works in another folder: remove it in «VM sandboxes» (its disk is deleted, not the project's files) and open again.",
+    "fr": "La sandbox {0} travaille dans un autre dossier : supprime-la dans «Sandbox des VM» (son disque est supprimé, pas les fichiers du projet) et rouvre.",
+    "de": "Die Sandbox {0} arbeitet in einem anderen Ordner: Entferne sie unter «Sandboxes der VMs» (ihre Festplatte wird gelöscht, nicht die Dateien des Projekts) und öffne erneut."
   },
   "Docker Sandboxes (sbx) non è nel kit.": {
     "en": "Docker Sandboxes (sbx) is not in the kit.",
