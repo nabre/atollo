@@ -293,68 +293,6 @@ pub fn used(kit: &Kit, file: &Path, expect: &Expect) {
     }
 }
 
-/// Windows' "Open" window over `owner` (a window handle), several files,
-/// starting in the Downloads folder. Empty when closed without a choice.
-/// macOS and Linux: `editor::picker::files`.
-#[cfg(windows)]
-pub fn pick(owner: isize, title: &str) -> Result<Vec<PathBuf>> {
-    use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
-    use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER,
-        COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
-    };
-    use windows::Win32::UI::Shell::{
-        FOLDERID_Downloads, FileOpenDialog, IFileOpenDialog, IShellItem,
-        SHCreateItemFromParsingName, SHGetKnownFolderPath, FOS_ALLOWMULTISELECT, FOS_FILEMUSTEXIST,
-        FOS_FORCEFILESYSTEM, KF_FLAG_DEFAULT, SIGDN_FILESYSPATH,
-    };
-    // SAFETY: COM initialised on this thread for the dialog and released
-    // after every COM object of the closure is dropped; the strings COM
-    // allocates are freed once read.
-    unsafe {
-        let init = CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-        let result = (|| -> Result<Vec<PathBuf>> {
-            let dialog: IFileOpenDialog =
-                CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
-            dialog.SetOptions(
-                dialog.GetOptions()?
-                    | FOS_ALLOWMULTISELECT
-                    | FOS_FILEMUSTEXIST
-                    | FOS_FORCEFILESYSTEM,
-            )?;
-            dialog.SetTitle(&HSTRING::from(title))?;
-            if let Ok(path) = SHGetKnownFolderPath(&FOLDERID_Downloads, KF_FLAG_DEFAULT, None) {
-                let folder: windows::core::Result<IShellItem> =
-                    SHCreateItemFromParsingName(PCWSTR(path.0), None);
-                CoTaskMemFree(Some(path.0 as _));
-                if let Ok(folder) = folder {
-                    let _ = dialog.SetDefaultFolder(&folder);
-                }
-            }
-            if let Err(e) = dialog.Show(Some(HWND(owner as _))) {
-                if e.code() == ERROR_CANCELLED.to_hresult() {
-                    return Ok(Vec::new());
-                }
-                return Err(e.into());
-            }
-            let items = dialog.GetResults()?;
-            let mut files = Vec::new();
-            for i in 0..items.GetCount()? {
-                let path = items.GetItemAt(i)?.GetDisplayName(SIGDN_FILESYSPATH)?;
-                let text = path.to_string();
-                CoTaskMemFree(Some(path.0 as _));
-                files.push(PathBuf::from(text?));
-            }
-            Ok(files)
-        })();
-        if init.is_ok() {
-            CoUninitialize();
-        }
-        result
-    }
-}
-
 /// Removes what no installation used for a month, and `.part` left over.
 fn prune(dir: &Path) {
     let Ok(entries) = fs::read_dir(dir) else {

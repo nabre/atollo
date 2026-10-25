@@ -31,10 +31,6 @@ mod versions;
 use std::path::Path;
 
 use tauri::Manager;
-#[cfg(windows)]
-use windows::core::HSTRING;
-#[cfg(windows)]
-use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
 use crate::app::cli::{self, help, models, prepare, version_lines, Cli};
 use crate::app::{build_app, context};
@@ -49,21 +45,12 @@ fn main() {
     std::process::exit(run());
 }
 
-/// Errors before (or instead of) the window, on macOS and Linux: stderr.
-#[cfg(not(windows))]
-fn fatal(_lang: &str, message: &str) {
-    eprintln!("{message}");
-}
-
-/// Message box for errors before (or instead of) the window; also on
-/// stderr, for the command line (a service session has no message box).
-#[cfg(windows)]
+/// Errors before (or instead of) the window: on stderr, for the command
+/// line (a service session has no message box), and in a message box on
+/// Windows.
 fn fatal(lang: &str, message: &str) {
     eprintln!("{message}");
-    let title = HSTRING::from(i18n::t(lang, "Atollo non può partire", &[]));
-    let text = HSTRING::from(message);
-    // SAFETY: both strings outlive the modal call.
-    unsafe { MessageBoxW(None, &text, &title, MB_OK | MB_ICONERROR) };
+    platform::desktop::error_box(&i18n::t(lang, "Atollo non può partire", &[]), message);
 }
 
 fn run() -> i32 {

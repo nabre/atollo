@@ -82,19 +82,13 @@ pub async fn terminal_dir_pick<R: Runtime>(
     start: Option<String>,
 ) -> CmdResult<Option<String>> {
     ensure_main(&webview)?;
-    #[cfg(windows)]
-    let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
-    #[cfg(unix)]
-    let window = webview.window();
+    let owner = crate::platform::desktop::owner(&webview.window()).or_fail("window")?;
     let title = crate::common::i18n::t(state.lang(), "Scegli la cartella del terminale", &[]);
     let projects = state.kit.projects();
     tauri::async_runtime::spawn_blocking(move || {
         let start = start.map(PathBuf::from).unwrap_or(projects);
-        #[cfg(windows)]
-        let picked = terminals::pick_dir(owner, &title, Some(&start));
-        #[cfg(unix)]
-        let picked = crate::editor::picker::folder(&window, &title, Some(&start));
-        picked.map(|d| d.map(|d| d.display().to_string()))
+        crate::platform::desktop::pick_folder(&owner, &title, Some(&start))
+            .map(|d| d.map(|d| d.display().to_string()))
     })
     .await
     .or_fail("terminals")?

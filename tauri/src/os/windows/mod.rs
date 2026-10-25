@@ -1,5 +1,7 @@
 //! Windows: the Win32 side of every module of `crate::platform`.
 
+pub mod console;
+pub mod desktop;
 pub mod files;
 pub mod host;
 pub mod instance;

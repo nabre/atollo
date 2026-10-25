@@ -21,8 +21,6 @@ pub mod cfg;
 #[cfg(windows)]
 pub mod conpty;
 pub mod ext;
-#[cfg(unix)]
-pub mod picker;
 pub mod pty;
 pub mod terminal;
 pub mod terminals;

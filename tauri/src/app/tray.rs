@@ -145,7 +145,7 @@ fn current<R: Runtime>(app: &AppHandle<R>) -> Spec {
 /// The icon with its menu. Without it the app works the same: a failure
 /// (a Linux desktop without the AppIndicator library) only goes to the log.
 pub fn create<R: Runtime>(app: &AppHandle<R>) {
-    if !available() {
+    if !crate::platform::desktop::tray_available() {
         crate::common::log::warn("tray: no AppIndicator library, no icon");
         return;
     }
@@ -258,35 +258,6 @@ fn on_icon<R: Runtime>(app: &AppHandle<R>, event: &TrayIconEvent) {
         TrayIconEvent::Enter { .. } => refresh_here(app),
         _ => {}
     }
-}
-
-/// The icon of Linux needs libayatana-appindicator (or libappindicator),
-/// loaded at run time: without it the icon would end the app.
-#[cfg(all(unix, not(target_os = "macos")))]
-fn available() -> bool {
-    [
-        c"libayatana-appindicator3.so.1",
-        c"libappindicator3.so.1",
-        c"libayatana-appindicator3.so",
-        c"libappindicator3.so",
-    ]
-    .iter()
-    .any(|name| {
-        // SAFETY: a NUL-terminated name; the handle is closed at once (the
-        // tray opens the library again).
-        let handle = unsafe { libc::dlopen(name.as_ptr(), libc::RTLD_LAZY) };
-        if handle.is_null() {
-            return false;
-        }
-        // SAFETY: a handle dlopen just returned.
-        unsafe { libc::dlclose(handle) };
-        true
-    })
-}
-
-#[cfg(not(all(unix, not(target_os = "macos"))))]
-fn available() -> bool {
-    true
 }
 
 #[cfg(test)]

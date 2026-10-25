@@ -198,23 +198,13 @@ fn pick<R: Runtime>(
     title: String,
     files: bool,
 ) -> CmdResult<impl FnOnce() -> anyhow::Result<Option<PathBuf>> + Send + 'static> {
-    #[cfg(windows)]
-    let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
-    #[cfg(unix)]
-    let window = webview.window();
+    let owner = crate::platform::desktop::owner(&webview.window()).or_fail("window")?;
     Ok(move || {
         if files {
-            #[cfg(windows)]
-            let picked = crate::setup::downloads::pick(owner, &title)?;
-            #[cfg(unix)]
-            let picked = crate::editor::picker::files(&window, &title, None)?;
+            let picked = crate::platform::desktop::pick_files(&owner, &title, false)?;
             return Ok(picked.into_iter().next());
         }
-        #[cfg(windows)]
-        let picked = crate::editor::terminals::pick_dir(owner, &title, None);
-        #[cfg(unix)]
-        let picked = crate::editor::picker::folder(&window, &title, None);
-        picked
+        crate::platform::desktop::pick_folder(&owner, &title, None)
     })
 }
 

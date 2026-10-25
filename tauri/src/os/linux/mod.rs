@@ -2,6 +2,7 @@
 //! with macOS, under the names of `crate::platform`.
 
 pub mod child;
+pub mod desktop;
 pub mod host;
 pub mod local_socket;
 pub mod memory;
@@ -10,7 +11,7 @@ pub mod processes;
 pub mod volume;
 pub mod webview;
 
-pub use super::unix::{files, instance, jobs, lock, sessions, temp};
+pub use super::unix::{console, files, instance, jobs, lock, sessions, temp};
 
 use crate::kit::Os;
 

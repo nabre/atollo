@@ -11,6 +11,8 @@
 //! - `jobs`: the programs the kit starts, none outliving the app (D-07);
 //! - `processes`, `sessions`: the PC's processes, the kit's programs open,
 //!   other kits, "Rimuovi l'unità";
+//! - `console`, `desktop`: the command line's output; the dialogs, the
+//!   message box, the tray;
 //! - `files`: owner-only files and folders, the executable bit;
 //! - `host`: what the app knows of the machine (processor, language...);
 //! - `instance`: one app per kit (D-08);
@@ -21,6 +23,8 @@
 //! - `memory`: the PC's RAM;
 //! - `webview`: the web view of the windows (D-05).
 
+pub mod console;
+pub mod desktop;
 pub mod files;
 pub mod host;
 pub mod instance;

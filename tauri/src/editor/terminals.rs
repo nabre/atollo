@@ -19,8 +19,6 @@
 //!   the project's (profile.ps1, bashrc).
 
 use std::collections::BTreeMap;
-#[cfg(windows)]
-use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -490,59 +488,6 @@ pub fn start_dir(kit: &Kit, terminal: &Terminal, dir: Option<&str>, lang: &str) 
     match dir.or(terminal.dir.as_deref()) {
         Some(d) => checked_dir(d, lang),
         None => Ok(kit.projects()),
-    }
-}
-
-/// Windows' "Select folder" window over `owner` (a window handle), starting
-/// in `start`. `None` when closed without a choice. macOS and Linux:
-/// `editor::picker::folder`.
-#[cfg(windows)]
-pub fn pick_dir(owner: isize, title: &str, start: Option<&Path>) -> Result<Option<PathBuf>> {
-    use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
-    use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER,
-        COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
-    };
-    use windows::Win32::UI::Shell::{
-        FileOpenDialog, IFileOpenDialog, IShellItem, SHCreateItemFromParsingName,
-        FOS_FORCEFILESYSTEM, FOS_PATHMUSTEXIST, FOS_PICKFOLDERS, SIGDN_FILESYSPATH,
-    };
-    // SAFETY: as `setup::downloads::pick`: COM initialised on this thread
-    // for the dialog and released after every COM object of the closure is
-    // dropped; the strings COM allocates are freed once read.
-    unsafe {
-        let init = CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-        let result = (|| -> Result<Option<PathBuf>> {
-            let dialog: IFileOpenDialog =
-                CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
-            dialog.SetOptions(
-                dialog.GetOptions()? | FOS_PICKFOLDERS | FOS_PATHMUSTEXIST | FOS_FORCEFILESYSTEM,
-            )?;
-            dialog.SetTitle(&HSTRING::from(title))?;
-            if let Some(start) = start.filter(|s| s.is_dir()) {
-                let start = HSTRING::from(start.as_os_str());
-                let folder: windows::core::Result<IShellItem> =
-                    SHCreateItemFromParsingName(PCWSTR(start.as_ptr()), None);
-                if let Ok(folder) = folder {
-                    let _ = dialog.SetFolder(&folder);
-                }
-            }
-            if let Err(e) = dialog.Show(Some(HWND(owner as _))) {
-                if e.code() == ERROR_CANCELLED.to_hresult() {
-                    return Ok(None);
-                }
-                return Err(e.into());
-            }
-            let path = dialog.GetResult()?.GetDisplayName(SIGDN_FILESYSPATH)?;
-            let text = path.to_string();
-            CoTaskMemFree(Some(path.0 as _));
-            Ok(Some(PathBuf::from(text?)))
-        })();
-        if init.is_ok() {
-            CoUninitialize();
-        }
-        result
     }
 }
 

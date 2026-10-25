@@ -579,21 +579,11 @@ pub async fn downloads_pick<R: Runtime>(
     state: State<'_, AppState>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
-    #[cfg(windows)]
-    let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
-    #[cfg(unix)]
-    let window = webview.window();
+    let owner = crate::platform::desktop::owner(&webview.window()).or_fail("window")?;
     let title = crate::common::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        #[cfg(windows)]
-        let files = crate::setup::downloads::pick(owner, &title)?;
-        #[cfg(unix)]
-        let files = {
-            let home = std::env::var_os("HOME").map(PathBuf::from);
-            let start = crate::editor::picker::downloads_dir(home.as_deref());
-            crate::editor::picker::files(&window, &title, start.as_deref())?
-        };
+        let files = crate::platform::desktop::pick_files(&owner, &title, true)?;
         if files.is_empty() {
             return Ok(Vec::new());
         }
