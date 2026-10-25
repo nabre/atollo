@@ -106,7 +106,7 @@ pub(crate) fn build_app<R: tauri::Runtime>(
             // Databases marked "start with Atollo" (D-73).
             // Then the server profiles marked "Avvia con Atollo", and the
             // server of the local models when it is marked too (D-151).
-            let (services, servers, llm, env, lang) = {
+            let (services, servers, llm, env, lang, host) = {
                 let state = app.state::<AppState>();
                 (
                     std::sync::Arc::clone(&state.services),
@@ -114,11 +114,20 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                     std::sync::Arc::clone(&state.llm),
                     state.env.read().map(|e| e.clone()).unwrap_or_default(),
                     state.lang(),
+                    state.host.clone(),
                 )
             };
+            let pools_kit = kit.clone();
             std::thread::spawn(move || {
                 services.autostart(&env);
-                servers.autostart(&env, lang);
+                // The pools are the box without the VM (D-175): with the VM
+                // on, the sites run in their projects' VMs.
+                let level = crate::isolation::status(&pools_kit, &host, &env, false).level;
+                if level == crate::isolation::Level::Vm {
+                    log::info("server pools: not started, every site runs in its VM");
+                } else {
+                    servers.autostart(&env, lang);
+                }
                 llm.autostart(&env);
             });
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);

@@ -4,6 +4,21 @@
 use super::*;
 use crate::servers::{WebServerEngine, WebServerProfileInput, WebServersView};
 
+/// With the VM on (D-175) a pool never starts: it would run the projects'
+/// code on the PC, out of their VMs. Each site runs in its project's VM,
+/// started from the project; the pools are the box without the VM.
+fn refused_with_vm(kit: &Kit, host: &crate::env::Host, env: &KitEnv, lang: &str) -> CmdResult<()> {
+    if crate::isolation::status(kit, host, env, false).level == crate::isolation::Level::Vm {
+        return Err(crate::common::i18n::t(
+            lang,
+            "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.",
+            &[],
+        )
+        .into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn servers_list<R: Runtime>(
     webview: Webview<R>,
@@ -67,7 +82,9 @@ pub async fn server_start<R: Runtime>(
         state.lang(),
         Arc::clone(&state.servers),
     );
+    let (host, base) = (state.host.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || {
+        refused_with_vm(&kit, &host, &base, lang)?;
         let view = servers.list(lang, true);
         let Some(pool) = view.pools.iter().find(|p| p.id == id) else {
             return Err(fail("servers", format!("unknown server pool {id}")));
@@ -108,7 +125,9 @@ pub async fn server_reload<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let (servers, env, lang) = (Arc::clone(&state.servers), state.env(), state.lang());
+    let (kit, host) = (state.kit.clone(), state.host.clone());
     tauri::async_runtime::spawn_blocking(move || {
+        refused_with_vm(&kit, &host, &env, lang)?;
         servers
             .reload(&id, &env, lang)
             .map_err(|e| CmdError::from(e.to_string()))

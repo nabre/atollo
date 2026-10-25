@@ -1105,5 +1105,6 @@
   "Il progetto nella VM usa il tuo accesso a GitHub del kit (push, gh)": "The project in the VM uses your GitHub access of the kit (push, gh)",
   "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi.": "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But the project's code could act on GitHub on your behalf: turn it on only for projects you trust.",
   "nella VM": "in the VM",
-  "Con la VM attiva gira nella VM, con la build per Linux: su questo sistema non serve.": "With the VM on it runs in the VM, with the build for Linux: it is not needed on this system."
+  "Con la VM attiva gira nella VM, con la build per Linux: su questo sistema non serve.": "With the VM on it runs in the VM, with the build for Linux: it is not needed on this system.",
+  "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": "With the VM on, every site runs in its project's VM: start it from the project's page. The shared servers are for working without the VM."
 }
