@@ -28,6 +28,7 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../../runtime/fcgi-guard.php"),
     ),
     ("profile.ps1", include_str!("../../../runtime/profile.ps1")),
+    ("vm.ps1", include_str!("../../../runtime/vm.ps1")),
     ("bashrc", include_str!("../../../runtime/bashrc")),
     ("bin/agy.cmd", include_str!("../../../runtime/bin/agy.cmd")),
     ("bin/agy", include_str!("../../../runtime/bin/agy")),

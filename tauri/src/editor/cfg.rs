@@ -190,6 +190,36 @@ fn profile(path: &Path, args: &[String], icon: &str) -> Value {
     json!({ "path": path.display().to_string(), "args": args, "icon": icon, "overrideName": true })
 }
 
+/// The kit's PowerShell running `vm.ps1` with `extra` (D-175): every
+/// terminal, task and agent of the editor goes through it, to the
+/// project's VM when the VM is on (`isolation::session`), else to the
+/// kit's own on the PC; `interactive` keeps the shell open after it.
+pub fn vm_args(kit: &Kit, interactive: bool, extra: &[String]) -> Vec<String> {
+    let mut args: Vec<String> = vec!["-NoLogo".into(), "-NoProfile".into()];
+    if interactive {
+        args.push("-NoExit".into());
+    }
+    args.extend([
+        "-ExecutionPolicy".to_owned(),
+        "Bypass".to_owned(),
+        "-File".to_owned(),
+        kit.kit_files().join("vm.ps1").display().to_string(),
+    ]);
+    args.extend(extra.iter().cloned());
+    args
+}
+
+/// `-Shell <kind>` and, for another program than the kit's PowerShell,
+/// `-Exe <its path>`, for [`vm_args`].
+fn shell_extra(kind: &str, exe: Option<&Path>) -> Vec<String> {
+    let mut extra = vec!["-Shell".to_owned(), kind.to_owned()];
+    if let Some(exe) = exe {
+        extra.push("-Exe".into());
+        extra.push(exe.display().to_string());
+    }
+    extra
+}
+
 /// The arguments of bash with the kit's `bashrc`.
 pub fn bash_args(kit: &Kit) -> Vec<String> {
     let rc = kit.kit_files().join("bashrc").display().to_string();
@@ -202,10 +232,25 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
     let app = |rel: &str| crate::setup::kit_path(kit, rel);
     let mut out = Map::new();
     let pwsh = app(r"pwsh\pwsh.exe");
-    if pwsh.is_file() {
+    // Through `vm.ps1` when the kit's PowerShell is there (D-175): `kind`
+    // of shell, `exe` its program; else the program itself with `args`.
+    let has_pwsh = pwsh.is_file();
+    let shell = |kind: &str, exe: &Path, args: Vec<String>, icon: &str| {
+        if has_pwsh {
+            let extra = shell_extra(kind, Some(exe));
+            profile(&pwsh, &vm_args(kit, false, &extra), icon)
+        } else {
+            profile(exe, &args, icon)
+        }
+    };
+    if has_pwsh {
         out.insert(
             "Atollo".into(),
-            profile(&pwsh, &pwsh_args(kit), "terminal-powershell"),
+            profile(
+                &pwsh,
+                &vm_args(kit, true, &shell_extra("pwsh", None)),
+                "terminal-powershell",
+            ),
         );
     }
     if os.is_windows() {
@@ -213,35 +258,40 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         if bash.is_file() {
             out.insert(
                 "Atollo - Git Bash".into(),
-                profile(&bash, &bash_args(kit), "terminal-bash"),
+                shell("bash", &bash, bash_args(kit), "terminal-bash"),
             );
         }
         let cmd = system_root.join(r"System32\cmd.exe");
         out.insert(
             "Atollo - cmd".into(),
-            profile(&cmd, &["/d".into(), "/k".into()], "terminal-cmd"),
+            shell("cmd", &cmd, vec!["/d".into(), "/k".into()], "terminal-cmd"),
         );
     } else {
         // The system's bash with the kit's bashrc (bash 3.2 on macOS reads
         // it too, D-105); the environment is the kit's, from the server.
         out.insert(
             "Atollo - Bash".into(),
-            profile(Path::new(BASH), &bash_args(kit), "terminal-bash"),
+            shell("bash", Path::new(BASH), bash_args(kit), "terminal-bash"),
         );
         if os.is_macos() {
             // Interactive, not a login shell: path_helper of
             // /etc/zprofile would put the system's folders first.
             out.insert(
                 "Atollo - zsh".into(),
-                profile(Path::new(ZSH), &["-i".into()], "terminal"),
+                shell("zsh", Path::new(ZSH), vec!["-i".into()], "terminal"),
             );
         }
     }
-    for (name, rel, icon) in [
-        ("Claude Code", r"claude\claude.exe", "sparkle"),
-        ("Codex", r"codex\bin\codex.exe", "hubot"),
-        ("Antigravity", r"antigravity\agy.exe", "rocket"),
-        ("Pi", r"pi\pi.exe", "symbol-constant"),
+    for (name, id, rel, icon) in [
+        ("Claude Code", "claude", r"claude\claude.exe", "sparkle"),
+        ("Codex", "codex", r"codex\bin\codex.exe", "hubot"),
+        (
+            "Antigravity",
+            "antigravity",
+            r"antigravity\agy.exe",
+            "rocket",
+        ),
+        ("Pi", "pi", r"pi\pi.exe", "symbol-constant"),
     ] {
         let exe = app(rel);
         if exe.is_file() {
@@ -255,7 +305,20 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
                 "Claude Code" if crate::agents::claude_token::offered(os) => bin.join("claude"),
                 _ => exe,
             };
-            out.insert(name.into(), profile(&path, &[], icon));
+            // In the VM, Claude Code and Codex in `sbx`'s sandboxes, the
+            // others refused; without it, the agent on the PC (D-175).
+            let entry = if has_pwsh {
+                let extra = [
+                    "-Agent".to_owned(),
+                    id.to_owned(),
+                    "-Exe".to_owned(),
+                    path.display().to_string(),
+                ];
+                profile(&pwsh, &vm_args(kit, false, &extra), icon)
+            } else {
+                profile(&path, &[], icon)
+            };
+            out.insert(name.into(), entry);
         }
     }
     out
@@ -322,18 +385,27 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
         out.insert(default_key, json!(default));
     }
     let pwsh = crate::setup::kit_path(kit, r"pwsh\pwsh.exe");
+    // Tasks and debug consoles through `vm.ps1` too (D-175): in the
+    // project's VM with `sh -lc` when the VM is on; else the kit's shell on
+    // Windows and, on macOS and Linux, the system's bash (tasks written for
+    // sh and bash; never the user's login shell, whose profile could put
+    // other tools first).
     if os.is_windows() {
         if pwsh.is_file() {
-            // Tasks and debug consoles use the kit's shell too.
+            let args = vm_args(kit, false, &shell_extra("pwsh", None));
             out.insert(
                 key("automationProfile"),
-                json!({ "path": pwsh.display().to_string(), "args": ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass"] }),
+                json!({ "path": pwsh.display().to_string(), "args": args }),
             );
         }
         out.insert("terminal.integrated.useWslProfiles".into(), json!(false));
+    } else if pwsh.is_file() {
+        let args = vm_args(kit, false, &shell_extra("bash", Some(Path::new(BASH))));
+        out.insert(
+            key("automationProfile"),
+            json!({ "path": pwsh.display().to_string(), "args": args }),
+        );
     } else {
-        // Tasks written for sh and bash: the system's bash, never the
-        // user's login shell (its profile could put other tools first).
         out.insert(key("automationProfile"), json!({ "path": BASH }));
     }
     // VSCodium drops NODE_OPTIONS from the terminals' environment (one of its
