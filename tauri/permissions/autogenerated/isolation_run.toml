@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-isolation-run"
+description = "Enables the isolation_run command without any pre-configured scope."
+commands.allow = ["isolation_run"]
+
+[[permission]]
+identifier = "deny-isolation-run"
+description = "Denies the isolation_run command without any pre-configured scope."
+commands.deny = ["isolation_run"]

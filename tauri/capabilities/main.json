@@ -15,6 +15,8 @@
     "core:window:allow-is-maximized",
     "core:window:allow-close",
     "allow-app-info",
+    "allow-isolation-status",
+    "allow-isolation-run",
     "allow-editor-status",
     "allow-editor-open",
     "allow-editor-restart",

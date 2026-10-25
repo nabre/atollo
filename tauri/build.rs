@@ -7,6 +7,8 @@
 /// `src/ipc/mod.rs`.
 const COMMANDS: &[&str] = &[
     "app_info",
+    "isolation_status",
+    "isolation_run",
     "editor_status",
     "editor_open",
     "editor_restart",

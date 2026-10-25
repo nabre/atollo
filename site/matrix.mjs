@@ -20,7 +20,7 @@ export const TARGETS = [
 // everything). A component not listed here falls back to its group's kind.
 export const KINDS = ["system", "agents", "ai", "languages", "tools", "web", "databases", "dbviewers"];
 export const KIND_OF = {
-  pwsh: "system", gh: "system", git: "system", "vscodium-server": "system",
+  pwsh: "system", gh: "system", git: "system", "vscodium-server": "system", sandboxes: "system",
   uv: "tools", pnpm: "tools", cmake: "tools", android: "tools", typst: "tools", tinytex: "tools",
   apache: "web", caddy: "web",
   phpmyadmin: "dbviewers", "mongo-express": "dbviewers",

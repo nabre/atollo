@@ -1018,10 +1018,27 @@ export const HELP: TopicTexts = {
         >
           <P>
             {tr(
-              "No, e non lo include. Usa programmi nativi per ogni sistema, più leggeri e senza amministratore. Se un progetto ha un compose.yaml o un Dockerfile, il kit li legge solo per suggerire le versioni giuste (PHP, Node, MySQL…).",
-              "No, and it does not include it. It uses native programs for each system, lighter and without an administrator. If a project has a compose.yaml or a Dockerfile, the kit reads them only to suggest the right versions (PHP, Node, MySQL…).",
-              "Non, et il ne l'inclut pas. Il utilise des programmes natifs pour chaque système, plus légers et sans administrateur. Si un projet a un compose.yaml ou un Dockerfile, le kit les lit seulement pour suggérer les bonnes versions (PHP, Node, MySQL…).",
-              "Nein, und es enthält Docker auch nicht. Es verwendet native Programme für jedes System, leichter und ohne Administrator. Wenn ein Projekt eine compose.yaml oder ein Dockerfile hat, liest das Kit sie nur, um die richtigen Versionen vorzuschlagen (PHP, Node, MySQL…).",
+              "No. Usa programmi nativi per ogni sistema, più leggeri e senza amministratore. Se un progetto ha un compose.yaml o un Dockerfile, il kit li legge per suggerire le versioni giuste (PHP, Node, MySQL…). Docker Sandboxes, un componente facoltativo, serve a isolare i progetti (domanda qui sotto), non a sostituire i programmi del kit.",
+              "No. It uses native programs for each system, lighter and without an administrator. If a project has a compose.yaml or a Dockerfile, the kit reads them to suggest the right versions (PHP, Node, MySQL…). Docker Sandboxes, an optional component, isolates the projects (question below); it does not replace the kit's programs.",
+              "Non. Il utilise des programmes natifs pour chaque système, plus légers et sans administrateur. Si un projet a un compose.yaml ou un Dockerfile, le kit les lit pour suggérer les bonnes versions (PHP, Node, MySQL…). Docker Sandboxes, un composant facultatif, isole les projets (question ci-dessous) ; il ne remplace pas les programmes du kit.",
+              "Nein. Es verwendet native Programme für jedes System, leichter und ohne Administrator. Wenn ein Projekt eine compose.yaml oder ein Dockerfile hat, liest das Kit sie, um die richtigen Versionen vorzuschlagen (PHP, Node, MySQL…). Docker Sandboxes, eine optionale Komponente, isoliert die Projekte (Frage unten); es ersetzt die Programme des Kits nicht.",
+            )}
+          </P>
+        </QA>
+        <QA
+          q={tr(
+            "Cosa vuol dire «Senza VM» nella barra di stato?",
+            "What does “No VM” in the status bar mean?",
+            "Que signifie « Sans VM » dans la barre d'état ?",
+            "Was bedeutet „Ohne VM“ in der Statusleiste?",
+          )}
+        >
+          <P>
+            {tr(
+              "Che i programmi dei progetti (terminale, azioni, server, agenti) girano sul PC con il tuo utente: possono leggere i tuoi file. Il kit ne filtra l'ambiente (niente chiavi SSH, niente login root di MySQL: ogni progetto entra con il suo utente), ma non è un muro. Con Docker Sandboxes ogni progetto gira in una microVM sua e vede solo la sua cartella. Un clic sull'avviso dice perché la VM non è attiva e cosa serve: Windows 11 con Hypervisor Platform, un Mac con Apple silicon e macOS 14, o Ubuntu 24.04 con KVM; Docker Sandboxes nel kit («Installa nel kit») e un account Docker («sbx login» nel terminale di Atollo).",
+              "That the projects' programs (terminal, actions, servers, agents) run on the PC as your user: they can read your files. The kit filters their environment (no SSH keys, no MySQL root login: each project signs in as its own user), but that is no wall. With Docker Sandboxes each project runs in a microVM of its own and sees only its folder. A click on the notice tells why the VM is off and what it needs: Windows 11 with Hypervisor Platform, a Mac with Apple silicon and macOS 14, or Ubuntu 24.04 with KVM; Docker Sandboxes in the kit (“Install in the kit”) and a Docker account (“sbx login” in Atollo's terminal).",
+              "Que les programmes des projets (terminal, actions, serveurs, agents) tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers. Le kit filtre leur environnement (pas de clés SSH, pas de login root de MySQL : chaque projet se connecte avec son utilisateur), mais ce n'est pas un mur. Avec Docker Sandboxes, chaque projet tourne dans sa propre microVM et ne voit que son dossier. Un clic sur l'avis dit pourquoi la VM n'est pas active et ce qu'il faut : Windows 11 avec Hypervisor Platform, un Mac Apple silicon sous macOS 14, ou Ubuntu 24.04 avec KVM ; Docker Sandboxes dans le kit (« Installer dans le kit ») et un compte Docker (« sbx login » dans le terminal d'Atollo).",
+              "Dass die Programme der Projekte (Terminal, Aktionen, Server, Agenten) auf dem PC mit deinem Benutzer laufen: Sie können deine Dateien lesen. Das Kit filtert ihre Umgebung (keine SSH-Schlüssel, kein Root-Login von MySQL: Jedes Projekt meldet sich mit seinem Benutzer an), aber das ist keine Mauer. Mit Docker Sandboxes läuft jedes Projekt in einer eigenen microVM und sieht nur seinen Ordner. Ein Klick auf den Hinweis sagt, warum die VM nicht aktiv ist und was sie braucht: Windows 11 mit Hypervisor Platform, einen Mac mit Apple Silicon und macOS 14 oder Ubuntu 24.04 mit KVM; Docker Sandboxes im Kit („Im Kit installieren“) und ein Docker-Konto („sbx login“ im Terminal von Atollo).",
             )}
           </P>
         </QA>

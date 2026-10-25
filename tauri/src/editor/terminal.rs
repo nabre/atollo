@@ -52,21 +52,16 @@ pub(crate) fn ps_single_quoted(s: &str) -> String {
     out
 }
 
-/// Opens `program` (`None`: the kit's shell) in a session of the app's
-/// terminal, and tells the main window to show it.
+/// Opens `launch` in a session of the app's terminal, and tells the main
+/// window to show it.
 fn open<R: Runtime>(
     app: &AppHandle<R>,
-    kit: &Kit,
     env: &KitEnv,
     dir: &Path,
-    program: Option<&Path>,
+    launch: pty::Launch,
     on_exit: Box<dyn FnOnce() + Send>,
 ) -> Result<()> {
     let main = crate::ipc::MAIN;
-    let launch = match program {
-        None => pty::shell(kit, dir),
-        Some(command) => pty::command(kit, command, dir),
-    };
     let (out, end) = (app.clone(), app.clone());
     let lang = app
         .try_state::<crate::ipc::AppState>()
@@ -115,7 +110,13 @@ pub fn open_command<R: Runtime>(
     command: &Path,
     on_exit: impl FnOnce() + Send + 'static,
 ) -> Result<()> {
-    open(app, kit, env, dir, Some(command), Box::new(on_exit))
+    open(
+        app,
+        env,
+        dir,
+        pty::command(kit, command, dir),
+        Box::new(on_exit),
+    )
 }
 
 /// Opens the kit's shell (its PowerShell; on macOS and Linux bash when it
@@ -126,7 +127,18 @@ pub fn open_console<R: Runtime>(
     env: &KitEnv,
     dir: &Path,
 ) -> Result<()> {
-    open(app, kit, env, dir, None, Box::new(|| {}))
+    open(app, env, dir, pty::shell(kit, dir), Box::new(|| {}))
+}
+
+/// Runs `launch` (a project's microVM, D-167) in a new session of the
+/// app's terminal in `dir`. Inside the job.
+pub fn open_launch<R: Runtime>(
+    app: &AppHandle<R>,
+    env: &KitEnv,
+    dir: &Path,
+    launch: pty::Launch,
+) -> Result<()> {
+    open(app, env, dir, launch, Box::new(|| {}))
 }
 
 /// The label of the window of a detached session (D-149).

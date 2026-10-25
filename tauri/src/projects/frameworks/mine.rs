@@ -61,7 +61,9 @@ pub fn files_of(kit: &Kit, env: &KitEnv, dir: &Path) -> Vec<String> {
 }
 
 /// What Git would commit: the tracked files and the new ones `.gitignore`
-/// does not leave out. `None` when Git is missing or fails.
+/// does not leave out. `None` when Git is missing or fails. The project's
+/// `.git/config` cannot start a program of its own through
+/// `core.fsmonitor` (D-167): the app runs this, not the user.
 fn git_files(kit: &Kit, env: &KitEnv, dir: &Path) -> Option<Vec<String>> {
     let git = crate::setup::kit_path(kit, r"git\cmd\git.exe");
     if !git.is_file() {
@@ -69,6 +71,8 @@ fn git_files(kit: &Kit, env: &KitEnv, dir: &Path) -> Option<Vec<String>> {
     }
     let out = crate::platform::jobs::kit_command(&git, env)
         .args([
+            "-c",
+            "core.fsmonitor=false",
             "ls-files",
             "-z",
             "--cached",

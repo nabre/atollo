@@ -336,18 +336,11 @@ fn autostart_lines_follow_the_projects() {
         .unwrap_err();
     assert_eq!(missing(err), Some(("mysql".into(), "9.1".into())));
 
-    // The login of a project on another version, once its start wrote it;
-    // none on the server's version.
-    assert!(
-        project_client_env(&kit, "shop").is_empty(),
-        "not started yet"
-    );
-    auth::write_mysql_line_cnf(&kit, "8.0", 3307, "pw").unwrap();
+    // Every project with a MySQL user logs in as that user (D-167), on its
+    // version or the server's; a project without one gets no login.
     assert_eq!(project_client_env(&kit, "shop").len(), 2);
-    assert!(
-        project_client_env(&kit, "blog").is_empty(),
-        "the server's version"
-    );
+    assert_eq!(project_client_env(&kit, "blog").len(), 2);
+    assert!(project_client_env(&kit, "nodb").is_empty());
 }
 
 /// MySQL (D-110): the kit's SQL server; the login of another version of
@@ -382,25 +375,35 @@ fn mysql_is_the_kits_sql_server() {
     assert_eq!(line_port(&kit, "mysql", Some("8.4")), 3307);
     assert!(bin_at(&kit, "mysql", Some("8.4"), "mysqld").starts_with(&older));
 
-    // A project on MySQL 8.4: its port, then the login of 8.4 once written.
+    // A project on MySQL 8.4: its port, and the login of its own user on
+    // 8.4 (D-167), in its private folder; never the root's.
     auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
     assert_eq!(project_db_port(&kit, "shop"), Some(3306));
     auth::set_project_line(&kit, "shop", "mysql", Some("8.4")).unwrap();
     assert_eq!(project_db_port(&kit, "shop"), Some(3307));
-    assert!(
-        project_client_env(&kit, "shop").is_empty(),
-        "not started yet"
-    );
-    auth::write_mysql_line_cnf(&kit, "8.4", 3307, "pw").unwrap();
     let env = project_client_env(&kit, "shop");
     let names: Vec<&str> = env.iter().map(|(n, _)| *n).collect();
     assert_eq!(names, ["ATOLLO_MYSQL_CNF", "CP_MYSQL"]);
+    assert!(env[0].1.ends_with(
+        std::path::Path::new("shop")
+            .join("private")
+            .join("mysql.cnf")
+    ));
     let cnf = fs::read_to_string(&env[0].1).unwrap();
     assert!(
-        cnf.contains("port=3307\n") && cnf.contains("protocol=TCP\n"),
+        cnf.contains("user=shop\n")
+            && cnf.contains("password=pw\n")
+            && cnf.contains("port=3307\n")
+            && cnf.contains("protocol=TCP\n")
+            && cnf.contains("database=shop\n")
+            && !cnf.contains("root"),
         "{cnf}"
     );
     assert_eq!(env[1].1, older);
+    // Back on the server's version: its port.
+    auth::set_project_line(&kit, "shop", "mysql", None).unwrap();
+    let cnf = fs::read_to_string(&project_client_env(&kit, "shop")[0].1).unwrap();
+    assert!(cnf.contains("port=3306\n"), "{cnf}");
     assert!(auth::write_mysql_line_cnf(&kit, "../x", 3307, "pw").is_err());
 }
 

@@ -159,6 +159,34 @@ pub fn program_version(exe: &Path) -> Result<String> {
     ))
 }
 
+/// The files of the Windows Installer package `msi` in `dest`: an
+/// administrative installation (`msiexec /a`), which only extracts them,
+/// without an administrator for a per-user package; nothing is registered
+/// on the PC. The tree is `TARGETDIR`'s (`LocalApp\<product>\…`).
+pub fn extract_msi(msi: &Path, dest: &Path) -> Result<()> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    // `msiexec` reads its own command line: the paths in double quotes,
+    // without a `\` before the closing one, and with `\` only (a `/` in
+    // the package's path fails to open it: 1619).
+    let quoted = |p: &Path| {
+        let path = p.display().to_string().replace('/', "\\");
+        format!("\"{}\"", path.trim_end_matches('\\'))
+    };
+    let root = std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into());
+    let status = std::process::Command::new(Path::new(&root).join("System32").join("msiexec.exe"))
+        .raw_arg(format!("/a {} /qn TARGETDIR={}", quoted(msi), quoted(dest)))
+        .creation_flags(CREATE_NO_WINDOW)
+        .stdin(std::process::Stdio::null())
+        .status()
+        .context("msiexec")?;
+    // 3010: done, a restart is asked (never for an extraction).
+    match status.code() {
+        Some(0 | 3010) => Ok(()),
+        other => bail!("msiexec /a {}: exit {other:?}", msi.display()),
+    }
+}
+
 /// A plain atomic write.
 pub fn write_secret(path: &Path, text: &str) -> Result<()> {
     crate::common::fsx::write_atomic(path, text.as_bytes())?;

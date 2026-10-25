@@ -29,11 +29,20 @@ pub async fn run_start<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let (runner, servers) = (Arc::clone(&runner), Arc::clone(&state.servers));
+    let (host, kit_env) = (state.host.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || {
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::common::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
+        // Every project in its microVM (D-167): the action there, its web
+        // server a container of the VM, never a pool of the PC.
+        let env = crate::versions::project_env(&kit, &project, kit_env);
+        if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
+            return runner
+                .start_in(&project, &dir, a, &env, lang, Some(&vm))
+                .or_fail_chain("run");
+        }
         // An Apache/Caddy site is started in a shared pool: the profile it
         // was assigned to (GAP-RUN), else the automatic pool of its lines
         // (D-101). A profile gone since: the pool `list` puts it in,

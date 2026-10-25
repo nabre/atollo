@@ -29,6 +29,7 @@
 //! - `sockets`: whether a server still answers on a Unix socket;
 //! - `proxy`: the system's proxy, and the hosts reached without one;
 //! - `pty`: a program on a pseudo terminal, for the app's terminal;
+//! - `virt`: what the PC lacks for Docker Sandboxes' microVMs (D-167);
 //! - `webview`: the web view of the windows (D-05).
 
 pub mod console;
@@ -51,6 +52,7 @@ pub mod sessions;
 pub mod signature;
 pub mod sockets;
 pub mod temp;
+pub mod virt;
 pub mod volume;
 pub mod webview;
 

@@ -183,6 +183,12 @@ pub fn program_version(exe: &Path) -> Result<String> {
     imp::program_version(exe)
 }
 
+/// The files of the Windows Installer package `msi`, extracted into `dest`
+/// without installing it (Docker Sandboxes, D-167); an error elsewhere.
+pub fn extract_msi(msi: &Path, dest: &Path) -> Result<()> {
+    imp::extract_msi(msi, dest)
+}
+
 /// A name of an archive's entry that means more than a file name on this
 /// system: on Windows one with `:` (a drive, `C:x`, an alternate data
 /// stream).

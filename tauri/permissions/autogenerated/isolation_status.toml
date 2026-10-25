@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-isolation-status"
+description = "Enables the isolation_status command without any pre-configured scope."
+commands.allow = ["isolation_status"]
+
+[[permission]]
+identifier = "deny-isolation-status"
+description = "Denies the isolation_status command without any pre-configured scope."
+commands.deny = ["isolation_status"]

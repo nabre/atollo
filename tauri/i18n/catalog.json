@@ -719,6 +719,11 @@
     "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre d'Atollo ou le menu du kit).",
     "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
   },
+  "Docker Sandboxes (sbx) non è nel kit.": {
+    "en": "Docker Sandboxes (sbx) is not in the kit.",
+    "fr": "Docker Sandboxes (sbx) n'est pas dans le kit.",
+    "de": "Docker Sandboxes (sbx) ist nicht im Kit."
+  },
   "Progetto non trovato: {0}": {
     "en": "Project not found: {0}",
     "fr": "Projet introuvable : {0}",
@@ -2268,5 +2273,15 @@
     "en": "Importing the copy of the kit failed: {0}",
     "fr": "L'importation de la copie du kit a échoué : {0}",
     "de": "Der Import der Kopie des Kits ist fehlgeschlagen: {0}"
+  },
+  "una microVM per ogni progetto: terminale, comandi, server e agenti isolati dal PC; serve un account Docker": {
+    "en": "one microVM per project: terminal, commands, servers and agents isolated from the PC; needs a Docker account",
+    "fr": "une microVM par projet : terminal, commandes, serveurs et agents isolés du PC ; nécessite un compte Docker",
+    "de": "eine microVM pro Projekt: Terminal, Befehle, Server und Agenten vom PC isoliert; braucht ein Docker-Konto"
+  },
+  "{0} non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.": {
+    "en": "{0} has no Docker Sandboxes sandbox: in the VM use Claude Code or Codex.",
+    "fr": "{0} n'a pas de sandbox Docker Sandboxes : dans la VM, utilisez Claude Code ou Codex.",
+    "de": "{0} hat keine Sandbox von Docker Sandboxes: In der VM nutzt du Claude Code oder Codex."
   }
 }

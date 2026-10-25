@@ -11,7 +11,7 @@ fn missing_required_lists_only_installable_ones() {
     let missing = missing_required(&kit);
     assert_eq!(
         missing,
-        ["gh", "pwsh", "vscodium-server", "conpty"],
+        ["gh", "pwsh", "vscodium-server", "conpty", "sandboxes"],
         "git only when needed (D-81)"
     );
     for id in ["node", "uv", "python"] {
@@ -25,6 +25,27 @@ fn missing_required_lists_only_installable_ones() {
     fs::create_dir_all(pwsh.parent().unwrap()).unwrap();
     fs::write(&pwsh, b"").unwrap();
     assert!(!missing_required(&kit).contains(&"pwsh".to_owned()));
+}
+
+/// Docker Sandboxes is required, but the editor and the consoles open
+/// without it (the notice says the VM is off), and a system without its
+/// build never tries to install it (D-167).
+#[test]
+fn sandboxes_never_block_and_skip_systems_without_a_build() {
+    let (_tmp, kit) = prepared_kit("task-sandboxes");
+    assert!(missing_required(&kit).contains(&"sandboxes".to_owned()));
+    assert!(!missing_to_open(&kit).contains(&"sandboxes".to_owned()));
+
+    for target in [
+        crate::kit::Target::WIN32_ARM64,
+        crate::kit::Target::DARWIN_X64,
+    ] {
+        let other = kit.for_target(target);
+        assert!(
+            !missing_required(&other).contains(&"sandboxes".to_owned()),
+            "{target}"
+        );
+    }
 }
 
 /// The editor at another version than this release's is installed again

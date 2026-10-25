@@ -161,6 +161,27 @@ pub fn mysql_cnf_text(port: u16, password: &str) -> String {
     )
 }
 
+/// The `[client]` login of a project's own user on its database (D-167):
+/// what its programs get instead of the root's. The names are the kit's
+/// ([`is_valid_name`]), the password hex: nothing to escape.
+pub fn mysql_project_cnf_text(user: &str, password: &str, port: u16) -> String {
+    format!(
+        "# Atollo: login of this project's user (written by the app).\n\
+         [client]\nuser={user}\npassword={password}\nhost=127.0.0.1\n\
+         port={port}\nprotocol=TCP\n\n[mysql]\ndatabase={user}\n"
+    )
+}
+
+/// The private folder of `project` with its login written in it.
+pub fn write_project_mysql_cnf(kit: &Kit, project: &str, text: &str) -> Result<PathBuf> {
+    let Some(state) = crate::projects::state::ProjectState::of(kit, project) else {
+        bail!("{project}: not a project name");
+    };
+    let cnf = state.private_dir()?.join("mysql.cnf");
+    write_in_private(&cnf, text)?;
+    Ok(cnf)
+}
+
 /// [`mysql_cnf`] for `port`.
 pub fn write_mysql_cnf(kit: &Kit, port: u16, password: &str) -> Result<()> {
     write_private(&mysql_cnf(kit), &mysql_cnf_text(port, password))

@@ -217,6 +217,13 @@ pub(super) fn path_var(env: &mut KitEnv, cx: &Cx, dirs: LangDirs, tools: OsTools
         &[app(r"mongodb-tools\bin")],
     );
     when(&mut path, r"sqlite\sqlite3.exe", &[app("sqlite")]);
+    // Docker Sandboxes (D-167): `sbx` in the kit's terminals, for
+    // `sbx login` and a look at the projects' microVMs.
+    when(
+        &mut path,
+        r"sandboxes\bin\sbx.exe",
+        &[app(r"sandboxes\bin")],
+    );
     if is_win {
         if has(r"git\bin\bash.exe") {
             env.set_path("CLAUDE_CODE_GIT_BASH_PATH", app(r"git\bin\bash.exe"));
