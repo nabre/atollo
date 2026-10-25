@@ -149,7 +149,7 @@ fn create_list_delete() {
     fs::write(kit.projects().join("site").join("index.html"), "x").unwrap();
     create(&kit, "empty", "it").unwrap();
     fs::create_dir_all(kit.projects().join(".hidden")).unwrap();
-    let l = list(&kit, "it");
+    let l = list_in(&kit, &kit, "it");
     assert_eq!(l.len(), 2);
     let site = l.iter().find(|p| p.id == "site").unwrap();
     assert!(!site.empty);
@@ -174,7 +174,10 @@ fn recent_follows_the_order_of_list() {
     // Far in the future: later than any folder's modification time.
     settings::update(&kit, "gamma", |s| s.last_opened = Some(u64::MAX - 1));
     settings::update(&kit, "alpha", |s| s.last_opened = Some(u64::MAX - 2));
-    let ids: Vec<String> = list(&kit, "it").into_iter().map(|p| p.id).collect();
+    let ids: Vec<String> = list_in(&kit, &kit, "it")
+        .into_iter()
+        .map(|p| p.id)
+        .collect();
     assert_eq!(recent(&kit), ids);
     assert_eq!(recent(&kit), ["gamma", "alpha", "beta"]);
 }
@@ -470,16 +473,28 @@ fn addable_follows_the_platform() {
     );
     let on = |t: Target| Kit::at_target(tmp.0.clone(), t);
     let win = on(Target::WIN32_X64);
-    assert!(addable(&win, apache) && addable(&win, r) && addable(&win, node));
+    assert!(addable(&win, apache, false) && addable(&win, r, false) && addable(&win, node, false));
     let win_arm = on(Target::WIN32_ARM64);
-    assert!(addable(&win_arm, apache) && addable(&win_arm, r));
+    assert!(addable(&win_arm, apache, false) && addable(&win_arm, r, false));
     for t in [Target::LINUX_ARM64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = on(t);
-        assert!(addable(&kit, apache), "{t:?}");
-        assert!(addable(&kit, php), "{t:?}");
-        assert!(addable(&kit, r) && addable(&kit, node), "{t:?}");
+        assert!(addable(&kit, apache, false), "{t:?}");
+        assert!(addable(&kit, php, false), "{t:?}");
+        assert!(
+            addable(&kit, r, false) && addable(&kit, node, false),
+            "{t:?}"
+        );
     }
     let android = catalog.find("android").unwrap();
-    assert!(addable(&on(Target::LINUX_X64), android));
-    assert!(!addable(&on(Target::LINUX_ARM64), android));
+    assert!(addable(&on(Target::LINUX_X64), android, false));
+    assert!(!addable(&on(Target::LINUX_ARM64), android, false));
+    // For the VM's Linux from this PC (D-173): what only finishes on its
+    // own system is not offered there.
+    let rust = catalog.find("rust").unwrap();
+    assert!(addable(&on(Target::LINUX_X64), node, true));
+    assert!(!addable(&on(Target::LINUX_X64), rust, true));
+    assert!(
+        addable(&on(Target::LINUX_X64), rust, false),
+        "on Linux itself"
+    );
 }

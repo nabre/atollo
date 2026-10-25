@@ -500,12 +500,30 @@ pub fn components_apply<R: Runtime>(
         let choice = Choice::parse(&text, catalog);
         choice.write(&kit, catalog).or_fail_chain("components")?;
     }
+    // With the VM on (D-173): the PC gets the system components only, the
+    // chosen tools go to the VM's Linux.
+    let guest = (kit.target() == state.kit.target())
+        .then(|| vm_tools_target(&state))
+        .flatten();
     let opts = Options {
         target: Some(kit.target()),
         update_all,
+        scope: if guest.is_some() {
+            crate::setup::runner::Scope::System
+        } else {
+            crate::setup::runner::Scope::All
+        },
+        then_tools_for: guest,
         ..Options::default()
     };
     Ok(state.setup.start(opts, false, setup_notify(app))?)
+}
+
+/// The VM's Linux when the VM is on (D-173): where the chosen tools go,
+/// the PC keeping the system components only; `None` without it.
+pub(super) fn vm_tools_target(state: &AppState) -> Option<crate::kit::Target> {
+    let guest = crate::isolation::vm::guest_target(state.kit.target())?;
+    crate::isolation::vm_on(&state.kit, &state.host, &state.env()).then_some(guest)
 }
 
 /// `components.txt` for the ids in `chosen`. What this target cannot install

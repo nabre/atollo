@@ -1,5 +1,11 @@
 # Novità
 
+## Con la VM attiva, gli strumenti solo per Linux (25/10/2026)
+
+- **Meno spazio** (D-173): con la VM attiva, «Installa» in Linguaggi e strumenti scarica i linguaggi e gli altri strumenti solo per il Linux della VM; per il PC restano PowerShell 7, GitHub CLI, l'editor, ConPTY e Docker Sandboxes. Lo stesso per uno strumento installato da solo, per una versione in più e per «Installa i mancanti» di un progetto.
+- Gli strumenti già installati per il PC restano: servono se un giorno la VM manca; per liberare spazio, toglili dalla scelta.
+- **Più sicurezza**: Docker Sandboxes non riparte mai senza le impostazioni di sicurezza del kit, e nessuna sandbox si apre finché non è ripartito.
+
 ## GitHub nella VM senza il token (25/10/2026)
 
 - **`git push` e `gh` dalla VM, per i progetti che scegli** (D-172): nella sezione Git del progetto, «GitHub nella VM» (spenta di serie). Accesa, il proxy di Docker Sandboxes aggiunge il tuo accesso alle richieste verso GitHub di quella sola VM; nella VM c'è solo un segnaposto, e Atollo non copia il token: dà a Docker Sandboxes un comando del kit che lo legge quando serve, e che risponde solo a Docker Sandboxes. Spenta, l'accesso viene tolto. Un accesso a GitHub che avevi già dato a Docker Sandboxes non viene toccato.

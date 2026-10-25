@@ -238,7 +238,27 @@ impl SetupTask {
             cancel: &self.cancel,
         };
         let mut sink = TaskSink { task: self, notify };
-        match runner::run(&ctx, opts, &mut sink) {
+        // With the VM on (D-173): the PC's side first, then the chosen
+        // tools for the VM's Linux, one task.
+        let both = runner::run(&ctx, opts, &mut sink).and_then(|first| {
+            let Some(guest) = opts.then_tools_for else {
+                return Ok(first);
+            };
+            let guest_kit = self.kit.for_target(guest);
+            let guest_ctx = Ctx {
+                kit: &guest_kit,
+                ..ctx
+            };
+            let tools = Options {
+                target: Some(guest),
+                update_all: opts.update_all,
+                force: opts.force,
+                scope: runner::Scope::Tools,
+                ..Options::default()
+            };
+            runner::run(&guest_ctx, &tools, &mut sink)
+        });
+        match both {
             Ok(_) => Ok(()),
             Err(e) if e.is::<Busy>() => Err(crate::common::i18n::t(
                 self.lang(),

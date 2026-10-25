@@ -38,6 +38,28 @@ pub struct Options {
     /// Versioned components installed for the first time at this line
     /// (`major.minor`), not at the latest; ignored for the installed ones.
     pub at: Vec<(String, String)>,
+    /// What the run prepares of the choice (D-173).
+    pub scope: Scope,
+    /// After this run, the chosen tools for this target too (the VM's
+    /// Linux, D-173), in the same task.
+    pub then_tools_for: Option<Target>,
+}
+
+/// What a run prepares of the choice (D-173).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Scope {
+    /// Every chosen component (and what is not chosen any more removed).
+    #[default]
+    All,
+    /// The PC's side with the VM on: the system components and the parts of
+    /// the app only (what they need too); the chosen tools are left as
+    /// they are, neither installed nor removed; what is not chosen any
+    /// more is removed, here and elsewhere.
+    System,
+    /// The VM's Linux: the chosen tools (agents, AI, languages, databases),
+    /// never the system components or the parts of the app, nor what only
+    /// finishes on its own system (`router::bootstrap`); nothing removed.
+    Tools,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -162,11 +184,28 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         })
         .map(|c| c.id.as_str())
         .collect();
-    let wanted = if opts.only.is_empty() {
+    let mut wanted = if opts.only.is_empty() {
         chosen_without_skipped(catalog, choice, &opts.skip, &installed, target)
     } else {
         only_with_needs(catalog, &opts.only, &installed, target)?
     };
+    // The scope (D-173): the PC's side keeps the system components, the
+    // VM's Linux the tools; a chosen tool on the PC is neither installed
+    // nor removed.
+    let locked = catalog.locked_on(target);
+    let tool = |id: &str| {
+        catalog.find(id).is_some_and(|c| {
+            !locked.contains(id)
+                && install::installer(id)
+                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
+        })
+    };
+    match opts.scope {
+        Scope::All => {}
+        Scope::System => wanted.retain(|id| locked.contains(id)),
+        Scope::Tools => wanted.retain(|id| tool(id)),
+    }
+    let removes = opts.only.is_empty() && opts.scope != Scope::Tools;
     // What the chosen components need on this target only (Zig for C and
     // C++ on macOS and Linux): not in the choice, yet not removed while
     // they are chosen, also in a run that skips them.
@@ -176,7 +215,7 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     for c in catalog.in_page_order() {
         if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
-        } else if opts.only.is_empty()
+        } else if removes
             && !choice.is_chosen(&c.id)
             && !kept.contains(c.id.as_str())
             && has_trace(ctx.kit, c)
@@ -201,7 +240,7 @@ pub fn remove_elsewhere(
     choice: &Choice,
     opts: &Options,
 ) -> Vec<(Target, String)> {
-    if !opts.only.is_empty() {
+    if !opts.only.is_empty() || opts.scope == Scope::Tools {
         return Vec::new();
     }
     let chosen = choice.chosen_ids(catalog);
