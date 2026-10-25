@@ -26,7 +26,7 @@ use crate::platform::sh_quote as shell_quote_posix;
 pub const PREFIX: &str = "atollo-";
 
 /// `project` readable in a name `sbx` takes (`[a-z0-9.-]`, at most 40
-/// characters), then the first 8 hex digits of the SHA-256 of its exact
+/// characters), then the first 24 hex digits of the SHA-256 of its exact
 /// name: two projects never share a sandboxes' name, and so never a
 /// workspace (`My Shop` and `my-shop` look the same, their hashes not).
 fn tag(project: &str) -> String {
@@ -42,7 +42,9 @@ fn tag(project: &str) -> String {
         .take(40)
         .collect();
     let hash = Sha256::digest(project.as_bytes());
-    let hex: String = hash[..4].iter().map(|b| format!("{b:02x}")).collect();
+    // 96 bits: no name chosen on purpose (a cloned repository's) reaches
+    // another project's sandbox by brute force.
+    let hex: String = hash[..12].iter().map(|b| format!("{b:02x}")).collect();
     let slug = slug.trim_matches(['-', '.']);
     if slug.is_empty() {
         hex

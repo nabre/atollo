@@ -6,7 +6,7 @@ use super::*;
 fn the_sandbox_is_named_after_the_project() {
     let shop = name("shop");
     assert!(shop.starts_with("atollo-p-shop-"), "{shop}");
-    assert_eq!(shop.len(), "atollo-p-shop-".len() + 8);
+    assert_eq!(shop.len(), "atollo-p-shop-".len() + 24);
     assert!(name("My_Shop 2").starts_with("atollo-p-my-shop-2-"));
     assert!(name("v1.2").starts_with("atollo-p-v1.2-"));
     assert!(name("_x_").starts_with("atollo-p-x-"));
@@ -17,8 +17,8 @@ fn the_sandbox_is_named_after_the_project() {
     assert_ne!(name("shop-claude"), agent_name("shop", "claude"));
     assert!(agent_name("shop", "claude").starts_with("atollo-a-claude-shop-"));
     // A name of symbols only is its hash; a long one is cut, its hash kept.
-    assert_eq!(name("___").len(), "atollo-p-".len() + 8);
-    assert!(name(&"a".repeat(100)).len() <= "atollo-p-".len() + 40 + 1 + 8);
+    assert_eq!(name("___").len(), "atollo-p-".len() + 24);
+    assert!(name(&"a".repeat(100)).len() <= "atollo-p-".len() + 40 + 1 + 24);
     // The same project, the same sandbox at every start.
     assert_eq!(name("shop"), shop);
 }
