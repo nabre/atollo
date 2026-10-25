@@ -27,15 +27,25 @@ interface Explained {
   install?: boolean;
 }
 
+/** A path AppArmor reads as itself: absolute, with none of the characters
+ * that would end the quoted name, start a rule or a glob. */
+export function plainProfilePath(path: string): boolean {
+  return path.startsWith("/") && !/["\\\n\r\t*?[\]{}^,#@$]/.test(path);
+}
+
 /** The AppArmor profile that lets the kit's microVM shim create user
- * namespaces, as the profile of Docker's package does for its own. */
-export function apparmorCommand(shim: string): string {
+ * namespaces (the rule Ubuntu restricts), as Docker's package does for its
+ * own; `null` when the path is not a plain one: a command run with `sudo`
+ * never carries text that could add rules. */
+export function apparmorCommand(shim: string): string | null {
+  if (!plainProfilePath(shim)) return null;
   const file = "/etc/apparmor.d/atollo-sbx-shim";
   return [
     `sudo tee ${file} >/dev/null <<'EOF'`,
     "abi <abi/3.0>,",
     "include <tunables/global>",
-    `"${shim}" flags=(unconfined) {`,
+    `profile atollo-sbx-shim "${shim}" flags=(unconfined) {`,
+    "  userns,",
     "}",
     "EOF",
     `sudo apparmor_parser -r ${file}`,
@@ -86,12 +96,21 @@ export function explain(b: IsolationBlocker, system: System): Explained {
         fix: t("In un terminale del PC, poi esci e rientra nella sessione:"),
         command: "sudo usermod -aG kvm $USER",
       };
-    case "apparmor":
-      return {
-        why: t("AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo."),
-        fix: t("In un terminale del PC, una volta (di nuovo se il kit cambia cartella):"),
-        command: apparmorCommand(b.shim),
-      };
+    case "apparmor": {
+      const command = apparmorCommand(b.shim);
+      return command
+        ? {
+            why: t("AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo."),
+            fix: t("In un terminale del PC, una volta (di nuovo se il kit cambia cartella):"),
+            command,
+          }
+        : {
+            why: t("AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo."),
+            fix: t(
+              "La cartella del kit ha caratteri che un profilo AppArmor non accetta (virgolette, *, ?, [ ], { }, virgole…): sposta il kit in una cartella con un nome semplice.",
+            ),
+          };
+    }
     case "sbx_missing":
       return {
         why: t("Docker Sandboxes (sbx) non è nel kit. Docker Desktop non serve."),

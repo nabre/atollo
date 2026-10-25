@@ -1087,5 +1087,6 @@
   "Nel terminale di Atollo (si apre il browser per l'accesso):": "Dans le terminal d'Atollo (le navigateur s'ouvre pour la connexion) :",
   "Prova il comando nel terminale di Atollo per vedere il problema:": "Essayez la commande dans le terminal d'Atollo pour voir le problème :",
   "Installa nel kit": "Installer dans le kit",
-  "Installazione avviata: la vedi nella barra di stato.": "Installation lancée : vous la suivez dans la barre d'état."
+  "Installazione avviata: la vedi nella barra di stato.": "Installation lancée : vous la suivez dans la barre d'état.",
+  "La cartella del kit ha caratteri che un profilo AppArmor non accetta (virgolette, *, ?, [ ], { }, virgole…): sposta il kit in una cartella con un nome semplice.": "Le dossier du kit contient des caractères qu'un profil AppArmor n'accepte pas (guillemets, *, ?, [ ], { }, virgules…) : déplacez le kit dans un dossier au nom simple."
 }

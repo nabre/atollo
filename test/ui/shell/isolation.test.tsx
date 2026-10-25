@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { IsolationBlocker } from "@/ipc";
-import { explain, IsolationDialog, systemOf } from "@/shell/isolation";
+import { apparmorCommand, explain, IsolationDialog, systemOf } from "@/shell/isolation";
 
 afterEach(cleanup);
 
@@ -44,7 +44,18 @@ describe("explain", () => {
     const profile = explain({ code: "apparmor", shim: "/k/shim" }, "linux").command ?? "";
     expect(profile).toContain('"/k/shim" flags=(unconfined)');
     expect(profile).toContain("apparmor_parser -r /etc/apparmor.d/atollo-sbx-shim");
+    expect(profile).toContain("  userns,");
     expect(explain({ code: "sbx_signed_out" }, "linux").command).toBe("sbx login");
+  });
+
+  it("never builds a sudo command from a path that could add rules", () => {
+    for (const shim of ['/k/a" { capability, } "/x', "/k/a\nb", "/k/*", "/k/a,b", "relative/shim"]) {
+      expect(apparmorCommand(shim), shim).toBeNull();
+      const e = explain({ code: "apparmor", shim }, "linux");
+      expect(e.command).toBeUndefined();
+      expect(e.fix.length).toBeGreaterThan(10);
+    }
+    expect(apparmorCommand("/media/u/My Kit/shim")).toContain('"/media/u/My Kit/shim"');
   });
 
   it("puts the details in the sentence", () => {
