@@ -126,8 +126,7 @@ fn rename_over(from: &Path, to: &Path) -> io::Result<()> {
     loop {
         match fs::rename(from, to) {
             Err(e)
-                if cfg!(windows)
-                    && matches!(e.raw_os_error(), Some(5 | 32))
+                if crate::platform::files::rename_busy(&e)
                     && start.elapsed() < std::time::Duration::from_secs(1) =>
             {
                 std::thread::sleep(wait);

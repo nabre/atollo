@@ -132,14 +132,14 @@ pub fn write_all(kit: &Kit) -> Result<()> {
                 fs::create_dir_all(parent)?;
             }
             if is_unix_bin {
-                crate::router::write_executable(&path, content.as_bytes())
+                crate::platform::files::write_executable(&path, content.as_bytes())
                     .with_context(|| path.display().to_string())?;
             } else {
                 write_atomic(&path, content.as_bytes())
                     .with_context(|| path.display().to_string())?;
             }
         } else if is_unix_bin {
-            let _ = crate::router::set_executable(&path);
+            let _ = crate::platform::files::set_executable(&path);
         }
     }
     Ok(())

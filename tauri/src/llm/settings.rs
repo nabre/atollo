@@ -71,7 +71,7 @@ pub fn ensure_key(kit: &Kit) -> Result<String> {
         return Ok(key);
     }
     let key = crate::editor::random_token()?;
-    crate::router::write_private(&key_file(kit), &key)?;
+    crate::platform::files::write_private(&key_file(kit), &key)?;
     Ok(key)
 }
 

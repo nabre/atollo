@@ -304,7 +304,7 @@ impl Editor {
         // A new file each start, owner-only before the token is in it: never
         // the old one rewritten, which another account's DACL (the kit
         // used on another PC) would refuse (PORT-V6-01, BUG-V6-33).
-        crate::router::fs::replace_private(&token_file, &token)?;
+        crate::platform::files::replace_private(&token_file, &token)?;
         let log_path = self.kit.logs().join("editor.log");
 
         let mut last_error = None;
@@ -449,7 +449,7 @@ pub fn random_token() -> Result<String> {
 // inherited by every file and folder created in it afterwards (temporary
 // files included), so they are private from the start; on Unix the folder
 // gets mode 700 and what is inside cannot be reached.
-pub(crate) use crate::router::{restrict_dir_to_owner, restrict_to_owner};
+pub(crate) use crate::platform::files::{restrict_dir_to_owner, restrict_to_owner};
 
 fn append_log(path: &Path, line: &str) {
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {

@@ -376,12 +376,12 @@ pub fn composer_launchers(dir: &Path) -> Result<()> {
         &sh,
         b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nif [ -x \"$d/bin/php\" ]; then\n  exec \"$d/bin/php\" \"$d/composer.phar\" \"$@\"\nfi\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
     )?;
-    let _ = crate::router::set_executable(&sh);
+    let _ = crate::platform::files::set_executable(&sh);
     let bin = dir.join("bin");
     if bin.join("php").is_file() {
         let launcher = bin.join("composer");
         write_atomic(&launcher, COMPOSER_UNIX)?;
-        let _ = crate::router::set_executable(&launcher);
+        let _ = crate::platform::files::set_executable(&launcher);
     }
     Ok(())
 }

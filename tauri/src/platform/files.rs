@@ -1,54 +1,35 @@
-//! OS-aware file reading, atomic writing, owner-only permissions (DACL on
-//! Windows, `chmod` on Unix), and executable bit management.
+//! Files with permissions: owner-only files and folders (a protected DACL
+//! on Windows, a mode on macOS and Linux), the executable bit, atomic
+//! writes of private files, and what to say when another account's file
+//! is in the way. Each system sets the permissions its way
+//! (`os/*/files.rs`).
 
 use std::fs;
 use std::io;
 use std::path::Path;
 
 use anyhow::{Context, Result};
-#[cfg(windows)]
-use windows::core::HSTRING;
-#[cfg(windows)]
-use windows::Win32::Foundation::{LocalFree, HLOCAL};
-#[cfg(windows)]
-use windows::Win32::Security::Authorization::{
-    ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
-};
-#[cfg(windows)]
-use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
 use crate::common::fsx::write_atomic;
 use crate::kit::Target;
+use crate::os::current::files as imp;
 
 /// Protected DACL with full access for the owner only on Windows
 /// (`D:P(A;;FA;;;OW)`), or mode `0o600` on Unix.
 /// Fails on filesystems without permissions (FAT32/exFAT): callers log a warning.
 pub fn restrict_to_owner(path: &Path) -> Result<()> {
-    #[cfg(windows)]
-    return set_dacl(path, "D:P(A;;FA;;;OW)");
-    #[cfg(unix)]
-    return set_mode(path, 0o600);
+    imp::restrict_to_owner(path)
 }
 
 /// Owner-only directory permissions: inherited DACL `D:P(A;OICI;FA;;;OW)` on
 /// Windows, mode `0o700` on Unix.
 pub fn restrict_dir_to_owner(path: &Path) -> Result<()> {
-    #[cfg(windows)]
-    return set_dacl(path, "D:P(A;OICI;FA;;;OW)");
-    #[cfg(unix)]
-    return set_mode(path, 0o700);
+    imp::restrict_dir_to_owner(path)
 }
 
 /// Marks `path` executable (`0o755`) on Unix; no-op on Windows.
 pub fn set_executable(path: &Path) -> io::Result<()> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        fs::set_permissions(path, fs::Permissions::from_mode(0o755))?;
-    }
-    #[cfg(not(unix))]
-    let _ = path;
-    Ok(())
+    imp::set_executable(path)
 }
 
 /// Writes `bytes` atomically to `path` (creating parent folders) and marks the
@@ -102,18 +83,7 @@ pub fn replace_private(path: &Path, text: &str) -> Result<()> {
         Err(e) if e.kind() != io::ErrorKind::NotFound => return Err(access_error(path, e)),
         _ => {}
     }
-    let mut options = fs::OpenOptions::new();
-    options.write(true).create_new(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.mode(0o600);
-    }
-    let mut file = options.open(path).map_err(|e| access_error(path, e))?;
-    #[cfg(windows)]
-    if let Err(e) = restrict_to_owner(path) {
-        crate::common::log::warn(&format!("{}: permissions: {e:#}", path.display()));
-    }
+    let mut file = imp::create_private(path).map_err(|e| access_error(path, e))?;
     file.write_all(text.as_bytes())
         .and_then(|()| file.sync_all())
         .map_err(|e| access_error(path, e))
@@ -126,67 +96,35 @@ pub fn access_error(path: &Path, e: io::Error) -> anyhow::Error {
     if e.kind() != io::ErrorKind::PermissionDenied {
         return anyhow::Error::new(e).context(shown.to_string());
     }
-    #[cfg(windows)]
-    let what = format!(
-        "{shown}: access denied ({e}). It was made private by another Windows account, \
-         perhaps on another PC (an NTFS disk keeps its permissions): delete it, or as \
-         administrator run takeown /f \"{shown}\" and icacls \"{shown}\" /reset"
-    );
-    #[cfg(unix)]
-    let what = format!(
-        "{shown}: permission denied ({e}). It belongs to another user, perhaps on another \
-         computer: delete it, or give it back with chown"
-    );
-    anyhow::anyhow!(what)
+    anyhow::anyhow!(imp::denied_text(&shown.to_string(), &e))
 }
 
-/// Ensures extracted Unix binaries (`bin/`, `sbin/`, and root executables)
-/// have the executable bit set when running on a Unix host.
+/// Ensures extracted Unix binaries (`bin/`, `sbin/`) have the executable
+/// bit set when running on a Unix host (on Windows nothing is set).
 pub fn ensure_tree_executables(target: Target, tree: &Path) {
-    if !target.is_unix() {
+    if !target.is_unix() || !imp::HAS_EXECUTABLE_BIT {
         return;
     }
-    #[cfg(unix)]
-    {
-        for sub in ["bin", "sbin"] {
-            let dir = tree.join(sub);
-            if let Ok(entries) = fs::read_dir(dir) {
-                for entry in entries.flatten() {
-                    if entry.file_type().is_ok_and(|t| t.is_file()) {
-                        let _ = set_executable(&entry.path());
-                    }
+    for sub in ["bin", "sbin"] {
+        let dir = tree.join(sub);
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                if entry.file_type().is_ok_and(|t| t.is_file()) {
+                    let _ = set_executable(&entry.path());
                 }
             }
         }
     }
-    #[cfg(not(unix))]
-    let _ = tree;
 }
 
-#[cfg(unix)]
-fn set_mode(path: &Path, mode: u32) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(path, fs::Permissions::from_mode(mode))
-        .with_context(|| format!("chmod {mode:o} {}", path.display()))
-}
-
-#[cfg(windows)]
-fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
-    let sddl = HSTRING::from(sddl);
-    let mut sd = PSECURITY_DESCRIPTOR::default();
-    // SAFETY: valid SDDL string; `sd` receives a LocalAlloc'd descriptor freed below.
-    unsafe {
-        ConvertStringSecurityDescriptorToSecurityDescriptorW(&sddl, SDDL_REVISION_1, &mut sd, None)
-    }
-    .context("security descriptor")?;
-    let file = HSTRING::from(path.as_os_str());
-    // SAFETY: `sd` is a valid descriptor for the duration of the call.
-    let result = unsafe { SetFileSecurityW(&file, DACL_SECURITY_INFORMATION, sd) };
-    // SAFETY: frees the descriptor allocated above, once.
-    unsafe { LocalFree(Some(HLOCAL(sd.0))) };
-    result.ok().context("SetFileSecurityW")
+/// A rename refused for a moment because another program holds the target
+/// without sharing its deletion (Windows: access denied or sharing
+/// violation): worth trying again. Never on macOS and Linux, where a rename
+/// does not fail this way.
+pub fn rename_busy(e: &io::Error) -> bool {
+    imp::rename_busy(e)
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/router/fs.rs"]
+#[path = "../../../test/rust/platform/files.rs"]
 mod tests;

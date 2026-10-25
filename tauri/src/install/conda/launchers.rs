@@ -75,7 +75,7 @@ pub fn write_launchers(prefix: &Path, package: &str) -> Result<()> {
     }
     for program in &programs {
         let path = dir.join(program);
-        crate::router::write_executable(&path, launcher_text(program).as_bytes())
+        crate::platform::files::write_executable(&path, launcher_text(program).as_bytes())
             .with_context(|| path.display().to_string())?;
     }
     Ok(())

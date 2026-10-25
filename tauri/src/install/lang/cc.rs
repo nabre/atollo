@@ -231,7 +231,7 @@ pub(crate) fn write_zig_shims(bin: &Path) -> Result<()> {
     for (name, script) in zig_shims() {
         let path = bin.join(name);
         crate::common::fsx::write_atomic(&path, script.as_bytes())?;
-        crate::router::set_executable(&path)?;
+        crate::platform::files::set_executable(&path)?;
     }
     Ok(())
 }

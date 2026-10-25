@@ -1,20 +1,13 @@
 //! Central multi-platform Router of Atollo (`WIN / LIN / MAC` ↔ `ROUTER` ↔
 //! `ATOLLO 2`): target capabilities (`target`), OS-aware binary and launcher
-//! resolution (`bins`), multi-target disk and health probing (`probe`), and
-//! OS-aware private/executable file operations (`fs`).
+//! resolution (`bins`), multi-target disk and health probing (`probe`). The
+//! private and executable files of this PC are `platform::files`.
 
 pub mod availability;
 pub mod bins;
 pub mod bootstrap;
-pub mod fs;
 pub mod probe;
 pub mod target;
-
-// The private and executable files, by a short path
-// (`crate::router::write_private`).
-pub use fs::{
-    restrict_dir_to_owner, restrict_to_owner, set_executable, write_executable, write_private,
-};
 
 use crate::env::KitEnv;
 use crate::kit::{Kit, Target};

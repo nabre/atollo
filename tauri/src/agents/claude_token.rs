@@ -74,7 +74,7 @@ pub fn save(kit: &Kit, token: &str) -> Result<()> {
         bail!("not a Claude Code token");
     }
     let file = path(kit);
-    crate::router::write_private(&file, token)?;
+    crate::platform::files::write_private(&file, token)?;
     // A kit on exFAT or FAT keeps no owner-only mode: anyone could read
     // the token there, so it is not kept (as the Antigravity keyring).
     if !owner_only(&file) {

@@ -242,7 +242,7 @@ impl Settings {
     pub fn save(&self, kit: &Kit) -> anyhow::Result<()> {
         let key = gemini_file(kit);
         match self.gemini_api_key.as_deref().filter(|k| !k.is_empty()) {
-            Some(k) => crate::router::write_private(&key, k)?,
+            Some(k) => crate::platform::files::write_private(&key, k)?,
             None if self.gemini_unreadable => {}
             None => match std::fs::remove_file(&key) {
                 Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),
@@ -291,7 +291,7 @@ pub(crate) fn read_secret(path: &Path) -> anyhow::Result<Option<String>> {
     match std::fs::read_to_string(path) {
         Ok(t) => Ok(Some(t.trim().to_owned()).filter(|t| !t.is_empty())),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(crate::router::fs::access_error(path, e)),
+        Err(e) => Err(crate::platform::files::access_error(path, e)),
     }
 }
 

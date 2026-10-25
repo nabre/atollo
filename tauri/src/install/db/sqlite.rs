@@ -95,7 +95,7 @@ impl Installer for Sqlite {
         }
         let launcher = dir.join("sqlite3");
         crate::common::fsx::write_atomic(&launcher, SQLITE_CONDA_LAUNCHER.as_bytes())?;
-        crate::router::set_executable(&launcher)?;
+        crate::platform::files::set_executable(&launcher)?;
         Ok(())
     }
 

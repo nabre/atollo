@@ -233,7 +233,7 @@ impl Installer for R {
                     continue;
                 };
                 if let Some(new) = plain_r_sed(&text) {
-                    crate::router::write_executable(&path, new.as_bytes())
+                    crate::platform::files::write_executable(&path, new.as_bytes())
                         .with_context(|| path.display().to_string())?;
                 }
             }

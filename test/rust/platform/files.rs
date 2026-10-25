@@ -1,36 +1,6 @@
 use super::*;
 use crate::kit::tests::TempDir;
 
-/// A private file of another account, as an NTFS disk brings it from
-/// another PC (PORT-V6-01): a protected DACL with no entry this account
-/// matches, so it can neither read nor rewrite it.
-#[cfg(windows)]
-fn foreign(path: &Path) {
-    set_dacl(path, "D:P").unwrap();
-    assert!(fs::read_to_string(path).is_err(), "not readable any more");
-    assert!(fs::write(path, "x").is_err(), "not writable any more");
-}
-
-/// PORT-V6-01: a private file this account may not rewrite is replaced
-/// by one of its own, owner-only again.
-#[cfg(windows)]
-#[test]
-fn foreign_private_file_is_replaced() {
-    let tmp = TempDir::new("fs-foreign");
-    let dir = tmp.0.join("O’Brien {x}");
-    let file = dir.join("my secret.txt");
-    write_private(&file, "old").unwrap();
-    foreign(&file);
-    write_in_private(&file, "new").unwrap();
-    assert_eq!(fs::read_to_string(&file).unwrap(), "new");
-
-    let token = dir.join("token");
-    replace_private(&token, "one").unwrap();
-    foreign(&token);
-    replace_private(&token, "two").unwrap();
-    assert_eq!(fs::read_to_string(&token).unwrap(), "two");
-}
-
 /// A session secret is a new file each time, with the text and nothing
 /// else, owner-only (mode 600 off Windows).
 #[test]

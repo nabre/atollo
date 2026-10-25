@@ -11,6 +11,7 @@
 //! - `jobs`: the programs the kit starts, none outliving the app (D-07);
 //! - `processes`, `sessions`: the PC's processes, the kit's programs open,
 //!   other kits, "Rimuovi l'unità";
+//! - `files`: owner-only files and folders, the executable bit;
 //! - `instance`: one app per kit (D-08);
 //! - `lock`: the kit's locks across its processes;
 //! - `volume`: the disk of a folder (D-90, D-105);
@@ -19,6 +20,7 @@
 //! - `memory`: the PC's RAM;
 //! - `webview`: the web view of the windows (D-05).
 
+pub mod files;
 pub mod instance;
 pub mod jobs;
 pub mod lock;

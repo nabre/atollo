@@ -170,7 +170,7 @@ pub fn sync_models(kit: &Kit, p: &Paths) -> Result<()> {
     }
     let text = serde_json::to_string_pretty(&cfg)?;
     // The server's key is in it: owner-only, as auth.json.
-    crate::router::write_private(&file, &text)
+    crate::platform::files::write_private(&file, &text)
 }
 
 /// `settings.json`: the keys the kit manages (see the module).

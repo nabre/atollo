@@ -113,7 +113,7 @@ pub(super) fn place_part(
             };
             check_key_for(ctx.kit.target(), component, inst.inside(), &tree)?;
             inst.before_swap(ctx, component, &tree, folder)?;
-            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
+            crate::platform::files::ensure_tree_executables(ctx.kit.target(), &tree);
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
             }
@@ -123,7 +123,7 @@ pub(super) fn place_part(
         }
         Dest::Folder(name) => {
             let folder = apps.join(name);
-            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
+            crate::platform::files::ensure_tree_executables(ctx.kit.target(), &tree);
             archive::clean_leftovers(&apps);
             archive::stage_into(&tree, &folder)
         }
@@ -135,7 +135,7 @@ pub(super) fn place_part(
                     .with_context(|| format!("{name} not found in {}", part.file_name))?;
                 let dest = tools.join(name);
                 put_file(&found, &dest)?;
-                let _ = crate::router::set_executable(&dest);
+                let _ = crate::platform::files::set_executable(&dest);
             }
             Ok(())
         }
@@ -152,7 +152,7 @@ pub(super) fn place_part(
             fs::create_dir_all(&dir)?;
             let dest = dir.join(name);
             put_file(&src, &dest)?;
-            let _ = crate::router::set_executable(&dest);
+            let _ = crate::platform::files::set_executable(&dest);
             Ok(())
         }
         Dest::Inside(name) => {
@@ -163,7 +163,7 @@ pub(super) fn place_part(
                 .with_context(|| format!("{name} not found in {}", part.file_name))?;
             let dest = folder.join(name);
             put_file(&found, &dest)?;
-            let _ = crate::router::set_executable(&dest);
+            let _ = crate::platform::files::set_executable(&dest);
             Ok(())
         }
     }

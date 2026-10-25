@@ -175,7 +175,7 @@ pub fn private_leaf(base: &Path, name: &str) -> std::io::Result<PathBuf> {
     #[cfg(not(unix))]
     fs::DirBuilder::new().create(&leaf)?;
     #[cfg(windows)]
-    if let Err(e) = crate::router::restrict_dir_to_owner(&leaf) {
+    if let Err(e) = crate::platform::files::restrict_dir_to_owner(&leaf) {
         let _ = fs::remove_dir(&leaf);
         return Err(std::io::Error::other(format!("{e:#}")));
     }
