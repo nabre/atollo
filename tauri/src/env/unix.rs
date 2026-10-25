@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::kit::{Os, Target};
 
 use super::{Cx, KitEnv};
@@ -146,28 +146,11 @@ pub(crate) fn macos_rust_linker(target: Target, clt: bool) -> Option<(String, &'
     Some((format!("CARGO_TARGET_{triple}_LINKER"), "/usr/bin/cc"))
 }
 
-/// The folders `xcode-select -p` prints when Xcode Command Line Tools, or
-/// Xcode itself, are installed, each with the `clang` of its own.
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-pub(crate) const XCODE_DEVELOPER_DIRS: [&str; 2] = [
-    "/Library/Developer/CommandLineTools",
-    "/Applications/Xcode.app/Contents/Developer",
-];
-
-/// Xcode Command Line Tools (or Xcode) on this Mac; looked up once. False
-/// elsewhere: a macOS kit prepared on another system cannot know.
+/// Xcode Command Line Tools (or Xcode) on this Mac
+/// (`platform::host::apple_clang_present`). False elsewhere: a macOS kit
+/// prepared on another system cannot know.
 fn xcode_clt_present() -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        *PRESENT.get_or_init(|| {
-            XCODE_DEVELOPER_DIRS
-                .iter()
-                .any(|d| join_rel(Path::new(d), "usr/bin/clang").is_file())
-        })
-    }
-    #[cfg(not(target_os = "macos"))]
-    false
+    crate::platform::host::apple_clang_present()
 }
 
 /// The linker of Rust's `aarch64-pc-windows-gnullvm` host in llvm-mingw's
@@ -246,12 +229,11 @@ pub(super) fn write_gemrc(rc: &Path) -> std::io::Result<()> {
     if let Some(dir) = rc.parent() {
         fs::create_dir_all(dir)?;
     }
-    crate::fsx::write_atomic(rc, GEMRC.as_bytes())
+    crate::common::fsx::write_atomic(rc, GEMRC.as_bytes())
 }
 
 /// The folders where Linux keeps shared libraries, for `arch` (`x86_64`,
 /// `aarch64`): the multiarch ones of Debian and Ubuntu, then the others.
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn linux_lib_dirs(arch: &str) -> Vec<PathBuf> {
     let multiarch = format!("{arch}-linux-gnu");
     let mut out = Vec::new();
@@ -266,7 +248,6 @@ pub(crate) fn linux_lib_dirs(arch: &str) -> Vec<PathBuf> {
 
 /// True when one of `dirs` has ICU's common library (`libicuuc.so.<n>`),
 /// which .NET loads by its versioned name.
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn has_libicu(dirs: &[PathBuf]) -> bool {
     dirs.iter().any(|dir| {
         fs::read_dir(dir).into_iter().flatten().flatten().any(|e| {
@@ -277,17 +258,10 @@ pub(crate) fn has_libicu(dirs: &[PathBuf]) -> bool {
     })
 }
 
-/// ICU is installed on this Linux PC; looked up once. Elsewhere true:
-/// a Linux kit built on another system cannot know.
-#[cfg(target_os = "linux")]
+/// ICU is installed on this Linux PC (`platform::host::libicu_present`).
+/// Elsewhere true: a Linux kit built on another system cannot know.
 pub(super) fn libicu_present() -> bool {
-    static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *PRESENT.get_or_init(|| has_libicu(&linux_lib_dirs(std::env::consts::ARCH)))
-}
-
-#[cfg(not(target_os = "linux"))]
-pub(super) fn libicu_present() -> bool {
-    true
+    crate::platform::host::libicu_present()
 }
 
 #[cfg(test)]

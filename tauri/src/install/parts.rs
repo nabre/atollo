@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Context, Result};
 
 use crate::net::archive::{self, Kind};
+use crate::platform::signature::Verdict;
 use crate::setup::Component;
 
 use super::flow::fetch;
@@ -76,19 +77,19 @@ pub(super) fn fetch_part(
         let _ = fs::remove_file(&file);
     }
     let tree = archive::pick_inner(&extracted, &part.inner)?;
-    #[cfg(windows)]
     if ctx.kit.os().is_windows() {
         if let Some(sign) = &part.sign {
-            let file = crate::fsx::join_rel(&tree, &sign.file);
-            match crate::net::signature::check(&file, sign.publisher, sign.required)? {
-                crate::net::signature::Verdict::Valid { subject } => {
+            let file = crate::common::fsx::join_rel(&tree, &sign.file);
+            match crate::platform::signature::check(&file, sign.publisher, sign.required)? {
+                Some(Verdict::Valid { subject }) => {
                     progress.note(&format!("signature ok: {subject}"))
                 }
-                crate::net::signature::Verdict::RevocationUnknown { subject } => {
+                Some(Verdict::RevocationUnknown { subject }) => {
                     progress.note(&format!(
                         "signature of {subject}: revocation not verifiable (offline?)"
                     ));
                 }
+                None => {}
             }
         }
     }
@@ -113,7 +114,7 @@ pub(super) fn place_part(
             };
             check_key_for(ctx.kit.target(), component, inst.inside(), &tree)?;
             inst.before_swap(ctx, component, &tree, folder)?;
-            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
+            crate::platform::files::ensure_tree_executables(ctx.kit.target(), &tree);
             if let Some(parent) = folder.parent() {
                 archive::clean_leftovers(parent);
             }
@@ -123,7 +124,7 @@ pub(super) fn place_part(
         }
         Dest::Folder(name) => {
             let folder = apps.join(name);
-            crate::router::fs::ensure_tree_executables(ctx.kit.target(), &tree);
+            crate::platform::files::ensure_tree_executables(ctx.kit.target(), &tree);
             archive::clean_leftovers(&apps);
             archive::stage_into(&tree, &folder)
         }
@@ -135,12 +136,12 @@ pub(super) fn place_part(
                     .with_context(|| format!("{name} not found in {}", part.file_name))?;
                 let dest = tools.join(name);
                 put_file(&found, &dest)?;
-                let _ = crate::router::set_executable(&dest);
+                let _ = crate::platform::files::set_executable(&dest);
             }
             Ok(())
         }
         Dest::File { folder, name, from } => {
-            let src = crate::fsx::join_rel(&tree, from);
+            let src = crate::common::fsx::join_rel(&tree, from);
             if !src.is_file() {
                 bail!("{from} not found in {}", part.file_name);
             }
@@ -152,7 +153,7 @@ pub(super) fn place_part(
             fs::create_dir_all(&dir)?;
             let dest = dir.join(name);
             put_file(&src, &dest)?;
-            let _ = crate::router::set_executable(&dest);
+            let _ = crate::platform::files::set_executable(&dest);
             Ok(())
         }
         Dest::Inside(name) => {
@@ -163,7 +164,7 @@ pub(super) fn place_part(
                 .with_context(|| format!("{name} not found in {}", part.file_name))?;
             let dest = folder.join(name);
             put_file(&found, &dest)?;
-            let _ = crate::router::set_executable(&dest);
+            let _ = crate::platform::files::set_executable(&dest);
             Ok(())
         }
     }

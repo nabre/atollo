@@ -21,7 +21,7 @@ import {
   type RunInfo,
   type SetupSnapshot,
   type UpdateStatus,
-} from "./api";
+} from "./ipc";
 import { updateFound, updateText } from "./shell/update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";

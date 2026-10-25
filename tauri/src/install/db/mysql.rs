@@ -135,13 +135,13 @@ pub fn mysql_release_for(
 pub fn strip_mysql(tree: &Path) -> Result<()> {
     use crate::db::services::mysql::{STRIP_DIRS, STRIP_FILES};
     for dir in STRIP_DIRS {
-        let path = crate::fsx::join_rel(tree, dir);
+        let path = crate::common::fsx::join_rel(tree, dir);
         if path.is_dir() {
             crate::net::archive::remove_dir(&path)?;
         }
     }
     for file in STRIP_FILES {
-        let _ = fs::remove_file(crate::fsx::join_rel(tree, file));
+        let _ = fs::remove_file(crate::common::fsx::join_rel(tree, file));
     }
     remove_debug_symbols(tree)
 }

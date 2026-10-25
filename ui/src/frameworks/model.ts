@@ -13,7 +13,7 @@ import {
   type FrameworkPlan,
   type FrameworkVariant,
   type FrameworksView,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 
 /** The name of a slot of additions (one of each goes in a project). */

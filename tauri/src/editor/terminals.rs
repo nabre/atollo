@@ -19,16 +19,14 @@
 //!   the project's (profile.ps1, bashrc).
 
 use std::collections::BTreeMap;
-#[cfg(windows)]
-use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::common::fsx::{read_json, write_json};
 use crate::env::KitEnv;
-use crate::fsx::{read_json, write_json};
 use crate::kit::Kit;
 use crate::setup::{Catalog, Component, Group};
 
@@ -121,7 +119,9 @@ fn load(kit: &Kit) -> Vec<Terminal> {
     for t in &mut all {
         if let Some(d) = &mut t.dir {
             if std::path::Path::new(d.as_str()).is_relative() {
-                *d = crate::fsx::join_rel(kit.root(), d).display().to_string();
+                *d = crate::common::fsx::join_rel(kit.root(), d)
+                    .display()
+                    .to_string();
             }
         }
     }
@@ -198,7 +198,7 @@ pub fn tools(kit: &Kit) -> Vec<ToolOption> {
 fn default_terminal(kit: &Kit, lang: &str) -> Terminal {
     Terminal {
         id: DEFAULT_ID.to_owned(),
-        name: crate::i18n::t(lang, "Tutti gli strumenti", &[]),
+        name: crate::common::i18n::t(lang, "Tutti gli strumenti", &[]),
         dir: None,
         tools: tools(kit).into_iter().map(|t| (t.id, None)).collect(),
     }
@@ -287,7 +287,7 @@ pub fn checked_dir(dir: &str, lang: &str) -> Result<PathBuf> {
     if !path.is_absolute() || !path.is_dir() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "La cartella {0} non esiste.", &[dir.trim()])
+            crate::common::i18n::t(lang, "La cartella {0} non esiste.", &[dir.trim()])
         );
     }
     Ok(path)
@@ -300,13 +300,13 @@ fn clean(input: Terminal, lang: &str) -> Result<Terminal> {
     if name.is_empty() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "Scrivi un nome per il terminale.", &[])
+            crate::common::i18n::t(lang, "Scrivi un nome per il terminale.", &[])
         );
     }
     if name.chars().count() > NAME_MAX {
         bail!(
             "{}",
-            crate::i18n::t(
+            crate::common::i18n::t(
                 lang,
                 "Il nome del terminale è troppo lungo (al massimo {0} caratteri).",
                 &[&NAME_MAX.to_string()]
@@ -339,7 +339,7 @@ pub fn save(kit: &Kit, input: Terminal, lang: &str) -> Result<String> {
     if input.id == DEFAULT_ID {
         bail!(
             "{}",
-            crate::i18n::t(lang, "Il terminale predefinito non si modifica.", &[])
+            crate::common::i18n::t(lang, "Il terminale predefinito non si modifica.", &[])
         );
     }
     let mut terminal = clean(input, lang)?;
@@ -354,7 +354,7 @@ pub fn save(kit: &Kit, input: Terminal, lang: &str) -> Result<String> {
         let Some(existing) = all.iter_mut().find(|t| t.id == terminal.id) else {
             bail!(
                 "{}",
-                crate::i18n::t(lang, "Terminale non trovato: {0}", &[&terminal.id])
+                crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&terminal.id])
             );
         };
         *existing = terminal.clone();
@@ -415,7 +415,7 @@ fn owned_dirs(kit: &Kit, c: &Component, env: &KitEnv) -> Vec<PathBuf> {
 
 /// `p` with one separator, compared as the PC's file system does.
 fn norm(p: &str) -> String {
-    crate::os::processes::path_key(p.replace('/', "\\").trim_end_matches('\\'))
+    crate::platform::processes::path_key(p.replace('/', "\\").trim_end_matches('\\'))
 }
 
 /// `path` is one of `dirs` or inside one.
@@ -488,59 +488,6 @@ pub fn start_dir(kit: &Kit, terminal: &Terminal, dir: Option<&str>, lang: &str) 
     match dir.or(terminal.dir.as_deref()) {
         Some(d) => checked_dir(d, lang),
         None => Ok(kit.projects()),
-    }
-}
-
-/// Windows' "Select folder" window over `owner` (a window handle), starting
-/// in `start`. `None` when closed without a choice. macOS and Linux:
-/// `editor::picker::folder`.
-#[cfg(windows)]
-pub fn pick_dir(owner: isize, title: &str, start: Option<&Path>) -> Result<Option<PathBuf>> {
-    use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
-    use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER,
-        COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
-    };
-    use windows::Win32::UI::Shell::{
-        FileOpenDialog, IFileOpenDialog, IShellItem, SHCreateItemFromParsingName,
-        FOS_FORCEFILESYSTEM, FOS_PATHMUSTEXIST, FOS_PICKFOLDERS, SIGDN_FILESYSPATH,
-    };
-    // SAFETY: as `setup::downloads::pick`: COM initialised on this thread
-    // for the dialog and released after every COM object of the closure is
-    // dropped; the strings COM allocates are freed once read.
-    unsafe {
-        let init = CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-        let result = (|| -> Result<Option<PathBuf>> {
-            let dialog: IFileOpenDialog =
-                CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
-            dialog.SetOptions(
-                dialog.GetOptions()? | FOS_PICKFOLDERS | FOS_PATHMUSTEXIST | FOS_FORCEFILESYSTEM,
-            )?;
-            dialog.SetTitle(&HSTRING::from(title))?;
-            if let Some(start) = start.filter(|s| s.is_dir()) {
-                let start = HSTRING::from(start.as_os_str());
-                let folder: windows::core::Result<IShellItem> =
-                    SHCreateItemFromParsingName(PCWSTR(start.as_ptr()), None);
-                if let Ok(folder) = folder {
-                    let _ = dialog.SetFolder(&folder);
-                }
-            }
-            if let Err(e) = dialog.Show(Some(HWND(owner as _))) {
-                if e.code() == ERROR_CANCELLED.to_hresult() {
-                    return Ok(None);
-                }
-                return Err(e.into());
-            }
-            let path = dialog.GetResult()?.GetDisplayName(SIGDN_FILESYSPATH)?;
-            let text = path.to_string();
-            CoTaskMemFree(Some(path.0 as _));
-            Ok(Some(PathBuf::from(text?)))
-        })();
-        if init.is_ok() {
-            CoUninitialize();
-        }
-        result
     }
 }
 

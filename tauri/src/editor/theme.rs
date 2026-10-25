@@ -74,10 +74,10 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
         return Ok(());
     }
     // In the host's temporary folder (D-90), removed when `work` is dropped.
-    let work = crate::os::temp::TempWork::new(kit, "theme")?;
+    let work = crate::platform::temp::TempWork::new(kit, "theme")?;
     let vsix = work.path().join("atollo-theme.vsix");
     write_vsix(&vsix)?;
-    let job = crate::os::jobs::Job::new()?;
+    let job = crate::platform::jobs::Job::new()?;
     let mut cmd = crate::editor::ext::server_cli(kit, env);
     // --force: also over a newer or equal version left by another build.
     cmd.arg("--install-extension")
@@ -86,7 +86,8 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    let child = crate::os::jobs::spawn_in(&mut cmd, &job).context("server --install-extension")?;
+    let child =
+        crate::platform::jobs::spawn_in(&mut cmd, &job).context("server --install-extension")?;
     let out = child
         .wait_with_output()
         .context("server --install-extension")?;
@@ -99,7 +100,7 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
             String::from_utf8_lossy(&out.stderr).trim()
         );
     }
-    crate::log::info(&format!("editor theme {} installed", version()));
+    crate::common::log::info(&format!("editor theme {} installed", version()));
     Ok(())
 }
 

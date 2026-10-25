@@ -39,10 +39,10 @@ use std::sync::{Arc, Mutex};
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::common::i18n::t as tr;
 use crate::env::KitEnv;
-use crate::i18n::t as tr;
 use crate::kit::Kit;
-use crate::os::jobs;
+use crate::platform::jobs;
 
 /// Where the one-time code of the sign-in is typed.
 pub const DEVICE_PATH: &str = "login/device";
@@ -159,11 +159,11 @@ pub fn sync_git(kit: &Kit, env: &KitEnv, signed_in: bool) -> Result<()> {
         return Ok(());
     }
     if let Err(e) = sync_safe_directory(kit, env) {
-        crate::log::warn(&format!("github: safe.directory: {e:#}"));
+        crate::common::log::warn(&format!("github: safe.directory: {e:#}"));
     }
     if signed_in {
         if let Err(e) = fill_identity(kit, env) {
-            crate::log::warn(&format!("github: git identity: {e:#}"));
+            crate::common::log::warn(&format!("github: git identity: {e:#}"));
         }
     }
     for host in HELPER_HOSTS {
@@ -216,8 +216,8 @@ fn safe_marker(kit: &Kit) -> PathBuf {
 
 /// Remembers `value` as the kit's own `safe.directory`.
 pub(crate) fn remember_safe_value(kit: &Kit, value: &str) {
-    if let Err(e) = crate::fsx::write_atomic(&safe_marker(kit), value.as_bytes()) {
-        crate::log::warn(&format!("github: safe.directory marker: {e}"));
+    if let Err(e) = crate::common::fsx::write_atomic(&safe_marker(kit), value.as_bytes()) {
+        crate::common::log::warn(&format!("github: safe.directory marker: {e}"));
     }
 }
 
@@ -468,7 +468,7 @@ impl Login {
             ..Pending::default()
         };
         drop(p);
-        crate::log::info("github: sign-in started");
+        crate::common::log::info("github: sign-in started");
         let (pending, kit, env) = (Arc::clone(&self.pending), kit.clone(), env.clone());
         std::thread::spawn(move || {
             let lock = || pending.lock().unwrap_or_else(|e| e.into_inner());
@@ -481,7 +481,7 @@ impl Login {
                 if let Some(code) = one_time_code(&line).filter(|_| lock().code.is_none()) {
                     lock().code = Some(code);
                     if let Err(e) = open_web(DEVICE_PATH) {
-                        crate::log::warn(&format!("github: browser: {e:#}"));
+                        crate::common::log::warn(&format!("github: browser: {e:#}"));
                     }
                     notify();
                 } else {
@@ -495,10 +495,10 @@ impl Login {
             let cancelled = lock().cancelled;
             if ok {
                 if let Err(e) = sync_git(&kit, &env, true) {
-                    crate::log::warn(&format!("github: git helper: {e:#}"));
+                    crate::common::log::warn(&format!("github: git helper: {e:#}"));
                 }
             }
-            crate::log::info(&format!(
+            crate::common::log::info(&format!(
                 "github: sign-in {}",
                 if ok {
                     "done"

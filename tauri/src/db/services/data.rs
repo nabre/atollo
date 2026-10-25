@@ -16,7 +16,7 @@ use super::{auth, bin_at, client_at, line_dir, log_path, mysql, server_line, Ser
 use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::projects::caddy;
 use crate::setup::Catalog;
 
@@ -38,19 +38,11 @@ fn private_socket_dir(kit: &Kit, port: u16) -> Option<PathBuf> {
         if mysql::fallback_socket(&dir, port).is_none() {
             continue;
         }
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::DirBuilderExt;
-            let _ = fs::DirBuilder::new().mode(0o700).create(&dir);
-        }
-        #[cfg(not(unix))]
-        {
-            let _ = fs::DirBuilder::new().create(&dir);
-        }
+        let _ = crate::platform::files::create_dir_owner_only(&dir);
         if caddy::is_private_dir(&dir) {
             return Some(dir);
         }
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "mysql: {}: not a private folder, not used for the socket",
             dir.display()
         ));
@@ -124,7 +116,7 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
     if one_major_at_a_time
         && wanted.first().copied().unwrap_or(0) > key.first().copied().unwrap_or(0) + 1
     {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "{id} {line}: the data of {from} cannot jump more than one major version; \
              starting with empty data (the {from} data stays)"
         ));
@@ -152,7 +144,7 @@ pub(super) fn seed(kit: &Kit, id: &str, line: &str, running: &[String]) -> Resul
         return Err(e.context(format!("{id} {line}: the copy of the data of {from}")));
     }
     fs::rename(&partial, &target).with_context(|| target.display().to_string())?;
-    crate::log::info(&format!("{id}: data of {from} copied for {line}"));
+    crate::common::log::info(&format!("{id}: data of {from} copied for {line}"));
     Ok(Some(from))
 }
 
@@ -189,7 +181,7 @@ pub fn migrate_data(kit: &Kit) {
             .and_then(|()| fs::create_dir_all(&root))
             .and_then(|()| fs::rename(&moving, root.join(&line)));
         match moved {
-            Ok(()) => crate::log::info(&format!(
+            Ok(()) => crate::common::log::info(&format!(
                 "{id}: data moved to {}",
                 root.join(&line).display()
             )),
@@ -198,7 +190,7 @@ pub fn migrate_data(kit: &Kit) {
                     let _ = fs::remove_dir(&root);
                     let _ = fs::rename(&moving, &root);
                 }
-                crate::log::warn(&format!("{id}: data not moved ({e})"));
+                crate::common::log::warn(&format!("{id}: data not moved ({e})"));
             }
         }
     }
@@ -286,7 +278,7 @@ impl Services {
             };
             let cnf = mysql::server_cnf(kit.os(), &basedir, &data, port, socket.as_deref());
             if fs::read_to_string(data.join("my.cnf")).ok().as_deref() != Some(cnf.as_str()) {
-                crate::fsx::write_atomic(&data.join("my.cnf"), cnf.as_bytes())?;
+                crate::common::fsx::write_atomic(&data.join("my.cnf"), cnf.as_bytes())?;
             }
             return Ok((data, fresh));
         }
@@ -312,7 +304,7 @@ impl Services {
             // MySQL upgrades the data dictionary and the system tables
             // itself at the first start of the new version.
             DbEngine::MySql => {
-                crate::log::info(&format!("mysql {line}: data of {from} upgraded"));
+                crate::common::log::info(&format!("mysql {line}: data of {from} upgraded"));
                 return;
             }
             DbEngine::MongoDb => {}
@@ -327,8 +319,10 @@ impl Services {
             )
             .env("ATOLLO_DB_FCV", line);
         match run_tool(cmd, Duration::from_secs(60)) {
-            Ok(_) => crate::log::info(&format!("mongodb {line}: feature compatibility {line}")),
-            Err(e) => crate::log::warn(&format!(
+            Ok(_) => {
+                crate::common::log::info(&format!("mongodb {line}: feature compatibility {line}"))
+            }
+            Err(e) => crate::common::log::warn(&format!(
                 "mongodb {line}: setFeatureCompatibilityVersion: {e:#}"
             )),
         }

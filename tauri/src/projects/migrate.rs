@@ -29,10 +29,10 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::{Map, Value};
 
 use super::state::{has_files, remove_empty_dirs, ProjectState};
+use crate::common::fsx::{read_text, try_read_json, write_atomic, write_json};
 use crate::db::auth;
-use crate::fsx::{read_text, try_read_json, write_atomic, write_json};
 use crate::kit::Kit;
-use crate::os::safe_path::is_link;
+use crate::platform::safe_path::is_link;
 
 const LAYOUT: &str = "2";
 
@@ -69,8 +69,8 @@ pub fn run(kit: &Kit) {
         return;
     }
     match migrate(kit) {
-        Ok(()) => crate::log::info("data of the projects: layout 2 (data\\projects)"),
-        Err(e) => crate::log::warn(&format!(
+        Ok(()) => crate::common::log::info("data of the projects: layout 2 (data\\projects)"),
+        Err(e) => crate::common::log::warn(&format!(
             "data of the projects: still layout 1, tried again at the next start ({e:#})"
         )),
     }
@@ -161,7 +161,7 @@ fn move_states(kit: &Kit) -> Result<()> {
     for entry in read_dir(&old)? {
         let name = entry.file_name().to_string_lossy().into_owned();
         let Some(state) = ProjectState::of(kit, &name).filter(|_| is_real_dir(&entry)) else {
-            crate::log::warn(&format!("{}: not a project, left", entry.path().display()));
+            crate::common::log::warn(&format!("{}: not a project, left", entry.path().display()));
             continue;
         };
         if !state.dir().exists() {
@@ -185,7 +185,7 @@ fn split_ports(kit: &Kit) -> Result<()> {
         Ok(None) => return Ok(()),
         // The ports are found again; the file and its copy stay for a hand.
         Err(e) => {
-            crate::log::warn(&format!("ports not moved: {e:#}"));
+            crate::common::log::warn(&format!("ports not moved: {e:#}"));
             return Ok(());
         }
     };
@@ -225,7 +225,7 @@ fn split_ports(kit: &Kit) -> Result<()> {
             }),
         };
         if let Err(e) = merged {
-            crate::log::warn(&format!("{project}: ports left in data\\app ({e:#})"));
+            crate::common::log::warn(&format!("{project}: ports left in data\\app ({e:#})"));
             for (action, port) in ports {
                 left_ports.insert(format!("{project}|{action}"), port);
             }
@@ -321,7 +321,7 @@ fn split_passwords(kit: &Kit) -> Result<()> {
         None => return Ok(()),
         Some(Value::Object(projects)) => projects.clone(),
         Some(_) => {
-            crate::log::warn("secrets.json: projects is not an object, left");
+            crate::common::log::warn("secrets.json: projects is not an object, left");
             return Ok(());
         }
     };
@@ -329,7 +329,7 @@ fn split_passwords(kit: &Kit) -> Result<()> {
     for (project, engines) in &projects {
         let (Some(state), Value::Object(engines)) = (ProjectState::of(kit, project), engines)
         else {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "{project}: passwords left in secrets.json (not a project name)"
             ));
             kept.insert(project.clone(), engines.clone());
@@ -370,7 +370,7 @@ fn merge_passwords(
             }
             Some(have) if have == password => {}
             Some(_) => {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "{project}: {engine}: another password already in db.json; \
                      the old one stays in secrets.json"
                 ));
@@ -397,7 +397,7 @@ fn move_backups(kit: &Kit) -> Result<()> {
     for entry in read_dir(&old)? {
         let name = entry.file_name().to_string_lossy().into_owned();
         let Some(state) = ProjectState::of(kit, &name).filter(|_| is_real_dir(&entry)) else {
-            crate::log::warn(&format!("{}: not a project, left", entry.path().display()));
+            crate::common::log::warn(&format!("{}: not a project, left", entry.path().display()));
             continue;
         };
         if has_files(&entry.path()) {
@@ -433,7 +433,7 @@ fn move_entries(from: &Path, to: &Path, private: bool) -> Result<()> {
         let free =
             matches!(fs::symlink_metadata(&target), Err(e) if e.kind() == io::ErrorKind::NotFound);
         if private && !dir && entry.file_type().is_ok_and(|t| t.is_symlink()) {
-            crate::log::warn(&format!("{}: a link, left", entry.path().display()));
+            crate::common::log::warn(&format!("{}: a link, left", entry.path().display()));
         } else if dir && (private || !free) {
             if free || (target.is_dir() && !is_link(&target)) {
                 move_entries(&entry.path(), &target, private)?;
@@ -444,7 +444,7 @@ fn move_entries(from: &Path, to: &Path, private: bool) -> Result<()> {
             fs::rename(entry.path(), &target).with_context(|| target.display().to_string())?;
             if private {
                 if let Err(e) = crate::editor::restrict_to_owner(&target) {
-                    crate::log::warn(&format!("{}: permissions: {e:#}", target.display()));
+                    crate::common::log::warn(&format!("{}: permissions: {e:#}", target.display()));
                 }
             }
         } else {
@@ -455,7 +455,7 @@ fn move_entries(from: &Path, to: &Path, private: bool) -> Result<()> {
 }
 
 fn skipped(from: &Path, to: &Path) {
-    crate::log::warn(&format!(
+    crate::common::log::warn(&format!(
         "{}: {} already exists, left in the old folder",
         from.display(),
         to.display()

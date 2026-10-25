@@ -3,7 +3,7 @@
 // is not lost when what has it goes: after Riprova, after Salva.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "@/api";
+import { SAMPLE_PRESETS, type EditorSettingsView, type McpServer, type McpView } from "@/ipc";
 import { KitMcpBox, ProjectMcpBox } from "@/projects/mcp";
 import { EditorSettingsBox } from "@/projects/editorsettings";
 import { invoke } from "@test/support/tauri";

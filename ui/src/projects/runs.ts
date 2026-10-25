@@ -1,7 +1,7 @@
 // The actions started in this session and their state, for the app, the
 // Activity panel and the projects' pages.
 import { useCallback, useRef, useState } from "react";
-import { onRun, runClear, runLog, runList, type RunInfo, type RunLog, type RunState } from "../api";
+import { onRun, runClear, runLog, runList, type RunInfo, type RunLog, type RunState } from "../ipc";
 import { t } from "../i18n";
 import { useLoad, useSubscription } from "../shared/hooks";
 

@@ -15,7 +15,7 @@ import {
   type TerminalTool,
   type TerminalToolGroup,
   type TerminalsView,
-} from "../api";
+} from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

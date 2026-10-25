@@ -2,7 +2,7 @@
 // why, with «Riprova», instead of loading for ever.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { GithubStatus } from "@/api";
+import type { GithubStatus } from "@/ipc";
 import { GithubAccount } from "@/github/account";
 import { invoke } from "@test/support/tauri";
 

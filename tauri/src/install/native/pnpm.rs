@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Result};
 use serde_json::Value;
 
 use super::run;
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::{Ctx, Installer, Progress, Release};
 use crate::kit::Target;
 use crate::setup::Component;

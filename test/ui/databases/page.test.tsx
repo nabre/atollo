@@ -3,7 +3,7 @@
 // not bring back the old list.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { SAMPLE_SERVICES, type ServiceInfo } from "@/api";
+import { SAMPLE_SERVICES, type ServiceInfo } from "@/ipc";
 import { DatabasesPage } from "@/databases";
 import { invoke } from "@test/support/tauri";
 

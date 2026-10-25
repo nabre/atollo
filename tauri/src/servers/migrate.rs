@@ -31,7 +31,7 @@ use serde_json::{Map, Value};
 
 use super::pools::{auto_pool_id, store_path, StoredServers};
 use super::WebServerEngine;
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::kit::Kit;
 
 fn copies_dir(kit: &Kit) -> PathBuf {
@@ -45,13 +45,13 @@ pub fn run(kit: &Kit) {
         .next();
     let mut failed = Vec::new();
     match migrate_store(kit) {
-        Ok(true) => crate::log::info("servers.json: the profiles of Nginx are Caddy's"),
+        Ok(true) => crate::common::log::info("servers.json: the profiles of Nginx are Caddy's"),
         Ok(false) => {}
         Err(e) => failed.push(format!("servers.json: {e:#}")),
     }
     for dir in crate::projects::folders(kit) {
         match migrate_panel(kit, &dir, caddy.as_deref()) {
-            Ok(true) => crate::log::info(&format!(
+            Ok(true) => crate::common::log::info(&format!(
                 "{}: the sites of Nginx are Caddy's",
                 dir.display()
             )),
@@ -60,7 +60,7 @@ pub fn run(kit: &Kit) {
         }
     }
     if !failed.is_empty() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "Nginx to Caddy: tried again at the next start ({})",
             failed.join("; ")
         ));
@@ -84,7 +84,7 @@ fn copy_once(src: &Path, dest: &Path) -> Result<()> {
 /// that nothing it holds is lost. True if it was rewritten.
 fn migrate_store(kit: &Kit) -> Result<bool> {
     let path = store_path(kit);
-    let Ok(text) = crate::fsx::read_text(&path) else {
+    let Ok(text) = crate::common::fsx::read_text(&path) else {
         return Ok(false);
     };
     let Ok(Value::Object(mut store)) = serde_json::from_str::<Value>(&text) else {
@@ -117,14 +117,14 @@ fn migrate_panel(kit: &Kit, dir: &Path, caddy: Option<&str>) -> Result<bool> {
     let Some(path) = crate::detect::OVERRIDE_FILES
         .iter()
         .map(|f| dir.join(f))
-        .find(|p| crate::os::safe_path::is_file(dir, p))
+        .find(|p| crate::platform::safe_path::is_file(dir, p))
     else {
         return Ok(false);
     };
-    if crate::os::safe_path::is_link(&path) {
+    if crate::platform::safe_path::is_link(&path) {
         return Ok(false);
     }
-    let Some(text) = crate::os::safe_path::read_text(dir, &path) else {
+    let Some(text) = crate::platform::safe_path::read_text(dir, &path) else {
         return Ok(false);
     };
     let Ok(Value::Object(mut panel)) = serde_json::from_str::<Value>(&text) else {

@@ -42,7 +42,7 @@ pub(crate) fn check_key_for(
         if inside.contains(&rel) {
             continue;
         }
-        let path = crate::fsx::join_rel(tree, rel);
+        let path = crate::common::fsx::join_rel(tree, rel);
         let ok = if rel.is_empty() {
             fs::read_dir(tree).is_ok_and(|mut d| d.next().is_some())
         } else {

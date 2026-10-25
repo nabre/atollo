@@ -52,41 +52,12 @@ pub(super) fn app_bundle(exe: &Path) -> Option<&Path> {
     (named(macos, "MacOS") && named(contents, "Contents") && is_app).then_some(bundle)
 }
 
-/// The AppImage the app runs from: `$APPIMAGE`, when `exe` is inside the
-/// image's mount (`$APPDIR`). A plain binary started from a program that
-/// itself runs from an AppImage inherits both variables, but is not inside
-/// that mount.
-#[cfg_attr(not(any(target_os = "linux", test)), allow(dead_code))]
-pub(super) fn appimage_of(
-    exe: &Path,
-    image: Option<&std::ffi::OsStr>,
-    appdir: Option<&std::ffi::OsStr>,
-) -> Option<PathBuf> {
-    let (image, appdir) = (image?, appdir?);
-    (!image.is_empty() && !appdir.is_empty() && exe.starts_with(appdir))
-        .then(|| PathBuf::from(image))
-}
-
-#[cfg(target_os = "linux")]
-pub(super) fn running_appimage(exe: &Path) -> Option<PathBuf> {
-    appimage_of(
-        exe,
-        std::env::var_os("APPIMAGE").as_deref(),
-        std::env::var_os("APPDIR").as_deref(),
-    )
-}
-
-#[cfg(not(target_os = "linux"))]
-pub(super) fn running_appimage(_exe: &Path) -> Option<PathBuf> {
-    None
-}
-
 /// The program the kit's wrappers start to run the app again
 /// (`ATOLLO_EXE`): the AppImage when the app runs from one, whose inner
 /// program goes away with its mount; otherwise this program.
 pub fn app_exe() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
-    Some(running_appimage(&exe).unwrap_or(exe))
+    Some(crate::platform::host::running_appimage(&exe).unwrap_or(exe))
 }
 
 /// The app bundle macOS runs from a random read-only copy (App
@@ -113,11 +84,11 @@ pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
         return None;
     }
     let bundle = translocated_bundle(exe)?;
-    let quoted = crate::os::sh_quote(&bundle);
+    let quoted = crate::platform::sh_quote(&bundle);
     Some(format!(
         "{}\n\n{}",
-        crate::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
-        crate::i18n::t(lang, "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
+        crate::common::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
+        crate::common::i18n::t(lang, "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
     ))
 }
 

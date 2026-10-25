@@ -33,15 +33,12 @@ use anyhow::{bail, Context, Result};
 
 #[cfg(test)]
 use super::web_admin::address;
-// Its test does not run on macOS, whose loopback answers on 127.0.0.1 only.
-#[cfg(all(test, not(target_os = "macos")))]
-use super::web_admin::private_loopback;
 use super::web_admin::{abandon, free_address, wait_ready, Served, Slot};
+use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
-use crate::fsx::write_atomic;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
-use crate::os::temp::TempWork;
+use crate::platform::jobs::{self, Job};
+use crate::platform::temp::TempWork;
 use crate::setup::catalog;
 
 /// phpMyAdmin's `config.inc.php`, written into its folder.
@@ -154,7 +151,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str, lang: &str) -> R
         abandon(job, child);
         return Err(e);
     }
-    crate::log::info(&format!("phpmyadmin: started on {host}:{port}"));
+    crate::common::log::info(&format!("phpmyadmin: started on {host}:{port}"));
     Ok(Served {
         child,
         host,

@@ -1,6 +1,6 @@
 // What a check of Atollo's updates found, in words: Settings › Updates and
 // the version in the status bar say the same.
-import type { UpdateStatus } from "../api";
+import type { UpdateStatus } from "../ipc";
 import { t } from "../i18n";
 
 export function updateText(st: UpdateStatus): string {

@@ -3,7 +3,7 @@
 // at a time (its versions, its details, the projects that use it). The
 // choice is applied with the bar under the page (./applybar.tsx).
 import { useState } from "react";
-import { componentLinkOpen, setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot } from "../api";
+import { componentLinkOpen, setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot } from "../ipc";
 import { t } from "../i18n";
 import { ByHandBox } from "./byhand";
 import { ComponentLogo } from "../shared/logos";

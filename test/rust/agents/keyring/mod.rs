@@ -69,9 +69,9 @@ fn sealing_key_name_survives_a_move() {
     );
 }
 
-pub(super) const T: &str = "gemini:antigravity";
+pub(crate) const T: &str = "gemini:antigravity";
 
-pub(super) fn item(target: &str, secret: &str) -> Item {
+pub(crate) fn item(target: &str, secret: &str) -> Item {
     Item {
         target: target.into(),
         user: Some("antigravity".into()),
@@ -82,6 +82,6 @@ pub(super) fn item(target: &str, secret: &str) -> Item {
     }
 }
 
-pub(super) fn kit() -> (TempDir, Kit) {
+pub(crate) fn kit() -> (TempDir, Kit) {
     prepared_kit("keyring-fake")
 }

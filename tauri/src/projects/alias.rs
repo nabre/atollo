@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use crate::kit::validate_project_name;
-use crate::os::safe_path;
+use crate::platform::safe_path;
 
 /// RFC 6761 `.localhost` domain (`mio-sito.localhost`).
 pub fn valid_domain(d: &str) -> bool {
@@ -148,7 +148,7 @@ pub fn resolve(
         .filter_map(|(url, target)| {
             let found = resolve_one(project_root, projects_root, url, target);
             if found.is_none() {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "{}: alias {url} -> {target} not served (not a folder of the projects, or through a link)",
                     project_root.display()
                 ));

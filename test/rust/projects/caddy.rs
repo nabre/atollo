@@ -4,7 +4,7 @@ use super::*;
 use super::{conf::*, socket::*};
 use crate::kit::tests::TempDir;
 use crate::kit::Target;
-use crate::os::safe_path::tests::junction;
+use crate::platform::safe_path::tests::junction;
 use crate::projects::fastcgi::FastCgi;
 
 /// A FastCGI server on `port` with a fixed key.

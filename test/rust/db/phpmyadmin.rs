@@ -15,7 +15,7 @@ fn address_carries_the_token() {
 #[cfg(not(target_os = "macos"))]
 fn loopback_is_not_the_sites_one() {
     for random in [[0, 0, 0], [253, 255, 253], [255, 255, 255], [0, 0, 254]] {
-        let ip = private_loopback(random);
+        let ip = crate::db::web_admin::private_loopback(random);
         assert!(ip.is_loopback(), "{ip}");
         assert_ne!(ip, Ipv4Addr::LOCALHOST);
         assert_ne!(ip.octets()[1], 0, "{ip}");
@@ -65,7 +65,7 @@ fn real_phpmyadmin_on_running_mysql() {
     let kit = Kit::at(PathBuf::from(root), crate::kit::Arch::detect());
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

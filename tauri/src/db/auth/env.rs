@@ -5,8 +5,8 @@ use std::path::Path;
 use anyhow::{bail, Result};
 use serde::Serialize;
 
+use crate::common::fsx::write_atomic;
 use crate::db::DbEngine;
-use crate::fsx::write_atomic;
 
 /// A project's connection to one of the kit's databases.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -143,14 +143,16 @@ pub fn env_set_text(text: &str, wanted: &[(String, String)]) -> String {
 
 /// The project's `.env`, created from `.env.example` when missing.
 pub fn env_source(project_dir: &Path) -> String {
-    crate::os::safe_path::read_text(project_dir, &project_dir.join(".env"))
-        .or_else(|| crate::os::safe_path::read_text(project_dir, &project_dir.join(".env.example")))
+    crate::platform::safe_path::read_text(project_dir, &project_dir.join(".env"))
+        .or_else(|| {
+            crate::platform::safe_path::read_text(project_dir, &project_dir.join(".env.example"))
+        })
         .unwrap_or_default()
 }
 
 /// `.env` is listed in the project's `.gitignore` (it will hold a password).
 pub fn env_ignored(project_dir: &Path) -> bool {
-    crate::os::safe_path::read_text(project_dir, &project_dir.join(".gitignore"))
+    crate::platform::safe_path::read_text(project_dir, &project_dir.join(".gitignore"))
         .unwrap_or_default()
         .lines()
         .map(str::trim)
@@ -161,7 +163,7 @@ pub fn env_apply(project_dir: &Path, db: &ProjectDb) -> Result<()> {
     if !project_dir.is_dir() {
         bail!("no project folder");
     }
-    if crate::os::safe_path::is_link(&project_dir.join(".env")) {
+    if crate::platform::safe_path::is_link(&project_dir.join(".env")) {
         bail!(".env is a link: left alone");
     }
     let text = env_apply_text(&env_source(project_dir), db);
@@ -174,7 +176,7 @@ pub fn env_set(project_dir: &Path, wanted: &[(String, String)]) -> Result<()> {
     if !project_dir.is_dir() {
         bail!("no project folder");
     }
-    if crate::os::safe_path::is_link(&project_dir.join(".env")) {
+    if crate::platform::safe_path::is_link(&project_dir.join(".env")) {
         bail!(".env is a link: left alone");
     }
     let text = env_set_text(&env_source(project_dir), wanted);

@@ -1,4 +1,4 @@
-// Settings page (data\app\settings.json, tauri/src/settings.rs), laid
+// Settings page (data\app\settings.json, tauri/src/common/settings.rs), laid
 // out as the Projects page: the side bar lists the sections (language,
 // network, Gemini key, versions of Python, PHP and Rust, the app's updates,
 // the GitHub account, where the kit is) and the tree of the new-project
@@ -8,7 +8,7 @@
 // that matches.
 import { useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
-import { editorRestart, type AppInfo } from "../api";
+import { editorRestart, type AppInfo } from "../ipc";
 import { GithubAccount, GitIdentitySetting } from "../github";
 import type { GuideTopicId } from "../guide";
 import { BrandSymbol } from "../shared/brand";

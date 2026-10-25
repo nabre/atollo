@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
 use crate::install::{
     github_single, pattern, target_of, triple_arch, Ctx, Dest, Installer, Part, Progress, Release,
@@ -230,8 +230,8 @@ pub(crate) fn write_zig_shims(bin: &Path) -> Result<()> {
     fs::create_dir_all(bin)?;
     for (name, script) in zig_shims() {
         let path = bin.join(name);
-        crate::fsx::write_atomic(&path, script.as_bytes())?;
-        crate::router::set_executable(&path)?;
+        crate::common::fsx::write_atomic(&path, script.as_bytes())?;
+        crate::platform::files::set_executable(&path)?;
     }
     Ok(())
 }
@@ -246,45 +246,11 @@ pub(crate) fn xcode_note(target: Target, selected: Option<&str>) -> Option<&'sta
     Some("Xcode Command Line Tools not found: C and C++ work, programs that use the Apple frameworks need them (xcode-select --install, as an administrator)")
 }
 
-/// The folder of the active developer tools (`xcode-select -p`), on a Mac:
-/// for the installer's note and the Tools page (`commands::setup`), which
-/// asks at every load. `-p` only prints: it never opens the installation
-/// dialog. A folder found is kept until the app closes; "not installed" is
-/// asked again after [`XCODE_RECHECK`], so tools installed meanwhile with
-/// `xcode-select --install` are seen without a restart.
-#[cfg(target_os = "macos")]
+/// The folder of the active developer tools (`xcode-select -p`) on a Mac
+/// (`platform::host::xcode_tools`): for the installer's note and the Tools
+/// page (`ipc::setup`), which asks at every load.
 pub(crate) fn xcode_selected() -> Option<String> {
-    use std::sync::Mutex;
-    use std::time::Instant;
-    static KEPT: Mutex<Option<(Instant, Option<String>)>> = Mutex::new(None);
-    let mut kept = KEPT
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some((at, answer)) = kept.as_ref() {
-        if answer.is_some() || at.elapsed() < XCODE_RECHECK {
-            return answer.clone();
-        }
-    }
-    let answer = std::process::Command::new("/usr/bin/xcode-select")
-        .arg("-p")
-        .stdin(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
-        .filter(|path| Path::new(path).is_dir());
-    *kept = Some((Instant::now(), answer.clone()));
-    answer
-}
-
-/// How long "no Command Line Tools" is believed before asking again.
-#[cfg(target_os = "macos")]
-const XCODE_RECHECK: std::time::Duration = std::time::Duration::from_secs(60);
-
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn xcode_selected() -> Option<String> {
-    None
+    crate::platform::host::xcode_tools()
 }
 
 impl Installer for Cc {
@@ -366,7 +332,7 @@ impl Installer for Cc {
         }
         // Only a Mac can say: a darwin kit prepared on another system would
         // always hear that the tools are missing.
-        if cfg!(target_os = "macos") {
+        if crate::platform::OS.is_macos() {
             if let Some(note) = xcode_note(target, xcode_selected().as_deref()) {
                 progress.note(note);
             }
@@ -425,7 +391,7 @@ pub fn make_launchers(bin: &Path) -> Result<()> {
     for (name, content) in files {
         let path = bin.join(name);
         if fs::read(&path).ok().as_deref() != Some(content) {
-            crate::fsx::write_atomic(&path, content)?;
+            crate::common::fsx::write_atomic(&path, content)?;
         }
     }
     Ok(())

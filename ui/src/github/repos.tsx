@@ -11,7 +11,7 @@ import {
   type EditorStatus,
   type GithubRepo,
   type GithubRepos,
-} from "../api";
+} from "../ipc";
 import { useAction } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { Mark } from "../shared/tags";

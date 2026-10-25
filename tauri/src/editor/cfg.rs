@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde_json::{json, Map, Value};
 
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::kit::{Kit, Os};
 
 /// Profiles owned by the kit (rewritten) and the PC profiles hidden, on
@@ -170,7 +170,7 @@ fn set_themes(existing: &Map<String, Value>, out: &mut Map<String, Value>) {
 }
 
 pub fn settings_path(kit: &Kit) -> PathBuf {
-    crate::fsx::join_rel(kit.data(), "vscodium-server/data/Machine/settings.json")
+    crate::common::fsx::join_rel(kit.data(), "vscodium-server/data/Machine/settings.json")
 }
 
 /// How the kit's PowerShell is started (editor, console windows, tasks).
@@ -382,7 +382,7 @@ pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
     let path = settings_path(kit);
     let existing = match fs::read_to_string(&path) {
         Ok(text) => {
-            let text = crate::fsx::strip_bom(&text);
+            let text = crate::common::fsx::strip_bom(&text);
             if text.trim().is_empty() {
                 Map::new()
             } else {

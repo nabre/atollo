@@ -2,7 +2,7 @@
 // Versioni until D-137): GNU (the default, everything in the kit) or MSVC
 // (needs Visual Studio Build Tools on the PC), from the next install or
 // update of Rust. Elsewhere rustup has one host: nothing to choose.
-import { rustToolchainSet, settingsGet, type Settings } from "../api";
+import { rustToolchainSet, settingsGet, type Settings } from "../ipc";
 import { ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

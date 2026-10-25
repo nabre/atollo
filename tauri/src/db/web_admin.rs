@@ -14,8 +14,8 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 
 use crate::kit::Kit;
-use crate::os::jobs::Job;
-use crate::os::temp::TempWork;
+use crate::platform::jobs::Job;
+use crate::platform::temp::TempWork;
 
 const READY_WITHIN: Duration = Duration::from_secs(15);
 
@@ -75,7 +75,7 @@ impl Slot {
             .take()
             .is_some()
         {
-            crate::log::info(&format!("{}: stopped", self.name));
+            crate::common::log::info(&format!("{}: stopped", self.name));
         }
     }
 
@@ -85,7 +85,7 @@ impl Slot {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         if running.as_ref().is_some_and(|s| s.db_port == db_port) {
             *running = None;
-            crate::log::info(&format!("{}: stopped", self.name));
+            crate::common::log::info(&format!("{}: stopped", self.name));
         }
     }
 }
@@ -94,7 +94,7 @@ impl Slot {
 /// 127.0.0.0/8 and never 127.0.0.1, where the projects' sites are. macOS
 /// answers only on 127.0.0.1 unless an alias is added: there it stays.
 pub fn private_loopback(random: [u8; 3]) -> Ipv4Addr {
-    if cfg!(target_os = "macos") {
+    if !crate::platform::host::LOOPBACK_RANGE {
         return Ipv4Addr::LOCALHOST;
     }
     Ipv4Addr::new(127, 1 + random[0] % 254, random[1], 1 + random[2] % 254)
@@ -112,7 +112,7 @@ fn random_bytes() -> Result<[u8; 3]> {
 /// when the system refuses the address (logged).
 pub fn free_address(kit: &Kit, name: &str) -> Result<(Ipv4Addr, u16)> {
     let mut host = private_loopback(random_bytes()?);
-    let taken = crate::ports::ports_taken(kit);
+    let taken = crate::common::ports::ports_taken(kit);
     // Ports owned by Atollo stay bound until the end: the system does not
     // give them again.
     let mut refused = Vec::new();
@@ -120,7 +120,7 @@ pub fn free_address(kit: &Kit, name: &str) -> Result<(Ipv4Addr, u16)> {
         let listener = match TcpListener::bind((host, 0)) {
             Ok(l) => l,
             Err(e) if host != Ipv4Addr::LOCALHOST => {
-                crate::log::warn(&format!("{name}: {host} refused ({e}), using 127.0.0.1"));
+                crate::common::log::warn(&format!("{name}: {host} refused ({e}), using 127.0.0.1"));
                 host = Ipv4Addr::LOCALHOST;
                 continue;
             }

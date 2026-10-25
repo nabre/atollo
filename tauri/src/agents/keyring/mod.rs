@@ -44,20 +44,16 @@
 //!
 //! Here the credentials, the trait of the store and the steps around a
 //! run; the kit's files in `files`, its lock in `lock`, the save and the
-//! restore in `moves`, the store of Windows in `credman`, of macOS and
-//! Linux in `unix_store` (over `unix`), the parts every system tests in
-//! `portable`.
+//! restore in `moves`, the parts every system tests in `portable`. The
+//! store of each system implements [`Store`] for [`System`] in `os/`:
+//! the Credential Manager in `os/windows/agy_store.rs`, the Keychain and
+//! the Secret Service in `os/unix/agy_store.rs` (over
+//! `os/macos/agy_keyring.rs` and `os/linux/agy_keyring.rs`).
 
-#[cfg(windows)]
-mod credman;
-mod files;
+pub(crate) mod files;
 mod lock;
 mod moves;
 mod portable;
-#[cfg(unix)]
-mod unix;
-#[cfg(unix)]
-mod unix_store;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -69,6 +65,11 @@ use crate::kit::Kit;
 use files::{files, read};
 use lock::Lock;
 use moves::{mode_after_600, restore_checked, save_login};
+
+/// "Logon session" persistence: never on disk, gone at logoff (Windows'
+/// `CRED_PERSIST_SESSION`, checked in `os/windows/agy_store.rs`; the other
+/// stores ignore it).
+pub(crate) const PERSIST_SESSION: u32 = 1;
 
 /// One credential. `blob`: base64 of the secret (as in the kit's files).
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -105,8 +106,9 @@ impl std::fmt::Debug for Item {
 }
 
 /// go-keyring names `<service>:<user>`: one part starts with jetski
-/// (Antigravity's code name) or antigravity.
-#[cfg_attr(not(any(windows, test)), allow(dead_code))]
+/// (Antigravity's code name) or antigravity. The store of Windows lists by
+/// it; tested on every system.
+#[allow(dead_code)]
 pub fn is_antigravity(target: &str) -> bool {
     let lower = target.to_ascii_lowercase();
     let Some((service, user)) = lower.split_once(':') else {
@@ -116,10 +118,12 @@ pub fn is_antigravity(target: &str) -> bool {
     starts(service) || starts(user)
 }
 
-#[cfg_attr(not(any(unix, test)), allow(unused_imports))]
+// Used by the stores of macOS and Linux in `os/`.
+#[allow(unused_imports)]
 pub use portable::*;
 
-const DPAPI: &str = "dpapi:";
+/// The prefix of a secret sealed with DPAPI (Windows).
+pub(crate) const DPAPI: &str = "dpapi:";
 
 /// Where agy keeps its login on this system. Behind a trait so that the
 /// moves in and out of the kit are tested with a fake store.
@@ -152,13 +156,14 @@ pub trait Store {
     }
 }
 
-/// The store of this system.
+/// The store of this system (`Store`, implemented in `os/`).
 pub struct System {
-    #[cfg_attr(windows, allow(dead_code))]
-    seal_user: String,
+    /// The user of the kit's sealing key (macOS and Linux).
+    #[allow(dead_code)]
+    pub(crate) seal_user: String,
     /// [`SEAL_ID_FILE`] and the id it holds (or will hold).
-    #[cfg_attr(windows, allow(dead_code))]
-    seal_id: (PathBuf, String),
+    #[allow(dead_code)]
+    pub(crate) seal_id: (PathBuf, String),
 }
 
 impl System {
@@ -174,7 +179,7 @@ impl System {
 
 /// An `agy.exe` (`agy` on macOS and Linux) of this kit is running.
 pub fn kit_agy_running(kit: &Kit) -> bool {
-    crate::os::processes::running_under(&kit.apps())
+    crate::platform::processes::running_under(&kit.apps())
         .iter()
         .any(|p| p.name.eq_ignore_ascii_case("agy.exe") || p.name == "agy")
 }
@@ -266,4 +271,4 @@ pub fn has_login(kit: &Kit) -> bool {
 
 #[cfg(test)]
 #[path = "../../../../test/rust/agents/keyring/mod.rs"]
-mod tests;
+pub(crate) mod tests;

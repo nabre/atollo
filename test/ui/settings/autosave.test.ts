@@ -3,7 +3,7 @@
 // one, a read that works clears the error of the failed one.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { SAMPLE_SETTINGS } from "@/api";
+import { SAMPLE_SETTINGS } from "@/ipc";
 import { useSettingsAutosave } from "@/settings/autosave";
 import { invoke } from "@test/support/tauri";
 

@@ -14,7 +14,7 @@ import {
   type RelationRuntime,
   type RelationsMatrix,
   type SetupSnapshot,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import { ActionButton, ErrorLine } from "../shared/common";

@@ -38,7 +38,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::fsx::{read_text, write_atomic};
+use crate::common::fsx::{read_text, write_atomic};
 use crate::kit::{Kit, Os};
 use crate::net::archive::{self, Kind};
 use crate::net::verify::{self, Expect};
@@ -88,7 +88,7 @@ fn record(s: &mut Status, result: Result<Found>) {
             }
         }
         Err(e) => {
-            crate::log::warn(&format!("update check: {e:#}"));
+            crate::common::log::warn(&format!("update check: {e:#}"));
             s.error = Some(format!("{e:#}"));
         }
     }
@@ -287,7 +287,7 @@ fn staged_path(kit: &Kit, info: &Staged) -> Option<PathBuf> {
 }
 
 fn read_staged(kit: &Kit) -> Option<(Staged, PathBuf)> {
-    let info: Staged = crate::fsx::read_json(&staged_info(kit))?;
+    let info: Staged = crate::common::fsx::read_json(&staged_info(kit))?;
     let path = staged_path(kit, &info)?;
     let there = fs::symlink_metadata(&path)
         .is_ok_and(|m| !m.file_type().is_symlink() && (m.is_file() || m.is_dir()));
@@ -378,15 +378,9 @@ pub fn tree_sha256(root: &Path) -> Result<String> {
         .collect())
 }
 
-#[cfg(unix)]
+/// 1 when the file has an execute bit (macOS, Linux), 0 on Windows.
 fn executable(meta: &fs::Metadata) -> u8 {
-    use std::os::unix::fs::PermissionsExt;
-    u8::from(meta.permissions().mode() & 0o111 != 0)
-}
-
-#[cfg(not(unix))]
-fn executable(_meta: &fs::Metadata) -> u8 {
-    0
+    u8::from(crate::platform::files::any_exec_bit(meta))
 }
 
 /// The digest recorded for a staged copy and checked again at the swap.
@@ -397,17 +391,9 @@ fn staged_digest(form: Form, path: &Path) -> Result<String> {
     }
 }
 
-/// `rwxr-xr-x`: the AppImage must run (Linux). Nothing elsewhere.
-#[cfg(unix)]
+/// `rwxr-xr-x`: the AppImage must run (Linux). Nothing on Windows.
 fn set_mode_755(path: &Path) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(path, fs::Permissions::from_mode(0o755))
-        .with_context(|| path.display().to_string())
-}
-
-#[cfg(not(unix))]
-fn set_mode_755(_path: &Path) -> Result<()> {
-    Ok(())
+    crate::platform::files::set_executable(path).with_context(|| path.display().to_string())
 }
 
 /// Removes a file or a folder (never through a link: a link itself goes).
@@ -537,7 +523,7 @@ impl Updater {
         // Only Atollo.app (macOS) and the AppImage (Linux) replace themselves
         // off Windows: a plain binary learns of the version all the same.
         let Some(plan) = plan_for(&self.kit, &exe) else {
-            crate::log::info(&format!(
+            crate::common::log::info(&format!(
                 "update {version} is out: this copy does not replace itself, download it"
             ));
             return Ok(Found::Manual(version));
@@ -577,8 +563,8 @@ impl Updater {
             sha256: digest,
             file,
         };
-        crate::fsx::write_json(&staged_info(&self.kit), &info)?;
-        crate::log::info(&format!("update {version} staged"));
+        crate::common::fsx::write_json(&staged_info(&self.kit), &info)?;
+        crate::common::log::info(&format!("update {version} staged"));
         Ok(Found::Staged(version))
     }
 }
@@ -640,13 +626,13 @@ fn apply_plan(kit: &Kit, plan: &SwapPlan) -> Result<bool> {
         set_mode_755(&dest)?;
     }
     discard(kit);
-    crate::log::info(&format!("updated to {} ({})", info.version, dest.display()));
+    crate::common::log::info(&format!("updated to {} ({})", info.version, dest.display()));
     Ok(true)
 }
 
 /// Deletes the staged copy and its `update.json`.
 fn discard(kit: &Kit) {
-    if let Some(info) = crate::fsx::read_json::<Staged>(&staged_info(kit)) {
+    if let Some(info) = crate::common::fsx::read_json::<Staged>(&staged_info(kit)) {
         if let Some(path) = staged_path(kit, &info) {
             let _ = remove_any(&path);
         }
@@ -663,7 +649,7 @@ pub fn record_version(kit: &Kit) {
             let _ = fs::create_dir_all(dir);
         }
         if let Err(e) = write_atomic(&path, env!("CARGO_PKG_VERSION").as_bytes()) {
-            crate::log::warn(&format!("{}: {e}", path.display()));
+            crate::common::log::warn(&format!("{}: {e}", path.display()));
         }
     }
 }
@@ -680,7 +666,7 @@ pub fn remove_old(exe: &Path) {
 fn remove_old_of(plan: &SwapPlan) {
     if fs::symlink_metadata(&plan.old).is_ok() {
         if let Err(e) = remove_any(&plan.old) {
-            crate::log::warn(&format!("{}: {e}", plan.old.display()));
+            crate::common::log::warn(&format!("{}: {e}", plan.old.display()));
         }
     }
     // Those set aside by a swap while an older one still ran.

@@ -2,7 +2,7 @@
 // locale» on, the site's address with this PC's IP and its QR, made by the
 // app (tauri/src/net/lan.rs), never by a service on the internet.
 import { useCallback, useState } from "react";
-import { lanLink, type LanLink, type Qr } from "../api";
+import { lanLink, type LanLink, type Qr } from "../ipc";
 import { useCopy, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, IconButton } from "../workbench";

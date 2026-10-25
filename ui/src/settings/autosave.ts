@@ -4,7 +4,7 @@
 // check stays on screen with its error, and the next change tries again.
 // Used by the Settings page and by the first-start page.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { settingsGet, settingsSet, type Settings, type SettingsView } from "../api";
+import { settingsGet, settingsSet, type Settings, type SettingsView } from "../ipc";
 import { useLoad } from "../shared/hooks";
 
 /** The wait after a change before saving it. */

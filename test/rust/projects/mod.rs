@@ -18,14 +18,14 @@ fn junctions_are_not_projects_nor_read() {
     )
     .unwrap();
     fs::write(outside.join(".env"), "DB_CONNECTION=mysql\n").unwrap();
-    crate::os::safe_path::tests::junction(&kit.projects().join("linked"), &outside);
+    crate::platform::safe_path::tests::junction(&kit.projects().join("linked"), &outside);
     let names: Vec<String> = folders(&kit)
         .iter()
         .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
         .collect();
     assert_eq!(names, ["real"]);
     // Inside a project: a junction named like a manifest folder.
-    crate::os::safe_path::tests::junction(&real.join("server"), &outside);
+    crate::platform::safe_path::tests::junction(&real.join("server"), &outside);
     let req = crate::detect::requires(&real);
     assert!(
         !req.iter().any(|r| r == "mongodb" || r == "mysql"),
@@ -95,7 +95,7 @@ fn git_state_from_files() {
     // it points to: here the real repository of `p`.
     let linked = tmp.0.join("linked");
     fs::create_dir_all(&linked).unwrap();
-    crate::os::safe_path::tests::junction(&linked.join(".git"), &g);
+    crate::platform::safe_path::tests::junction(&linked.join(".git"), &g);
     assert!(git_dir(&linked, &tmp.0).is_none(), "junction .git refused");
     assert!(git_info(&linked, &tmp.0).is_none());
 }

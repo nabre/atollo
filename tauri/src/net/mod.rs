@@ -23,11 +23,8 @@ pub mod archive;
 pub mod ca;
 mod github;
 pub mod lan;
-mod proxy;
 pub mod resume;
 /// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
-#[cfg(windows)]
-pub mod signature;
 pub mod verify;
 
 use std::fs::{self, File};
@@ -43,11 +40,9 @@ use serde::Deserialize;
 use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 use ureq::{Agent, Proxy};
 
-use crate::settings::Settings;
+use crate::common::settings::Settings;
+use crate::platform::proxy::{no_proxy_hosts, with_exceptions};
 pub use github::{first_sha256, github_digest, hash_in_list, verifiable};
-#[cfg(unix)]
-use proxy::system_proxy;
-use proxy::{no_proxy_hosts, with_exceptions};
 
 pub struct Net {
     agent: Agent,
@@ -149,10 +144,7 @@ impl Net {
                     &no_proxy_hosts(n.no_proxy.as_deref()),
                 ))
             }
-            #[cfg(windows)]
-            None => Proxy::try_from_env(),
-            #[cfg(unix)]
-            None => Proxy::try_from_env().or_else(system_proxy),
+            None => crate::platform::proxy::from_system(),
         };
         let roots = match set(&n.extra_ca_certs) {
             Some(file) => RootCerts::Specific(Arc::new(
@@ -299,7 +291,7 @@ impl Net {
             .limit(4 * 1024 * 1024)
             .read_to_string()
             .map_err(|e| failed(e.to_string()))?;
-        let json = serde_json::from_str::<serde_json::Value>(crate::fsx::strip_bom(&text));
+        let json = serde_json::from_str::<serde_json::Value>(crate::common::fsx::strip_bom(&text));
         match json {
             Ok(value) if (200..300).contains(&status) => Ok(value),
             _ => Err(ApiError {

@@ -41,7 +41,7 @@ fn one_folder_per_project() {
 fn orphans_by_files_and_adopted() {
     let (_tmp, kit) = prepared_kit("project-orphans");
     let write = |p: &str, rel: &str, text: &str| {
-        let path = crate::fsx::join_rel(kit.project_data().join(p), rel);
+        let path = crate::common::fsx::join_rel(kit.project_data().join(p), rel);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, text).unwrap();
     };
@@ -150,10 +150,10 @@ fn orphans_by_files_and_adopted() {
 /// orphan whose `db.json` cannot be read.
 #[test]
 fn adopt_refuses_links_and_unreadable_passwords() {
-    use crate::os::safe_path::tests::{junction, remove_junction};
+    use crate::platform::safe_path::tests::{junction, remove_junction};
     let (tmp, kit) = prepared_kit("project-adopt-links");
     let write = |p: &str, rel: &str, text: &str| {
-        let path = crate::fsx::join_rel(kit.project_data().join(p), rel);
+        let path = crate::common::fsx::join_rel(kit.project_data().join(p), rel);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, text).unwrap();
     };
@@ -207,7 +207,7 @@ fn adopt_refuses_links_and_unreadable_passwords() {
 fn adopt_over_settings_only() {
     let (_tmp, kit) = prepared_kit("project-adopt-light");
     let write = |p: &str, rel: &str, text: &str| {
-        let path = crate::fsx::join_rel(kit.project_data().join(p), rel);
+        let path = crate::common::fsx::join_rel(kit.project_data().join(p), rel);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, text).unwrap();
     };

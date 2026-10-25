@@ -78,7 +78,7 @@ pub(super) fn key_rel(kit: &Kit, c: &Component) -> String {
 
 /// A folder `dir` of `c` with its key, as the kit's target names it.
 pub(super) fn install_fake(kit: &Kit, c: &Component, dir: &Path) {
-    let key = crate::fsx::join_rel(dir, &key_rel(kit, c));
+    let key = crate::common::fsx::join_rel(dir, &key_rel(kit, c));
     fs::create_dir_all(key.parent().unwrap()).unwrap();
     fs::write(key, b"").unwrap();
 }

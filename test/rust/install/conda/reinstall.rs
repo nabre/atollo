@@ -1,7 +1,7 @@
 use super::super::status;
 use super::*;
+use crate::common::settings::Settings;
 use crate::kit::Target;
-use crate::settings::Settings;
 use crate::setup::Catalog;
 
 struct Print;
@@ -28,7 +28,7 @@ fn answers(kit: &Kit, c: &Component) -> String {
         "cc" => ("make/bin/make", "--version"),
         other => panic!("{other}"),
     };
-    let out = std::process::Command::new(crate::fsx::join_rel(&dir, exe))
+    let out = std::process::Command::new(crate::common::fsx::join_rel(&dir, exe))
         .arg(arg)
         .output()
         .unwrap_or_else(|e| panic!("{}: {e}", c.id));

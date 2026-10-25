@@ -70,7 +70,7 @@ pub fn reinstall(
                 component.id,
                 started.elapsed().as_secs()
             );
-            crate::log::info(&text);
+            crate::common::log::info(&text);
             progress.note(&text);
             Some(version)
         }
@@ -79,7 +79,7 @@ pub fn reinstall(
                 "{} {line_name}: installed again from the network: {fallback}",
                 component.id
             );
-            crate::log::warn(&text);
+            crate::common::log::warn(&text);
             progress.note(&text);
             None
         }
@@ -88,7 +88,7 @@ pub fn reinstall(
                 "{} {line_name}: not created from the kept packages ({e:#}), installed again from the network",
                 component.id
             );
-            crate::log::warn(&text);
+            crate::common::log::warn(&text);
             progress.note(&text);
             None
         }

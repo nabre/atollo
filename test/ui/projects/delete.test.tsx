@@ -3,7 +3,7 @@
 // the folder, and only after an error "Elimina senza i database" appears.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { DeletePlan } from "@/api";
+import type { DeletePlan } from "@/ipc";
 import { DeleteProjectDialog } from "@/projects/delete";
 import { invoke } from "@test/support/tauri";
 

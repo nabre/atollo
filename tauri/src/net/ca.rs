@@ -17,8 +17,8 @@ use anyhow::{bail, Context, Result};
 use base64::Engine;
 use ureq::tls::{parse_pem, Certificate, PemItem};
 
+use crate::common::settings::Settings;
 use crate::kit::Kit;
-use crate::settings::Settings;
 
 /// The variables of the tools that read one bundle of roots.
 pub const BUNDLE_VARS: &[&str] = &[
@@ -53,7 +53,7 @@ pub fn extra_certs(file: &Path) -> Result<Vec<Certificate<'static>>> {
 pub fn roots_with(file: &Path) -> Result<Vec<Certificate<'static>>> {
     let system = rustls_native_certs::load_native_certs();
     for e in &system.errors {
-        crate::log::warn(&format!("system certificates: {e}"));
+        crate::common::log::warn(&format!("system certificates: {e}"));
     }
     let mut all: Vec<Certificate<'static>> = system
         .certs
@@ -92,13 +92,13 @@ pub fn refresh(kit: &Kit, settings: &Settings) {
         .filter(|f| !f.is_empty());
     let written = extra.map(|extra| {
         roots_with(Path::new(extra)).and_then(|certs| {
-            crate::fsx::write_atomic(&file, pem(&certs).as_bytes()).map_err(Into::into)
+            crate::common::fsx::write_atomic(&file, pem(&certs).as_bytes()).map_err(Into::into)
         })
     });
     match written {
         Some(Ok(())) => {}
         Some(Err(e)) => {
-            crate::log::warn(&format!("certificate bundle: {e:#}"));
+            crate::common::log::warn(&format!("certificate bundle: {e:#}"));
             let _ = fs::remove_file(&file);
         }
         None => {

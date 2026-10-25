@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::tests::TempDir;
-use crate::os::safe_path::tests::junction;
+use crate::platform::safe_path::tests::junction;
 use std::fs;
 
 #[test]

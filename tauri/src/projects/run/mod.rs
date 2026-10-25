@@ -31,10 +31,10 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use serde::Serialize;
 
+use crate::common::time::now_ms;
 use crate::detect::Kind;
 use crate::kit::Kit;
-use crate::os::jobs::Job;
-use crate::time::now_ms;
+use crate::platform::jobs::Job;
 
 pub(crate) use output::{split_lines, take_utf8};
 pub use pool::{site_mode, SiteMode, DEDICATED_SERVER};

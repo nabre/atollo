@@ -2,7 +2,7 @@
 // change: what Apply installs and removes, the installation running, "Update
 // all"; Apply asks first what it will do.
 import { useState } from "react";
-import { setupCancel, type SetupSnapshot } from "../api";
+import { setupCancel, type SetupSnapshot } from "../ipc";
 import { t } from "../i18n";
 import { ActionButton } from "../shared/common";
 import { setupStatusText } from "./setup";

@@ -5,8 +5,8 @@
 // (Rust: tauri/src/agents/claude_token.rs). If it is not recognized, it can
 // be pasted here. "Esci" on the page deletes it.
 import { useState } from "react";
-import { act } from "../api/core";
-import type { AgentInfo } from "../api";
+import { act } from "../ipc/core";
+import type { AgentInfo } from "../ipc";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction } from "../shared/hooks";

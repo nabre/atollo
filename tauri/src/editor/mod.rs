@@ -18,11 +18,7 @@
 //! - output in `data\app\logs\editor.log`, with the token masked.
 
 pub mod cfg;
-#[cfg(windows)]
-pub mod conpty;
 pub mod ext;
-#[cfg(unix)]
-pub mod picker;
 pub mod pty;
 pub mod terminal;
 pub mod terminals;
@@ -38,14 +34,12 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
 use serde::Serialize;
-#[cfg(windows)]
-use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
 
 use crate::env::{mask_secrets, KitEnv};
 use crate::kit::{Kit, Os};
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 
 pub const PORTS: std::ops::RangeInclusive<u16> = 7000..=7099;
 const START_TIMEOUT: Duration = Duration::from_secs(30);
@@ -221,7 +215,7 @@ impl Editor {
 
     /// `retry`: the server (re)started, failed extensions are tried again.
     fn sync_extensions_now(&self, retry: bool) -> bool {
-        let settings = crate::settings::Settings::load(&self.kit).settings;
+        let settings = crate::common::settings::Settings::load(&self.kit).settings;
         let net = crate::net::Net::new(&settings, None)
             .ok()
             .map(std::sync::Arc::new);
@@ -284,15 +278,15 @@ impl Editor {
         let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
         match cfg::write(&self.kit, &system_root)? {
             cfg::Outcome::LeftAlone(why) => {
-                crate::log::warn(&format!("editor settings left alone: {why}"))
+                crate::common::log::warn(&format!("editor settings left alone: {why}"))
             }
-            other => crate::log::info(&format!("editor settings: {other:?}")),
+            other => crate::common::log::info(&format!("editor settings: {other:?}")),
         }
         if self.stopped(stops) {
             bail!("the editor was stopped while it started");
         }
         if let Err(e) = theme::ensure(&self.kit, &env) {
-            crate::log::warn(&format!("editor theme: {e:#}"));
+            crate::common::log::warn(&format!("editor theme: {e:#}"));
         }
         if self.stopped(stops) {
             bail!("the editor was stopped while it started");
@@ -304,7 +298,7 @@ impl Editor {
         // A new file each start, owner-only before the token is in it: never
         // the old one rewritten, which another account's DACL (the kit
         // used on another PC) would refuse (PORT-V6-01, BUG-V6-33).
-        crate::router::fs::replace_private(&token_file, &token)?;
+        crate::platform::files::replace_private(&token_file, &token)?;
         let log_path = self.kit.logs().join("editor.log");
 
         let mut last_error = None;
@@ -316,7 +310,7 @@ impl Editor {
             match self.start_on(port, stops, &token, &token_file, &data_dir, &log_path) {
                 Ok(server) => return Ok(server),
                 Err(e) => {
-                    crate::log::warn(&format!("editor on port {port}: {e:#}"));
+                    crate::common::log::warn(&format!("editor on port {port}: {e:#}"));
                     last_error = Some(e);
                 }
             }
@@ -423,23 +417,16 @@ fn local_agent() -> ureq::Agent {
 }
 
 /// The editor's own range, bound on IPv4 only: unlike
-/// [`crate::ports::is_port_free`], which also asks who answers and binds
+/// [`crate::common::ports::is_port_free`], which also asks who answers and binds
 /// IPv6; kept as it is, so the editor picks the same ports as before.
 fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())
 }
 
+/// 32 random bytes of the system (`platform::random`) as 64 hex digits.
 pub fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
-    #[cfg(windows)]
-    // SAFETY: the buffer is valid for its length; system RNG, no algorithm handle.
-    unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }
-        .ok()
-        .context("BCryptGenRandom")?;
-    #[cfg(unix)]
-    fs::File::open("/dev/urandom")
-        .and_then(|mut f| f.read_exact(&mut bytes))
-        .context("/dev/urandom")?;
+    crate::platform::random::fill(&mut bytes)?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 
@@ -449,7 +436,7 @@ pub fn random_token() -> Result<String> {
 // inherited by every file and folder created in it afterwards (temporary
 // files included), so they are private from the start; on Unix the folder
 // gets mode 700 and what is inside cannot be reached.
-pub(crate) use crate::router::{restrict_dir_to_owner, restrict_to_owner};
+pub(crate) use crate::platform::files::{restrict_dir_to_owner, restrict_to_owner};
 
 fn append_log(path: &Path, line: &str) {
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {

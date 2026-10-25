@@ -51,7 +51,7 @@ pub fn fake_server(kit: &Kit, id: &str, version: &str) {
     let target = kit.target();
     for k in std::iter::once(c.key_for(target)).chain(c.keys_for(target)) {
         if let Some(rel) = k.strip_prefix(folder) {
-            let file = crate::fsx::join_rel(&dir, rel);
+            let file = crate::common::fsx::join_rel(&dir, rel);
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(&file, b"").unwrap();
         }

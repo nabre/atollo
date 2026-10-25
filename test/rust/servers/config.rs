@@ -26,7 +26,7 @@ fn pool_skips_site_with_missing_or_linked_docroot() {
     fs::create_dir_all(projects.join("linked")).unwrap();
     let outside = tmp.0.join("outside");
     fs::create_dir_all(&outside).unwrap();
-    crate::os::safe_path::tests::junction(&projects.join("linked").join("public"), &outside);
+    crate::platform::safe_path::tests::junction(&projects.join("linked").join("public"), &outside);
 
     let pool = caddy_pool(
         "caddy-docroot",

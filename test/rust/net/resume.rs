@@ -108,7 +108,7 @@ fn temp(name: &str) -> PathBuf {
 }
 
 fn net() -> Net {
-    Net::new(&crate::settings::Settings::default(), None).unwrap()
+    Net::new(&crate::common::settings::Settings::default(), None).unwrap()
 }
 
 fn sha256(data: &[u8]) -> String {

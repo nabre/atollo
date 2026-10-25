@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::{conda_info, conda_versions, micromamba_create, micromamba_release};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::install::{target_of, Ctx, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
 use crate::setup::Component;
@@ -233,7 +233,7 @@ impl Installer for R {
                     continue;
                 };
                 if let Some(new) = plain_r_sed(&text) {
-                    crate::router::write_executable(&path, new.as_bytes())
+                    crate::platform::files::write_executable(&path, new.as_bytes())
                         .with_context(|| path.display().to_string())?;
                 }
             }

@@ -1,6 +1,6 @@
 // A tool of the kit and a framework as small pictures: the tag of a tool,
 // the logo of a base or addition.
-import type { ComponentInfo, FrameworkPiece } from "../api";
+import type { ComponentInfo, FrameworkPiece } from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo, FrameworkLogo } from "../shared/logos";
 import { Tag } from "../shared/tags";

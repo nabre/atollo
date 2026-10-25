@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { TOPIC_TEXTS } from "@guide/content";
 import type { GuideTopicId } from "@guide/core/model";
-import type { AppInfo, ComponentInfo } from "../api";
+import type { AppInfo, ComponentInfo } from "../ipc";
 
 export { TOPIC_TEXTS };
 

@@ -1,6 +1,6 @@
 // The pieces of the Tools page and of the project page: the list of a
 // tool's lines, the button that asks for more, the state of a chosen one.
-import type { SetupSnapshot, VersionedTool } from "../api";
+import type { SetupSnapshot, VersionedTool } from "../ipc";
 import { t } from "../i18n";
 import { ActionButton } from "../shared/common";
 import { codicon, Link, Notice, Select } from "../workbench";

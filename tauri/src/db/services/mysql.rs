@@ -266,14 +266,13 @@ pub const STRIP_FILES: [&str; 2] = ["bin/mysqld-debug", "bin/mysqld-debug.exe"];
 /// system's `libaio.so.1t64` when that is the only one, and is not there
 /// otherwise (a kit moved to a PC with `libaio.so.1`); a missing library is
 /// an error ([`SystemLibsMissing`]). Nothing off Linux.
-#[cfg_attr(not(unix), allow(unused_variables))]
 pub fn ensure_server_libs(os: Os, arch: Arch, basedir: &Path) -> anyhow::Result<()> {
     if os != Os::Linux {
         return Ok(());
     }
     let libs = linux_server_libs(arch, |p| p.exists());
-    #[cfg(unix)]
-    {
+    // The system's libraries are this PC's: none to point to from Windows.
+    if !crate::platform::OS.is_windows() {
         let ours = basedir.join("lib").join("private").join("libaio.so.1");
         let is_link = std::fs::symlink_metadata(&ours).is_ok_and(|m| m.file_type().is_symlink());
         match &libs.link {
@@ -286,7 +285,7 @@ pub fn ensure_server_libs(os: Os, arch: Arch, basedir: &Path) -> anyhow::Result<
                         std::fs::create_dir_all(parent)?;
                     }
                     // A disk without links (exFAT): a copy of the library.
-                    if std::os::unix::fs::symlink(target, &ours).is_err() {
+                    if crate::platform::links::symlink(target, &ours).is_err() {
                         std::fs::copy(target, &ours)?;
                     }
                 }

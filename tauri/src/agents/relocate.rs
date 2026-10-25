@@ -23,7 +23,7 @@ use regex::bytes::{Captures, Regex};
 use serde_json::Value;
 
 use super::sync::{read_json, write_json, Paths, Report};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::kit::{same_root, Kit, Os};
 
 const TEXT_MAX: u64 = 8 * 1024 * 1024;
@@ -446,20 +446,11 @@ fn merge_dir(src: &Path, dst: &Path) -> std::io::Result<()> {
 
 /// The same entry on disk: a folder renamed only in case on a file system
 /// that ignores case (macOS, exFAT) already "exists" under its new name.
-#[cfg(unix)]
-fn same_entry(a: &Path, b: &Path) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    match (fs::metadata(a), fs::metadata(b)) {
-        (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
-        _ => false,
-    }
-}
-
 /// On Windows a root that changed only in case is not a move
-/// ([`crate::kit::same_root`]), so a folder never meets itself.
-#[cfg(not(unix))]
-fn same_entry(_: &Path, _: &Path) -> bool {
-    false
+/// ([`crate::kit::same_root`]), so a folder never meets itself
+/// (`platform::files::same_entry` says no).
+fn same_entry(a: &Path, b: &Path) -> bool {
+    crate::platform::files::same_entry(a, b)
 }
 
 fn relocate_claude_projects(p: &Paths, r: &Replacer, from: &str, to: &str, report: &mut Moved) {
@@ -637,7 +628,7 @@ struct Left {
 }
 
 fn read_left(kit: &Kit) -> Vec<Left> {
-    let list: Vec<Value> = crate::fsx::read_json(&left_file(kit)).unwrap_or_default();
+    let list: Vec<Value> = crate::common::fsx::read_json(&left_file(kit)).unwrap_or_default();
     list.iter()
         .filter_map(|e| {
             let from = e.get("from")?.as_str()?.to_owned();
@@ -721,7 +712,7 @@ fn move_files(
             f.display()
         ));
     }
-    crate::log::info(&format!(
+    crate::common::log::info(&format!(
         "relocate {from} -> {to}: {} changed, {} programs, {} failed",
         moved.changed,
         moved.programs.len(),
@@ -766,7 +757,7 @@ pub fn relocate(kit: &Kit, report: &mut Report) -> Result<()> {
         }
     }
     let pending = kit.old_root_file();
-    if let Ok(from) = crate::fsx::read_text(&pending) {
+    if let Ok(from) = crate::common::fsx::read_text(&pending) {
         let from = trim_root(from.trim().trim_matches('"')).to_owned();
         if !from.is_empty() && !same_root(kit.os(), &from, &to) {
             let files = move_files(kit, &from, &to, None, report);

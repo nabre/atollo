@@ -52,7 +52,7 @@ pub fn remove(kit: &Kit, id: &str, line: &str) -> Result<()> {
 fn forget_line(kit: &Kit, c: &Component, line: &str, staged: Option<&str>) {
     crate::install::conda::forget(kit, &c.id, Some(line));
     if let Err(e) = crate::router::bootstrap::remove_line(kit, &c.id, staged) {
-        crate::log::warn(&format!("{} {line}: {e:#}", c.id));
+        crate::common::log::warn(&format!("{} {line}: {e:#}", c.id));
     }
 }
 
@@ -60,7 +60,7 @@ fn forget_line(kit: &Kit, c: &Component, line: &str, staged: Option<&str>) {
 fn promote(kit: &Kit, c: &Component, line: &Line) -> Result<()> {
     let version = line.version.clone().unwrap_or_else(|| line.line.clone());
     c.save_version(kit, &version)?;
-    crate::log::info(&format!("{}: {version} is the default", c.id));
+    crate::common::log::info(&format!("{}: {version} is the default", c.id));
     Ok(())
 }
 
@@ -74,7 +74,7 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
     let catalog = Catalog::get();
     for c in versioned() {
         if let Err(e) = repair_default(kit, c) {
-            crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
+            crate::common::log::warn(&format!("{}: no default version ({e:#})", c.id));
         }
     }
     let _one = crate::setup::catalog::choice_lock();
@@ -122,7 +122,7 @@ pub fn sync_with_disk(kit: &Kit) -> Result<Vec<String>> {
         .filter(|c| before.is_chosen(&c.id) && !choice.is_chosen(&c.id))
         .map(|c| c.name.clone())
         .collect();
-    crate::log::info(&format!(
+    crate::common::log::info(&format!(
         "deleted by hand, no longer chosen: {}",
         off.join(", ")
     ));
@@ -151,13 +151,13 @@ fn repair_default(kit: &Kit, c: &Component) -> Result<()> {
 pub fn migrate(kit: &Kit) {
     for c in lined() {
         if let Err(e) = migrate_default(kit, c) {
-            crate::log::warn(&format!("{}: default folder not moved ({e:#})", c.id));
+            crate::common::log::warn(&format!("{}: default folder not moved ({e:#})", c.id));
         }
         if let Err(e) = migrate_from_tools(kit, c) {
-            crate::log::warn(&format!("{}: not moved from tools ({e:#})", c.id));
+            crate::common::log::warn(&format!("{}: not moved from tools ({e:#})", c.id));
         }
         if let Err(e) = migrate_patch_folders(kit, c) {
-            crate::log::warn(&format!("{}: version folders not renamed ({e:#})", c.id));
+            crate::common::log::warn(&format!("{}: version folders not renamed ({e:#})", c.id));
         }
     }
     let old = kit.apps().join("versions");
@@ -168,13 +168,13 @@ pub fn migrate(kit: &Kit) {
             None => crate::net::archive::remove_dir(&entry.path()),
         };
         if let Err(e) = result {
-            crate::log::warn(&format!("{id}: saved versions not moved ({e:#})"));
+            crate::common::log::warn(&format!("{id}: saved versions not moved ({e:#})"));
         }
     }
     let _ = fs::remove_dir(&old);
     for c in versioned() {
         if let Err(e) = repair_default(kit, c) {
-            crate::log::warn(&format!("{}: no default version ({e:#})", c.id));
+            crate::common::log::warn(&format!("{}: no default version ({e:#})", c.id));
         }
     }
     for c in lined() {
@@ -184,13 +184,13 @@ pub fn migrate(kit: &Kit) {
     // The databases' data, one folder per version too.
     crate::db::services::migrate_data(kit);
     if let Err(e) = crate::install::adopt_composer(kit) {
-        crate::log::warn(&format!("Composer of the older kit: {e:#}"));
+        crate::common::log::warn(&format!("Composer of the older kit: {e:#}"));
     }
     if let Err(e) = crate::install::migrate_php_ini(kit) {
-        crate::log::warn(&format!("php.ini per line of PHP: {e:#}"));
+        crate::common::log::warn(&format!("php.ini per line of PHP: {e:#}"));
     }
     if let Err(e) = crate::projects::apache::fix_kit_conf(kit) {
-        crate::log::warn(&format!("Apache kit.conf: {e:#}"));
+        crate::common::log::warn(&format!("Apache kit.conf: {e:#}"));
     }
 }
 
@@ -220,8 +220,8 @@ fn drop_component(kit: &Kit, id: &str) {
     let dir = kit.apps().join(id);
     if dir.exists() {
         match crate::net::archive::remove_dir(&dir) {
-            Ok(()) => crate::log::info(&format!("{id}: no longer in the catalog, removed")),
-            Err(e) => crate::log::warn(&format!("{id}: not removed ({e:#})")),
+            Ok(()) => crate::common::log::info(&format!("{id}: no longer in the catalog, removed")),
+            Err(e) => crate::common::log::warn(&format!("{id}: not removed ({e:#})")),
         }
     }
     let prefix = format!("{id}@");
@@ -269,7 +269,7 @@ fn migrate_default(kit: &Kit, c: &Component) -> Result<()> {
         return Err(e.into());
     }
     write_version(&to, &version)?;
-    crate::log::info(&format!("{}: {version} moved to {}", c.id, to.display()));
+    crate::common::log::info(&format!("{}: {version} moved to {}", c.id, to.display()));
     Ok(())
 }
 
@@ -291,8 +291,10 @@ pub fn drop_old_lines(kit: &Kit, c: &Component) {
             continue;
         }
         match crate::net::archive::remove_dir(&entry.path()) {
-            Ok(()) => crate::log::info(&format!("{}: {name} removed, {line} replaces it", c.id)),
-            Err(e) => crate::log::warn(&format!("{}: {name} not removed ({e:#})", c.id)),
+            Ok(()) => {
+                crate::common::log::info(&format!("{}: {name} removed, {line} replaces it", c.id))
+            }
+            Err(e) => crate::common::log::warn(&format!("{}: {name} not removed ({e:#})", c.id)),
         }
     }
 }
@@ -323,14 +325,14 @@ fn migrate_from_tools(kit: &Kit, c: &Component) -> Result<()> {
     if has_key(c, &dir) || !files.iter().any(|p| p.ends_with(exe)) {
         return Ok(());
     }
-    let into = crate::fsx::join_rel(&dir, sub);
+    let into = crate::common::fsx::join_rel(&dir, sub);
     fs::create_dir_all(&into)?;
     for from in &files {
         let to = into.join(from.file_name().unwrap_or_default());
         fs::rename(from, &to).with_context(|| to.display().to_string())?;
     }
     write_version(&dir, &version)?;
-    crate::log::info(&format!("{}: moved from tools to {}", c.id, dir.display()));
+    crate::common::log::info(&format!("{}: moved from tools to {}", c.id, dir.display()));
     Ok(())
 }
 
@@ -362,10 +364,10 @@ fn migrate_patch_folders(kit: &Kit, c: &Component) -> Result<()> {
         let to = saved_dir(kit, c, &line);
         if to.exists() {
             crate::net::archive::remove_dir(&path)?;
-            crate::log::info(&format!("{}: {name} removed, {line} replaces it", c.id));
+            crate::common::log::info(&format!("{}: {name} removed, {line} replaces it", c.id));
         } else {
             fs::rename(&path, &to).with_context(|| to.display().to_string())?;
-            crate::log::info(&format!("{}: {name} renamed to {line}", c.id));
+            crate::common::log::info(&format!("{}: {name} renamed to {line}", c.id));
         }
     }
     Ok(())

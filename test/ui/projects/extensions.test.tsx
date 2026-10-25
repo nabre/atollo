@@ -2,7 +2,7 @@
 // suggestions of the kit's matrix (those the project does not have yet).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SAMPLE_MATRIX, SAMPLE_PROJECTS, type ProjectInfo } from "@/api";
+import { SAMPLE_MATRIX, SAMPLE_PROJECTS, type ProjectInfo } from "@/ipc";
 import { ProjectExtensions } from "@/projects/extensions";
 import { invoke } from "@test/support/tauri";
 

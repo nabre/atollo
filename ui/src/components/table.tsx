@@ -16,7 +16,7 @@ import {
   type ComponentInfo,
   type SetupSnapshot,
   type TargetId,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { ComponentLogo } from "../shared/logos";

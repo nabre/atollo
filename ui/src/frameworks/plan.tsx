@@ -1,7 +1,7 @@
 // The plan of a combination: the additions to choose and what it does;
 // tried in Settings, shown by the wizard.
 import type { ReactNode } from "react";
-import type { FrameworkPiece, FrameworkPlan, FrameworksView } from "../api";
+import type { FrameworkPiece, FrameworkPlan, FrameworksView } from "../ipc";
 import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { CheckboxLabel, Notice, Select, SettingItem, SettingsGroup } from "../workbench";

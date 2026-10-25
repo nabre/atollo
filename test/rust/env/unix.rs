@@ -20,7 +20,7 @@ fn cc_variables_on_unix_with_cc_and_zig() {
         Target::DARWIN_ARM64,
         Target::DARWIN_X64,
     ] {
-        let bin_of = |kit: &Kit| crate::fsx::join_rel(kit.apps(), "cc/bin");
+        let bin_of = |kit: &Kit| crate::common::fsx::join_rel(kit.apps(), "cc/bin");
         let on_path = |env: &KitEnv, kit: &Kit| {
             env.path_entries()
                 .iter()
@@ -64,7 +64,7 @@ fn cc_variables_on_unix_with_cc_and_zig() {
     for (name, _) in CC_VARS {
         assert_eq!(env.get(name), None, "{name}");
     }
-    let win_bin = crate::fsx::join_rel(win.apps(), "cc/bin");
+    let win_bin = crate::common::fsx::join_rel(win.apps(), "cc/bin");
     assert!(env.path_entries().iter().any(|e| Path::new(e) == win_bin));
 }
 
@@ -111,9 +111,6 @@ fn macos_rust_linker_with_command_line_tools() {
         macos_rust_linker(Target::DARWIN_X64, true).map(|(n, _)| n),
         Some("CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER".to_owned())
     );
-    for dir in XCODE_DEVELOPER_DIRS {
-        assert!(dir.starts_with('/') && !dir.ends_with('/'), "{dir}");
-    }
 }
 
 /// D-112: the linker of Rust's gnullvm host on Windows ARM64 only, the
@@ -146,7 +143,7 @@ fn rust_linker_on_windows_arm64() {
     let env = KitEnv::build(&arm, &Settings::default(), "en", &host());
     assert_eq!(
         env.get(var).map(Path::new),
-        Some(crate::fsx::join_rel(arm.apps(), parts[1]).as_path())
+        Some(crate::common::fsx::join_rel(arm.apps(), parts[1]).as_path())
     );
     // Windows x64 unchanged.
     let x64 = Kit::at_target(tmp.0.join("x64"), Target::WIN32_X64);
@@ -192,7 +189,7 @@ fn git_variables_for_a_dugite_layout() {
         ("GIT_SSL_CAINFO", "ssl/cacert.pem"),
     ] {
         let value = &env.iter().find(|(n, _)| *n == name).unwrap().1;
-        assert_eq!(value, &crate::fsx::join_rel(git, rel), "{name}");
+        assert_eq!(value, &crate::common::fsx::join_rel(git, rel), "{name}");
     }
     // Without libexec (a Git of another layout) or without the CA bundle.
     assert!(git_unix_env(Os::Linux, git, |_| false).is_empty());
@@ -206,11 +203,15 @@ fn git_variables_for_a_dugite_layout() {
     touch(&kit, &["git/bin/git"]);
     let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
     assert_eq!(env.get("GIT_EXEC_PATH"), None);
-    fs::create_dir_all(crate::fsx::join_rel(kit.apps(), "git/libexec/git-core")).unwrap();
+    fs::create_dir_all(crate::common::fsx::join_rel(
+        kit.apps(),
+        "git/libexec/git-core",
+    ))
+    .unwrap();
     let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
     assert_eq!(
         env.get("GIT_EXEC_PATH").map(Path::new),
-        Some(crate::fsx::join_rel(kit.apps(), "git/libexec/git-core").as_path())
+        Some(crate::common::fsx::join_rel(kit.apps(), "git/libexec/git-core").as_path())
     );
     assert_eq!(env.get("PREFIX"), None);
 }
@@ -254,7 +255,7 @@ fn gem_home_per_system_and_line() {
         );
         let entries = env.path_entries();
         let at = |p: &Path| entries.iter().position(|e| Path::new(e) == p);
-        let ruby_bin = crate::fsx::join_rel(kit.apps(), "ruby/3.4/bin");
+        let ruby_bin = crate::common::fsx::join_rel(kit.apps(), "ruby/3.4/bin");
         assert!(at(&ruby_bin).is_some(), "{target} {entries:?}");
         assert_eq!(
             at(&gems.join("bin")),
@@ -290,13 +291,13 @@ fn gem_home_follows_the_line_the_kit_uses() {
         );
         let entries = env.path_entries();
         let at = |p: &Path| entries.iter().position(|e| Path::new(e) == p);
-        let ruby_bin = crate::fsx::join_rel(kit.apps(), "ruby/3.4/bin");
+        let ruby_bin = crate::common::fsx::join_rel(kit.apps(), "ruby/3.4/bin");
         assert_eq!(
             at(&gems.join("bin")),
             at(&ruby_bin).map(|i| i + 1),
             "{target} {entries:?}"
         );
-        let old = crate::fsx::join_rel(kit.apps(), "ruby/3.3");
+        let old = crate::common::fsx::join_rel(kit.apps(), "ruby/3.3");
         let old_gems = gem_home(&kit.data(), target, "3.3");
         assert!(
             entries

@@ -354,7 +354,7 @@ fn runs_and_stops_commands() {
     ));
     let env = KitEnv::build(
         &kit2,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "it",
         &crate::env::Host::capture(),
     );
@@ -407,7 +407,7 @@ fn replaced_run_does_not_end_the_new_one() {
     std::fs::create_dir_all(&proj).unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "it",
         &crate::env::Host::capture(),
     );
@@ -624,12 +624,14 @@ fn pool_runs_follow_their_pool() {
 #[cfg(windows)]
 #[test]
 fn site_stops_when_its_php_cgi_ends() {
-    use crate::os::jobs;
+    use crate::platform::jobs;
     let (_tmp, kit) = prepared_kit("run-php-cgi");
     let r = Runner::new(kit, Arc::new(|_| {}));
     let cmd = |args: &str| {
         use std::os::windows::process::CommandExt;
-        let mut c = std::process::Command::new(jobs::system_root().join(r"System32\cmd.exe"));
+        let mut c = std::process::Command::new(
+            crate::os::windows::jobs::system_root().join(r"System32\cmd.exe"),
+        );
         c.raw_arg(format!("/d /c \"{args}\""))
             .stdin(Stdio::null())
             .stdout(Stdio::null())

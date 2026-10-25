@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch};
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::test_support::prepared_kit;
 use std::time::Duration;
 
@@ -259,7 +259,7 @@ fn real_databases_start_and_stop() {
     kit.prepare().unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

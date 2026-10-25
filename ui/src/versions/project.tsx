@@ -11,7 +11,7 @@ import {
   type ProjectVersions as ProjectVersionsData,
   type RelationsMatrix,
   type VersionedTool,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import { useAction, useLoad } from "../shared/hooks";

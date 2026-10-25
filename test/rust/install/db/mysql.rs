@@ -112,7 +112,7 @@ fn mysql_strips_what_the_kit_never_runs() {
         "mysql-test/t/a.test",
         "share/english/errmsg.sys",
     ] {
-        let p = crate::fsx::join_rel(t, f);
+        let p = crate::common::fsx::join_rel(t, f);
         fs::create_dir_all(p.parent().unwrap()).unwrap();
         fs::write(&p, b"x").unwrap();
     }
@@ -123,13 +123,13 @@ fn mysql_strips_what_the_kit_never_runs() {
         "lib/plugin/debug",
         "mysql-test",
     ] {
-        assert!(!crate::fsx::join_rel(t, gone).exists(), "{gone}");
+        assert!(!crate::common::fsx::join_rel(t, gone).exists(), "{gone}");
     }
     for kept in [
         "bin/mysqld.exe",
         "lib/plugin/keep.so",
         "share/english/errmsg.sys",
     ] {
-        assert!(crate::fsx::join_rel(t, kept).exists(), "{kept}");
+        assert!(crate::common::fsx::join_rel(t, kept).exists(), "{kept}");
     }
 }

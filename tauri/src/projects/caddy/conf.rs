@@ -91,7 +91,7 @@ pub fn site_routes(
     let inner = format!("{i}\t\t");
     for a in aliases {
         let Some(target) = quoted_path(&a.dir) else {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "alias {} not served by Caddy: {} cannot be written in a Caddyfile",
                 a.url,
                 a.dir.display()
@@ -204,7 +204,7 @@ pub fn project_conf(
     if let Some(dir) = conf_d {
         match quoted_path(&dir.join("*.caddy")) {
             Some(glob) => routes.insert(0, format!("\timport {glob}")),
-            None => crate::log::warn(&format!(
+            None => crate::common::log::warn(&format!(
                 "{}: not imported, it cannot be written in a Caddyfile",
                 dir.display()
             )),
@@ -279,7 +279,7 @@ pub fn resolve_aliases(
         .filter(|a| match look_inside(&a.dir) {
             Inside::Clean => true,
             Inside::Link(p) => {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "{}: alias {} not served by Caddy: {} is a link, a junction or unreadable (Caddy would follow it)",
                     project_root.display(),
                     a.url,
@@ -288,7 +288,7 @@ pub fn resolve_aliases(
                 false
             }
             Inside::TooLarge => {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "{}: alias {} not served by Caddy: its folder is too large to check for links (over {} levels or {} entries)",
                     project_root.display(),
                     a.url,

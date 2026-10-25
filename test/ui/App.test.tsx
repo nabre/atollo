@@ -20,10 +20,10 @@ import {
   type ServiceInfo,
   type SetupSnapshot,
   type WebServerPool,
-} from "@/api";
+} from "@/ipc";
 import { invoke } from "@test/support/tauri";
 
-// The answers start from the browser preview's (ui/src/api): a test
+// The answers start from the browser preview's (ui/src/ipc): a test
 // changes only what it is about.
 
 /** Default answer of every command; tests override single commands. */

@@ -19,12 +19,12 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use super::bins::exe_name;
-use super::fs::{ensure_tree_executables, set_executable};
 use super::target::{can_execute_on_host, effective_target};
 use crate::install::{self, Ctx, Dest, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
 use crate::net::archive::{self, InUse};
 use crate::net::verify::{self, Expect};
+use crate::platform::files::{ensure_tree_executables, set_executable};
 use crate::setup::{Catalog, Component};
 
 /// `data/apps/<target>/.bootstrap`: what is pre-downloaded for that system.

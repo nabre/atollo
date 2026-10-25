@@ -8,7 +8,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
 use super::{s, version_key};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::install::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
 use crate::install::{arch_of, target_of, Ctx, Installer, Progress, Release};
 use crate::kit::Target;

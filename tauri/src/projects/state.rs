@@ -58,8 +58,8 @@ impl ProjectState {
     pub fn private_dir(&self) -> io::Result<PathBuf> {
         let dir = self.dir.join("private");
         fs::create_dir_all(&dir)?;
-        if let Err(e) = crate::router::restrict_dir_to_owner(&dir) {
-            crate::log::warn(&format!("{}: permissions: {e:#}", dir.display()));
+        if let Err(e) = crate::platform::files::restrict_dir_to_owner(&dir) {
+            crate::common::log::warn(&format!("{}: permissions: {e:#}", dir.display()));
         }
         Ok(dir)
     }
@@ -173,7 +173,7 @@ pub struct Holdings {
 pub fn holdings(kit: &Kit, project: &str) -> Option<Holdings> {
     let state = ProjectState::of(kit, project)?;
     let private = state.dir.join("private");
-    let json = |path: &Path| crate::fsx::read_json::<serde_json::Value>(path);
+    let json = |path: &Path| crate::common::fsx::read_json::<serde_json::Value>(path);
     let ports = json(&state.ports_file())
         .and_then(|v| v.get("ports")?.as_object().map(|m| m.len()))
         .unwrap_or(0);
@@ -243,7 +243,7 @@ pub fn adopt(kit: &Kit, lang: &str, orphan: &str, project: &str) -> io::Result<P
     let from = ProjectState::of(kit, orphan).ok_or_else(|| invalid("not a project name"))?;
     let to = ProjectState::of(kit, project).ok_or_else(|| invalid("not a project name"))?;
     for state in [&from, &to] {
-        if crate::os::safe_path::is_link(state.dir()) {
+        if crate::platform::safe_path::is_link(state.dir()) {
             return Err(invalid(&format!(
                 "{}: a link, left alone",
                 state.dir().display()
@@ -259,7 +259,7 @@ pub fn adopt(kit: &Kit, lang: &str, orphan: &str, project: &str) -> io::Result<P
     if has_own_data(&to.dir) {
         return Err(io::Error::new(
             io::ErrorKind::AlreadyExists,
-            crate::i18n::t(
+            crate::common::i18n::t(
                 lang,
                 "{0} ha già dati suoi nel kit (porte, server, database o copie): i dati si collegano solo a un progetto che ha al massimo le impostazioni.",
                 &[project],

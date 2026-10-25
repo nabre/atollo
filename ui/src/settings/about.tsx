@@ -12,7 +12,7 @@ import {
   type UpdateStatus,
   type AppInfo,
   type HealthFinding,
-} from "../api";
+} from "../ipc";
 import { BrandSymbol } from "../shared/brand";
 import { useAction, useLoad } from "../shared/hooks";
 import { ErrorLine } from "../shared/common";

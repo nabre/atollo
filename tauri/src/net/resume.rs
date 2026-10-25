@@ -172,7 +172,7 @@ impl Net {
                     if idle >= ATTEMPTS {
                         return Err(e);
                     }
-                    crate::log::warn(&format!(
+                    crate::common::log::warn(&format!(
                         "download of {url} stopped at {offset} bytes: {e:#}; trying again"
                     ));
                     std::thread::sleep(wait);

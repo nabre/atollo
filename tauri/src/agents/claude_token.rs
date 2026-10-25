@@ -15,9 +15,7 @@
 //! file. The token is never logged nor printed by `Atollo env` (masked):
 //! only "saved" or "not found".
 //!
-//! The reading of the output is plain code, tested on every system; only
-//! the terminal session is Unix code.
-#![cfg_attr(not(any(unix, test)), allow(dead_code))]
+//! The reading of the output is plain code, tested on every system.
 
 use std::path::{Path, PathBuf};
 
@@ -74,7 +72,7 @@ pub fn save(kit: &Kit, token: &str) -> Result<()> {
         bail!("not a Claude Code token");
     }
     let file = path(kit);
-    crate::router::write_private(&file, token)?;
+    crate::platform::files::write_private(&file, token)?;
     // A kit on exFAT or FAT keeps no owner-only mode: anyone could read
     // the token there, so it is not kept (as the Antigravity keyring).
     if !owner_only(&file) {
@@ -84,19 +82,10 @@ pub fn save(kit: &Kit, token: &str) -> Result<()> {
     Ok(())
 }
 
-/// The file readable by its owner only (always true off Unix, where the
-/// app's folder is the user's own).
+/// The file readable by its owner only (`platform::files::owner_only`:
+/// always true on Windows, where the app's folder is the user's own).
 fn owner_only(file: &Path) -> bool {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::metadata(file).is_ok_and(|m| m.permissions().mode() & 0o077 == 0)
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = file;
-        true
-    }
+    std::fs::metadata(file).is_ok_and(|m| crate::platform::files::owner_only(&m))
 }
 
 /// "Esci": the token is forgotten (no file is not an error).
@@ -234,8 +223,8 @@ impl std::fmt::Debug for TokenScan {
 
 /// "Collega con un token": `claude setup-token` in a session of the app's
 /// terminal in the kit's home; when it ends, the token it printed is saved
-/// and `on_saved` runs. Errors in `lang`.
-#[cfg(unix)]
+/// and `on_saved` runs. Errors in `lang`. Not on Windows, which keeps
+/// Claude Code's login in the kit's home already.
 pub fn link<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kit: &Kit,
@@ -248,11 +237,14 @@ pub fn link<R: tauri::Runtime>(
 
     use crate::editor::pty;
 
+    if crate::platform::OS.is_windows() {
+        bail!("claude setup-token: only on macOS");
+    }
     let exe = crate::setup::kit_path(kit, super::exe_of("claude").unwrap_or_default());
     if !exe.is_file() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "{0} non è installato.", &["Claude Code"])
+            crate::common::i18n::t(lang, "{0} non è installato.", &["Claude Code"])
         );
     }
     let dir = kit.home();
@@ -264,15 +256,15 @@ pub fn link<R: tauri::Runtime>(
     env.remove(VAR);
     let scan = Arc::new(Mutex::new(TokenScan::default()));
     let (fed, out, end, after) = (Arc::clone(&scan), app.clone(), app.clone(), kit.clone());
-    let main = crate::commands::MAIN;
+    let main = crate::ipc::MAIN;
     app.state::<crate::editor::terminal::Consoles>().ptys.open(
         &launch,
         &env,
         &dir,
         lang,
         |info| {
-            crate::log::info(&format!("terminal {}: {}", info.id, info.title));
-            let _ = app.emit_to(main, pty::OPENED_EVENT, info);
+            crate::common::log::info(&format!("terminal {}: {}", info.id, info.title));
+            let _ = app.emit_to(main, crate::ipc::events::PTY_OPENED, info);
         },
         move |id, chunk| {
             fed.lock()
@@ -285,28 +277,18 @@ pub fn link<R: tauri::Runtime>(
             let token = scan.lock().unwrap_or_else(PoisonError::into_inner).token();
             match token.map(|t| save(&after, &t)) {
                 Some(Ok(())) => {
-                    crate::log::info("claude: token saved in the kit");
+                    crate::common::log::info("claude: token saved in the kit");
                     on_saved();
                 }
-                Some(Err(e)) => crate::log::warn(&format!("claude: token not saved: {e:#}")),
-                None => crate::log::warn("claude: setup-token ended without a token"),
+                Some(Err(e)) => {
+                    crate::common::log::warn(&format!("claude: token not saved: {e:#}"))
+                }
+                None => crate::common::log::warn("claude: setup-token ended without a token"),
             }
             crate::editor::terminal::emit_exit(&end, &info);
         },
     )?;
     Ok(())
-}
-
-/// Windows keeps Claude Code's login in the kit's home already.
-#[cfg(not(unix))]
-pub fn link<R: tauri::Runtime>(
-    _app: &tauri::AppHandle<R>,
-    _kit: &Kit,
-    _env: &KitEnv,
-    _lang: &str,
-    _on_saved: impl FnOnce() + Send + 'static,
-) -> Result<()> {
-    bail!("claude setup-token: only on macOS")
 }
 
 #[cfg(test)]

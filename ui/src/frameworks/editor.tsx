@@ -1,6 +1,6 @@
 // One base or addition as a group of settings (a tab of Settings, or a
 // search result), with the bar of a modified setting and «Ripristina».
-import { urlOpen, type FrameworkPiece, type FrameworksView } from "../api";
+import { urlOpen, type FrameworkPiece, type FrameworksView } from "../ipc";
 import { ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { Link, Select, SettingItem, SettingsGroup } from "../workbench";

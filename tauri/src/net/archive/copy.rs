@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Result};
 
-#[cfg(unix)]
 use super::links::finish_links_here;
 
 /// Copies the folder `from` into `to` (created); hard links become separate
@@ -19,14 +18,12 @@ use super::links::finish_links_here;
 pub fn copy_tree(from: &Path, to: &Path) -> io::Result<()> {
     let mut links = Vec::new();
     copy_entries(from, to, &mut links)?;
-    #[cfg(unix)]
     finish_links_here(to, links).map_err(io::Error::other)?;
     Ok(())
 }
 
 /// The files and folders of `copy_tree`; the links to make in `links`
-/// (none on Windows).
-#[cfg_attr(not(unix), allow(clippy::only_used_in_recursion))]
+/// (none on Windows: `platform::links::link_to_copy`).
 fn copy_entries(from: &Path, to: &Path, links: &mut Vec<(PathBuf, String)>) -> io::Result<()> {
     fs::create_dir_all(to)?;
     for entry in fs::read_dir(from)? {
@@ -34,13 +31,14 @@ fn copy_entries(from: &Path, to: &Path, links: &mut Vec<(PathBuf, String)>) -> i
         let kind = entry.file_type()?;
         let target = to.join(entry.file_name());
         if kind.is_symlink() {
-            #[cfg(unix)]
-            match fs::read_link(entry.path())?.to_str() {
-                Some(t) => links.push((target, t.to_owned())),
-                None => crate::log::warn(&format!(
-                    "link not copied (target not UTF-8): {}",
-                    entry.path().display()
-                )),
+            if let Some(t) = crate::platform::links::link_to_copy(&entry.path())? {
+                match t.to_str() {
+                    Some(t) => links.push((target, t.to_owned())),
+                    None => crate::common::log::warn(&format!(
+                        "link not copied (target not UTF-8): {}",
+                        entry.path().display()
+                    )),
+                }
             }
             continue;
         }
@@ -102,10 +100,10 @@ fn human(bytes: u64) -> String {
 /// 4 GiB or more. Checked before the installed version is touched. When the
 /// disk cannot be read, nothing is refused (a copy that fails still does).
 pub fn check_fits(tree: &Path, dest: &Path) -> Result<()> {
-    match crate::os::volume::info(existing_ancestor(dest)) {
+    match crate::platform::volume::info(existing_ancestor(dest)) {
         Ok(v) => fits(tree, v.fs.max_file_size(), v.fs.as_str()),
         Err(e) => {
-            crate::log::warn(&format!("{}: {e}", dest.display()));
+            crate::common::log::warn(&format!("{}: {e}", dest.display()));
             Ok(())
         }
     }
@@ -136,10 +134,10 @@ fn fits(tree: &Path, limit: Option<u64>, fs_name: &str) -> Result<()> {
 /// The disk of `dest` has room for a copy of `tree`. When the disk cannot be
 /// read, nothing is refused (a copy that fails still does).
 pub fn check_space(tree: &Path, dest: &Path) -> Result<()> {
-    match crate::os::volume::free_space(existing_ancestor(dest)) {
+    match crate::platform::volume::free_space(existing_ancestor(dest)) {
         Ok(free) => has_space(tree, free, dest),
         Err(e) => {
-            crate::log::warn(&format!("{}: {e}", dest.display()));
+            crate::common::log::warn(&format!("{}: {e}", dest.display()));
             Ok(())
         }
     }

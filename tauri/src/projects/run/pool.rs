@@ -5,9 +5,9 @@ use std::collections::HashSet;
 use std::process::Child;
 use std::time::Duration;
 
+use crate::common::i18n::t as tr;
+use crate::common::time::now_ms;
 use crate::detect::Action;
-use crate::i18n::t as tr;
-use crate::time::now_ms;
 
 use super::{key_of, Entry, Event, RunInfo, Runner, State};
 

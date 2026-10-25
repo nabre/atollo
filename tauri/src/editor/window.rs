@@ -22,12 +22,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use anyhow::{Context, Result};
 use tauri::webview::NewWindowResponse;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
-#[cfg(windows)]
-use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
-#[cfg(windows)]
-use windows::core::Interface;
 
-use crate::os::jobs;
+use crate::platform::jobs;
 
 pub const LABEL_PREFIX: &str = "editor-";
 
@@ -68,7 +64,7 @@ fn apply<R: Runtime>(window: &WebviewWindow<R>, what: Control) {
         Control::Close => window.close(),
     };
     if let Err(e) = done {
-        crate::log::warn(&format!("editor {}: {what:?}: {e}", window.label()));
+        crate::common::log::warn(&format!("editor {}: {what:?}: {e}", window.label()));
     }
 }
 
@@ -163,8 +159,9 @@ fn data_uri(png: &[u8]) -> String {
 /// bar with the Windows buttons, with the editor's own classes, so its
 /// colors (codicons, red on close).
 fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> String {
-    let label =
-        |it: &str| serde_json::to_string(&crate::i18n::t(lang, it, &[])).unwrap_or_default();
+    let label = |it: &str| {
+        serde_json::to_string(&crate::common::i18n::t(lang, it, &[])).unwrap_or_default()
+    };
     let (logo32, logo256) = (data_uri(LOGO_32), data_uri(LOGO_256));
     let hidden_key = serde_json::to_string(&hidden_key(project)).unwrap_or_default();
     let project = serde_json::to_string(project).unwrap_or_default();
@@ -449,7 +446,7 @@ fn hidden_key(project: &str) -> String {
     format!("atollo-hidden:{project}")
 }
 
-use crate::time::now_ms;
+use crate::common::time::now_ms;
 
 /// Sends each open editor window the extensions its project hides now: a
 /// language or a choice changed. They apply at the window's next reload.
@@ -540,7 +537,7 @@ pub fn watch_projects(
                         seen.insert(dir, now);
                     }
                     Some(before) if *before != now => {
-                        crate::log::info(&format!(
+                        crate::common::log::info(&format!(
                             "editor: {} changed, extensions synced",
                             dir.display()
                         ));
@@ -659,12 +656,12 @@ pub fn open<R: Runtime>(
             lang,
             port,
             title,
-            &crate::editor::ext::hidden_of(&app.state::<crate::commands::AppState>().kit, folder),
+            &crate::editor::ext::hidden_of(&app.state::<crate::ipc::AppState>().kit, folder),
         ))
         .data_directory(data_dir.to_path_buf())
         // Light or dark as the settings say (D-137); VSCodium follows it.
         .theme(
-            crate::settings::Settings::load(&app.state::<crate::commands::AppState>().kit)
+            crate::common::settings::Settings::load(&app.state::<crate::ipc::AppState>().kit)
                 .settings
                 .theme
                 .window(),
@@ -674,7 +671,7 @@ pub fn open<R: Runtime>(
             if same_origin(u, port) {
                 let ok = in_project(u, &project);
                 if !ok {
-                    crate::log::warn("editor: blocked navigation out of the project");
+                    crate::common::log::warn("editor: blocked navigation out of the project");
                 }
                 return ok;
             }
@@ -683,7 +680,10 @@ pub fn open<R: Runtime>(
                 if classify_external(u) == Leave::Browser {
                     let _ = open_in_browser(u);
                 } else {
-                    crate::log::warn(&format!("editor: blocked navigation to {}", u.scheme()));
+                    crate::common::log::warn(&format!(
+                        "editor: blocked navigation to {}",
+                        u.scheme()
+                    ));
                 }
             }
             ok
@@ -692,7 +692,7 @@ pub fn open<R: Runtime>(
             sync_maximized(&w);
             let mut url = payload.url().clone();
             url.set_query(None);
-            crate::log::info(&format!(
+            crate::common::log::info(&format!(
                 "editor {}: {:?} {url}",
                 w.label(),
                 payload.event()
@@ -705,20 +705,20 @@ pub fn open<R: Runtime>(
                     std::thread::spawn(move || apply(&w, what));
                 }
             } else if same_origin(&u, port) && !in_project(&u, &project_new) {
-                crate::log::warn("editor: blocked new window out of the project");
+                crate::common::log::warn("editor: blocked new window out of the project");
             } else if same_origin(&u, port) {
                 let (app, data, url) = (handle.clone(), data.clone(), u.to_string());
                 let (folder, name) = (project_new.clone(), name.clone());
                 // Not on the WebView2 callback: building a window there would deadlock.
                 std::thread::spawn(move || {
                     if let Err(e) = open(&app, &url, port, &name, &folder, &data, lang) {
-                        crate::log::error(&format!("editor: new window: {e:#}"));
+                        crate::common::log::error(&format!("editor: new window: {e:#}"));
                     }
                 });
             } else if classify_external(&u) == Leave::Browser {
                 let _ = open_in_browser(&u);
             } else {
-                crate::log::warn(&format!("editor: blocked new window to {}", u.scheme()));
+                crate::common::log::warn(&format!("editor: blocked new window to {}", u.scheme()));
             }
             NewWindowResponse::Deny
         })
@@ -731,36 +731,10 @@ pub fn open<R: Runtime>(
     Ok(())
 }
 
-/// WebView2 settings: nothing to change in WKWebView or WebKitGTK.
-#[cfg(not(windows))]
-pub fn quiet_webview<R: Runtime>(_window: &WebviewWindow<R>, _what: &'static str) {}
-
-/// Browser accelerator keys, context menu and status bar off, so Ctrl+W,
-/// Ctrl+N, Ctrl+F, F5... reach the page. `what` names the window in the log.
-#[cfg(windows)]
+/// The web view's browser keys, menu and status bar off
+/// (`platform::webview::quiet`).
 pub fn quiet_webview<R: Runtime>(window: &WebviewWindow<R>, what: &'static str) {
-    let applied = window.with_webview(move |webview| {
-        let result = (|| -> windows::core::Result<()> {
-            // SAFETY: COM calls on the live controller of this webview.
-            unsafe {
-                let settings = webview
-                    .controller()
-                    .CoreWebView2()?
-                    .Settings()?
-                    .cast::<ICoreWebView2Settings3>()?;
-                settings.SetAreBrowserAcceleratorKeysEnabled(false)?;
-                settings.SetAreDefaultContextMenusEnabled(false)?;
-                settings.SetIsStatusBarEnabled(false)?;
-            }
-            Ok(())
-        })();
-        if let Err(e) = result {
-            crate::log::warn(&format!("{what}: webview settings: {e}"));
-        }
-    });
-    if let Err(e) = applied {
-        crate::log::warn(&format!("{what}: webview settings: {e}"));
-    }
+    crate::platform::webview::quiet(window, what);
 }
 
 #[cfg(test)]

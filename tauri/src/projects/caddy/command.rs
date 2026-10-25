@@ -9,10 +9,10 @@ use std::process::Command;
 
 use anyhow::{bail, Result};
 
+use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
-use crate::fsx::write_atomic;
 use crate::kit::Kit;
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::projects::fastcgi::{FastCgi, FCGI_KEY_PARAM};
 
 use super::conf::{admin_address, project_conf, resolve_aliases};
@@ -111,7 +111,7 @@ pub fn command(
     if !exe.is_file() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "{0} non è installato (Strumenti > {0})", &["Caddy"])
+            crate::common::i18n::t(lang, "{0} non è installato (Strumenti > {0})", &["Caddy"])
         );
     }
     let run_dir = dir(kit, project)?;

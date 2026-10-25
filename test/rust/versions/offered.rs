@@ -18,7 +18,7 @@ fn stale_lists_are_asked_for_again() {
     // Older than a day: asked for again.
     let mut all = offered(&kit);
     all.get_mut("mongodb").unwrap().checked -= STALE_SECS + 1;
-    crate::fsx::write_json(&offered_file(&kit), &all).unwrap();
+    crate::common::fsx::write_json(&offered_file(&kit), &all).unwrap();
     assert!(stale_offers(&kit).iter().any(|id| id == "mongodb"));
 
     // Apache's list of a kit with one folder per patch: asked for again.
@@ -30,7 +30,7 @@ fn stale_lists_are_asked_for_again() {
             checked: all["mongodb"].checked + STALE_SECS,
         },
     );
-    crate::fsx::write_json(&offered_file(&kit), &all).unwrap();
+    crate::common::fsx::write_json(&offered_file(&kit), &all).unwrap();
     assert!(stale_offers(&kit).iter().any(|id| id == "apache"));
     save_offered(&kit, "apache", &["2.4.69".into(), "2.4".into()]).unwrap();
     assert_eq!(offered(&kit)["apache"].lines, ["2.4"]);

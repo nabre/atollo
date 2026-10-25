@@ -15,7 +15,7 @@ use crate::versions::ranges::{Bare, Range, Version};
 
 /// The version text `spec` reads in `dir`, if the file says one.
 fn declared(dir: &Path, spec: &ProjectSpec) -> Option<String> {
-    let text = crate::fsx::read_text(&dir.join(&spec.file)).ok()?;
+    let text = crate::common::fsx::read_text(&dir.join(&spec.file)).ok()?;
     let text = text.as_str();
     let found = if let Some(path) = &spec.json {
         let v: Value = serde_json::from_str(text).ok()?;

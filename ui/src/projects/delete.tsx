@@ -5,7 +5,7 @@
 // then "Elimina senza i database" deletes the folders and leaves the
 // databases on the servers (named in the log).
 import { useCallback, useState } from "react";
-import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan } from "../api";
+import { folderOpen, projectDelete, projectDeletePlan, type DeletePlan } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

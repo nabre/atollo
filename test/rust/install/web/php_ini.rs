@@ -40,7 +40,7 @@ fn php_ini_from_older_templates() {
 fn fake_php(kit: &crate::kit::Kit, dir: &Path, template: &str) {
     let php = crate::setup::Catalog::get().find("php").unwrap();
     let key = php.key_for(kit.target());
-    let file = crate::fsx::join_rel(dir, key.strip_prefix("php/").unwrap());
+    let file = crate::common::fsx::join_rel(dir, key.strip_prefix("php/").unwrap());
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(file, b"").unwrap();
     fs::write(dir.join("php.ini-development"), template).unwrap();

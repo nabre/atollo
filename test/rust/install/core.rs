@@ -239,7 +239,7 @@ fn git_is_staged_where_its_target_cannot_run() {
     // `should_stage` on this host, for a kit of every target.
     let tmp = crate::kit::tests::TempDir::new("git-stage");
     let git = crate::setup::Catalog::get().find("git").unwrap();
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     let env = crate::env::KitEnv::default();
     let cancel = std::sync::atomic::AtomicBool::new(false);
     for target in Target::ALL {
@@ -337,7 +337,7 @@ fn conda_git_is_marked_once_for_reinstall() {
         // The installed line 2.51, with the key of `target`.
         let line = store.join("2.51");
         let key = git.key_for(target);
-        let key_file = crate::fsx::join_rel(&line, key.strip_prefix("git/").unwrap());
+        let key_file = crate::common::fsx::join_rel(&line, key.strip_prefix("git/").unwrap());
         fs::create_dir_all(key_file.parent().unwrap()).unwrap();
         fs::write(&key_file, b"x").unwrap();
         fs::create_dir_all(line.join("libexec").join("git-core")).unwrap();

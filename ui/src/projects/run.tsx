@@ -1,7 +1,7 @@
 // The Avvio section of a project's page: its actions, the chosen one with
 // its port and its output.
 import { useEffect, useRef, useState } from "react";
-import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunInfo } from "../api";
+import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunInfo } from "../ipc";
 import { useAction } from "../shared/hooks";
 import { ErrorLine, PORT_MAX, PORT_MIN, validPort } from "../shared/common";
 import { t } from "../i18n";
@@ -18,7 +18,7 @@ import {
   Notice,
   TextField,
 } from "../workbench";
-import { projectActionDefault, projectActionRemove, urlOpen } from "../api";
+import { projectActionDefault, projectActionRemove, urlOpen } from "../ipc";
 import { ActionButton } from "../shared/common";
 import { ActionBar, EditorSection, Properties } from "../workbench";
 import { ActionForm } from "./actionform";

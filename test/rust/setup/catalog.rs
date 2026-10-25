@@ -457,7 +457,7 @@ fn unavailable_on_linux_names_the_system() {
     let tmp = TempDir::new("catalog-android-linux");
     let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_ARM64);
     kit.prepare().unwrap();
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     let env = crate::env::KitEnv::default();
     let cancel = std::sync::atomic::AtomicBool::new(false);
     let ctx = crate::install::Ctx {
@@ -476,7 +476,7 @@ fn unavailable_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert_eq!(e, "android is not available on linux-arm64");
-    let msg = crate::commands::unavailable_msg(
+    let msg = crate::ipc::unavailable_msg(
         "en",
         "Android SDK",
         Target::LINUX_ARM64,

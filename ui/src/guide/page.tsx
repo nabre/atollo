@@ -4,7 +4,7 @@
 //   page of the app the topic is about;
 // - the topic's text, then the previous and next topic.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { componentsList, folderOpen, type AppInfo, type ComponentInfo } from "../api";
+import { componentsList, folderOpen, type AppInfo, type ComponentInfo } from "../ipc";
 import { t } from "../i18n";
 import { Tag } from "../shared/tags";
 import {

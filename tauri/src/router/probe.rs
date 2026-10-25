@@ -142,7 +142,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
 }
 
 /// Probes all 6 supported targets (`Target::ALL`) on the kit's disk: the
-/// component × target grid of the Tools page (`commands::setup::target_profiles`).
+/// component × target grid of the Tools page (`ipc::setup::target_profiles`).
 pub fn probe_all_targets(kit: &Kit, lang: &str) -> Vec<TargetSummary> {
     Target::ALL
         .into_iter()

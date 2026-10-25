@@ -71,7 +71,7 @@ pub enum Inner {
 /// on macOS and Linux it is an ordinary character of a file name, which
 /// tar archives for those systems may have.
 pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
-    if name.starts_with(['/', '\\']) || (cfg!(windows) && name.contains(':')) {
+    if name.starts_with(['/', '\\']) || crate::platform::files::special_in_name(name) {
         return None;
     }
     let mut out = base.to_path_buf();
@@ -89,18 +89,10 @@ pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
     (depth > 0).then_some(out)
 }
 
-#[cfg(unix)]
+/// The entry's execute bits (`platform::files::add_executable`).
 fn set_executable(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    if let Ok(meta) = fs::metadata(path) {
-        let mut perms = meta.permissions();
-        perms.set_mode(perms.mode() | 0o755);
-        let _ = fs::set_permissions(path, perms);
-    }
+    let _ = crate::platform::files::add_executable(path);
 }
-
-#[cfg(not(unix))]
-fn set_executable(_path: &Path) {}
 
 pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
     fs::create_dir_all(dest)?;
@@ -184,19 +176,19 @@ pub fn pick_inner(extracted: &Path, inner: &Inner) -> Result<PathBuf> {
     match inner {
         Inner::Root => Ok(extracted.to_path_buf()),
         Inner::Named(name) => {
-            let path = crate::fsx::join_rel(extracted, name);
+            let path = crate::common::fsx::join_rel(extracted, name);
             if !path.is_dir() {
                 bail!("the archive has no folder {name}");
             }
             Ok(path)
         }
         Inner::SingleUnder(name) => {
-            let sub = crate::fsx::join_rel(extracted, name);
+            let sub = crate::common::fsx::join_rel(extracted, name);
             pick_inner(&sub, &Inner::Single).with_context(|| format!("in {name}"))
         }
         Inner::SingleThen(sub) => {
             let top = pick_inner(extracted, &Inner::Single)?;
-            let path = crate::fsx::join_rel(&top, sub);
+            let path = crate::common::fsx::join_rel(&top, sub);
             if !path.is_dir() {
                 bail!("the archive has no folder {sub} inside {}", top.display());
             }

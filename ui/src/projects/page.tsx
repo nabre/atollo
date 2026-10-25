@@ -16,12 +16,12 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
-} from "../api";
+} from "../ipc";
 import { useAction, useLoad } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { t } from "../i18n";
 import { Button, Codicon, codicon, Dot, IconButton } from "../workbench";
-import { projectDatabases, projectStatus, type ProjectDatabases, type ProjectStatus } from "../api";
+import { projectDatabases, projectStatus, type ProjectDatabases, type ProjectStatus } from "../ipc";
 import { AgentButtons } from "../agents";
 import { ProjectExtensions } from "./extensions";
 import { EditorSettingsBox } from "./editorsettings";

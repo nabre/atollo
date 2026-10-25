@@ -12,7 +12,7 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
-} from "../api";
+} from "../ipc";
 import { AgentButtons } from "../agents";
 import { basesByGroup, PieceLogo, textOf, type BaseGroup, type Frameworks } from "../frameworks";
 import { t } from "../i18n";

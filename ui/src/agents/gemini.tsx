@@ -3,7 +3,7 @@
 // in Settings. Saved apart from the settings and never shown; a key typed
 // is saved when the field loses the focus, then the field empties.
 import { useState } from "react";
-import { settingsGet, settingsSet, type SettingsView } from "../api";
+import { settingsGet, settingsSet, type SettingsView } from "../ipc";
 import { t } from "../i18n";
 import { ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";

@@ -1,7 +1,7 @@
 // The fields of a framework's settings: lines of commands, the project's
 // actions, the kit's tools, the .env, the database.
 import { useEffect, useRef, useState } from "react";
-import type { EnvVar, FrameworkAction, FrameworkVariant } from "../api";
+import type { EnvVar, FrameworkAction, FrameworkVariant } from "../ipc";
 import { t } from "../i18n";
 import { codicon, IconButton, Link, Select, TextArea, TextField as InputField } from "../workbench";
 import { useComponents } from "./model";

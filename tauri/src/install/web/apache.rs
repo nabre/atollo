@@ -10,7 +10,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
 use super::vcruntime::copy_vc_runtime;
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::install::db::{mysql_lines_for, MysqlPin};
 use crate::install::lang::version_key;
 use crate::install::{pattern, target_of, Ctx, Installer, Release};

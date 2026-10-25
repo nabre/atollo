@@ -49,10 +49,10 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use super::{auth, DbEngine};
+use crate::common::ports::responds;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs::Job;
-use crate::ports::responds;
+use crate::platform::jobs::Job;
 use crate::setup::Catalog;
 use access::admin_password;
 pub use backups::Backup;
@@ -61,7 +61,7 @@ pub use projects::{lines_in_use, project_client_env, project_db_port, project_li
 pub use settings::{line_port, line_ports, load_settings, server_line, server_lines};
 
 /// The ids of the servers, in the order of the page: [`DbEngine::ALL`], for
-/// the callers that still hold an id (`commands`, `projects`, `versions`).
+/// the callers that still hold an id (`ipc`, `projects`, `versions`).
 pub const SERVERS: [&str; DbEngine::ALL.len()] = {
     let mut ids = [""; DbEngine::ALL.len()];
     let mut i = 0;

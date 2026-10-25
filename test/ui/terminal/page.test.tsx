@@ -2,7 +2,7 @@
 // (UX-V5-02); a new terminal that saves but does not open says why.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { TerminalsView } from "@/api";
+import type { TerminalsView } from "@/ipc";
 import { TerminalsPage } from "@/terminal/page";
 import { invoke } from "@test/support/tauri";
 

@@ -14,7 +14,7 @@ import {
   type AgentInfo,
   type AgentStats,
   type Level,
-} from "../api";
+} from "../ipc";
 import { rich, t } from "../i18n";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { ComponentLogo, componentIcon } from "../shared/logos";

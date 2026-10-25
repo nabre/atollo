@@ -15,10 +15,10 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Stdio};
 use std::sync::Arc;
 
+use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
-use crate::fsx::write_atomic;
 use crate::kit::{Kit, Os};
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::projects::apache::fwd;
 use crate::projects::caddy::{self, PrivateSocket};
 
@@ -126,7 +126,7 @@ fn new_key(what: &str) -> Option<String> {
     match crate::editor::random_token() {
         Ok(key) => Some(key),
         Err(e) => {
-            crate::log::warn(&format!("{what}: no FastCGI key: {e:#}"));
+            crate::common::log::warn(&format!("{what}: no FastCGI key: {e:#}"));
             None
         }
     }
@@ -141,7 +141,7 @@ fn key_and_port(what: &str) -> Option<(String, u16)> {
     {
         Ok(addr) => addr.port(),
         Err(e) => {
-            crate::log::warn(&format!("{what}: no free FastCGI port: {e}"));
+            crate::common::log::warn(&format!("{what}: no free FastCGI port: {e}"));
             return None;
         }
     };
@@ -155,7 +155,7 @@ fn guard_file(kit: &Kit, what: &str) -> Option<PathBuf> {
     if guard.is_file() {
         Some(guard)
     } else {
-        crate::log::warn(&format!("{what}: {} is missing", guard.display()));
+        crate::common::log::warn(&format!("{what}: {} is missing", guard.display()));
         None
     }
 }
@@ -186,7 +186,7 @@ pub fn spawn_php_cgi_if_present(kit: &Kit, env: &KitEnv, job: &Job) -> Option<(F
     match jobs::spawn_in(&mut cmd, job) {
         Ok(child) => Some((FastCgi::tcp(port, key), child)),
         Err(e) => {
-            crate::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
+            crate::common::log::warn(&format!("php-cgi {}: {e:#}", cgi.display()));
             None
         }
     }
@@ -278,7 +278,7 @@ pub fn spawn_fastcgi_if_present(
     if let Err(e) = fs::create_dir_all(run_dir)
         .and_then(|()| write_atomic(&conf, fpm_conf(run_dir, &socket.path).as_bytes()))
     {
-        crate::log::warn(&format!("php-fpm: {}: {e}", conf.display()));
+        crate::common::log::warn(&format!("php-fpm: {}: {e}", conf.display()));
         return None;
     }
     let ini = crate::install::php_ini_dir(&kit.data(), &php);
@@ -296,7 +296,7 @@ pub fn spawn_fastcgi_if_present(
             child,
         )),
         Err(e) => {
-            crate::log::warn(&format!("php-fpm {}: {e:#}", fpm.display()));
+            crate::common::log::warn(&format!("php-fpm {}: {e:#}", fpm.display()));
             None
         }
     }

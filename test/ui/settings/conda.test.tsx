@@ -2,7 +2,7 @@
 // network (D-118): the setting, the space and «Libera».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { CondaKept, Settings } from "@/api";
+import type { CondaKept, Settings } from "@/ipc";
 import { CondaSettings } from "@/settings/conda";
 import { invoke } from "@test/support/tauri";
 

@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::kit::Kit;
 use crate::setup::{Catalog, Component};
 
@@ -31,15 +31,15 @@ fn line_dirs(kit: &Kit, c: &Component) -> Vec<(String, PathBuf)> {
 
 pub fn refresh(kit: &Kit) {
     if let Err(e) = java(kit) {
-        crate::log::warn(&format!("JDKs for Gradle and Maven: {e:#}"));
+        crate::common::log::warn(&format!("JDKs for Gradle and Maven: {e:#}"));
     }
     if let Err(e) = dotnet(kit) {
-        crate::log::warn(&format!(".NET side by side: {e:#}"));
+        crate::common::log::warn(&format!(".NET side by side: {e:#}"));
     }
     // `make` for a C/C++ installed before the kit wrote it.
     let cc_bin = crate::setup::kit_path(kit, "cc/bin");
     if let Err(e) = crate::install::make_launchers(&cc_bin) {
-        crate::log::warn(&format!("make for C/C++: {e:#}"));
+        crate::common::log::warn(&format!("make for C/C++: {e:#}"));
     }
     // `kit-bin` for a Ruby, MongoDB or R environment installed before the
     // kit wrote it (D-125).
@@ -163,24 +163,13 @@ const DOTNET_SHARED: [&str; 4] = [
     "shared/Microsoft.WindowsDesktop.App",
 ];
 
-#[cfg(windows)]
 fn is_dir_link(path: &Path) -> bool {
-    junction::exists(path).unwrap_or(false)
+    crate::platform::links::is_dir_link(path)
 }
 
-#[cfg(not(windows))]
-fn is_dir_link(path: &Path) -> bool {
-    path.is_symlink()
-}
-
-#[cfg(windows)]
+/// Where the link `path` points, a relative target taken from its folder.
 fn dir_link_target(path: &Path) -> Option<PathBuf> {
-    junction::get_target(path).ok()
-}
-
-#[cfg(not(windows))]
-fn dir_link_target(path: &Path) -> Option<PathBuf> {
-    let target = fs::read_link(path).ok()?;
+    let target = crate::platform::links::dir_link_target(path).ok()?;
     Some(match path.parent() {
         Some(dir) if target.is_relative() => dir.join(target),
         _ => target,
@@ -201,25 +190,16 @@ fn dir_link_target_ok(path: &Path, roots: &[PathBuf]) -> bool {
             .any(|r| target.starts_with(r))
 }
 
-#[cfg(windows)]
+/// The link only; on Windows also the junction's folder, left empty.
 fn remove_dir_link(path: &Path) {
-    let _ = junction::delete(path);
+    let _ = crate::platform::links::delete_dir_link(path);
     let _ = fs::remove_dir(path);
 }
 
-#[cfg(not(windows))]
-fn remove_dir_link(path: &Path) {
-    let _ = fs::remove_file(path);
-}
-
-#[cfg(windows)]
+/// A junction (Windows) or a symbolic link; on a disk without links a
+/// marked copy ([`link_or_copy`]).
 fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
-    junction::create(source, link).with_context(|| link.display().to_string())
-}
-
-#[cfg(not(windows))]
-fn create_dir_link(source: &Path, link: &Path) -> Result<()> {
-    link_or_copy(source, link, |s, l| std::os::unix::fs::symlink(s, l))
+    link_or_copy(source, link, crate::platform::links::create_dir_link)
 }
 
 /// In a folder copied where a link could not be made: the folder it copies,
@@ -234,7 +214,6 @@ const STAGED: &str = ".atollo-new";
 /// The link `link -> source`, made by `make`; on a disk without links
 /// (exFAT, FAT: `archive::links_unsupported`) a copy of `source` marked
 /// with [`COPY_MARK`], so it goes like a link when `source` goes.
-#[cfg_attr(windows, allow(dead_code))]
 fn link_or_copy(
     source: &Path,
     link: &Path,
@@ -262,7 +241,6 @@ fn staged_path(link: &Path) -> PathBuf {
 /// Copies `source` (with `copy`) into `<link>.atollo-new`, marks it, then
 /// renames it to `link`: `link` is a complete, marked copy or nothing, and
 /// a copy that fails (a full disk) removes what it made.
-#[cfg_attr(windows, allow(dead_code))]
 fn copy_marked(
     source: &Path,
     link: &Path,

@@ -6,7 +6,7 @@
 // is downloaded before «Installa».
 import { useState } from "react";
 import { BrandSymbol } from "../shared/brand";
-import type { SetupSnapshot } from "../api";
+import type { SetupSnapshot } from "../ipc";
 import { rich, t } from "../i18n";
 import { ErrorLine } from "../shared/common";
 import { Codicon, SettingsEditor, SettingsGroup, SingleEditor } from "../workbench";

@@ -2,7 +2,7 @@
 // the name and the description sent, then where to find it.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { BaseEntry } from "@/api";
+import type { BaseEntry } from "@/ipc";
 import { SaveBaseDialog } from "@/projects/savebase";
 import { basesByGroup, categoryLabel } from "@/frameworks/model";
 import { invoke } from "@test/support/tauri";

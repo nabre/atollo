@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{bail, Context, Result};
 
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::net::verify::{self, Expect};
 
@@ -98,7 +98,7 @@ fn write_wanted(dir: &Path, list: &[Wanted]) {
         fs::create_dir_all(dir).and_then(|()| write_atomic(&path, text.as_bytes()))
     };
     if let Err(e) = result {
-        crate::log::warn(&format!("{}: {e}", path.display()));
+        crate::common::log::warn(&format!("{}: {e}", path.display()));
     }
 }
 
@@ -134,7 +134,7 @@ pub fn forget(kit: &Kit, id: &str) {
     for file in added(&dir) {
         if wanted_by(&file, &mine) && !wanted_by(&file, &others) {
             if let Err(e) = fs::remove_file(&file) {
-                crate::log::warn(&format!("{}: {e}", file.display()));
+                crate::common::log::warn(&format!("{}: {e}", file.display()));
             }
         }
     }
@@ -208,7 +208,7 @@ fn move_files(from: &Path, to: &Path) {
             fs::remove_file(&path).with_context(|| path.display().to_string())
         })();
         if let Err(e) = moved {
-            crate::log::warn(&format!("{}: {e:#}", path.display()));
+            crate::common::log::warn(&format!("{}: {e:#}", path.display()));
         }
     }
 }
@@ -268,7 +268,7 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
         // antivirus, a file in use) deletes its work folder, and the file
         // must still be here for the next attempt.
         fs::copy(&file, dest).with_context(|| dest.display().to_string())?;
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "{file_name}: the file added by hand {}",
             file.display()
         ));
@@ -282,7 +282,7 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
 pub fn used(kit: &Kit, file: &Path, expect: &Expect) {
     if let Err(e) = fs::remove_file(file) {
         if e.kind() != std::io::ErrorKind::NotFound {
-            crate::log::warn(&format!("{}: {e}", file.display()));
+            crate::common::log::warn(&format!("{}: {e}", file.display()));
         }
     }
     let dir = dir(kit);
@@ -290,68 +290,6 @@ pub fn used(kit: &Kit, file: &Path, expect: &Expect) {
     if list.iter().any(|w| w.expect == *expect) {
         let left: Vec<Wanted> = list.into_iter().filter(|w| w.expect != *expect).collect();
         write_wanted(&dir, &left);
-    }
-}
-
-/// Windows' "Open" window over `owner` (a window handle), several files,
-/// starting in the Downloads folder. Empty when closed without a choice.
-/// macOS and Linux: `editor::picker::files`.
-#[cfg(windows)]
-pub fn pick(owner: isize, title: &str) -> Result<Vec<PathBuf>> {
-    use windows::core::{HSTRING, PCWSTR};
-    use windows::Win32::Foundation::{ERROR_CANCELLED, HWND};
-    use windows::Win32::System::Com::{
-        CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER,
-        COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE,
-    };
-    use windows::Win32::UI::Shell::{
-        FOLDERID_Downloads, FileOpenDialog, IFileOpenDialog, IShellItem,
-        SHCreateItemFromParsingName, SHGetKnownFolderPath, FOS_ALLOWMULTISELECT, FOS_FILEMUSTEXIST,
-        FOS_FORCEFILESYSTEM, KF_FLAG_DEFAULT, SIGDN_FILESYSPATH,
-    };
-    // SAFETY: COM initialised on this thread for the dialog and released
-    // after every COM object of the closure is dropped; the strings COM
-    // allocates are freed once read.
-    unsafe {
-        let init = CoInitializeEx(None, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-        let result = (|| -> Result<Vec<PathBuf>> {
-            let dialog: IFileOpenDialog =
-                CoCreateInstance(&FileOpenDialog, None, CLSCTX_INPROC_SERVER)?;
-            dialog.SetOptions(
-                dialog.GetOptions()?
-                    | FOS_ALLOWMULTISELECT
-                    | FOS_FILEMUSTEXIST
-                    | FOS_FORCEFILESYSTEM,
-            )?;
-            dialog.SetTitle(&HSTRING::from(title))?;
-            if let Ok(path) = SHGetKnownFolderPath(&FOLDERID_Downloads, KF_FLAG_DEFAULT, None) {
-                let folder: windows::core::Result<IShellItem> =
-                    SHCreateItemFromParsingName(PCWSTR(path.0), None);
-                CoTaskMemFree(Some(path.0 as _));
-                if let Ok(folder) = folder {
-                    let _ = dialog.SetDefaultFolder(&folder);
-                }
-            }
-            if let Err(e) = dialog.Show(Some(HWND(owner as _))) {
-                if e.code() == ERROR_CANCELLED.to_hresult() {
-                    return Ok(Vec::new());
-                }
-                return Err(e.into());
-            }
-            let items = dialog.GetResults()?;
-            let mut files = Vec::new();
-            for i in 0..items.GetCount()? {
-                let path = items.GetItemAt(i)?.GetDisplayName(SIGDN_FILESYSPATH)?;
-                let text = path.to_string();
-                CoTaskMemFree(Some(path.0 as _));
-                files.push(PathBuf::from(text?));
-            }
-            Ok(files)
-        })();
-        if init.is_ok() {
-            CoUninitialize();
-        }
-        result
     }
 }
 

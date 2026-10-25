@@ -81,20 +81,10 @@ pub fn is_private_dir(path: &Path) -> bool {
     let Ok(meta) = fs::symlink_metadata(path) else {
         return false;
     };
-    if !meta.is_dir() || meta.file_type().is_symlink() || crate::os::safe_path::is_reparse(&meta) {
-        return false;
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        // SAFETY: geteuid has no preconditions.
-        let me = unsafe { libc::geteuid() };
-        meta.uid() == me && meta.mode() & 0o077 == 0
-    }
-    #[cfg(not(unix))]
-    {
-        true
-    }
+    meta.is_dir()
+        && !meta.file_type().is_symlink()
+        && !crate::platform::safe_path::is_reparse(&meta)
+        && crate::platform::files::owner_only(&meta)
 }
 
 /// Where the admin sockets may go, best first. On Linux the session's
@@ -139,22 +129,7 @@ pub fn base_trusted(base: &Path) -> bool {
     let Ok(meta) = fs::symlink_metadata(base) else {
         return false;
     };
-    if !meta.is_dir() {
-        return false;
-    }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        // SAFETY: geteuid has no preconditions.
-        let me = unsafe { libc::geteuid() };
-        let sticky = meta.mode() & 0o1000 != 0;
-        let owner_ok = meta.uid() == me || meta.uid() == 0;
-        owner_ok && (sticky || (meta.uid() == me && meta.mode() & 0o022 == 0))
-    }
-    #[cfg(not(unix))]
-    {
-        true
-    }
+    meta.is_dir() && crate::platform::files::safe_parent(&meta)
 }
 
 /// Makes the folder `base/name` for a socket: created here and now (never
@@ -164,15 +139,8 @@ pub fn base_trusted(base: &Path) -> bool {
 /// folder that fails the check is removed when it is ours.
 pub fn private_leaf(base: &Path, name: &str) -> std::io::Result<PathBuf> {
     let leaf = base.join(name);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::DirBuilderExt;
-        fs::DirBuilder::new().mode(0o700).create(&leaf)?;
-    }
-    #[cfg(not(unix))]
-    fs::DirBuilder::new().create(&leaf)?;
-    #[cfg(windows)]
-    if let Err(e) = crate::router::restrict_dir_to_owner(&leaf) {
+    crate::platform::files::create_dir_owner_only(&leaf)?;
+    if let Err(e) = crate::platform::files::restrict_dir_to_owner(&leaf) {
         let _ = fs::remove_dir(&leaf);
         return Err(std::io::Error::other(format!("{e:#}")));
     }
@@ -199,15 +167,7 @@ pub fn socket_parent_name(uid: Option<u32>) -> String {
 
 /// The current user's id on Unix, `None` on Windows.
 pub(super) fn current_uid() -> Option<u32> {
-    #[cfg(unix)]
-    {
-        // SAFETY: geteuid has no preconditions.
-        Some(unsafe { libc::geteuid() })
-    }
-    #[cfg(not(unix))]
-    {
-        None
-    }
+    crate::platform::host::user_id()
 }
 
 /// The kit's folder for sockets in `base` ([`socket_parent_name`]), made
@@ -216,23 +176,15 @@ pub(super) fn current_uid() -> Option<u32> {
 /// others): that base is not used, since its owner could rename a leaf and
 /// put another folder or socket in its place.
 pub fn socket_parent(base: &Path) -> Option<PathBuf> {
-    #[cfg(windows)]
+    // On Windows the base is the kit's own folder in the temporary one,
+    // maybe not made yet; on Unix it is there already.
     let _ = fs::create_dir_all(base);
     if !base_trusted(base) {
         return None;
     }
     let parent = base.join(socket_parent_name(current_uid()));
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::DirBuilderExt;
-        let _ = fs::DirBuilder::new().mode(0o700).create(&parent);
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = fs::DirBuilder::new().create(&parent);
-    }
+    let _ = crate::platform::files::create_dir_owner_only(&parent);
     let private = is_private_dir(&parent);
-    #[cfg(unix)]
     if private {
         sweep_stale_leaves(&parent, STALE_LEAF_AGE);
     }
@@ -241,7 +193,6 @@ pub fn socket_parent(base: &Path) -> Option<PathBuf> {
 
 /// How old a leaf of the sockets' folder must be before [`sweep_stale_leaves`]
 /// looks at it: a new one gets its socket within seconds of being made.
-#[cfg(unix)]
 pub const STALE_LEAF_AGE: std::time::Duration = std::time::Duration::from_secs(600);
 
 /// Removes the `c-*` leaves of the sockets' folder `parent` that a crash
@@ -249,11 +200,10 @@ pub const STALE_LEAF_AGE: std::time::Duration = std::time::Duration::from_secs(6
 /// older than `min_age`, and with no socket in them that a server still
 /// listens on (a connect is refused or finds nothing). The leaves of a
 /// running Caddy or php-fpm, of this app or of another kit of the same
-/// user, answer and stay. Unix only: on Windows the folder is the kit's own
-/// in the user's temporary folder.
-#[cfg(unix)]
+/// user, answer and stay. Nothing on Windows, where the app cannot ask a
+/// socket (`platform::sockets`) and the folder is the kit's own in the
+/// user's temporary folder.
 pub fn sweep_stale_leaves(parent: &Path, min_age: std::time::Duration) {
-    use std::os::unix::net::UnixStream;
     let Ok(entries) = fs::read_dir(parent) else {
         return;
     };
@@ -274,24 +224,13 @@ pub fn sweep_stale_leaves(parent: &Path, min_age: std::time::Duration) {
         if !old {
             continue;
         }
-        let alive = fs::read_dir(&leaf)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .any(|f| {
-                let is_socket = {
-                    use std::os::unix::fs::FileTypeExt;
-                    f.file_type().is_ok_and(|t| t.is_socket())
-                };
-                is_socket && UnixStream::connect(f.path()).is_ok()
-            });
-        if !alive {
+        if crate::platform::sockets::live_socket_in(&leaf) == Some(false) {
             match fs::remove_dir_all(&leaf) {
-                Ok(()) => crate::log::info(&format!(
+                Ok(()) => crate::common::log::info(&format!(
                     "caddy: {}: left by an instance that ended, removed",
                     leaf.display()
                 )),
-                Err(e) => crate::log::warn(&format!("caddy: {}: {e}", leaf.display())),
+                Err(e) => crate::common::log::warn(&format!("caddy: {}: {e}", leaf.display())),
             }
         }
     }
@@ -305,7 +244,7 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
         let random = match crate::editor::random_token() {
             Ok(t) => t.chars().take(12).collect::<String>(),
             Err(e) => {
-                crate::log::warn(&format!("{what} {id}: no random name: {e:#}"));
+                crate::common::log::warn(&format!("{what} {id}: no random name: {e:#}"));
                 return None;
             }
         };
@@ -317,7 +256,7 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
             continue;
         }
         let Some(parent) = socket_parent(&base) else {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "{what} {id}: {}: not a private folder, not used",
                 base.join(socket_parent_name(current_uid())).display()
             ));
@@ -325,10 +264,10 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
         };
         match PrivateSocket::in_leaf(&parent, &format!("c-{random}"), file) {
             Ok(sock) => return Some(sock),
-            Err(e) => crate::log::warn(&format!("{what} {id}: socket folder: {e}")),
+            Err(e) => crate::common::log::warn(&format!("{what} {id}: socket folder: {e}")),
         }
     }
-    crate::log::warn(&format!("{what} {id}: no private folder for its socket"));
+    crate::common::log::warn(&format!("{what} {id}: no private folder for its socket"));
     None
 }
 
@@ -338,7 +277,7 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
 pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
     let sock = private_socket(kit, id, "caddy", "a.sock");
     if sock.is_none() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "caddy {id}: no admin socket: admin off, a reload restarts the pool"
         ));
     }

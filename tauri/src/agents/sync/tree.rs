@@ -81,19 +81,10 @@ pub fn list_files(dir: &Path) -> BTreeMap<String, Meta> {
     out
 }
 
-/// A symbolic link (Unix has no junctions).
-#[cfg(not(windows))]
+/// A link or a junction, seen without following it
+/// (`platform::safe_path::is_link`).
 pub fn is_reparse(path: &Path) -> bool {
-    fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink())
-}
-
-/// A junction or symbolic link (Rust's `is_symlink` misses junctions).
-#[cfg(windows)]
-pub fn is_reparse(path: &Path) -> bool {
-    use std::os::windows::fs::MetadataExt;
-    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-    fs::symlink_metadata(path)
-        .is_ok_and(|m| m.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0)
+    crate::platform::safe_path::is_link(path)
 }
 
 fn same_content(a: &Path, b: &Path) -> bool {

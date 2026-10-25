@@ -41,7 +41,7 @@ tauri\
 ui\src\                       React + TypeScript interface (below)
 guide\                        the Guide's text, neutral: core\ (contract, model, language), content\ (the
                               chapters), render\load.cjs (the site's loader); drawn by the app and the site (below)
-test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src
+test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src (one system's code: test\rust\os\<system>)
 runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
 scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
@@ -59,39 +59,43 @@ Only the configuration files (workspace, lint, formatting, CI) and the README st
 
 ## Rust engine (`tauri\src`)
 
-A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`cli.rs`). Only startup and the shared infrastructure stay at the top; the rest is in one folder per area (D-87). They read by layers: a layer above calls the one below, never the reverse.
+A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`app\cli.rs`). Only `main.rs` stays at the top; everything else is in one folder per area (D-87, D-166). They read by layers: a layer above calls the one below, never the reverse.
 
 | Layer | Modules | What they do |
 | --- | --- | --- |
-| Startup | `main.rs`, `app.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | startup order ("Startup", above), command line, single instance, WebView2 |
-| Commands | `commands\` | the interface's only entry point: they check the window, translate the errors, call the domain |
-| Domain | the folders per area (below) | components, versions, projects, editor and console, agents, local models, databases, web servers, GitHub |
-| Infrastructure | `kit\`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | kit paths, files, clock, environment, settings, log, languages, who has each port, network and checks, processes, target operating systems |
+| Startup | `main.rs`, `app\` | startup order ("Startup", above), the app and its windows, the tray, the command line |
+| IPC | `ipc\` | the interface's only entry point: the commands (they check the window, translate the errors, call the domain) and the names of the events Rust sends (`ipc\events.rs`) |
+| Domain | the folders per area (below) | components, versions, projects, editor and console, agents, local models, databases, web servers, GitHub, diagnostics |
+| Infrastructure | `common\`, `kit\`, `env\`, `net\`, `router\` | files, log, clock, languages, settings, ports; kit paths; environment; network and checks; target operating systems |
+| Platform | `platform\` | the abstract layer over the operating system: the same API on Windows, macOS and Linux (below) |
+| Systems | `os\windows\`, `os\unix\`, `os\macos\`, `os\linux\` | the code of each system, behind `platform\` only |
 
 ```
 tauri\src\
-  main.rs  app.rs  cli.rs     startup; the app, its windows and shutdown; command line and its commands
-  kit\                        mod (paths, first run, move), target (Os, Arch, Target), root (bundle,
-                              AppImage), names (valid project names)
-  env\                        kit environment: mod (Host, KitEnv, build in parts), langs, unix (D-112),
-                              path (PATH), secrets (masking)
-  fsx.rs                      kit files: reading, JSON, atomic writes (below)
-  time.rs                     the clock: now_secs, now_ms since the Unix epoch
-  settings.rs                 data\app\settings.json (one change at a time, `Settings::update`), Gemini key file
-  log.rs  i18n.rs             log with masked secrets; language and catalogs
-  ports.rs                    who has each port: pools, database versions, actions, editor, local models (D-141, below)
-  diagnostics.rs              "Export diagnostics", `Atollo diagnostics`: the zip in data\app\diagnostics, secrets masked (D-153)
-  health.rs                   "Kit health", `Atollo check --kit`: drive, free space, path, permissions, libraries (D-155)
-  backup.rs                   "Copy of the kit": export to a folder or a zip; an import applied at the next start (D-163)
-  tray.rs                     the icon in the notification area: show, projects, quit (D-145)
-  commands\                   Tauri commands (below)
+  main.rs                     startup (the only file at the top)
+  app\                        mod (the app, its windows and shutdown), tray (the icon in the notification area:
+                              show, projects, quit, D-145), cli (command line and its commands)
+  ipc\                        the IPC with the interface (below): one file of commands per area, error, events
+  common\                     what every area uses: fsx (kit files: reading, JSON, atomic writes, below), log
+                              (masked secrets), time (now_secs, now_ms), i18n (language and catalogs), settings
+                              (data\app\settings.json, one change at a time: `Settings::update`; Gemini key
+                              file), ports (who has each port: pools, database versions, actions, editor, local
+                              models, D-141, below)
+  kit\                        mod (paths, first run, move), target (Os, Arch, Target), root (bundle), names
+                              (valid project names), backup ("Copy of the kit": export to a folder or a zip;
+                              an import applied at the next start, D-163)
+  env\                        kit environment: mod (Host, KitEnv, build in parts), langs, unix (what a macOS or
+                              Linux kit adds, D-112), path (PATH), secrets (masking)
+  diagnostics\                mod ("Export diagnostics", `Atollo diagnostics`: the zip in data\app\diagnostics,
+                              secrets masked, D-153), health ("Kit health", `Atollo check --kit`: drive, free
+                              space, path, permissions, libraries, D-155)
   setup\                      components and installation
     catalog  needs            embedded catalog, components.txt; what agents, clone, actions need (D-59)
     runner  task              plan and steps of a setup; the setup started from the window
     checkup  downloads        final check (D-39); files downloaded by hand (D-82)
     kit_files  self_update    files written to data\kit\; new version of the exe
   install\                    one installer per family: core, agents (Pi too), llama (llama.cpp, D-151), web, caddy,
-                              native, editor, db, android;
+                              native, editor, db, android, conpty (the kit's ConPTY);
                               conda (packages kept to reinstall without the network, D-118); the shared path:
                               mod (types, Installer, registry), flow, parts, keys
     lang\                     one file per language or family: go, jvm, dotnet, dart, zig, julia,
@@ -118,10 +122,9 @@ tauri\src\
   editor\                     editor and console
     mod  window               VSCodium web server; editor-<n> windows (D-69)
     cfg  ext  theme           settings and terminal profiles; extensions (D-71); Atollo theme
-    picker                    file and folder pickers (D-109)
     terminal                  kit console: a session of the in-app terminal on every system (D-148), its own window once detached (D-149)
-    pty                       in-app terminal, PTY sessions for xterm.js (D-109, D-148)
-    conpty                    Windows' pseudo console: the kit's conpty.dll by its path, job per session (D-148)
+    pty                       in-app terminal: the sessions for xterm.js, their output and backlog (D-109, D-148);
+                              the pseudo terminal itself is `platform::pty`
     terminals                 Terminals page: consoles saved in data\app\terminals.json, with their own tools and
                               versions; a saved line no longer installed falls back to the newest (`replaced`)
   servers\                    Web server page: Caddy/Apache pools shared by the projects
@@ -134,7 +137,8 @@ tauri\src\
     sync\                     instructions, skills, MCP, rules, trusted folders; pi (Pi's settings.json, models.json
                               with the local models, mcp.json, APPEND_SYSTEM.md, trust.json: D-152)
     stats\                    usage limits and consumption (D-61): claude, codex, antigravity, pi (sessions' JSONL)
-    keyring  relocate         Antigravity sign-in (D-115; keyring\portable: the parts tested on every system);
+    keyring  relocate         Antigravity sign-in (D-115): the Store trait, the moves, the kit's files, lock,
+                              portable (the parts tested on every system; each system's store is in os\);
                               paths rewritten after a move
     claude_token              Claude Code token on macOS (D-115)
     presets  github_mcp       ready MCP servers (D-156); `Atollo mcp github`, the stdio bridge to GitHub's server
@@ -153,20 +157,25 @@ tauri\src\
                               (downloads, FAT32 and free space checked first), presets (data\app\llm\presets.ini),
                               service (llama-server in router mode on 127.0.0.1, its job, one operation at a time),
                               settings (data\app\llm.json, port, key), cli (models, llm)
-  net\                        network: mod (HTTPS, proxy and exceptions, GitHub API), ca (the PEM file of the
-                              settings, data\app\ca-bundle.pem: D-137), verify (SHA), signature (Authenticode),
-                              archive (extraction, folder swap), resume (large downloads: <file>.part resumed
-                              with Range, SHA-256 while the bytes arrive, D-151)
-  os\                         Windows and processes: jobs (Job Object, D-07), processes, sessions ("Remove
-                              drive", other copies), instance (D-08), webview (D-05), safe_path (D-77),
-                              temp (TempWork, cleanup: staging files in the system temp, D-90),
-                              volume (file system and disk type, free space, same disk, noexec), memory (the PC's RAM),
-                              guard (process guard on macOS and Linux, D-105)
+  net\                        network: mod (HTTPS, the proxy of the settings, GitHub API), ca (the PEM file of the
+                              settings, data\app\ca-bundle.pem: D-137), verify (SHA), archive (extraction, folder
+                              swap), resume (large downloads: <file>.part resumed with Range, SHA-256 while the
+                              bytes arrive, D-151)
   router\                     targets (Windows, macOS, Linux × x64, ARM64): target, bins (programs and launchers
-                              per system), probe (what is on disk, health), fs (private and executable files), bootstrap
-                              (setup for another system, D-114), availability (why a component cannot be
-                              installed on a target)
+                              per system), probe (what is on disk, health), bootstrap (setup for another system,
+                              D-114), availability (why a component cannot be installed on a target)
+  platform\                   the abstract layer over the operating system (below)
+  os\                         the code of each system (below)
 ```
+
+### The operating system (`platform\` and `os\`)
+
+The engine looks at which system it is built for only in `os\` (D-166): everywhere else there is no `#[cfg(windows)]`, `#[cfg(unix)]`, `#[cfg(target_os = …)]` or `cfg!(…)`, no crate of one system (`libc`, `windows`, `webview2_com`, `junction`, `portable_pty`, `rfd`, `dbus_secret_service`) and no `std::os::<system>`. `test\rust\os\rule.rs` checks it, comments and strings left out.
+
+- **`platform\`** is the API the engine calls, the same on every system, with the logic that is the same everywhere: `jobs` (the programs the kit starts, none outliving the app: D-07, D-105; the system shell and its quoting), `processes`, `sessions` (the kit's programs open, other kits, "Remove the drive"), `instance` (one app per kit, D-08), `lock` (the kit's locks across its processes: the preparation, `db.json`, Antigravity's sign-in), `volume` (the disk of a folder, D-90, D-105), `temp` (`TempWork`, the folders in transit, D-90), `safe_path` (reading inside a project without following links, D-77), `files` (owner-only files and folders, the executable bit, private writes), `links` (junctions on Windows, symbolic links elsewhere), `host` (what the app knows of the machine: processor, language, build of Windows, os-release, Rosetta, Xcode, ICU, the AppImage, the machine id), `desktop` (the "Select folder" and "Open" windows, the error box, the tray), `console` (the command line's output), `pty` (a program on a pseudo terminal, for the app's terminal), `proxy` (the system's proxy and the hosts reached without one), `signature` (Authenticode, Windows), `sockets` (whether a server answers on a Unix socket), `webview` (D-05), `memory`, `random`, `registry` (the current user's registry, Windows), `local_time`, and in `mod.rs` `OS`, `PATH_SEPARATOR`, `sh_quote`. Nothing there looks at which system it is: each function hands over to the module of the same name of `crate::os::current`, and the build of each system checks the signatures.
+- **`os\windows\`** has Win32, WebView2, the ConPTY (`conpty.rs`), the Credential Manager and DPAPI (`agy_store.rs`), the registry, the Job Object; **`os\unix\`** what macOS and Linux share (process groups and the guard, `guard.rs`, D-105; `flock`; modes and owners; the instance's socket and TCP fallback; portable-pty; the gentle stop; the sealing key of Antigravity's sign-in); **`os\macos\`** and **`os\linux\`** what only one has (libproc and `/proc`, `statfs` and `mountinfo`, `scutil` and `gsettings`, the Keychain and the Secret Service in `agy_keyring.rs`, AppleLanguages, the AppImage, `PR_SET_PDEATHSIG`). `macos\` and `linux\` re-export the `unix\` modules they share, so every system offers the same names; `os\mod.rs` is the only place that picks the system (`current`), and a build for another system stops with a `compile_error!`. `test\rust\os\rule.rs` also checks that every module `platform\` asks `os::current` for is there in `windows\`, `macos\` and `linux\`.
+
+To add something that differs between the systems: the function, with its doc, in the module of `platform\` it belongs to (a new module if none fits, listed in `platform\mod.rs`), handing over to `imp::<name>`; the same function in `os\windows\<module>.rs` and in `os\unix\<module>.rs` (or in `os\macos\` and `os\linux\` when they differ); the module named in each `mod.rs` of `os\`. A pure parser of one system's text (`/proc`, `mountinfo`, `scutil`) goes in that system's folder, with its tests in `test\rust\os\<system>\`; what the engine compares on every system (a kit for another target) stays in its area, where the kit's target (`kit.os()`) decides, not the system the app runs on. A check of the system the app runs on, at run time, reads `platform::OS`.
 
 ### Kit data (`data\`)
 
@@ -215,23 +224,24 @@ data\
   webview2\                   the data of the app window
 ```
 
-In the system temp, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` and `claude\` (`TEMP` of the programs and `CLAUDE_CODE_TMPDIR`, when the choice or the disk calls for it). `Kit::system_temp()` returns it, `os\temp.rs` creates its work folders and cleans them up, `net\archive.rs` (`stage_into`) moves the result into `data\apps`. The startup order: the migration of the projects' data (`projects\migrate.rs`) runs after the single instance (D-08), followed by the temp cleanup (`os::temp::sweep`); at shutdown, after the job, `os::temp::cleanup_at_exit`.
+In the system temp, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` and `claude\` (`TEMP` of the programs and `CLAUDE_CODE_TMPDIR`, when the choice or the disk calls for it). `Kit::system_temp()` returns it, `platform\temp.rs` creates its work folders and cleans them up, `net\archive.rs` (`stage_into`) moves the result into `data\apps`. The startup order: the migration of the projects' data (`projects\migrate.rs`) runs after the single instance (D-08), followed by the temp cleanup (`platform::temp::sweep`); at shutdown, after the job, `platform::temp::cleanup_at_exit`.
 
 Folder rules:
-- a module named after its area is the folder's `mod.rs` (`editor\mod.rs`, not `editor\editor.rs`: clippy rejects it), so `crate::editor::Editor` and `crate::versions::*` stay short; folders without logic of their own (`db\`, `setup\`, `os\`) hold only the description of the area in `mod.rs`;
+- a module named after its area is the folder's `mod.rs` (`editor\mod.rs`, not `editor\editor.rs`: clippy rejects it), so `crate::editor::Editor` and `crate::versions::*` stay short; folders without logic of their own (`db\`, `setup\`, `common\`) hold only the description of the area in `mod.rs`;
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
 - a file is split when it has parts that read on their own; `editor\ext.rs` and `editor\pty.rs` (the PTY sessions on every system, over 900 lines) stay whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`guide\content\`) are text, not code.
 
-### Tauri commands (`commands\`)
+### IPC (`ipc\` and `ui\src\ipc\`)
 
-One file per page or area of the interface, with the same names as the files in `ui\src\api\`:
+Everything that crosses between the interface and Rust is in two folders with the same name: `tauri\src\ipc\` and `ui\src\ipc\` (D-166). The commands are one file per page or area of the interface, with the same names as the files in `ui\src\ipc\`; the events Rust sends have their names in `ipc\events.rs`, the same as in `ui\src\ipc\events.ts` (a Rust test compares the two files): who emits or subscribes uses the constant, never the string.
 
 | File | Commands |
 | --- | --- |
 | `mod.rs` | `AppState`, the shared checks (`ensure_main`, `project_dir`, `tr`), `ensure` (installs what is missing before an action), the `command_handler!` macro |
 | `error.rs` | `CmdError`, `CmdResult`, `fail` and `OrFail` (below, "Errors") |
+| `events.rs` | the names of the events sent to the interface (`run`, `setup`, `pty-*`…) |
 | `app.rs` | information, settings, updates, opening addresses and folders |
 | `window.rs` | what is open, "Remove drive", shutdown and confirmation |
 | `editing.rs` | editor, console, editor settings and extensions of a project |
@@ -251,15 +261,15 @@ One file per page or area of the interface, with the same names as the files in 
 
 To add a command:
 1. the `#[tauri::command]` function in the file of its area, which returns `CmdResult<_>`, starts with `ensure_main(&webview)?` and calls the domain module (the logic stays there, the command translates it for the interface);
-2. its path in `command_handler!` (`commands\mod.rs`);
+2. its path in `command_handler!` (`ipc\mod.rs`);
 3. its name in `COMMANDS` (`build.rs`): the build generates `permissions\autogenerated\<name>.toml`;
 4. `allow-<name>` in `capabilities\main.json`;
-5. the TypeScript function in `ui\src\api\<area>.ts`, with the browser preview;
+5. the TypeScript function in `ui\src\ipc\<area>.ts`, with the browser preview;
 6. the new texts in the catalogs of the four languages (`tauri\i18n\catalog.json`, `ui\src\locales\*.json`).
 
-A helper used by several areas (for example `apply_env`, `open_in_browser`) stays in the file of its area with `pub(super)` visibility and is imported by name in `mod.rs`.
+A helper used by several areas (for example `apply_env`, `open_in_browser`) stays in the file of its area with `pub(super)` visibility and is imported by name in `mod.rs`. A new event: its constant in `ipc\events.rs` (and in `ALL`) and in `ui\src\ipc\events.ts`, the subscription in `ui\src\ipc\<area>.ts`.
 
-### Kit files (`fsx.rs` and `Kit`)
+### Kit files (`common\fsx.rs` and `Kit`)
 
 Every module follows the same rules for its files in `data\`:
 
@@ -267,7 +277,7 @@ Every module follows the same rules for its files in `data\`:
 - **reading**: `fsx::read_text` (UTF-8 with replacement of invalid bytes, without BOM); for JSON `fsx::read_json` (missing or damaged: `None`, for state the kit rebuilds), `fsx::load_json` (the default value plus the problem to show, for the user's settings) or `fsx::try_read_json` (error with the path). An empty file counts as missing;
 - **writing**: `fsx::write_json` (creates the folder, indented JSON, atomic) or `fsx::write_atomic` for text; never `fs::write` on a file the kit reads back;
 - **files of other programs** (editor settings, agent files, `.mcp.json`) as `serde_json::Value`, with the rules of their module: a file with comments or an invalid one is not overwritten;
-- **inside a project** only with `os::safe_path` (no link followed, D-77).
+- **inside a project** only with `platform::safe_path` (no link followed, D-77).
 
 ### One change at a time (locks)
 
@@ -288,7 +298,7 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 
 ### Ports
 
-`ports.rs` (D-141) also has the two probes of a port, `responds` and `is_port_free` (IPv4 and IPv6 loopback), used by the actions, the database servers, the local models and the pools. It tells who has each port, from the files only and without taking any lock, so whoever already holds its own can ask:
+`common\ports.rs` (D-141) also has the two probes of a port, `responds` and `is_port_free` (IPv4 and IPv6 loopback), used by the actions, the database servers, the local models and the pools. It tells who has each port, from the files only and without taking any lock, so whoever already holds its own can ask:
 
 | Owner (`Owner`) | From | Range |
 | --- | --- | --- |
@@ -307,11 +317,11 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 
 ### Processes
 
-All the kit's programs start in the app's Job Object with the kit's environment (`os\jobs.rs`, D-07). Only the browser and File Explorer run outside the job: `jobs::open_with_explorer` opens an address or a folder, `jobs::system_root` gives the Windows folder. No `Command::new` with a joined command line: arguments always as a vector.
+All the kit's programs start in the app's Job Object (Windows) or in process groups watched by the guard (macOS, Linux) with the kit's environment (`platform\jobs.rs`, D-07, D-105). Only the browser and the file manager run outside: `jobs::open_with_explorer` opens a folder, `jobs::open_url` an address. No `Command::new` with a joined command line: arguments always as a vector.
 
 ### Errors
 
-In the modules `anyhow::Result`, with the context the log needs. Commands return `CmdResult<_>` (`commands\error.rs`): `CmdError` is the short text the interface shows and arrives as a JSON string, the same as that of `Result<_, String>`. A command reports an error in four ways:
+In the modules `anyhow::Result`, with the context the log needs. Commands return `CmdResult<_>` (`ipc\error.rs`): `CmdError` is the short text the interface shows and arrives as a JSON string, the same as that of `Result<_, String>`. A command reports an error in four ways:
 - `.or_fail(context)?` writes `context: error` to the log and sends `error` to the interface (`{e}`); `.or_fail_chain(context)?` does the same with the whole chain of an `anyhow::Error` (`{e:#}`);
 - `?` on an `anyhow::Error` sends the whole chain without writing to the log;
 - `Err(text.into())` for a refusal with a text for the user, which goes through `tr`/`i18n::t` with the Italian sentence as the key;
@@ -322,7 +332,7 @@ In the modules `anyhow::Result`, with the context the log needs. Commands return
 | Part | Files | What it holds |
 | --- | --- | --- |
 | Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar |
-| Toward Rust | `api\` | one file per area, like `commands\` (above); `index.ts` re-exports them, pages import from `./api`; `preview-runs.ts` plays the actions in the browser preview |
+| Toward Rust | `ipc\` | one file per area, like `tauri\src\ipc\` (above); `index.ts` re-exports them, pages import from `@/ipc`; `events.ts` has the events' names, `pty.ts` the in-app terminal's commands and events (imported by itself, so the window of a detached session carries no other area), `window.ts` the controls of the title bar; `preview-runs.ts` plays the actions in the browser preview. An ESLint rule keeps `@tauri-apps/*` out of every other file of `ui\src` |
 | Shared helpers | `shared\`: `hooks.ts`, `common.tsx`, `format.ts`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | helpers without a page, used by several folders: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below); `ActionButton`, `ErrorLine`, `editorHint`, the port fields (`usePortField`, `validPort`); sizes as text (`formatBytes`, `gb`, `sizeText`); tags, the brands' logos, the brand; the quick pick of Quick Open and of the command palette |
 | Base components | `workbench\` | the VSCodium controls (`@vscode-elements/elements`), the codicons and the workbench parts (below); from the rest of the app it imports only `i18n` |
 | Theme | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | fonts, the codicon font and brand touches; `--vsc-*` colors for Tailwind; all the VS Code `--vscode-*` variables; VSCodium 1.135's sizes and the `--vsc-size-*` measures (the last three generated, below) |
@@ -350,9 +360,9 @@ The page folders:
 
 A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `shared\` if several folders use it. An import that would climb more than one folder is written with the `@/` alias (`ui\tsconfig.json`, `ui\vite.config.ts`); the Guide's text with `@guide/` (the `guide\` folder at the root).
 
-### `api\`
+### `ipc\`
 
-- `core.ts` has the three helpers every command is written with: `query(cmd, preview, args)` for a command that answers with data, `act(cmd, args)` for one that just acts, `subscribe(event, handler)` for events. Outside Tauri (`npm run dev` opened in the browser) they answer with the preview and the page shows the "preview" banner: this way the pages render in the browser. They stay inside `api\`: pages do not call commands by name.
+- `core.ts` has the three helpers every command is written with: `query(cmd, preview, args)` for a command that answers with data, `act(cmd, args)` for one that just acts, `subscribe(event, handler)` for events. Outside Tauri (`npm run dev` opened in the browser) they answer with the preview and the page shows the "preview" banner: this way the pages render in the browser. They stay inside `ipc\`: pages do not call commands by name.
 - A computed preview (`sampleStats()`) is written as `browserPreview ? … : invoke(…)`, so that it is not computed when the app is running.
 - The types mirror the Rust structs with `serde(rename_all = "camelCase")`.
 
@@ -411,7 +421,7 @@ This way the app and the editor have the same colors and measures, key by key. A
 
 ### Screenshots and the development server
 
-The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.0.1:5173`) on its sample data, with `playwright-core` and the system's Edge or Chrome (`SHOTS_BROWSER`); `?lang=en|fr|de` sets the preview's language, and the texts the engine sends already translated pass through `engineText` (`api\core.ts`) with their translation next to them (D-135). `SHOTS_URL` takes the preview from another address.
+The screenshots are taken from the browser preview (`npm -w ui run dev`, `127.0.0.1:5173`) on its sample data, with `playwright-core` and the system's Edge or Chrome (`SHOTS_BROWSER`); `?lang=en|fr|de` sets the preview's language, and the texts the engine sends already translated pass through `engineText` (`ipc\core.ts`) with their translation next to them (D-135). `SHOTS_URL` takes the preview from another address.
 
 | Script | Writes |
 | --- | --- |
@@ -443,7 +453,7 @@ From the analysis of October 15, 2026, checked again on October 21. Done: comman
 
 1. ~~**Read error that stays on screen**~~: done on October 21, 2026. The error already cleared after a successful read; what was missing was protection from an older read answering late. The kit's information (`App.tsx`), the "Remove the drive" list (`shell\eject.tsx`) and the settings (`settings\autosave.ts`) go through `useLoad` with `"show"`; Settings and the first start have "Retry". `databases\page.tsx` already used it.
 2. ~~**In-page confirmations without `alertdialog`**~~: done on October 17, 2026 (D-106), the four confirmations use `InlineConfirm`.
-3. ~~**Preview reused by the tests**~~: done on October 21, 2026. `api\` exports the preview's data (`SAMPLE_*`, `NOTHING_OPEN`) and `App.test.tsx`, `autosave.test.ts`, `program-temp.test.tsx` and `databases.test.tsx` start from it. Only the cases the preview lacks stay hand-written (components unavailable on ARM64, the frameworks plan, `RunInfo`).
+3. ~~**Preview reused by the tests**~~: done on October 21, 2026. `ipc\` (then `api\`) exports the preview's data (`SAMPLE_*`, `NOTHING_OPEN`) and `App.test.tsx`, `autosave.test.ts`, `program-temp.test.tsx` and `databases.test.tsx` start from it. Only the cases the preview lacks stay hand-written (components unavailable on ARM64, the frameworks plan, `RunInfo`).
 4. ~~**`tool-versions.json` in the matrix fingerprint**~~: done on October 21, 2026, the file is no longer part of the fingerprint and the `_doc` of `tauri\catalog\relations.json` names `versions\relations\`.
 5. ~~**Interface bundle**~~: done on October 21, 2026. Only the components in use are registered; Settings, Tools (with the first start) and the wizard load when opened, and pointing at their activity-bar item preloads them; React, logos, translations and each Guide chapter in separate files (`ui\vite.config.ts`). Main file from 1,190 kB (357 compressed) to 258 kB (73). Loading only the active language would save about 140 kB more, but switching language would become asynchronous.
 6. ~~**Controls still native**~~: done on October 21, 2026, `ToggleButton`, `Meter` and `SuggestField` (above, "These stay native").

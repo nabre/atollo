@@ -41,7 +41,7 @@ use std::time::Duration;
 use anyhow::{bail, Result};
 use serde_json::Value;
 
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::kit::{Kit, Os};
 
 /// Folders of the kit and of the agents.
@@ -107,7 +107,7 @@ impl Report {
 /// `fsx::try_read_json` on a [`Value`], the agents' files of other
 /// programs, so the callers name no type.
 pub fn read_json(file: &Path) -> Result<Option<Value>> {
-    crate::fsx::try_read_json(file)
+    crate::common::fsx::try_read_json(file)
 }
 
 /// State of the last sync: rebuilt (empty) if damaged.
@@ -118,7 +118,7 @@ pub fn read_state(file: &Path) -> Value {
         .unwrap_or(Value::Object(Default::default()))
 }
 
-pub use crate::fsx::write_json;
+pub use crate::common::fsx::write_json;
 
 /// JSON with sorted keys: two servers are equal when their settings are.
 pub fn canonical(v: &Value) -> String {
@@ -144,7 +144,7 @@ pub fn canonical(v: &Value) -> String {
 
 /// `yyyymmdd-hhmmss` (UTC), for kept copies.
 pub fn stamp() -> String {
-    let secs = crate::time::now_secs();
+    let secs = crate::common::time::now_secs();
     let days = secs / 86_400;
     let (y, m, d) = civil_from_days(days as i64);
     let rem = secs % 86_400;
@@ -201,7 +201,7 @@ fn sync_rules(p: &Paths) -> Result<()> {
 pub fn trust_project(kit: &Kit, dir: &Path) {
     let p = Paths::of(kit);
     if dir.parent() != Some(p.projects.as_path()) {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "agents trust: {} is not a project of the kit: not trusted",
             dir.display()
         ));
@@ -210,7 +210,7 @@ pub fn trust_project(kit: &Kit, dir: &Path) {
     let _lock = match Lock::take(&p.state) {
         Ok(l) => l,
         Err(e) => {
-            crate::log::warn(&format!("agents trust: {e:#}"));
+            crate::common::log::warn(&format!("agents trust: {e:#}"));
             return;
         }
     };
@@ -220,7 +220,7 @@ pub fn trust_project(kit: &Kit, dir: &Path) {
         ("Pi", pi::trust(&p, dir)),
     ] {
         if let Err(e) = done {
-            crate::log::warn(&format!("agents trust: {who}: {e:#}"));
+            crate::common::log::warn(&format!("agents trust: {who}: {e:#}"));
         }
     }
 }
@@ -339,35 +339,9 @@ impl Drop for Lock {
     }
 }
 
-/// True if a process with this id runs (signal 0 checks without sending;
-/// EPERM: it runs under another user).
-#[cfg(unix)]
+/// True if a process with this id runs (`platform::processes::exists`).
 pub fn alive(pid: u32) -> bool {
-    let Ok(pid @ 1..) = libc::pid_t::try_from(pid) else {
-        return false;
-    };
-    // SAFETY: signal 0 sends nothing.
-    let sent = unsafe { libc::kill(pid, 0) } == 0;
-    sent || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
-}
-
-/// True if a process with this id runs.
-#[cfg(windows)]
-pub fn alive(pid: u32) -> bool {
-    use windows::Win32::Foundation::CloseHandle;
-    use windows::Win32::System::Threading::{
-        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
-    };
-    // SAFETY: query-only handle, closed right after.
-    unsafe {
-        let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
-            return false;
-        };
-        let mut code = 0u32;
-        let ok = GetExitCodeProcess(h, &mut code).is_ok() && code == 259; // STILL_ACTIVE
-        let _ = CloseHandle(h);
-        ok
-    }
+    crate::platform::processes::exists(pid)
 }
 
 /// One agent's places.
@@ -529,7 +503,7 @@ pub fn run(kit: &Kit, project: Option<&Path>) -> Report {
     }
     drop(lock);
     for w in &report.warnings {
-        crate::log::warn(&format!("agents sync: {w}"));
+        crate::common::log::warn(&format!("agents sync: {w}"));
     }
     report
 }

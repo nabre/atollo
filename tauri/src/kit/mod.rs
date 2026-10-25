@@ -12,6 +12,7 @@
 //! Arch, Target), `root` (where the root is, from the program's path, a
 //! macOS bundle or a Linux AppImage), `names` (the valid project names).
 
+pub mod backup;
 mod names;
 mod root;
 mod target;
@@ -23,11 +24,10 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-use crate::fsx::{read_text, write_atomic};
-use crate::os::volume::VolumeInfo;
+use crate::common::fsx::{read_text, write_atomic};
+use crate::platform::volume::VolumeInfo;
 
 pub use names::validate_project_name;
-use root::running_appimage;
 pub use root::{app_exe, launch_problem, root_from, watcher_unsafe_folder};
 pub(crate) use root::{same_root, strip_verbatim};
 pub use target::{Arch, Os, Target};
@@ -56,7 +56,7 @@ impl Kit {
     /// next to `Atollo.app` or the AppImage ([`root_from`]).
     pub fn from_exe(exe: &Path) -> Result<Kit, KitError> {
         let exe = strip_verbatim(exe);
-        let image = running_appimage(&exe);
+        let image = crate::platform::host::running_appimage(&exe);
         let root = root_from(Os::current(), &exe, image.as_deref())
             .ok_or_else(|| KitError::NoRoot(exe.clone()))?;
         Ok(Kit::at_target(root, Target::detect()))
@@ -95,7 +95,7 @@ impl Kit {
                 None => t.join(&mine),
             })
             .filter(|t| !t.starts_with(&self.root));
-        self.volume = crate::os::volume::info(&self.root).ok();
+        self.volume = crate::platform::volume::info(&self.root).ok();
         self
     }
 
@@ -187,7 +187,7 @@ impl Kit {
     /// socket or `<TEMP>/Atollo/<id>` (BUG-V7-18). The keyring seal keeps
     /// the id it was made with (`SEAL_ID_FILE`).
     pub fn id(&self) -> String {
-        let key = crate::os::processes::path_key(&self.root.to_string_lossy());
+        let key = crate::platform::processes::path_key(&self.root.to_string_lossy());
         let digest = Sha256::digest(key.as_bytes());
         digest.iter().take(8).map(|b| format!("{b:02x}")).collect()
     }
@@ -269,26 +269,26 @@ pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
     };
     let read_only = matches!(error, KitError::NotWritable { source, .. }
         if source.kind() == io::ErrorKind::ReadOnlyFilesystem);
-    let cannot = crate::i18n::t(lang, "Impossibile scrivere nella cartella {0}.", &[&path]);
+    let cannot = crate::common::i18n::t(lang, "Impossibile scrivere nella cartella {0}.", &[&path]);
     if os.is_windows() {
         return format!(
             "{cannot}\n\n{}",
-            crate::i18n::t(lang, "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
+            crate::common::i18n::t(lang, "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
         );
     }
     if read_only {
         return format!(
             "{}\n\n{}",
-            crate::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
-            crate::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.", &[])
+            crate::common::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
+            crate::common::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.", &[])
         );
     }
     format!(
         "{cannot}\n\n{}",
-        crate::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.", &[])
+        crate::common::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.", &[])
     )
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/kit.rs"]
+#[path = "../../../test/rust/kit/mod.rs"]
 pub(crate) mod tests;

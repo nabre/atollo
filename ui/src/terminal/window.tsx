@@ -8,7 +8,7 @@ import { createRoot } from "react-dom/client";
 import "@fontsource-variable/geist/wght.css";
 import "../theme/theme.css";
 import { setLang, type Lang, LANGS } from "../i18n";
-import { tauriPty } from "./api";
+import { tauriPty } from "../ipc/pty";
 import { monoFamily, monoReady } from "./font";
 import { TerminalPanel } from "./panel";
 import { useTerminals } from "./state";

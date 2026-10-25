@@ -12,11 +12,11 @@ use serde::Serialize;
 
 use super::catalog::Catalog;
 use super::runner::{self, Busy, Event, Options, Outcome, Sink};
+use crate::common::settings::Settings;
 use crate::env::KitEnv;
 use crate::install::{self, Ctx};
 use crate::kit::Kit;
 use crate::net::Net;
-use crate::settings::Settings;
 
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -136,7 +136,7 @@ impl SetupTask {
     /// The language of the interface (`CP_LANG` of the kit environment).
     fn lang(&self) -> &'static str {
         let env = self.env.lock().unwrap_or_else(PoisonError::into_inner);
-        crate::i18n::resolve(env.get("CP_LANG"), None, None)
+        crate::common::i18n::resolve(env.get("CP_LANG"), None, None)
     }
 
     fn lock(&self) -> MutexGuard<'_, Snapshot> {
@@ -158,7 +158,7 @@ impl SetupTask {
         {
             let mut state = self.lock();
             if state.running {
-                return Err(crate::i18n::t(
+                return Err(crate::common::i18n::t(
                     self.lang(),
                     "C'è già un'installazione in corso.",
                     &[],
@@ -173,7 +173,7 @@ impl SetupTask {
             notify(&state);
         }
         self.cancel.store(false, Ordering::Relaxed);
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "setup from the window: {opts:?} automatic={automatic}"
         ));
         let task = Arc::clone(self);
@@ -188,7 +188,7 @@ impl SetupTask {
             state.queue.clear();
             state.error = error.err();
             for step in &state.steps {
-                crate::log::info(&format!("setup {}: {:?}", step.id, step.outcome));
+                crate::common::log::info(&format!("setup {}: {:?}", step.id, step.outcome));
             }
             notify(&state);
         });
@@ -228,7 +228,7 @@ impl SetupTask {
         let mut sink = TaskSink { task: self, notify };
         match runner::run(&ctx, opts, &mut sink) {
             Ok(_) => Ok(()),
-            Err(e) if e.is::<Busy>() => Err(crate::i18n::t(
+            Err(e) if e.is::<Busy>() => Err(crate::common::i18n::t(
                 self.lang(),
                 "Un'altra installazione è in corso in questo kit (un'altra finestra di Atollo o il menu del kit).",
                 &[],
@@ -309,7 +309,7 @@ pub(crate) fn panic_text(payload: &(dyn std::any::Any + Send)) -> String {
         .or_else(|| payload.downcast_ref::<String>().cloned())
         .unwrap_or_else(|| "unknown".to_owned());
     let text = format!("internal error: {message}");
-    crate::log::error(&text);
+    crate::common::log::error(&text);
     text
 }
 

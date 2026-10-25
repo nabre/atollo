@@ -8,7 +8,7 @@ import {
   versionsRemove,
   type SetupSnapshot,
   type VersionedTool,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { useAction, useLoad } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";

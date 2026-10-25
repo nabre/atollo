@@ -27,7 +27,7 @@ pub(crate) fn fake_kit(name: &str, installed: &[&str]) -> (TempDir, Kit) {
     for rel in installed {
         // The layout of the kit's system: `node/node.exe` is `node/bin/node`
         // on macOS and Linux.
-        let file = crate::fsx::join_rel(
+        let file = crate::common::fsx::join_rel(
             kit.apps(),
             &crate::setup::catalog::translate_rel(kit.target(), rel),
         );
@@ -90,7 +90,7 @@ fn profile_and_temp_inside_kit() {
 
 #[test]
 fn program_temp_decision_table() {
-    use crate::os::volume::FsKind;
+    use crate::platform::volume::FsKind;
     let vol = |fs, drive| {
         Some(VolumeInfo {
             fs,
@@ -247,7 +247,7 @@ fn settings_override_and_add() {
     let (_tmp, kit) = fake_kit("env-settings", &[]);
     let s = Settings {
         lang: Some("fr".into()),
-        network: crate::settings::Network {
+        network: crate::common::settings::Network {
             https_proxy: Some("http://corp:3128".into()),
             allow_lan: true,
             ..Default::default()
@@ -281,7 +281,7 @@ fn keys_unique_ignoring_case() {
 fn print_env_and_debug_mask_secrets() {
     let (_tmp, kit) = fake_kit("env-print", &[]);
     let s = Settings {
-        network: crate::settings::Network {
+        network: crate::common::settings::Network {
             https_proxy: Some("http://me:hunter2@proxy:8080".into()),
             ..Default::default()
         },
@@ -294,7 +294,7 @@ fn print_env_and_debug_mask_secrets() {
     env.set("GH_TOKEN", "ghp_SECRET");
     env.set("CLAUDE_CODE_OAUTH_TOKEN", "sk-ant-oat01-SECRET");
     let mut out = Vec::new();
-    crate::cli::print_env(&env, &mut out).unwrap();
+    crate::app::cli::print_env(&env, &mut out).unwrap();
     let out = String::from_utf8(out).unwrap();
     for line in [
         "GEMINI_API_KEY=***",
@@ -327,7 +327,7 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
         "go/bin/go",
         "tinytex/bin/universal-darwin/tlmgr",
     ] {
-        let file = crate::fsx::join_rel(kit.apps(), rel);
+        let file = crate::common::fsx::join_rel(kit.apps(), rel);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(file, b"").unwrap();
     }
@@ -351,13 +351,13 @@ fn unix_target_builds_colon_path_and_xdg_dirs() {
     let apps = kit.apps();
     assert!(entries
         .iter()
-        .any(|e| Path::new(e) == crate::fsx::join_rel(&apps, "node/bin")));
+        .any(|e| Path::new(e) == crate::common::fsx::join_rel(&apps, "node/bin")));
     assert!(entries
         .iter()
-        .any(|e| Path::new(e) == crate::fsx::join_rel(&apps, "python/bin")));
-    assert!(entries
-        .iter()
-        .any(|e| Path::new(e) == crate::fsx::join_rel(&apps, "tinytex/bin/universal-darwin")));
+        .any(|e| Path::new(e) == crate::common::fsx::join_rel(&apps, "python/bin")));
+    assert!(entries.iter().any(
+        |e| Path::new(e) == crate::common::fsx::join_rel(&apps, "tinytex/bin/universal-darwin")
+    ));
     for xdg in [
         "XDG_CONFIG_HOME",
         "XDG_DATA_HOME",
@@ -454,7 +454,7 @@ fn credential_store_on_windows_only() {
 /// Files under `data/apps/<target>` of `kit` (forward slashes).
 pub(crate) fn touch(kit: &Kit, rels: &[&str]) {
     for rel in rels {
-        let file = crate::fsx::join_rel(kit.apps(), rel);
+        let file = crate::common::fsx::join_rel(kit.apps(), rel);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(file, b"").unwrap();
     }
@@ -499,7 +499,7 @@ fn settings_of_a_kit_console_are_not_the_hosts() {
     assert_eq!(console.get("HTTPS_PROXY"), Some("http://proxy:8080"));
     // A setting emptied since: the language is the system's again.
     assert_eq!(
-        crate::i18n::resolve(None, console.get("ATOLLO_LANG"), Some("it-IT")),
+        crate::common::i18n::resolve(None, console.get("ATOLLO_LANG"), Some("it-IT")),
         "it"
     );
 }

@@ -2,7 +2,7 @@
 // pool are two VirtualHosts, each with its own row (key project:action).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { WebServersView } from "@/api/servers";
+import type { WebServersView } from "@/ipc/servers";
 import { ServersPage } from "@/servers/page";
 import { invoke } from "@test/support/tauri";
 

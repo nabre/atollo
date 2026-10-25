@@ -9,7 +9,7 @@ import {
   type Outcome,
   type SetupSnapshot,
   type SetupStep,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import { useSubscription } from "../shared/hooks";

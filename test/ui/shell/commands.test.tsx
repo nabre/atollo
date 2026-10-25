@@ -2,7 +2,7 @@
 // few words, Enter runs the first, a failure is told after it closed.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_AGENTS, SAMPLE_PROJECTS, SAMPLE_SERVICES, type RunInfo } from "@/api";
+import { SAMPLE_AGENTS, SAMPLE_PROJECTS, SAMPLE_SERVICES, type RunInfo } from "@/ipc";
 import type { Running } from "@/shell/activity";
 import { CommandPalette } from "@/shell/commands";
 import { filterItems } from "@/shared/palette";

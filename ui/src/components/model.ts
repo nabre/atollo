@@ -1,6 +1,6 @@
 // The data of the Tools page: its sections, the choice that follows the
 // dependencies, the lines of a versioned tool, sizes as text.
-import type { ComponentInfo, Group, VersionedTool } from "../api";
+import type { ComponentInfo, Group, VersionedTool } from "../ipc";
 import { t } from "../i18n";
 
 /** The kinds of tool, as the site's matrix (site/matrix.mjs, KINDS and

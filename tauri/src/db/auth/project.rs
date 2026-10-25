@@ -150,7 +150,7 @@ pub(super) fn project_file_to_read(kit: &Kit, project: &str) -> Result<PathBuf> 
 /// `None` for a missing file; an error for one that cannot be read, so it
 /// is never overwritten and its passwords lost.
 pub(super) fn read_project(path: &Path) -> Result<Option<ProjectSecrets>> {
-    if crate::os::safe_path::is_link(path) {
+    if crate::platform::safe_path::is_link(path) {
         bail!("{}: a link, left alone", path.display());
     }
     match fs::read_to_string(path) {
@@ -182,7 +182,7 @@ pub fn try_project_passwords(kit: &Kit, project: &str) -> Result<BTreeMap<String
 /// unreadable: only a warning, for the pages that show them).
 pub fn project_passwords(kit: &Kit, project: &str) -> BTreeMap<String, String> {
     try_project_passwords(kit, project).unwrap_or_else(|e| {
-        crate::log::warn(&format!("{project}: passwords: {e:#}"));
+        crate::common::log::warn(&format!("{project}: passwords: {e:#}"));
         BTreeMap::new()
     })
 }

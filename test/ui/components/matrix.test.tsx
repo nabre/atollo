@@ -4,7 +4,7 @@
 // remembered between sessions.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from "@testing-library/react";
-import { TARGETS, type ComponentInfo, type TargetGrid, type TargetProfile, type TargetToolStatus } from "@/api";
+import { TARGETS, type ComponentInfo, type TargetGrid, type TargetProfile, type TargetToolStatus } from "@/ipc";
 import { TargetMatrix } from "@/components/matrix";
 import { useComponents, type ComponentsState } from "@/components/state";
 import { cellState, targetLabel, targetName } from "@/components/targets";

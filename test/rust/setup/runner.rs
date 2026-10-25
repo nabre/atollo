@@ -1,8 +1,8 @@
 use super::*;
+use crate::common::settings::Settings;
 use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch, Kit};
 use crate::net::Net;
-use crate::settings::Settings;
 use crate::test_support::prepared_kit;
 use std::fs;
 use std::sync::atomic::AtomicBool;

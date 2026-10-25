@@ -205,7 +205,7 @@ fn kit_on(name: &str, target: crate::kit::Target, installed: &[&str]) -> (TempDi
     let (tmp, kit) = kit_with(name, &[]);
     let kit = kit.for_target(target);
     for rel in installed {
-        let f = crate::fsx::join_rel(kit.apps(), rel);
+        let f = crate::common::fsx::join_rel(kit.apps(), rel);
         fs::create_dir_all(f.parent().unwrap()).unwrap();
         fs::write(f, b"").unwrap();
     }

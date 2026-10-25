@@ -94,7 +94,6 @@ pub enum Dest {
 /// An Authenticode signature to check on a file of the new tree before it
 /// is put in place (`Assert-Signature` of the kit).
 #[derive(Debug, Clone)]
-#[cfg_attr(not(windows), allow(dead_code))]
 pub struct Sign {
     /// Path of the file in the extracted tree.
     pub file: String,
@@ -113,8 +112,7 @@ pub struct Part {
     pub kind: Kind,
     pub inner: Inner,
     pub dest: Dest,
-    /// Checked on Windows only (Authenticode).
-    #[cfg_attr(not(windows), allow(dead_code))]
+    /// Checked where the system can (Authenticode, Windows).
     pub sign: Option<Sign>,
 }
 

@@ -15,10 +15,10 @@ use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::kit::Target;
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::Expect;
+use crate::platform::signature::Verdict;
 use crate::setup::Component;
 
 /// The signer of both files.
-#[cfg_attr(not(windows), allow(dead_code))]
 const PUBLISHER: &str = "Microsoft Corporation";
 
 pub struct ConPty;
@@ -98,7 +98,7 @@ impl Installer for ConPty {
         let tree = work.path().join("tree");
         fs::create_dir_all(&tree)?;
         for (from, name) in files_for(target_of(ctx, component)) {
-            let src: PathBuf = crate::fsx::join_rel(&extracted, &from);
+            let src: PathBuf = crate::common::fsx::join_rel(&extracted, &from);
             if !src.is_file() {
                 bail!("{from} not found in {}", part.file_name);
             }
@@ -112,23 +112,17 @@ impl Installer for ConPty {
     }
 }
 
-/// Signed by Microsoft (Authenticode), on Windows.
-#[cfg(windows)]
+/// Signed by Microsoft (Authenticode), checked where the system can.
 fn signed(file: &Path, progress: &mut dyn Progress) -> Result<()> {
-    match crate::net::signature::check(file, PUBLISHER, false)? {
-        crate::net::signature::Verdict::Valid { subject } => {
+    match crate::platform::signature::check(file, PUBLISHER, false)? {
+        Some(Verdict::Valid { subject }) => {
             progress.note(&format!("signature ok: {subject}"));
         }
-        crate::net::signature::Verdict::RevocationUnknown { subject } => progress.note(&format!(
+        Some(Verdict::RevocationUnknown { subject }) => progress.note(&format!(
             "signature of {subject}: revocation not verifiable (offline?)"
         )),
+        None => {}
     }
-    Ok(())
-}
-
-/// Only Windows installs it.
-#[cfg(not(windows))]
-fn signed(_file: &Path, _progress: &mut dyn Progress) -> Result<()> {
     Ok(())
 }
 

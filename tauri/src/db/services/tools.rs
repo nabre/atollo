@@ -11,7 +11,7 @@ use anyhow::{anyhow, bail, Result};
 use super::{auth, bin_at, Services};
 use crate::db::DbEngine;
 use crate::env::KitEnv;
-use crate::os::jobs;
+use crate::platform::jobs;
 use crate::router::bins::exe_name;
 
 /// Runs a tool with `input` on its stdin (SQL with passwords: never on the
@@ -105,7 +105,7 @@ pub(super) fn run_for_output(mut cmd: Command, input: &str, limit: Duration) -> 
             Ok(String::from_utf8_lossy(&out.stdout).into_owned())
         }
         Err(_) => {
-            crate::os::sessions::stop(&[pid]);
+            crate::platform::sessions::stop(&[pid]);
             bail!("{:?}: no answer", cmd.get_program());
         }
     }

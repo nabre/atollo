@@ -11,16 +11,8 @@
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
 
-#[cfg(windows)]
-use anyhow::Context;
 use anyhow::{bail, Result};
 use serde::Serialize;
-#[cfg(windows)]
-use windows::core::HSTRING;
-#[cfg(windows)]
-use windows::Win32::Foundation::{CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HANDLE};
-#[cfg(windows)]
-use windows::Win32::System::Threading::CreateMutexW;
 
 use super::catalog::{Catalog, Choice, Component};
 use crate::install::{self, Ctx, Progress};
@@ -125,110 +117,23 @@ pub trait Sink {
     fn emit(&mut self, event: Event);
 }
 
-/// One run per kit: `Local\Atollo-Prepare-<kit id>`.
-#[cfg(windows)]
-#[derive(Debug)]
-struct RunLock(HANDLE);
-
-#[cfg(windows)]
-impl Drop for RunLock {
-    fn drop(&mut self) {
-        // SAFETY: handle from CreateMutexW, closed once.
-        let _ = unsafe { CloseHandle(self.0) };
-    }
-}
-
-/// One run per kit on macOS and Linux: the kit's id in a set of this
-/// process, and an exclusive `flock` on `data/app/prepare.lock` for the
-/// other processes (another window, `prepare` from a terminal). The system
-/// drops the `flock` when the file closes, also after a crash.
-#[cfg(not(windows))]
-#[derive(Debug)]
-struct RunLock {
-    id: String,
-    #[allow(dead_code)]
-    file: Option<std::fs::File>,
-}
-
-#[cfg(not(windows))]
-impl Drop for RunLock {
-    fn drop(&mut self) {
-        if let Ok(mut set) = active_locks().lock() {
-            set.remove(&self.id);
-        }
-    }
-}
-
-#[cfg(not(windows))]
-fn active_locks() -> &'static std::sync::Mutex<HashSet<String>> {
-    static LOCKS: std::sync::OnceLock<std::sync::Mutex<HashSet<String>>> =
-        std::sync::OnceLock::new();
-    LOCKS.get_or_init(|| std::sync::Mutex::new(HashSet::new()))
-}
+/// One run per kit: `Local\Atollo-Prepare-<kit id>` on Windows, an
+/// exclusive `flock` on `data/app/prepare.lock` on macOS and Linux, for
+/// the other processes (another window, `prepare` from a terminal) and the
+/// other threads of this one.
+type RunLock = crate::platform::lock::KitLock;
 
 #[derive(Debug, thiserror::Error)]
 #[error("another preparation is already running in this kit")]
 pub struct Busy;
 
-#[cfg(windows)]
-fn lock(kit: &Kit) -> Result<RunLock> {
-    let name = HSTRING::from(format!(r"Local\Atollo-Prepare-{}", kit.id()));
-    // SAFETY: valid name, default security.
-    let handle = unsafe { CreateMutexW(None, false, &name) }.context("CreateMutexW")?;
-    // SAFETY: last error of CreateMutexW on this thread.
-    if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
-        // SAFETY: handle from CreateMutexW.
-        let _ = unsafe { CloseHandle(handle) };
-        return Err(Busy.into());
-    }
-    Ok(RunLock(handle))
-}
-
-#[cfg(not(windows))]
-fn lock(kit: &Kit) -> Result<RunLock> {
-    let id = kit.id();
-    {
-        let mut set = active_locks()
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !set.insert(id.clone()) {
-            return Err(Busy.into());
-        }
-    }
-    // From here the guard takes the id out of the set again, also on error.
-    let mut guard = RunLock { id, file: None };
-    guard.file = Some(prepare_flock(kit)?);
-    Ok(guard)
-}
-
-/// The exclusive `flock` on `data/app/prepare.lock`, without waiting:
-/// `Busy` when another process holds it. Any other error (a file system
+/// `Busy` when another run holds the lock. Any other error (a file system
 /// without `flock`, some network shares) is returned: the run does not
 /// start unguarded.
-#[cfg(unix)]
-fn prepare_flock(kit: &Kit) -> Result<std::fs::File> {
-    use anyhow::Context;
-    use std::os::fd::AsRawFd;
-    let dir = kit.app_dir();
-    std::fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
-    let path = dir.join("prepare.lock");
-    let file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(&path)
-        .with_context(|| path.display().to_string())?;
-    // SAFETY: a valid descriptor owned by `file`.
-    if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
-        let e = std::io::Error::last_os_error();
-        if e.kind() == std::io::ErrorKind::WouldBlock {
-            return Err(Busy.into());
-        }
-        // No silent fallback: as `os::instance::acquire`, a file system
-        // without `flock` stops the run instead of preparing unguarded.
-        return Err(e).with_context(|| format!("flock {}", path.display()));
-    }
-    Ok(file)
+fn lock(kit: &Kit) -> Result<RunLock> {
+    let name = format!("Atollo-Prepare-{}", kit.id());
+    crate::platform::lock::try_take(&name, &kit.app_dir().join("prepare.lock"))?
+        .ok_or_else(|| Busy.into())
 }
 
 /// What a run would do, before doing it (shown by the interface).
@@ -777,9 +682,8 @@ fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
     for path in c.owned_paths(ctx.kit) {
         // A link (`bin/pnpm` of npm on macOS and Linux) goes as a link,
         // also when what it points to went first.
-        #[cfg(unix)]
-        if std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
-            std::fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
+        if let Some(removed) = crate::platform::links::remove_symlink(&path) {
+            removed.map_err(|_| InUse(path.clone()))?;
             continue;
         }
         if path.is_dir() {

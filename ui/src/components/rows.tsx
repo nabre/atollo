@@ -1,6 +1,6 @@
 // The rows of the Tools page: a component with its checkbox, its tags and
 // state and its versions; Composer under PHP.
-import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, type VersionedTool } from "../api";
+import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, type VersionedTool } from "../ipc";
 import { t } from "../i18n";
 import { Checkbox, Codicon } from "../workbench";
 import { ItemBar, ItemStatus, itemState, type ItemState } from "./setup";

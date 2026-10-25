@@ -8,7 +8,7 @@ use std::process::Stdio;
 
 use anyhow::{anyhow, bail, Context, Result};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::{pattern, Ctx, Progress};
 
 /// A progress sink that only logs, for steps that run inside hooks.
@@ -16,7 +16,7 @@ pub(super) struct LogProgress;
 
 impl Progress for LogProgress {
     fn note(&mut self, text: &str) {
-        crate::log::info(text);
+        crate::common::log::info(text);
     }
     fn bytes(&mut self, _done: u64, _total: Option<u64>) {}
 }
@@ -24,15 +24,17 @@ impl Progress for LogProgress {
 fn expand_cab(ctx: &Ctx, cab: &Path, dest: &Path) -> Result<()> {
     fs::create_dir_all(dest)?;
     let system_root = ctx.env.get("SystemRoot").unwrap_or(r"C:\Windows");
-    let status =
-        crate::os::jobs::kit_command(Path::new(system_root).join(r"System32\expand.exe"), ctx.env)
-            .arg(cab)
-            .arg("-F:*")
-            .arg(dest)
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .context("expand.exe")?;
+    let status = crate::platform::jobs::kit_command(
+        Path::new(system_root).join(r"System32\expand.exe"),
+        ctx.env,
+    )
+    .arg(cab)
+    .arg("-F:*")
+    .arg(dest)
+    .stdout(Stdio::null())
+    .stderr(Stdio::null())
+    .status()
+    .context("expand.exe")?;
     if !status.success() {
         bail!("expand.exe failed on {} ({status})", cab.display());
     }
@@ -76,7 +78,6 @@ pub fn find_cabs(bytes: &[u8]) -> Vec<(usize, usize)> {
 }
 
 /// The organization (`O=`) that signs the Visual C++ runtime.
-#[cfg(windows)]
 const MICROSOFT: &str = "Microsoft Corporation";
 
 /// The DLLs of the Visual C++ runtime in `tools\vcruntime`, extracted once.
@@ -86,7 +87,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
         return Ok(folder);
     }
     // In the host's temporary folder (D-90), removed when `guard` is dropped.
-    let guard = crate::os::temp::TempWork::new(ctx.kit, "setup/vcruntime")?;
+    let guard = crate::platform::temp::TempWork::new(ctx.kit, "setup/vcruntime")?;
     let work = guard.path();
     let result = (|| -> Result<()> {
         let exe = work.join("vc_redist.x64.exe");
@@ -97,8 +98,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
             &mut |_, _| {},
         )?;
         // The signer's organization, exactly: the only check of this file.
-        #[cfg(windows)]
-        crate::net::signature::check(&exe, MICROSOFT, true)?;
+        crate::platform::signature::check(&exe, MICROSOFT, true)?;
         let bytes = fs::read(&exe)?;
         let cabs = find_cabs(&bytes);
         if cabs.len() < 2 {
@@ -148,8 +148,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
         if !key.is_file() {
             bail!("vcruntime140.dll not found in the Microsoft package");
         }
-        #[cfg(windows)]
-        crate::net::signature::check(&key, MICROSOFT, true)?;
+        crate::platform::signature::check(&key, MICROSOFT, true)?;
         crate::net::archive::stage_into(&dlls, &folder)
     })();
     drop(guard);

@@ -1,7 +1,7 @@
 // The six systems as people call them («macOS Apple Silicon», not
 // darwin-arm64), with what each one is for this PC: the «Piattaforma»
 // selector of the Tools page and the columns of its grid (D-121).
-import type { TargetProfile, TargetToolStatus } from "../api";
+import type { TargetProfile, TargetToolStatus } from "../ipc";
 import { t } from "../i18n";
 
 /** The readable name of a system id (`win32-arm64`…); the id itself for

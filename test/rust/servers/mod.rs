@@ -12,7 +12,7 @@ use super::process::RunningPool;
 use super::*;
 use crate::env::KitEnv;
 use crate::kit::Arch;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 #[cfg(unix)]
 use crate::projects::fastcgi::FcgiAddr;
 use crate::setup::Catalog;
@@ -467,7 +467,7 @@ pub(crate) fn real_apache() -> Option<(Kit, KitEnv, u16)> {
     }
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

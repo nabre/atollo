@@ -4,7 +4,7 @@
 // settings but no other data of the kit yet) or deleted with the confirmation of a project's deletion
 // (./delete.tsx). Nothing is deleted by itself.
 import { useCallback, useState } from "react";
-import { projectOrphanAdopt, projectsOrphans, type Holdings, type ProjectInfo } from "../api";
+import { projectOrphanAdopt, projectsOrphans, type Holdings, type ProjectInfo } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

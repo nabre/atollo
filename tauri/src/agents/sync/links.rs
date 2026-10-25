@@ -24,30 +24,10 @@ use serde_json::{json, Value};
 use super::tree::{is_reparse, list_files};
 use super::{read_state, stamp, write_json, Paths, Report, Tool};
 
-/// Folder links: junctions on Windows.
-#[cfg(windows)]
-use junction as dirlink;
-
-/// Folder links: symbolic links on macOS and Linux, with the calls of the
-/// `junction` crate.
-#[cfg(unix)]
-mod dirlink {
-    use std::io;
-    use std::path::{Path, PathBuf};
-
-    pub fn create(target: impl AsRef<Path>, link: impl AsRef<Path>) -> io::Result<()> {
-        std::os::unix::fs::symlink(target, link)
-    }
-
-    /// Removes the link only, never what it points to.
-    pub fn delete(link: impl AsRef<Path>) -> io::Result<()> {
-        std::fs::remove_file(link)
-    }
-
-    pub fn get_target(link: impl AsRef<Path>) -> io::Result<PathBuf> {
-        std::fs::read_link(link)
-    }
-}
+/// Folder links: junctions on Windows, symbolic links on macOS and Linux.
+use crate::platform::links::{
+    create_dir_link as create_link, delete_dir_link as delete_link, dir_link_target as link_target,
+};
 
 fn norm(p: &Path) -> String {
     let s = p.display().to_string();
@@ -77,10 +57,10 @@ fn kit_link(shared_root: &Path, target: &Path) -> bool {
 
 fn can_link(dir: &Path, target: &Path) -> bool {
     let probe = dir.join(format!(".atollo-link-{}", std::process::id()));
-    let _ = dirlink::delete(&probe);
+    let _ = delete_link(&probe);
     let _ = fs::remove_dir(&probe);
-    let ok = dirlink::create(target, &probe).is_ok();
-    let _ = dirlink::delete(&probe);
+    let ok = create_link(target, &probe).is_ok();
+    let _ = delete_link(&probe);
     let _ = fs::remove_dir(&probe);
     ok
 }
@@ -184,13 +164,13 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
         let path = e.path();
         let shared = shared_root.join(&name);
         if is_reparse(&path) {
-            let target = dirlink::get_target(&path).ok();
+            let target = link_target(&path).ok();
             if shared.exists() && target.as_deref().is_some_and(|t| same(t, &shared)) {
                 continue;
             }
             // Only the kit's own links are made again or removed.
             if target.as_deref().is_some_and(|t| kit_link(&shared_root, t)) {
-                let _ = dirlink::delete(&path);
+                let _ = delete_link(&path);
                 let _ = fs::remove_dir(&path);
             } else if !shared.exists() {
                 report.note(format!(
@@ -213,7 +193,7 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
     for name in names {
         let link = dir.join(&name);
         if fs::symlink_metadata(&link).is_err() {
-            if let Err(e) = dirlink::create(shared_root.join(&name), &link) {
+            if let Err(e) = create_link(&shared_root.join(&name), &link) {
                 report.warn(format!("{}: link failed ({e})", link.display()));
                 continue;
             }
@@ -223,7 +203,7 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
                 link.display()
             ));
             continue;
-        } else if !dirlink::get_target(&link).is_ok_and(|t| same(&t, &shared_root.join(&name))) {
+        } else if !link_target(&link).is_ok_and(|t| same(&t, &shared_root.join(&name))) {
             report.warn(format!(
                 "{} is a link of yours to another folder: left as it is, skill {name} not linked",
                 link.display()
@@ -238,6 +218,6 @@ pub fn link_skills(p: &Paths, tool: &Tool, report: &mut Report) -> Result<bool> 
     Ok(true)
 }
 
-#[cfg(all(test, windows))]
+#[cfg(test)]
 #[path = "../../../../test/rust/agents/sync/links.rs"]
 mod tests;

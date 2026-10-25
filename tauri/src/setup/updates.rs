@@ -36,10 +36,10 @@ fn file(kit: &Kit) -> PathBuf {
     kit.app_dir().join("updates.json")
 }
 
-use crate::time::now_secs as now;
+use crate::common::time::now_secs as now;
 
 pub fn load(kit: &Kit) -> Latest {
-    crate::fsx::read_json(&file(kit)).unwrap_or_default()
+    crate::common::fsx::read_json(&file(kit)).unwrap_or_default()
 }
 
 /// Never asked, or more than a day ago.
@@ -65,7 +65,7 @@ fn watched(kit: &Kit) -> impl Iterator<Item = &'static Component> + '_ {
 /// them. A source that does not answer keeps its last version.
 pub fn check(kit: &Kit, env: &KitEnv, token: Option<String>) -> Result<Latest> {
     let token = token.or_else(|| crate::github::token(kit, env));
-    let settings = crate::settings::Settings::load(kit).settings;
+    let settings = crate::common::settings::Settings::load(kit).settings;
     let net = crate::net::Net::new(&settings, token)?
         .with_github_cache(kit.data().join("cache").join("github"));
     let cancel = std::sync::atomic::AtomicBool::new(false);
@@ -84,11 +84,11 @@ pub fn check(kit: &Kit, env: &KitEnv, token: Option<String>) -> Result<Latest> {
             Ok(release) => {
                 latest.versions.insert(c.id.clone(), release.version);
             }
-            Err(e) => crate::log::warn(&format!("latest version of {}: {e:#}", c.id)),
+            Err(e) => crate::common::log::warn(&format!("latest version of {}: {e:#}", c.id)),
         }
     }
     latest.checked = now();
-    crate::fsx::write_json(&file(kit), &latest)?;
+    crate::common::fsx::write_json(&file(kit), &latest)?;
     Ok(latest)
 }
 

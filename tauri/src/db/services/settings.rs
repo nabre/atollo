@@ -118,11 +118,11 @@ fn update_settings<T>(
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let before: BTreeMap<String, Setting> =
-        crate::fsx::try_read_json(&settings_path(kit))?.unwrap_or_default();
+        crate::common::fsx::try_read_json(&settings_path(kit))?.unwrap_or_default();
     let mut all = before.clone();
     let out = change(&mut all)?;
     if all != before {
-        crate::fsx::write_json(&settings_path(kit), &all)?;
+        crate::common::fsx::write_json(&settings_path(kit), &all)?;
     }
     Ok(out)
 }
@@ -132,10 +132,10 @@ fn update_settings<T>(
 /// are checked by the caller, which may move them. Called before
 /// [`update_settings`], never inside it.
 fn refuse_other_owner(kit: &Kit, engine: DbEngine, port: u16, lang: &str) -> Result<()> {
-    crate::ports::refuse_taken(
+    crate::common::ports::refuse_taken(
         kit,
         port,
-        |o| matches!(o, crate::ports::Owner::Db { engine: e, .. } if *e == engine),
+        |o| matches!(o, crate::common::ports::Owner::Db { engine: e, .. } if *e == engine),
         lang,
     )
 }
@@ -145,7 +145,7 @@ fn settings_path(kit: &Kit) -> PathBuf {
 }
 
 pub fn load_settings(kit: &Kit) -> BTreeMap<String, Setting> {
-    crate::fsx::read_json(&settings_path(kit)).unwrap_or_default()
+    crate::common::fsx::read_json(&settings_path(kit)).unwrap_or_default()
 }
 
 impl Services {

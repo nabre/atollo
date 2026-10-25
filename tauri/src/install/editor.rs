@@ -72,10 +72,11 @@ impl Installer for Server {
         if ctx.kit.os() != Os::current() {
             return Ok(());
         }
-        let running = crate::os::processes::running_from(&crate::os::processes::all(), old);
+        let running =
+            crate::platform::processes::running_from(&crate::platform::processes::all(), old);
         if !running.is_empty() {
-            crate::log::info(&format!("editor update: stopping {running:?}"));
-            crate::os::sessions::stop(&running);
+            crate::common::log::info(&format!("editor update: stopping {running:?}"));
+            crate::platform::sessions::stop(&running);
             std::thread::sleep(std::time::Duration::from_millis(500));
         }
         Ok(())

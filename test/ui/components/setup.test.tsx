@@ -2,7 +2,7 @@
 // on another system then installed, two lines patched) is two steps.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { SAMPLE_SETUP, type SetupStep } from "@/api";
+import { SAMPLE_SETUP, type SetupStep } from "@/ipc";
 import { SetupProgress } from "@/components/setup";
 
 vi.mock("@tauri-apps/api/core", () => ({

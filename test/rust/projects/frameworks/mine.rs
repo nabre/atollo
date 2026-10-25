@@ -33,7 +33,7 @@ fn real_git_files() {
     let kit = Kit::at(PathBuf::from(root), Arch::detect());
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );
@@ -42,7 +42,7 @@ fn real_git_files() {
     project(&dir);
     fs::write(dir.join(".gitignore"), "public/\n").unwrap();
     let git = crate::setup::kit_path(&kit, r"git\cmd\git.exe");
-    let ok = crate::os::jobs::kit_command(&git, &env)
+    let ok = crate::platform::jobs::kit_command(&git, &env)
         .args(["init", "-q"])
         .current_dir(&dir)
         .status()

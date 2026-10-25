@@ -36,11 +36,13 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
     if had_old && fs::rename(dest, &old).is_err() {
         // A running program could be moved too (Windows allows renaming a
         // running exe), and would then load the new files with the old ones.
-        if !crate::os::processes::running_from(&crate::os::processes::all(), dest).is_empty() {
+        if !crate::platform::processes::running_from(&crate::platform::processes::all(), dest)
+            .is_empty()
+        {
             return Err(InUse(dest.to_path_buf()).into());
         }
         if let Err(e) = move_tree(dest, &old) {
-            crate::log::info(&format!("{}: {e}", dest.display()));
+            crate::common::log::info(&format!("{}: {e}", dest.display()));
             let _ = move_tree(&old, dest);
             let _ = fs::remove_dir_all(&old);
             return Err(InUse(dest.to_path_buf()).into());
@@ -81,7 +83,7 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
 pub fn stage_into(tree: &Path, dest: &Path) -> Result<()> {
     let parent = dest.parent().context("no parent folder")?;
     fs::create_dir_all(parent)?;
-    let same = crate::os::volume::same_volume(tree, parent);
+    let same = crate::platform::volume::same_volume(tree, parent);
     stage_with(tree, dest, same)
 }
 
@@ -265,7 +267,7 @@ pub fn rebuild_in_place<T>(dest: &Path, make: impl FnOnce() -> Result<T>) -> Res
             }
             if let Some(old) = old {
                 if let Err(back) = fs::rename(&old, dest) {
-                    crate::log::warn(&format!(
+                    crate::common::log::warn(&format!(
                         "{} not put back from {}: {back}",
                         dest.display(),
                         old.display()

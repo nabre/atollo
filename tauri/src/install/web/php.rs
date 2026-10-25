@@ -14,7 +14,7 @@ use super::php_unix::{
     unix_php_versions,
 };
 use super::vcruntime::{copy_vc_runtime, LogProgress};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::install::lang::{is_release, version_key};
 use crate::install::{fetch, pattern, target_of, Ctx, Dest, Installer, Part, Release};
 use crate::net::archive::{Inner, Kind};
@@ -301,7 +301,7 @@ impl Installer for Php {
             Ok(())
         })();
         if let Err(e) = pem {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "PHP: CA certificates not downloaded ({e:#}): HTTPS from PHP may fail"
             ));
         }
@@ -376,12 +376,12 @@ pub fn composer_launchers(dir: &Path) -> Result<()> {
         &sh,
         b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nif [ -x \"$d/bin/php\" ]; then\n  exec \"$d/bin/php\" \"$d/composer.phar\" \"$@\"\nfi\nexec \"$d/php.exe\" \"$d/composer.phar\" \"$@\"\n",
     )?;
-    let _ = crate::router::set_executable(&sh);
+    let _ = crate::platform::files::set_executable(&sh);
     let bin = dir.join("bin");
     if bin.join("php").is_file() {
         let launcher = bin.join("composer");
         write_atomic(&launcher, COMPOSER_UNIX)?;
-        let _ = crate::router::set_executable(&launcher);
+        let _ = crate::platform::files::set_executable(&launcher);
     }
     Ok(())
 }

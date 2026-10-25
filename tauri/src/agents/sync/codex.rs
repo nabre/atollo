@@ -10,7 +10,7 @@ use serde_json::Value;
 
 use super::mcp::{server_type, Servers};
 use super::{Paths, Report, KIT_RULE_TEXT};
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 
 const TOP_BEGIN: &str = "# >>> Atollo: impostazioni del kit (non modificare questo blocco) >>>";
 const TOP_END: &str = "# <<< Atollo <<<";

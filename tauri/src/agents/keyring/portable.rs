@@ -1,7 +1,8 @@
 //! The pure parts of the keyring of macOS and Linux (names, go-keyring's
 //! encodings, the sealing of the computer's secrets, file names), tested on
-//! every system.
-#![cfg_attr(not(any(unix, test)), allow(dead_code))]
+//! every system. The stores of `os/` call them, so some go unused on
+//! Windows, or on one of the two.
+#![allow(dead_code)]
 
 use anyhow::{bail, Context, Result};
 use base64::Engine;
@@ -27,7 +28,6 @@ impl std::error::Error for NoStore {}
 /// reset, a kit moved by a version that named the key after the kit's
 /// folder): those secrets can never be opened again (PORT-V6-06).
 #[derive(Debug)]
-#[cfg_attr(not(any(unix, test)), allow(dead_code))]
 pub struct SealKeyMissing;
 
 impl std::fmt::Display for SealKeyMissing {
@@ -63,7 +63,6 @@ pub fn seal_id(saved: Option<&str>, kit_id: &str) -> String {
 /// A Secret Service error that means "there is none" (nobody owns or can
 /// start `org.freedesktop.secrets`, or no session bus), never a locked or
 /// refused one.
-#[cfg_attr(target_os = "macos", allow(dead_code))]
 pub fn no_secret_service(error: &str) -> bool {
     [
         "org.freedesktop.secrets was not provided by any .service files",
@@ -87,7 +86,6 @@ pub const NO_LOGIN_COLLECTION: &str = "the Secret Service has no \"login\" colle
 /// paths) gets agy's sign-in: [`LOGIN_COLLECTION`] only. Never `default`
 /// or another one when it is missing: agy would not find the sign-in there
 /// (fail closed, [`NO_LOGIN_COLLECTION`]).
-#[cfg_attr(target_os = "macos", allow(dead_code))]
 pub fn login_collection<'a>(paths: impl IntoIterator<Item = &'a str>) -> Result<usize> {
     paths
         .into_iter()
@@ -133,7 +131,6 @@ pub fn machine_tag(machine_id: &str, uid: u32) -> String {
 /// `Ok(false)` no such item (44, errSecItemNotFound), an error for anything
 /// else (36 interaction not allowed, 128 unlock cancelled, killed): a
 /// Keychain that cannot be read is never taken for an empty one.
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 pub fn mac_found(code: Option<i32>) -> Result<bool> {
     match code {
         Some(0) => Ok(true),
@@ -152,14 +149,11 @@ pub fn split_target(target: &str) -> Option<(&str, &str)> {
 
 /// What go-keyring's `Set` stores on macOS: every password base64-encoded
 /// behind a prefix (otherwise `security` returns non-ASCII text as hex).
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 pub const MAC_BASE64: &str = "go-keyring-base64:";
 /// The older hex encoding go-keyring still reads on macOS.
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 pub const MAC_HEX: &str = "go-keyring-encoded:";
 
 /// The value written in the Keychain for the secret `raw`, as go-keyring.
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 pub fn mac_encode(raw: &[u8]) -> String {
     format!(
         "{MAC_BASE64}{}",
@@ -169,7 +163,6 @@ pub fn mac_encode(raw: &[u8]) -> String {
 
 /// The secret of a Keychain value printed by `security -w`, as go-keyring's
 /// `Get` reads it (a value without a prefix as it is).
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 pub fn mac_decode(value: &str) -> Result<Vec<u8>> {
     let value = value.trim();
     if let Some(rest) = value.strip_prefix(MAC_BASE64) {
@@ -183,7 +176,6 @@ pub fn mac_decode(value: &str) -> Result<Vec<u8>> {
     Ok(value.as_bytes().to_vec())
 }
 
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 fn hex_decode(text: &str) -> Option<Vec<u8>> {
     if !text.len().is_multiple_of(2) {
         return None;
@@ -196,7 +188,6 @@ fn hex_decode(text: &str) -> Option<Vec<u8>> {
 
 /// A word `security -i` reads as it is (go-keyring's shellescape leaves
 /// these unquoted): no quoting needed, nothing injected.
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 fn plain_word(s: &str) -> bool {
     !s.is_empty()
         && s.bytes()
@@ -205,7 +196,6 @@ fn plain_word(s: &str) -> bool {
 
 /// The line given on stdin to `security -i` to store `raw` (as go-keyring:
 /// the secret never appears among a process's arguments).
-#[cfg_attr(not(any(target_os = "macos", test)), allow(dead_code))]
 pub fn mac_add_command(service: &str, user: &str, raw: &[u8]) -> Result<String> {
     let value = mac_encode(raw);
     if !(plain_word(service) && plain_word(user)) {

@@ -7,7 +7,7 @@ use anyhow::Result;
 use super::*;
 use crate::env::KitEnv;
 use crate::kit::{tests::TempDir, Arch};
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::projects::fastcgi::{FastCgi, FcgiAddr};
 use crate::servers::tests::*;
 use crate::servers::*;
@@ -565,7 +565,7 @@ fn caddy_pool_two_php_sites_alias_and_reload() {
     crate::setup::kit_files::write_all(&kit).unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

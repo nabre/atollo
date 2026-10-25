@@ -2,7 +2,7 @@
 // a read that fails is asked again by the next page, not kept as empty.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
-import type { ComponentInfo } from "@/api";
+import type { ComponentInfo } from "@/ipc";
 import { useComponents } from "@/frameworks/model";
 import { invoke } from "@test/support/tauri";
 

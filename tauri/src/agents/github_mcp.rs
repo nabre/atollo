@@ -19,9 +19,9 @@ use std::io::{BufRead, BufReader, Write};
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
 
+use crate::common::settings::Settings;
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::settings::Settings;
 
 /// GitHub's own MCP server.
 pub const URL: &str = "https://api.githubcopilot.com/mcp/";

@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 
 use super::run;
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::lang::{is_release, version_key};
 use crate::install::{fetch, target_of, work_dir, Ctx, Progress, Release};
 use crate::kit::{Kit, Target};
@@ -181,15 +181,7 @@ pub(in crate::install) fn micromamba_create(
         } else {
             mm_new
         };
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if let Ok(m) = fs::metadata(&mm) {
-                let mut p = m.permissions();
-                p.set_mode(p.mode() | 0o755);
-                let _ = fs::set_permissions(&mm, p);
-            }
-        }
+        let _ = crate::platform::files::add_executable(&mm);
         let envs = mamba_envs(work);
         let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
         progress.note(&format!("micromamba: {}", specs.join(" ")));

@@ -53,7 +53,7 @@ pub fn files_of(kit: &Kit, env: &KitEnv, dir: &Path) -> Vec<String> {
     files.retain(|rel| {
         !secret(rel)
             && !rel.starts_with(".git/")
-            && crate::os::safe_path::is_file(dir, &dir.join(rel))
+            && crate::platform::safe_path::is_file(dir, &dir.join(rel))
     });
     files.sort();
     files.dedup();
@@ -67,7 +67,7 @@ fn git_files(kit: &Kit, env: &KitEnv, dir: &Path) -> Option<Vec<String>> {
     if !git.is_file() {
         return None;
     }
-    let out = crate::os::jobs::kit_command(&git, env)
+    let out = crate::platform::jobs::kit_command(&git, env)
         .args([
             "ls-files",
             "-z",

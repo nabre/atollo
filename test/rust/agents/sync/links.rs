@@ -1,3 +1,6 @@
+// Junctions: Windows only.
+#![cfg(windows)]
+
 use super::*;
 use crate::agents::sync::tests::kit;
 use crate::agents::sync::{run, tools};

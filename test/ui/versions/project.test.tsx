@@ -5,7 +5,7 @@
 // above says the versions apply to the web server too.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import type { ProjectInfo, ProjectVersions as Data, VersionedTool } from "@/api";
+import type { ProjectInfo, ProjectVersions as Data, VersionedTool } from "@/ipc";
 import { ProjectVersions } from "@/versions";
 import { invoke } from "@test/support/tauri";
 

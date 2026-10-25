@@ -141,7 +141,7 @@ pub fn after_install(kit: &Kit, c: &Component, dir: &Path, default: bool) {
         Vec::new()
     };
     if let Err(e) = write(kit.root(), dir, &outside) {
-        crate::log::warn(&format!("{}: manifest: {e:#}", c.id));
+        crate::common::log::warn(&format!("{}: manifest: {e:#}", c.id));
     }
 }
 

@@ -3,7 +3,7 @@
 // component on this PC, the problems with their search box. The site draws
 // the same widgets without the data (site/guide.mjs).
 import { useMemo, useState, type ReactNode } from "react";
-import { urlOpen } from "../api";
+import { urlOpen } from "../ipc";
 import { ComponentLogo } from "../shared/logos";
 import { Tag } from "../shared/tags";
 import { Button, Codicon, Properties, SearchBox } from "../workbench";

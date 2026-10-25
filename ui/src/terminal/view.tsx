@@ -8,7 +8,7 @@ import { Terminal, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import "@xterm/xterm/css/xterm.css";
-import type { PtyBackend, PtyChunk, PtyInfo } from "./api";
+import type { PtyBackend, PtyChunk, PtyInfo } from "../ipc/pty";
 import { FONT_SIZE, monoFamily, monoLoaded, monoReady, remeasured, whenMonoLoads } from "./font";
 import { t } from "../i18n";
 

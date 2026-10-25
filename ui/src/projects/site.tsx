@@ -1,7 +1,7 @@
 // The Sito web section of a project's page: a folder of it served on its
 // own port or attached to a pooled Caddy/Apache VirtualHost.
 import { useState, type SyntheticEvent } from "react";
-import { projectSite, serversList, type ProjectInfo, type SiteKind } from "../api";
+import { projectSite, serversList, type ProjectInfo, type SiteKind } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

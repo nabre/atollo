@@ -8,8 +8,8 @@ use std::sync::PoisonError;
 
 use anyhow::{Context, Result};
 
+use crate::common::fsx::write_atomic;
 use crate::detect::{self};
-use crate::fsx::write_atomic;
 use crate::kit::{Kit, Os};
 use crate::projects::alias;
 use crate::projects::apache::{self, fwd};
@@ -44,7 +44,7 @@ pub(super) fn apache_vhost_conf(
     conf_d: Option<&Path>,
 ) -> Option<String> {
     let Some(doc_root) = apache::quoted_path(doc_root) else {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "{}: not served by Apache, its folder cannot be written in httpd.conf",
             doc_root.display()
         ));
@@ -167,7 +167,7 @@ pub(super) fn site_doc_root(project_root: &Path, site: &AttachedSite) -> Option<
     match detect::inside_dir(project_root, &site.folder) {
         Ok(dir) => Some(dir),
         Err(_) => {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "{}: site folder {} not served (missing, not a folder of the project, or through a link)",
                 project_root.display(),
                 site.folder
@@ -200,7 +200,7 @@ pub(super) fn caddy_site_conf(
         }
     }
     let Some(routes) = caddy::site_routes(doc_root, aliases, fcgi, "\t") else {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "{}: not served by Caddy, its folder cannot be written in a Caddyfile",
             doc_root.display()
         ));
@@ -210,7 +210,7 @@ pub(super) fn caddy_site_conf(
     if let Some(dir) = conf_d {
         match caddy::quoted_path(&dir.join("*.caddy")) {
             Some(glob) => body.push(format!("\timport {glob}")),
-            None => crate::log::warn(&format!(
+            None => crate::common::log::warn(&format!(
                 "{}: not imported, it cannot be written in a Caddyfile",
                 dir.display()
             )),

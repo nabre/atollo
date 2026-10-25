@@ -1,8 +1,6 @@
 //! The MongoDB Database Tools (mongodump, mongorestore) of `release.json`:
 //! on Linux the build of this PC's distribution, read from `os-release`.
 
-use std::fs;
-
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 
@@ -146,12 +144,10 @@ pub fn mongodb_tools_linux_name<'a>(
 /// The text of `/etc/os-release` (or `/usr/lib/os-release`) of this PC when
 /// it runs the kit's Linux target; `None` elsewhere.
 pub(super) fn host_os_release(target: Target) -> Option<String> {
-    if target.os != Os::Linux || !cfg!(target_os = "linux") {
+    if target.os != Os::Linux {
         return None;
     }
-    ["/etc/os-release", "/usr/lib/os-release"]
-        .iter()
-        .find_map(|p| fs::read_to_string(p).ok())
+    crate::platform::host::os_release()
 }
 
 /// The newest MongoDB Database Tools for `target` from `release.json`, on

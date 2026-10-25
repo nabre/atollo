@@ -59,39 +59,43 @@ Nella radice restano solo i file di configurazione (workspace, lint, formattazio
 
 ## Motore Rust (`tauri\src`)
 
-Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`cli.rs`). In cima restano solo l'avvio e l'infrastruttura comune; il resto sta in una cartella per area (D-87). Si leggono per livelli: chi sta sopra chiama chi sta sotto, mai il contrario.
+Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`app\cli.rs`). In cima resta solo `main.rs`; tutto il resto sta in una cartella per area (D-87, D-166). Si leggono per livelli: chi sta sopra chiama chi sta sotto, mai il contrario.
 
 | Livello | Moduli | Cosa fanno |
 | --- | --- | --- |
-| Avvio | `main.rs`, `app.rs`, `cli.rs`, `os\instance.rs`, `os\webview.rs` | ordine di avvio («Avvio», sopra), riga di comando, istanza singola, WebView2 |
-| Comandi | `commands\` | l'unico ingresso dell'interfaccia: controllano la finestra, traducono gli errori, chiamano il dominio |
-| Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, modelli locali, database, server web, GitHub |
-| Infrastruttura | `kit\`, `fsx.rs`, `time.rs`, `env\`, `settings.rs`, `log.rs`, `i18n.rs`, `ports.rs`, `net\`, `os\`, `router\` | percorsi del kit, file, orologio, ambiente, impostazioni, log, lingue, chi ha ogni porta, rete e controlli, processi, sistemi operativi di destinazione |
+| Avvio | `main.rs`, `app\` | ordine di avvio («Avvio», sopra), l'app e le sue finestre, l'icona nell'area di notifica, la riga di comando |
+| IPC | `ipc\` | l'unico ingresso dell'interfaccia: i comandi (controllano la finestra, traducono gli errori, chiamano il dominio) e i nomi degli eventi che Rust manda (`ipc\events.rs`) |
+| Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, modelli locali, database, server web, GitHub, diagnostica |
+| Infrastruttura | `common\`, `kit\`, `env\`, `net\`, `router\` | file, log, orologio, lingue, impostazioni, porte; percorsi del kit; ambiente; rete e controlli; sistemi operativi di destinazione |
+| Piattaforma | `platform\` | lo strato astratto sopra il sistema operativo: la stessa API su Windows, macOS e Linux (sotto) |
+| Sistemi | `os\windows\`, `os\unix\`, `os\macos\`, `os\linux\` | il codice di ciascun sistema, solo dietro `platform\` |
 
 ```
 tauri\src\
-  main.rs  app.rs  cli.rs     avvio; l'app, le sue finestre e la chiusura; riga di comando e i suoi comandi
+  main.rs                     avvio (l'unico file in cima)
+  app\                        mod (l'app, le sue finestre e la chiusura), tray (l'icona nell'area di notifica:
+                              mostra, progetti, chiudi, D-145), cli (riga di comando e i suoi comandi)
+  ipc\                        l'IPC con l'interfaccia (sotto): un file di comandi per area, error, events
+  common\                     ciò che usano tutte le aree: fsx (file del kit: lettura, JSON, scrittura atomica,
+                              sotto), log (segreti mascherati), time (now_secs, now_ms), i18n (lingua e
+                              cataloghi), settings (data\app\settings.json, una modifica alla volta:
+                              `Settings::update`; file della chiave di Gemini), ports (chi ha ogni porta: pool,
+                              versioni dei database, azioni, editor, modelli locali, D-141, sotto)
   kit\                        mod (percorsi, primo avvio, spostamento), target (Os, Arch, Target), root
-                              (bundle, AppImage), names (nomi validi dei progetti)
-  env\                        ambiente del kit: mod (Host, KitEnv, build per parti), langs, unix (D-112),
-                              path (PATH), secrets (mascheramento)
-  fsx.rs                      file del kit: lettura, JSON, scrittura atomica (sotto)
-  time.rs                     l'orologio: now_secs, now_ms dall'epoca Unix
-  settings.rs                 data\app\settings.json (una modifica alla volta, `Settings::update`), file della chiave di Gemini
-  log.rs  i18n.rs             log con segreti mascherati; lingua e cataloghi
-  ports.rs                    chi ha ogni porta: pool, versioni dei database, azioni, editor, modelli locali (D-141, sotto)
-  diagnostics.rs              «Esporta diagnostica», `Atollo diagnostics`: lo zip in data\app\diagnostics, segreti mascherati (D-153)
-  health.rs                   «Salute del kit», `Atollo check --kit`: disco, spazio libero, percorso, permessi, librerie (D-155)
-  backup.rs                   «Copia del kit»: esportazione in una cartella o in uno zip; importazione applicata all'avvio successivo (D-163)
-  tray.rs                     l'icona nell'area di notifica: mostra, progetti, chiudi (D-145)
-  commands\                   comandi Tauri (sotto)
+                              (bundle), names (nomi validi dei progetti), backup («Copia del kit»: esportazione
+                              in una cartella o in uno zip; importazione applicata all'avvio successivo, D-163)
+  env\                        ambiente del kit: mod (Host, KitEnv, build per parti), langs, unix (ciò che aggiunge
+                              un kit macOS o Linux, D-112), path (PATH), secrets (mascheramento)
+  diagnostics\                mod («Esporta diagnostica», `Atollo diagnostics`: lo zip in data\app\diagnostics,
+                              segreti mascherati, D-153), health («Salute del kit», `Atollo check --kit`: disco,
+                              spazio libero, percorso, permessi, librerie, D-155)
   setup\                      componenti e installazione
     catalog  needs            catalogo incorporato, components.txt; cosa serve ad agenti, clone, azioni (D-59)
     runner  task              piano e passi di una preparazione; la preparazione avviata dalla finestra
     checkup  downloads        verifica finale (D-39); file scaricati a mano (D-82)
     kit_files  self_update    file scritti in data\kit\; nuova versione dell'exe
   install\                    un installatore per famiglia: core, agents (anche Pi), llama (llama.cpp, D-151), web,
-                              caddy, native, editor, db, android;
+                              caddy, native, editor, db, android, conpty (il ConPTY del kit);
                               conda (pacchetti conservati per reinstallare senza rete, D-118); il percorso comune:
                               mod (tipi, Installer, registro), flow, parts, keys
     lang\                     un file per linguaggio o famiglia: go, jvm, dotnet, dart, zig, julia,
@@ -118,10 +122,9 @@ tauri\src\
   editor\                     editor e console
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale; estensioni (D-71); tema Atollo
-    picker                    selettori di file e cartelle (D-109)
     terminal                  console del kit: una sessione del terminale nell'app su ogni sistema (D-148), in una finestra sua se staccata (D-149)
-    pty                       terminale nell'app, sessioni PTY per xterm.js (D-109, D-148)
-    conpty                    pseudo console di Windows: conpty.dll del kit dal suo percorso, un job per sessione (D-148)
+    pty                       terminale nell'app: le sessioni per xterm.js, il loro output e il backlog (D-109,
+                              D-148); lo pseudo terminale stesso è `platform::pty`
     terminals                 pagina Terminali: console salvate in data\app\terminals.json, con strumenti e
                               versioni propri; una linea salvata non più installata passa alla più nuova (`replaced`)
   servers\                    pagina Server web: pool Caddy/Apache condivisi dai progetti
@@ -134,7 +137,8 @@ tauri\src\
     sync\                     istruzioni, skill, MCP, regole, cartelle attendibili; pi (settings.json di Pi, models.json
                               con i modelli locali, mcp.json, APPEND_SYSTEM.md, trust.json: D-152)
     stats\                    limiti d'uso e consumi (D-61): claude, codex, antigravity, pi (i JSONL delle sessioni)
-    keyring  relocate         accesso di Antigravity (D-115; keyring\portable: le parti provate su ogni sistema);
+    keyring  relocate         accesso di Antigravity (D-115): il trait Store, gli spostamenti, i file del kit, lock,
+                              portable (le parti provate su ogni sistema; lo store di ogni sistema sta in os\);
                               percorsi riscritti dopo uno spostamento
     claude_token              token di Claude Code su macOS (D-115)
     presets  github_mcp       server MCP pronti (D-156); `Atollo mcp github`, il ponte stdio verso il server di GitHub
@@ -154,20 +158,25 @@ tauri\src\
                               (data\app\llm\presets.ini), service (llama-server in modalità router su 127.0.0.1, il
                               suo job, un'operazione alla volta), settings (data\app\llm.json, porta, chiave),
                               cli (models, llm)
-  net\                        rete: mod (HTTPS, proxy ed eccezioni, API di GitHub), ca (il file PEM delle
-                              impostazioni, data\app\ca-bundle.pem: D-137), verify (SHA), signature (Authenticode),
-                              archive (estrazione, scambio cartelle), resume (download grandi: <file>.part ripreso
-                              con Range, SHA-256 mentre arrivano i byte, D-151)
-  os\                         Windows e processi: jobs (Job Object, D-07), processes, sessions («Rimuovi
-                              l'unità», altre copie), instance (D-08), webview (D-05), safe_path (D-77),
-                              temp (TempWork, pulizia: file di passaggio nel temp del sistema, D-90),
-                              volume (file system e tipo di disco, spazio libero, stesso disco, noexec), memory (la RAM del PC),
-                              guard (guardiano dei processi su macOS e Linux, D-105)
+  net\                        rete: mod (HTTPS, il proxy delle impostazioni, API di GitHub), ca (il file PEM delle
+                              impostazioni, data\app\ca-bundle.pem: D-137), verify (SHA), archive (estrazione,
+                              scambio cartelle), resume (download grandi: <file>.part ripreso con Range, SHA-256
+                              mentre arrivano i byte, D-151)
   router\                     destinazioni (Windows, macOS, Linux × x64, ARM64): target, bins (programmi e lanciatori
-                              per sistema), probe (cosa c'è su disco, salute), fs (file privati ed eseguibili), bootstrap
-                              (preparazione per un altro sistema, D-114), availability (perché un componente non
-                              si installa su un target)
+                              per sistema), probe (cosa c'è su disco, salute), bootstrap (preparazione per un altro
+                              sistema, D-114), availability (perché un componente non si installa su un target)
+  platform\                   lo strato astratto sopra il sistema operativo (sotto)
+  os\                         il codice di ciascun sistema (sotto)
 ```
+
+### Il sistema operativo (`platform\` e `os\`)
+
+Il motore guarda per quale sistema è compilato solo in `os\` (D-166): altrove nessun `#[cfg(windows)]`, `#[cfg(unix)]`, `#[cfg(target_os = …)]` o `cfg!(…)`, nessun crate di un solo sistema (`libc`, `windows`, `webview2_com`, `junction`, `portable_pty`, `rfd`, `dbus_secret_service`) e nessun `std::os::<sistema>`. Lo controlla `test\rust\os\rule.rs`, senza commenti e stringhe.
+
+- **`platform\`** è l'API che il motore chiama, la stessa su ogni sistema, con la logica che è uguale ovunque: `jobs` (i programmi che il kit avvia, nessuno sopravvive all'app: D-07, D-105; la shell del sistema e le sue virgolette), `processes`, `sessions` (i programmi del kit aperti, gli altri kit, «Rimuovi l'unità»), `instance` (un'app per kit, D-08), `lock` (i lock del kit fra i suoi processi: la preparazione, `db.json`, l'accesso di Antigravity), `volume` (il disco di una cartella, D-90, D-105), `temp` (`TempWork`, le cartelle di passaggio, D-90), `safe_path` (lettura dentro un progetto senza seguire collegamenti, D-77), `files` (file e cartelle del solo proprietario, il bit di esecuzione, scritture private), `links` (junction su Windows, collegamenti simbolici altrove), `host` (ciò che l'app sa della macchina: processore, lingua, build di Windows, os-release, Rosetta, Xcode, ICU, l'AppImage, l'id della macchina), `desktop` (le finestre «Seleziona cartella» e «Apri», la finestra d'errore, l'icona nell'area di notifica), `console` (l'output della riga di comando), `pty` (un programma su uno pseudo terminale, per il terminale dell'app), `proxy` (il proxy del sistema e gli host raggiunti senza), `signature` (Authenticode, Windows), `sockets` (se un server risponde su un socket Unix), `webview` (D-05), `memory`, `random`, `registry` (il registro dell'utente, Windows), `local_time`, e in `mod.rs` `OS`, `PATH_SEPARATOR`, `sh_quote`. Lì nulla guarda di che sistema si tratta: ogni funzione passa al modulo con lo stesso nome di `crate::os::current`, e la build di ogni sistema ne controlla la firma.
+- **`os\windows\`** ha Win32, WebView2, il ConPTY (`conpty.rs`), il Gestore credenziali e DPAPI (`agy_store.rs`), il registro, il Job Object; **`os\unix\`** ciò che macOS e Linux condividono (gruppi di processi e il guardiano, `guard.rs`, D-105; `flock`; permessi e proprietari; il socket dell'istanza e il ripiego TCP; portable-pty; l'arresto gentile; la chiave che sigilla l'accesso di Antigravity); **`os\macos\`** e **`os\linux\`** ciò che ha uno solo dei due (libproc e `/proc`, `statfs` e `mountinfo`, `scutil` e `gsettings`, il Portachiavi e il Secret Service in `agy_keyring.rs`, AppleLanguages, l'AppImage, `PR_SET_PDEATHSIG`). `macos\` e `linux\` riesportano i moduli di `unix\` che condividono, così ogni sistema offre gli stessi nomi; `os\mod.rs` è l'unico punto che sceglie il sistema (`current`), e una build per un altro sistema si ferma con un `compile_error!`. `test\rust\os\rule.rs` controlla anche che ogni modulo che `platform\` chiede a `os::current` ci sia in `windows\`, `macos\` e `linux\`.
+
+Per aggiungere qualcosa che cambia fra i sistemi: la funzione, con la sua documentazione, nel modulo di `platform\` a cui appartiene (un modulo nuovo se nessuno va bene, elencato in `platform\mod.rs`), che passa a `imp::<nome>`; la stessa funzione in `os\windows\<modulo>.rs` e in `os\unix\<modulo>.rs` (o in `os\macos\` e `os\linux\` quando cambiano); il modulo nominato in ogni `mod.rs` di `os\`. Un parser puro del testo di un sistema (`/proc`, `mountinfo`, `scutil`) va nella cartella di quel sistema, con le prove in `test\rust\os\<sistema>\`; ciò che il motore confronta su ogni sistema (un kit per un'altra destinazione) resta nella sua area, dove decide la destinazione del kit (`kit.os()`), non il sistema su cui gira l'app. Un controllo del sistema su cui gira l'app, a run time, legge `platform::OS`.
 
 ### Dati del kit (`data\`)
 
@@ -216,18 +225,18 @@ data\
   webview2\                   i dati della finestra dell'app
 ```
 
-Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `os\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`os::temp::sweep`); alla chiusura, dopo il job, `os::temp::cleanup_at_exit`.
+Nel temp del sistema, `<TEMP>\Atollo\<id>\` (D-90): `setup\<id>\`, `frameworks\<stamp>\`, `downloads\`, `phpmyadmin\`, `system\` e `claude\` (`TEMP` dei programmi e `CLAUDE_CODE_TMPDIR`, quando la scelta o il disco lo vogliono). `Kit::system_temp()` lo restituisce, `platform\temp.rs` ne crea le cartelle di lavoro e le pulisce, `net\archive.rs` (`stage_into`) porta il risultato in `data\apps`. L'ordine di avvio: la migrazione dei dati dei progetti (`projects\migrate.rs`) gira dopo l'istanza singola (D-08), seguita dalla pulizia del temp (`platform::temp::sweep`); alla chiusura, dopo il job, `platform::temp::cleanup_at_exit`.
 
 Regole delle cartelle:
-- un modulo con il nome della sua area è il `mod.rs` della cartella (`editor\mod.rs`, non `editor\editor.rs`: clippy lo rifiuta), così `crate::editor::Editor` e `crate::versions::*` restano brevi; le cartelle senza logica propria (`db\`, `setup\`, `os\`) hanno in `mod.rs` solo la descrizione dell'area;
+- un modulo con il nome della sua area è il `mod.rs` della cartella (`editor\mod.rs`, non `editor\editor.rs`: clippy lo rifiuta), così `crate::editor::Editor` e `crate::versions::*` restano brevi; le cartelle senza logica propria (`db\`, `setup\`, `common\`) hanno in `mod.rs` solo la descrizione dell'area;
 - ogni `mod.rs` comincia con un `//!` che nomina l'area e i suoi sottomoduli;
 - i percorsi si scrivono interi (`crate::setup::task::SetupTask`, `use crate::db::auth;`), senza alias e senza `pub use x::*`; nella stessa cartella `use super::x;`. Ciò che tutto il crate legge da una cartella è riesportato per nome nel suo `mod.rs` e si scrive con il percorso corto: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - un modulo diviso in file (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) riesporta in `mod.rs` solo ciò che si usa da fuori; i suoi file si chiamano fra loro con `pub(super)` e si importano per nome (`use super::pools::load_store;`), mai con `use super::*`; anche i metodi di un tipo possono stare in più file, con un `impl` per file (`servers\`: `WebServers`);
 - un file si divide quando ha parti che si leggono da sole; `editor\ext.rs` e `editor\pty.rs` (le sessioni PTY di ogni sistema, oltre le 900 righe) restano interi; `projects\run\` è una cartella, un file per parte del runner (STR-V7-02), ed `env\` uno per parte di `KitEnv::build`, che chiama in ordine una funzione per sezione (STR-V7-03). Gli altri file dovrebbero restare sotto le 900 righe. I testi della Guida (`guide\content\`) sono testo, non codice.
 
-### Comandi Tauri (`commands\`)
+### IPC (`ipc\` e `ui\src\ipc\`)
 
-Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\src\api\`:
+Tutto ciò che passa fra l'interfaccia e Rust sta in due cartelle con lo stesso nome: `tauri\src\ipc\` e `ui\src\ipc\` (D-166). I comandi sono un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\src\ipc\`; gli eventi che Rust manda hanno i nomi in `ipc\events.rs`, gli stessi di `ui\src\ipc\events.ts` (una prova Rust confronta i due file): chi emette o si iscrive usa la costante, mai la stringa.
 
 | File | Comandi |
 | --- | --- |
@@ -252,15 +261,15 @@ Un file per pagina o area dell'interfaccia, con gli stessi nomi dei file di `ui\
 
 Per aggiungere un comando:
 1. la funzione `#[tauri::command]` nel file della sua area, che risponde `CmdResult<_>`, comincia con `ensure_main(&webview)?` e chiama il modulo di dominio (la logica resta lì, il comando la traduce per l'interfaccia);
-2. il suo percorso in `command_handler!` (`commands\mod.rs`);
+2. il suo percorso in `command_handler!` (`ipc\mod.rs`);
 3. il suo nome in `COMMANDS` (`build.rs`): la build genera `permissions\autogenerated\<nome>.toml`;
 4. `allow-<nome>` in `capabilities\main.json`;
-5. la funzione TypeScript in `ui\src\api\<area>.ts`, con l'anteprima per il browser;
+5. la funzione TypeScript in `ui\src\ipc\<area>.ts`, con l'anteprima per il browser;
 6. i testi nuovi nei cataloghi delle quattro lingue (`tauri\i18n\catalog.json`, `ui\src\locales\*.json`).
 
-Un aiuto usato da più aree (per esempio `apply_env`, `open_in_browser`) resta nel file della sua area con visibilità `pub(super)` ed è importato per nome in `mod.rs`.
+Un aiuto usato da più aree (per esempio `apply_env`, `open_in_browser`) resta nel file della sua area con visibilità `pub(super)` ed è importato per nome in `mod.rs`. Un evento nuovo: la sua costante in `ipc\events.rs` (e in `ALL`) e in `ui\src\ipc\events.ts`, l'iscrizione in `ui\src\ipc\<area>.ts`.
 
-### File del kit (`fsx.rs` e `Kit`)
+### File del kit (`common\fsx.rs` e `Kit`)
 
 Ogni modulo segue le stesse regole per i suoi file in `data\`:
 
@@ -268,7 +277,7 @@ Ogni modulo segue le stesse regole per i suoi file in `data\`:
 - **lettura**: `fsx::read_text` (UTF-8 con sostituzione dei byte non validi, senza BOM); per il JSON `fsx::read_json` (mancante o danneggiato: `None`, per lo stato che il kit ricostruisce), `fsx::load_json` (il valore predefinito più il problema da mostrare, per le impostazioni dell'utente) o `fsx::try_read_json` (errore con il percorso). Un file vuoto vale come mancante;
 - **scrittura**: `fsx::write_json` (crea la cartella, JSON indentato, atomico) o `fsx::write_atomic` per il testo; mai `fs::write` su un file che il kit rilegge;
 - **file di altri programmi** (impostazioni dell'editor, file degli agenti, `.mcp.json`) come `serde_json::Value`, con le regole del loro modulo: un file con commenti o non valido non si sovrascrive;
-- **dentro un progetto** solo con `os::safe_path` (nessun collegamento seguito, D-77).
+- **dentro un progetto** solo con `platform::safe_path` (nessun collegamento seguito, D-77).
 
 ### Una modifica alla volta (lock)
 
@@ -289,7 +298,7 @@ I login degli strumenti dei database (dump e ripristini) sono file con nome `<ex
 
 ### Porte
 
-`ports.rs` (D-141) ha anche le due sonde di una porta, `responds` e `is_port_free` (loopback IPv4 e IPv6), usate dalle azioni, dai server di database, dai modelli locali e dai pool. Dice chi ha ogni porta, leggendo solo i file e senza prendere lock, così chi tiene già il suo può chiederlo:
+`common\ports.rs` (D-141) ha anche le due sonde di una porta, `responds` e `is_port_free` (loopback IPv4 e IPv6), usate dalle azioni, dai server di database, dai modelli locali e dai pool. Dice chi ha ogni porta, leggendo solo i file e senza prendere lock, così chi tiene già il suo può chiederlo:
 
 | Proprietario (`Owner`) | Da | Intervallo |
 | --- | --- | --- |
@@ -308,11 +317,11 @@ I login degli strumenti dei database (dump e ripristini) sono file con nome `<ex
 
 ### Processi
 
-Tutti i programmi del kit partono nel Job Object dell'app con l'ambiente del kit (`os\jobs.rs`, D-07). Fuori dal job solo browser ed Esplora risorse: `jobs::open_with_explorer` apre un indirizzo o una cartella, `jobs::system_root` dà la cartella di Windows. Nessun `Command::new` con una riga di comando unita: argomenti sempre a vettore.
+Tutti i programmi del kit partono nel Job Object dell'app (Windows) o in gruppi di processi sorvegliati dal guardiano (macOS, Linux) con l'ambiente del kit (`platform\jobs.rs`, D-07, D-105). Fuori solo il browser e il gestore dei file: `jobs::open_with_explorer` apre una cartella, `jobs::open_url` un indirizzo. Nessun `Command::new` con una riga di comando unita: argomenti sempre a vettore.
 
 ### Errori
 
-Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispondono `CmdResult<_>` (`commands\error.rs`): `CmdError` è il testo breve che l'interfaccia mostra e arriva come una stringa JSON, uguale a quella di `Result<_, String>`. Un comando segnala un errore in quattro modi:
+Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispondono `CmdResult<_>` (`ipc\error.rs`): `CmdError` è il testo breve che l'interfaccia mostra e arriva come una stringa JSON, uguale a quella di `Result<_, String>`. Un comando segnala un errore in quattro modi:
 - `.or_fail(contesto)?` scrive `contesto: errore` nel log e manda all'interfaccia `errore` (`{e}`); `.or_fail_chain(contesto)?` fa lo stesso con tutta la catena di un `anyhow::Error` (`{e:#}`);
 - `?` su un `anyhow::Error` manda tutta la catena senza scrivere nel log;
 - `Err(testo.into())` per un rifiuto con un testo per l'utente, che passa da `tr`/`i18n::t` con la frase italiana come chiave;
@@ -323,7 +332,7 @@ Nei moduli `anyhow::Result`, con il contesto che serve al log. I comandi rispond
 | Parte | File | Cosa contiene |
 | --- | --- | --- |
 | Ingresso | `main.tsx`, `App.tsx` | finestra in stile VSCodium: barra delle attività, pagina, pannello Attività, barra di stato |
-| Verso Rust | `api\` | un file per area, come `commands\` (sopra); `index.ts` li riesporta, le pagine importano da `./api`; `preview-runs.ts` fa girare le azioni nell'anteprima del browser |
+| Verso Rust | `ipc\` | un file per area, come `tauri\src\ipc\` (sopra); `index.ts` li riesporta, le pagine importano da `@/ipc`; `events.ts` ha i nomi degli eventi, `pty.ts` i comandi e gli eventi del terminale nell'app (importato da solo, così la finestra di una sessione staccata non porta altre aree), `window.ts` i comandi della barra del titolo; `preview-runs.ts` fa girare le azioni nell'anteprima del browser. Una regola ESLint tiene `@tauri-apps/*` fuori da ogni altro file di `ui\src` |
 | Aiuti comuni | `shared\`: `hooks.ts`, `common.tsx`, `format.ts`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | aiuti senza pagina, usati da più cartelle: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (sotto); `ActionButton`, `ErrorLine`, `editorHint`, i campi delle porte (`usePortField`, `validPort`); le dimensioni come testo (`formatBytes`, `gb`, `sizeText`); etichette, loghi dei marchi, il brand; la scelta rapida di Quick Open e della palette dei comandi |
 | Componenti di base | `workbench\` | i controlli di VSCodium (`@vscode-elements/elements`), i codicon e le parti del workbench (sotto); dal resto dell'app importa solo `i18n` |
 | Tema | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | font, il font dei codicon e note del brand; i colori `--vsc-*` per Tailwind; tutte le variabili `--vscode-*` di VS Code; le misure di VSCodium 1.135 e le misure `--vsc-size-*` (gli ultimi tre generati, sotto) |
@@ -351,9 +360,9 @@ Le cartelle delle pagine:
 
 Un modulo non importa chi lo importa: nessun ciclo fra i file di `ui\src`. Un pezzo usato da due pagine va in un file suo dentro la cartella (`projects\runs.ts`), o in `shared\` se lo usano più cartelle. Un import che salirebbe di più di una cartella si scrive con l'alias `@/` (`ui\tsconfig.json`, `ui\vite.config.ts`); il testo della Guida con `@guide/` (la cartella `guide\` alla radice).
 
-### `api\`
+### `ipc\`
 
-- `core.ts` ha i tre aiuti con cui si scrive ogni comando: `query(cmd, anteprima, args)` per un comando che risponde con dati, `act(cmd, args)` per uno che agisce e basta, `subscribe(evento, handler)` per gli eventi. Fuori da Tauri (`npm run dev` aperto nel browser) rispondono con l'anteprima e la pagina mostra il banner «anteprima»: così le pagine si disegnano nel browser. Restano dentro `api\`: le pagine non chiamano comandi per nome.
+- `core.ts` ha i tre aiuti con cui si scrive ogni comando: `query(cmd, anteprima, args)` per un comando che risponde con dati, `act(cmd, args)` per uno che agisce e basta, `subscribe(evento, handler)` per gli eventi. Fuori da Tauri (`npm run dev` aperto nel browser) rispondono con l'anteprima e la pagina mostra il banner «anteprima»: così le pagine si disegnano nel browser. Restano dentro `ipc\`: le pagine non chiamano comandi per nome.
 - Un'anteprima calcolata (`sampleStats()`) si scrive con `browserPreview ? … : invoke(…)`, per non calcolarla quando gira l'app.
 - I tipi rispecchiano le strutture Rust con `serde(rename_all = "camelCase")`.
 
@@ -412,7 +421,7 @@ Così app ed editor hanno gli stessi colori e le stesse misure, chiave per chiav
 
 ### Schermate e server di sviluppo
 
-Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0.0.1:5173`) sui suoi dati di esempio, con `playwright-core` ed Edge o Chrome del sistema (`SHOTS_BROWSER`); `?lang=en|fr|de` sceglie la lingua dell'anteprima, e i testi che il motore manda già tradotti passano da `engineText` (`api\core.ts`) con la loro traduzione accanto (D-135). `SHOTS_URL` prende l'anteprima da un altro indirizzo.
+Le schermate si prendono dall'anteprima nel browser (`npm -w ui run dev`, `127.0.0.1:5173`) sui suoi dati di esempio, con `playwright-core` ed Edge o Chrome del sistema (`SHOTS_BROWSER`); `?lang=en|fr|de` sceglie la lingua dell'anteprima, e i testi che il motore manda già tradotti passano da `engineText` (`ipc\core.ts`) con la loro traduzione accanto (D-135). `SHOTS_URL` prende l'anteprima da un altro indirizzo.
 
 | Script | Scrive |
 | --- | --- |
@@ -444,7 +453,7 @@ Dall'analisi del 15/10/2026, ricontrollata il 21/10. Fatte: comandi per area e r
 
 1. ~~**Errore di lettura che resta sullo schermo**~~: fatto il 21/10/2026. L'errore si toglieva già dopo una lettura riuscita; mancava la protezione da una lettura vecchia che risponde tardi. Le informazioni del kit (`App.tsx`), l'elenco di «Rimuovi l'unità» (`shell\eject.tsx`) e le impostazioni (`settings\autosave.ts`) passano da `useLoad` con `"show"`; Impostazioni e primo avvio hanno «Riprova». `databases\page.tsx` lo usava già.
 2. ~~**Conferme nella pagina senza `alertdialog`**~~: fatto il 17/10/2026 (D-106), le quattro conferme usano `InlineConfirm`.
-3. ~~**Anteprima riusata dai test**~~: fatto il 21/10/2026. `api\` esporta i dati dell'anteprima (`SAMPLE_*`, `NOTHING_OPEN`) e `App.test.tsx`, `autosave.test.ts`, `program-temp.test.tsx` e `databases.test.tsx` partono da quelli. Restano scritti a mano solo i casi che l'anteprima non ha (componenti non disponibili su ARM64, il piano dei framework, `RunInfo`).
+3. ~~**Anteprima riusata dai test**~~: fatto il 21/10/2026. `ipc\` (allora `api\`) esporta i dati dell'anteprima (`SAMPLE_*`, `NOTHING_OPEN`) e `App.test.tsx`, `autosave.test.ts`, `program-temp.test.tsx` e `databases.test.tsx` partono da quelli. Restano scritti a mano solo i casi che l'anteprima non ha (componenti non disponibili su ARM64, il piano dei framework, `RunInfo`).
 4. ~~**`tool-versions.json` nell'impronta della matrice**~~: fatto il 21/10/2026, il file non entra più nell'impronta e il `_doc` di `tauri\catalog\relations.json` nomina `versions\relations\`.
 5. ~~**Pacchetto dell'interfaccia**~~: fatto il 21/10/2026. Registrati solo i componenti usati; Impostazioni, Strumenti (con il primo avvio) e la procedura guidata si caricano quando si aprono, e puntare la loro voce nella barra delle attività li precarica; React, loghi, traduzioni e ogni capitolo della Guida in file a parte (`ui\vite.config.ts`). File principale da 1.190 kB (357 compressi) a 258 kB (73). Si potrebbe ancora caricare solo la lingua attiva (circa 140 kB), ma il cambio di lingua diventerebbe asincrono.
 6. ~~**Controlli ancora nativi**~~: fatto il 21/10/2026, `ToggleButton`, `Meter` e `SuggestField` (sopra, «Restano nativi»).

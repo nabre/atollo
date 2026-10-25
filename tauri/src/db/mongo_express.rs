@@ -29,7 +29,7 @@ use anyhow::{bail, Context, Result};
 use super::web_admin::{abandon, free_address, wait_ready, Served, Slot};
 use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::os::jobs::{self, Job};
+use crate::platform::jobs::{self, Job};
 use crate::setup::catalog;
 
 /// The starter the app writes to `data\kit\` (`setup/kit_files.rs`).
@@ -151,7 +151,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str) -> Result<Served
         abandon(job, child);
         return Err(e);
     }
-    crate::log::info(&format!("mongo-express: started on {host}:{port}"));
+    crate::common::log::info(&format!("mongo-express: started on {host}:{port}"));
     Ok(Served {
         child,
         host,

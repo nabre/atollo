@@ -32,7 +32,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::i18n::t as tr;
+use crate::common::i18n::t as tr;
 
 pub use overrides::{
     remove_action, save_action, set_default_action, set_site_with_options, ActionEdit, SiteKind,
@@ -222,17 +222,17 @@ pub const OVERRIDE_FILES: [&str; 2] = ["panel.json", "pannello.json"];
 // Every look into a project goes through `safe_path`: never through a
 // symbolic link or a junction (D-77).
 fn exists(dir: &Path, rel: &str) -> bool {
-    crate::os::safe_path::exists(dir, &dir.join(&*native(rel)))
+    crate::platform::safe_path::exists(dir, &dir.join(&*native(rel)))
 }
 
 fn read(dir: &Path, rel: &str) -> String {
-    crate::os::safe_path::read_text(dir, &dir.join(&*native(rel))).unwrap_or_default()
+    crate::platform::safe_path::read_text(dir, &dir.join(&*native(rel))).unwrap_or_default()
 }
 
 /// A relative path written with `\` (as the detection writes them), with
 /// the system's separator: on macOS and Linux `\` is a character of a name.
 fn native(rel: &str) -> std::borrow::Cow<'_, str> {
-    if cfg!(windows) {
+    if std::path::MAIN_SEPARATOR == '\\' {
         rel.into()
     } else {
         rel.replace('\\', "/").into()
@@ -244,7 +244,7 @@ fn read_json(dir: &Path, rel: &str) -> Option<serde_json::Value> {
 }
 
 fn list_dir(dir: &Path) -> Vec<String> {
-    if crate::os::safe_path::is_link(dir) {
+    if crate::platform::safe_path::is_link(dir) {
         return Vec::new();
     }
     let mut names: Vec<String> = fs::read_dir(dir)
@@ -257,41 +257,18 @@ fn list_dir(dir: &Path) -> Vec<String> {
     names
 }
 
-/// Quotes a path for `cmd.exe` when it holds spaces or symbols.
-#[cfg(windows)]
+/// A path as one word of the system shell of the actions
+/// (`platform::jobs::shell_quote`).
 fn quote(s: &str) -> String {
-    if s.chars()
-        .any(|c| c.is_whitespace() || "&()^,;=".contains(c))
-    {
-        format!("\"{s}\"")
-    } else {
-        s.to_owned()
-    }
-}
-
-/// Quotes a path for `/bin/sh` when it holds anything but plain characters:
-/// in single quotes, where `$(…)`, backticks and `;` of a folder name in a
-/// cloned repository stay text.
-#[cfg(not(windows))]
-fn quote(s: &str) -> String {
-    if !s.is_empty()
-        && s.chars()
-            .all(|c| c.is_ascii_alphanumeric() || "._-/+@".contains(c))
-    {
-        s.to_owned()
-    } else {
-        format!("'{}'", s.replace('\'', r"'\''"))
-    }
+    crate::platform::jobs::shell_quote(s)
 }
 
 /// The kit's router of `php -S` (`runtime\php-router.php`, written to
-/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02). The command
-/// runs through `cmd.exe` on Windows and `/bin/sh` elsewhere, each with its
-/// own way to read `CP_DATA`.
-#[cfg(windows)]
-const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
-#[cfg(not(windows))]
-const PHP_ROUTER: &str = r#""$CP_DATA/kit/php-router.php""#;
+/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02), named through
+/// `CP_DATA` as the system shell reads it.
+fn php_router() -> String {
+    crate::platform::jobs::shell_var_path("CP_DATA", &["kit", "php-router.php"])
+}
 
 /// `php -S` on the folder `root` of the project, always through the kit's
 /// router. A project's own `router.php` (in `root`, else in the project
@@ -315,8 +292,9 @@ fn php_server(dir: &Path, root: &str) -> String {
         .map(|f| format!("-d {} ", quote(&format!("atollo.router={}", native(&f)))))
         .unwrap_or_default();
     format!(
-        "php {own}-S 127.0.0.1:{{port}} -t {} {PHP_ROUTER}",
-        quote(&native(root))
+        "php {own}-S 127.0.0.1:{{port}} -t {} {}",
+        quote(&native(root)),
+        php_router()
     )
 }
 
@@ -325,7 +303,7 @@ fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
     fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
         // Below the root, links are not entered (a DirEntry's type is the
         // link's own); the root itself is checked here.
-        if depth > 3 || *seen > 3000 || (depth == 0 && crate::os::safe_path::is_link(d)) {
+        if depth > 3 || *seen > 3000 || (depth == 0 && crate::platform::safe_path::is_link(d)) {
             return;
         }
         let Ok(entries) = fs::read_dir(d) else {
@@ -624,7 +602,7 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             continue;
         }
         let sub_dir = dir.join(&sub);
-        if !crate::os::safe_path::is_dir(dir, &sub_dir)
+        if !crate::platform::safe_path::is_dir(dir, &sub_dir)
             || !MANIFESTS.iter().any(|m| exists(&sub_dir, m))
         {
             continue;

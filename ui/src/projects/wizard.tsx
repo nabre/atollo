@@ -14,7 +14,7 @@ import {
   type EnvVar,
   type FrameworkEvent,
   type FrameworkTarget,
-} from "../api";
+} from "../ipc";
 import {
   AddonChoice,
   basesByCategory,

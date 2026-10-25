@@ -166,12 +166,12 @@ impl Room {
     /// The message for the user, in `lang`.
     pub fn message(&self, lang: &str) -> String {
         match self {
-            Room::TooLargeForFs { file, bytes, fs } => crate::i18n::t(
+            Room::TooLargeForFs { file, bytes, fs } => crate::common::i18n::t(
                 lang,
                 "{0} pesa {1} GB: il disco del kit è {2} e non tiene file oltre i 4 GB. Su un disco exFAT o NTFS ci sta, oppure scegli un modello più piccolo.",
                 &[file, &gb(*bytes), fs],
             ),
-            Room::NoSpace { need, free } => crate::i18n::t(
+            Room::NoSpace { need, free } => crate::common::i18n::t(
                 lang,
                 "Spazio insufficiente sul disco del kit: servono {0} GB, liberi {1} GB.",
                 &[&gb(*need), &gb(*free)],
@@ -199,7 +199,7 @@ fn done_of(kit: &Kit, plan: &Plan) -> u64 {
 pub fn check_room(kit: &Kit, plan: &Plan, lang: &str) -> Result<()> {
     let root = super::models_dir(kit);
     let at = existing_parent(&root);
-    let info = crate::os::volume::info(&at)?;
+    let info = crate::platform::volume::info(&at)?;
     let room = room_for(
         plan,
         info.fs.as_str(),
@@ -247,7 +247,7 @@ fn pulling_map() -> std::sync::MutexGuard<'static, BTreeMap<String, Running>> {
 /// `qwen--qwen3-gguf` are one folder on NTFS, exFAT and APFS, and must not
 /// be downloaded into twice at once.
 fn folder_key(folder: &str) -> String {
-    crate::os::processes::path_key(folder)
+    crate::platform::processes::path_key(folder)
 }
 
 /// The file that tells another process (the command line, the app) that a
@@ -271,7 +271,7 @@ impl Pulling {
         lang: &str,
     ) -> Result<Pulling> {
         let busy = || {
-            crate::i18n::t(
+            crate::common::i18n::t(
                 lang,
                 "Un modello di questo repository si sta già scaricando.",
                 &[],
@@ -427,7 +427,8 @@ fn remove_if_there(path: &Path) -> Result<()> {
 /// of the same repository is refused, in `lang`.
 fn entry_for(kit: &Kit, plan: &Plan, lang: &str) -> Result<Entry> {
     let dir = plan.dir(kit);
-    let in_kit = |id: &str| crate::i18n::t(lang, "Nel kit c'è già un modello chiamato {0}.", &[id]);
+    let in_kit =
+        |id: &str| crate::common::i18n::t(lang, "Nel kit c'è già un modello chiamato {0}.", &[id]);
     let folder = local::folder_of(&plan.repo);
     let files = plan.local_files();
     let names = |fs: &[ModelFile]| fs.iter().map(|f| f.name.clone()).collect::<Vec<_>>();
@@ -505,7 +506,7 @@ fn already_there(dest: &Path, entry: &Entry, f: &ModelFile) -> Result<bool> {
     if checked || crate::net::verify::sha256_hex(dest)?.eq_ignore_ascii_case(f.sha256.trim()) {
         return Ok(true);
     }
-    crate::log::warn(&format!(
+    crate::common::log::warn(&format!(
         "model {}: {name} does not match its checksum, downloaded again",
         entry.id
     ));
@@ -526,7 +527,7 @@ fn refused_to_gated(e: anyhow::Error, repo: &str) -> anyhow::Error {
         )
     });
     if refused {
-        crate::log::warn(&format!("{repo}: {e:#}"));
+        crate::common::log::warn(&format!("{repo}: {e:#}"));
         HfError::Gated(repo.to_owned()).into()
     } else {
         e
@@ -601,7 +602,7 @@ pub fn pull(
             .as_deref()
             .map(|a| vec![("Authorization", a)])
             .unwrap_or_default();
-        crate::log::info(&format!("model {}: downloading {url}", entry.id));
+        crate::common::log::info(&format!("model {}: downloading {url}", entry.id));
         net.download_resumable(
             &url,
             &dest,
@@ -615,7 +616,7 @@ pub fn pull(
         before += f.bytes;
     }
     mark_complete(kit, plan, &entry.id)?;
-    crate::log::info(&format!("model {}: downloaded and checked", entry.id));
+    crate::common::log::info(&format!("model {}: downloaded and checked", entry.id));
     Ok(entry.id)
 }
 
