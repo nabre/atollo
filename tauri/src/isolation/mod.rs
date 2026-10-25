@@ -4,9 +4,10 @@
 //! environment only, with the reasons the VM is off and, for each one, what
 //! the user does about it (the interface's notice in the status bar).
 //!
-//! `sbx` is a program of the PC, not of the kit: it is found in the PC's
-//! `PATH` (and where its installers put it) and runs with the PC's
-//! environment, where its sign-in lives (D-167, declared trace).
+//! `sbx` is the kit's (the required `sandboxes` component, in `data`),
+//! never one of the PC (D-175): it runs with the kit's environment, so its
+//! sandboxes, settings and state travel with the kit. Its sign-in to
+//! Docker stays in the system's keyring, a declared trace.
 //!
 //! On every level a project's programs get a sealed environment
 //! ([`seal`]): less of what reaches them by itself. It is no wall (they run
@@ -1166,11 +1167,12 @@ impl Vm {
     fn call(&self, env: &KitEnv, args: &[String], limit: Duration) -> anyhow::Result<()> {
         let args: Vec<&str> = args.iter().map(String::as_str).collect();
         let out = run(&self.sbx, &self.host, env, &args, limit).map_err(anyhow::Error::msg)?;
+        let stderr = String::from_utf8_lossy(&out.stderr);
         anyhow::ensure!(
             out.status.success(),
             "sbx {}: {}",
-            args.first().copied().unwrap_or_default(),
-            String::from_utf8_lossy(&out.stderr).trim()
+            args.iter().take(2).copied().collect::<Vec<_>>().join(" "),
+            stderr.trim()
         );
         Ok(())
     }
@@ -1193,7 +1195,12 @@ impl Vm {
         let _one = lock
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if self.exists(env)? {
+        let mut exists = self.exists(env)?;
+        if exists && self.moved(env)? {
+            self.make_again(env)?;
+            exists = false;
+        }
+        if exists {
             self.mount_missing(env, lang)?;
             if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
                 let args = vec![
@@ -1224,6 +1231,49 @@ impl Vm {
         self.sync_host_ports(env, true)?;
         self.sync_github(env);
         Ok(())
+    }
+
+    /// True when the sandbox of a project works in another folder than the
+    /// project's: the kit moved (another drive letter, a folder renamed).
+    /// `sbx` never changes a sandbox's workspace and refuses to start one
+    /// whose folder is gone (tried with sbx 0.49.2). A kit terminal's
+    /// sandbox is named after its folder: never moved.
+    fn moved(&self, env: &KitEnv) -> anyhow::Result<bool> {
+        if !matches!(self.owner, kit::Owner::Project { .. }) {
+            return Ok(false);
+        }
+        let noted =
+            kit::mounts(&self.kit, &self.name).and_then(|m| m.lines().next().map(str::to_owned));
+        let workspace = match noted {
+            Some(w) => w,
+            None => match self.workspace(env)? {
+                Some(w) => w,
+                None => return Ok(false),
+            },
+        };
+        Ok(crate::platform::processes::path_key(&workspace)
+            != crate::platform::processes::path_key(&self.dir.display().to_string()))
+    }
+
+    /// Removes the sandbox of a project whose kit moved, to make it again
+    /// in the project's folder (D-175): its disk holds nothing that is not
+    /// in the kit (the project's files, its database, the tools and the
+    /// sign-ins are all there), only the VM's home and the images it
+    /// pulled. GitHub is taken back first (D-172), the PC's ports go with
+    /// the sandbox (D-171).
+    fn make_again(&self, env: &KitEnv) -> anyhow::Result<()> {
+        crate::common::log::info(&format!(
+            "{}: the kit moved, the sandbox is made again in {}",
+            self.name,
+            self.dir.display()
+        ));
+        github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, false);
+        self.call(
+            env,
+            &["rm".to_owned(), "-f".to_owned(), self.name.clone()],
+            START_LIMIT,
+        )?;
+        kit::forget(&self.kit, &self.name)
     }
 
     /// GitHub for this sandbox as its project chose (`github_in_vm`, off
@@ -1338,9 +1388,49 @@ impl Vm {
             .any(|l| l.trim() == self.name))
     }
 
-    /// Publishes `port` of the VM on the PC's `127.0.0.1`.
-    pub fn publish(&self, env: &KitEnv, port: u16) -> anyhow::Result<()> {
-        self.call(env, &vm::publish_args(&self.name, port), ASK_LIMIT)
+    /// Publishes `port` of the VM on the PC: on `127.0.0.1`, or on the
+    /// local network when `lan` (Settings). The other address, left by a
+    /// start with the other setting, is taken back first; a port published
+    /// already (an action that ended by itself) is fine: `sbx` answers
+    /// `409 … already published` (tried with sbx 0.49.2).
+    pub fn publish(&self, env: &KitEnv, port: u16, lan: bool) -> anyhow::Result<()> {
+        let other = vm::unpublish_args(&self.name, port, !lan);
+        if let Err(e) = self.call(env, &other, ASK_LIMIT) {
+            crate::common::log::warn(&format!("{}: {e:#}", self.name));
+        }
+        let args = vm::publish_args(&self.name, port, lan);
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+        let out = run(&self.sbx, &self.host, env, &args, ASK_LIMIT).map_err(anyhow::Error::msg)?;
+        let text = String::from_utf8_lossy(&out.stderr);
+        anyhow::ensure!(
+            out.status.success() || text.contains("already published"),
+            "sbx ports: {}",
+            text.trim()
+        );
+        Ok(())
+    }
+
+    /// Stops what the action noted as `tag` runs in the VM ([`vm::stop_args`]:
+    /// ending its `sbx exec` on the PC does not), its web `container` if
+    /// any, and takes its `port` back from the PC. Failures only go to the
+    /// log: the daemon's stop at the app's exit ends the VM anyway.
+    pub fn stop_run(
+        &self,
+        env: &KitEnv,
+        tag: &str,
+        container: Option<&str>,
+        port: Option<u16>,
+        lan: bool,
+    ) {
+        let mut steps = vec![vm::stop_args(&self.name, tag, container)];
+        if let Some(p) = port {
+            steps.push(vm::unpublish_args(&self.name, p, lan));
+        }
+        for args in steps {
+            if let Err(e) = self.call(env, &args, ASK_LIMIT) {
+                crate::common::log::warn(&format!("{}: {e:#}", self.name));
+            }
+        }
     }
 
     /// The session of the app's terminal for `args` (`vm::kit_terminal_args`,

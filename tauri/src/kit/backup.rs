@@ -30,8 +30,15 @@ const ASIDE: &str = ".atollo-before-import-";
 /// the local models, the temporary files, the WebView's profile.
 const LOCAL: [&str; 6] = ["apps", "cache", "models", "tmp", "webview2", "downloads"];
 
-/// A path from the kit's root (`/`) that is not copied.
+/// A path from the kit's root (`/`) that is not copied. Also the state of
+/// the kit's Docker Sandboxes daemon (`…/state/sandboxd` in the kit's
+/// home: the VMs' images and sparse disks, tens of GB once copied): a
+/// sandbox missing there is made again from its kit (D-175); its settings
+/// and sign-in beside it are copied.
 pub fn left_out(rel: &str) -> bool {
+    if rel.starts_with("data/home/") && rel.ends_with("/state/sandboxd") {
+        return true;
+    }
     let mut parts = rel.split('/');
     match (parts.next(), parts.next(), parts.next()) {
         (Some("data"), Some(dir), _) if LOCAL.contains(&dir) => true,

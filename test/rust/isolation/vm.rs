@@ -162,9 +162,48 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         ]
     );
     assert_eq!(
-        publish_args("atollo-shop", 7101),
+        publish_args("atollo-shop", 7101, false),
         ["ports", "atollo-shop", "--publish", "127.0.0.1:7101:7101"]
     );
+    // The local network when Settings allow it (tried with sbx 0.49.2).
+    assert_eq!(
+        publish_args("atollo-shop", 7101, true)[3],
+        "0.0.0.0:7101:7101"
+    );
+    assert_eq!(
+        unpublish_args("atollo-shop", 7101, false),
+        ["ports", "atollo-shop", "--unpublish", "127.0.0.1:7101:7101"]
+    );
+}
+
+/// Ending `sbx exec` on the PC leaves the action running in the VM (tried
+/// with sbx 0.49.2): it notes its process group, and the stop ends that
+/// group inside the VM, never with a note that is not a plain number.
+#[test]
+fn an_action_in_the_vm_is_stopped_inside_it() {
+    let tag = run_tag("Web Server");
+    assert!(tag.starts_with("web-server-"), "{tag}");
+    assert_eq!(tag.len(), "web-server-".len() + 12);
+    assert_ne!(run_tag("a"), run_tag("A"));
+    assert_eq!(
+        tracked(&tag, "npm start"),
+        format!("mkdir -p /tmp/atollo-runs && echo $$ > /tmp/atollo-runs/{tag} && npm start")
+    );
+    let args = stop_args("atollo-p-shop", &tag, Some("atollo-web-site"));
+    assert_eq!(args[..4], ["exec", "atollo-p-shop", "sh", "-c"]);
+    let script = &args[4];
+    assert!(
+        script.starts_with(&format!("f='/tmp/atollo-runs/{tag}';")),
+        "{script}"
+    );
+    assert!(script.contains("''|*[!0-9]*|0|1) ;;"), "{script}");
+    assert!(script.contains("kill -TERM -$g"), "{script}");
+    assert!(script.contains("kill -KILL -$g"), "{script}");
+    assert!(
+        script.ends_with("; docker rm -f 'atollo-web-site' >/dev/null 2>&1; true"),
+        "{script}"
+    );
+    assert!(stop_args("atollo-p-shop", &tag, None)[4].ends_with("esac; true"));
 }
 
 /// Claude Code and Codex in `sbx`'s own agents; the others have none.
@@ -237,7 +276,13 @@ fn a_command_line_runs_in_the_vm() {
 
 #[test]
 fn a_php_site_is_apache_of_its_line_on_its_port() {
-    let line = web_line("site", &Web::Php { line: "8.3".into() }, "public", 7102);
+    let line = web_line(
+        "site",
+        &Web::Php { line: "8.3".into() },
+        "public",
+        7102,
+        &[],
+    );
     assert!(
         line.starts_with("docker rm -f 'atollo-web-site' >/dev/null 2>&1; "),
         "{line}"
@@ -249,10 +294,43 @@ fn a_php_site_is_apache_of_its_line_on_its_port() {
     );
     assert!(line.contains("Listen 7102"), "{line}");
     assert!(line.contains("apache2-foreground"), "{line}");
-    let line = web_line("docs", &Web::Static, ".", 7103);
+    let line = web_line("docs", &Web::Static, ".", 7103, &[]);
     assert!(line.contains("httpd:2.4"), "{line}");
     assert!(line.contains("/usr/local/apache2/htdocs"), "{line}");
     assert!(line.contains("httpd-foreground"), "{line}");
+    assert!(!line.contains("Alias"), "{line}");
+}
+
+/// A site's path aliases of the project itself: each folder mounted in the
+/// container and an `Alias` of Apache for it, quoted for the VM's shell.
+#[test]
+fn a_sites_aliases_reach_its_container() {
+    let aliases = vec![(
+        "/media".to_owned(),
+        "/d/kit/projects/my shop/storage/up".to_owned(),
+    )];
+    let line = web_line(
+        "site",
+        &Web::Php { line: "8.4".into() },
+        "public",
+        7104,
+        &aliases,
+    );
+    assert!(
+        line.contains("-v '/d/kit/projects/my shop/storage/up:/srv/alias/0' php:8.4-apache"),
+        "{line}"
+    );
+    assert!(
+        line.contains("/etc/apache2/conf-enabled/atollo-aliases.conf"),
+        "{line}"
+    );
+    assert!(line.contains(r#"Alias "/media" "/srv/alias/0""#), "{line}");
+    assert!(line.contains("Require all granted"), "{line}");
+    let line = web_line("docs", &Web::Static, ".", 7105, &aliases);
+    assert!(
+        line.contains(">> /usr/local/apache2/conf/httpd.conf"),
+        "{line}"
+    );
 }
 
 /// The project's database stays on the PC (D-171): its sandbox, and it

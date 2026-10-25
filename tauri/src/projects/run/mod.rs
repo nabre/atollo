@@ -113,6 +113,8 @@ struct Entry {
     detected_url: Option<String>,
     /// Served by this shared pool (`servers/mod.rs`): no process of its own.
     pool: Option<String>,
+    /// Running in the project's VM: stopped there too ([`start::VmRun`]).
+    vm_run: Option<start::VmRun>,
     /// The run this entry is for: the threads of a run that was replaced
     /// leave it alone (BUG-V6-10).
     run: u64,
@@ -220,7 +222,7 @@ impl Runner {
     /// shared pool is only marked stopped here: the caller takes its site
     /// out of the pool (`WebServers::detach`).
     pub fn stop(&self, key: &str) {
-        let (job, unpooled) = {
+        let (job, unpooled, vm_run) = {
             let mut entries = self.entries();
             let Some(e) = entries.get_mut(key) else {
                 return;
@@ -231,10 +233,14 @@ impl Runner {
                 e.info.end = Some(now_ms());
                 e.info.clone()
             });
-            (e.job.take(), unpooled)
+            (e.job.take(), unpooled, e.vm_run.take())
         };
-        // Closing the job's last handle ends its processes (KILL_ON_JOB_CLOSE).
+        // Closing the job's last handle ends its processes (KILL_ON_JOB_CLOSE);
+        // in the VM, its own processes are stopped there.
         drop(job);
+        if let Some(vm_run) = vm_run {
+            vm_run.stop();
+        }
         if let Some(info) = unpooled {
             (self.notify)(Event::State(info));
         }

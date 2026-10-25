@@ -118,6 +118,19 @@ pub struct SiteAlias {
 }
 
 impl SiteAlias {
+    /// The folder relative to the project itself, `/`-separated (`.` for
+    /// the project's own folder); `None` for another project's.
+    pub fn in_project(&self) -> Option<String> {
+        if self.other.is_some() {
+            return None;
+        }
+        Some(if self.parts.is_empty() {
+            ".".to_owned()
+        } else {
+            self.parts.join("/")
+        })
+    }
+
     /// The folder for Apache: under `own` (the expression of the project's
     /// folder, `${CP_PROJECT_FWD}`) or under `${CP_PROJECTS_FWD}` for another
     /// project; made only of checked names, so portable and safe in quotes.
