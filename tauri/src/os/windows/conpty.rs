@@ -45,9 +45,9 @@ use windows::Win32::System::Threading::{
     STARTF_USESTDHANDLES, STARTUPINFOEXW,
 };
 
-use super::pty::Io;
 use crate::env::KitEnv;
 use crate::os::windows::jobs::{self, Job};
+use crate::platform::pty::Io;
 
 /// The kit's ConPTY: both files in the component's folder.
 pub const FILES: [&str; 2] = ["conpty.dll", "OpenConsole.exe"];
@@ -518,5 +518,5 @@ pub fn spawn(
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/editor/conpty.rs"]
+#[path = "../../../../test/rust/os/windows/conpty.rs"]
 mod tests;

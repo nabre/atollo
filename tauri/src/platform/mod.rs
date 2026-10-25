@@ -21,6 +21,7 @@
 //! - `temp`: the folders in transit (D-90);
 //! - `safe_path`: reading inside a project without following links (D-77);
 //! - `memory`: the PC's RAM;
+//! - `pty`: a program on a pseudo terminal, for the app's terminal;
 //! - `webview`: the web view of the windows (D-05).
 
 pub mod console;
@@ -32,6 +33,7 @@ pub mod jobs;
 pub mod lock;
 pub mod memory;
 pub mod processes;
+pub mod pty;
 pub mod safe_path;
 pub mod sessions;
 pub mod temp;

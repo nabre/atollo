@@ -18,8 +18,6 @@
 //! - output in `data\app\logs\editor.log`, with the token masked.
 
 pub mod cfg;
-#[cfg(windows)]
-pub mod conpty;
 pub mod ext;
 pub mod pty;
 pub mod terminal;

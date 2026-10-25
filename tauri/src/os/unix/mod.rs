@@ -10,6 +10,7 @@ pub mod host;
 pub mod instance;
 pub mod jobs;
 pub mod lock;
+pub mod pty;
 pub mod sessions;
 pub mod temp;
 pub mod users;

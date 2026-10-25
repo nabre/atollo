@@ -11,7 +11,7 @@ pub mod processes;
 pub mod volume;
 pub mod webview;
 
-pub use super::unix::{console, files, instance, jobs, lock, sessions, temp};
+pub use super::unix::{console, files, instance, jobs, lock, pty, sessions, temp};
 
 use crate::kit::Os;
 

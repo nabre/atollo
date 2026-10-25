@@ -1,5 +1,6 @@
 //! Windows: the Win32 side of every module of `crate::platform`.
 
+pub mod conpty;
 pub mod console;
 pub mod desktop;
 pub mod files;
@@ -9,6 +10,7 @@ pub mod jobs;
 pub mod lock;
 pub mod memory;
 pub mod processes;
+pub mod pty;
 pub mod sessions;
 pub mod temp;
 pub mod volume;

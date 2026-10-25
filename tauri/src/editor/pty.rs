@@ -7,7 +7,8 @@
 //!   the kit environment only, in the chosen folder;
 //! - on macOS and Linux its program leads a session and a process group of
 //!   its own (`setsid` of the PTY), put in a job (`platform/jobs.rs`); on Windows
-//!   it runs on the kit's ConPTY (`conpty.rs`) in a Job Object of its own.
+//!   it runs on the kit's ConPTY (`os/windows/conpty.rs`) in a Job Object of
+//!   its own.
 //!   Closing the session hangs it up (`SIGHUP`, or the console closing),
 //!   then ends what is left of its tree, its group and its session (the
 //!   jobs of an interactive shell, in groups of their own);
@@ -19,9 +20,9 @@
 //! - the keys typed are written in order by a thread of the session, so a
 //!   program that does not read never blocks the window.
 //!
-//! Only the pseudo terminal itself is code of one system (`unix` below,
-//! `conpty.rs`); the sessions, the output and the choice of the program
-//! are plain code, tested on every system.
+//! Only the pseudo terminal itself is code of one system (`platform::pty`:
+//! `os/unix/pty.rs`, `os/windows/conpty.rs`); the sessions, the output and
+//! the choice of the program are plain code, tested on every system.
 
 use std::collections::BTreeMap;
 use std::io::Read;
@@ -34,6 +35,7 @@ use anyhow::{bail, Result};
 use serde::Serialize;
 
 use crate::kit::Kit;
+use crate::platform::pty::{Io, Spawned};
 
 /// Output kept per session for a view that attaches late.
 pub const BACKLOG: usize = 256 * 1024;
@@ -284,26 +286,10 @@ pub fn ready(launch: &Launch, dir: &Path, lang: &str) -> Result<()> {
     );
     let shown = launch.program.display().to_string();
     anyhow::ensure!(
-        runnable(&launch.program),
+        crate::platform::pty::runnable(&launch.program),
         crate::common::i18n::t(lang, "{0} non è installato.", &[&shown])
     );
     Ok(())
-}
-
-#[cfg(unix)]
-fn runnable(program: &Path) -> bool {
-    use std::os::unix::ffi::OsStrExt;
-    let Ok(path) = std::ffi::CString::new(program.as_os_str().as_bytes()) else {
-        return false;
-    };
-    // access(X_OK) also refuses a file on a `noexec` mount.
-    // SAFETY: a NUL-terminated path, only read.
-    program.is_file() && unsafe { libc::access(path.as_ptr(), libc::X_OK) } == 0
-}
-
-#[cfg(windows)]
-fn runnable(program: &Path) -> bool {
-    program.is_file()
 }
 
 /// The bytes of xterm.js's binary input (its `onBinary`: mouse reports of
@@ -313,96 +299,6 @@ pub fn latin1(data: &str) -> Option<Vec<u8>> {
     data.chars()
         .map(|c| u8::try_from(u32::from(c)).ok())
         .collect()
-}
-
-/// The variable and value to add so that a session on `os` reads and
-/// writes UTF-8 (typed accents, file names such as `projects/già`), from
-/// the kit environment's `LC_ALL`, `LC_CTYPE` and `LANG`; `None` when the
-/// first of them that is set (the one the C library reads) already names a
-/// UTF-8 locale. An app started from Finder or by launchd has none of them,
-/// and bash 3.2 or pwsh would then run in the C locale. `LANG` when none is
-/// set, as VS Code does (`en_US.UTF-8` on macOS, which has no `C.UTF-8`);
-/// `LC_CTYPE` over a `LANG` of another charset, which keeps its messages;
-/// never over an `LC_ALL` chosen by the user. Not on Windows, where the
-/// console is UTF-16 and the kit's profile sets the code pages.
-#[cfg_attr(windows, allow(dead_code))]
-pub fn utf8_locale(
-    os: crate::kit::Os,
-    lc_all: Option<&str>,
-    lc_ctype: Option<&str>,
-    lang: Option<&str>,
-) -> Option<(&'static str, &'static str)> {
-    fn set(v: Option<&str>) -> Option<&str> {
-        v.filter(|v| !v.is_empty())
-    }
-    let utf8 = |v: &str| {
-        let v = v.to_ascii_lowercase();
-        v.contains("utf-8") || v.contains("utf8")
-    };
-    let value = if os.is_macos() {
-        "en_US.UTF-8"
-    } else {
-        "C.UTF-8"
-    };
-    match (set(lc_all), set(lc_ctype), set(lang)) {
-        (Some(_), _, _) => None,
-        (None, Some(v), _) | (None, None, Some(v)) if utf8(v) => None,
-        (None, None, None) => Some(("LANG", value)),
-        _ => Some(("LC_CTYPE", value)),
-    }
-}
-
-/// The processes of `procs` (pid, session id) left in the session that
-/// `leader` led. Every job of the session keeps its id, the leader's pid,
-/// unless it calls `setsid` itself, and the system gives that pid to no new
-/// process while one of them lives. So a process with that pid, once the
-/// leader was reaped, means the session is gone and the pid now another
-/// program's: then none. Never the app itself. Unix only: on Windows the
-/// session's Job Object holds them.
-#[cfg_attr(windows, allow(dead_code))]
-pub fn in_session(procs: &[(u32, u32)], leader: u32, leader_running: bool) -> Vec<u32> {
-    if leader == 0 || (!leader_running && procs.iter().any(|&(pid, _)| pid == leader)) {
-        return Vec::new();
-    }
-    let me = std::process::id();
-    procs
-        .iter()
-        .filter(|&&(pid, sid)| sid == leader && pid != me)
-        .map(|&(pid, _)| pid)
-        .collect()
-}
-
-/// The PTY and the program of a session, as the session uses them.
-pub trait Io: Send + Sync {
-    /// Queues `data` for the program; written in order, never blocking.
-    fn write(&self, data: &[u8]) -> Result<()>;
-    fn resize(&self, cols: u16, rows: u16) -> Result<()>;
-    /// The program's process id (also its process group's).
-    fn pid(&self) -> Option<u32>;
-    /// Asks the program to end (`SIGHUP`, as a terminal closing).
-    fn hang_up(&self);
-    /// The processes left in the program's session (see [`in_session`]);
-    /// `leader_running`: the program itself was not reaped yet.
-    fn left(&self, leader_running: bool) -> Vec<u32>;
-    /// Ends `pids` and their trees now.
-    fn kill(&self, pids: &[u32]);
-    /// Lets go of the PTY and of the job: what is left of the program's
-    /// group is killed.
-    fn release(&self);
-    /// The program ended and its output was not closed by the system:
-    /// the PTY lets the reader end (Windows closes the pseudo console,
-    /// whose host would keep the pipe open). Default: nothing.
-    fn program_ended(&self) {}
-}
-
-/// A program started on a new PTY.
-struct Spawned {
-    io: Box<dyn Io>,
-    reader: Box<dyn Read + Send>,
-    /// Waits for the program to end: its exit code (`None`: by a signal).
-    wait: Box<dyn FnOnce() -> Option<u32> + Send>,
-    /// A line of the app shown before the program's output.
-    note: Option<String>,
 }
 
 /// How long the exit of a program waits for its output to end by itself
@@ -719,239 +615,17 @@ impl Sessions {
     }
 }
 
-/// Starts `launch` on a new PTY (unix) with the kit environment only.
-#[cfg(unix)]
-fn spawn(launch: &Launch, env: &crate::env::KitEnv, dir: &Path, lang: &str) -> Result<Spawned> {
-    let spawned = unix::spawn(launch, env, dir, lang)?;
-    let mut child = spawned.child;
-    Ok(Spawned {
-        io: Box::new(spawned.io),
-        reader: spawned.reader,
-        wait: Box::new(move || match child.wait() {
-            Ok(status) if status.signal().is_none() => Some(status.exit_code()),
-            _ => None,
-        }),
-        note: None,
-    })
-}
-
-/// Starts `launch` on a new pseudo console (Windows, `conpty.rs`) with the
-/// kit environment only; without the kit's ConPTY the session says that
-/// Windows' own is used.
-#[cfg(windows)]
+/// Starts `launch` on a new pseudo terminal (`platform::pty`) with the kit
+/// environment only, once [`ready`] says it can.
 fn spawn(launch: &Launch, env: &crate::env::KitEnv, dir: &Path, lang: &str) -> Result<Spawned> {
     ready(launch, dir, lang)?;
-    let mut env = env.clone();
-    env.set("COLORTERM", "truecolor");
-    let spawned = super::conpty::spawn(
-        &launch.program,
-        &launch.args,
-        &env,
-        dir,
-        launch.conpty.as_deref(),
-    )?;
-    let note = spawned.system.then(|| {
-        let text = crate::common::i18n::t(
-            lang,
-            "Il ConPTY del kit non è installato: questo terminale usa quello di Windows, e alcuni programmi (Claude Code) possono non ricevere i tasti.",
-            &[],
-        );
-        format!("\x1b[2m{text}\x1b[0m\r\n")
-    });
-    let process = spawned.process;
-    Ok(Spawned {
-        io: Box::new(spawned.io),
-        reader: Box::new(spawned.reader),
-        wait: Box::new(move || process.wait()),
-        note,
-    })
-}
-
-#[cfg(unix)]
-mod unix {
-    use std::io::{Read, Write};
-    use std::path::Path;
-    use std::sync::mpsc::{channel, Sender};
-    use std::sync::{Mutex, PoisonError};
-
-    use anyhow::{Context, Result};
-    use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
-
-    use super::{Io, Launch};
-    use crate::env::KitEnv;
-    use crate::platform::jobs::Job;
-
-    pub struct Spawned {
-        pub io: PtyIo,
-        pub reader: Box<dyn Read + Send>,
-        pub child: Box<dyn Child + Send + Sync>,
-    }
-
-    pub struct PtyIo {
-        pid: Option<u32>,
-        master: Mutex<Option<Box<dyn MasterPty + Send>>>,
-        input: Mutex<Option<Sender<Vec<u8>>>>,
-        job: Mutex<Option<Job>>,
-    }
-
-    /// The size before the view measures itself (`pty_resize`).
-    const SIZE: PtySize = PtySize {
-        rows: 24,
-        cols: 80,
-        pixel_width: 0,
-        pixel_height: 0,
+    let program = crate::platform::pty::Program {
+        program: &launch.program,
+        args: &launch.args,
+        shell: &launch.shell,
+        conpty: launch.conpty.as_deref(),
     };
-
-    pub fn spawn(launch: &Launch, env: &KitEnv, dir: &Path, lang: &str) -> Result<Spawned> {
-        super::ready(launch, dir, lang)?;
-        let pair = native_pty_system().openpty(SIZE).context("openpty")?;
-        let mut cmd = CommandBuilder::new(&launch.program);
-        cmd.args(&launch.args);
-        cmd.cwd(dir);
-        cmd.env_clear();
-        for (k, v) in env.iter() {
-            cmd.env(k, v);
-        }
-        cmd.env("TERM", "xterm-256color");
-        cmd.env("COLORTERM", "truecolor");
-        cmd.env("SHELL", &launch.shell);
-        let locale = super::utf8_locale(
-            crate::kit::Os::current(),
-            env.get("LC_ALL"),
-            env.get("LC_CTYPE"),
-            env.get("LANG"),
-        );
-        if let Some((name, value)) = locale {
-            cmd.env(name, value);
-        }
-        let mut child = pair
-            .slave
-            .spawn_command(cmd)
-            .with_context(|| format!("starting {}", launch.program.display()))?;
-        // The reader ends only once every copy of the PTY's other side is
-        // closed: the app keeps none.
-        drop(pair.slave);
-        let pid = child.process_id();
-        // The program leads its own group (setsid): the job kills that
-        // group when the session lets it go, as for the app's other jobs.
-        let prepared = (|| -> Result<_> {
-            let job = Job::new()?;
-            let leader: &dyn Child = &*child;
-            let std_child = leader
-                .downcast_ref::<std::process::Child>()
-                .context("pty child is not a std::process::Child")?;
-            job.assign(std_child)?;
-            let reader = pair.master.try_clone_reader().context("pty reader")?;
-            let writer = pair.master.take_writer().context("pty writer")?;
-            Ok((job, reader, writer))
-        })();
-        // Never a session outside the job on any error once it started:
-        // its group would outlive it (BUG-V6-25).
-        let (job, reader, mut writer) = match prepared {
-            Ok(p) => p,
-            Err(e) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(e);
-            }
-        };
-        let (tx, rx) = channel::<Vec<u8>>();
-        std::thread::spawn(move || {
-            for data in rx {
-                if writer
-                    .write_all(&data)
-                    .and_then(|()| writer.flush())
-                    .is_err()
-                {
-                    break;
-                }
-            }
-        });
-        Ok(Spawned {
-            io: PtyIo {
-                pid,
-                master: Mutex::new(Some(pair.master)),
-                input: Mutex::new(Some(tx)),
-                job: Mutex::new(Some(job)),
-            },
-            reader,
-            child,
-        })
-    }
-
-    impl Io for PtyIo {
-        fn write(&self, data: &[u8]) -> Result<()> {
-            let input = self.input.lock().unwrap_or_else(PoisonError::into_inner);
-            match input.as_ref() {
-                Some(tx) => tx.send(data.to_vec()).context("terminal closed"),
-                None => anyhow::bail!("terminal closed"),
-            }
-        }
-
-        fn resize(&self, cols: u16, rows: u16) -> Result<()> {
-            let master = self.master.lock().unwrap_or_else(PoisonError::into_inner);
-            match master.as_ref() {
-                Some(m) => m.resize(PtySize {
-                    rows,
-                    cols,
-                    pixel_width: 0,
-                    pixel_height: 0,
-                }),
-                None => anyhow::bail!("terminal closed"),
-            }
-        }
-
-        fn pid(&self) -> Option<u32> {
-            self.pid
-        }
-
-        fn hang_up(&self) {
-            // Only while the program has not been reaped (the session
-            // checks `running`): its pid cannot belong to another process.
-            if let Some(pid @ 1..) = self.pid.and_then(|p| libc::pid_t::try_from(p).ok()) {
-                // SAFETY: a plain signal to one process.
-                unsafe { libc::kill(pid, libc::SIGHUP) };
-            }
-        }
-
-        fn left(&self, leader_running: bool) -> Vec<u32> {
-            let Some(leader) = self.pid else {
-                return Vec::new();
-            };
-            // Zombies are not listed (no program path): a job that ended
-            // but was not reaped yet does not hold the session up.
-            let procs: Vec<(u32, u32)> = crate::platform::processes::all()
-                .iter()
-                .filter_map(|p| {
-                    let pid = libc::pid_t::try_from(p.pid).ok()?;
-                    // SAFETY: only reads the session id; -1 when it is gone.
-                    let sid = unsafe { libc::getsid(pid) };
-                    Some((p.pid, u32::try_from(sid).ok()?))
-                })
-                .collect();
-            super::in_session(&procs, leader, leader_running)
-        }
-
-        fn kill(&self, pids: &[u32]) {
-            crate::platform::sessions::stop(pids);
-        }
-
-        fn release(&self) {
-            self.input
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .take();
-            self.master
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .take();
-            // Dropping the job kills what is left of the group.
-            self.job
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .take();
-        }
-    }
+    crate::platform::pty::spawn(&program, env, dir, lang)
 }
 
 #[cfg(test)]
