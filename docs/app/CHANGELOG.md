@@ -1,5 +1,12 @@
 # Novità
 
+## Isolamento dei progetti (25/10/2026)
+
+- **«Senza VM» nella barra di stato** (D-167): accanto ad Attività, sul colore di avviso, finché i progetti girano sul PC. Un clic dice perché la VM non è attiva, motivo per motivo (sistema, processore, Hypervisor Platform, KVM, AppArmor, Docker Sandboxes, accesso a Docker), con cosa fare e il comando da copiare; «Ricontrolla» chiede di nuovo. Lo stato si calcola da solo, senza impostazioni.
+- **Docker Sandboxes nel kit**: il componente `sandboxes` mette `sbx` in `data\apps` (su Windows l'MSI estratto senza installarlo, senza amministratore); sandbox, impostazioni e registri restano in `data\home` e viaggiano con il kit; il demone si ferma all'uscita e con «Rimuovi l'unità».
+- **Ambiente sigillato**: terminale, azioni e agenti non ricevono più il percorso del profilo vero, l'agente SSH, il bus di sessione né il login root di MySQL; `mysql` entra con l'utente del progetto. Git lanciato dall'app in un progetto ignora `core.fsmonitor`.
+- **Tutto nella VM** (pronto, acceso dopo la prova con un account Docker): terminale, comandi, server web e MySQL come container della VM sulle versioni del progetto, Claude Code e Codex negli agenti di `sbx`, porte su `127.0.0.1`.
+
 ## Rilascio 0.6.0 alpha (24/10/2026)
 
 - **Versione 0.6.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.6.0` pubblica i file per i sei sistemi.

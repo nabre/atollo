@@ -61,7 +61,7 @@ pub async fn agent_launch<R: Runtime>(
         // `sbx` has none for is not started on the PC instead.
         let base = crate::versions::project_env(&kit, &project, kit_env);
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &base, &project, &dir) {
-            let Some(args) = crate::isolation::vm::agent_args(&vm.name, &agent, &dir) else {
+            let Some(args) = crate::isolation::vm::agent_args(&project, &agent, &dir) else {
                 return Err(crate::common::i18n::t(
                     lang,
                     "{0} non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.",

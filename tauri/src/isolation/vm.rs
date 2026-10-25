@@ -1,5 +1,5 @@
 //! A project in its microVM (D-167): one Docker Sandboxes sandbox per
-//! project, `atollo-<project>`, with the project's folder as its workspace
+//! project, `atollo-p-<project>-<hash>`, with the project's folder as its workspace
 //! (the folder the commands start in). What runs there:
 //!
 //! - the terminal: `sbx exec -it <vm> bash -l`;
@@ -10,7 +10,7 @@
 //!   `mysql:<line>`), on the VM's network, so `127.0.0.1:<DB_PORT>` of the
 //!   project's `.env` reaches its database there as it does on the PC;
 //! - Claude Code and Codex: `sbx`'s own agents, a sandbox each
-//!   (`atollo-<project>-claude`), whose keys the proxy of `sbx` adds to
+//!   (`atollo-a-claude-<project>-<hash>`), whose keys the proxy of `sbx` adds to
 //!   their requests. The other agents have no sandbox: not started.
 //!
 //! The words given to `sh -lc` are quoted for the VM's shell (POSIX):
@@ -18,15 +18,19 @@
 
 use std::path::Path;
 
+use sha2::{Digest, Sha256};
+
 use crate::platform::sh_quote as shell_quote_posix;
 
-/// The prefix of the projects' sandboxes.
+/// The prefix of everything Atollo names in the VMs.
 pub const PREFIX: &str = "atollo-";
 
-/// The sandbox of `project`: `atollo-` and the project's name with what
-/// `sbx` does not take (`[^A-Za-z0-9.-]`) turned into `-`, lower case.
-pub fn name(project: &str) -> String {
-    let body: String = project
+/// `project` readable in a name `sbx` takes (`[a-z0-9.-]`, at most 40
+/// characters), then the first 8 hex digits of the SHA-256 of its exact
+/// name: two projects never share a sandboxes' name, and so never a
+/// workspace (`My Shop` and `my-shop` look the same, their hashes not).
+fn tag(project: &str) -> String {
+    let slug: String = project
         .chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '.' || c == '-' {
@@ -35,8 +39,27 @@ pub fn name(project: &str) -> String {
                 '-'
             }
         })
+        .take(40)
         .collect();
-    format!("{PREFIX}{}", body.trim_matches(['-', '.']))
+    let hash = Sha256::digest(project.as_bytes());
+    let hex: String = hash[..4].iter().map(|b| format!("{b:02x}")).collect();
+    let slug = slug.trim_matches(['-', '.']);
+    if slug.is_empty() {
+        hex
+    } else {
+        format!("{slug}-{hex}")
+    }
+}
+
+/// The sandbox of `project`: `atollo-p-<project>-<hash>`.
+pub fn name(project: &str) -> String {
+    format!("{PREFIX}p-{}", tag(project))
+}
+
+/// The sandbox of `agent` for `project`, in a namespace of its own:
+/// `atollo-a-<agent>-<project>-<hash>`, never a project's.
+pub fn agent_name(project: &str, agent: &str) -> String {
+    format!("{PREFIX}a-{agent}-{}", tag(project))
 }
 
 /// Creates the sandbox the first time, starts it again when stopped:
@@ -66,14 +89,14 @@ pub fn sbx_agent(agent: &str) -> Option<&'static str> {
     }
 }
 
-/// `agent` in its sandbox for the project: `sbx run --name
-/// <vm>-<agent> <agent> <dir>` (created the first time, attached after).
-pub fn agent_args(vm: &str, agent: &str, dir: &Path) -> Option<Vec<String>> {
+/// `agent` in its sandbox for `project`: `sbx run --name <agent_name>
+/// <agent> <dir>` (created the first time, attached after).
+pub fn agent_args(project: &str, agent: &str, dir: &Path) -> Option<Vec<String>> {
     let id = sbx_agent(agent)?;
     Some(vec![
         "run".into(),
         "--name".into(),
-        format!("{vm}-{id}"),
+        agent_name(project, id),
         id.into(),
         dir.display().to_string(),
     ])

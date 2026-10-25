@@ -1657,11 +1657,12 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
   1. Stato automatico, motivi, passi, avviso nella barra di stato.
   2. Ambiente sigillato e Git senza `core.fsmonitor` (sopra).
   3. Tutto nella VM (scelta dell'utente, 25/10/2026: anche server e database), `isolation/vm.rs`:
-     - una sandbox per progetto, `atollo-<progetto>` (agente `shell`, la cartella del progetto come spazio di lavoro), creata o riavviata con `sbx run -d --name … shell <cartella>`;
-     - terminale: `sbx exec -it atollo-<p> bash -l` nel terminale dell'app;
-     - azioni: `sbx exec -e … atollo-<p> sh -lc '<riga>'`, con `HOST=0.0.0.0`, `PORT`, `DB_PORT` e le variabili dell'azione; la porta pubblicata su `127.0.0.1` del PC (`sbx ports`); i server del kit (statico, Apache, Caddy) diventano container del Docker della VM sulle versioni del progetto (`php:<linea>-apache`, `httpd:2.4`), in rete host sulla porta dell'azione; mai un pool del PC;
+     - una sandbox per progetto, `atollo-p-<progetto>-<hash>` (agente `shell`, la cartella del progetto come spazio di lavoro), creata o riavviata con `sbx run -d --name … shell <cartella>`;
+     - nomi: il nome del progetto leggibile (`[a-z0-9.-]`, al più 40 caratteri) e le prime 8 cifre esadecimali dello SHA-256 del nome esatto, così due progetti non condividono mai una sandbox né la sua cartella (`My Shop` e `my-shop`); le sandbox degli agenti in uno spazio di nomi loro (`atollo-a-`), mai quello di un progetto (`atollo-p-`);
+     - terminale: `sbx exec -it <sandbox> bash -l` nel terminale dell'app;
+     - azioni: `sbx exec -e … <sandbox> sh -lc '<riga>'`, con `HOST=0.0.0.0`, `PORT`, `DB_PORT` e le variabili dell'azione; la porta pubblicata su `127.0.0.1` del PC (`sbx ports`); i server del kit (statico, Apache, Caddy) diventano container del Docker della VM sulle versioni del progetto (`php:<linea>-apache`, `httpd:2.4`), in rete host sulla porta dell'azione; mai un pool del PC;
      - MySQL: un container `mysql:<linea>` per VM con l'utente e il database del progetto, password di root casuale, dati in un volume della VM, sulla porta del suo `DB_PORT`: il `.env` del progetto vale uguale;
-     - agenti: Claude Code e Codex negli agenti di `sbx` (una sandbox ciascuno, `atollo-<p>-claude`), le chiavi aggiunte dal proxy di `sbx`; gli altri agenti non partono nella VM (messaggio), mai sul PC al loro posto.
+     - agenti: Claude Code e Codex negli agenti di `sbx` (una sandbox ciascuno, `atollo-a-claude-<progetto>-<hash>`), le chiavi aggiunte dal proxy di `sbx`; gli altri agenti non partono nella VM (messaggio), mai sul PC al loro posto.
   La VM si accende solo dopo una prova dal vero con un account Docker: fino ad allora un PC pronto mostra il motivo «pending» e i progetti restano sul PC, con l'avviso.
 - **Scartate.**
   - Gabbia del sistema (AppContainer, Seatbelt, Landlock) come livello a sé: su Windows l'AppContainer non riceve connessioni su `127.0.0.1` senza un'eccezione da amministratore, e su FAT32/exFAT (le chiavette) non ci sono ACL per separare i progetti; avrebbe dato un terzo stato con garanzie diverse per sistema, difficile da spiegare. Resta un'idea per dopo la fase 3.

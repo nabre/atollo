@@ -1,11 +1,26 @@
 use super::*;
 
+/// The project's name readable, then a hash of its exact name: two
+/// projects never share a sandbox, a project never an agent's.
 #[test]
 fn the_sandbox_is_named_after_the_project() {
-    assert_eq!(name("shop"), "atollo-shop");
-    assert_eq!(name("My_Shop 2"), "atollo-my-shop-2");
-    assert_eq!(name("v1.2"), "atollo-v1.2");
-    assert_eq!(name("_x_"), "atollo-x");
+    let shop = name("shop");
+    assert!(shop.starts_with("atollo-p-shop-"), "{shop}");
+    assert_eq!(shop.len(), "atollo-p-shop-".len() + 8);
+    assert!(name("My_Shop 2").starts_with("atollo-p-my-shop-2-"));
+    assert!(name("v1.2").starts_with("atollo-p-v1.2-"));
+    assert!(name("_x_").starts_with("atollo-p-x-"));
+    // Names that look the same are told apart.
+    assert_ne!(name("My Shop"), name("my-shop"));
+    assert_ne!(name("Shop"), name("shop"));
+    // An agent's sandbox is in its own namespace.
+    assert_ne!(name("shop-claude"), agent_name("shop", "claude"));
+    assert!(agent_name("shop", "claude").starts_with("atollo-a-claude-shop-"));
+    // A name of symbols only is its hash; a long one is cut, its hash kept.
+    assert_eq!(name("___").len(), "atollo-p-".len() + 8);
+    assert!(name(&"a".repeat(100)).len() <= "atollo-p-".len() + 40 + 1 + 8);
+    // The same project, the same sandbox at every start.
+    assert_eq!(name("shop"), shop);
 }
 
 #[test]
@@ -36,13 +51,14 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
 #[test]
 fn only_sbx_agents_have_a_sandbox() {
     let dir = Path::new("/p");
+    let claude = agent_name("shop", "claude");
     assert_eq!(
-        agent_args("atollo-shop", "claude", dir).unwrap(),
-        ["run", "--name", "atollo-shop-claude", "claude", "/p"]
+        agent_args("shop", "claude", dir).unwrap(),
+        ["run", "--name", claude.as_str(), "claude", "/p"]
     );
     assert_eq!(
-        agent_args("atollo-shop", "codex", dir).unwrap()[2],
-        "atollo-shop-codex"
+        agent_args("shop", "codex", dir).unwrap()[2],
+        agent_name("shop", "codex")
     );
     assert_eq!(agent_args("atollo-shop", "antigravity", dir), None);
     assert_eq!(agent_args("atollo-shop", "pi", dir), None);
