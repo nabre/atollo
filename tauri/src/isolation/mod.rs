@@ -25,6 +25,7 @@ use crate::platform::virt::{self, Gap};
 
 pub mod daemon;
 pub mod kit;
+pub mod secrets;
 pub mod vm;
 
 /// How long a status stays good: `sbx` is asked at most once a minute.
@@ -206,6 +207,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
                 blockers.push(b);
             } else if let Sbx::Kit(_) = sbx {
                 daemon_settings(sbx, host, env);
+                kit_secrets(kit, sbx, host, env);
             }
         }
     }
@@ -297,6 +299,49 @@ fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
         return;
     }
     daemon_call(sbx, host, env, &["daemon", "restart"]);
+}
+
+/// The kit's secrets in the kit's `sbx` ([`secrets`], D-172): GitHub's,
+/// as a command of the app, when the kit is signed in to GitHub and the
+/// secret is not the user's own. Failures only go to the log: the VMs
+/// work without it.
+fn kit_secrets(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+    let Some(exe) = crate::kit::app_exe() else {
+        return;
+    };
+    let command = secrets::github_command(&exe, kit.target().is_windows());
+    let computer = host
+        .get("COMPUTERNAME")
+        .or(host.get("HOSTNAME"))
+        .unwrap_or("pc")
+        .to_owned();
+    let Ok(ls) = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT) else {
+        return;
+    };
+    let noted = secrets::noted(kit);
+    let mine = noted
+        .get("github")
+        .and_then(|list| list.iter().find(|n| n.computer == computer));
+    let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), "github");
+    if secrets::step(listed, mine, &command) == secrets::Step::Keep {
+        return;
+    }
+    if crate::github::token(kit, env).is_none() {
+        return;
+    }
+    let args = ["secret", "set", "github", "--command", command.as_str()];
+    match run(sbx, host, env, &args, ASK_LIMIT) {
+        Ok(out) if out.status.success() => {
+            if let Err(e) = secrets::note(kit, "github", &computer, &command) {
+                crate::common::log::warn(&format!("secrets.json: {e:#}"));
+            }
+        }
+        Ok(out) => crate::common::log::warn(&format!(
+            "sbx secret set github: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )),
+        Err(e) => crate::common::log::warn(&format!("sbx secret set github: {e}")),
+    }
 }
 
 /// True when `sbx ls --json` lists a running sandbox.

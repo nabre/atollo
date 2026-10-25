@@ -217,6 +217,16 @@ fn run() -> i32 {
                 }
             };
         }
+        Cli::SecretGithub => {
+            // Standard output is the token only; nothing else is written.
+            return match github::token(&kit, &kit_env) {
+                Some(token) => {
+                    println!("{token}");
+                    0
+                }
+                None => 1,
+            };
+        }
         Cli::McpGithub => {
             // Standard output is the agent's MCP channel: errors on stderr.
             return match agents::github_mcp::run(&kit, &kit_env, &loaded.settings) {

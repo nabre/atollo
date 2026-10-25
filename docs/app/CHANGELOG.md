@@ -1,5 +1,9 @@
 # Novità
 
+## GitHub nella VM senza il token (25/10/2026)
+
+- **`git push` e `gh` dalla VM** (D-172): con il kit collegato a GitHub, il proxy di Docker Sandboxes aggiunge l'accesso alle richieste verso GitHub. Nella VM c'è solo un segnaposto; Atollo non copia il token, dà a Docker Sandboxes un comando del kit che lo legge quando serve. Un accesso a GitHub che avevi già dato a Docker Sandboxes non viene toccato.
+
 ## Il database del progetto resta sul PC (25/10/2026)
 
 - **La VM non tocca il server** (D-171): il database di un progetto nella VM è quello del kit, sul PC, come senza VM. La VM ne raggiunge solo la porta, aperta per quella sola sandbox, e vi entra come l'utente del progetto: legge e scrive i suoi dati, non gli altri database né la configurazione del server. Pagina Database, copie di sicurezza e phpMyAdmin restano gli stessi.
