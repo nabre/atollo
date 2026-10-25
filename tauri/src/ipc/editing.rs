@@ -98,7 +98,7 @@ pub async fn terminal_open<R: Runtime>(
                 )
                 })?;
             let args = crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, vm.tools());
-            let launch = vm.launch(&kit, args, "VM");
+            let launch = vm.launch(&kit, args, "VM", lang).or_fail_chain("vm")?;
             return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
                 .or_fail_chain("terminal");
         }

@@ -1130,15 +1130,7 @@ impl Vm {
     /// kit's tools were mounted, D-170) is mounted with `sbx mount`, its
     /// disk kept ([`Vm::mount_missing`]).
     pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
-        // A daemon that has not restarted with the kit's settings yet (no
-        // SSH agent of the PC in the VMs) starts no sandbox.
-        if matches!(self.sbx, Sbx::Kit(_)) && restart_pending(&self.kit) {
-            anyhow::bail!(crate::common::i18n::t(
-                lang,
-                "Docker Sandboxes deve ripartire per un'impostazione di sicurezza: chiudi le sessioni nella VM, poi «Ricontrolla» nella finestra della VM e riprova.",
-                &[],
-            ));
-        }
+        self.ready(lang)?;
         let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
         let mounts = self.mounts();
         if self.exists(env)? {
@@ -1291,10 +1283,39 @@ impl Vm {
         self.call(env, &vm::publish_args(&self.name, port), ASK_LIMIT)
     }
 
-    /// The session of the app's terminal for `args` (`vm::terminal_args`,
-    /// `vm::agent_args`), titled `what`.
-    pub fn launch(&self, kit: &Kit, args: Vec<String>, what: &str) -> crate::editor::pty::Launch {
-        crate::editor::pty::program(kit, self.sbx.path(), args, &self.dir, what)
+    /// The session of the app's terminal for `args` (`vm::kit_terminal_args`,
+    /// `vm::agent_args`), titled `what`; refused while [`Vm::ready`] is not
+    /// (an agent's `sbx run` makes its sandbox without [`Vm::start`]).
+    pub fn launch(
+        &self,
+        kit: &Kit,
+        args: Vec<String>,
+        what: &str,
+        lang: &str,
+    ) -> anyhow::Result<crate::editor::pty::Launch> {
+        self.ready(lang)?;
+        Ok(crate::editor::pty::program(
+            kit,
+            self.sbx.path(),
+            args,
+            &self.dir,
+            what,
+        ))
+    }
+
+    /// The one gate of every way into a sandbox (start, sessions, agents):
+    /// a daemon that has not restarted with the kit's settings yet (no SSH
+    /// agent of the PC in the VMs) starts and opens nothing, and never
+    /// falls back to the PC.
+    fn ready(&self, lang: &str) -> anyhow::Result<()> {
+        if matches!(self.sbx, Sbx::Kit(_)) && restart_pending(&self.kit) {
+            anyhow::bail!(crate::common::i18n::t(
+                lang,
+                "Docker Sandboxes deve ripartire per un'impostazione di sicurezza: chiudi le sessioni nella VM, poi «Ricontrolla» nella finestra della VM e riprova.",
+                &[],
+            ));
+        }
+        Ok(())
     }
 
     /// The environment of that session ([`Sbx::session_env`]).
