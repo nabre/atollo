@@ -497,47 +497,91 @@ pub fn kit_terminal_vm(
     })
 }
 
-/// True when `dir` must not be a VM's writable workspace: what the VM
-/// writes there the PC could run. A drive's root; a folder holding the kit
-/// or the user's profile (the kit's Windows programs, the profile's start
-/// files, and the read-only mount of the tools reachable again through
-/// it); a folder inside the kit's `data` or the profile's settings
-/// (`AppData`, `.config`, `.local`, `Library`). Canonical paths, so a link
-/// or a junction does not get around it; a folder that cannot be read is
-/// refused too.
-pub fn workspace_refused(kit: &Kit, host: &Host, dir: &Path) -> bool {
-    let canon = |p: &Path| std::fs::canonicalize(p).ok();
-    let Some(dir) = canon(dir) else {
-        return true;
-    };
-    if dir.parent().is_none() {
-        return true;
+/// True when the VM is on (the level of the last status).
+pub fn vm_on(kit: &Kit, host: &Host, env: &KitEnv) -> bool {
+    status(kit, host, env, false).level == Level::Vm
+}
+
+/// `dir` as a VM's writable workspace, when it may be one: its canonical
+/// path, the one to mount, so the folder checked is the folder the VM gets.
+/// What the VM writes there the PC must never run, so it is refused:
+///
+/// - when it or a folder above it is a link or a junction;
+/// - a drive's root;
+/// - anything in the kit or in the user's profile, or holding either (the
+///   kit's programs and launchers, the profile's start files, PowerShell
+///   profiles, `.ssh`, the agents' settings…, and the tools mounted
+///   read-only, reachable again through it), except the kit's `projects`;
+/// - the system's folders (Windows, Program Files, ProgramData; `/etc`,
+///   `/usr`…), or one holding them.
+///
+/// Elsewhere (`D:\Siti\shop`) it may.
+pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
+    if !dir.is_absolute() || dir.ancestors().any(crate::platform::safe_path::is_link) {
+        return None;
+    }
+    let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));
+    let dir = canon(dir)?;
+    dir.parent()?;
+    if canon(&kit.projects()).is_some_and(|p| dir.starts_with(p)) {
+        return Some(dir);
     }
     let profile = host
         .get("CP_USER_PROFILE")
         .or(host.get("USERPROFILE"))
         .or(host.get("HOME"))
         .map(PathBuf::from);
-    let held: Vec<PathBuf> = [Some(kit.root().to_path_buf()), profile.clone()]
+    let mut guarded: Vec<PathBuf> = [Some(kit.root().to_path_buf()), profile]
         .into_iter()
         .flatten()
-        .filter_map(|p| canon(&p))
         .collect();
-    if held.iter().any(|p| p.starts_with(&dir)) {
-        return true;
-    }
-    let mut settings = vec![kit.data()];
-    if let Some(profile) = profile {
-        settings.extend(
-            ["AppData", ".config", ".local", "Library"]
-                .iter()
-                .map(|d| profile.join(d)),
+    if kit.target().is_windows() {
+        guarded.extend(
+            [
+                "SystemRoot",
+                "ProgramFiles",
+                "ProgramFiles(x86)",
+                "ProgramData",
+            ]
+            .iter()
+            .filter_map(|v| host.get(v))
+            .map(PathBuf::from),
+        );
+    } else {
+        guarded.extend(
+            [
+                "/bin",
+                "/boot",
+                "/etc",
+                "/lib",
+                "/lib64",
+                "/opt",
+                "/sbin",
+                "/usr",
+                "/var",
+                "/Applications",
+                "/Library",
+                "/System",
+            ]
+            .iter()
+            .map(PathBuf::from),
         );
     }
-    settings
+    let near = guarded
         .iter()
         .filter_map(|p| canon(p))
-        .any(|p| dir.starts_with(p))
+        .any(|p| dir.starts_with(&p) || p.starts_with(&dir));
+    (!near).then_some(dir)
+}
+
+/// A canonical Windows path without its `\\?\` (`D:\a`, as `sbx` and the
+/// user write it); a network one (`\\?\UNC\…`) and the others as they are.
+fn plain(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
+        _ => path.to_path_buf(),
+    }
 }
 
 /// The kit's tools for the VM's Linux in the kit's terminal `terminal`:

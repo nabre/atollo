@@ -76,30 +76,60 @@ fn a_kit_terminal_gets_the_kits_tools_for_linux() {
 /// profile's settings; a project's folder and the projects' folder are fine.
 #[test]
 fn a_vm_never_gets_the_kit_or_the_profile_writable() {
-    let (tmp, kit) = crate::test_support::prepared_kit("isolation-workspace");
-    let profile = tmp.0.join("user");
-    let code = profile.join("code").join("shop");
-    let appdata = profile.join("AppData").join("Roaming");
-    for d in [&code, &appdata, &kit.projects().join("shop"), &kit.data()] {
+    // The kit is its whole temporary folder; the PC's other folders are in
+    // another one.
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-workspace");
+    let pc = crate::kit::tests::TempDir::new("isolation-workspace-pc");
+    let profile = pc.0.join("user");
+    let in_profile = profile.join("Documents").join("shop");
+    let sites = pc.0.join("sites").join("shop");
+    let system = pc.0.join("Windows");
+    for d in [
+        &in_profile,
+        &sites,
+        &system,
+        &kit.projects().join("shop"),
+        &kit.data(),
+    ] {
         std::fs::create_dir_all(d).unwrap();
     }
-    let host = Host::from_pairs([("USERPROFILE".into(), profile.clone().into_os_string())]);
-    let refused = |d: &Path| workspace_refused(&kit, &host, d);
-    assert!(!refused(&kit.projects()));
-    assert!(!refused(&kit.projects().join("shop")));
-    assert!(!refused(&code));
-    assert!(refused(kit.root()), "the kit's root");
-    assert!(refused(&tmp.0), "a folder holding the kit and the profile");
-    assert!(refused(&profile), "the profile");
-    assert!(refused(&kit.data()), "the kit's data");
-    assert!(refused(&kit.apps()), "inside the kit's data");
-    assert!(refused(&appdata), "the profile's settings");
-    assert!(
-        refused(&tmp.0.join("missing")),
-        "a folder that cannot be read"
+    let host = Host::from_pairs([
+        ("USERPROFILE".into(), profile.clone().into_os_string()),
+        ("SystemRoot".into(), system.clone().into_os_string()),
+        ("HOME".into(), profile.clone().into_os_string()),
+    ]);
+    let allowed = |d: &Path| vm_workspace(&kit, &host, d);
+    // The kit's projects, and a folder elsewhere, as their canonical path.
+    let shop = allowed(&kit.projects().join("shop")).expect("a project of the kit");
+    assert_eq!(
+        shop,
+        plain(&std::fs::canonicalize(kit.projects().join("shop")).unwrap())
     );
+    assert!(!shop.to_string_lossy().starts_with(r"\\?\"), "{shop:?}");
+    assert!(allowed(&kit.projects()).is_some());
+    assert!(allowed(&sites).is_some(), "a folder elsewhere");
+    // Never the kit, the profile, the system, nor what holds them.
+    assert_eq!(allowed(kit.root()), None, "the kit's root");
+    assert_eq!(allowed(&kit.data()), None, "the kit's data");
+    assert_eq!(
+        allowed(pc.0.parent().unwrap()),
+        None,
+        "holding the kit and the profile"
+    );
+    assert_eq!(allowed(&profile), None, "the profile");
+    assert_eq!(allowed(&in_profile), None, "anything in the profile");
+    if kit.target().is_windows() {
+        assert_eq!(allowed(&system), None, "the system's folder");
+    }
+    assert_eq!(allowed(&pc.0.join("missing")), None, "unreadable");
+    assert_eq!(allowed(Path::new("relative")), None);
     let root = kit.root().ancestors().last().unwrap();
-    assert!(refused(root), "a drive's root");
+    assert_eq!(allowed(root), None, "a drive's root");
+    // A link on the way: the folder checked would not be the one mounted.
+    let linked = pc.0.join("linked");
+    crate::platform::safe_path::tests::junction(&linked, &sites);
+    assert_eq!(allowed(&linked), None, "a junction");
+    assert_eq!(allowed(&linked.join("x")), None, "under a junction");
 }
 
 #[test]

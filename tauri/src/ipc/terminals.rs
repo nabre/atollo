@@ -70,29 +70,31 @@ pub async fn terminal_launch<R: Runtime>(
         let env = terminals::env(&kit, &terminal, ensure(&app, &task, &kit, lang, &[])?);
         // In a microVM of its own when the VM is on (D-167), with the kit's
         // tools for its Linux.
-        if let Some(guest) = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t)) {
+        let guest = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t));
+        if let Some(guest) = guest.filter(|_| crate::isolation::vm_on(&kit, &host, &env)) {
+            // Never a folder whose files the PC runs, writable from the VM;
+            // from here on only the folder checked, canonical, is used.
+            let Some(workspace) = crate::isolation::vm_workspace(&kit, &host, &dir) else {
+                return Err(crate::common::i18n::t(
+                    lang,
+                    "La cartella {0} non si apre nella VM: è la radice di un disco, un link, una cartella di sistema, o è nel kit o nel tuo profilo (salvo i progetti del kit). Scegli la cartella di un progetto.",
+                    &[&dir.display().to_string()],
+                )
+                .into());
+            };
+            let windows = kit.target().is_windows();
+            let Some(guest_dir) = crate::isolation::vm::guest_path(windows, &workspace) else {
+                return Err(crate::common::i18n::t(
+                    lang,
+                    "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
+                    &[&dir.display().to_string()],
+                )
+                .into());
+            };
             let apps = guest.apps();
             if let Some(vm) =
-                crate::isolation::kit_terminal_vm(&kit, &host, &env, &terminal.id, &dir, &apps)
+                crate::isolation::kit_terminal_vm(&kit, &host, &env, &terminal.id, &workspace, &apps)
             {
-                let windows = kit.target().is_windows();
-                let Some(guest_dir) = crate::isolation::vm::guest_path(windows, &dir) else {
-                    return Err(crate::common::i18n::t(
-                        lang,
-                        "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
-                        &[&dir.display().to_string()],
-                    )
-                    .into());
-                };
-                // Never a folder whose files the PC runs, writable from the VM.
-                if crate::isolation::workspace_refused(&kit, &host, &dir) {
-                    return Err(crate::common::i18n::t(
-                        lang,
-                        "La cartella {0} non si apre nella VM: è la radice di un disco, contiene il kit o il tuo profilo, o è fra i loro file. Scegli la cartella di un progetto.",
-                        &[&dir.display().to_string()],
-                    )
-                    .into());
-                }
                 ensure_guest_tools(&app, &task, &guest, &terminal);
                 std::fs::create_dir_all(&apps).or_fail("terminals")?;
                 let base = KitEnv::build(&guest, &Settings::load(&kit).settings, lang, &host);
@@ -101,7 +103,7 @@ pub async fn terminal_launch<R: Runtime>(
                 let args =
                     crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, &path, &vars);
                 let launch = vm.launch(&kit, args, "VM");
-                return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
+                return terminal::open_launch(&app, &vm.session_env(&env), &workspace, launch)
                     .or_fail_chain("terminal");
             }
         }
