@@ -42,6 +42,9 @@ pub struct TargetToolStatus {
     /// Why it is not available, already translated (see
     /// [`unavailable_reason`]); `None` when available or `no_arm64`.
     pub unavailable_reason: Option<String>,
+    /// On the PC's system with the VM on: a tool the VM runs with its build
+    /// for Linux, not needed here (D-174).
+    pub via_vm: bool,
 }
 
 /// Summary of a [`Target`]'s tools on disk inside `data/apps/<target>` and
@@ -125,6 +128,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             first_start,
             no_arm64,
             unavailable_reason,
+            via_vm: false,
         });
     }
 

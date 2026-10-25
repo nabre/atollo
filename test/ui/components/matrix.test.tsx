@@ -59,13 +59,14 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
   firstStart: false,
   noArm64: false,
   unavailableReason: null,
+  viaVm: false,
   ...extra,
 });
 
 /** This PC Windows ARM64: x64 Windows in emulation, the others not run here.
  *  The cells say what the catalog says: R not on Windows ARM64, Android SDK
  *  x64 there and missing on Linux ARM64. */
-function grid(chosen: TargetGrid["chosen"] = null): TargetGrid {
+function grid(chosen: TargetGrid["chosen"] = null, vm: TargetGrid["vm"] = null): TargetGrid {
   const profiles: TargetProfile[] = TARGETS.map((id) => {
     const [os, arch] = id.split("-") as [TargetProfile["os"], TargetProfile["arch"]];
     return {
@@ -99,6 +100,7 @@ function grid(chosen: TargetGrid["chosen"] = null): TargetGrid {
   return {
     profiles,
     chosen,
+    vm,
     targets: profiles.map(({ id, ...p }) => ({
       ...p,
       target: id,
@@ -197,6 +199,21 @@ describe("TargetMatrix", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Git, Windows ARM64/ }));
     const own = screen.getByRole("region", { name: "Git su Windows ARM64" });
     expect(within(own).queryByRole("button", { name: "Mostra questo sistema" })).toBeNull();
+  });
+
+  it("marks the VM's column, and a tool of the PC's system the VM runs (D-174)", () => {
+    const g = grid(null, "linux-arm64");
+    const pc = g.targets.find((s) => s.target === "win32-arm64");
+    if (!pc) throw new Error("no column");
+    pc.tools = pc.tools.map((x) => (x.id === "git" ? { ...x, viaVm: true } : x));
+    render(<TargetMatrix state={fakeState({ grid: g })} onOpen={vi.fn()} />);
+    const heads = within(screen.getByRole("table", { name: "Matrice componente-sistema" })).getAllByRole(
+      "columnheader",
+    );
+    expect(heads.find((h) => h.textContent.includes("linux-arm64"))?.textContent).toContain("VM");
+    expect(heads.find((h) => h.textContent.includes("linux-x64"))?.textContent).not.toContain("VM");
+    expect(screen.getByRole("button", { name: "Git, Windows ARM64: nella VM" })).toBeTruthy();
+    expect(cellState(status("x", { viaVm: true, available: false }))).toBe("vm");
   });
 
   it("says when the grid cannot be read", () => {

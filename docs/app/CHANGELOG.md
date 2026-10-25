@@ -5,6 +5,7 @@
 - **Meno spazio** (D-173): con la VM attiva, «Installa» in Linguaggi e strumenti scarica i linguaggi e gli altri strumenti solo per il Linux della VM; per il PC restano PowerShell 7, GitHub CLI, l'editor, ConPTY e Docker Sandboxes. Lo stesso per uno strumento installato da solo, per una versione in più e per «Installa i mancanti» di un progetto.
 - Gli strumenti già installati per il PC restano: servono se un giorno la VM manca; per liberare spazio, toglili dalla scelta.
 - **Più sicurezza**: Docker Sandboxes non riparte mai senza le impostazioni di sicurezza del kit, e nessuna sandbox si apre finché non è ripartito.
+- **La matrice con la VM** (D-174): nella Matrice di Linguaggi e strumenti la colonna del Linux della VM porta «VM», e nella colonna del tuo sistema gli strumenti che girano nella VM dicono «nella VM»: lì non servono.
 
 ## GitHub nella VM senza il token (25/10/2026)
 

@@ -1752,3 +1752,12 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
   - Sul PC non si toglie da sé uno strumento già installato: serve se un giorno la VM manca (un altro PC), e lo spazio si libera togliendolo dalla scelta. Gli agenti nella VM sono quelli di `sbx`: nessuna installazione sul PC per loro (la strada della VM esce prima di `ensure`).
 - **Resta per D-174 (matrice):** la pagina Linguaggi e strumenti mostra ancora lo stato degli strumenti sul sistema del PC; la colonna del Linux della VM e «non serve sul PC» vanno nella matrice.
 - **Prove.** `test/rust/setup/runner.rs` (`the_vm_splits_the_system_and_the_tools`: la passata del PC prepara i componenti di sistema e toglie ciò che non è più scelto, quella del Linux prepara gli strumenti, niente di sistema né Rust, non toglie nulla), `test/rust/projects/mod.rs` (`addable` per il Linux della VM).
+
+## D-174 La matrice con la VM
+
+- **Richiesta dell'utente** (25/10/2026): «devi quindi migliorare la matrice».
+- **Scelta.** Con la VM attiva la griglia componenti × sistemi (D-121) dice chi serve dove:
+  - la colonna del Linux della VM porta il segno «VM» (`TargetGrid::vm`);
+  - nella colonna del sistema del PC, uno strumento che la VM esegue con la sua build per Linux (non i componenti di sistema, non le parti dell'app, non ciò che si completa solo sul suo sistema, come Rust) ha lo stato nuovo «nella VM» (`TargetToolStatus::via_vm`, `ipc::setup::mark_via_vm`), con la spiegazione nella legenda: su quel sistema non serve. Lo stato viene prima degli altri: ciò che conta è dove gira.
+  - Senza VM la griglia è com'era.
+- **Prove.** `test/rust/ipc/setup.rs` (`the_grid_marks_the_vm`), `test/ui/components/matrix.test.tsx` (colonna «VM», cella «nella VM»).

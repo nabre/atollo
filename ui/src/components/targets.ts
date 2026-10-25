@@ -43,14 +43,16 @@ export function targetLabel(id: string, profiles: TargetProfile[]): string {
 }
 
 /** The states of a cell of the grid, in the order of the legend. */
-export const CELL_STATES = ["available", "emulated", "staged", "firstStart", "unavailable"] as const;
+export const CELL_STATES = ["available", "vm", "emulated", "staged", "firstStart", "unavailable"] as const;
 
 export type CellState = (typeof CELL_STATES)[number];
 
 /** The state of a component on a system: not available (with the reason),
- * pre-downloaded, completing on the first start there, in emulation, or
- * available. */
+ * pre-downloaded, completing on the first start there, in emulation, run
+ * in the VM with its build for Linux (the PC's system with the VM on,
+ * D-174), or available. */
 export function cellState(s: TargetToolStatus): CellState {
+  if (s.viaVm) return "vm";
   if (!s.available) return "unavailable";
   if (s.bootstrapStaged) return "staged";
   if (s.firstStart) return "firstStart";
@@ -61,6 +63,7 @@ export function cellState(s: TargetToolStatus): CellState {
 export function cellLabel(state: CellState): string {
   return {
     available: t("disponibile"),
+    vm: t("nella VM"),
     emulated: t("in emulazione"),
     staged: t("pre-installato"),
     firstStart: t("si completa al primo avvio"),
@@ -72,6 +75,7 @@ export function cellLabel(state: CellState): string {
 export function cellHint(state: CellState): string {
   return {
     available: t("Si installa e gira con la build per questo sistema."),
+    vm: t("Con la VM attiva gira nella VM, con la build per Linux: su questo sistema non serve."),
     emulated: t("Si installa la build x64, che il sistema esegue in emulazione."),
     staged: t("Gli archivi sono già nel kit: l'installazione termina al primo avvio su quel sistema."),
     firstStart: t(

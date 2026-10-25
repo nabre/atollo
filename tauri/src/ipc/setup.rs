@@ -120,6 +120,9 @@ pub struct TargetGrid {
     pub targets: Vec<crate::router::probe::TargetSummary>,
     /// `tools_target` of settings.json, when it is a system the app knows.
     pub chosen: Option<String>,
+    /// The VM's Linux when the VM is on (D-174): its column is the VM's,
+    /// and the tools on the PC's column are not needed there.
+    pub vm: Option<String>,
 }
 
 /// The grid: off the window's thread, it reads the disk of the six systems.
@@ -130,21 +133,51 @@ pub async fn target_profiles<R: Runtime>(
 ) -> CmdResult<TargetGrid> {
     ensure_main(&webview)?;
     let (kit, lang) = (state.kit.clone(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || target_grid(&kit, lang))
+    let vm = vm_tools_target(&state);
+    tauri::async_runtime::spawn_blocking(move || target_grid(&kit, lang, vm))
         .await
         .or_fail("targets")
 }
 
-pub(super) fn target_grid(kit: &Kit, lang: &str) -> TargetGrid {
+pub(super) fn target_grid(kit: &Kit, lang: &str, vm: Option<crate::kit::Target>) -> TargetGrid {
     let chosen = Settings::load(kit)
         .settings
         .tools_target
         .and_then(|t| crate::kit::Target::parse(&t))
         .map(|t| t.as_str().to_owned());
+    let mut targets = crate::router::probe::probe_all_targets(kit, lang);
+    if let Some(guest) = vm {
+        mark_via_vm(&mut targets, kit.target(), guest);
+    }
     TargetGrid {
         profiles: crate::router::target::all_profiles(),
-        targets: crate::router::probe::probe_all_targets(kit, lang),
+        targets,
         chosen,
+        vm: vm.map(|t| t.as_str().to_owned()),
+    }
+}
+
+/// With the VM on (D-174): on the PC's column (`host`), the tools the VM
+/// runs with its build for `guest` (not the system components or the
+/// parts of the app, nor what only finishes on its own system) are not
+/// needed on the PC.
+pub(super) fn mark_via_vm(
+    targets: &mut [crate::router::probe::TargetSummary],
+    host: crate::kit::Target,
+    guest: crate::kit::Target,
+) {
+    let catalog = Catalog::get();
+    let locked = catalog.locked_on(host);
+    let Some(column) = targets.iter_mut().find(|t| t.target == host.as_str()) else {
+        return;
+    };
+    for tool in &mut column.tools {
+        let Some(c) = catalog.find(&tool.id) else {
+            continue;
+        };
+        let staged = crate::install::installer(&c.id)
+            .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, guest));
+        tool.via_vm = !locked.contains(tool.id.as_str()) && c.is_available_on(guest) && !staged;
     }
 }
 
