@@ -650,6 +650,18 @@ pub fn vm_list(kit: &Kit, host: &Host, env: &KitEnv) -> anyhow::Result<VmList> {
     })
 }
 
+/// The workspace of sandbox `name` in `sbx ls --json`: the first of its
+/// `workspaces`.
+pub(crate) fn workspace_of(json: &str, name: &str) -> Option<String> {
+    let list: Vec<serde_json::Value> = serde_json::from_str(json).ok()?;
+    list.iter()
+        .find(|s| s["name"] == name)?
+        .get("workspaces")?
+        .get(0)?
+        .as_str()
+        .map(str::to_owned)
+}
+
 /// A name of one of Atollo's sandboxes: `atollo-` and `[a-z0-9.-]`.
 pub fn is_atollos(name: &str) -> bool {
     name.strip_prefix(vm::PREFIX).is_some_and(|rest| {
@@ -975,14 +987,20 @@ impl Vm {
     fn mount_missing(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
         let noted = kit::mounts(&self.kit, &self.name).unwrap_or_default();
         let lines: Vec<&str> = noted.lines().collect();
-        if let Some(workspace) = lines.first() {
-            if *workspace != self.dir.display().to_string() {
-                anyhow::bail!(crate::common::i18n::t(
-                    lang,
-                    "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.",
-                    &[&self.name],
-                ));
-            }
+        // Nothing noted is nothing known: the workspace `sbx` has, checked,
+        // never taken for this one.
+        let workspace = match lines.first() {
+            Some(w) => (*w).to_owned(),
+            None => self.workspace(env)?.unwrap_or_default(),
+        };
+        let same = crate::platform::processes::path_key(&workspace)
+            == crate::platform::processes::path_key(&self.dir.display().to_string());
+        if !same {
+            anyhow::bail!(crate::common::i18n::t(
+                lang,
+                "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.",
+                &[&self.name],
+            ));
         }
         let windows = self.kit.target().is_windows();
         let mut changed = noted.is_empty();
@@ -1009,6 +1027,22 @@ impl Vm {
             kit::mark_mounts(&self.kit, &self.name, &self.mounts())?;
         }
         Ok(())
+    }
+
+    /// The workspace `sbx` has for this sandbox (`sbx ls --json`, the first
+    /// of its `workspaces`), if any.
+    fn workspace(&self, env: &KitEnv) -> anyhow::Result<Option<String>> {
+        let out = run(&self.sbx, &self.host, env, &["ls", "--json"], ASK_LIMIT)
+            .map_err(anyhow::Error::msg)?;
+        anyhow::ensure!(
+            out.status.success(),
+            "sbx ls: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+        Ok(workspace_of(
+            &String::from_utf8_lossy(&out.stdout),
+            &self.name,
+        ))
     }
 
     /// The folders this sandbox mounts, one per line: the workspace, then

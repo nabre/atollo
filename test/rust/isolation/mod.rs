@@ -246,6 +246,21 @@ fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
     );
 }
 
+/// A sandbox made before its mounts were noted: its workspace is the one
+/// `sbx` says (sbx 0.49.2's `ls --json`), never assumed.
+#[test]
+fn an_unnoted_sandbox_has_the_workspace_sbx_says() {
+    let json = r#"[{"name":"atollo-p-a","workspaces":["D:\\kit\\projects\\a"]},
+                   {"name":"atollo-p-b","workspaces":[]}]"#;
+    assert_eq!(
+        workspace_of(json, "atollo-p-a").as_deref(),
+        Some(r"D:\kit\projects\a")
+    );
+    assert_eq!(workspace_of(json, "atollo-p-b"), None);
+    assert_eq!(workspace_of(json, "atollo-p-c"), None);
+    assert_eq!(workspace_of("not json", "atollo-p-a"), None);
+}
+
 #[test]
 fn no_blocker_is_the_vm() {
     assert_eq!(Status::of(Vec::new(), None).level, Level::Vm);
