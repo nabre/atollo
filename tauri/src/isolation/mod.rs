@@ -28,6 +28,7 @@ use crate::platform::virt::{self, Gap};
 pub mod daemon;
 pub mod kit;
 pub mod secrets;
+pub mod session;
 pub mod vm;
 
 /// How long a status stays good: `sbx` is asked at most once a minute.
@@ -853,8 +854,7 @@ pub struct VmInfo {
 pub struct VmList {
     pub vms: Vec<VmInfo>,
     /// Bytes the kit daemon's state takes on the disk (images, the VMs'
-    /// disks, sparse): `None` for the PC's `sbx`, which keeps them where
-    /// the user installed it.
+    /// disks, sparse): `None` before the kit's daemon ever ran.
     pub disk: Option<u64>,
 }
 
@@ -1194,6 +1194,24 @@ pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
 }
 
 impl Vm {
+    /// The VM of `project` in `dir` with an `sbx` named `sbx` (the tests).
+    #[cfg(test)]
+    pub(crate) fn for_tests(kit: &Kit, project: &str, dir: &Path) -> Vm {
+        Vm {
+            sbx: Sbx(PathBuf::from("sbx")),
+            host: Host::default(),
+            name: vm::name(project),
+            dir: dir.to_path_buf(),
+            read_only: Vec::new(),
+            kit: kit.clone(),
+            owner: kit::Owner::Project {
+                project: project.to_owned(),
+            },
+            tools: GuestTools::default(),
+            host_ports: Vec::new(),
+        }
+    }
+
     /// A command of `sbx` with `args`, with its environment.
     pub fn command(&self, env: &KitEnv, args: &[String]) -> std::process::Command {
         let mut cmd = self.sbx.command(env, &self.host);

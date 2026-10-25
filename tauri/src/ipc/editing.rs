@@ -35,6 +35,7 @@ pub async fn editor_open<R: Runtime>(
     .await
     .or_fail("editor")??;
     let _ = app.emit_to(MAIN, super::events::EDITOR_STATUS, state.editor.status());
+    editor_vm_session(&app, &state, &project, &dir);
     let url = editor::url(port, &token, Some(&dir));
     editor::window::open(
         &app,
@@ -46,6 +47,57 @@ pub async fn editor_open<R: Runtime>(
         lang,
     )
     .or_fail_chain("editor window")
+}
+
+/// The project's VM for the editor's terminals, tasks and agents (D-175,
+/// `isolation::session`), made ready off the window's opening: a terminal
+/// opened meanwhile waits for it. Without the VM, the editor's terminals
+/// are the kit's on the PC.
+fn editor_vm_session<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &State<'_, AppState>,
+    project: &str,
+    dir: &std::path::Path,
+) {
+    use crate::isolation::session;
+    let (app, task, kit, lang) = (
+        app.clone(),
+        Arc::clone(&state.setup),
+        state.kit.clone(),
+        state.lang(),
+    );
+    let (host, services, kit_env) = (state.host.clone(), Arc::clone(&state.services), state.env());
+    let (project, dir) = (project.to_owned(), dir.to_path_buf());
+    std::thread::spawn(move || {
+        let env = crate::versions::project_env(&kit, &project, kit_env.clone());
+        let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) else {
+            let cleared =
+                session::mark_vm(&kit, false).and_then(|()| session::clear(&kit, &project));
+            if let Err(e) = cleared {
+                crate::common::log::warn(&format!("editor session {project}: {e:#}"));
+            }
+            return;
+        };
+        let noted = session::mark_vm(&kit, true).and_then(|()| session::pending(&kit, &project));
+        if let Err(e) = noted {
+            crate::common::log::warn(&format!("editor session {project}: {e:#}"));
+            return;
+        }
+        let ready = super::terminals::project_vm_ready(
+            &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+        )
+        .map_err(|e| e.to_string())
+        .and_then(|vm| {
+            vm.start(&env, lang).map_err(|e| format!("{e:#}"))?;
+            session::write(&kit, &project, &dir, &vm, &env).map_err(|e| format!("{e:#}"))
+        });
+        if let Err(why) = ready {
+            crate::common::log::warn(&format!("editor session {project}: {why}"));
+            if let Err(e) = session::failed(&kit, &project, &why) {
+                crate::common::log::warn(&format!("editor session {project}: {e:#}"));
+            }
+        }
+    });
 }
 
 #[tauri::command]

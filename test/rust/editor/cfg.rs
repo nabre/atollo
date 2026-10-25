@@ -46,8 +46,17 @@ fn profiles_rewritten_user_ones_kept() {
         .unwrap();
     assert_eq!(p["Mine"]["path"], "x.exe");
     assert!(slashed(&p["Atollo"]["path"]).ends_with("win32-x64/pwsh/pwsh.exe"));
-    assert!(slashed(&p["Atollo - Git Bash"]["path"]).ends_with("git/bin/bash.exe"));
-    assert!(slashed(&p["Atollo - Git Bash"]["args"][1]).ends_with("data/kit/bashrc"));
+    // Every shell through `vm.ps1` (D-175): the project's VM when it is
+    // on, the shell of the PC otherwise.
+    assert!(via_vm(&p["Atollo"]) && via_vm(&p["Atollo - Git Bash"]));
+    assert!(p["Atollo"]["args"]
+        .as_array()
+        .unwrap()
+        .contains(&Value::from("-NoExit")));
+    assert!(slashed(&p["Atollo - Git Bash"]["path"]).ends_with("win32-x64/pwsh/pwsh.exe"));
+    assert!(exe_of(&p["Atollo - Git Bash"]).ends_with("git/bin/bash.exe"));
+    let tasks = &s["terminal.integrated.automationProfile.windows"];
+    assert!(via_vm(tasks), "tasks in the VM too");
     assert!(
         p.get("Codex").is_none(),
         "agent not installed: profile removed"
@@ -229,6 +238,24 @@ fn slashed(v: &Value) -> String {
     v.as_str().unwrap().replace('\\', "/")
 }
 
+/// The program a profile runs on the PC without the VM: after `-Exe` when
+/// it goes through `vm.ps1` (D-175), else its path.
+fn exe_of(p: &Value) -> String {
+    let args = p["args"].as_array().cloned().unwrap_or_default();
+    match args.iter().position(|a| a == "-Exe") {
+        Some(i) => slashed(&args[i + 1]),
+        None => slashed(&p["path"]),
+    }
+}
+
+/// True when the profile is the kit's PowerShell running `vm.ps1`.
+fn via_vm(p: &Value) -> bool {
+    p["args"].as_array().is_some_and(|a| {
+        a.iter()
+            .any(|x| x.as_str().is_some_and(|s| s.ends_with("vm.ps1")))
+    })
+}
+
 #[test]
 fn linux_profiles_bash_of_the_system_no_cmd() {
     use crate::kit::Target;
@@ -299,14 +326,22 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
     );
     let p = &s["terminal.integrated.profiles.osx"];
     assert!(slashed(&p["Atollo"]["path"]).ends_with("darwin-arm64/pwsh/pwsh"));
-    assert_eq!(p["Atollo - zsh"]["path"], "/bin/zsh");
+    assert_eq!(exe_of(&p["Atollo - zsh"]), "/bin/zsh");
+    assert!(via_vm(&p["Atollo - zsh"]) && via_vm(&p["Claude Code"]));
     // Antigravity through the kit's agy (sh): it carries the login.
-    let agy = slashed(&p["Antigravity"]["path"]);
+    let agy = exe_of(&p["Antigravity"]);
     assert!(agy.ends_with("data/kit/bin/agy"), "{agy}");
     // Claude Code through the kit's claude (sh): the token saved in the
     // kit reaches it, not the editor's other terminals (SEC-V6-02).
-    let claude = slashed(&p["Claude Code"]["path"]);
+    let claude = exe_of(&p["Claude Code"]);
     assert!(claude.ends_with("data/kit/bin/claude"), "{claude}");
+    let args = p["Claude Code"]["args"].as_array().unwrap();
+    let agent = args.iter().position(|a| a == "-Agent").unwrap();
+    assert_eq!(args[agent + 1], "claude");
+    // Tasks: in the VM, or the system's bash without it.
+    let tasks = &s["terminal.integrated.automationProfile.osx"];
+    assert!(via_vm(tasks));
+    assert_eq!(exe_of(tasks), "/bin/bash");
     // The shells macOS lists in /etc/shells are hidden, as on Windows.
     for shell in ["bash", "zsh", "sh", "csh", "tcsh", "ksh", "dash"] {
         assert!(p[shell].is_null(), "{shell} shown");
@@ -325,7 +360,7 @@ fn windows_profiles_unchanged_by_the_unix_ones() {
     );
     // Joined by the host's separator off Windows: compared with slashes.
     assert_eq!(
-        slashed(&s["terminal.integrated.profiles.windows"]["Atollo - cmd"]["path"]),
+        exe_of(&s["terminal.integrated.profiles.windows"]["Atollo - cmd"]),
         "C:/Windows/System32/cmd.exe"
     );
     let hidden = &s["terminal.integrated.profiles.windows"];
