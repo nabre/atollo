@@ -5,22 +5,14 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
-#[cfg(windows)]
-use windows::Win32::Security::Credentials::CRED_PERSIST_SESSION;
 
 use super::files::{files, read, save_file, Files};
 use super::lock::Lock;
 use super::{
     kit_agy_running, plaintext_allowed, Item, NoStore, SealKeyMissing, Store, NO_STORE,
-    NO_STORE_REFUSED,
+    NO_STORE_REFUSED, PERSIST_SESSION,
 };
 use crate::kit::Kit;
-
-/// "Logon session" persistence: never on disk, gone at logoff.
-#[cfg(windows)]
-pub(super) const PERSIST_SESSION: u32 = CRED_PERSIST_SESSION.0;
-#[cfg(not(windows))]
-pub(super) const PERSIST_SESSION: u32 = 1;
 
 /// An agy of the kit started less than 20 s ago (the starting mark), and
 /// may not show as running yet.
@@ -130,22 +122,10 @@ pub(super) fn save_login(kit: &Kit, f: &Files, store: &dyn Store) -> Result<()> 
     Ok(())
 }
 
-/// The permissions a file in `dir` really has after being set to 600.
-#[cfg(unix)]
+/// The permissions a file in `dir` really has after being set to 600
+/// (`platform::files::mode_after_600`; `None` on Windows).
 pub(super) fn mode_after_600(dir: &Path) -> Option<u32> {
-    use std::os::unix::fs::PermissionsExt;
-    fs::create_dir_all(dir).ok()?;
-    let probe = dir.join(".mode-probe");
-    fs::write(&probe, b"").ok()?;
-    let _ = fs::set_permissions(&probe, fs::Permissions::from_mode(0o600));
-    let mode = fs::metadata(&probe).ok().map(|m| m.permissions().mode());
-    let _ = fs::remove_file(&probe);
-    mode
-}
-
-#[cfg(not(unix))]
-pub(super) fn mode_after_600(_dir: &Path) -> Option<u32> {
-    None
+    crate::platform::files::mode_after_600(dir)
 }
 
 /// No store at all: the kit moves nothing. Allowed (with the warning that

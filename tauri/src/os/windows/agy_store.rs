@@ -9,7 +9,11 @@ use windows::Win32::Security::Credentials::{
     CRED_TYPE_GENERIC,
 };
 
-use super::{is_antigravity, Item, Store, System, DPAPI};
+use crate::agents::keyring::{is_antigravity, Item, Store, System, DPAPI, PERSIST_SESSION};
+
+// The kit's "logon session" persistence is Windows' own value.
+const _: () =
+    assert!(PERSIST_SESSION == windows::Win32::Security::Credentials::CRED_PERSIST_SESSION.0);
 
 impl Store for System {
     fn list(&self) -> Result<Vec<Item>> {
@@ -154,5 +158,5 @@ fn unprotect(blob: &str) -> Result<String> {
 }
 
 #[cfg(test)]
-#[path = "../../../../test/rust/agents/keyring/credman.rs"]
+#[path = "../../../../test/rust/os/windows/agy_store.rs"]
 mod tests;

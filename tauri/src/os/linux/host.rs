@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-pub use crate::os::unix::host::{arch, env_locale as locale, user_id, windows_build};
+pub use crate::os::unix::host::{arch, env_locale as locale, host_name, user_id, windows_build};
 
 /// Every 127.x.x.x answers.
 pub const LOOPBACK_RANGE: bool = true;
@@ -58,6 +58,15 @@ pub fn libicu_present() -> bool {
     static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *PRESENT
         .get_or_init(|| crate::env::has_libicu(&crate::env::linux_lib_dirs(std::env::consts::ARCH)))
+}
+
+/// systemd's machine id, or D-Bus's copy of it.
+pub fn machine_id() -> Option<String> {
+    ["/etc/machine-id", "/var/lib/dbus/machine-id"]
+        .iter()
+        .filter_map(|p| std::fs::read_to_string(p).ok())
+        .map(|t| t.trim().to_owned())
+        .find(|t| !t.is_empty())
 }
 
 #[cfg(test)]

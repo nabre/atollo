@@ -84,6 +84,20 @@ pub fn write_in_private(path: &Path, text: &str) -> Result<()> {
     Ok(())
 }
 
+/// Writes a file that holds a secret in clear (`text`), atomically: on
+/// macOS and Linux owner-only (600, in a 700 folder: [`write_private`]); on
+/// Windows a plain file, in the user's own folder of the kit.
+pub fn write_secret(path: &Path, text: &str) -> Result<()> {
+    imp::write_secret(path, text)
+}
+
+/// The permissions a file in `dir` really has after being set to 600: the
+/// mode where the disk keeps one (not exFAT, FAT), `None` there and on
+/// Windows.
+pub fn mode_after_600(dir: &Path) -> Option<u32> {
+    imp::mode_after_600(dir)
+}
+
 /// Replaces `path` with a new owner-only file holding `text`: the old one is
 /// deleted first (never rewritten: one made private by another account
 /// keeps that account's DACL, PORT-V6-01), the new one is created owner-only

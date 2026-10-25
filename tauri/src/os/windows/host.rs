@@ -91,6 +91,16 @@ pub fn libicu_present() -> bool {
     true
 }
 
+/// Not read on Windows.
+pub fn machine_id() -> Option<String> {
+    None
+}
+
+/// Not read on Windows.
+pub fn host_name() -> String {
+    String::new()
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/windows/host.rs"]
 mod tests;

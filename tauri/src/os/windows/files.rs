@@ -159,6 +159,16 @@ pub fn program_version(exe: &Path) -> Result<String> {
     ))
 }
 
+/// A plain atomic write.
+pub fn write_secret(path: &Path, text: &str) -> Result<()> {
+    crate::common::fsx::write_atomic(path, text.as_bytes())?;
+    Ok(())
+}
+
+pub fn mode_after_600(_dir: &Path) -> Option<u32> {
+    None
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/windows/files.rs"]
 mod tests;

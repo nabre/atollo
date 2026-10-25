@@ -1,13 +1,15 @@
+// The real Secret Service: Linux only.
+#![cfg(not(target_os = "macos"))]
+
 use super::*;
-use crate::agents::keyring::moves::PERSIST_SESSION;
 use crate::agents::keyring::tests::{item, kit, T};
+use crate::agents::keyring::PERSIST_SESSION;
 use crate::agents::keyring::{login_collection, NO_LOGIN_COLLECTION};
 
 /// The real Secret Service of Linux (`--ignored`, TESTING.md). With a
 /// `login` collection agy's sign-in is written there, as go-keyring reads
 /// it, listed back and deleted; without one nothing is written anywhere.
 /// Refuses to run where agy is signed in already.
-#[cfg(all(unix, not(target_os = "macos")))]
 #[test]
 #[ignore = "needs a Secret Service (TESTING.md)"]
 fn real_secret_service_login_collection() {

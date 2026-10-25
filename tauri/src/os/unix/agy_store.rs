@@ -1,13 +1,17 @@
-//! macOS and Linux: the store of this system, and the sealing key of the computer's own sign-in.
+//! The store of Antigravity's sign-in on macOS and Linux
+//! (`agents::keyring::Store`): the Keychain or the Secret Service of each
+//! (`os/*/agy_keyring.rs`), and the sealing key of the computer's own
+//! sign-in.
 
 use std::fs;
 
 use anyhow::{bail, Context, Result};
 use base64::Engine;
 
-use super::{
-    known_target, open_sealed, seal, unix, Item, SealKeyMissing, Store, System, DPAPI, SEALED,
+use crate::agents::keyring::{
+    known_target, open_sealed, seal, Item, SealKeyMissing, Store, System, DPAPI, SEALED,
 };
+use crate::os::current::agy_keyring as keychain;
 
 /// The service of the kit's own sealing key in the Keychain or the
 /// Secret Service (one per kit, only while keyring-before.json exists).
@@ -54,26 +58,23 @@ impl System {
 }
 
 fn random<const N: usize>() -> Result<[u8; N]> {
-    use std::io::Read;
     let mut out = [0u8; N];
-    fs::File::open("/dev/urandom")
-        .and_then(|mut f| f.read_exact(&mut out))
-        .context("/dev/urandom")?;
+    crate::platform::random::fill(&mut out)?;
     Ok(out)
 }
 
 impl Store for System {
     fn list(&self) -> Result<Vec<Item>> {
-        unix::list()
+        keychain::list()
     }
     fn write(&self, item: &Item, _persist: u32) -> Result<()> {
         if !known_target(&item.target) {
             bail!("{}: not a name agy uses here", item.target);
         }
-        unix::write(item)
+        keychain::write(item)
     }
     fn delete(&self, target: &str) {
-        unix::delete(target);
+        keychain::delete(target);
     }
     /// Fails closed, like DPAPI: without the sealing key (store locked,
     /// access denied, any error) the computer's secret never reaches the
@@ -108,7 +109,6 @@ impl Store for System {
     }
 }
 
-// The real Secret Service: Linux only.
-#[cfg(all(test, not(target_os = "macos")))]
-#[path = "../../../../test/rust/agents/keyring/unix_store.rs"]
+#[cfg(test)]
+#[path = "../../../../test/rust/os/unix/agy_store.rs"]
 mod tests;
