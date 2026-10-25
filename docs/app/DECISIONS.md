@@ -1783,9 +1783,9 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
   - **Un sito Caddy nella VM** diventa Apache con il PHP del progetto, e il log lo dice.
   - **Kit spostato**: la sandbox di un progetto che lavora in un'altra cartella (`Vm::moved`) si toglie e si rifà nella cartella del progetto (`Vm::make_again`: GitHub ritirato prima, `kit::forget` delle note di `sbx`, il kit resta), con una riga nel log. Il suo disco non ha nulla che non sia nel kit: file del progetto, database, strumenti e accessi stanno nel kit; si perdono la home della VM e le immagini scaricate.
   - **«Copia del kit»** salta lo stato del daemon (`…/state/sandboxd` nella home del kit: immagini e dischi sparsi delle VM, decine di GB una volta copiati, `kit::backup::left_out`); le impostazioni e l'accesso di `sbx` accanto si copiano. Una sandbox che manca si rifà dal suo kit.
+  - **Pool di Server Web con la VM attiva**: restano (sono il box senza VM) ma non partono: avvio e ricaricamento rifiutati con il motivo (`ipc::servers::refused_with_vm`), «Avvia con Atollo» saltato all'avvio dell'app; la pagina Server Web lo dice. Fermare un pool acceso resta possibile.
 - **Da fare** (in quest'ordine), perché ogni funzione resti e stia nel suo box:
-  1. Pool di Server Web con la VM attiva: visibili, ma non avviano codice di un progetto sul PC (avvio rifiutato con il motivo, «Avvia con Atollo» saltato).
-  2. I terminali e i task dell'editor nella VM del progetto.
-  3. Gli agenti nella VM con gli strumenti e il database del progetto; i server MCP del kit raggiungibili dalla VM o detti assenti.
-  4. Un'installazione di Docker Sandboxes non riuscita: il motivo nell'avviso e un nuovo tentativo.
+  1. I terminali e i task dell'editor nella VM del progetto.
+  2. Gli agenti nella VM con gli strumenti e il database del progetto; i server MCP del kit raggiungibili dalla VM o detti assenti.
+  3. Un'installazione di Docker Sandboxes non riuscita: il motivo nell'avviso e un nuovo tentativo.
 - **Prove.** `test/rust/isolation/mod.rs` (`no_vm_starts_without_a_network_policy` con il solo `sbx` del kit, ambiente delle sessioni), `test/rust/isolation/daemon.rs` (impostazioni del daemon), `test/rust/isolation/vm.rs` (`an_action_in_the_vm_is_stopped_inside_it`, `a_sites_aliases_reach_its_container`, pubblicazione sulla rete locale e ritiro), `test/rust/isolation/kit.rs` (`a_sandbox_made_again_keeps_its_kit_only`), `test/ui/shell/isolation.test.tsx` (motivi senza `policy_unset`).

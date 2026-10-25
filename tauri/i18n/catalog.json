@@ -2313,5 +2313,10 @@
     "en": "in the VM the site uses Apache with PHP {0} instead of Caddy: Caddy's own rules do not apply",
     "fr": "dans la VM le site utilise Apache avec PHP {0} au lieu de Caddy : les règles propres à Caddy ne s'appliquent pas",
     "de": "in der VM nutzt die Website Apache mit PHP {0} statt Caddy: Caddys eigene Regeln gelten nicht"
+  },
+  "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": {
+    "en": "With the VM on, every site runs in its project's VM: start it from the project's page. The shared servers are for working without the VM.",
+    "fr": "Avec la VM active, chaque site tourne dans la VM de son projet : démarrez-le depuis la page du projet. Les serveurs partagés servent quand on travaille sans VM.",
+    "de": "Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. Die gemeinsamen Server dienen der Arbeit ohne VM."
   }
 }
