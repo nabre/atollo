@@ -148,15 +148,6 @@ export function explain(b: IsolationBlocker, system: System): Explained {
         command: "sbx ls",
         run: "ls",
       };
-    case "policy_unset":
-      return {
-        why: t("Lo sbx del PC non ha ancora una politica di rete: senza, nessuna VM parte."),
-        fix: t(
-          "Imposta quella consigliata da Docker (il traffico tipico dello sviluppo: servizi AI e registri di pacchetti):",
-        ),
-        command: "sbx policy init balanced",
-        run: "policy",
-      };
     case "foreign_daemon":
       return {
         why: t(

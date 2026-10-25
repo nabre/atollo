@@ -1088,8 +1088,6 @@
   "Installa nel kit": "Installer dans le kit",
   "Installazione avviata: la vedi nella barra di stato.": "Installation lancée : vous la suivez dans la barre d'état.",
   "La cartella del kit ha caratteri che un profilo AppArmor non accetta (virgolette, *, ?, [ ], { }, virgole…): sposta il kit in una cartella con un nome semplice.": "Le dossier du kit contient des caractères qu'un profil AppArmor n'accepte pas (guillemets, *, ?, [ ], { }, virgules…) : déplacez le kit dans un dossier au nom simple.",
-  "Lo sbx del PC non ha ancora una politica di rete: senza, nessuna VM parte.": "Le sbx du PC n'a pas encore de politique réseau : sans elle, aucune VM ne démarre.",
-  "Imposta quella consigliata da Docker (il traffico tipico dello sviluppo: servizi AI e registri di pacchetti):": "Définis celle que Docker recommande (le trafic habituel du développement : services d'IA et registres de paquets) :",
   "Sul PC è già attivo un altro Docker Sandboxes (quello del PC o di un altro kit): le VM del kit finirebbero nei suoi dati, fuori dal kit.": "Un autre Docker Sandboxes est déjà actif sur le PC (celui du PC ou d'un autre kit) : les VM du kit finiraient dans ses données, hors du kit.",
   "Fermalo, se non ti serve, poi premi «Ricontrolla»; le sue sandbox restano dove sono:": "Arrête-le si tu n'en as pas besoin, puis appuie sur «Vérifier à nouveau» ; ses sandbox restent où elles sont :",
   "Il kit è su un disco {0}: i dischi delle VM (fino a 30 GB ciascuna, che su NTFS occupano solo quello che si scrive) non ci stanno o lo riempirebbero.": "Le kit est sur un disque {0} : les disques des VM (jusqu'à 30 Go chacune, qui sur NTFS n'occupent que ce qui est écrit) n'y tiennent pas ou le rempliraient.",

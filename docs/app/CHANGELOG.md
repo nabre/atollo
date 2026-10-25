@@ -1,5 +1,11 @@
 # Novità
 
+## Solo il Docker Sandboxes del kit (25/10/2026)
+
+- **Niente esce dal kit** (D-175): Atollo usa solo il Docker Sandboxes installato nel kit, mai uno installato sul PC; sandbox, dischi, immagini e impostazioni stanno in `data` e viaggiano con il kit. Le poche tracce che restano sul PC (accesso a Docker, hypervisor, file temporanei del daemon) sono elencate nelle decisioni.
+- **La VM non apre il browser del PC** e Docker Sandboxes non invia pacchetti di diagnostica: impostazioni fissate dal kit.
+- **Cosa gira dove**: nella VM il codice dei progetti, sul PC solo i programmi del kit (database, editor, modelli locali), senza VM tutto sul PC con l'avviso «Senza VM». La guida e la documentazione lo dicono pagina per pagina.
+
 ## Con la VM attiva, gli strumenti solo per Linux (25/10/2026)
 
 - **Meno spazio** (D-173): con la VM attiva, «Installa» in Linguaggi e strumenti scarica i linguaggi e gli altri strumenti solo per il Linux della VM; per il PC restano PowerShell 7, GitHub CLI, l'editor, ConPTY e Docker Sandboxes. Lo stesso per uno strumento installato da solo, per una versione in più e per «Installa i mancanti» di un progetto.

@@ -1,42 +1,33 @@
 use super::*;
 
 /// The network policy: the kit's `sbx` gets `balanced` (set already is
-/// fine), the PC's is only told; texts of sbx 0.49.2.
+/// fine); texts of sbx 0.49.2.
 #[test]
 fn no_vm_starts_without_a_network_policy() {
-    let kit = Sbx::Kit(PathBuf::from("sbx"));
-    let pc = Sbx::Pc(PathBuf::from("sbx"));
-    assert_eq!(
-        policy_answer(&kit, true, "Initialized global network policy balanced\n"),
-        Ok(())
-    );
     assert_eq!(
         policy_answer(
-            &kit,
-            false,
-            "error: global network policy is already initialized; reset it first to change it\n"
+            true,
+            "Initialized global network policy balanced
+"
         ),
         Ok(())
     );
-    let unset = "error: global network policy has not been initialized\n  try: sbx policy init <allow-all|balanced|deny-all>\n";
-    assert_eq!(policy_answer(&pc, false, unset), Err(Blocker::PolicyUnset));
     assert_eq!(
         policy_answer(
-            &pc,
-            true,
-            "POLICY         SOURCE   APPLIES TO   SUMMARY\nlocal-policy   local    all          network: 195 allow\n"
+            false,
+            "error: global network policy is already initialized; reset it first to change it
+"
         ),
         Ok(())
     );
     assert!(matches!(
-        policy_answer(&kit, false, "error: daemon not running\n"),
+        policy_answer(
+            false,
+            "error: daemon not running
+"
+        ),
         Err(Blocker::SbxFailed { .. })
     ));
-    assert_eq!(Fix::Policy.args(), ["policy", "init", "balanced"]);
-    assert_eq!(
-        serde_json::to_value(Blocker::PolicyUnset).unwrap(),
-        serde_json::json!({ "code": "policy_unset" })
-    );
 }
 
 /// The kit's terminal in the VM gets the kit's tools for Linux: only what
@@ -344,16 +335,12 @@ fn a_fix_runs_with_the_environment_of_its_sbx() {
 
     // The kit's keeps the kit's home, with the PC's short temp: the
     // daemon's junction goes there (sockets of at most 107 bytes).
-    let kit_env = Sbx::Kit(PathBuf::from("sbx")).session_env(&env, &host);
+    let kit_env = Sbx::at(PathBuf::from("sbx")).session_env(&env, &host);
     assert_eq!(kit_env.get("LOCALAPPDATA"), Some("kit-home"));
     assert_eq!(kit_env.get("CP_KIT"), Some("x"));
     for name in ["TEMP", "TMP", "TMPDIR"] {
         assert_eq!(kit_env.get(name), Some(r"C:\T"), "{name}");
     }
-
-    let pc_env = Sbx::Pc(PathBuf::from("sbx")).session_env(&env, &host);
-    assert_eq!(pc_env.get("LOCALAPPDATA"), Some("pc-home"));
-    assert_eq!(pc_env.get("CP_KIT"), None);
 }
 
 #[test]
@@ -378,33 +365,6 @@ fn sbx_signed_out_is_told_apart_from_other_errors() {
             message: "sbx".into()
         })
     );
-}
-
-#[test]
-fn sbx_is_looked_for_in_the_path_then_where_installers_put_it() {
-    let host = Host::from_pairs([
-        ("Path".into(), r#"C:\Tools;"C:\Program Files\X";;"#.into()),
-        ("LOCALAPPDATA".into(), r"C:\Users\u\AppData\Local".into()),
-    ]);
-    let dirs = sbx_dirs(Os::Win32, &host);
-    assert_eq!(dirs[0], PathBuf::from(r"C:\Tools"));
-    assert_eq!(dirs[1], PathBuf::from(r"C:\Program Files\X"));
-    let winget = PathBuf::from(r"C:\Users\u\AppData\Local")
-        .join("Microsoft")
-        .join("WinGet")
-        .join("Links");
-    assert!(dirs.contains(&winget));
-    let unix = Host::from_pairs([("PATH".into(), "/usr/bin:/home/u/bin".into())]);
-    let dirs = sbx_dirs(Os::Linux, &unix);
-    assert_eq!(
-        dirs[..2],
-        [PathBuf::from("/usr/bin"), PathBuf::from("/home/u/bin")]
-    );
-    assert_eq!(
-        dirs.iter().filter(|d| **d == Path::new("/usr/bin")).count(),
-        1
-    );
-    assert!(dirs.contains(&PathBuf::from("/opt/homebrew/bin")));
 }
 
 #[test]
