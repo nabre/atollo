@@ -16,6 +16,7 @@ pub mod processes;
 pub mod proxy;
 pub mod pty;
 pub mod random;
+pub mod registry;
 pub mod sessions;
 pub mod signature;
 pub mod sockets;

@@ -6,12 +6,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Context, Result};
-#[cfg(windows)]
-use windows::core::HSTRING;
-#[cfg(windows)]
-use windows::Win32::System::Registry::{
-    RegDeleteTreeW, RegGetValueW, RegSetKeyValueW, HKEY_CURRENT_USER, REG_SZ, RRF_RT_REG_SZ,
-};
 
 use super::run;
 use crate::common::fsx::join_rel;
@@ -78,51 +72,17 @@ fn rust_plan(
 // even with --no-modify-path. The kit puts it back as it was: removed if it
 // was created now and points into the kit, old values restored otherwise.
 
-#[cfg(windows)]
 const RUSTUP_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Rustup";
-#[cfg(windows)]
 const RUSTUP_VALUES: [&str; 3] = ["UninstallString", "DisplayName", "DisplayVersion"];
 
-#[cfg(windows)]
-fn reg_get(name: &str) -> Option<String> {
-    let key = HSTRING::from(RUSTUP_KEY);
-    let value = HSTRING::from(name);
-    let mut buf = vec![0u16; 2048];
-    let mut size = (buf.len() * 2) as u32;
-    // SAFETY: buffer and size describe the same memory; read-only query.
-    let r = unsafe {
-        RegGetValueW(
-            HKEY_CURRENT_USER,
-            &key,
-            &value,
-            RRF_RT_REG_SZ,
-            None,
-            Some(buf.as_mut_ptr().cast()),
-            Some(&mut size),
-        )
-    };
-    r.is_ok()
-        .then(|| String::from_utf16_lossy(&buf[..(size as usize / 2).saturating_sub(1)]))
-}
-
-/// `None` when the key does not exist.
-#[cfg(windows)]
+/// `None` when the key does not exist (always off Windows:
+/// `platform::registry`).
 fn rustup_key() -> Option<Vec<(String, Option<String>)>> {
-    let values: Vec<_> = RUSTUP_VALUES
-        .iter()
-        .map(|n| ((*n).to_owned(), reg_get(n)))
-        .collect();
-    values.iter().any(|(_, v)| v.is_some()).then_some(values)
+    crate::platform::registry::user_values(RUSTUP_KEY, &RUSTUP_VALUES)
 }
 
-#[cfg(not(windows))]
-fn rustup_key() -> Option<Vec<(String, Option<String>)>> {
-    None
-}
-
-#[cfg(windows)]
 fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&Path]) {
-    let key = HSTRING::from(RUSTUP_KEY);
+    use crate::platform::registry;
     let result = (|| -> Result<()> {
         let Some(now) = rustup_key() else {
             return Ok(());
@@ -140,29 +100,17 @@ fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&P
                         .contains(&p.to_string_lossy().to_lowercase())
                 });
                 if uninstall.is_empty() || ours {
-                    // SAFETY: deletes the subkey rustup created just now.
-                    unsafe { RegDeleteTreeW(HKEY_CURRENT_USER, &key) }.ok()?;
+                    // The subkey rustup created just now.
+                    registry::delete_user_key(RUSTUP_KEY)?;
                 }
             }
             Some(old) => {
                 for (name, value) in old {
                     let Some(value) = value else { continue };
-                    if reg_get(&name).as_deref() == Some(value.as_str()) {
+                    if registry::user_value(RUSTUP_KEY, &name).as_deref() == Some(value.as_str()) {
                         continue;
                     }
-                    let wide: Vec<u16> = value.encode_utf16().chain(Some(0)).collect();
-                    // SAFETY: REG_SZ data with its terminating NUL, size in bytes.
-                    unsafe {
-                        RegSetKeyValueW(
-                            HKEY_CURRENT_USER,
-                            &key,
-                            &HSTRING::from(name.as_str()),
-                            REG_SZ.0,
-                            Some(wide.as_ptr().cast()),
-                            (wide.len() * 2) as u32,
-                        )
-                    }
-                    .ok()?;
+                    registry::set_user_value(RUSTUP_KEY, &name, &value)?;
                 }
             }
         }
@@ -174,9 +122,6 @@ fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&P
         ));
     }
 }
-
-#[cfg(not(windows))]
-fn restore_rustup_key(_before: Option<Vec<(String, Option<String>)>>, _owned: &[&Path]) {}
 
 /// Rust: rustup with the stable toolchain, rustfmt and clippy, all in
 /// `rust/` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
@@ -347,15 +292,7 @@ impl Installer for Rust {
                 work,
                 progress,
             )?;
-            #[cfg(unix)]
-            {
-                use std::os::unix::fs::PermissionsExt;
-                if let Ok(m) = fs::metadata(&init) {
-                    let mut p = m.permissions();
-                    p.set_mode(p.mode() | 0o755);
-                    let _ = fs::set_permissions(&init, p);
-                }
-            }
+            let _ = crate::platform::files::add_executable(&init);
             let envs = envs_for(&root);
             let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
             progress.note(&format!("rustup-init: stable {host}"));

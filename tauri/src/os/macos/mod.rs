@@ -13,8 +13,8 @@ pub mod volume;
 pub mod webview;
 
 pub use super::unix::{
-    console, files, instance, jobs, links, local_time, lock, pty, random, sessions, signature,
-    sockets, temp,
+    console, files, instance, jobs, links, local_time, lock, pty, random, registry, sessions,
+    signature, sockets, temp,
 };
 
 use crate::kit::Os;

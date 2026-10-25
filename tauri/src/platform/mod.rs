@@ -24,6 +24,7 @@
 //! - `safe_path`: reading inside a project without following links (D-77);
 //! - `memory`: the PC's RAM;
 //! - `random`: random bytes of the system, for tokens;
+//! - `registry`: the current user's registry (Windows);
 //! - `signature`: Authenticode signatures (Windows);
 //! - `sockets`: whether a server still answers on a Unix socket;
 //! - `proxy`: the system's proxy, and the hosts reached without one;
@@ -44,6 +45,7 @@ pub mod processes;
 pub mod proxy;
 pub mod pty;
 pub mod random;
+pub mod registry;
 pub mod safe_path;
 pub mod sessions;
 pub mod signature;
