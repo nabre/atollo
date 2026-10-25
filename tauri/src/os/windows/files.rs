@@ -96,6 +96,19 @@ pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
     fs::DirBuilder::new().create(path)
 }
 
+pub fn add_executable(_path: &Path) -> io::Result<()> {
+    Ok(())
+}
+
+pub fn is_executable(_path: &Path) -> io::Result<bool> {
+    Ok(true)
+}
+
+/// A drive (`C:x`) or an alternate data stream.
+pub fn special_in_name(name: &str) -> bool {
+    name.contains(':')
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/windows/files.rs"]
 mod tests;

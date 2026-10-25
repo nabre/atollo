@@ -9,14 +9,10 @@ use anyhow::{bail, Context, Result};
 use super::copy::copy_tree;
 use super::{no_link_on_the_way, prepare_dir};
 
-/// The file system refuses symbolic links: exFAT and FAT answer `EPERM`
-/// (Linux) or `ENOTSUP`/`EOPNOTSUPP` (macOS). Any other error is a real one.
+/// The file system refuses links (`platform::links::refused`): exFAT and
+/// FAT. Any other error is a real one.
 pub(crate) fn links_unsupported(e: &io::Error) -> bool {
-    #[cfg(unix)]
-    if let Some(code) = e.raw_os_error() {
-        return code == libc::EPERM || code == libc::ENOTSUP || code == libc::EOPNOTSUPP;
-    }
-    e.kind() == io::ErrorKind::Unsupported
+    crate::platform::links::refused(e)
 }
 
 /// The hard link `path` of a tar entry to `target`, a regular file already
@@ -304,13 +300,7 @@ fn copy_one(path: &Path, source: &Path, budget: &mut u64, skipped: &mut Vec<Stri
 /// unpacked from this PC (`python/bin/python3 -> python3.13`).
 pub(super) fn finish_links_here(dest: &Path, links: Vec<(PathBuf, String)>) -> Result<()> {
     let skipped = finish_links(dest, links, |target, path| {
-        #[cfg(unix)]
-        return std::os::unix::fs::symlink(target, path);
-        #[cfg(not(unix))]
-        {
-            let _ = (target, path);
-            Err(io::Error::from(io::ErrorKind::Unsupported))
-        }
+        crate::platform::links::symlink(Path::new(target), path)
     })?;
     for link in skipped {
         crate::common::log::warn(&format!(

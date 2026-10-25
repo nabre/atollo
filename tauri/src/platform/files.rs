@@ -32,6 +32,17 @@ pub fn set_executable(path: &Path) -> io::Result<()> {
     imp::set_executable(path)
 }
 
+/// Adds the execute bits (`0o755`) to the mode of `path` on Unix, keeping
+/// the others; no-op on Windows.
+pub fn add_executable(path: &Path) -> io::Result<()> {
+    imp::add_executable(path)
+}
+
+/// `path` has every execute bit on Unix (always on Windows).
+pub fn is_executable(path: &Path) -> io::Result<bool> {
+    imp::is_executable(path)
+}
+
 /// Writes `bytes` atomically to `path` (creating parent folders) and marks the
 /// file executable on Unix (`0o755`).
 pub fn write_executable(path: &Path, bytes: &[u8]) -> io::Result<()> {
@@ -138,6 +149,13 @@ pub fn safe_parent(meta: &fs::Metadata) -> bool {
 /// permissions of its parent, the user's own temporary folder.
 pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
     imp::create_dir_owner_only(path)
+}
+
+/// A name of an archive's entry that means more than a file name on this
+/// system: on Windows one with `:` (a drive, `C:x`, an alternate data
+/// stream).
+pub fn special_in_name(name: &str) -> bool {
+    imp::special_in_name(name)
 }
 
 /// A rename refused for a moment because another program holds the target

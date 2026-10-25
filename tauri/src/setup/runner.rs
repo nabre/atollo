@@ -682,9 +682,8 @@ fn remove_component(ctx: &Ctx, c: &Component) -> Result<()> {
     for path in c.owned_paths(ctx.kit) {
         // A link (`bin/pnpm` of npm on macOS and Linux) goes as a link,
         // also when what it points to went first.
-        #[cfg(unix)]
-        if std::fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
-            std::fs::remove_file(&path).map_err(|_| InUse(path.clone()))?;
+        if let Some(removed) = crate::platform::links::remove_symlink(&path) {
+            removed.map_err(|_| InUse(path.clone()))?;
             continue;
         }
         if path.is_dir() {

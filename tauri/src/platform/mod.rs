@@ -16,6 +16,7 @@
 //! - `files`: owner-only files and folders, the executable bit;
 //! - `host`: what the app knows of the machine (processor, language...);
 //! - `instance`: one app per kit (D-08);
+//! - `links`: links to folders (junctions on Windows) and to files;
 //! - `lock`: the kit's locks across its processes;
 //! - `volume`: the disk of a folder (D-90, D-105);
 //! - `temp`: the folders in transit (D-90);
@@ -34,6 +35,7 @@ pub mod files;
 pub mod host;
 pub mod instance;
 pub mod jobs;
+pub mod links;
 pub mod lock;
 pub mod memory;
 pub mod processes;
@@ -53,6 +55,9 @@ use crate::os::current as sys;
 
 /// The system the app is built for.
 pub const OS: Os = sys::OS;
+
+/// What separates the folders of `PATH`: `;` on Windows, `:` elsewhere.
+pub const PATH_SEPARATOR: char = sys::PATH_SEPARATOR;
 
 /// `text` as one word for a POSIX shell, for the commands the user is told
 /// to paste in a Terminal: always in single quotes, where nothing expands

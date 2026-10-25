@@ -7,6 +7,7 @@ pub mod files;
 pub mod host;
 pub mod instance;
 pub mod jobs;
+pub mod links;
 pub mod lock;
 pub mod memory;
 pub mod processes;
@@ -24,6 +25,9 @@ use crate::kit::Os;
 
 /// The system the app is built for.
 pub const OS: Os = Os::Win32;
+
+/// What separates the folders of `PATH`.
+pub const PATH_SEPARATOR: char = ';';
 
 /// NTFS compares names without case.
 pub const PATHS_IGNORE_CASE: bool = true;

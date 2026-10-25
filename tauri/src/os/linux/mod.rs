@@ -13,10 +13,13 @@ pub mod volume;
 pub mod webview;
 
 pub use super::unix::{
-    console, files, instance, jobs, lock, pty, random, sessions, signature, sockets, temp,
+    console, files, instance, jobs, links, lock, pty, random, sessions, signature, sockets, temp,
 };
 
 use crate::kit::Os;
+
+/// What separates the folders of `PATH`.
+pub const PATH_SEPARATOR: char = ':';
 
 /// The system the app is built for.
 pub const OS: Os = Os::Linux;

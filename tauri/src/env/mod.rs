@@ -289,10 +289,10 @@ impl KitEnv {
         self.set("CP_PHPRC_FWD", ini.to_string_lossy().replace('\\', "/"));
     }
 
-    /// The PATH separator used by this environment (`;` on Windows, `:` on Unix).
+    /// The PATH separator used by this environment (`;` on Windows, `:` on
+    /// Unix): its own, else this system's.
     pub fn path_sep(&self) -> char {
-        self.path_sep
-            .unwrap_or(if cfg!(windows) { ';' } else { ':' })
+        self.path_sep.unwrap_or(crate::platform::PATH_SEPARATOR)
     }
 
     /// The PATH entries, in order.
@@ -657,12 +657,8 @@ fn write_python_shim(dir: &Path) -> std::io::Result<()> {
         fs::create_dir_all(dir)?;
         crate::common::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
     }
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        if fs::metadata(&file)?.permissions().mode() & 0o111 != 0o111 {
-            fs::set_permissions(&file, fs::Permissions::from_mode(0o755))?;
-        }
+    if !crate::platform::files::is_executable(&file)? {
+        crate::platform::files::set_executable(&file)?;
     }
     Ok(())
 }

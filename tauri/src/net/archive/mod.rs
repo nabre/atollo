@@ -71,7 +71,7 @@ pub enum Inner {
 /// on macOS and Linux it is an ordinary character of a file name, which
 /// tar archives for those systems may have.
 pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
-    if name.starts_with(['/', '\\']) || (cfg!(windows) && name.contains(':')) {
+    if name.starts_with(['/', '\\']) || crate::platform::files::special_in_name(name) {
         return None;
     }
     let mut out = base.to_path_buf();
@@ -89,18 +89,10 @@ pub fn safe_join(base: &Path, name: &str) -> Option<PathBuf> {
     (depth > 0).then_some(out)
 }
 
-#[cfg(unix)]
+/// The entry's execute bits (`platform::files::add_executable`).
 fn set_executable(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    if let Ok(meta) = fs::metadata(path) {
-        let mut perms = meta.permissions();
-        perms.set_mode(perms.mode() | 0o755);
-        let _ = fs::set_permissions(path, perms);
-    }
+    let _ = crate::platform::files::add_executable(path);
 }
-
-#[cfg(not(unix))]
-fn set_executable(_path: &Path) {}
 
 pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
     fs::create_dir_all(dest)?;

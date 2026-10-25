@@ -80,3 +80,22 @@ pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
     use std::os::unix::fs::DirBuilderExt;
     fs::DirBuilder::new().mode(0o700).create(path)
 }
+
+/// The mode with `0o755` added.
+pub fn add_executable(path: &Path) -> io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    let mut perms = fs::metadata(path)?.permissions();
+    perms.set_mode(perms.mode() | 0o755);
+    fs::set_permissions(path, perms)
+}
+
+/// Every execute bit (`0o111`).
+pub fn is_executable(path: &Path) -> io::Result<bool> {
+    use std::os::unix::fs::PermissionsExt;
+    Ok(fs::metadata(path)?.permissions().mode() & 0o111 == 0o111)
+}
+
+/// Only `/` separates.
+pub fn special_in_name(_name: &str) -> bool {
+    false
+}

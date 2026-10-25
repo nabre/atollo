@@ -9,6 +9,7 @@ pub mod guard;
 pub mod host;
 pub mod instance;
 pub mod jobs;
+pub mod links;
 pub mod lock;
 pub mod proxy;
 pub mod pty;
