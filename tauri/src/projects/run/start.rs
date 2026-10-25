@@ -31,9 +31,10 @@ impl Runner {
         env: &KitEnv,
         port: Option<u16>,
         fill: &dyn Fn(&str) -> String,
+        lang: &str,
     ) -> Result<(std::process::Command, String)> {
         use crate::isolation::vm::{exec_args, web_line, Web};
-        vm.start(env)?;
+        vm.start(env, lang)?;
         if let Some(p) = port {
             vm.publish(env, p)?;
         }
@@ -57,6 +58,8 @@ impl Runner {
         if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
             vars.push(("DB_PORT".into(), p.to_string()));
         }
+        // The kit's tools' variables (`JAVA_HOME`…), the action's after.
+        vars.extend(vm.tools().vars.iter().cloned());
         for (k, v) in &action.env {
             vars.push((k.clone(), fill(v)));
         }
@@ -72,7 +75,7 @@ impl Runner {
         } else {
             fill(&action.command)
         };
-        let args = exec_args(&vm.name, rel.as_deref(), &line, &vars);
+        let args = exec_args(&vm.name, rel.as_deref(), &line, &vars, &vm.tools().path);
         let shown = format!("sbx exec {} {line}", vm.name);
         Ok((vm.command(env, &args), shown))
     }
@@ -158,7 +161,7 @@ impl Runner {
         // ends: php-fpm's private socket folder goes with its last copy.
         let mut fcgi_kept: Option<crate::projects::fastcgi::FastCgi> = None;
         let (mut cmd, shown) = if let Some(vm) = vm {
-            self.in_vm(vm, id, dir, &cwd, action, env, port, &fill)?
+            self.in_vm(vm, id, dir, &cwd, action, env, port, &fill, lang)?
         } else if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // The AppImage, not its inner program: `kit_command` clears

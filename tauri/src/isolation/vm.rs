@@ -2,7 +2,8 @@
 //! project, `atollo-p-<project>-<hash>`, with the project's folder as its workspace
 //! (the folder the commands start in). What runs there:
 //!
-//! - the terminal: `sbx exec -it <vm> bash -l`;
+//! - the terminal: `sbx exec -it -w <folder> <vm> … bash -l`, the kit's
+//!   tools for Linux first on the `PATH` (D-170, [`kit_terminal_args`]);
 //! - an action's command line: `sbx exec -e … <vm> sh -lc '<line>'`, its
 //!   port published on the PC's `127.0.0.1` (`sbx ports`);
 //! - the web servers and MySQL: containers of the VM's own Docker on the
@@ -163,11 +164,6 @@ pub fn kit_terminal_args(
     args
 }
 
-/// The terminal of the project: a login bash in its workspace.
-pub fn terminal_args(vm: &str) -> Vec<String> {
-    ["exec", "-it", vm, "bash", "-l"].map(String::from).into()
-}
-
 /// The agents `sbx` runs in a sandbox of their own: Atollo's id → `sbx`'s.
 pub fn sbx_agent(agent: &str) -> Option<&'static str> {
     match agent {
@@ -202,15 +198,22 @@ pub fn publish_args(vm: &str, port: u16) -> Vec<String> {
 
 /// A command line run in the VM: `sbx exec -e K=V … <vm> sh -lc '<line>'`,
 /// in `folder` of the workspace when given (relative, `/`), with the
-/// action's variables. A server in the VM listens on every card of the VM
-/// (`HOST=0.0.0.0`): only the published port reaches the PC.
+/// action's variables, and the kit's tools (`path`, D-170) first on the
+/// `PATH`, set before the `cd`: a folder that is not there stops the line.
+/// A server in the VM listens on every card of the VM (`HOST=0.0.0.0`):
+/// only the published port reaches the PC.
 pub fn exec_args(
     vm: &str,
     folder: Option<&str>,
     line: &str,
     env: &[(String, String)],
+    path: &[String],
 ) -> Vec<String> {
     let mut args: Vec<String> = vec!["exec".into()];
+    if !path.is_empty() {
+        args.push("-e".into());
+        args.push(format!("ATOLLO_PATH={}", path.join(":")));
+    }
     for (k, v) in env {
         args.push("-e".into());
         args.push(format!("{k}={v}"));
@@ -218,12 +221,20 @@ pub fn exec_args(
     args.push(vm.into());
     args.push("sh".into());
     args.push("-lc".into());
-    args.push(match folder {
+    let line = match folder {
         Some(f) => format!("cd {} && {line}", shell_quote_posix(f)),
         None => line.to_owned(),
+    };
+    args.push(if path.is_empty() {
+        line
+    } else {
+        format!("{TOOLS_FIRST}; {line}")
     });
     args
 }
+
+/// The kit's tools first on the `PATH` (`ATOLLO_PATH`, given with `-e`).
+pub const TOOLS_FIRST: &str = r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH"; export PATH"#;
 
 /// What serves a web action in the VM.
 #[derive(Debug, Clone, PartialEq, Eq)]

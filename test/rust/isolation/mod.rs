@@ -53,7 +53,7 @@ fn a_kit_terminal_gets_the_kits_tools_for_linux() {
     }
     let terminal = crate::editor::terminals::find(&kit, "default", "it").unwrap();
     let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
-    let (path, vars) = guest_tools(&kit, &guest, &terminal, base);
+    let GuestTools { path, vars } = guest_tools(&kit, &guest, &terminal, base);
     let windows = kit.target().is_windows();
     let apps = vm::guest_path(windows, &guest.apps()).unwrap();
     assert!(!path.is_empty(), "node's folder on the PATH");
@@ -186,6 +186,64 @@ fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
         ["atollo-t-legacy-a", "atollo-t-legacy-b"]
     );
     assert!(terminal_sandboxes(&kit, "default").is_empty());
+}
+
+/// A project in its VM gets the kit's tools for Linux (D-170): only what
+/// lies in `data/apps/linux-…`, never its sealed PC-side variables (the
+/// project's MySQL login file, the kit's home); the tools are those the
+/// kit chose, not those on the PC's disk; the folders mounted at a
+/// sandbox's making are noted.
+#[test]
+fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-project-guest");
+    let guest = kit.for_target(crate::kit::Target::LINUX_X64);
+    let node = crate::setup::Catalog::get().find("node").unwrap();
+    for key in node.key_paths(&guest) {
+        std::fs::create_dir_all(key.parent().unwrap()).unwrap();
+        std::fs::write(&key, b"").unwrap();
+    }
+    crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
+    let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
+    let tools = project_guest_tools(&kit, &guest, "shop", base);
+    let apps = vm::guest_path(kit.target().is_windows(), &guest.apps()).unwrap();
+    assert!(!tools.path.is_empty());
+    assert!(
+        tools.path.iter().all(|p| p.starts_with(&apps)),
+        "{:?}",
+        tools.path
+    );
+    assert!(
+        tools.vars.iter().all(|(_, v)| v.starts_with(&apps)),
+        "{:?}",
+        tools.vars
+    );
+    assert!(!tools.vars.iter().any(|(n, _)| n == "ATOLLO_MYSQL_CNF"));
+
+    let mut choice =
+        crate::setup::catalog::Choice::read_or_defaults(&kit, crate::setup::Catalog::get());
+    choice.set(crate::setup::Catalog::get(), "node", true);
+    choice.write(&kit, crate::setup::Catalog::get()).unwrap();
+    let chosen = crate::editor::terminals::chosen_tools(&kit);
+    assert_eq!(chosen.get("node"), Some(&None));
+    assert!(
+        !chosen.contains_key("gh"),
+        "a component of the app is no tool"
+    );
+
+    assert_eq!(kit::mounts(&kit, "atollo-p-shop-1"), None);
+    kit::write(
+        &kit,
+        "atollo-p-shop-1",
+        &kit::Owner::Project {
+            project: "shop".into(),
+        },
+    )
+    .unwrap();
+    kit::mark_mounts(&kit, "atollo-p-shop-1", "/p/shop\n/k/apps\n").unwrap();
+    assert_eq!(
+        kit::mounts(&kit, "atollo-p-shop-1").as_deref(),
+        Some("/p/shop\n/k/apps\n")
+    );
 }
 
 #[test]

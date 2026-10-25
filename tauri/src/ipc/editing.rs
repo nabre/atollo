@@ -84,8 +84,26 @@ pub async fn terminal_open<R: Runtime>(
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &[])?);
         // In the project's microVM when every project runs in one (D-167).
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
-            vm.start(&env).or_fail_chain("vm")?;
-            let launch = vm.launch(&kit, crate::isolation::vm::terminal_args(&vm.name), "VM");
+            // The kit's tools for Linux, at the project's lines (D-170).
+            let tools =
+                super::terminals::project_vm_tools(&app, &task, &kit, &host, lang, &project)?;
+            let vm = vm.with_tools(tools);
+            vm.start(&env, lang).or_fail_chain("vm")?;
+            let guest_dir = crate::isolation::vm::guest_path(kit.target().is_windows(), &dir)
+                .ok_or_else(|| {
+                    crate::common::i18n::t(
+                    lang,
+                    "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
+                    &[&dir.display().to_string()],
+                )
+                })?;
+            let args = crate::isolation::vm::kit_terminal_args(
+                &vm.name,
+                &guest_dir,
+                &vm.tools().path,
+                &vm.tools().vars,
+            );
+            let launch = vm.launch(&kit, args, "VM");
             return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
                 .or_fail_chain("terminal");
         }

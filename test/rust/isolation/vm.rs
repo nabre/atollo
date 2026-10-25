@@ -142,10 +142,6 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         ]
     );
     assert_eq!(
-        terminal_args("atollo-shop"),
-        ["exec", "-it", "atollo-shop", "bash", "-l"]
-    );
-    assert_eq!(
         publish_args("atollo-shop", 7101),
         ["ports", "atollo-shop", "--publish", "127.0.0.1:7101:7101"]
     );
@@ -174,7 +170,7 @@ fn only_sbx_agents_have_a_sandbox() {
 fn a_command_line_runs_in_the_vm() {
     let env = vec![("PORT".to_owned(), "7101".to_owned())];
     assert_eq!(
-        exec_args("atollo-shop", None, "npm run dev", &env),
+        exec_args("atollo-shop", None, "npm run dev", &env, &[]),
         [
             "exec",
             "-e",
@@ -185,10 +181,31 @@ fn a_command_line_runs_in_the_vm() {
             "npm run dev"
         ]
     );
-    let args = exec_args("atollo-shop", Some("web app"), "npm start", &[]);
+    let args = exec_args("atollo-shop", Some("web app"), "npm start", &[], &[]);
     assert_eq!(args.last().unwrap(), "cd 'web app' && npm start");
-    let args = exec_args("atollo-shop", Some("a'b"), "x", &[]);
+    let args = exec_args("atollo-shop", Some("a'b"), "x", &[], &[]);
     assert_eq!(args.last().unwrap(), r"cd 'a'\''b' && x");
+    // With the kit's tools (D-170): first on the PATH, set before the `cd`.
+    let args = exec_args(
+        "atollo-shop",
+        Some("web"),
+        "npm start",
+        &env,
+        &["/d/kit/data/apps/linux-x64/node/24.22/bin".into()],
+    );
+    assert_eq!(
+        args[..4],
+        [
+            "exec",
+            "-e",
+            "ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24.22/bin",
+            "-e"
+        ]
+    );
+    assert_eq!(
+        args.last().unwrap(),
+        r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH"; export PATH; cd 'web' && npm start"#
+    );
 }
 
 #[test]

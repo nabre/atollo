@@ -39,6 +39,10 @@ pub async fn run_start<R: Runtime>(
         // server a container of the VM, never a pool of the PC.
         let env = crate::versions::project_env(&kit, &project, kit_env);
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
+            // The kit's tools for Linux, at the project's lines (D-170).
+            let tools =
+                super::terminals::project_vm_tools(&app, &task, &kit, &host, lang, &project)?;
+            let vm = vm.with_tools(tools);
             return runner
                 .start_in(&project, &dir, a, &env, lang, Some(&vm))
                 .or_fail_chain("run");

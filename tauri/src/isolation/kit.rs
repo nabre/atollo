@@ -137,6 +137,19 @@ pub fn mark_applied(kit: &Kit, sandbox: &str, print: &str) -> Result<()> {
     std::fs::write(&path, format!("{print}\n")).with_context(|| path.display().to_string())
 }
 
+/// The folders `sbx` mounted in `sandbox` when it was made (one per line:
+/// the workspace, then the read-only ones), if Atollo noted them: they
+/// cannot change after (`sbx run`'s arguments, not the kit's).
+pub fn mounts(kit: &Kit, sandbox: &str) -> Option<String> {
+    std::fs::read_to_string(dir(kit, sandbox).join(".mounts")).ok()
+}
+
+/// Notes the folders mounted in `sandbox` at its making.
+pub fn mark_mounts(kit: &Kit, sandbox: &str, mounts: &str) -> Result<()> {
+    let path = dir(kit, sandbox).join(".mounts");
+    std::fs::write(&path, mounts).with_context(|| path.display().to_string())
+}
+
 /// The owner of `sandbox`, from its kit, if Atollo wrote one.
 pub fn owner(kit: &Kit, sandbox: &str) -> Option<Owner> {
     let text = std::fs::read_to_string(dir(kit, sandbox).join("atollo.json")).ok()?;

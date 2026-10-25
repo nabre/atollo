@@ -581,6 +581,8 @@ pub struct Vm {
     kit: Kit,
     /// Whose sandbox it is, written in its kit.
     owner: kit::Owner,
+    /// The kit's tools a session gets ([`Vm::with_tools`]).
+    tools: GuestTools,
 }
 
 /// A sandbox of Atollo, for the list of the VMs (D-169).
@@ -711,16 +713,21 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
     if status(kit, host, env, false).level != Level::Vm {
         return None;
     }
+    // The kit's tools for the VM's Linux, read-only (D-170).
+    let read_only = vm::guest_target(kit.target())
+        .map(|t| vec![kit.for_target(t).apps()])
+        .unwrap_or_default();
     Some(Vm {
         sbx: Sbx::find(kit, host)?,
         host: host.clone(),
         name: vm::name(project),
         dir: dir.to_path_buf(),
-        read_only: Vec::new(),
+        read_only,
         kit: kit.clone(),
         owner: kit::Owner::Project {
             project: project.to_owned(),
         },
+        tools: GuestTools::default(),
     })
 }
 
@@ -750,6 +757,7 @@ pub fn kit_terminal_vm(
             terminal: terminal.to_owned(),
             dir: dir.display().to_string(),
         },
+        tools: GuestTools::default(),
     })
 }
 
@@ -840,20 +848,45 @@ fn plain(path: &Path) -> PathBuf {
     }
 }
 
-/// The kit's tools for the VM's Linux in the kit's terminal `terminal`:
-/// the `PATH` entries and the variables of `guest` (the kit scoped to the
-/// VM's target, [`vm::guest_target`]) that lie in its `data/apps`, as the
-/// VM sees them. The rest of the kit's environment (its home, temp,
-/// agents) is the PC's business: the VM has its own.
+/// The kit's tools in a VM: the `PATH` entries (first, before the VM's
+/// own) and the variables (`JAVA_HOME`…), as the VM sees them.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct GuestTools {
+    pub path: Vec<String>,
+    pub vars: Vec<(String, String)>,
+}
+
+/// The kit's tools for the VM's Linux in the kit's terminal `terminal`
+/// ([`guest_view`]), with `ATOLLO_TERMINAL`.
 pub fn guest_tools(
     kit: &Kit,
     guest: &Kit,
     terminal: &crate::editor::terminals::Terminal,
     base: KitEnv,
-) -> (Vec<String>, Vec<(String, String)>) {
+) -> GuestTools {
+    let env = crate::editor::terminals::env(guest, terminal, base);
+    let mut tools = guest_view(kit, guest, &env);
+    tools
+        .vars
+        .push(("ATOLLO_TERMINAL".to_owned(), terminal.name.clone()));
+    tools
+}
+
+/// The kit's tools for the VM's Linux in `project`, at the lines it chose
+/// (D-170), as on the PC (`versions::project_env`).
+pub fn project_guest_tools(kit: &Kit, guest: &Kit, project: &str, base: KitEnv) -> GuestTools {
+    let env = crate::versions::project_env(guest, project, base);
+    guest_view(kit, guest, &env)
+}
+
+/// The `PATH` entries and the variables of `env` (an environment of
+/// `guest`, the kit scoped to the VM's target, [`vm::guest_target`]) that
+/// lie in its `data/apps`, as the VM sees them. The rest of the kit's
+/// environment (its home, temp, agents) is the PC's business: the VM has
+/// its own.
+pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
     let windows = kit.target().is_windows();
     let apps = guest.apps();
-    let env = crate::editor::terminals::env(guest, terminal, base);
     let in_vm = |value: &str| -> Option<String> {
         let value = if windows {
             value.replace('/', "\\")
@@ -866,13 +899,12 @@ pub fn guest_tools(
             .flatten()
     };
     let path = env.path_entries().into_iter().filter_map(in_vm).collect();
-    let mut vars: Vec<(String, String)> = env
+    let vars = env
         .iter()
         .filter(|(name, _)| !name.eq_ignore_ascii_case("PATH"))
         .filter_map(|(name, value)| Some((name.to_owned(), in_vm(value)?)))
         .collect();
-    vars.push(("ATOLLO_TERMINAL".to_owned(), terminal.name.clone()));
-    (path, vars)
+    GuestTools { path, vars }
 }
 
 impl Vm {
@@ -900,9 +932,22 @@ impl Vm {
     /// Writes the sandbox's kit (D-169), then: the first time the sandbox
     /// is made with it (`--kit`); after, a changed kit goes in with
     /// `sbx kit add` (its disk kept); then it starts again when stopped.
-    pub fn start(&self, env: &KitEnv) -> anyhow::Result<()> {
+    ///
+    /// The folders mounted are fixed when the sandbox is made: one made
+    /// with others (before the kit's tools were mounted, D-170) is never
+    /// made again here, which would delete its disk; the error says to
+    /// remove it in the list of the VMs.
+    pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
         let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
+        let mounts = self.mounts();
         if self.exists(env)? {
+            if kit::mounts(&self.kit, &self.name).as_deref() != Some(mounts.as_str()) {
+                anyhow::bail!(crate::common::i18n::t(
+                    lang,
+                    "La sandbox {0} è stata creata con altre cartelle: per avere gli strumenti del kit va creata di nuovo. Rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.",
+                    &[&self.name],
+                ));
+            }
             if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
                 let args = vec![
                     "kit".to_owned(),
@@ -924,7 +969,27 @@ impl Vm {
             &vm::start_args(&self.name, &self.dir, &self.read_only, Some(&kit_dir)),
             START_LIMIT,
         )?;
+        kit::mark_mounts(&self.kit, &self.name, &mounts)?;
         kit::mark_applied(&self.kit, &self.name, &print)
+    }
+
+    /// The folders this sandbox mounts, one per line: the workspace, then
+    /// the read-only ones.
+    fn mounts(&self) -> String {
+        std::iter::once(&self.dir)
+            .chain(&self.read_only)
+            .map(|p| format!("{}\n", p.display()))
+            .collect()
+    }
+
+    /// The kit's tools its sessions and actions get (D-170).
+    pub fn with_tools(mut self, tools: GuestTools) -> Vm {
+        self.tools = tools;
+        self
+    }
+
+    pub fn tools(&self) -> &GuestTools {
+        &self.tools
     }
 
     /// True when `sbx` has this sandbox.
@@ -962,7 +1027,7 @@ impl Vm {
     pub fn run_line(&self, env: &KitEnv, line: &str) -> anyhow::Result<()> {
         self.call(
             env,
-            &vm::exec_args(&self.name, None, line, &[]),
+            &vm::exec_args(&self.name, None, line, &[], &[]),
             START_LIMIT,
         )
     }

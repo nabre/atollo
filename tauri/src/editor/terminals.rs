@@ -152,6 +152,19 @@ fn selectable() -> impl Iterator<Item = &'static Component> {
     })
 }
 
+/// The tools the kit chose (Linguaggi e strumenti), each at its newest
+/// line: what the default terminal and a project have in the VM, where
+/// the tools come from the kit's choice for Linux, not from what is on the
+/// PC's disk (D-170).
+pub fn chosen_tools(kit: &Kit) -> BTreeMap<String, Option<String>> {
+    let catalog = Catalog::get();
+    let choice = crate::setup::catalog::Choice::read_or_defaults(kit, catalog);
+    selectable()
+        .filter(|c| choice.is_chosen(&c.id))
+        .map(|c| (c.id.clone(), None))
+        .collect()
+}
+
 /// The lines of `c` on disk, newest first, with their versions.
 fn lines_of(kit: &Kit, c: &Component) -> (Vec<String>, BTreeMap<String, String>) {
     if !c.versioned {

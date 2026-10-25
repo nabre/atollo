@@ -1,5 +1,10 @@
 # Novità
 
+## I progetti nella VM con gli strumenti del kit (25/10/2026)
+
+- **Strumenti del kit nella VM del progetto** (D-170): terminale e azioni di un progetto nella VM usano Node, PHP, Python e gli altri strumenti scelti nel kit, alle versioni scelte dal progetto, come sul PC. Arrivano per Linux, la prima volta scaricati in `data\apps\linux-x64`, e la VM non li può modificare.
+- Una sandbox di progetto creata prima di oggi non ha la cartella degli strumenti: Atollo lo dice e chiede di rimuoverla in «Sandbox delle VM» (i file del progetto restano), invece di cancellarne il disco da sé.
+
 ## Lo stato delle VM nel kit (25/10/2026)
 
 - **Le VM restano nel kit** (D-169): Atollo usa solo un daemon di Docker Sandboxes avviato da lui, con immagini e dischi delle VM in `data`. Se sul PC ne gira un altro, l'avviso «Senza VM» lo dice invece di mettere le VM nei suoi dati; su un disco FAT32 o exFAT dice di spostare il kit.

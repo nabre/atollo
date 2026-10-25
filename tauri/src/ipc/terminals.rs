@@ -99,13 +99,24 @@ pub async fn terminal_launch<R: Runtime>(
             if let Some(vm) =
                 crate::isolation::kit_terminal_vm(&kit, &host, &env, &terminal.id, &workspace, &apps)
             {
-                ensure_guest_tools(&app, &task, &guest, &terminal);
+                // The default terminal: the tools the kit chose, for the
+                // VM's Linux; another: its own (D-170).
+                let wanted = if terminal.id == terminals::DEFAULT_ID {
+                    terminals::chosen_tools(&kit)
+                } else {
+                    terminal.tools.clone()
+                };
+                ensure_guest_tools(&app, &task, &guest, &wanted);
                 std::fs::create_dir_all(&apps).or_fail("terminals")?;
                 let base = KitEnv::build(&guest, &Settings::load(&kit).settings, lang, &host);
-                let (path, vars) = crate::isolation::guest_tools(&kit, &guest, &terminal, base);
-                vm.start(&env).or_fail_chain("vm")?;
-                let args =
-                    crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, &path, &vars);
+                let tools = crate::isolation::guest_tools(&kit, &guest, &terminal, base);
+                vm.start(&env, lang).or_fail_chain("vm")?;
+                let args = crate::isolation::vm::kit_terminal_args(
+                    &vm.name,
+                    &guest_dir,
+                    &tools.path,
+                    &tools.vars,
+                );
                 let launch = vm.launch(&kit, args, "VM");
                 return terminal::open_launch(&app, &vm.session_env(&env), &workspace, launch)
                     .or_fail_chain("terminal");
@@ -117,22 +128,22 @@ pub async fn terminal_launch<R: Runtime>(
     .or_fail("terminals")?
 }
 
-/// The tools of `terminal` for the VM's Linux (`guest`, the kit scoped to
-/// its target), installed in `data/apps/linux-…` when missing, waiting for
-/// the downloads (their progress in the status bar): those with a build for
-/// it that this PC can install, not those that finish on their own system
-/// (`router::bootstrap`), each at the line the terminal chose. A failure
-/// only goes to the log: the terminal opens with what is there.
-fn ensure_guest_tools<R: Runtime>(
+/// The kit's tools `wanted` (id → the line chosen; `None`: the newest) for
+/// the VM's Linux (`guest`, the kit scoped to its target), installed in
+/// `data/apps/linux-…` when missing, waiting for the downloads (their
+/// progress in the status bar): those with a build for it that this PC can
+/// install, not those that finish on their own system
+/// (`router::bootstrap`). A failure only goes to the log: the session
+/// opens with what is there.
+pub(crate) fn ensure_guest_tools<R: Runtime>(
     app: &AppHandle<R>,
     task: &Arc<SetupTask>,
     guest: &Kit,
-    terminal: &Terminal,
+    wanted: &std::collections::BTreeMap<String, Option<String>>,
 ) {
     let catalog = Catalog::get();
     let target = guest.target();
-    let tools: Vec<(&crate::setup::Component, Option<&String>)> = terminal
-        .tools
+    let tools: Vec<(&crate::setup::Component, Option<&String>)> = wanted
         .iter()
         .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
         .filter(|(c, _)| {
@@ -172,7 +183,7 @@ fn ensure_guest_tools<R: Runtime>(
             ..Options::default()
         });
     }
-    // A line the terminal chose, beside the one installed.
+    // A line chosen, beside the one installed.
     let has_line = |c: &crate::setup::Component, line: &str| {
         crate::versions::default_line(guest, c).as_deref() == Some(line)
             || crate::versions::saved(guest, c)
@@ -192,6 +203,33 @@ fn ensure_guest_tools<R: Runtime>(
             ..Options::default()
         });
     }
+}
+
+/// The kit's tools for `project` in its VM (D-170): those the kit chose, at
+/// the lines the project chose, installed for the VM's Linux when missing;
+/// nothing where there is no VM's Linux.
+pub(crate) fn project_vm_tools<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    kit: &Kit,
+    host: &crate::env::Host,
+    lang: &str,
+    project: &str,
+) -> CmdResult<crate::isolation::GuestTools> {
+    let Some(guest) = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t))
+    else {
+        return Ok(crate::isolation::GuestTools::default());
+    };
+    let mut wanted = terminals::chosen_tools(kit);
+    for (id, line) in crate::versions::project_choice(kit, project) {
+        wanted.insert(id, Some(line));
+    }
+    ensure_guest_tools(app, task, &guest, &wanted);
+    std::fs::create_dir_all(guest.apps()).or_fail("vm")?;
+    let base = KitEnv::build(&guest, &Settings::load(kit).settings, lang, host);
+    Ok(crate::isolation::project_guest_tools(
+        kit, &guest, project, base,
+    ))
 }
 
 /// The system's "Select folder" window, starting in `start`; `None` when it
