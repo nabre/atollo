@@ -42,7 +42,7 @@ ui\src\                       React + TypeScript interface (below)
 guide\                        the Guide's text, neutral: core\ (contract, model, language), content\ (the
                               chapters), render\load.cjs (the site's loader); drawn by the app and the site (below)
 test\rust\  test\ui\          tests, with the same structure as tauri\src and ui\src (one system's code: test\rust\os\<system>)
-runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
+runtime\                      files written to data\kit\ (profile.ps1, bashrc, vm.ps1, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
 scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
                               test-linux.sh, cross-check\, build-httpd\, build-php\, build-mongo-express\;
@@ -128,7 +128,7 @@ tauri\src\
                               site, container, overrides (panel.json)
   editor\                     editor and console
     mod  window               VSCodium web server; editor-<n> windows (D-69)
-    cfg  ext  theme           settings and terminal profiles; extensions (D-71); Atollo theme
+    cfg  ext  theme           settings and terminal profiles (through vm.ps1, D-175); extensions (D-71); Atollo theme
     terminal                  kit console: a session of the in-app terminal on every system (D-148), its own window once detached (D-149)
     pty                       in-app terminal: the sessions for xterm.js, their output and backlog (D-109, D-148);
                               the pseudo terminal itself is `platform::pty`
@@ -200,15 +200,16 @@ Three boxes, one at a time for a project's programs (D-175):
 
 | Box | What runs there | Where in the code |
 | --- | --- | --- |
-| **VM** (`Level::Vm`) | everything that runs a project's code: the project's terminal and the kit terminals (`sbx exec`, D-168, D-170), the actions, an action's site (a container of the VM's Docker: `php:<line>-apache`, `httpd:2.4`, with the project's own aliases mounted; its port published on the PC's `127.0.0.1`, or `0.0.0.0` with "Local network"), Claude Code and Codex (sbx agent sandboxes, `atollo-a-`). Inside: the project's folder writable, the kit's tools for Linux (`data\apps\linux-x64` or `linux-arm64`) read-only. Toward the PC only the ports of its databases (D-171) and GitHub when the project chooses it (D-172) | `isolation\vm.rs`, `isolation\mod.rs` (`Vm`, `vm_for`, `kit_terminal_vm`, `guest_tools`), `ipc\terminals.rs` (`project_vm_ready`, `ensure_guest_tools`), `projects\run\start.rs` |
-| **Kit on the PC** | the kit's programs, never a project's code: database servers and their tools (phpMyAdmin, mongo-express, backups), llama.cpp, the editor's window, Git for cloning, `sbx` itself, the app | the other areas |
+| **VM** (`Level::Vm`) | everything that runs a project's code: the project's terminal and the kit terminals (`sbx exec`, D-168, D-170), the actions, an action's site (a container of the VM's Docker: `php:<line>-apache`, `httpd:2.4`, with the project's own aliases mounted; its port published on the PC's `127.0.0.1`, or `0.0.0.0` with "Local network"), Claude Code and Codex (sbx agent sandboxes, `atollo-a-`, with the project's kit tools on the `PATH` and its database, from the app's page and from the editor), the editor's terminals (every kit profile), its tasks and its Claude Code and Codex profiles (through `data\kit\vm.ps1`; Antigravity and Pi refused). Inside: the project's folder writable, the kit's tools for Linux (`data\apps\linux-x64` or `linux-arm64`) read-only. Toward the PC only the ports of its databases (D-171) and GitHub when the project chooses it (D-172) | `isolation\vm.rs`, `isolation\mod.rs` (`Vm`, `vm_for`, `kit_terminal_vm`, `guest_tools`, `for_agent`), `isolation\session.rs`, `ipc\terminals.rs` (`project_vm_ready`, `ensure_guest_tools`), `ipc\agents.rs` (`agent_vm_ready`, `watch_agent_requests`), `ipc\editing.rs` (`editor_vm_begin`, `editor_vm_session`), `editor\cfg.rs` (`vm_args`), `runtime\vm.ps1`, `projects\run\start.rs` |
+| **Kit on the PC** | the kit's programs, never a project's code: database servers and their tools (phpMyAdmin, mongo-express, backups), llama.cpp, the editor's window, Git for cloning, `sbx` itself, the app. One declared limit: the editor's debugger adapters start programs on the PC by themselves | the other areas |
 | **No VM** (`Level::Env`) | when the VM is off: everything on the PC with the sealed environment (`isolation::seal`, in `versions::project_env` and `choice_env`) and the "No VM" notice; the Web server pools (D-101; with the VM on their start and reload are refused, `ipc::servers::refused_with_vm`, and "Start with Atollo" is skipped, while stopping still works), the kit terminals on the PC, the kit's site servers | `isolation::seal`, `versions\choice.rs` |
 
 The files:
 - `mod.rs`: `status` (the `Level` and the `Blocker`s, in order: the system, the hypervisor and AppArmor from `platform::virt` (an unsupported system is the only reason given), the kit's `sbx` (`sbx_missing`, with `failed`: the reason of the last installation, noted by `note_install` and read by `install_failure`), the kit's disk (`kit_disk`), the daemon (`foreign_daemon`), `sbx ls --json` (`sbx_signed_out`, `sbx_failed`), the network policy `sbx policy init balanced`), `Sbx` (`find`, `command`, `session_env`: the kit's environment with the PC's temp and `daemon::ENV`), `Fix` and `fix_launch` ("Run" for `sbx login` and `sbx ls` in the app's terminal; never a text of the interface), `seal`, the `Vm` of a project or a terminal (start with its kit, made again in the project's folder when the kit moved: `moved`, `make_again`; mounts, database ports, `publish`, where a port already published is fine and the other address is taken back first; `stop_run`; `launch`), `vm_workspace` (the folders refused as a workspace), `guest_tools` and `guest_view` (only the kit's tools for Linux and their variables), `db_in_vm`, the sandboxes' list and removal (`vm_list`, `remove_vm`, `remove_owned`), `stop_daemon`, `restart_pending`;
-- `vm.rs`: pure builders of `sbx`'s arguments and names: `name`, `agent_name`, `terminal_name` (`atollo-p-`, `atollo-a-`, `atollo-t-` and 96 bits of SHA-256), `start_args` (`sbx run -d --name … --kit …`), `exec_args`, `kit_terminal_args`, `agent_args`, `publish_args` and `unpublish_args` (`127.0.0.1`, or `0.0.0.0` with the local network), `published_already`, `run_tag`, `tracked` and `stop_args` (an action's process group noted in the VM; `TERM`, `KILL` after five seconds, then its web container), `mount_args`, `host_port_allow` and `host_port_close`, `POLICY_ARGS`, `guest_target`, `guest_path` (`D:\a\b` → `/d/a/b`), `web_line` (the site's container, the project's aliases at `/srv/alias/<n>`);
+- `vm.rs`: pure builders of `sbx`'s arguments and names: `name`, `agent_name`, `terminal_name` (`atollo-p-`, `atollo-a-`, `atollo-t-` and 96 bits of SHA-256), `start_args` (`sbx run -d --name … --kit …`), `exec_args`, `kit_terminal_args`, `agent_args`, `agent_session_args` (`sbx run --name <sandbox> --env-file db.env -e PATH=<tools>:<the image's PATH>`), `publish_args` and `unpublish_args` (`127.0.0.1`, or `0.0.0.0` with the local network), `published_already`, `run_tag`, `tracked` and `stop_args` (an action's process group noted in the VM; `TERM`, `KILL` after five seconds, then its web container), `mount_args`, `host_port_allow` and `host_port_close`, `POLICY_ARGS`, `guest_target`, `guest_path` (`D:\a\b` → `/d/a/b`), `web_line` (the site's container, the project's aliases at `/srv/alias/<n>`);
 - `daemon.rs`: whose the daemon is (`Daemon::None`, `Kit`, `Other`, from the kit's `sandboxd.pid` and the pipe), its state in the kit's home (`state_dir`), `ENV` (`LLMMAN_RUNTIME=path`, `SBX_NO_TELEMETRY=1`), `SETTINGS` (`ssh.agentForwardingEnabled=false`, `browser.enabled=false`, `diagnostics.autoUpload=no`, applied with a restart only when no sandbox runs);
 - `kit.rs`: each sandbox's kit in `data\app\sandboxes\<sandbox>\` (`spec.yaml`, `atollo.json`, `.applied`, `.mounts`, `.ports`), its owner, the list and the removal;
+- `session.rs`: the editor's sessions in `data\app\sandboxes\sessions\`, read by `data\kit\vm.ps1` (the script every editor profile runs, `editor::cfg::vm_args`): `.level` (`vm` or `env`, written before the editor's window; fail closed: only `env` lets a terminal run on the PC, no level after 15 seconds opens nothing), `<project>.pending` while the app makes the VM ready, `<project>\` (`sbx`, `env`, `shell`, `run`, or `error`), the agents' requests (`<project>.<agent>.request`, `take_requests`, answered by `ipc::agents::watch_agent_requests` with `<project>\<agent>` or `<agent>.error`); `clear_all` at the app's start;
 - `secrets.rs`: `Atollo.exe secret github` registered per sandbox with `sbx secret set github --sandbox <vm> --command …`, answered only to the kit's `sbx` (`asked_by_sbx`) with a known nonce (`secrets.json`);
 - around it: `platform\virt.rs` and `os\*\virt.rs` (`Gap`: what the PC lacks), `install\sandboxes.rs` (the component), `ipc\isolation.rs` (`isolation_status`, `vms_list`, `vm_remove`, `isolation_run`), `ui\src\shell\isolation.tsx` and `ui\src\ipc\isolation.ts` (the status bar's item and its dialog), the runner's `Scope` with `ipc::setup::vm_tools_target` (D-173) and `ipc::setup::mark_via_vm` for the matrix (D-174), `projects\run\start.rs` (`VmRun`: an action's stop in its VM, off the caller's thread), `ipc\servers.rs` (`refused_with_vm`), `kit\backup.rs` (`left_out`: the daemon's state, `…/state/sandboxd`, stays out of "Copy of the kit").
 
@@ -217,9 +218,9 @@ Where a change goes:
 - a new reason the VM is off → a `Blocker` in `isolation\mod.rs` (sent by its `code`), its text and action in `ui\src\shell\isolation.tsx` and the four languages; something the PC lacks → a `Gap` in `platform\virt.rs` and the `os\*\virt.rs` that read it;
 - something a sandbox has from its creation → `isolation\kit.rs` (`spec_yaml`); what changes at every session (`PATH`, the tools' lines) → `sbx exec -e`, in `vm.rs`;
 - a setting of the daemon → `daemon::SETTINGS`; a secret for the VMs → `isolation\secrets.rs`, as a command, never a copy;
-- a program of a project → through `ipc::terminals::project_vm_ready` while the VM is on, never on the PC in its place.
+- a program of a project → through `ipc::terminals::project_vm_ready` while the VM is on, never on the PC in its place; one the editor starts → a profile through `editor::cfg::vm_args` (`vm.ps1`), its session in `isolation\session.rs`.
 
-Still to do, in this order (D-175): the editor's terminals and tasks in the project's VM; the agents in the VM with the project's tools and database, and the kit's MCP servers reachable from the VM (or said missing).
+Still to do (D-175): the kit's MCP servers for the agents in the VM (`data\agents\mcp.json`, the project's `.mcp.json`; their commands are programs of the PC), to be brought into `sbx`'s MCP gateway or said missing.
 
 ### Kit data (`data\`)
 
@@ -233,7 +234,8 @@ data\
     sandboxes\<sandbox>\      each Docker Sandboxes sandbox's kit (D-169): spec.yaml, atollo.json (its owner),
                               .applied, .mounts, .ports (the database ports opened to it, D-171), db.env (the
                               project's database login for the VM, owner-only); beside them secrets.json (the
-                              secret commands registered per PC and sandbox, D-172) and .restart-pending
+                              secret commands registered per PC and sandbox, D-172), .restart-pending and
+                              sessions\ (the editor's sessions for vm.ps1, cleared at the app's start, D-175)
     secrets\                  gemini-api-key, llama-key (the local models' server), hf-token (Hugging Face),
                               readable by the owner only (D-137, D-151)
     llm.json                  the local models' settings: port, automatic start, Pi's model (D-151)
@@ -256,7 +258,7 @@ data\
                               AppData\Local\DockerSandboxes\ on Windows (the other systems: the same home's
                               folders): sbx's settings and logs (the Docker sign-in is in the system's keyring), and the kit daemon's state
                               (images, the sandboxes' sparse disks, D-169)
-  kit\                        files written from runtime\ at every start
+  kit\                        files written from runtime\ at every start (vm.ps1: the editor's profiles, D-175)
   models\gguf\<owner>--<repo>\
                               local models, one copy for every target (D-151): the GGUF files, atollo.json
                               (what the kit downloaded), <file>.part while a download is paused
@@ -296,10 +298,10 @@ Everything that crosses between the interface and Rust is in two folders with th
 | `events.rs` | the names of the events sent to the interface (`run`, `setup`, `pty-*`…) |
 | `app.rs` | information, settings, updates, opening addresses and folders |
 | `window.rs` | what is open, "Remove drive", shutdown and confirmation |
-| `editing.rs` | editor, console, editor settings and extensions of a project |
+| `editing.rs` | editor, console, editor settings and extensions of a project; the editor's session in the project's VM (`editor_vm_begin`, `editor_vm_session`, D-175) |
 | `setup.rs` | choice of components, installation in progress, downloads by hand |
 | `versions.rs` | saved versions, project versions, relations matrix |
-| `agents.rs` | status, consumption, launch and exit of the agents |
+| `agents.rs` | status, consumption, launch and exit of the agents; their sandbox in the VM with the project's tools and database (`agent_vm_ready`), also for the editor's profiles (`watch_agent_requests`) |
 | `llm.rs` | local models: server status, start and stop, settings, catalog and models on disk, Hugging Face, downloads and their cancel, removal, the token and the key; one hand-written permission, `allow-local-models` (`permissions\llm.toml`), instead of one per command |
 | `projects.rs` | list, creation, clone, deletion, actions, site, status, MCP |
 | `orphans.rs` | data without a project: list and "Link to…" (D-89) |
