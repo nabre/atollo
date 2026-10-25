@@ -427,6 +427,12 @@ export const SERVICES: TopicTexts = {
             "Tout se fait depuis Projets › le projet › section « Bases de données ».",
             "Alles geschieht unter Projekte › das Projekt › Abschnitt „Datenbanken“.",
           ),
+          tr(
+            "Con la VM attiva il database resta sul PC: la VM del progetto ne raggiunge solo la porta, come l'utente del progetto, all'indirizzo host.docker.internal. Il file .env non cambia.",
+            "With the VM on the database stays on the PC: the project's VM reaches only its port, as the project's user, at the address host.docker.internal. The .env file does not change.",
+            "Avec la VM active, la base de données reste sur le PC : la VM du projet n'en atteint que le port, en tant qu'utilisateur du projet, à l'adresse host.docker.internal. Le fichier .env ne change pas.",
+            "Mit aktiver VM bleibt die Datenbank auf dem PC: Die VM des Projekts erreicht nur ihren Port, als Benutzer des Projekts, unter der Adresse host.docker.internal. Die Datei .env ändert sich nicht.",
+          ),
         ]}
       />
 
@@ -743,6 +749,12 @@ export const SERVICES: TopicTexts = {
             "The sites respond only to this PC, unless you turn on the local network in Settings.",
             "Les sites ne répondent qu'à ce PC, sauf si vous activez le réseau local dans les Paramètres.",
             "Die Websites antworten nur diesem PC, es sei denn, du aktivierst das lokale Netzwerk in den Einstellungen.",
+          ),
+          tr(
+            "Con la VM attiva il sito gira come container nella VM del progetto (Apache con il suo PHP, o Apache per i soli file; un sito Caddy diventa Apache), con rete locale, domini .localhost e alias del progetto; i pool della pagina Server Web non partono, servono solo senza VM.",
+            "With the VM on, the site runs as a container in the project's VM (Apache with its PHP, or Apache for plain files; a Caddy site becomes Apache), with local network, .localhost domains and the project's aliases; the pools of the Web Servers page do not start, they serve only without the VM.",
+            "Avec la VM active, le site tourne comme conteneur dans la VM du projet (Apache avec son PHP, ou Apache pour les simples fichiers ; un site Caddy devient Apache), avec réseau local, domaines .localhost et alias du projet ; les pools de la page Serveurs web ne démarrent pas, ils ne servent que sans VM.",
+            "Mit aktiver VM läuft die Website als Container in der VM des Projekts (Apache mit seinem PHP oder Apache für reine Dateien; eine Caddy-Website wird zu Apache), mit lokalem Netzwerk, .localhost-Domains und den Aliassen des Projekts; die Pools der Seite Webserver starten nicht, sie dienen nur ohne VM.",
           ),
         ]}
       />
@@ -1238,6 +1250,12 @@ export const SERVICES: TopicTexts = {
             "Le terminal « Tous les outils » est toujours prêt ; vous pouvez en créer à vous avec les outils et versions choisis.",
             "Das Terminal „Alle Werkzeuge“ ist immer bereit; du kannst eigene mit ausgewählten Werkzeugen und Versionen erstellen.",
           ),
+          tr(
+            "Con la VM attiva ogni terminale del kit si apre in una microVM sua, una per cartella, con gli strumenti del kit per Linux; senza, gira sul PC.",
+            "With the VM on, each kit terminal opens in a microVM of its own, one per folder, with the kit's tools for Linux; without it, it runs on the PC.",
+            "Avec la VM active, chaque terminal du kit s'ouvre dans sa propre microVM, une par dossier, avec les outils du kit pour Linux ; sans elle, il tourne sur le PC.",
+            "Mit aktiver VM öffnet sich jedes Terminal des Kits in einer eigenen microVM, eine pro Ordner, mit den Werkzeugen des Kits für Linux; ohne sie läuft es auf dem PC.",
+          ),
         ]}
       />
 
@@ -1291,6 +1309,63 @@ export const SERVICES: TopicTexts = {
             "Seite Terminals öffnen",
           )}
         </Go>
+      </Section>
+
+      <Section
+        title={tr(
+          "Il terminale nella VM",
+          "The terminal in the VM",
+          "Le terminal dans la VM",
+          "Das Terminal in der VM",
+        )}
+      >
+        <P>
+          {tr(
+            "Con la VM attiva («VM» nella barra di stato) «Apri» non apre la PowerShell del PC: apre bash in una microVM di Docker Sandboxes, una per terminale e per cartella. La cartella di partenza è montata in scrittura; gli strumenti del kit per Linux in sola lettura, primi nel PATH. Del resto del PC e del kit la VM non vede nulla.",
+            "With the VM on (“VM” in the status bar) “Open” does not open the PC's PowerShell: it opens bash in a Docker Sandboxes microVM, one per terminal and folder. The starting folder is mounted writable; the kit's tools for Linux read-only, first on the PATH. Of the rest of the PC and of the kit the VM sees nothing.",
+            "Avec la VM active (« VM » dans la barre d'état), « Ouvrir » n'ouvre pas le PowerShell du PC : il ouvre bash dans une microVM Docker Sandboxes, une par terminal et par dossier. Le dossier de départ est monté en écriture ; les outils du kit pour Linux en lecture seule, en tête du PATH. Du reste du PC et du kit, la VM ne voit rien.",
+            "Mit aktiver VM („VM“ in der Statusleiste) öffnet „Öffnen“ nicht die PowerShell des PCs, sondern bash in einer microVM von Docker Sandboxes, eine pro Terminal und Ordner. Der Startordner ist beschreibbar eingehängt; die Werkzeuge des Kits für Linux schreibgeschützt, vorne im PATH. Vom Rest des PCs und des Kits sieht die VM nichts.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "Gli strumenti sono quelli del terminale, alle sue versioni (per «Tutti gli strumenti» quelli scelti nel kit): se ne manca uno per Linux, Atollo lo installa prima di aprire, con l'avanzamento nella barra di stato.",
+              "The tools are the terminal's, at its versions (for “All tools” the ones chosen in the kit): when one is missing for Linux, Atollo installs it before opening, with the progress in the status bar.",
+              "Les outils sont ceux du terminal, à ses versions (pour « Tous les outils », ceux choisis dans le kit) : s'il en manque un pour Linux, Atollo l'installe avant d'ouvrir, avec la progression dans la barre d'état.",
+              "Die Werkzeuge sind die des Terminals, in seinen Versionen (für „Alle Werkzeuge“ die im Kit gewählten): Fehlt eines für Linux, installiert Atollo es vor dem Öffnen, mit dem Fortschritt in der Statusleiste.",
+            ),
+            tr(
+              "La cartella di partenza non può essere la radice di un disco, un link, una cartella di sistema o di rete, né stare nel kit o nel tuo profilo (salvo i progetti del kit): il terminale non parte e dice di scegliere la cartella di un progetto. Mai un ripiego silenzioso sul PC.",
+              "The starting folder cannot be the root of a disk, a link, a system or network folder, nor be in the kit or in your profile (except the kit's projects): the terminal does not start and says to choose a project's folder. Never a silent fallback to the PC.",
+              "Le dossier de départ ne peut pas être la racine d'un disque, un lien, un dossier système ou réseau, ni se trouver dans le kit ou dans votre profil (sauf les projets du kit) : le terminal ne démarre pas et dit de choisir le dossier d'un projet. Jamais un repli silencieux sur le PC.",
+              "Der Startordner darf nicht das Stammverzeichnis eines Laufwerks, ein Link, ein System- oder Netzwerkordner sein und nicht im Kit oder in deinem Profil liegen (außer den Projekten des Kits): Das Terminal startet nicht und sagt, den Ordner eines Projekts zu wählen. Nie ein stilles Ausweichen auf den PC.",
+            ),
+            tr(
+              "Nella VM un percorso come D:\\Siti\\shop diventa /d/Siti/shop; su macOS e Linux resta lo stesso.",
+              "In the VM a path like D:\\Sites\\shop becomes /d/Sites/shop; on macOS and Linux it stays the same.",
+              "Dans la VM, un chemin comme D:\\Sites\\shop devient /d/Sites/shop ; sur macOS et Linux, il reste le même.",
+              "In der VM wird ein Pfad wie D:\\Sites\\shop zu /d/Sites/shop; unter macOS und Linux bleibt er gleich.",
+            ),
+            tr(
+              "Eliminare un terminale toglie anche le sue sandbox, una per cartella.",
+              "Deleting a terminal also removes its sandboxes, one per folder.",
+              "Supprimer un terminal retire aussi ses sandbox, une par dossier.",
+              "Ein Terminal zu löschen entfernt auch seine Sandboxes, eine pro Ordner.",
+            ),
+          ]}
+        />
+        <P>
+          {rich(
+            tr(
+              "Senza VM il terminale gira sul PC, come descritto sopra, con l'avviso «Senza VM» nella barra di stato. I dettagli: {0}.",
+              "Without the VM the terminal runs on the PC, as described above, with the “No VM” notice in the status bar. The details: {0}.",
+              "Sans VM, le terminal tourne sur le PC, comme décrit ci-dessus, avec l'avis « Sans VM » dans la barre d'état. Les détails : {0}.",
+              "Ohne VM läuft das Terminal auf dem PC, wie oben beschrieben, mit dem Hinweis „Ohne VM“ in der Statusleiste. Die Details: {0}.",
+            ),
+            <See key="v" id="vm" />,
+          )}
+        </P>
       </Section>
 
       <Section
@@ -1433,7 +1508,7 @@ export const SERVICES: TopicTexts = {
         />
       </Under>
 
-      <Related ids={["project-editor", "isolation", "tools-versions"]} />
+      <Related ids={["project-editor", "vm", "isolation", "tools-versions"]} />
     </>
   ),
 };

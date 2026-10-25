@@ -208,6 +208,15 @@ export const PORTABLE: TopicTexts = {
               ),
             },
             {
+              title: tr("VM", "VM", "VM", "VM"),
+              text: tr(
+                "Docker Sandboxes del kit si ferma, e con lui le microVM, i cui dischi sono nel kit.",
+                "The kit's Docker Sandboxes stops, and with it the microVMs, whose disks are in the kit.",
+                "Le Docker Sandboxes du kit s'arrête, et avec lui les microVM, dont les disques sont dans le kit.",
+                "Das Docker Sandboxes des Kits wird beendet, und mit ihm die microVMs, deren Festplatten im Kit liegen.",
+              ),
+            },
+            {
               title: tr("Il resto", "The rest", "Le reste", "Der Rest"),
               text: tr(
                 "Console e ogni processo con il programma dentro il kit.",
@@ -320,6 +329,18 @@ export const PORTABLE: TopicTexts = {
               "Connexions, paramètres, projets et bases de données sont dans le dossier : ils voyagent avec lui.",
               "Anmeldungen, Einstellungen, Projekte und Datenbanken liegen im Ordner: Sie reisen mit ihm.",
             ),
+            tr(
+              "Anche le sandbox delle VM sono nel kit: quella di un progetto si rifà da sola nella cartella nuova, con una riga nel log. File, database, strumenti e accessi restano; si perdono solo la home della VM e le immagini scaricate.",
+              "The VM sandboxes are in the kit too: a project's one is made again by itself in the new folder, with a line in the log. Files, databases, tools and sign-ins stay; only the VM's home and the downloaded images are lost.",
+              "Les sandbox des VM sont aussi dans le kit : celle d'un projet est refaite toute seule dans le nouveau dossier, avec une ligne dans le journal. Fichiers, bases de données, outils et connexions restent ; seuls le dossier personnel de la VM et les images téléchargées sont perdus.",
+              "Auch die Sandboxes der VMs liegen im Kit: Die eines Projekts wird im neuen Ordner von selbst neu angelegt, mit einer Zeile im Log. Dateien, Datenbanken, Werkzeuge und Anmeldungen bleiben; verloren gehen nur das Home der VM und die heruntergeladenen Images.",
+            ),
+            tr(
+              "Su un altro PC la VM chiede di nuovo ciò che non viaggia con il kit: l'accesso a Docker (sbx login), l'hypervisor attivo e, su Ubuntu, il profilo AppArmor, da rifare anche quando il kit cambia cartella. L'avviso «Senza VM» dice che cosa manca.",
+              "On another PC the VM asks again for what does not travel with the kit: the Docker sign-in (sbx login), the hypervisor on and, on Ubuntu, the AppArmor profile, to be redone also when the kit changes folder. The “No VM” notice says what is missing.",
+              "Sur un autre PC, la VM redemande ce qui ne voyage pas avec le kit : la connexion à Docker (sbx login), l'hyperviseur activé et, sur Ubuntu, le profil AppArmor, à refaire aussi quand le kit change de dossier. L'avis « Sans VM » dit ce qui manque.",
+              "Auf einem anderen PC verlangt die VM erneut, was nicht mit dem Kit reist: die Anmeldung bei Docker (sbx login), den eingeschalteten Hypervisor und unter Ubuntu das AppArmor-Profil, das auch neu nötig ist, wenn das Kit den Ordner wechselt. Der Hinweis „Ohne VM“ sagt, was fehlt.",
+            ),
           ]}
         />
         <Callout tone="info">
@@ -362,10 +383,10 @@ export const PORTABLE: TopicTexts = {
         <Steps
           steps={[
             tr(
-              "Formatta la chiavetta in exFAT, che tutti e tre i sistemi leggono e scrivono.",
-              "Format the USB stick as exFAT, which all three systems can read and write.",
-              "Formatez la clé USB en exFAT, que les trois systèmes savent lire et écrire.",
-              "Formatiere den USB-Stick mit exFAT, das alle drei Systeme lesen und schreiben können.",
+              "Formatta la chiavetta in exFAT, che tutti e tre i sistemi leggono e scrivono. Su exFAT però la VM dei progetti non parte («Senza VM»): per usarla tieni il kit su NTFS, APFS o ext4.",
+              "Format the USB stick as exFAT, which all three systems can read and write. On exFAT, though, the projects' VM does not start (“No VM”): to use it keep the kit on NTFS, APFS or ext4.",
+              "Formatez la clé USB en exFAT, que les trois systèmes savent lire et écrire. Sur exFAT, cependant, la VM des projets ne démarre pas (« Sans VM ») : pour l'utiliser, gardez le kit sur NTFS, APFS ou ext4.",
+              "Formatiere den USB-Stick mit exFAT, das alle drei Systeme lesen und schreiben können. Auf exFAT startet die VM der Projekte allerdings nicht („Ohne VM“): Um sie zu nutzen, lass das Kit auf NTFS, APFS oder ext4.",
             ),
             tr(
               "Metti nella cartella del kit l'eseguibile di ciascun sistema (Atollo.exe, Atollo.app, il file AppImage).",
@@ -421,7 +442,7 @@ export const PORTABLE: TopicTexts = {
         </Under>
       </Section>
 
-      <Related ids={["eject", "isolation", "tools-overview"]} />
+      <Related ids={["eject", "vm", "isolation", "tools-overview"]} />
     </>
   ),
 
@@ -442,10 +463,10 @@ export const PORTABLE: TopicTexts = {
             "Die Werkzeuge werden auf der Seite Werkzeuge aktualisiert, mit „<Name> aktualisieren“ in einer Zeile oder „Alle aktualisieren“.",
           ),
           tr(
-            "Per una copia di sicurezza completa c'è «Copia del kit» in Impostazioni › Il kit: progetti e dati in una cartella o in uno zip, senza i programmi, che si riscaricano, e l'importazione in un altro kit.",
-            "For a complete backup there is “Copy of the kit” in Settings › The kit: projects and data into a folder or a zip, without the programs, which are downloaded again, and the import into another kit.",
-            "Pour une sauvegarde complète, il y a « Copie du kit » dans Paramètres › Le kit : projets et données dans un dossier ou un zip, sans les programmes, qui se retéléchargent, et l'importation dans un autre kit.",
-            "Für eine vollständige Sicherung gibt es „Kopie des Kits“ unter Einstellungen › Das Kit: Projekte und Daten in einen Ordner oder ein Zip, ohne die Programme, die sich erneut herunterladen lassen, und den Import in ein anderes Kit.",
+            "Per una copia di sicurezza completa c'è «Copia del kit» in Impostazioni › Il kit: progetti e dati in una cartella o in uno zip, senza i programmi, che si riscaricano, e l'importazione in un altro kit. Non copia nemmeno immagini e dischi delle VM: le sandbox si rifanno da sole.",
+            "For a complete backup there is “Copy of the kit” in Settings › The kit: projects and data into a folder or a zip, without the programs, which are downloaded again, and the import into another kit. It does not copy the VMs' images and disks either: the sandboxes are made again by themselves.",
+            "Pour une sauvegarde complète, il y a « Copie du kit » dans Paramètres › Le kit : projets et données dans un dossier ou un zip, sans les programmes, qui se retéléchargent, et l'importation dans un autre kit. Elle ne copie pas non plus les images et les disques des VM : les sandbox sont refaites toutes seules.",
+            "Für eine vollständige Sicherung gibt es „Kopie des Kits“ unter Einstellungen › Das Kit: Projekte und Daten in einen Ordner oder ein Zip, ohne die Programme, die sich erneut herunterladen lassen, und den Import in ein anderes Kit. Auch Images und Festplatten der VMs werden nicht kopiert: Die Sandboxes werden von selbst neu angelegt.",
           ),
         ]}
       />

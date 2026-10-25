@@ -844,10 +844,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Terminale", "Terminal", "Terminal", "Terminal"),
               tr(
-                "Apre una console del kit nella cartella del progetto, con le sue versioni.",
-                "Opens a kit console in the project folder, with its versions.",
-                "Ouvre une console du kit dans le dossier du projet, avec ses versions.",
-                "Öffnet eine Konsole des Kits im Projektordner, mit seinen Versionen.",
+                "Apre una console del kit nella cartella del progetto, con le sue versioni. Con la VM attiva, bash nella VM del progetto.",
+                "Opens a kit console in the project folder, with its versions. With the VM on, bash in the project's VM.",
+                "Ouvre une console du kit dans le dossier du projet, avec ses versions. Avec la VM active, bash dans la VM du projet.",
+                "Öffnet eine Konsole des Kits im Projektordner, mit seinen Versionen. Mit aktiver VM bash in der VM des Projekts.",
               ),
             ],
             [
@@ -1109,10 +1109,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Dal telefono", "From the phone", "Depuis le téléphone", "Vom Telefon"),
               tr(
-                "Con «Rete locale» accesa nelle Impostazioni, l'indirizzo con l'IP di questo PC sulla rete, da aprire da un telefono o da un altro PC collegato alla stessa rete: «Copia», e «Mostra il QR» da inquadrare con la fotocamera, invece di ricopiare l'IP. Il QR lo crea Atollo, senza servizi su internet. Non c'è per un nome come shop.localhost di un server condiviso: il telefono non può mandare quel nome.",
-                "With “Local network” on in the Settings, the address with this PC's IP on the network, to open from a phone or another PC on the same network: “Copy”, and “Show the QR code” to scan with the camera, instead of typing the IP. Atollo makes the QR code itself, with no service on the internet. There is none for a name like shop.localhost of a shared server: the phone cannot send that name.",
-                "Avec « Réseau local » activé dans les Paramètres, l'adresse avec l'IP de ce PC sur le réseau, à ouvrir depuis un téléphone ou un autre PC du même réseau : « Copier », et « Afficher le QR code » à scanner avec l'appareil photo, au lieu de recopier l'IP. Atollo crée le QR code lui-même, sans service sur internet. Il n'y en a pas pour un nom comme shop.localhost d'un serveur partagé : le téléphone ne peut pas envoyer ce nom.",
-                "Mit eingeschaltetem „Lokales Netzwerk“ in den Einstellungen die Adresse mit der IP dieses PCs im Netzwerk, zum Öffnen von einem Telefon oder einem anderen PC im selben Netzwerk: „Kopieren“ und „QR-Code anzeigen“ zum Scannen mit der Kamera, statt die IP abzutippen. Den QR-Code erstellt Atollo selbst, ohne Dienst im Internet. Für einen Namen wie shop.localhost eines gemeinsamen Servers gibt es keine: Das Telefon kann diesen Namen nicht senden.",
+                "Con «Rete locale» accesa nelle Impostazioni, l'indirizzo con l'IP di questo PC sulla rete, da aprire da un telefono o da un altro PC collegato alla stessa rete: «Copia», e «Mostra il QR» da inquadrare con la fotocamera, invece di ricopiare l'IP. Il QR lo crea Atollo, senza servizi su internet. Non c'è per un nome come shop.localhost di un server condiviso: il telefono non può mandare quel nome. Anche un'azione che gira nella VM ha questo indirizzo.",
+                "With “Local network” on in the Settings, the address with this PC's IP on the network, to open from a phone or another PC on the same network: “Copy”, and “Show the QR code” to scan with the camera, instead of typing the IP. Atollo makes the QR code itself, with no service on the internet. There is none for a name like shop.localhost of a shared server: the phone cannot send that name. An action running in the VM has this address too.",
+                "Avec « Réseau local » activé dans les Paramètres, l'adresse avec l'IP de ce PC sur le réseau, à ouvrir depuis un téléphone ou un autre PC du même réseau : « Copier », et « Afficher le QR code » à scanner avec l'appareil photo, au lieu de recopier l'IP. Atollo crée le QR code lui-même, sans service sur internet. Il n'y en a pas pour un nom comme shop.localhost d'un serveur partagé : le téléphone ne peut pas envoyer ce nom. Une action qui tourne dans la VM a aussi cette adresse.",
+                "Mit eingeschaltetem „Lokales Netzwerk“ in den Einstellungen die Adresse mit der IP dieses PCs im Netzwerk, zum Öffnen von einem Telefon oder einem anderen PC im selben Netzwerk: „Kopieren“ und „QR-Code anzeigen“ zum Scannen mit der Kamera, statt die IP abzutippen. Den QR-Code erstellt Atollo selbst, ohne Dienst im Internet. Für einen Namen wie shop.localhost eines gemeinsamen Servers gibt es keine: Das Telefon kann diesen Namen nicht senden. Auch eine Aktion, die in der VM läuft, hat diese Adresse.",
               ),
             ],
             [
@@ -1208,10 +1208,10 @@ export const PROJECTS: TopicTexts = {
               "Wenn das Programm den zugewiesenen Port ignoriert und einen anderen in der Ausgabe ausgibt, folgt das Kit diesem.",
             ),
             tr(
-              "«Ferma» chiude l'intero albero di processi dell'azione. Chiudendo Atollo si fermano tutte le azioni.",
-              "“Stop” closes the action's whole process tree. Closing Atollo stops all actions.",
-              "« Arrêter » ferme toute l'arborescence de processus de l'action. Fermer Atollo arrête toutes les actions.",
-              "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn du Atollo schließt, werden alle Aktionen beendet.",
+              "«Ferma» chiude l'intero albero di processi dell'azione. Chiudendo Atollo si fermano tutte le azioni. Con la VM attiva l'azione gira nella VM del progetto: «Ferma» la ferma lì dentro e libera la porta.",
+              "“Stop” closes the action's whole process tree. Closing Atollo stops all actions. With the VM on the action runs in the project's VM: “Stop” stops it in there and frees the port.",
+              "« Arrêter » ferme toute l'arborescence de processus de l'action. Fermer Atollo arrête toutes les actions. Avec la VM active, l'action tourne dans la VM du projet : « Arrêter » l'arrête là-dedans et libère le port.",
+              "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn du Atollo schließt, werden alle Aktionen beendet. Mit aktiver VM läuft die Aktion in der VM des Projekts: „Beenden“ beendet sie dort und gibt den Port frei.",
             ),
             tr(
               "Le azioni avviate compaiono anche nel pannello «Attività» e nel contatore della barra di stato; nel pannello «Ferma tutto», dopo una conferma, le ferma insieme ai database e ai server web in esecuzione.",
@@ -1540,10 +1540,10 @@ export const PROJECTS: TopicTexts = {
         </P>
         <Callout tone="info">
           {tr(
-            "«Installa ciò che manca» installa i componenti del kit (Node.js, PHP, Python…), non le dipendenze del progetto: per quelle esegui npm install, composer install o simili, con un'azione o nel terminale del progetto.",
-            "“Install what is missing” installs the kit's components (Node.js, PHP, Python…), not the project's dependencies: for those run npm install, composer install or similar, with an action or in the project terminal.",
-            "« Installer ce qui manque » installe les composants du kit (Node.js, PHP, Python…), pas les dépendances du projet : pour celles-ci, exécutez npm install, composer install ou équivalent, avec une action ou dans le terminal du projet.",
-            "„Fehlendes installieren“ installiert die Komponenten des Kits (Node.js, PHP, Python…), nicht die Abhängigkeiten des Projekts: Für diese führst du npm install, composer install oder Ähnliches aus, mit einer Aktion oder im Terminal des Projekts.",
+            "«Installa ciò che manca» installa i componenti del kit (Node.js, PHP, Python…), non le dipendenze del progetto: per quelle esegui npm install, composer install o simili, con un'azione o nel terminale del progetto. Con la VM attiva i componenti mancanti si contano e si installano per il Linux della VM.",
+            "“Install what is missing” installs the kit's components (Node.js, PHP, Python…), not the project's dependencies: for those run npm install, composer install or similar, with an action or in the project terminal. With the VM on, the missing components are counted and installed for the VM's Linux.",
+            "« Installer ce qui manque » installe les composants du kit (Node.js, PHP, Python…), pas les dépendances du projet : pour celles-ci, exécutez npm install, composer install ou équivalent, avec une action ou dans le terminal du projet. Avec la VM active, les composants manquants sont comptés et installés pour le Linux de la VM.",
+            "„Fehlendes installieren“ installiert die Komponenten des Kits (Node.js, PHP, Python…), nicht die Abhängigkeiten des Projekts: Für diese führst du npm install, composer install oder Ähnliches aus, mit einer Aktion oder im Terminal des Projekts. Mit aktiver VM werden die fehlenden Komponenten für das Linux der VM gezählt und installiert.",
           )}
         </Callout>
       </Section>
@@ -1704,10 +1704,10 @@ export const PROJECTS: TopicTexts = {
             "„Editor“ öffnet das Projekt in VSCodium, in einem Atollo-Fenster, mit allen Werkzeugen des Kits.",
           ),
           tr(
-            "«Terminale» apre una console del kit nella cartella del progetto.",
-            "“Terminal” opens a kit console in the project folder.",
-            "« Terminal » ouvre une console du kit dans le dossier du projet.",
-            "„Terminal“ öffnet eine Konsole des Kits im Projektordner.",
+            "«Terminale» apre una console del kit nella cartella del progetto. Con la VM attiva si apre nella VM del progetto.",
+            "“Terminal” opens a kit console in the project folder. With the VM on it opens in the project's VM.",
+            "« Terminal » ouvre une console du kit dans le dossier du projet. Avec la VM active, elle s'ouvre dans la VM du projet.",
+            "„Terminal“ öffnet eine Konsole des Kits im Projektordner. Mit aktiver VM öffnet sie sich in der VM des Projekts.",
           ),
           tr(
             "Le estensioni si scelgono per progetto; quelle installate valgono per tutto l'editor.",
@@ -1736,10 +1736,10 @@ export const PROJECTS: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "I terminali dell'editor hanno già l'ambiente del kit. Su Windows i profili sono «Atollo» (PowerShell, predefinito), «Atollo - Git Bash» e «Atollo - cmd»; su macOS e Linux «Atollo», «Atollo - Bash» e, su macOS, «Atollo - zsh».",
-              "The editor's terminals already have the kit's environment. On Windows the profiles are “Atollo” (PowerShell, default), “Atollo - Git Bash” and “Atollo - cmd”; on macOS and Linux “Atollo”, “Atollo - Bash” and, on macOS, “Atollo - zsh”.",
-              "Les terminaux de l'éditeur ont déjà l'environnement du kit. Sous Windows, les profils sont « Atollo » (PowerShell, par défaut), « Atollo - Git Bash » et « Atollo - cmd » ; sous macOS et Linux « Atollo », « Atollo - Bash » et, sous macOS, « Atollo - zsh ».",
-              "Die Terminals des Editors haben bereits die Umgebung des Kits. Unter Windows heißen die Profile „Atollo“ (PowerShell, Standard), „Atollo - Git Bash“ und „Atollo - cmd“; unter macOS und Linux „Atollo“, „Atollo - Bash“ und, unter macOS, „Atollo - zsh“.",
+              "I terminali dell'editor hanno già l'ambiente del kit. Su Windows i profili sono «Atollo» (PowerShell, predefinito), «Atollo - Git Bash» e «Atollo - cmd»; su macOS e Linux «Atollo», «Atollo - Bash» e, su macOS, «Atollo - zsh». Girano sul PC anche con la VM attiva: per lavorare nella VM usa il «Terminale» del progetto.",
+              "The editor's terminals already have the kit's environment. On Windows the profiles are “Atollo” (PowerShell, default), “Atollo - Git Bash” and “Atollo - cmd”; on macOS and Linux “Atollo”, “Atollo - Bash” and, on macOS, “Atollo - zsh”. They run on the PC even with the VM on: to work in the VM use the project's “Terminal”.",
+              "Les terminaux de l'éditeur ont déjà l'environnement du kit. Sous Windows, les profils sont « Atollo » (PowerShell, par défaut), « Atollo - Git Bash » et « Atollo - cmd » ; sous macOS et Linux « Atollo », « Atollo - Bash » et, sous macOS, « Atollo - zsh ». Ils tournent sur le PC même avec la VM active : pour travailler dans la VM, utilisez le « Terminal » du projet.",
+              "Die Terminals des Editors haben bereits die Umgebung des Kits. Unter Windows heißen die Profile „Atollo“ (PowerShell, Standard), „Atollo - Git Bash“ und „Atollo - cmd“; unter macOS und Linux „Atollo“, „Atollo - Bash“ und, unter macOS, „Atollo - zsh“. Sie laufen auch mit aktiver VM auf dem PC: Um in der VM zu arbeiten, nutze das „Terminal“ des Projekts.",
             ),
             tr(
               "Commit, push, confronto delle modifiche: tutto ciò che fa Git nell'editor funziona con l'account GitHub del kit.",
@@ -1775,10 +1775,10 @@ export const PROJECTS: TopicTexts = {
       >
         <P>
           {tr(
-            "«Terminale» apre una console del kit nella cartella del progetto: una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella.",
-            "“Terminal” opens a kit console in the project folder: a tab of the terminal panel inside Atollo, on every system, with the kit's PowerShell 7. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder.",
-            "« Terminal » ouvre une console du kit dans le dossier du projet : un onglet du panneau des terminaux dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit. Les outils sont ceux du kit, aux versions choisies pour le projet. L'invite affiche Atollo et le dossier.",
-            "„Terminal“ öffnet eine Konsole des Kits im Projektordner: einen Tab des Terminalbereichs in Atollo, auf jedem System, mit der PowerShell 7 des Kits. Die Werkzeuge sind die des Kits, in den für das Projekt gewählten Versionen. Die Eingabeaufforderung zeigt Atollo und den Ordner.",
+            "«Terminale» apre una console del kit nella cartella del progetto: una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella. Con la VM attiva è invece bash nella microVM del progetto, con gli strumenti del kit per Linux alle versioni del progetto: vede solo la cartella del progetto.",
+            "“Terminal” opens a kit console in the project folder: a tab of the terminal panel inside Atollo, on every system, with the kit's PowerShell 7. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder. With the VM on it is bash in the project's microVM instead, with the kit's tools for Linux at the project's versions: it sees only the project's folder.",
+            "« Terminal » ouvre une console du kit dans le dossier du projet : un onglet du panneau des terminaux dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit. Les outils sont ceux du kit, aux versions choisies pour le projet. L'invite affiche Atollo et le dossier. Avec la VM active, c'est bash dans la microVM du projet, avec les outils du kit pour Linux aux versions du projet : il ne voit que le dossier du projet.",
+            "„Terminal“ öffnet eine Konsole des Kits im Projektordner: einen Tab des Terminalbereichs in Atollo, auf jedem System, mit der PowerShell 7 des Kits. Die Werkzeuge sind die des Kits, in den für das Projekt gewählten Versionen. Die Eingabeaufforderung zeigt Atollo und den Ordner. Mit aktiver VM ist es stattdessen bash in der microVM des Projekts, mit den Werkzeugen des Kits für Linux in den Versionen des Projekts: Es sieht nur den Ordner des Projekts.",
           )}
         </P>
         <P>
@@ -2007,10 +2007,10 @@ export const PROJECTS: TopicTexts = {
               "Im Editor: der Bereich „Quellcodeverwaltung“ für Commits, Push, Pull, Branches und Vergleiche.",
             ),
             tr(
-              "Nel terminale del progetto o dell'editor: i comandi git e gh, già autenticati.",
-              "In the project or editor terminal: the git and gh commands, already authenticated.",
-              "Dans le terminal du projet ou de l'éditeur : les commandes git et gh, déjà authentifiées.",
-              "Im Terminal des Projekts oder des Editors: die Befehle git und gh, bereits angemeldet.",
+              "Nel terminale del progetto o dell'editor: i comandi git e gh, già autenticati. Nella VM del progetto gh e push usano il tuo accesso solo con «GitHub nella VM» acceso.",
+              "In the project or editor terminal: the git and gh commands, already authenticated. In the project's VM gh and push use your access only with “GitHub in the VM” on.",
+              "Dans le terminal du projet ou de l'éditeur : les commandes git et gh, déjà authentifiées. Dans la VM du projet, gh et push n'utilisent votre accès qu'avec « GitHub dans la VM » activé.",
+              "Im Terminal des Projekts oder des Editors: die Befehle git und gh, bereits angemeldet. In der VM des Projekts nutzen gh und push deinen Zugang nur mit eingeschaltetem „GitHub in der VM“.",
             ),
             tr(
               "Con un agente: Claude Code, Codex, Antigravity e Pi possono fare commit, creare rami e aprire pull request.",
@@ -2048,7 +2048,29 @@ export const PROJECTS: TopicTexts = {
         </Under>
       </Section>
 
-      <Related ids={["github", "project-editor", "agents"]} />
+      <Section title={tr("«GitHub nella VM»", "“GitHub in the VM”", "« GitHub dans la VM »", "„GitHub in der VM“")}>
+        <P>
+          {tr(
+            "Sotto il riquadro del repository, la sezione «Git» ha il riquadro «GitHub nella VM», spento di serie. Spunta «Il progetto nella VM usa il tuo accesso a GitHub del kit (push, gh)» e la VM del progetto può fare push e usare gh con l'account collegato in Impostazioni › Account GitHub; togli la spunta e l'accesso si toglie subito.",
+            "Below the repository box, the “Git” section has the “GitHub in the VM” box, off by default. Tick “The project in the VM uses your GitHub access of the kit (push, gh)” and the project's VM can push and use gh with the account connected in Settings › GitHub account; untick it and the access is removed right away.",
+            "Sous l'encadré du dépôt, la section « Git » a l'encadré « GitHub dans la VM », désactivé par défaut. Cochez « Le projet dans la VM utilise ton accès GitHub du kit (push, gh) » et la VM du projet peut faire des push et utiliser gh avec le compte relié dans Paramètres › Compte GitHub ; décochez et l'accès est retiré aussitôt.",
+            "Unter dem Kasten des Repositorys hat der Abschnitt „Git“ den Kasten „GitHub in der VM“, standardmäßig aus. Setze das Häkchen bei „Das Projekt in der VM nutzt deinen GitHub-Zugang des Kits (push, gh)“, und die VM des Projekts kann pushen und gh mit dem unter Einstellungen › GitHub-Konto verbundenen Konto nutzen; ohne Häkchen wird der Zugang sofort entfernt.",
+          )}
+        </P>
+        <Callout tone="warn">
+          {rich(
+            tr(
+              "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi. Vale solo per la sandbox di questo progetto, mai per i terminali del kit. Più dettagli in {0}.",
+              "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But the project's code could act on GitHub on your behalf: turn it on only for projects you trust. It applies only to this project's sandbox, never to the kit's terminals. More details in {0}.",
+              "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais le code du projet pourrait agir sur GitHub en votre nom : activez-le seulement pour les projets de confiance. Cela ne vaut que pour la sandbox de ce projet, jamais pour les terminaux du kit. Plus de détails dans {0}.",
+              "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber der Code des Projekts könnte auf GitHub in deinem Namen handeln: Schalte es nur für Projekte ein, denen du vertraust. Es gilt nur für die Sandbox dieses Projekts, nie für die Terminals des Kits. Mehr Details in {0}.",
+            ),
+            <See key="v" id="vm" />,
+          )}
+        </Callout>
+      </Section>
+
+      <Related ids={["github", "project-editor", "vm", "agents"]} />
     </>
   ),
 
@@ -2164,6 +2186,14 @@ export const PROJECTS: TopicTexts = {
             ),
           ]}
         />
+        <P>
+          {tr(
+            "Con il progetto se ne vanno anche la sua sandbox delle VM e quelle dei suoi agenti, con i loro dischi.",
+            "Together with the project, its VM sandbox and its agents' ones go too, with their disks.",
+            "Avec le projet partent aussi sa sandbox des VM et celles de ses agents, avec leurs disques.",
+            "Mit dem Projekt verschwinden auch seine VM-Sandbox und die seiner Agenten, samt ihren Festplatten.",
+          )}
+        </P>
         <P>
           {tr(
             "Se l'eliminazione di un database non riesce, non viene eliminato nient'altro; compare allora anche «Elimina senza i database», che lascia database e utenti sui server.",

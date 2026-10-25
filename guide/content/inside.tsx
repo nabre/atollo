@@ -96,13 +96,23 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       ),
     },
     {
+      path: "app\\sandboxes\\",
+      depth: 3,
+      text: tr(
+        "La descrizione di ogni sandbox delle VM (di chi è, cartelle montate, porte aperte, connessione al database leggibile solo da te) e secrets.json, i comandi di «GitHub nella VM».",
+        "The description of each VM sandbox (whose it is, mounted folders, open ports, database connection readable only by you) and secrets.json, the commands of “GitHub in the VM”.",
+        "La description de chaque sandbox des VM (à qui elle appartient, dossiers montés, ports ouverts, connexion à la base lisible par vous seul) et secrets.json, les commandes de « GitHub dans la VM ».",
+        "Die Beschreibung jeder Sandbox der VMs (Besitzer, eingehängte Ordner, offene Ports, nur für dich lesbare Datenbankverbindung) und secrets.json, die Befehle von „GitHub in der VM“.",
+      ),
+    },
+    {
       path: tr("apps\\<sistema>\\", "apps\\<system>\\", "apps\\<système>\\", "apps\\<System>\\"),
       depth: 2,
       text: tr(
-        "I programmi, per sistema (win32-x64, darwin-arm64…), una cartella per componente e per versione.",
-        "The programs, by system (win32-x64, darwin-arm64…), one folder per component and per version.",
-        "Les programmes, par système (win32-x64, darwin-arm64…), un dossier par composant et par version.",
-        "Die Programme, nach System (win32-x64, darwin-arm64…), ein Ordner pro Komponente und pro Version.",
+        "I programmi, per sistema (win32-x64, darwin-arm64…), una cartella per componente e per versione. Con la VM attiva c'è anche linux-x64 (linux-arm64 sui Mac con Apple silicon): gli strumenti che la VM monta in sola lettura.",
+        "The programs, by system (win32-x64, darwin-arm64…), one folder per component and per version. With the VM on there is also linux-x64 (linux-arm64 on Macs with Apple silicon): the tools the VM mounts read-only.",
+        "Les programmes, par système (win32-x64, darwin-arm64…), un dossier par composant et par version. Avec la VM active, il y a aussi linux-x64 (linux-arm64 sur les Mac avec Apple silicon) : les outils que la VM monte en lecture seule.",
+        "Die Programme, nach System (win32-x64, darwin-arm64…), ein Ordner pro Komponente und pro Version. Mit aktiver VM gibt es auch linux-x64 (linux-arm64 auf Macs mit Apple Silicon): die Werkzeuge, die die VM schreibgeschützt einhängt.",
       ),
     },
     {
@@ -179,10 +189,10 @@ function diskTree(): { path: string; depth: number; text: string }[] {
       path: "home\\",
       depth: 2,
       text: tr(
-        "La «cartella utente» dei programmi del kit: .claude, .codex, .gemini, .pi (profili degli agenti), .gitconfig, .npmrc, AppData (su Windows).",
-        "The “user folder” of the kit's programs: .claude, .codex, .gemini, .pi (agent profiles), .gitconfig, .npmrc, AppData (on Windows).",
-        "Le « dossier utilisateur » des programmes du kit : .claude, .codex, .gemini, .pi (profils des agents), .gitconfig, .npmrc, AppData (sur Windows).",
-        "Der „Benutzerordner“ der Programme des Kits: .claude, .codex, .gemini, .pi (Profile der Agenten), .gitconfig, .npmrc, AppData (unter Windows).",
+        "La «cartella utente» dei programmi del kit: .claude, .codex, .gemini, .pi (profili degli agenti), .gitconfig, .npmrc, AppData (su Windows). Qui stanno anche impostazioni, registri, immagini e dischi delle VM di Docker Sandboxes.",
+        "The “user folder” of the kit's programs: .claude, .codex, .gemini, .pi (agent profiles), .gitconfig, .npmrc, AppData (on Windows). Docker Sandboxes' settings, logs, images and VM disks are here too.",
+        "Le « dossier utilisateur » des programmes du kit : .claude, .codex, .gemini, .pi (profils des agents), .gitconfig, .npmrc, AppData (sur Windows). Ici se trouvent aussi les paramètres, journaux, images et disques des VM de Docker Sandboxes.",
+        "Der „Benutzerordner“ der Programme des Kits: .claude, .codex, .gemini, .pi (Profile der Agenten), .gitconfig, .npmrc, AppData (unter Windows). Hier liegen auch Einstellungen, Logs, Images und VM-Festplatten von Docker Sandboxes.",
       ),
     },
     {
@@ -264,6 +274,726 @@ const CLI_EXAMPLE = `cd D:\\Atollo
 .\\Atollo.exe check | Out-Host`;
 
 export const INSIDE: TopicTexts = {
+  vm: () => (
+    <>
+      <InBrief
+        points={[
+          tr(
+            "Il cuore di Atollo è il configuratore di Docker Sandboxes (sbx): ogni progetto gira in una microVM sua, con un Linux suo, e vede solo la sua cartella.",
+            "The heart of Atollo is the configurator of Docker Sandboxes (sbx): each project runs in a microVM of its own, with its own Linux, and sees only its folder.",
+            "Le cœur d'Atollo est le configurateur de Docker Sandboxes (sbx) : chaque projet tourne dans sa propre microVM, avec son propre Linux, et ne voit que son dossier.",
+            "Das Herz von Atollo ist der Konfigurator von Docker Sandboxes (sbx): Jedes Projekt läuft in einer eigenen microVM, mit eigenem Linux, und sieht nur seinen Ordner.",
+          ),
+          tr(
+            "Nella VM girano il terminale e le azioni del progetto, il suo sito, Claude Code e Codex; anche i terminali del kit si aprono in una microVM, una per cartella. I database restano sul PC.",
+            "In the VM run the project's terminal and actions, its website, Claude Code and Codex; the kit's terminals open in a microVM too, one per folder. The databases stay on the PC.",
+            "Dans la VM tournent le terminal et les actions du projet, son site, Claude Code et Codex ; les terminaux du kit s'ouvrent eux aussi dans une microVM, une par dossier. Les bases de données restent sur le PC.",
+            "In der VM laufen Terminal und Aktionen des Projekts, seine Website, Claude Code und Codex; auch die Terminals des Kits öffnen sich in einer microVM, eine pro Ordner. Die Datenbanken bleiben auf dem PC.",
+          ),
+          tr(
+            "Docker Sandboxes è un componente obbligatorio del kit e Atollo usa solo quello: mai uno installato sul PC. Serve un account Docker gratuito, con «sbx login» nel terminale di Atollo.",
+            "Docker Sandboxes is a required component of the kit and Atollo uses only that one: never one installed on the PC. A free Docker account is needed, with “sbx login” in Atollo's terminal.",
+            "Docker Sandboxes est un composant obligatoire du kit et Atollo n'utilise que celui-là : jamais un autre installé sur le PC. Il faut un compte Docker gratuit, avec « sbx login » dans le terminal d'Atollo.",
+            "Docker Sandboxes ist eine Pflichtkomponente des Kits, und Atollo verwendet nur diese: nie eine auf dem PC installierte. Nötig ist ein kostenloses Docker-Konto, mit „sbx login“ im Terminal von Atollo.",
+          ),
+          tr(
+            "Quando la VM non può partire, la barra di stato dice «Senza VM»: un clic spiega perché e che cosa fare. Intanto tutto gira sul PC, con l'ambiente sigillato del kit.",
+            "When the VM cannot start, the status bar says “No VM”: a click tells why and what to do. Meanwhile everything runs on the PC, with the kit's sealed environment.",
+            "Quand la VM ne peut pas démarrer, la barre d'état indique « Sans VM » : un clic dit pourquoi et quoi faire. En attendant, tout tourne sur le PC, avec l'environnement scellé du kit.",
+            "Wenn die VM nicht starten kann, zeigt die Statusleiste „Ohne VM“: Ein Klick sagt, warum und was zu tun ist. Bis dahin läuft alles auf dem PC, mit der versiegelten Umgebung des Kits.",
+          ),
+        ]}
+      />
+
+      <Section title={tr("Che cos'è", "What it is", "Ce que c'est", "Was das ist")}>
+        <P>
+          {tr(
+            "Una microVM è un piccolo computer virtuale che parte in pochi secondi. Docker Sandboxes ne crea una per progetto: dentro c'è un Linux con la cartella del progetto, in scrittura, e gli strumenti del kit per Linux, in sola lettura. Il resto del PC e del kit resta fuori: un pacchetto npm o lo script di un repository clonato non può leggere i tuoi documenti, le tue chiavi SSH o gli altri progetti.",
+            "A microVM is a small virtual computer that starts in a few seconds. Docker Sandboxes makes one per project: inside there is a Linux with the project's folder, writable, and the kit's tools for Linux, read-only. The rest of the PC and of the kit stays outside: an npm package or the script of a cloned repository cannot read your documents, your SSH keys or the other projects.",
+            "Une microVM est un petit ordinateur virtuel qui démarre en quelques secondes. Docker Sandboxes en crée une par projet : dedans, un Linux avec le dossier du projet, en écriture, et les outils du kit pour Linux, en lecture seule. Le reste du PC et du kit reste dehors : un paquet npm ou le script d'un dépôt cloné ne peut lire ni vos documents, ni vos clés SSH, ni les autres projets.",
+            "Eine microVM ist ein kleiner virtueller Computer, der in wenigen Sekunden startet. Docker Sandboxes legt eine pro Projekt an: Darin ist ein Linux mit dem Ordner des Projekts, beschreibbar, und den Werkzeugen des Kits für Linux, schreibgeschützt. Der Rest des PCs und des Kits bleibt draußen: Ein npm-Paket oder das Skript eines geklonten Repositorys kann weder deine Dokumente noch deine SSH-Schlüssel noch die anderen Projekte lesen.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "Non c'è niente da accendere: il livello lo decide il PC. Atollo controlla lo stato all'avvio e poi ogni minuto; quando tutto è pronto la barra di stato mostra «VM», altrimenti «Senza VM». La rete della VM passa dal proxy di Docker Sandboxes, con la politica che Atollo imposta (quella consigliata da Docker per lo sviluppo: servizi AI e registri di pacchetti).",
+            "There is nothing to turn on: the PC decides the level. Atollo checks the status at start and then every minute; when everything is ready the status bar shows “VM”, otherwise “No VM”. The VM's network goes through the Docker Sandboxes proxy, with the policy Atollo sets (the one Docker recommends for development: AI services and package registries).",
+            "Il n'y a rien à activer : c'est le PC qui décide du niveau. Atollo vérifie l'état au démarrage puis chaque minute ; quand tout est prêt, la barre d'état affiche « VM », sinon « Sans VM ». Le réseau de la VM passe par le proxy de Docker Sandboxes, avec la politique qu'Atollo définit (celle que Docker conseille pour le développement : services d'IA et registres de paquets).",
+            "Es gibt nichts einzuschalten: Die Stufe entscheidet der PC. Atollo prüft den Zustand beim Start und dann jede Minute; ist alles bereit, zeigt die Statusleiste „VM“, sonst „Ohne VM“. Das Netzwerk der VM läuft über den Proxy von Docker Sandboxes, mit der Richtlinie, die Atollo setzt (der von Docker für die Entwicklung empfohlenen: KI-Dienste und Paket-Registries).",
+          )}
+        </P>
+      </Section>
+
+      <Section
+        title={tr(
+          "Che cosa serve, sistema per sistema",
+          "What it needs, system by system",
+          "Ce qu'il faut, système par système",
+          "Was nötig ist, System für System",
+        )}
+      >
+        <Table
+          columns={[
+            tr("Sistema", "System", "Système", "System"),
+            tr("Che cosa serve", "What it needs", "Ce qu'il faut", "Was nötig ist"),
+            tr("Senza VM", "No VM", "Sans VM", "Ohne VM"),
+          ]}
+          rows={[
+            [
+              "Windows",
+              tr(
+                "Windows 11 a 64 bit (processore Intel o AMD) con Windows Hypervisor Platform attivo: si attiva una volta, da amministratore, poi si riavvia il PC.",
+                "64-bit Windows 11 (Intel or AMD processor) with Windows Hypervisor Platform on: it is turned on once, as an administrator, then the PC is restarted.",
+                "Windows 11 64 bits (processeur Intel ou AMD) avec Windows Hypervisor Platform activé : il s'active une fois, en administrateur, puis on redémarre le PC.",
+                "Windows 11 mit 64 Bit (Intel- oder AMD-Prozessor) mit aktivierter Windows Hypervisor Platform: Sie wird einmal als Administrator eingeschaltet, dann wird der PC neu gestartet.",
+              ),
+              tr(
+                "Windows 10 e Windows su processori ARM.",
+                "Windows 10 and Windows on ARM processors.",
+                "Windows 10 et Windows sur processeurs ARM.",
+                "Windows 10 und Windows auf ARM-Prozessoren.",
+              ),
+            ],
+            [
+              "macOS",
+              tr(
+                "Un Mac con Apple silicon (M1 o successivo) e macOS 14 Sonoma o successivo.",
+                "A Mac with Apple silicon (M1 or later) and macOS 14 Sonoma or later.",
+                "Un Mac avec Apple silicon (M1 ou ultérieur) et macOS 14 Sonoma ou ultérieur.",
+                "Ein Mac mit Apple Silicon (M1 oder neuer) und macOS 14 Sonoma oder neuer.",
+              ),
+              tr(
+                "I Mac Intel e le versioni di macOS precedenti alla 14.",
+                "Intel Macs and macOS versions before 14.",
+                "Les Mac Intel et les versions de macOS antérieures à la 14.",
+                "Intel-Macs und macOS-Versionen vor 14.",
+              ),
+            ],
+            [
+              "Linux",
+              tr(
+                "Ubuntu 24.04 o successivo; /dev/kvm presente (virtualizzazione accesa nel BIOS/UEFI) e il tuo utente nel gruppo kvm; dove Ubuntu limita i namespace utente, un profilo AppArmor per la microVM del kit.",
+                "Ubuntu 24.04 or later; /dev/kvm present (virtualization on in the BIOS/UEFI) and your user in the kvm group; where Ubuntu restricts user namespaces, an AppArmor profile for the kit's microVM.",
+                "Ubuntu 24.04 ou ultérieur ; /dev/kvm présent (virtualisation activée dans le BIOS/UEFI) et votre utilisateur dans le groupe kvm ; là où Ubuntu restreint les espaces de noms utilisateur, un profil AppArmor pour la microVM du kit.",
+                "Ubuntu 24.04 oder neuer; /dev/kvm vorhanden (Virtualisierung im BIOS/UEFI eingeschaltet) und dein Benutzer in der Gruppe kvm; wo Ubuntu die Benutzer-Namespaces einschränkt, ein AppArmor-Profil für die microVM des Kits.",
+              ),
+              tr(
+                "Le altre distribuzioni, comprese le derivate di Ubuntu.",
+                "The other distributions, Ubuntu's derivatives included.",
+                "Les autres distributions, y compris les dérivées d'Ubuntu.",
+                "Die anderen Distributionen, Ableger von Ubuntu eingeschlossen.",
+              ),
+            ],
+            [
+              tr("Ogni sistema", "Every system", "Tous les systèmes", "Jedes System"),
+              tr(
+                "Docker Sandboxes nel kit (circa 470 MB in data, installato con i componenti obbligatori), un account Docker gratuito e il kit su un disco NTFS (APFS o ext4 su macOS e Linux).",
+                "Docker Sandboxes in the kit (about 470 MB in data, installed with the required components), a free Docker account and the kit on an NTFS disk (APFS or ext4 on macOS and Linux).",
+                "Docker Sandboxes dans le kit (environ 470 Mo dans data, installé avec les composants obligatoires), un compte Docker gratuit et le kit sur un disque NTFS (APFS ou ext4 sur macOS et Linux).",
+                "Docker Sandboxes im Kit (etwa 470 MB in data, mit den Pflichtkomponenten installiert), ein kostenloses Docker-Konto und das Kit auf einem NTFS-Laufwerk (APFS oder ext4 unter macOS und Linux).",
+              ),
+              tr(
+                "Il kit su FAT32 o exFAT: i dischi delle VM non ci stanno o lo riempirebbero.",
+                "The kit on FAT32 or exFAT: the VMs' disks do not fit or would fill it.",
+                "Le kit sur FAT32 ou exFAT : les disques des VM n'y tiennent pas ou le rempliraient.",
+                "Das Kit auf FAT32 oder exFAT: Die Festplatten der VMs passen nicht darauf oder würden es füllen.",
+              ),
+            ],
+          ]}
+        />
+        <Callout
+          tone="info"
+          title={tr(
+            "Niente Docker Desktop, niente amministratore",
+            "No Docker Desktop, no administrator",
+            "Pas de Docker Desktop, pas d'administrateur",
+            "Kein Docker Desktop, kein Administrator",
+          )}
+        >
+          {tr(
+            "Docker Desktop non serve. Atollo non chiede mai diritti di amministratore: i passi che li richiedono (Hypervisor Platform, gruppo kvm, profilo AppArmor) li fai tu, una volta, con il comando che la finestra dell'avviso ti fa copiare.",
+            "Docker Desktop is not needed. Atollo never asks for administrator rights: the steps that need them (Hypervisor Platform, kvm group, AppArmor profile) are yours to do, once, with the command the notice's window lets you copy.",
+            "Docker Desktop n'est pas nécessaire. Atollo ne demande jamais de droits d'administrateur : les étapes qui en ont besoin (Hypervisor Platform, groupe kvm, profil AppArmor), c'est vous qui les faites, une fois, avec la commande que la fenêtre de l'avis vous fait copier.",
+            "Docker Desktop wird nicht gebraucht. Atollo verlangt nie Administratorrechte: Die Schritte, die sie brauchen (Hypervisor Platform, Gruppe kvm, AppArmor-Profil), machst du selbst, einmal, mit dem Befehl, den dich das Fenster des Hinweises kopieren lässt.",
+          )}
+        </Callout>
+      </Section>
+
+      <Section title={tr("Il primo accesso", "The first sign-in", "La première connexion", "Die erste Anmeldung")}>
+        <Steps
+          steps={[
+            tr(
+              "Al primo avvio «Installa» scarica anche Docker Sandboxes, con gli altri componenti obbligatori; l'avanzamento è nella barra di stato.",
+              "At the first start “Install” also downloads Docker Sandboxes, with the other required components; the progress is in the status bar.",
+              "Au premier lancement, « Installer » télécharge aussi Docker Sandboxes, avec les autres composants obligatoires ; la progression est dans la barre d'état.",
+              "Beim ersten Start lädt „Installieren“ auch Docker Sandboxes herunter, mit den anderen Pflichtkomponenten; der Fortschritt steht in der Statusleiste.",
+            ),
+            tr(
+              "Finché non hai fatto l'accesso, la barra di stato mostra «Senza VM». Fai clic: nella finestra «Lavori senza VM», sotto «Perché la VM non è attiva», c'è il motivo «sbx non ha accesso a Docker» con il comando sbx login.",
+              "Until you sign in, the status bar shows “No VM”. Click it: in the window “You are working without a VM”, under “Why the VM is not on”, there is the reason “sbx is not signed in to Docker” with the command sbx login.",
+              "Tant que vous n'êtes pas connecté, la barre d'état affiche « Sans VM ». Cliquez dessus : dans la fenêtre « Vous travaillez sans VM », sous « Pourquoi la VM n'est pas active », il y a le motif « sbx n'est pas connecté à Docker » avec la commande sbx login.",
+              "Solange du nicht angemeldet bist, zeigt die Statusleiste „Ohne VM“. Klicke darauf: Im Fenster „Du arbeitest ohne VM“ steht unter „Warum die VM nicht aktiv ist“ der Grund „sbx ist nicht bei Docker angemeldet“ mit dem Befehl sbx login.",
+            ),
+            tr(
+              "Premi «Lancia»: Atollo apre sbx login in una scheda del suo terminale, con il Docker Sandboxes del kit. Accedi a Docker nel browser (o crea un account gratuito); un indirizzo che compare nel terminale si apre con un clic.",
+              "Press “Run”: Atollo opens sbx login in a tab of its terminal, with the kit's Docker Sandboxes. Sign in to Docker in the browser (or create a free account); an address that appears in the terminal opens with a click.",
+              "Appuyez sur « Lancer » : Atollo ouvre sbx login dans un onglet de son terminal, avec le Docker Sandboxes du kit. Connectez-vous à Docker dans le navigateur (ou créez un compte gratuit) ; une adresse qui apparaît dans le terminal s'ouvre d'un clic.",
+              "Drücke „Starten“: Atollo öffnet sbx login in einem Tab seines Terminals, mit dem Docker Sandboxes des Kits. Melde dich im Browser bei Docker an (oder lege ein kostenloses Konto an); eine Adresse, die im Terminal erscheint, öffnet sich mit einem Klick.",
+            ),
+            tr(
+              "Torna nella finestra dell'avviso e premi «Ricontrolla». Quando non resta nessun motivo, la finestra diventa «Progetti nella VM» e la barra di stato mostra «VM».",
+              "Go back to the notice's window and press “Check again”. When no reason is left, the window becomes “Projects in the VM” and the status bar shows “VM”.",
+              "Revenez à la fenêtre de l'avis et appuyez sur « Vérifier à nouveau ». Quand il ne reste aucun motif, la fenêtre devient « Projets dans la VM » et la barre d'état affiche « VM ».",
+              "Geh zurück zum Fenster des Hinweises und drücke „Erneut prüfen“. Wenn kein Grund mehr übrig ist, wird das Fenster zu „Projekte in der VM“ und die Statusleiste zeigt „VM“.",
+            ),
+          ]}
+        />
+        <Callout tone="tip">
+          {tr(
+            "L'accesso a Docker vale per questo PC: Docker Sandboxes lo tiene nel portachiavi del sistema, non nel kit. Su un altro PC rifai sbx login, una volta.",
+            "The Docker sign-in is for this PC: Docker Sandboxes keeps it in the system keychain, not in the kit. On another PC run sbx login again, once.",
+            "La connexion à Docker vaut pour ce PC : Docker Sandboxes la garde dans le trousseau du système, pas dans le kit. Sur un autre PC, refaites sbx login, une fois.",
+            "Die Anmeldung bei Docker gilt für diesen PC: Docker Sandboxes bewahrt sie im Schlüsselbund des Systems auf, nicht im Kit. Auf einem anderen PC führst du sbx login noch einmal aus, einmalig.",
+          )}
+        </Callout>
+      </Section>
+
+      <Section
+        title={tr(
+          "Che cosa gira dove: i tre box",
+          "What runs where: the three boxes",
+          "Ce qui tourne où : les trois boîtes",
+          "Was wo läuft: die drei Boxen",
+        )}
+      >
+        <Table
+          columns={[
+            tr("Box", "Box", "Boîte", "Box"),
+            tr("Che cosa ci gira", "What runs there", "Ce qui y tourne", "Was dort läuft"),
+            tr("Che cosa vede", "What it sees", "Ce qu'il voit", "Was es sieht"),
+          ]}
+          rows={[
+            [
+              tr("VM", "VM", "VM", "VM"),
+              tr(
+                "Tutto ciò che esegue il codice di un progetto: il terminale del progetto, le azioni, il sito di un'azione (un container della VM: Apache con il PHP del progetto, o Apache per i soli file), Claude Code e Codex (una sandbox di agente ciascuno). E i terminali del kit, una microVM per cartella.",
+                "Everything that runs a project's code: the project's terminal, the actions, an action's website (a container of the VM: Apache with the project's PHP, or Apache for plain files), Claude Code and Codex (an agent sandbox each). And the kit's terminals, one microVM per folder.",
+                "Tout ce qui exécute le code d'un projet : le terminal du projet, les actions, le site d'une action (un conteneur de la VM : Apache avec le PHP du projet, ou Apache pour les simples fichiers), Claude Code et Codex (une sandbox d'agent chacun). Et les terminaux du kit, une microVM par dossier.",
+                "Alles, was den Code eines Projekts ausführt: das Terminal des Projekts, die Aktionen, die Website einer Aktion (ein Container der VM: Apache mit dem PHP des Projekts, oder Apache für reine Dateien), Claude Code und Codex (je eine Agenten-Sandbox). Und die Terminals des Kits, eine microVM pro Ordner.",
+              ),
+              tr(
+                "La cartella del progetto in scrittura e gli strumenti del kit per Linux in sola lettura. Verso il PC solo la porta dei database del progetto e, se lo accendi, GitHub.",
+                "The project's folder, writable, and the kit's tools for Linux, read-only. Towards the PC only the port of the project's databases and, if you turn it on, GitHub.",
+                "Le dossier du projet en écriture et les outils du kit pour Linux en lecture seule. Vers le PC, seulement le port des bases de données du projet et, si vous l'activez, GitHub.",
+                "Den Ordner des Projekts, beschreibbar, und die Werkzeuge des Kits für Linux, schreibgeschützt. Zum PC hin nur den Port der Datenbanken des Projekts und, wenn du es einschaltest, GitHub.",
+              ),
+            ],
+            [
+              tr("Kit sul PC", "Kit on the PC", "Kit sur le PC", "Kit auf dem PC"),
+              tr(
+                "I programmi del kit, mai il codice di un progetto: i server dei database e i loro strumenti (phpMyAdmin, mongo-express, copie di sicurezza), llama.cpp, la finestra dell'editor, Git per clonare, Docker Sandboxes stesso, l'app.",
+                "The kit's programs, never a project's code: the database servers and their tools (phpMyAdmin, mongo-express, backups), llama.cpp, the editor window, Git for cloning, Docker Sandboxes itself, the app.",
+                "Les programmes du kit, jamais le code d'un projet : les serveurs de bases de données et leurs outils (phpMyAdmin, mongo-express, sauvegardes), llama.cpp, la fenêtre de l'éditeur, Git pour cloner, Docker Sandboxes lui-même, l'application.",
+                "Die Programme des Kits, nie der Code eines Projekts: die Datenbankserver und ihre Werkzeuge (phpMyAdmin, mongo-express, Sicherungen), llama.cpp, das Editorfenster, Git zum Klonen, Docker Sandboxes selbst, die App.",
+              ),
+              tr(
+                "Ciò che vede il tuo utente, con l'ambiente del kit.",
+                "What your user sees, with the kit's environment.",
+                "Ce que voit votre utilisateur, avec l'environnement du kit.",
+                "Was dein Benutzer sieht, mit der Umgebung des Kits.",
+              ),
+            ],
+            [
+              tr("Senza VM", "No VM", "Sans VM", "Ohne VM"),
+              tr(
+                "Quando la VM non c'è: tutto sul PC, con l'avviso «Senza VM» nella barra di stato. Qui servono i pool di Server Web, i terminali del kit sul PC e i server dei siti del kit (Caddy, Apache).",
+                "When there is no VM: everything on the PC, with the “No VM” notice in the status bar. This is where the Web Servers pools, the kit's terminals on the PC and the kit's website servers (Caddy, Apache) serve.",
+                "Quand il n'y a pas de VM : tout sur le PC, avec l'avis « Sans VM » dans la barre d'état. C'est là que servent les pools de Serveurs web, les terminaux du kit sur le PC et les serveurs des sites du kit (Caddy, Apache).",
+                "Wenn es keine VM gibt: alles auf dem PC, mit dem Hinweis „Ohne VM“ in der Statusleiste. Hier dienen die Pools der Webserver, die Terminals des Kits auf dem PC und die Server der Websites des Kits (Caddy, Apache).",
+              ),
+              tr(
+                "Ciò che vede il tuo utente: l'ambiente sigillato filtra le variabili, non è un muro.",
+                "What your user sees: the sealed environment filters the variables, it is no wall.",
+                "Ce que voit votre utilisateur : l'environnement scellé filtre les variables, ce n'est pas un mur.",
+                "Was dein Benutzer sieht: Die versiegelte Umgebung filtert die Variablen, sie ist keine Mauer.",
+              ),
+            ],
+          ]}
+        />
+        <P>
+          {tr(
+            "Gli strumenti nella VM sono quelli scelti nel kit, alle versioni scelte dal progetto, nella loro build per Linux: se ne manca uno, Atollo lo installa in data\\apps\\linux-x64 (linux-arm64 sui Mac con Apple silicon) prima di aprire la sessione, con l'avanzamento nella barra di stato. Con la VM attiva la pagina Strumenti installa per il Linux della VM gli strumenti scelti e sul PC solo i componenti dell'app; nella matrice la colonna del Linux porta il segno «VM» e la cella del sistema del PC dice «nella VM».",
+            "The tools in the VM are the ones chosen in the kit, at the versions the project chose, in their build for Linux: when one is missing, Atollo installs it in data\\apps\\linux-x64 (linux-arm64 on Macs with Apple silicon) before opening the session, with the progress in the status bar. With the VM on, the Tools page installs the chosen tools for the VM's Linux and only the app's components on the PC; in the matrix the Linux column bears the “VM” mark and the cell of the PC's system says “in the VM”.",
+            "Les outils dans la VM sont ceux choisis dans le kit, aux versions choisies par le projet, dans leur build pour Linux : s'il en manque un, Atollo l'installe dans data\\apps\\linux-x64 (linux-arm64 sur les Mac avec Apple silicon) avant d'ouvrir la session, avec la progression dans la barre d'état. Avec la VM active, la page Outils installe les outils choisis pour le Linux de la VM et seulement les composants de l'application sur le PC ; dans la matrice, la colonne de Linux porte la marque « VM » et la cellule du système du PC indique « dans la VM ».",
+            "Die Werkzeuge in der VM sind die im Kit gewählten, in den vom Projekt gewählten Versionen, in ihrem Build für Linux: Fehlt eines, installiert Atollo es in data\\apps\\linux-x64 (linux-arm64 auf Macs mit Apple Silicon), bevor die Sitzung geöffnet wird, mit dem Fortschritt in der Statusleiste. Mit aktiver VM installiert die Seite Werkzeuge die gewählten Werkzeuge für das Linux der VM und auf dem PC nur die Komponenten der App; in der Matrix trägt die Linux-Spalte das Zeichen „VM“ und die Zelle des PC-Systems sagt „in der VM“.",
+          )}
+        </P>
+        <P>
+          {tr(
+            "Il database resta sul PC, nel server del kit: la VM ne raggiunge solo la porta, come l'utente del progetto (tutti i diritti sul suo database, nessuno sugli altri). Ai programmi della VM la connessione arriva con le stesse variabili del file .env (DB_HOST e le altre di Laravel, oppure DATABASE_URL o MONGODB_URI) e l'indirizzo host.docker.internal; il file .env del progetto non cambia. La password di amministratore dei database non entra mai nella VM.",
+            "The database stays on the PC, in the kit's server: the VM reaches only its port, as the project's user (every right on its database, none on the others). The VM's programs get the connection through the same variables as the .env file (DB_HOST and Laravel's others, or DATABASE_URL or MONGODB_URI) and the address host.docker.internal; the project's .env file does not change. The databases' administrator password never enters the VM.",
+            "La base de données reste sur le PC, dans le serveur du kit : la VM n'en atteint que le port, en tant qu'utilisateur du projet (tous les droits sur sa base, aucun sur les autres). Les programmes de la VM reçoivent la connexion par les mêmes variables que le fichier .env (DB_HOST et les autres de Laravel, ou DATABASE_URL ou MONGODB_URI) et l'adresse host.docker.internal ; le fichier .env du projet ne change pas. Le mot de passe d'administrateur des bases de données n'entre jamais dans la VM.",
+            "Die Datenbank bleibt auf dem PC, im Server des Kits: Die VM erreicht nur ihren Port, als Benutzer des Projekts (alle Rechte an seiner Datenbank, keine an den anderen). Die Programme der VM erhalten die Verbindung über dieselben Variablen wie die Datei .env (DB_HOST und die anderen von Laravel, oder DATABASE_URL oder MONGODB_URI) und die Adresse host.docker.internal; die Datei .env des Projekts ändert sich nicht. Das Administratorpasswort der Datenbanken gelangt nie in die VM.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "Claude Code e Codex partono nelle sandbox di agente di Docker Sandboxes, con gli accessi gestiti da sbx. Antigravity e Pi non hanno una sandbox: con la VM attiva non partono (il messaggio lo dice), mai sul PC al loro posto.",
+              "Claude Code and Codex start in Docker Sandboxes' agent sandboxes, with the sign-ins managed by sbx. Antigravity and Pi have no sandbox: with the VM on they do not start (the message says so), never on the PC in their place.",
+              "Claude Code et Codex démarrent dans les sandbox d'agent de Docker Sandboxes, avec les connexions gérées par sbx. Antigravity et Pi n'ont pas de sandbox : avec la VM active, ils ne démarrent pas (le message le dit), jamais sur le PC à leur place.",
+              "Claude Code und Codex starten in den Agenten-Sandboxes von Docker Sandboxes, mit den von sbx verwalteten Anmeldungen. Antigravity und Pi haben keine Sandbox: Mit aktiver VM starten sie nicht (die Meldung sagt es), nie stattdessen auf dem PC.",
+            ),
+            tr(
+              "Un terminale del kit non si apre nella VM in una cartella del kit o del tuo profilo (salvo i progetti del kit), in una cartella di sistema, nella radice di un disco, attraverso un link o in una cartella di rete: non parte e dice di scegliere la cartella di un progetto.",
+              "A kit terminal does not open in the VM in a folder of the kit or of your profile (except the kit's projects), in a system folder, at the root of a disk, through a link or in a network folder: it does not start and says to choose a project's folder.",
+              "Un terminal du kit ne s'ouvre pas dans la VM dans un dossier du kit ou de votre profil (sauf les projets du kit), dans un dossier système, à la racine d'un disque, à travers un lien ou dans un dossier réseau : il ne démarre pas et dit de choisir le dossier d'un projet.",
+              "Ein Terminal des Kits öffnet sich nicht in der VM in einem Ordner des Kits oder deines Profils (außer den Projekten des Kits), in einem Systemordner, im Stammverzeichnis eines Laufwerks, über einen Link oder in einem Netzwerkordner: Es startet nicht und sagt, den Ordner eines Projekts zu wählen.",
+            ),
+          ]}
+        />
+      </Section>
+
+      <Section
+        title={tr(
+          "L'avviso «Senza VM» e come risolverlo",
+          "The “No VM” notice and how to fix it",
+          "L'avis « Sans VM » et comment le résoudre",
+          "Der Hinweis „Ohne VM“ und wie man ihn behebt",
+        )}
+      >
+        <P>
+          {tr(
+            "«Senza VM» sta nella barra di stato, sul colore di avviso, sempre in vista. Un clic apre la finestra «Lavori senza VM»: che cosa vuol dire e, sotto «Perché la VM non è attiva», un motivo per riga, ognuno con che cosa fare e, quando c'è, il comando.",
+            "“No VM” is in the status bar, on the warning color, always in sight. A click opens the window “You are working without a VM”: what it means and, under “Why the VM is not on”, one reason per row, each with what to do and, when there is one, the command.",
+            "« Sans VM » est dans la barre d'état, sur la couleur d'avertissement, toujours visible. Un clic ouvre la fenêtre « Vous travaillez sans VM » : ce que cela veut dire et, sous « Pourquoi la VM n'est pas active », un motif par ligne, chacun avec quoi faire et, quand il y en a une, la commande.",
+            "„Ohne VM“ steht in der Statusleiste, in der Warnfarbe, immer sichtbar. Ein Klick öffnet das Fenster „Du arbeitest ohne VM“: was das bedeutet und, unter „Warum die VM nicht aktiv ist“, ein Grund pro Zeile, jeder mit dem, was zu tun ist, und, wenn es einen gibt, dem Befehl.",
+          )}
+        </P>
+        <Table
+          columns={[
+            tr("Motivo", "Reason", "Motif", "Grund"),
+            tr("Che cosa fare", "What to do", "Quoi faire", "Was zu tun ist"),
+          ]}
+          rows={[
+            [
+              tr(
+                "Sistema non supportato (Windows prima dell'11, Windows su ARM, Mac Intel, macOS prima del 14, Linux diverso da Ubuntu 24.04 o successivo)",
+                "System not supported (Windows before 11, Windows on ARM, Intel Mac, macOS before 14, Linux other than Ubuntu 24.04 or later)",
+                "Système non pris en charge (Windows avant la 11, Windows sur ARM, Mac Intel, macOS avant la 14, Linux autre qu'Ubuntu 24.04 ou ultérieur)",
+                "System nicht unterstützt (Windows vor 11, Windows auf ARM, Intel-Mac, macOS vor 14, Linux außer Ubuntu 24.04 oder neuer)",
+              ),
+              tr(
+                "Aggiorna il sistema, se si può; altrimenti i progetti restano sul PC. È l'unico motivo mostrato: gli altri non servirebbero.",
+                "Update the system if you can; otherwise the projects stay on the PC. It is the only reason shown: the others would not help.",
+                "Mettez le système à jour si possible ; sinon, les projets restent sur le PC. C'est le seul motif affiché : les autres ne serviraient à rien.",
+                "Aktualisiere das System, wenn möglich; sonst bleiben die Projekte auf dem PC. Es ist der einzige angezeigte Grund: Die anderen würden nicht helfen.",
+              ),
+            ],
+            [
+              tr(
+                "Windows Hypervisor Platform non è attivo",
+                "Windows Hypervisor Platform is not on",
+                "Windows Hypervisor Platform n'est pas activé",
+                "Windows Hypervisor Platform ist nicht aktiv",
+              ),
+              tr(
+                "«Copia» il comando Enable-WindowsOptionalFeature, eseguilo in PowerShell come amministratore, una volta sola, poi riavvia il PC.",
+                "“Copy” the Enable-WindowsOptionalFeature command, run it in PowerShell as an administrator, just once, then restart the PC.",
+                "Avec « Copier », copiez la commande Enable-WindowsOptionalFeature, exécutez-la dans PowerShell en administrateur, une seule fois, puis redémarrez le PC.",
+                "Kopiere mit „Kopieren“ den Befehl Enable-WindowsOptionalFeature, führe ihn in PowerShell als Administrator aus, nur einmal, und starte dann den PC neu.",
+              ),
+            ],
+            [
+              tr("/dev/kvm non c'è", "There is no /dev/kvm", "/dev/kvm est absent", "/dev/kvm fehlt"),
+              tr(
+                "Attiva la virtualizzazione (Intel VT-x o AMD-V) nel BIOS/UEFI e riavvia il PC.",
+                "Turn on virtualization (Intel VT-x or AMD-V) in the BIOS/UEFI and restart the PC.",
+                "Activez la virtualisation (Intel VT-x ou AMD-V) dans le BIOS/UEFI et redémarrez le PC.",
+                "Schalte die Virtualisierung (Intel VT-x oder AMD-V) im BIOS/UEFI ein und starte den PC neu.",
+              ),
+            ],
+            [
+              tr(
+                "Il tuo utente non può usare /dev/kvm",
+                "Your user cannot use /dev/kvm",
+                "Votre utilisateur ne peut pas utiliser /dev/kvm",
+                "Dein Benutzer kann /dev/kvm nicht verwenden",
+              ),
+              tr(
+                "«Copia» sudo usermod -aG kvm $USER, eseguilo in un terminale del PC, poi esci e rientra nella sessione.",
+                "“Copy” sudo usermod -aG kvm $USER, run it in a terminal of the PC, then log out and back in.",
+                "Avec « Copier », copiez sudo usermod -aG kvm $USER, exécutez-le dans un terminal du PC, puis fermez et rouvrez la session.",
+                "Kopiere mit „Kopieren“ sudo usermod -aG kvm $USER, führe es in einem Terminal des PCs aus, melde dich dann ab und wieder an.",
+              ),
+            ],
+            [
+              tr(
+                "AppArmor non lascia partire la microVM del kit",
+                "AppArmor does not let the kit's microVM start",
+                "AppArmor empêche la microVM du kit de démarrer",
+                "AppArmor lässt die microVM des Kits nicht starten",
+              ),
+              tr(
+                "«Copia» il comando sudo che crea il profilo, una volta (di nuovo se il kit cambia cartella). Se la cartella del kit ha caratteri che un profilo non accetta, il comando non c'è: sposta il kit in una cartella con un nome semplice.",
+                "“Copy” the sudo command that creates the profile, once (again if the kit changes folder). If the kit's folder has characters a profile does not accept, there is no command: move the kit to a folder with a plain name.",
+                "Avec « Copier », copiez la commande sudo qui crée le profil et exécutez-la une fois (à nouveau si le kit change de dossier). Si le dossier du kit contient des caractères qu'un profil n'accepte pas, il n'y a pas de commande : déplacez le kit dans un dossier au nom simple.",
+                "Kopiere mit „Kopieren“ den sudo-Befehl, der das Profil anlegt, und führe ihn einmal aus (erneut, wenn das Kit den Ordner wechselt). Hat der Ordner des Kits Zeichen, die ein Profil nicht annimmt, gibt es keinen Befehl: Verschiebe das Kit in einen Ordner mit einfachem Namen.",
+              ),
+            ],
+            [
+              tr(
+                "Docker Sandboxes (sbx) non è nel kit",
+                "Docker Sandboxes (sbx) is not in the kit",
+                "Docker Sandboxes (sbx) n'est pas dans le kit",
+                "Docker Sandboxes (sbx) ist nicht im Kit",
+              ),
+              tr(
+                "«Installa nel kit»: lo installa come la pagina Strumenti, con l'avanzamento nella barra di stato; alla fine lo stato si ricontrolla da solo. Se l'installazione non riesce, l'avviso ne dice il motivo accanto al pulsante, che riprova subito; Atollo riprova anche da solo ogni ora finché il kit non ha il suo sbx.",
+                "“Install in the kit”: it installs it as the Tools page does, with the progress in the status bar; at the end the status is checked again by itself. If the installation fails, the notice gives the reason beside the button, which tries again at once; Atollo also tries again by itself every hour while the kit has no sbx of its own.",
+                "« Installer dans le kit » : l'installe comme la page Outils, avec la progression dans la barre d'état ; à la fin, l'état est revérifié tout seul. Si l'installation échoue, l'avis en donne la raison à côté du bouton, qui réessaie tout de suite ; Atollo réessaie aussi tout seul toutes les heures tant que le kit n'a pas son sbx.",
+                "„Im Kit installieren“: installiert es wie die Seite Werkzeuge, mit dem Fortschritt in der Statusleiste; am Ende wird der Zustand von selbst erneut geprüft. Schlägt die Installation fehl, nennt der Hinweis den Grund neben der Schaltfläche, die es sofort erneut versucht; Atollo versucht es außerdem jede Stunde von selbst, solange das Kit kein eigenes sbx hat.",
+              ),
+            ],
+            [
+              tr(
+                "sbx non ha accesso a Docker",
+                "sbx is not signed in to Docker",
+                "sbx n'est pas connecté à Docker",
+                "sbx ist nicht bei Docker angemeldet",
+              ),
+              tr(
+                "«Lancia» apre sbx login nel terminale di Atollo (il primo accesso, sopra).",
+                "“Run” opens sbx login in Atollo's terminal (the first sign-in, above).",
+                "« Lancer » ouvre sbx login dans le terminal d'Atollo (la première connexion, ci-dessus).",
+                "„Starten“ öffnet sbx login im Terminal von Atollo (die erste Anmeldung, oben).",
+              ),
+            ],
+            [
+              tr(
+                "sbx ha risposto con un errore",
+                "sbx answered with an error",
+                "sbx a répondu par une erreur",
+                "sbx hat mit einem Fehler geantwortet",
+              ),
+              tr(
+                "«Lancia» apre sbx ls nel terminale di Atollo, per vedere il problema.",
+                "“Run” opens sbx ls in Atollo's terminal, to see the problem.",
+                "« Lancer » ouvre sbx ls dans le terminal d'Atollo, pour voir le problème.",
+                "„Starten“ öffnet sbx ls im Terminal von Atollo, um das Problem zu sehen.",
+              ),
+            ],
+            [
+              tr(
+                "Sul PC è già attivo un altro Docker Sandboxes",
+                "Another Docker Sandboxes is already running on the PC",
+                "Un autre Docker Sandboxes est déjà actif sur le PC",
+                "Auf dem PC läuft bereits ein anderes Docker Sandboxes",
+              ),
+              tr(
+                "Quello del PC o di un altro kit: le VM del kit finirebbero nei suoi dati. Se non ti serve, «Copia» sbx daemon stop, eseguilo, poi «Ricontrolla». Atollo non lo ferma mai da solo.",
+                "The PC's or another kit's: the kit's VMs would end up in its data. If you do not need it, “Copy” sbx daemon stop, run it, then “Check again”. Atollo never stops it by itself.",
+                "Celui du PC ou d'un autre kit : les VM du kit finiraient dans ses données. Si vous n'en avez pas besoin, copiez sbx daemon stop avec « Copier », exécutez-le, puis « Vérifier à nouveau ». Atollo ne l'arrête jamais de lui-même.",
+                "Das des PCs oder eines anderen Kits: Die VMs des Kits landeten in dessen Daten. Wenn du es nicht brauchst, kopiere sbx daemon stop mit „Kopieren“, führe es aus, dann „Erneut prüfen“. Atollo hält es nie von selbst an.",
+              ),
+            ],
+            [
+              tr(
+                "Il kit è su un disco FAT32 o exFAT",
+                "The kit is on a FAT32 or exFAT disk",
+                "Le kit est sur un disque FAT32 ou exFAT",
+                "Das Kit liegt auf einem FAT32- oder exFAT-Laufwerk",
+              ),
+              tr(
+                "Sposta il kit su un disco NTFS (APFS o ext4 su macOS e Linux) e riaprilo da lì: lì i dischi delle VM, fino a 30 GB ciascuno, occupano solo ciò che si scrive.",
+                "Move the kit to an NTFS disk (APFS or ext4 on macOS and Linux) and open it again from there: there the VMs' disks, up to 30 GB each, take only what is written.",
+                "Déplacez le kit sur un disque NTFS (APFS ou ext4 sur macOS et Linux) et rouvrez-le depuis là : les disques des VM, jusqu'à 30 Go chacun, n'y occupent que ce qui est écrit.",
+                "Verschiebe das Kit auf ein NTFS-Laufwerk (APFS oder ext4 unter macOS und Linux) und öffne es von dort: Dort belegen die Festplatten der VMs, bis zu 30 GB je VM, nur, was geschrieben wird.",
+              ),
+            ],
+          ]}
+        />
+        <P>
+          {tr(
+            "«Lancia» c'è solo per i comandi di sbx: Atollo li apre nel suo terminale, con il Docker Sandboxes del kit. I comandi del PC hanno «Copia», perché chiedono un amministratore e Atollo non li esegue mai. «Ricontrolla» chiede di nuovo lo stato, subito.",
+            "“Run” is there only for sbx's commands: Atollo opens them in its terminal, with the kit's Docker Sandboxes. The PC's commands have “Copy”, because they need an administrator and Atollo never runs them. “Check again” asks for the status again, right away.",
+            "« Lancer » n'existe que pour les commandes de sbx : Atollo les ouvre dans son terminal, avec le Docker Sandboxes du kit. Les commandes du PC ont « Copier », car elles demandent un administrateur et Atollo ne les exécute jamais. « Vérifier à nouveau » redemande l'état, tout de suite.",
+            "„Starten“ gibt es nur für die Befehle von sbx: Atollo öffnet sie in seinem Terminal, mit dem Docker Sandboxes des Kits. Die Befehle des PCs haben „Kopieren“, weil sie einen Administrator brauchen und Atollo sie nie ausführt. „Erneut prüfen“ fragt den Zustand sofort neu ab.",
+          )}
+        </P>
+        <P>
+          {rich(
+            tr(
+              "Senza VM i programmi dei progetti girano sul PC con il tuo utente: possono leggere i tuoi file e usare la rete. Il kit ne sigilla l'ambiente (niente variabili verso il tuo profilo vero o le tue chiavi SSH; MySQL con l'utente del progetto, mai l'amministratore), ma è un filtro, non un muro: {0}.",
+              "Without the VM the projects' programs run on the PC as your user: they can read your files and use the network. The kit seals their environment (no variables leading to your real profile or your SSH keys; MySQL as the project's user, never the administrator), but it is a filter, not a wall: {0}.",
+              "Sans VM, les programmes des projets tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers et utiliser le réseau. Le kit scelle leur environnement (pas de variables menant à votre vrai profil ou à vos clés SSH ; MySQL avec l'utilisateur du projet, jamais l'administrateur), mais c'est un filtre, pas un mur : {0}.",
+              "Ohne VM laufen die Programme der Projekte auf dem PC mit deinem Benutzer: Sie können deine Dateien lesen und das Netzwerk nutzen. Das Kit versiegelt ihre Umgebung (keine Variablen zu deinem echten Profil oder deinen SSH-Schlüsseln; MySQL mit dem Benutzer des Projekts, nie dem Administrator), aber das ist ein Filter, keine Mauer: {0}.",
+            ),
+            <See key="i" id="isolation" />,
+          )}
+        </P>
+      </Section>
+
+      <Section title={tr("GitHub nella VM", "GitHub in the VM", "GitHub dans la VM", "GitHub in der VM")}>
+        <P>
+          {tr(
+            "Di serie la VM di un progetto non usa il tuo accesso a GitHub: push e gh, dalla VM, non arrivano al tuo account. Per un progetto di cui ti fidi puoi accenderlo:",
+            "By default a project's VM does not use your GitHub access: push and gh, from the VM, do not reach your account. For a project you trust you can turn it on:",
+            "Par défaut, la VM d'un projet n'utilise pas votre accès GitHub : push et gh, depuis la VM, n'atteignent pas votre compte. Pour un projet de confiance, vous pouvez l'activer :",
+            "Standardmäßig nutzt die VM eines Projekts deinen GitHub-Zugang nicht: Push und gh erreichen aus der VM dein Konto nicht. Für ein Projekt, dem du vertraust, kannst du ihn einschalten:",
+          )}
+        </P>
+        <Steps
+          steps={[
+            tr(
+              "Collega il kit a GitHub in Impostazioni › Account GitHub, se non l'hai già fatto.",
+              "Connect the kit to GitHub in Settings › GitHub account, if you have not already.",
+              "Reliez le kit à GitHub dans Paramètres › Compte GitHub, si ce n'est pas déjà fait.",
+              "Verbinde das Kit mit GitHub unter Einstellungen › GitHub-Konto, falls noch nicht geschehen.",
+            ),
+            tr(
+              "Nella pagina del progetto apri la sezione «Git»; in fondo c'è il riquadro «GitHub nella VM».",
+              "On the project's page open the “Git” section; at the bottom there is the “GitHub in the VM” box.",
+              "Sur la page du projet, ouvrez la section « Git » ; en bas se trouve l'encadré « GitHub dans la VM ».",
+              "Öffne auf der Seite des Projekts den Abschnitt „Git“; unten steht der Kasten „GitHub in der VM“.",
+            ),
+            tr(
+              "Spunta «Il progetto nella VM usa il tuo accesso a GitHub del kit (push, gh)». Vale dal prossimo avvio della sua VM; togliendo la spunta l'accesso si toglie subito.",
+              "Tick “The project in the VM uses your GitHub access of the kit (push, gh)”. It applies from the next start of its VM; unticking it removes the access right away.",
+              "Cochez « Le projet dans la VM utilise ton accès GitHub du kit (push, gh) ». Cela vaut dès le prochain démarrage de sa VM ; en décochant, l'accès est retiré aussitôt.",
+              "Setze das Häkchen bei „Das Projekt in der VM nutzt deinen GitHub-Zugang des Kits (push, gh)“. Es gilt ab dem nächsten Start seiner VM; ohne Häkchen wird der Zugang sofort entfernt.",
+            ),
+          ]}
+        />
+        <Callout
+          tone="warn"
+          title={tr(
+            "Solo per i progetti di cui ti fidi",
+            "Only for projects you trust",
+            "Seulement pour les projets de confiance",
+            "Nur für Projekte, denen du vertraust",
+          )}
+        >
+          {tr(
+            "Il token non entra nella VM: il proxy di Docker Sandboxes lo aggiunge alle richieste verso GitHub. Ma il codice del progetto (anche un npm install) potrebbe agire su GitHub a tuo nome. La scelta vale solo per la sandbox di quel progetto, mai per i terminali del kit.",
+            "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But the project's code (even an npm install) could act on GitHub on your behalf. The choice applies only to that project's sandbox, never to the kit's terminals.",
+            "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais le code du projet (même un npm install) pourrait agir sur GitHub en votre nom. Le choix ne vaut que pour la sandbox de ce projet, jamais pour les terminaux du kit.",
+            "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber der Code des Projekts (auch ein npm install) könnte auf GitHub in deinem Namen handeln. Die Wahl gilt nur für die Sandbox dieses Projekts, nie für die Terminals des Kits.",
+          )}
+        </Callout>
+      </Section>
+
+      <Section
+        title={tr(
+          "Le sandbox e lo spazio che occupano",
+          "The sandboxes and the room they take",
+          "Les sandbox et l'espace qu'elles occupent",
+          "Die Sandboxes und ihr Platzbedarf",
+        )}
+      >
+        <P>
+          {tr(
+            "La finestra che si apre dalla barra di stato (anche quando dice «VM») ha, con Docker Sandboxes nel kit, la sezione «Sandbox delle VM»: in cima lo «Spazio occupato nel kit», lo spazio vero sul disco; poi ogni sandbox di Atollo con di chi è («Progetto …» o «Terminale … in …»), «accesa» o «spenta», e «Rimuovi».",
+            "The window that opens from the status bar (even when it says “VM”) has, with Docker Sandboxes in the kit, the “VM sandboxes” section: at the top the “Space taken in the kit”, the real room on the disk; then each of Atollo's sandboxes with whose it is (“Project …” or “Terminal … in …”), “running” or “stopped”, and “Remove”.",
+            "La fenêtre qui s'ouvre depuis la barre d'état (même quand elle indique « VM ») a, avec Docker Sandboxes dans le kit, la section « Sandbox des VM » : en haut l'« Espace occupé dans le kit », l'espace réel sur le disque ; puis chaque sandbox d'Atollo avec à qui elle appartient (« Projet … » ou « Terminal … dans … »), « allumée » ou « éteinte », et « Supprimer ».",
+            "Das Fenster, das sich aus der Statusleiste öffnet (auch wenn sie „VM“ zeigt), hat mit Docker Sandboxes im Kit den Abschnitt „Sandboxes der VMs“: oben der „Belegte Platz im Kit“, der echte Platz auf dem Laufwerk; dann jede Sandbox von Atollo mit ihrem Besitzer („Projekt …“ oder „Terminal … in …“), „läuft“ oder „gestoppt“, und „Entfernen“.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "«Rimuovi», poi «Rimuovi davvero», cancella la sandbox con il suo disco (la sua home e /tmp); i file del progetto restano. Al prossimo uso Atollo ne crea una nuova.",
+              "“Remove”, then “Really remove”, deletes the sandbox with its disk (its home and /tmp); the project's files stay. At the next use Atollo makes a new one.",
+              "« Supprimer », puis « Supprimer vraiment », efface la sandbox avec son disque (son dossier personnel et /tmp) ; les fichiers du projet restent. À la prochaine utilisation, Atollo en crée une nouvelle.",
+              "„Entfernen“, dann „Wirklich entfernen“, löscht die Sandbox mit ihrer Festplatte (ihr Home und /tmp); die Dateien des Projekts bleiben. Bei der nächsten Verwendung legt Atollo eine neue an.",
+            ),
+            tr(
+              "Eliminare un progetto toglie anche la sua sandbox e quelle dei suoi agenti; eliminare un terminale toglie le sue, una per cartella.",
+              "Deleting a project also removes its sandbox and its agents' ones; deleting a terminal removes its own, one per folder.",
+              "Supprimer un projet retire aussi sa sandbox et celles de ses agents ; supprimer un terminal retire les siennes, une par dossier.",
+              "Ein Projekt zu löschen entfernt auch seine Sandbox und die seiner Agenten; ein Terminal zu löschen entfernt seine, eine pro Ordner.",
+            ),
+            tr(
+              "I dischi delle VM arrivano fino a circa 30 GB ciascuno, ma su NTFS, APFS ed ext4 occupano solo ciò che si scrive.",
+              "The VMs' disks reach up to about 30 GB each, but on NTFS, APFS and ext4 they take only what is written.",
+              "Les disques des VM vont jusqu'à environ 30 Go chacun, mais sur NTFS, APFS et ext4 ils n'occupent que ce qui est écrit.",
+              "Die Festplatten der VMs reichen bis etwa 30 GB je VM, belegen auf NTFS, APFS und ext4 aber nur, was geschrieben wird.",
+            ),
+            tr(
+              "Se il kit cambia lettera o cartella, la sandbox di un progetto si rifà da sola nella cartella nuova, con una riga nel log: file, database, strumenti e accessi stanno nel kit e restano; si perdono solo la home della VM e le immagini scaricate.",
+              "If the kit changes letter or folder, a project's sandbox is made again by itself in the new folder, with a line in the log: files, databases, tools and sign-ins are in the kit and stay; only the VM's home and the downloaded images are lost.",
+              "Si le kit change de lettre ou de dossier, la sandbox d'un projet est refaite toute seule dans le nouveau dossier, avec une ligne dans le journal : fichiers, bases de données, outils et connexions sont dans le kit et restent ; seuls le dossier personnel de la VM et les images téléchargées sont perdus.",
+              "Wechselt das Kit Buchstaben oder Ordner, wird die Sandbox eines Projekts von selbst im neuen Ordner neu angelegt, mit einer Zeile im Log: Dateien, Datenbanken, Werkzeuge und Anmeldungen liegen im Kit und bleiben; verloren gehen nur das Home der VM und die heruntergeladenen Images.",
+            ),
+            tr(
+              "«Copia del kit» non copia immagini e dischi delle VM (decine di GB): le sandbox si rifanno da sole dove la copia viene aperta.",
+              "“Copy of the kit” does not copy the VMs' images and disks (tens of GB): the sandboxes are made again by themselves where the copy is opened.",
+              "« Copie du kit » ne copie pas les images et les disques des VM (des dizaines de Go) : les sandbox sont refaites toutes seules là où la copie est ouverte.",
+              "„Kopie des Kits“ kopiert die Images und Festplatten der VMs nicht (Dutzende GB): Die Sandboxes werden dort, wo die Kopie geöffnet wird, von selbst neu angelegt.",
+            ),
+          ]}
+        />
+      </Section>
+
+      <Section
+        title={tr(
+          "Le azioni e il sito nella VM",
+          "Actions and the website in the VM",
+          "Les actions et le site dans la VM",
+          "Aktionen und die Website in der VM",
+        )}
+      >
+        <Bullets
+          items={[
+            tr(
+              "Un'azione gira nella VM del progetto, con HOST=0.0.0.0 e la sua PORT; la porta arriva su localhost del PC. «Ferma» la ferma dentro la VM (se non risponde, dopo cinque secondi la chiude) e la porta torna libera.",
+              "An action runs in the project's VM, with HOST=0.0.0.0 and its PORT; the port reaches the PC's localhost. “Stop” stops it inside the VM (if it does not answer, it ends it after five seconds) and the port is freed.",
+              "Une action tourne dans la VM du projet, avec HOST=0.0.0.0 et son PORT ; le port arrive sur le localhost du PC. « Arrêter » l'arrête dans la VM (si elle ne répond pas, elle est terminée après cinq secondes) et le port est libéré.",
+              "Eine Aktion läuft in der VM des Projekts, mit HOST=0.0.0.0 und ihrem PORT; der Port kommt auf localhost des PCs an. „Beenden“ beendet sie in der VM (antwortet sie nicht, wird sie nach fünf Sekunden geschlossen), und der Port wird frei.",
+            ),
+            tr(
+              "Il sito di un'azione servito da Apache o Caddy è un container della VM: Apache con il PHP del progetto, o Apache per i soli file; un sito Caddy diventa Apache, e il log lo dice. Gli indirizzi .localhost portano al PC e funzionano come senza VM; gli alias verso cartelle del progetto stesso funzionano, quelli verso un altro progetto no (il log lo dice).",
+              "An action's website served by Apache or Caddy is a container of the VM: Apache with the project's PHP, or Apache for plain files; a Caddy site becomes Apache, and the log says so. .localhost addresses lead to the PC and work as without the VM; aliases to folders of the project itself work, those to another project do not (the log says so).",
+              "Le site d'une action servi par Apache ou Caddy est un conteneur de la VM : Apache avec le PHP du projet, ou Apache pour les simples fichiers ; un site Caddy devient Apache, et le journal le dit. Les adresses .localhost mènent au PC et fonctionnent comme sans VM ; les alias vers des dossiers du projet lui-même fonctionnent, ceux vers un autre projet non (le journal le dit).",
+              "Die Website einer Aktion, die Apache oder Caddy ausliefert, ist ein Container der VM: Apache mit dem PHP des Projekts oder Apache für reine Dateien; eine Caddy-Website wird zu Apache, und das Log sagt es. .localhost-Adressen führen zum PC und funktionieren wie ohne VM; Aliasse auf Ordner des Projekts selbst funktionieren, solche auf ein anderes Projekt nicht (das Log sagt es).",
+            ),
+            tr(
+              "Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» nelle Impostazioni, il sito nella VM si apre anche dal telefono, come quello sul PC.",
+              "With “Let other PCs on the network reach the project servers” in Settings, the site in the VM opens from the phone too, like the one on the PC.",
+              "Avec « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » dans les Paramètres, le site dans la VM s'ouvre aussi depuis le téléphone, comme celui sur le PC.",
+              "Mit „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ in den Einstellungen öffnet sich die Website in der VM auch vom Telefon aus, wie die auf dem PC.",
+            ),
+            tr(
+              "I server condivisi della pagina Server Web (i pool) con la VM attiva non partono, perché eseguirebbero il codice dei progetti sul PC: ogni sito parte dalla pagina del suo progetto, nella sua VM. Un pool già acceso si può ancora fermare.",
+              "The shared servers of the Web Servers page (the pools) do not start with the VM on, because they would run the projects' code on the PC: each site starts from its project's page, in its VM. A pool already running can still be stopped.",
+              "Les serveurs partagés de la page Serveurs web (les pools) ne démarrent pas avec la VM active, car ils exécuteraient le code des projets sur le PC : chaque site démarre depuis la page de son projet, dans sa VM. Un pool déjà allumé peut encore être arrêté.",
+              "Die gemeinsamen Server der Seite Webserver (die Pools) starten mit aktiver VM nicht, weil sie den Code der Projekte auf dem PC ausführen würden: Jede Website startet von der Seite ihres Projekts, in ihrer VM. Ein bereits laufender Pool lässt sich weiterhin beenden.",
+            ),
+          ]}
+        />
+      </Section>
+
+      <Section
+        title={tr(
+          "Che cosa non va ancora nella VM",
+          "What does not go into the VM yet",
+          "Ce qui ne passe pas encore dans la VM",
+          "Was noch nicht in die VM geht",
+        )}
+      >
+        <Callout tone="warn">
+          <Bullets
+            items={[
+              tr(
+                "I terminali e i task dell'editor: girano sul PC, con l'ambiente dell'editor.",
+                "The editor's terminals and tasks: they run on the PC, with the editor's environment.",
+                "Les terminaux et les tâches de l'éditeur : ils tournent sur le PC, avec l'environnement de l'éditeur.",
+                "Die Terminals und Tasks des Editors: Sie laufen auf dem PC, mit der Umgebung des Editors.",
+              ),
+              tr(
+                "Gli agenti nella VM non hanno ancora gli strumenti, il database e i server MCP del progetto.",
+                "The agents in the VM do not have the project's tools, database and MCP servers yet.",
+                "Les agents dans la VM n'ont pas encore les outils, la base de données et les serveurs MCP du projet.",
+                "Die Agenten in der VM haben die Werkzeuge, die Datenbank und die MCP-Server des Projekts noch nicht.",
+              ),
+            ]}
+          />
+        </Callout>
+      </Section>
+
+      <Section
+        title={tr(
+          "Che cosa resta fuori dal kit",
+          "What stays outside the kit",
+          "Ce qui reste hors du kit",
+          "Was außerhalb des Kits bleibt",
+        )}
+      >
+        <P>
+          {tr(
+            "Sandbox, dischi, immagini, impostazioni e registri di Docker Sandboxes stanno in data e viaggiano con il kit. Atollo ferma Docker Sandboxes quando si chiude e prima di «Rimuovi l'unità». Restano fuori, perché Docker Sandboxes o il sistema non lasciano altro:",
+            "Docker Sandboxes' sandboxes, disks, images, settings and logs are in data and travel with the kit. Atollo stops Docker Sandboxes when it closes and before “Remove drive”. What stays outside, because Docker Sandboxes or the system allow nothing else:",
+            "Les sandbox, disques, images, paramètres et journaux de Docker Sandboxes sont dans data et voyagent avec le kit. Atollo arrête Docker Sandboxes à sa fermeture et avant « Retirer le lecteur ». Restent dehors, parce que Docker Sandboxes ou le système ne permettent rien d'autre :",
+            "Sandboxes, Festplatten, Images, Einstellungen und Logs von Docker Sandboxes liegen in data und reisen mit dem Kit. Atollo beendet Docker Sandboxes beim Schließen und vor „Laufwerk entfernen“. Außerhalb bleiben, weil Docker Sandboxes oder das System nichts anderes zulassen:",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "L'hypervisor (Windows Hypervisor Platform, /dev/kvm), attivato una volta da te come amministratore.",
+              "The hypervisor (Windows Hypervisor Platform, /dev/kvm), turned on once by you as an administrator.",
+              "L'hyperviseur (Windows Hypervisor Platform, /dev/kvm), activé une fois par vous en administrateur.",
+              "Der Hypervisor (Windows Hypervisor Platform, /dev/kvm), einmal von dir als Administrator eingeschaltet.",
+            ),
+            tr(
+              "L'accesso a Docker (sbx login), nel portachiavi del sistema, una volta per PC.",
+              "The Docker sign-in (sbx login), in the system keychain, once per PC.",
+              "La connexion à Docker (sbx login), dans le trousseau du système, une fois par PC.",
+              "Die Anmeldung bei Docker (sbx login), im Schlüsselbund des Systems, einmal pro PC.",
+            ),
+            tr(
+              "Per «GitHub nella VM», nel portachiavi del sistema (su Windows la Gestione credenziali) il comando che dà il token alla sandbox: il comando, non il token.",
+              "For “GitHub in the VM”, in the system keychain (on Windows the Credential Manager) the command that gives the token to the sandbox: the command, not the token.",
+              "Pour « GitHub dans la VM », dans le trousseau du système (sur Windows le Gestionnaire d'identification) la commande qui donne le jeton à la sandbox : la commande, pas le jeton.",
+              "Für „GitHub in der VM“ im Schlüsselbund des Systems (unter Windows die Anmeldeinformationsverwaltung) der Befehl, der der Sandbox das Token gibt: der Befehl, nicht das Token.",
+            ),
+            tr(
+              "Una giunzione sboxd-<id> e una cartella gvisor nella cartella temporanea del PC, per i percorsi brevi del servizio di Docker Sandboxes.",
+              "A junction sboxd-<id> and a gvisor folder in the PC's temporary folder, for the short paths of the Docker Sandboxes service.",
+              "Une jonction sboxd-<id> et un dossier gvisor dans le dossier temporaire du PC, pour les chemins courts du service de Docker Sandboxes.",
+              "Eine Verknüpfung sboxd-<id> und ein Ordner gvisor im temporären Ordner des PCs, für die kurzen Pfade des Dienstes von Docker Sandboxes.",
+            ),
+            tr(
+              "Su Ubuntu, il profilo AppArmor della microVM del kit.",
+              "On Ubuntu, the AppArmor profile of the kit's microVM.",
+              "Sur Ubuntu, le profil AppArmor de la microVM du kit.",
+              "Unter Ubuntu das AppArmor-Profil der microVM des Kits.",
+            ),
+          ]}
+        />
+      </Section>
+
+      <Under>
+        <Bullets
+          items={[
+            tr(
+              "Nomi delle sandbox: atollo-p-<progetto>-<hash> per un progetto, atollo-t-<terminale>-<hash> per un terminale in una cartella, atollo-a-<agente>-<progetto>-<hash> per un agente. L'hash viene dal nome esatto: due progetti non condividono mai una sandbox.",
+              "Sandbox names: atollo-p-<project>-<hash> for a project, atollo-t-<terminal>-<hash> for a terminal in a folder, atollo-a-<agent>-<project>-<hash> for an agent. The hash comes from the exact name: two projects never share a sandbox.",
+              "Noms des sandbox : atollo-p-<projet>-<hash> pour un projet, atollo-t-<terminal>-<hash> pour un terminal dans un dossier, atollo-a-<agent>-<projet>-<hash> pour un agent. Le hash vient du nom exact : deux projets ne partagent jamais une sandbox.",
+              "Namen der Sandboxes: atollo-p-<Projekt>-<Hash> für ein Projekt, atollo-t-<Terminal>-<Hash> für ein Terminal in einem Ordner, atollo-a-<Agent>-<Projekt>-<Hash> für einen Agenten. Der Hash stammt vom genauen Namen: Zwei Projekte teilen sich nie eine Sandbox.",
+            ),
+            tr(
+              "data\\app\\sandboxes\\<sandbox>\\ è la descrizione di ogni sandbox (spec.yaml, atollo.json con di chi è, le cartelle montate e le porte aperte, db.env con la connessione al database, leggibile solo da te); secrets.json annota i comandi di GitHub registrati.",
+              "data\\app\\sandboxes\\<sandbox>\\ is each sandbox's description (spec.yaml, atollo.json with whose it is, the mounted folders and the open ports, db.env with the database connection, readable only by you); secrets.json notes the GitHub commands registered.",
+              "data\\app\\sandboxes\\<sandbox>\\ est la description de chaque sandbox (spec.yaml, atollo.json avec à qui elle appartient, les dossiers montés et les ports ouverts, db.env avec la connexion à la base, lisible par vous seul) ; secrets.json note les commandes GitHub enregistrées.",
+              "data\\app\\sandboxes\\<sandbox>\\ ist die Beschreibung jeder Sandbox (spec.yaml, atollo.json mit ihrem Besitzer, die eingehängten Ordner und die offenen Ports, db.env mit der Datenbankverbindung, nur für dich lesbar); secrets.json vermerkt die registrierten GitHub-Befehle.",
+            ),
+            tr(
+              "Docker Sandboxes sta in data\\apps\\<sistema>\\sandboxes; configurazione, accesso e registri in data\\home (su Windows data\\home\\AppData\\Local\\DockerSandboxes), immagini e dischi nella cartella di stato del suo servizio, anch'essa nel kit.",
+              "Docker Sandboxes is in data\\apps\\<system>\\sandboxes; settings, sign-in state and logs in data\\home (on Windows data\\home\\AppData\\Local\\DockerSandboxes), images and disks in its service's state folder, in the kit as well.",
+              "Docker Sandboxes est dans data\\apps\\<système>\\sandboxes ; configuration, état de connexion et journaux dans data\\home (sur Windows data\\home\\AppData\\Local\\DockerSandboxes), images et disques dans le dossier d'état de son service, lui aussi dans le kit.",
+              "Docker Sandboxes liegt in data\\apps\\<System>\\sandboxes; Konfiguration, Anmeldestatus und Logs in data\\home (unter Windows data\\home\\AppData\\Local\\DockerSandboxes), Images und Festplatten im Zustandsordner seines Dienstes, ebenfalls im Kit.",
+            ),
+            tr(
+              "Il servizio di Docker Sandboxes del kit parte con l'inoltro dell'agente SSH spento, senza browser nella VM, senza invio di diagnostica e senza telemetria.",
+              "The kit's Docker Sandboxes service starts with SSH agent forwarding off, no browser in the VM, no diagnostics upload and no telemetry.",
+              "Le service Docker Sandboxes du kit démarre avec le transfert de l'agent SSH désactivé, sans navigateur dans la VM, sans envoi de diagnostics et sans télémétrie.",
+              "Der Docker-Sandboxes-Dienst des Kits startet mit ausgeschalteter SSH-Agent-Weiterleitung, ohne Browser in der VM, ohne Hochladen von Diagnosen und ohne Telemetrie.",
+            ),
+            tr(
+              "Terminale: sbx exec -it … bash -l, con gli strumenti del kit per Linux in testa al PATH. Azione: sbx exec … sh -lc '<riga>', con HOST=0.0.0.0 e PORT, e la porta pubblicata su 127.0.0.1 del PC, o su 0.0.0.0 con la rete locale (sbx ports); «Ferma» manda TERM al suo gruppo di processi nella VM, KILL dopo cinque secondi, e ritira la porta. Nella VM D:\\a\\b diventa /d/a/b; su macOS e Linux il percorso resta lo stesso.",
+              "Terminal: sbx exec -it … bash -l, with the kit's tools for Linux first on the PATH. Action: sbx exec … sh -lc '<line>', with HOST=0.0.0.0 and PORT, and the port published on the PC's 127.0.0.1, or on 0.0.0.0 with the local network (sbx ports); “Stop” sends TERM to its process group in the VM, KILL after five seconds, and takes the port back. In the VM D:\\a\\b becomes /d/a/b; on macOS and Linux the path stays the same.",
+              "Terminal : sbx exec -it … bash -l, avec les outils du kit pour Linux en tête du PATH. Action : sbx exec … sh -lc '<ligne>', avec HOST=0.0.0.0 et PORT, et le port publié sur 127.0.0.1 du PC, ou sur 0.0.0.0 avec le réseau local (sbx ports) ; « Arrêter » envoie TERM à son groupe de processus dans la VM, KILL après cinq secondes, et retire le port. Dans la VM, D:\\a\\b devient /d/a/b ; sur macOS et Linux, le chemin reste le même.",
+              "Terminal: sbx exec -it … bash -l, mit den Werkzeugen des Kits für Linux vorne im PATH. Aktion: sbx exec … sh -lc '<Zeile>', mit HOST=0.0.0.0 und PORT, und der Port auf 127.0.0.1 des PCs veröffentlicht, mit lokalem Netzwerk auf 0.0.0.0 (sbx ports); „Beenden“ schickt TERM an ihre Prozessgruppe in der VM, KILL nach fünf Sekunden, und nimmt den Port zurück. In der VM wird D:\\a\\b zu /d/a/b; unter macOS und Linux bleibt der Pfad gleich.",
+            ),
+          ]}
+        />
+      </Under>
+
+      <Related ids={["isolation", "terminals", "project-git", "troubleshooting"]} />
+    </>
+  ),
+
   isolation: () => (
     <>
       <InBrief
@@ -291,6 +1021,12 @@ export const INSIDE: TopicTexts = {
             "A few exceptions are declared: the system's temporary folder and, for a few seconds, the keychain.",
             "Quelques exceptions sont déclarées : le dossier temporaire du système et, pendant quelques secondes, le trousseau.",
             "Wenige Ausnahmen sind offen angegeben: der temporäre Ordner des Systems und, für einige Sekunden, der Schlüsselbund.",
+          ),
+          tr(
+            "L'ambiente è un filtro, non un muro: il confine vero è la VM di ogni progetto. I programmi dei progetti ricevono in più un ambiente sigillato, l'unica protezione quando la VM manca.",
+            "The environment is a filter, not a wall: the real boundary is each project's VM. The projects' programs also get a sealed environment, the only protection when the VM is missing.",
+            "L'environnement est un filtre, pas un mur : la vraie frontière est la VM de chaque projet. Les programmes des projets reçoivent en plus un environnement scellé, la seule protection quand la VM manque.",
+            "Die Umgebung ist ein Filter, keine Mauer: Die echte Grenze ist die VM jedes Projekts. Die Programme der Projekte erhalten zusätzlich eine versiegelte Umgebung, der einzige Schutz, wenn die VM fehlt.",
           ),
         ]}
       />
@@ -436,6 +1172,69 @@ export const INSIDE: TopicTexts = {
       </Section>
 
       <Section
+        title={tr(
+          "L'ambiente sigillato dei progetti",
+          "The projects' sealed environment",
+          "L'environnement scellé des projets",
+          "Die versiegelte Umgebung der Projekte",
+        )}
+      >
+        <P>
+          {tr(
+            "Il terminale di un progetto, le sue azioni, gli agenti e i terminali del kit ricevono l'ambiente del kit sigillato: un progetto riceve da sé solo ciò che è suo.",
+            "A project's terminal, its actions, the agents and the kit's terminals get the kit's environment sealed: a project receives from it only what is its own.",
+            "Le terminal d'un projet, ses actions, les agents et les terminaux du kit reçoivent l'environnement du kit scellé : un projet n'en reçoit que ce qui est à lui.",
+            "Das Terminal eines Projekts, seine Aktionen, die Agenten und die Terminals des Kits erhalten die Umgebung des Kits versiegelt: Ein Projekt bekommt daraus nur, was ihm gehört.",
+          )}
+        </P>
+        <Bullets
+          items={[
+            tr(
+              "Fuori le variabili che portano al tuo profilo vero (CP_USER_PROFILE), alle tue chiavi SSH (SSH_AUTH_SOCK) e, su Linux, al portachiavi della sessione (DBUS_SESSION_BUS_ADDRESS).",
+              "Out go the variables leading to your real profile (CP_USER_PROFILE), to your SSH keys (SSH_AUTH_SOCK) and, on Linux, to the session keyring (DBUS_SESSION_BUS_ADDRESS).",
+              "Dehors les variables qui mènent à votre vrai profil (CP_USER_PROFILE), à vos clés SSH (SSH_AUTH_SOCK) et, sur Linux, au trousseau de la session (DBUS_SESSION_BUS_ADDRESS).",
+              "Draußen bleiben die Variablen, die zu deinem echten Profil (CP_USER_PROFILE), zu deinen SSH-Schlüsseln (SSH_AUTH_SOCK) und unter Linux zum Schlüsselbund der Sitzung (DBUS_SESSION_BUS_ADDRESS) führen.",
+            ),
+            tr(
+              "Il client mysql entra come l'utente del progetto, sul suo database, mai come amministratore: l'accesso di amministratore resta ai server del kit e a phpMyAdmin.",
+              "The mysql client signs in as the project's user, on its database, never as the administrator: the administrator login stays with the kit's servers and phpMyAdmin.",
+              "Le client mysql se connecte en tant qu'utilisateur du projet, sur sa base, jamais en administrateur : l'accès administrateur reste aux serveurs du kit et à phpMyAdmin.",
+              "Der mysql-Client meldet sich als Benutzer des Projekts an, auf dessen Datenbank, nie als Administrator: Die Administrator-Anmeldung bleibt bei den Servern des Kits und bei phpMyAdmin.",
+            ),
+            tr(
+              "Restano l'accesso di GitHub CLI del kit (serve a Git su HTTPS) e la sessione grafica, perché un progetto può aprire finestre.",
+              "The kit's GitHub CLI sign-in stays (Git over HTTPS needs it), and so does the graphical session, since a project can open windows.",
+              "Restent la connexion de GitHub CLI du kit (Git en HTTPS en a besoin) et la session graphique, car un projet peut ouvrir des fenêtres.",
+              "Es bleiben die Anmeldung von GitHub CLI des Kits (Git über HTTPS braucht sie) und die grafische Sitzung, denn ein Projekt kann Fenster öffnen.",
+            ),
+            tr(
+              "I terminali dell'editor hanno l'ambiente dell'editor, condiviso fra i progetti, non sigillato.",
+              "The editor's terminals have the editor's environment, shared between projects, not sealed.",
+              "Les terminaux de l'éditeur ont l'environnement de l'éditeur, partagé entre les projets, non scellé.",
+              "Die Terminals des Editors haben die Umgebung des Editors, von den Projekten geteilt, nicht versiegelt.",
+            ),
+            tr(
+              "Quando l'app legge un progetto con Git, il .git/config del progetto non può avviare programmi suoi (core.fsmonitor spento).",
+              "When the app reads a project with Git, the project's .git/config cannot start programs of its own (core.fsmonitor off).",
+              "Quand l'application lit un projet avec Git, le .git/config du projet ne peut pas lancer ses propres programmes (core.fsmonitor désactivé).",
+              "Wenn die App ein Projekt mit Git liest, kann die .git/config des Projekts keine eigenen Programme starten (core.fsmonitor aus).",
+            ),
+          ]}
+        />
+        <P>
+          {rich(
+            tr(
+              "Senza la VM questo è tutto: i programmi dei progetti girano con il tuo utente e leggono ciò che leggi tu. Con la VM ogni progetto vede solo la sua cartella: {0}.",
+              "Without the VM this is all: the projects' programs run as your user and read what you read. With the VM each project sees only its folder: {0}.",
+              "Sans la VM, c'est tout : les programmes des projets tournent avec votre utilisateur et lisent ce que vous lisez. Avec la VM, chaque projet ne voit que son dossier : {0}.",
+              "Ohne die VM ist das alles: Die Programme der Projekte laufen mit deinem Benutzer und lesen, was du liest. Mit der VM sieht jedes Projekt nur seinen Ordner: {0}.",
+            ),
+            <See key="v" id="vm" />,
+          )}
+        </P>
+      </Section>
+
+      <Section
         title={tr("Che cosa resta sul PC", "What stays on the PC", "Ce qui reste sur le PC", "Was auf dem PC bleibt")}
       >
         <P>
@@ -478,6 +1277,12 @@ export const INSIDE: TopicTexts = {
               "Sur macOS : les données de la fenêtre dans ~/Library/WebKit et, si vous n'utilisez pas le jeton, la connexion de Claude Code dans le Trousseau.",
               "Unter macOS: die Daten des Fensters in ~/Library/WebKit und, wenn du das Token nicht verwendest, die Anmeldung von Claude Code im Schlüsselbund.",
             ),
+            tr(
+              "Per la VM dei progetti: l'hypervisor attivato da te, l'accesso a Docker nel portachiavi, una giunzione e una cartella nella cartella temporanea del sistema e, su Ubuntu, un profilo AppArmor (l'elenco completo nell'argomento sulla VM).",
+              "For the projects' VM: the hypervisor you turned on, the Docker sign-in in the keychain, a junction and a folder in the system's temporary folder and, on Ubuntu, an AppArmor profile (the full list in the topic about the VM).",
+              "Pour la VM des projets : l'hyperviseur que vous avez activé, la connexion à Docker dans le trousseau, une jonction et un dossier dans le dossier temporaire du système et, sur Ubuntu, un profil AppArmor (la liste complète dans le sujet sur la VM).",
+              "Für die VM der Projekte: der von dir eingeschaltete Hypervisor, die Docker-Anmeldung im Schlüsselbund, eine Verknüpfung und ein Ordner im temporären Ordner des Systems und unter Ubuntu ein AppArmor-Profil (die vollständige Liste im Thema über die VM).",
+            ),
           ]}
         />
         <Callout
@@ -490,10 +1295,10 @@ export const INSIDE: TopicTexts = {
           )}
         >
           {tr(
-            "Atollo parte sempre come utente normale. Le uniche cose che chiedono un amministratore sono esterne al kit e facoltative: Visual Studio Build Tools per il compilatore MSVC di Rust, gli Xcode Command Line Tools su macOS per alcuni programmi C/C++.",
-            "Atollo always starts as a normal user. The only things that need an administrator are outside the kit and optional: Visual Studio Build Tools for Rust's MSVC compiler, the Xcode Command Line Tools on macOS for some C/C++ programs.",
-            "Atollo démarre toujours en tant qu'utilisateur normal. Les seules choses qui demandent un administrateur sont extérieures au kit et facultatives : Visual Studio Build Tools pour le compilateur MSVC de Rust, les Xcode Command Line Tools sur macOS pour certains programmes C/C++.",
-            "Atollo startet immer als normaler Benutzer. Die einzigen Dinge, die einen Administrator verlangen, liegen außerhalb des Kits und sind optional: Visual Studio Build Tools für den MSVC-Compiler von Rust, die Xcode Command Line Tools unter macOS für einige C/C++-Programme.",
+            "Atollo parte sempre come utente normale e non esegue mai un comando da amministratore. Le uniche cose che lo chiedono sono esterne al kit e le fai tu, una volta: attivare l'hypervisor per la VM (o, su Linux, il gruppo kvm e il profilo AppArmor), Visual Studio Build Tools per il compilatore MSVC di Rust, gli Xcode Command Line Tools su macOS per alcuni programmi C/C++.",
+            "Atollo always starts as a normal user and never runs an administrator command. The only things that need one are outside the kit and are yours to do, once: turning on the hypervisor for the VM (or, on Linux, the kvm group and the AppArmor profile), Visual Studio Build Tools for Rust's MSVC compiler, the Xcode Command Line Tools on macOS for some C/C++ programs.",
+            "Atollo démarre toujours en tant qu'utilisateur normal et n'exécute jamais de commande d'administrateur. Les seules choses qui en demandent un sont extérieures au kit et c'est vous qui les faites, une fois : activer l'hyperviseur pour la VM (ou, sur Linux, le groupe kvm et le profil AppArmor), Visual Studio Build Tools pour le compilateur MSVC de Rust, les Xcode Command Line Tools sur macOS pour certains programmes C/C++.",
+            "Atollo startet immer als normaler Benutzer und führt nie einen Administratorbefehl aus. Die einzigen Dinge, die einen verlangen, liegen außerhalb des Kits und machst du selbst, einmal: den Hypervisor für die VM einschalten (oder unter Linux die Gruppe kvm und das AppArmor-Profil), Visual Studio Build Tools für den MSVC-Compiler von Rust, die Xcode Command Line Tools unter macOS für einige C/C++-Programme.",
           )}
         </Callout>
       </Section>
@@ -529,7 +1334,7 @@ export const INSIDE: TopicTexts = {
         />
       </Under>
 
-      <Related ids={["disk-layout", "lifecycle", "move"]} />
+      <Related ids={["vm", "disk-layout", "lifecycle", "move"]} />
     </>
   ),
 
@@ -868,6 +1673,21 @@ export const INSIDE: TopicTexts = {
               ),
             ],
             [
+              tr("VM (Docker Sandboxes)", "VM (Docker Sandboxes)", "VM (Docker Sandboxes)", "VM (Docker Sandboxes)"),
+              tr(
+                "Lo stato si controlla all'avvio e ogni minuto; una microVM parte con il primo terminale, azione o agente che la usa",
+                "The status is checked at start and every minute; a microVM starts with the first terminal, action or agent that uses it",
+                "L'état est vérifié au démarrage puis chaque minute ; une microVM démarre avec le premier terminal, action ou agent qui l'utilise",
+                "Der Zustand wird beim Start und jede Minute geprüft; eine microVM startet mit dem ersten Terminal, der ersten Aktion oder dem ersten Agenten, der sie nutzt",
+              ),
+              tr(
+                "Alla chiusura dell'app e con «Rimuovi l'unità», insieme al servizio di Docker Sandboxes del kit",
+                "When the app closes and with “Remove drive”, together with the kit's Docker Sandboxes service",
+                "À la fermeture de l'application et avec « Retirer le lecteur », avec le service Docker Sandboxes du kit",
+                "Beim Schließen der App und mit „Laufwerk entfernen“, zusammen mit dem Docker-Sandboxes-Dienst des Kits",
+              ),
+            ],
+            [
               tr(
                 "Server dei modelli locali",
                 "Local models server",
@@ -903,10 +1723,10 @@ export const INSIDE: TopicTexts = {
         <P>
           {rich(
             tr(
-              "Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e il server dei modelli locali e spegne con ordine i database, poi esce. Prima di staccare l'unità usa {0}.",
-              "If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions, the web servers and the local models server and shuts down the databases neatly, then exits. Before unplugging the drive use {0}.",
-              "Si quelque chose est ouvert, Atollo demande « Fermer Atollo ? » avec la liste ; « Tout fermer » arrête les actions, les serveurs web et le serveur des modèles locaux et éteint proprement les bases de données, puis quitte. Avant de débrancher le lecteur, utilisez {0}.",
-              "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ mit der Liste; „Alles schließen“ stoppt die Aktionen, die Webserver und den Server der lokalen Modelle, fährt die Datenbanken geordnet herunter und beendet sich dann. Bevor du das Laufwerk abziehst, verwende {0}.",
+              "Se qualcosa è aperto, Atollo chiede «Chiudere Atollo?» con l'elenco; «Chiudi tutto» ferma le azioni, i server web e il server dei modelli locali e spegne con ordine i database e Docker Sandboxes con le microVM, poi esce. Prima di staccare l'unità usa {0}.",
+              "If something is open, Atollo asks “Close Atollo?” with the list; “Close everything” stops the actions, the web servers and the local models server and shuts down the databases and Docker Sandboxes with the microVMs neatly, then exits. Before unplugging the drive use {0}.",
+              "Si quelque chose est ouvert, Atollo demande « Fermer Atollo ? » avec la liste ; « Tout fermer » arrête les actions, les serveurs web et le serveur des modèles locaux et éteint proprement les bases de données et Docker Sandboxes avec les microVM, puis quitte. Avant de débrancher le lecteur, utilisez {0}.",
+              "Wenn etwas geöffnet ist, fragt Atollo „Atollo schließen?“ mit der Liste; „Alles schließen“ stoppt die Aktionen, die Webserver und den Server der lokalen Modelle, fährt die Datenbanken und Docker Sandboxes mit den microVMs geordnet herunter und beendet sich dann. Bevor du das Laufwerk abziehst, verwende {0}.",
             ),
             <See key="e" id="eject" />,
           )}

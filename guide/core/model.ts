@@ -47,6 +47,7 @@ export type GuideTopicId =
   | "move"
   | "updates"
   // 8. How it works
+  | "vm"
   | "isolation"
   | "disk-layout"
   | "lifecycle"
@@ -744,6 +745,27 @@ export const GUIDE_TOPICS: GuideTopic[] = [
 
   // 8. How it works
   {
+    id: "vm",
+    group: "inside",
+    title: () =>
+      tr(
+        "La VM dei progetti (Docker Sandboxes)",
+        "The projects' VM (Docker Sandboxes)",
+        "La VM des projets (Docker Sandboxes)",
+        "Die VM der Projekte (Docker Sandboxes)",
+      ),
+    subtitle: () =>
+      tr(
+        "Una microVM per progetto e per terminale: che cosa serve su ogni sistema, il primo accesso, che cosa gira dove, l'avviso «Senza VM», GitHub nella VM e le sandbox.",
+        "A microVM per project and per terminal: what each system needs, the first sign-in, what runs where, the “No VM” notice, GitHub in the VM and the sandboxes.",
+        "Une microVM par projet et par terminal : ce qu'il faut sur chaque système, la première connexion, ce qui tourne où, l'avis « Sans VM », GitHub dans la VM et les sandbox.",
+        "Eine microVM pro Projekt und pro Terminal: was jedes System braucht, die erste Anmeldung, was wo läuft, der Hinweis „Ohne VM“, GitHub in der VM und die Sandboxes.",
+      ),
+    icon: "vm",
+    keywords:
+      "vm microvm docker sandboxes sbx sandbox isolamento senza vm sbx login account docker hypervisor platform kvm apparmor box rimuovi sandbox github nella vm isolation no vm sign in docker account remove sandbox github in the vm isolement sans vm connexion compte docker supprimer sandbox github dans la vm isolierung ohne vm anmeldung docker-konto sandbox entfernen github in der vm",
+  },
+  {
     id: "isolation",
     group: "inside",
     title: () =>
@@ -755,10 +777,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Perché il kit non si installa, non chiede diritti di amministratore e non tocca il PC che lo ospita. E le eccezioni.",
-        "Why the kit does not install, does not ask for administrator rights and does not touch the PC that hosts it. And the exceptions.",
-        "Pourquoi le kit ne s'installe pas, ne demande pas de droits d'administrateur et ne touche pas au PC qui l'héberge. Et les exceptions.",
-        "Warum sich das Kit nicht installiert, keine Administratorrechte verlangt und den PC, auf dem es läuft, nicht verändert. Und die Ausnahmen.",
+        "Perché il kit non si installa, non chiede diritti di amministratore e non tocca il PC che lo ospita; l'ambiente sigillato dei programmi del kit; le eccezioni.",
+        "Why the kit does not install, does not ask for administrator rights and does not touch the PC that hosts it; the sealed environment of the kit's programs; the exceptions.",
+        "Pourquoi le kit ne s'installe pas, ne demande pas de droits d'administrateur et ne touche pas au PC qui l'héberge ; l'environnement scellé des programmes du kit ; les exceptions.",
+        "Warum sich das Kit nicht installiert, keine Administratorrechte verlangt und den PC, auf dem es läuft, nicht verändert; die versiegelte Umgebung der Programme des Kits; die Ausnahmen.",
       ),
     icon: "shield",
     keywords:
