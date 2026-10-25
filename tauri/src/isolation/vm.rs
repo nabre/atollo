@@ -82,21 +82,23 @@ pub fn terminal_name(terminal: &str, dir: &Path) -> String {
 }
 
 /// Creates the sandbox the first time, starts it again when stopped:
-/// `sbx run -d --name <vm> [--kit <kit>] shell <dir> [<folder>:ro…]`, its
-/// own kit when it is made (`kit`, D-169), the `read_only` folders mounted
-/// too, where the VM cannot change them.
+/// `sbx run -d --name <vm> [--kit <kit>] <agent> <dir> [<folder>:ro…]`
+/// (`shell` for a project's or a terminal's, `claude` or `codex` for an
+/// agent's), its own kit when it is made (`kit`, D-169), the `read_only`
+/// folders mounted too, where the VM cannot change them.
 pub fn start_args(
     vm: &str,
     dir: &Path,
     read_only: &[std::path::PathBuf],
     kit: Option<&Path>,
+    agent: &str,
 ) -> Vec<String> {
     let mut args: Vec<String> = vec!["run".into(), "-d".into(), "--name".into(), vm.into()];
     if let Some(kit) = kit {
         args.push("--kit".into());
         args.push(kit.display().to_string());
     }
-    args.push("shell".into());
+    args.push(agent.into());
     args.push(dir.display().to_string());
     args.extend(read_only.iter().map(|p| format!("{}:ro", p.display())));
     args
@@ -236,17 +238,31 @@ pub fn sbx_agent(agent: &str) -> Option<&'static str> {
     }
 }
 
-/// `agent` in its sandbox for `project`: `sbx run --name <agent_name>
-/// <agent> <dir>` (created the first time, attached after).
-pub fn agent_args(project: &str, agent: &str, dir: &Path) -> Option<Vec<String>> {
-    let id = sbx_agent(agent)?;
-    Some(vec![
-        "run".into(),
-        "--name".into(),
-        agent_name(project, id),
-        id.into(),
-        dir.display().to_string(),
-    ])
+/// The session of an agent in its sandbox `vm` (made by `Vm::start`):
+/// `sbx run --name <vm>`, which attaches to the agent, with the project's
+/// database variables (`--env-file`), the kit's tools for Linux first on
+/// the `PATH` before the image's own (`image_path`, read in the sandbox:
+/// `-e PATH` replaces it), and the tools' variables. `-e` and `--env-file`
+/// apply to the agent's session also on a re-attach (sbx 0.49.2).
+pub fn agent_session_args(
+    vm: &str,
+    image_path: &str,
+    tools: &crate::isolation::GuestTools,
+) -> Vec<String> {
+    let mut args: Vec<String> = vec!["run".into(), "--name".into(), vm.into()];
+    if let Some(file) = &tools.env_file {
+        args.push("--env-file".into());
+        args.push(file.display().to_string());
+    }
+    if !tools.path.is_empty() {
+        args.push("-e".into());
+        args.push(format!("PATH={}:{image_path}", tools.path.join(":")));
+    }
+    for (k, v) in &tools.vars {
+        args.push("-e".into());
+        args.push(format!("{k}={v}"));
+    }
+    args
 }
 
 /// The PC's address a port of the VM is published on: `127.0.0.1`, or

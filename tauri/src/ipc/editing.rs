@@ -28,14 +28,21 @@ pub async fn editor_open<R: Runtime>(
     let editor = Arc::clone(&state.editor);
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
     let lang = state.lang();
-    let (port, token) = tauri::async_runtime::spawn_blocking(move || {
+    let (host, kit_env) = (state.host.clone(), state.env());
+    let (for_vm, dir_vm) = (project.clone(), dir.clone());
+    let (port, token, vm) = tauri::async_runtime::spawn_blocking(move || {
         ensure(&handle, &task, &kit, lang, &[])?;
-        editor.ensure_running().or_fail_chain("editor start")
+        let (port, token) = editor.ensure_running().or_fail_chain("editor start")?;
+        // Before the window: a terminal never opens before the box is known.
+        let vm = editor_vm_begin(&kit, &host, &kit_env, &for_vm, &dir_vm);
+        Ok::<_, CmdError>((port, token, vm))
     })
     .await
     .or_fail("editor")??;
     let _ = app.emit_to(MAIN, super::events::EDITOR_STATUS, state.editor.status());
-    editor_vm_session(&app, &state, &project, &dir);
+    if let Some(vm) = vm {
+        editor_vm_session(&app, &state, &project, &dir, vm);
+    }
     let url = editor::url(port, &token, Some(&dir));
     editor::window::open(
         &app,
@@ -49,15 +56,51 @@ pub async fn editor_open<R: Runtime>(
     .or_fail_chain("editor window")
 }
 
-/// The project's VM for the editor's terminals, tasks and agents (D-175,
-/// `isolation::session`), made ready off the window's opening: a terminal
-/// opened meanwhile waits for it. Without the VM, the editor's terminals
-/// are the kit's on the PC.
+/// The box of the editor's terminals, tasks and agents for `project`
+/// (D-175, `isolation::session`), noted before its window opens: the VM's
+/// level and the project pending, its `Vm` to make ready; without the VM
+/// the level says so and the terminals are the kit's on the PC. The level
+/// on, but no `sbx` to run it: the session says why, nothing runs on the
+/// PC instead.
+fn editor_vm_begin(
+    kit: &Kit,
+    host: &crate::env::Host,
+    kit_env: &KitEnv,
+    project: &str,
+    dir: &std::path::Path,
+) -> Option<crate::isolation::Vm> {
+    use crate::isolation::{session, Level};
+    let env = crate::versions::project_env(kit, project, kit_env.clone());
+    let warn = |e: anyhow::Error| {
+        crate::common::log::warn(&format!("editor session {project}: {e:#}"));
+    };
+    if crate::isolation::status(kit, host, &env, false).level != Level::Vm {
+        if let Err(e) = session::set_level(kit, false).and_then(|()| session::clear(kit, project)) {
+            warn(e);
+        }
+        return None;
+    }
+    if let Err(e) = session::set_level(kit, true).and_then(|()| session::pending(kit, project)) {
+        warn(e);
+    }
+    let vm = crate::isolation::vm_for(kit, host, &env, project, dir);
+    if vm.is_none() {
+        if let Err(e) = session::failed(kit, project, "Docker Sandboxes of the kit not found") {
+            warn(e);
+        }
+    }
+    vm
+}
+
+/// The project's VM for the editor's terminals, tasks and agents (D-175),
+/// made ready off the window's opening (its tools, databases and ports): a
+/// terminal opened meanwhile waits for it.
 fn editor_vm_session<R: Runtime>(
     app: &AppHandle<R>,
     state: &State<'_, AppState>,
     project: &str,
     dir: &std::path::Path,
+    vm: crate::isolation::Vm,
 ) {
     use crate::isolation::session;
     let (app, task, kit, lang) = (
@@ -70,19 +113,6 @@ fn editor_vm_session<R: Runtime>(
     let (project, dir) = (project.to_owned(), dir.to_path_buf());
     std::thread::spawn(move || {
         let env = crate::versions::project_env(&kit, &project, kit_env.clone());
-        let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) else {
-            let cleared =
-                session::mark_vm(&kit, false).and_then(|()| session::clear(&kit, &project));
-            if let Err(e) = cleared {
-                crate::common::log::warn(&format!("editor session {project}: {e:#}"));
-            }
-            return;
-        };
-        let noted = session::mark_vm(&kit, true).and_then(|()| session::pending(&kit, &project));
-        if let Err(e) = noted {
-            crate::common::log::warn(&format!("editor session {project}: {e:#}"));
-            return;
-        }
         let ready = super::terminals::project_vm_ready(
             &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
         )

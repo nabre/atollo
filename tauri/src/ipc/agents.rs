@@ -59,9 +59,9 @@ pub async fn agent_launch<R: Runtime>(
         // In a sandbox of its own when every project runs in a microVM
         // (D-167): `sbx`'s agent, its keys added by `sbx`'s proxy; an agent
         // `sbx` has none for is not started on the PC instead.
-        let base = crate::versions::project_env(&kit, &project, kit_env);
+        let base = crate::versions::project_env(&kit, &project, kit_env.clone());
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &base, &project, &dir) {
-            let Some(args) = crate::isolation::vm::agent_args(&project, &agent, &dir) else {
+            let Some(vm) = vm.for_agent(&project, &agent) else {
                 return Err(crate::common::i18n::t(
                     lang,
                     "{0} non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.",
@@ -69,6 +69,9 @@ pub async fn agent_launch<R: Runtime>(
                 )
                 .into());
             };
+            let (vm, args) = agent_vm_ready(
+                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+            )?;
             let launch = vm.launch(&kit, args, &agent, lang).or_fail_chain("vm")?;
             return crate::editor::terminal::open_launch(&app, &vm.session_env(&base), &dir, launch)
                 .or_fail_chain("agent");
@@ -90,6 +93,75 @@ pub async fn agent_launch<R: Runtime>(
     })
     .await
     .or_fail("agent")?
+}
+
+/// The sandbox of an agent of `project` made ready like the project's VM
+/// (D-175): the kit's tools for Linux, the project's databases and the
+/// ports to them, started; with the arguments of its session. If an editor
+/// has a session for the project, its profile of the agent gets them too.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn agent_vm_ready<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    services: &crate::db::services::Services,
+    kit: &Kit,
+    host: &crate::env::Host,
+    lang: &str,
+    project: &str,
+    dir: &std::path::Path,
+    kit_env: &KitEnv,
+    vm: crate::isolation::Vm,
+) -> CmdResult<(crate::isolation::Vm, Vec<String>)> {
+    let env = crate::versions::project_env(kit, project, kit_env.clone());
+    let vm = super::terminals::project_vm_ready(
+        app, task, services, kit, host, lang, project, dir, kit_env, vm,
+    )?;
+    vm.start(&env, lang).or_fail_chain("vm")?;
+    let args = vm.agent_session_args(&env).or_fail_chain("vm")?;
+    Ok((vm, args))
+}
+
+/// The agents' sandboxes the editor's profiles ask for (`vm.ps1`,
+/// `isolation::session::take_requests`), made ready one by one while the
+/// app runs.
+pub(crate) fn watch_agent_requests<R: Runtime>(app: AppHandle<R>) {
+    use crate::isolation::session;
+    use tauri::Manager;
+    std::thread::spawn(move || loop {
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        let state = app.state::<AppState>();
+        for (project, agent) in session::take_requests(&state.kit) {
+            let (kit, host, kit_env, lang) = (
+                state.kit.clone(),
+                state.host.clone(),
+                state.env(),
+                state.lang(),
+            );
+            let (task, services) = (Arc::clone(&state.setup), Arc::clone(&state.services));
+            let app = app.clone();
+            std::thread::spawn(move || {
+                let ready = project_dir(&kit, Some(&project), lang)
+                    .map_err(|e| e.to_string())
+                    .and_then(|dir| {
+                        let base = crate::versions::project_env(&kit, &project, kit_env.clone());
+                        let vm = crate::isolation::vm_for(&kit, &host, &base, &project, &dir)
+                            .and_then(|vm| vm.for_agent(&project, &agent))
+                            .ok_or_else(|| "no VM".to_owned())?;
+                        agent_vm_ready(
+                            &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+                        )
+                        .map_err(|e| e.to_string())
+                    });
+                let noted = match ready {
+                    Ok((_, args)) => session::write_agent(&kit, &project, &agent, &args),
+                    Err(why) => session::agent_failed(&kit, &project, &agent, &why),
+                };
+                if let Err(e) = noted {
+                    crate::common::log::warn(&format!("editor session {project} {agent}: {e:#}"));
+                }
+            });
+        }
+    });
 }
 
 /// The ready MCP servers (N-7, D-156), the kit's and the projects'.

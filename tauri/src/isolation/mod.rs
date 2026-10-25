@@ -833,6 +833,9 @@ pub struct Vm {
     tools: GuestTools,
     /// The PC's ports it may reach ([`Vm::with_host_ports`]).
     host_ports: Vec<u16>,
+    /// What `sbx` runs in it: `shell`, or an agent of `sbx`
+    /// ([`Vm::for_agent`]).
+    agent: String,
 }
 
 /// A sandbox of Atollo, for the list of the VMs (D-169).
@@ -989,6 +992,7 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
         },
         tools: GuestTools::default(),
         host_ports: Vec::new(),
+        agent: "shell".into(),
     })
 }
 
@@ -1020,6 +1024,7 @@ pub fn kit_terminal_vm(
         },
         tools: GuestTools::default(),
         host_ports: Vec::new(),
+        agent: "shell".into(),
     })
 }
 
@@ -1209,6 +1214,7 @@ impl Vm {
             },
             tools: GuestTools::default(),
             host_ports: Vec::new(),
+            agent: "shell".into(),
         }
     }
 
@@ -1270,7 +1276,7 @@ impl Vm {
             }
             self.call(
                 env,
-                &vm::start_args(&self.name, &self.dir, &self.read_only, None),
+                &vm::start_args(&self.name, &self.dir, &self.read_only, None, &self.agent),
                 START_LIMIT,
             )?;
             self.sync_host_ports(env, false)?;
@@ -1279,7 +1285,13 @@ impl Vm {
         }
         self.call(
             env,
-            &vm::start_args(&self.name, &self.dir, &self.read_only, Some(&kit_dir)),
+            &vm::start_args(
+                &self.name,
+                &self.dir,
+                &self.read_only,
+                Some(&kit_dir),
+                &self.agent,
+            ),
             START_LIMIT,
         )?;
         kit::mark_mounts(&self.kit, &self.name, &mounts)?;
@@ -1418,6 +1430,40 @@ impl Vm {
             .chain(&self.read_only)
             .map(|p| format!("{}\n", p.display()))
             .collect()
+    }
+
+    /// The sandbox of `agent` (one of `sbx`'s, [`vm::sbx_agent`]) for this
+    /// project's VM: its own (`atollo-a-`), the same folders, kit, tools,
+    /// databases and ports as the project's (D-175); `None` for an agent
+    /// `sbx` has none for.
+    pub fn for_agent(mut self, project: &str, agent: &str) -> Option<Vm> {
+        let id = vm::sbx_agent(agent)?;
+        self.name = vm::agent_name(project, id);
+        self.agent = id.to_owned();
+        Some(self)
+    }
+
+    /// The session of the agent in this sandbox, started ([`Vm::start`]):
+    /// `sbx run --name` with the database's variables and the kit's tools
+    /// first on the `PATH` before the image's own, read in the sandbox.
+    pub fn agent_session_args(&self, env: &KitEnv) -> anyhow::Result<Vec<String>> {
+        let args = [
+            "exec".to_owned(),
+            self.name.clone(),
+            "sh".to_owned(),
+            "-c".to_owned(),
+            r#"printf %s "$PATH""#.to_owned(),
+        ];
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+        let out = run(&self.sbx, &self.host, env, &args, ASK_LIMIT).map_err(anyhow::Error::msg)?;
+        anyhow::ensure!(
+            out.status.success(),
+            "sbx exec {}: {}",
+            self.name,
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+        let image_path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
+        Ok(vm::agent_session_args(&self.name, &image_path, &self.tools))
     }
 
     /// The kit's tools its sessions and actions get (D-170).

@@ -210,6 +210,7 @@ pub(crate) fn build_app<R: tauri::Runtime>(
             if let Err(e) = crate::isolation::session::clear_all(&kit) {
                 log::warn(&format!("editor sessions: {e:#}"));
             }
+            ipc::agents::watch_agent_requests(app.handle().clone());
             // Docker Sandboxes failed to install (the network, a checksum):
             // tried again every hour while the kit has none (D-175).
             let (retry_app, retry_kit) = (app.handle().clone(), kit.clone());

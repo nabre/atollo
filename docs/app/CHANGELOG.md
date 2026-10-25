@@ -7,7 +7,8 @@
 - **Kit spostato su un'altra lettera o cartella**: la VM di un progetto si ricrea da sola invece di chiedere di rimuoverla; file, database e strumenti restano dove sono.
 - **Server Web con la VM attiva**: i server condivisi non partono più (avrebbero eseguito il codice dei progetti sul PC, fuori dalle loro VM); ogni sito parte dalla pagina del suo progetto, nella sua VM. La pagina Server Web lo dice; senza VM tutto resta com'era.
 - **Docker Sandboxes che non si installa**: l'avviso «Senza VM» dice perché (la rete, un controllo non riuscito…) e Atollo riprova da solo ogni ora.
-- **I terminali dell'editor nella VM**: con la VM attiva, il terminale dell'editor, i task e i profili di Claude Code e Codex si aprono nella VM del progetto, con gli strumenti e il database del progetto; prima giravano sempre sul PC. Antigravity e Pi non partono nella VM. Senza VM tutto come prima.
+- **I terminali dell'editor nella VM**: con la VM attiva, il terminale dell'editor e i task si aprono nella VM del progetto; prima giravano sempre sul PC. Se Atollo non sa ancora se la VM è attiva, il terminale non si apre invece di partire sul PC. Senza VM tutto come prima.
+- **Claude Code e Codex nella VM con gli strumenti e il database del progetto**, dalla pagina del progetto come dall'editor: prima la loro sandbox aveva solo i programmi dell'immagine di Docker. Antigravity e Pi non partono nella VM.
 - **«Copia del kit» più leggera**: non copia più immagini e dischi delle VM (decine di GB); le VM si ricreano da sole.
 - **Niente esce dal kit** (D-175): Atollo usa solo il Docker Sandboxes installato nel kit, mai uno installato sul PC; sandbox, dischi, immagini e impostazioni stanno in `data` e viaggiano con il kit. Le poche tracce che restano sul PC (accesso a Docker, hypervisor, file temporanei del daemon) sono elencate nelle decisioni.
 - **La VM non apre il browser del PC** e Docker Sandboxes non invia pacchetti di diagnostica: impostazioni fissate dal kit.
