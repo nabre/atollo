@@ -316,6 +316,19 @@ fn installed_and_versions() {
     pwsh.forget_version(&kit);
     assert_eq!(pwsh.installed_version(&kit), None);
 
+    // Below the oldest version Atollo works with, or of unknown version:
+    // installed again (Docker Sandboxes follows its latest release).
+    let sbx = catalog.find("sandboxes").unwrap();
+    let min = sbx.min_version.clone().expect("a minimum for sbx");
+    assert!(sbx.outdated(&kit), "unknown version");
+    sbx.save_version(&kit, "0.1.0").unwrap();
+    assert!(sbx.outdated(&kit), "older than {min}");
+    sbx.save_version(&kit, &min).unwrap();
+    assert!(!sbx.outdated(&kit));
+    sbx.save_version(&kit, "99.0.0").unwrap();
+    assert!(!sbx.outdated(&kit), "newer");
+    sbx.forget_version(&kit);
+
     assert!(Choice::read(&kit, catalog).is_none());
     Choice::defaults(catalog).write(&kit, catalog).unwrap();
     assert_eq!(Choice::read(&kit, catalog), Some(Choice::defaults(catalog)));

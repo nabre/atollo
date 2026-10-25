@@ -95,7 +95,8 @@ impl Installer for Sandboxes {
         ))
     }
 
-    /// The Linux tarball into the layout of its `install.sh`.
+    /// The Linux tarball into the layout of its `install.sh`, then the new
+    /// tree checked whole ([`check_tree`]) before it replaces the old one.
     fn before_swap(
         &self,
         ctx: &Ctx,
@@ -103,11 +104,41 @@ impl Installer for Sandboxes {
         tree: &Path,
         _old: &Path,
     ) -> Result<()> {
-        if !target_of(ctx, component).is_linux() {
-            return Ok(());
+        let target = target_of(ctx, component);
+        if target.is_linux() {
+            lay_out_linux(tree)?;
         }
-        lay_out_linux(tree)
+        check_tree(target, tree)
     }
+}
+
+/// A tree of Docker Sandboxes that can start a microVM: `sbx` and, on
+/// Windows and Linux, the shim in `libexec` (on macOS it is inside
+/// `Sbx.app`). A release laid out differently fails here, with the old
+/// tree kept, instead of an `sbx` that is "installed" and never starts.
+pub(crate) fn check_tree(target: Target, tree: &Path) -> Result<()> {
+    let sbx = tree
+        .join("bin")
+        .join(format!("sbx{}", target.os.exe_suffix()));
+    anyhow::ensure!(
+        sbx.symlink_metadata().is_ok(),
+        "Docker Sandboxes: no {} in the release",
+        sbx.display()
+    );
+    if target.os == Os::Darwin {
+        return Ok(());
+    }
+    let shim = fs::read_dir(tree.join("libexec"))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|e| {
+            e.file_name()
+                .to_string_lossy()
+                .starts_with("containerd-shim-")
+        });
+    anyhow::ensure!(shim, "Docker Sandboxes: no containerd-shim in libexec");
+    Ok(())
 }
 
 /// Moves the files of the Linux tarball in `tree` to their places
