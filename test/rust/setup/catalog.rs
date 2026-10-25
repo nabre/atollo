@@ -45,15 +45,15 @@ fn catalog_is_valid() {
             }
         }
     }
-    // Always installed: the kit's shell and GitHub CLI only; the rest
-    // comes when something needs it (D-59).
+    // Always installed: the kit's shell, GitHub CLI and Docker Sandboxes
+    // (D-167); the rest comes when something needs it (D-59).
     let required: Vec<&str> = catalog
         .all()
         .iter()
         .filter(|c| c.group == Group::Required)
         .map(|c| c.id.as_str())
         .collect();
-    assert_eq!(required, ["gh", "pwsh"]);
+    assert_eq!(required, ["gh", "pwsh", "sandboxes"]);
     for id in ["git", "node", "uv"] {
         let c = catalog.find(id).unwrap();
         assert!(c.group == Group::Languages && !c.def, "{id}");

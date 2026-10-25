@@ -13,9 +13,9 @@ Real tests: the CI (x64 job) installs `pwsh`, `node`, `git` and the editor; all 
 | --- | --- | --- | --- | --- | --- | --- |
 | required (`required`) | `gh` | GitHub CLI | always | 40 | | pull requests, issues, access to GitHub (also for private clones); works without Git (D-81) |
 | | `pwsh` | PowerShell 7 | always | 110 | | **new**; the kit's terminal |
+| | `sandboxes` | Docker Sandboxes (sbx) | always, where Docker publishes it | 470 | — | **new**; one microVM per project (DECISIONS.md (in Italian) D-167): terminal, commands, servers and agents isolated from the PC; Windows x64, Apple silicon, Linux x64 and ARM64 (not Windows on Arm or Intel Macs, where it is not installed); needs a Docker account (`sbx login`). The editor and the consoles do not wait for it: without it, the "Senza VM" notice says so |
 | app (`app`) | `vscodium-server` | Editor (VSCodium web server) | always | 250 | `pwsh` | **new**; part of the app, version pinned at each release (DECISIONS.md (in Italian) D-58); in Tools it appears with the required ones, checked and not editable; SHA-256 pinned per target, x64 under emulation on Windows ARM64 |
 | app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | always, Windows only | 3 | — | **new**; part of the app, the console of the in-app terminal on Windows (DECISIONS.md (in Italian) D-148); version and SHA-256 of the NuGet package pinned; x64 and ARM64 native; not offered on macOS and Linux (their PTY) |
-| languages (`languages`) | `sandboxes` | Docker Sandboxes (sbx) | no | 470 | — | **new**; one microVM per project (DECISIONS.md (in Italian) D-167): terminal, commands, servers and agents isolated from the PC; Windows x64, Apple silicon, Linux x64 and ARM64 (not Windows on Arm or Intel Macs); in Tools under "System and editor"; needs a Docker account (`sbx login`) |
 | agents (`agents`) | `claude` | Claude Code | yes | 250 | `git` | |
 | | `codex` | Codex | yes | 440 | | |
 | | `antigravity` | Antigravity | yes | 190 | | sign-in saved in the kit (`agents/keyring.rs`) |

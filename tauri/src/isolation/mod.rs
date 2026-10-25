@@ -17,7 +17,7 @@ use std::sync::mpsc;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::env::{Host, KitEnv};
 use crate::kit::{Kit, Os};
@@ -95,8 +95,6 @@ pub enum Blocker {
     SbxFailed {
         message: String,
     },
-    /// All is there, but Atollo does not run the projects in it yet.
-    Pending,
 }
 
 impl From<Gap> for Blocker {
@@ -191,9 +189,6 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
             }
         }
     }
-    if blockers.is_empty() {
-        blockers.push(Blocker::Pending);
-    }
     Status::of(blockers, sbx.map(|s| s.path().display().to_string()))
 }
 
@@ -238,21 +233,84 @@ impl Sbx {
         }
     }
 
-    /// A command of this `sbx`, with its environment: the kit's for the
-    /// kit's, the PC's for the PC's.
+    /// A command of this `sbx`, with its environment ([`Sbx::session_env`]).
     pub fn command(&self, env: &KitEnv, host: &Host) -> std::process::Command {
-        let mut cmd = crate::platform::jobs::kit_command(self.path(), env);
-        if let Sbx::Pc(_) = self {
-            cmd.env_clear().envs(host.iter());
+        crate::platform::jobs::kit_command(self.path(), &self.session_env(env, host))
+    }
+
+    /// The environment every run of this `sbx` gets, commands and sessions
+    /// of the app's terminal alike, so its sign-in is the one the status
+    /// asks: the PC's for the PC's; the kit's for the kit's, but with the
+    /// PC's temporary folder. The daemon puts there the junction that
+    /// shortens its sockets' paths (D-167), and the kit's (`data\tmp`, deep
+    /// in a kit folder) would leave them over the limit of 107 bytes.
+    pub fn session_env(&self, env: &KitEnv, host: &Host) -> KitEnv {
+        let mut out = env.clone();
+        match self {
+            Sbx::Kit(_) => {
+                if let Some(temp) = host.temp() {
+                    for name in ["TEMP", "TMP", "TMPDIR"] {
+                        out.set(name, temp);
+                    }
+                }
+            }
+            Sbx::Pc(_) => {
+                let names: Vec<String> = out.iter().map(|(k, _)| k.to_owned()).collect();
+                for name in names {
+                    out.remove(&name);
+                }
+                for (name, value) in host.iter() {
+                    out.set(name, value);
+                }
+            }
         }
-        cmd
+        out
     }
 }
+
+/// What the notice's «Lancia» runs in the app's terminal: one of these,
+/// never a text of the interface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Fix {
+    /// `sbx login`: the browser opens for the Docker account.
+    Login,
+    /// `sbx ls`: shows the error `sbx` answers with.
+    Ls,
+}
+
+impl Fix {
+    pub fn args(self) -> Vec<String> {
+        let args: &[&str] = match self {
+            Fix::Login => &["login"],
+            Fix::Ls => &["ls"],
+        };
+        args.iter().map(|a| (*a).to_owned()).collect()
+    }
+}
+
+/// Runs `fix` with the `sbx` found in a new session of the app's terminal,
+/// in `dir`; `None` without one.
+pub fn fix_launch(
+    kit: &Kit,
+    host: &Host,
+    env: &KitEnv,
+    fix: Fix,
+    dir: &Path,
+) -> Option<(crate::editor::pty::Launch, KitEnv)> {
+    let sbx = Sbx::find(kit, host)?;
+    let launch = crate::editor::pty::program(kit, sbx.path(), fix.args(), dir, "sbx");
+    Some((launch, sbx.session_env(env, host)))
+}
+
+/// The component of the kit's `sbx`: required, but the editor and the
+/// consoles never wait for it (the notice says it is missing).
+pub const COMPONENT: &str = "sandboxes";
 
 /// The kit's `sbx` (`data/apps/<target>/sandboxes/bin/sbx`), when the
 /// component is installed.
 pub fn kit_sbx(kit: &Kit) -> Option<PathBuf> {
-    let c = crate::setup::Catalog::get().find("sandboxes")?;
+    let c = crate::setup::Catalog::get().find(COMPONENT)?;
     c.is_installed(kit)
         .then(|| c.key_paths(kit).into_iter().next())
         .flatten()
@@ -400,6 +458,11 @@ impl Vm {
     /// `vm::agent_args`), titled `what`.
     pub fn launch(&self, kit: &Kit, args: Vec<String>, what: &str) -> crate::editor::pty::Launch {
         crate::editor::pty::program(kit, self.sbx.path(), args, &self.dir, what)
+    }
+
+    /// The environment of that session ([`Sbx::session_env`]).
+    pub fn session_env(&self, env: &KitEnv) -> KitEnv {
+        self.sbx.session_env(env, &self.host)
     }
 
     /// Runs the shell `line` in the VM to its end (a container started

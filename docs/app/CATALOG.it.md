@@ -13,9 +13,9 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | --- | --- | --- | --- | --- | --- | --- |
 | obbligatori (`required`) | `gh` | GitHub CLI | sempre | 40 | | pull request, issue, accesso a GitHub (anche per i clone privati); funziona senza Git (D-81) |
 | | `pwsh` | PowerShell 7 | sempre | 110 | | **nuovo**; terminale del kit |
+| | `sandboxes` | Docker Sandboxes (sbx) | sempre, dove Docker lo pubblica | 470 | — | **nuovo**; una microVM per progetto (DECISIONS.md D-167): terminale, comandi, server e agenti isolati dal PC; Windows x64, Apple silicon, Linux x64 e ARM64 (non Windows su Arm né i Mac Intel, dove non si installa); serve un account Docker (`sbx login`). Editor e console non lo aspettano: senza, l'avviso «Senza VM» lo dice |
 | app (`app`) | `vscodium-server` | Editor (server web di VSCodium) | sempre | 250 | `pwsh` | **nuovo**; parte dell'app, versione fissata a ogni rilascio (DECISIONS.md D-58); in Strumenti compare con gli obbligatori, spuntato e non modificabile; SHA-256 fissato per target, x64 in emulazione su Windows ARM64 |
 | app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | sempre, solo Windows | 3 | — | **nuovo**; parte dell'app, la console del terminale nell'app su Windows (DECISIONS.md D-148); versione e SHA-256 del pacchetto NuGet fissati; x64 e ARM64 nativi; non offerto su macOS e Linux (il loro PTY) |
-| linguaggi (`languages`) | `sandboxes` | Docker Sandboxes (sbx) | no | 470 | — | **nuovo**; una microVM per progetto (DECISIONS.md D-167): terminale, comandi, server e agenti isolati dal PC; Windows x64, Apple silicon, Linux x64 e ARM64 (non Windows su Arm né i Mac Intel); in Strumenti sotto «Sistema ed editor»; serve un account Docker (`sbx login`) |
 | agenti (`agents`) | `claude` | Claude Code | sì | 250 | `git` | |
 | | `codex` | Codex | sì | 440 | | |
 | | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`agents/keyring.rs`) |

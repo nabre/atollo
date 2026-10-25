@@ -453,6 +453,12 @@
           "markdownDescription": "Enables the github_status command without any pre-configured scope."
         },
         {
+          "description": "Enables the isolation_run command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-isolation-run",
+          "markdownDescription": "Enables the isolation_run command without any pre-configured scope."
+        },
+        {
           "description": "Enables the isolation_status command without any pre-configured scope.",
           "type": "string",
           "const": "allow-isolation-status",
@@ -1279,6 +1285,12 @@
           "type": "string",
           "const": "deny-github-status",
           "markdownDescription": "Denies the github_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the isolation_run command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-isolation-run",
+          "markdownDescription": "Denies the isolation_run command without any pre-configured scope."
         },
         {
           "description": "Denies the isolation_status command without any pre-configured scope.",

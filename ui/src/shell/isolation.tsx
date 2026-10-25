@@ -3,7 +3,14 @@
 // why the VM is off and what makes it work, one step per reason.
 import { useEffect, useRef, useState } from "react";
 
-import { componentsInstall, isolationStatus, type IsolationBlocker, type IsolationStatus } from "../ipc";
+import {
+  componentsInstall,
+  isolationRun,
+  isolationStatus,
+  type IsolationBlocker,
+  type IsolationFix,
+  type IsolationStatus,
+} from "../ipc";
 import { useCopy, useLoad } from "../shared/hooks";
 import { Button, ConfirmDialog } from "../workbench";
 import { t } from "../i18n";
@@ -18,12 +25,14 @@ export function systemOf(platform: string): System {
 }
 
 /** What a blocker means and what the user does about it: a sentence, the
- * command to run when there is one, and `install` when the kit's Docker
- * Sandboxes is what is missing (a button installs it). */
+ * command to run when there is one (`run` when Atollo launches it in its
+ * terminal), and `install` when the kit's Docker Sandboxes is what is
+ * missing (a button installs it). */
 interface Explained {
   why: string;
   fix: string;
   command?: string;
+  run?: IsolationFix;
   install?: boolean;
 }
 
@@ -124,37 +133,63 @@ export function explain(b: IsolationBlocker, system: System): Explained {
         why: t("sbx non ha accesso a Docker: serve un account Docker (gratuito)."),
         fix: t("Nel terminale di Atollo (si apre il browser per l'accesso):"),
         command: "sbx login",
+        run: "login",
       };
     case "sbx_failed":
       return {
         why: t("sbx ha risposto con un errore: {0}", b.message),
         fix: t("Prova il comando nel terminale di Atollo per vedere il problema:"),
         command: "sbx ls",
-      };
-    case "pending":
-      return {
-        why: t("Il PC ha tutto, ma questa versione di Atollo non avvia ancora i progetti nella VM."),
-        fix: t("Nessuna azione: la VM si attiva da sola con un aggiornamento di Atollo."),
+        run: "ls",
       };
   }
 }
 
-/** A command with its "Copia" button. */
-function CommandLine({ command }: { command: string }) {
+/** A command with its button: «Lancia» opens it in the app's terminal
+ * when it is one of `sbx`'s (`run`), then `onLaunched` (the box closes,
+ * the terminal is in front); «Copia» for one of the PC's. */
+function CommandLine({
+  command,
+  run,
+  onLaunched,
+}: {
+  command: string;
+  run?: IsolationFix | undefined;
+  onLaunched: () => void;
+}) {
   const { copied, copy } = useCopy(2000);
+  const [error, setError] = useState<string | null>(null);
   return (
-    <div className="mt-vsc-size40 flex items-start gap-vsc-size40">
-      <code className="flex-1 rounded-vsc-small bg-vsc-input px-vsc-size60 py-vsc-size20 font-mono text-[12px] break-all whitespace-pre-wrap text-vsc-fg select-text">
-        {command}
-      </code>
-      <Button
-        small
-        onClick={() => {
-          copy(command);
-        }}
-      >
-        {copied ? t("Copiato") : t("Copia")}
-      </Button>
+    <div className="mt-vsc-size40">
+      <div className="flex items-start gap-vsc-size40">
+        <code className="flex-1 rounded-vsc-small bg-vsc-input px-vsc-size60 py-vsc-size20 font-mono text-[12px] break-all whitespace-pre-wrap text-vsc-fg select-text">
+          {command}
+        </code>
+        {run ? (
+          <Button
+            small
+            variant="primary"
+            onClick={() => {
+              setError(null);
+              isolationRun(run).then(onLaunched, (e: unknown) => {
+                setError(String(e));
+              });
+            }}
+          >
+            {t("Lancia")}
+          </Button>
+        ) : (
+          <Button
+            small
+            onClick={() => {
+              copy(command);
+            }}
+          >
+            {copied ? t("Copiato") : t("Copia")}
+          </Button>
+        )}
+      </div>
+      {error && <p className="mt-vsc-size20 text-vsc-error">{error}</p>}
     </div>
   );
 }
@@ -240,7 +275,7 @@ export function IsolationDialog({
                 <li key={b.code}>
                   <p className="text-vsc-fg">{e.why}</p>
                   <p>{e.fix}</p>
-                  {e.command && <CommandLine command={e.command} />}
+                  {e.command && <CommandLine command={e.command} run={e.run} onLaunched={onClose} />}
                   {e.install && <InstallButton />}
                 </li>
               );

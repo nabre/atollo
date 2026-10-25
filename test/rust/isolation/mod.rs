@@ -9,6 +9,42 @@ fn no_blocker_is_the_vm() {
     );
 }
 
+/// «Lancia» runs only `sbx login` and `sbx ls`, with the environment
+/// where that `sbx` keeps its sign-in: the kit's for the kit's, the PC's
+/// for the PC's.
+#[test]
+fn a_fix_runs_with_the_environment_of_its_sbx() {
+    assert_eq!(Fix::Login.args(), ["login"]);
+    assert_eq!(Fix::Ls.args(), ["ls"]);
+    assert_eq!(
+        serde_json::from_str::<Fix>("\"login\"").unwrap(),
+        Fix::Login
+    );
+    assert!(serde_json::from_str::<Fix>("\"rm -rf\"").is_err());
+
+    let mut env = KitEnv::default();
+    env.set("LOCALAPPDATA", "kit-home");
+    env.set("TEMP", r"E:\a\deep\kit\folder\data\tmp\system");
+    env.set("CP_KIT", "x");
+    let host = Host::from_pairs([
+        ("LOCALAPPDATA".into(), "pc-home".into()),
+        ("TEMP".into(), r"C:\T".into()),
+    ]);
+
+    // The kit's keeps the kit's home, with the PC's short temp: the
+    // daemon's junction goes there (sockets of at most 107 bytes).
+    let kit_env = Sbx::Kit(PathBuf::from("sbx")).session_env(&env, &host);
+    assert_eq!(kit_env.get("LOCALAPPDATA"), Some("kit-home"));
+    assert_eq!(kit_env.get("CP_KIT"), Some("x"));
+    for name in ["TEMP", "TMP", "TMPDIR"] {
+        assert_eq!(kit_env.get(name), Some(r"C:\T"), "{name}");
+    }
+
+    let pc_env = Sbx::Pc(PathBuf::from("sbx")).session_env(&env, &host);
+    assert_eq!(pc_env.get("LOCALAPPDATA"), Some("pc-home"));
+    assert_eq!(pc_env.get("CP_KIT"), None);
+}
+
 #[test]
 fn sbx_signed_out_is_told_apart_from_other_errors() {
     assert_eq!(answer(true, ""), Ok(()));

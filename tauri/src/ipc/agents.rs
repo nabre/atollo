@@ -70,7 +70,7 @@ pub async fn agent_launch<R: Runtime>(
                 .into());
             };
             let launch = vm.launch(&kit, args, &agent);
-            return crate::editor::terminal::open_launch(&app, &base, &dir, launch)
+            return crate::editor::terminal::open_launch(&app, &vm.session_env(&base), &dir, launch)
                 .or_fail_chain("agent");
         }
         let wanted: Vec<&str> = crate::setup::needs::of_agent(&kit, &agent, Some(&dir))

@@ -2,11 +2,17 @@
 // and what to do, with the command of the PC's system; the box lists them
 // all and asks again on "Ricontrolla".
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { IsolationBlocker } from "@/ipc";
 import { apparmorCommand, explain, IsolationDialog, systemOf } from "@/shell/isolation";
+import { invoke } from "@test/support/tauri";
 
-afterEach(cleanup);
+vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
+
+afterEach(() => {
+  cleanup();
+  invoke.mockReset();
+});
 
 const ALL: IsolationBlocker[] = [
   { code: "old_windows", build: 19045 },
@@ -20,7 +26,6 @@ const ALL: IsolationBlocker[] = [
   { code: "sbx_missing" },
   { code: "sbx_signed_out" },
   { code: "sbx_failed", message: "daemon not running" },
-  { code: "pending" },
 ];
 
 describe("explain", () => {
@@ -90,6 +95,29 @@ describe("IsolationDialog", () => {
     expect(screen.getByRole("button", { name: "Installa nel kit" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Ricontrolla" }));
     expect(onCheck).toHaveBeenCalledOnce();
+  });
+
+  it("launches sbx's commands in Atollo's terminal and closes, copies the PC's", async () => {
+    invoke.mockResolvedValue(undefined);
+    const onClose = vi.fn();
+    render(
+      <IsolationDialog
+        status={{ level: "env", blockers: [{ code: "hypervisor_off" }, { code: "sbx_signed_out" }], sbx: "sbx" }}
+        system="windows"
+        checking={false}
+        onCheck={() => {}}
+        onClose={onClose}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: "Lancia" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Copia" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Lancia" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("isolation_run", { fix: "login" });
+    });
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledOnce();
+    });
   });
 
   it("says the projects are in the VM when they are", () => {

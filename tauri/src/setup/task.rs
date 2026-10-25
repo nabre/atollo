@@ -69,18 +69,30 @@ pub struct SetupTask {
 pub type Notify = Box<dyn Fn(&Snapshot) + Send>;
 
 /// System components (required, the parts of the app, and what they need)
-/// this app can install that are not installed yet. Without them the editor
-/// and the consoles do not open.
+/// this app can install on the kit's target that are not installed yet:
+/// installed at start. Docker Sandboxes, whose builds are for some systems
+/// only, is skipped on the others.
 pub fn missing_required(kit: &Kit) -> Vec<String> {
     let catalog = Catalog::get();
     let locked = catalog.locked();
+    let target = kit.target();
     catalog
         .all()
         .iter()
         .filter(|c| locked.contains(c.id.as_str()))
+        .filter(|c| crate::router::target::installable_on(c, target))
         .filter(|c| install::installer(&c.id).is_some() && !c.is_installed(kit))
         .map(|c| c.id.clone())
         .collect()
+}
+
+/// [`missing_required`] without Docker Sandboxes: without the others the
+/// editor and the consoles do not open; without it they run on the PC, and
+/// the notice of the isolation says so (D-167).
+pub fn missing_to_open(kit: &Kit) -> Vec<String> {
+    let mut ids = missing_required(kit);
+    ids.retain(|id| id != crate::isolation::COMPONENT);
+    ids
 }
 
 /// Parts of the app installed at another version than this release's (the

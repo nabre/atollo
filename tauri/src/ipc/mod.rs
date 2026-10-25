@@ -199,7 +199,7 @@ fn ensure<R: Runtime>(
         }
     }
     let missing = |kit: &Kit| -> Vec<String> {
-        let mut ids = crate::setup::task::missing_required(kit);
+        let mut ids = crate::setup::task::missing_to_open(kit);
         for c in &needed {
             if install::installer(&c.id).is_some() && !c.is_installed(kit) && !ids.contains(&c.id) {
                 ids.push(c.id.clone());
@@ -305,6 +305,7 @@ macro_rules! command_handler {
         tauri::generate_handler![
             $crate::ipc::app::app_info,
             $crate::ipc::isolation::isolation_status,
+            $crate::ipc::isolation::isolation_run,
             $crate::ipc::editing::editor_status,
             $crate::ipc::editing::editor_open,
             $crate::ipc::editing::editor_restart,

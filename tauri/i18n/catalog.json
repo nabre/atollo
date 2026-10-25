@@ -719,6 +719,11 @@
     "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre d'Atollo ou le menu du kit).",
     "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
   },
+  "Docker Sandboxes (sbx) non è nel kit.": {
+    "en": "Docker Sandboxes (sbx) is not in the kit.",
+    "fr": "Docker Sandboxes (sbx) n'est pas dans le kit.",
+    "de": "Docker Sandboxes (sbx) ist nicht im Kit."
+  },
   "Progetto non trovato: {0}": {
     "en": "Project not found: {0}",
     "fr": "Projet introuvable : {0}",

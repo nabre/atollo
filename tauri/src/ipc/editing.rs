@@ -86,7 +86,8 @@ pub async fn terminal_open<R: Runtime>(
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
             vm.start(&env).or_fail_chain("vm")?;
             let launch = vm.launch(&kit, crate::isolation::vm::terminal_args(&vm.name), "VM");
-            return terminal::open_launch(&app, &env, &dir, launch).or_fail_chain("terminal");
+            return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
+                .or_fail_chain("terminal");
         }
         terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
