@@ -207,6 +207,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
                 blockers.push(b);
             } else if let Sbx::Kit(_) = sbx {
                 daemon_settings(sbx, host, env);
+                legacy_global_github(kit, sbx, host, env);
             }
         }
     }
@@ -325,7 +326,7 @@ pub(crate) fn github_for_sandbox(
     let Some(exe) = crate::kit::app_exe() else {
         return;
     };
-    let command = secrets::github_command(&exe, kit.target().is_windows());
+    let prefix = secrets::github_prefix(&exe, kit.target().is_windows());
     let pc = computer(host);
     let mine = secrets::mine(kit, "github", &pc, sandbox);
     let warn = |what: &str, out: Result<std::process::Output, String>| match out {
@@ -358,11 +359,22 @@ pub(crate) fn github_for_sandbox(
         return;
     };
     let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), "github", sandbox);
-    let step = secrets::step(listed, mine.as_ref(), &command);
+    let step = secrets::step(listed, mine.as_ref(), &prefix);
     if step == secrets::Step::Keep || crate::github::token(kit, env).is_none() {
         return;
     }
     if step == secrets::Step::Replace && !remove() {
+        return;
+    }
+    // A nonce of its own: `secret github` answers only a command that
+    // carries one Atollo noted.
+    let Ok(nonce) = secrets::new_nonce() else {
+        return;
+    };
+    let command = secrets::github_command(&exe, kit.target().is_windows(), &nonce);
+    // Noted first: `sbx` runs the command already to verify it.
+    if let Err(e) = secrets::note(kit, "github", &pc, sandbox, Some(&command)) {
+        crate::common::log::warn(&format!("secrets.json: {e:#}"));
         return;
     }
     let args = [
@@ -374,10 +386,39 @@ pub(crate) fn github_for_sandbox(
         "--command",
         command.as_str(),
     ];
-    if warn("set", run(sbx, host, env, &args, ASK_LIMIT)) {
-        if let Err(e) = secrets::note(kit, "github", &pc, sandbox, Some(&command)) {
+    if !warn("set", run(sbx, host, env, &args, ASK_LIMIT)) {
+        // Not registered: its nonce opens nothing.
+        if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
             crate::common::log::warn(&format!("secrets.json: {e:#}"));
         }
+    }
+}
+
+/// A global GitHub secret a first version of Atollo may have registered on
+/// this PC (a note without a sandbox) is taken back: GitHub goes only to
+/// the projects that chose it (D-172).
+fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+    let pc = computer(host);
+    if secrets::mine(kit, "github", &pc, "").is_none() {
+        return;
+    }
+    let listed = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT)
+        .map(|o| secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", "(global)"))
+        .unwrap_or(false);
+    if listed {
+        let args = ["secret", "rm", "github", "--force"];
+        match run(sbx, host, env, &args, ASK_LIMIT) {
+            Ok(o) if o.status.success() => {}
+            _ => {
+                crate::common::log::warn(
+                    "sbx secret rm github (global): failed, tried again later",
+                );
+                return;
+            }
+        }
+    }
+    if let Err(e) = secrets::note(kit, "github", &pc, "", None) {
+        crate::common::log::warn(&format!("secrets.json: {e:#}"));
     }
 }
 

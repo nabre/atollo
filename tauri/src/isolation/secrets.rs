@@ -35,10 +35,12 @@ pub fn asked_by_sbx(ancestors: &[&crate::platform::processes::Proc], sbx: &Path)
         .any(|p| crate::platform::processes::path_key(&p.path.display().to_string()) == key)
 }
 
-/// What Atollo registered on one PC for one service, for one sandbox.
+/// What Atollo registered on one PC for one service, for one sandbox
+/// (empty: global, a note of a first version, only ever taken back).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Noted {
     pub computer: String,
+    #[serde(default)]
     pub sandbox: String,
     pub command: String,
 }
@@ -47,12 +49,46 @@ fn file(kit: &Kit) -> std::path::PathBuf {
     super::kit::root(kit).join("secrets.json")
 }
 
-/// The commands Atollo registered, by service.
+/// The commands Atollo registered, by service: every entry that can be
+/// read, one that cannot left out (never the whole file).
 pub fn noted(kit: &Kit) -> BTreeMap<String, Vec<Noted>> {
-    std::fs::read_to_string(file(kit))
+    let Some(value) = std::fs::read_to_string(file(kit))
         .ok()
-        .and_then(|t| serde_json::from_str(&t).ok())
-        .unwrap_or_default()
+        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+    else {
+        return BTreeMap::new();
+    };
+    let Some(map) = value.as_object() else {
+        return BTreeMap::new();
+    };
+    map.iter()
+        .map(|(service, list)| {
+            let entries = list
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|e| serde_json::from_value::<Noted>(e.clone()).ok())
+                .collect();
+            (service.clone(), entries)
+        })
+        .collect()
+}
+
+/// A nonce for one registration: 32 random bytes in hex.
+pub fn new_nonce() -> anyhow::Result<String> {
+    crate::editor::random_token()
+}
+
+/// True when `nonce` is in a command Atollo registered for GitHub (D-172):
+/// `secret github` answers only a command `sbx` has from Atollo.
+pub fn nonce_known(kit: &Kit, nonce: &str) -> bool {
+    let well_formed = nonce.len() == 64 && nonce.bytes().all(|b| b.is_ascii_hexdigit());
+    well_formed
+        && noted(kit)
+            .get("github")
+            .into_iter()
+            .flatten()
+            .any(|n| n.command.ends_with(&format!(" secret github {nonce}")))
 }
 
 /// What Atollo noted for `service` on `computer` for `sandbox`.
@@ -86,14 +122,14 @@ pub fn note(
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
     }
-    std::fs::write(&path, serde_json::to_string_pretty(&all)? + "\n")?;
-    Ok(())
+    // Readable by its owner only: its nonces open `secret github`.
+    crate::platform::files::replace_private(&path, &(serde_json::to_string_pretty(&all)? + "\n"))
 }
 
-/// The command `sbx` runs for the kit's GitHub token: the app with
-/// `secret github`, its path quoted as `sbx` splits the command (a path
-/// with spaces unquoted fails: tried), for the PC's system.
-pub fn github_command(exe: &Path, windows: bool) -> String {
+/// The start of the command `sbx` runs for the kit's GitHub token: the app
+/// with `secret github`, its path quoted as `sbx` splits the command (a
+/// path with spaces unquoted fails: tried), for the PC's system.
+pub fn github_prefix(exe: &Path, windows: bool) -> String {
     let path = exe.display().to_string();
     let quoted = if windows {
         format!("\"{path}\"")
@@ -103,9 +139,15 @@ pub fn github_command(exe: &Path, windows: bool) -> String {
     format!("{quoted} secret github")
 }
 
+/// The whole command: [`github_prefix`] and the registration's `nonce`.
+pub fn github_command(exe: &Path, windows: bool, nonce: &str) -> String {
+    format!("{} {nonce}", github_prefix(exe, windows))
+}
+
 /// What to do with `service`, from whether `sbx` lists it (`listed`) and
-/// what Atollo noted for this PC (`mine`) against the command now
-/// (`command`).
+/// what Atollo noted for this PC (`mine`) against the start of the command
+/// now (`prefix`, [`github_prefix`]: the nonce differs at each
+/// registration).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Step {
     /// Nothing: registered already, or the user's own.
@@ -116,10 +158,10 @@ pub enum Step {
     Replace,
 }
 
-pub fn step(listed: bool, mine: Option<&Noted>, command: &str) -> Step {
+pub fn step(listed: bool, mine: Option<&Noted>, prefix: &str) -> Step {
     match (listed, mine) {
         (false, _) => Step::Register,
-        (true, Some(n)) if n.command != command => Step::Replace,
+        (true, Some(n)) if !n.command.starts_with(&format!("{prefix} ")) => Step::Replace,
         (true, _) => Step::Keep,
     }
 }

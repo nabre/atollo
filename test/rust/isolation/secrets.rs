@@ -7,12 +7,45 @@ use std::path::PathBuf;
 #[test]
 fn the_command_quotes_the_apps_path() {
     assert_eq!(
-        github_command(Path::new(r"D:\My Kit\Atollo.exe"), true),
-        r#""D:\My Kit\Atollo.exe" secret github"#
+        github_command(Path::new(r"D:\My Kit\Atollo.exe"), true, "ab12"),
+        r#""D:\My Kit\Atollo.exe" secret github ab12"#
     );
     assert_eq!(
-        github_command(Path::new("/media/u/My Kit/Atollo.AppImage"), false),
+        github_prefix(Path::new("/media/u/My Kit/Atollo.AppImage"), false),
         "'/media/u/My Kit/Atollo.AppImage' secret github"
+    );
+}
+
+/// `secret github` answers only a nonce of a command Atollo noted, in a
+/// file readable by its owner only; a file of a first version (an entry
+/// without a sandbox) or a damaged entry never drops the rest.
+#[test]
+fn only_a_noted_nonce_opens_the_token() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-nonce");
+    let nonce = new_nonce().unwrap();
+    assert_eq!(nonce.len(), 64);
+    assert!(!nonce_known(&kit, &nonce), "nothing noted yet");
+    let command = github_command(Path::new(r"D:\kit\Atollo.exe"), true, &nonce);
+    note(&kit, "github", "PC1", "atollo-p-shop", Some(&command)).unwrap();
+    assert!(nonce_known(&kit, &nonce));
+    assert!(!nonce_known(&kit, &new_nonce().unwrap()), "another nonce");
+    assert!(!nonce_known(&kit, ""), "no nonce");
+    assert!(!nonce_known(&kit, &nonce[..10]), "a part of it");
+    note(&kit, "github", "PC1", "atollo-p-shop", None).unwrap();
+    assert!(!nonce_known(&kit, &nonce), "taken back");
+
+    let path = crate::isolation::kit::root(&kit).join("secrets.json");
+    std::fs::write(
+        &path,
+        r#"{"github":[{"computer":"PC1","command":"old"},{"bad":1},{"computer":"PC2","sandbox":"atollo-p-x","command":"y"}]}"#,
+    )
+    .unwrap();
+    let all = noted(&kit);
+    assert_eq!(all["github"].len(), 2, "the damaged entry only left out");
+    assert_eq!(
+        mine(&kit, "github", "PC1", "").map(|n| n.command),
+        Some("old".into()),
+        "a global note of a first version, read to be taken back"
     );
 }
 
@@ -20,22 +53,19 @@ fn the_command_quotes_the_apps_path() {
 /// kit moved; the user's own (none noted for this PC) never touched.
 #[test]
 fn only_atollos_own_secret_is_registered_or_replaced() {
+    let prefix = "\"D:\\kit\\Atollo.exe\" secret github";
     let mine = Noted {
         computer: "PC1".into(),
         sandbox: "atollo-p-shop".into(),
-        command: "\"D:\\kit\\Atollo.exe\" secret github".into(),
+        command: format!("{prefix} 0123abcd"),
     };
-    assert_eq!(step(false, None, &mine.command), Step::Register);
-    assert_eq!(step(true, Some(&mine), &mine.command), Step::Keep);
+    assert_eq!(step(false, None, prefix), Step::Register);
+    assert_eq!(step(true, Some(&mine), prefix), Step::Keep, "any nonce");
     assert_eq!(
         step(true, Some(&mine), "\"E:\\kit\\Atollo.exe\" secret github"),
         Step::Replace
     );
-    assert_eq!(
-        step(true, None, &mine.command),
-        Step::Keep,
-        "the user's own"
-    );
+    assert_eq!(step(true, None, prefix), Step::Keep, "the user's own");
 }
 
 /// `sbx secret ls` of sbx 0.49.2, read for one scope: a sandbox's own

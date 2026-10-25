@@ -217,15 +217,17 @@ fn run() -> i32 {
                 }
             };
         }
-        Cli::SecretGithub => {
+        Cli::SecretGithub(nonce) => {
             // Only for the kit's Docker Sandboxes, which runs it on the PC
-            // when its proxy needs the value: never for an agent or a
-            // project's program that runs the app (D-172, SEC-V7-01).
+            // when its proxy needs the value: a command Atollo registered
+            // (its nonce noted, in a file readable by its owner only) and
+            // started by the kit's sbx; never for an agent or a project's
+            // program that runs the app (D-172, SEC-V7-01).
             let all = platform::processes::all();
             let above = platform::processes::ancestors(&all, std::process::id(), 3);
             let by_sbx = isolation::kit_sbx(&kit)
                 .is_some_and(|sbx| isolation::secrets::asked_by_sbx(&above, &sbx));
-            if !by_sbx {
+            if !by_sbx || !isolation::secrets::nonce_known(&kit, &nonce) {
                 eprintln!("secret github: only for the kit's Docker Sandboxes");
                 return 1;
             }

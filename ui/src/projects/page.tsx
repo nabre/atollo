@@ -346,7 +346,7 @@ export function ProjectPage({
         {section === "git" && (
           <>
             <Git status={status} />
-            <GithubInVm project={p.name} />
+            <GithubInVm project={p.id} />
           </>
         )}
       </EditorBody>
