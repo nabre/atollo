@@ -15,16 +15,22 @@ fn the_editors_session_goes_from_pending_to_ready_or_failed() {
         std::fs::read_to_string(base.join("shop").join("error")).unwrap(),
         "sbx run: boom\n"
     );
-    mark_vm(&kit, true).unwrap();
-    assert!(base.join(".vm").is_file());
+    set_level(&kit, true).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(base.join(".level")).unwrap(),
+        "vm\n"
+    );
     clear(&kit, "shop").unwrap();
     assert!(!base.join("shop").exists());
     assert!(
-        base.join(".vm").is_file(),
-        "the mark is the VM's, not a project's"
+        base.join(".level").is_file(),
+        "the level is the kit's, not a project's"
     );
-    mark_vm(&kit, false).unwrap();
-    assert!(!base.join(".vm").exists());
+    set_level(&kit, false).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(base.join(".level")).unwrap(),
+        "env\n"
+    );
     pending(&kit, "blog").unwrap();
     clear_all(&kit).unwrap();
     assert!(!base.exists());
@@ -54,7 +60,28 @@ fn a_session_holds_the_vms_commands() {
     assert_eq!(shell[..4], ["exec", "-it", "-w", guest.as_str()]);
     assert!(shell.contains(&vm.name));
     assert!(read("run").trim_end().ends_with(LINE));
-    assert!(read("claude").contains(&vm::agent_name("shop", "claude")));
-    assert!(read("codex").contains(&vm::agent_name("shop", "codex")));
+    assert!(
+        !root(&kit).join("shop/claude").exists(),
+        "made on request only"
+    );
     assert!(!root(&kit).join("shop.pending").exists());
+
+    // An editor's profile asks for an agent's sandbox: taken once, only for
+    // an agent of `sbx` and a project with a session.
+    for request in [
+        "shop.claude.request",
+        "shop.pi.request",
+        "blog.codex.request",
+    ] {
+        std::fs::write(root(&kit).join(request), "1").unwrap();
+    }
+    assert_eq!(
+        take_requests(&kit),
+        [("shop".to_owned(), "claude".to_owned())]
+    );
+    assert!(take_requests(&kit).is_empty());
+    write_agent(&kit, "shop", "claude", &["run".into(), "--name".into()]).unwrap();
+    assert_eq!(read("claude"), "run\n--name\n");
+    agent_failed(&kit, "shop", "codex", "no VM").unwrap();
+    assert_eq!(read("codex.error"), "no VM\n");
 }

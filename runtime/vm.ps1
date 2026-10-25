@@ -7,10 +7,10 @@
 #        -Shell pwsh|bash|cmd|zsh [-Exe <program>] [-Agent <id>]
 # and, for a task, with "-Command <line>" added by VSCodium.
 #
-# The app notes in data\app\sandboxes\sessions\ what the project's VM needs
-# (isolation/session.rs). With a session the terminal opens in the VM;
-# with the VM on but no session (a folder that is no project's) nothing
-# opens; without the VM the kit's own shell or agent runs on the PC.
+# The app notes in data\app\sandboxes\sessions\ the level and what the
+# project's VM needs (isolation/session.rs). Fail closed: with the level
+# `vm` the terminal opens in the project's VM or not at all; only with the
+# level `env` the kit's own shell or agent runs on the PC.
 
 param(
     [string]$Shell = 'pwsh',
@@ -40,8 +40,19 @@ if ($here.StartsWith($projects + $sep, [StringComparison]::$ignore)) {
     if ($parts.Count -gt 1) { $below = $parts[1] -replace '\\', '/' }
 }
 
-$vmOn = Test-Path -LiteralPath (Join-Path $sessions '.vm')
-$session = if ($project) { Join-Path $sessions $project } else { $null }
+# The level the app noted when the editor opened (fail closed: only `env`
+# lets anything run on the PC; none yet, a moment to write it, then nothing).
+$levelFile = Join-Path $sessions '.level'
+$until = (Get-Date).AddSeconds(15)
+while (-not (Test-Path -LiteralPath $levelFile) -and (Get-Date) -lt $until) {
+    Start-Sleep -Milliseconds 250
+}
+$level = if (Test-Path -LiteralPath $levelFile) { (Get-Content -LiteralPath $levelFile -Raw).Trim() } else { '' }
+if ($level -ne 'vm' -and $level -ne 'env') {
+    Say "Atollo non ha detto se la VM e' attiva: apri l'editor dalla pagina del progetto in Atollo."
+    Leave 1
+}
+$session = if ($project -and $level -eq 'vm') { Join-Path $sessions $project } else { $null }
 
 # Being made ready by the app: wait, at most ten minutes.
 if ($session -and (Test-Path -LiteralPath "$session.pending")) {
@@ -64,9 +75,26 @@ if ($session -and (Test-Path -LiteralPath (Join-Path $session 'sbx'))) {
         if ($i -gt 0) { [Environment]::SetEnvironmentVariable($line.Substring(0, $i), $line.Substring($i + 1)) }
     }
     if ($Agent) {
-        $file = Join-Path $session $Agent
-        if (-not (Test-Path -LiteralPath $file)) {
+        if ($Agent -ne 'claude' -and $Agent -ne 'codex') {
             Say "$Agent non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex."
+            Leave 1
+        }
+        # Its sandbox made ready by the app (tools, database, ports) on a
+        # request: the first time, or again at every start of the editor.
+        $file = Join-Path $session $Agent
+        $failed = Join-Path $session "$Agent.error"
+        if (-not (Test-Path -LiteralPath $file)) {
+            Remove-Item -LiteralPath $failed -ErrorAction SilentlyContinue
+            Set-Content -LiteralPath "$session.$Agent.request" -Value '1'
+            Say "La sandbox di $Agent si sta preparando..."
+            $until = (Get-Date).AddMinutes(10)
+            while (-not (Test-Path -LiteralPath $file) -and -not (Test-Path -LiteralPath $failed) -and (Get-Date) -lt $until) {
+                Start-Sleep -Milliseconds 500
+            }
+        }
+        if (-not (Test-Path -LiteralPath $file)) {
+            $why = if (Test-Path -LiteralPath $failed) { (Get-Content -LiteralPath $failed -Raw).Trim() } else { 'nessuna risposta da Atollo' }
+            Say "La sandbox di $Agent non e' pronta: $why"
             Leave 1
         }
         $argv = @(Get-Content -LiteralPath $file)
@@ -84,8 +112,12 @@ if ($session -and (Test-Path -LiteralPath (Join-Path $session 'sbx'))) {
     Leave $LASTEXITCODE
 }
 
-if ($vmOn) {
-    Say "Con la VM attiva il terminale dell'editor si apre solo nella cartella di un progetto."
+if ($level -eq 'vm') {
+    if ($session) {
+        Say "La VM di questo progetto non e' stata preparata: riapri l'editor dalla pagina del progetto in Atollo."
+    } else {
+        Say "Con la VM attiva il terminale dell'editor si apre solo nella cartella di un progetto."
+    }
     Leave 1
 }
 

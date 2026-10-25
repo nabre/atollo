@@ -125,7 +125,7 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
 fn the_sandbox_starts_with_the_project_as_its_workspace() {
     let dir = Path::new("/kit/projects/shop");
     assert_eq!(
-        start_args("atollo-shop", dir, &[], None),
+        start_args("atollo-shop", dir, &[], None, "shell"),
         [
             "run",
             "-d",
@@ -136,9 +136,15 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         ]
     );
     assert_eq!(
-        start_args("atollo-t", dir, &["/kit/data/apps/linux-x64".into()], None)
-            .last()
-            .map(String::as_str),
+        start_args(
+            "atollo-t",
+            dir,
+            &["/kit/data/apps/linux-x64".into()],
+            None,
+            "shell"
+        )
+        .last()
+        .map(String::as_str),
         Some("/kit/data/apps/linux-x64:ro"),
         "the kit's tools are mounted where the VM cannot change them"
     );
@@ -148,7 +154,8 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
             "atollo-shop",
             dir,
             &[],
-            Some(Path::new("/kit/data/app/sandboxes/atollo-shop"))
+            Some(Path::new("/kit/data/app/sandboxes/atollo-shop")),
+            "shell"
         ),
         [
             "run",
@@ -212,21 +219,52 @@ fn an_action_in_the_vm_is_stopped_inside_it() {
     assert!(stop_args("atollo-p-shop", &tag, None)[4].ends_with("esac; true"));
 }
 
-/// Claude Code and Codex in `sbx`'s own agents; the others have none.
+/// Claude Code and Codex in `sbx`'s own agents, made like the project's
+/// sandbox; the others have none.
 #[test]
 fn only_sbx_agents_have_a_sandbox() {
+    assert_eq!(sbx_agent("claude"), Some("claude"));
+    assert_eq!(sbx_agent("codex"), Some("codex"));
+    assert_eq!(sbx_agent("antigravity"), None);
+    assert_eq!(sbx_agent("pi"), None);
     let dir = Path::new("/p");
     let claude = agent_name("shop", "claude");
     assert_eq!(
-        agent_args("shop", "claude", dir).unwrap(),
-        ["run", "--name", claude.as_str(), "claude", "/p"]
+        start_args(&claude, dir, &[], None, "claude")[4..],
+        ["claude", "/p"]
     );
+}
+
+/// The agent's session (D-175): the project's database from its file, the
+/// kit's tools first on the image's own `PATH` (as read in the sandbox),
+/// the tools' variables after.
+#[test]
+fn an_agent_gets_the_projects_tools_and_database() {
+    let tools = crate::isolation::GuestTools {
+        path: vec!["/d/kit/data/apps/linux-x64/node/24.22/bin".into()],
+        vars: vec![("JAVA_HOME".into(), "/d/j".into())],
+        env_file: Some("/kit/db.env".into()),
+    };
+    let image = "/home/agent/.local/bin:/usr/local/bin:/usr/bin:/bin";
     assert_eq!(
-        agent_args("shop", "codex", dir).unwrap()[2],
-        agent_name("shop", "codex")
+        agent_session_args("atollo-a-claude-shop", image, &tools),
+        [
+            "run",
+            "--name",
+            "atollo-a-claude-shop",
+            "--env-file",
+            "/kit/db.env",
+            "-e",
+            "PATH=/d/kit/data/apps/linux-x64/node/24.22/bin:/home/agent/.local/bin:/usr/local/bin:/usr/bin:/bin",
+            "-e",
+            "JAVA_HOME=/d/j"
+        ]
     );
-    assert_eq!(agent_args("atollo-shop", "antigravity", dir), None);
-    assert_eq!(agent_args("atollo-shop", "pi", dir), None);
+    let none = crate::isolation::GuestTools::default();
+    assert_eq!(
+        agent_session_args("atollo-a-codex-shop", image, &none),
+        ["run", "--name", "atollo-a-codex-shop"]
+    );
 }
 
 /// The action's variables go to the VM with `-e`; its folder and line are
