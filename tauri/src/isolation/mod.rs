@@ -206,7 +206,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
             {
                 blockers.push(b);
             } else if let Sbx::Kit(_) = sbx {
-                daemon_settings(sbx, host, env);
+                daemon_settings(kit, sbx, host, env);
                 legacy_global_github(kit, sbx, host, env);
             }
         }
@@ -233,7 +233,11 @@ fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blo
             // Started here, its output to nothing: a daemon started by a
             // command whose output is read keeps that pipe open, and the
             // reader waits for it until its limit.
-            daemon_call(sbx, host, env, &["daemon", "start"]);
+            // A daemon started now reads the settings as they are: a
+            // restart owed to the one before is not owed any more.
+            if daemon_call(sbx, host, env, &["daemon", "start"]) {
+                let _ = std::fs::remove_file(kit::root(kit).join(".restart-pending"));
+            }
             Ok(())
         }
     }
@@ -241,7 +245,7 @@ fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blo
 
 /// `sbx <args>` of the daemon (`daemon start`, `daemon restart`), its
 /// output to nothing, waited for at most a minute.
-fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) {
+fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) -> bool {
     let mut cmd = sbx.command(env, host);
     cmd.args(args)
         .stdin(std::process::Stdio::null())
@@ -251,7 +255,7 @@ fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) {
         Ok(child) => child,
         Err(e) => {
             crate::common::log::warn(&format!("sbx {}: {e}", args.join(" ")));
-            return;
+            return false;
         }
     };
     let (tx, rx) = mpsc::channel();
@@ -260,10 +264,19 @@ fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) {
         let _ = tx.send(child.wait());
     });
     match rx.recv_timeout(Duration::from_secs(60)) {
-        Ok(Ok(status)) if status.success() => {}
-        Ok(Ok(status)) => crate::common::log::warn(&format!("sbx {}: {status}", args.join(" "))),
-        Ok(Err(e)) => crate::common::log::warn(&format!("sbx {}: {e}", args.join(" "))),
-        Err(_) => crate::common::log::warn(&format!("sbx {}: no end in 60 s", args.join(" "))),
+        Ok(Ok(status)) if status.success() => true,
+        Ok(Ok(status)) => {
+            crate::common::log::warn(&format!("sbx {}: {status}", args.join(" ")));
+            false
+        }
+        Ok(Err(e)) => {
+            crate::common::log::warn(&format!("sbx {}: {e}", args.join(" ")));
+            false
+        }
+        Err(_) => {
+            crate::common::log::warn(&format!("sbx {}: no end in 60 s", args.join(" ")));
+            false
+        }
     }
 }
 
@@ -271,8 +284,11 @@ fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) {
 /// then the daemon restarted for them when no sandbox runs (a running one
 /// would stop; the next status tries again). Failures only go to the log:
 /// the VMs work without them.
-fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
-    let mut changed = false;
+fn daemon_settings(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+    // A restart still owed (a setting changed while a sandbox ran) stays
+    // owed across checks and starts of the app: `settings get` already
+    // answers the new value, the daemon running does not have it yet.
+    let pending = kit::root(kit).join(".restart-pending");
     for (key, value) in daemon::SETTINGS {
         let now = run(sbx, host, env, &["settings", "get", key], ASK_LIMIT)
             .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned());
@@ -280,7 +296,12 @@ fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
             continue;
         }
         match run(sbx, host, env, &["settings", "set", key, value], ASK_LIMIT) {
-            Ok(out) if out.status.success() => changed = true,
+            Ok(out) if out.status.success() => {
+                let _ = std::fs::create_dir_all(kit::root(kit));
+                if let Err(e) = std::fs::write(&pending, key) {
+                    crate::common::log::warn(&format!("{}: {e}", pending.display()));
+                }
+            }
             Ok(out) => crate::common::log::warn(&format!(
                 "sbx settings set {key}: {}",
                 String::from_utf8_lossy(&out.stderr).trim()
@@ -288,7 +309,7 @@ fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
             Err(e) => crate::common::log::warn(&format!("sbx settings set {key}: {e}")),
         }
     }
-    if !changed {
+    if !pending.exists() {
         return;
     }
     let running = run(sbx, host, env, &["ls", "--json"], ASK_LIMIT)
@@ -298,7 +319,16 @@ fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
         crate::common::log::info("sbx settings changed: restart when no sandbox runs");
         return;
     }
-    daemon_call(sbx, host, env, &["daemon", "restart"]);
+    if daemon_call(sbx, host, env, &["daemon", "restart"]) {
+        let _ = std::fs::remove_file(&pending);
+    }
+}
+
+/// True while the daemon still has to restart for a setting of
+/// [`daemon::SETTINGS`] (a sandbox ran when it changed): no sandbox starts
+/// until then, so none runs without it.
+pub fn restart_pending(kit: &Kit) -> bool {
+    kit::root(kit).join(".restart-pending").exists()
 }
 
 /// The PC's name, to note per PC what Atollo registered in `sbx`.
@@ -1100,6 +1130,15 @@ impl Vm {
     /// kit's tools were mounted, D-170) is mounted with `sbx mount`, its
     /// disk kept ([`Vm::mount_missing`]).
     pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
+        // A daemon that has not restarted with the kit's settings yet (no
+        // SSH agent of the PC in the VMs) starts no sandbox.
+        if matches!(self.sbx, Sbx::Kit(_)) && restart_pending(&self.kit) {
+            anyhow::bail!(crate::common::i18n::t(
+                lang,
+                "Docker Sandboxes deve ripartire per un'impostazione di sicurezza: chiudi le sessioni nella VM, poi «Ricontrolla» nella finestra della VM e riprova.",
+                &[],
+            ));
+        }
         let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
         let mounts = self.mounts();
         if self.exists(env)? {
