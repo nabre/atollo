@@ -7,6 +7,10 @@
 //! `sbx` is a program of the PC, not of the kit: it is found in the PC's
 //! `PATH` (and where its installers put it) and runs with the PC's
 //! environment, where its sign-in lives (D-167, declared trace).
+//!
+//! On every level a project's programs get a sealed environment
+//! ([`seal`]): less of what reaches them by itself. It is no wall (they run
+//! as the user and can read what the user can): the VM is.
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
@@ -16,13 +20,39 @@ use std::time::{Duration, Instant};
 use serde::Serialize;
 
 use crate::env::{Host, KitEnv};
-use crate::kit::Os;
+use crate::kit::{Kit, Os};
 use crate::platform::virt::{self, Gap};
 
 /// How long a status stays good: `sbx` is asked at most once a minute.
 const FRESH: Duration = Duration::from_secs(60);
 /// How long `sbx` may take to answer.
 const ASK_LIMIT: Duration = Duration::from_secs(15);
+
+/// What a project's programs never get from the kit's environment: the
+/// way to the user's real profile, the user's SSH keys (the agent's
+/// socket), the desktop's session bus (the Secret Service), and the root
+/// login of the kit's MySQL, replaced by the project's own user.
+pub const SEALED: [&str; 4] = [
+    "CP_USER_PROFILE",
+    "SSH_AUTH_SOCK",
+    "DBUS_SESSION_BUS_ADDRESS",
+    "ATOLLO_MYSQL_CNF",
+];
+
+/// Seals `env` for the programs of `project` (terminal, actions, agents,
+/// `Atollo env --project`), or of a kit terminal when `None`: the
+/// [`SEALED`] variables out, then the project's own MySQL login in
+/// (`db::services::project_client_env`).
+pub fn seal(kit: &Kit, project: Option<&str>, env: &mut KitEnv) {
+    for name in SEALED {
+        env.remove(name);
+    }
+    if let Some(project) = project {
+        for (name, value) in crate::db::services::project_client_env(kit, project) {
+            env.set(name, value.to_string_lossy());
+        }
+    }
+}
 
 /// What shuts a project's programs in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

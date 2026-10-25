@@ -39,30 +39,42 @@ pub fn project_db_port(kit: &Kit, project: &str) -> Option<u16> {
     ))
 }
 
-/// The login of the project's programs when its SQL database is on another
-/// version than the server's, written at that version's start (`mysql` of
-/// its scripts then logs in on its port): `ATOLLO_MYSQL_CNF` (read by the
-/// kit's launchers, `setup/kit_files.rs`) and `CP_MYSQL`, the folder of that
-/// version. Empty: the kit's own (`env/`), on the server's port.
+/// The MySQL login of the project's programs (D-167): its own user, on
+/// the version its database is on (D-102), written to its
+/// `private\mysql.cnf`; never the kit's root login. `ATOLLO_MYSQL_CNF`
+/// (read by the kit's launchers, `setup/kit_files.rs`: `mysql` of its
+/// scripts and of its terminal logs in with it) and `CP_MYSQL`, the folder
+/// of that version. Empty when the project has no MySQL user: the
+/// launchers then log in with nothing.
 pub fn project_client_env(kit: &Kit, project: &str) -> Vec<(&'static str, PathBuf)> {
     let Some(engine) = project_sql_db(kit, project) else {
         return Vec::new();
     };
     let id = engine.id();
-    let Some(line) = auth::project_line(kit, project, id).ok().flatten() else {
-        return Vec::new();
+    let login = || -> Result<PathBuf> {
+        let password =
+            auth::try_project_password(kit, project, id)?.context("no password of its user")?;
+        let user = auth::project_db_name(kit, project, id)?;
+        let line = project_line(kit, project, id);
+        let port = line_port(kit, id, line.as_deref());
+        auth::write_project_mysql_cnf(
+            kit,
+            project,
+            &auth::mysql_project_cnf_text(&user, &password, port),
+        )
     };
-    if Some(&line) == server_line(kit, id).as_ref() {
-        return Vec::new();
-    }
-    let cnf = auth::mysql_line_cnf(kit, &line);
-    if cnf.is_file() {
-        vec![
+    match login() {
+        Ok(cnf) => vec![
             ("ATOLLO_MYSQL_CNF", cnf),
-            ("CP_MYSQL", line_dir(kit, id, Some(&line))),
-        ]
-    } else {
-        Vec::new()
+            (
+                "CP_MYSQL",
+                line_dir(kit, id, project_line(kit, project, id).as_deref()),
+            ),
+        ],
+        Err(e) => {
+            crate::common::log::warn(&format!("{project}: MySQL login: {e:#}"));
+            Vec::new()
+        }
     }
 }
 

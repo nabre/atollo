@@ -81,3 +81,35 @@ fn blockers_serialize_with_their_code() {
     assert_eq!(json["blockers"][1]["code"], "sbx_signed_out");
     assert_eq!(json["sbx"], "sbx");
 }
+
+/// A project's programs lose the way to the user's profile, SSH keys,
+/// session bus and the root's MySQL login; they log in as the project's
+/// own user. A kit terminal is sealed the same way, with no login.
+#[test]
+fn a_project_gets_a_sealed_environment() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-seal");
+    let full = || {
+        let mut env = KitEnv::default();
+        for name in SEALED {
+            env.set(name, "x");
+        }
+        env.set("PATH", "kit");
+        env
+    };
+    let mut env = full();
+    seal(&kit, None, &mut env);
+    for name in SEALED {
+        assert_eq!(env.get(name), None, "{name}");
+    }
+    assert_eq!(env.get("PATH"), Some("kit"));
+
+    crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
+    let mut env = full();
+    seal(&kit, Some("shop"), &mut env);
+    let cnf = env.get("ATOLLO_MYSQL_CNF").expect("the project's login");
+    assert!(std::fs::read_to_string(cnf)
+        .unwrap()
+        .contains("user=shop\n"));
+    assert_eq!(env.get("CP_USER_PROFILE"), None);
+    assert_eq!(env.get("SSH_AUTH_SOCK"), None);
+}

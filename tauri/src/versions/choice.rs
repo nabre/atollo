@@ -200,19 +200,22 @@ fn project_swaps(kit: &Kit, project: &str) -> Vec<Swap> {
     swaps(kit, &kit_choice(kit), &project_choice(kit, project))
 }
 
-/// The kit environment (with the kit's lines) for a program of `project`.
+/// The kit environment (with the kit's lines) for a program of `project`,
+/// sealed for it (`isolation::seal`, D-167).
 pub fn project_env(kit: &Kit, project: &str, mut env: KitEnv) -> KitEnv {
     apply(&mut env, &project_swaps(kit, project));
+    crate::isolation::seal(kit, Some(project), &mut env);
     env
 }
 
 /// The kit environment (with the kit's lines) on the lines of `choice`
-/// instead: a kit terminal's (terminals.rs).
+/// instead: a kit terminal's (terminals.rs), sealed as a project's.
 pub fn choice_env(kit: &Kit, choice: &Choice, mut env: KitEnv) -> KitEnv {
     apply(
         &mut env,
         &swaps(kit, &kit_choice(kit), &clean(choice.clone())),
     );
+    crate::isolation::seal(kit, None, &mut env);
     env
 }
 
