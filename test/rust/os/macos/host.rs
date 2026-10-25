@@ -20,3 +20,10 @@ fn apple_languages() {
     assert_eq!(first_apple_language("(\n)\n"), None);
     assert_eq!(first_apple_language(""), None);
 }
+
+#[test]
+fn xcode_folders_are_absolute() {
+    for dir in XCODE_DEVELOPER_DIRS {
+        assert!(dir.starts_with('/') && !dir.ends_with('/'), "{dir}");
+    }
+}

@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 
+pub use crate::os::unix::processes::exists;
 use crate::platform::processes::Proc;
 
 /// The parent of a process from `/proc/<pid>/stat`: the fourth field, after

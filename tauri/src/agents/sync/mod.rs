@@ -339,35 +339,9 @@ impl Drop for Lock {
     }
 }
 
-/// True if a process with this id runs (signal 0 checks without sending;
-/// EPERM: it runs under another user).
-#[cfg(unix)]
+/// True if a process with this id runs (`platform::processes::exists`).
 pub fn alive(pid: u32) -> bool {
-    let Ok(pid @ 1..) = libc::pid_t::try_from(pid) else {
-        return false;
-    };
-    // SAFETY: signal 0 sends nothing.
-    let sent = unsafe { libc::kill(pid, 0) } == 0;
-    sent || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
-}
-
-/// True if a process with this id runs.
-#[cfg(windows)]
-pub fn alive(pid: u32) -> bool {
-    use windows::Win32::Foundation::CloseHandle;
-    use windows::Win32::System::Threading::{
-        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
-    };
-    // SAFETY: query-only handle, closed right after.
-    unsafe {
-        let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
-            return false;
-        };
-        let mut code = 0u32;
-        let ok = GetExitCodeProcess(h, &mut code).is_ok() && code == 259; // STILL_ACTIVE
-        let _ = CloseHandle(h);
-        ok
-    }
+    crate::platform::processes::exists(pid)
 }
 
 /// One agent's places.

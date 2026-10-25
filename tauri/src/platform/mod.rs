@@ -17,6 +17,7 @@
 //! - `host`: what the app knows of the machine (processor, language...);
 //! - `instance`: one app per kit (D-08);
 //! - `links`: links to folders (junctions on Windows) and to files;
+//! - `local_time`: where the user's local day starts;
 //! - `lock`: the kit's locks across its processes;
 //! - `volume`: the disk of a folder (D-90, D-105);
 //! - `temp`: the folders in transit (D-90);
@@ -36,6 +37,7 @@ pub mod host;
 pub mod instance;
 pub mod jobs;
 pub mod links;
+pub mod local_time;
 pub mod lock;
 pub mod memory;
 pub mod processes;

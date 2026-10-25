@@ -50,6 +50,18 @@ pub fn xcode_tools() -> Option<String> {
     imp::xcode_tools()
 }
 
+/// The Xcode Command Line Tools (or Xcode) on this Mac, with their
+/// `clang`; looked up once. False elsewhere.
+pub fn apple_clang_present() -> bool {
+    imp::apple_clang_present()
+}
+
+/// ICU's library (`libicuuc.so.<n>`, which .NET loads) on this Linux PC;
+/// looked up once. True elsewhere.
+pub fn libicu_present() -> bool {
+    imp::libicu_present()
+}
+
 /// The AppImage the app runs from, when `exe` is inside the image's mount
 /// (Linux); `None` elsewhere.
 pub fn running_appimage(exe: &Path) -> Option<PathBuf> {

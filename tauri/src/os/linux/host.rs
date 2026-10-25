@@ -47,6 +47,19 @@ pub(crate) fn appimage_of(
         .then(|| PathBuf::from(image))
 }
 
+/// No Xcode on Linux.
+pub fn apple_clang_present() -> bool {
+    false
+}
+
+/// ICU in one of the library folders of this PC's processor; looked up
+/// once.
+pub fn libicu_present() -> bool {
+    static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *PRESENT
+        .get_or_init(|| crate::env::has_libicu(&crate::env::linux_lib_dirs(std::env::consts::ARCH)))
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/linux/host.rs"]
 mod tests;

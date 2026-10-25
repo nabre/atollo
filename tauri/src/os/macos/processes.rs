@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 
+pub use crate::os::unix::processes::exists;
 use crate::platform::processes::Proc;
 
 /// Every process with its program path (those the user can query).

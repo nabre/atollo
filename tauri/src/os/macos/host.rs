@@ -99,6 +99,28 @@ pub fn xcode_tools() -> Option<String> {
 /// How long "no Command Line Tools" is believed before asking again.
 const XCODE_RECHECK: std::time::Duration = std::time::Duration::from_secs(60);
 
+/// The folders `xcode-select -p` prints when Xcode Command Line Tools, or
+/// Xcode itself, are installed, each with the `clang` of its own.
+pub(crate) const XCODE_DEVELOPER_DIRS: [&str; 2] = [
+    "/Library/Developer/CommandLineTools",
+    "/Applications/Xcode.app/Contents/Developer",
+];
+
+/// A `clang` in one of [`XCODE_DEVELOPER_DIRS`]; looked up once.
+pub fn apple_clang_present() -> bool {
+    static PRESENT: OnceLock<bool> = OnceLock::new();
+    *PRESENT.get_or_init(|| {
+        XCODE_DEVELOPER_DIRS
+            .iter()
+            .any(|d| crate::common::fsx::join_rel(Path::new(d), "usr/bin/clang").is_file())
+    })
+}
+
+/// .NET finds ICU on a Mac.
+pub fn libicu_present() -> bool {
+    true
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/macos/host.rs"]
 mod tests;

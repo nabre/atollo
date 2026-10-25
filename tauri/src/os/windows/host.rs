@@ -82,6 +82,15 @@ pub fn running_appimage(_exe: &Path) -> Option<PathBuf> {
     None
 }
 
+pub fn apple_clang_present() -> bool {
+    false
+}
+
+/// .NET carries ICU on Windows.
+pub fn libicu_present() -> bool {
+    true
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/windows/host.rs"]
 mod tests;

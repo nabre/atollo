@@ -48,6 +48,21 @@ pub fn all() -> Vec<Proc> {
     out
 }
 
+/// True if a process with this id runs.
+pub fn exists(pid: u32) -> bool {
+    use windows::Win32::System::Threading::GetExitCodeProcess;
+    // SAFETY: query-only handle, closed right after.
+    unsafe {
+        let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else {
+            return false;
+        };
+        let mut code = 0u32;
+        let ok = GetExitCodeProcess(h, &mut code).is_ok() && code == 259; // STILL_ACTIVE
+        let _ = CloseHandle(h);
+        ok
+    }
+}
+
 /// The program of process `pid`, if the user can query it.
 pub fn image(pid: u32) -> Option<PathBuf> {
     // SAFETY: query-only handle, closed right after use; the buffer and its

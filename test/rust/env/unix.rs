@@ -111,9 +111,6 @@ fn macos_rust_linker_with_command_line_tools() {
         macos_rust_linker(Target::DARWIN_X64, true).map(|(n, _)| n),
         Some("CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER".to_owned())
     );
-    for dir in XCODE_DEVELOPER_DIRS {
-        assert!(dir.starts_with('/') && !dir.ends_with('/'), "{dir}");
-    }
 }
 
 /// D-112: the linker of Rust's gnullvm host on Windows ARM64 only, the

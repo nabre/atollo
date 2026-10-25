@@ -8,6 +8,7 @@ pub mod host;
 pub mod instance;
 pub mod jobs;
 pub mod links;
+pub mod local_time;
 pub mod lock;
 pub mod memory;
 pub mod processes;

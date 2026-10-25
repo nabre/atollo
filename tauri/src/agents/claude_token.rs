@@ -15,9 +15,7 @@
 //! file. The token is never logged nor printed by `Atollo env` (masked):
 //! only "saved" or "not found".
 //!
-//! The reading of the output is plain code, tested on every system; only
-//! the terminal session is Unix code.
-#![cfg_attr(not(any(unix, test)), allow(dead_code))]
+//! The reading of the output is plain code, tested on every system.
 
 use std::path::{Path, PathBuf};
 
@@ -84,19 +82,10 @@ pub fn save(kit: &Kit, token: &str) -> Result<()> {
     Ok(())
 }
 
-/// The file readable by its owner only (always true off Unix, where the
-/// app's folder is the user's own).
+/// The file readable by its owner only (`platform::files::owner_only`:
+/// always true on Windows, where the app's folder is the user's own).
 fn owner_only(file: &Path) -> bool {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::metadata(file).is_ok_and(|m| m.permissions().mode() & 0o077 == 0)
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = file;
-        true
-    }
+    std::fs::metadata(file).is_ok_and(|m| crate::platform::files::owner_only(&m))
 }
 
 /// "Esci": the token is forgotten (no file is not an error).
@@ -234,8 +223,8 @@ impl std::fmt::Debug for TokenScan {
 
 /// "Collega con un token": `claude setup-token` in a session of the app's
 /// terminal in the kit's home; when it ends, the token it printed is saved
-/// and `on_saved` runs. Errors in `lang`.
-#[cfg(unix)]
+/// and `on_saved` runs. Errors in `lang`. Not on Windows, which keeps
+/// Claude Code's login in the kit's home already.
 pub fn link<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     kit: &Kit,
@@ -248,6 +237,9 @@ pub fn link<R: tauri::Runtime>(
 
     use crate::editor::pty;
 
+    if crate::platform::OS.is_windows() {
+        bail!("claude setup-token: only on macOS");
+    }
     let exe = crate::setup::kit_path(kit, super::exe_of("claude").unwrap_or_default());
     if !exe.is_file() {
         bail!(
@@ -297,18 +289,6 @@ pub fn link<R: tauri::Runtime>(
         },
     )?;
     Ok(())
-}
-
-/// Windows keeps Claude Code's login in the kit's home already.
-#[cfg(not(unix))]
-pub fn link<R: tauri::Runtime>(
-    _app: &tauri::AppHandle<R>,
-    _kit: &Kit,
-    _env: &KitEnv,
-    _lang: &str,
-    _on_saved: impl FnOnce() + Send + 'static,
-) -> Result<()> {
-    bail!("claude setup-token: only on macOS")
 }
 
 #[cfg(test)]

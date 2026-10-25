@@ -59,6 +59,11 @@ pub fn all() -> Vec<Proc> {
     imp::all()
 }
 
+/// A process with this id runs (also one of another user).
+pub fn exists(pid: u32) -> bool {
+    imp::exists(pid)
+}
+
 /// Processes whose program is under `dir` (case as [`path_key`]).
 pub fn running_under(dir: &Path) -> Vec<Proc> {
     let prefix = prefix_of(dir);
