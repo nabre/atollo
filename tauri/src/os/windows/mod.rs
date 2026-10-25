@@ -3,6 +3,7 @@
 pub mod files;
 pub mod instance;
 pub mod jobs;
+pub mod lock;
 pub mod memory;
 pub mod processes;
 pub mod sessions;

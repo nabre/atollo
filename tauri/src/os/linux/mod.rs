@@ -9,7 +9,7 @@ pub mod processes;
 pub mod volume;
 pub mod webview;
 
-pub use super::unix::{files, instance, jobs, sessions, system, temp};
+pub use super::unix::{files, instance, jobs, lock, sessions, system, temp};
 
 use crate::kit::Os;
 

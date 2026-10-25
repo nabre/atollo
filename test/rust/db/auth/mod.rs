@@ -1,5 +1,5 @@
 use super::env::env_apply_text;
-use super::lock::KitLock;
+use super::lock::kit_lock;
 use super::names::{legacy_db_name, name_used_by};
 use super::project::ProjectSecrets;
 use super::*;
@@ -712,7 +712,7 @@ fn db_json_lock_waits_for_the_kit_lock() {
     let other = {
         let kit = kit.clone();
         std::thread::spawn(move || {
-            let lock = KitLock::take(&kit).unwrap();
+            let lock = kit_lock(&kit).unwrap();
             held_tx.send(()).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(400));
             let released = std::time::Instant::now();

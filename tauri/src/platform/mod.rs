@@ -12,6 +12,7 @@
 //! - `processes`, `sessions`: the PC's processes, the kit's programs open,
 //!   other kits, "Rimuovi l'unità";
 //! - `instance`: one app per kit (D-08);
+//! - `lock`: the kit's locks across its processes;
 //! - `volume`: the disk of a folder (D-90, D-105);
 //! - `temp`: the folders in transit (D-90);
 //! - `safe_path`: reading inside a project without following links (D-77);
@@ -20,6 +21,7 @@
 
 pub mod instance;
 pub mod jobs;
+pub mod lock;
 pub mod memory;
 pub mod processes;
 pub mod safe_path;
