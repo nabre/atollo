@@ -1100,12 +1100,12 @@
   "accesa": "allumée",
   "spenta": "éteinte",
   "Rimuovi davvero": "Supprimer vraiment",
-  "Si cancella il disco della sandbox: la sua home, /tmp e i database della VM. I file del progetto restano.": "Le disque de la sandbox est supprimé : son dossier personnel, /tmp et les bases de données de la VM. Les fichiers du projet restent.",
   "GitHub nella VM": "GitHub dans la VM",
   "Il progetto nella VM usa il tuo accesso a GitHub del kit (push, gh)": "Le projet dans la VM utilise ton accès GitHub du kit (push, gh)",
   "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi.": "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais le code du projet pourrait agir sur GitHub en ton nom : active-le seulement pour les projets de confiance.",
   "nella VM": "dans la VM",
   "Con la VM attiva gira nella VM, con la build per Linux: su questo sistema non serve.": "Avec la VM active il tourne dans la VM, avec la build pour Linux : il n'est pas nécessaire sur ce système.",
   "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": "Avec la VM active, chaque site tourne dans la VM de son projet : démarrez-le depuis la page du projet. Les serveurs partagés servent quand on travaille sans VM.",
-  "Docker Sandboxes (sbx) non è nel kit: l'ultima installazione non è riuscita ({0}).": "Docker Sandboxes (sbx) n'est pas dans le kit : sa dernière installation a échoué ({0})."
+  "Docker Sandboxes (sbx) non è nel kit: l'ultima installazione non è riuscita ({0}).": "Docker Sandboxes (sbx) n'est pas dans le kit : sa dernière installation a échoué ({0}).",
+  "Si cancella il disco della sandbox: la sua home, /tmp e le immagini Docker scaricate. I file e il database del progetto restano.": "Le disque de la sandbox est supprimé : son dossier personnel, /tmp et les images Docker téléchargées. Les fichiers et la base de données du projet restent."
 }
