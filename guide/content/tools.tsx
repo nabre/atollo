@@ -53,6 +53,12 @@ export const TOOLS: TopicTexts = {
             "Chaque ligne montre l'état sur le disque avec une icône : absent, pré-installé, installé, à mettre à jour, erreur.",
             "Jede Zeile zeigt den Status auf dem Datenträger mit einem Symbol: nicht vorhanden, vorinstalliert, installiert, zu aktualisieren, Fehler.",
           ),
+          tr(
+            "Con la VM attiva «Installa» prepara sul PC i componenti dell'app e per il Linux della VM gli strumenti scelti: sono quelli che girano nella VM. Uno strumento già sul PC resta, per quando la VM manca.",
+            "With the VM on, “Install” prepares the app's components on the PC and the chosen tools for the VM's Linux: they are the ones that run in the VM. A tool already on the PC stays, for when the VM is missing.",
+            "Avec la VM active, « Installer » prépare sur le PC les composants de l'application et pour le Linux de la VM les outils choisis : ce sont eux qui tournent dans la VM. Un outil déjà sur le PC reste, pour quand la VM manque.",
+            "Mit aktiver VM bereitet „Installieren“ auf dem PC die Komponenten der App vor und für das Linux der VM die gewählten Werkzeuge: Sie sind es, die in der VM laufen. Ein Werkzeug, das schon auf dem PC ist, bleibt, für den Fall, dass die VM fehlt.",
+          ),
         ]}
       />
 
@@ -159,10 +165,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor"),
               tr(
-                "Editor, PowerShell 7, GitHub CLI: sempre installati. Git: si sceglie, e arriva con Claude Code e Pi.",
-                "Editor, PowerShell 7, GitHub CLI: always installed. Git: your choice, and it comes with Claude Code and Pi.",
-                "Éditeur, PowerShell 7, GitHub CLI : toujours installés. Git : à choisir, et il arrive avec Claude Code et Pi.",
-                "Editor, PowerShell 7, GitHub CLI: immer installiert. Git: frei wählbar, und es kommt mit Claude Code und Pi.",
+                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (la VM dei progetti): sempre installati. Git: si sceglie, e arriva con Claude Code e Pi.",
+                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (the projects' VM): always installed. Git: your choice, and it comes with Claude Code and Pi.",
+                "Éditeur, PowerShell 7, GitHub CLI, Docker Sandboxes (la VM des projets) : toujours installés. Git : à choisir, et il arrive avec Claude Code et Pi.",
+                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (die VM der Projekte): immer installiert. Git: frei wählbar, und es kommt mit Claude Code und Pi.",
               ),
             ],
             [
@@ -990,6 +996,14 @@ export const TOOLS: TopicTexts = {
             "Die Matrix sagt, was möglich ist; die Tabelle „Alle Werkzeuge“ sagt, was wirklich auf dem Datenträger ist.",
           )}
         </Callout>
+        <P>
+          {tr(
+            "Con la VM attiva la colonna del Linux della VM porta il segno «VM», e nella colonna del sistema del PC uno strumento che la VM esegue con la sua build per Linux ha lo stato «nella VM»: su quel sistema non serve. Non vale per i componenti di sistema, le parti dell'app e ciò che si completa solo sul suo sistema (come Rust). Senza VM la Matrice è quella di sempre.",
+            "With the VM on, the column of the VM's Linux bears the “VM” mark, and in the column of the PC's system a tool the VM runs with its build for Linux has the state “in the VM”: it is not needed on that system. This does not apply to system components, the app's parts and what completes only on its own system (like Rust). Without the VM the Matrix is the usual one.",
+            "Avec la VM active, la colonne du Linux de la VM porte la marque « VM », et dans la colonne du système du PC un outil que la VM exécute avec sa build pour Linux a l'état « dans la VM » : il n'est pas nécessaire sur ce système. Cela ne vaut pas pour les composants système, les parties de l'application et ce qui ne se termine que sur son propre système (comme Rust). Sans VM, la Matrice est celle de toujours.",
+            "Mit aktiver VM trägt die Spalte des Linux der VM das Zeichen „VM“, und in der Spalte des PC-Systems hat ein Werkzeug, das die VM mit seinem Build für Linux ausführt, den Zustand „in der VM“: Auf diesem System wird es nicht gebraucht. Das gilt nicht für Systemkomponenten, Teile der App und das, was sich nur auf seinem eigenen System abschließt (wie Rust). Ohne VM ist die Matrix die gewohnte.",
+          )}
+        </P>
       </Section>
 
       <Section title={tr("Relazioni", "Relations", "Relations", "Beziehungen")}>

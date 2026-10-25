@@ -56,6 +56,12 @@ export const SETTINGS: TopicTexts = {
             "Avec la connexion, le nom et l'e-mail des commits se remplissent depuis le compte, avec l'adresse noreply de GitHub ; vous les changez dans « Qui signe les commits ».",
             "Mit der Anmeldung werden Name und E-Mail der Commits aus dem Konto gefüllt, mit der noreply-Adresse von GitHub; du änderst sie unter „Wer die Commits signiert“.",
           ),
+          tr(
+            "Nella VM di un progetto l'accesso arriva solo se lo accendi per quel progetto, con «GitHub nella VM» nella sua sezione «Git»; il token non entra mai nella VM.",
+            "In a project's VM the access arrives only if you turn it on for that project, with “GitHub in the VM” in its “Git” section; the token never enters the VM.",
+            "Dans la VM d'un projet, l'accès n'arrive que si vous l'activez pour ce projet, avec « GitHub dans la VM » dans sa section « Git » ; le jeton n'entre jamais dans la VM.",
+            "In der VM eines Projekts kommt der Zugang nur an, wenn du ihn für dieses Projekt einschaltest, mit „GitHub in der VM“ in seinem Abschnitt „Git“; das Token gelangt nie in die VM.",
+          ),
         ]}
       />
 

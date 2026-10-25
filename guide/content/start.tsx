@@ -199,6 +199,12 @@ export const START: TopicTexts = {
             "Es wird nicht installiert und verlangt keine Administratorrechte: Kopiere den Ordner auf einen anderen PC und du findest alles wieder, einschließlich der Projekte.",
           ),
           tr(
+            "Il suo cuore è il configuratore di Docker Sandboxes: ogni progetto gira in una microVM sua, che vede solo la sua cartella, con terminale, azioni, sito e agenti. Senza la VM tutto gira sul PC, e la barra di stato lo dice.",
+            "Its heart is the configurator of Docker Sandboxes: each project runs in a microVM of its own, which sees only its folder, with terminal, actions, website and agents. Without the VM everything runs on the PC, and the status bar says so.",
+            "Son cœur est le configurateur de Docker Sandboxes : chaque projet tourne dans sa propre microVM, qui ne voit que son dossier, avec terminal, actions, site et agents. Sans la VM, tout tourne sur le PC, et la barre d'état le dit.",
+            "Sein Herz ist der Konfigurator von Docker Sandboxes: Jedes Projekt läuft in einer eigenen microVM, die nur seinen Ordner sieht, mit Terminal, Aktionen, Website und Agenten. Ohne die VM läuft alles auf dem PC, und die Statusleiste sagt es.",
+          ),
+          tr(
             "Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, quattro agenti IA e i modelli linguistici locali.",
             "Inside you find languages in several versions, databases, web servers, an editor, consoles, Git and GitHub, four AI agents and local language models.",
             "À l'intérieur, vous trouvez des langages en plusieurs versions, des bases de données, des serveurs web, un éditeur, des consoles, Git et GitHub, quatre agents IA et des modèles de langage locaux.",
@@ -235,6 +241,17 @@ export const START: TopicTexts = {
             "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors (on ARM64 Windows 11 is needed).",
             "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64 (sur ARM64, Windows 11 est nécessaire).",
             "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren (auf ARM64 braucht es Windows 11).",
+          )}
+        </P>
+        <P>
+          {rich(
+            tr(
+              "E ogni progetto ha la sua stanza chiusa: una microVM di Docker Sandboxes, dove girano il terminale, le azioni, il sito e gli agenti del progetto con gli strumenti del kit per Linux. Il codice di un progetto non vede i tuoi file né gli altri progetti; i database restano sul PC, raggiungibili solo dalla porta del progetto. La VM chiede Windows 11 x64, un Mac con Apple silicon o Ubuntu 24.04, e un account Docker gratuito: dove manca, Atollo lavora sul PC e lo dice. I dettagli: {0}.",
+              "And each project has its own closed room: a Docker Sandboxes microVM, where the project's terminal, actions, website and agents run with the kit's tools for Linux. A project's code sees neither your files nor the other projects; the databases stay on the PC, reachable only through the project's port. The VM needs Windows 11 x64, a Mac with Apple silicon or Ubuntu 24.04, and a free Docker account: where it is missing, Atollo works on the PC and says so. The details: {0}.",
+              "Et chaque projet a sa propre pièce fermée : une microVM de Docker Sandboxes, où tournent le terminal, les actions, le site et les agents du projet avec les outils du kit pour Linux. Le code d'un projet ne voit ni vos fichiers ni les autres projets ; les bases de données restent sur le PC, joignables seulement par le port du projet. La VM demande Windows 11 x64, un Mac avec Apple silicon ou Ubuntu 24.04, et un compte Docker gratuit : là où elle manque, Atollo travaille sur le PC et le dit. Les détails : {0}.",
+              "Und jedes Projekt hat seinen eigenen geschlossenen Raum: eine microVM von Docker Sandboxes, in der Terminal, Aktionen, Website und Agenten des Projekts mit den Werkzeugen des Kits für Linux laufen. Der Code eines Projekts sieht weder deine Dateien noch die anderen Projekte; die Datenbanken bleiben auf dem PC, nur über den Port des Projekts erreichbar. Die VM braucht Windows 11 x64, einen Mac mit Apple Silicon oder Ubuntu 24.04 und ein kostenloses Docker-Konto: Wo sie fehlt, arbeitet Atollo auf dem PC und sagt es. Die Details: {0}.",
+            ),
+            <See key="v" id="vm" />,
           )}
         </P>
         <Callout tone="info" title={tr("A chi serve", "Who it is for", "À qui il s'adresse", "Für wen es gedacht ist")}>
@@ -276,6 +293,21 @@ export const START: TopicTexts = {
                 "Deine Arbeitsordner, jeder mit eigenen Aktionen, Versionen, Datenbank und Website.",
               ),
               tr("Progetti", "Projects", "Projets", "Projekte"),
+            ],
+            [
+              tr("La VM dei progetti", "The projects' VM", "La VM des projets", "Die VM der Projekte"),
+              tr(
+                "Docker Sandboxes: una microVM per ogni progetto e per ogni terminale del kit, che vede solo la sua cartella.",
+                "Docker Sandboxes: a microVM for each project and each kit terminal, which sees only its folder.",
+                "Docker Sandboxes : une microVM pour chaque projet et chaque terminal du kit, qui ne voit que son dossier.",
+                "Docker Sandboxes: eine microVM für jedes Projekt und jedes Terminal des Kits, die nur ihren Ordner sieht.",
+              ),
+              tr(
+                "Barra di stato › «VM» o «Senza VM»",
+                "Status bar › “VM” or “No VM”",
+                "Barre d'état › « VM » ou « Sans VM »",
+                "Statusleiste › „VM“ oder „Ohne VM“",
+              ),
             ],
             [
               tr("Linguaggi e strumenti", "Languages and tools", "Langages et outils", "Sprachen und Werkzeuge"),
@@ -320,10 +352,10 @@ export const START: TopicTexts = {
             [
               tr("Console", "Console", "Console", "Konsole"),
               tr(
-                "PowerShell 7 con tutti gli strumenti del kit già pronti.",
-                "PowerShell 7 with all the kit's tools ready to use.",
-                "PowerShell 7 avec tous les outils du kit déjà prêts.",
-                "PowerShell 7 mit allen Werkzeugen des Kits, sofort einsatzbereit.",
+                "PowerShell 7 con tutti gli strumenti del kit già pronti; con la VM, bash nella microVM con gli strumenti del kit per Linux.",
+                "PowerShell 7 with all the kit's tools ready to use; with the VM, bash in the microVM with the kit's tools for Linux.",
+                "PowerShell 7 avec tous les outils du kit déjà prêts ; avec la VM, bash dans la microVM avec les outils du kit pour Linux.",
+                "PowerShell 7 mit allen Werkzeugen des Kits, sofort einsatzbereit; mit der VM bash in der microVM mit den Werkzeugen des Kits für Linux.",
               ),
               tr("Terminali", "Terminals", "Terminaux", "Terminals"),
             ],
@@ -466,7 +498,7 @@ export const START: TopicTexts = {
 
       <KitInfo info={info} show="card" />
 
-      <Related ids={["first-run", "window", "first-project"]} />
+      <Related ids={["first-run", "window", "first-project", "vm"]} />
     </>
   ),
 
@@ -526,10 +558,10 @@ export const START: TopicTexts = {
               "Unter Windows heißt die Programmdatei Atollo.exe oder Atollo-<Version>-win32-x64.exe, so wie du sie von der Release-Seite herunterlädst. Unter macOS ist es Atollo.app, unter Linux eine AppImage-Datei.",
             ),
             tr(
-              "Spazio: la scelta proposta al primo avvio occupa circa 1,8 GB. Ogni linguaggio o versione in più aggiunge spazio, e i progetti con le loro dipendenze crescono nel tempo: su una chiavetta conviene avere almeno 16 GB liberi.",
-              "Space: the choice suggested at the first start takes about 1.8 GB. Each extra language or version adds space, and projects with their dependencies grow over time: on a USB stick it is best to have at least 16 GB free.",
-              "Espace : le choix proposé au premier lancement occupe environ 1,8 Go. Chaque langage ou version en plus ajoute de l'espace, et les projets avec leurs dépendances grossissent avec le temps : sur une clé, mieux vaut avoir au moins 16 Go libres.",
-              "Speicherplatz: Die beim ersten Start vorgeschlagene Auswahl belegt etwa 1,8 GB. Jede weitere Sprache oder Version braucht zusätzlichen Platz, und Projekte mit ihren Abhängigkeiten wachsen mit der Zeit: Auf einem USB-Stick sollten mindestens 16 GB frei sein.",
+              "Spazio: la scelta proposta al primo avvio occupa circa 2,3 GB. Ogni linguaggio o versione in più aggiunge spazio, e i progetti con le loro dipendenze crescono nel tempo: su una chiavetta conviene avere almeno 16 GB liberi.",
+              "Space: the choice suggested at the first start takes about 2.3 GB. Each extra language or version adds space, and projects with their dependencies grow over time: on a USB stick it is best to have at least 16 GB free.",
+              "Espace : le choix proposé au premier lancement occupe environ 2,3 Go. Chaque langage ou version en plus ajoute de l'espace, et les projets avec leurs dépendances grossissent avec le temps : sur une clé, mieux vaut avoir au moins 16 Go libres.",
+              "Speicherplatz: Die beim ersten Start vorgeschlagene Auswahl belegt etwa 2,3 GB. Jede weitere Sprache oder Version braucht zusätzlichen Platz, und Projekte mit ihren Abhängigkeiten wachsen mit der Zeit: Auf einem USB-Stick sollten mindestens 16 GB frei sein.",
             ),
             tr(
               "Velocità: un SSD esterno è molto più veloce di una chiavetta economica. Il kit funziona su entrambi, ma installare pacchetti con npm o Composer su una chiavetta lenta richiede pazienza.",
@@ -575,10 +607,10 @@ export const START: TopicTexts = {
         >
           <P>
             {tr(
-              "Su Windows il formato migliore è NTFS: è l'unico che permette al kit di proteggere le cartelle con le password (database, accessi) in modo che le legga solo il tuo utente, e di usare collegamenti al posto delle copie. Su exFAT e FAT32 il kit funziona, ma senza quella protezione; FAT32 inoltre non accetta file più grandi di 4 GB. Se usi la stessa chiavetta su Windows, macOS e Linux, exFAT è il formato che tutti leggono e scrivono: in quel caso tieni presente che i collegamenti diventano copie.",
-              "On Windows the best format is NTFS: it is the only one that lets the kit protect the folders holding passwords (databases, sign-ins) so that only your user can read them, and use links instead of copies. On exFAT and FAT32 the kit works, but without that protection; FAT32 also does not accept files larger than 4 GB. If you use the same USB stick on Windows, macOS and Linux, exFAT is the format all of them can read and write: in that case keep in mind that links become copies.",
-              "Sous Windows, le meilleur format est NTFS : c'est le seul qui permet au kit de protéger les dossiers contenant des mots de passe (bases de données, connexions) pour que seul votre utilisateur puisse les lire, et d'utiliser des liens au lieu de copies. Sur exFAT et FAT32, le kit fonctionne, mais sans cette protection ; FAT32 n'accepte pas non plus les fichiers de plus de 4 Go. Si vous utilisez la même clé sous Windows, macOS et Linux, exFAT est le format que tous lisent et écrivent : dans ce cas, gardez à l'esprit que les liens deviennent des copies.",
-              "Unter Windows ist NTFS das beste Format: Es ist das einzige, mit dem das Kit die Ordner mit Passwörtern (Datenbanken, Anmeldungen) so schützen kann, dass nur dein Benutzer sie lesen kann, und Verknüpfungen statt Kopien verwenden kann. Auf exFAT und FAT32 funktioniert das Kit, aber ohne diesen Schutz; FAT32 akzeptiert außerdem keine Dateien über 4 GB. Wenn du denselben USB-Stick unter Windows, macOS und Linux verwendest, ist exFAT das Format, das alle lesen und schreiben können: Denk in diesem Fall daran, dass Verknüpfungen zu Kopien werden.",
+              "Su Windows il formato migliore è NTFS: è l'unico che permette al kit di proteggere le cartelle con le password (database, accessi) in modo che le legga solo il tuo utente, e di usare collegamenti al posto delle copie. Su exFAT e FAT32 il kit funziona, ma senza quella protezione; FAT32 inoltre non accetta file più grandi di 4 GB. Se usi la stessa chiavetta su Windows, macOS e Linux, exFAT è il formato che tutti leggono e scrivono: in quel caso tieni presente che i collegamenti diventano copie. Su exFAT e FAT32, però, la VM dei progetti non parte: i suoi dischi chiedono NTFS (o APFS ed ext4 su macOS e Linux).",
+              "On Windows the best format is NTFS: it is the only one that lets the kit protect the folders holding passwords (databases, sign-ins) so that only your user can read them, and use links instead of copies. On exFAT and FAT32 the kit works, but without that protection; FAT32 also does not accept files larger than 4 GB. If you use the same USB stick on Windows, macOS and Linux, exFAT is the format all of them can read and write: in that case keep in mind that links become copies. On exFAT and FAT32, though, the projects' VM does not start: its disks need NTFS (or APFS and ext4 on macOS and Linux).",
+              "Sous Windows, le meilleur format est NTFS : c'est le seul qui permet au kit de protéger les dossiers contenant des mots de passe (bases de données, connexions) pour que seul votre utilisateur puisse les lire, et d'utiliser des liens au lieu de copies. Sur exFAT et FAT32, le kit fonctionne, mais sans cette protection ; FAT32 n'accepte pas non plus les fichiers de plus de 4 Go. Si vous utilisez la même clé sous Windows, macOS et Linux, exFAT est le format que tous lisent et écrivent : dans ce cas, gardez à l'esprit que les liens deviennent des copies. Sur exFAT et FAT32, cependant, la VM des projets ne démarre pas : ses disques demandent NTFS (ou APFS et ext4 sur macOS et Linux).",
+              "Unter Windows ist NTFS das beste Format: Es ist das einzige, mit dem das Kit die Ordner mit Passwörtern (Datenbanken, Anmeldungen) so schützen kann, dass nur dein Benutzer sie lesen kann, und Verknüpfungen statt Kopien verwenden kann. Auf exFAT und FAT32 funktioniert das Kit, aber ohne diesen Schutz; FAT32 akzeptiert außerdem keine Dateien über 4 GB. Wenn du denselben USB-Stick unter Windows, macOS und Linux verwendest, ist exFAT das Format, das alle lesen und schreiben können: Denk in diesem Fall daran, dass Verknüpfungen zu Kopien werden. Auf exFAT und FAT32 startet die VM der Projekte allerdings nicht: Ihre Festplatten brauchen NTFS (oder APFS und ext4 unter macOS und Linux).",
             )}
           </P>
           <P>
@@ -634,16 +666,16 @@ export const START: TopicTexts = {
             [
               tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor"),
               tr(
-                "L'editor, PowerShell 7 (la console del kit), GitHub CLI e Git. Sotto, i requisiti del PC.",
-                "The editor, PowerShell 7 (the kit's console), GitHub CLI and Git. Below, the PC requirements.",
-                "L'éditeur, PowerShell 7 (la console du kit), GitHub CLI et Git. En dessous, les prérequis du PC.",
-                "Der Editor, PowerShell 7 (die Konsole des Kits), GitHub CLI und Git. Darunter die Anforderungen an den PC.",
+                "L'editor, PowerShell 7 (la console del kit), GitHub CLI, Docker Sandboxes (la VM dei progetti) e Git. Sotto, i requisiti del PC.",
+                "The editor, PowerShell 7 (the kit's console), GitHub CLI, Docker Sandboxes (the projects' VM) and Git. Below, the PC requirements.",
+                "L'éditeur, PowerShell 7 (la console du kit), GitHub CLI, Docker Sandboxes (la VM des projets) et Git. En dessous, les prérequis du PC.",
+                "Der Editor, PowerShell 7 (die Konsole des Kits), GitHub CLI, Docker Sandboxes (die VM der Projekte) und Git. Darunter die Anforderungen an den PC.",
               ),
               tr(
-                "L'editor, PowerShell 7 e GitHub CLI sono sempre installati, insieme agli altri, quando premi «Installa»: le loro caselle sono bloccate. Git si sceglie, e arriva comunque con Claude Code e Pi.",
-                "The editor, PowerShell 7 and GitHub CLI are always installed, together with the others, when you press “Install”: their checkboxes are locked. Git is your choice, and it comes anyway with Claude Code and Pi.",
-                "L'éditeur, PowerShell 7 et GitHub CLI sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : leurs cases sont verrouillées. Git est à choisir, et il arrive de toute façon avec Claude Code et Pi.",
-                "Der Editor, PowerShell 7 und GitHub CLI werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Ihre Kontrollkästchen sind gesperrt. Git wählst du selbst, und es kommt ohnehin mit Claude Code und Pi.",
+                "L'editor, PowerShell 7, GitHub CLI e Docker Sandboxes sono sempre installati, insieme agli altri, quando premi «Installa»: le loro caselle sono bloccate. Docker Sandboxes solo dove Docker lo pubblica (non su Windows ARM64 né sui Mac Intel). Git si sceglie, e arriva comunque con Claude Code e Pi.",
+                "The editor, PowerShell 7, GitHub CLI and Docker Sandboxes are always installed, together with the others, when you press “Install”: their checkboxes are locked. Docker Sandboxes only where Docker publishes it (not on Windows ARM64 nor on Intel Macs). Git is your choice, and it comes anyway with Claude Code and Pi.",
+                "L'éditeur, PowerShell 7, GitHub CLI et Docker Sandboxes sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : leurs cases sont verrouillées. Docker Sandboxes seulement là où Docker le publie (ni sur Windows ARM64 ni sur les Mac Intel). Git est à choisir, et il arrive de toute façon avec Claude Code et Pi.",
+                "Der Editor, PowerShell 7, GitHub CLI und Docker Sandboxes werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Ihre Kontrollkästchen sind gesperrt. Docker Sandboxes nur dort, wo Docker es veröffentlicht (nicht unter Windows ARM64 und nicht auf Intel-Macs). Git wählst du selbst, und es kommt ohnehin mit Claude Code und Pi.",
               ),
             ],
             [
@@ -740,10 +772,10 @@ export const START: TopicTexts = {
         />
         <P>
           {tr(
-            "La scelta proposta comprende Claude Code, Codex e Antigravity (non Pi né llama.cpp), Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 1,8 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
-            "The suggested choice includes Claude Code, Codex and Antigravity (not Pi or llama.cpp), Python, PHP with Apache and the “System and editor” components, Git included. About 1.8 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
-            "Le choix proposé comprend Claude Code, Codex et Antigravity (ni Pi ni llama.cpp), Python, PHP avec Apache et les composants de « Système et éditeur », Git compris. En tout, environ 1,8 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
-            "Die vorgeschlagene Auswahl umfasst Claude Code, Codex und Antigravity (weder Pi noch llama.cpp), Python, PHP mit Apache und die Komponenten von „System und Editor“, Git inklusive. Insgesamt etwa 1,8 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
+            "La scelta proposta comprende Claude Code, Codex e Antigravity (non Pi né llama.cpp), Python, PHP con Apache e i componenti di «Sistema ed editor», Git compreso. In tutto circa 2,3 GB. Quando spunti un componente, il kit spunta anche quelli di cui ha bisogno (per esempio Kotlin porta con sé Java, phpMyAdmin porta PHP e MySQL).",
+            "The suggested choice includes Claude Code, Codex and Antigravity (not Pi or llama.cpp), Python, PHP with Apache and the “System and editor” components, Git included. About 2.3 GB in all. When you tick a component, the kit also ticks the ones it needs (for example Kotlin brings Java with it, phpMyAdmin brings PHP and MySQL).",
+            "Le choix proposé comprend Claude Code, Codex et Antigravity (ni Pi ni llama.cpp), Python, PHP avec Apache et les composants de « Système et éditeur », Git compris. En tout, environ 2,3 Go. Quand vous cochez un composant, le kit coche aussi ceux dont il a besoin (par exemple Kotlin apporte Java, phpMyAdmin apporte PHP et MySQL).",
+            "Die vorgeschlagene Auswahl umfasst Claude Code, Codex und Antigravity (weder Pi noch llama.cpp), Python, PHP mit Apache und die Komponenten von „System und Editor“, Git inklusive. Insgesamt etwa 2,3 GB. Wenn du eine Komponente ankreuzt, kreuzt das Kit auch die an, die sie braucht (zum Beispiel bringt Kotlin Java mit, phpMyAdmin bringt PHP und MySQL mit).",
           )}
         </P>
         <Steps
@@ -774,6 +806,25 @@ export const START: TopicTexts = {
             ),
           ]}
         />
+        <Callout
+          tone="info"
+          title={tr(
+            "Poi, l'accesso a Docker",
+            "Then, the Docker sign-in",
+            "Ensuite, la connexion à Docker",
+            "Dann die Anmeldung bei Docker",
+          )}
+        >
+          {rich(
+            tr(
+              "Arrivato Docker Sandboxes, la barra di stato mostra «Senza VM» finché non accedi con un account Docker gratuito: fai clic sull'avviso, premi «Lancia» accanto a sbx login, accedi nel browser e poi «Ricontrolla». Se il PC non è pronto per la VM, la stessa finestra dice perché: {0}.",
+              "Once Docker Sandboxes has arrived, the status bar shows “No VM” until you sign in with a free Docker account: click the notice, press “Run” next to sbx login, sign in in the browser and then “Check again”. If the PC is not ready for the VM, the same window tells why: {0}.",
+              "Une fois Docker Sandboxes arrivé, la barre d'état affiche « Sans VM » jusqu'à ce que vous vous connectiez avec un compte Docker gratuit : cliquez sur l'avis, appuyez sur « Lancer » à côté de sbx login, connectez-vous dans le navigateur puis « Vérifier à nouveau ». Si le PC n'est pas prêt pour la VM, la même fenêtre dit pourquoi : {0}.",
+              "Sobald Docker Sandboxes da ist, zeigt die Statusleiste „Ohne VM“, bis du dich mit einem kostenlosen Docker-Konto anmeldest: Klicke auf den Hinweis, drücke „Starten“ neben sbx login, melde dich im Browser an und dann „Erneut prüfen“. Ist der PC nicht bereit für die VM, sagt dasselbe Fenster, warum: {0}.",
+            ),
+            <See key="v" id="vm" />,
+          )}
+        </Callout>
         <Callout tone="tip">
           {tr(
             "Al primo avvio non si scelgono le versioni: di ogni linguaggio si installa la più recente. Le altre versioni si aggiungono dopo, dalla pagina Strumenti.",
@@ -889,7 +940,7 @@ export const START: TopicTexts = {
         </Under>
       </Section>
 
-      <Related ids={["window", "first-project", "tools", "network"]} />
+      <Related ids={["window", "first-project", "vm", "tools", "network"]} />
     </>
   ),
 
@@ -1016,10 +1067,10 @@ export const START: TopicTexts = {
             [
               tr("6 · Barra di stato", "6 · Status bar", "6 · Barre d'état", "6 · Statusleiste"),
               tr(
-                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori, che mostra o nasconde il pannello «Attività»; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64) e, per ultima, la versione di Atollo: un clic cerca gli aggiornamenti, e accanto compare l'esito (un segno di spunta, la versione nuova o un avviso).",
-                "On the left the Atollo item and the counter of what is running and of the errors, which shows or hides the “Activity” panel; on the right the open terminals, the editor status, the system (for example win32-x64) and, last, the Atollo version: a click checks for updates, and the result appears beside it (a check mark, the new version or a warning).",
-                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs, qui affiche ou masque le panneau « Activité » ; à droite, les terminaux ouverts, l'état de l'éditeur, le système (par exemple win32-x64) et, en dernier, la version d'Atollo : un clic recherche les mises à jour, et le résultat s'affiche à côté (une coche, la nouvelle version ou un avertissement).",
-                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler, der den Bereich „Aktivität“ ein- oder ausblendet; rechts die geöffneten Terminals, der Status des Editors, das System (zum Beispiel win32-x64) und als Letztes die Atollo-Version: Ein Klick sucht nach Updates, daneben erscheint das Ergebnis (ein Häkchen, die neue Version oder eine Warnung).",
+                "A sinistra la voce Atollo e il contatore di ciò che è in esecuzione e degli errori, che mostra o nasconde il pannello «Attività», e accanto «VM» o «Senza VM»; a destra i terminali aperti, lo stato dell'editor, il sistema (per esempio win32-x64) e, per ultima, la versione di Atollo: un clic cerca gli aggiornamenti, e accanto compare l'esito (un segno di spunta, la versione nuova o un avviso).",
+                "On the left the Atollo item and the counter of what is running and of the errors, which shows or hides the “Activity” panel, and beside it “VM” or “No VM”; on the right the open terminals, the editor status, the system (for example win32-x64) and, last, the Atollo version: a click checks for updates, and the result appears beside it (a check mark, the new version or a warning).",
+                "À gauche, l'élément Atollo et le compteur de ce qui est en cours d'exécution et des erreurs, qui affiche ou masque le panneau « Activité », et à côté « VM » ou « Sans VM » ; à droite, les terminaux ouverts, l'état de l'éditeur, le système (par exemple win32-x64) et, en dernier, la version d'Atollo : un clic recherche les mises à jour, et le résultat s'affiche à côté (une coche, la nouvelle version ou un avertissement).",
+                "Links das Element Atollo und der Zähler dessen, was läuft, und der Fehler, der den Bereich „Aktivität“ ein- oder ausblendet, und daneben „VM“ oder „Ohne VM“; rechts die geöffneten Terminals, der Status des Editors, das System (zum Beispiel win32-x64) und als Letztes die Atollo-Version: Ein Klick sucht nach Updates, daneben erscheint das Ergebnis (ein Häkchen, die neue Version oder eine Warnung).",
               ),
             ],
           ]}
@@ -1068,6 +1119,21 @@ export const START: TopicTexts = {
                 "Opens or closes the “Activity” panel.",
                 "Ouvre ou ferme le panneau « Activité ».",
                 "Öffnet oder schließt den Bereich „Aktivität“.",
+              ),
+            ],
+            [
+              tr("VM · Senza VM", "VM · No VM", "VM · Sans VM", "VM · Ohne VM"),
+              tr(
+                "«VM» quando ogni progetto gira nella sua microVM; «Senza VM», sul colore di avviso, quando i progetti girano sul PC.",
+                "“VM” when each project runs in its microVM; “No VM”, on the warning color, when the projects run on the PC.",
+                "« VM » quand chaque projet tourne dans sa microVM ; « Sans VM », sur la couleur d'avertissement, quand les projets tournent sur le PC.",
+                "„VM“, wenn jedes Projekt in seiner microVM läuft; „Ohne VM“, in der Warnfarbe, wenn die Projekte auf dem PC laufen.",
+              ),
+              tr(
+                "Apre la finestra della VM: perché non è attiva e che cosa fare, «Ricontrolla» e le sandbox.",
+                "Opens the VM's window: why it is not on and what to do, “Check again” and the sandboxes.",
+                "Ouvre la fenêtre de la VM : pourquoi elle n'est pas active et quoi faire, « Vérifier à nouveau » et les sandbox.",
+                "Öffnet das Fenster der VM: warum sie nicht aktiv ist und was zu tun ist, „Erneut prüfen“ und die Sandboxes.",
               ),
             ],
             [
@@ -1334,6 +1400,17 @@ export const START: TopicTexts = {
             ),
           ]}
         />
+        <Callout tone="info">
+          {rich(
+            tr(
+              "Con la VM attiva («VM» nella barra di stato) npm run dev gira nella microVM del progetto, con il Node.js del kit per Linux, e la porta arriva su localhost del PC: per te non cambia niente. «Ferma» la ferma dentro la VM. I dettagli: {0}.",
+              "With the VM on (“VM” in the status bar) npm run dev runs in the project's microVM, with the kit's Node.js for Linux, and the port reaches the PC's localhost: for you nothing changes. “Stop” stops it inside the VM. The details: {0}.",
+              "Avec la VM active (« VM » dans la barre d'état), npm run dev tourne dans la microVM du projet, avec le Node.js du kit pour Linux, et le port arrive sur le localhost du PC : pour vous, rien ne change. « Arrêter » l'arrête dans la VM. Les détails : {0}.",
+              "Mit aktiver VM („VM“ in der Statusleiste) läuft npm run dev in der microVM des Projekts, mit dem Node.js des Kits für Linux, und der Port kommt auf localhost des PCs an: Für dich ändert sich nichts. „Beenden“ beendet sie in der VM. Die Details: {0}.",
+            ),
+            <See key="v" id="vm" />,
+          )}
+        </Callout>
       </Section>
 
       <Section

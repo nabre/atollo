@@ -68,6 +68,12 @@ export const AGENTS: TopicTexts = {
             "La connexion à votre compte se fait au premier lancement de l'agent et reste dans le kit, même sur un autre PC.",
             "Die Anmeldung bei deinem Konto erfolgt beim ersten Start des Agenten und bleibt im Kit, auch auf einem anderen PC.",
           ),
+          tr(
+            "Con la VM attiva Claude Code e Codex partono in una sandbox di agente di Docker Sandboxes, che vede solo il progetto, con gli accessi gestiti da Docker Sandboxes; Antigravity e Pi lì non partono. Per ora l'agente nella VM non ha gli strumenti, il database e i server MCP del progetto.",
+            "With the VM on, Claude Code and Codex start in a Docker Sandboxes agent sandbox, which sees only the project, with the sign-ins managed by Docker Sandboxes; Antigravity and Pi do not start there. For now the agent in the VM does not have the project's tools, database and MCP servers.",
+            "Avec la VM active, Claude Code et Codex démarrent dans une sandbox d'agent de Docker Sandboxes, qui ne voit que le projet, avec les connexions gérées par Docker Sandboxes ; Antigravity et Pi n'y démarrent pas. Pour l'instant, l'agent dans la VM n'a pas les outils, la base de données et les serveurs MCP du projet.",
+            "Mit aktiver VM starten Claude Code und Codex in einer Agenten-Sandbox von Docker Sandboxes, die nur das Projekt sieht, mit den von Docker Sandboxes verwalteten Anmeldungen; Antigravity und Pi starten dort nicht. Vorerst hat der Agent in der VM die Werkzeuge, die Datenbank und die MCP-Server des Projekts nicht.",
+          ),
         ]}
       />
 
@@ -498,7 +504,7 @@ export const AGENTS: TopicTexts = {
         </Under>
       </Section>
 
-      <Related ids={["agents-shared", "agents-usage", "models", "settings"]} />
+      <Related ids={["agents-shared", "agents-usage", "models", "vm"]} />
     </>
   ),
 

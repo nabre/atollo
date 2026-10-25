@@ -9,8 +9,8 @@ How Atollo's code is organized and where a new change goes. The reasons behind t
 From the initial prompt (October 13-14, 2026), valid for every change; each one has a test or an item in the TESTING.md checklist.
 
 1. **No installation**: a single executable (on macOS the `.app` bundle, on Linux the AppImage), no installer, service or scheduled task.
-2. **No administrator rights** (`asInvoker` manifest on Windows).
-3. **No writes outside the kit**: no registry, system `PATH`, real `%APPDATA%`, `%LOCALAPPDATA%` or `%TEMP%`; the only exceptions are the ones declared in the README (D-41, D-70, D-90, D-115).
+2. **No administrator rights** (`asInvoker` manifest on Windows). What only an administrator can do for Docker Sandboxes (turning on the hypervisor, an AppArmor profile on Ubuntu) Atollo never does: the "No VM" notice shows the command to copy (D-167).
+3. **No writes outside the kit**: no registry, system `PATH`, real `%APPDATA%`, `%LOCALAPPDATA%` or `%TEMP%`; the only exceptions are the ones declared in the README (D-41, D-70, D-90, D-115) and, for Docker Sandboxes, the ones D-175 lists (the Docker sign-in of `sbx login`, the per-sandbox secret commands in the system's credential store, the daemon's `sboxd-<id>` junction and `gvisor` folder in the system temp, the AppArmor profile on Ubuntu). Sandboxes, disks, images, settings and logs of `sbx` stay in `data`.
 4. **Paths relative to the kit root**, which works from any folder (spaces, parentheses, `&`) and after a move (relocation at startup).
 5. **WebView in the kit**: the system WebView2 or a fixed one in `data\apps\…\webview2\`, never the bootstrapper; WebView data in `data\webview2\` (on macOS it stays in `~/Library/WebKit`, a declared trace).
 6. **Always the kit's environment**: every process started gets the environment from `env\`, never the user's `PATH` unfiltered.
@@ -20,7 +20,7 @@ From the initial prompt (October 13-14, 2026), valid for every change; each one 
 
 ## Startup
 
-`main.rs`: command line read → kit root → creation of `data\`, write check, kit move (`root.txt`) → log, one folder per version (`versions::migrate`), versions side by side, cleanup of the old copy of the exe, app version → Gemini key out of `settings.json` (`settings::move_secrets`) → settings → disk that runs no program: stop (D-105) → certificate bundle (`net::ca::refresh`) → kit environment, applied to the process → files in `data\kit\` → if there is a command, it runs it and exits → single instance (D-08) → migration of the projects' data, Nginx pools and sites to Caddy (`servers::migrate`, D-120), temp cleanup, kept conda packages (`install::conda::sweep`) → WebView2 (or WebKitGTK on Linux) → Job Object, or guard on macOS and Linux → `main` window with the theme of the settings → in the background the databases and the pools marked "Start with Atollo"; installation of the missing required components and of the editor of another release (not before the first start's choice, D-137); pending Antigravity sign-in, Git helper and identity (`github::sync_git`), agent sync, agent watcher; version lists after 10 s and update check after 20 s (neither with `ATOLLO_NO_UPDATE`).
+`main.rs`: command line read → kit root → creation of `data\`, write check, kit move (`root.txt`) → log, one folder per version (`versions::migrate`), versions side by side, cleanup of the old copy of the exe, app version → Gemini key out of `settings.json` (`settings::move_secrets`) → settings → disk that runs no program: stop (D-105) → certificate bundle (`net::ca::refresh`) → kit environment, applied to the process → files in `data\kit\` → if there is a command, it runs it and exits → single instance (D-08) → migration of the projects' data, Nginx pools and sites to Caddy (`servers::migrate`, D-120), temp cleanup, kept conda packages (`install::conda::sweep`) → WebView2 (or WebKitGTK on Linux) → Job Object, or guard on macOS and Linux → `main` window with the theme of the settings → in the background the databases and the pools marked "Start with Atollo" (the pools not while the VM is on, D-175); installation of the missing required components and of the editor of another release (not before the first start's choice, D-137), and Docker Sandboxes again every hour while a failed installation left the kit without it (`isolation::install_failure`, D-175); pending Antigravity sign-in, Git helper and identity (`github::sync_git`), agent sync, agent watcher; version lists after 10 s and update check after 20 s (neither with `ATOLLO_NO_UPDATE`). At shutdown and before "Remove the drive", `isolation::stop_daemon` stops the daemon of the kit's Docker Sandboxes (`app\mod.rs`, `ipc\window.rs`).
 
 ## Repository
 
@@ -45,14 +45,16 @@ test\rust\  test\ui\          tests, with the same structure as tauri\src and ui
 runtime\                      files written to data\kit\ (profile.ps1, bashrc, loopback.js, php-router.php,
                               fcgi-guard.php, phpmyadmin.php, bin\…)
 scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
-                              test-linux.sh, cross-check\, build-httpd\, build-php\; lib\shots.mjs (browser,
-                              preview, languages and labels shared by the screenshot scripts and the site)
+                              test-linux.sh, cross-check\, build-httpd\, build-php\, build-mongo-express\;
+                              lib\shots.mjs (browser, preview, languages and labels shared by the screenshot
+                              scripts and the site)
 site\                         the site (build.mjs, strings\, landing.html, partials\; guide.mjs and guide.html,
                               the Guide's pages); shots\ (screenshots per language)
-docs\app\                     decisions, architecture, catalog, tests, changelog, guide, TOOLS-MATRIX.html
+docs\                         README.{it,fr,de}.md and PRIVACY*.md (the README in English stays in the root)
+docs\app\                     decisions, architecture, catalog, tests, changelog, TOOLS-MATRIX.html
 docs\brand\                   logo, themes, the scripts that generate them; vscodium-1.135\ (the workbench
-                              reference); social.png (the social card), brand.png (the brand board)
-docs\reports\                 analysis reports v1-v5
+                              reference); social.png (the social card), brand.png (the brand board); MARKETING.md
+docs\reports\                 analysis reports v1-v8
 ```
 
 Only the configuration files (workspace, lint, formatting, CI) and the README stay in the root.
@@ -90,13 +92,18 @@ tauri\src\
                               secrets masked, D-153), health ("Kit health", `Atollo check --kit`: drive, free
                               space, path, permissions, libraries, D-155)
   setup\                      components and installation
-    catalog  needs            embedded catalog, components.txt; what agents, clone, actions need (D-59)
-    runner  task              plan and steps of a setup; the setup started from the window
+    catalog  needs            embedded catalog (`minVersion`: `Component::outdated`), components.txt; what
+                              agents, clone, actions need (D-59)
+    runner  task              plan and steps of a setup, its scope (`Scope`: All, System, Tools, D-173); the
+                              setup started from the window
     checkup  downloads        final check (D-39); files downloaded by hand (D-82)
+    integrity  updates        "Check the files" (`.atollo-manifest`, D-159); components with a new version
+                              (data\app\updates.json, D-161)
     kit_files  self_update    files written to data\kit\; new version of the exe
-  install\                    one installer per family: core, agents (Pi too), llama (llama.cpp, D-151), web, caddy,
-                              native, editor, db, android, conpty (the kit's ConPTY);
-                              conda (packages kept to reinstall without the network, D-118); the shared path:
+  install\                    one installer per family: core, agents (Pi too), llama (llama.cpp, D-151), web\, caddy,
+                              native\, editor, db\, android, conpty (the kit's ConPTY), sandboxes (Docker
+                              Sandboxes, D-167: the per-user MSI extracted without installing it, `check_tree`);
+                              conda\ (packages kept to reinstall without the network, D-118); the shared path:
                               mod (types, Installer, registry), flow, parts, keys
     lang\                     one file per language or family: go, jvm, dotnet, dart, zig, julia,
                               js (Bun, Deno), typeset (Typst, TinyTeX), cc (CMake, C/C++), ruby
@@ -145,24 +152,30 @@ tauri\src\
                               that keeps the token out of the agent's environment (SEC-V7-01)
   db\                         databases
     engine                    DbEngine: MySQL, MongoDB (D-110)
-    services\                 kit servers (D-73): mod (settings, start, stop, one operation at a time per engine:
-                              D-140), data (folders and ports per version), access (passwords and databases
-                              of the projects), backups (D-78), tools (login files), mysql (initialization,
-                              my.cnf, libaio: D-110)
-    auth  phpmyadmin          passwords and .env (D-74); phpMyAdmin (D-107), mongo-express and web_admin (D-147)
+    services\                 kit servers (D-73): mod (start, stop, one operation at a time per engine: D-140),
+                              settings (services.json), process (a server's life, automatic start), data
+                              (folders and ports per version), access (passwords and databases of the
+                              projects), projects (the projects' versions, deletion), backups (D-78), tools
+                              (login files), mysql (initialization, my.cnf, libaio: D-110)
+    auth\                     passwords and .env (D-74): mod, env, project, names, scripts, lock
+    phpmyadmin  mongo_express phpMyAdmin (D-107); mongo-express (D-147)
+    web_admin                 what the two share: a loopback address and a port of their own, a token (D-141)
   github\                     the kit's GitHub account (D-70): mod (sign-in, Git helper), repos (list, clone,
                               rename, deletion)
-  isolation\                  how shut in the projects' programs are (D-167): the VM (Docker Sandboxes, `sbx`)
-                              or the kit's environment, the reasons the VM is off; the status bar's notice
+  isolation\                  Docker Sandboxes, Atollo's core (D-167…D-175; below, "Isolation"): mod (status,
+                              `Level`, `Blocker`, the kit's `Sbx`, `Vm`, `seal`), vm (the `sbx` arguments and
+                              the paths in the VM), daemon (whose the daemon is, `SETTINGS`), kit (each
+                              sandbox's kit in data\app\sandboxes), secrets (`Atollo secret github`)
   llm\                        local models (D-151): catalog (catalog\models.json), hf (any Hugging Face repository,
                               GGUF files grouped by quantization), local (data\models\gguf and atollo.json), pull
                               (downloads, FAT32 and free space checked first), presets (data\app\llm\presets.ini),
                               service (llama-server in router mode on 127.0.0.1, its job, one operation at a time),
                               settings (data\app\llm.json, port, key), cli (models, llm)
-  net\                        network: mod (HTTPS, the proxy of the settings, GitHub API), ca (the PEM file of the
-                              settings, data\app\ca-bundle.pem: D-137), verify (SHA), archive (extraction, folder
+  net\                        network: mod (HTTPS, the proxy of the settings), github (releases with ETags,
+                              checksums, the account's calls), ca (the PEM file of the settings,
+                              data\app\ca-bundle.pem: D-137), verify (SHA), archive\ (extraction, links, folder
                               swap), resume (large downloads: <file>.part resumed with Range, SHA-256 while the
-                              bytes arrive, D-151)
+                              bytes arrive, D-151), lan (the site's address on the local network and its QR, D-158)
   router\                     targets (Windows, macOS, Linux × x64, ARM64): target, bins (programs and launchers
                               per system), probe (what is on disk, health), bootstrap (setup for another system,
                               D-114), availability (why a component cannot be installed on a target)
@@ -175,9 +188,38 @@ tauri\src\
 The engine looks at which system it is built for only in `os\` (D-166): everywhere else there is no `#[cfg(windows)]`, `#[cfg(unix)]`, `#[cfg(target_os = …)]` or `cfg!(…)`, no crate of one system (`libc`, `windows`, `webview2_com`, `junction`, `portable_pty`, `rfd`, `dbus_secret_service`) and no `std::os::<system>`. `test\rust\os\rule.rs` checks it, comments and strings left out.
 
 - **`platform\`** is the API the engine calls, the same on every system, with the logic that is the same everywhere: `jobs` (the programs the kit starts, none outliving the app: D-07, D-105; the system shell and its quoting), `processes`, `sessions` (the kit's programs open, other kits, "Remove the drive"), `instance` (one app per kit, D-08), `lock` (the kit's locks across its processes: the preparation, `db.json`, Antigravity's sign-in), `volume` (the disk of a folder, D-90, D-105), `temp` (`TempWork`, the folders in transit, D-90), `safe_path` (reading inside a project without following links, D-77), `files` (owner-only files and folders, the executable bit, private writes), `links` (junctions on Windows, symbolic links elsewhere), `host` (what the app knows of the machine: processor, language, build of Windows, os-release, Rosetta, Xcode, ICU, the AppImage, the machine id), `desktop` (the "Select folder" and "Open" windows, the error box, the tray), `console` (the command line's output), `pty` (a program on a pseudo terminal, for the app's terminal), `proxy` (the system's proxy and the hosts reached without one), `signature` (Authenticode, Windows), `sockets` (whether a server answers on a Unix socket), `webview` (D-05), `virt` (what the PC lacks for Docker Sandboxes' microVMs: Windows 11 and Hypervisor Platform, Apple silicon and macOS 14, Ubuntu 24.04 and KVM; D-167), `memory`, `random`, `registry` (the current user's registry, Windows), `local_time`, and in `mod.rs` `OS`, `PATH_SEPARATOR`, `sh_quote`. Nothing there looks at which system it is: each function hands over to the module of the same name of `crate::os::current`, and the build of each system checks the signatures.
-- **`os\windows\`** has Win32, WebView2, the ConPTY (`conpty.rs`), the Credential Manager and DPAPI (`agy_store.rs`), the registry, the Job Object; **`os\unix\`** what macOS and Linux share (process groups and the guard, `guard.rs`, D-105; `flock`; modes and owners; the instance's socket and TCP fallback; portable-pty; the gentle stop; the sealing key of Antigravity's sign-in); **`os\macos\`** and **`os\linux\`** what only one has (libproc and `/proc`, `statfs` and `mountinfo`, `scutil` and `gsettings`, the Keychain and the Secret Service in `agy_keyring.rs`, AppleLanguages, the AppImage, `PR_SET_PDEATHSIG`). `macos\` and `linux\` re-export the `unix\` modules they share, so every system offers the same names; `os\mod.rs` is the only place that picks the system (`current`), and a build for another system stops with a `compile_error!`. `test\rust\os\rule.rs` also checks that every module `platform\` asks `os::current` for is there in `windows\`, `macos\` and `linux\`.
+- **`os\windows\`** has Win32, WebView2, the ConPTY (`conpty.rs`), the Credential Manager and DPAPI (`agy_store.rs`), the registry, the Job Object; **`os\unix\`** what macOS and Linux share (process groups and the guard, `guard.rs`, D-105; `flock`; modes and owners; the instance's socket and TCP fallback; portable-pty; the gentle stop; the sealing key of Antigravity's sign-in); **`os\macos\`** and **`os\linux\`** what only one has (libproc and `/proc`, `statfs` and `mountinfo`, `scutil` and `gsettings`, the Keychain and the Secret Service in `agy_keyring.rs`, AppleLanguages, the AppImage, `PR_SET_PDEATHSIG`). `virt.rs` is in `windows\`, `macos\` and `linux\`, each with its own way of reading, without an administrator, what Docker Sandboxes needs (Windows 11 and the Hypervisor Platform via `WHvGetCapability`; macOS 14 on Apple silicon; Ubuntu 24.04, `/dev/kvm` and the AppArmor profile of the kit's shim). `macos\` and `linux\` re-export the `unix\` modules they share, so every system offers the same names; `os\mod.rs` is the only place that picks the system (`current`), and a build for another system stops with a `compile_error!`. `test\rust\os\rule.rs` also checks that every module `platform\` asks `os::current` for is there in `windows\`, `macos\` and `linux\`.
 
 To add something that differs between the systems: the function, with its doc, in the module of `platform\` it belongs to (a new module if none fits, listed in `platform\mod.rs`), handing over to `imp::<name>`; the same function in `os\windows\<module>.rs` and in `os\unix\<module>.rs` (or in `os\macos\` and `os\linux\` when they differ); the module named in each `mod.rs` of `os\`. A pure parser of one system's text (`/proc`, `mountinfo`, `scutil`) goes in that system's folder, with its tests in `test\rust\os\<system>\`; what the engine compares on every system (a kit for another target) stays in its area, where the kit's target (`kit.os()`) decides, not the system the app runs on. A check of the system the app runs on, at run time, reads `platform::OS`.
+
+### Isolation (`isolation\`): Docker Sandboxes and the three boxes
+
+Atollo's core is the portable configurator of Docker Sandboxes (`sbx`, D-167…D-175): each project, and each kit terminal in a folder, gets a microVM whose shape Atollo writes and keeps in the kit. Only the kit's `sbx` is used (the `sandboxes` component, `data\apps\<target>\sandboxes\bin\sbx`, `isolation::kit_sbx`; `Sbx` is a struct around its path): one installed on the PC is never used, and the daemon of another `sbx` is never stopped (the `foreign_daemon` reason, D-175). The level is not a setting: `isolation::status` works it out (at most once a minute, or on "Check again") and the status bar shows "VM" or "No VM".
+
+Three boxes, one at a time for a project's programs (D-175):
+
+| Box | What runs there | Where in the code |
+| --- | --- | --- |
+| **VM** (`Level::Vm`) | everything that runs a project's code: the project's terminal and the kit terminals (`sbx exec`, D-168, D-170), the actions, an action's site (a container of the VM's Docker: `php:<line>-apache`, `httpd:2.4`, with the project's own aliases mounted; its port published on the PC's `127.0.0.1`, or `0.0.0.0` with "Local network"), Claude Code and Codex (sbx agent sandboxes, `atollo-a-`). Inside: the project's folder writable, the kit's tools for Linux (`data\apps\linux-x64` or `linux-arm64`) read-only. Toward the PC only the ports of its databases (D-171) and GitHub when the project chooses it (D-172) | `isolation\vm.rs`, `isolation\mod.rs` (`Vm`, `vm_for`, `kit_terminal_vm`, `guest_tools`), `ipc\terminals.rs` (`project_vm_ready`, `ensure_guest_tools`), `projects\run\start.rs` |
+| **Kit on the PC** | the kit's programs, never a project's code: database servers and their tools (phpMyAdmin, mongo-express, backups), llama.cpp, the editor's window, Git for cloning, `sbx` itself, the app | the other areas |
+| **No VM** (`Level::Env`) | when the VM is off: everything on the PC with the sealed environment (`isolation::seal`, in `versions::project_env` and `choice_env`) and the "No VM" notice; the Web server pools (D-101; with the VM on their start and reload are refused, `ipc::servers::refused_with_vm`, and "Start with Atollo" is skipped, while stopping still works), the kit terminals on the PC, the kit's site servers | `isolation::seal`, `versions\choice.rs` |
+
+The files:
+- `mod.rs`: `status` (the `Level` and the `Blocker`s, in order: the system, the hypervisor and AppArmor from `platform::virt` (an unsupported system is the only reason given), the kit's `sbx` (`sbx_missing`, with `failed`: the reason of the last installation, noted by `note_install` and read by `install_failure`), the kit's disk (`kit_disk`), the daemon (`foreign_daemon`), `sbx ls --json` (`sbx_signed_out`, `sbx_failed`), the network policy `sbx policy init balanced`), `Sbx` (`find`, `command`, `session_env`: the kit's environment with the PC's temp and `daemon::ENV`), `Fix` and `fix_launch` ("Run" for `sbx login` and `sbx ls` in the app's terminal; never a text of the interface), `seal`, the `Vm` of a project or a terminal (start with its kit, made again in the project's folder when the kit moved: `moved`, `make_again`; mounts, database ports, `publish`, where a port already published is fine and the other address is taken back first; `stop_run`; `launch`), `vm_workspace` (the folders refused as a workspace), `guest_tools` and `guest_view` (only the kit's tools for Linux and their variables), `db_in_vm`, the sandboxes' list and removal (`vm_list`, `remove_vm`, `remove_owned`), `stop_daemon`, `restart_pending`;
+- `vm.rs`: pure builders of `sbx`'s arguments and names: `name`, `agent_name`, `terminal_name` (`atollo-p-`, `atollo-a-`, `atollo-t-` and 96 bits of SHA-256), `start_args` (`sbx run -d --name … --kit …`), `exec_args`, `kit_terminal_args`, `agent_args`, `publish_args` and `unpublish_args` (`127.0.0.1`, or `0.0.0.0` with the local network), `published_already`, `run_tag`, `tracked` and `stop_args` (an action's process group noted in the VM; `TERM`, `KILL` after five seconds, then its web container), `mount_args`, `host_port_allow` and `host_port_close`, `POLICY_ARGS`, `guest_target`, `guest_path` (`D:\a\b` → `/d/a/b`), `web_line` (the site's container, the project's aliases at `/srv/alias/<n>`);
+- `daemon.rs`: whose the daemon is (`Daemon::None`, `Kit`, `Other`, from the kit's `sandboxd.pid` and the pipe), its state in the kit's home (`state_dir`), `ENV` (`LLMMAN_RUNTIME=path`, `SBX_NO_TELEMETRY=1`), `SETTINGS` (`ssh.agentForwardingEnabled=false`, `browser.enabled=false`, `diagnostics.autoUpload=no`, applied with a restart only when no sandbox runs);
+- `kit.rs`: each sandbox's kit in `data\app\sandboxes\<sandbox>\` (`spec.yaml`, `atollo.json`, `.applied`, `.mounts`, `.ports`), its owner, the list and the removal;
+- `secrets.rs`: `Atollo.exe secret github` registered per sandbox with `sbx secret set github --sandbox <vm> --command …`, answered only to the kit's `sbx` (`asked_by_sbx`) with a known nonce (`secrets.json`);
+- around it: `platform\virt.rs` and `os\*\virt.rs` (`Gap`: what the PC lacks), `install\sandboxes.rs` (the component), `ipc\isolation.rs` (`isolation_status`, `vms_list`, `vm_remove`, `isolation_run`), `ui\src\shell\isolation.tsx` and `ui\src\ipc\isolation.ts` (the status bar's item and its dialog), the runner's `Scope` with `ipc::setup::vm_tools_target` (D-173) and `ipc::setup::mark_via_vm` for the matrix (D-174), `projects\run\start.rs` (`VmRun`: an action's stop in its VM, off the caller's thread), `ipc\servers.rs` (`refused_with_vm`), `kit\backup.rs` (`left_out`: the daemon's state, `…/state/sandboxd`, stays out of "Copy of the kit").
+
+Where a change goes:
+- a new `sbx` command or argument → a pure builder in `isolation\vm.rs`, with its test in `test\rust\isolation\vm.rs`, run through `Sbx::command` or `Vm::command` (never a `Command::new` of its own);
+- a new reason the VM is off → a `Blocker` in `isolation\mod.rs` (sent by its `code`), its text and action in `ui\src\shell\isolation.tsx` and the four languages; something the PC lacks → a `Gap` in `platform\virt.rs` and the `os\*\virt.rs` that read it;
+- something a sandbox has from its creation → `isolation\kit.rs` (`spec_yaml`); what changes at every session (`PATH`, the tools' lines) → `sbx exec -e`, in `vm.rs`;
+- a setting of the daemon → `daemon::SETTINGS`; a secret for the VMs → `isolation\secrets.rs`, as a command, never a copy;
+- a program of a project → through `ipc::terminals::project_vm_ready` while the VM is on, never on the PC in its place.
+
+Still to do, in this order (D-175): the editor's terminals and tasks in the project's VM; the agents in the VM with the project's tools and database, and the kit's MCP servers reachable from the VM (or said missing).
 
 ### Kit data (`data\`)
 
@@ -186,7 +228,12 @@ data\
   apps\<target>\              installed programs (win32-x64, darwin-arm64, linux-x64…)
   app\                        kit state: settings.json, services.json, components.txt, versions\,
                               frameworks.json, servers.json, terminals.json, logs\, layout.txt (2 = data per
-                              project), ca-bundle.pem (D-137), safe-directory.txt (the kit's safe.directory)
+                              project), ca-bundle.pem (D-137), safe-directory.txt (the kit's safe.directory),
+                              updates.json (the components' new versions, D-161)
+    sandboxes\<sandbox>\      each Docker Sandboxes sandbox's kit (D-169): spec.yaml, atollo.json (its owner),
+                              .applied, .mounts, .ports (the database ports opened to it, D-171), db.env (the
+                              project's database login for the VM, owner-only); beside them secrets.json (the
+                              secret commands registered per PC and sandbox, D-172) and .restart-pending
     secrets\                  gemini-api-key, llama-key (the local models' server), hf-token (Hugging Face),
                               readable by the owner only (D-137, D-151)
     llm.json                  the local models' settings: port, automatic start, Pi's model (D-151)
@@ -205,7 +252,10 @@ data\
   db\<engine>\<version>\      data of each database server version, with the server's my.cnf (D-81, D-102)
   frameworks\mine\<id>\       the files of a base saved from a project, copied when a project is made from it (D-162)
   gh\                         GitHub CLI's sign-in (hosts.yml)
-  home\                       HOME of the programs: .gitconfig and the like; .pi\agent\ (Pi: PI_CODING_AGENT_DIR)
+  home\                       HOME of the programs: .gitconfig and the like; .pi\agent\ (Pi: PI_CODING_AGENT_DIR);
+                              AppData\Local\DockerSandboxes\ on Windows (the other systems: the same home's
+                              folders): sbx's settings and logs (the Docker sign-in is in the system's keyring), and the kit daemon's state
+                              (images, the sandboxes' sparse disks, D-169)
   kit\                        files written from runtime\ at every start
   models\gguf\<owner>--<repo>\
                               local models, one copy for every target (D-151): the GGUF files, atollo.json
@@ -233,7 +283,7 @@ Folder rules:
 - every `mod.rs` starts with a `//!` that names the area and its submodules;
 - paths are written in full (`crate::setup::task::SetupTask`, `use crate::db::auth;`), without aliases and without `pub use x::*`; within the same folder `use super::x;`. What the whole crate reads from a folder is re-exported by name in its `mod.rs` and written with the short path: `crate::setup::{Catalog, Component, Choice, Group, kit_path}`, `crate::router::{write_private, write_executable, set_executable, restrict_to_owner, restrict_dir_to_owner}`;
 - a module split into files (`db\services\`, `versions\relations\`, `projects\frameworks\`, `install\lang\`, `servers\`) re-exports in `mod.rs` only what is used from outside; its files call each other with `pub(super)` and are imported by name (`use super::pools::load_store;`), never with `use super::*`; the methods of a type can also live in several files, with one `impl` per file (`servers\`: `WebServers`);
-- a file is split when it has parts that read on their own; `editor\ext.rs` and `editor\pty.rs` (the PTY sessions on every system, over 900 lines) stay whole; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). The other files should stay under 900 lines. The Guide's texts (`guide\content\`) are text, not code.
+- a file is split when it has parts that read on their own; `projects\run\` is a folder, one file per part of the runner (STR-V7-02), and `env\` one per part of `KitEnv::build`, which calls a function per section in order (STR-V7-03). Files should stay under 900 lines; today only `isolation\mod.rs` (about 1,500) is over (below, "Opportunities"). The Guide's texts (`guide\content\`) are text, not code.
 
 ### IPC (`ipc\` and `ui\src\ipc\`)
 
@@ -257,9 +307,10 @@ Everything that crosses between the interface and Rust is in two folders with th
 | `github.rs` | GitHub account and repositories |
 | `databases.rs` | project databases, copies, `.env`, content, phpMyAdmin, mongo-express |
 | `services.rs` | the kit's database servers |
-| `servers.rs` | web server pools: list, profiles, start, stop, reload, linked project |
-| `terminals.rs` | Terminals page: list, saving, removal, opening, folder choice; the in-app terminal's sessions |
+| `servers.rs` | web server pools: list, profiles, start, stop, reload, linked project; start and reload refused with the VM on (`refused_with_vm`) |
+| `terminals.rs` | Terminals page: list, saving, removal, opening, folder choice; the in-app terminal's sessions; `project_vm_ready` and `ensure_guest_tools`, the one road of a project's terminal and actions into its VM (D-170, D-171) |
 | `runs.rs` | started actions: start, stop, output, ports |
+| `isolation.rs` | the VM's status (`isolation_status`), the sandboxes' list and removal (`vms_list`, `vm_remove`), "Run" of the notice (`isolation_run`, only `sbx login` and `sbx ls`) |
 
 To add a command:
 1. the `#[tauri::command]` function in the file of its area, which returns `CmdResult<_>`, starts with `ensure_main(&webview)?` and calls the domain module (the logic stays there, the command translates it for the interface);
@@ -319,7 +370,7 @@ The logins of the database tools (dumps and restores) are files named `<exe>-<pi
 
 ### Processes
 
-All the kit's programs start in the app's Job Object (Windows) or in process groups watched by the guard (macOS, Linux) with the kit's environment (`platform\jobs.rs`, D-07, D-105). Only the browser and the file manager run outside: `jobs::open_with_explorer` opens a folder, `jobs::open_url` an address. No `Command::new` with a joined command line: arguments always as a vector.
+All the kit's programs start in the app's Job Object (Windows) or in process groups watched by the guard (macOS, Linux) with the kit's environment (`platform\jobs.rs`, D-07, D-105). Only the browser and the file manager run outside: `jobs::open_with_explorer` opens a folder, `jobs::open_url` an address, both with the PC's environment read at startup (`Host::capture`, D-169). No `Command::new` with a joined command line: arguments always as a vector. The kit's `sbx` is one of the kit's programs too (`Sbx::command`, through `platform::jobs::kit_command`); a program inside a VM is not: closing its `sbx exec` on the PC does not stop it, so an action notes its process group in the VM and its stop goes in there (`Vm::stop_run`, D-175).
 
 ### Errors
 
@@ -333,20 +384,21 @@ In the modules `anyhow::Result`, with the context the log needs. Commands return
 
 | Part | Files | What it holds |
 | --- | --- | --- |
-| Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar |
+| Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar (with the "VM" / "No VM" item, `IsolationItem`) |
 | Toward Rust | `ipc\` | one file per area, like `tauri\src\ipc\` (above); `index.ts` re-exports them, pages import from `@/ipc`; `events.ts` has the events' names, `pty.ts` the in-app terminal's commands and events (imported by itself, so the window of a detached session carries no other area), `window.ts` the controls of the title bar; `preview-runs.ts` plays the actions in the browser preview. An ESLint rule keeps `@tauri-apps/*` out of every other file of `ui\src` |
 | Shared helpers | `shared\`: `hooks.ts`, `common.tsx`, `format.ts`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | helpers without a page, used by several folders: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below); `ActionButton`, `ErrorLine`, `editorHint`, the port fields (`usePortField`, `validPort`); sizes as text (`formatBytes`, `gb`, `sizeText`); tags, the brands' logos, the brand; the quick pick of Quick Open and of the command palette |
 | Base components | `workbench\` | the VSCodium controls (`@vscode-elements/elements`), the codicons and the workbench parts (below); from the rest of the app it imports only `i18n` |
 | Theme | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | fonts, the codicon font and brand touches; `--vsc-*` colors for Tailwind; all the VS Code `--vscode-*` variables; VSCodium 1.135's sizes and the `--vsc-size-*` measures (the last three generated, below) |
-| Pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `agents\`, `models\`, `servers\`, `terminal\`, `guide\` | one folder per page or part, with an `index.ts` that exports only what the other pages use |
-| Window frame | `shell\`: `titlebar.tsx`, `activity.tsx`, `commands.tsx`, `eject.tsx`, `update.ts`, `freeze.ts`, `freezeproto.ts` | the title bar; `activity.tsx` has the Activity panel and `useRunning`, the one count of what runs (actions, database versions, local models, pools) for the status bar, the Projects badge and the panel, with "Stop all" after a confirmation; the command palette (D-160); "Remove the drive" and closing; the update's words; `freeze.ts` freezes the prototypes of the main window only |
+| Pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `ai\`, `agents\`, `models\`, `servers\`, `terminal\`, `guide\` | one folder per page or part, with an `index.ts` that exports only what the other pages use |
+| Images | `assets\` | the logo (`logo-32.png`, `logo-256.png`) and `brand\` |
+| Window frame | `shell\`: `titlebar.tsx`, `activity.tsx`, `commands.tsx`, `eject.tsx`, `isolation.tsx`, `update.ts`, `freeze.ts`, `freezeproto.ts` | the title bar; `activity.tsx` has the Activity panel and `useRunning`, the one count of what runs (actions, database versions, local models, pools) for the status bar, the Projects badge and the panel, with "Stop all" after a confirmation; the command palette (D-160); "Remove the drive" and closing; `isolation.tsx` (D-167, D-169): `useIsolation`, the "No VM" dialog with each reason, what to do and its command ("Run" for `sbx`, "Copy" for the PC's, "Install in the kit" with the reason of a failed installation, "Check again"), and Atollo's sandboxes with the room they take and "Remove" on a second click; the update's words; `freeze.ts` freezes the prototypes of the main window only |
 | Texts | `i18n.ts`, `locales\*.json` | `t("Italian sentence")`; the test checks the four languages |
 
 The page folders:
 
 | Folder | Files |
 | --- | --- |
-| `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx`, `extensions.tsx` (editor extensions by language: the kit's matrix and a project's own) |
+| `projects\` | `explorer.tsx` (Projects page), `home.tsx` (what runs, favorites and recent ones), `quickopen.tsx` (Ctrl+P), `page.tsx` (project page), `runs.ts` (`useRuns` and the state of the actions), `kind.tsx` (type and languages), `new.tsx` (new and clone), `wizard.tsx` (new project from a framework), `site.tsx`, `lan.tsx` (the site's address and QR for the phone, D-158), `savebase.tsx` ("Save as a base", D-162), `delete.tsx`, `orphans.tsx`; the page's tabs in `run.tsx` (with `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (the project's MCP servers), `editorsettings.tsx`, `extensions.tsx` (editor extensions by language: the kit's matrix and a project's own) |
 | `databases\` | `page.tsx` (Databases page, `SecretField`), `backups.tsx` (copies of a project's databases), `engines.ts` (the engines' names, `ENGINE_NAMES`) |
 | `ai\` | `page.tsx` (AI page, D-165: the Agents pane and the Local models pane in one side bar, the editor shows the row chosen) |
 | `agents\` | `page.tsx` (`AgentsPane` with the "Shared by the agents" row, `AgentEditor`, `SharedEditor` with the kit's MCP servers, `AgentButtons`, `useAgents`), `stats.tsx` (limits and consumption), `token.tsx` (Claude Code's token on macOS), `gemini.tsx` (Antigravity's Gemini key) |
@@ -354,10 +406,10 @@ The page folders:
 | `frameworks\` | `model.ts` (data and hooks), `fields.tsx` (instruction fields), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (kit versions), `project.tsx` (versions of a project), `lines.tsx` (line choice) |
 | `github\` | `account.tsx`, `identity.tsx` (who signs the commits), `repos.tsx`, `details.tsx` |
-| `settings\` | `page.tsx` (six sections: General, Network, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `about.tsx` (kit and updates) |
-| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (relations matrix), `setup.tsx` (the setup in progress), `byhand.tsx` (files downloaded by hand) |
-| `servers\` | `page.tsx` (Web server page: Caddy and Apache pools) |
-| `terminal\` | `page.tsx` (Terminals page: the saved kit consoles); the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx`, `font.ts` (Geist Mono before xterm.js measures), `api.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |
+| `settings\` | `page.tsx` (six sections: General, Network, Updates, GitHub account, Privacy, The kit), `sections.tsx`, `autosave.ts` (saved as they change, D-137), `firstrun.tsx` (the first start's choices), `conda.tsx` (kept packages), `backup.tsx` ("Copy of the kit", D-163), `about.tsx` (kit and updates) |
+| `components\` | `page.tsx`, `explorer.tsx`, `table.tsx` (one block per kind, D-139), `rows.tsx`, `status.tsx`, `tool.tsx`, `rust.tsx` (Rust's compiler on Windows), `matrix.tsx` (the grid, D-121, with the VM's column and the "in the VM" cells, D-174), `integrity.tsx` ("Check the files", D-159), `updates.tsx` (the "Updates" pane, D-161), `targets.ts`, `applybar.tsx`, `model.ts`, `state.ts`, `relations.tsx` (relations matrix), `setup.tsx` (the setup in progress), `byhand.tsx` (files downloaded by hand) |
+| `servers\` | `page.tsx` (Web server page: Caddy and Apache pools; with the VM on, a notice that they do not start) |
+| `terminal\` | `page.tsx` (Terminals page: the saved kit consoles); the in-app terminal on every system (D-109, D-148): `state.ts` (sessions), `panel.tsx` (loaded with xterm.js only when needed), `view.tsx` (with `webLinks`: a click on an address opens it, D-169), `font.ts` (Geist Mono before xterm.js measures); its commands and events are `ipc\pty.ts`; `window.tsx` is the page of a detached session's window (`terminal.html`, D-149) |
 | `guide\` | the app's renderer of the Guide (the text is in `guide\` at the root, below): `page.tsx` (D-136), `widgets.tsx` (the contract's widgets, `GuideNavContext`), `live.tsx` (the kit's card, the sources table with the components' state, the problems' search), `register.ts` (the app's language and `APP_WIDGETS`), `sections.tsx` |
 
 A module does not import whoever imports it: no cycle among the files of `ui\src`. A piece used by two pages goes in a file of its own inside the folder (`projects\runs.ts`), or in `shared\` if several folders use it. An import that would climb more than one folder is written with the `@/` alias (`ui\tsconfig.json`, `ui\vite.config.ts`); the Guide's text with `@guide/` (the `guide\` folder at the root).
@@ -376,7 +428,7 @@ A module does not import whoever imports it: no cycle among the files of `ui\src
 - `useAction(onDone)` runs an action with the wait state and the last error.
 - `useCopy(resetMs)` copies to the clipboard; `copied` goes back to false after `resetMs`, if given.
 
-Reads still written by hand, because `useLoad` would change what the user sees: an error that stays even after a successful read (`App.tsx` for the information, `shell\eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, where the same error also covers start and stop); chained reads or reads that fill a form (`components\page.tsx`, `projects\editorsettings.tsx`); reads with arguments or with their own requests and wait state (`frameworks\model.ts`, `github\repos.tsx`, `components\relations.tsx`, `databases\browser.tsx`, `agents\stats.tsx`, `components\setup.tsx`).
+Reads still written by hand, because `useLoad` would change what the user sees: an error that stays even after a successful read (`App.tsx` for the information, `shell\eject.tsx`, `settings\page.tsx`, `databases\page.tsx`, where the same error also covers start and stop); chained reads or reads that fill a form (`components\page.tsx`, `projects\editorsettings.tsx`); reads with arguments or with their own requests and wait state (`frameworks\model.ts`, `github\repos.tsx`, `components\relations.tsx`, `agents\stats.tsx`, `components\setup.tsx`).
 
 ### `workbench\`
 
@@ -451,7 +503,7 @@ In the app's build each chapter is a chunk of its own (`guide-<chapter>`), `guid
 
 ## Opportunities found, not yet done
 
-From the analysis of October 15, 2026, checked again on October 21. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88); VSCodium 1.135's measures as tokens and the codicons from their font (D-142). All of them are done:
+From the analysis of October 15, 2026, checked again on October 21 and October 25. Done: commands per area and file rules (D-86); folders per area, large files split, `CmdError`, `useLoad`, `Select`, `DataTable`, `ConfirmDialog`, `useCopy`, cycle among the project pages (D-87); VSCodium controls and theme (D-88); VSCodium 1.135's measures as tokens and the codicons from their font (D-142). The first ten are done; the eleventh is open:
 
 1. ~~**Read error that stays on screen**~~: done on October 21, 2026. The error already cleared after a successful read; what was missing was protection from an older read answering late. The kit's information (`App.tsx`), the "Remove the drive" list (`shell\eject.tsx`) and the settings (`settings\autosave.ts`) go through `useLoad` with `"show"`; Settings and the first start have "Retry". `databases\page.tsx` already used it.
 2. ~~**In-page confirmations without `alertdialog`**~~: done on October 17, 2026 (D-106), the four confirmations use `InlineConfirm`.
@@ -461,5 +513,6 @@ From the analysis of October 15, 2026, checked again on October 21. Done: comman
 6. ~~**Controls still native**~~: done on October 21, 2026, `ToggleButton`, `Meter` and `SuggestField` (above, "These stay native").
 7. ~~**`projectmcp.tsx`** not imported~~: it was already used by the project page; since October 17, 2026 it is `projects\mcp.tsx`.
 8. ~~**Files over 900 lines**~~: done on October 21, 2026. `install\web.rs`, `native.rs`, `conda.rs`, `db.rs`, `net\archive.rs`, `net\mod.rs`, `db\services\mod.rs`, `db\auth.rs` and `agents\keyring.rs` are folders with one file per part; the tests in `test\rust\` follow the same split.
-9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in `topics\`, one file per chapter; the longest ones (`topics\projects.tsx`) are text.
+9. ~~**`ui\src\guide\`**: `sections.tsx` and `model.ts` are Guide texts more than code~~: done on October 19, 2026 (D-136), the text is in one file per chapter; since D-164 in `guide\content\` at the root.
 10. ~~**`install\mod.rs`**~~: done in the v7 report's wave 2 (STR-V7-05), split into `flow.rs`, `parts.rs` and `keys.rs`.
+11. **`isolation\mod.rs`** (about 1,500 lines, October 25, 2026): the status and its blockers, `Sbx`, `Vm` and its start, the sandboxes' list and the guest tools read on their own and could be files of `isolation\` like `vm.rs`, `daemon.rs`, `kit.rs` and `secrets.rs`, with the tests of `test\rust\isolation\mod.rs` split the same way.

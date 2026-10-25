@@ -367,11 +367,111 @@ function problems(): { title: string; items: GuideProblem[] }[] {
             "Hinweis: „Auf diesem PC sind Programme einer anderen Kopie des Kits geöffnet“.",
           ),
           a: tr(
-            "Solo un'informazione: un altro kit è aperto. Le due copie non condividono niente.",
-            "Just information: another kit is open. The two copies share nothing.",
-            "Simple information : un autre kit est ouvert. Les deux copies ne partagent rien.",
-            "Nur eine Information: Ein anderes Kit ist geöffnet. Die beiden Kopien teilen nichts.",
+            "Solo un'informazione: un altro kit è aperto. Le due copie non condividono niente; Docker Sandboxes però ne serve uno alla volta per utente, quindi il secondo kit lavora «Senza VM» finché il primo tiene acceso il suo.",
+            "Just information: another kit is open. The two copies share nothing; Docker Sandboxes, though, serves one at a time per user, so the second kit works with “No VM” while the first keeps its own running.",
+            "Simple information : un autre kit est ouvert. Les deux copies ne partagent rien ; Docker Sandboxes, lui, n'en sert qu'un à la fois par utilisateur, donc le second kit travaille « Sans VM » tant que le premier garde le sien actif.",
+            "Nur eine Information: Ein anderes Kit ist geöffnet. Die beiden Kopien teilen nichts; Docker Sandboxes bedient aber nur eines zur Zeit pro Benutzer, daher arbeitet das zweite Kit „Ohne VM“, solange das erste seines laufen lässt.",
           ),
+          see: "vm",
+        },
+      ],
+    },
+    {
+      title: tr(
+        "La VM (Docker Sandboxes)",
+        "The VM (Docker Sandboxes)",
+        "La VM (Docker Sandboxes)",
+        "Die VM (Docker Sandboxes)",
+      ),
+      items: [
+        {
+          q: tr(
+            "«Senza VM» nella barra di stato.",
+            "“No VM” in the status bar.",
+            "« Sans VM » dans la barre d'état.",
+            "„Ohne VM“ in der Statusleiste.",
+          ),
+          a: tr(
+            "La VM dei progetti non può partire. Fai clic: la finestra elenca i motivi con che cosa fare («Lancia», «Copia», «Installa nel kit»); poi premi «Ricontrolla». Al primo avvio di solito manca solo l'accesso a Docker (sbx login).",
+            "The projects' VM cannot start. Click it: the window lists the reasons with what to do (“Run”, “Copy”, “Install in the kit”); then press “Check again”. At the first start usually only the Docker sign-in (sbx login) is missing.",
+            "La VM des projets ne peut pas démarrer. Cliquez dessus : la fenêtre liste les motifs avec quoi faire (« Lancer », « Copier », « Installer dans le kit ») ; puis appuyez sur « Vérifier à nouveau ». Au premier lancement, il ne manque en général que la connexion à Docker (sbx login).",
+            "Die VM der Projekte kann nicht starten. Klicke darauf: Das Fenster listet die Gründe mit dem, was zu tun ist („Starten“, „Kopieren“, „Im Kit installieren“); drücke dann „Erneut prüfen“. Beim ersten Start fehlt meist nur die Anmeldung bei Docker (sbx login).",
+          ),
+          see: "vm",
+        },
+        {
+          q: tr(
+            "«… non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.»",
+            "“… has no Docker Sandboxes sandbox: in the VM use Claude Code or Codex.”",
+            "« … n'a pas de sandbox Docker Sandboxes : dans la VM, utilisez Claude Code ou Codex. »",
+            "„… hat keine Sandbox von Docker Sandboxes: In der VM nutzt du Claude Code oder Codex.“",
+          ),
+          a: tr(
+            "Con la VM attiva partono solo gli agenti che Docker Sandboxes sa chiudere in una sandbox: Claude Code e Codex. Antigravity e Pi non partono, e mai sul PC al loro posto.",
+            "With the VM on, only the agents Docker Sandboxes can shut in a sandbox start: Claude Code and Codex. Antigravity and Pi do not start, and never on the PC in their place.",
+            "Avec la VM active, seuls démarrent les agents que Docker Sandboxes sait enfermer dans une sandbox : Claude Code et Codex. Antigravity et Pi ne démarrent pas, et jamais sur le PC à leur place.",
+            "Mit aktiver VM starten nur die Agenten, die Docker Sandboxes in eine Sandbox sperren kann: Claude Code und Codex. Antigravity und Pi starten nicht, und nie stattdessen auf dem PC.",
+          ),
+          see: "vm",
+        },
+        {
+          q: tr(
+            "«La cartella … non si apre nella VM: …»",
+            "“The folder … does not open in the VM: …”",
+            "« Le dossier … ne s'ouvre pas dans la VM : … »",
+            "„Der Ordner … lässt sich nicht in der VM öffnen: …“",
+          ),
+          a: tr(
+            "Un terminale nella VM non si apre nella radice di un disco, attraverso un link, in una cartella di sistema o di rete, nel kit o nel tuo profilo (salvo i progetti del kit). Scegli la cartella di un progetto, o un'altra cartella di un disco del PC.",
+            "A terminal in the VM does not open at the root of a disk, through a link, in a system or network folder, in the kit or in your profile (except the kit's projects). Choose a project's folder, or another folder on one of the PC's disks.",
+            "Un terminal dans la VM ne s'ouvre pas à la racine d'un disque, à travers un lien, dans un dossier système ou réseau, dans le kit ou dans votre profil (sauf les projets du kit). Choisissez le dossier d'un projet, ou un autre dossier d'un disque du PC.",
+            "Ein Terminal in der VM öffnet sich nicht im Stammverzeichnis eines Laufwerks, über einen Link, in einem System- oder Netzwerkordner, im Kit oder in deinem Profil (außer den Projekten des Kits). Wähle den Ordner eines Projekts oder einen anderen Ordner auf einem Laufwerk des PCs.",
+          ),
+          see: "terminals",
+        },
+        {
+          q: tr(
+            "«La sandbox … lavora in un'altra cartella: rimuovila in «Sandbox delle VM» …»",
+            "“The sandbox … works in another folder: remove it in «VM sandboxes» …”",
+            "« La sandbox … travaille dans un autre dossier : supprime-la dans «Sandbox des VM» … »",
+            "„Die Sandbox … arbeitet in einem anderen Ordner: Entferne sie unter «Sandboxes der VMs» …“",
+          ),
+          a: tr(
+            "Quando il kit cambia cartella Atollo rifà da solo la sandbox di un progetto; il messaggio resta per i casi che non sa risolvere. Apri la finestra della VM dalla barra di stato, premi «Rimuovi» e «Rimuovi davvero» sulla sandbox del progetto (si cancella il suo disco, non i file del progetto) e riapri: Atollo ne crea una nuova.",
+            "When the kit changes folder Atollo makes a project's sandbox again by itself; the message remains for the cases it cannot solve. Open the VM's window from the status bar, press “Remove” and “Really remove” on the project's sandbox (its disk is deleted, not the project's files) and open again: Atollo makes a new one.",
+            "Quand le kit change de dossier, Atollo refait tout seul la sandbox d'un projet ; le message reste pour les cas qu'il ne sait pas résoudre. Ouvrez la fenêtre de la VM depuis la barre d'état, appuyez sur « Supprimer » puis « Supprimer vraiment » sur la sandbox du projet (son disque est supprimé, pas les fichiers du projet) et rouvrez : Atollo en crée une nouvelle.",
+            "Wechselt das Kit den Ordner, legt Atollo die Sandbox eines Projekts von selbst neu an; die Meldung bleibt für die Fälle, die es nicht lösen kann. Öffne das Fenster der VM über die Statusleiste, drücke „Entfernen“ und „Wirklich entfernen“ bei der Sandbox des Projekts (ihre Festplatte wird gelöscht, nicht die Dateien des Projekts) und öffne erneut: Atollo legt eine neue an.",
+          ),
+          see: "vm",
+        },
+        {
+          q: tr(
+            "«Docker Sandboxes deve ripartire per un'impostazione di sicurezza: …»",
+            "“Docker Sandboxes must restart for a security setting: …”",
+            "« Docker Sandboxes doit redémarrer pour un réglage de sécurité : … »",
+            "„Docker Sandboxes muss für eine Sicherheitseinstellung neu starten: …“",
+          ),
+          a: tr(
+            "Atollo lo fa ripartire solo quando nessuna sandbox è accesa. Chiudi i terminali e le azioni nella VM, poi «Ricontrolla» nella finestra della VM e riprova.",
+            "Atollo restarts it only when no sandbox is running. Close the terminals and actions in the VM, then “Check again” in the VM's window and try again.",
+            "Atollo ne le redémarre que lorsqu'aucune sandbox n'est allumée. Fermez les terminaux et les actions dans la VM, puis « Vérifier à nouveau » dans la fenêtre de la VM et réessayez.",
+            "Atollo startet es nur neu, wenn keine Sandbox läuft. Schließe die Terminals und Aktionen in der VM, dann „Erneut prüfen“ im Fenster der VM und versuche es erneut.",
+          ),
+        },
+        {
+          q: tr(
+            "«Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. …»",
+            "“With the VM on, every site runs in its project's VM: start it from the project's page. …”",
+            "« Avec la VM active, chaque site tourne dans la VM de son projet : démarrez-le depuis la page du projet. … »",
+            "„Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. …“",
+          ),
+          a: tr(
+            "Con la VM attiva i server condivisi della pagina Server Web non partono, perché eseguirebbero il codice dei progetti sul PC. Avvia il sito dalla pagina del suo progetto: gira nella sua VM. Senza VM i pool funzionano come sempre.",
+            "With the VM on, the shared servers of the Web Servers page do not start, because they would run the projects' code on the PC. Start the site from its project's page: it runs in its VM. Without the VM the pools work as always.",
+            "Avec la VM active, les serveurs partagés de la page Serveurs web ne démarrent pas, car ils exécuteraient le code des projets sur le PC. Démarrez le site depuis la page de son projet : il tourne dans sa VM. Sans VM, les pools fonctionnent comme toujours.",
+            "Mit aktiver VM starten die gemeinsamen Server der Seite Webserver nicht, weil sie den Code der Projekte auf dem PC ausführen würden. Starte die Website von der Seite ihres Projekts: Sie läuft in ihrer VM. Ohne VM funktionieren die Pools wie immer.",
+          ),
+          see: "websites",
         },
       ],
     },
@@ -387,6 +487,33 @@ function glossary(): [string, string][] {
         "A command-line assistant that works in the project folder: it reads, edits and runs commands. In the kit: Claude Code, Codex, Antigravity, Pi.",
         "Un assistant en ligne de commande qui travaille dans le dossier du projet : il lit, modifie, exécute des commandes. Dans le kit : Claude Code, Codex, Antigravity, Pi.",
         "Ein Befehlszeilen-Assistent, der im Projektordner arbeitet: Er liest, ändert und führt Befehle aus. Im Kit: Claude Code, Codex, Antigravity, Pi.",
+      ),
+    ],
+    [
+      tr("Docker Sandboxes (sbx)", "Docker Sandboxes (sbx)", "Docker Sandboxes (sbx)", "Docker Sandboxes (sbx)"),
+      tr(
+        "Il programma di Docker che crea le microVM dei progetti. È un componente obbligatorio del kit, in data; Atollo usa solo quello del kit. Serve un account Docker gratuito (sbx login); Docker Desktop no.",
+        "Docker's program that makes the projects' microVMs. It is a required component of the kit, in data; Atollo uses only the kit's. A free Docker account is needed (sbx login); Docker Desktop is not.",
+        "Le programme de Docker qui crée les microVM des projets. C'est un composant obligatoire du kit, dans data ; Atollo n'utilise que celui du kit. Il faut un compte Docker gratuit (sbx login) ; Docker Desktop, non.",
+        "Das Programm von Docker, das die microVMs der Projekte anlegt. Es ist eine Pflichtkomponente des Kits, in data; Atollo verwendet nur das des Kits. Nötig ist ein kostenloses Docker-Konto (sbx login), Docker Desktop nicht.",
+      ),
+    ],
+    [
+      tr("MicroVM (VM)", "MicroVM (VM)", "MicroVM (VM)", "MicroVM (VM)"),
+      tr(
+        "Un piccolo computer virtuale, con un Linux suo, che parte in pochi secondi. In Atollo ogni progetto e ogni terminale del kit ne ha una, che vede solo la sua cartella e gli strumenti del kit per Linux.",
+        "A small virtual computer, with its own Linux, that starts in a few seconds. In Atollo each project and each kit terminal has one, which sees only its folder and the kit's tools for Linux.",
+        "Un petit ordinateur virtuel, avec son propre Linux, qui démarre en quelques secondes. Dans Atollo, chaque projet et chaque terminal du kit en a une, qui ne voit que son dossier et les outils du kit pour Linux.",
+        "Ein kleiner virtueller Computer mit eigenem Linux, der in wenigen Sekunden startet. In Atollo hat jedes Projekt und jedes Terminal des Kits eine, die nur ihren Ordner und die Werkzeuge des Kits für Linux sieht.",
+      ),
+    ],
+    [
+      tr("Sandbox", "Sandbox", "Sandbox", "Sandbox"),
+      tr(
+        "La microVM di Docker Sandboxes con il suo disco: una per progetto, una per terminale e cartella, una per agente e progetto. Si vedono e si rimuovono nella finestra della VM, sezione «Sandbox delle VM».",
+        "The Docker Sandboxes microVM with its disk: one per project, one per terminal and folder, one per agent and project. They are listed and removed in the VM's window, section “VM sandboxes”.",
+        "La microVM de Docker Sandboxes avec son disque : une par projet, une par terminal et dossier, une par agent et projet. Elles se voient et se suppriment dans la fenêtre de la VM, section « Sandbox des VM ».",
+        "Die microVM von Docker Sandboxes mit ihrer Festplatte: eine pro Projekt, eine pro Terminal und Ordner, eine pro Agent und Projekt. Sie werden im Fenster der VM angezeigt und entfernt, Abschnitt „Sandboxes der VMs“.",
       ),
     ],
     [
@@ -500,10 +627,10 @@ function glossary(): [string, string][] {
     [
       tr("Console (terminale)", "Console (terminal)", "Console (terminal)", "Konsole (Terminal)"),
       tr(
-        "Una finestra in cui si scrivono comandi. Quella del kit è PowerShell 7 con gli strumenti del kit; su macOS e Linux, se PowerShell non è installato, è bash.",
-        "A window where you type commands. The kit's one is PowerShell 7 with the kit's tools; on macOS and Linux, if PowerShell is not installed, it is bash.",
-        "Une fenêtre dans laquelle on tape des commandes. Celle du kit est PowerShell 7 avec les outils du kit ; sur macOS et Linux, si PowerShell n'est pas installé, c'est bash.",
-        "Ein Fenster, in das man Befehle eingibt. Die des Kits ist PowerShell 7 mit den Werkzeugen des Kits; unter macOS und Linux ist es bash, wenn PowerShell nicht installiert ist.",
+        "Una finestra in cui si scrivono comandi. Quella del kit è PowerShell 7 con gli strumenti del kit; su macOS e Linux, se PowerShell non è installato, è bash. Con la VM attiva è bash nella microVM, con gli strumenti del kit per Linux.",
+        "A window where you type commands. The kit's one is PowerShell 7 with the kit's tools; on macOS and Linux, if PowerShell is not installed, it is bash. With the VM on it is bash in the microVM, with the kit's tools for Linux.",
+        "Une fenêtre dans laquelle on tape des commandes. Celle du kit est PowerShell 7 avec les outils du kit ; sur macOS et Linux, si PowerShell n'est pas installé, c'est bash. Avec la VM active, c'est bash dans la microVM, avec les outils du kit pour Linux.",
+        "Ein Fenster, in das man Befehle eingibt. Die des Kits ist PowerShell 7 mit den Werkzeugen des Kits; unter macOS und Linux ist es bash, wenn PowerShell nicht installiert ist. Mit aktiver VM ist es bash in der microVM, mit den Werkzeugen des Kits für Linux.",
       ),
     ],
     [
@@ -762,10 +889,10 @@ export const HELP: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Il disco. FAT32 tiene file fino a 4 GB (niente modelli locali né copie di database grandi) e niente collegamenti: per un kit su chiavetta è meglio exFAT, o NTFS se resta su Windows. Su macOS e Linux un disco montato noexec (o FAT32 con showexec su Linux) non lascia partire i programmi: la riga dà il comando per rimontarlo.",
-              "The drive. FAT32 holds files up to 4 GB (no large local models or database copies) and no links: for a kit on a stick exFAT is better, or NTFS if it stays on Windows. On macOS and Linux a drive mounted noexec (or FAT32 with showexec on Linux) lets no program start: the line gives the command to remount it.",
-              "Le disque. FAT32 accepte des fichiers jusqu'à 4 Go (pas de grands modèles locaux ni de grandes copies de bases de données) et aucun lien : pour un kit sur clé, exFAT est préférable, ou NTFS s'il reste sous Windows. Sous macOS et Linux, un disque monté noexec (ou FAT32 avec showexec sous Linux) ne laisse démarrer aucun programme : la ligne donne la commande pour le remonter.",
-              "Das Laufwerk. FAT32 nimmt Dateien bis 4 GB (keine großen lokalen Modelle oder Datenbankkopien) und keine Links: Für ein Kit auf einem Stick ist exFAT besser, oder NTFS, wenn es unter Windows bleibt. Unter macOS und Linux lässt ein mit noexec eingehängtes Laufwerk (oder FAT32 mit showexec unter Linux) kein Programm starten: Die Zeile nennt den Befehl, um es neu einzuhängen.",
+              "Il disco. FAT32 tiene file fino a 4 GB (niente modelli locali né copie di database grandi) e niente collegamenti: per un kit su chiavetta è meglio exFAT, o NTFS se resta su Windows. Su macOS e Linux un disco montato noexec (o FAT32 con showexec su Linux) non lascia partire i programmi: la riga dà il comando per rimontarlo. Su FAT32 ed exFAT la VM dei progetti non parte (motivo nell'avviso «Senza VM»).",
+              "The drive. FAT32 holds files up to 4 GB (no large local models or database copies) and no links: for a kit on a stick exFAT is better, or NTFS if it stays on Windows. On macOS and Linux a drive mounted noexec (or FAT32 with showexec on Linux) lets no program start: the line gives the command to remount it. On FAT32 and exFAT the projects' VM does not start (reason in the “No VM” notice).",
+              "Le disque. FAT32 accepte des fichiers jusqu'à 4 Go (pas de grands modèles locaux ni de grandes copies de bases de données) et aucun lien : pour un kit sur clé, exFAT est préférable, ou NTFS s'il reste sous Windows. Sous macOS et Linux, un disque monté noexec (ou FAT32 avec showexec sous Linux) ne laisse démarrer aucun programme : la ligne donne la commande pour le remonter. Sur FAT32 et exFAT, la VM des projets ne démarre pas (motif dans l'avis « Sans VM »).",
+              "Das Laufwerk. FAT32 nimmt Dateien bis 4 GB (keine großen lokalen Modelle oder Datenbankkopien) und keine Links: Für ein Kit auf einem Stick ist exFAT besser, oder NTFS, wenn es unter Windows bleibt. Unter macOS und Linux lässt ein mit noexec eingehängtes Laufwerk (oder FAT32 mit showexec unter Linux) kein Programm starten: Die Zeile nennt den Befehl, um es neu einzuhängen. Auf FAT32 und exFAT startet die VM der Projekte nicht (Grund im Hinweis „Ohne VM“).",
             ),
             tr(
               "Lo spazio libero: sotto 5 GB un avviso, sotto 1 GB un errore (installazioni, download e copie dei database non riescono). Libera spazio o sposta il kit su un disco più grande.",
@@ -893,7 +1020,7 @@ export const HELP: TopicTexts = {
           ]}
         />
       </Section>
-      <Related ids={["faq", "network", "lifecycle"]} />
+      <Related ids={["faq", "vm", "network", "lifecycle"]} />
     </>
   ),
 
@@ -1018,10 +1145,10 @@ export const HELP: TopicTexts = {
         >
           <P>
             {tr(
-              "No. Usa programmi nativi per ogni sistema, più leggeri e senza amministratore. Se un progetto ha un compose.yaml o un Dockerfile, il kit li legge per suggerire le versioni giuste (PHP, Node, MySQL…). Docker Sandboxes, un componente facoltativo, serve a isolare i progetti (domanda qui sotto), non a sostituire i programmi del kit.",
-              "No. It uses native programs for each system, lighter and without an administrator. If a project has a compose.yaml or a Dockerfile, the kit reads them to suggest the right versions (PHP, Node, MySQL…). Docker Sandboxes, an optional component, isolates the projects (question below); it does not replace the kit's programs.",
-              "Non. Il utilise des programmes natifs pour chaque système, plus légers et sans administrateur. Si un projet a un compose.yaml ou un Dockerfile, le kit les lit pour suggérer les bonnes versions (PHP, Node, MySQL…). Docker Sandboxes, un composant facultatif, isole les projets (question ci-dessous) ; il ne remplace pas les programmes du kit.",
-              "Nein. Es verwendet native Programme für jedes System, leichter und ohne Administrator. Wenn ein Projekt eine compose.yaml oder ein Dockerfile hat, liest das Kit sie, um die richtigen Versionen vorzuschlagen (PHP, Node, MySQL…). Docker Sandboxes, eine optionale Komponente, isoliert die Projekte (Frage unten); es ersetzt die Programme des Kits nicht.",
+              "No, e Docker Desktop non serve. I programmi del kit sono nativi, scaricati dalle fonti ufficiali, senza amministratore; se un progetto ha un compose.yaml o un Dockerfile, il kit li legge per suggerire le versioni giuste (PHP, Node, MySQL…). Docker Sandboxes, un componente obbligatorio del kit, dà a ogni progetto una microVM sua, dove girano gli strumenti del kit per Linux: isola i progetti (domanda qui sotto), non sostituisce i programmi del kit.",
+              "No, and Docker Desktop is not needed. The kit's programs are native, downloaded from the official sources, without an administrator; if a project has a compose.yaml or a Dockerfile, the kit reads them to suggest the right versions (PHP, Node, MySQL…). Docker Sandboxes, a required component of the kit, gives each project a microVM of its own, where the kit's tools for Linux run: it isolates the projects (question below), it does not replace the kit's programs.",
+              "Non, et Docker Desktop n'est pas nécessaire. Les programmes du kit sont natifs, téléchargés depuis les sources officielles, sans administrateur ; si un projet a un compose.yaml ou un Dockerfile, le kit les lit pour suggérer les bonnes versions (PHP, Node, MySQL…). Docker Sandboxes, un composant obligatoire du kit, donne à chaque projet sa propre microVM, où tournent les outils du kit pour Linux : il isole les projets (question ci-dessous), il ne remplace pas les programmes du kit.",
+              "Nein, und Docker Desktop wird nicht gebraucht. Die Programme des Kits sind nativ, aus den offiziellen Quellen geladen, ohne Administrator; wenn ein Projekt eine compose.yaml oder ein Dockerfile hat, liest das Kit sie, um die richtigen Versionen vorzuschlagen (PHP, Node, MySQL…). Docker Sandboxes, eine Pflichtkomponente des Kits, gibt jedem Projekt eine eigene microVM, in der die Werkzeuge des Kits für Linux laufen: Es isoliert die Projekte (Frage unten), es ersetzt die Programme des Kits nicht.",
             )}
           </P>
         </QA>
@@ -1034,11 +1161,14 @@ export const HELP: TopicTexts = {
           )}
         >
           <P>
-            {tr(
-              "Che i programmi dei progetti (terminale, azioni, server, agenti) girano sul PC con il tuo utente: possono leggere i tuoi file. Il kit ne filtra l'ambiente (niente chiavi SSH, niente login root di MySQL: ogni progetto entra con il suo utente), ma non è un muro. Con Docker Sandboxes ogni progetto gira in una microVM sua e vede solo la sua cartella. Un clic sull'avviso dice perché la VM non è attiva e cosa serve: Windows 11 con Hypervisor Platform, un Mac con Apple silicon e macOS 14, o Ubuntu 24.04 con KVM; Docker Sandboxes nel kit («Installa nel kit») e un account Docker («sbx login» nel terminale di Atollo).",
-              "That the projects' programs (terminal, actions, servers, agents) run on the PC as your user: they can read your files. The kit filters their environment (no SSH keys, no MySQL root login: each project signs in as its own user), but that is no wall. With Docker Sandboxes each project runs in a microVM of its own and sees only its folder. A click on the notice tells why the VM is off and what it needs: Windows 11 with Hypervisor Platform, a Mac with Apple silicon and macOS 14, or Ubuntu 24.04 with KVM; Docker Sandboxes in the kit (“Install in the kit”) and a Docker account (“sbx login” in Atollo's terminal).",
-              "Que les programmes des projets (terminal, actions, serveurs, agents) tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers. Le kit filtre leur environnement (pas de clés SSH, pas de login root de MySQL : chaque projet se connecte avec son utilisateur), mais ce n'est pas un mur. Avec Docker Sandboxes, chaque projet tourne dans sa propre microVM et ne voit que son dossier. Un clic sur l'avis dit pourquoi la VM n'est pas active et ce qu'il faut : Windows 11 avec Hypervisor Platform, un Mac Apple silicon sous macOS 14, ou Ubuntu 24.04 avec KVM ; Docker Sandboxes dans le kit (« Installer dans le kit ») et un compte Docker (« sbx login » dans le terminal d'Atollo).",
-              "Dass die Programme der Projekte (Terminal, Aktionen, Server, Agenten) auf dem PC mit deinem Benutzer laufen: Sie können deine Dateien lesen. Das Kit filtert ihre Umgebung (keine SSH-Schlüssel, kein Root-Login von MySQL: Jedes Projekt meldet sich mit seinem Benutzer an), aber das ist keine Mauer. Mit Docker Sandboxes läuft jedes Projekt in einer eigenen microVM und sieht nur seinen Ordner. Ein Klick auf den Hinweis sagt, warum die VM nicht aktiv ist und was sie braucht: Windows 11 mit Hypervisor Platform, einen Mac mit Apple Silicon und macOS 14 oder Ubuntu 24.04 mit KVM; Docker Sandboxes im Kit („Im Kit installieren“) und ein Docker-Konto („sbx login“ im Terminal von Atollo).",
+            {rich(
+              tr(
+                "Che i programmi dei progetti (terminale, azioni, server, agenti) girano sul PC con il tuo utente: possono leggere i tuoi file. Il kit ne sigilla l'ambiente (niente chiavi SSH, niente login di amministratore di MySQL: ogni progetto entra con il suo utente), ma non è un muro. Con la VM ogni progetto gira in una microVM sua e vede solo la sua cartella. Un clic sull'avviso dice perché la VM non è attiva e che cosa fare, con «Lancia», «Copia», «Installa nel kit» e «Ricontrolla»: di solito servono Windows 11 con Hypervisor Platform, un Mac con Apple silicon e macOS 14, o Ubuntu 24.04 con KVM, più un account Docker («sbx login» nel terminale di Atollo). Tutto in {0}.",
+                "That the projects' programs (terminal, actions, servers, agents) run on the PC as your user: they can read your files. The kit seals their environment (no SSH keys, no MySQL administrator login: each project signs in as its own user), but that is no wall. With the VM each project runs in a microVM of its own and sees only its folder. A click on the notice tells why the VM is off and what to do, with “Run”, “Copy”, “Install in the kit” and “Check again”: usually Windows 11 with Hypervisor Platform, a Mac with Apple silicon and macOS 14, or Ubuntu 24.04 with KVM, plus a Docker account (“sbx login” in Atollo's terminal). All of it in {0}.",
+                "Que les programmes des projets (terminal, actions, serveurs, agents) tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers. Le kit scelle leur environnement (pas de clés SSH, pas de login administrateur de MySQL : chaque projet se connecte avec son utilisateur), mais ce n'est pas un mur. Avec la VM, chaque projet tourne dans sa propre microVM et ne voit que son dossier. Un clic sur l'avis dit pourquoi la VM n'est pas active et quoi faire, avec « Lancer », « Copier », « Installer dans le kit » et « Vérifier à nouveau » : en général il faut Windows 11 avec Hypervisor Platform, un Mac Apple silicon sous macOS 14, ou Ubuntu 24.04 avec KVM, plus un compte Docker (« sbx login » dans le terminal d'Atollo). Tout est dans {0}.",
+                "Dass die Programme der Projekte (Terminal, Aktionen, Server, Agenten) auf dem PC mit deinem Benutzer laufen: Sie können deine Dateien lesen. Das Kit versiegelt ihre Umgebung (keine SSH-Schlüssel, keine Administrator-Anmeldung von MySQL: Jedes Projekt meldet sich mit seinem Benutzer an), aber das ist keine Mauer. Mit der VM läuft jedes Projekt in einer eigenen microVM und sieht nur seinen Ordner. Ein Klick auf den Hinweis sagt, warum die VM nicht aktiv ist und was zu tun ist, mit „Starten“, „Kopieren“, „Im Kit installieren“ und „Erneut prüfen“: Meist braucht es Windows 11 mit Hypervisor Platform, einen Mac mit Apple Silicon und macOS 14 oder Ubuntu 24.04 mit KVM, dazu ein Docker-Konto („sbx login“ im Terminal von Atollo). Alles in {0}.",
+              ),
+              <See key="v" id="vm" />,
             )}
           </P>
         </QA>
@@ -1052,10 +1182,10 @@ export const HELP: TopicTexts = {
         >
           <P>
             {tr(
-              "Sì: ogni cartella è un kit indipendente, con i suoi progetti, accessi e impostazioni, e due kit possono essere aperti insieme. Lo stesso kit, invece, si apre una volta sola.",
-              "Yes: each folder is an independent kit, with its own projects, sign-ins and settings, and two kits can be open together. The same kit, however, opens only once.",
-              "Oui : chaque dossier est un kit indépendant, avec ses projets, connexions et paramètres, et deux kits peuvent être ouverts ensemble. Le même kit, en revanche, ne s'ouvre qu'une fois.",
-              "Ja: Jeder Ordner ist ein eigenständiges Kit mit eigenen Projekten, Anmeldungen und Einstellungen, und zwei Kits können gleichzeitig geöffnet sein. Dasselbe Kit öffnet sich dagegen nur einmal.",
+              "Sì: ogni cartella è un kit indipendente, con i suoi progetti, accessi e impostazioni, e due kit possono essere aperti insieme. Lo stesso kit, invece, si apre una volta sola. Solo un kit alla volta ha la VM: Docker Sandboxes ne serve uno per utente, e l'altro lavora «Senza VM».",
+              "Yes: each folder is an independent kit, with its own projects, sign-ins and settings, and two kits can be open together. The same kit, however, opens only once. One kit at a time has the VM: Docker Sandboxes serves one per user, and the other works with “No VM”.",
+              "Oui : chaque dossier est un kit indépendant, avec ses projets, connexions et paramètres, et deux kits peuvent être ouverts ensemble. Le même kit, en revanche, ne s'ouvre qu'une fois. Un seul kit à la fois a la VM : Docker Sandboxes en sert un par utilisateur, et l'autre travaille « Sans VM ».",
+              "Ja: Jeder Ordner ist ein eigenständiges Kit mit eigenen Projekten, Anmeldungen und Einstellungen, und zwei Kits können gleichzeitig geöffnet sein. Dasselbe Kit öffnet sich dagegen nur einmal. Die VM hat jeweils nur ein Kit: Docker Sandboxes bedient eines pro Benutzer, das andere arbeitet „Ohne VM“.",
             )}
           </P>
         </QA>
@@ -1086,10 +1216,10 @@ export const HELP: TopicTexts = {
         >
           <P>
             {tr(
-              "La scelta iniziale occupa circa 1,8 GB. Ogni linguaggio aggiunge da qualche decina a qualche centinaio di MB (l'Android SDK e TinyTeX di più), ogni versione in più altrettanto. I progetti con le loro dipendenze (node_modules, vendor) crescono nel tempo. La pagina Strumenti mostra la dimensione di ogni componente.",
-              "The initial selection takes about 1.8 GB. Each language adds from a few tens to a few hundred MB (the Android SDK and TinyTeX more), each extra version as much again. Projects with their dependencies (node_modules, vendor) grow over time. The Tools page shows the size of each component.",
-              "La sélection initiale occupe environ 1,8 Go. Chaque langage ajoute de quelques dizaines à quelques centaines de Mo (l'Android SDK et TinyTeX davantage), chaque version supplémentaire autant. Les projets avec leurs dépendances (node_modules, vendor) grossissent avec le temps. La page Outils affiche la taille de chaque composant.",
-              "Die anfängliche Auswahl belegt etwa 1,8 GB. Jede Sprache fügt einige zehn bis einige hundert MB hinzu (das Android SDK und TinyTeX mehr), jede weitere Version ebenso viel. Projekte mit ihren Abhängigkeiten (node_modules, vendor) wachsen mit der Zeit. Die Seite Werkzeuge zeigt die Größe jeder Komponente.",
+              "La scelta iniziale occupa circa 2,3 GB. Ogni linguaggio aggiunge da qualche decina a qualche centinaio di MB (l'Android SDK e TinyTeX di più), ogni versione in più altrettanto. I progetti con le loro dipendenze (node_modules, vendor) crescono nel tempo. La pagina Strumenti mostra la dimensione di ogni componente.",
+              "The initial selection takes about 2.3 GB. Each language adds from a few tens to a few hundred MB (the Android SDK and TinyTeX more), each extra version as much again. Projects with their dependencies (node_modules, vendor) grow over time. The Tools page shows the size of each component.",
+              "La sélection initiale occupe environ 2,3 Go. Chaque langage ajoute de quelques dizaines à quelques centaines de Mo (l'Android SDK et TinyTeX davantage), chaque version supplémentaire autant. Les projets avec leurs dépendances (node_modules, vendor) grossissent avec le temps. La page Outils affiche la taille de chaque composant.",
+              "Die anfängliche Auswahl belegt etwa 2,3 GB. Jede Sprache fügt einige zehn bis einige hundert MB hinzu (das Android SDK und TinyTeX mehr), jede weitere Version ebenso viel. Projekte mit ihren Abhängigkeiten (node_modules, vendor) wachsen mit der Zeit. Die Seite Werkzeuge zeigt die Größe jeder Komponente.",
             )}
           </P>
         </QA>

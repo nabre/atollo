@@ -380,7 +380,7 @@ export function VmSection() {
       {asked !== null && (
         <p>
           {t(
-            "Si cancella il disco della sandbox: la sua home, /tmp e i database della VM. I file del progetto restano.",
+            "Si cancella il disco della sandbox: la sua home, /tmp e le immagini Docker scaricate. I file e il database del progetto restano.",
           )}
         </p>
       )}
