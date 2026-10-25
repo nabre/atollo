@@ -59,3 +59,24 @@ fn set_mode(path: &Path, mode: u32) -> Result<()> {
     fs::set_permissions(path, fs::Permissions::from_mode(mode))
         .with_context(|| format!("chmod {mode:o} {}", path.display()))
 }
+
+/// Owned by this user, mode `0700` or tighter.
+pub fn owner_only(meta: &fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    meta.uid() == super::users::effective() && meta.mode() & 0o077 == 0
+}
+
+/// Writable only by this user, or sticky and of root or this user.
+pub fn safe_parent(meta: &fs::Metadata) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    let me = super::users::effective();
+    let sticky = meta.mode() & 0o1000 != 0;
+    let owner_ok = meta.uid() == me || meta.uid() == 0;
+    owner_ok && (sticky || (meta.uid() == me && meta.mode() & 0o022 == 0))
+}
+
+/// Mode `0700` from the start.
+pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
+    use std::os::unix::fs::DirBuilderExt;
+    fs::DirBuilder::new().mode(0o700).create(path)
+}

@@ -117,6 +117,29 @@ pub fn ensure_tree_executables(target: Target, tree: &Path) {
     }
 }
 
+/// A folder only its owner can enter, as the metadata (of the folder
+/// itself, not followed) says: on macOS and Linux owned by this user with
+/// no right for group and others (mode `0700` or tighter); on Windows,
+/// whose temporary folders are per user and get an owner-only DACL, always.
+pub fn owner_only(meta: &fs::Metadata) -> bool {
+    imp::owner_only(meta)
+}
+
+/// A folder other users cannot replace what this user makes in it: on
+/// macOS and Linux one only this user can write in, or a sticky one
+/// (`/tmp`: nobody renames another's entries) of root or this user; on
+/// Windows always.
+pub fn safe_parent(meta: &fs::Metadata) -> bool {
+    imp::safe_parent(meta)
+}
+
+/// Makes the folder `path` (its parent must exist, and `path` must not):
+/// mode `0700` from the start on macOS and Linux; on Windows it gets the
+/// permissions of its parent, the user's own temporary folder.
+pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
+    imp::create_dir_owner_only(path)
+}
+
 /// A rename refused for a moment because another program holds the target
 /// without sharing its deletion (Windows: access denied or sharing
 /// violation): worth trying again. Never on macOS and Linux, where a rename

@@ -82,6 +82,20 @@ pub(crate) fn set_dacl(path: &Path, sddl: &str) -> Result<()> {
     result.ok().context("SetFileSecurityW")
 }
 
+/// The temporary folders are per user.
+pub fn owner_only(_meta: &fs::Metadata) -> bool {
+    true
+}
+
+pub fn safe_parent(_meta: &fs::Metadata) -> bool {
+    true
+}
+
+/// A plain folder: the parent, the user's own, gives its permissions.
+pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
+    fs::DirBuilder::new().create(path)
+}
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/windows/files.rs"]
 mod tests;

@@ -23,7 +23,6 @@ pub mod archive;
 pub mod ca;
 mod github;
 pub mod lan;
-mod proxy;
 pub mod resume;
 /// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
 pub mod verify;
@@ -42,10 +41,8 @@ use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 use ureq::{Agent, Proxy};
 
 use crate::common::settings::Settings;
+use crate::platform::proxy::{no_proxy_hosts, with_exceptions};
 pub use github::{first_sha256, github_digest, hash_in_list, verifiable};
-#[cfg(unix)]
-use proxy::system_proxy;
-use proxy::{no_proxy_hosts, with_exceptions};
 
 pub struct Net {
     agent: Agent,
@@ -147,10 +144,7 @@ impl Net {
                     &no_proxy_hosts(n.no_proxy.as_deref()),
                 ))
             }
-            #[cfg(windows)]
-            None => Proxy::try_from_env(),
-            #[cfg(unix)]
-            None => Proxy::try_from_env().or_else(system_proxy),
+            None => crate::platform::proxy::from_system(),
         };
         let roots = match set(&n.extra_ca_certs) {
             Some(file) => RootCerts::Specific(Arc::new(

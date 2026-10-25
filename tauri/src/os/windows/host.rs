@@ -61,6 +61,10 @@ pub fn windows_build() -> Option<u32> {
         .ok()
 }
 
+pub fn user_id() -> Option<u32> {
+    None
+}
+
 pub fn os_release() -> Option<String> {
     None
 }

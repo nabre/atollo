@@ -31,6 +31,11 @@ pub(crate) fn posix_locale(value: &str) -> Option<String> {
     Some(name.replace('_', "-"))
 }
 
+/// The effective user id.
+pub fn user_id() -> Option<u32> {
+    Some(super::users::effective())
+}
+
 /// Not Windows: no build to read.
 pub fn windows_build() -> Option<u32> {
     None

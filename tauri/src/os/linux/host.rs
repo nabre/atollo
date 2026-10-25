@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-pub use crate::os::unix::host::{arch, env_locale as locale, windows_build};
+pub use crate::os::unix::host::{arch, env_locale as locale, user_id, windows_build};
 
 /// Every 127.x.x.x answers.
 pub const LOOPBACK_RANGE: bool = true;

@@ -38,15 +38,7 @@ fn private_socket_dir(kit: &Kit, port: u16) -> Option<PathBuf> {
         if mysql::fallback_socket(&dir, port).is_none() {
             continue;
         }
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::DirBuilderExt;
-            let _ = fs::DirBuilder::new().mode(0o700).create(&dir);
-        }
-        #[cfg(not(unix))]
-        {
-            let _ = fs::DirBuilder::new().create(&dir);
-        }
+        let _ = crate::platform::files::create_dir_owner_only(&dir);
         if caddy::is_private_dir(&dir) {
             return Some(dir);
         }

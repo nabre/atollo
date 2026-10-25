@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-pub use crate::os::unix::host::{arch, windows_build};
+pub use crate::os::unix::host::{arch, user_id, windows_build};
 
 /// macOS answers only on 127.0.0.1 unless an alias is added.
 pub const LOOPBACK_RANGE: bool = false;

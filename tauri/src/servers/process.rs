@@ -164,11 +164,7 @@ pub(super) fn fcgi_answers(addr: &FcgiAddr) -> bool {
             let addr = SocketAddr::from(([127, 0, 0, 1], *port));
             TcpStream::connect_timeout(&addr, Duration::from_millis(80)).is_ok()
         }
-        #[cfg(unix)]
-        FcgiAddr::Unix(sock) => std::os::unix::net::UnixStream::connect(&sock.path).is_ok(),
-        // php-fpm runs on macOS and Linux only; php-cgi listens on TCP.
-        #[cfg(not(unix))]
-        FcgiAddr::Unix(sock) => sock.path.exists(),
+        FcgiAddr::Unix(sock) => crate::platform::sockets::answers(&sock.path),
     }
 }
 

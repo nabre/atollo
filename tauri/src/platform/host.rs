@@ -48,6 +48,12 @@ pub fn running_appimage(exe: &Path) -> Option<PathBuf> {
     imp::running_appimage(exe)
 }
 
+/// The user the app runs as (its effective id) on macOS and Linux; `None`
+/// on Windows.
+pub fn user_id() -> Option<u32> {
+    imp::user_id()
+}
+
 /// Every address of 127.0.0.0/8 answers without an alias: true on Windows
 /// and Linux; macOS answers only on 127.0.0.1.
 pub const LOOPBACK_RANGE: bool = imp::LOOPBACK_RANGE;
