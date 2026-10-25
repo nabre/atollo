@@ -85,10 +85,8 @@ pub async fn terminal_open<R: Runtime>(
         // In the project's microVM when every project runs in one (D-167),
         // with the kit's tools and its databases on the PC (D-170, D-171).
         if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
-            let vm = super::terminals::project_vm_ready(
-                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
-            )?;
-            vm.start(&env, lang).or_fail_chain("vm")?;
+            // Checked before the sandbox is made: a folder with no path in
+            // the VM (a network share) never gets one.
             let guest_dir = crate::isolation::vm::guest_path(kit.target().is_windows(), &dir)
                 .ok_or_else(|| {
                     crate::common::i18n::t(
@@ -97,6 +95,10 @@ pub async fn terminal_open<R: Runtime>(
                     &[&dir.display().to_string()],
                 )
                 })?;
+            let vm = super::terminals::project_vm_ready(
+                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+            )?;
+            vm.start(&env, lang).or_fail_chain("vm")?;
             let args = crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, vm.tools());
             let launch = vm.launch(&kit, args, "VM");
             return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)

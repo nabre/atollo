@@ -12,6 +12,7 @@
 //! ([`seal`]): less of what reaches them by itself. It is no wall (they run
 //! as the user and can read what the user can): the VM is.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::sync::Mutex;
@@ -169,21 +170,71 @@ impl Status {
     }
 }
 
+/// The last status and when it was worked out.
 static LAST: Mutex<Option<(Instant, Status)>> = Mutex::new(None);
+/// When the VM was last found ready ([`status`]'s grace).
+static GOOD: Mutex<Option<Instant>> = Mutex::new(None);
+/// One [`compute`] at a time.
+static COMPUTE: Mutex<()> = Mutex::new(());
+
+/// How long a VM found ready outlives an `sbx` that does not answer for a
+/// moment (another VM pulling its image, starting).
+const GRACE: Duration = Duration::from_secs(180);
+
+fn last() -> std::sync::MutexGuard<'static, Option<(Instant, Status)>> {
+    LAST.lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
 
 /// The status, asked again when older than a minute or when `force` (the
 /// notice's "Ricontrolla", an installation of Docker Sandboxes).
+///
+/// One check at a time, and nobody waits behind it while an older answer
+/// exists: a check can take minutes (a daemon started, restarted). An
+/// `sbx` that fails for a moment ([`Blocker::SbxFailed`] alone) within
+/// [`GRACE`] of a VM found ready keeps the VM, asked again at the next
+/// call: the programs stay in their VM, whose start then says what fails,
+/// never on the PC without a word.
 pub fn status(kit: &Kit, host: &Host, env: &KitEnv, force: bool) -> Status {
-    let mut last = LAST
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some((at, st)) = last.as_ref() {
-        if !force && at.elapsed() < FRESH {
-            return st.clone();
+    let fresh = |force: bool| {
+        last()
+            .as_ref()
+            .filter(|(at, _)| !force && at.elapsed() < FRESH)
+            .map(|(_, st)| st.clone())
+    };
+    if let Some(st) = fresh(force) {
+        return st;
+    }
+    let _one = match COMPUTE.try_lock() {
+        Ok(guard) => guard,
+        Err(std::sync::TryLockError::Poisoned(p)) => p.into_inner(),
+        Err(std::sync::TryLockError::WouldBlock) => {
+            if let Some((_, st)) = last().as_ref().filter(|_| !force) {
+                return st.clone();
+            }
+            COMPUTE
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
         }
+    };
+    // Worked out meanwhile by the check this one waited for.
+    if let Some(st) = fresh(force) {
+        return st;
     }
     let st = compute(kit, host, env);
-    *last = Some((Instant::now(), st.clone()));
+    let mut good = GOOD
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let transient = matches!(st.blockers.as_slice(), [Blocker::SbxFailed { .. }]);
+    if st.level == Level::Vm {
+        *good = Some(Instant::now());
+    } else if transient && good.is_some_and(|at| at.elapsed() < GRACE) {
+        crate::common::log::warn(&format!("sbx: {:?}: the VM kept", st.blockers));
+        let kept = Status::of(Vec::new(), st.sbx.clone());
+        // Not noted as fresh: the next call asks again.
+        return kept;
+    }
+    *last() = Some((Instant::now(), st.clone()));
     st
 }
 
@@ -301,12 +352,16 @@ fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
     daemon_call(sbx, host, env, &["daemon", "restart"]);
 }
 
-/// The PC's name, to note per PC what Atollo registered in `sbx`.
+/// The PC's name, to note per PC what Atollo registered in `sbx`:
+/// `HOSTNAME` is seldom exported on macOS and Linux, so the system's own
+/// name next; "pc" only when nothing answers (then every such PC shares
+/// the notes).
 fn computer(host: &Host) -> String {
     host.get("COMPUTERNAME")
         .or(host.get("HOSTNAME"))
-        .unwrap_or("pc")
-        .to_owned()
+        .map(str::to_owned)
+        .or_else(|| Some(crate::platform::host::host_name()).filter(|n| !n.is_empty()))
+        .unwrap_or_else(|| "pc".to_owned())
 }
 
 /// The kit's GitHub access for the sandbox `sandbox` ([`secrets`], D-172),
@@ -348,7 +403,15 @@ pub(crate) fn github_for_sandbox(
         warn("rm", run(sbx, host, env, &args, ASK_LIMIT))
     };
     if !wanted {
-        if mine.is_some() && remove() {
+        // A note `sbx` no longer lists (removed by hand, the sandbox gone)
+        // goes too: its nonce must not open `secret github` any more.
+        let gone = || {
+            run(sbx, host, env, &["secret", "ls"], ASK_LIMIT).is_ok_and(|o| {
+                o.status.success()
+                    && !secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", sandbox)
+            })
+        };
+        if mine.is_some() && (gone() || remove()) {
             if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
                 crate::common::log::warn(&format!("secrets.json: {e:#}"));
             }
@@ -610,7 +673,8 @@ fn find_pc_sbx(host: &Host) -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
-/// Runs `sbx` with `args`, its output once it ends or after `limit`.
+/// Runs `sbx` with `args`, its output once it ends; after `limit` it is
+/// ended, never left half way (an `sbx run -d` still making a sandbox).
 fn run(
     sbx: &Sbx,
     host: &Host,
@@ -618,21 +682,53 @@ fn run(
     args: &[&str],
     limit: Duration,
 ) -> Result<std::process::Output, String> {
+    use std::io::Read;
     let mut cmd = sbx.command(env, host);
     cmd.args(args)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let child = crate::platform::jobs::spawn(&mut cmd).map_err(|e| e.to_string())?;
-    let (tx, rx) = mpsc::channel();
-    std::thread::spawn(move || {
-        let _ = tx.send(child.wait_with_output());
-    });
-    match rx.recv_timeout(limit) {
-        Ok(Ok(out)) => Ok(out),
-        Ok(Err(e)) => Err(e.to_string()),
-        Err(_) => Err(format!("sbx: no answer in {} s", limit.as_secs())),
-    }
+    let mut child = crate::platform::jobs::spawn(&mut cmd).map_err(|e| e.to_string())?;
+    // Both pipes read while it runs: a full pipe would stop it.
+    let read = |pipe: Option<Box<dyn Read + Send>>| {
+        std::thread::spawn(move || {
+            let mut buf = Vec::new();
+            if let Some(mut p) = pipe {
+                let _ = p.read_to_end(&mut buf);
+            }
+            buf
+        })
+    };
+    let stdout = read(
+        child
+            .stdout
+            .take()
+            .map(|p| Box::new(p) as Box<dyn Read + Send>),
+    );
+    let stderr = read(
+        child
+            .stderr
+            .take()
+            .map(|p| Box::new(p) as Box<dyn Read + Send>),
+    );
+    let until = Instant::now() + limit;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() < until => std::thread::sleep(Duration::from_millis(25)),
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("sbx: no answer in {} s", limit.as_secs()));
+            }
+            Err(e) => return Err(e.to_string()),
+        }
+    };
+    Ok(std::process::Output {
+        status,
+        stdout: stdout.join().unwrap_or_default(),
+        stderr: stderr.join().unwrap_or_default(),
+    })
 }
 
 /// `sbx ls --json`: answers only when the daemon runs and the user is
@@ -928,7 +1024,9 @@ pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
     let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));
     let dir = canon(dir)?;
     dir.parent()?;
-    if canon(&kit.projects()).is_some_and(|p| dir.starts_with(p)) {
+    // A project, or a folder in one; never the folder of every project,
+    // which would put them all, writable, in one VM.
+    if canon(&kit.projects()).is_some_and(|p| dir.starts_with(&p) && dir != p) {
         return Some(dir);
     }
     let profile = host
@@ -1102,6 +1200,12 @@ impl Vm {
     pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
         let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
         let mounts = self.mounts();
+        // One start per sandbox at a time: a terminal and an action of the
+        // same project would both find it missing and both make it.
+        let lock = sandbox_lock(&self.name);
+        let _one = lock
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if self.exists(env)? {
             self.mount_missing(env, lang)?;
             if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
@@ -1279,6 +1383,11 @@ impl Vm {
         } else {
             kit::host_ports(&self.kit, &self.name)
         };
+        // Noted before any rule is opened: a rule opened and then lost by
+        // a failure or the app's end would never be closed.
+        let mut noted = self.host_ports.clone();
+        noted.extend(before.iter().filter(|p| !self.host_ports.contains(p)));
+        kit::mark_host_ports(&self.kit, &self.name, &noted)?;
         for port in &self.host_ports {
             self.call(env, &vm::host_port_allow(&self.name, *port), ASK_LIMIT)?;
         }
@@ -1295,6 +1404,15 @@ impl Vm {
     }
 }
 
+/// The lock of the sandbox `name`, the same for every caller.
+fn sandbox_lock(name: &str) -> std::sync::Arc<Mutex<()>> {
+    static LOCKS: Mutex<BTreeMap<String, std::sync::Arc<Mutex<()>>>> = Mutex::new(BTreeMap::new());
+    let mut all = LOCKS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    std::sync::Arc::clone(all.entry(name.to_owned()).or_default())
+}
+
 /// The PHP line of `project` in its VM: its own choice, the kit's, or
 /// `8.4` (the official images have every line the kit offers).
 pub fn php_line(kit: &Kit, project: &str) -> String {
@@ -1308,12 +1426,17 @@ pub fn php_line(kit: &Kit, project: &str) -> String {
 /// Stops the daemon of the kit's `sbx` and the microVMs it runs, at the
 /// app's exit and before the drive is removed: the PC's own daemon is the
 /// user's, never stopped.
-pub fn stop_daemon(kit: &Kit, env: &KitEnv) {
+pub fn stop_daemon(kit: &Kit, host: &Host, env: &KitEnv) {
     let Some(exe) = kit_sbx(kit) else {
         return;
     };
+    // The daemon is one per user: with another `sbx`'s running, the kit's
+    // `daemon stop` would stop that one and its VMs.
+    if !matches!(daemon::current(kit, &exe), daemon::Daemon::Kit) {
+        return;
+    }
     let sbx = Sbx::Kit(exe);
-    match run(&sbx, &Host::default(), env, &["daemon", "stop"], ASK_LIMIT) {
+    match run(&sbx, host, env, &["daemon", "stop"], ASK_LIMIT) {
         Ok(out) if out.status.success() => crate::common::log::info("sbx: daemon stopped"),
         Ok(out) => crate::common::log::warn(&format!(
             "sbx daemon stop: {}",

@@ -106,7 +106,11 @@ fn a_vm_never_gets_the_kit_or_the_profile_writable() {
         plain(&std::fs::canonicalize(kit.projects().join("shop")).unwrap())
     );
     assert!(!shop.to_string_lossy().starts_with(r"\\?\"), "{shop:?}");
-    assert!(allowed(&kit.projects()).is_some());
+    assert_eq!(
+        allowed(&kit.projects()),
+        None,
+        "every project, writable, in one VM"
+    );
     assert!(allowed(&sites).is_some(), "a folder elsewhere");
     // Never the kit, the profile, the system, nor what holds them.
     assert_eq!(allowed(kit.root()), None, "the kit's root");
