@@ -35,9 +35,7 @@ fn hash_file<D: Digest>(path: &Path) -> Result<Vec<u8>> {
     Ok(hasher.finalize().to_vec())
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
+use crate::common::hex;
 
 pub fn sha256_hex(path: &Path) -> Result<String> {
     hash_file::<Sha256>(path).map(|h| hex(&h))

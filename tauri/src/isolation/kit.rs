@@ -62,8 +62,7 @@ pub fn dir(kit: &Kit, sandbox: &str) -> PathBuf {
 /// name (the spec takes at most 64 characters, `[a-z0-9-]`).
 pub fn kit_name(sandbox: &str) -> String {
     let hash = Sha256::digest(sandbox.as_bytes());
-    let hex: String = hash[..12].iter().map(|b| format!("{b:02x}")).collect();
-    format!("atollo-{hex}")
+    format!("atollo-{}", crate::common::hex(&hash[..12]))
 }
 
 /// A YAML scalar that is only ever text: JSON's quoting, which YAML reads.
@@ -99,8 +98,7 @@ pub fn spec_yaml(sandbox: &str, owner: &Owner) -> String {
 
 /// The fingerprint of a kit's text.
 pub fn fingerprint(spec: &str) -> String {
-    let hash = Sha256::digest(spec.as_bytes());
-    hash.iter().map(|b| format!("{b:02x}")).collect()
+    crate::common::hex(&Sha256::digest(spec.as_bytes()))
 }
 
 /// Writes the kit of `sandbox` for `owner` (`spec.yaml`, `atollo.json`);

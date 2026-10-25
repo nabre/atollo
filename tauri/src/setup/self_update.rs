@@ -371,11 +371,7 @@ pub fn tree_sha256(root: &Path) -> Result<String> {
     }
     let mut hasher = Sha256::new();
     walk(root, root, &mut hasher)?;
-    Ok(hasher
-        .finalize()
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect())
+    Ok(crate::common::hex(&hasher.finalize()))
 }
 
 /// 1 when the file has an execute bit (macOS, Linux), 0 on Windows.

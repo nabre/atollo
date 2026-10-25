@@ -104,9 +104,7 @@ impl Services {
                 if !auth::mysql_cnf(&self.kit).is_file() {
                     auth::write_mysql_cnf(&self.kit, line_port(&self.kit, id, None), &password)?;
                 }
-                if let Some(l) = line {
-                    auth::write_mysql_line_cnf(&self.kit, l, port, &password)?;
-                }
+                auth::remove_old_line_logins(&self.kit);
             }
         }
         // MySQL answers to root's login before anything else uses it; an

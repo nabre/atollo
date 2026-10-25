@@ -404,7 +404,6 @@ fn mysql_is_the_kits_sql_server() {
     auth::set_project_line(&kit, "shop", "mysql", None).unwrap();
     let cnf = fs::read_to_string(&project_client_env(&kit, "shop")[0].1).unwrap();
     assert!(cnf.contains("port=3306\n"), "{cnf}");
-    assert!(auth::write_mysql_line_cnf(&kit, "../x", 3307, "pw").is_err());
 }
 
 #[test]

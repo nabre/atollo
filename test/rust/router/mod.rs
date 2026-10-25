@@ -122,9 +122,6 @@ fn bins_resolve_per_target_os() {
     assert_eq!(bins::cmd_name(Os::Win32, "npm"), "npm.cmd");
     assert_eq!(bins::cmd_name(Os::Linux, "npm"), "npm");
 
-    assert_eq!(bins::bat_name(Os::Win32, "mvn"), "mvn.bat");
-    assert_eq!(bins::bat_name(Os::Darwin, "mvn"), "mvn");
-
     let tmp = TempDir::new("router-bins");
     let win_kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
     let lin_kit = win_kit.for_target(Target::LINUX_X64);

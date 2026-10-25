@@ -189,7 +189,7 @@ impl Kit {
     pub fn id(&self) -> String {
         let key = crate::platform::processes::path_key(&self.root.to_string_lossy());
         let digest = Sha256::digest(key.as_bytes());
-        digest.iter().take(8).map(|b| format!("{b:02x}")).collect()
+        crate::common::hex(&digest[..8])
     }
 
     /// Creates `data\`, `projects\` and the app folders; checks that the root

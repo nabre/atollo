@@ -29,7 +29,7 @@ fn saved_in_data_and_kept() {
     // never outside data\projects
     for bad in ["..", r"..\x", "a/b", "con"] {
         update(&kit, bad, |s| s.agent = Some("x".into()));
-        assert!(dir(&kit, bad).is_none(), "{bad}");
+        assert!(ProjectState::of(&kit, bad).is_none(), "{bad}");
     }
     remove(&kit, "app").unwrap();
     assert!(!file.exists());

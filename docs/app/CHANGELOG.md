@@ -1,5 +1,18 @@
 # Novità
 
+## Le VM più solide (25/10/2026)
+
+- **Docker Sandboxes sempre a una versione provata**: sotto la 0.49.2, o di versione sconosciuta, si aggiorna da solo all'avvio; un pacchetto senza `sbx` o senza i suoi componenti della VM non sostituisce mai quello installato.
+- **Niente ripiego silenzioso sul PC**: se Docker Sandboxes non risponde per un momento (un'altra VM che scarica la sua immagine), terminali, azioni e agenti restano nella VM per tre minuti invece di partire sul PC; se l'errore resta, l'avviso «Senza VM» lo dice.
+- **Una sola creazione per sandbox**: un terminale e un'azione dello stesso progetto aperti insieme non creano più due volte la stessa sandbox.
+- **Un `sbx` che non risponde viene chiuso** al suo limite di tempo, invece di restare a metà.
+- **Le porte del database verso la VM** sono annotate prima di aprirle: una regola aperta e poi persa (un errore, l'app chiusa) si richiude sempre.
+- **GitHub nella VM**: spegnerlo toglie sempre l'accesso, anche se due operazioni scrivono insieme; una registrazione che Docker Sandboxes non ha più non lascia un permesso valido. Su macOS e Linux le registrazioni sono annotate con il nome vero del PC.
+- **Il daemon di un altro Docker Sandboxes** non viene più fermato all'uscita dell'app.
+- **La cartella di tutti i progetti** non si apre più come una sola VM (li metterebbe tutti, in scrittura, nella stessa VM): si apre un progetto.
+- **La creazione di un progetto da una base** (`npm create`, `composer create-project`) gira con l'ambiente sigillato dei progetti: niente login root di MySQL né chiavi SSH del PC.
+- **Tolti** il login root di MySQL scritto per ogni versione e mai letto (cancellato anche dal disco), il file `db.env` di un progetto che non ha più database, e codice morto.
+
 ## GitHub nella VM senza il token (25/10/2026)
 
 - **`git push` e `gh` dalla VM, per i progetti che scegli** (D-172): nella sezione Git del progetto, «GitHub nella VM» (spenta di serie). Accesa, il proxy di Docker Sandboxes aggiunge il tuo accesso alle richieste verso GitHub di quella sola VM; nella VM c'è solo un segnaposto, e Atollo non copia il token: dà a Docker Sandboxes un comando del kit che lo legge quando serve, e che risponde solo a Docker Sandboxes. Spenta, l'accesso viene tolto. Un accesso a GitHub che avevi già dato a Docker Sandboxes non viene toccato.
