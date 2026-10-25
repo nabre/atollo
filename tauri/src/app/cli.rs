@@ -99,7 +99,7 @@ impl PrepareArgs {
             update_all: self.update_all,
             force: self.force,
             lines: self.lines.clone(),
-            at: Vec::new(),
+            ..Options::default()
         }
     }
 }

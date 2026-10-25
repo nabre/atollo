@@ -114,6 +114,55 @@ fn plan_follows_choice_skip_and_only() {
     });
 }
 
+/// With the VM on (D-173): the PC's run prepares the system components and
+/// the parts of the app only, leaves the chosen tools as they are, and
+/// still removes what is not chosen any more; the run for the VM's Linux
+/// prepares the chosen tools only, never the system components nor what
+/// only finishes on its own system, and removes nothing.
+#[test]
+fn the_vm_splits_the_system_and_the_tools() {
+    let catalog = Catalog::get();
+    let mut choice = Choice::defaults(catalog);
+    choice.set(catalog, "go", true);
+    choice.set(catalog, "node", true);
+    choice.set(catalog, "php", false);
+    let scoped = |scope| Options {
+        scope,
+        ..Options::default()
+    };
+    with_ctx("plan-system", |ctx| {
+        fake_install(ctx, "php");
+        fake_install(ctx, "node");
+        let p = plan(ctx, catalog, &choice, &scoped(Scope::System)).unwrap();
+        assert!(p.handle.contains(&"pwsh".into()) && p.handle.contains(&"gh".into()));
+        assert!(p.handle.contains(&"sandboxes".into()));
+        assert!(!p.handle.contains(&"go".into()), "a tool goes to the VM");
+        assert!(
+            !p.handle.contains(&"node".into()),
+            "a tool on the PC is left"
+        );
+        assert_eq!(p.remove, ["php"], "not chosen any more: removed");
+    });
+    with_target_ctx("plan-tools", crate::kit::Target::LINUX_X64, |ctx| {
+        fake_install(ctx, "php");
+        let p = plan(ctx, catalog, &choice, &scoped(Scope::Tools)).unwrap();
+        assert!(p.handle.contains(&"go".into()) && p.handle.contains(&"node".into()));
+        for system in ["pwsh", "gh", "sandboxes", "vscodium-server"] {
+            assert!(!p.handle.contains(&system.into()), "{system}");
+        }
+        assert!(
+            !p.handle.contains(&"rust".into()),
+            "finishes on its own system only"
+        );
+        assert!(p.remove.is_empty(), "the tools' run removes nothing");
+        let tools = Options {
+            scope: Scope::Tools,
+            ..Options::default()
+        };
+        assert!(remove_elsewhere(ctx.kit, catalog, &choice, &tools).is_empty());
+    });
+}
+
 fn plan_with(ctx: &Ctx, choice: &Choice, only: &[&str], skip: &[&str]) -> Result<Plan> {
     let ids = |ids: &[&str]| ids.iter().map(|&id| id.to_owned()).collect();
     plan(

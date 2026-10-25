@@ -73,6 +73,9 @@ export interface TargetToolStatus {
   noArm64: boolean;
   /** Why it is not available, already translated. */
   unavailableReason: string | null;
+  /** On the PC's system with the VM on: the VM runs it with its build for
+   * Linux, not needed here (D-174). */
+  viaVm: boolean;
 }
 
 export interface TargetSummary extends Omit<TargetProfile, "id"> {
@@ -88,6 +91,8 @@ export interface TargetGrid {
   targets: TargetSummary[];
   /** «Piattaforma» chosen last (settings.json); null: this PC's. */
   chosen: TargetId | null;
+  /** The VM's Linux when the VM is on (D-174); null: no VM. */
+  vm: TargetId | null;
 }
 
 export interface ComponentCheck {
@@ -387,6 +392,7 @@ function sampleGrid(): TargetGrid {
         firstStart: !p.executableOnHost && ["git", "python"].includes(c.id),
         noArm64: false,
         unavailableReason: null,
+        viaVm: false,
       };
     });
     return {
@@ -397,7 +403,7 @@ function sampleGrid(): TargetGrid {
       tools,
     };
   });
-  return { profiles, targets, chosen: null };
+  return { profiles, targets, chosen: null, vm: null };
 }
 
 /** The component × system grid and the system chosen last (D-121). */

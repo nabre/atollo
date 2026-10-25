@@ -81,19 +81,32 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
     out
 }
 
-/// What can be added from "Linguaggi e strumenti": not installed, and
-/// available for the kit's platform (no R on Windows ARM64).
-fn addable(kit: &Kit, c: &crate::setup::Component) -> bool {
-    !c.is_installed(kit) && c.is_available_on(kit.target())
+/// What can be added from "Linguaggi e strumenti" for the tools' kit
+/// `tools` (the kit, or with the VM on the kit of its Linux, D-173): not
+/// installed, available there (no R on Windows ARM64), and for the VM's
+/// Linux one this PC can install (not what only finishes on its own
+/// system).
+fn addable(tools: &Kit, c: &crate::setup::Component, cross: bool) -> bool {
+    let staged = cross
+        && crate::install::installer(&c.id)
+            .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, tools.target()));
+    !c.is_installed(tools) && c.is_available_on(tools.target()) && !staged
 }
 
 pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
+    info_in(kit, kit, dir, lang)
+}
+
+/// [`info`] with what it misses counted on `tools` (the VM's Linux when the
+/// VM is on, D-173).
+pub fn info_in(kit: &Kit, tools: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     let project = detect::detect(dir, lang);
     let catalog = Catalog::get();
+    let cross = tools.target() != kit.target();
     let missing = project
         .requires
         .iter()
-        .filter(|id| catalog.find(id).is_some_and(|c| addable(kit, c)))
+        .filter(|id| catalog.find(id).is_some_and(|c| addable(tools, c, cross)))
         .cloned()
         .collect();
     let empty = fs::symlink_metadata(dir).is_ok_and(|m| m.is_dir())
@@ -126,14 +139,19 @@ fn recency(modified: u64, settings: &settings::ProjectSettings) -> u64 {
 }
 
 /// Every project, most recently opened or changed first.
-pub fn list(kit: &Kit, lang: &str) -> Vec<ProjectInfo> {
-    let mut out: Vec<ProjectInfo> = folders(kit).iter().map(|d| info(kit, d, lang)).collect();
+/// The projects, what they miss counted on `tools` ([`info_in`]: the kit,
+/// or with the VM on the kit of its Linux).
+pub fn list_in(kit: &Kit, tools: &Kit, lang: &str) -> Vec<ProjectInfo> {
+    let mut out: Vec<ProjectInfo> = folders(kit)
+        .iter()
+        .map(|d| info_in(kit, tools, d, lang))
+        .collect();
     let recent = |p: &ProjectInfo| recency(p.modified, &p.settings);
     out.sort_by(|a, b| recent(b).cmp(&recent(a)).then_with(|| a.id.cmp(&b.id)));
     out
 }
 
-/// The projects' ids in the order of [`list`], without reading what is in
+/// The projects' ids in the order of [`list_in`], without reading what is in
 /// them: the tray menu reads it on every change (D-145).
 pub fn recent(kit: &Kit) -> Vec<String> {
     let mut out: Vec<(u64, String)> = folders(kit)

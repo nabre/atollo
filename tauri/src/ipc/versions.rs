@@ -121,11 +121,11 @@ pub(super) fn install_now<R: Runtime>(
     if state.setup.snapshot().running {
         return Err(tr(state, "C'è già un'installazione in corso.", &[]).into());
     }
-    let kit = kit_for(&state.kit, target.as_deref())?;
     let catalog = Catalog::get();
     if catalog.find(&id).is_none() {
         return Err(format!("unknown component: {id}").into());
     }
+    let kit = tools_kit(state, kit_for(&state.kit, target.as_deref())?, &id);
     {
         let _one = crate::setup::catalog::choice_lock();
         let mut choice = crate::setup::Choice::read(&kit, catalog)
@@ -149,13 +149,37 @@ pub(super) fn download_line<R: Runtime>(
     line: String,
     target: Option<String>,
 ) -> CmdResult<()> {
-    let kit = kit_for(&state.kit, target.as_deref())?;
+    let kit = tools_kit(state, kit_for(&state.kit, target.as_deref())?, &id);
     let opts = Options {
         target: Some(kit.target()),
         lines: vec![(id, line)],
         ..Options::default()
     };
     Ok(state.setup.start(opts, false, setup_notify(app))?)
+}
+
+/// Where component `id` asked for `kit` is installed (D-173): with the VM
+/// on, a tool asked for the PC goes to the VM's Linux, if it has a build
+/// there this PC can install; a system component, or another system
+/// asked for, stays as asked.
+fn tools_kit(state: &AppState, kit: Kit, id: &str) -> Kit {
+    let catalog = Catalog::get();
+    let Some(component) = catalog.find(id) else {
+        return kit;
+    };
+    if kit.target() != state.kit.target() || catalog.locked_on(kit.target()).contains(id) {
+        return kit;
+    }
+    let Some(guest) = super::setup::vm_tools_target(state) else {
+        return kit;
+    };
+    let staged = crate::install::installer(id)
+        .is_some_and(|i| crate::router::bootstrap::stages_for(i, component, guest));
+    if component.is_available_on(guest) && !staged {
+        state.kit.for_target(guest)
+    } else {
+        kit
+    }
 }
 
 /// A line chosen and not on disk is downloaded first (progress as

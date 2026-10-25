@@ -734,6 +734,11 @@
     "fr": "La sandbox {0} travaille dans un autre dossier : supprime-la dans «Sandbox des VM» (son disque est supprimé, pas les fichiers du projet) et rouvre.",
     "de": "Die Sandbox {0} arbeitet in einem anderen Ordner: Entferne sie unter «Sandboxes der VMs» (ihre Festplatte wird gelöscht, nicht die Dateien des Projekts) und öffne erneut."
   },
+  "Docker Sandboxes deve ripartire per un'impostazione di sicurezza: chiudi le sessioni nella VM, poi «Ricontrolla» nella finestra della VM e riprova.": {
+    "en": "Docker Sandboxes must restart for a security setting: close the sessions in the VM, then «Check again» in the VM's box and try again.",
+    "fr": "Docker Sandboxes doit redémarrer pour un réglage de sécurité : ferme les sessions dans la VM, puis «Vérifier à nouveau» dans la fenêtre de la VM et réessaie.",
+    "de": "Docker Sandboxes muss für eine Sicherheitseinstellung neu starten: Schließe die Sitzungen in der VM, dann «Erneut prüfen» im Fenster der VM und versuche es erneut."
+  },
   "Docker Sandboxes (sbx) non è nel kit.": {
     "en": "Docker Sandboxes (sbx) is not in the kit.",
     "fr": "Docker Sandboxes (sbx) n'est pas dans le kit.",

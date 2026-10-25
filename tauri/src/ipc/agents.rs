@@ -69,7 +69,7 @@ pub async fn agent_launch<R: Runtime>(
                 )
                 .into());
             };
-            let launch = vm.launch(&kit, args, &agent);
+            let launch = vm.launch(&kit, args, &agent, lang).or_fail_chain("vm")?;
             return crate::editor::terminal::open_launch(&app, &vm.session_env(&base), &dir, launch)
                 .or_fail_chain("agent");
         }

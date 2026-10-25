@@ -25,6 +25,7 @@ import {
 
 const GLYPH: Record<CellState, { glyph: string; tone: string }> = {
   available: { glyph: "✓", tone: "text-vsc-success" },
+  vm: { glyph: "▣", tone: "text-vsc-link" },
   emulated: { glyph: "≈", tone: "text-vsc-link" },
   staged: { glyph: "↓", tone: "text-vsc-success" },
   firstStart: { glyph: "◷", tone: "text-vsc-warning" },
@@ -164,6 +165,7 @@ export function TargetMatrix({ state, onOpen }: { state: ComponentsState; onOpen
                     <span className="block whitespace-nowrap">{targetName(p.id)}</span>
                     <span className="block font-mono text-[11px] font-normal text-vsc-desc">{p.id}</span>
                     {mark && <Tag className="mt-0.5">{mark}</Tag>}
+                    {grid.vm === p.id && <Tag className="mt-0.5">{t("VM")}</Tag>}
                     {summary && (
                       <span
                         className="block font-normal text-vsc-desc tabular-nums"

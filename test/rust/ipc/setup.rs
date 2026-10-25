@@ -243,6 +243,39 @@ fn needs_of_one_target_stay_out_of_the_choice() {
     assert!(!choice.is_chosen("cc") && !choice.is_chosen("rust"));
 }
 
+/// With the VM on (D-174): the grid names the VM's Linux, and on the PC's
+/// column the tools the VM runs are not needed there; the system
+/// components, the parts of the app and what only finishes on its own
+/// system stay as they are.
+#[test]
+fn the_grid_marks_the_vm() {
+    let tmp = TempDir::new("cmd-grid-vm");
+    let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    kit.prepare().unwrap();
+    assert_eq!(target_grid(&kit, "en", None).vm, None);
+    let grid = target_grid(&kit, "en", Some(Target::LINUX_X64));
+    assert_eq!(grid.vm.as_deref(), Some("linux-x64"));
+    let column = |t: Target| {
+        grid.targets
+            .iter()
+            .find(|s| s.target == t.as_str())
+            .unwrap()
+    };
+    let via = |id: &str| {
+        column(Target::WIN32_X64)
+            .tools
+            .iter()
+            .find(|x| x.id == id)
+            .unwrap()
+            .via_vm
+    };
+    assert!(via("node") && via("python") && via("go"));
+    for kept in ["pwsh", "gh", "sandboxes", "vscodium-server", "rust"] {
+        assert!(!via(kept), "{kept}");
+    }
+    assert!(column(Target::LINUX_X64).tools.iter().all(|x| !x.via_vm));
+}
+
 /// «Piattaforma» is remembered in settings.json (D-121): the grid gives it
 /// back, the other settings stay, an unknown system is refused, `None`
 /// forgets it; a file that cannot be read is not overwritten.
@@ -251,7 +284,7 @@ fn tools_target_is_remembered() {
     let tmp = TempDir::new("cmd-tools-target");
     let kit = Kit::at_target(tmp.0.clone(), Target::detect());
     kit.prepare().unwrap();
-    let grid = target_grid(&kit, "en");
+    let grid = target_grid(&kit, "en", None);
     assert_eq!(grid.chosen, None);
     assert_eq!(grid.profiles.map(|p| p.id), Target::ALL.map(Target::as_str));
     assert_eq!(grid.targets.len(), 6);
@@ -266,7 +299,7 @@ fn tools_target_is_remembered() {
     assert_eq!(saved.lang.as_deref(), Some("de"));
     assert!(saved.validate().is_ok());
     assert_eq!(
-        target_grid(&kit, "en").chosen.as_deref(),
+        target_grid(&kit, "en", None).chosen.as_deref(),
         Some("linux-arm64")
     );
 
@@ -280,7 +313,7 @@ fn tools_target_is_remembered() {
 
     // A value written by hand that the app does not know is not chosen.
     std::fs::write(kit.settings_file(), r#"{"toolsTarget":"beos-x64"}"#).unwrap();
-    assert_eq!(target_grid(&kit, "en").chosen, None);
+    assert_eq!(target_grid(&kit, "en", None).chosen, None);
     assert!(Settings::load(&kit).settings.validate().is_err());
 
     std::fs::write(kit.settings_file(), "{ broken").unwrap();
