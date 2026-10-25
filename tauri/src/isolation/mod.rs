@@ -1141,12 +1141,16 @@ impl Vm {
         for port in &self.host_ports {
             self.call(env, &vm::host_port_allow(&self.name, *port), ASK_LIMIT)?;
         }
+        // A port leaves the list only once its rule is gone: one that
+        // could not be closed stays noted, and the next start tries again.
+        let mut noted = self.host_ports.clone();
         for port in before.iter().filter(|p| !self.host_ports.contains(p)) {
             if let Err(e) = self.call(env, &vm::host_port_close(&self.name, *port), ASK_LIMIT) {
                 crate::common::log::warn(&format!("{}: port {port}: {e:#}", self.name));
+                noted.push(*port);
             }
         }
-        kit::mark_host_ports(&self.kit, &self.name, &self.host_ports)
+        kit::mark_host_ports(&self.kit, &self.name, &noted)
     }
 }
 
