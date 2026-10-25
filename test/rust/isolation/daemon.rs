@@ -62,4 +62,6 @@ fn the_kits_daemon_state_is_in_its_home() {
     assert_eq!(kit_pid(&kit), Some(9412));
     assert_eq!(ENV[0], ("LLMMAN_RUNTIME", "path"));
     assert_eq!(SETTINGS[0], ("ssh.agentForwardingEnabled", "false"));
+    assert!(SETTINGS.contains(&("browser.enabled", "false")));
+    assert!(SETTINGS.contains(&("diagnostics.autoUpload", "no")));
 }

@@ -21,10 +21,17 @@ pub const PIPE: &str = r"\\.\pipe\docker_kaname_sandboxd";
 /// reports off.
 pub const ENV: [(&str, &str); 2] = [("LLMMAN_RUNTIME", "path"), ("SBX_NO_TELEMETRY", "1")];
 
-/// The daemon's settings Atollo keeps on the kit's `sbx`: the VMs never
-/// sign with the user's SSH keys (the PC's agent), as the sealed
-/// environment of D-167 keeps them from a project's programs.
-pub const SETTINGS: [(&str, &str); 1] = [("ssh.agentForwardingEnabled", "false")];
+/// The daemon's settings Atollo keeps on the kit's `sbx` (D-175: nothing
+/// of the box reaches the PC but its published ports): the VMs never sign
+/// with the user's SSH keys (the PC's agent), as the sealed environment of
+/// D-167 keeps them from a project's programs; never open the PC's browser
+/// (the app's terminal shows a link, a click opens it); and `sbx` never
+/// uploads a diagnostics bundle of the kit (tried with sbx 0.49.2).
+pub const SETTINGS: [(&str, &str); 3] = [
+    ("ssh.agentForwardingEnabled", "false"),
+    ("browser.enabled", "false"),
+    ("diagnostics.autoUpload", "no"),
+];
 
 /// Who runs the daemon.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

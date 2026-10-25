@@ -21,7 +21,7 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 
 use crate::env::{Host, KitEnv};
-use crate::kit::{Kit, Os};
+use crate::kit::Kit;
 use crate::platform::virt::{self, Gap};
 
 pub mod daemon;
@@ -91,7 +91,8 @@ pub enum Blocker {
     AppArmor {
         shim: String,
     },
-    /// Docker Sandboxes is neither in the kit nor on the PC.
+    /// The kit's Docker Sandboxes is not installed (one of the PC is
+    /// never used, D-175).
     SbxMissing,
     /// `sbx` is there but not signed in to Docker.
     SbxSignedOut,
@@ -99,9 +100,6 @@ pub enum Blocker {
     SbxFailed {
         message: String,
     },
-    /// The PC's `sbx` has no global network policy yet: no VM starts.
-    /// The kit's gets `balanced` by itself ([`vm::POLICY_ARGS`]).
-    PolicyUnset,
     /// The daemon running is another `sbx`'s (the PC's, another kit's):
     /// the kit's VMs would go into its state, out of the kit
     /// ([`daemon::Daemon::Other`]).
@@ -256,7 +254,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
                 .and_then(|()| policy(sbx, host, env))
             {
                 blockers.push(b);
-            } else if let Sbx::Kit(_) = sbx {
+            } else {
                 daemon_settings(kit, sbx, host, env);
                 legacy_global_github(kit, sbx, host, env);
             }
@@ -269,9 +267,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
 /// with sparse files, and with a daemon of its own. The PC's `sbx` keeps
 /// its own where the user installed it: nothing to check.
 fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
-    let Sbx::Kit(exe) = sbx else {
-        return Ok(());
-    };
+    let exe = sbx.path();
     if let Some(volume) = kit.volume().filter(|v| !v.fs.has_permissions()) {
         return Err(Blocker::KitDisk {
             fs: volume.fs.as_str().to_owned(),
@@ -567,45 +563,39 @@ pub(crate) fn sandboxes_running(json: &str) -> bool {
         .unwrap_or(true)
 }
 
-/// The `sbx` the projects' microVMs run with.
+/// The `sbx` the projects' microVMs run with: the kit's own (the
+/// `sandboxes` component), never one of the PC (D-175: nothing of a
+/// project's box leaves the kit). It runs with the kit's environment, so
+/// its sandboxes, settings and state are in the kit and travel with it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Sbx {
-    /// The kit's own (the `sandboxes` component): with the kit's
-    /// environment, so its sandboxes, settings and sign-in are in the kit's
-    /// home and travel with it.
-    Kit(PathBuf),
-    /// One of the PC (D-167, declared trace): with the PC's environment,
-    /// where it keeps its own.
-    Pc(PathBuf),
-}
+pub struct Sbx(PathBuf);
 
 impl Sbx {
-    /// The kit's, when installed; else the PC's.
-    pub fn find(kit: &Kit, host: &Host) -> Option<Sbx> {
-        kit_sbx(kit)
-            .map(Sbx::Kit)
-            .or_else(|| find_pc_sbx(host).map(Sbx::Pc))
+    /// The kit's, when installed.
+    pub fn find(kit: &Kit, _host: &Host) -> Option<Sbx> {
+        kit_sbx(kit).map(Sbx)
+    }
+
+    /// The kit's `sbx` at `path` (the tests).
+    #[cfg(test)]
+    pub(crate) fn at(path: PathBuf) -> Sbx {
+        Sbx(path)
     }
 
     pub fn path(&self) -> &Path {
-        match self {
-            Sbx::Kit(p) | Sbx::Pc(p) => p,
-        }
+        &self.0
     }
 
     /// The microVM's shim beside the kit's `sbx` (`libexec`), which
-    /// AppArmor must let create user namespaces (Linux); none for the PC's,
-    /// whose package installs its profile.
+    /// AppArmor must let create user namespaces (Linux).
     fn shim(&self) -> Option<PathBuf> {
-        match self {
-            Sbx::Kit(p) => Some(
-                p.parent()?
-                    .parent()?
-                    .join("libexec")
-                    .join("containerd-shim-nerdbox-v1"),
-            ),
-            Sbx::Pc(_) => None,
-        }
+        Some(
+            self.0
+                .parent()?
+                .parent()?
+                .join("libexec")
+                .join("containerd-shim-nerdbox-v1"),
+        )
     }
 
     /// A command of this `sbx`, with its environment ([`Sbx::session_env`]).
@@ -621,26 +611,13 @@ impl Sbx {
     /// in a kit folder) would leave them over the limit of 107 bytes.
     pub fn session_env(&self, env: &KitEnv, host: &Host) -> KitEnv {
         let mut out = env.clone();
-        match self {
-            Sbx::Kit(_) => {
-                if let Some(temp) = host.temp() {
-                    for name in ["TEMP", "TMP", "TMPDIR"] {
-                        out.set(name, temp);
-                    }
-                }
-                for (name, value) in daemon::ENV {
-                    out.set(name, value);
-                }
+        if let Some(temp) = host.temp() {
+            for name in ["TEMP", "TMP", "TMPDIR"] {
+                out.set(name, temp);
             }
-            Sbx::Pc(_) => {
-                let names: Vec<String> = out.iter().map(|(k, _)| k.to_owned()).collect();
-                for name in names {
-                    out.remove(&name);
-                }
-                for (name, value) in host.iter() {
-                    out.set(name, value);
-                }
-            }
+        }
+        for (name, value) in daemon::ENV {
+            out.set(name, value);
         }
         out
     }
@@ -655,8 +632,6 @@ pub enum Fix {
     Login,
     /// `sbx ls`: shows the error `sbx` answers with.
     Ls,
-    /// `sbx policy init balanced`, for the PC's `sbx` ([`Blocker::PolicyUnset`]).
-    Policy,
 }
 
 impl Fix {
@@ -664,7 +639,6 @@ impl Fix {
         let args: &[&str] = match self {
             Fix::Login => &["login"],
             Fix::Ls => &["ls"],
-            Fix::Policy => &vm::POLICY_ARGS,
         };
         args.iter().map(|a| (*a).to_owned()).collect()
     }
@@ -702,50 +676,6 @@ pub fn kit_sbx(kit: &Kit) -> Option<PathBuf> {
     c.is_installed(kit)
         .then(|| c.key_paths(kit).into_iter().next())
         .flatten()
-}
-
-/// The folders a PC's `sbx` is looked for in: the PC's `PATH`, then where
-/// its installers put it (WinGet's links for the user, Homebrew, the
-/// Ubuntu package).
-pub(crate) fn sbx_dirs(os: Os, host: &Host) -> Vec<PathBuf> {
-    let mut dirs: Vec<PathBuf> = host
-        .get("PATH")
-        .unwrap_or_default()
-        .split(os.path_sep())
-        .filter(|d| !d.trim().is_empty())
-        .map(|d| PathBuf::from(d.trim().trim_matches('"')))
-        .collect();
-    let extra: Vec<PathBuf> = if os.is_windows() {
-        let local = host.get("LOCALAPPDATA").map(PathBuf::from);
-        let programs = host.get("ProgramFiles").map(PathBuf::from);
-        [
-            local.map(|l| l.join("Microsoft").join("WinGet").join("Links")),
-            programs.map(|p| p.join("Docker").join("Sandboxes")),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
-    } else {
-        ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin"]
-            .into_iter()
-            .map(PathBuf::from)
-            .collect()
-    };
-    for d in extra {
-        if !dirs.contains(&d) {
-            dirs.push(d);
-        }
-    }
-    dirs
-}
-
-fn find_pc_sbx(host: &Host) -> Option<PathBuf> {
-    let os = crate::platform::OS;
-    let name = format!("sbx{}", os.exe_suffix());
-    sbx_dirs(os, host)
-        .into_iter()
-        .map(|d| d.join(&name))
-        .find(|p| p.is_file())
 }
 
 /// Runs `sbx` with `args`, its output once it ends; after `limit` it is
@@ -816,15 +746,10 @@ fn ask(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
 }
 
 /// The global network policy no VM starts without: the kit's `sbx` gets
-/// `balanced` (already set is fine); the PC's is the user's, only told.
+/// `balanced` (already set is fine).
 fn policy(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
-    let args: &[&str] = match sbx {
-        Sbx::Kit(_) => &vm::POLICY_ARGS,
-        Sbx::Pc(_) => &["policy", "ls"],
-    };
-    match run(sbx, host, env, args, ASK_LIMIT) {
+    match run(sbx, host, env, &vm::POLICY_ARGS, ASK_LIMIT) {
         Ok(out) => policy_answer(
-            sbx,
             out.status.success(),
             &format!(
                 "{}{}",
@@ -836,23 +761,12 @@ fn policy(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
     }
 }
 
-/// What `sbx policy init` (the kit's) or `sbx policy ls` (the PC's) says.
-pub(crate) fn policy_answer(sbx: &Sbx, success: bool, text: &str) -> Result<(), Blocker> {
-    let lower = text.to_lowercase();
-    if lower.contains("already initialized") {
+/// What `sbx policy init` says: done, or set already, is fine.
+pub(crate) fn policy_answer(success: bool, text: &str) -> Result<(), Blocker> {
+    if success || text.to_lowercase().contains("already initialized") {
         return Ok(());
     }
-    if lower.contains("not been initialized") || lower.contains("not initialized") {
-        return Err(Blocker::PolicyUnset);
-    }
-    if success {
-        return Ok(());
-    }
-    match sbx {
-        // A list that cannot be read says nothing of the VM: `sbx ls` answered.
-        Sbx::Pc(_) => Ok(()),
-        Sbx::Kit(_) => answer(false, text),
-    }
+    answer(false, text)
 }
 
 /// How long the start of a sandbox may take: the first one pulls its
@@ -936,10 +850,7 @@ pub fn vm_list(kit: &Kit, host: &Host, env: &KitEnv) -> anyhow::Result<VmList> {
         "sbx ls: {}",
         String::from_utf8_lossy(&out.stderr).trim()
     );
-    let disk = match sbx {
-        Sbx::Kit(_) => daemon::state_dir(kit).map(|d| crate::platform::files::allocated_size(&d)),
-        Sbx::Pc(_) => None,
-    };
+    let disk = daemon::state_dir(kit).map(|d| crate::platform::files::allocated_size(&d));
     Ok(VmList {
         vms: vms_of(kit, &String::from_utf8_lossy(&out.stdout)),
         disk,
@@ -1457,7 +1368,7 @@ impl Vm {
     /// agent of the PC in the VMs) starts and opens nothing, and never
     /// falls back to the PC.
     fn ready(&self, lang: &str) -> anyhow::Result<()> {
-        if matches!(self.sbx, Sbx::Kit(_)) && restart_pending(&self.kit) {
+        if restart_pending(&self.kit) {
             anyhow::bail!(crate::common::i18n::t(
                 lang,
                 "Docker Sandboxes deve ripartire per un'impostazione di sicurezza: chiudi le sessioni nella VM, poi «Ricontrolla» nella finestra della VM e riprova.",
@@ -1540,7 +1451,7 @@ pub fn stop_daemon(kit: &Kit, host: &Host, env: &KitEnv) {
     if !matches!(daemon::current(kit, &exe), daemon::Daemon::Kit) {
         return;
     }
-    let sbx = Sbx::Kit(exe);
+    let sbx = Sbx(exe);
     match run(&sbx, host, env, &["daemon", "stop"], ASK_LIMIT) {
         Ok(out) if out.status.success() => crate::common::log::info("sbx: daemon stopped"),
         Ok(out) => crate::common::log::warn(&format!(

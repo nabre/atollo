@@ -26,7 +26,6 @@ const ALL: IsolationBlocker[] = [
   { code: "sbx_missing" },
   { code: "sbx_signed_out" },
   { code: "sbx_failed", message: "daemon not running" },
-  { code: "policy_unset" },
   { code: "foreign_daemon" },
   { code: "kit_disk", fs: "exFAT" },
 ];

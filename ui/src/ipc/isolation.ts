@@ -16,7 +16,6 @@ export type IsolationBlocker =
   | { code: "sbx_missing" }
   | { code: "sbx_signed_out" }
   | { code: "sbx_failed"; message: string }
-  | { code: "policy_unset" }
   | { code: "foreign_daemon" }
   | { code: "kit_disk"; fs: string };
 
@@ -37,8 +36,8 @@ const SAMPLE_ISOLATION: IsolationStatus = {
 };
 
 /** What the notice's «Lancia» runs in the app's terminal: `sbx login`,
- * `sbx ls`, `sbx policy init balanced`. */
-export type IsolationFix = "login" | "ls" | "policy";
+ * `sbx ls`. */
+export type IsolationFix = "login" | "ls";
 
 /** Opens `fix` with the `sbx` found in a new session of the app's terminal. */
 export function isolationRun(fix: IsolationFix): Promise<void> {
