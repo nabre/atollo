@@ -81,7 +81,11 @@ pub enum Blocker {
     HypervisorOff,
     KvmMissing,
     KvmDenied,
-    /// `sbx` is not on the PC.
+    /// AppArmor keeps the kit's microVM shim (its path) from starting.
+    AppArmor {
+        shim: String,
+    },
+    /// Docker Sandboxes is neither in the kit nor on the PC.
     SbxMissing,
     /// `sbx` is there but not signed in to Docker.
     SbxSignedOut,
@@ -103,6 +107,9 @@ impl From<Gap> for Blocker {
             Gap::HypervisorOff => Blocker::HypervisorOff,
             Gap::KvmMissing => Blocker::KvmMissing,
             Gap::KvmDenied => Blocker::KvmDenied,
+            Gap::AppArmor(shim) => Blocker::AppArmor {
+                shim: shim.display().to_string(),
+            },
         }
     }
 }
@@ -149,8 +156,8 @@ impl Status {
 static LAST: Mutex<Option<(Instant, Status)>> = Mutex::new(None);
 
 /// The status, asked again when older than a minute or when `force` (the
-/// notice's "Ricontrolla").
-pub fn status(host: &Host, env: &KitEnv, force: bool) -> Status {
+/// notice's "Ricontrolla", an installation of Docker Sandboxes).
+pub fn status(kit: &Kit, host: &Host, env: &KitEnv, force: bool) -> Status {
     let mut last = LAST
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -159,21 +166,25 @@ pub fn status(host: &Host, env: &KitEnv, force: bool) -> Status {
             return st.clone();
         }
     }
-    let st = compute(host, env);
+    let st = compute(kit, host, env);
     *last = Some((Instant::now(), st.clone()));
     st
 }
 
-fn compute(host: &Host, env: &KitEnv) -> Status {
-    let mut blockers: Vec<Blocker> = virt::gaps().into_iter().map(Blocker::from).collect();
+fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
+    let sbx = Sbx::find(kit, host);
+    let shim = sbx.as_ref().and_then(Sbx::shim);
+    let mut blockers: Vec<Blocker> = virt::gaps(shim.as_deref())
+        .into_iter()
+        .map(Blocker::from)
+        .collect();
     if blockers.iter().any(Blocker::unsupported) {
         return Status::of(blockers, None);
     }
-    let sbx = find_sbx(host);
     match &sbx {
         None => blockers.push(Blocker::SbxMissing),
-        Some(exe) => {
-            if let Err(b) = ask(exe, host, env) {
+        Some(sbx) => {
+            if let Err(b) = ask(sbx, host, env) {
                 blockers.push(b);
             }
         }
@@ -181,12 +192,73 @@ fn compute(host: &Host, env: &KitEnv) -> Status {
     if blockers.is_empty() {
         blockers.push(Blocker::Pending);
     }
-    Status::of(blockers, sbx.map(|p| p.display().to_string()))
+    Status::of(blockers, sbx.map(|s| s.path().display().to_string()))
 }
 
-/// The folders `sbx` is looked for in: the PC's `PATH`, then where its
-/// installers put it (WinGet's links for the user, Homebrew, the Ubuntu
-/// package).
+/// The `sbx` the projects' microVMs run with.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Sbx {
+    /// The kit's own (the `sandboxes` component): with the kit's
+    /// environment, so its sandboxes, settings and sign-in are in the kit's
+    /// home and travel with it.
+    Kit(PathBuf),
+    /// One of the PC (D-167, declared trace): with the PC's environment,
+    /// where it keeps its own.
+    Pc(PathBuf),
+}
+
+impl Sbx {
+    /// The kit's, when installed; else the PC's.
+    pub fn find(kit: &Kit, host: &Host) -> Option<Sbx> {
+        kit_sbx(kit)
+            .map(Sbx::Kit)
+            .or_else(|| find_pc_sbx(host).map(Sbx::Pc))
+    }
+
+    pub fn path(&self) -> &Path {
+        match self {
+            Sbx::Kit(p) | Sbx::Pc(p) => p,
+        }
+    }
+
+    /// The microVM's shim beside the kit's `sbx` (`libexec`), which
+    /// AppArmor must let create user namespaces (Linux); none for the PC's,
+    /// whose package installs its profile.
+    fn shim(&self) -> Option<PathBuf> {
+        match self {
+            Sbx::Kit(p) => Some(
+                p.parent()?
+                    .parent()?
+                    .join("libexec")
+                    .join("containerd-shim-nerdbox-v1"),
+            ),
+            Sbx::Pc(_) => None,
+        }
+    }
+
+    /// A command of this `sbx`, with its environment: the kit's for the
+    /// kit's, the PC's for the PC's.
+    pub fn command(&self, env: &KitEnv, host: &Host) -> std::process::Command {
+        let mut cmd = crate::platform::jobs::kit_command(self.path(), env);
+        if let Sbx::Pc(_) = self {
+            cmd.env_clear().envs(host.iter());
+        }
+        cmd
+    }
+}
+
+/// The kit's `sbx` (`data/apps/<target>/sandboxes/bin/sbx`), when the
+/// component is installed.
+pub fn kit_sbx(kit: &Kit) -> Option<PathBuf> {
+    let c = crate::setup::Catalog::get().find("sandboxes")?;
+    c.is_installed(kit)
+        .then(|| c.key_paths(kit).into_iter().next())
+        .flatten()
+}
+
+/// The folders a PC's `sbx` is looked for in: the PC's `PATH`, then where
+/// its installers put it (WinGet's links for the user, Homebrew, the
+/// Ubuntu package).
 pub(crate) fn sbx_dirs(os: Os, host: &Host) -> Vec<PathBuf> {
     let mut dirs: Vec<PathBuf> = host
         .get("PATH")
@@ -219,7 +291,7 @@ pub(crate) fn sbx_dirs(os: Os, host: &Host) -> Vec<PathBuf> {
     dirs
 }
 
-fn find_sbx(host: &Host) -> Option<PathBuf> {
+fn find_pc_sbx(host: &Host) -> Option<PathBuf> {
     let os = crate::platform::OS;
     let name = format!("sbx{}", os.exe_suffix());
     sbx_dirs(os, host)
@@ -228,31 +300,55 @@ fn find_sbx(host: &Host) -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
-/// `sbx ls --json`: answers only when the daemon runs and the user is
-/// signed in. With the PC's environment, where `sbx` keeps its sign-in.
-fn ask(exe: &Path, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
-    let mut cmd = crate::platform::jobs::kit_command(exe, env);
-    cmd.env_clear()
-        .envs(host.iter())
-        .args(["ls", "--json"])
+/// Runs `sbx` with `args`, its output once it ends or after `limit`.
+fn run(
+    sbx: &Sbx,
+    host: &Host,
+    env: &KitEnv,
+    args: &[&str],
+    limit: Duration,
+) -> Result<std::process::Output, String> {
+    let mut cmd = sbx.command(env, host);
+    cmd.args(args)
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let child = crate::platform::jobs::spawn(&mut cmd).map_err(|e| Blocker::SbxFailed {
-        message: e.to_string(),
-    })?;
+    let child = crate::platform::jobs::spawn(&mut cmd).map_err(|e| e.to_string())?;
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || {
         let _ = tx.send(child.wait_with_output());
     });
-    match rx.recv_timeout(ASK_LIMIT) {
-        Ok(Ok(out)) => answer(out.status.success(), &String::from_utf8_lossy(&out.stderr)),
-        Ok(Err(e)) => Err(Blocker::SbxFailed {
-            message: e.to_string(),
-        }),
-        Err(_) => Err(Blocker::SbxFailed {
-            message: format!("sbx: no answer in {} s", ASK_LIMIT.as_secs()),
-        }),
+    match rx.recv_timeout(limit) {
+        Ok(Ok(out)) => Ok(out),
+        Ok(Err(e)) => Err(e.to_string()),
+        Err(_) => Err(format!("sbx: no answer in {} s", limit.as_secs())),
+    }
+}
+
+/// `sbx ls --json`: answers only when the daemon runs and the user is
+/// signed in.
+fn ask(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
+    match run(sbx, host, env, &["ls", "--json"], ASK_LIMIT) {
+        Ok(out) => answer(out.status.success(), &String::from_utf8_lossy(&out.stderr)),
+        Err(message) => Err(Blocker::SbxFailed { message }),
+    }
+}
+
+/// Stops the daemon of the kit's `sbx` and the microVMs it runs, at the
+/// app's exit and before the drive is removed: the PC's own daemon is the
+/// user's, never stopped.
+pub fn stop_daemon(kit: &Kit, env: &KitEnv) {
+    let Some(exe) = kit_sbx(kit) else {
+        return;
+    };
+    let sbx = Sbx::Kit(exe);
+    match run(&sbx, &Host::default(), env, &["daemon", "stop"], ASK_LIMIT) {
+        Ok(out) if out.status.success() => crate::common::log::info("sbx: daemon stopped"),
+        Ok(out) => crate::common::log::warn(&format!(
+            "sbx daemon stop: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )),
+        Err(e) => crate::common::log::warn(&format!("sbx daemon stop: {e}")),
     }
 }
 

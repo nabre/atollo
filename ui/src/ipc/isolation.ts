@@ -12,6 +12,7 @@ export type IsolationBlocker =
   | { code: "hypervisor_off" }
   | { code: "kvm_missing" }
   | { code: "kvm_denied" }
+  | { code: "apparmor"; shim: string }
   | { code: "sbx_missing" }
   | { code: "sbx_signed_out" }
   | { code: "sbx_failed"; message: string }

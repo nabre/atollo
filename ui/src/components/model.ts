@@ -15,6 +15,7 @@ export const KIND_OF: Record<string, Kind> = {
   gh: "system",
   git: "system",
   "vscodium-server": "system",
+  sandboxes: "system",
   uv: "tools",
   pnpm: "tools",
   cmake: "tools",

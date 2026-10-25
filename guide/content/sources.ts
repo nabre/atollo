@@ -173,6 +173,37 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     targetPath: "conpty\\",
   }),
   defSource({
+    id: "sandboxes",
+    logoId: "sandboxes",
+    name: "Docker Sandboxes (sbx)",
+    group: "system",
+    home: "https://docs.docker.com/ai/sandboxes/",
+    metaSource: "api.github.com/repos/docker/sbx-releases/releases/latest",
+    binarySource: () =>
+      tr(
+        "github.com/docker/sbx-releases: DockerSandboxes.msi (per utente, estratto senza installarlo, solo x64)",
+        "github.com/docker/sbx-releases: DockerSandboxes.msi (per user, extracted without installing it, x64 only)",
+        "github.com/docker/sbx-releases : DockerSandboxes.msi (par utilisateur, extrait sans l'installer, x64 uniquement)",
+        "github.com/docker/sbx-releases: DockerSandboxes.msi (pro Benutzer, entpackt ohne Installation, nur x64)",
+      ),
+    unix: () =>
+      tr(
+        "Apple silicon: DockerSandboxes-darwin.tar.gz; Linux x64 e ARM64: il tarball statico, disposto come il suo install.sh",
+        "Apple silicon: DockerSandboxes-darwin.tar.gz; Linux x64 and ARM64: the static tarball, laid out as its install.sh",
+        "Apple silicon : DockerSandboxes-darwin.tar.gz ; Linux x64 et ARM64 : l'archive statique, disposée comme son install.sh",
+        "Apple Silicon: DockerSandboxes-darwin.tar.gz; Linux x64 und ARM64: das statische Tarball, angeordnet wie sein install.sh",
+      ),
+    verifyKind: "SHA-256",
+    verifyDetail: () =>
+      tr(
+        "SHA-256 del digest di GitHub sull'asset della release",
+        "SHA-256 from GitHub's digest of the release asset",
+        "SHA-256 du digest GitHub de l'asset de la release",
+        "SHA-256 aus GitHubs Digest des Release-Assets",
+      ),
+    targetPath: "sandboxes\\",
+  }),
+  defSource({
     id: "claude",
     logoId: "claude",
     name: "Claude Code",

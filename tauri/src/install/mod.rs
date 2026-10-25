@@ -35,6 +35,7 @@ mod lang;
 mod llama;
 mod native;
 mod parts;
+mod sandboxes;
 mod web;
 
 use std::path::{Path, PathBuf};
@@ -290,6 +291,7 @@ pub fn installer(id: &str) -> Option<&'static dyn Installer> {
         "pwsh" => &editor::Pwsh,
         "vscodium-server" => &editor::Server,
         "conpty" => &conpty::ConPty,
+        "sandboxes" => &sandboxes::Sandboxes,
         "mysql" => &db::MySql,
         "mongodb" => &db::MongoDb,
         "sqlite" => &db::Sqlite,

@@ -120,6 +120,11 @@ pub fn program_version(exe: &Path) -> Result<String> {
     anyhow::bail!("{}: only on Windows", exe.display())
 }
 
+/// Windows Installer packages are Windows only.
+pub fn extract_msi(msi: &Path, _dest: &Path) -> Result<()> {
+    anyhow::bail!("{}: an MSI package opens on Windows only", msi.display())
+}
+
 /// 600 in a 700 folder.
 pub fn write_secret(path: &Path, text: &str) -> Result<()> {
     crate::platform::files::write_private(path, text)

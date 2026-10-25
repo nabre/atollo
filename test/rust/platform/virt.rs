@@ -4,7 +4,7 @@ use super::*;
 /// only gap listed.
 #[test]
 fn the_gaps_of_this_pc_are_read() {
-    let gaps = gaps();
+    let gaps = gaps(None);
     let unsupported = |g: &Gap| {
         matches!(
             g,

@@ -1066,12 +1066,7 @@
   "Attiva la virtualizzazione (Intel VT-x o AMD-V) nel BIOS/UEFI e riavvia il PC.": "Activez la virtualisation (Intel VT-x ou AMD-V) dans le BIOS/UEFI et redémarrez le PC.",
   "Il tuo utente non può usare /dev/kvm: non è nel gruppo kvm.": "Votre utilisateur ne peut pas utiliser /dev/kvm : il n'est pas dans le groupe kvm.",
   "In un terminale del PC, poi esci e rientra nella sessione:": "Dans un terminal du PC, puis déconnectez-vous et reconnectez-vous :",
-  "Docker Sandboxes (sbx) non è installato su questo PC. Docker Desktop non serve.": "Docker Sandboxes (sbx) n'est pas installé sur ce PC. Docker Desktop n'est pas nécessaire.",
-  "Installalo in un terminale del PC, poi accedi con «sbx login»:": "Installez-le dans un terminal du PC, puis connectez-vous avec « sbx login » :",
-  "sbx è installato ma non ha accesso a Docker: serve un account Docker (gratuito).": "sbx est installé mais n'est pas connecté à Docker : un compte Docker (gratuit) est nécessaire.",
-  "In un terminale del PC (si apre il browser per l'accesso):": "Dans un terminal du PC (le navigateur s'ouvre pour la connexion) :",
   "sbx ha risposto con un errore: {0}": "sbx a répondu par une erreur : {0}",
-  "Prova il comando in un terminale del PC per vedere il problema:": "Essayez la commande dans un terminal du PC pour voir le problème :",
   "Il PC ha tutto, ma questa versione di Atollo non avvia ancora i progetti nella VM.": "Le PC a tout ce qu'il faut, mais cette version d'Atollo ne lance pas encore les projets dans la VM.",
   "Nessuna azione: la VM si attiva da sola con un aggiornamento di Atollo.": "Rien à faire : la VM s'active d'elle-même avec une mise à jour d'Atollo.",
   "Progetti nella VM": "Projets dans la VM",
@@ -1083,5 +1078,14 @@
   "Lavori senza VM: i progetti girano sul PC": "Travail sans VM : les projets tournent sur le PC",
   "Dettagli e cosa serve per la VM": "Détails et ce qu'il faut pour la VM",
   "VM": "VM",
-  "Senza VM": "Sans VM"
+  "Senza VM": "Sans VM",
+  "AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo.": "AppArmor empêche la microVM Docker Sandboxes du kit de démarrer : elle n'a pas de profil.",
+  "In un terminale del PC, una volta (di nuovo se il kit cambia cartella):": "Dans un terminal du PC, une fois (à refaire si le kit change de dossier) :",
+  "Docker Sandboxes (sbx) non è nel kit. Docker Desktop non serve.": "Docker Sandboxes (sbx) n'est pas dans le kit. Docker Desktop n'est pas nécessaire.",
+  "Installalo nel kit (circa 470 MB in data, portabile come gli altri programmi); poi accedi con «sbx login» nel terminale di Atollo.": "Installez-le dans le kit (environ 470 Mo dans data, portable comme les autres programmes) ; puis connectez-vous avec « sbx login » dans le terminal d'Atollo.",
+  "sbx non ha accesso a Docker: serve un account Docker (gratuito).": "sbx n'est pas connecté à Docker : un compte Docker (gratuit) est nécessaire.",
+  "Nel terminale di Atollo (si apre il browser per l'accesso):": "Dans le terminal d'Atollo (le navigateur s'ouvre pour la connexion) :",
+  "Prova il comando nel terminale di Atollo per vedere il problema:": "Essayez la commande dans le terminal d'Atollo pour voir le problème :",
+  "Installa nel kit": "Installer dans le kit",
+  "Installazione avviata: la vedi nella barra di stato.": "Installation lancée : vous la suivez dans la barre d'état."
 }

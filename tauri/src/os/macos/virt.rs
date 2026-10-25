@@ -6,7 +6,7 @@ use std::process::{Command, Stdio};
 
 use crate::platform::virt::Gap;
 
-pub fn gaps() -> Vec<Gap> {
+pub fn gaps(_shim: Option<&std::path::Path>) -> Vec<Gap> {
     gaps_of(apple_silicon(), version().as_deref())
 }
 

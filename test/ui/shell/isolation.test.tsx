@@ -16,6 +16,7 @@ const ALL: IsolationBlocker[] = [
   { code: "hypervisor_off" },
   { code: "kvm_missing" },
   { code: "kvm_denied" },
+  { code: "apparmor", shim: "/media/u/KIT/data/apps/linux-x64/sandboxes/libexec/containerd-shim-nerdbox-v1" },
   { code: "sbx_missing" },
   { code: "sbx_signed_out" },
   { code: "sbx_failed", message: "daemon not running" },
@@ -33,11 +34,16 @@ describe("explain", () => {
     }
   });
 
-  it("gives the install command of the PC's system", () => {
-    expect(explain({ code: "sbx_missing" }, "windows").command).toBe("winget install -h Docker.sbx");
-    expect(explain({ code: "sbx_missing" }, "macos").command).toBe("brew install docker/tap/sbx");
-    expect(explain({ code: "sbx_missing" }, "linux").command).toContain("docker-sbx");
+  it("installs Docker Sandboxes in the kit, and gives the commands of the PC", () => {
+    for (const system of ["windows", "macos", "linux"] as const) {
+      const e = explain({ code: "sbx_missing" }, system);
+      expect(e.install).toBe(true);
+      expect(e.command).toBeUndefined();
+    }
     expect(explain({ code: "hypervisor_off" }, "windows").command).toContain("HypervisorPlatform");
+    const profile = explain({ code: "apparmor", shim: "/k/shim" }, "linux").command ?? "";
+    expect(profile).toContain('"/k/shim" flags=(unconfined)');
+    expect(profile).toContain("apparmor_parser -r /etc/apparmor.d/atollo-sbx-shim");
     expect(explain({ code: "sbx_signed_out" }, "linux").command).toBe("sbx login");
   });
 
@@ -70,7 +76,7 @@ describe("IsolationDialog", () => {
     expect(screen.getByText("Lavori senza VM")).toBeTruthy();
     expect(screen.getByText("Perché la VM non è attiva")).toBeTruthy();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
-    expect(screen.getByText("winget install -h Docker.sbx")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Installa nel kit" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Ricontrolla" }));
     expect(onCheck).toHaveBeenCalledOnce();
   });

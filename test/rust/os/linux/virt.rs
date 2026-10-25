@@ -24,3 +24,25 @@ fn older_ubuntu_and_derivatives_are_not_supported() {
     let plucky = "VERSION_ID=\"25.04\"\nID=ubuntu\n";
     assert!(gaps_of(Some(plucky), Kvm::Ready).is_empty());
 }
+
+/// The kit's shim has a profile when one of AppArmor's files names its
+/// path.
+#[test]
+fn a_profile_names_the_shim() {
+    let tmp = crate::test_support::TempDir::new("virt-apparmor");
+    let dir = tmp.0.as_path();
+    let shim =
+        Path::new("/media/u/KIT/data/apps/linux-x64/sandboxes/libexec/containerd-shim-nerdbox-v1");
+    assert!(!profiled(dir, shim));
+    std::fs::write(dir.join("other"), "/usr/bin/x {}\n").unwrap();
+    assert!(!profiled(dir, shim));
+    std::fs::write(
+        dir.join("atollo-sbx-shim"),
+        format!(
+            "abi <abi/3.0>,\n\"{}\" flags=(unconfined) {{\n}}\n",
+            shim.display()
+        ),
+    )
+    .unwrap();
+    assert!(profiled(dir, shim));
+}

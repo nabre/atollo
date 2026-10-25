@@ -77,12 +77,18 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                 let servers =
                     std::sync::Arc::clone(&window.app_handle().state::<AppState>().servers);
                 let llm = std::sync::Arc::clone(&window.app_handle().state::<AppState>().llm);
+                let (kit, env) = {
+                    let state = window.app_handle().state::<AppState>();
+                    (state.kit.clone(), state.env())
+                };
                 let handle = window.app_handle().clone();
                 std::thread::spawn(move || {
                     servers.stop_all();
                     llm.stop_all();
                     llm::pull::cancel_all(std::time::Duration::from_secs(10));
                     services.stop_all();
+                    // The projects' microVMs shut down too (D-167).
+                    crate::isolation::stop_daemon(&kit, &env);
                     handle.exit(0);
                 });
             }

@@ -39,6 +39,7 @@
     "sqlite": { "windows": "sqlite.org (x64 when there is no arm64 zip)", "unix": "sqlite.org; linux-arm64: conda-forge", "notRelocatable": ["linux-arm64"] },
     "pwsh": { "windows": "GitHub PowerShell/PowerShell", "unix": "GitHub PowerShell/PowerShell" },
     "vscodium-server": { "windows": "VSCodium reh-web, pinned version (x64 on ARM64 too)", "unix": "VSCodium reh-web, pinned version per target" },
-    "conpty": { "windows": "NuGet Microsoft.Windows.Console.ConPTY, pinned version, conpty.dll + OpenConsole.exe signed by Microsoft (x64 and arm64)", "unix": "not needed: the system's PTY" }
+    "conpty": { "windows": "NuGet Microsoft.Windows.Console.ConPTY, pinned version, conpty.dll + OpenConsole.exe signed by Microsoft (x64 and arm64)", "unix": "not needed: the system's PTY" },
+    "sandboxes": { "windows": "GitHub docker/sbx-releases: DockerSandboxes.msi (per user) extracted with msiexec /a, never installed (x64 only)", "unix": "GitHub docker/sbx-releases: Sbx.app on Apple silicon; the static tarball laid out as its install.sh on Linux x64 and arm64" }
   }
 }

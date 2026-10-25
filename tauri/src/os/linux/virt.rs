@@ -11,8 +11,40 @@ use crate::platform::virt::Gap;
 
 const KVM: &str = "/dev/kvm";
 
-pub fn gaps() -> Vec<Gap> {
-    gaps_of(super::host::os_release().as_deref(), kvm())
+pub fn gaps(shim: Option<&Path>) -> Vec<Gap> {
+    let mut gaps = gaps_of(super::host::os_release().as_deref(), kvm());
+    if let Some(shim) = shim {
+        if gaps.iter().all(|g| !matches!(g, Gap::Distribution(_)))
+            && userns_restricted()
+            && !profiled(Path::new(APPARMOR_DIR), shim)
+        {
+            gaps.push(Gap::AppArmor(shim.to_path_buf()));
+        }
+    }
+    gaps
+}
+
+/// Where AppArmor's profiles are.
+const APPARMOR_DIR: &str = "/etc/apparmor.d";
+
+/// Ubuntu 23.10 and later: a program without a profile cannot create user
+/// namespaces, which the microVM's shim needs.
+fn userns_restricted() -> bool {
+    std::fs::read_to_string("/proc/sys/kernel/apparmor_restrict_unprivileged_userns")
+        .is_ok_and(|v| v.trim() == "1")
+}
+
+/// A profile in `dir` names `shim` (its full path, as the profile's
+/// attachment).
+pub(crate) fn profiled(dir: &Path, shim: &Path) -> bool {
+    let wanted = shim.to_string_lossy();
+    std::fs::read_dir(dir).is_ok_and(|entries| {
+        entries.flatten().any(|e| {
+            e.file_type().is_ok_and(|t| t.is_file())
+                && std::fs::read_to_string(e.path())
+                    .is_ok_and(|text| text.contains(wanted.as_ref()))
+        })
+    })
 }
 
 /// What `/dev/kvm` is to the user.

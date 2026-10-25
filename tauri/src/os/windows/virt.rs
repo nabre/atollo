@@ -22,7 +22,7 @@ const HYPERVISOR_PRESENT: i32 = 0;
 type GetCapabilityFn =
     unsafe extern "system" fn(i32, *mut core::ffi::c_void, u32, *mut u32) -> HRESULT;
 
-pub fn gaps() -> Vec<Gap> {
+pub fn gaps(_shim: Option<&std::path::Path>) -> Vec<Gap> {
     gaps_of(
         super::host::windows_build(),
         super::host::arch(),

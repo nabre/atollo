@@ -4,6 +4,8 @@
 //! Mac's Virtualization framework is always there). Each system finds them
 //! its own way (`os/*/virt.rs`), without an administrator.
 
+use std::path::{Path, PathBuf};
+
 use crate::os::current::virt as imp;
 
 /// Something the PC lacks, in the order the user fixes them.
@@ -24,12 +26,17 @@ pub enum Gap {
     KvmMissing,
     /// `/dev/kvm` is there but the user is not in the `kvm` group.
     KvmDenied,
+    /// Ubuntu keeps unprivileged user namespaces from programs without an
+    /// AppArmor profile, and the microVM's shim (the path) has none.
+    AppArmor(PathBuf),
 }
 
 /// What the PC lacks for the sandboxes; empty when it has all. A system
 /// Docker does not support stops the list there: the rest would not help.
-pub fn gaps() -> Vec<Gap> {
-    imp::gaps()
+/// `shim`: the microVM's shim of the kit's Docker Sandboxes, when it is
+/// installed (Linux checks its AppArmor profile).
+pub fn gaps(shim: Option<&Path>) -> Vec<Gap> {
+    imp::gaps(shim)
 }
 
 #[cfg(test)]

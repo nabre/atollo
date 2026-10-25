@@ -44,6 +44,9 @@ pub enum Kind {
     /// Not an archive: the download is the file itself (an exe), copied
     /// into the target folder under its name.
     File,
+    /// A Windows Installer package, extracted without installing it
+    /// (`platform::files::extract_msi`); Windows only.
+    Msi,
 }
 
 /// Which part of the extracted tree becomes the component folder.
@@ -108,6 +111,7 @@ pub fn extract(archive: &Path, kind: Kind, dest: &Path) -> Result<()> {
             set_executable(&out);
             Ok(())
         }
+        Kind::Msi => crate::platform::files::extract_msi(archive, dest),
     }
     .with_context(|| format!("extracting {}", archive.display()))
 }

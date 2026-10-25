@@ -1,9 +1,9 @@
 // How shut in the projects' programs are (D-167): the status bar's item,
 // a warning while the projects run without the VM, and the box that says
 // why the VM is off and what makes it work, one step per reason.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { isolationStatus, type IsolationBlocker, type IsolationStatus } from "../ipc";
+import { componentsInstall, isolationStatus, type IsolationBlocker, type IsolationStatus } from "../ipc";
 import { useCopy, useLoad } from "../shared/hooks";
 import { Button, ConfirmDialog } from "../workbench";
 import { t } from "../i18n";
@@ -17,19 +17,30 @@ export function systemOf(platform: string): System {
   return "linux";
 }
 
-/** What a blocker means and what the user does about it: a sentence, and
- * the command to run when there is one. */
+/** What a blocker means and what the user does about it: a sentence, the
+ * command to run when there is one, and `install` when the kit's Docker
+ * Sandboxes is what is missing (a button installs it). */
 interface Explained {
   why: string;
   fix: string;
   command?: string;
+  install?: boolean;
 }
 
-const INSTALL: Record<System, string> = {
-  windows: "winget install -h Docker.sbx",
-  macos: "brew install docker/tap/sbx",
-  linux: "curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh && sudo apt install docker-sbx",
-};
+/** The AppArmor profile that lets the kit's microVM shim create user
+ * namespaces, as the profile of Docker's package does for its own. */
+export function apparmorCommand(shim: string): string {
+  const file = "/etc/apparmor.d/atollo-sbx-shim";
+  return [
+    `sudo tee ${file} >/dev/null <<'EOF'`,
+    "abi <abi/3.0>,",
+    "include <tunables/global>",
+    `"${shim}" flags=(unconfined) {`,
+    "}",
+    "EOF",
+    `sudo apparmor_parser -r ${file}`,
+  ].join("\n");
+}
 
 export function explain(b: IsolationBlocker, system: System): Explained {
   switch (b.code) {
@@ -75,22 +86,30 @@ export function explain(b: IsolationBlocker, system: System): Explained {
         fix: t("In un terminale del PC, poi esci e rientra nella sessione:"),
         command: "sudo usermod -aG kvm $USER",
       };
+    case "apparmor":
+      return {
+        why: t("AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo."),
+        fix: t("In un terminale del PC, una volta (di nuovo se il kit cambia cartella):"),
+        command: apparmorCommand(b.shim),
+      };
     case "sbx_missing":
       return {
-        why: t("Docker Sandboxes (sbx) non è installato su questo PC. Docker Desktop non serve."),
-        fix: t("Installalo in un terminale del PC, poi accedi con «sbx login»:"),
-        command: INSTALL[system],
+        why: t("Docker Sandboxes (sbx) non è nel kit. Docker Desktop non serve."),
+        fix: t(
+          "Installalo nel kit (circa 470 MB in data, portabile come gli altri programmi); poi accedi con «sbx login» nel terminale di Atollo.",
+        ),
+        install: true,
       };
     case "sbx_signed_out":
       return {
-        why: t("sbx è installato ma non ha accesso a Docker: serve un account Docker (gratuito)."),
-        fix: t("In un terminale del PC (si apre il browser per l'accesso):"),
+        why: t("sbx non ha accesso a Docker: serve un account Docker (gratuito)."),
+        fix: t("Nel terminale di Atollo (si apre il browser per l'accesso):"),
         command: "sbx login",
       };
     case "sbx_failed":
       return {
         why: t("sbx ha risposto con un errore: {0}", b.message),
-        fix: t("Prova il comando in un terminale del PC per vedere il problema:"),
+        fix: t("Prova il comando nel terminale di Atollo per vedere il problema:"),
         command: "sbx ls",
       };
     case "pending":
@@ -106,7 +125,7 @@ function CommandLine({ command }: { command: string }) {
   const { copied, copy } = useCopy(2000);
   return (
     <div className="mt-vsc-size40 flex items-start gap-vsc-size40">
-      <code className="flex-1 rounded-vsc-small bg-vsc-input px-vsc-size60 py-vsc-size20 font-mono text-[12px] break-all text-vsc-fg select-text">
+      <code className="flex-1 rounded-vsc-small bg-vsc-input px-vsc-size60 py-vsc-size20 font-mono text-[12px] break-all whitespace-pre-wrap text-vsc-fg select-text">
         {command}
       </code>
       <Button
@@ -117,6 +136,40 @@ function CommandLine({ command }: { command: string }) {
       >
         {copied ? t("Copiato") : t("Copia")}
       </Button>
+    </div>
+  );
+}
+
+/** "Installa nel kit": the kit's Docker Sandboxes, as on the Tools page;
+ * the progress is in the status bar. */
+function InstallButton() {
+  const [state, setState] = useState<"idle" | "busy" | "started">("idle");
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="mt-vsc-size40 flex items-center gap-vsc-size80">
+      <Button
+        small
+        variant="primary"
+        busy={state === "busy"}
+        disabled={state === "started"}
+        onClick={() => {
+          setState("busy");
+          setError(null);
+          componentsInstall("sandboxes").then(
+            () => {
+              setState("started");
+            },
+            (e: unknown) => {
+              setState("idle");
+              setError(String(e));
+            },
+          );
+        }}
+      >
+        {t("Installa nel kit")}
+      </Button>
+      {state === "started" && <span>{t("Installazione avviata: la vedi nella barra di stato.")}</span>}
+      {error && <span className="text-vsc-error">{error}</span>}
     </div>
   );
 }
@@ -169,6 +222,7 @@ export function IsolationDialog({
                   <p className="text-vsc-fg">{e.why}</p>
                   <p>{e.fix}</p>
                   {e.command && <CommandLine command={e.command} />}
+                  {e.install && <InstallButton />}
                 </li>
               );
             })}
@@ -180,8 +234,9 @@ export function IsolationDialog({
 }
 
 /** The status, read at start and every minute (`sbx` is asked at most once
- * a minute), and asked again on "Ricontrolla". */
-export function useIsolation() {
+ * a minute), and asked again on "Ricontrolla" and when an installation
+ * ends (`installing` turns false: Docker Sandboxes may have arrived). */
+export function useIsolation(installing = false) {
   const { data, setData } = useLoad<IsolationStatus | null>(isolationStatus, null, {
     onError: "keep",
     every: 60_000,
@@ -199,5 +254,12 @@ export function useIsolation() {
       },
     );
   };
+  const was = useRef(installing);
+  useEffect(() => {
+    if (was.current && !installing) {
+      isolationStatus(true).then(setData, () => {});
+    }
+    was.current = installing;
+  }, [installing, setData]);
   return { status: data, checking, check };
 }

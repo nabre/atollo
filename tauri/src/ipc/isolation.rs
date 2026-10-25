@@ -11,8 +11,8 @@ pub async fn isolation_status<R: Runtime>(
     force: bool,
 ) -> CmdResult<crate::isolation::Status> {
     ensure_main(&webview)?;
-    let (host, env) = (state.host.clone(), state.env());
-    tauri::async_runtime::spawn_blocking(move || crate::isolation::status(&host, &env, force))
+    let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || crate::isolation::status(&kit, &host, &env, force))
         .await
         .or_fail("isolation")
 }
