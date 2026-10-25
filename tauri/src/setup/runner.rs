@@ -523,6 +523,9 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
             .find(|(id, _)| *id == c.id)
             .map(|(_, line)| line.as_str());
         let outcome = step(ctx, c, update_all, opts.force, at, sink);
+        if c.id == crate::isolation::COMPONENT {
+            crate::isolation::note_install(ctx.kit, &outcome);
+        }
         sink.emit(Event::Done {
             id: c.id.clone(),
             outcome: outcome.clone(),

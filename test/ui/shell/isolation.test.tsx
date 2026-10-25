@@ -65,6 +65,12 @@ describe("explain", () => {
     expect(apparmorCommand("/media/u/My Kit/shim")).toContain('"/media/u/My Kit/shim"');
   });
 
+  it("says why the last installation of Docker Sandboxes failed", () => {
+    const e = explain({ code: "sbx_missing", failed: "checksum mismatch" }, "windows");
+    expect(e.why).toContain("checksum mismatch");
+    expect(e.install).toBe(true);
+  });
+
   it("puts the details in the sentence", () => {
     expect(explain({ code: "old_windows", build: 19045 }, "windows").why).toContain("19045");
     expect(explain({ code: "sbx_failed", message: "boom" }, "windows").why).toContain("boom");

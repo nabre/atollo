@@ -205,6 +205,17 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                 });
             }
             start_missing_required(app.handle(), &kit);
+            // Docker Sandboxes failed to install (the network, a checksum):
+            // tried again every hour while the kit has none (D-175).
+            let (retry_app, retry_kit) = (app.handle().clone(), kit.clone());
+            std::thread::spawn(move || loop {
+                std::thread::sleep(std::time::Duration::from_secs(3600));
+                if crate::isolation::kit_sbx(&retry_kit).is_none()
+                    && crate::isolation::install_failure(&retry_kit).is_some()
+                {
+                    start_missing_required(&retry_app, &retry_kit);
+                }
+            });
             // Antigravity's login left in Windows by a run that did not end
             // cleanly, the kit moved, the agents aligned; then the watcher.
             let background = kit.clone();

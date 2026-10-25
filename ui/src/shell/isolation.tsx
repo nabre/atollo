@@ -128,7 +128,9 @@ export function explain(b: IsolationBlocker, system: System): Explained {
     }
     case "sbx_missing":
       return {
-        why: t("Docker Sandboxes (sbx) non è nel kit. Docker Desktop non serve."),
+        why: b.failed
+          ? t("Docker Sandboxes (sbx) non è nel kit: l'ultima installazione non è riuscita ({0}).", b.failed)
+          : t("Docker Sandboxes (sbx) non è nel kit. Docker Desktop non serve."),
         fix: t(
           "Installalo nel kit (circa 470 MB in data, portabile come gli altri programmi); poi accedi con «sbx login» nel terminale di Atollo.",
         ),
