@@ -1390,20 +1390,21 @@ impl Vm {
 
     /// Publishes `port` of the VM on the PC: on `127.0.0.1`, or on the
     /// local network when `lan` (Settings). The other address, left by a
-    /// start with the other setting, is taken back first; a port published
-    /// already (an action that ended by itself) is fine: `sbx` answers
-    /// `409 … already published` (tried with sbx 0.49.2).
+    /// start with the other setting, is taken back first, and failing that
+    /// nothing starts: with the local network turned off, the site must not
+    /// stay on it (`--unpublish` of nothing published succeeds, so a
+    /// failure is a real one). A port published already on the same
+    /// address (an action that ended by itself) is fine: `sbx` answers
+    /// `409 … port <address>:<port>/tcp4 is already published` (tried with
+    /// sbx 0.49.2).
     pub fn publish(&self, env: &KitEnv, port: u16, lan: bool) -> anyhow::Result<()> {
-        let other = vm::unpublish_args(&self.name, port, !lan);
-        if let Err(e) = self.call(env, &other, ASK_LIMIT) {
-            crate::common::log::warn(&format!("{}: {e:#}", self.name));
-        }
+        self.call(env, &vm::unpublish_args(&self.name, port, !lan), ASK_LIMIT)?;
         let args = vm::publish_args(&self.name, port, lan);
         let args: Vec<&str> = args.iter().map(String::as_str).collect();
         let out = run(&self.sbx, &self.host, env, &args, ASK_LIMIT).map_err(anyhow::Error::msg)?;
         let text = String::from_utf8_lossy(&out.stderr);
         anyhow::ensure!(
-            out.status.success() || text.contains("already published"),
+            out.status.success() || vm::published_already(&text, port, lan),
             "sbx ports: {}",
             text.trim()
         );

@@ -174,6 +174,12 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         unpublish_args("atollo-shop", 7101, false),
         ["ports", "atollo-shop", "--unpublish", "127.0.0.1:7101:7101"]
     );
+    // Published already, on the address asked only (sbx 0.49.2's text).
+    let local = "error: publish ports: publish ports: request failed: 409 Conflict: request[0]: port 127.0.0.1:7101/tcp4 is already published";
+    assert!(published_already(local, 7101, false));
+    assert!(!published_already(local, 7101, true), "not on the network");
+    assert!(!published_already(local, 7102, false), "another port");
+    assert!(!published_already("error: daemon not running", 7101, false));
 }
 
 /// Ending `sbx exec` on the PC leaves the action running in the VM (tried
