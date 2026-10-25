@@ -460,3 +460,19 @@ fn a_project_gets_a_sealed_environment() {
     assert_eq!(env.get("CP_USER_PROFILE"), None);
     assert_eq!(env.get("SSH_AUTH_SOCK"), None);
 }
+
+/// A note written under the old name of a PC without `HOSTNAME` moves to
+/// the PC's real name, so its registration can still be taken back.
+#[test]
+fn a_legacy_pc_note_moves_to_the_real_name() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-legacy-pc");
+    let vm = vm::name("shop");
+    secrets::note(&kit, "github", LEGACY_PC, &vm, Some("cmd")).unwrap();
+    assert_eq!(mine_github(&kit, "mac", &vm).unwrap().command, "cmd");
+    assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_none());
+    assert_eq!(
+        secrets::mine(&kit, "github", "mac", &vm).unwrap().command,
+        "cmd"
+    );
+    assert!(mine_github(&kit, LEGACY_PC, "other").is_none());
+}

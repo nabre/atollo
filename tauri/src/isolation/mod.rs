@@ -361,7 +361,30 @@ fn computer(host: &Host) -> String {
         .or(host.get("HOSTNAME"))
         .map(str::to_owned)
         .or_else(|| Some(crate::platform::host::host_name()).filter(|n| !n.is_empty()))
-        .unwrap_or_else(|| "pc".to_owned())
+        .unwrap_or_else(|| LEGACY_PC.to_owned())
+}
+
+/// The name [`computer`] gave on macOS and Linux before it read the
+/// system's own.
+const LEGACY_PC: &str = "pc";
+
+/// What Atollo noted for GitHub on `pc` for `sandbox`, a note under
+/// [`LEGACY_PC`] moved to `pc` first: left there it would never be found,
+/// and its registration never taken back.
+fn mine_github(kit: &Kit, pc: &str, sandbox: &str) -> Option<secrets::Noted> {
+    if let Some(n) = secrets::mine(kit, "github", pc, sandbox) {
+        return Some(n);
+    }
+    if pc == LEGACY_PC {
+        return None;
+    }
+    let old = secrets::mine(kit, "github", LEGACY_PC, sandbox)?;
+    let moved = secrets::note(kit, "github", pc, sandbox, Some(&old.command))
+        .and_then(|()| secrets::note(kit, "github", LEGACY_PC, sandbox, None));
+    if let Err(e) = moved {
+        crate::common::log::warn(&format!("secrets.json: {e:#}"));
+    }
+    Some(old)
 }
 
 /// The kit's GitHub access for the sandbox `sandbox` ([`secrets`], D-172),
@@ -383,7 +406,7 @@ pub(crate) fn github_for_sandbox(
     };
     let prefix = secrets::github_prefix(&exe, kit.target().is_windows());
     let pc = computer(host);
-    let mine = secrets::mine(kit, "github", &pc, sandbox);
+    let mine = mine_github(kit, &pc, sandbox);
     let warn = |what: &str, out: Result<std::process::Output, String>| match out {
         Ok(o) if o.status.success() => true,
         Ok(o) => {
@@ -462,7 +485,7 @@ pub(crate) fn github_for_sandbox(
 /// the projects that chose it (D-172).
 fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
     let pc = computer(host);
-    if secrets::mine(kit, "github", &pc, "").is_none() {
+    if mine_github(kit, &pc, "").is_none() {
         return;
     }
     let listed = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT)
