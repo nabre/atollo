@@ -61,16 +61,122 @@ pub async fn terminal_launch<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let Some(terminal) = terminals::find(&kit, &id, lang) else {
             return Err(crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&id]).into());
         };
         let dir = terminals::start_dir(&kit, &terminal, dir.as_deref(), lang)?;
         let env = terminals::env(&kit, &terminal, ensure(&app, &task, &kit, lang, &[])?);
+        // In a microVM of its own when the VM is on (D-167), with the kit's
+        // tools for its Linux.
+        if let Some(guest) = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t)) {
+            let apps = guest.apps();
+            if let Some(vm) =
+                crate::isolation::kit_terminal_vm(&kit, &host, &env, &terminal.id, &dir, &apps)
+            {
+                let windows = kit.target().is_windows();
+                let Some(guest_dir) = crate::isolation::vm::guest_path(windows, &dir) else {
+                    return Err(crate::common::i18n::t(
+                        lang,
+                        "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
+                        &[&dir.display().to_string()],
+                    )
+                    .into());
+                };
+                ensure_guest_tools(&app, &task, &guest, &terminal);
+                std::fs::create_dir_all(&apps).or_fail("terminals")?;
+                let base = KitEnv::build(&guest, &Settings::load(&kit).settings, lang, &host);
+                let (path, vars) = crate::isolation::guest_tools(&kit, &guest, &terminal, base);
+                vm.start(&env).or_fail_chain("vm")?;
+                let args =
+                    crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, &path, &vars);
+                let launch = vm.launch(&kit, args, "VM");
+                return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
+                    .or_fail_chain("terminal");
+            }
+        }
         terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
     .await
     .or_fail("terminals")?
+}
+
+/// The tools of `terminal` for the VM's Linux (`guest`, the kit scoped to
+/// its target), installed in `data/apps/linux-…` when missing, waiting for
+/// the downloads (their progress in the status bar): those with a build for
+/// it that this PC can install, not those that finish on their own system
+/// (`router::bootstrap`), each at the line the terminal chose. A failure
+/// only goes to the log: the terminal opens with what is there.
+fn ensure_guest_tools<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    guest: &Kit,
+    terminal: &Terminal,
+) {
+    let catalog = Catalog::get();
+    let target = guest.target();
+    let tools: Vec<(&crate::setup::Component, Option<&String>)> = terminal
+        .tools
+        .iter()
+        .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
+        .filter(|(c, _)| {
+            c.is_available_on(target)
+                && install::installer(&c.id)
+                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
+        })
+        .collect();
+    let run = |opts: Options| {
+        while task.snapshot().running {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+        }
+        if let Err(e) = task.start(opts, true, setup_notify(app.clone())) {
+            crate::common::log::warn(&format!("tools for the VM: {e}"));
+        }
+        while task.snapshot().running {
+            std::thread::sleep(std::time::Duration::from_millis(300));
+        }
+    };
+    let missing: Vec<_> = tools
+        .iter()
+        .filter(|(c, _)| !c.is_installed(guest))
+        .collect();
+    if !missing.is_empty() {
+        crate::common::log::info(&format!(
+            "tools for the VM ({}): {:?}",
+            target.as_str(),
+            missing.iter().map(|(c, _)| &c.id).collect::<Vec<_>>()
+        ));
+        run(Options {
+            target: Some(target),
+            only: missing.iter().map(|(c, _)| c.id.clone()).collect(),
+            at: missing
+                .iter()
+                .filter_map(|(c, line)| Some((c.id.clone(), (*line)?.clone())))
+                .collect(),
+            ..Options::default()
+        });
+    }
+    // A line the terminal chose, beside the one installed.
+    let has_line = |c: &crate::setup::Component, line: &str| {
+        crate::versions::default_line(guest, c).as_deref() == Some(line)
+            || crate::versions::saved(guest, c)
+                .iter()
+                .any(|l| l.line == line)
+    };
+    let lines: Vec<(String, String)> = tools
+        .iter()
+        .filter_map(|(c, line)| Some((*c, (*line)?)))
+        .filter(|(c, line)| c.is_installed(guest) && !has_line(c, line))
+        .map(|(c, line)| (c.id.clone(), line.clone()))
+        .collect();
+    if !lines.is_empty() {
+        run(Options {
+            target: Some(target),
+            lines,
+            ..Options::default()
+        });
+    }
 }
 
 /// The system's "Select folder" window, starting in `start`; `None` when it

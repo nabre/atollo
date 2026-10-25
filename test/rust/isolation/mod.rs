@@ -1,5 +1,76 @@
 use super::*;
 
+/// The network policy: the kit's `sbx` gets `balanced` (set already is
+/// fine), the PC's is only told; texts of sbx 0.49.2.
+#[test]
+fn no_vm_starts_without_a_network_policy() {
+    let kit = Sbx::Kit(PathBuf::from("sbx"));
+    let pc = Sbx::Pc(PathBuf::from("sbx"));
+    assert_eq!(
+        policy_answer(&kit, true, "Initialized global network policy balanced\n"),
+        Ok(())
+    );
+    assert_eq!(
+        policy_answer(
+            &kit,
+            false,
+            "error: global network policy is already initialized; reset it first to change it\n"
+        ),
+        Ok(())
+    );
+    let unset = "error: global network policy has not been initialized\n  try: sbx policy init <allow-all|balanced|deny-all>\n";
+    assert_eq!(policy_answer(&pc, false, unset), Err(Blocker::PolicyUnset));
+    assert_eq!(
+        policy_answer(
+            &pc,
+            true,
+            "POLICY         SOURCE   APPLIES TO   SUMMARY\nlocal-policy   local    all          network: 195 allow\n"
+        ),
+        Ok(())
+    );
+    assert!(matches!(
+        policy_answer(&kit, false, "error: daemon not running\n"),
+        Err(Blocker::SbxFailed { .. })
+    ));
+    assert_eq!(Fix::Policy.args(), ["policy", "init", "balanced"]);
+    assert_eq!(
+        serde_json::to_value(Blocker::PolicyUnset).unwrap(),
+        serde_json::json!({ "code": "policy_unset" })
+    );
+}
+
+/// The kit's terminal in the VM gets the kit's tools for Linux: only what
+/// lies in `data/apps/linux-…`, as the VM sees it; never the kit's home,
+/// temp or agents.
+#[test]
+fn a_kit_terminal_gets_the_kits_tools_for_linux() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-guest");
+    let guest = kit.for_target(crate::kit::Target::LINUX_X64);
+    let node = crate::setup::Catalog::get().find("node").unwrap();
+    for key in node.key_paths(&guest) {
+        std::fs::create_dir_all(key.parent().unwrap()).unwrap();
+        std::fs::write(&key, b"").unwrap();
+    }
+    let terminal = crate::editor::terminals::find(&kit, "default", "it").unwrap();
+    let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
+    let (path, vars) = guest_tools(&kit, &guest, &terminal, base);
+    let windows = kit.target().is_windows();
+    let apps = vm::guest_path(windows, &guest.apps()).unwrap();
+    assert!(!path.is_empty(), "node's folder on the PATH");
+    for entry in &path {
+        assert!(entry.starts_with(&apps), "{entry}");
+        assert!(!entry.contains('\\'), "{entry}");
+    }
+    for (name, value) in &vars {
+        assert!(
+            name == "ATOLLO_TERMINAL" || value.starts_with(&apps),
+            "{name}={value}"
+        );
+        assert!(!["HOME", "TEMP", "TMPDIR", "CLAUDE_CONFIG_DIR"].contains(&name.as_str()));
+    }
+    assert!(vars.iter().any(|(n, _)| n == "ATOLLO_TERMINAL"));
+}
+
 #[test]
 fn no_blocker_is_the_vm() {
     assert_eq!(Status::of(Vec::new(), None).level, Level::Vm);

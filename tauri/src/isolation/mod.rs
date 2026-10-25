@@ -95,6 +95,9 @@ pub enum Blocker {
     SbxFailed {
         message: String,
     },
+    /// The PC's `sbx` has no global network policy yet: no VM starts.
+    /// The kit's gets `balanced` by itself ([`vm::POLICY_ARGS`]).
+    PolicyUnset,
 }
 
 impl From<Gap> for Blocker {
@@ -184,7 +187,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
     match &sbx {
         None => blockers.push(Blocker::SbxMissing),
         Some(sbx) => {
-            if let Err(b) = ask(sbx, host, env) {
+            if let Err(b) = ask(sbx, host, env).and_then(|()| policy(sbx, host, env)) {
                 blockers.push(b);
             }
         }
@@ -277,6 +280,8 @@ pub enum Fix {
     Login,
     /// `sbx ls`: shows the error `sbx` answers with.
     Ls,
+    /// `sbx policy init balanced`, for the PC's `sbx` ([`Blocker::PolicyUnset`]).
+    Policy,
 }
 
 impl Fix {
@@ -284,6 +289,7 @@ impl Fix {
         let args: &[&str] = match self {
             Fix::Login => &["login"],
             Fix::Ls => &["ls"],
+            Fix::Policy => &vm::POLICY_ARGS,
         };
         args.iter().map(|a| (*a).to_owned()).collect()
     }
@@ -394,6 +400,46 @@ fn ask(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
     }
 }
 
+/// The global network policy no VM starts without: the kit's `sbx` gets
+/// `balanced` (already set is fine); the PC's is the user's, only told.
+fn policy(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
+    let args: &[&str] = match sbx {
+        Sbx::Kit(_) => &vm::POLICY_ARGS,
+        Sbx::Pc(_) => &["policy", "ls"],
+    };
+    match run(sbx, host, env, args, ASK_LIMIT) {
+        Ok(out) => policy_answer(
+            sbx,
+            out.status.success(),
+            &format!(
+                "{}{}",
+                String::from_utf8_lossy(&out.stdout),
+                String::from_utf8_lossy(&out.stderr)
+            ),
+        ),
+        Err(message) => Err(Blocker::SbxFailed { message }),
+    }
+}
+
+/// What `sbx policy init` (the kit's) or `sbx policy ls` (the PC's) says.
+pub(crate) fn policy_answer(sbx: &Sbx, success: bool, text: &str) -> Result<(), Blocker> {
+    let lower = text.to_lowercase();
+    if lower.contains("already initialized") {
+        return Ok(());
+    }
+    if lower.contains("not been initialized") || lower.contains("not initialized") {
+        return Err(Blocker::PolicyUnset);
+    }
+    if success {
+        return Ok(());
+    }
+    match sbx {
+        // A list that cannot be read says nothing of the VM: `sbx ls` answered.
+        Sbx::Pc(_) => Ok(()),
+        Sbx::Kit(_) => answer(false, text),
+    }
+}
+
 /// How long the start of a sandbox may take: the first one pulls its
 /// image.
 const START_LIMIT: Duration = Duration::from_secs(600);
@@ -407,6 +453,9 @@ pub struct Vm {
     pub name: String,
     /// The project's folder, its workspace.
     pub dir: PathBuf,
+    /// Folders of the PC mounted where the VM cannot change them (the
+    /// kit's tools for Linux, for the kit's terminals).
+    pub read_only: Vec<PathBuf>,
 }
 
 /// The microVM of `project` (folder `dir`) when every project runs in one
@@ -420,7 +469,67 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
         host: host.clone(),
         name: vm::name(project),
         dir: dir.to_path_buf(),
+        read_only: Vec::new(),
     })
+}
+
+/// The microVM of the kit's terminal `terminal` in `dir` when the VM is
+/// on (the level of the last status): `dir` as its workspace and the kit's
+/// tools for Linux (`apps`, `data/apps/linux-…`) read-only; `None` on the
+/// kit's environment.
+pub fn kit_terminal_vm(
+    kit: &Kit,
+    host: &Host,
+    env: &KitEnv,
+    terminal: &str,
+    dir: &Path,
+    apps: &Path,
+) -> Option<Vm> {
+    if status(kit, host, env, false).level != Level::Vm {
+        return None;
+    }
+    Some(Vm {
+        sbx: Sbx::find(kit, host)?,
+        host: host.clone(),
+        name: vm::terminal_name(terminal, dir),
+        dir: dir.to_path_buf(),
+        read_only: vec![apps.to_path_buf()],
+    })
+}
+
+/// The kit's tools for the VM's Linux in the kit's terminal `terminal`:
+/// the `PATH` entries and the variables of `guest` (the kit scoped to the
+/// VM's target, [`vm::guest_target`]) that lie in its `data/apps`, as the
+/// VM sees them. The rest of the kit's environment (its home, temp,
+/// agents) is the PC's business: the VM has its own.
+pub fn guest_tools(
+    kit: &Kit,
+    guest: &Kit,
+    terminal: &crate::editor::terminals::Terminal,
+    base: KitEnv,
+) -> (Vec<String>, Vec<(String, String)>) {
+    let windows = kit.target().is_windows();
+    let apps = guest.apps();
+    let env = crate::editor::terminals::env(guest, terminal, base);
+    let in_vm = |value: &str| -> Option<String> {
+        let value = if windows {
+            value.replace('/', "\\")
+        } else {
+            value.to_owned()
+        };
+        let path = PathBuf::from(value);
+        path.starts_with(&apps)
+            .then(|| vm::guest_path(windows, &path))
+            .flatten()
+    };
+    let path = env.path_entries().into_iter().filter_map(in_vm).collect();
+    let mut vars: Vec<(String, String)> = env
+        .iter()
+        .filter(|(name, _)| !name.eq_ignore_ascii_case("PATH"))
+        .filter_map(|(name, value)| Some((name.to_owned(), in_vm(value)?)))
+        .collect();
+    vars.push(("ATOLLO_TERMINAL".to_owned(), terminal.name.clone()));
+    (path, vars)
 }
 
 impl Vm {
@@ -446,7 +555,11 @@ impl Vm {
 
     /// Creates the sandbox the first time, starts it again when stopped.
     pub fn start(&self, env: &KitEnv) -> anyhow::Result<()> {
-        self.call(env, &vm::start_args(&self.name, &self.dir), START_LIMIT)
+        self.call(
+            env,
+            &vm::start_args(&self.name, &self.dir, &self.read_only),
+            START_LIMIT,
+        )
     }
 
     /// Publishes `port` of the VM on the PC's `127.0.0.1`.

@@ -23,11 +23,89 @@ fn the_sandbox_is_named_after_the_project() {
     assert_eq!(name("shop"), shop);
 }
 
+/// A kit's terminal has a sandbox per folder, in its own namespace.
+#[test]
+fn a_kit_terminal_has_a_sandbox_per_folder() {
+    let a = terminal_name("default", Path::new("/kit/projects"));
+    assert!(a.starts_with("atollo-t-default-"), "{a}");
+    assert_eq!(a.len(), "atollo-t-default-".len() + 24);
+    assert_ne!(a, terminal_name("default", Path::new("/kit/projects/shop")));
+    assert_ne!(a, terminal_name("legacy", Path::new("/kit/projects")));
+    assert_eq!(a, terminal_name("default", Path::new("/kit/projects")));
+    assert!(!a.starts_with("atollo-p-"));
+}
+
+/// Where the PC's folders are in the VM: `sbx` mounts `D:\a` at `/d/a`
+/// (seen on Windows 11 with sbx 0.49.2), the same path elsewhere.
+#[test]
+fn the_pcs_folders_keep_their_path_in_the_vm() {
+    assert_eq!(
+        guest_path(true, Path::new(r"D:\Projects\My Kit\data\apps\linux-x64")).as_deref(),
+        Some("/d/Projects/My Kit/data/apps/linux-x64")
+    );
+    assert_eq!(guest_path(true, Path::new(r"C:\")).as_deref(), Some("/c"));
+    assert_eq!(
+        guest_path(true, Path::new(r"\\?\E:\kit")).as_deref(),
+        Some("/e/kit")
+    );
+    assert_eq!(guest_path(true, Path::new(r"\\server\share\kit")), None);
+    assert_eq!(
+        guest_path(false, Path::new("/media/u/KIT")).as_deref(),
+        Some("/media/u/KIT")
+    );
+}
+
+#[test]
+fn the_vm_is_linux_of_the_pcs_processor() {
+    use crate::kit::Target;
+    assert_eq!(guest_target(Target::WIN32_X64), Some(Target::LINUX_X64));
+    assert_eq!(
+        guest_target(Target::DARWIN_ARM64),
+        Some(Target::LINUX_ARM64)
+    );
+    assert_eq!(guest_target(Target::LINUX_ARM64), Some(Target::LINUX_ARM64));
+    assert_eq!(guest_target(Target::WIN32_ARM64), None);
+    assert_eq!(guest_target(Target::DARWIN_X64), None);
+}
+
+/// The kit's terminal in the VM: a login bash in its folder, the kit's
+/// tools first on the PATH, their variables passed.
+#[test]
+fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
+    let args = kit_terminal_args(
+        "atollo-t-x",
+        "/d/sites/shop",
+        &[
+            "/d/kit/data/apps/linux-x64/node/24.22/bin".into(),
+            "/d/kit/data/apps/linux-x64/python/3.15/bin".into(),
+        ],
+        &[("JAVA_HOME".into(), "/d/kit/data/apps/linux-x64/java".into())],
+    );
+    assert_eq!(
+        args,
+        [
+            "exec",
+            "-it",
+            "-w",
+            "/d/sites/shop",
+            "-e",
+            "ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24.22/bin:/d/kit/data/apps/linux-x64/python/3.15/bin",
+            "-e",
+            "JAVA_HOME=/d/kit/data/apps/linux-x64/java",
+            "atollo-t-x",
+            "sh",
+            "-c",
+            r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#,
+        ]
+    );
+    assert_eq!(POLICY_ARGS, ["policy", "init", "balanced"]);
+}
+
 #[test]
 fn the_sandbox_starts_with_the_project_as_its_workspace() {
     let dir = Path::new("/kit/projects/shop");
     assert_eq!(
-        start_args("atollo-shop", dir),
+        start_args("atollo-shop", dir, &[]),
         [
             "run",
             "-d",
@@ -36,6 +114,13 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
             "shell",
             "/kit/projects/shop"
         ]
+    );
+    assert_eq!(
+        start_args("atollo-t", dir, &["/kit/data/apps/linux-x64".into()])
+            .last()
+            .map(String::as_str),
+        Some("/kit/data/apps/linux-x64:ro"),
+        "the kit's tools are mounted where the VM cannot change them"
     );
     assert_eq!(
         terminal_args("atollo-shop"),

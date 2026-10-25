@@ -48,6 +48,47 @@ fn links_become_copies_where_refused() {
     assert_eq!(skipped.len(), 2, "{skipped:?}");
 }
 
+/// Without links, a link to a script becomes a script that runs it where
+/// it is (npm's `bin/npm -> ../lib/node_modules/npm/bin/npm-cli.js`
+/// requires `../lib/cli.js` from there); a program stays a copy.
+#[test]
+fn links_to_scripts_run_them_where_they_are() {
+    let tmp = TempDir::new("linkshim");
+    let dest = tmp.0.join("out");
+    let node = dest.join("node");
+    let cli = node
+        .join("lib")
+        .join("node_modules")
+        .join("npm")
+        .join("bin");
+    fs::create_dir_all(&cli).unwrap();
+    fs::create_dir_all(node.join("bin")).unwrap();
+    fs::write(
+        cli.join("npm-cli.js"),
+        "#!/usr/bin/env node\nrequire('../lib/cli.js')\n",
+    )
+    .unwrap();
+    fs::write(node.join("bin").join("node.real"), b"\x7fELF").unwrap();
+    let links = vec![
+        (
+            node.join("bin").join("npm"),
+            "../lib/node_modules/npm/bin/npm-cli.js".to_owned(),
+        ),
+        (node.join("bin").join("node"), "node.real".to_owned()),
+    ];
+    finish_links(&dest, links, no_links).unwrap();
+    assert_eq!(
+        fs::read_to_string(node.join("bin").join("npm")).unwrap(),
+        "#!/bin/sh\n# In place of a link to ../lib/node_modules/npm/bin/npm-cli.js (a disk without links).\n\
+         exec \"$(dirname -- \"$0\")\"/'../lib/node_modules/npm/bin/npm-cli.js' \"$@\"\n"
+    );
+    assert_eq!(fs::read(node.join("bin").join("node")).unwrap(), b"\x7fELF");
+    assert_eq!(
+        relative_to(Path::new("/a/b"), Path::new("/a/c/d")).as_deref(),
+        Some("../c/d")
+    );
+}
+
 /// Without links, a link whose way crosses another link (`x -> lib64/foo`,
 /// `lib64 -> lib`) is copied once that one is a copy; a way that still
 /// leaves the folder after it stays skipped.

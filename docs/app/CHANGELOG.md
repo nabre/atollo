@@ -1,5 +1,11 @@
 # Novità
 
+## Terminali del kit nella VM (25/10/2026)
+
+- **Il terminale del kit nella VM** (D-168): con la VM attiva, «Tutti gli strumenti» e i terminali personalizzati si aprono in una microVM loro, una per cartella, con gli strumenti del kit per Linux alle stesse versioni (scaricati la prima volta in `data\apps\linux-x64`, montati in sola lettura). Senza VM restano sul PC, con l'avviso «Senza VM».
+- **Politica di rete**: Atollo imposta da solo quella consigliata da Docker (`balanced`) sullo `sbx` del kit; per quello del PC l'avviso la propone con «Lancia».
+- **`npm` funziona in un kit preparato su un altro sistema**: un link a uno script di un archivio Linux, estratto su Windows, diventa uno script che lo lancia dov'è invece di una copia rotta.
+
 ## Isolamento dei progetti (25/10/2026)
 
 - **«Senza VM» nella barra di stato** (D-167): accanto ad Attività, sul colore di avviso, finché i progetti girano sul PC. Un clic dice perché la VM non è attiva, motivo per motivo (sistema, processore, Hypervisor Platform, KVM, AppArmor, Docker Sandboxes, accesso a Docker), con cosa fare e il comando: «Lancia» apre `sbx login` (o `sbx ls`) nel terminale di Atollo, «Copia» per i comandi del PC; «Ricontrolla» chiede di nuovo. Lo stato si calcola da solo, senza impostazioni.

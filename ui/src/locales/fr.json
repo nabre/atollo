@@ -1087,5 +1087,7 @@
   "Prova il comando nel terminale di Atollo per vedere il problema:": "Essayez la commande dans le terminal d'Atollo pour voir le problème :",
   "Installa nel kit": "Installer dans le kit",
   "Installazione avviata: la vedi nella barra di stato.": "Installation lancée : vous la suivez dans la barre d'état.",
-  "La cartella del kit ha caratteri che un profilo AppArmor non accetta (virgolette, *, ?, [ ], { }, virgole…): sposta il kit in una cartella con un nome semplice.": "Le dossier du kit contient des caractères qu'un profil AppArmor n'accepte pas (guillemets, *, ?, [ ], { }, virgules…) : déplacez le kit dans un dossier au nom simple."
+  "La cartella del kit ha caratteri che un profilo AppArmor non accetta (virgolette, *, ?, [ ], { }, virgole…): sposta il kit in una cartella con un nome semplice.": "Le dossier du kit contient des caractères qu'un profil AppArmor n'accepte pas (guillemets, *, ?, [ ], { }, virgules…) : déplacez le kit dans un dossier au nom simple.",
+  "Lo sbx del PC non ha ancora una politica di rete: senza, nessuna VM parte.": "Le sbx du PC n'a pas encore de politique réseau : sans elle, aucune VM ne démarre.",
+  "Imposta quella consigliata da Docker (il traffico tipico dello sviluppo: servizi AI e registri di pacchetti):": "Définis celle que Docker recommande (le trafic habituel du développement : services d'IA et registres de paquets) :"
 }

@@ -30,7 +30,12 @@ pub const PREFIX: &str = "atollo-";
 /// name: two projects never share a sandboxes' name, and so never a
 /// workspace (`My Shop` and `my-shop` look the same, their hashes not).
 fn tag(project: &str) -> String {
-    let slug: String = project
+    tag_of(project, project)
+}
+
+/// [`tag`] with the readable part from `readable` and the hash of `exact`.
+fn tag_of(readable: &str, exact: &str) -> String {
+    let slug: String = readable
         .chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '.' || c == '-' {
@@ -41,7 +46,7 @@ fn tag(project: &str) -> String {
         })
         .take(40)
         .collect();
-    let hash = Sha256::digest(project.as_bytes());
+    let hash = Sha256::digest(exact.as_bytes());
     // 96 bits: no name chosen on purpose (a cloned repository's) reaches
     // another project's sandbox by brute force.
     let hex: String = hash[..12].iter().map(|b| format!("{b:02x}")).collect();
@@ -64,17 +69,93 @@ pub fn agent_name(project: &str, agent: &str) -> String {
     format!("{PREFIX}a-{agent}-{}", tag(project))
 }
 
+/// The sandbox of the kit's terminal `terminal` (its id) in `dir`:
+/// `atollo-t-<terminal>-<hash>`, the hash of both, so each folder has its
+/// own and never a project's (`atollo-p-`).
+pub fn terminal_name(terminal: &str, dir: &Path) -> String {
+    let exact = format!("{terminal}\n{}", dir.display());
+    format!("{PREFIX}t-{}", tag_of(terminal, &exact))
+}
+
 /// Creates the sandbox the first time, starts it again when stopped:
-/// `sbx run -d --name <vm> shell <dir>`.
-pub fn start_args(vm: &str, dir: &Path) -> Vec<String> {
-    vec![
+/// `sbx run -d --name <vm> shell <dir> [<folder>:ro…]`, the `read_only`
+/// folders mounted too, where the VM cannot change them.
+pub fn start_args(vm: &str, dir: &Path, read_only: &[std::path::PathBuf]) -> Vec<String> {
+    let mut args: Vec<String> = vec![
         "run".into(),
         "-d".into(),
         "--name".into(),
         vm.into(),
         "shell".into(),
         dir.display().to_string(),
-    ]
+    ];
+    args.extend(read_only.iter().map(|p| format!("{}:ro", p.display())));
+    args
+}
+
+/// The global network policy Atollo gives the kit's `sbx` before its first
+/// VM (scelta dell'utente, D-167): Docker's recommended one, the usual
+/// traffic of development (AI services, package registries) and nothing
+/// else.
+pub const POLICY_ARGS: [&str; 3] = ["policy", "init", "balanced"];
+
+/// The Linux of the microVM on a PC of `host`: Docker Sandboxes runs one of
+/// the PC's processor (`linux-x64` on Windows x64, `linux-arm64` on Apple
+/// silicon); `None` where there is no VM.
+pub fn guest_target(host: crate::kit::Target) -> Option<crate::kit::Target> {
+    use crate::kit::Target;
+    match host {
+        Target::WIN32_X64 | Target::LINUX_X64 => Some(Target::LINUX_X64),
+        Target::DARWIN_ARM64 | Target::LINUX_ARM64 => Some(Target::LINUX_ARM64),
+        _ => None,
+    }
+}
+
+/// Where the folder `path` of the PC is in the VM: the same path on macOS
+/// and Linux; on Windows `D:\a\b` is `/d/a/b` (the drive in lower case, as
+/// `sbx` mounts it). `None` for a path without a drive (a network share).
+pub fn guest_path(windows: bool, path: &Path) -> Option<String> {
+    let text = path.to_string_lossy();
+    if !windows {
+        return Some(text.into_owned());
+    }
+    let text = text.strip_prefix(r"\\?\").unwrap_or(&text);
+    let mut chars = text.chars();
+    let (drive, colon) = (chars.next()?, chars.next()?);
+    if !drive.is_ascii_alphabetic() || colon != ':' {
+        return None;
+    }
+    let rest = chars.as_str().replace('\\', "/");
+    let rest = rest.trim_end_matches('/');
+    Some(format!("/{}{rest}", drive.to_ascii_lowercase()))
+}
+
+/// The kit's terminal in its VM: a login bash in `dir` (the VM's path),
+/// the kit's tools for Linux first on the `PATH` (`path`, VM paths) and
+/// their variables (`vars`), the VM's own programs after them.
+pub fn kit_terminal_args(
+    vm: &str,
+    dir: &str,
+    path: &[String],
+    vars: &[(String, String)],
+) -> Vec<String> {
+    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
+    args.push("-e".into());
+    args.push(format!("ATOLLO_PATH={}", path.join(":")));
+    for (k, v) in vars {
+        args.push("-e".into());
+        args.push(format!("{k}={v}"));
+    }
+    args.push(vm.into());
+    args.extend(
+        [
+            "sh",
+            "-c",
+            r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#,
+        ]
+        .map(String::from),
+    );
+    args
 }
 
 /// The terminal of the project: a login bash in its workspace.

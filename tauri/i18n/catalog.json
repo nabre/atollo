@@ -719,6 +719,11 @@
     "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre d'Atollo ou le menu du kit).",
     "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
   },
+  "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.": {
+    "en": "The folder {0} does not open in the VM: choose a folder on one of the PC's disks.",
+    "fr": "Le dossier {0} ne s'ouvre pas dans la VM : choisis un dossier sur un disque du PC.",
+    "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Wähle einen Ordner auf einem Laufwerk des PCs."
+  },
   "Docker Sandboxes (sbx) non è nel kit.": {
     "en": "Docker Sandboxes (sbx) is not in the kit.",
     "fr": "Docker Sandboxes (sbx) n'est pas dans le kit.",
