@@ -370,8 +370,15 @@ const LEGACY_PC: &str = "pc";
 
 /// What Atollo noted for GitHub on `pc` for `sandbox`, a note under
 /// [`LEGACY_PC`] moved to `pc` first: left there it would never be found,
-/// and its registration never taken back.
-fn mine_github(kit: &Kit, pc: &str, sandbox: &str) -> Option<secrets::Noted> {
+/// and its registration never taken back. Moved only when `listed_here`
+/// (this PC's `sbx` has that secret): a kit carried between PCs without
+/// a name shared that key, and another PC's note stays its own.
+fn mine_github(
+    kit: &Kit,
+    pc: &str,
+    sandbox: &str,
+    listed_here: impl FnOnce() -> bool,
+) -> Option<secrets::Noted> {
     if let Some(n) = secrets::mine(kit, "github", pc, sandbox) {
         return Some(n);
     }
@@ -379,6 +386,9 @@ fn mine_github(kit: &Kit, pc: &str, sandbox: &str) -> Option<secrets::Noted> {
         return None;
     }
     let old = secrets::mine(kit, "github", LEGACY_PC, sandbox)?;
+    if !listed_here() {
+        return None;
+    }
     let moved = secrets::note(kit, "github", pc, sandbox, Some(&old.command))
         .and_then(|()| secrets::note(kit, "github", LEGACY_PC, sandbox, None));
     if let Err(e) = moved {
@@ -406,7 +416,13 @@ pub(crate) fn github_for_sandbox(
     };
     let prefix = secrets::github_prefix(&exe, kit.target().is_windows());
     let pc = computer(host);
-    let mine = mine_github(kit, &pc, sandbox);
+    let listed_here = || {
+        run(sbx, host, env, &["secret", "ls"], ASK_LIMIT).is_ok_and(|o| {
+            o.status.success()
+                && secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", sandbox)
+        })
+    };
+    let mine = mine_github(kit, &pc, sandbox, listed_here);
     let warn = |what: &str, out: Result<std::process::Output, String>| match out {
         Ok(o) if o.status.success() => true,
         Ok(o) => {
@@ -485,7 +501,13 @@ pub(crate) fn github_for_sandbox(
 /// the projects that chose it (D-172).
 fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
     let pc = computer(host);
-    if mine_github(kit, &pc, "").is_none() {
+    let listed_here = || {
+        run(sbx, host, env, &["secret", "ls"], ASK_LIMIT).is_ok_and(|o| {
+            o.status.success()
+                && secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", "(global)")
+        })
+    };
+    if mine_github(kit, &pc, "", listed_here).is_none() {
         return;
     }
     let listed = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT)

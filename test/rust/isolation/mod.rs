@@ -468,11 +468,17 @@ fn a_legacy_pc_note_moves_to_the_real_name() {
     let (_tmp, kit) = crate::test_support::prepared_kit("isolation-legacy-pc");
     let vm = vm::name("shop");
     secrets::note(&kit, "github", LEGACY_PC, &vm, Some("cmd")).unwrap();
-    assert_eq!(mine_github(&kit, "mac", &vm).unwrap().command, "cmd");
+    // Not listed by this PC's `sbx`: another PC's, left where it is.
+    assert!(mine_github(&kit, "mac", &vm, || false).is_none());
+    assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_some());
+    assert_eq!(
+        mine_github(&kit, "mac", &vm, || true).unwrap().command,
+        "cmd"
+    );
     assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_none());
     assert_eq!(
         secrets::mine(&kit, "github", "mac", &vm).unwrap().command,
         "cmd"
     );
-    assert!(mine_github(&kit, LEGACY_PC, "other").is_none());
+    assert!(mine_github(&kit, LEGACY_PC, "other", || true).is_none());
 }
