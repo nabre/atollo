@@ -1656,10 +1656,15 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
 - **Fasi.**
   1. Stato automatico, motivi, passi, avviso nella barra di stato.
   2. Ambiente sigillato e Git senza `core.fsmonitor` (sopra).
-  3. Terminale, azioni e agenti nella VM: `sbx exec` nel PTY, porte pubblicate con `sbx ports`, il kit Linux preparato da `Atollo prepare --target linux-<arch>` montato in sola lettura.
-  Finché la fase 3 non c'è, un PC pronto mostra il motivo «pending»: la VM non è attiva e l'avviso resta.
+  3. Tutto nella VM (scelta dell'utente, 25/10/2026: anche server e database), `isolation/vm.rs`:
+     - una sandbox per progetto, `atollo-<progetto>` (agente `shell`, la cartella del progetto come spazio di lavoro), creata o riavviata con `sbx run -d --name … shell <cartella>`;
+     - terminale: `sbx exec -it atollo-<p> bash -l` nel terminale dell'app;
+     - azioni: `sbx exec -e … atollo-<p> sh -lc '<riga>'`, con `HOST=0.0.0.0`, `PORT`, `DB_PORT` e le variabili dell'azione; la porta pubblicata su `127.0.0.1` del PC (`sbx ports`); i server del kit (statico, Apache, Caddy) diventano container del Docker della VM sulle versioni del progetto (`php:<linea>-apache`, `httpd:2.4`), in rete host sulla porta dell'azione; mai un pool del PC;
+     - MySQL: un container `mysql:<linea>` per VM con l'utente e il database del progetto, password di root casuale, dati in un volume della VM, sulla porta del suo `DB_PORT`: il `.env` del progetto vale uguale;
+     - agenti: Claude Code e Codex negli agenti di `sbx` (una sandbox ciascuno, `atollo-<p>-claude`), le chiavi aggiunte dal proxy di `sbx`; gli altri agenti non partono nella VM (messaggio), mai sul PC al loro posto.
+  La VM si accende solo dopo una prova dal vero con un account Docker: fino ad allora un PC pronto mostra il motivo «pending» e i progetti restano sul PC, con l'avviso.
 - **Scartate.**
   - Gabbia del sistema (AppContainer, Seatbelt, Landlock) come livello a sé: su Windows l'AppContainer non riceve connessioni su `127.0.0.1` senza un'eccezione da amministratore, e su FAT32/exFAT (le chiavette) non ci sono ACL per separare i progetti; avrebbe dato un terzo stato con garanzie diverse per sistema, difficile da spiegare. Resta un'idea per dopo la fase 3.
   - Docker Desktop o Windows Sandbox: richiedono un amministratore a ogni uso o non hanno un'interfaccia da programma.
   - Installare `sbx` dal kit: serve un amministratore per l'hypervisor e un account Docker; lo fa l'utente, una volta.
-- **Prove.** `test/rust/isolation/mod.rs` (livello, risposte di `sbx`, cartelle di ricerca, forma JSON, ambiente sigillato), `test/rust/db/services/data.rs` (login MySQL del progetto), `test/rust/os/{windows,macos,linux}/virt.rs` (sistemi e hypervisor), `test/rust/platform/virt.rs`, `test/ui/shell/isolation.test.tsx` (ogni motivo spiegato su ogni sistema, comandi, finestra).
+- **Prove.** `test/rust/isolation/mod.rs` (livello, risposte di `sbx`, cartelle di ricerca, forma JSON, ambiente sigillato), `test/rust/db/services/data.rs` (login MySQL del progetto), `test/rust/isolation/vm.rs` (argomenti di `sbx`, righe dei container), `test/rust/install/sandboxes.rs`, `test/rust/os/{windows,macos,linux}/virt.rs` (sistemi, hypervisor, AppArmor), `test/rust/platform/virt.rs`, `test/ui/shell/isolation.test.tsx` (ogni motivo spiegato su ogni sistema, comandi, finestra).

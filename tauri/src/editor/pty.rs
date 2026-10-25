@@ -274,6 +274,18 @@ pub fn command(kit: &Kit, command: &Path, dir: &Path) -> Launch {
     }
 }
 
+/// A program of the PC or of the kit with its arguments (`sbx exec` of a
+/// project's microVM, D-167), started directly.
+pub fn program(kit: &Kit, program: &Path, args: Vec<String>, dir: &Path, what: &str) -> Launch {
+    Launch {
+        program: program.to_path_buf(),
+        args,
+        shell: PathBuf::from(BASH),
+        title: title(dir, what),
+        conpty: conpty_dir(kit),
+    }
+}
+
 /// What portable-pty and Windows would not tell clearly: it falls back to
 /// `$HOME` for a folder that is not one, and a program that cannot start
 /// would look like one that printed nothing and ended with 1. Errors in

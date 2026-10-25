@@ -2273,5 +2273,10 @@
     "en": "one microVM per project: terminal, commands, servers and agents isolated from the PC; needs a Docker account",
     "fr": "une microVM par projet : terminal, commandes, serveurs et agents isolés du PC ; nécessite un compte Docker",
     "de": "eine microVM pro Projekt: Terminal, Befehle, Server und Agenten vom PC isoliert; braucht ein Docker-Konto"
+  },
+  "{0} non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.": {
+    "en": "{0} has no Docker Sandboxes sandbox: in the VM use Claude Code or Codex.",
+    "fr": "{0} n'a pas de sandbox Docker Sandboxes : dans la VM, utilisez Claude Code ou Codex.",
+    "de": "{0} hat keine Sandbox von Docker Sandboxes: In der VM nutzt du Claude Code oder Codex."
   }
 }

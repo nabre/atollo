@@ -18,6 +18,66 @@ use crate::platform::jobs::{self, Job};
 use super::output::{env_on_network, on_network};
 use super::{key_of, Entry, Event, RunInfo, Runner, State, PORT_FROM};
 
+impl Runner {
+    /// The `sbx exec` of `action` in `vm`, and the line shown in its log.
+    #[allow(clippy::too_many_arguments)]
+    fn in_vm(
+        &self,
+        vm: &crate::isolation::Vm,
+        id: &str,
+        dir: &Path,
+        cwd: &Path,
+        action: &Action,
+        env: &KitEnv,
+        port: Option<u16>,
+        fill: &dyn Fn(&str) -> String,
+    ) -> Result<(std::process::Command, String)> {
+        use crate::isolation::vm::{exec_args, web_line, Web};
+        vm.start(env)?;
+        if let Some(p) = port {
+            vm.publish(env, p)?;
+        }
+        if let Some(line) = crate::isolation::mysql_start_line(&self.kit, id) {
+            vm.run_line(env, &line)?;
+        }
+        let rel = cwd
+            .strip_prefix(dir)
+            .ok()
+            .map(|r| r.to_string_lossy().replace('\\', "/"))
+            .filter(|r| !r.is_empty());
+        let mut vars: Vec<(String, String)> = vec![
+            ("BROWSER".into(), "none".into()),
+            ("PYTHONUNBUFFERED".into(), "1".into()),
+            ("HOST".into(), "0.0.0.0".into()),
+        ];
+        if let Some(p) = port {
+            vars.push(("PORT".into(), p.to_string()));
+            vars.push(("ROCKET_PORT".into(), p.to_string()));
+        }
+        if let Some(p) = crate::db::services::project_db_port(&self.kit, id) {
+            vars.push(("DB_PORT".into(), p.to_string()));
+        }
+        for (k, v) in &action.env {
+            vars.push((k.clone(), fill(v)));
+        }
+        let php = || Web::Php {
+            line: crate::isolation::php_line(&self.kit, id),
+        };
+        let web =
+            |folder: &str, web: Web| web_line(&action.id, &web, folder, port.unwrap_or(PORT_FROM));
+        let line = if let Some(folder) = &action.static_dir {
+            web(folder, Web::Static)
+        } else if let Some(folder) = action.apache_dir.as_ref().or(action.caddy_dir.as_ref()) {
+            web(folder, php())
+        } else {
+            fill(&action.command)
+        };
+        let args = exec_args(&vm.name, rel.as_deref(), &line, &vars);
+        let shown = format!("sbx exec {} {line}", vm.name);
+        Ok((vm.command(env, &args), shown))
+    }
+}
+
 /// The value of `key` in the `.env` of `dir` (`KEY=value`, `export KEY=`,
 /// quotes taken off), when set there.
 pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
@@ -47,6 +107,22 @@ impl Runner {
         action: &Action,
         env: &KitEnv,
         lang: &str,
+    ) -> Result<RunInfo> {
+        self.start_in(id, dir, action, env, lang, None)
+    }
+
+    /// [`Runner::start`] in the project's microVM when `vm` (D-167): the
+    /// command line, or the container of its web server, through `sbx
+    /// exec`, its port published on the PC's `127.0.0.1`, the project's
+    /// MySQL started in the VM first.
+    pub fn start_in(
+        self: &Arc<Self>,
+        id: &str,
+        dir: &Path,
+        action: &Action,
+        env: &KitEnv,
+        lang: &str,
+        vm: Option<&crate::isolation::Vm>,
     ) -> Result<RunInfo> {
         let key = key_of(id, &action.id);
         // A second start of the action (a double click during
@@ -81,7 +157,9 @@ impl Runner {
         // The FastCGI server of a project's Caddy, kept until the action
         // ends: php-fpm's private socket folder goes with its last copy.
         let mut fcgi_kept: Option<crate::projects::fastcgi::FastCgi> = None;
-        let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
+        let (mut cmd, shown) = if let Some(vm) = vm {
+            self.in_vm(vm, id, dir, &cwd, action, env, port, &fill)?
+        } else if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // The AppImage, not its inner program: `kit_command` clears
             // APPIMAGE, and the image's mount is not this program's to keep.

@@ -23,6 +23,8 @@ use crate::env::{Host, KitEnv};
 use crate::kit::{Kit, Os};
 use crate::platform::virt::{self, Gap};
 
+pub mod vm;
+
 /// How long a status stays good: `sbx` is asked at most once a minute.
 const FRESH: Duration = Duration::from_secs(60);
 /// How long `sbx` may take to answer.
@@ -332,6 +334,106 @@ fn ask(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
         Ok(out) => answer(out.status.success(), &String::from_utf8_lossy(&out.stderr)),
         Err(message) => Err(Blocker::SbxFailed { message }),
     }
+}
+
+/// How long the start of a sandbox may take: the first one pulls its
+/// image.
+const START_LIMIT: Duration = Duration::from_secs(600);
+
+/// A project's microVM, when the level is the VM (`vm_for`).
+#[derive(Debug, Clone)]
+pub struct Vm {
+    sbx: Sbx,
+    host: Host,
+    /// The sandbox's name (`vm::name`).
+    pub name: String,
+    /// The project's folder, its workspace.
+    pub dir: PathBuf,
+}
+
+/// The microVM of `project` (folder `dir`) when every project runs in one
+/// (the level of the last status); `None` on the kit's environment.
+pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -> Option<Vm> {
+    if status(kit, host, env, false).level != Level::Vm {
+        return None;
+    }
+    Some(Vm {
+        sbx: Sbx::find(kit, host)?,
+        host: host.clone(),
+        name: vm::name(project),
+        dir: dir.to_path_buf(),
+    })
+}
+
+impl Vm {
+    /// A command of `sbx` with `args`, with its environment.
+    pub fn command(&self, env: &KitEnv, args: &[String]) -> std::process::Command {
+        let mut cmd = self.sbx.command(env, &self.host);
+        cmd.args(args);
+        cmd
+    }
+
+    /// Runs `sbx` with `args` to its end; its error text when it fails.
+    fn call(&self, env: &KitEnv, args: &[String], limit: Duration) -> anyhow::Result<()> {
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+        let out = run(&self.sbx, &self.host, env, &args, limit).map_err(anyhow::Error::msg)?;
+        anyhow::ensure!(
+            out.status.success(),
+            "sbx {}: {}",
+            args.first().copied().unwrap_or_default(),
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+        Ok(())
+    }
+
+    /// Creates the sandbox the first time, starts it again when stopped.
+    pub fn start(&self, env: &KitEnv) -> anyhow::Result<()> {
+        self.call(env, &vm::start_args(&self.name, &self.dir), START_LIMIT)
+    }
+
+    /// Publishes `port` of the VM on the PC's `127.0.0.1`.
+    pub fn publish(&self, env: &KitEnv, port: u16) -> anyhow::Result<()> {
+        self.call(env, &vm::publish_args(&self.name, port), ASK_LIMIT)
+    }
+
+    /// The session of the app's terminal for `args` (`vm::terminal_args`,
+    /// `vm::agent_args`), titled `what`.
+    pub fn launch(&self, kit: &Kit, args: Vec<String>, what: &str) -> crate::editor::pty::Launch {
+        crate::editor::pty::program(kit, self.sbx.path(), args, &self.dir, what)
+    }
+
+    /// Runs the shell `line` in the VM to its end (a container started
+    /// in the background).
+    pub fn run_line(&self, env: &KitEnv, line: &str) -> anyhow::Result<()> {
+        self.call(
+            env,
+            &vm::exec_args(&self.name, None, line, &[]),
+            START_LIMIT,
+        )
+    }
+}
+
+/// The PHP line of `project` in its VM: its own choice, the kit's, or
+/// `8.4` (the official images have every line the kit offers).
+pub fn php_line(kit: &Kit, project: &str) -> String {
+    crate::versions::project_choice(kit, project)
+        .get("php")
+        .cloned()
+        .or_else(|| crate::versions::kit_choice(kit).get("php").cloned())
+        .unwrap_or_else(|| "8.4".to_owned())
+}
+
+/// The line that starts the project's MySQL in its VM, when the project
+/// has a MySQL user: its version (or `8.4`), its user and password, on the
+/// port its `DB_PORT` names.
+pub fn mysql_start_line(kit: &Kit, project: &str) -> Option<String> {
+    let id = crate::db::DbEngine::MySql.id();
+    let password = crate::db::auth::try_project_password(kit, project, id).ok()??;
+    let user = crate::db::auth::project_db_name(kit, project, id).ok()?;
+    let port = crate::db::services::project_db_port(kit, project)?;
+    let line =
+        crate::db::services::project_line(kit, project, id).unwrap_or_else(|| "8.4".to_owned());
+    Some(vm::mysql_line(&line, &user, &password, port))
 }
 
 /// Stops the daemon of the kit's `sbx` and the microVMs it runs, at the

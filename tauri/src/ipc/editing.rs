@@ -78,9 +78,16 @@ pub async fn terminal_open<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::opened(&state.kit, &project);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let env =
             crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &[])?);
+        // In the project's microVM when every project runs in one (D-167).
+        if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
+            vm.start(&env).or_fail_chain("vm")?;
+            let launch = vm.launch(&kit, crate::isolation::vm::terminal_args(&vm.name), "VM");
+            return terminal::open_launch(&app, &env, &dir, launch).or_fail_chain("terminal");
+        }
         terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
     .await
