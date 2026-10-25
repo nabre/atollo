@@ -497,6 +497,49 @@ pub fn kit_terminal_vm(
     })
 }
 
+/// True when `dir` must not be a VM's writable workspace: what the VM
+/// writes there the PC could run. A drive's root; a folder holding the kit
+/// or the user's profile (the kit's Windows programs, the profile's start
+/// files, and the read-only mount of the tools reachable again through
+/// it); a folder inside the kit's `data` or the profile's settings
+/// (`AppData`, `.config`, `.local`, `Library`). Canonical paths, so a link
+/// or a junction does not get around it; a folder that cannot be read is
+/// refused too.
+pub fn workspace_refused(kit: &Kit, host: &Host, dir: &Path) -> bool {
+    let canon = |p: &Path| std::fs::canonicalize(p).ok();
+    let Some(dir) = canon(dir) else {
+        return true;
+    };
+    if dir.parent().is_none() {
+        return true;
+    }
+    let profile = host
+        .get("CP_USER_PROFILE")
+        .or(host.get("USERPROFILE"))
+        .or(host.get("HOME"))
+        .map(PathBuf::from);
+    let held: Vec<PathBuf> = [Some(kit.root().to_path_buf()), profile.clone()]
+        .into_iter()
+        .flatten()
+        .filter_map(|p| canon(&p))
+        .collect();
+    if held.iter().any(|p| p.starts_with(&dir)) {
+        return true;
+    }
+    let mut settings = vec![kit.data()];
+    if let Some(profile) = profile {
+        settings.extend(
+            ["AppData", ".config", ".local", "Library"]
+                .iter()
+                .map(|d| profile.join(d)),
+        );
+    }
+    settings
+        .iter()
+        .filter_map(|p| canon(p))
+        .any(|p| dir.starts_with(p))
+}
+
 /// The kit's tools for the VM's Linux in the kit's terminal `terminal`:
 /// the `PATH` entries and the variables of `guest` (the kit scoped to the
 /// VM's target, [`vm::guest_target`]) that lie in its `data/apps`, as the

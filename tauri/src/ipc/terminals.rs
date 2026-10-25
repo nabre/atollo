@@ -84,6 +84,15 @@ pub async fn terminal_launch<R: Runtime>(
                     )
                     .into());
                 };
+                // Never a folder whose files the PC runs, writable from the VM.
+                if crate::isolation::workspace_refused(&kit, &host, &dir) {
+                    return Err(crate::common::i18n::t(
+                        lang,
+                        "La cartella {0} non si apre nella VM: è la radice di un disco, contiene il kit o il tuo profilo, o è fra i loro file. Scegli la cartella di un progetto.",
+                        &[&dir.display().to_string()],
+                    )
+                    .into());
+                }
                 ensure_guest_tools(&app, &task, &guest, &terminal);
                 std::fs::create_dir_all(&apps).or_fail("terminals")?;
                 let base = KitEnv::build(&guest, &Settings::load(&kit).settings, lang, &host);

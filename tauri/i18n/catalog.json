@@ -724,6 +724,11 @@
     "fr": "Le dossier {0} ne s'ouvre pas dans la VM : choisis un dossier sur un disque du PC.",
     "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Wähle einen Ordner auf einem Laufwerk des PCs."
   },
+  "La cartella {0} non si apre nella VM: è la radice di un disco, contiene il kit o il tuo profilo, o è fra i loro file. Scegli la cartella di un progetto.": {
+    "en": "The folder {0} does not open in the VM: it is a drive's root, holds the kit or your profile, or is among their files. Choose a project's folder.",
+    "fr": "Le dossier {0} ne s'ouvre pas dans la VM : c'est la racine d'un disque, il contient le kit ou ton profil, ou il fait partie de leurs fichiers. Choisis le dossier d'un projet.",
+    "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Er ist das Stammverzeichnis eines Laufwerks, enthält das Kit oder dein Profil oder gehört zu ihren Dateien. Wähle den Ordner eines Projekts."
+  },
   "Docker Sandboxes (sbx) non è nel kit.": {
     "en": "Docker Sandboxes (sbx) is not in the kit.",
     "fr": "Docker Sandboxes (sbx) n'est pas dans le kit.",

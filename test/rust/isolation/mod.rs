@@ -71,6 +71,37 @@ fn a_kit_terminal_gets_the_kits_tools_for_linux() {
     assert!(vars.iter().any(|(n, _)| n == "ATOLLO_TERMINAL"));
 }
 
+/// A VM never writes where the PC runs files: not a drive's root, not a
+/// folder holding the kit or the profile, not inside the kit's data or the
+/// profile's settings; a project's folder and the projects' folder are fine.
+#[test]
+fn a_vm_never_gets_the_kit_or_the_profile_writable() {
+    let (tmp, kit) = crate::test_support::prepared_kit("isolation-workspace");
+    let profile = tmp.0.join("user");
+    let code = profile.join("code").join("shop");
+    let appdata = profile.join("AppData").join("Roaming");
+    for d in [&code, &appdata, &kit.projects().join("shop"), &kit.data()] {
+        std::fs::create_dir_all(d).unwrap();
+    }
+    let host = Host::from_pairs([("USERPROFILE".into(), profile.clone().into_os_string())]);
+    let refused = |d: &Path| workspace_refused(&kit, &host, d);
+    assert!(!refused(&kit.projects()));
+    assert!(!refused(&kit.projects().join("shop")));
+    assert!(!refused(&code));
+    assert!(refused(kit.root()), "the kit's root");
+    assert!(refused(&tmp.0), "a folder holding the kit and the profile");
+    assert!(refused(&profile), "the profile");
+    assert!(refused(&kit.data()), "the kit's data");
+    assert!(refused(&kit.apps()), "inside the kit's data");
+    assert!(refused(&appdata), "the profile's settings");
+    assert!(
+        refused(&tmp.0.join("missing")),
+        "a folder that cannot be read"
+    );
+    let root = kit.root().ancestors().last().unwrap();
+    assert!(refused(root), "a drive's root");
+}
+
 #[test]
 fn no_blocker_is_the_vm() {
     assert_eq!(Status::of(Vec::new(), None).level, Level::Vm);
