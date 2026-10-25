@@ -8,3 +8,14 @@ pub mod log;
 pub mod ports;
 pub mod settings;
 pub mod time;
+
+/// `bytes` as lowercase hex digits, two per byte.
+pub fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write;
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
+            let _ = write!(s, "{b:02x}");
+            s
+        })
+}

@@ -284,7 +284,11 @@ pub async fn frameworks_create<R: Runtime>(
             let _ = app.emit_to(MAIN, super::events::FRAMEWORK, event);
         };
         emit(0, None, None);
-        let env = ensure(&app, &task, &kit, lang, &plan_needs(&plan))?;
+        let mut env = ensure(&app, &task, &kit, lang, &plan_needs(&plan))?;
+        // The creation runs the packages' own scripts (`npm create`,
+        // `composer create-project`): sealed like a project's programs
+        // (D-167), never with the kit's MySQL root or the user's SSH keys.
+        crate::isolation::seal(&kit, None, &mut env);
         std::fs::create_dir_all(kit.projects()).or_fail("frameworks")?;
         // A project with files: the framework is made aside, in the PC's
         // temporary folder (D-90; removed when `staging` is dropped), then

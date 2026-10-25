@@ -106,7 +106,11 @@ fn a_vm_never_gets_the_kit_or_the_profile_writable() {
         plain(&std::fs::canonicalize(kit.projects().join("shop")).unwrap())
     );
     assert!(!shop.to_string_lossy().starts_with(r"\\?\"), "{shop:?}");
-    assert!(allowed(&kit.projects()).is_some());
+    assert_eq!(
+        allowed(&kit.projects()),
+        None,
+        "every project, writable, in one VM"
+    );
     assert!(allowed(&sites).is_some(), "a folder elsewhere");
     // Never the kit, the profile, the system, nor what holds them.
     assert_eq!(allowed(kit.root()), None, "the kit's root");
@@ -455,4 +459,26 @@ fn a_project_gets_a_sealed_environment() {
         .contains("user=shop\n"));
     assert_eq!(env.get("CP_USER_PROFILE"), None);
     assert_eq!(env.get("SSH_AUTH_SOCK"), None);
+}
+
+/// A note written under the old name of a PC without `HOSTNAME` moves to
+/// the PC's real name, so its registration can still be taken back.
+#[test]
+fn a_legacy_pc_note_moves_to_the_real_name() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-legacy-pc");
+    let vm = vm::name("shop");
+    secrets::note(&kit, "github", LEGACY_PC, &vm, Some("cmd")).unwrap();
+    // Not listed by this PC's `sbx`: another PC's, left where it is.
+    assert!(mine_github(&kit, "mac", &vm, || false).is_none());
+    assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_some());
+    assert_eq!(
+        mine_github(&kit, "mac", &vm, || true).unwrap().command,
+        "cmd"
+    );
+    assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_none());
+    assert_eq!(
+        secrets::mine(&kit, "github", "mac", &vm).unwrap().command,
+        "cmd"
+    );
+    assert!(mine_github(&kit, LEGACY_PC, "other", || true).is_none());
 }

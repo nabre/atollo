@@ -218,7 +218,10 @@ pub(crate) fn project_vm_dbs(
     env: &KitEnv,
 ) -> CmdResult<(Vec<u16>, Option<std::path::PathBuf>)> {
     let dbs = services.project_dbs(project);
+    let file = crate::isolation::kit::dir(kit, &crate::isolation::vm::name(project)).join("db.env");
     if dbs.is_empty() {
+        // A database removed takes its password out of the VM's file too.
+        let _ = std::fs::remove_file(&file);
         return Ok((Vec::new(), None));
     }
     let text = crate::platform::safe_path::read_text(dir, &dir.join(".env")).unwrap_or_default();
@@ -240,7 +243,6 @@ pub(crate) fn project_vm_dbs(
             ));
         }
     }
-    let file = crate::isolation::kit::dir(kit, &crate::isolation::vm::name(project)).join("db.env");
     if let Some(parent) = file.parent() {
         std::fs::create_dir_all(parent).or_fail("database")?;
     }

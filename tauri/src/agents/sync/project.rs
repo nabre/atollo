@@ -63,11 +63,7 @@ pub fn sync(p: &Paths, dir: &Path, report: &mut Report) -> Result<()> {
         .strip_prefix(&p.root)
         .map_or_else(|_| root.clone(), Path::to_path_buf);
     let id = id.display().to_string().to_lowercase().replace('\\', "/");
-    let key: String = Sha256::digest(id.as_bytes())
-        .iter()
-        .take(8)
-        .map(|b| format!("{b:02x}"))
-        .collect();
+    let key = crate::common::hex(&Sha256::digest(id.as_bytes())[..8]);
     sync_tree(
         p,
         &shared,

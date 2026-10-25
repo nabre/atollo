@@ -18,12 +18,6 @@ pub fn cmd_name(os: Os, stem: &str) -> String {
     format!("{stem}{}", os.cmd_suffix())
 }
 
-/// Batch script file name on `os` (`"tlmgr.bat"` on Windows, `"tlmgr"` on Unix).
-#[allow(dead_code)]
-pub fn bat_name(os: Os, stem: &str) -> String {
-    format!("{stem}{}", os.bat_suffix())
-}
-
 /// Executable inside `<dir>/bin/<stem>[.exe]` for `os`.
 pub fn db_bin_in(os: Os, dir: &Path, stem: &str) -> PathBuf {
     dir.join("bin").join(exe_name(os, stem))

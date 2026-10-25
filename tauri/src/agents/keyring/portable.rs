@@ -123,8 +123,7 @@ pub fn machine_tag(machine_id: &str, uid: u32) -> String {
         b"\0",
         &uid.to_le_bytes(),
     ]);
-    let hex: String = digest[..8].iter().map(|b| format!("{b:02x}")).collect();
-    format!("m{hex}")
+    format!("m{}", crate::common::hex(&digest[..8]))
 }
 
 /// The exit status of `security find-generic-password`: `Ok(true)` found,

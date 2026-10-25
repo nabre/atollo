@@ -307,9 +307,7 @@ impl Net {
     }
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
+use crate::common::hex;
 
 #[cfg(test)]
 #[path = "../../../test/rust/net/resume.rs"]

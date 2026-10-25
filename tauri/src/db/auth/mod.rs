@@ -142,11 +142,23 @@ pub fn mysql_cnf(kit: &Kit) -> PathBuf {
     dir(kit).join("mysql.cnf")
 }
 
-/// The login of another version of MySQL, on its own port
-/// (D-102): the `ATOLLO_MYSQL_CNF` of the programs of a project whose
-/// database is on it (`services::project_client_env`).
-pub fn mysql_line_cnf(kit: &Kit, line: &str) -> PathBuf {
-    dir(kit).join("mysql-lines").join(line).join("mysql.cnf")
+/// Where versions before D-167 wrote a root login per MySQL version
+/// (`mysql-lines/<line>/mysql.cnf`): nothing reads it since a project's
+/// programs get their own user's, so it is only ever removed
+/// ([`remove_old_line_logins`]).
+fn old_line_logins(kit: &Kit) -> PathBuf {
+    dir(kit).join("mysql-lines")
+}
+
+/// Removes the root logins of [`old_line_logins`]: a password on the disk
+/// that serves nothing.
+pub fn remove_old_line_logins(kit: &Kit) {
+    let old = old_line_logins(kit);
+    if old.exists() {
+        if let Err(e) = std::fs::remove_dir_all(&old) {
+            crate::common::log::warn(&format!("{}: {e}", old.display()));
+        }
+    }
 }
 
 /// MySQL's `[client]` login: TCP on 127.0.0.1 (never a socket or a named
@@ -185,14 +197,6 @@ pub fn write_project_mysql_cnf(kit: &Kit, project: &str, text: &str) -> Result<P
 /// [`mysql_cnf`] for `port`.
 pub fn write_mysql_cnf(kit: &Kit, port: u16, password: &str) -> Result<()> {
     write_private(&mysql_cnf(kit), &mysql_cnf_text(port, password))
-}
-
-/// [`mysql_line_cnf`] for version `line` on its `port`.
-pub fn write_mysql_line_cnf(kit: &Kit, line: &str, port: u16, password: &str) -> Result<()> {
-    if !crate::versions::valid_line(line) {
-        bail!("not a version line: {line}");
-    }
-    write_private(&mysql_line_cnf(kit, line), &mysql_cnf_text(port, password))
 }
 
 #[cfg(test)]

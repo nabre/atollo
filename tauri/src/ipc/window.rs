@@ -92,6 +92,7 @@ pub async fn eject_run<R: Runtime>(
     let services = Arc::clone(&state.services);
     let closing = state.closing.clone();
     let env = state.env();
+    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         // The downloads of models let go of their files on the drive (what
         // arrived is kept for later).
@@ -99,7 +100,7 @@ pub async fn eject_run<R: Runtime>(
         // Asked to shut down before the kit's processes are ended.
         services.stop_all();
         // The projects' microVMs, whose disks are in the kit (D-167).
-        crate::isolation::stop_daemon(&kit, &env);
+        crate::isolation::stop_daemon(&kit, &host, &env);
         // A start in progress gives up before the sweep below, not after
         // it with a server from the drive (BUG-V7-15).
         editor.stop_and_wait();
@@ -153,8 +154,9 @@ pub fn app_quit<R: Runtime>(
     app.state::<AppState>().llm.stop_all();
     // The databases shut down cleanly first (D-73), off this thread.
     let services = Arc::clone(&app.state::<AppState>().services);
-    let (kit, env) = (
+    let (kit, host, env) = (
         app.state::<AppState>().kit.clone(),
+        app.state::<AppState>().host.clone(),
         app.state::<AppState>().env(),
     );
     let handle = app.clone();
@@ -162,7 +164,7 @@ pub fn app_quit<R: Runtime>(
         crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
         services.stop_all();
         // The projects' microVMs shut down too (D-167).
-        crate::isolation::stop_daemon(&kit, &env);
+        crate::isolation::stop_daemon(&kit, &host, &env);
         handle.exit(0);
     });
     Ok(())

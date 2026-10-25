@@ -51,7 +51,7 @@ fn tag_of(readable: &str, exact: &str) -> String {
     let hash = Sha256::digest(exact.as_bytes());
     // 96 bits: no name chosen on purpose (a cloned repository's) reaches
     // another project's sandbox by brute force.
-    let hex: String = hash[..12].iter().map(|b| format!("{b:02x}")).collect();
+    let hex = crate::common::hex(&hash[..12]);
     let slug = slug.trim_matches(['-', '.']);
     if slug.is_empty() {
         hex

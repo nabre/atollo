@@ -9,7 +9,6 @@
 //! Keys written by a newer version of the app are kept as they are.
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
@@ -63,12 +62,6 @@ impl Extensions {
     pub fn is_empty(&self) -> bool {
         self.added.is_empty() && self.removed.is_empty()
     }
-}
-
-/// The folder of the kit's files of `project` (`None`: not a valid name).
-#[allow(dead_code)] // kept for callers on other branches; `ProjectState` is the way
-pub fn dir(kit: &Kit, project: &str) -> Option<PathBuf> {
-    ProjectState::of(kit, project).map(|s| s.dir().clone())
 }
 
 pub fn load(kit: &Kit, project: &str) -> ProjectSettings {

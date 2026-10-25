@@ -427,7 +427,7 @@ fn free_ports() -> impl Iterator<Item = u16> {
 pub fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
     crate::platform::random::fill(&mut bytes)?;
-    Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
+    Ok(crate::common::hex(&bytes))
 }
 
 // restrict_to_owner: protected DACL with full access for the owner only

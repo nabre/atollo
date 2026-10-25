@@ -115,6 +115,11 @@ pub struct Component {
     /// `data/apps/<target>`, `@` = the kit root) and arguments.
     #[serde(default)]
     pub check: Vec<String>,
+    /// The oldest version Atollo works with (a component that follows its
+    /// source's latest, like Docker Sandboxes): one older, or of unknown
+    /// version, is [`Component::outdated`] and installed again.
+    #[serde(default)]
+    pub min_version: Option<String>,
     /// Group `app`: the version this release of Atollo installs, and the
     /// SHA-256 of its download.
     #[serde(default)]
@@ -534,9 +539,15 @@ impl Component {
     /// A part of the app (fixed `version`) installed at another version: the
     /// release of Atollo changed, so it is installed again.
     pub fn outdated(&self, kit: &Kit) -> bool {
+        let installed = self.installed_version(kit);
         self.version
             .as_deref()
-            .is_some_and(|v| self.installed_version(kit).as_deref() != Some(v))
+            .is_some_and(|v| installed.as_deref() != Some(v))
+            || self.min_version.as_deref().is_some_and(|min| {
+                installed
+                    .as_deref()
+                    .is_none_or(|i| crate::setup::updates::newer(min, i))
+            })
     }
 
     pub fn save_version(&self, kit: &Kit, version: &str) -> Result<()> {

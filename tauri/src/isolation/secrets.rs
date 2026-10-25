@@ -108,6 +108,12 @@ pub fn note(
     sandbox: &str,
     command: Option<&str>,
 ) -> anyhow::Result<()> {
+    // One writer at a time: two notes read and written together would
+    // lose one, and a registration without its note is never taken back.
+    static WRITE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _one = WRITE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut all = noted(kit);
     let list = all.entry(service.to_owned()).or_default();
     list.retain(|n| !(n.computer == computer && n.sandbox == sandbox));

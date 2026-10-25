@@ -60,3 +60,25 @@ fn the_linux_tarball_is_laid_out_as_install_sh() {
     }
     assert!(!tree.join("sbx").exists());
 }
+
+/// A release without `sbx`, or without the shim on Windows and Linux,
+/// never replaces the installed one.
+#[test]
+fn an_incomplete_release_is_refused() {
+    let tmp = crate::test_support::TempDir::new("sandboxes-check");
+    let tree = tmp.0.as_path();
+    let linux = Target::new(Os::Linux, Arch::X64);
+    let windows = Target::new(Os::Win32, Arch::X64);
+    let mac = Target::new(Os::Darwin, Arch::Arm64);
+    assert!(check_tree(linux, tree).is_err(), "nothing");
+    fs::create_dir_all(tree.join("bin")).unwrap();
+    fs::write(tree.join("bin").join("sbx"), "sbx").unwrap();
+    assert!(check_tree(mac, tree).is_ok(), "the shim is in Sbx.app");
+    assert!(check_tree(linux, tree).is_err(), "no shim");
+    fs::create_dir_all(tree.join("libexec")).unwrap();
+    fs::write(tree.join("libexec").join("containerd-shim-nerdbox-v1"), "s").unwrap();
+    assert!(check_tree(linux, tree).is_ok());
+    assert!(check_tree(windows, tree).is_err(), "no sbx.exe");
+    fs::write(tree.join("bin").join("sbx.exe"), "sbx").unwrap();
+    assert!(check_tree(windows, tree).is_ok());
+}

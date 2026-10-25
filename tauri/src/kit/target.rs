@@ -55,13 +55,6 @@ impl Os {
         }
     }
 
-    pub const fn bat_suffix(self) -> &'static str {
-        match self {
-            Os::Win32 => ".bat",
-            Os::Darwin | Os::Linux => "",
-        }
-    }
-
     pub const fn path_sep(self) -> char {
         match self {
             Os::Win32 => ';',
