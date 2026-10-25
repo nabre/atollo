@@ -151,6 +151,24 @@ pub fn create_dir_owner_only(path: &Path) -> io::Result<()> {
     imp::create_dir_owner_only(path)
 }
 
+/// `a` and `b` are one entry on disk: a folder renamed only in case on a
+/// file system that ignores case (macOS, exFAT) already "exists" under its
+/// new name. Always false on Windows.
+pub fn same_entry(a: &Path, b: &Path) -> bool {
+    imp::same_entry(a, b)
+}
+
+/// The file has an execute bit (macOS, Linux); false on Windows.
+pub fn any_exec_bit(meta: &fs::Metadata) -> bool {
+    imp::any_exec_bit(meta)
+}
+
+/// The file version in the resources of the Windows program `exe`
+/// (`a.b.c.d`); an error elsewhere.
+pub fn program_version(exe: &Path) -> Result<String> {
+    imp::program_version(exe)
+}
+
 /// A name of an archive's entry that means more than a file name on this
 /// system: on Windows one with `:` (a drive, `C:x`, an alternate data
 /// stream).

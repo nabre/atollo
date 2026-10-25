@@ -446,20 +446,11 @@ fn merge_dir(src: &Path, dst: &Path) -> std::io::Result<()> {
 
 /// The same entry on disk: a folder renamed only in case on a file system
 /// that ignores case (macOS, exFAT) already "exists" under its new name.
-#[cfg(unix)]
-fn same_entry(a: &Path, b: &Path) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    match (fs::metadata(a), fs::metadata(b)) {
-        (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
-        _ => false,
-    }
-}
-
 /// On Windows a root that changed only in case is not a move
-/// ([`crate::kit::same_root`]), so a folder never meets itself.
-#[cfg(not(unix))]
-fn same_entry(_: &Path, _: &Path) -> bool {
-    false
+/// ([`crate::kit::same_root`]), so a folder never meets itself
+/// (`platform::files::same_entry` says no).
+fn same_entry(a: &Path, b: &Path) -> bool {
+    crate::platform::files::same_entry(a, b)
 }
 
 fn relocate_claude_projects(p: &Paths, r: &Replacer, from: &str, to: &str, report: &mut Moved) {

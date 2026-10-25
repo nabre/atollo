@@ -69,6 +69,11 @@ pub fn os_release() -> Option<String> {
     None
 }
 
+/// No Xcode here.
+pub fn xcode_tools() -> Option<String> {
+    None
+}
+
 pub fn rosetta_present() -> bool {
     false
 }

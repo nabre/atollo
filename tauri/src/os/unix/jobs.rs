@@ -223,6 +223,24 @@ pub fn shell_command(line: &str, env: &KitEnv) -> Command {
     cmd
 }
 
+/// Quotes a path for `/bin/sh` when it holds anything but plain
+/// characters: in single quotes.
+pub fn shell_quote(s: &str) -> String {
+    if !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || "._-/+@".contains(c))
+    {
+        s.to_owned()
+    } else {
+        format!("'{}'", s.replace('\'', r"'\''"))
+    }
+}
+
+/// `"$VAR/a/b"`.
+pub fn shell_var_path(var: &str, rel: &[&str]) -> String {
+    format!("\"${var}/{}\"", rel.join("/"))
+}
+
 /// The guard's pid, so that the lists of the kit's programs leave it out.
 pub fn guard_pid() -> Option<u32> {
     crate::os::unix::guard::pid()

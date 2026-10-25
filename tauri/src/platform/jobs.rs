@@ -57,6 +57,22 @@ pub fn shell_command(line: &str, env: &KitEnv) -> Command {
     imp::shell_command(line, env)
 }
 
+/// `s` as one word of the system shell of [`shell_command`]: in double
+/// quotes for `cmd.exe` when it holds spaces or `&()^,;=`; in single
+/// quotes for `/bin/sh` when it holds anything but plain characters, where
+/// `$(…)`, backticks and `;` of a folder name in a cloned repository stay
+/// text.
+pub fn shell_quote(s: &str) -> String {
+    imp::shell_quote(s)
+}
+
+/// The path `rel` under the environment variable `var`, quoted, as the
+/// system shell reads it: `"%CP_DATA%\kit\x"` for `cmd.exe`,
+/// `"$CP_DATA/kit/x"` for `/bin/sh`.
+pub fn shell_var_path(var: &str, rel: &[&str]) -> String {
+    imp::shell_var_path(var, rel)
+}
+
 /// Starts a program that belongs to the session: it ends with the app.
 pub fn spawn(cmd: &mut Command) -> Result<Child> {
     imp::spawn(cmd)

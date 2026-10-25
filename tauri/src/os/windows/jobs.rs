@@ -211,6 +211,22 @@ pub fn shell_command(line: &str, env: &KitEnv) -> Command {
     cmd
 }
 
+/// Quotes a path for `cmd.exe` when it holds spaces or symbols.
+pub fn shell_quote(s: &str) -> String {
+    if s.chars()
+        .any(|c| c.is_whitespace() || "&()^,;=".contains(c))
+    {
+        format!("\"{s}\"")
+    } else {
+        s.to_owned()
+    }
+}
+
+/// `"%VAR%\a\b"`.
+pub fn shell_var_path(var: &str, rel: &[&str]) -> String {
+    format!("\"%{var}%\\{}\"", rel.join("\\"))
+}
+
 /// Starts a program that belongs to the session: it ends with the app.
 pub fn spawn(cmd: &mut Command) -> Result<Child> {
     let child = cmd

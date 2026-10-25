@@ -378,15 +378,9 @@ pub fn tree_sha256(root: &Path) -> Result<String> {
         .collect())
 }
 
-#[cfg(unix)]
+/// 1 when the file has an execute bit (macOS, Linux), 0 on Windows.
 fn executable(meta: &fs::Metadata) -> u8 {
-    use std::os::unix::fs::PermissionsExt;
-    u8::from(meta.permissions().mode() & 0o111 != 0)
-}
-
-#[cfg(not(unix))]
-fn executable(_meta: &fs::Metadata) -> u8 {
-    0
+    u8::from(crate::platform::files::any_exec_bit(meta))
 }
 
 /// The digest recorded for a staged copy and checked again at the swap.
@@ -397,17 +391,9 @@ fn staged_digest(form: Form, path: &Path) -> Result<String> {
     }
 }
 
-/// `rwxr-xr-x`: the AppImage must run (Linux). Nothing elsewhere.
-#[cfg(unix)]
+/// `rwxr-xr-x`: the AppImage must run (Linux). Nothing on Windows.
 fn set_mode_755(path: &Path) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(path, fs::Permissions::from_mode(0o755))
-        .with_context(|| path.display().to_string())
-}
-
-#[cfg(not(unix))]
-fn set_mode_755(_path: &Path) -> Result<()> {
-    Ok(())
+    crate::platform::files::set_executable(path).with_context(|| path.display().to_string())
 }
 
 /// Removes a file or a folder (never through a link: a link itself goes).

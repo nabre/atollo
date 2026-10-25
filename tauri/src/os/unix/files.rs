@@ -99,3 +99,23 @@ pub fn is_executable(path: &Path) -> io::Result<bool> {
 pub fn special_in_name(_name: &str) -> bool {
     false
 }
+
+/// The same device and inode.
+pub fn same_entry(a: &Path, b: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    match (fs::metadata(a), fs::metadata(b)) {
+        (Ok(x), Ok(y)) => x.dev() == y.dev() && x.ino() == y.ino(),
+        _ => false,
+    }
+}
+
+/// Some execute bit.
+pub fn any_exec_bit(meta: &fs::Metadata) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    meta.permissions().mode() & 0o111 != 0
+}
+
+/// Only Windows programs carry a version resource.
+pub fn program_version(exe: &Path) -> Result<String> {
+    anyhow::bail!("{}: only on Windows", exe.display())
+}

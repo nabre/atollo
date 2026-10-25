@@ -41,50 +41,10 @@ pub const PACKAGE_JSON: &str = "<package.json>";
 /// its resources.
 pub const FILE_VERSION: &str = "<file-version>";
 
-/// The file version in the resources of the Windows program `exe`.
-#[cfg(windows)]
+/// The file version in the resources of the Windows program `exe`
+/// (`platform::files::program_version`).
 pub fn file_version(exe: &std::path::Path) -> Result<String> {
-    use std::os::windows::ffi::OsStrExt;
-    use windows::core::{w, PCWSTR};
-    use windows::Win32::Storage::FileSystem::{
-        GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, VS_FIXEDFILEINFO,
-    };
-    if !exe.is_file() {
-        bail!("{} not found", exe.display());
-    }
-    let path: Vec<u16> = exe.as_os_str().encode_wide().chain([0]).collect();
-    // SAFETY: a NUL-terminated path.
-    let size = unsafe { GetFileVersionInfoSizeW(PCWSTR(path.as_ptr()), None) };
-    anyhow::ensure!(size > 0, "{}: no version", exe.display());
-    let mut data = vec![0u8; size as usize];
-    // SAFETY: a buffer of `size` bytes.
-    unsafe { GetFileVersionInfoW(PCWSTR(path.as_ptr()), None, size, data.as_mut_ptr().cast()) }
-        .context("GetFileVersionInfoW")?;
-    let mut info: *mut std::ffi::c_void = std::ptr::null_mut();
-    let mut len = 0u32;
-    // SAFETY: `data` holds the version resource read above; `info` points
-    // into it while it lives.
-    let found = unsafe { VerQueryValueW(data.as_ptr().cast(), w!("\\"), &mut info, &mut len) };
-    anyhow::ensure!(
-        found.as_bool() && !info.is_null() && len as usize >= size_of::<VS_FIXEDFILEINFO>(),
-        "{}: no version",
-        exe.display()
-    );
-    // SAFETY: checked above: a VS_FIXEDFILEINFO inside `data`.
-    let fixed = unsafe { &*info.cast::<VS_FIXEDFILEINFO>() };
-    let (ms, ls) = (fixed.dwFileVersionMS, fixed.dwFileVersionLS);
-    Ok(format!(
-        "{}.{}.{}.{}",
-        ms >> 16,
-        ms & 0xffff,
-        ls >> 16,
-        ls & 0xffff
-    ))
-}
-
-#[cfg(not(windows))]
-pub fn file_version(exe: &std::path::Path) -> Result<String> {
-    bail!("{}: only on Windows", exe.display())
+    crate::platform::files::program_version(exe)
 }
 
 /// Runs the check command of `c`; `None` if it has none or nothing of it is

@@ -232,7 +232,7 @@ fn read(dir: &Path, rel: &str) -> String {
 /// A relative path written with `\` (as the detection writes them), with
 /// the system's separator: on macOS and Linux `\` is a character of a name.
 fn native(rel: &str) -> std::borrow::Cow<'_, str> {
-    if cfg!(windows) {
+    if std::path::MAIN_SEPARATOR == '\\' {
         rel.into()
     } else {
         rel.replace('\\', "/").into()
@@ -257,41 +257,18 @@ fn list_dir(dir: &Path) -> Vec<String> {
     names
 }
 
-/// Quotes a path for `cmd.exe` when it holds spaces or symbols.
-#[cfg(windows)]
+/// A path as one word of the system shell of the actions
+/// (`platform::jobs::shell_quote`).
 fn quote(s: &str) -> String {
-    if s.chars()
-        .any(|c| c.is_whitespace() || "&()^,;=".contains(c))
-    {
-        format!("\"{s}\"")
-    } else {
-        s.to_owned()
-    }
-}
-
-/// Quotes a path for `/bin/sh` when it holds anything but plain characters:
-/// in single quotes, where `$(…)`, backticks and `;` of a folder name in a
-/// cloned repository stay text.
-#[cfg(not(windows))]
-fn quote(s: &str) -> String {
-    if !s.is_empty()
-        && s.chars()
-            .all(|c| c.is_ascii_alphanumeric() || "._-/+@".contains(c))
-    {
-        s.to_owned()
-    } else {
-        format!("'{}'", s.replace('\'', r"'\''"))
-    }
+    crate::platform::jobs::shell_quote(s)
 }
 
 /// The kit's router of `php -S` (`runtime\php-router.php`, written to
-/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02). The command
-/// runs through `cmd.exe` on Windows and `/bin/sh` elsewhere, each with its
-/// own way to read `CP_DATA`.
-#[cfg(windows)]
-const PHP_ROUTER: &str = r#""%CP_DATA%\kit\php-router.php""#;
-#[cfg(not(windows))]
-const PHP_ROUTER: &str = r#""$CP_DATA/kit/php-router.php""#;
+/// `data\kit\`): 403 for hidden files and `.inc` (SEC-V3-02), named through
+/// `CP_DATA` as the system shell reads it.
+fn php_router() -> String {
+    crate::platform::jobs::shell_var_path("CP_DATA", &["kit", "php-router.php"])
+}
 
 /// `php -S` on the folder `root` of the project, always through the kit's
 /// router. A project's own `router.php` (in `root`, else in the project
@@ -315,8 +292,9 @@ fn php_server(dir: &Path, root: &str) -> String {
         .map(|f| format!("-d {} ", quote(&format!("atollo.router={}", native(&f)))))
         .unwrap_or_default();
     format!(
-        "php {own}-S 127.0.0.1:{{port}} -t {} {PHP_ROUTER}",
-        quote(&native(root))
+        "php {own}-S 127.0.0.1:{{port}} -t {} {}",
+        quote(&native(root)),
+        php_router()
     )
 }
 

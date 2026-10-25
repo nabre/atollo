@@ -42,6 +42,14 @@ pub fn rosetta_present() -> bool {
     imp::rosetta_present()
 }
 
+/// The folder of the Mac's active developer tools (`xcode-select -p`):
+/// Clang and the SDK the Apple frameworks need; asked again a minute after
+/// "not installed", so tools installed meanwhile are seen. `None`
+/// elsewhere.
+pub fn xcode_tools() -> Option<String> {
+    imp::xcode_tools()
+}
+
 /// The AppImage the app runs from, when `exe` is inside the image's mount
 /// (Linux); `None` elsewhere.
 pub fn running_appimage(exe: &Path) -> Option<PathBuf> {

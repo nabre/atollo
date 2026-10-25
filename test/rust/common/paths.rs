@@ -10,8 +10,8 @@ use regex::Regex;
 
 /// Joins with a backslash that are right as they are, with the reason:
 /// (file under `tauri/src`, the string literal as written, why). Those not
-/// yet inside `cfg(windows)` or an OS check say so, and which phase gates
-/// them.
+/// yet inside an OS check say so, and which phase gates them. The files of
+/// `os/windows/`, built for Windows only, are not looked at.
 const ALLOWED: &[(&str, &str, &str)] = &[
     (
         "editor/cfg.rs",
@@ -28,16 +28,6 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "env/path.rs",
         r#"r"WindowsPowerShell\v1.0\Modules""#,
         "under System32, inside `if is_win`",
-    ),
-    (
-        "os/windows/jobs.rs",
-        r#"r"System32\cmd.exe""#,
-        "under %SystemRoot%, in os/windows (built for Windows only)",
-    ),
-    (
-        "os/windows/jobs.rs",
-        r#"r"System32\rundll32.exe""#,
-        "under %SystemRoot%, in os/windows (built for Windows only)",
     ),
     (
         "install/web/vcruntime.rs",
@@ -186,6 +176,10 @@ fn no_backslash_in_joined_paths() {
             .unwrap()
             .to_string_lossy()
             .replace('\\', "/");
+        // Built for Windows only, where `\` is the separator.
+        if rel.starts_with("os/windows/") {
+            continue;
+        }
         let text = fs::read_to_string(file).unwrap();
         for (line, lit) in backslash_joins(&text) {
             match ALLOWED.iter().position(|(f, l, _)| *f == rel && *l == lit) {

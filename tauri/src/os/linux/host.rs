@@ -15,6 +15,11 @@ pub fn os_release() -> Option<String> {
 }
 
 /// No Rosetta on Linux.
+/// No Xcode here.
+pub fn xcode_tools() -> Option<String> {
+    None
+}
+
 pub fn rosetta_present() -> bool {
     false
 }

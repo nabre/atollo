@@ -6,7 +6,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use windows::core::HSTRING;
 use windows::Win32::Foundation::{LocalFree, HLOCAL};
 use windows::Win32::Security::Authorization::{
@@ -107,6 +107,56 @@ pub fn is_executable(_path: &Path) -> io::Result<bool> {
 /// A drive (`C:x`) or an alternate data stream.
 pub fn special_in_name(name: &str) -> bool {
     name.contains(':')
+}
+
+/// Never the same entry: a root changed only in case is not a move here.
+pub fn same_entry(_a: &Path, _b: &Path) -> bool {
+    false
+}
+
+/// No execute bits.
+pub fn any_exec_bit(_meta: &fs::Metadata) -> bool {
+    false
+}
+
+/// The file version in the resources of the program `exe`.
+pub fn program_version(exe: &Path) -> Result<String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::{w, PCWSTR};
+    use windows::Win32::Storage::FileSystem::{
+        GetFileVersionInfoSizeW, GetFileVersionInfoW, VerQueryValueW, VS_FIXEDFILEINFO,
+    };
+    if !exe.is_file() {
+        bail!("{} not found", exe.display());
+    }
+    let path: Vec<u16> = exe.as_os_str().encode_wide().chain([0]).collect();
+    // SAFETY: a NUL-terminated path.
+    let size = unsafe { GetFileVersionInfoSizeW(PCWSTR(path.as_ptr()), None) };
+    anyhow::ensure!(size > 0, "{}: no version", exe.display());
+    let mut data = vec![0u8; size as usize];
+    // SAFETY: a buffer of `size` bytes.
+    unsafe { GetFileVersionInfoW(PCWSTR(path.as_ptr()), None, size, data.as_mut_ptr().cast()) }
+        .context("GetFileVersionInfoW")?;
+    let mut info: *mut std::ffi::c_void = std::ptr::null_mut();
+    let mut len = 0u32;
+    // SAFETY: `data` holds the version resource read above; `info` points
+    // into it while it lives.
+    let found = unsafe { VerQueryValueW(data.as_ptr().cast(), w!("\\"), &mut info, &mut len) };
+    anyhow::ensure!(
+        found.as_bool() && !info.is_null() && len as usize >= size_of::<VS_FIXEDFILEINFO>(),
+        "{}: no version",
+        exe.display()
+    );
+    // SAFETY: checked above: a VS_FIXEDFILEINFO inside `data`.
+    let fixed = unsafe { &*info.cast::<VS_FIXEDFILEINFO>() };
+    let (ms, ls) = (fixed.dwFileVersionMS, fixed.dwFileVersionLS);
+    Ok(format!(
+        "{}.{}.{}.{}",
+        ms >> 16,
+        ms & 0xffff,
+        ls >> 16,
+        ls & 0xffff
+    ))
 }
 
 #[cfg(test)]

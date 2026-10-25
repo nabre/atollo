@@ -66,6 +66,39 @@ pub fn running_appimage(_exe: &Path) -> Option<PathBuf> {
     None
 }
 
+/// The folder of the active developer tools (`xcode-select -p`). `-p` only
+/// prints: it never opens the installation
+/// dialog. A folder found is kept until the app closes; "not installed" is
+/// asked again after [`XCODE_RECHECK`], so tools installed meanwhile with
+/// `xcode-select --install` are seen without a restart.
+pub fn xcode_tools() -> Option<String> {
+    use std::sync::Mutex;
+    use std::time::Instant;
+    static KEPT: Mutex<Option<(Instant, Option<String>)>> = Mutex::new(None);
+    let mut kept = KEPT
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((at, answer)) = kept.as_ref() {
+        if answer.is_some() || at.elapsed() < XCODE_RECHECK {
+            return answer.clone();
+        }
+    }
+    let answer = std::process::Command::new("/usr/bin/xcode-select")
+        .arg("-p")
+        .stdin(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned())
+        .filter(|path| std::path::Path::new(path).is_dir());
+    *kept = Some((Instant::now(), answer.clone()));
+    answer
+}
+
+/// How long "no Command Line Tools" is believed before asking again.
+const XCODE_RECHECK: std::time::Duration = std::time::Duration::from_secs(60);
+
 #[cfg(test)]
 #[path = "../../../../test/rust/os/macos/host.rs"]
 mod tests;
