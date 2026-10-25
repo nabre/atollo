@@ -31,7 +31,7 @@ pub(crate) fn offered_file(kit: &Kit) -> PathBuf {
 /// folder per patch) is dropped: it is asked again.
 pub fn offered(kit: &Kit) -> BTreeMap<String, Offered> {
     let mut all: BTreeMap<String, Offered> =
-        crate::fsx::read_json(&offered_file(kit)).unwrap_or_default();
+        crate::common::fsx::read_json(&offered_file(kit)).unwrap_or_default();
     all.retain(|id, o| find(id).is_some() && o.lines.iter().all(|l| valid_line(l)));
     for o in all.values_mut() {
         o.lines
@@ -48,7 +48,7 @@ const STALE_SECS: u64 = 24 * 60 * 60;
 /// missing or older than a day.
 pub fn stale_offers(kit: &Kit) -> Vec<String> {
     let all = offered(kit);
-    let now = crate::time::now_secs();
+    let now = crate::common::time::now_secs();
     super::versioned()
         .filter(|c| crate::install::installer(&c.id).is_some_and(|i| i.has_lines()))
         .filter(|c| {
@@ -70,7 +70,7 @@ pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
         return Ok(());
     }
     let mut all = offered(kit);
-    let checked = crate::time::now_secs();
+    let checked = crate::common::time::now_secs();
     all.insert(
         id.to_owned(),
         Offered {
@@ -78,7 +78,7 @@ pub fn save_offered(kit: &Kit, id: &str, lines: &[String]) -> Result<()> {
             checked,
         },
     );
-    crate::fsx::write_json(&offered_file(kit), &all)
+    crate::common::fsx::write_json(&offered_file(kit), &all)
 }
 
 /// `line` of `id` has to be downloaded before it can be used: the component

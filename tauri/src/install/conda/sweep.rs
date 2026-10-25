@@ -11,9 +11,9 @@ use serde::Serialize;
 
 use super::list::parse_explicit;
 use super::{lock_name, locks_dir, pkgs_dir, root};
+use crate::common::settings::Settings;
 use crate::install::installer;
 use crate::kit::Kit;
-use crate::settings::Settings;
 use crate::setup::Catalog;
 
 /// The environment the list `<id>@<line>` was written for is still on
@@ -89,7 +89,7 @@ pub fn sweep(kit: &Kit) -> Swept {
     if !Settings::load(kit).settings.keep_conda_packages {
         if let Ok(bytes) = free(kit) {
             swept.bytes = bytes;
-            crate::log::info(&format!(
+            crate::common::log::info(&format!(
                 "conda: kept packages off, {} MB freed",
                 bytes.div_ceil(1 << 20)
             ));
@@ -143,7 +143,7 @@ pub fn sweep(kit: &Kit) -> Swept {
         }
     }
     if !swept.lists.is_empty() || swept.archives > 0 {
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "conda: lists removed [{}], {} archives no list names removed ({} MB)",
             swept.lists.join(", "),
             swept.archives,

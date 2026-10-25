@@ -17,7 +17,7 @@ pub async fn projects_list<R: Runtime>(
         let list = crate::projects::list(&kit, lang);
         // The interface reads the list after every change of a project:
         // the tray menu follows (D-145).
-        crate::tray::refresh(&app);
+        crate::app::tray::refresh(&app);
         list
     })
     .await

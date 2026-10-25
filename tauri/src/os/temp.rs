@@ -36,13 +36,16 @@ impl TempWork {
         if let Some(base) = kit.system_temp() {
             let dir = base.join(rel);
             match free_near(base) {
-                Some(free) if free < bytes => crate::log::warn(&format!(
+                Some(free) if free < bytes => crate::common::log::warn(&format!(
                     "{}: {free} bytes free, {bytes} needed; using data\\tmp",
                     base.display()
                 )),
                 _ => match TempWork::at(&dir) {
                     Ok(work) => return Ok(work),
-                    Err(e) => crate::log::warn(&format!("{}: {e}; using data\\tmp", dir.display())),
+                    Err(e) => crate::common::log::warn(&format!(
+                        "{}: {e}; using data\\tmp",
+                        dir.display()
+                    )),
                 },
             }
         }
@@ -201,7 +204,7 @@ fn sweep_one(dir: &Path) {
         Err(_) => return,
     }
     if let Err(e) = fs::remove_dir_all(dir) {
-        crate::log::warn(&format!("{}: {e}", dir.display()));
+        crate::common::log::warn(&format!("{}: {e}", dir.display()));
     }
 }
 
@@ -214,7 +217,7 @@ pub fn cleanup_at_exit(kit: &Kit) {
             let dir = base.join(name);
             if let Err(e) = fs::remove_dir_all(&dir) {
                 if e.kind() != io::ErrorKind::NotFound {
-                    crate::log::warn(&format!("{}: {e}", dir.display()));
+                    crate::common::log::warn(&format!("{}: {e}", dir.display()));
                 }
             }
         }

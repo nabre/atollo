@@ -9,7 +9,7 @@ use anyhow::Result;
 
 use super::pull::{gb, Plan};
 use super::{catalog, hf, local};
-use crate::i18n::t;
+use crate::common::i18n::t;
 use crate::kit::Kit;
 use crate::net::Net;
 

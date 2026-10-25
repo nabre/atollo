@@ -70,7 +70,7 @@ export function folderOpen(
 }
 
 /** «Esporta diagnostica»: the zip for a report of a problem, its secrets
- * masked (tauri/src/diagnostics.rs); its path. */
+ * masked (tauri/src/diagnostics/mod.rs); its path. */
 export function diagnosticsExport(): Promise<string> {
   return query<string>(
     "diagnostics_export",
@@ -78,7 +78,7 @@ export function diagnosticsExport(): Promise<string> {
   );
 }
 
-/** One check of «Salute del kit» (tauri/src/health.rs). */
+/** One check of «Salute del kit» (tauri/src/diagnostics/health.rs). */
 export interface HealthFinding {
   id: "disk" | "space" | "path" | "owners" | "libs";
   level: "ok" | "warn" | "err";
@@ -121,7 +121,7 @@ export function urlOpen(url: string): Promise<void> {
   return act("url_open", { url });
 }
 
-/** What «Esporta il kit» made (N-12, tauri/src/backup.rs). */
+/** What «Esporta il kit» made (N-12, tauri/src/kit/backup.rs). */
 export interface KitExported {
   path: string;
   files: number;

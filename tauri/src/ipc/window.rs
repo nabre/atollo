@@ -120,12 +120,12 @@ pub async fn eject_run<R: Runtime>(
         // An alignment or a save started before the flag was raised ends
         // before the drive is said to be free.
         if !closing.wait_idle(std::time::Duration::from_secs(60)) {
-            crate::log::warn("eject: an agents' alignment still running after 60 s");
+            crate::common::log::warn("eject: an agents' alignment still running after 60 s");
         }
         if let Err(e) = crate::agents::keyring::save_after_run(&kit) {
-            crate::log::warn(&format!("eject, antigravity login: {e:#}"));
+            crate::common::log::warn(&format!("eject, antigravity login: {e:#}"));
         }
-        crate::log::info("eject: programs of the kit stopped");
+        crate::common::log::info("eject: programs of the kit stopped");
         let _ = handle.emit_to(MAIN, super::events::EDITOR_STATUS, editor.status());
         Ok(open_now(&handle))
     })

@@ -20,7 +20,7 @@ pub(super) fn problem_text(
     (source, args): crate::projects::frameworks::Problem,
 ) -> String {
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
-    crate::i18n::t(lang, source, &args)
+    crate::common::i18n::t(lang, source, &args)
 }
 
 #[tauri::command]
@@ -36,7 +36,7 @@ pub fn frameworks_get<R: Runtime>(
     for p in official {
         let notes = p.on.values().filter_map(|v| v.note.as_ref());
         for s in std::iter::once(&p.desc).chain(&p.note).chain(notes) {
-            texts.insert(s.clone(), crate::i18n::t(lang, s, &[]));
+            texts.insert(s.clone(), crate::common::i18n::t(lang, s, &[]));
         }
     }
     Ok(FrameworksView {
@@ -176,7 +176,7 @@ pub(super) fn ignore_env(dir: &std::path::Path) -> anyhow::Result<()> {
     } else {
         newline
     };
-    crate::fsx::write_atomic(&path, format!("{text}{sep}/.env{newline}").as_bytes())?;
+    crate::common::fsx::write_atomic(&path, format!("{text}{sep}/.env{newline}").as_bytes())?;
     Ok(())
 }
 
@@ -306,7 +306,7 @@ pub async fn frameworks_create<R: Runtime>(
             std::fs::remove_dir(&dir).or_fail("frameworks")?;
         }
         let no_folder = || {
-            crate::i18n::t(
+            crate::common::i18n::t(
                 lang,
                 "Il comando di creazione non ha fatto la cartella {0}.",
                 &[&name],
@@ -318,7 +318,7 @@ pub async fn frameworks_create<R: Runtime>(
                    vars: &[(String, String)]|
          -> CmdResult<()> {
             if crate::projects::frameworks::cancelled() {
-                return Err(crate::i18n::t(lang, "Creazione annullata.", &[]).into());
+                return Err(crate::common::i18n::t(lang, "Creazione annullata.", &[]).into());
             }
             let command = crate::projects::frameworks::fill(line, &name);
             emit(step, Some(command.clone()), None);
@@ -326,11 +326,15 @@ pub async fn frameworks_create<R: Runtime>(
             crate::projects::frameworks::run_line(&kit, &env, vars, at, &command, &out).map_err(
                 |last| {
                     if crate::projects::frameworks::cancelled() {
-                        return crate::i18n::t(lang, "Creazione annullata.", &[]).into();
+                        return crate::common::i18n::t(lang, "Creazione annullata.", &[]).into();
                     }
-                    crate::log::warn(&format!("frameworks: {command}: {last}"));
-                    crate::i18n::t(lang, "Comando non riuscito: {0}\n{1}", &[&command, &last])
-                        .into()
+                    crate::common::log::warn(&format!("frameworks: {command}: {last}"));
+                    crate::common::i18n::t(
+                        lang,
+                        "Comando non riuscito: {0}\n{1}",
+                        &[&command, &last],
+                    )
+                    .into()
                 },
             )
         };
@@ -356,7 +360,11 @@ pub async fn frameworks_create<R: Runtime>(
                 }
                 .or_fail("frameworks")?;
                 for k in kept {
-                    let text = crate::i18n::t(lang, "Già nel progetto, lasciato com'è: {0}", &[&k]);
+                    let text = crate::common::i18n::t(
+                        lang,
+                        "Già nel progetto, lasciato com'è: {0}",
+                        &[&k],
+                    );
                     emit(plan.create.len(), None, Some(text));
                 }
             }
@@ -368,7 +376,11 @@ pub async fn frameworks_create<R: Runtime>(
             let mut step_vars: Vec<(String, String)> = Vec::new();
             let mut db = None;
             if let Some(engine) = &plan.database {
-                let text = crate::i18n::t(lang, "Creo il database del progetto in {0}…", &[engine]);
+                let text = crate::common::i18n::t(
+                    lang,
+                    "Creo il database del progetto in {0}…",
+                    &[engine],
+                );
                 emit(plan.create.len(), None, Some(text));
                 let made = services
                     .start_for(&name, engine, &env)
@@ -395,7 +407,8 @@ pub async fn frameworks_create<R: Runtime>(
             }));
             if !vars.is_empty() {
                 let keys: Vec<&str> = vars.iter().map(|(k, _)| k.as_str()).collect();
-                let text = crate::i18n::t(lang, "Scrivo nel file .env: {0}", &[&keys.join(", ")]);
+                let text =
+                    crate::common::i18n::t(lang, "Scrivo nel file .env: {0}", &[&keys.join(", ")]);
                 emit(plan.create.len(), None, Some(text));
             }
             let db_keys = write_env(&dir, &vars, db.as_ref()).or_fail_chain(".env")?;
@@ -405,7 +418,7 @@ pub async fn frameworks_create<R: Runtime>(
                 run(plan.create.len() + i + 1, line, &dir, &step_vars)?;
             }
             if let Err(e) = ignore_env(&dir) {
-                crate::log::warn(&format!("{name}: .gitignore: {e:#}"));
+                crate::common::log::warn(&format!("{name}: .gitignore: {e:#}"));
             }
             Ok(())
         })();
@@ -425,7 +438,7 @@ pub async fn frameworks_create<R: Runtime>(
                 env: std::collections::BTreeMap::new(),
             };
             if let Err(e) = crate::detect::save_action(&dir, &edit, lang) {
-                crate::log::warn(&format!("{name}: action {}: {e:#}", a.name));
+                crate::common::log::warn(&format!("{name}: action {}: {e:#}", a.name));
             }
         }
         crate::versions::pin_newest(&kit, &name);

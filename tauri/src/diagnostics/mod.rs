@@ -16,6 +16,10 @@
 //! appears, on top of the masking of secret-looking names
 //! (`env::mask_secrets`); the real profile folder (the user's name)
 //! becomes `~`, and the variables naming the user or the PC `***`.
+//!
+//! «Salute del kit» is [`health`].
+
+pub mod health;
 
 use std::fs;
 use std::io::Write;
@@ -52,7 +56,7 @@ pub fn secrets(kit: &Kit, env: &KitEnv) -> Vec<String> {
     // Files that hold one secret each.
     let one = [
         crate::agents::claude_token::path(kit),
-        crate::settings::gemini_file(kit),
+        crate::common::settings::gemini_file(kit),
     ];
     let secret_dir = kit.app_dir().join("secrets");
     let files = fs::read_dir(&secret_dir)
@@ -80,7 +84,7 @@ pub fn secrets(kit: &Kit, env: &KitEnv) -> Vec<String> {
         );
     }
     for f in json {
-        if let Some(v) = crate::fsx::read_json::<Value>(&f) {
+        if let Some(v) = crate::common::fsx::read_json::<Value>(&f) {
             long_strings(&v, &mut |s| {
                 if s.len() >= MIN_SECRET {
                     add(s);
@@ -203,9 +207,9 @@ fn summary(kit: &Kit) -> String {
 }
 
 fn ports(kit: &Kit) -> String {
-    crate::ports::ports_taken(kit)
+    crate::common::ports::ports_taken(kit)
         .iter()
-        .filter(|(_, o)| !matches!(o, crate::ports::Owner::Editor))
+        .filter(|(_, o)| !matches!(o, crate::common::ports::Owner::Editor))
         .map(|(p, o)| format!("{p:<6} {o:?}\n"))
         .collect()
 }
@@ -236,19 +240,19 @@ pub fn export(kit: &Kit, env: &KitEnv, lang: &str) -> Result<PathBuf> {
     let clean = |t: &str| clean(t, &secrets, profile.as_deref());
     let mut entries: Vec<(String, String)> = vec![("summary.txt".into(), summary(kit))];
     let mut text = Vec::new();
-    crate::cli::print_env(env, &mut text)?;
+    crate::app::cli::print_env(env, &mut text)?;
     entries.push((
         "env.txt".into(),
         without_identity(&String::from_utf8_lossy(&text)),
     ));
     let mut text = Vec::new();
-    crate::cli::print_checks(&crate::setup::checkup::check_all(kit, env), &mut text)?;
+    crate::app::cli::print_checks(&crate::setup::checkup::check_all(kit, env), &mut text)?;
     entries.push((
         "check.txt".into(),
         String::from_utf8_lossy(&text).into_owned(),
     ));
     let mut text = Vec::new();
-    crate::cli::print_components(kit, lang, &mut text)?;
+    crate::app::cli::print_components(kit, lang, &mut text)?;
     entries.push((
         "components.txt".into(),
         String::from_utf8_lossy(&text).into_owned(),
@@ -280,7 +284,7 @@ pub fn export(kit: &Kit, env: &KitEnv, lang: &str) -> Result<PathBuf> {
         zip.write_all(clean(&text).as_bytes())?;
     }
     zip.finish()?;
-    crate::log::info(&format!("diagnostics: {}", path.display()));
+    crate::common::log::info(&format!("diagnostics: {}", path.display()));
     Ok(path)
 }
 
@@ -326,5 +330,5 @@ fn encode(text: &str) -> String {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/diagnostics.rs"]
+#[path = "../../../test/rust/diagnostics/mod.rs"]
 mod tests;

@@ -211,7 +211,7 @@ fn antigravity_server(s: &Value) -> Option<Value> {
 /// Writes only the servers of mcp.json and remembers what it wrote: servers
 /// added with `agy mcp add`, or kit servers changed there, are left alone.
 pub fn sync_antigravity(p: &Paths, servers: &Servers, report: &mut Report) -> Result<()> {
-    let file = crate::fsx::join_rel(&p.gemini, "config/mcp_config.json");
+    let file = crate::common::fsx::join_rel(&p.gemini, "config/mcp_config.json");
     let state_file = p.state.join("mcp-antigravity.json");
     let base = read_state(&state_file);
     let mut cfg = read_json(&file)?.unwrap_or_else(|| json!({}));

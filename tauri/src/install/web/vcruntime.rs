@@ -8,7 +8,7 @@ use std::process::Stdio;
 
 use anyhow::{anyhow, bail, Context, Result};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::{pattern, Ctx, Progress};
 
 /// A progress sink that only logs, for steps that run inside hooks.
@@ -16,7 +16,7 @@ pub(super) struct LogProgress;
 
 impl Progress for LogProgress {
     fn note(&mut self, text: &str) {
-        crate::log::info(text);
+        crate::common::log::info(text);
     }
     fn bytes(&mut self, _done: u64, _total: Option<u64>) {}
 }

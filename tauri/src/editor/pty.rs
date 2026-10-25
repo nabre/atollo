@@ -280,12 +280,12 @@ pub fn ready(launch: &Launch, dir: &Path, lang: &str) -> Result<()> {
     let shown = dir.display().to_string();
     anyhow::ensure!(
         dir.is_dir(),
-        crate::i18n::t(lang, "La cartella {0} non esiste.", &[&shown])
+        crate::common::i18n::t(lang, "La cartella {0} non esiste.", &[&shown])
     );
     let shown = launch.program.display().to_string();
     anyhow::ensure!(
         runnable(&launch.program),
-        crate::i18n::t(lang, "{0} non è installato.", &[&shown])
+        crate::common::i18n::t(lang, "{0} non è installato.", &[&shown])
     );
     Ok(())
 }
@@ -751,7 +751,7 @@ fn spawn(launch: &Launch, env: &crate::env::KitEnv, dir: &Path, lang: &str) -> R
         launch.conpty.as_deref(),
     )?;
     let note = spawned.system.then(|| {
-        let text = crate::i18n::t(
+        let text = crate::common::i18n::t(
             lang,
             "Il ConPTY del kit non è installato: questo terminale usa quello di Windows, e alcuni programmi (Claude Code) possono non ricevere i tasti.",
             &[],

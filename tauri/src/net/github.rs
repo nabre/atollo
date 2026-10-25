@@ -49,10 +49,10 @@ impl Net {
                     .read_to_string()
                     .with_context(|| format!("reading {url}"))?;
                 if std::fs::create_dir_all(dir).is_ok() {
-                    let _ = crate::fsx::write_atomic(&body_path, body.as_bytes());
+                    let _ = crate::common::fsx::write_atomic(&body_path, body.as_bytes());
                     match new_tag {
                         Some(tag) => {
-                            let _ = crate::fsx::write_atomic(&etag_path, tag.as_bytes());
+                            let _ = crate::common::fsx::write_atomic(&etag_path, tag.as_bytes());
                         }
                         None => {
                             let _ = std::fs::remove_file(&etag_path);
@@ -62,7 +62,7 @@ impl Net {
                 Ok(body)
             }
             (403 | 429, Some(body)) => {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "GitHub API limit reached: the last answer kept for {url}"
                 ));
                 Ok(body)
@@ -106,7 +106,7 @@ impl Net {
         ));
         match api {
             Err(e) if is_github_limit(&e) => self.github_latest_page(repo).map_err(|page| {
-                crate::log::warn(&format!("{repo}: release page: {page:#}"));
+                crate::common::log::warn(&format!("{repo}: release page: {page:#}"));
                 e
             }),
             other => other,

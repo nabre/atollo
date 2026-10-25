@@ -38,7 +38,7 @@ impl Lock {
         // SAFETY: a valid descriptor owned by `file`.
         while unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
             if start.elapsed() > Duration::from_secs(30) {
-                crate::log::warn("antigravity keyring: lock busy for 30 s, going on");
+                crate::common::log::warn("antigravity keyring: lock busy for 30 s, going on");
                 break;
             }
             std::thread::sleep(Duration::from_millis(100));
@@ -61,7 +61,7 @@ impl Lock {
             let _ = GetLastError() == ERROR_ALREADY_EXISTS;
             let r = WaitForSingleObject(h, 30_000);
             if r != WAIT_OBJECT_0 && r != WAIT_ABANDONED {
-                crate::log::warn("antigravity keyring: lock busy for 30 s, going on");
+                crate::common::log::warn("antigravity keyring: lock busy for 30 s, going on");
             }
             Ok(Lock(h))
         }

@@ -31,8 +31,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::common::fsx::{read_text, write_atomic};
 use crate::env::KitEnv;
-use crate::fsx::{read_text, write_atomic};
 use crate::kit::Kit;
 use crate::net::verify::Expect;
 use crate::net::{github_digest, Net};
@@ -483,7 +483,7 @@ pub fn sync_in_background(
     match jobs::Job::new() {
         Ok(j) => *job.lock().unwrap_or_else(|e| e.into_inner()) = Some(j),
         Err(e) => {
-            crate::log::warn(&format!("editor extensions: job: {e:#}"));
+            crate::common::log::warn(&format!("editor extensions: job: {e:#}"));
             state.lock().unwrap_or_else(|e| e.into_inner()).running = false;
             return true;
         }
@@ -510,7 +510,7 @@ pub fn sync_in_background(
                 }
             }
             Ok(_) => {}
-            Err(e) => crate::log::warn(&format!("editor extensions: {e:#}")),
+            Err(e) => crate::common::log::warn(&format!("editor extensions: {e:#}")),
         }
     });
     true
@@ -542,7 +542,7 @@ fn install(
         if id == CODELLDB {
             match net.map(|n| codelldb_vsix(kit, n, work.path())) {
                 Some(Ok(vsix)) => sources.push((id.clone(), vsix)),
-                Some(Err(e)) => crate::log::warn(&format!("CodeLLDB: {e:#}")),
+                Some(Err(e)) => crate::common::log::warn(&format!("CodeLLDB: {e:#}")),
                 None => {}
             }
         } else {
@@ -556,7 +556,7 @@ fn install(
     for (_, vsix) in &sources {
         cmd.arg("--install-extension").arg(vsix);
     }
-    crate::log::info(&format!("editor extensions: installing {}", ids.join(", ")));
+    crate::common::log::info(&format!("editor extensions: installing {}", ids.join(", ")));
     // Started and put in the job under its lock: `Editor::stop` either came
     // first (no job: nothing starts) or closes the job with it inside.
     let child = {
@@ -606,7 +606,7 @@ fn install(
         .cloned()
         .collect();
     if !failed.is_empty() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "editor extensions not installed (retried next start): {}",
             failed.join(", ")
         ));

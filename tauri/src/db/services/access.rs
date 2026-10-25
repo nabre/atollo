@@ -89,7 +89,7 @@ impl Services {
                     }
                 }
             }
-            crate::log::info(&format!("{id}: administrator password set"));
+            crate::common::log::info(&format!("{id}: administrator password set"));
         }
         match engine {
             DbEngine::MongoDb => {}
@@ -127,7 +127,7 @@ impl Services {
             .iter()
             .filter_map(|(engine, pw)| {
                 let name = auth::project_db_name(&self.kit, project, engine)
-                    .map_err(|e| crate::log::warn(&format!("{project}: {engine}: {e:#}")))
+                    .map_err(|e| crate::common::log::warn(&format!("{project}: {engine}: {e:#}")))
                     .ok()?;
                 let line = project_line(&self.kit, project, engine);
                 let port = line_port(&self.kit, engine, line.as_deref());
@@ -167,7 +167,7 @@ impl Services {
             // Its server, on the version it leaves, for the copy; a version
             // no longer installed has nothing to copy from.
             match self.start_for(project, engine, env) {
-                Err(e) if e.is::<super::LineMissing>() => crate::log::warn(&format!(
+                Err(e) if e.is::<super::LineMissing>() => crate::common::log::warn(&format!(
                     "{project}: {engine}: no copy before the change of version: {e:#}"
                 )),
                 started => {
@@ -198,7 +198,9 @@ impl Services {
             // restore keep finding them.
             if let Err(e) = auth::set_project_line(&self.kit, project, engine, previous.as_deref())
             {
-                crate::log::warn(&format!("{project}: {engine}: version not restored: {e:#}"));
+                crate::common::log::warn(&format!(
+                    "{project}: {engine}: version not restored: {e:#}"
+                ));
             }
         }
         moved.map(Some)
@@ -244,7 +246,9 @@ impl Services {
         // The deletion of the project drops it from every version it is on.
         if let Some(l) = &line {
             if let Err(e) = auth::add_project_used_line(&self.kit, project, engine, l) {
-                crate::log::warn(&format!("{project}: {engine} {l}: version not kept: {e:#}"));
+                crate::common::log::warn(&format!(
+                    "{project}: {engine} {l}: version not kept: {e:#}"
+                ));
             }
         }
         Ok(auth::project_db(engine, &name, &password, port))
@@ -308,7 +312,7 @@ impl Services {
                 run_with_input(cmd, &auth::project_drop_sql(name), Duration::from_secs(60))?;
             }
         }
-        crate::log::info(&format!("{engine}: database and user {name} dropped"));
+        crate::common::log::info(&format!("{engine}: database and user {name} dropped"));
         Ok(())
     }
 }

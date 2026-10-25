@@ -27,10 +27,10 @@ use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
+use crate::common::settings::{ProgramTemp, Settings};
 use crate::kit::Kit;
 use crate::os::volume::{DriveKind, VolumeInfo};
-use crate::settings::{ProgramTemp, Settings};
 use langs::language_vars;
 use path::path_var;
 pub use secrets::{mask_secrets, masked};
@@ -438,7 +438,7 @@ impl KitEnv {
         // Kit mode on NTFS/ReFS: the programs' leftovers are for the owner only.
         if let Some(tmp) = &self.private_tmp {
             if let Err(e) = crate::editor::restrict_dir_to_owner(tmp) {
-                crate::log::warn(&format!("{}: owner-only access: {e:#}", tmp.display()));
+                crate::common::log::warn(&format!("{}: owner-only access: {e:#}", tmp.display()));
             }
         }
         Ok(())
@@ -655,7 +655,7 @@ fn write_python_shim(dir: &Path) -> std::io::Result<()> {
     let file = dir.join("python");
     if !fs::read(&file).is_ok_and(|b| b == PYTHON_SHIM.as_bytes()) {
         fs::create_dir_all(dir)?;
-        crate::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
+        crate::common::fsx::write_atomic(&file, PYTHON_SHIM.as_bytes())?;
     }
     #[cfg(unix)]
     {

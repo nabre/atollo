@@ -66,7 +66,7 @@ fn view(state: &AppState) -> ModelsView {
             .map(|m| CatalogEntry {
                 bytes: m.bytes(),
                 model: CatalogModel {
-                    desc: crate::i18n::t(lang, &m.desc, &[]),
+                    desc: crate::common::i18n::t(lang, &m.desc, &[]),
                     ..m.clone()
                 },
             })
@@ -279,7 +279,7 @@ pub async fn llm_pull<R: Runtime>(
                 emit(total, total, "done", None);
                 let env = app.state::<AppState>().env();
                 if let Err(e) = llm.reload(&env, lang) {
-                    crate::log::warn(&format!("llm: restart after a download: {e:#}"));
+                    crate::common::log::warn(&format!("llm: restart after a download: {e:#}"));
                 }
                 crate::agents::sync::run(&kit, None);
                 Ok(id)

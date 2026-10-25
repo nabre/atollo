@@ -52,7 +52,7 @@ pub struct Manifest {
     pub bytes: u64,
 }
 
-use crate::time::now_secs as now;
+use crate::common::time::now_secs as now;
 
 /// Every file of `projects\` and `data\` a copy takes (links skipped), as
 /// `/` paths from the root, sorted.
@@ -309,7 +309,7 @@ pub fn apply_pending(root: &Path) -> Result<Option<PathBuf>> {
         if let Err(e) = fs::rename(&src, &dst) {
             for (back_src, back_dst) in done.iter().rev() {
                 if let Err(undo) = fs::rename(back_dst, back_src) {
-                    crate::log::warn(&format!(
+                    crate::common::log::warn(&format!(
                         "import: {} not put back: {undo}",
                         back_dst.display()
                     ));
@@ -326,5 +326,5 @@ pub fn apply_pending(root: &Path) -> Result<Option<PathBuf>> {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/backup.rs"]
+#[path = "../../../test/rust/kit/backup.rs"]
 mod tests;

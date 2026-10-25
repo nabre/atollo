@@ -1,6 +1,6 @@
 // Removing the drive and closing (tauri/src/os/sessions.rs), the tray menu,
 // the controls of the window's own title bar (shell/titlebar.tsx). Rust:
-// tauri/src/ipc/window.rs, tauri/src/tray.rs; the window's controls are
+// tauri/src/ipc/window.rs, tauri/src/app/tray.rs; the window's controls are
 // Tauri's (capabilities/main.json).
 
 import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
@@ -58,7 +58,7 @@ export function onCloseRequested(handler: (open: OpenNow) => void): Promise<() =
   return subscribe<OpenNow>(CLOSE_REQUESTED, handler);
 }
 
-/** A project chosen in the tray menu (tauri/src/tray.rs): its page opens. */
+/** A project chosen in the tray menu (tauri/src/app/tray.rs): its page opens. */
 export function onOpenProject(handler: (id: string) => void): Promise<() => void> {
   return subscribe<string>(OPEN_PROJECT, handler);
 }

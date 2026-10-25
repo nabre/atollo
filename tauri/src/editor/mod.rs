@@ -221,7 +221,7 @@ impl Editor {
 
     /// `retry`: the server (re)started, failed extensions are tried again.
     fn sync_extensions_now(&self, retry: bool) -> bool {
-        let settings = crate::settings::Settings::load(&self.kit).settings;
+        let settings = crate::common::settings::Settings::load(&self.kit).settings;
         let net = crate::net::Net::new(&settings, None)
             .ok()
             .map(std::sync::Arc::new);
@@ -284,15 +284,15 @@ impl Editor {
         let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
         match cfg::write(&self.kit, &system_root)? {
             cfg::Outcome::LeftAlone(why) => {
-                crate::log::warn(&format!("editor settings left alone: {why}"))
+                crate::common::log::warn(&format!("editor settings left alone: {why}"))
             }
-            other => crate::log::info(&format!("editor settings: {other:?}")),
+            other => crate::common::log::info(&format!("editor settings: {other:?}")),
         }
         if self.stopped(stops) {
             bail!("the editor was stopped while it started");
         }
         if let Err(e) = theme::ensure(&self.kit, &env) {
-            crate::log::warn(&format!("editor theme: {e:#}"));
+            crate::common::log::warn(&format!("editor theme: {e:#}"));
         }
         if self.stopped(stops) {
             bail!("the editor was stopped while it started");
@@ -316,7 +316,7 @@ impl Editor {
             match self.start_on(port, stops, &token, &token_file, &data_dir, &log_path) {
                 Ok(server) => return Ok(server),
                 Err(e) => {
-                    crate::log::warn(&format!("editor on port {port}: {e:#}"));
+                    crate::common::log::warn(&format!("editor on port {port}: {e:#}"));
                     last_error = Some(e);
                 }
             }
@@ -423,7 +423,7 @@ fn local_agent() -> ureq::Agent {
 }
 
 /// The editor's own range, bound on IPv4 only: unlike
-/// [`crate::ports::is_port_free`], which also asks who answers and binds
+/// [`crate::common::ports::is_port_free`], which also asks who answers and binds
 /// IPv6; kept as it is, so the editor picks the same ports as before.
 fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())

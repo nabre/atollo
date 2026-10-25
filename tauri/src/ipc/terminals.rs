@@ -63,7 +63,7 @@ pub async fn terminal_launch<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
         let Some(terminal) = terminals::find(&kit, &id, lang) else {
-            return Err(crate::i18n::t(lang, "Terminale non trovato: {0}", &[&id]).into());
+            return Err(crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&id]).into());
         };
         let dir = terminals::start_dir(&kit, &terminal, dir.as_deref(), lang)?;
         let env = terminals::env(&kit, &terminal, ensure(&app, &task, &kit, lang, &[])?);
@@ -86,7 +86,7 @@ pub async fn terminal_dir_pick<R: Runtime>(
     let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
     #[cfg(unix)]
     let window = webview.window();
-    let title = crate::i18n::t(state.lang(), "Scegli la cartella del terminale", &[]);
+    let title = crate::common::i18n::t(state.lang(), "Scegli la cartella del terminale", &[]);
     let projects = state.kit.projects();
     tauri::async_runtime::spawn_blocking(move || {
         let start = start.map(PathBuf::from).unwrap_or(projects);

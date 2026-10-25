@@ -32,7 +32,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::i18n::t as tr;
+use crate::common::i18n::t as tr;
 
 pub use overrides::{
     remove_action, save_action, set_default_action, set_site_with_options, ActionEdit, SiteKind,

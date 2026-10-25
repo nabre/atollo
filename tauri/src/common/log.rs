@@ -42,7 +42,7 @@ fn append(path: &Path, line: &str, max: u64) {
 fn write(level: &str, message: &str) {
     let Ok(guard) = FILE.lock() else { return };
     let Some(path) = guard.as_ref() else { return };
-    let secs = crate::time::now_secs();
+    let secs = crate::common::time::now_secs();
     let line = format!(
         "{secs} {level} {}\n",
         mask_secrets(message).replace('\n', " | ")
@@ -61,5 +61,5 @@ pub fn error(message: &str) {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/log.rs"]
+#[path = "../../../test/rust/common/log.rs"]
 mod tests;

@@ -56,7 +56,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::Serialize;
 
-use crate::fsx::{read_text, write_atomic};
+use crate::common::fsx::{read_text, write_atomic};
 use crate::kit::Kit;
 use crate::setup::{Catalog, Component};
 
@@ -159,7 +159,7 @@ pub fn resolve(kit: &Kit, rel: &str) -> Option<PathBuf> {
     Some(if rest.is_empty() {
         dir
     } else {
-        crate::fsx::join_rel(&dir, rest)
+        crate::common::fsx::join_rel(&dir, rest)
     })
 }
 
@@ -191,7 +191,7 @@ pub fn has_key_for(target: crate::kit::Target, c: &Component, dir: &Path) -> boo
         .strip_prefix(folder.as_str())
         .unwrap_or(&key)
         .trim_start_matches(['/', '\\']);
-    let path = crate::fsx::join_rel(dir, rel);
+    let path = crate::common::fsx::join_rel(dir, rel);
     path.is_file() || (rel.is_empty() && fs::read_dir(dir).is_ok_and(|mut d| d.next().is_some()))
 }
 

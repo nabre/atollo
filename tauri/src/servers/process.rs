@@ -12,10 +12,10 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 
+use crate::common::ports::is_port_free;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
-use crate::ports::is_port_free;
 use crate::projects::apache::{self, fwd};
 use crate::projects::caddy;
 use crate::projects::fastcgi::{self, FastCgi, FcgiAddr};
@@ -117,7 +117,7 @@ pub(super) fn take_dead(running: &mut BTreeMap<String, RunningPool>) -> Vec<(Str
 pub(super) fn end_dead(dead: Vec<(String, RunningPool)>) {
     for (id, mut r) in dead {
         if matches!(r.child.try_wait(), Ok(None)) {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "server pool {id}: php-cgi ended, the pool is stopped (start it again)"
             ));
         }
@@ -219,7 +219,7 @@ fn spawn_with_retries(
         if php_cgi_listening(&mut child, &fcgi.addr, Duration::from_secs(5)) {
             return (Some(fcgi), Some(child));
         }
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "PHP's FastCGI server ended at once on {}: trying again",
             fcgi.addr.describe()
         ));
@@ -265,7 +265,7 @@ impl WebServers {
             .collect();
         for id in ids {
             if let Err(e) = self.start(&id, env, lang) {
-                crate::log::warn(&format!("server pool {id}: automatic start: {e:#}"));
+                crate::common::log::warn(&format!("server pool {id}: automatic start: {e:#}"));
             }
         }
     }
@@ -431,7 +431,7 @@ impl WebServers {
         if !wait_port_released(pool.port, PORT_BUSY_GRACE) {
             bail!(
                 "{}",
-                crate::i18n::t(
+                crate::common::i18n::t(
                     lang,
                     "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
                     &[&pool.port.to_string()]
@@ -456,7 +456,7 @@ impl WebServers {
             if !crate::versions::is_present(&self.kit, c, line) {
                 bail!(
                     "{}",
-                    crate::i18n::t(
+                    crate::common::i18n::t(
                         lang,
                         "{0} {1} non è installato nel kit: installa questa versione o scegline un'altra.",
                         &[name, line]
@@ -634,7 +634,7 @@ impl WebServers {
             // Nothing to reload it with: its combination is gone.
             bail!(
                 "{}",
-                crate::i18n::t(
+                crate::common::i18n::t(
                     lang,
                     "Questo pool non corrisponde più ai progetti e ai profili: fermalo.",
                     &[]
@@ -669,7 +669,7 @@ impl WebServers {
             .filter(|a| {
                 let ok = a.still_private();
                 if !ok {
-                    crate::log::warn(&format!(
+                    crate::common::log::warn(&format!(
                         "server pool {id}: {}: no longer a private folder, the pool is restarted",
                         a.path.display()
                     ));
@@ -709,25 +709,25 @@ impl WebServers {
                                 if let Some(why) =
                                     caddy_rejects(&exe, &pool_dir, &conf_path, base_env)
                                 {
-                                    crate::log::warn(&format!(
+                                    crate::common::log::warn(&format!(
                                         "server pool {id}: caddy rejects the configuration: {why}; the pool keeps the previous one"
                                     ));
                                     bail!(
                                         "{}",
-                                        crate::i18n::t(
+                                        crate::common::i18n::t(
                                             lang,
                                             "Caddy rifiuta la nuova configurazione del pool {0}: {1}. Il pool resta acceso con quella di prima.",
                                             &[id, &why]
                                         )
                                     );
                                 }
-                                crate::log::warn(&format!(
+                                crate::common::log::warn(&format!(
                                     "server pool {id}: caddy reload failed ({}): {}; the pool is restarted",
                                     o.status,
                                     caddy::reload_failure(&o.stderr)
                                 ));
                             }
-                            Err(e) => crate::log::warn(&format!(
+                            Err(e) => crate::common::log::warn(&format!(
                                 "server pool {id}: caddy reload: {e}; the pool is restarted"
                             )),
                             _ => {}

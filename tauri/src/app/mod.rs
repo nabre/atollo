@@ -1,15 +1,20 @@
 //! The app's window side: Tauri's context, the app built with its state,
 //! commands and window events, the main window, and what starts in the
-//! background once it is open.
+//! background once it is open; the icon in the tray (`tray`) and the
+//! command line of the same exe (`cli`).
+
+pub mod cli;
+pub mod tray;
 
 use std::path::Path;
 
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
+use crate::common::log;
+use crate::common::settings::Settings;
 use crate::ipc::{AppState, MAIN};
 use crate::kit::Kit;
-use crate::settings::Settings;
-use crate::{agents, editor, github, ipc, llm, log, net, os, projects, setup, tray};
+use crate::{agents, editor, github, ipc, llm, net, os, projects, setup};
 
 /// The app's context, expanded once for the app and its tests: on macOS
 /// `generate_context!` embeds the Info.plist under a global symbol, so a

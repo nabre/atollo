@@ -14,7 +14,7 @@ use crate::kit::Kit;
 pub fn project_line(kit: &Kit, project: &str, engine: &str) -> Option<String> {
     auth::project_line(kit, project, engine)
         .unwrap_or_else(|e| {
-            crate::log::warn(&format!("{project}: {engine}: {e:#}"));
+            crate::common::log::warn(&format!("{project}: {engine}: {e:#}"));
             None
         })
         .or_else(|| server_line(kit, engine))
@@ -89,7 +89,7 @@ pub fn lines_in_use(kit: &Kit, id: &str) -> Vec<String> {
 /// in that order, each once.
 pub fn project_drop_lines(kit: &Kit, project: &str, engine: &str) -> Vec<String> {
     let mut lines = auth::project_used_lines(kit, project, engine).unwrap_or_else(|e| {
-        crate::log::warn(&format!("{project}: {engine}: {e:#}"));
+        crate::common::log::warn(&format!("{project}: {engine}: {e:#}"));
         Vec::new()
     });
     if let Some(now) = project_line(kit, project, engine) {
@@ -128,7 +128,7 @@ impl crate::projects::ProjectDatabases for ProjectDrops<'_> {
                     .db_drop_at(engine, Some(line), database, &self.env)
                     .with_context(|| format!("{engine} {line}"))?;
             } else {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "{}: {engine} {line} not installed: database and user {database} left there",
                     self.project
                 ));

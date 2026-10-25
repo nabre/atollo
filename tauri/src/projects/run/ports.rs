@@ -7,9 +7,9 @@ use std::sync::PoisonError;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::i18n::t as tr;
+use crate::common::i18n::t as tr;
+use crate::common::ports::is_port_free;
 use crate::kit::Kit;
-use crate::ports::is_port_free;
 use crate::projects::state::{self, ProjectState};
 
 use super::{key_of, Runner};
@@ -42,7 +42,7 @@ pub(super) fn load_ports(kit: &Kit) -> (Ports, BTreeMap<String, ProjectPorts>) {
         let Some(file) = ProjectState::of(kit, &project).map(|s| s.ports_file()) else {
             continue;
         };
-        let Some(p) = crate::fsx::read_json::<ProjectPorts>(&file) else {
+        let Some(p) = crate::common::fsx::read_json::<ProjectPorts>(&file) else {
             continue;
         };
         for (action, &port) in &p.ports {
@@ -57,7 +57,7 @@ pub(super) fn load_ports(kit: &Kit) -> (Ports, BTreeMap<String, ProjectPorts>) {
 }
 
 /// The ports of the projects' actions as their `ports.json` keep them,
-/// under `project|action` keys (for [`crate::ports`]).
+/// under `project|action` keys (for [`crate::common::ports`]).
 pub(crate) fn saved_ports(kit: &Kit) -> BTreeMap<String, u16> {
     load_ports(kit).0.ports
 }
@@ -119,12 +119,12 @@ impl Runner {
                 saved.remove(&project);
                 continue;
             }
-            match crate::fsx::write_json(&state.ports_file(), &p) {
+            match crate::common::fsx::write_json(&state.ports_file(), &p) {
                 Ok(()) => {
                     saved.insert(project, p);
                 }
                 Err(e) => {
-                    crate::log::warn(&format!("ports of {project}: {e:#}"));
+                    crate::common::log::warn(&format!("ports of {project}: {e:#}"));
                     if result.is_ok() {
                         result = Err(e);
                     }
@@ -154,9 +154,9 @@ impl Runner {
         // Nor the port of a pool or a database version, even one not
         // running now (BUG-V5-07): the projects' own are those above.
         used.extend(
-            crate::ports::ports_taken(&self.kit)
+            crate::common::ports::ports_taken(&self.kit)
                 .into_iter()
-                .filter(|(_, o)| !matches!(o, crate::ports::Owner::Project { .. }))
+                .filter(|(_, o)| !matches!(o, crate::common::ports::Owner::Project { .. }))
                 .map(|(p, _)| p),
         );
         let (from, to) = self.port_range;
@@ -210,10 +210,10 @@ impl Runner {
             }
             // Not the port of a pool, of a database version or the editor's
             // (BUG-V5-05); the projects' own below, from memory.
-            crate::ports::refuse_taken(
+            crate::common::ports::refuse_taken(
                 &self.kit,
                 n,
-                |o| matches!(o, crate::ports::Owner::Project { .. }),
+                |o| matches!(o, crate::common::ports::Owner::Project { .. }),
                 lang,
             )?;
         }

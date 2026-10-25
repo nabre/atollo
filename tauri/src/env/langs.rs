@@ -3,7 +3,7 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 
 use super::{node_options, Cx, KitEnv};
 

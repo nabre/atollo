@@ -184,19 +184,19 @@ pub fn pick_inner(extracted: &Path, inner: &Inner) -> Result<PathBuf> {
     match inner {
         Inner::Root => Ok(extracted.to_path_buf()),
         Inner::Named(name) => {
-            let path = crate::fsx::join_rel(extracted, name);
+            let path = crate::common::fsx::join_rel(extracted, name);
             if !path.is_dir() {
                 bail!("the archive has no folder {name}");
             }
             Ok(path)
         }
         Inner::SingleUnder(name) => {
-            let sub = crate::fsx::join_rel(extracted, name);
+            let sub = crate::common::fsx::join_rel(extracted, name);
             pick_inner(&sub, &Inner::Single).with_context(|| format!("in {name}"))
         }
         Inner::SingleThen(sub) => {
             let top = pick_inner(extracted, &Inner::Single)?;
-            let path = crate::fsx::join_rel(&top, sub);
+            let path = crate::common::fsx::join_rel(&top, sub);
             if !path.is_dir() {
                 bail!("the archive has no folder {sub} inside {}", top.display());
             }

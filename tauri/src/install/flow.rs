@@ -300,7 +300,7 @@ pub fn relocate(kit: &Kit) {
             continue;
         };
         if let Err(e) = inst.relocate(kit, c) {
-            crate::log::warn(&format!("{}: relocation: {e:#}", c.id));
+            crate::common::log::warn(&format!("{}: relocation: {e:#}", c.id));
         }
     }
 }

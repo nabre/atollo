@@ -58,7 +58,7 @@ fn gemini_key_for_antigravity_only() {
     let env = KitEnv::default();
     assert_eq!(sign_in(&kit, "antigravity"), None);
     assert_eq!(launch_env(&kit, &env, "antigravity").get(GEMINI_VAR), None);
-    let settings = crate::settings::Settings {
+    let settings = crate::common::settings::Settings {
         gemini_api_key: Some("AIza-key".into()),
         ..Default::default()
     };
@@ -73,7 +73,7 @@ fn gemini_key_for_antigravity_only() {
     }
     let kit_env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::load(&kit).settings,
+        &crate::common::settings::Settings::load(&kit).settings,
         "en",
         &crate::env::Host::from_pairs(std::iter::empty()),
     );

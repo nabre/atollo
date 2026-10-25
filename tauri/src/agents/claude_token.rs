@@ -252,7 +252,7 @@ pub fn link<R: tauri::Runtime>(
     if !exe.is_file() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "{0} non è installato.", &["Claude Code"])
+            crate::common::i18n::t(lang, "{0} non è installato.", &["Claude Code"])
         );
     }
     let dir = kit.home();
@@ -271,7 +271,7 @@ pub fn link<R: tauri::Runtime>(
         &dir,
         lang,
         |info| {
-            crate::log::info(&format!("terminal {}: {}", info.id, info.title));
+            crate::common::log::info(&format!("terminal {}: {}", info.id, info.title));
             let _ = app.emit_to(main, crate::ipc::events::PTY_OPENED, info);
         },
         move |id, chunk| {
@@ -285,11 +285,13 @@ pub fn link<R: tauri::Runtime>(
             let token = scan.lock().unwrap_or_else(PoisonError::into_inner).token();
             match token.map(|t| save(&after, &t)) {
                 Some(Ok(())) => {
-                    crate::log::info("claude: token saved in the kit");
+                    crate::common::log::info("claude: token saved in the kit");
                     on_saved();
                 }
-                Some(Err(e)) => crate::log::warn(&format!("claude: token not saved: {e:#}")),
-                None => crate::log::warn("claude: setup-token ended without a token"),
+                Some(Err(e)) => {
+                    crate::common::log::warn(&format!("claude: token not saved: {e:#}"))
+                }
+                None => crate::common::log::warn("claude: setup-token ended without a token"),
             }
             crate::editor::terminal::emit_exit(&end, &info);
         },

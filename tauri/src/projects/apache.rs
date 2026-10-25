@@ -14,8 +14,8 @@ use std::process::Command;
 
 use anyhow::{anyhow, bail, Context, Result};
 
+use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
-use crate::fsx::write_atomic;
 use crate::kit::{Kit, Os};
 use crate::os::jobs;
 use crate::projects::alias::{self, valid_domain, SiteAlias};
@@ -496,7 +496,7 @@ pub fn command(
     if !exe.is_file() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "{0} non è installato (Strumenti > {0})", &["Apache"])
+            crate::common::i18n::t(lang, "{0} non è installato (Strumenti > {0})", &["Apache"])
         );
     }
     let base = fs::read_to_string(apache.join("conf").join("httpd.conf")).context("httpd.conf")?;

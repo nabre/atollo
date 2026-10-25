@@ -161,7 +161,7 @@ fn half_installed_fails_the_check() {
     let result = check(&kit, &KitEnv::default(), cmake).unwrap();
     assert!(!result.ok);
     // `tools/ninja.exe` on Windows, `tools/ninja` elsewhere
-    let ninja = crate::fsx::join_rel(kit.apps(), &cmake.keys_for(kit.target())[0]);
+    let ninja = crate::common::fsx::join_rel(kit.apps(), &cmake.keys_for(kit.target())[0]);
     assert!(
         result.answer.contains(&ninja.display().to_string()),
         "{}",

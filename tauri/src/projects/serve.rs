@@ -308,7 +308,7 @@ pub fn run(root: &Path, port: u16, lang: &str) -> Result<()> {
     let listener = TcpListener::bind((ip, port)).with_context(|| format!("{ip}:{port}"))?;
     println!(
         "{}",
-        crate::i18n::t(
+        crate::common::i18n::t(
             lang,
             "Sito statico: {0}   (cartella {1})",
             &[

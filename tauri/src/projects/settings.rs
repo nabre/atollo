@@ -68,7 +68,7 @@ pub fn dir(kit: &Kit, project: &str) -> Option<PathBuf> {
 
 pub fn load(kit: &Kit, project: &str) -> ProjectSettings {
     ProjectState::of(kit, project)
-        .and_then(|s| crate::fsx::read_json(&s.settings_file()))
+        .and_then(|s| crate::common::fsx::read_json(&s.settings_file()))
         .unwrap_or_default()
 }
 
@@ -86,14 +86,14 @@ pub fn update(kit: &Kit, project: &str, change: impl FnOnce(&mut ProjectSettings
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut s = load(kit, project);
     change(&mut s);
-    if let Err(e) = crate::fsx::write_json(&state.settings_file(), &s) {
-        crate::log::warn(&format!("project settings of {project}: {e}"));
+    if let Err(e) = crate::common::fsx::write_json(&state.settings_file(), &s) {
+        crate::common::log::warn(&format!("project settings of {project}: {e}"));
     }
 }
 
 /// The project was opened now (editor, console, agent).
 pub fn opened(kit: &Kit, project: &str) {
-    let now = crate::time::now_secs();
+    let now = crate::common::time::now_secs();
     update(kit, project, |s| s.last_opened = Some(now));
 }
 

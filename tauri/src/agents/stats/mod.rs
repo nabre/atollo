@@ -216,7 +216,7 @@ impl Ctx {
     }
 
     pub fn t(&self, it_source: &str, args: &[&str]) -> String {
-        crate::i18n::t(self.lang, it_source, args)
+        crate::common::i18n::t(self.lang, it_source, args)
     }
 
     pub fn has_env(&self, name: &str) -> bool {
@@ -253,7 +253,7 @@ impl Ctx {
             .map_err(|e| {
                 let message = match e.status {
                     None => {
-                        crate::log::warn(&format!("stats {}: {}", host_of(url), e.detail));
+                        crate::common::log::warn(&format!("stats {}: {}", host_of(url), e.detail));
                         self.t("il server non risponde", &[])
                     }
                     Some(401) => self.t(
@@ -280,7 +280,7 @@ fn host_of(url: &str) -> &str {
 /// `fsx::read_json` on a [`Value`]: the agents' own files, read as they
 /// are, so the callers name no type.
 pub fn read_json(path: &Path) -> Option<Value> {
-    crate::fsx::read_json(path)
+    crate::common::fsx::read_json(path)
 }
 
 /// The last reading of one server.
@@ -404,7 +404,7 @@ fn finish(mut a: AgentStats, cx: &Ctx) -> AgentStats {
 /// The statistics of the agents installed in the kit. `force`: "Refresh"
 /// (the servers are asked sooner, never before a 429 wait ends).
 pub fn collect(kit: &Kit, lang: &'static str, force: bool) -> Report {
-    let settings = crate::settings::Settings::load(kit).settings;
+    let settings = crate::common::settings::Settings::load(kit).settings;
     let net = Net::new(&settings, None).ok();
     let cx = Ctx::new(kit, settings.gemini_api_key.as_deref(), lang, net);
     let catalog = Catalog::get();

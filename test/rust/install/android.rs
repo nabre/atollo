@@ -39,7 +39,7 @@ fn newest_stable_packages() {
 #[test]
 #[ignore]
 fn real_download_page() {
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     assert!(tools_on_page(&net.text(STUDIO).unwrap()).is_some());
 }
 
@@ -105,7 +105,7 @@ fn android_waits_for_a_system_whose_java_cannot_run_here() {
 #[test]
 #[ignore]
 fn real_download_page_every_system() {
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     let page = net.text(STUDIO).unwrap();
     for target in Target::ALL {
         assert!(

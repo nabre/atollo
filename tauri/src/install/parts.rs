@@ -79,7 +79,7 @@ pub(super) fn fetch_part(
     #[cfg(windows)]
     if ctx.kit.os().is_windows() {
         if let Some(sign) = &part.sign {
-            let file = crate::fsx::join_rel(&tree, &sign.file);
+            let file = crate::common::fsx::join_rel(&tree, &sign.file);
             match crate::net::signature::check(&file, sign.publisher, sign.required)? {
                 crate::net::signature::Verdict::Valid { subject } => {
                     progress.note(&format!("signature ok: {subject}"))
@@ -140,7 +140,7 @@ pub(super) fn place_part(
             Ok(())
         }
         Dest::File { folder, name, from } => {
-            let src = crate::fsx::join_rel(&tree, from);
+            let src = crate::common::fsx::join_rel(&tree, from);
             if !src.is_file() {
                 bail!("{from} not found in {}", part.file_name);
             }

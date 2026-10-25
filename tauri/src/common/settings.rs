@@ -170,19 +170,21 @@ impl Settings {
             Ok(None) => {}
             Err(e) => {
                 s.gemini_unreadable = true;
-                crate::log::warn(&format!("Gemini key: {e:#}"));
+                crate::common::log::warn(&format!("Gemini key: {e:#}"));
             }
         }
         if let Some(ca) = &mut s.network.extra_ca_certs {
             if Path::new(ca.as_str()).is_relative() {
-                *ca = crate::fsx::join_rel(kit.root(), ca).display().to_string();
+                *ca = crate::common::fsx::join_rel(kit.root(), ca)
+                    .display()
+                    .to_string();
             }
         }
         loaded
     }
 
     fn load_from(path: &Path) -> Loaded {
-        let (settings, problem) = crate::fsx::load_json(path);
+        let (settings, problem) = crate::common::fsx::load_json(path);
         Loaded { settings, problem }
     }
 
@@ -190,7 +192,7 @@ impl Settings {
     /// Italian source of the problem and its argument (translated by the caller).
     pub fn validate(&self) -> Result<(), (&'static str, String)> {
         if let Some(l) = &self.lang {
-            if !crate::i18n::LANGS.contains(&l.as_str()) {
+            if !crate::common::i18n::LANGS.contains(&l.as_str()) {
                 return Err(("Lingua non valida: {0}", l.clone()));
             }
         }
@@ -253,7 +255,7 @@ impl Settings {
                 *ca = rel.to_string_lossy().replace('\\', "/");
             }
         }
-        crate::fsx::write_json(&kit.settings_file(), &stored)
+        crate::common::fsx::write_json(&kit.settings_file(), &stored)
     }
 
     /// Reads the file, lets `change` modify it and saves it, with no other
@@ -302,7 +304,7 @@ pub fn move_secrets(kit: &Kit) {
         Err(e) => {
             // Never replaced by an older key: the user decides (the error
             // says how).
-            crate::log::warn(&format!("Gemini key: {e:#}"));
+            crate::common::log::warn(&format!("Gemini key: {e:#}"));
             return;
         }
     }
@@ -311,7 +313,7 @@ pub fn move_secrets(kit: &Kit) {
         return;
     }
     if let Err(e) = Settings::update(kit, |_, _| Ok::<(), anyhow::Error>(())) {
-        crate::log::warn(&format!("settings: moving the Gemini key: {e:#}"));
+        crate::common::log::warn(&format!("settings: moving the Gemini key: {e:#}"));
     }
 }
 
@@ -319,5 +321,5 @@ pub fn move_secrets(kit: &Kit) {
 static LOCK: Mutex<()> = Mutex::new(());
 
 #[cfg(test)]
-#[path = "../../test/rust/settings.rs"]
+#[path = "../../../test/rust/common/settings.rs"]
 mod tests;

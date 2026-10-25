@@ -7,7 +7,7 @@
 //! start, a stop, a restart after the models changed), started inside its
 //! job with every process it starts (the router runs one per model), its
 //! output in `data/app/logs/llm.log`, a port of its own that no other part
-//! of Atollo takes ([`crate::ports::Owner::Llm`]); stopped with "Ferma
+//! of Atollo takes ([`crate::common::ports::Owner::Llm`]); stopped with "Ferma
 //! tutto", "Rimuovi l'unità" and when the app closes.
 
 use std::fs::OpenOptions;
@@ -20,11 +20,11 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::settings;
+use crate::common::ports::{is_port_free, responds};
 use crate::db::services::State;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 use crate::os::jobs::{self, Job};
-use crate::ports::{is_port_free, responds};
 use crate::setup::{kit_path, Catalog};
 
 /// The program, as the catalog writes it.
@@ -164,16 +164,16 @@ impl Llm {
     fn port(&self, lang: &str) -> Result<u16> {
         let saved = settings::load(&self.kit).port;
         if let Some(p) = saved {
-            crate::ports::refuse_taken(
+            crate::common::ports::refuse_taken(
                 &self.kit,
                 p,
-                |o| matches!(o, crate::ports::Owner::Llm),
+                |o| matches!(o, crate::common::ports::Owner::Llm),
                 lang,
             )?;
             if !is_port_free(p) {
                 bail!(
                     "{}",
-                    crate::i18n::t(
+                    crate::common::i18n::t(
                         lang,
                         "La porta {0} dei modelli locali è occupata da un altro programma.",
                         &[&p.to_string()]
@@ -182,7 +182,7 @@ impl Llm {
             }
             return Ok(p);
         }
-        let taken = crate::ports::ports_taken(&self.kit);
+        let taken = crate::common::ports::ports_taken(&self.kit);
         let Some(p) = settings::PORTS
             .clone()
             .find(|p| !taken.contains_key(p) && is_port_free(*p))
@@ -226,14 +226,14 @@ impl Llm {
         if !self.installed() {
             bail!(
                 "{}",
-                crate::i18n::t(lang, "{0} non è installato.", &["llama.cpp"])
+                crate::common::i18n::t(lang, "{0} non è installato.", &["llama.cpp"])
             );
         }
         let ids = super::presets::write(&self.kit)?;
         if ids.is_empty() {
             bail!(
                 "{}",
-                crate::i18n::t(
+                crate::common::i18n::t(
                     lang,
                     "Nessun modello locale: scaricane uno dalla pagina Modelli locali.",
                     &[]
@@ -258,7 +258,7 @@ impl Llm {
             .stderr(Stdio::from(file));
         let job = Job::new()?;
         let child = jobs::spawn_in(&mut cmd, &job)?;
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "llm: started on 127.0.0.1:{port} with {} models",
             ids.len()
         ));
@@ -299,7 +299,7 @@ impl Llm {
         if let Some(mut server) = lock(&self.running).take() {
             let _ = server.child.kill();
             let _ = server.child.wait();
-            crate::log::info("llm: stopped");
+            crate::common::log::info("llm: stopped");
             // The job ends what the router started.
         }
     }
@@ -393,7 +393,7 @@ impl Llm {
                     String::from_utf8_lossy(&o.stderr)
                 )),
                 Err(e) => {
-                    crate::log::warn(&format!("llm: --list-devices: {e}"));
+                    crate::common::log::warn(&format!("llm: --list-devices: {e}"));
                     Vec::new()
                 }
             });
@@ -414,7 +414,7 @@ impl Llm {
                     crate::agents::sync::run(&self.kit, None);
                 }
                 Ok(_) => {}
-                Err(e) => crate::log::warn(&format!("llm: automatic start: {e:#}")),
+                Err(e) => crate::common::log::warn(&format!("llm: automatic start: {e:#}")),
             }
         }
     }

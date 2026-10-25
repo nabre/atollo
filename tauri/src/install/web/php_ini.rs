@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::install::pattern;
 
 /// The folder of the `php.ini` of the PHP in `php_dir` (PHPRC, `-c`,
@@ -92,7 +92,7 @@ pub fn migrate_php_ini(kit: &crate::kit::Kit) -> Result<()> {
     {
         fs::create_dir_all(new.parent().unwrap_or(data))?;
         fs::rename(&old, &new).with_context(|| new.display().to_string())?;
-        crate::log::info(&format!("php.ini: moved to {}", new.display()));
+        crate::common::log::info(&format!("php.ini: moved to {}", new.display()));
     }
     let dirs = std::iter::once(default).chain(
         crate::versions::saved(kit, php)

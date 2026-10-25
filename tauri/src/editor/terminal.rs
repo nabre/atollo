@@ -78,7 +78,7 @@ fn open<R: Runtime>(
         lang,
         // Told before the session's first output or its exit.
         |info| {
-            crate::log::info(&format!("terminal {}: {}", info.id, info.title));
+            crate::common::log::info(&format!("terminal {}: {}", info.id, info.title));
             let _ = app.emit_to(main, crate::ipc::events::PTY_OPENED, info);
         },
         move |id, chunk| emit_output(&out, id, chunk),
@@ -171,7 +171,7 @@ pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
         .initialization_script(format!("window.__ATOLLO_LANG__ = {lang};"))
         .data_directory(state.kit.webview_data())
         .theme(
-            crate::settings::Settings::load(&state.kit)
+            crate::common::settings::Settings::load(&state.kit)
                 .settings
                 .theme
                 .window(),

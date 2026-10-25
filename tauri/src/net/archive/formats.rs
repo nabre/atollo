@@ -110,7 +110,7 @@ fn extract_tar_stream<R: Read>(reader: R, dest: &Path) -> Result<()> {
                             }
                             hard_link_or_copy(&target_path, &path, |t, p| fs::hard_link(t, p))?;
                         } else {
-                            crate::log::warn(&format!(
+                            crate::common::log::warn(&format!(
                                 "hard link not made (not a file inside the folder): {} -> {}",
                                 path.display(),
                                 target.display()

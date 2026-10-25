@@ -467,7 +467,7 @@ pub(crate) fn real_apache() -> Option<(Kit, KitEnv, u16)> {
     }
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

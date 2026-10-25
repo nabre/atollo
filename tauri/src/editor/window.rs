@@ -68,7 +68,7 @@ fn apply<R: Runtime>(window: &WebviewWindow<R>, what: Control) {
         Control::Close => window.close(),
     };
     if let Err(e) = done {
-        crate::log::warn(&format!("editor {}: {what:?}: {e}", window.label()));
+        crate::common::log::warn(&format!("editor {}: {what:?}: {e}", window.label()));
     }
 }
 
@@ -163,8 +163,9 @@ fn data_uri(png: &[u8]) -> String {
 /// bar with the Windows buttons, with the editor's own classes, so its
 /// colors (codicons, red on close).
 fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> String {
-    let label =
-        |it: &str| serde_json::to_string(&crate::i18n::t(lang, it, &[])).unwrap_or_default();
+    let label = |it: &str| {
+        serde_json::to_string(&crate::common::i18n::t(lang, it, &[])).unwrap_or_default()
+    };
     let (logo32, logo256) = (data_uri(LOGO_32), data_uri(LOGO_256));
     let hidden_key = serde_json::to_string(&hidden_key(project)).unwrap_or_default();
     let project = serde_json::to_string(project).unwrap_or_default();
@@ -449,7 +450,7 @@ fn hidden_key(project: &str) -> String {
     format!("atollo-hidden:{project}")
 }
 
-use crate::time::now_ms;
+use crate::common::time::now_ms;
 
 /// Sends each open editor window the extensions its project hides now: a
 /// language or a choice changed. They apply at the window's next reload.
@@ -540,7 +541,7 @@ pub fn watch_projects(
                         seen.insert(dir, now);
                     }
                     Some(before) if *before != now => {
-                        crate::log::info(&format!(
+                        crate::common::log::info(&format!(
                             "editor: {} changed, extensions synced",
                             dir.display()
                         ));
@@ -664,7 +665,7 @@ pub fn open<R: Runtime>(
         .data_directory(data_dir.to_path_buf())
         // Light or dark as the settings say (D-137); VSCodium follows it.
         .theme(
-            crate::settings::Settings::load(&app.state::<crate::ipc::AppState>().kit)
+            crate::common::settings::Settings::load(&app.state::<crate::ipc::AppState>().kit)
                 .settings
                 .theme
                 .window(),
@@ -674,7 +675,7 @@ pub fn open<R: Runtime>(
             if same_origin(u, port) {
                 let ok = in_project(u, &project);
                 if !ok {
-                    crate::log::warn("editor: blocked navigation out of the project");
+                    crate::common::log::warn("editor: blocked navigation out of the project");
                 }
                 return ok;
             }
@@ -683,7 +684,10 @@ pub fn open<R: Runtime>(
                 if classify_external(u) == Leave::Browser {
                     let _ = open_in_browser(u);
                 } else {
-                    crate::log::warn(&format!("editor: blocked navigation to {}", u.scheme()));
+                    crate::common::log::warn(&format!(
+                        "editor: blocked navigation to {}",
+                        u.scheme()
+                    ));
                 }
             }
             ok
@@ -692,7 +696,7 @@ pub fn open<R: Runtime>(
             sync_maximized(&w);
             let mut url = payload.url().clone();
             url.set_query(None);
-            crate::log::info(&format!(
+            crate::common::log::info(&format!(
                 "editor {}: {:?} {url}",
                 w.label(),
                 payload.event()
@@ -705,20 +709,20 @@ pub fn open<R: Runtime>(
                     std::thread::spawn(move || apply(&w, what));
                 }
             } else if same_origin(&u, port) && !in_project(&u, &project_new) {
-                crate::log::warn("editor: blocked new window out of the project");
+                crate::common::log::warn("editor: blocked new window out of the project");
             } else if same_origin(&u, port) {
                 let (app, data, url) = (handle.clone(), data.clone(), u.to_string());
                 let (folder, name) = (project_new.clone(), name.clone());
                 // Not on the WebView2 callback: building a window there would deadlock.
                 std::thread::spawn(move || {
                     if let Err(e) = open(&app, &url, port, &name, &folder, &data, lang) {
-                        crate::log::error(&format!("editor: new window: {e:#}"));
+                        crate::common::log::error(&format!("editor: new window: {e:#}"));
                     }
                 });
             } else if classify_external(&u) == Leave::Browser {
                 let _ = open_in_browser(&u);
             } else {
-                crate::log::warn(&format!("editor: blocked new window to {}", u.scheme()));
+                crate::common::log::warn(&format!("editor: blocked new window to {}", u.scheme()));
             }
             NewWindowResponse::Deny
         })
@@ -755,11 +759,11 @@ pub fn quiet_webview<R: Runtime>(window: &WebviewWindow<R>, what: &'static str) 
             Ok(())
         })();
         if let Err(e) = result {
-            crate::log::warn(&format!("{what}: webview settings: {e}"));
+            crate::common::log::warn(&format!("{what}: webview settings: {e}"));
         }
     });
     if let Err(e) = applied {
-        crate::log::warn(&format!("{what}: webview settings: {e}"));
+        crate::common::log::warn(&format!("{what}: webview settings: {e}"));
     }
 }
 

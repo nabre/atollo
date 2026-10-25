@@ -20,18 +20,20 @@ pub(super) fn github_notify<R: Runtime>(app: AppHandle<R>) -> Arc<dyn Fn() + Sen
 
 /// A refusal of GitHub's API as a short text.
 pub(super) fn github_error(lang: &str, e: &crate::net::ApiError) -> String {
-    crate::log::warn(&format!("github: {:?} {}", e.status, e.detail));
+    crate::common::log::warn(&format!("github: {:?} {}", e.status, e.detail));
     match e.status {
-        Some(401) => crate::i18n::t(lang, "GitHub ha rifiutato l'accesso: accedi di nuovo.", &[]),
-        None => crate::i18n::t(lang, "GitHub non risponde: {0}", &[&e.detail]),
-        Some(_) => crate::i18n::t(lang, "GitHub: {0}", &[&e.detail]),
+        Some(401) => {
+            crate::common::i18n::t(lang, "GitHub ha rifiutato l'accesso: accedi di nuovo.", &[])
+        }
+        None => crate::common::i18n::t(lang, "GitHub non risponde: {0}", &[&e.detail]),
+        Some(_) => crate::common::i18n::t(lang, "GitHub: {0}", &[&e.detail]),
     }
 }
 
 /// The account's token, or the text asking to sign in.
 pub(super) fn github_token_of(kit: &Kit, env: &KitEnv, lang: &str) -> CmdResult<String> {
     crate::github::token(kit, env)
-        .ok_or_else(|| crate::i18n::t(lang, "Accedi prima a GitHub.", &[]).into())
+        .ok_or_else(|| crate::common::i18n::t(lang, "Accedi prima a GitHub.", &[]).into())
 }
 
 pub(super) fn github_net(kit: &Kit) -> CmdResult<crate::net::Net> {
@@ -217,7 +219,7 @@ pub async fn github_delete<R: Runtime>(
         let token = github_token_of(&kit, &env, lang)?;
         match crate::github::delete(&github_net(&kit)?, &token, &full_name) {
             Ok(()) => {
-                crate::log::info(&format!("github: {full_name} deleted"));
+                crate::common::log::info(&format!("github: {full_name} deleted"));
                 Ok(Deleted::Deleted)
             }
             Err(e) if matches!(e.status, Some(403 | 404)) => Ok(Deleted::NeedsPermission),

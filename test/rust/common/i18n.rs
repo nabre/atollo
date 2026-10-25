@@ -19,7 +19,7 @@ fn placeholders(s: &str) -> BTreeSet<String> {
 
 #[test]
 fn catalog_is_complete() {
-    let parsed: Catalog = serde_json::from_str(include_str!("../../tauri/i18n/catalog.json"))
+    let parsed: Catalog = serde_json::from_str(include_str!("../../../tauri/i18n/catalog.json"))
         .expect("i18n/catalog.json is not valid JSON");
     assert!(!parsed.is_empty());
     for (source, tr) in &parsed {
@@ -131,7 +131,7 @@ fn literals<'a>(re: &regex::Regex, code: &'a str) -> Vec<&'a str> {
 }
 
 /// Every literal Italian source passed to `tr(lang, "…")`, `i18n::t(lang,
-/// "…")` or `crate::i18n::t(lang, "…")`, to the `t("…", …)` of a value
+/// "…")` or `crate::common::i18n::t(lang, "…")`, to the `t("…", …)` of a value
 /// that knows its language (`cx.t`, `self.t` of the agents' statistics), to
 /// the `label("…")` of the editor window's script, the command line's
 /// `HELP`, and every source returned by `Settings::validate`, is in the

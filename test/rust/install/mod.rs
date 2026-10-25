@@ -17,7 +17,7 @@ fn live_lines() {
     let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
     kit.prepare().unwrap();
     let token = std::env::var("GITHUB_TOKEN").ok();
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), token).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), token).unwrap();
     let env = KitEnv::default();
     let cancel = AtomicBool::new(false);
     let ctx = Ctx {
@@ -145,7 +145,7 @@ fn check_key_wants_every_part_of_the_folder() {
     let php = Catalog::get().find("php").unwrap();
     let tree = tmp.0.join("php");
     let key = php.key_for(host);
-    let file = crate::fsx::join_rel(&tree, key.strip_prefix("php/").unwrap());
+    let file = crate::common::fsx::join_rel(&tree, key.strip_prefix("php/").unwrap());
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(file, b"").unwrap();
     assert!(check_key(php, &[], &tree).is_err());
@@ -226,7 +226,7 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
             ),
         ],
     };
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     let env = KitEnv::default();
     // Cancelled: the network part fails at once; the one added by hand is
     // taken without the network.
@@ -289,7 +289,7 @@ fn download_names_stay_in_the_work_folder() {
     let tmp = TempDir::new("fetch-name");
     let kit = Kit::at(tmp.0.join("kit"), crate::kit::Arch::X64);
     kit.prepare().unwrap();
-    let net = crate::net::Net::new(&crate::settings::Settings::default(), None).unwrap();
+    let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     let env = KitEnv::default();
     let cancel = AtomicBool::new(true);
     let ctx = Ctx {

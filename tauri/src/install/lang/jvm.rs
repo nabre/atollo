@@ -7,7 +7,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 
 use super::{github_line, github_stable, is_release, release_lines, s, version_key};
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::{
     arch_of, github_single, pattern, target_of, Ctx, Dest, Installer, Part, Release,
 };

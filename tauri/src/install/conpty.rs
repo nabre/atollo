@@ -98,7 +98,7 @@ impl Installer for ConPty {
         let tree = work.path().join("tree");
         fs::create_dir_all(&tree)?;
         for (from, name) in files_for(target_of(ctx, component)) {
-            let src: PathBuf = crate::fsx::join_rel(&extracted, &from);
+            let src: PathBuf = crate::common::fsx::join_rel(&extracted, &from);
             if !src.is_file() {
                 bail!("{from} not found in {}", part.file_name);
             }

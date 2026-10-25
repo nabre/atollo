@@ -17,7 +17,7 @@ use windows::Win32::Security::Authorization::{
 #[cfg(windows)]
 use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
 
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::kit::Target;
 
 /// Protected DACL with full access for the owner only on Windows
@@ -67,7 +67,7 @@ pub fn write_private(path: &Path, text: &str) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
         if let Err(e) = restrict_dir_to_owner(parent) {
-            crate::log::warn(&format!("{}: permissions: {e:#}", parent.display()));
+            crate::common::log::warn(&format!("{}: permissions: {e:#}", parent.display()));
         }
     }
     write_in_private(path, text)
@@ -87,7 +87,7 @@ pub fn write_in_private(path: &Path, text: &str) -> Result<()> {
         write_atomic(path, text.as_bytes()).map_err(|e| access_error(path, e))?;
     }
     if let Err(e) = restrict_to_owner(path) {
-        crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
+        crate::common::log::warn(&format!("{}: permissions: {e:#}", path.display()));
     }
     Ok(())
 }
@@ -112,7 +112,7 @@ pub fn replace_private(path: &Path, text: &str) -> Result<()> {
     let mut file = options.open(path).map_err(|e| access_error(path, e))?;
     #[cfg(windows)]
     if let Err(e) = restrict_to_owner(path) {
-        crate::log::warn(&format!("{}: permissions: {e:#}", path.display()));
+        crate::common::log::warn(&format!("{}: permissions: {e:#}", path.display()));
     }
     file.write_all(text.as_bytes())
         .and_then(|()| file.sync_all())

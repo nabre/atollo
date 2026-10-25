@@ -19,7 +19,7 @@ use std::sync::OnceLock;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::{join_rel, read_text, write_atomic};
+use crate::common::fsx::{join_rel, read_text, write_atomic};
 use crate::kit::{Arch, Kit, Target};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

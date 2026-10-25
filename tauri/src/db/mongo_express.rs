@@ -151,7 +151,7 @@ fn start(kit: &Kit, env: &KitEnv, db_port: u16, password: &str) -> Result<Served
         abandon(job, child);
         return Err(e);
     }
-    crate::log::info(&format!("mongo-express: started on {host}:{port}"));
+    crate::common::log::info(&format!("mongo-express: started on {host}:{port}"));
     Ok(Served {
         child,
         host,

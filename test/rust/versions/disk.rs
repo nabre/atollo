@@ -95,7 +95,8 @@ fn folders_of_an_older_kit_move() {
     // `node.exe` on Windows, `bin/node` elsewhere
     let key = key_rel(&kit, node);
     assert!(
-        crate::fsx::join_rel(&main, &key).is_file() && !crate::fsx::join_rel(&store, &key).exists()
+        crate::common::fsx::join_rel(&main, &key).is_file()
+            && !crate::common::fsx::join_rel(&store, &key).exists()
     );
     assert_eq!(
         fs::read_to_string(main.join(VERSION_FILE)).unwrap(),

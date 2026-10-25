@@ -108,7 +108,7 @@ pub fn launchers_of_older_installations(kit: &Kit) {
                 continue;
             }
             if let Err(e) = write_launchers(&prefix, package) {
-                crate::log::warn(&format!("{}@{line}: launchers: {e:#}", c.id));
+                crate::common::log::warn(&format!("{}@{line}: launchers: {e:#}", c.id));
             }
         }
     }

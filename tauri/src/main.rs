@@ -8,32 +8,23 @@
 
 mod agents;
 mod app;
-mod backup;
-mod cli;
+mod common;
 mod db;
 mod detect;
 mod diagnostics;
 mod editor;
 mod env;
-mod fsx;
 mod github;
-mod health;
-mod i18n;
 mod install;
 mod ipc;
 mod kit;
 mod llm;
-mod log;
 mod net;
 mod os;
-mod ports;
 mod projects;
 mod router;
 mod servers;
-mod settings;
 mod setup;
-mod time;
-mod tray;
 mod versions;
 
 use std::path::Path;
@@ -44,12 +35,14 @@ use windows::core::HSTRING;
 #[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
+use crate::app::cli::{self, help, models, prepare, version_lines, Cli};
 use crate::app::{build_app, context};
-use crate::cli::{help, models, prepare, version_lines, Cli};
+use crate::common::settings::{self, Settings};
+use crate::common::{i18n, log};
+use crate::diagnostics::health;
 use crate::env::{Host, KitEnv};
 use crate::ipc::AppState;
-use crate::kit::Kit;
-use crate::settings::Settings;
+use crate::kit::{backup, Kit};
 
 fn main() {
     std::process::exit(run());

@@ -99,7 +99,7 @@ pub fn ensure(kit: &Kit, env: &KitEnv) -> Result<()> {
             String::from_utf8_lossy(&out.stderr).trim()
         );
     }
-    crate::log::info(&format!("editor theme {} installed", version()));
+    crate::common::log::info(&format!("editor theme {} installed", version()));
     Ok(())
 }
 

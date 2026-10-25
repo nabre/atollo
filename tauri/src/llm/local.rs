@@ -88,12 +88,12 @@ pub fn valid_repo(repo: &str) -> bool {
 
 /// The manifest of `dir`; empty without one.
 pub fn read_manifest(dir: &Path) -> Result<Manifest> {
-    Ok(crate::fsx::try_read_json(&dir.join(MANIFEST))?.unwrap_or_default())
+    Ok(crate::common::fsx::try_read_json(&dir.join(MANIFEST))?.unwrap_or_default())
 }
 
 pub fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<()> {
     fs::create_dir_all(dir)?;
-    crate::fsx::write_json(&dir.join(MANIFEST), manifest)
+    crate::common::fsx::write_json(&dir.join(MANIFEST), manifest)
 }
 
 /// One read-change-write of a manifest at a time in this process (another
@@ -175,7 +175,7 @@ pub fn list(kit: &Kit) -> Vec<LocalModel> {
 /// entry names (put there by hand).
 fn in_folder(dir: &Path, folder: &str, ids: &mut BTreeSet<String>) -> Vec<LocalModel> {
     let manifest = read_manifest(dir).unwrap_or_else(|e| {
-        crate::log::warn(&format!("{}: {e:#}", dir.display()));
+        crate::common::log::warn(&format!("{}: {e:#}", dir.display()));
         Manifest::default()
     });
     let mut files: Vec<String> = fs::read_dir(dir)

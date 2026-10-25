@@ -1,4 +1,4 @@
-// Settings page (data\app\settings.json, tauri/src/settings.rs), laid
+// Settings page (data\app\settings.json, tauri/src/common/settings.rs), laid
 // out as the Projects page: the side bar lists the sections (language,
 // network, Gemini key, versions of Python, PHP and Rust, the app's updates,
 // the GitHub account, where the kit is) and the tree of the new-project

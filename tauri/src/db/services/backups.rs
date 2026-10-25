@@ -63,7 +63,7 @@ fn new_copy(
     name: &str,
     kind: DbEngine,
 ) -> Result<(PathBuf, PathBuf, fs::File)> {
-    let millis = crate::time::now_ms;
+    let millis = crate::common::time::now_ms;
     for _ in 0..1000 {
         // The stamp and the milliseconds of the same second.
         let before = millis();
@@ -215,7 +215,7 @@ impl Services {
                     let errors = String::from_utf8_lossy(&done.stderr);
                     match (done.status.success(), label) {
                         (true, _) => {}
-                        (false, Some(l)) => crate::log::warn(&format!(
+                        (false, Some(l)) => crate::common::log::warn(&format!(
                             "{project}: {l}: {dump} skipped: {}",
                             errors.trim()
                         )),
@@ -345,7 +345,7 @@ fn prune(dir: &std::path::Path, name: &str, label: &str, kind: DbEngine, keep: u
     let extra = copies.len().saturating_sub(keep);
     for old in &copies[..extra] {
         if let Err(e) = fs::remove_file(old) {
-            crate::log::warn(&format!("{}: {e}", old.display()));
+            crate::common::log::warn(&format!("{}: {e}", old.display()));
         }
     }
 }

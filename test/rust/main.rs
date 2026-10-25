@@ -1,5 +1,5 @@
 use super::*;
-use crate::cli::{help_text, program_name, HELP};
+use crate::app::cli::{help_text, program_name, HELP};
 use crate::ipc::MAIN;
 use crate::kit::Arch;
 use tauri::test::{get_ipc_response, mock_builder, INVOKE_KEY};

@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::{conda_info, conda_versions, micromamba_create, micromamba_release};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::install::{target_of, Ctx, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
 use crate::setup::Component;

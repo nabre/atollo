@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{bail, Context, Result};
 
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::net::verify::{self, Expect};
 
@@ -98,7 +98,7 @@ fn write_wanted(dir: &Path, list: &[Wanted]) {
         fs::create_dir_all(dir).and_then(|()| write_atomic(&path, text.as_bytes()))
     };
     if let Err(e) = result {
-        crate::log::warn(&format!("{}: {e}", path.display()));
+        crate::common::log::warn(&format!("{}: {e}", path.display()));
     }
 }
 
@@ -134,7 +134,7 @@ pub fn forget(kit: &Kit, id: &str) {
     for file in added(&dir) {
         if wanted_by(&file, &mine) && !wanted_by(&file, &others) {
             if let Err(e) = fs::remove_file(&file) {
-                crate::log::warn(&format!("{}: {e}", file.display()));
+                crate::common::log::warn(&format!("{}: {e}", file.display()));
             }
         }
     }
@@ -208,7 +208,7 @@ fn move_files(from: &Path, to: &Path) {
             fs::remove_file(&path).with_context(|| path.display().to_string())
         })();
         if let Err(e) = moved {
-            crate::log::warn(&format!("{}: {e:#}", path.display()));
+            crate::common::log::warn(&format!("{}: {e:#}", path.display()));
         }
     }
 }
@@ -268,7 +268,7 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
         // antivirus, a file in use) deletes its work folder, and the file
         // must still be here for the next attempt.
         fs::copy(&file, dest).with_context(|| dest.display().to_string())?;
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "{file_name}: the file added by hand {}",
             file.display()
         ));
@@ -282,7 +282,7 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
 pub fn used(kit: &Kit, file: &Path, expect: &Expect) {
     if let Err(e) = fs::remove_file(file) {
         if e.kind() != std::io::ErrorKind::NotFound {
-            crate::log::warn(&format!("{}: {e}", file.display()));
+            crate::common::log::warn(&format!("{}: {e}", file.display()));
         }
     }
     let dir = dir(kit);

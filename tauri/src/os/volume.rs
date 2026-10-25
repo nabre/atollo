@@ -475,7 +475,7 @@ pub fn notice_for(
     folder: &Path,
     lang: &str,
 ) -> Option<DiskNotice> {
-    use crate::i18n::t;
+    use crate::common::i18n::t;
     if os.is_windows() {
         return None;
     }
@@ -552,13 +552,13 @@ pub fn disk_notice(kit: &Kit, lang: &str) -> Option<DiskNotice> {
     let noexec = match info(&folder) {
         Ok(v) => v.noexec,
         Err(e) => {
-            crate::log::warn(&format!("{}: statvfs: {e}", folder.display()));
+            crate::common::log::warn(&format!("{}: statvfs: {e}", folder.display()));
             false
         }
     };
     let mount = mount_of(&folder);
     if mount.is_none() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "{}: mount not found, showexec not checked",
             folder.display()
         ));

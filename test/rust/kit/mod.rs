@@ -380,7 +380,7 @@ fn moving_the_kit_flags_the_conda_components_off_windows() {
             "ruby/3.4/bin/ruby",
             "python/3.13/bin/python3",
         ] {
-            let file = crate::fsx::join_rel(first.apps(), rel);
+            let file = crate::common::fsx::join_rel(first.apps(), rel);
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(&file, b"x").unwrap();
         }
@@ -437,7 +437,7 @@ fn case_only_move_is_a_move_off_windows() {
         let first = Kit::at_target(tmp.0.join("Kit"), target);
         assert_eq!(first.prepare().unwrap(), None);
         // R: a conda environment off Windows.
-        let file = crate::fsx::join_rel(first.apps(), "r/4.5/bin/R");
+        let file = crate::common::fsx::join_rel(first.apps(), "r/4.5/bin/R");
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(&file, b"x").unwrap();
         // Renamed in two steps: also where the file system ignores case.
@@ -461,7 +461,7 @@ fn saved_r_line_is_marked_when_the_kit_moves() {
     let first = Kit::at_target(tmp.0.join("one"), Target::LINUX_X64);
     assert_eq!(first.prepare().unwrap(), None);
     for rel in ["r/4.5/bin/R", "r/4.4/bin/R"] {
-        let file = crate::fsx::join_rel(first.apps(), rel);
+        let file = crate::common::fsx::join_rel(first.apps(), rel);
         fs::create_dir_all(file.parent().unwrap()).unwrap();
         fs::write(&file, b"x").unwrap();
     }
@@ -495,7 +495,7 @@ fn saved_r_line_is_marked_when_the_kit_moves() {
     assert!(!moved.versions_dir().join("r@4.4.reinstall").exists());
 
     // A marked line that became the default marks the component.
-    let file = crate::fsx::join_rel(moved.apps(), "r/4.4/bin/R");
+    let file = crate::common::fsx::join_rel(moved.apps(), "r/4.4/bin/R");
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(&file, b"x").unwrap();
     r.mark_line_reinstall(&moved, "4.4", "/old").unwrap();

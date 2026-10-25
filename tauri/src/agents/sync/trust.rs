@@ -24,7 +24,7 @@ use anyhow::{Context, Result};
 use serde_json::Value;
 
 use super::{read_json, write_json, Paths};
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 
 /// The key of `dir` in Claude's `projects`: `/` separators, the drive letter
 /// in both cases (the kit's windows write "D:/...", VSCodium "d:/...").

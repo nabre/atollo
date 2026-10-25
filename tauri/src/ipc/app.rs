@@ -84,15 +84,15 @@ pub(super) fn apply_env(state: &AppState) -> &'static str {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let settings = Settings::load(&state.kit).settings;
-    let lang = crate::i18n::resolve(
+    let lang = crate::common::i18n::resolve(
         settings.lang.as_deref(),
         state.host.get("ATOLLO_LANG"),
-        crate::i18n::windows_locale().as_deref(),
+        crate::common::i18n::windows_locale().as_deref(),
     );
     crate::net::ca::refresh(&state.kit, &settings);
     let env = KitEnv::build(&state.kit, &settings, lang, &state.host);
     if let Err(e) = env.create_dirs() {
-        crate::log::warn(&format!("creating kit folders: {e}"));
+        crate::common::log::warn(&format!("creating kit folders: {e}"));
     }
     *state
         .lang
@@ -141,7 +141,7 @@ pub fn folder_open<R: Runtime>(
 }
 
 /// «Esporta diagnostica»: the zip for a report of a problem, secrets
-/// masked (diagnostics.rs); its path.
+/// masked (diagnostics/mod.rs); its path.
 #[tauri::command]
 pub async fn diagnostics_export<R: Runtime>(
     webview: Webview<R>,
@@ -158,16 +158,16 @@ pub async fn diagnostics_export<R: Runtime>(
     .or_fail("diagnostics")?
 }
 
-/// «Salute del kit» (health.rs): the drive, the space, the kit's folder,
+/// «Salute del kit» (diagnostics/health.rs): the drive, the space, the kit's folder,
 /// files of another account, the libraries of Linux.
 #[tauri::command]
 pub async fn kit_health<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
-) -> CmdResult<Vec<crate::health::Finding>> {
+) -> CmdResult<Vec<crate::diagnostics::health::Finding>> {
     ensure_main(&webview)?;
     let (kit, lang) = (state.kit.clone(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || crate::health::check(&kit, lang))
+    tauri::async_runtime::spawn_blocking(move || crate::diagnostics::health::check(&kit, lang))
         .await
         .or_fail("health")
 }
@@ -226,7 +226,7 @@ pub async fn kit_export<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     zip: bool,
-) -> CmdResult<Option<crate::backup::Exported>> {
+) -> CmdResult<Option<crate::kit::backup::Exported>> {
     ensure_main(&webview)?;
     let choose = pick(
         &webview,
@@ -239,7 +239,7 @@ pub async fn kit_export<R: Runtime>(
             return Ok(None);
         };
         services.stop_all();
-        let result = crate::backup::export(kit.root(), &dest, zip);
+        let result = crate::kit::backup::export(kit.root(), &dest, zip);
         services.autostart(&env);
         result.map(Some)
     })
@@ -256,7 +256,7 @@ pub async fn kit_import<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     zip: bool,
-) -> CmdResult<Option<crate::backup::Manifest>> {
+) -> CmdResult<Option<crate::kit::backup::Manifest>> {
     ensure_main(&webview)?;
     let choose = pick(
         &webview,
@@ -268,7 +268,7 @@ pub async fn kit_import<R: Runtime>(
         let Some(source) = choose()? else {
             return Ok(None);
         };
-        crate::backup::stage(kit.root(), &source).map(Some)
+        crate::kit::backup::stage(kit.root(), &source).map(Some)
     })
     .await
     .or_fail("import")?
@@ -282,7 +282,7 @@ pub fn kit_import_pending<R: Runtime>(
     state: State<'_, AppState>,
 ) -> CmdResult<bool> {
     ensure_main(&webview)?;
-    Ok(crate::backup::pending(state.kit.root()))
+    Ok(crate::kit::backup::pending(state.kit.root()))
 }
 
 /// The copy waiting is given up: the next start is as before.
@@ -292,7 +292,7 @@ pub fn kit_import_cancel<R: Runtime>(
     state: State<'_, AppState>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    crate::backup::cancel(state.kit.root()).or_fail_chain("import")
+    crate::kit::backup::cancel(state.kit.root()).or_fail_chain("import")
 }
 
 /// A project's site from the phone (N-6): its address with this PC's IP on
@@ -411,7 +411,7 @@ pub fn settings_set<R: Runtime>(
     // A PEM file written relative to the kit's folder.
     if let Some(ca) = &mut settings.network.extra_ca_certs {
         if std::path::Path::new(ca.as_str()).is_relative() {
-            *ca = crate::fsx::join_rel(state.kit.root(), ca)
+            *ca = crate::common::fsx::join_rel(state.kit.root(), ca)
                 .display()
                 .to_string();
         }
@@ -453,8 +453,8 @@ pub fn settings_set<R: Runtime>(
     tauri::Manager::app_handle(&webview)
         .set_theme(Settings::load(&state.kit).settings.theme.window());
     // The tray menu in the new language (D-145).
-    crate::tray::refresh(tauri::Manager::app_handle(&webview));
-    crate::log::info(&format!("settings saved, lang={lang}"));
+    crate::app::tray::refresh(tauri::Manager::app_handle(&webview));
+    crate::common::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
 }
 

@@ -11,11 +11,11 @@ use serde_json::Value;
 
 use super::list::{explicit_text, is_sha256, parse_explicit, safe_file, Archive, Package, Record};
 use super::{lock_name, locks_dir, pkgs_dir};
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
+use crate::common::settings::Settings;
 use crate::install::native::run_output;
 use crate::install::{installer, Ctx, Progress};
 use crate::net::verify::{self, Expect};
-use crate::settings::Settings;
 use crate::setup::Component;
 
 /// The packages of `component` are kept: it cannot follow the kit on this
@@ -51,7 +51,7 @@ pub(in crate::install) fn keep(
                 "{}: packages not kept, a move of the kit will need the network ({e:#})",
                 component.id
             );
-            crate::log::warn(&text);
+            crate::common::log::warn(&text);
             progress.note(&text);
         }
     }
@@ -95,7 +95,7 @@ fn store(src: &Path, dest: &Path, sha256: &str) -> Result<()> {
     Ok(())
 }
 
-use crate::time::now_secs as now;
+use crate::common::time::now_secs as now;
 
 fn keep_lists(
     ctx: &Ctx,

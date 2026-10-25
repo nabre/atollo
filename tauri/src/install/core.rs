@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use super::{arch_of, github_single, pattern, target_of, Ctx, Installer, Release};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::kit::{Arch, Kit, Os, Target};
 use crate::net::archive::{Inner, Kind};
 use crate::net::verify::Expect;
@@ -515,7 +515,7 @@ impl Installer for Python {
                 .status()
                 .context("pip")?;
             if !status.success() {
-                crate::log::warn(&format!(
+                crate::common::log::warn(&format!(
                     "python: pip from the bundled wheel failed ({status})"
                 ));
             }
@@ -530,7 +530,7 @@ impl Installer for Python {
 fn copy_tree(from: &Path, to: &Path) -> Result<()> {
     let meta = fs::symlink_metadata(from).with_context(|| from.display().to_string())?;
     if meta.file_type().is_symlink() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "python: link not carried to the new line: {}",
             from.display()
         ));

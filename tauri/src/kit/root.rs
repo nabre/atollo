@@ -116,8 +116,8 @@ pub fn launch_problem(os: Os, exe: &Path, lang: &str) -> Option<String> {
     let quoted = crate::os::sh_quote(&bundle);
     Some(format!(
         "{}\n\n{}",
-        crate::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
-        crate::i18n::t(lang, "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
+        crate::common::i18n::t(lang, "macOS ha aperto Atollo da una copia temporanea in sola lettura (App Translocation): lì il kit non può tenere i suoi dati.", &[]),
+        crate::common::i18n::t(lang, "Esci da Atollo, apri il Terminale nella cartella del kit ed esegui: xattr -dr com.apple.quarantine {0}. Poi riapri l'app dalla cartella del kit.", &[&quoted]),
     ))
 }
 

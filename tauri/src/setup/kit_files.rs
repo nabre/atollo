@@ -6,7 +6,7 @@ use std::fs;
 
 use anyhow::{Context, Result};
 
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::kit::Kit;
 
 const FILES: &[(&str, &str)] = &[

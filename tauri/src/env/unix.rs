@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::kit::{Os, Target};
 
 use super::{Cx, KitEnv};
@@ -246,7 +246,7 @@ pub(super) fn write_gemrc(rc: &Path) -> std::io::Result<()> {
     if let Some(dir) = rc.parent() {
         fs::create_dir_all(dir)?;
     }
-    crate::fsx::write_atomic(rc, GEMRC.as_bytes())
+    crate::common::fsx::write_atomic(rc, GEMRC.as_bytes())
 }
 
 /// The folders where Linux keeps shared libraries, for `arch` (`x86_64`,

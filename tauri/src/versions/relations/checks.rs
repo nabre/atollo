@@ -63,7 +63,10 @@ pub(super) fn links(lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Link> {
                 kind: s.kind.clone(),
                 optional: s.optional,
                 range: s.range.clone(),
-                note: s.note.as_deref().map(|n| crate::i18n::t(lang, n, &[])),
+                note: s
+                    .note
+                    .as_deref()
+                    .map(|n| crate::common::i18n::t(lang, n, &[])),
                 status,
                 uses: uses.map(|l| version_of(to, &l)),
                 outside,
@@ -108,7 +111,10 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
             }
             let (present, detail) = match s.id.as_str() {
                 "vcruntime" => {
-                    let dll = crate::fsx::join_rel(kit.apps(), "tools/vcruntime/vcruntime140.dll");
+                    let dll = crate::common::fsx::join_rel(
+                        kit.apps(),
+                        "tools/vcruntime/vcruntime140.dll",
+                    );
                     (dll.is_file(), None)
                 }
                 "webview2" => match crate::os::webview::found(kit) {
@@ -130,7 +136,10 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
             RuntimeState {
                 id: s.id.clone(),
                 name: s.name.clone(),
-                note: s.note.as_deref().map(|n| crate::i18n::t(lang, n, &[])),
+                note: s
+                    .note
+                    .as_deref()
+                    .map(|n| crate::common::i18n::t(lang, n, &[])),
                 needed_by,
                 present,
                 detail,

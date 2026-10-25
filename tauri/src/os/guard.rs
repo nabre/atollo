@@ -233,7 +233,7 @@ fn send(record: &[u8; RECORD]) {
     if let Some(w) = pipe.as_mut() {
         // At most PIPE_BUF bytes: written whole or not at all.
         if let Err(e) = w.write_all(record) {
-            crate::log::warn(&format!("guard: {e}"));
+            crate::common::log::warn(&format!("guard: {e}"));
         }
     }
 }

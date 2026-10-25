@@ -41,7 +41,7 @@ pub fn hf_token_file(kit: &Kit) -> PathBuf {
 
 /// The Hugging Face token, if the user gave one.
 pub fn hf_token(kit: &Kit) -> anyhow::Result<Option<String>> {
-    crate::settings::read_secret(&hf_token_file(kit))
+    crate::common::settings::read_secret(&hf_token_file(kit))
 }
 
 /// The Hugging Face token for a download that does not need one (the
@@ -50,7 +50,7 @@ pub fn hf_token(kit: &Kit) -> anyhow::Result<Option<String>> {
 /// instead of blocking the download.
 pub fn hf_token_if_readable(kit: &Kit) -> Option<String> {
     hf_token(kit).unwrap_or_else(|e| {
-        crate::log::warn(&format!("Hugging Face token left out: {e:#}"));
+        crate::common::log::warn(&format!("Hugging Face token left out: {e:#}"));
         None
     })
 }

@@ -107,7 +107,7 @@ pub async fn kit_mcp_set<R: Runtime>(
         crate::projects::mcp::kit_set(&kit, &servers)?;
         let report = crate::agents::sync::run(&kit, None);
         for w in &report.warnings {
-            crate::log::warn(w);
+            crate::common::log::warn(w);
         }
         anyhow::Ok(())
     })

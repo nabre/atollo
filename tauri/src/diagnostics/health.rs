@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::i18n::t;
+use crate::common::i18n::t;
 use crate::kit::{Kit, Os};
 use crate::os::volume::FsKind;
 
@@ -285,5 +285,5 @@ pub fn check(kit: &Kit, lang: &str) -> Vec<Finding> {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/health.rs"]
+#[path = "../../../test/rust/diagnostics/health.rs"]
 mod tests;

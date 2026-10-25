@@ -105,7 +105,7 @@ pub(super) fn files(kit: &Kit) -> Files {
 }
 
 pub(super) fn read(path: &std::path::Path) -> Vec<Item> {
-    crate::fsx::read_text(path)
+    crate::common::fsx::read_text(path)
         .ok()
         .map(|t| t.trim().to_owned())
         .filter(|t| !t.is_empty())
@@ -131,5 +131,6 @@ pub(super) fn save_file(path: &std::path::Path, items: &[Item]) -> Result<()> {
     #[cfg(unix)]
     return crate::router::write_private(path, &text).with_context(|| path.display().to_string());
     #[cfg(not(unix))]
-    crate::fsx::write_atomic(path, text.as_bytes()).with_context(|| path.display().to_string())
+    crate::common::fsx::write_atomic(path, text.as_bytes())
+        .with_context(|| path.display().to_string())
 }

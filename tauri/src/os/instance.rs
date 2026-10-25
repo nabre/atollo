@@ -428,17 +428,17 @@ pub fn listen(kit: &Kit, on_message: impl Fn(String) + Send + 'static) {
         Some(Ok(l)) => l,
         failed => {
             if let Some(Err(e)) = failed {
-                crate::log::warn(&format!("instance socket: {e}; TCP on 127.0.0.1"));
+                crate::common::log::warn(&format!("instance socket: {e}; TCP on 127.0.0.1"));
             }
             let token = match crate::editor::random_token() {
                 Ok(t) => t,
                 Err(e) => {
-                    crate::log::warn(&format!("instance token: {e:#}"));
+                    crate::common::log::warn(&format!("instance token: {e:#}"));
                     return;
                 }
             };
             if let Err(e) = listen_tcp(&file, token, on_message) {
-                crate::log::warn(&format!("instance TCP: {e:#}"));
+                crate::common::log::warn(&format!("instance TCP: {e:#}"));
             }
             return;
         }
@@ -449,7 +449,7 @@ pub fn listen(kit: &Kit, on_message: impl Fn(String) + Send + 'static) {
     std::thread::spawn(move || {
         for stream in listener.incoming().flatten() {
             let Ok(mut stream) = same_user(stream) else {
-                crate::log::warn("instance socket: a connection of another user, ignored");
+                crate::common::log::warn("instance socket: a connection of another user, ignored");
                 continue;
             };
             // One thread serves every connection: a peer that never closes

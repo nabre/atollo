@@ -75,7 +75,7 @@ impl Slot {
             .take()
             .is_some()
         {
-            crate::log::info(&format!("{}: stopped", self.name));
+            crate::common::log::info(&format!("{}: stopped", self.name));
         }
     }
 
@@ -85,7 +85,7 @@ impl Slot {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         if running.as_ref().is_some_and(|s| s.db_port == db_port) {
             *running = None;
-            crate::log::info(&format!("{}: stopped", self.name));
+            crate::common::log::info(&format!("{}: stopped", self.name));
         }
     }
 }
@@ -112,7 +112,7 @@ fn random_bytes() -> Result<[u8; 3]> {
 /// when the system refuses the address (logged).
 pub fn free_address(kit: &Kit, name: &str) -> Result<(Ipv4Addr, u16)> {
     let mut host = private_loopback(random_bytes()?);
-    let taken = crate::ports::ports_taken(kit);
+    let taken = crate::common::ports::ports_taken(kit);
     // Ports owned by Atollo stay bound until the end: the system does not
     // give them again.
     let mut refused = Vec::new();
@@ -120,7 +120,7 @@ pub fn free_address(kit: &Kit, name: &str) -> Result<(Ipv4Addr, u16)> {
         let listener = match TcpListener::bind((host, 0)) {
             Ok(l) => l,
             Err(e) if host != Ipv4Addr::LOCALHOST => {
-                crate::log::warn(&format!("{name}: {host} refused ({e}), using 127.0.0.1"));
+                crate::common::log::warn(&format!("{name}: {host} refused ({e}), using 127.0.0.1"));
                 host = Ipv4Addr::LOCALHOST;
                 continue;
             }

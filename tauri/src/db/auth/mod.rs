@@ -32,7 +32,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::try_read_json;
+use crate::common::fsx::try_read_json;
 use crate::kit::Kit;
 pub use env::{
     env_apply, env_block, env_changes, env_ignored, env_set, env_source, env_wanted, project_db,

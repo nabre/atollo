@@ -20,12 +20,12 @@ use std::sync::Arc;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Runtime, State, Webview};
 
+use crate::common::settings::Settings;
 use crate::editor::{self, terminal, Editor};
 use crate::env::KitEnv;
 use crate::install;
 use crate::kit::{validate_project_name, Kit};
 use crate::projects::run::{Runner, State as RunState};
-use crate::settings::Settings;
 use crate::setup::runner::Options;
 use crate::setup::self_update::Updater;
 use crate::setup::task::{Notify, SetupTask, Snapshot};
@@ -133,7 +133,7 @@ fn project_dir(kit: &Kit, project: Option<&str>, lang: &str) -> CmdResult<PathBu
     if crate::os::safe_path::is_dir(&kit.projects(), &dir) {
         Ok(dir)
     } else {
-        Err(crate::i18n::t(lang, "Progetto non trovato: {0}", &[name]).into())
+        Err(crate::common::i18n::t(lang, "Progetto non trovato: {0}", &[name]).into())
     }
 }
 
@@ -175,7 +175,7 @@ fn ensure<R: Runtime>(
         .iter()
         .find(|c| win_arm64 && c.x64_only && !emulates_x64())
     {
-        return Err(crate::i18n::t(
+        return Err(crate::common::i18n::t(
             lang,
             "{0} gira solo con Windows 11 sui PC ARM64.",
             &[&c.name],
@@ -193,7 +193,7 @@ fn ensure<R: Runtime>(
         }
         if choice != before {
             if let Err(e) = choice.write(kit, catalog) {
-                crate::log::warn(&format!("components.txt: {e:#}"));
+                crate::common::log::warn(&format!("components.txt: {e:#}"));
             }
         }
     }
@@ -211,7 +211,7 @@ fn ensure<R: Runtime>(
         return Ok(env());
     }
     if !task.snapshot().running {
-        crate::log::info(&format!("installing what is needed: {todo:?}"));
+        crate::common::log::info(&format!("installing what is needed: {todo:?}"));
         let opts = Options {
             only: todo,
             ..Options::default()
@@ -231,7 +231,7 @@ fn ensure<R: Runtime>(
         .error
         .map(|e| format!(" ({e})"))
         .unwrap_or_default();
-    Err(crate::i18n::t(
+    Err(crate::common::i18n::t(
         lang,
         "Componenti del kit non installati: {0}{1}. Riprova da Strumenti.",
         &[&still.join(", "), &why],
@@ -255,7 +255,7 @@ fn settle_project<R: Runtime>(
     let requires = crate::detect::requires(dir);
     let ids: Vec<&str> = requires.iter().map(String::as_str).collect();
     if let Err(e) = ensure(app, task, kit, lang, &ids) {
-        crate::log::warn(&format!("{project}: {e}"));
+        crate::common::log::warn(&format!("{project}: {e}"));
     }
     let lines = crate::versions::relations::settle(kit, lang, project);
     if !lines.is_empty() {
@@ -294,7 +294,7 @@ fn lang_of(state: &AppState) -> &'static str {
 }
 
 fn tr(state: &AppState, source: &str, args: &[&str]) -> String {
-    crate::i18n::t(lang_of(state), source, args)
+    crate::common::i18n::t(lang_of(state), source, args)
 }
 
 /// The handler with every command; keep in sync with `build.rs` COMMANDS.

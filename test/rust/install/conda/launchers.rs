@@ -101,17 +101,17 @@ fn launchers_for_older_installations() {
     let ruby = Catalog::get().find("ruby").unwrap();
     let kit = Kit::at_target(tmp.0.join("Kit"), Target::LINUX_X64);
     for (line, version) in [("4.0", "4.0.7"), ("3.4", "3.4.9")] {
-        let dir = crate::fsx::join_rel(kit.apps(), &format!("ruby/{line}"));
+        let dir = crate::common::fsx::join_rel(kit.apps(), &format!("ruby/{line}"));
         env_with(&dir, &[("ruby", version, &["bin/ruby", "bin/gem"])]);
         fs::create_dir_all(dir.join("bin")).unwrap();
         fs::write(dir.join("bin").join("ruby"), "").unwrap();
         crate::versions::write_version(&dir, version).unwrap();
     }
     ruby.save_version(&kit, "4.0.7").unwrap();
-    let kept = crate::fsx::join_rel(kit.apps(), "ruby/3.4").join(LAUNCHERS);
+    let kept = crate::common::fsx::join_rel(kit.apps(), "ruby/3.4").join(LAUNCHERS);
     fs::create_dir_all(&kept).unwrap();
     launchers_of_older_installations(&kit);
-    let new = crate::fsx::join_rel(kit.apps(), "ruby/4.0").join(LAUNCHERS);
+    let new = crate::common::fsx::join_rel(kit.apps(), "ruby/4.0").join(LAUNCHERS);
     assert!(new.join("ruby").is_file() && new.join("gem").is_file());
     assert!(
         !kept.join("ruby").exists(),
@@ -120,7 +120,7 @@ fn launchers_for_older_installations() {
 
     // Windows: Ruby is not a conda environment, nothing written.
     let win = Kit::at_target(tmp.0.join("Win"), Target::WIN32_X64);
-    let dir = crate::fsx::join_rel(win.apps(), "ruby/4.0");
+    let dir = crate::common::fsx::join_rel(win.apps(), "ruby/4.0");
     env_with(&dir, &[("ruby", "4.0.7", &["bin/ruby"])]);
     fs::create_dir_all(dir.join("bin")).unwrap();
     fs::write(dir.join("bin").join("ruby.exe"), "").unwrap();

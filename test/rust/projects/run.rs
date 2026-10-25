@@ -354,7 +354,7 @@ fn runs_and_stops_commands() {
     ));
     let env = KitEnv::build(
         &kit2,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "it",
         &crate::env::Host::capture(),
     );
@@ -407,7 +407,7 @@ fn replaced_run_does_not_end_the_new_one() {
     std::fs::create_dir_all(&proj).unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "it",
         &crate::env::Host::capture(),
     );

@@ -259,7 +259,7 @@ fn real_databases_start_and_stop() {
     kit.prepare().unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

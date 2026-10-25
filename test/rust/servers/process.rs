@@ -565,7 +565,7 @@ fn caddy_pool_two_php_sites_alias_and_reload() {
     crate::setup::kit_files::write_all(&kit).unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

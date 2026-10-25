@@ -14,7 +14,7 @@ use super::php_unix::{
     unix_php_versions,
 };
 use super::vcruntime::{copy_vc_runtime, LogProgress};
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::install::lang::{is_release, version_key};
 use crate::install::{fetch, pattern, target_of, Ctx, Dest, Installer, Part, Release};
 use crate::net::archive::{Inner, Kind};
@@ -301,7 +301,7 @@ impl Installer for Php {
             Ok(())
         })();
         if let Err(e) = pem {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "PHP: CA certificates not downloaded ({e:#}): HTTPS from PHP may fail"
             ));
         }

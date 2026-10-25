@@ -74,12 +74,12 @@ pub struct AgentInfo {
 }
 
 fn json(path: &Path) -> Option<Value> {
-    crate::fsx::read_json(path)
+    crate::common::fsx::read_json(path)
 }
 
 /// The Gemini API key of the settings (its own owner-only file), if any.
 pub fn gemini_key(kit: &Kit) -> Option<String> {
-    crate::settings::Settings::load(kit)
+    crate::common::settings::Settings::load(kit)
         .settings
         .gemini_api_key
         .filter(|k| !k.is_empty())
@@ -235,7 +235,10 @@ fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
     let exe = crate::setup::kit_path(kit, rel);
     if !exe.is_file() {
         let name = Catalog::get().find(id).map_or(id, |c| c.name.as_str());
-        bail!("{}", crate::i18n::t(lang, "{0} non è installato.", &[name]));
+        bail!(
+            "{}",
+            crate::common::i18n::t(lang, "{0} non è installato.", &[name])
+        );
     }
     Ok(if id == "antigravity" {
         crate::router::bins::agent_launcher(kit, id).unwrap_or(exe)
@@ -264,7 +267,7 @@ pub fn launch<R: tauri::Runtime>(
     sync::trust_project(kit, dir);
     let report = sync::run(kit, Some(dir));
     for w in &report.warnings {
-        crate::log::warn(&format!("before {id}: {w}"));
+        crate::common::log::warn(&format!("before {id}: {w}"));
     }
     let (after, after_dir) = (kit.clone(), dir.to_path_buf());
     // Claude Code's token or the Gemini key, in this agent's environment
@@ -286,7 +289,7 @@ fn start_local_models<R: tauri::Runtime>(app: &tauri::AppHandle<R>, lang: &str) 
         return;
     };
     if let Err(e) = state.llm.start(&state.env(), lang) {
-        crate::log::warn(&format!("pi: local models: {e:#}"));
+        crate::common::log::warn(&format!("pi: local models: {e:#}"));
     }
 }
 
@@ -313,7 +316,7 @@ pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str, lang: &str) -> Result<()> {
             if keyring::kit_agy_running(kit) {
                 bail!(
                     "{}",
-                    crate::i18n::t(
+                    crate::common::i18n::t(
                         lang,
                         "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.",
                         &[]
@@ -349,7 +352,7 @@ fn codex_logout(codex: &Path, env: &KitEnv) -> Result<bool> {
             return Ok(status.success());
         }
         if start.elapsed() > CODEX_LOGOUT_WITHIN {
-            crate::log::warn("codex logout: no answer in 20 s, stopped");
+            crate::common::log::warn("codex logout: no answer in 20 s, stopped");
             let _ = child.kill();
             let _ = child.wait();
             return Ok(false);
@@ -518,7 +521,7 @@ pub fn watch(kit: Kit, closing: Closing) {
             let now = running(&kit);
             let ended: Vec<&String> = before.difference(&now).collect();
             if !ended.is_empty() {
-                crate::log::info(&format!("agents ended: {ended:?}"));
+                crate::common::log::info(&format!("agents ended: {ended:?}"));
                 let _ = closing.run(|| sync::run(&kit, None));
             }
             // Antigravity's login still in Windows and no agy of the kit
@@ -532,9 +535,9 @@ pub fn watch(kit: Kit, closing: Closing) {
                 match closing.run(|| keyring::save(&kit)) {
                     Some(Ok(())) => retry.succeeded(),
                     Some(Err(e)) => {
-                        crate::log::warn(&format!("antigravity login: {e:#}"));
+                        crate::common::log::warn(&format!("antigravity login: {e:#}"));
                         if retry.failed(at) {
-                            crate::log::warn(&format!(
+                            crate::common::log::warn(&format!(
                                 "antigravity login: not saved after {SAVE_MAX_FAILURES} tries, no more tries until agy runs again or the app starts again"
                             ));
                         }

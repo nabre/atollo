@@ -16,7 +16,7 @@ fn catalog() -> &'static Catalog {
     static CATALOG: OnceLock<Catalog> = OnceLock::new();
     CATALOG.get_or_init(|| {
         // A broken catalog fails the tests; at run time it degrades to Italian.
-        serde_json::from_str(include_str!("../i18n/catalog.json")).unwrap_or_default()
+        serde_json::from_str(include_str!("../../i18n/catalog.json")).unwrap_or_default()
     })
 }
 
@@ -121,5 +121,5 @@ pub fn t(lang: &str, it_source: &str, args: &[&str]) -> String {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/i18n.rs"]
+#[path = "../../../test/rust/common/i18n.rs"]
 mod tests;

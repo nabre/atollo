@@ -106,7 +106,7 @@ pub(super) fn save_login(kit: &Kit, f: &Files, store: &dyn Store) -> Result<()> 
         }
     }
     if !lost.is_empty() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "antigravity keyring: {SealKeyMissing}: this computer's own sign-in ({}) cannot be put back; the kit's sign-in is saved and the pending file dropped",
             lost.join(", ")
         ));
@@ -152,12 +152,12 @@ pub(super) fn mode_after_600(_dir: &Path) -> Option<u32> {
 /// the sign-in is unencrypted in the kit) only where [`plaintext_allowed`].
 fn without_store(f: &Files, detail: &str, os: crate::kit::Os, mode: Option<u32>) -> Result<()> {
     if !plaintext_allowed(os, mode) {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "antigravity keyring: {NO_STORE_REFUSED} ({detail})"
         ));
         bail!("{NO_STORE_REFUSED}");
     }
-    crate::log::warn(&format!("antigravity keyring: {NO_STORE} ({detail})"));
+    crate::common::log::warn(&format!("antigravity keyring: {NO_STORE} ({detail})"));
     eprintln!("  [!] Antigravity: {NO_STORE}.");
     if f.store.exists() {
         // Owner-only even when it came from another system.
@@ -192,7 +192,7 @@ pub(super) fn restore_checked(
         }
         // A store that cannot be used now (locked, denied): nothing moved.
         Err(e) => {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "antigravity keyring: store not usable, sign-in not moved: {e:#}"
             ));
             return Err(e.context("the Antigravity sign-in was not moved"));
@@ -224,7 +224,7 @@ fn move_in(f: &Files, store: &dyn Store, existing: &[Item]) -> Result<()> {
         })
         .collect::<Result<_>>()
         .inspect_err(|e| {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "antigravity keyring: this computer's sign-in cannot be sealed, the kit's sign-in is not moved: {e:#}"
             ));
         })

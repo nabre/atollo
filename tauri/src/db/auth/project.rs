@@ -182,7 +182,7 @@ pub fn try_project_passwords(kit: &Kit, project: &str) -> Result<BTreeMap<String
 /// unreadable: only a warning, for the pages that show them).
 pub fn project_passwords(kit: &Kit, project: &str) -> BTreeMap<String, String> {
     try_project_passwords(kit, project).unwrap_or_else(|e| {
-        crate::log::warn(&format!("{project}: passwords: {e:#}"));
+        crate::common::log::warn(&format!("{project}: passwords: {e:#}"));
         BTreeMap::new()
     })
 }

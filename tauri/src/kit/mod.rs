@@ -12,6 +12,7 @@
 //! Arch, Target), `root` (where the root is, from the program's path, a
 //! macOS bundle or a Linux AppImage), `names` (the valid project names).
 
+pub mod backup;
 mod names;
 mod root;
 mod target;
@@ -23,7 +24,7 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-use crate::fsx::{read_text, write_atomic};
+use crate::common::fsx::{read_text, write_atomic};
 use crate::os::volume::VolumeInfo;
 
 pub use names::validate_project_name;
@@ -269,26 +270,26 @@ pub fn prepare_error_message(os: Os, error: &KitError, lang: &str) -> String {
     };
     let read_only = matches!(error, KitError::NotWritable { source, .. }
         if source.kind() == io::ErrorKind::ReadOnlyFilesystem);
-    let cannot = crate::i18n::t(lang, "Impossibile scrivere nella cartella {0}.", &[&path]);
+    let cannot = crate::common::i18n::t(lang, "Impossibile scrivere nella cartella {0}.", &[&path]);
     if os.is_windows() {
         return format!(
             "{cannot}\n\n{}",
-            crate::i18n::t(lang, "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
+            crate::common::i18n::t(lang, "Sposta Atollo.exe in una cartella dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvialo.", &[])
         );
     }
     if read_only {
         return format!(
             "{}\n\n{}",
-            crate::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
-            crate::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.", &[])
+            crate::common::i18n::t(lang, "Il disco del kit è in sola lettura: impossibile scrivere nella cartella {0}.", &[&path]),
+            crate::common::i18n::t(lang, "Copia la cartella del kit su un disco dove puoi scrivere, o rimonta il disco in lettura e scrittura, e riavvia Atollo.", &[])
         );
     }
     format!(
         "{cannot}\n\n{}",
-        crate::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.", &[])
+        crate::common::i18n::t(lang, "Sposta la cartella del kit dove puoi scrivere (per esempio una chiavetta o una cartella del tuo profilo) e riavvia Atollo.", &[])
     )
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/kit.rs"]
+#[path = "../../../test/rust/kit/mod.rs"]
 pub(crate) mod tests;

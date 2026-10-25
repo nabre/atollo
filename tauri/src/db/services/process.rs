@@ -13,10 +13,10 @@ use super::{
     auth, bin_at, check_line, client_at, installed, line_port, lines_in_use, load_settings,
     log_path, log_tail, server_line, Key, PortInUse, Server, Services,
 };
+use crate::common::ports::{is_port_free, responds};
 use crate::db::DbEngine;
 use crate::env::KitEnv;
 use crate::os::jobs::{self, Job};
-use crate::ports::{is_port_free, responds};
 
 const READY_WITHIN: Duration = Duration::from_secs(90);
 const STOP_WITHIN: Duration = Duration::from_secs(20);
@@ -162,7 +162,7 @@ impl Services {
         // and data folder taken.
         let job = Job::new()?;
         let child = jobs::spawn_in(&mut cmd, &job)?;
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "{id} {}: started on 127.0.0.1:{port}",
             line.unwrap_or_default()
         ));
@@ -330,9 +330,9 @@ impl Services {
             std::thread::sleep(Duration::from_millis(200));
         }
         if matches!(server.child.try_wait(), Ok(None)) {
-            crate::log::warn(&format!("{id} {}: did not stop, ended", key.1));
+            crate::common::log::warn(&format!("{id} {}: did not stop, ended", key.1));
         }
-        crate::log::info(&format!("{id} {}: stopped", key.1));
+        crate::common::log::info(&format!("{id} {}: stopped", key.1));
         // Dropping the server closes its job.
     }
 
@@ -365,11 +365,11 @@ impl Services {
             };
             if s.autostart && installed(&self.kit, &id) {
                 if let Err(e) = self.start(&id, env) {
-                    crate::log::warn(&format!("{id}: automatic start: {e:#}"));
+                    crate::common::log::warn(&format!("{id}: automatic start: {e:#}"));
                 }
                 for line in lines_in_use(&self.kit, &id) {
                     if let Err(e) = self.start_engine(engine, Some(&line), env) {
-                        crate::log::warn(&format!("{id} {line}: automatic start: {e:#}"));
+                        crate::common::log::warn(&format!("{id} {line}: automatic start: {e:#}"));
                     }
                 }
             }

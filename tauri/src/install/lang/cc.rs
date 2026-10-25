@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::native::{conda_info, conda_versions, micromamba_create, micromamba_release};
 use crate::install::{
     github_single, pattern, target_of, triple_arch, Ctx, Dest, Installer, Part, Progress, Release,
@@ -230,7 +230,7 @@ pub(crate) fn write_zig_shims(bin: &Path) -> Result<()> {
     fs::create_dir_all(bin)?;
     for (name, script) in zig_shims() {
         let path = bin.join(name);
-        crate::fsx::write_atomic(&path, script.as_bytes())?;
+        crate::common::fsx::write_atomic(&path, script.as_bytes())?;
         crate::router::set_executable(&path)?;
     }
     Ok(())
@@ -425,7 +425,7 @@ pub fn make_launchers(bin: &Path) -> Result<()> {
     for (name, content) in files {
         let path = bin.join(name);
         if fs::read(&path).ok().as_deref() != Some(content) {
-            crate::fsx::write_atomic(&path, content)?;
+            crate::common::fsx::write_atomic(&path, content)?;
         }
     }
     Ok(())

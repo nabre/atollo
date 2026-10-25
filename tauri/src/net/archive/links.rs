@@ -313,7 +313,7 @@ pub(super) fn finish_links_here(dest: &Path, links: Vec<(PathBuf, String)>) -> R
         }
     })?;
     for link in skipped {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "link not made (outside the folder, or through another link): {link}"
         ));
     }

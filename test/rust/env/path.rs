@@ -79,14 +79,14 @@ fn python_on_the_unix_path() {
 
     let tmp = TempDir::new("env-python-shim");
     let kit = Kit::at_target(tmp.0.join("Kit"), Target::LINUX_X64);
-    let python = crate::fsx::join_rel(kit.apps(), "python/bin/python3");
+    let python = crate::common::fsx::join_rel(kit.apps(), "python/bin/python3");
     fs::create_dir_all(python.parent().unwrap()).unwrap();
     fs::write(&python, b"").unwrap();
     let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
     let shims = kit.kit_files().join("shims");
     let entries = env.path_entries();
     let at = |p: &Path| entries.iter().position(|e| Path::new(e) == p);
-    let bin = crate::fsx::join_rel(kit.apps(), "python/bin");
+    let bin = crate::common::fsx::join_rel(kit.apps(), "python/bin");
     assert!(at(&bin).is_some(), "{entries:?}");
     assert_eq!(at(&shims), at(&bin).map(|i| i + 1), "{entries:?}");
     env.create_dirs().unwrap();
@@ -164,7 +164,7 @@ fn conda_environments_give_only_their_programs() {
     let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
     let entries = env.path_entries();
     let has = |rel: &str| {
-        let p = crate::fsx::join_rel(kit.apps(), rel);
+        let p = crate::common::fsx::join_rel(kit.apps(), rel);
         entries.iter().any(|e| Path::new(e) == p)
     };
     assert!(

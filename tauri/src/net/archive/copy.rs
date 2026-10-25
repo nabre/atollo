@@ -37,7 +37,7 @@ fn copy_entries(from: &Path, to: &Path, links: &mut Vec<(PathBuf, String)>) -> i
             #[cfg(unix)]
             match fs::read_link(entry.path())?.to_str() {
                 Some(t) => links.push((target, t.to_owned())),
-                None => crate::log::warn(&format!(
+                None => crate::common::log::warn(&format!(
                     "link not copied (target not UTF-8): {}",
                     entry.path().display()
                 )),
@@ -105,7 +105,7 @@ pub fn check_fits(tree: &Path, dest: &Path) -> Result<()> {
     match crate::os::volume::info(existing_ancestor(dest)) {
         Ok(v) => fits(tree, v.fs.max_file_size(), v.fs.as_str()),
         Err(e) => {
-            crate::log::warn(&format!("{}: {e}", dest.display()));
+            crate::common::log::warn(&format!("{}: {e}", dest.display()));
             Ok(())
         }
     }
@@ -139,7 +139,7 @@ pub fn check_space(tree: &Path, dest: &Path) -> Result<()> {
     match crate::os::volume::free_space(existing_ancestor(dest)) {
         Ok(free) => has_space(tree, free, dest),
         Err(e) => {
-            crate::log::warn(&format!("{}: {e}", dest.display()));
+            crate::common::log::warn(&format!("{}: {e}", dest.display()));
             Ok(())
         }
     }

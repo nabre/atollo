@@ -142,7 +142,7 @@ pub async fn project_extensions<R: Runtime>(
     crate::projects::settings::update(&state.kit, &project, |s| s.extensions = choice);
     crate::editor::window::refresh_hidden(&app, &state.kit);
     let editor = Arc::clone(&state.editor);
-    // Busy installing: the watch of the open projects asks again (app.rs).
+    // Busy installing: the watch of the open projects asks again (app/mod.rs).
     tauri::async_runtime::spawn_blocking(move || {
         editor.sync_extensions();
     })

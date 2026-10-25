@@ -40,7 +40,7 @@ pub fn replace_dir(new: &Path, dest: &Path) -> Result<()> {
             return Err(InUse(dest.to_path_buf()).into());
         }
         if let Err(e) = move_tree(dest, &old) {
-            crate::log::info(&format!("{}: {e}", dest.display()));
+            crate::common::log::info(&format!("{}: {e}", dest.display()));
             let _ = move_tree(&old, dest);
             let _ = fs::remove_dir_all(&old);
             return Err(InUse(dest.to_path_buf()).into());
@@ -265,7 +265,7 @@ pub fn rebuild_in_place<T>(dest: &Path, make: impl FnOnce() -> Result<T>) -> Res
             }
             if let Some(old) = old {
                 if let Err(back) = fs::rename(&old, dest) {
-                    crate::log::warn(&format!(
+                    crate::common::log::warn(&format!(
                         "{} not put back from {}: {back}",
                         dest.display(),
                         old.display()

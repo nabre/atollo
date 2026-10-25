@@ -334,7 +334,7 @@ impl Installer for MongoDb {
             let shared_missing = component
                 .keys_for(target)
                 .iter()
-                .any(|k| !crate::fsx::join_rel(ctx.kit.apps(), k).is_file());
+                .any(|k| !crate::common::fsx::join_rel(ctx.kit.apps(), k).is_file());
             if shared_missing {
                 release.parts.extend(mongodb_shared_parts(ctx, target)?.0);
             }

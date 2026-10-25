@@ -50,7 +50,7 @@ pub(super) fn start_error(lang: &str, e: &anyhow::Error) -> CmdError {
         let name = crate::setup::Catalog::get()
             .find(&m.id)
             .map_or_else(|| m.id.clone(), |c| c.name.clone());
-        return crate::i18n::t(
+        return crate::common::i18n::t(
             lang,
             "{0} {1} non è installata: installala, o scegli un'altra versione nella pagina del progetto.",
             &[&name, &m.line],
@@ -58,7 +58,7 @@ pub(super) fn start_error(lang: &str, e: &anyhow::Error) -> CmdError {
         .into();
     }
     match e.downcast_ref::<crate::db::services::PortInUse>() {
-        Some(p) => crate::i18n::t(
+        Some(p) => crate::common::i18n::t(
             lang,
             "La porta {0} è già usata da un altro programma: cambiala qui sotto.",
             &[&p.0.to_string()],

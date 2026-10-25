@@ -106,7 +106,7 @@ fn models_json_has_the_local_provider() {
     .unwrap();
     add_model(&kit, "m1", None);
     sync_models(&kit, &p).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("models.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("models.json")).unwrap();
     let ours = &cfg["providers"][PROVIDER];
     assert_eq!(ours["baseUrl"], "http://127.0.0.1:9931/v1");
     assert_eq!(ours["api"], "openai-completions");
@@ -120,7 +120,7 @@ fn models_json_has_the_local_provider() {
     // No model left: the provider goes, the user's stays.
     fs::remove_dir_all(crate::llm::models_dir(&kit)).unwrap();
     sync_models(&kit, &p).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("models.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("models.json")).unwrap();
     assert!(cfg["providers"].get(PROVIDER).is_none());
     assert!(cfg["providers"]["ollama"].is_object());
 }
@@ -139,7 +139,7 @@ fn settings_follow_the_local_model() {
     .unwrap();
     add_model(&kit, "m1", None);
     sync_settings(&kit, &p).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("settings.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("settings.json")).unwrap();
     assert_eq!(cfg["defaultProvider"], PROVIDER);
     assert_eq!(cfg["defaultModel"], "m1");
     assert_eq!(cfg["defaultProjectTrust"], "never");
@@ -150,7 +150,7 @@ fn settings_follow_the_local_model() {
     cfg["defaultModel"] = json!("claude-sonnet-5");
     write_json(&p.pi.join("settings.json"), &cfg).unwrap();
     sync_settings(&kit, &p).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("settings.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("settings.json")).unwrap();
     assert_eq!(cfg["defaultProvider"], "anthropic");
     assert_eq!(cfg["defaultModel"], "claude-sonnet-5");
 }
@@ -160,7 +160,7 @@ fn a_fresh_settings_file_asks_for_trust() {
     let (_tmp, kit) = kit();
     let p = Paths::of(&kit);
     sync_settings(&kit, &p).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("settings.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("settings.json")).unwrap();
     assert_eq!(cfg["defaultProjectTrust"], "ask");
     assert!(cfg.get("defaultProvider").is_none());
 }
@@ -185,7 +185,7 @@ fn mcp_servers_in_pis_format() {
     .unwrap();
     let mut report = Report::default();
     sync_mcp(&p, &servers, &mut report).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("mcp.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("mcp.json")).unwrap();
     let list = &cfg["mcpServers"];
     assert_eq!(list["fs"]["command"], "npx");
     assert_eq!(list["fs"]["env"]["A"], "1");
@@ -196,7 +196,7 @@ fn mcp_servers_in_pis_format() {
     assert!(report.warnings.iter().any(|w| w.contains("old")));
     // Removed from the kit: removed from Pi; the user's stays.
     sync_mcp(&p, &Servers::new(), &mut Report::default()).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("mcp.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("mcp.json")).unwrap();
     assert!(cfg["mcpServers"].get("fs").is_none());
     assert_eq!(cfg["mcpServers"]["own"]["command"], "x");
 }
@@ -210,7 +210,7 @@ fn a_project_is_trusted_once() {
     let project = kit.projects().join("shop");
     fs::create_dir_all(&project).unwrap();
     trust(&p, &project).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("trust.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("trust.json")).unwrap();
     let key = trust_key(&project);
     assert_eq!(cfg[&key], true);
     assert!(!key.starts_with(r"\\?\"));
@@ -218,6 +218,6 @@ fn a_project_is_trusted_once() {
     cfg[&key] = json!(false);
     write_json(&p.pi.join("trust.json"), &cfg).unwrap();
     trust(&p, &project).unwrap();
-    let cfg: Value = crate::fsx::read_json(&p.pi.join("trust.json")).unwrap();
+    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("trust.json")).unwrap();
     assert_eq!(cfg[&key], false);
 }

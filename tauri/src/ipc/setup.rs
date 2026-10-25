@@ -187,7 +187,7 @@ pub fn tools_target_set<R: Runtime>(
 }
 
 /// Writes `tools_target` into settings.json, keeping the rest of the file;
-/// one that cannot be read is not overwritten (settings.rs). An unknown
+/// one that cannot be read is not overwritten (common/settings.rs). An unknown
 /// system is refused.
 pub(super) fn save_tools_target(kit: &Kit, target: Option<&str>) -> anyhow::Result<()> {
     let target = match target.map(str::trim).filter(|s| !s.is_empty()) {
@@ -279,7 +279,7 @@ pub(super) fn component_infos_from(
                 id: c.id.clone(),
                 name: c.name.clone(),
                 group: c.group,
-                desc: crate::i18n::t(lang, &c.desc, &[]),
+                desc: crate::common::i18n::t(lang, &c.desc, &[]),
                 mb: c.mb,
                 chosen: choice.is_chosen(&c.id) || here.contains(c.id.as_str()),
                 installed: c.is_installed(kit),
@@ -583,7 +583,7 @@ pub async fn downloads_pick<R: Runtime>(
     let owner = webview.window().hwnd().or_fail("window")?.0 as isize;
     #[cfg(unix)]
     let window = webview.window();
-    let title = crate::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
+    let title = crate::common::i18n::t(state.lang(), "Scegli il file scaricato", &[]);
     let kit = state.kit.clone();
     tauri::async_runtime::spawn_blocking(move || {
         #[cfg(windows)]
@@ -656,7 +656,7 @@ pub async fn conda_kept_free<R: Runtime>(
         let freed = crate::setup::runner::while_idle(&kit, || crate::install::conda::free(&kit))
             .map_err(|_| busy)?
             .or_fail_chain("conda")?;
-        crate::log::info(&format!(
+        crate::common::log::info(&format!(
             "conda: kept packages freed, {} MB",
             freed.div_ceil(1 << 20)
         ));

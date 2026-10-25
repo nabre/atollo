@@ -127,7 +127,7 @@ fn real_server_token_redirect_and_stop() {
     crate::setup::kit_files::write_all(&kit).unwrap();
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

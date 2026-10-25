@@ -16,7 +16,7 @@ use std::process::Stdio;
 use anyhow::{anyhow, bail, Context, Result};
 
 use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::kit::{Arch, Kit, Os, Target};
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::Expect;

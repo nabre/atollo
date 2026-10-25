@@ -27,7 +27,7 @@ use anyhow::{bail, Context, Result};
 use serde_json::{Map, Value};
 
 use super::{php_server, tr, Action, Kind, Project, OVERRIDE_FILES};
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 
 /// Id of the action written by "Servi come sito web".
 pub const SITE_ACTION: &str = "site";

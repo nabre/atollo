@@ -32,7 +32,7 @@ pub async fn run_start<R: Runtime>(
     tauri::async_runtime::spawn_blocking(move || {
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
-            return Err(crate::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
+            return Err(crate::common::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
         // An Apache/Caddy site is started in a shared pool: the profile it
         // was assigned to (GAP-RUN), else the automatic pool of its lines
@@ -56,7 +56,7 @@ pub async fn run_start<R: Runtime>(
                         if servers.running_port(&pool_id) == Some(port) {
                             Ok((pool_id, port, server_name))
                         } else {
-                            Err(anyhow::anyhow!(crate::i18n::t(
+                            Err(anyhow::anyhow!(crate::common::i18n::t(
                                 lang,
                                 "Il server condiviso {0} non è partito: guarda la pagina Server Web.",
                                 &[&pool_id],
@@ -74,8 +74,8 @@ pub async fn run_start<R: Runtime>(
                     // The automatic pool cannot start (D-101): the site's own
                     // server, saying why in its log.
                     Err(e) => {
-                        crate::log::warn(&format!("run {project} {}: pool: {e:#}", a.id));
-                        fallback = Some(crate::i18n::t(
+                        crate::common::log::warn(&format!("run {project} {}: pool: {e:#}", a.id));
+                        fallback = Some(crate::common::i18n::t(
                             lang,
                             "Il server condiviso {0} non è partito ({1}): il sito usa un server tutto suo.",
                             &[&pool.id, &format!("{e:#}")],

@@ -123,15 +123,19 @@ fn api(dir: Option<&Path>) -> Result<Api> {
         {
             Ok(module) => match functions(module, true) {
                 Some(api) => {
-                    crate::log::info(&format!("terminal: ConPTY of the kit, {}", dll.display()));
+                    crate::common::log::info(&format!(
+                        "terminal: ConPTY of the kit, {}",
+                        dll.display()
+                    ));
                     *kit = Some(api);
                     return Ok(api);
                 }
-                None => {
-                    crate::log::warn(&format!("{}: no pseudo console functions", dll.display()))
-                }
+                None => crate::common::log::warn(&format!(
+                    "{}: no pseudo console functions",
+                    dll.display()
+                )),
             },
-            Err(e) => crate::log::warn(&format!("{}: {e}", dll.display())),
+            Err(e) => crate::common::log::warn(&format!("{}: {e}", dll.display())),
         }
     }
     // SAFETY: kernel32 is loaded in every process.

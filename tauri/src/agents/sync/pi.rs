@@ -48,7 +48,7 @@ pub fn local_model(kit: &Kit) -> Option<String> {
     if let Some(id) = crate::llm::settings::load(kit).pi_model {
         return models.iter().any(|m| m.id == id).then_some(id);
     }
-    let auth = crate::fsx::read_json::<Value>(&dir(&kit.home()).join("auth.json"));
+    let auth = crate::common::fsx::read_json::<Value>(&dir(&kit.home()).join("auth.json"));
     if auth
         .as_ref()
         .and_then(Value::as_object)
@@ -103,7 +103,7 @@ pub fn sync_rule(p: &Paths) -> Result<()> {
     let new = with_block(&old, super::KIT_RULE_TEXT);
     if new != old {
         fs::create_dir_all(&p.pi)?;
-        crate::fsx::write_atomic(&file, new.as_bytes())?;
+        crate::common::fsx::write_atomic(&file, new.as_bytes())?;
     }
     Ok(())
 }

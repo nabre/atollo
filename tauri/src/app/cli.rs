@@ -16,13 +16,14 @@ use windows::Win32::System::Console::{
     AttachConsole, GetStdHandle, ATTACH_PARENT_PROCESS, STD_OUTPUT_HANDLE,
 };
 
+use crate::common::i18n::t;
+use crate::common::settings::Settings;
+use crate::common::{i18n, log};
 use crate::env::{Host, KitEnv};
-use crate::i18n::t;
 use crate::kit::Kit;
-use crate::settings::Settings;
 use crate::setup::runner::{Event, Options, Outcome, Sink};
 use crate::setup::{Catalog, Choice};
-use crate::{i18n, install, kit, llm, log, net, os, setup, versions};
+use crate::{install, kit, llm, net, os, setup, versions};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Cli {
@@ -39,7 +40,7 @@ pub enum Cli {
     /// The saved versions; with an id, the lines that can be downloaded.
     Versions(Option<String>),
     /// Every installed program answers its version command; with `--kit`,
-    /// the health of the kit (health.rs).
+    /// the health of the kit (diagnostics/health.rs).
     Check {
         kit: bool,
     },
@@ -65,7 +66,7 @@ pub enum Cli {
     Models(Models),
     /// Their server: `start`, `stop`, `status`.
     Llm(String),
-    /// The zip for a report of a problem (diagnostics.rs).
+    /// The zip for a report of a problem (diagnostics/mod.rs).
     Diagnostics,
     Version,
     Help,
@@ -322,8 +323,11 @@ pub fn print_versions(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Result<
 
 /// The health of the kit, one finding per line (`√`, `!`, `x`) with what
 /// to do under it.
-pub fn print_health(findings: &[crate::health::Finding], out: &mut dyn Write) -> io::Result<()> {
-    use crate::health::Level;
+pub fn print_health(
+    findings: &[crate::diagnostics::health::Finding],
+    out: &mut dyn Write,
+) -> io::Result<()> {
+    use crate::diagnostics::health::Level;
     for f in findings {
         let mark = match f.level {
             Level::Ok => "√",
@@ -748,5 +752,5 @@ pub(crate) fn help(lang: &str) -> String {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/cli.rs"]
+#[path = "../../../test/rust/app/cli.rs"]
 mod tests;

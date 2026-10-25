@@ -46,7 +46,7 @@ impl From<anyhow::Error> for CmdError {
 
 /// Logs `context: e` and gives `e` to the interface.
 pub(super) fn fail(context: &str, e: impl fmt::Display) -> CmdError {
-    crate::log::error(&format!("{context}: {e}"));
+    crate::common::log::error(&format!("{context}: {e}"));
     CmdError(e.to_string())
 }
 

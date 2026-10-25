@@ -1,6 +1,6 @@
 use super::*;
+use crate::common::settings::Settings;
 use crate::net::is_permanent;
-use crate::settings::Settings;
 
 #[test]
 fn checksum_files_of_old_releases() {

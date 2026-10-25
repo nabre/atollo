@@ -287,11 +287,11 @@ pub fn sweep_stale_leaves(parent: &Path, min_age: std::time::Duration) {
             });
         if !alive {
             match fs::remove_dir_all(&leaf) {
-                Ok(()) => crate::log::info(&format!(
+                Ok(()) => crate::common::log::info(&format!(
                     "caddy: {}: left by an instance that ended, removed",
                     leaf.display()
                 )),
-                Err(e) => crate::log::warn(&format!("caddy: {}: {e}", leaf.display())),
+                Err(e) => crate::common::log::warn(&format!("caddy: {}: {e}", leaf.display())),
             }
         }
     }
@@ -305,7 +305,7 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
         let random = match crate::editor::random_token() {
             Ok(t) => t.chars().take(12).collect::<String>(),
             Err(e) => {
-                crate::log::warn(&format!("{what} {id}: no random name: {e:#}"));
+                crate::common::log::warn(&format!("{what} {id}: no random name: {e:#}"));
                 return None;
             }
         };
@@ -317,7 +317,7 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
             continue;
         }
         let Some(parent) = socket_parent(&base) else {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "{what} {id}: {}: not a private folder, not used",
                 base.join(socket_parent_name(current_uid())).display()
             ));
@@ -325,10 +325,10 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
         };
         match PrivateSocket::in_leaf(&parent, &format!("c-{random}"), file) {
             Ok(sock) => return Some(sock),
-            Err(e) => crate::log::warn(&format!("{what} {id}: socket folder: {e}")),
+            Err(e) => crate::common::log::warn(&format!("{what} {id}: socket folder: {e}")),
         }
     }
-    crate::log::warn(&format!("{what} {id}: no private folder for its socket"));
+    crate::common::log::warn(&format!("{what} {id}: no private folder for its socket"));
     None
 }
 
@@ -338,7 +338,7 @@ pub fn private_socket(kit: &Kit, id: &str, what: &str, file: &str) -> Option<Pri
 pub fn admin_socket(kit: &Kit, id: &str) -> Option<AdminSocket> {
     let sock = private_socket(kit, id, "caddy", "a.sock");
     if sock.is_none() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "caddy {id}: no admin socket: admin off, a reload restarts the pool"
         ));
     }

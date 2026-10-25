@@ -89,7 +89,7 @@ pub(crate) fn webkit_install_command(os_release: &str) -> Option<&'static str> {
 /// WebView2 (unchanged), on Linux what to install. `os_release` is the
 /// text of `/etc/os-release` (Linux).
 pub fn missing_message(kit: &Kit, os_release: Option<&str>, lang: &str) -> String {
-    use crate::i18n::t;
+    use crate::common::i18n::t;
     if kit.os().is_linux() {
         let install = match os_release.and_then(webkit_install_command) {
             Some(command) => t(lang, "Installalo con {0}, poi riavvia Atollo. In alternativa usa l'AppImage di Atollo, che lo contiene.", &[command]),

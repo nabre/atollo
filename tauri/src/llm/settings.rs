@@ -37,7 +37,7 @@ pub fn path(kit: &Kit) -> PathBuf {
 /// The settings; the defaults without a file. A file that cannot be read is
 /// never overwritten ([`update`] fails).
 pub fn load(kit: &Kit) -> LlmSettings {
-    crate::fsx::read_json(&path(kit)).unwrap_or_default()
+    crate::common::fsx::read_json(&path(kit)).unwrap_or_default()
 }
 
 /// One read-change-write at a time.
@@ -47,9 +47,10 @@ pub fn update<T>(kit: &Kit, change: impl FnOnce(&mut LlmSettings) -> Result<T>) 
     let _turn = LOCK
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    let mut settings: LlmSettings = crate::fsx::try_read_json(&path(kit))?.unwrap_or_default();
+    let mut settings: LlmSettings =
+        crate::common::fsx::try_read_json(&path(kit))?.unwrap_or_default();
     let out = change(&mut settings)?;
-    crate::fsx::write_json(&path(kit), &settings)?;
+    crate::common::fsx::write_json(&path(kit), &settings)?;
     Ok(out)
 }
 
@@ -66,7 +67,7 @@ pub fn ensure_key(kit: &Kit) -> Result<String> {
     let _one = KEY
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some(key) = crate::settings::read_secret(&key_file(kit))? {
+    if let Some(key) = crate::common::settings::read_secret(&key_file(kit))? {
         return Ok(key);
     }
     let key = crate::editor::random_token()?;
@@ -76,7 +77,9 @@ pub fn ensure_key(kit: &Kit) -> Result<String> {
 
 /// The key, if it was made.
 pub fn key(kit: &Kit) -> Option<String> {
-    crate::settings::read_secret(&key_file(kit)).ok().flatten()
+    crate::common::settings::read_secret(&key_file(kit))
+        .ok()
+        .flatten()
 }
 
 #[cfg(test)]

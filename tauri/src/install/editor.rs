@@ -74,7 +74,7 @@ impl Installer for Server {
         }
         let running = crate::os::processes::running_from(&crate::os::processes::all(), old);
         if !running.is_empty() {
-            crate::log::info(&format!("editor update: stopping {running:?}"));
+            crate::common::log::info(&format!("editor update: stopping {running:?}"));
             crate::os::sessions::stop(&running);
             std::thread::sleep(std::time::Duration::from_millis(500));
         }

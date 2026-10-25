@@ -61,7 +61,7 @@ pub(crate) fn fetch_lines(
     };
     let lines = installer.lines(&ctx, c)?;
     if let Err(e) = crate::versions::save_offered(kit, id, &lines) {
-        crate::log::warn(&format!("versions of {id}: {e:#}"));
+        crate::common::log::warn(&format!("versions of {id}: {e:#}"));
     }
     Ok(lines)
 }
@@ -71,7 +71,7 @@ pub(crate) fn fetch_lines(
 pub(crate) fn refresh_stale_lines(kit: &Kit, env: &KitEnv, token: Option<String>) {
     for id in crate::versions::stale_offers(kit) {
         if let Err(e) = fetch_lines(kit, env, token.clone(), &id) {
-            crate::log::warn(&format!("versions of {id}: {e:#}"));
+            crate::common::log::warn(&format!("versions of {id}: {e:#}"));
         }
     }
 }

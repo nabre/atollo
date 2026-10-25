@@ -30,7 +30,7 @@ use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fsx::write_atomic;
+use crate::common::fsx::write_atomic;
 use crate::kit::Kit;
 
 /// The groups of the bases, in the order of the wizard's tree.
@@ -188,7 +188,7 @@ pub struct Loaded {
 /// Official pieces with the user's changes, then the user's own pieces.
 pub fn load(kit: &Kit) -> Loaded {
     let path = user_file(kit);
-    let (own, problem) = crate::fsx::load_json::<File>(&path);
+    let (own, problem) = crate::common::fsx::load_json::<File>(&path);
     Loaded {
         pieces: merge(official(), own.pieces),
         problem,

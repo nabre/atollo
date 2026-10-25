@@ -45,7 +45,7 @@ pub fn write(kit: &Kit) -> Result<Vec<String>> {
     if let Some(dir) = file.parent() {
         std::fs::create_dir_all(dir)?;
     }
-    crate::fsx::write_atomic(&file, text.as_bytes())?;
+    crate::common::fsx::write_atomic(&file, text.as_bytes())?;
     Ok(models
         .into_iter()
         .filter(|m| m.complete)

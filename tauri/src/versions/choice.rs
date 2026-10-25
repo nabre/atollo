@@ -8,8 +8,8 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
 use super::{default_line, dir_for, find, is_present, saved, valid_line, versioned};
+use crate::common::fsx::write_atomic;
 use crate::env::KitEnv;
-use crate::fsx::write_atomic;
 use crate::kit::Kit;
 use crate::setup::Component;
 
@@ -253,7 +253,7 @@ pub fn write_project_file(kit: &Kit, project: &str) {
         .and_then(|()| write_atomic(&json, text.as_bytes()))
         .and_then(|()| write_atomic(&txt, lines.as_bytes()));
     if let Err(e) = result {
-        crate::log::warn(&format!("versions of {project}: {e}"));
+        crate::common::log::warn(&format!("versions of {project}: {e}"));
     }
 }
 

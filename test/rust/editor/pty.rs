@@ -49,7 +49,7 @@ fn kit_on(name: &str, target: Target, installed: &[&str]) -> (TempDir, Kit) {
     let kit = Kit::at(tmp.0.join("k (1) & co"), Arch::X64).for_target(target);
     kit.prepare().unwrap();
     for rel in installed {
-        let f = crate::fsx::join_rel(kit.apps(), rel);
+        let f = crate::common::fsx::join_rel(kit.apps(), rel);
         std::fs::create_dir_all(f.parent().unwrap()).unwrap();
         std::fs::write(f, b"").unwrap();
     }
@@ -696,7 +696,7 @@ mod real {
             .unwrap_err();
         assert_eq!(
             e.to_string(),
-            crate::i18n::t(
+            crate::common::i18n::t(
                 "en",
                 "La cartella {0} non esiste.",
                 &[&missing.display().to_string()]

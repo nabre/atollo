@@ -148,10 +148,10 @@ pub fn write_json<T: Serialize + ?Sized>(path: &Path, value: &T) -> Result<()> {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/fsx.rs"]
+#[path = "../../../test/rust/common/fsx.rs"]
 mod tests;
 
 /// No separator written inside a joined path, in the whole crate (D-105).
 #[cfg(test)]
-#[path = "../../test/rust/paths.rs"]
+#[path = "../../../test/rust/common/paths.rs"]
 mod paths;

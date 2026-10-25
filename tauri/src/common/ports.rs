@@ -16,9 +16,9 @@ use std::time::Duration;
 
 use anyhow::{bail, Result};
 
+use crate::common::i18n::t;
 use crate::db::services::{line_ports, load_settings, server_line, server_lines};
 use crate::db::DbEngine;
-use crate::i18n::t;
 use crate::kit::Kit;
 use crate::setup::Catalog;
 
@@ -170,5 +170,5 @@ pub fn refuse_taken(kit: &Kit, port: u16, own: impl Fn(&Owner) -> bool, lang: &s
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/ports.rs"]
+#[path = "../../../test/rust/common/ports.rs"]
 mod tests;

@@ -156,7 +156,7 @@ pub(super) fn system_proxy() -> Option<Proxy> {
     match Proxy::new(url) {
         Ok(p) => Some(with_exceptions(p, hosts)),
         Err(e) => {
-            crate::log::warn(&format!("system proxy {url}: {e}"));
+            crate::common::log::warn(&format!("system proxy {url}: {e}"));
             None
         }
     }

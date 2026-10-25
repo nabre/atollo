@@ -43,7 +43,7 @@ use serde::Deserialize;
 use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 use ureq::{Agent, Proxy};
 
-use crate::settings::Settings;
+use crate::common::settings::Settings;
 pub use github::{first_sha256, github_digest, hash_in_list, verifiable};
 #[cfg(unix)]
 use proxy::system_proxy;
@@ -299,7 +299,7 @@ impl Net {
             .limit(4 * 1024 * 1024)
             .read_to_string()
             .map_err(|e| failed(e.to_string()))?;
-        let json = serde_json::from_str::<serde_json::Value>(crate::fsx::strip_bom(&text));
+        let json = serde_json::from_str::<serde_json::Value>(crate::common::fsx::strip_bom(&text));
         match json {
             Ok(value) if (200..300).contains(&status) => Ok(value),
             _ => Err(ApiError {

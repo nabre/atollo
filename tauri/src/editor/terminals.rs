@@ -27,8 +27,8 @@ use std::sync::Mutex;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::common::fsx::{read_json, write_json};
 use crate::env::KitEnv;
-use crate::fsx::{read_json, write_json};
 use crate::kit::Kit;
 use crate::setup::{Catalog, Component, Group};
 
@@ -121,7 +121,9 @@ fn load(kit: &Kit) -> Vec<Terminal> {
     for t in &mut all {
         if let Some(d) = &mut t.dir {
             if std::path::Path::new(d.as_str()).is_relative() {
-                *d = crate::fsx::join_rel(kit.root(), d).display().to_string();
+                *d = crate::common::fsx::join_rel(kit.root(), d)
+                    .display()
+                    .to_string();
             }
         }
     }
@@ -198,7 +200,7 @@ pub fn tools(kit: &Kit) -> Vec<ToolOption> {
 fn default_terminal(kit: &Kit, lang: &str) -> Terminal {
     Terminal {
         id: DEFAULT_ID.to_owned(),
-        name: crate::i18n::t(lang, "Tutti gli strumenti", &[]),
+        name: crate::common::i18n::t(lang, "Tutti gli strumenti", &[]),
         dir: None,
         tools: tools(kit).into_iter().map(|t| (t.id, None)).collect(),
     }
@@ -287,7 +289,7 @@ pub fn checked_dir(dir: &str, lang: &str) -> Result<PathBuf> {
     if !path.is_absolute() || !path.is_dir() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "La cartella {0} non esiste.", &[dir.trim()])
+            crate::common::i18n::t(lang, "La cartella {0} non esiste.", &[dir.trim()])
         );
     }
     Ok(path)
@@ -300,13 +302,13 @@ fn clean(input: Terminal, lang: &str) -> Result<Terminal> {
     if name.is_empty() {
         bail!(
             "{}",
-            crate::i18n::t(lang, "Scrivi un nome per il terminale.", &[])
+            crate::common::i18n::t(lang, "Scrivi un nome per il terminale.", &[])
         );
     }
     if name.chars().count() > NAME_MAX {
         bail!(
             "{}",
-            crate::i18n::t(
+            crate::common::i18n::t(
                 lang,
                 "Il nome del terminale è troppo lungo (al massimo {0} caratteri).",
                 &[&NAME_MAX.to_string()]
@@ -339,7 +341,7 @@ pub fn save(kit: &Kit, input: Terminal, lang: &str) -> Result<String> {
     if input.id == DEFAULT_ID {
         bail!(
             "{}",
-            crate::i18n::t(lang, "Il terminale predefinito non si modifica.", &[])
+            crate::common::i18n::t(lang, "Il terminale predefinito non si modifica.", &[])
         );
     }
     let mut terminal = clean(input, lang)?;
@@ -354,7 +356,7 @@ pub fn save(kit: &Kit, input: Terminal, lang: &str) -> Result<String> {
         let Some(existing) = all.iter_mut().find(|t| t.id == terminal.id) else {
             bail!(
                 "{}",
-                crate::i18n::t(lang, "Terminale non trovato: {0}", &[&terminal.id])
+                crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&terminal.id])
             );
         };
         *existing = terminal.clone();

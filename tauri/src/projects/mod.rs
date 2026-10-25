@@ -29,9 +29,9 @@ use std::time::UNIX_EPOCH;
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
 
+use crate::common::i18n::t as tr;
 use crate::detect::{self, Project};
 use crate::env::KitEnv;
-use crate::i18n::t as tr;
 use crate::kit::{validate_project_name, Kit};
 use crate::setup::Catalog;
 
@@ -322,7 +322,7 @@ pub fn delete(
     let databases = match databases_of(kit, name) {
         Ok(databases) => databases,
         Err(e) if force_without_db => {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "{name}: deleted without its databases, unknown ({e:#}): \
                  its databases and users may be left on the servers"
             ));
@@ -340,7 +340,7 @@ pub fn delete(
         if force_without_db {
             left.push(format!("{database} on {engine}"));
         } else if !dbs.installed(&engine) {
-            crate::log::info(&format!("{name}: {engine} not installed, skipped"));
+            crate::common::log::info(&format!("{name}: {engine} not installed, skipped"));
             left.push(format!("{database} on {engine}"));
         } else {
             dbs.drop_db(&engine, &database)
@@ -348,7 +348,7 @@ pub fn delete(
         }
     }
     if !left.is_empty() {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "{name}: databases and users left: {}",
             left.join(", ")
         ));
@@ -360,7 +360,7 @@ pub fn delete(
     // The users are gone (or given up): their passwords go too, even when
     // another file of the folder stayed.
     if let Err(e) = crate::db::auth::drop_project(kit, name) {
-        crate::log::warn(&format!("{name}: passwords: {e:#}"));
+        crate::common::log::warn(&format!("{name}: passwords: {e:#}"));
     }
     removed.with_context(|| format!("data\\projects\\{name}"))?;
     Ok(())

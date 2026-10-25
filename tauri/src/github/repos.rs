@@ -302,7 +302,7 @@ pub fn rename(
     let local = clones(kit).get(&full_name.to_ascii_lowercase()).cloned();
     if let Some(id) = &local {
         if let Err(e) = follow_rename(kit, env, &kit.projects().join(id), full_name, &repo.name) {
-            crate::log::warn(&format!("github: remotes of {id}: {e:#}"));
+            crate::common::log::warn(&format!("github: remotes of {id}: {e:#}"));
         }
     }
     repo.local = clones(kit)

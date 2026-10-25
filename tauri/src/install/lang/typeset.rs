@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{anyhow, Result};
 
 use super::{github_line_kind, github_stable, release_lines};
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::{github_single, target_of, Ctx, Installer, Release};
 use crate::kit::{Arch, Os, Target};
 use crate::net::archive::{Inner, Kind};
@@ -221,7 +221,7 @@ impl Installer for TinyTex {
         if let Some(list) = tlmgr_packages(ctx, old) {
             let file = tinytex_list(ctx);
             fs::create_dir_all(file.parent().unwrap_or(&file))?;
-            crate::fsx::write_atomic(&file, list.join("\n").as_bytes())?;
+            crate::common::fsx::write_atomic(&file, list.join("\n").as_bytes())?;
         }
         Ok(())
     }
@@ -251,9 +251,9 @@ impl Installer for TinyTex {
             .output()
             .is_ok_and(|o| o.status.success());
         if ok {
-            crate::log::info(&format!("TinyTeX: {} packages back", missing.len()));
+            crate::common::log::info(&format!("TinyTeX: {} packages back", missing.len()));
         } else {
-            crate::log::warn(&format!(
+            crate::common::log::warn(&format!(
                 "TinyTeX: packages not installed again ({}): tlmgr install them by hand",
                 missing.join(" ")
             ));

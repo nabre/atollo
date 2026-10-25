@@ -9,11 +9,11 @@ use std::sync::PoisonError;
 use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::common::fsx::{read_json, try_read_json, write_json};
+use crate::common::ports::is_port_free;
 use crate::detect::{self, set_site_with_options, SiteKind, SiteOptions};
 use crate::env::KitEnv;
-use crate::fsx::{read_json, try_read_json, write_json};
 use crate::kit::{validate_project_name, Kit};
-use crate::ports::is_port_free;
 
 use super::{
     AttachedSite, WebServerEngine, WebServerPool, WebServerProfileInput, WebServers, WebServersView,
@@ -48,7 +48,7 @@ pub(super) fn try_load_store(kit: &Kit) -> Result<StoredServers> {
 }
 
 /// The port of every pool, by id, as `servers.json` keeps them (read
-/// without `store_lock`, for [`crate::ports`]).
+/// without `store_lock`, for [`crate::common::ports`]).
 pub(crate) fn pool_ports(kit: &Kit) -> BTreeMap<String, u16> {
     load_store(kit).ports
 }
@@ -303,7 +303,7 @@ impl WebServers {
             .ports
             .values()
             .copied()
-            .chain(crate::ports::ports_taken(&self.kit).into_keys())
+            .chain(crate::common::ports::ports_taken(&self.kit).into_keys())
             .collect();
         // A free port no other pool has; failing that (every one taken by
         // other programs), one no other pool has, which the start reports
@@ -339,7 +339,7 @@ impl WebServers {
         let (mut store, readable) = match try_load_store(&self.kit) {
             Ok(store) => (store, true),
             Err(e) => {
-                crate::log::warn(&format!("{e:#}: left as it is"));
+                crate::common::log::warn(&format!("{e:#}: left as it is"));
                 (StoredServers::default(), false)
             }
         };
@@ -536,7 +536,7 @@ impl WebServers {
         if name.is_empty() {
             bail!(
                 "{}",
-                crate::i18n::t(lang, "Scrivi un nome per il profilo server.", &[])
+                crate::common::i18n::t(lang, "Scrivi un nome per il profilo server.", &[])
             );
         }
         let id = if input.id.trim().is_empty() {
@@ -555,14 +555,14 @@ impl WebServers {
         if id.is_empty() {
             bail!(
                 "{}",
-                crate::i18n::t(lang, "Identificativo del server non valido.", &[])
+                crate::common::i18n::t(lang, "Identificativo del server non valido.", &[])
             );
         }
         if let Some(p) = input.port {
             if p < 1024 {
                 bail!(
                     "{}",
-                    crate::i18n::t(lang, "Porta tra {0} e {1}", &["1024", "65535"])
+                    crate::common::i18n::t(lang, "Porta tra {0} e {1}", &["1024", "65535"])
                 );
             }
         }
@@ -583,10 +583,10 @@ impl WebServers {
             // second never starts and its sites answer from the first. Nor
             // one of a database version, of a project or of the editor
             // (BUG-V5-05): the pool, or that one, would not start.
-            crate::ports::refuse_taken(
+            crate::common::ports::refuse_taken(
                 &self.kit,
                 p,
-                |o| matches!(o, crate::ports::Owner::Pool(o) if *o == id),
+                |o| matches!(o, crate::common::ports::Owner::Pool(o) if *o == id),
                 lang,
             )?;
             store.ports.insert(id.clone(), p);
@@ -633,7 +633,7 @@ impl WebServers {
         if !crate::os::safe_path::is_dir(&self.kit.projects(), &proj_dir) {
             bail!(
                 "{}",
-                crate::i18n::t(lang, "Progetto non trovato: {0}", &[project])
+                crate::common::i18n::t(lang, "Progetto non trovato: {0}", &[project])
             );
         }
         let detected = detect::detect(&proj_dir, lang);
@@ -668,7 +668,7 @@ impl WebServers {
                 continue;
             }
             if let Err(e) = self.reload(&id, base_env, lang) {
-                crate::log::warn(&format!("server pool {id}: reload: {e:#}"));
+                crate::common::log::warn(&format!("server pool {id}: reload: {e:#}"));
                 failed.get_or_insert(e);
             }
         }

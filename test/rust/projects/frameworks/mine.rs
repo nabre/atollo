@@ -33,7 +33,7 @@ fn real_git_files() {
     let kit = Kit::at(PathBuf::from(root), Arch::detect());
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );

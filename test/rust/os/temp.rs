@@ -1,5 +1,5 @@
 use super::*;
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::kit::{tests::TempDir, Arch};
 use std::time::SystemTime;
 

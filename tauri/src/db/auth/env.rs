@@ -5,8 +5,8 @@ use std::path::Path;
 use anyhow::{bail, Result};
 use serde::Serialize;
 
+use crate::common::fsx::write_atomic;
 use crate::db::DbEngine;
-use crate::fsx::write_atomic;
 
 /// A project's connection to one of the kit's databases.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

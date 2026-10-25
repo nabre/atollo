@@ -14,12 +14,12 @@ use windows::Win32::System::Registry::{
 };
 
 use super::run;
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
+use crate::common::settings::Settings;
 use crate::install::{fetch, pattern, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::kit::Target;
 use crate::net::first_sha256;
 use crate::net::verify::Expect;
-use crate::settings::Settings;
 use crate::setup::Component;
 
 fn can_hard_link(dir: &Path) -> bool {
@@ -169,7 +169,7 @@ fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&P
         Ok(())
     })();
     if let Err(e) = result {
-        crate::log::warn(&format!(
+        crate::common::log::warn(&format!(
             "rustup wrote HKCU\\{RUSTUP_KEY}; remove it by hand ({e:#})"
         ));
     }

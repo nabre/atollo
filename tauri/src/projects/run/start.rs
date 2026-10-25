@@ -8,12 +8,12 @@ use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 
+use crate::common::i18n::t as tr;
+use crate::common::ports::responds;
+use crate::common::time::now_ms;
 use crate::detect::{self, Action, Kind};
 use crate::env::KitEnv;
-use crate::i18n::t as tr;
 use crate::os::jobs::{self, Job};
-use crate::ports::responds;
-use crate::time::now_ms;
 
 use super::output::{env_on_network, on_network};
 use super::{key_of, Entry, Event, RunInfo, Runner, State, PORT_FROM};

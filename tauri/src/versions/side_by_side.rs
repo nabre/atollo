@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 
-use crate::fsx::{join_rel, write_atomic};
+use crate::common::fsx::{join_rel, write_atomic};
 use crate::kit::Kit;
 use crate::setup::{Catalog, Component};
 
@@ -31,15 +31,15 @@ fn line_dirs(kit: &Kit, c: &Component) -> Vec<(String, PathBuf)> {
 
 pub fn refresh(kit: &Kit) {
     if let Err(e) = java(kit) {
-        crate::log::warn(&format!("JDKs for Gradle and Maven: {e:#}"));
+        crate::common::log::warn(&format!("JDKs for Gradle and Maven: {e:#}"));
     }
     if let Err(e) = dotnet(kit) {
-        crate::log::warn(&format!(".NET side by side: {e:#}"));
+        crate::common::log::warn(&format!(".NET side by side: {e:#}"));
     }
     // `make` for a C/C++ installed before the kit wrote it.
     let cc_bin = crate::setup::kit_path(kit, "cc/bin");
     if let Err(e) = crate::install::make_launchers(&cc_bin) {
-        crate::log::warn(&format!("make for C/C++: {e:#}"));
+        crate::common::log::warn(&format!("make for C/C++: {e:#}"));
     }
     // `kit-bin` for a Ruby, MongoDB or R environment installed before the
     // kit wrote it (D-125).

@@ -35,6 +35,6 @@ pub fn project_orphan_adopt<R: Runtime>(
     project_dir(&state.kit, Some(&project), state.lang())?;
     project_state::adopt(&state.kit, state.lang(), &orphan, &project).or_fail("adopt")?;
     runner.rename_project(&orphan, &project);
-    crate::log::info(&format!("data of {orphan} given to {project}"));
+    crate::common::log::info(&format!("data of {orphan} given to {project}"));
     Ok(())
 }

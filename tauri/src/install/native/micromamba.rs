@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 
 use super::run;
-use crate::fsx::join_rel;
+use crate::common::fsx::join_rel;
 use crate::install::lang::{is_release, version_key};
 use crate::install::{fetch, target_of, work_dir, Ctx, Progress, Release};
 use crate::kit::{Kit, Target};

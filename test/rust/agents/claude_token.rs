@@ -41,7 +41,7 @@ fn tokens() {
 fn kit_env(kit: &Kit) -> KitEnv {
     KitEnv::build(
         kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::from_pairs(std::iter::empty()),
     )
@@ -69,7 +69,7 @@ fn environment_with_and_without_token() {
     let env = claude_env(&kit);
     assert_eq!(env.get(VAR), Some(sample().as_str()));
     let mut printed = Vec::new();
-    crate::cli::print_env(&env, &mut printed).unwrap();
+    crate::app::cli::print_env(&env, &mut printed).unwrap();
     let printed = String::from_utf8(printed).unwrap();
     assert!(printed.contains(&format!("{VAR}=***\n")));
     assert!(!printed.contains(PREFIX));

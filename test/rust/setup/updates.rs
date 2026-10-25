@@ -14,7 +14,7 @@ fn real_check_of_a_kit() {
     let kit = Kit::at(std::path::PathBuf::from(root), Arch::detect());
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );
@@ -87,7 +87,7 @@ fn pending_updates() {
         ]
         .into(),
     };
-    crate::fsx::write_json(&file(&kit), &latest).unwrap();
+    crate::common::fsx::write_json(&file(&kit), &latest).unwrap();
     assert!(!stale(&kit));
     let list = pending(&kit);
     assert_eq!(list.checked, Some(latest.checked));

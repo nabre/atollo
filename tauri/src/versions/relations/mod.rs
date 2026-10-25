@@ -259,7 +259,7 @@ fn fingerprint(kit: &Kit, lang: &str) -> String {
         }
     }
     read(&crate::versions::offered_file(kit)).hash(&mut h);
-    crate::fsx::join_rel(kit.apps(), "tools/vcruntime/vcruntime140.dll")
+    crate::common::fsx::join_rel(kit.apps(), "tools/vcruntime/vcruntime140.dll")
         .is_file()
         .hash(&mut h);
     for (project, dir) in project_dirs(kit) {
@@ -310,7 +310,7 @@ pub fn build(kit: &Kit, lang: &str) -> Matrix {
         .collect();
     Matrix {
         fingerprint: fingerprint(kit, lang),
-        generated: crate::time::now_secs(),
+        generated: crate::common::time::now_secs(),
         platform: target.as_str().to_owned(),
         links: sorted_links(links(lang, &here)),
         runtimes: {
@@ -345,7 +345,7 @@ pub fn settle(kit: &Kit, lang: &str, project: &str) -> Vec<(String, String)> {
         if let Err(e) =
             crate::versions::set_project_choice(kit, project, &need.component, Some(line))
         {
-            crate::log::warn(&format!("{project}: {} {line}: {e:#}", need.component));
+            crate::common::log::warn(&format!("{project}: {} {line}: {e:#}", need.component));
             continue;
         }
         if need.status == NeedStatus::Download {
@@ -360,13 +360,13 @@ pub fn settle(kit: &Kit, lang: &str, project: &str) -> Vec<(String, String)> {
 pub fn matrix(kit: &Kit, lang: &str, force: bool) -> Result<Matrix> {
     let fp = fingerprint(kit, lang);
     if !force {
-        let saved = crate::fsx::read_json::<Matrix>(&file(kit));
+        let saved = crate::common::fsx::read_json::<Matrix>(&file(kit));
         if let Some(m) = saved.filter(|m| m.fingerprint == fp) {
             return Ok(m);
         }
     }
     let m = build(kit, lang);
-    crate::fsx::write_json(&file(kit), &m)?;
+    crate::common::fsx::write_json(&file(kit), &m)?;
     Ok(m)
 }
 

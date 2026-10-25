@@ -74,7 +74,7 @@ pub fn label(name: &str) -> String {
 }
 
 fn tr(lang: &str, source: &str) -> String {
-    crate::i18n::t(lang, source, &[])
+    crate::common::i18n::t(lang, source, &[])
 }
 
 /// The menu of the icon, changed in place: replacing it while it is open
@@ -146,13 +146,13 @@ fn current<R: Runtime>(app: &AppHandle<R>) -> Spec {
 /// (a Linux desktop without the AppIndicator library) only goes to the log.
 pub fn create<R: Runtime>(app: &AppHandle<R>) {
     if !available() {
-        crate::log::warn("tray: no AppIndicator library, no icon");
+        crate::common::log::warn("tray: no AppIndicator library, no icon");
         return;
     }
     let (shown, menu) = match Shown::new(app, current(app)) {
         Ok(made) => made,
         Err(e) => {
-            crate::log::warn(&format!("tray: menu: {e}"));
+            crate::common::log::warn(&format!("tray: menu: {e}"));
             return;
         }
     };
@@ -171,7 +171,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
         Ok(_) => {
             app.manage(shown);
         }
-        Err(e) => crate::log::warn(&format!("tray: {e}")),
+        Err(e) => crate::common::log::warn(&format!("tray: {e}")),
     }
 }
 
@@ -187,7 +187,7 @@ pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     // One change at a time, on the thread that owns the menu.
     let handle = app.clone();
     if let Err(e) = app.run_on_main_thread(move || refresh_here(&handle)) {
-        crate::log::warn(&format!("tray: menu: {e}"));
+        crate::common::log::warn(&format!("tray: menu: {e}"));
     }
 }
 
@@ -202,7 +202,7 @@ fn refresh_here<R: Runtime>(app: &AppHandle<R>) {
         return;
     }
     if let Err(e) = shown.update(app, &spec, &next) {
-        crate::log::warn(&format!("tray: menu: {e}"));
+        crate::common::log::warn(&format!("tray: menu: {e}"));
     }
     *spec = next;
 }
@@ -231,7 +231,7 @@ fn on_menu<R: Runtime>(app: &AppHandle<R>, id: &str) {
         Some(Action::Quit) => {
             if let Some(window) = show_main(app) {
                 if let Err(e) = window.close() {
-                    crate::log::warn(&format!("tray: quit: {e}"));
+                    crate::common::log::warn(&format!("tray: quit: {e}"));
                 }
             }
         }
@@ -290,5 +290,5 @@ fn available() -> bool {
 }
 
 #[cfg(test)]
-#[path = "../../test/rust/tray.rs"]
+#[path = "../../../test/rust/app/tray.rs"]
 mod tests;

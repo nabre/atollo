@@ -65,7 +65,7 @@ fn real_phpmyadmin_on_running_mysql() {
     let kit = Kit::at(PathBuf::from(root), crate::kit::Arch::detect());
     let env = KitEnv::build(
         &kit,
-        &crate::settings::Settings::default(),
+        &crate::common::settings::Settings::default(),
         "en",
         &crate::env::Host::capture(),
     );
