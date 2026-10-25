@@ -3,7 +3,7 @@
 // saves a token pasted by hand.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { AgentInfo } from "@/api";
+import type { AgentInfo } from "@/ipc";
 import { TokenLink, tokenOffered } from "@/agents/token";
 import { invoke } from "@test/support/tauri";
 

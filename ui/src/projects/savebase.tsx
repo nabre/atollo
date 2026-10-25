@@ -3,7 +3,7 @@
 // (.gitignore respected), never .env; the top folders and files can be left
 // out one by one.
 import { useCallback, useState } from "react";
-import { projectBasePreview, projectSaveBase, type BaseEntry } from "../api";
+import { projectBasePreview, projectSaveBase, type BaseEntry } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

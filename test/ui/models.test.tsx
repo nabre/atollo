@@ -3,7 +3,7 @@
 // Pi's model, the server's state after «Avvia».
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "@/api/llm";
+import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "@/ipc/llm";
 import { AiPage } from "@/ai";
 import { fitOf } from "@/models";
 import { invoke } from "@test/support/tauri";

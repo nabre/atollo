@@ -17,7 +17,7 @@ import {
   type LineInfo,
   type ServiceInfo,
   type ServiceState,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import { ActionButton, ErrorLine, portRangeText, usePortField } from "../shared/common";

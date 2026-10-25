@@ -3,7 +3,7 @@
 // workbench/.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
-import type { EditorStatus } from "../api";
+import type { EditorStatus } from "../ipc";
 import { t } from "../i18n";
 import { Button, codicon, IconButton, Notice, type MenuTrigger } from "../workbench";
 

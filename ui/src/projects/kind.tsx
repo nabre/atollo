@@ -1,7 +1,7 @@
 // What a project is (how it starts, its languages) and its state, as the
 // icons and marks of its row and of its page.
 import type { IconType } from "react-icons";
-import type { ProjectAction, ProjectInfo, RunInfo } from "../api";
+import type { ProjectAction, ProjectInfo, RunInfo } from "../ipc";
 import { t } from "../i18n";
 import { LanguageIcon } from "../shared/logos";
 import { Mark } from "../shared/tags";

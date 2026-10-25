@@ -2,7 +2,7 @@
 // the last one read, so the page and the projects' agent buttons stay.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import type { AgentInfo } from "@/api";
+import type { AgentInfo } from "@/ipc";
 import { useAgents } from "@/agents";
 import { invoke } from "@test/support/tauri";
 

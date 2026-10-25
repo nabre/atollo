@@ -2,7 +2,7 @@
 // data\projects\<project>\private\backups, restore one of them (a file from elsewhere is
 // copied into that folder first: the app has no file picker, D-15).
 import { useCallback, useState } from "react";
-import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "../api";
+import { folderOpen, projectBackups, projectDbExport, projectDbRestore, type Backup } from "../ipc";
 import { t } from "../i18n";
 import { formatBytes } from "../shared/format";
 import { ActionButton, ErrorLine } from "../shared/common";

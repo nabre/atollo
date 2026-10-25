@@ -1,7 +1,7 @@
 // A repository opened in the list: its facts, its address, rename and
 // delete on GitHub.
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
-import { githubDelete, githubRename, type GithubRepo } from "../api";
+import { githubDelete, githubRename, type GithubRepo } from "../ipc";
 import { useAction, useCopy } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { locale, t } from "../i18n";

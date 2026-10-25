@@ -476,7 +476,7 @@ fn unavailable_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert_eq!(e, "android is not available on linux-arm64");
-    let msg = crate::commands::unavailable_msg(
+    let msg = crate::ipc::unavailable_msg(
         "en",
         "Android SDK",
         Target::LINUX_ARM64,

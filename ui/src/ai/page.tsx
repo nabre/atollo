@@ -4,7 +4,7 @@
 // shows the row chosen in either. What is installed comes from Tools, as
 // for every component; agents open in a project, from Projects.
 import { useState } from "react";
-import type { AgentId } from "../api";
+import type { AgentId } from "../ipc";
 import { AgentEditor, AgentsPane, SHARED, SharedEditor, useAgents, useStats } from "../agents";
 import type { GuideTopicId } from "../guide";
 import { t } from "../i18n";

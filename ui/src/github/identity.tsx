@@ -3,7 +3,7 @@
 // GitHub's noreply address; changed here, each field saved when it loses
 // the focus.
 import { useState } from "react";
-import { gitIdentityGet, gitIdentitySet, type GitIdentity } from "../api";
+import { gitIdentityGet, gitIdentitySet, type GitIdentity } from "../ipc";
 import { ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { t } from "../i18n";

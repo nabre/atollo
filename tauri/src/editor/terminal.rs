@@ -62,14 +62,14 @@ fn open<R: Runtime>(
     program: Option<&Path>,
     on_exit: Box<dyn FnOnce() + Send>,
 ) -> Result<()> {
-    let main = crate::commands::MAIN;
+    let main = crate::ipc::MAIN;
     let launch = match program {
         None => pty::shell(kit, dir),
         Some(command) => pty::command(kit, command, dir),
     };
     let (out, end) = (app.clone(), app.clone());
     let lang = app
-        .try_state::<crate::commands::AppState>()
+        .try_state::<crate::ipc::AppState>()
         .map_or("it", |s| s.lang());
     app.state::<Consoles>().ptys.open(
         &launch,
@@ -79,7 +79,7 @@ fn open<R: Runtime>(
         // Told before the session's first output or its exit.
         |info| {
             crate::log::info(&format!("terminal {}: {}", info.id, info.title));
-            let _ = app.emit_to(main, pty::OPENED_EVENT, info);
+            let _ = app.emit_to(main, crate::ipc::events::PTY_OPENED, info);
         },
         move |id, chunk| emit_output(&out, id, chunk),
         move |info| {
@@ -94,15 +94,15 @@ fn open<R: Runtime>(
 /// the one that listens (the view that shows it) receives it. Every session
 /// goes through here, since any of them can be detached (D-149).
 pub fn emit_output<R: Runtime>(app: &AppHandle<R>, id: u64, chunk: &pty::Chunk) {
-    let event = pty::output_event(id);
-    let _ = app.emit_to(crate::commands::MAIN, &event, chunk);
+    let event = crate::ipc::events::pty_output(id);
+    let _ = app.emit_to(crate::ipc::MAIN, &event, chunk);
     let _ = app.emit_to(label(id).as_str(), &event, chunk);
 }
 
 /// A session's end, to the panel and to the session's own window.
 pub fn emit_exit<R: Runtime>(app: &AppHandle<R>, info: &pty::PtyInfo) {
-    let _ = app.emit_to(crate::commands::MAIN, pty::EXIT_EVENT, info);
-    let _ = app.emit_to(label(info.id).as_str(), pty::EXIT_EVENT, info);
+    let _ = app.emit_to(crate::ipc::MAIN, crate::ipc::events::PTY_EXIT, info);
+    let _ = app.emit_to(label(info.id).as_str(), crate::ipc::events::PTY_EXIT, info);
 }
 
 /// Runs `command` (an agent, or a `.cmd` wrapper) in a new session of the
@@ -161,7 +161,7 @@ pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
     }
     let ptys = &app.state::<Consoles>().ptys;
     let info = ptys.info(id)?;
-    let state = app.state::<crate::commands::AppState>();
+    let state = app.state::<crate::ipc::AppState>();
     let lang = serde_json::to_string(state.lang())?;
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("terminal.html".into()))
         .title(format!("{} - Atollo", info.title))
@@ -181,7 +181,7 @@ pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
     // F5, Ctrl+F, Ctrl+P... go to the program, as in the panel (D-148).
     super::window::quiet_webview(&window, "terminal");
     let info = ptys.set_detached(id, true)?;
-    let _ = app.emit_to(crate::commands::MAIN, pty::MOVED_EVENT, &info);
+    let _ = app.emit_to(crate::ipc::MAIN, crate::ipc::events::PTY_MOVED, &info);
     Ok(())
 }
 
@@ -189,7 +189,7 @@ pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
 /// it, and closes its window.
 pub fn dock<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
     let info = app.state::<Consoles>().ptys.set_detached(id, false)?;
-    let _ = app.emit_to(crate::commands::MAIN, pty::MOVED_EVENT, &info);
+    let _ = app.emit_to(crate::ipc::MAIN, crate::ipc::events::PTY_MOVED, &info);
     if let Some(window) = app.get_webview_window(&label(id)) {
         let _ = window.close();
     }
@@ -217,7 +217,7 @@ pub fn closed<R: Runtime>(app: &AppHandle<R>, window: &str) {
     let handle = app.clone();
     std::thread::spawn(move || {
         if ptys.close(id, pty::GRACE).is_ok() {
-            let _ = handle.emit_to(crate::commands::MAIN, pty::CLOSED_EVENT, id);
+            let _ = handle.emit_to(crate::ipc::MAIN, crate::ipc::events::PTY_CLOSED, id);
         }
     });
 }

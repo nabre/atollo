@@ -20,7 +20,7 @@ import {
   type ProjectInfo,
   type RunInfo,
   type ServiceInfo,
-} from "../api";
+} from "../ipc";
 import type { Running } from "./activity";
 import { useLoad } from "../shared/hooks";
 import { t } from "../i18n";

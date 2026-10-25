@@ -1,7 +1,7 @@
 // Quick Open of Projects (Ctrl+P), as the editor's: a box at the top of the
 // window, a project found by its name, platform or languages, Enter opens its
 // page, Shift+Enter starts it; under the projects, the ways to make a new one.
-import type { ProjectInfo, RunInfo } from "../api";
+import type { ProjectInfo, RunInfo } from "../ipc";
 import { t } from "../i18n";
 import { Palette, type PaletteItem } from "../shared/palette";
 import { codicon } from "../workbench";

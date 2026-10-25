@@ -10,7 +10,7 @@ import {
   type StatsReport,
   type Tokens,
   type Usage,
-} from "../api";
+} from "../ipc";
 import { locale, t } from "../i18n";
 import { ActionButton } from "../shared/common";
 import { Badge } from "../shared/tags";

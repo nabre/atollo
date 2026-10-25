@@ -2,8 +2,8 @@
 // its pool (name_sites), not `<project>.localhost` written by the page.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { ProjectAction, ProjectInfo } from "@/api";
-import type { AttachedSite, WebServersView } from "@/api/servers";
+import type { ProjectAction, ProjectInfo } from "@/ipc";
+import type { AttachedSite, WebServersView } from "@/ipc/servers";
 import { SiteForm } from "@/projects/site";
 import { invoke } from "@test/support/tauri";
 

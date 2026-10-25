@@ -1,7 +1,7 @@
 // A project's editor settings, in its .vscode\settings.json (DECISIONS.md
 // D-78): format on save, indentation, folders hidden in the editor.
 import { useCallback, useState, type SyntheticEvent } from "react";
-import { projectEditorSettings, projectEditorSettingsSet, type EditorSettings, type EditorSettingsView } from "../api";
+import { projectEditorSettings, projectEditorSettingsSet, type EditorSettings, type EditorSettingsView } from "../ipc";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine, LoadError, useRetryFocus } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";

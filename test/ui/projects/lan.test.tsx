@@ -2,7 +2,7 @@
 // modules, shown on demand, and nothing when «Rete locale» is off.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { LanLink } from "@/api";
+import type { LanLink } from "@/ipc";
 import { LanAddress, QrCode, useLanLink } from "@/projects/lan";
 import { invoke } from "@test/support/tauri";
 

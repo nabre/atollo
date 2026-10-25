@@ -282,7 +282,7 @@ pub fn launch<R: tauri::Runtime>(
 /// line); a failure is logged, the agent opens anyway.
 fn start_local_models<R: tauri::Runtime>(app: &tauri::AppHandle<R>, lang: &str) {
     use tauri::Manager;
-    let Some(state) = app.try_state::<crate::commands::AppState>() else {
+    let Some(state) = app.try_state::<crate::ipc::AppState>() else {
         return;
     };
     if let Err(e) = state.llm.start(&state.env(), lang) {
@@ -451,7 +451,7 @@ impl Closing {
 /// The `Closing` of the app, if it runs (`None` in the command line).
 fn closing_of<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Closing {
     use tauri::Manager;
-    app.try_state::<crate::commands::AppState>()
+    app.try_state::<crate::ipc::AppState>()
         .map(|s| s.closing.clone())
         .unwrap_or_default()
 }

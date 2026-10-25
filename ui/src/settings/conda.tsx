@@ -3,7 +3,7 @@
 // network after the kit moves (DECISIONS.md D-118): the setting, the space
 // they take and «Libera». Only on a system where some component cannot
 // follow the kit.
-import { condaKept, condaKeptFree, type CondaKept, type Settings } from "../api";
+import { condaKept, condaKeptFree, type CondaKept, type Settings } from "../ipc";
 import { t } from "../i18n";
 import { megabytes } from "../shared/format";
 import { ActionButton, ErrorLine } from "../shared/common";

@@ -22,7 +22,7 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
-} from "../api";
+} from "../ipc";
 import { AgentButtons } from "../agents";
 import { groupOf, useFrameworks } from "../frameworks";
 import { GithubRepositories } from "../github";

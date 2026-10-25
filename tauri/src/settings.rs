@@ -70,7 +70,7 @@ pub struct Settings {
     pub keep_conda_packages: bool,
     /// The system the Tools page shows (`linux-x64`, `darwin-arm64`…),
     /// chosen last there with «Piattaforma» (D-121); `None` = this PC's.
-    /// Only `commands::setup::tools_target_set` writes it: the Settings
+    /// Only `ipc::setup::tools_target_set` writes it: the Settings
     /// page keeps it as it is.
     pub tools_target: Option<String>,
     /// Keys of a newer version, kept as they are.

@@ -3,7 +3,7 @@
 // steps, tips, the folded technical part, links between topics and to the
 // app's pages, flows, tables and quick folder openers.
 import { createContext, useContext, useId, useRef, useState } from "react";
-import { folderOpen } from "../api";
+import { folderOpen } from "../ipc";
 import { useCopy } from "../shared/hooks";
 import { lang } from "../i18n";
 import { Tag } from "../shared/tags";

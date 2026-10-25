@@ -2,7 +2,7 @@
 // with what each one holds, "Collega a…" and "Elimina".
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { Holdings, ProjectInfo } from "@/api";
+import type { Holdings, ProjectInfo } from "@/ipc";
 import { Orphans } from "@/projects/orphans";
 import { invoke } from "@test/support/tauri";
 

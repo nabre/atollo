@@ -2,7 +2,7 @@
 // facts of the Il kit group (D-90).
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SAMPLE_INFO, SAMPLE_SETTINGS, type AppInfo } from "@/api";
+import { SAMPLE_INFO, SAMPLE_SETTINGS, type AppInfo } from "@/ipc";
 import { KitInfo } from "@/settings/about";
 import { GeneralSettings } from "@/settings/sections";
 

@@ -19,7 +19,7 @@ import {
   type ServiceState,
   type SetupSnapshot,
   type WebServerPool,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { alive, stateText } from "../projects";
 import { SetupProgress, setupStatusText } from "../components/setup";

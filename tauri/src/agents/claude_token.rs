@@ -264,7 +264,7 @@ pub fn link<R: tauri::Runtime>(
     env.remove(VAR);
     let scan = Arc::new(Mutex::new(TokenScan::default()));
     let (fed, out, end, after) = (Arc::clone(&scan), app.clone(), app.clone(), kit.clone());
-    let main = crate::commands::MAIN;
+    let main = crate::ipc::MAIN;
     app.state::<crate::editor::terminal::Consoles>().ptys.open(
         &launch,
         &env,
@@ -272,7 +272,7 @@ pub fn link<R: tauri::Runtime>(
         lang,
         |info| {
             crate::log::info(&format!("terminal {}: {}", info.id, info.title));
-            let _ = app.emit_to(main, pty::OPENED_EVENT, info);
+            let _ = app.emit_to(main, crate::ipc::events::PTY_OPENED, info);
         },
         move |id, chunk| {
             fed.lock()

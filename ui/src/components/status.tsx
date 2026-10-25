@@ -6,7 +6,7 @@
 // shown it adds what the page knows only there: the preparation under way
 // (queued, download) and the choice waiting for "Apply".
 import type { IconType } from "react-icons";
-import type { ComponentInfo, TargetToolStatus } from "../api";
+import type { ComponentInfo, TargetToolStatus } from "../ipc";
 import { t } from "../i18n";
 import type { ItemState } from "./setup";
 import { cellReason } from "./targets";

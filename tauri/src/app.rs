@@ -6,10 +6,10 @@ use std::path::Path;
 
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
-use crate::commands::{AppState, MAIN};
+use crate::ipc::{AppState, MAIN};
 use crate::kit::Kit;
 use crate::settings::Settings;
-use crate::{agents, commands, editor, github, llm, log, net, os, projects, setup, tray};
+use crate::{agents, editor, github, ipc, llm, log, net, os, projects, setup, tray};
 
 /// The app's context, expanded once for the app and its tests: on macOS
 /// `generate_context!` embeds the Info.plist under a global symbol, so a
@@ -27,7 +27,7 @@ pub(crate) fn build_app<R: tauri::Runtime>(
     builder
         .manage(state)
         .manage(editor::terminal::Consoles::default())
-        .manage(commands::Quitting::default())
+        .manage(ipc::Quitting::default())
         .invoke_handler(crate::command_handler!())
         .on_window_event(|window, event| {
             if window.label().starts_with(editor::window::LABEL_PREFIX)
@@ -60,7 +60,7 @@ pub(crate) fn build_app<R: tauri::Runtime>(
             // With something open, the interface asks before closing.
             if window.label() == MAIN {
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    commands::on_main_close(window, api);
+                    ipc::on_main_close(window, api);
                 }
             }
             // Closing the app window ends the session: editor windows,
@@ -126,7 +126,7 @@ pub(crate) fn build_app<R: tauri::Runtime>(
             app.manage(std::sync::Arc::new(projects::run::Runner::new(
                 kit.clone(),
                 std::sync::Arc::new(move |e: projects::run::Event| {
-                    let _ = events.emit_to(MAIN, "run", e);
+                    let _ = events.emit_to(MAIN, ipc::events::RUN, e);
                 }),
             )));
             app.manage(std::sync::Arc::new(github::Login::default()));
@@ -170,14 +170,14 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                 std::thread::spawn(move || {
                     // After the start, not competing with it.
                     std::thread::sleep(std::time::Duration::from_secs(10));
-                    commands::versions::refresh_stale_lines(&lines_kit, &env, token.clone());
+                    ipc::versions::refresh_stale_lines(&lines_kit, &env, token.clone());
                     // The new versions of what is installed (N-9): at most
                     // once a day, only with «Aggiornamento automatico» on.
                     let auto = Settings::load(&lines_kit).settings.auto_update;
                     if auto && setup::updates::stale(&lines_kit) {
                         match setup::updates::check(&lines_kit, &env, token) {
                             Ok(_) => {
-                                let _ = events.emit_to(MAIN, "updates", ());
+                                let _ = events.emit_to(MAIN, ipc::events::UPDATES, ());
                             }
                             Err(e) => log::warn(&format!("new versions: {e:#}")),
                         }
@@ -236,7 +236,7 @@ pub(crate) fn start_missing_required<R: tauri::Runtime>(app: &tauri::AppHandle<R
     let state = app.state::<AppState>();
     if let Err(e) = state
         .setup
-        .start(opts, true, commands::setup_notify(app.clone()))
+        .start(opts, true, ipc::setup_notify(app.clone()))
     {
         log::warn(&format!("automatic setup: {e}"));
     }

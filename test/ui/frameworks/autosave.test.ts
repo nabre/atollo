@@ -2,7 +2,7 @@
 // a moment after the last edit, or when Settings closes before that.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
-import type { FrameworkPiece, FrameworksView } from "@/api";
+import type { FrameworkPiece, FrameworksView } from "@/ipc";
 import { useFrameworks, useFrameworksAutosave } from "@/frameworks";
 import { useAction } from "@/shared/hooks";
 import { invoke } from "@test/support/tauri";

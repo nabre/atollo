@@ -4,7 +4,7 @@
 // shown when the window is closed with something open (CloseDialog).
 import { useState } from "react";
 
-import { appQuit, ejectList, ejectRun, type OpenNow } from "../api";
+import { appQuit, ejectList, ejectRun, type OpenNow } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { Codicon, codicon, ConfirmDialog, EditorBody, EditorSection, Notice, SingleEditor } from "../workbench";

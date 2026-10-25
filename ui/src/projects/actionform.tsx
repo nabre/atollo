@@ -2,7 +2,7 @@
 // in the project's panel.json. A detected action saved with its own id is
 // corrected by it (the one in panel.json takes its place).
 import { useState, type SyntheticEvent } from "react";
-import { projectActionSave, type ActionEdit, type ActionKind, type ProjectAction, type ProjectInfo } from "../api";
+import { projectActionSave, type ActionEdit, type ActionKind, type ProjectAction, type ProjectInfo } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction } from "../shared/hooks";
 import { t } from "../i18n";

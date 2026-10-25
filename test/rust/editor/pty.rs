@@ -101,11 +101,6 @@ fn agents_run_directly_with_bash_as_shell() {
     assert_eq!(agy.program, Path::new("/k/agy.cmd"));
 }
 
-#[test]
-fn output_events_are_named_by_session() {
-    assert_eq!(output_event(7), "pty://7");
-}
-
 /// What a fake PTY was asked to do.
 #[derive(Default)]
 struct Calls {

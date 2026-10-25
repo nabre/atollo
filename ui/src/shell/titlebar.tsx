@@ -9,56 +9,15 @@
 // titleBar.border (TitlebarPart.updateStyles), the bar is one with the
 // workbench's color.
 import { useEffect, useState } from "react";
-import { getCurrentWindow, type Window } from "@tauri-apps/api/window";
-import { browserPreview } from "../api";
+import { browserPreview, watchMaximized, windowClose, windowMinimize, windowToggleMaximize } from "../ipc";
 import { t } from "../i18n";
 import { BrandWordmark } from "../shared/brand";
 import { Badge } from "../shared/tags";
 import { Codicon } from "../workbench";
 
-/** The window, or null in the browser preview and in the tests. */
-function current(): Window | null {
-  if (browserPreview) return null;
-  try {
-    return getCurrentWindow();
-  } catch {
-    return null;
-  }
-}
-
-function act(f: (w: Window) => Promise<void>) {
-  const w = current();
-  if (w) f(w).catch(() => undefined);
-}
-
 export function TitleBar({ title }: { title: string | undefined }) {
   const [maximized, setMaximized] = useState(false);
-  useEffect(() => {
-    const w = current();
-    if (!w) return;
-    let stop: (() => void) | null = null;
-    let gone = false;
-    const read = () => {
-      w.isMaximized().then(
-        (m) => {
-          if (!gone) setMaximized(m);
-        },
-        () => undefined,
-      );
-    };
-    read();
-    w.onResized(read).then(
-      (f) => {
-        if (gone) f();
-        else stop = f;
-      },
-      () => undefined,
-    );
-    return () => {
-      gone = true;
-      stop?.();
-    };
-  }, []);
+  useEffect(() => watchMaximized(setMaximized), []);
   const button =
     "flex h-full w-vsc-window-control items-center justify-center text-vsc-titlebar-fg hover:bg-vsc-toolbar-hover focus-visible:bg-vsc-toolbar-hover";
   return (
@@ -82,7 +41,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
         title={t("Riduci a icona")}
         className={button}
         onClick={() => {
-          act((w) => w.minimize());
+          windowMinimize();
         }}
       >
         <Codicon name="chrome-minimize" size={16} />
@@ -93,7 +52,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
         title={maximized ? t("Ripristina") : t("Ingrandisci")}
         className={button}
         onClick={() => {
-          act((w) => w.toggleMaximize());
+          windowToggleMaximize();
         }}
       >
         {maximized ? <Codicon name="chrome-restore" size={16} /> : <Codicon name="chrome-maximize" size={16} />}
@@ -105,8 +64,7 @@ export function TitleBar({ title }: { title: string | undefined }) {
         // VSCodium's close hover, a fixed color in its CSS: not a theme color.
         className="flex h-full w-vsc-window-control items-center justify-center text-vsc-titlebar-fg hover:bg-[rgba(232,17,35,0.9)] hover:text-white focus-visible:bg-[rgba(232,17,35,0.9)] focus-visible:text-white"
         onClick={() => {
-          // Same path as the Windows button: the app asks first if something is open.
-          act((w) => w.close());
+          windowClose();
         }}
       >
         <Codicon name="chrome-close" size={16} />

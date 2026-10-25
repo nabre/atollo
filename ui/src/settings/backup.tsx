@@ -12,7 +12,7 @@ import {
   kitImportPending,
   type KitCopy,
   type KitExported,
-} from "../api";
+} from "../ipc";
 import { ErrorLine } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";
 import { locale, t } from "../i18n";

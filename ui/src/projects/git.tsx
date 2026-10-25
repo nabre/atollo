@@ -1,7 +1,7 @@
 // The Git section of a project's page: its state, read from .git.
 import { ActionButton } from "../shared/common";
 import { t } from "../i18n";
-import { urlOpen, type ProjectStatus } from "../api";
+import { urlOpen, type ProjectStatus } from "../ipc";
 import { codicon, EditorSection, Properties } from "../workbench";
 
 export function Git({ status }: { status: ProjectStatus | null }) {

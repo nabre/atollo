@@ -1,7 +1,7 @@
 // The lines of a tool as the lists show them, and the hooks that keep them
 // current: the sources asked once a day, a reload after every download.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { versionsAvailable, type SetupSnapshot, type VersionedTool } from "../api";
+import { versionsAvailable, type SetupSnapshot, type VersionedTool } from "../ipc";
 
 /** A list older than this (seconds) is asked again. */
 const STALE = 24 * 60 * 60;

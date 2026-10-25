@@ -9,11 +9,9 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 
-use crate::commands::{AppState, MAIN};
+use crate::ipc::{events, AppState, MAIN};
 
 const TRAY: &str = "atollo";
-/// The event that opens a project's page in the interface (its id).
-pub const OPEN_PROJECT: &str = "open-project";
 /// The most recent projects in the menu; the others are a Ctrl+P away.
 pub const MAX_PROJECTS: usize = 20;
 
@@ -225,7 +223,7 @@ fn on_menu<R: Runtime>(app: &AppHandle<R>, id: &str) {
         }
         Some(Action::Open(project)) => {
             if show_main(app).is_some() {
-                let _ = app.emit_to(MAIN, OPEN_PROJECT, project);
+                let _ = app.emit_to(MAIN, events::OPEN_PROJECT, project);
             }
         }
         // The window's close, as its title bar's «Chiudi»: with something

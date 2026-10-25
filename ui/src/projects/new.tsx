@@ -3,7 +3,7 @@
 // CMS in four groups, Web, CMS, App and Altro, by category), each opening
 // its procedure in the «Nuovo progetto» tab of the editor.
 import { useState, type ReactNode, type SyntheticEvent } from "react";
-import { projectClone, projectCreate, type FrameworkPiece } from "../api";
+import { projectClone, projectCreate, type FrameworkPiece } from "../ipc";
 import { basesByGroup, PieceLogo, textOf, type Frameworks, type GroupId } from "../frameworks";
 import { useAction } from "../shared/hooks";
 import { ErrorLine } from "../shared/common";

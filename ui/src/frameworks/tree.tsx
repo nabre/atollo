@@ -3,7 +3,7 @@
 // go with it by slot, each one opening what it does with that base; then
 // all the additions by slot and the trial of a combination.
 import { useState, type ReactNode } from "react";
-import type { FrameworkPiece } from "../api";
+import type { FrameworkPiece } from "../ipc";
 import { t } from "../i18n";
 import { Codicon, List, ListRow } from "../workbench";
 import {

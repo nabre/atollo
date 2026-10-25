@@ -2,7 +2,7 @@
 // «Aggiorna», «Controlla ora», read again when a preparation ends.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { SAMPLE_UPDATES, type Updates } from "@/api";
+import { SAMPLE_UPDATES, type Updates } from "@/ipc";
 import { UpdatesPane } from "@/components/updates";
 import { invoke } from "@test/support/tauri";
 

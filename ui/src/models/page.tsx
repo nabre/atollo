@@ -28,7 +28,7 @@ import {
   type ModelsView,
   type PullEvent,
   type ServiceState,
-} from "../api";
+} from "../ipc";
 import { locale, t } from "../i18n";
 import { gb } from "../shared/format";
 import { ComponentLogo } from "../shared/logos";

@@ -2,7 +2,7 @@
 // Altro): the quick panel's blocks and the side bar's tree.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import type { FrameworkPiece } from "@/api";
+import type { FrameworkPiece } from "@/ipc";
 import { basesByGroup, type Frameworks } from "@/frameworks";
 import { ProjectsHome, type HomeHandlers } from "@/projects/home";
 import { NewProjectTree } from "@/projects/new";

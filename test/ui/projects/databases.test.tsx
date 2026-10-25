@@ -3,7 +3,7 @@
 // versions to move to; the section is read again when the install ends.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SAMPLE_SETUP, type ProjectDatabases, type ProjectInfo, type SetupSnapshot } from "@/api";
+import { SAMPLE_SETUP, type ProjectDatabases, type ProjectInfo, type SetupSnapshot } from "@/ipc";
 import { Databases } from "@/projects/databases";
 import { invoke } from "@test/support/tauri";
 

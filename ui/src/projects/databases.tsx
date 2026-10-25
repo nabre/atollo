@@ -1,7 +1,7 @@
 // The Database section of a project's page: its own database and user on
 // the kit's servers, written in .env, and their copies.
 import { useRef, useState } from "react";
-import type { ProjectInfo } from "../api";
+import type { ProjectInfo } from "../ipc";
 import { useAction, useCopy, useSubscription } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { t } from "../i18n";
@@ -18,7 +18,7 @@ import {
   type EnvChange,
   type ProjectDatabases,
   type ProjectDb,
-} from "../api";
+} from "../ipc";
 import { SecretField } from "../databases";
 import { DatabaseCopies } from "../databases";
 import { codicon, DataTable, EditorSection, Notice, Properties, Select } from "../workbench";

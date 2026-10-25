@@ -3,7 +3,7 @@
 // compiler on Rust's page in Tools (D-137). Each change is saved as it is made (D-137);
 // the first-start page shows some of them too (setup.tsx).
 import { LANGS, t } from "../i18n";
-import type { Settings } from "../api";
+import type { Settings } from "../ipc";
 import { CheckboxLabel, Select, SettingItem, SettingsGroup, TextField } from "../workbench";
 import { CondaSettings } from "./conda";
 

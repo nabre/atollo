@@ -10,7 +10,7 @@ import {
   type ExtensionsMatrix,
   type ProjectExtension,
   type ProjectInfo,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo, LanguageLogo } from "../shared/logos";
 import { ActionButton, ErrorLine, LoadError } from "../shared/common";

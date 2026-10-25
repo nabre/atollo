@@ -5,7 +5,7 @@
 // session opens. A tab moves into a window of its own (D-149), and comes
 // back from it.
 import { useState } from "react";
-import type { PtyBackend, PtyInfo } from "./api";
+import type { PtyBackend, PtyInfo } from "../ipc/pty";
 import type { Terminals } from "./state";
 import { TerminalView } from "./view";
 import { t } from "../i18n";

@@ -82,7 +82,7 @@ pub fn unavailable_msg(lang: &str, name: &str, target: Target, host: Target) -> 
 }
 
 /// [`unavailable_message`] with Rosetta 2 probed on this host: for
-/// `commands::ensure` and `Atollo components` (cli.rs).
+/// `ipc::ensure` and `Atollo components` (cli.rs).
 pub fn unavailable_message_on_host(c: &Component, target: Target, lang: &str) -> Option<String> {
     let no_rosetta = c.is_available_on(target) && super::target::rosetta_missing_on_host(target, c);
     unavailable_message(c, target, Target::detect(), no_rosetta, lang)

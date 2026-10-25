@@ -4,7 +4,7 @@
 // its own tab (./tool.tsx). Choosing and removing wait for "Apply", in the
 // bar under the editor (./applybar.tsx).
 import { useState, type ReactNode } from "react";
-import type { ComponentInfo, SetupSnapshot } from "../api";
+import type { ComponentInfo, SetupSnapshot } from "../ipc";
 import type { GuideTopicId } from "../guide";
 import { t } from "../i18n";
 import { ErrorLine } from "../shared/common";

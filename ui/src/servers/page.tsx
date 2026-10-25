@@ -14,7 +14,7 @@ import {
   type WebServerEngine,
   type WebServerPool,
   type WebServersView,
-} from "../api";
+} from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useEvery } from "../shared/hooks";
 import { t } from "../i18n";

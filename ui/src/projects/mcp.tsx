@@ -12,7 +12,7 @@ import {
   type McpPreset,
   type McpServer,
   type McpView,
-} from "../api";
+} from "../ipc";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine, LoadError } from "../shared/common";
 import { useAction, useLoad } from "../shared/hooks";

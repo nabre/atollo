@@ -10,7 +10,6 @@ mod agents;
 mod app;
 mod backup;
 mod cli;
-mod commands;
 mod db;
 mod detect;
 mod diagnostics;
@@ -21,6 +20,7 @@ mod github;
 mod health;
 mod i18n;
 mod install;
+mod ipc;
 mod kit;
 mod llm;
 mod log;
@@ -46,8 +46,8 @@ use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
 use crate::app::{build_app, context};
 use crate::cli::{help, models, prepare, version_lines, Cli};
-use crate::commands::AppState;
 use crate::env::{Host, KitEnv};
+use crate::ipc::AppState;
 use crate::kit::Kit;
 use crate::settings::Settings;
 

@@ -3,7 +3,7 @@
 // listed, and "Ferma tutto", once confirmed, stops actions, lines and pools.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { RunInfo, ServiceInfo, WebServerPool } from "@/api";
+import type { RunInfo, ServiceInfo, WebServerPool } from "@/ipc";
 import { ActivityPanel, liveLines, useRunning } from "@/shell/activity";
 import { invoke } from "@test/support/tauri";
 

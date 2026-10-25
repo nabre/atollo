@@ -2,7 +2,7 @@
 // state: kept by the main window while pages change, filled by the events
 // of Rust. No xterm.js here, so the window loads it only with the panel.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PtyBackend, PtyInfo } from "./api";
+import type { PtyBackend, PtyInfo } from "../ipc/pty";
 
 /** The sessions and the panel's state; `enabled` false (the browser
  * preview's first render, before the app answers) reads and listens to

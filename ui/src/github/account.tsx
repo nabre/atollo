@@ -9,7 +9,7 @@ import {
   githubStatus,
   onGithub,
   type GithubStatus,
-} from "../api";
+} from "../ipc";
 import { useAction, useCopy, useLoad } from "../shared/hooks";
 import { ActionButton, ErrorLine, LoadError } from "../shared/common";
 import { useSubscription } from "../shared/hooks";

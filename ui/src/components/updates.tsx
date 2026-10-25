@@ -2,7 +2,7 @@
 // on Tools and the pane «Aggiornamenti», each with what changes (its release
 // notes) and «Aggiorna», instead of «Aggiorna tutto» blindly.
 import { useCallback, useEffect, useRef } from "react";
-import { componentLinkOpen, onUpdates, setupStart, updatesCheck, updatesList, type Updates } from "../api";
+import { componentLinkOpen, onUpdates, setupStart, updatesCheck, updatesList, type Updates } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad, useSubscription } from "../shared/hooks";
 import { t } from "../i18n";

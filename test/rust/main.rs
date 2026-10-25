@@ -1,6 +1,6 @@
 use super::*;
 use crate::cli::{help_text, program_name, HELP};
-use crate::commands::MAIN;
+use crate::ipc::MAIN;
 use crate::kit::Arch;
 use tauri::test::{get_ipc_response, mock_builder, INVOKE_KEY};
 use tauri::webview::InvokeRequest;

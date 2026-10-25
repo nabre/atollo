@@ -4,7 +4,7 @@
 // The column of the system shown by «Piattaforma» is highlighted; the
 // details can make another one the shown system.
 import { useState } from "react";
-import type { ComponentInfo, TargetId, TargetProfile, TargetToolStatus } from "../api";
+import type { ComponentInfo, TargetId, TargetProfile, TargetToolStatus } from "../ipc";
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { ComponentLogo } from "../shared/logos";

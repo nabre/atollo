@@ -3,7 +3,7 @@
 // file is dropped or picked. The app keeps it in the host's temp folder
 // (data\downloads is still accepted: moved there on use) and tries again; the file is used only with the checksum the source publishes.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { downloadsAdd, downloadsPick, onFileDrag, setupByHandOpen, type ByHand } from "../api";
+import { downloadsAdd, downloadsPick, onFileDrag, setupByHandOpen, type ByHand } from "../ipc";
 import { t } from "../i18n";
 import { Codicon, Link } from "../workbench";
 import { useSubscription } from "../shared/hooks";

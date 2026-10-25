@@ -13,5 +13,17 @@ export default tseslint.config(
     plugins: { "react-hooks": reactHooks },
     rules: { ...reactHooks.configs.recommended.rules },
   },
+  // The IPC stays in ui/src/ipc (docs/app/ARCHITECTURE.md): no other file of
+  // the interface reaches Tauri by itself.
+  {
+    files: ["ui/src/**/*.{ts,tsx}"],
+    ignores: ["ui/src/ipc/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [{ group: ["@tauri-apps/*"], message: "Tauri only through ui/src/ipc." }] },
+      ],
+    },
+  },
   { files: ["eslint.config.mjs", "vitest.config.ts", "ui/vite.config.ts"], ...tseslint.configs.disableTypeChecked },
 );

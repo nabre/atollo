@@ -247,7 +247,7 @@ pub(crate) fn xcode_note(target: Target, selected: Option<&str>) -> Option<&'sta
 }
 
 /// The folder of the active developer tools (`xcode-select -p`), on a Mac:
-/// for the installer's note and the Tools page (`commands::setup`), which
+/// for the installer's note and the Tools page (`ipc::setup`), which
 /// asks at every load. `-p` only prints: it never opens the installation
 /// dialog. A folder found is kept until the app closes; "not installed" is
 /// asked again after [`XCODE_RECHECK`], so tools installed meanwhile with

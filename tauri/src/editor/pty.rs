@@ -43,23 +43,8 @@ pub const GRACE: Duration = Duration::from_secs(2);
 /// How long the exit of a program waits for the rest of its output (a job
 /// left in the background keeps the PTY open after it).
 pub const DRAIN: Duration = Duration::from_millis(500);
-/// A session opened: the payload is its [`PtyInfo`].
-pub const OPENED_EVENT: &str = "pty-opened";
-/// The program of a session ended: the payload is its [`PtyInfo`].
-pub const EXIT_EVENT: &str = "pty-exit";
-/// A session moved to a window of its own or back to the panel: the
-/// payload is its [`PtyInfo`].
-pub const MOVED_EVENT: &str = "pty-moved";
-/// A session was closed (by the panel or by its own window): the payload
-/// is its id.
-pub const CLOSED_EVENT: &str = "pty-closed";
 /// The system's bash, never one of the user's PATH (cfg.rs uses it too).
 pub const BASH: &str = super::cfg::BASH;
-
-/// The event with the output of session `id`.
-pub fn output_event(id: u64) -> String {
-    format!("pty://{id}")
-}
 
 /// A session as the window shows it.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

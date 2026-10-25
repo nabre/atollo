@@ -17,7 +17,7 @@ import {
   type ProjectInfo,
   type SetupSnapshot,
   type TargetGrid,
-} from "../api";
+} from "../ipc";
 import { toggle } from "./model";
 
 export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, onDone?: () => void) {

@@ -8,7 +8,7 @@
 // that matches.
 import { useEffect, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
-import { editorRestart, type AppInfo } from "../api";
+import { editorRestart, type AppInfo } from "../ipc";
 import { GithubAccount, GitIdentitySetting } from "../github";
 import type { GuideTopicId } from "../guide";
 import { BrandSymbol } from "../shared/brand";
