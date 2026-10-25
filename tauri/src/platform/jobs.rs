@@ -90,9 +90,25 @@ pub fn open_with_explorer(target: impl AsRef<OsStr>) -> Result<()> {
     imp::open_with_explorer(target)
 }
 
-/// Opens a web address in the PC's browser, outside the app's processes.
+/// The PC's own environment, read at start ([`set_browser_env`]).
+static BROWSER_ENV: std::sync::OnceLock<Vec<(String, String)>> = std::sync::OnceLock::new();
+
+/// Keeps the PC's environment `host` for the browser [`open_url`] starts:
+/// the app's own points at the kit's profile (D-04), and a browser not
+/// running yet would make its profile there (Chrome's `User Data` in
+/// `data\home`, D-169). Once, at start.
+pub fn set_browser_env(host: &crate::env::Host) {
+    let _ = BROWSER_ENV.set(
+        host.iter()
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+            .collect(),
+    );
+}
+
+/// Opens a web address in the PC's browser, outside the app's processes,
+/// with the PC's environment when it was kept.
 pub fn open_url(url: &str) -> Result<()> {
-    imp::open_url(url)
+    imp::open_url(url, BROWSER_ENV.get().map(Vec::as_slice))
 }
 
 /// The guard's pid (macOS, Linux): a copy of the app, not one of its

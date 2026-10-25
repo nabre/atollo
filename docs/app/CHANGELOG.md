@@ -1,12 +1,40 @@
 # Novità
 
+## GitHub nella VM senza il token (25/10/2026)
+
+- **`git push` e `gh` dalla VM, per i progetti che scegli** (D-172): nella sezione Git del progetto, «GitHub nella VM» (spenta di serie). Accesa, il proxy di Docker Sandboxes aggiunge il tuo accesso alle richieste verso GitHub di quella sola VM; nella VM c'è solo un segnaposto, e Atollo non copia il token: dà a Docker Sandboxes un comando del kit che lo legge quando serve, e che risponde solo a Docker Sandboxes. Spenta, l'accesso viene tolto. Un accesso a GitHub che avevi già dato a Docker Sandboxes non viene toccato.
+
+## Il database del progetto resta sul PC (25/10/2026)
+
+- **La VM non tocca il server** (D-171): il database di un progetto nella VM è quello del kit, sul PC, come senza VM. La VM ne raggiunge solo la porta, aperta per quella sola sandbox, e vi entra come l'utente del progetto: legge e scrive i suoi dati, non gli altri database né la configurazione del server. Pagina Database, copie di sicurezza e phpMyAdmin restano gli stessi.
+- **La password non passa da una riga di comando**: le variabili del database arrivano nella VM da un file leggibile solo da te.
+
+## I progetti nella VM con gli strumenti del kit (25/10/2026)
+
+- **Strumenti del kit nella VM del progetto** (D-170): terminale e azioni di un progetto nella VM usano Node, PHP, Python e gli altri strumenti scelti nel kit, alle versioni scelte dal progetto, come sul PC. Arrivano per Linux, la prima volta scaricati in `data\apps\linux-x64`, e la VM non li può modificare.
+- Una sandbox di progetto creata prima di oggi riceve da sé la cartella degli strumenti, senza perdere nulla.
+
+## Lo stato delle VM nel kit (25/10/2026)
+
+- **Le VM restano nel kit** (D-169): Atollo usa solo un daemon di Docker Sandboxes avviato da lui, con immagini e dischi delle VM in `data`. Se sul PC ne gira un altro, l'avviso «Senza VM» lo dice invece di mettere le VM nei suoi dati; su un disco FAT32 o exFAT dice di spostare il kit.
+- **Un kit per ogni sandbox** in `data\app\sandboxes`: la descrizione di com'è fatta, data a Docker Sandboxes alla creazione e aggiornata senza perdere i dati della VM.
+- **Sandbox delle VM**: nella finestra della VM l'elenco delle sandbox, di chi sono, se sono accese, lo spazio che occupano davvero, e «Rimuovi». Eliminare un progetto o un terminale toglie anche le sue sandbox.
+- **Niente più file inutili**: `llmman` non scarica più llama.cpp (713 MB), la telemetria di Docker è spenta, le VM non usano le chiavi SSH del PC.
+- **Link nel terminale**: gli indirizzi web si aprono con un clic, e il browser si apre con il tuo profilo, non con quello del kit (vale per tutti i link di Atollo). Il login di Docker passa da lì.
+
+## Terminali del kit nella VM (25/10/2026)
+
+- **Il terminale del kit nella VM** (D-168): con la VM attiva, «Tutti gli strumenti» e i terminali personalizzati si aprono in una microVM loro, una per cartella, con gli strumenti del kit per Linux alle stesse versioni (scaricati la prima volta in `data\apps\linux-x64`, montati in sola lettura). Senza VM restano sul PC, con l'avviso «Senza VM».
+- **Politica di rete**: Atollo imposta da solo quella consigliata da Docker (`balanced`) sullo `sbx` del kit; per quello del PC l'avviso la propone con «Lancia».
+- **`npm` funziona in un kit preparato su un altro sistema**: un link a uno script di un archivio Linux, estratto su Windows, diventa uno script che lo lancia dov'è invece di una copia rotta.
+
 ## Isolamento dei progetti (25/10/2026)
 
 - **«Senza VM» nella barra di stato** (D-167): accanto ad Attività, sul colore di avviso, finché i progetti girano sul PC. Un clic dice perché la VM non è attiva, motivo per motivo (sistema, processore, Hypervisor Platform, KVM, AppArmor, Docker Sandboxes, accesso a Docker), con cosa fare e il comando: «Lancia» apre `sbx login` (o `sbx ls`) nel terminale di Atollo, «Copia» per i comandi del PC; «Ricontrolla» chiede di nuovo. Lo stato si calcola da solo, senza impostazioni.
 - **Docker Sandboxes obbligatorio**: si installa sempre, come PowerShell 7 e GitHub CLI, sui sistemi dove Docker lo pubblica (non Windows su Arm né i Mac Intel). Editor e console non lo aspettano: se manca o non c'è l'accesso a Docker, l'avviso «Senza VM» lo dice.
 - **Docker Sandboxes nel kit**: il componente `sandboxes` mette `sbx` in `data\apps` (su Windows l'MSI estratto senza installarlo, senza amministratore); sandbox, impostazioni e registri restano in `data\home` e viaggiano con il kit; il demone si ferma all'uscita e con «Rimuovi l'unità».
 - **Ambiente sigillato**: terminale, azioni e agenti non ricevono più il percorso del profilo vero, l'agente SSH, il bus di sessione né il login root di MySQL; `mysql` entra con l'utente del progetto. Git lanciato dall'app in un progetto ignora `core.fsmonitor`.
-- **Tutto nella VM** (acceso appena il PC è pronto; prova con un account Docker in corso): terminale, comandi, server web e MySQL come container della VM sulle versioni del progetto, Claude Code e Codex negli agenti di `sbx`, porte su `127.0.0.1`.
+- **Tutto nella VM** (acceso appena il PC è pronto; prova con un account Docker in corso): terminale, comandi e server web come container della VM sulle versioni del progetto (il database resta sul PC: D-171), Claude Code e Codex negli agenti di `sbx`, porte su `127.0.0.1`.
 
 ## Rilascio 0.6.0 alpha (24/10/2026)
 

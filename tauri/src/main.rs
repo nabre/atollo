@@ -58,6 +58,7 @@ fn run() -> i32 {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let command = cli::parse(&args);
     let host = Host::capture();
+    platform::jobs::set_browser_env(&host);
     let windows_lang = platform::host::locale();
     // Language before settings exist: for the "cannot write" message.
     let early_lang = i18n::resolve(None, host.get("ATOLLO_LANG"), windows_lang.as_deref());
@@ -214,6 +215,29 @@ fn run() -> i32 {
                     let _ = writeln!(cli::output(), "  [!] Antigravity: {e:#}");
                     1
                 }
+            };
+        }
+        Cli::SecretGithub(nonce) => {
+            // Only for the kit's Docker Sandboxes, which runs it on the PC
+            // when its proxy needs the value: a command Atollo registered
+            // (its nonce noted, in a file readable by its owner only) and
+            // started by the kit's sbx; never for an agent or a project's
+            // program that runs the app (D-172, SEC-V7-01).
+            let all = platform::processes::all();
+            let above = platform::processes::ancestors(&all, std::process::id(), 3);
+            let by_sbx = isolation::kit_sbx(&kit)
+                .is_some_and(|sbx| isolation::secrets::asked_by_sbx(&above, &sbx));
+            if !by_sbx || !isolation::secrets::nonce_known(&kit, &nonce) {
+                eprintln!("secret github: only for the kit's Docker Sandboxes");
+                return 1;
+            }
+            // Standard output is the token only; nothing else is written.
+            return match github::token(&kit, &kit_env) {
+                Some(token) => {
+                    println!("{token}");
+                    0
+                }
+                None => 1,
             };
         }
         Cli::McpGithub => {

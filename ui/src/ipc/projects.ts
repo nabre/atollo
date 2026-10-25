@@ -373,6 +373,16 @@ export function projectPin(project: string, pinned: boolean): Promise<void> {
   return act("project_pin", { project, pinned });
 }
 
+/** Whether the project's VM gets the kit's GitHub access (D-172; off by default). */
+export function projectGithubVm(project: string): Promise<boolean> {
+  return query<boolean>("project_github_vm", false, { project });
+}
+
+/** Gives the project's VM the kit's GitHub access, or takes it back. */
+export function projectGithubVmSet(project: string, on: boolean): Promise<void> {
+  return act("project_github_vm_set", { project, on });
+}
+
 /** "Servi come sito web": writes the "site" action in the project's panel.json. */
 export function projectSite(project: string, folder: string, kind: SiteKind, options?: SiteOptions): Promise<void> {
   return act("project_site", { project, folder, kind, options });

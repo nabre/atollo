@@ -288,10 +288,50 @@ fn copy_one(path: &Path, source: &Path, budget: &mut u64, skipped: &mut Vec<Stri
     *budget -= size;
     if meta.is_dir() {
         copy_tree(source, path).with_context(|| path.display().to_string())?;
+    } else if let Some(shim) = script_shim(path, source) {
+        fs::write(path, shim).with_context(|| path.display().to_string())?;
     } else {
         fs::copy(source, path).with_context(|| path.display().to_string())?;
     }
     Ok(())
+}
+
+/// In place of a link to a script (`#!`), a POSIX script that runs the
+/// script where it is, not a copy of it: a copy would look for its files
+/// next to itself (`bin/npm -> ../lib/node_modules/npm/bin/npm-cli.js`
+/// requires `../lib/cli.js`). Its way is relative, so the kit can move.
+/// `None` for anything else (a program, a library: their copy works).
+fn script_shim(path: &Path, source: &Path) -> Option<String> {
+    let mut head = [0u8; 2];
+    let mut file = fs::File::open(source).ok()?;
+    std::io::Read::read_exact(&mut file, &mut head).ok()?;
+    if &head != b"#!" {
+        return None;
+    }
+    let rel = relative_to(path.parent()?, source)?;
+    let quoted = rel.replace('\'', r"'\''");
+    Some(format!(
+        "#!/bin/sh\n# In place of a link to {rel} (a disk without links).\n\
+         exec \"$(dirname -- \"$0\")\"/'{quoted}' \"$@\"\n"
+    ))
+}
+
+/// `to` from the folder `from`, with `/` (`../lib/x.js`); `None` when they
+/// share no root.
+fn relative_to(from: &Path, to: &Path) -> Option<String> {
+    let from: Vec<_> = from.components().collect();
+    let to: Vec<_> = to.components().collect();
+    let common = from.iter().zip(&to).take_while(|(a, b)| a == b).count();
+    if common == 0 {
+        return None;
+    }
+    let mut parts: Vec<String> = vec!["..".to_owned(); from.len() - common];
+    parts.extend(
+        to[common..]
+            .iter()
+            .map(|c| c.as_os_str().to_string_lossy().into_owned()),
+    );
+    Some(parts.join("/"))
 }
 
 /// [`finish_links`] with real links on Unix, the skipped ones in the log.

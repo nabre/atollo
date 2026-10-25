@@ -80,6 +80,20 @@ const onMac = () => typeof navigator !== "undefined" && /Mac/i.test(navigator.us
  * Ctrl+C copies when text is selected (else it goes to the program),
  * Ctrl+Shift+C copies, Ctrl+V and Ctrl+Shift+V paste (the browser's own
  * paste, which xterm.js reads). False: xterm.js leaves the key alone. */
+/** The web links of a line of the terminal (`http://`, `https://`), with
+ * the columns they take (1-based, both ends included): what xterm.js
+ * underlines and opens on a click. A closing parenthesis, bracket or
+ * punctuation at the end belongs to the sentence, not to the link. */
+export function webLinks(text: string): { url: string; start: number; end: number }[] {
+  const out: { url: string; start: number; end: number }[] = [];
+  for (const m of text.matchAll(/https?:\/\/[^\s"'<>`]+/g)) {
+    const url = m[0].replace(/[.,;:!?)\]}]+$/, "");
+    if (url.length <= "https://".length) continue;
+    out.push({ url, start: m.index + 1, end: m.index + url.length });
+  }
+  return out;
+}
+
 export function clipboardKey(
   e: Pick<KeyboardEvent, "type" | "key" | "ctrlKey" | "shiftKey" | "altKey" | "metaKey">,
   selection: string,
@@ -155,6 +169,22 @@ export function TerminalView({
       const fit = new FitAddon();
       x.loadAddon(fit);
       x.open(el);
+      // Web links open in the PC's browser on a click (the page of
+      // `sbx login`, D-169).
+      x.registerLinkProvider({
+        provideLinks(y, callback) {
+          const text = x.buffer.active.getLine(y - 1)?.translateToString(true) ?? "";
+          callback(
+            webLinks(text).map((l) => ({
+              text: l.url,
+              range: { start: { x: l.start, y }, end: { x: l.end, y } },
+              activate: () => {
+                backend.openLink(id, l.url).catch(() => undefined);
+              },
+            })),
+          );
+        },
+      });
       // Opened with a fallback (the faces came after the cap): the cell is
       // measured again with Geist Mono, and the size follows.
       const late = monoLoaded(family)

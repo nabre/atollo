@@ -50,6 +50,11 @@ pub enum Cli {
     /// The kit's GitHub MCP server on stdio (`mcp github`, started by the
     /// agents with the app's absolute path): the token stays here.
     McpGithub,
+    /// `secret github <nonce>`: the kit's GitHub token on standard output,
+    /// for the command Docker Sandboxes runs on the PC when its proxy needs
+    /// it (D-172): the token is never copied, never in a VM; the nonce is
+    /// the one of a registration Atollo noted.
+    SecretGithub(String),
     /// File server of a static site: `serve <folder> <port>` (projects/run/).
     Serve {
         dir: std::path::PathBuf,
@@ -177,6 +182,16 @@ pub fn parse(args: &[OsString]) -> Cli {
         {
             Some(a @ ("restore" | "save")) => Cli::Keyring(a.to_owned()),
             other => Cli::Unknown(format!("keyring {}", other.unwrap_or_default())),
+        },
+        "secret" => match args
+            .get(1)
+            .map(|a| a.to_string_lossy().into_owned())
+            .as_deref()
+        {
+            Some("github") if args.len() == 3 => {
+                Cli::SecretGithub(args[2].to_string_lossy().into_owned())
+            }
+            other => Cli::Unknown(format!("secret {}", other.unwrap_or_default())),
         },
         "mcp" => match args
             .get(1)

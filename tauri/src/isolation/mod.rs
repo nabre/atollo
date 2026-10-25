@@ -23,6 +23,9 @@ use crate::env::{Host, KitEnv};
 use crate::kit::{Kit, Os};
 use crate::platform::virt::{self, Gap};
 
+pub mod daemon;
+pub mod kit;
+pub mod secrets;
 pub mod vm;
 
 /// How long a status stays good: `sbx` is asked at most once a minute.
@@ -94,6 +97,19 @@ pub enum Blocker {
     /// `sbx` answered with an error (its text).
     SbxFailed {
         message: String,
+    },
+    /// The PC's `sbx` has no global network policy yet: no VM starts.
+    /// The kit's gets `balanced` by itself ([`vm::POLICY_ARGS`]).
+    PolicyUnset,
+    /// The daemon running is another `sbx`'s (the PC's, another kit's):
+    /// the kit's VMs would go into its state, out of the kit
+    /// ([`daemon::Daemon::Other`]).
+    ForeignDaemon,
+    /// The kit's disk has no sparse files nor permissions (FAT32, exFAT):
+    /// each VM's disks (20 + 10 GB, sparse on NTFS) would not fit or would
+    /// take their whole size.
+    KitDisk {
+        fs: String,
     },
 }
 
@@ -184,12 +200,233 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
     match &sbx {
         None => blockers.push(Blocker::SbxMissing),
         Some(sbx) => {
-            if let Err(b) = ask(sbx, host, env) {
+            if let Err(b) = kit_daemon(kit, sbx, host, env)
+                .and_then(|()| ask(sbx, host, env))
+                .and_then(|()| policy(sbx, host, env))
+            {
                 blockers.push(b);
+            } else if let Sbx::Kit(_) = sbx {
+                daemon_settings(sbx, host, env);
+                legacy_global_github(kit, sbx, host, env);
             }
         }
     }
     Status::of(blockers, sbx.map(|s| s.path().display().to_string()))
+}
+
+/// Where the kit's `sbx` keeps its VMs (D-169): in the kit, so on a disk
+/// with sparse files, and with a daemon of its own. The PC's `sbx` keeps
+/// its own where the user installed it: nothing to check.
+fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
+    let Sbx::Kit(exe) = sbx else {
+        return Ok(());
+    };
+    if let Some(volume) = kit.volume().filter(|v| !v.fs.has_permissions()) {
+        return Err(Blocker::KitDisk {
+            fs: volume.fs.as_str().to_owned(),
+        });
+    }
+    match daemon::current(kit, exe) {
+        daemon::Daemon::Other => Err(Blocker::ForeignDaemon),
+        daemon::Daemon::Kit => Ok(()),
+        daemon::Daemon::None => {
+            // Started here, its output to nothing: a daemon started by a
+            // command whose output is read keeps that pipe open, and the
+            // reader waits for it until its limit.
+            daemon_call(sbx, host, env, &["daemon", "start"]);
+            Ok(())
+        }
+    }
+}
+
+/// `sbx <args>` of the daemon (`daemon start`, `daemon restart`), its
+/// output to nothing, waited for at most a minute.
+fn daemon_call(sbx: &Sbx, host: &Host, env: &KitEnv, args: &[&str]) {
+    let mut cmd = sbx.command(env, host);
+    cmd.args(args)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+    let child = match crate::platform::jobs::spawn(&mut cmd) {
+        Ok(child) => child,
+        Err(e) => {
+            crate::common::log::warn(&format!("sbx {}: {e}", args.join(" ")));
+            return;
+        }
+    };
+    let (tx, rx) = mpsc::channel();
+    let mut child = child;
+    std::thread::spawn(move || {
+        let _ = tx.send(child.wait());
+    });
+    match rx.recv_timeout(Duration::from_secs(60)) {
+        Ok(Ok(status)) if status.success() => {}
+        Ok(Ok(status)) => crate::common::log::warn(&format!("sbx {}: {status}", args.join(" "))),
+        Ok(Err(e)) => crate::common::log::warn(&format!("sbx {}: {e}", args.join(" "))),
+        Err(_) => crate::common::log::warn(&format!("sbx {}: no end in 60 s", args.join(" "))),
+    }
+}
+
+/// The kit daemon's settings ([`daemon::SETTINGS`]): set when they differ,
+/// then the daemon restarted for them when no sandbox runs (a running one
+/// would stop; the next status tries again). Failures only go to the log:
+/// the VMs work without them.
+fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
+    let mut changed = false;
+    for (key, value) in daemon::SETTINGS {
+        let now = run(sbx, host, env, &["settings", "get", key], ASK_LIMIT)
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned());
+        if now.as_deref() == Ok(value) {
+            continue;
+        }
+        match run(sbx, host, env, &["settings", "set", key, value], ASK_LIMIT) {
+            Ok(out) if out.status.success() => changed = true,
+            Ok(out) => crate::common::log::warn(&format!(
+                "sbx settings set {key}: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            )),
+            Err(e) => crate::common::log::warn(&format!("sbx settings set {key}: {e}")),
+        }
+    }
+    if !changed {
+        return;
+    }
+    let running = run(sbx, host, env, &["ls", "--json"], ASK_LIMIT)
+        .map(|o| sandboxes_running(&String::from_utf8_lossy(&o.stdout)))
+        .unwrap_or(true);
+    if running {
+        crate::common::log::info("sbx settings changed: restart when no sandbox runs");
+        return;
+    }
+    daemon_call(sbx, host, env, &["daemon", "restart"]);
+}
+
+/// The PC's name, to note per PC what Atollo registered in `sbx`.
+fn computer(host: &Host) -> String {
+    host.get("COMPUTERNAME")
+        .or(host.get("HOSTNAME"))
+        .unwrap_or("pc")
+        .to_owned()
+}
+
+/// The kit's GitHub access for the sandbox `sandbox` ([`secrets`], D-172),
+/// that one only (`--sandbox`), never global: given when `wanted` (the
+/// project allowed it) and the kit is signed in to GitHub; taken back when
+/// not wanted any more and Atollo had given it. A secret Atollo did not
+/// register (the user's own) is never touched. Failures only go to the
+/// log: the VM works without it.
+pub(crate) fn github_for_sandbox(
+    kit: &Kit,
+    sbx: &Sbx,
+    host: &Host,
+    env: &KitEnv,
+    sandbox: &str,
+    wanted: bool,
+) {
+    let Some(exe) = crate::kit::app_exe() else {
+        return;
+    };
+    let prefix = secrets::github_prefix(&exe, kit.target().is_windows());
+    let pc = computer(host);
+    let mine = secrets::mine(kit, "github", &pc, sandbox);
+    let warn = |what: &str, out: Result<std::process::Output, String>| match out {
+        Ok(o) if o.status.success() => true,
+        Ok(o) => {
+            crate::common::log::warn(&format!(
+                "sbx secret {what} github {sandbox}: {}",
+                String::from_utf8_lossy(&o.stderr).trim()
+            ));
+            false
+        }
+        Err(e) => {
+            crate::common::log::warn(&format!("sbx secret {what} github {sandbox}: {e}"));
+            false
+        }
+    };
+    let remove = || {
+        let args = ["secret", "rm", "github", "--sandbox", sandbox, "--force"];
+        warn("rm", run(sbx, host, env, &args, ASK_LIMIT))
+    };
+    if !wanted {
+        if mine.is_some() && remove() {
+            if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
+                crate::common::log::warn(&format!("secrets.json: {e:#}"));
+            }
+        }
+        return;
+    }
+    let Ok(ls) = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT) else {
+        return;
+    };
+    let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), "github", sandbox);
+    let step = secrets::step(listed, mine.as_ref(), &prefix);
+    if step == secrets::Step::Keep || crate::github::token(kit, env).is_none() {
+        return;
+    }
+    if step == secrets::Step::Replace && !remove() {
+        return;
+    }
+    // A nonce of its own: `secret github` answers only a command that
+    // carries one Atollo noted.
+    let Ok(nonce) = secrets::new_nonce() else {
+        return;
+    };
+    let command = secrets::github_command(&exe, kit.target().is_windows(), &nonce);
+    // Noted first: `sbx` runs the command already to verify it.
+    if let Err(e) = secrets::note(kit, "github", &pc, sandbox, Some(&command)) {
+        crate::common::log::warn(&format!("secrets.json: {e:#}"));
+        return;
+    }
+    let args = [
+        "secret",
+        "set",
+        "github",
+        "--sandbox",
+        sandbox,
+        "--command",
+        command.as_str(),
+    ];
+    if !warn("set", run(sbx, host, env, &args, ASK_LIMIT)) {
+        // Not registered: its nonce opens nothing.
+        if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
+            crate::common::log::warn(&format!("secrets.json: {e:#}"));
+        }
+    }
+}
+
+/// A global GitHub secret a first version of Atollo may have registered on
+/// this PC (a note without a sandbox) is taken back: GitHub goes only to
+/// the projects that chose it (D-172).
+fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+    let pc = computer(host);
+    if secrets::mine(kit, "github", &pc, "").is_none() {
+        return;
+    }
+    let listed = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT)
+        .map(|o| secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", "(global)"))
+        .unwrap_or(false);
+    if listed {
+        let args = ["secret", "rm", "github", "--force"];
+        match run(sbx, host, env, &args, ASK_LIMIT) {
+            Ok(o) if o.status.success() => {}
+            _ => {
+                crate::common::log::warn(
+                    "sbx secret rm github (global): failed, tried again later",
+                );
+                return;
+            }
+        }
+    }
+    if let Err(e) = secrets::note(kit, "github", &pc, "", None) {
+        crate::common::log::warn(&format!("secrets.json: {e:#}"));
+    }
+}
+
+/// True when `sbx ls --json` lists a running sandbox.
+pub(crate) fn sandboxes_running(json: &str) -> bool {
+    serde_json::from_str::<Vec<serde_json::Value>>(json)
+        .map(|list| list.iter().any(|s| s["status"] == "running"))
+        .unwrap_or(true)
 }
 
 /// The `sbx` the projects' microVMs run with.
@@ -253,6 +490,9 @@ impl Sbx {
                         out.set(name, temp);
                     }
                 }
+                for (name, value) in daemon::ENV {
+                    out.set(name, value);
+                }
             }
             Sbx::Pc(_) => {
                 let names: Vec<String> = out.iter().map(|(k, _)| k.to_owned()).collect();
@@ -277,6 +517,8 @@ pub enum Fix {
     Login,
     /// `sbx ls`: shows the error `sbx` answers with.
     Ls,
+    /// `sbx policy init balanced`, for the PC's `sbx` ([`Blocker::PolicyUnset`]).
+    Policy,
 }
 
 impl Fix {
@@ -284,6 +526,7 @@ impl Fix {
         let args: &[&str] = match self {
             Fix::Login => &["login"],
             Fix::Ls => &["ls"],
+            Fix::Policy => &vm::POLICY_ARGS,
         };
         args.iter().map(|a| (*a).to_owned()).collect()
     }
@@ -300,7 +543,14 @@ pub fn fix_launch(
 ) -> Option<(crate::editor::pty::Launch, KitEnv)> {
     let sbx = Sbx::find(kit, host)?;
     let launch = crate::editor::pty::program(kit, sbx.path(), fix.args(), dir, "sbx");
-    Some((launch, sbx.session_env(env, host)))
+    let mut env = sbx.session_env(env, host);
+    if fix == Fix::Login {
+        // The sign-in page is not opened by `sbx`, whose environment is the
+        // kit's (its browser would make its profile in the kit): its link
+        // is in the terminal, and a click opens it with the PC's (D-169).
+        env.set("SBX_NO_BROWSER_OPEN", "1");
+    }
+    Some((launch, env))
 }
 
 /// The component of the kit's `sbx`: required, but the editor and the
@@ -394,6 +644,46 @@ fn ask(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
     }
 }
 
+/// The global network policy no VM starts without: the kit's `sbx` gets
+/// `balanced` (already set is fine); the PC's is the user's, only told.
+fn policy(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
+    let args: &[&str] = match sbx {
+        Sbx::Kit(_) => &vm::POLICY_ARGS,
+        Sbx::Pc(_) => &["policy", "ls"],
+    };
+    match run(sbx, host, env, args, ASK_LIMIT) {
+        Ok(out) => policy_answer(
+            sbx,
+            out.status.success(),
+            &format!(
+                "{}{}",
+                String::from_utf8_lossy(&out.stdout),
+                String::from_utf8_lossy(&out.stderr)
+            ),
+        ),
+        Err(message) => Err(Blocker::SbxFailed { message }),
+    }
+}
+
+/// What `sbx policy init` (the kit's) or `sbx policy ls` (the PC's) says.
+pub(crate) fn policy_answer(sbx: &Sbx, success: bool, text: &str) -> Result<(), Blocker> {
+    let lower = text.to_lowercase();
+    if lower.contains("already initialized") {
+        return Ok(());
+    }
+    if lower.contains("not been initialized") || lower.contains("not initialized") {
+        return Err(Blocker::PolicyUnset);
+    }
+    if success {
+        return Ok(());
+    }
+    match sbx {
+        // A list that cannot be read says nothing of the VM: `sbx ls` answered.
+        Sbx::Pc(_) => Ok(()),
+        Sbx::Kit(_) => answer(false, text),
+    }
+}
+
 /// How long the start of a sandbox may take: the first one pulls its
 /// image.
 const START_LIMIT: Duration = Duration::from_secs(600);
@@ -407,6 +697,153 @@ pub struct Vm {
     pub name: String,
     /// The project's folder, its workspace.
     pub dir: PathBuf,
+    /// Folders of the PC mounted where the VM cannot change them (the
+    /// kit's tools for Linux, for the kit's terminals).
+    pub read_only: Vec<PathBuf>,
+    /// The kit the sandbox's own kit is written in (`data\app\sandboxes`).
+    kit: Kit,
+    /// Whose sandbox it is, written in its kit.
+    owner: kit::Owner,
+    /// The kit's tools a session gets ([`Vm::with_tools`]).
+    tools: GuestTools,
+    /// The PC's ports it may reach ([`Vm::with_host_ports`]).
+    host_ports: Vec<u16>,
+}
+
+/// A sandbox of Atollo, for the list of the VMs (D-169).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmInfo {
+    pub name: String,
+    /// Whose it is, from its kit; `None` for an agent's sandbox (`sbx`'s
+    /// own kit) or one made before the kits.
+    pub owner: Option<kit::Owner>,
+    /// `running`, `stopped`… as `sbx` says it.
+    pub status: String,
+    pub last_used: Option<String>,
+}
+
+/// The sandboxes of Atollo and the room their state takes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmList {
+    pub vms: Vec<VmInfo>,
+    /// Bytes the kit daemon's state takes on the disk (images, the VMs'
+    /// disks, sparse): `None` for the PC's `sbx`, which keeps them where
+    /// the user installed it.
+    pub disk: Option<u64>,
+}
+
+/// Atollo's sandboxes in `sbx ls --json` (`atollo-…`), with their owner
+/// from their kits.
+pub(crate) fn vms_of(kit: &Kit, json: &str) -> Vec<VmInfo> {
+    let list: Vec<serde_json::Value> = serde_json::from_str(json).unwrap_or_default();
+    list.iter()
+        .filter_map(|s| {
+            let name = s["name"].as_str()?;
+            name.starts_with(vm::PREFIX).then(|| VmInfo {
+                name: name.to_owned(),
+                owner: kit::owner(kit, name),
+                status: s["status"].as_str().unwrap_or_default().to_owned(),
+                last_used: s["last_used_at"].as_str().map(str::to_owned),
+            })
+        })
+        .collect()
+}
+
+/// The sandboxes of Atollo `sbx` has, and the room the kit's take.
+pub fn vm_list(kit: &Kit, host: &Host, env: &KitEnv) -> anyhow::Result<VmList> {
+    let Some(sbx) = Sbx::find(kit, host) else {
+        return Ok(VmList {
+            vms: Vec::new(),
+            disk: None,
+        });
+    };
+    let out = run(&sbx, host, env, &["ls", "--json"], ASK_LIMIT).map_err(anyhow::Error::msg)?;
+    anyhow::ensure!(
+        out.status.success(),
+        "sbx ls: {}",
+        String::from_utf8_lossy(&out.stderr).trim()
+    );
+    let disk = match sbx {
+        Sbx::Kit(_) => daemon::state_dir(kit).map(|d| crate::platform::files::allocated_size(&d)),
+        Sbx::Pc(_) => None,
+    };
+    Ok(VmList {
+        vms: vms_of(kit, &String::from_utf8_lossy(&out.stdout)),
+        disk,
+    })
+}
+
+/// The workspace of sandbox `name` in `sbx ls --json`: the first of its
+/// `workspaces`.
+pub(crate) fn workspace_of(json: &str, name: &str) -> Option<String> {
+    let list: Vec<serde_json::Value> = serde_json::from_str(json).ok()?;
+    list.iter()
+        .find(|s| s["name"] == name)?
+        .get("workspaces")?
+        .get(0)?
+        .as_str()
+        .map(str::to_owned)
+}
+
+/// A name of one of Atollo's sandboxes: `atollo-` and `[a-z0-9.-]`.
+pub fn is_atollos(name: &str) -> bool {
+    name.strip_prefix(vm::PREFIX).is_some_and(|rest| {
+        !rest.is_empty()
+            && rest
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-')
+    })
+}
+
+/// Removes the sandbox `name` of Atollo (`sbx rm -f`: its disk with it),
+/// then its kit.
+pub fn remove_vm(kit: &Kit, host: &Host, env: &KitEnv, name: &str) -> anyhow::Result<()> {
+    anyhow::ensure!(is_atollos(name), "not a sandbox of Atollo: {name}");
+    if let Some(sbx) = Sbx::find(kit, host) {
+        // GitHub taken back first, if Atollo had given it (D-172).
+        github_for_sandbox(kit, &sbx, host, env, name, false);
+        let out =
+            run(&sbx, host, env, &["rm", "-f", name], START_LIMIT).map_err(anyhow::Error::msg)?;
+        let text = String::from_utf8_lossy(&out.stderr).to_lowercase();
+        anyhow::ensure!(
+            out.status.success() || text.contains("not found") || text.contains("no such"),
+            "sbx rm: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    kit::remove(kit, name)
+}
+
+/// The sandboxes of `project`: its own and its agents'.
+pub fn project_sandboxes(project: &str) -> Vec<String> {
+    let mut names = vec![vm::name(project)];
+    names.extend(["claude", "codex"].map(|a| vm::agent_name(project, a)));
+    names
+}
+
+/// The sandboxes of the kit terminal `terminal`, one per folder, from
+/// their kits.
+pub fn terminal_sandboxes(kit: &Kit, terminal: &str) -> Vec<String> {
+    kit::all(kit)
+        .into_iter()
+        .filter(
+            |(_, owner)| matches!(owner, kit::Owner::Terminal { terminal: t, .. } if t == terminal),
+        )
+        .map(|(name, _)| name)
+        .collect()
+}
+
+/// Removes `names` with their owner gone (a project deleted, a terminal
+/// removed): a failure only goes to the log, the list of the VMs still
+/// shows what is left.
+pub fn remove_owned(kit: &Kit, host: &Host, env: &KitEnv, names: &[String]) {
+    for name in names {
+        if let Err(e) = remove_vm(kit, host, env, name) {
+            crate::common::log::warn(&format!("sandbox {name}: {e:#}"));
+        }
+    }
 }
 
 /// The microVM of `project` (folder `dir`) when every project runs in one
@@ -415,12 +852,222 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
     if status(kit, host, env, false).level != Level::Vm {
         return None;
     }
+    // The kit's tools for the VM's Linux, read-only (D-170).
+    let read_only = vm::guest_target(kit.target())
+        .map(|t| vec![kit.for_target(t).apps()])
+        .unwrap_or_default();
     Some(Vm {
         sbx: Sbx::find(kit, host)?,
         host: host.clone(),
         name: vm::name(project),
         dir: dir.to_path_buf(),
+        read_only,
+        kit: kit.clone(),
+        owner: kit::Owner::Project {
+            project: project.to_owned(),
+        },
+        tools: GuestTools::default(),
+        host_ports: Vec::new(),
     })
+}
+
+/// The microVM of the kit's terminal `terminal` in `dir` when the VM is
+/// on (the level of the last status): `dir` as its workspace and the kit's
+/// tools for Linux (`apps`, `data/apps/linux-…`) read-only; `None` on the
+/// kit's environment.
+pub fn kit_terminal_vm(
+    kit: &Kit,
+    host: &Host,
+    env: &KitEnv,
+    terminal: &str,
+    dir: &Path,
+    apps: &Path,
+) -> Option<Vm> {
+    if status(kit, host, env, false).level != Level::Vm {
+        return None;
+    }
+    Some(Vm {
+        sbx: Sbx::find(kit, host)?,
+        host: host.clone(),
+        name: vm::terminal_name(terminal, dir),
+        dir: dir.to_path_buf(),
+        read_only: vec![apps.to_path_buf()],
+        kit: kit.clone(),
+        owner: kit::Owner::Terminal {
+            terminal: terminal.to_owned(),
+            dir: dir.display().to_string(),
+        },
+        tools: GuestTools::default(),
+        host_ports: Vec::new(),
+    })
+}
+
+/// True when the VM is on (the level of the last status).
+pub fn vm_on(kit: &Kit, host: &Host, env: &KitEnv) -> bool {
+    status(kit, host, env, false).level == Level::Vm
+}
+
+/// `dir` as a VM's writable workspace, when it may be one: its canonical
+/// path, the one to mount, so the folder checked is the folder the VM gets.
+/// What the VM writes there the PC must never run, so it is refused:
+///
+/// - when it or a folder above it is a link or a junction;
+/// - a drive's root;
+/// - anything in the kit or in the user's profile, or holding either (the
+///   kit's programs and launchers, the profile's start files, PowerShell
+///   profiles, `.ssh`, the agents' settings…, and the tools mounted
+///   read-only, reachable again through it), except the kit's `projects`;
+/// - the system's folders (Windows, Program Files, ProgramData; `/etc`,
+///   `/usr`…), or one holding them.
+///
+/// Elsewhere (`D:\Siti\shop`) it may.
+pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
+    if !dir.is_absolute() || dir.ancestors().any(crate::platform::safe_path::is_link) {
+        return None;
+    }
+    let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));
+    let dir = canon(dir)?;
+    dir.parent()?;
+    if canon(&kit.projects()).is_some_and(|p| dir.starts_with(p)) {
+        return Some(dir);
+    }
+    let profile = host
+        .get("CP_USER_PROFILE")
+        .or(host.get("USERPROFILE"))
+        .or(host.get("HOME"))
+        .map(PathBuf::from);
+    let mut guarded: Vec<PathBuf> = [Some(kit.root().to_path_buf()), profile]
+        .into_iter()
+        .flatten()
+        .collect();
+    if kit.target().is_windows() {
+        guarded.extend(
+            [
+                "SystemRoot",
+                "ProgramFiles",
+                "ProgramFiles(x86)",
+                "ProgramData",
+            ]
+            .iter()
+            .filter_map(|v| host.get(v))
+            .map(PathBuf::from),
+        );
+    } else {
+        guarded.extend(
+            [
+                "/bin",
+                "/boot",
+                "/etc",
+                "/lib",
+                "/lib64",
+                "/opt",
+                "/sbin",
+                "/usr",
+                "/var",
+                "/Applications",
+                "/Library",
+                "/System",
+            ]
+            .iter()
+            .map(PathBuf::from),
+        );
+    }
+    let near = guarded
+        .iter()
+        .filter_map(|p| canon(p))
+        .any(|p| dir.starts_with(&p) || p.starts_with(&dir));
+    (!near).then_some(dir)
+}
+
+/// A canonical Windows path without its `\\?\` (`D:\a`, as `sbx` and the
+/// user write it); a network one (`\\?\UNC\…`) and the others as they are.
+fn plain(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
+        _ => path.to_path_buf(),
+    }
+}
+
+/// What a session or an action in a VM gets: the kit's tools' `PATH`
+/// entries (first, before the VM's own) and variables (`JAVA_HOME`…), as
+/// the VM sees them, and a file of variables on the PC with what must not
+/// be on a command line (the project's database login, D-171).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct GuestTools {
+    pub path: Vec<String>,
+    pub vars: Vec<(String, String)>,
+    pub env_file: Option<PathBuf>,
+}
+
+/// `db` (a project's database on the kit's server, at `port`) as a
+/// program in the VM reaches it: through [`vm::HOST`].
+pub fn db_in_vm(db: &crate::db::auth::ProjectDb, port: u16) -> crate::db::auth::ProjectDb {
+    let engine = crate::db::DbEngine::from_id(&db.engine).unwrap_or(crate::db::DbEngine::MySql);
+    let url = engine
+        .project_url(&db.database, &db.password, port)
+        .replacen("@127.0.0.1:", &format!("@{}:", vm::HOST), 1);
+    crate::db::auth::ProjectDb {
+        host: vm::HOST.to_owned(),
+        port,
+        url,
+        ..db.clone()
+    }
+}
+
+/// The kit's tools for the VM's Linux in the kit's terminal `terminal`
+/// ([`guest_view`]), with `ATOLLO_TERMINAL`.
+pub fn guest_tools(
+    kit: &Kit,
+    guest: &Kit,
+    terminal: &crate::editor::terminals::Terminal,
+    base: KitEnv,
+) -> GuestTools {
+    let env = crate::editor::terminals::env(guest, terminal, base);
+    let mut tools = guest_view(kit, guest, &env);
+    tools
+        .vars
+        .push(("ATOLLO_TERMINAL".to_owned(), terminal.name.clone()));
+    tools
+}
+
+/// The kit's tools for the VM's Linux in `project`, at the lines it chose
+/// (D-170), as on the PC (`versions::project_env`).
+pub fn project_guest_tools(kit: &Kit, guest: &Kit, project: &str, base: KitEnv) -> GuestTools {
+    let env = crate::versions::project_env(guest, project, base);
+    guest_view(kit, guest, &env)
+}
+
+/// The `PATH` entries and the variables of `env` (an environment of
+/// `guest`, the kit scoped to the VM's target, [`vm::guest_target`]) that
+/// lie in its `data/apps`, as the VM sees them. The rest of the kit's
+/// environment (its home, temp, agents) is the PC's business: the VM has
+/// its own.
+pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
+    let windows = kit.target().is_windows();
+    let apps = guest.apps();
+    let in_vm = |value: &str| -> Option<String> {
+        let value = if windows {
+            value.replace('/', "\\")
+        } else {
+            value.to_owned()
+        };
+        let path = PathBuf::from(value);
+        path.starts_with(&apps)
+            .then(|| vm::guest_path(windows, &path))
+            .flatten()
+    };
+    let path = env.path_entries().into_iter().filter_map(in_vm).collect();
+    let vars = env
+        .iter()
+        .filter(|(name, _)| !name.eq_ignore_ascii_case("PATH"))
+        .filter_map(|(name, value)| Some((name.to_owned(), in_vm(value)?)))
+        .collect();
+    GuestTools {
+        path,
+        vars,
+        env_file: None,
+    }
 }
 
 impl Vm {
@@ -445,8 +1092,159 @@ impl Vm {
     }
 
     /// Creates the sandbox the first time, starts it again when stopped.
-    pub fn start(&self, env: &KitEnv) -> anyhow::Result<()> {
-        self.call(env, &vm::start_args(&self.name, &self.dir), START_LIMIT)
+    /// Writes the sandbox's kit (D-169), then: the first time the sandbox
+    /// is made with it (`--kit`); after, a changed kit goes in with
+    /// `sbx kit add` (its disk kept); then it starts again when stopped.
+    ///
+    /// A read-only folder an existing sandbox lacks (one made before the
+    /// kit's tools were mounted, D-170) is mounted with `sbx mount`, its
+    /// disk kept ([`Vm::mount_missing`]).
+    pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
+        let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
+        let mounts = self.mounts();
+        if self.exists(env)? {
+            self.mount_missing(env, lang)?;
+            if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
+                let args = vec![
+                    "kit".to_owned(),
+                    "add".to_owned(),
+                    self.name.clone(),
+                    kit_dir.display().to_string(),
+                ];
+                self.call(env, &args, START_LIMIT)?;
+                kit::mark_applied(&self.kit, &self.name, &print)?;
+            }
+            self.call(
+                env,
+                &vm::start_args(&self.name, &self.dir, &self.read_only, None),
+                START_LIMIT,
+            )?;
+            self.sync_host_ports(env, false)?;
+            self.sync_github(env);
+            return Ok(());
+        }
+        self.call(
+            env,
+            &vm::start_args(&self.name, &self.dir, &self.read_only, Some(&kit_dir)),
+            START_LIMIT,
+        )?;
+        kit::mark_mounts(&self.kit, &self.name, &mounts)?;
+        kit::mark_applied(&self.kit, &self.name, &print)?;
+        self.sync_host_ports(env, true)?;
+        self.sync_github(env);
+        Ok(())
+    }
+
+    /// GitHub for this sandbox as its project chose (`github_in_vm`, off
+    /// unless turned on; never for a kit terminal), D-172.
+    fn sync_github(&self, env: &KitEnv) {
+        let wanted = match &self.owner {
+            kit::Owner::Project { project } => {
+                crate::projects::settings::load(&self.kit, project).github_in_vm
+            }
+            kit::Owner::Terminal { .. } => false,
+        };
+        github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, wanted);
+    }
+
+    /// Mounts the read-only folders an existing sandbox lacks, after those
+    /// noted at its making (`.mounts`; none noted: a sandbox made before,
+    /// every one tried, one mounted already is fine), then notes them. The
+    /// workspace never changes (the sandbox's name comes from it): another
+    /// one noted is an error, never a sandbox made again, which would delete
+    /// its disk.
+    fn mount_missing(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
+        let noted = kit::mounts(&self.kit, &self.name).unwrap_or_default();
+        let lines: Vec<&str> = noted.lines().collect();
+        // Nothing noted is nothing known: the workspace `sbx` has, checked,
+        // never taken for this one.
+        let workspace = match lines.first() {
+            Some(w) => (*w).to_owned(),
+            None => self.workspace(env)?.unwrap_or_default(),
+        };
+        let same = crate::platform::processes::path_key(&workspace)
+            == crate::platform::processes::path_key(&self.dir.display().to_string());
+        if !same {
+            anyhow::bail!(crate::common::i18n::t(
+                lang,
+                "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.",
+                &[&self.name],
+            ));
+        }
+        let windows = self.kit.target().is_windows();
+        let mut changed = noted.is_empty();
+        for folder in &self.read_only {
+            let shown = folder.display().to_string();
+            if lines.iter().skip(1).any(|l| *l == shown) {
+                continue;
+            }
+            let guest = vm::guest_path(windows, folder)
+                .ok_or_else(|| anyhow::anyhow!("{shown}: no path in the VM"))?;
+            let args = vm::mount_args(&self.name, folder, &guest);
+            let args: Vec<&str> = args.iter().map(String::as_str).collect();
+            let out =
+                run(&self.sbx, &self.host, env, &args, START_LIMIT).map_err(anyhow::Error::msg)?;
+            let text = String::from_utf8_lossy(&out.stderr);
+            anyhow::ensure!(
+                out.status.success() || text.to_lowercase().contains("already"),
+                "sbx mount: {}",
+                text.trim()
+            );
+            changed = true;
+        }
+        if changed {
+            kit::mark_mounts(&self.kit, &self.name, &self.mounts())?;
+        }
+        Ok(())
+    }
+
+    /// The workspace `sbx` has for this sandbox (`sbx ls --json`, the first
+    /// of its `workspaces`), if any.
+    fn workspace(&self, env: &KitEnv) -> anyhow::Result<Option<String>> {
+        let out = run(&self.sbx, &self.host, env, &["ls", "--json"], ASK_LIMIT)
+            .map_err(anyhow::Error::msg)?;
+        anyhow::ensure!(
+            out.status.success(),
+            "sbx ls: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+        Ok(workspace_of(
+            &String::from_utf8_lossy(&out.stdout),
+            &self.name,
+        ))
+    }
+
+    /// The folders this sandbox mounts, one per line: the workspace, then
+    /// the read-only ones.
+    fn mounts(&self) -> String {
+        std::iter::once(&self.dir)
+            .chain(&self.read_only)
+            .map(|p| format!("{}\n", p.display()))
+            .collect()
+    }
+
+    /// The kit's tools its sessions and actions get (D-170).
+    pub fn with_tools(mut self, tools: GuestTools) -> Vm {
+        self.tools = tools;
+        self
+    }
+
+    pub fn tools(&self) -> &GuestTools {
+        &self.tools
+    }
+
+    /// True when `sbx` has this sandbox.
+    fn exists(&self, env: &KitEnv) -> anyhow::Result<bool> {
+        let out = run(&self.sbx, &self.host, env, &["ls", "-q"], ASK_LIMIT)
+            .map_err(anyhow::Error::msg)?;
+        anyhow::ensure!(
+            out.status.success(),
+            "sbx ls: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+        Ok(String::from_utf8_lossy(&out.stdout)
+            .lines()
+            .any(|l| l.trim() == self.name))
     }
 
     /// Publishes `port` of the VM on the PC's `127.0.0.1`.
@@ -465,14 +1263,35 @@ impl Vm {
         self.sbx.session_env(env, &self.host)
     }
 
-    /// Runs the shell `line` in the VM to its end (a container started
-    /// in the background).
-    pub fn run_line(&self, env: &KitEnv, line: &str) -> anyhow::Result<()> {
-        self.call(
-            env,
-            &vm::exec_args(&self.name, None, line, &[]),
-            START_LIMIT,
-        )
+    /// The PC's ports this sandbox may reach (its databases on the kit's
+    /// servers, D-171), opened by [`Vm::start`].
+    pub fn with_host_ports(mut self, ports: Vec<u16>) -> Vm {
+        self.host_ports = ports;
+        self
+    }
+
+    /// Opens the PC's ports of this sandbox, closes those it had and has
+    /// no more (a database moved to another version's server), and notes
+    /// them; `made`: the sandbox was just made, nothing open before.
+    fn sync_host_ports(&self, env: &KitEnv, made: bool) -> anyhow::Result<()> {
+        let before = if made {
+            Vec::new()
+        } else {
+            kit::host_ports(&self.kit, &self.name)
+        };
+        for port in &self.host_ports {
+            self.call(env, &vm::host_port_allow(&self.name, *port), ASK_LIMIT)?;
+        }
+        // A port leaves the list only once its rule is gone: one that
+        // could not be closed stays noted, and the next start tries again.
+        let mut noted = self.host_ports.clone();
+        for port in before.iter().filter(|p| !self.host_ports.contains(p)) {
+            if let Err(e) = self.call(env, &vm::host_port_close(&self.name, *port), ASK_LIMIT) {
+                crate::common::log::warn(&format!("{}: port {port}: {e:#}", self.name));
+                noted.push(*port);
+            }
+        }
+        kit::mark_host_ports(&self.kit, &self.name, &noted)
     }
 }
 
@@ -484,19 +1303,6 @@ pub fn php_line(kit: &Kit, project: &str) -> String {
         .cloned()
         .or_else(|| crate::versions::kit_choice(kit).get("php").cloned())
         .unwrap_or_else(|| "8.4".to_owned())
-}
-
-/// The line that starts the project's MySQL in its VM, when the project
-/// has a MySQL user: its version (or `8.4`), its user and password, on the
-/// port its `DB_PORT` names.
-pub fn mysql_start_line(kit: &Kit, project: &str) -> Option<String> {
-    let id = crate::db::DbEngine::MySql.id();
-    let password = crate::db::auth::try_project_password(kit, project, id).ok()??;
-    let user = crate::db::auth::project_db_name(kit, project, id).ok()?;
-    let port = crate::db::services::project_db_port(kit, project)?;
-    let line =
-        crate::db::services::project_line(kit, project, id).unwrap_or_else(|| "8.4".to_owned());
-    Some(vm::mysql_line(&line, &user, &password, port))
 }
 
 /// Stops the daemon of the kit's `sbx` and the microVMs it runs, at the

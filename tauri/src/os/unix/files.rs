@@ -15,6 +15,13 @@ pub fn is_reparse(meta: &fs::Metadata) -> bool {
     meta.file_type().is_symlink()
 }
 
+/// The bytes the file takes on the disk: its blocks of 512 bytes, so a
+/// sparse file counts what is written.
+pub fn allocated(_path: &Path, meta: &fs::Metadata) -> u64 {
+    use std::os::unix::fs::MetadataExt;
+    meta.blocks() * 512
+}
+
 /// Mode `0o600`.
 pub fn restrict_to_owner(path: &Path) -> Result<()> {
     set_mode(path, 0o600)

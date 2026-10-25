@@ -719,6 +719,21 @@
     "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre d'Atollo ou le menu du kit).",
     "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
   },
+  "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.": {
+    "en": "The folder {0} does not open in the VM: choose a folder on one of the PC's disks.",
+    "fr": "Le dossier {0} ne s'ouvre pas dans la VM : choisis un dossier sur un disque du PC.",
+    "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Wähle einen Ordner auf einem Laufwerk des PCs."
+  },
+  "La cartella {0} non si apre nella VM: è la radice di un disco, un link, una cartella di sistema, o è nel kit o nel tuo profilo (salvo i progetti del kit). Scegli la cartella di un progetto.": {
+    "en": "The folder {0} does not open in the VM: it is a drive's root, a link, a system folder, or it is in the kit or in your profile (except the kit's projects). Choose a project's folder.",
+    "fr": "Le dossier {0} ne s'ouvre pas dans la VM : c'est la racine d'un disque, un lien, un dossier système, ou il est dans le kit ou dans ton profil (sauf les projets du kit). Choisis le dossier d'un projet.",
+    "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Er ist das Stammverzeichnis eines Laufwerks, ein Link, ein Systemordner oder liegt im Kit oder in deinem Profil (außer den Projekten des Kits). Wähle den Ordner eines Projekts."
+  },
+  "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.": {
+    "en": "The sandbox {0} works in another folder: remove it in «VM sandboxes» (its disk is deleted, not the project's files) and open again.",
+    "fr": "La sandbox {0} travaille dans un autre dossier : supprime-la dans «Sandbox des VM» (son disque est supprimé, pas les fichiers du projet) et rouvre.",
+    "de": "Die Sandbox {0} arbeitet in einem anderen Ordner: Entferne sie unter «Sandboxes der VMs» (ihre Festplatte wird gelöscht, nicht die Dateien des Projekts) und öffne erneut."
+  },
   "Docker Sandboxes (sbx) non è nel kit.": {
     "en": "Docker Sandboxes (sbx) is not in the kit.",
     "fr": "Docker Sandboxes (sbx) n'est pas dans le kit.",

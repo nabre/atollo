@@ -26,6 +26,9 @@ const ALL: IsolationBlocker[] = [
   { code: "sbx_missing" },
   { code: "sbx_signed_out" },
   { code: "sbx_failed", message: "daemon not running" },
+  { code: "policy_unset" },
+  { code: "foreign_daemon" },
+  { code: "kit_disk", fs: "exFAT" },
 ];
 
 describe("explain", () => {
@@ -120,7 +123,52 @@ describe("IsolationDialog", () => {
     });
   });
 
+  it("lists Atollo's sandboxes with the room they take, and removes one after a second click", async () => {
+    let vms = [
+      { name: "atollo-p-shop-1", owner: { kind: "project", project: "shop" }, status: "running", lastUsed: null },
+      {
+        name: "atollo-t-legacy-2",
+        owner: { kind: "terminal", terminal: "legacy", dir: "D:\\Siti\\x" },
+        status: "stopped",
+        lastUsed: null,
+      },
+    ];
+    invoke.mockImplementation((cmd: string) => {
+      if (cmd === "vms_list") return Promise.resolve({ vms, disk: 3 * 1024 ** 3 });
+      if (cmd === "vm_remove") {
+        vms = vms.slice(1);
+        return Promise.resolve(undefined);
+      }
+      return Promise.resolve(undefined);
+    });
+    render(
+      <IsolationDialog
+        status={{ level: "vm", blockers: [], sbx: "sbx" }}
+        system="windows"
+        checking={false}
+        onCheck={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(await screen.findByText("Progetto shop")).toBeTruthy();
+    expect(screen.getByText("Terminale legacy in D:\\Siti\\x")).toBeTruthy();
+    expect(screen.getByText("accesa")).toBeTruthy();
+    expect(screen.getByText("Spazio occupato nel kit: 3 GB")).toBeTruthy();
+    const [first] = screen.getAllByRole("button", { name: "Rimuovi" });
+    if (!first) throw new Error("no «Rimuovi»");
+    fireEvent.click(first);
+    expect(invoke).not.toHaveBeenCalledWith("vm_remove", expect.anything());
+    fireEvent.click(screen.getByRole("button", { name: "Rimuovi davvero" }));
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("vm_remove", { name: "atollo-p-shop-1" });
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Progetto shop")).toBeNull();
+    });
+  });
+
   it("says the projects are in the VM when they are", () => {
+    invoke.mockResolvedValue({ vms: [], disk: null });
     render(
       <IsolationDialog
         status={{ level: "vm", blockers: [], sbx: "sbx" }}

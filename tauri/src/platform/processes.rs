@@ -54,6 +54,27 @@ pub fn running_from(all: &[Proc], folder: &Path) -> Vec<u32> {
         .collect()
 }
 
+/// The processes above `pid` in `all`, nearest first, at most `depth` of
+/// them (a loop of parents stops).
+pub fn ancestors(all: &[Proc], pid: u32, depth: usize) -> Vec<&Proc> {
+    let mut out: Vec<&Proc> = Vec::new();
+    let mut at = all.iter().find(|p| p.pid == pid);
+    while let Some(p) = at {
+        if out.len() >= depth {
+            break;
+        }
+        let parent = all.iter().find(|q| q.pid == p.parent && q.pid != p.pid);
+        match parent {
+            Some(q) if !out.iter().any(|o| o.pid == q.pid) => {
+                out.push(q);
+                at = Some(q);
+            }
+            _ => break,
+        }
+    }
+    out
+}
+
 /// Every process with its program path (those the user can query).
 pub fn all() -> Vec<Proc> {
     imp::all()

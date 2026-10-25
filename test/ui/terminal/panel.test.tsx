@@ -8,7 +8,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import type { PtyBackend, PtyChunk, PtyInfo } from "@/terminal";
 import { useTerminals } from "@/terminal";
 import { TerminalPanel } from "@/terminal/panel";
-import { clipboardKey, sequencer } from "@/terminal/view";
+import { clipboardKey, sequencer, webLinks } from "@/terminal/view";
 
 // The fake xterm.js, made before the mocks (vi.mock is hoisted); every
 // one made is kept, with what was written to it.
@@ -61,6 +61,20 @@ const { terms, FakeTerminal } = vi.hoisted(() => {
     }
     getSelection() {
       return "";
+    }
+    /** The screen's lines, for the link provider. */
+    lines: string[] = [];
+    buffer = {
+      active: {
+        getLine: (y: number) => ({ translateToString: () => this.lines[y] ?? "" }),
+      },
+    };
+    linkProvider: {
+      provideLinks(y: number, cb: (links: { text: string; activate(): void }[] | undefined) => void): void;
+    } | null = null;
+    registerLinkProvider(provider: NonNullable<typeof this.linkProvider>) {
+      this.linkProvider = provider;
+      return { dispose: () => undefined };
     }
     dispose() {
       this.disposed = true;
@@ -122,6 +136,10 @@ function fakeBackend(start: PtyInfo[] = []) {
     },
     dock: (id) => {
       calls.push(`dock ${String(id)}`);
+      return Promise.resolve();
+    },
+    openLink: (id, url) => {
+      calls.push(`link ${String(id)} ${url}`);
       return Promise.resolve();
     },
     onOpened: (h) => {
@@ -225,6 +243,16 @@ describe("sequencer", () => {
   });
 });
 
+describe("webLinks", () => {
+  it("finds the web links of a line, without the sentence's punctuation", () => {
+    expect(webLinks("see (https://a.example/x?y=1), then http://b.example.")).toEqual([
+      { url: "https://a.example/x?y=1", start: 6, end: 28 },
+      { url: "http://b.example", start: 37, end: 52 },
+    ]);
+    expect(webLinks("no link, ftp://x, https:// alone")).toEqual([]);
+  });
+});
+
 describe("TerminalPanel", () => {
   it("reads and listens to nothing when disabled (Windows)", () => {
     const fake = fakeBackend();
@@ -252,6 +280,18 @@ describe("TerminalPanel", () => {
     // Mouse reports that are not text reach the program as bytes.
     terms[0]?.sendBinary("\x1b[M \xff\xa0");
     expect(fake.calls).toContain("binary 1 27,91,77,32,255,160");
+    // A web link of the output opens in the PC's browser on a click
+    // (`sbx login`'s page, D-169).
+    const term = terms[0];
+    if (!term) throw new Error("no terminal");
+    term.lines[0] = "Open https://login.docker.com/activate?code=AB-12. Then wait";
+    let links: { text: string; activate(): void }[] = [];
+    term.linkProvider?.provideLinks(1, (l) => {
+      links = l ?? [];
+    });
+    expect(links.map((l) => l.text)).toEqual(["https://login.docker.com/activate?code=AB-12"]);
+    links[0]?.activate();
+    expect(fake.calls).toContain("link 1 https://login.docker.com/activate?code=AB-12");
   });
 
   it("shows why an ended session's tab could not close", async () => {

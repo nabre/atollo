@@ -72,14 +72,18 @@ pub async fn project_delete<R: Runtime>(
     ensure_main(&webview)?;
     let (kit, lang, env) = (state.kit.clone(), state.lang(), state.env());
     let (services, servers) = (Arc::clone(&state.services), Arc::clone(&state.servers));
+    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let dbs = crate::db::services::ProjectDrops {
             services: &services,
-            env,
+            env: env.clone(),
             project: project.clone(),
         };
         crate::projects::delete(&kit, &project, lang, &dbs, force_without_db == Some(true))
             .or_fail_chain("project delete")?;
+        // Its sandboxes and their disks go with it (D-169).
+        let names = crate::isolation::project_sandboxes(&project);
+        crate::isolation::remove_owned(&kit, &host, &env, &names);
         // Its site leaves the pools' list now, not after `LIST_TTL`.
         servers.invalidate();
         Ok(())
@@ -239,6 +243,44 @@ pub fn project_pin<R: Runtime>(
     project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::update(&state.kit, &project, |s| s.pinned = pinned);
     Ok(())
+}
+
+/// Whether the project's VM gets the kit's GitHub access (D-172).
+#[tauri::command]
+pub fn project_github_vm<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> CmdResult<bool> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(crate::projects::settings::load(&state.kit, &project).github_in_vm)
+}
+
+/// Gives the project's VM the kit's GitHub access, or takes it back (D-172):
+/// saved, then applied at its sandbox's next start; taken back now if the
+/// sandbox has it.
+#[tauri::command]
+pub async fn project_github_vm_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    on: bool,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::projects::settings::update(&kit, &project, |s| s.github_in_vm = on);
+        if !on {
+            if let Some(sbx) = crate::isolation::Sbx::find(&kit, &host) {
+                let sandbox = crate::isolation::vm::name(&project);
+                crate::isolation::github_for_sandbox(&kit, &sbx, &host, &env, &sandbox, false);
+            }
+        }
+    })
+    .await
+    .or_fail("project")
 }
 
 /// "Servi come sito web": a folder of the project served by the file server

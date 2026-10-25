@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-vms-list"
+description = "Enables the vms_list command without any pre-configured scope."
+commands.allow = ["vms_list"]
+
+[[permission]]
+identifier = "deny-vms-list"
+description = "Denies the vms_list command without any pre-configured scope."
+commands.deny = ["vms_list"]
