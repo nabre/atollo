@@ -85,6 +85,8 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | Docker Sandboxes: its settings and logs, the VMs' images and disks (each VM's home, `/tmp` and its own Docker) | the kit's home: `data/home/AppData/Local/DockerSandboxes/` on Windows, under `data/home/` on macOS and Linux |
 | Each sandbox's kit: its specification, whose it is (project, or terminal and folder), its mounts and opened ports; for a project with a database, the `db.env` with the project's database login given to its VM (readable by your user only) | `data/app/sandboxes/<sandbox>/` |
 | The notes of the "GitHub in the VM" commands Atollo registered in Docker Sandboxes, with their nonces (readable by your user only) | `data/app/sandboxes/secrets.json` |
+| The editor's sessions in the VM: whether the VM was on when the editor opened (`.level`) and, for each project opened in the editor, the path of `sbx`, its variables and the arguments of its terminal, its tasks and its Claude Code and Codex sandboxes (no password: the database login stays in `db.env`); cleared at every start of the app | `data/app/sandboxes/sessions/` |
+| The script the editor's terminals, tasks and agent profiles start (it reads the sessions above), written again at every start of the app | `data/kit/vm.ps1` |
 | Your projects | `projects/` |
 | A kit copy waiting to be imported, only after “Import from…” | `.atollo-import/` |
 | What an imported copy replaced, kept until you delete it | `.atollo-before-import-<date-time>/` |
