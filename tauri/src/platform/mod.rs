@@ -21,6 +21,8 @@
 //! - `temp`: the folders in transit (D-90);
 //! - `safe_path`: reading inside a project without following links (D-77);
 //! - `memory`: the PC's RAM;
+//! - `random`: random bytes of the system, for tokens;
+//! - `signature`: Authenticode signatures (Windows);
 //! - `pty`: a program on a pseudo terminal, for the app's terminal;
 //! - `webview`: the web view of the windows (D-05).
 
@@ -34,8 +36,10 @@ pub mod lock;
 pub mod memory;
 pub mod processes;
 pub mod pty;
+pub mod random;
 pub mod safe_path;
 pub mod sessions;
+pub mod signature;
 pub mod temp;
 pub mod volume;
 pub mod webview;

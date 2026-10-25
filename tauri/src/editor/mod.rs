@@ -34,10 +34,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, bail, Result};
 use serde::Serialize;
-#[cfg(windows)]
-use windows::Win32::Security::Cryptography::{BCryptGenRandom, BCRYPT_USE_SYSTEM_PREFERRED_RNG};
 
 use crate::env::{mask_secrets, KitEnv};
 use crate::kit::{Kit, Os};
@@ -425,17 +423,10 @@ fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())
 }
 
+/// 32 random bytes of the system (`platform::random`) as 64 hex digits.
 pub fn random_token() -> Result<String> {
     let mut bytes = [0u8; 32];
-    #[cfg(windows)]
-    // SAFETY: the buffer is valid for its length; system RNG, no algorithm handle.
-    unsafe { BCryptGenRandom(None, &mut bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG) }
-        .ok()
-        .context("BCryptGenRandom")?;
-    #[cfg(unix)]
-    fs::File::open("/dev/urandom")
-        .and_then(|mut f| f.read_exact(&mut bytes))
-        .context("/dev/urandom")?;
+    crate::platform::random::fill(&mut bytes)?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
 }
 

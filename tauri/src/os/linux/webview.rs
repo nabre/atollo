@@ -18,3 +18,6 @@ fn webkit_present() -> bool {
     // (the library is the app's own, loaded anyway).
     !unsafe { libc::dlopen(c"libwebkit2gtk-4.1.so.0".as_ptr(), libc::RTLD_LAZY) }.is_null()
 }
+
+/// Nothing to change in the system's web view.
+pub fn quiet<R: tauri::Runtime>(_window: &tauri::WebviewWindow<R>, _what: &'static str) {}

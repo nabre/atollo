@@ -26,8 +26,6 @@ pub mod lan;
 mod proxy;
 pub mod resume;
 /// Authenticode (WinVerifyTrust): Windows only, like the files it checks.
-#[cfg(windows)]
-pub mod signature;
 pub mod verify;
 
 use std::fs::{self, File};

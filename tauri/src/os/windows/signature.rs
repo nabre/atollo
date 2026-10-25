@@ -1,4 +1,4 @@
-//! Authenticode signatures.
+//! Authenticode signatures on Windows (`platform::signature`).
 //!
 //! `WinVerifyTrust` checks the signature and the certificate chain against
 //! the Windows trust store, with revocation of the whole chain; the
@@ -25,26 +25,21 @@ use windows::Win32::Security::WinTrust::{
     WTD_UI_NONE,
 };
 
+use crate::platform::signature::Verdict;
+
 /// HRESULTs of a revocation check that could not complete.
 const REVOCATION_UNKNOWN: [u32; 2] = [
     0x8009_2013, // CRYPT_E_REVOCATION_OFFLINE
     0x800B_010E, // CERT_E_REVOCATION_FAILURE
 ];
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum Verdict {
-    Valid {
-        subject: String,
-    },
-    /// Signed by the right publisher, revocation not verifiable.
-    RevocationUnknown {
-        subject: String,
-    },
-}
-
 /// Verifies the signature of `path` and that the organization of its
 /// signer is `publisher` exactly.
-pub fn check(path: &Path, publisher: &str, required: bool) -> Result<Verdict> {
+pub fn check(path: &Path, publisher: &str, required: bool) -> Result<Option<Verdict>> {
+    verify(path, publisher, required).map(Some)
+}
+
+fn verify(path: &Path, publisher: &str, required: bool) -> Result<Verdict> {
     let file = HSTRING::from(path.as_os_str());
     let mut file_info = WINTRUST_FILE_INFO {
         cbStruct: size_of::<WINTRUST_FILE_INFO>() as u32,
@@ -162,5 +157,5 @@ unsafe fn organization(cert: *const CERT_CONTEXT) -> Option<String> {
 }
 
 #[cfg(test)]
-#[path = "../../../test/rust/net/signature.rs"]
+#[path = "../../../../test/rust/os/windows/signature.rs"]
 mod tests;

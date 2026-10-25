@@ -78,7 +78,6 @@ pub fn find_cabs(bytes: &[u8]) -> Vec<(usize, usize)> {
 }
 
 /// The organization (`O=`) that signs the Visual C++ runtime.
-#[cfg(windows)]
 const MICROSOFT: &str = "Microsoft Corporation";
 
 /// The DLLs of the Visual C++ runtime in `tools\vcruntime`, extracted once.
@@ -99,8 +98,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
             &mut |_, _| {},
         )?;
         // The signer's organization, exactly: the only check of this file.
-        #[cfg(windows)]
-        crate::net::signature::check(&exe, MICROSOFT, true)?;
+        crate::platform::signature::check(&exe, MICROSOFT, true)?;
         let bytes = fs::read(&exe)?;
         let cabs = find_cabs(&bytes);
         if cabs.len() < 2 {
@@ -150,8 +148,7 @@ pub fn vc_runtime(ctx: &Ctx, force: bool) -> Result<PathBuf> {
         if !key.is_file() {
             bail!("vcruntime140.dll not found in the Microsoft package");
         }
-        #[cfg(windows)]
-        crate::net::signature::check(&key, MICROSOFT, true)?;
+        crate::platform::signature::check(&key, MICROSOFT, true)?;
         crate::net::archive::stage_into(&dlls, &folder)
     })();
     drop(guard);

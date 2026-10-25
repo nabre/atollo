@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Context, Result};
 
 use crate::net::archive::{self, Kind};
+use crate::platform::signature::Verdict;
 use crate::setup::Component;
 
 use super::flow::fetch;
@@ -76,19 +77,19 @@ pub(super) fn fetch_part(
         let _ = fs::remove_file(&file);
     }
     let tree = archive::pick_inner(&extracted, &part.inner)?;
-    #[cfg(windows)]
     if ctx.kit.os().is_windows() {
         if let Some(sign) = &part.sign {
             let file = crate::common::fsx::join_rel(&tree, &sign.file);
-            match crate::net::signature::check(&file, sign.publisher, sign.required)? {
-                crate::net::signature::Verdict::Valid { subject } => {
+            match crate::platform::signature::check(&file, sign.publisher, sign.required)? {
+                Some(Verdict::Valid { subject }) => {
                     progress.note(&format!("signature ok: {subject}"))
                 }
-                crate::net::signature::Verdict::RevocationUnknown { subject } => {
+                Some(Verdict::RevocationUnknown { subject }) => {
                     progress.note(&format!(
                         "signature of {subject}: revocation not verifiable (offline?)"
                     ));
                 }
+                None => {}
             }
         }
     }

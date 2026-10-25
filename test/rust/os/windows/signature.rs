@@ -13,7 +13,7 @@ fn edge() -> Option<std::path::PathBuf> {
 #[test]
 fn signed_by_microsoft() {
     let Some(edge) = edge() else { return };
-    let verdict = check(&edge, "Microsoft Corporation", false).unwrap();
+    let verdict = verify(&edge, "Microsoft Corporation", false).unwrap();
     let (Verdict::Valid { subject } | Verdict::RevocationUnknown { subject }) = verdict;
     assert!(subject.contains("Microsoft"), "{subject}");
     // The organization exactly: a part of it, or of the subject, is not
@@ -24,7 +24,7 @@ fn signed_by_microsoft() {
         "O=Microsoft Corporation",
         "Redmond",
     ] {
-        assert!(check(&edge, wrong, false).is_err(), "{wrong}");
+        assert!(verify(&edge, wrong, false).is_err(), "{wrong}");
     }
 }
 
@@ -33,7 +33,7 @@ fn unsigned_and_wrong_publisher_are_refused() {
     let tmp = TempDir::new("sig");
     let f = tmp.0.join("fake.exe");
     std::fs::write(&f, b"MZ not really").unwrap();
-    assert!(check(&f, "Anthropic, PBC", false).is_err());
+    assert!(verify(&f, "Anthropic, PBC", false).is_err());
 }
 
 /// A certificate with the publisher's name in another attribute (`OU=`,

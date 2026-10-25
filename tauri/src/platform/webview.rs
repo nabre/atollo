@@ -105,6 +105,14 @@ pub fn found(kit: &Kit) -> Option<Runtime> {
     Some(Runtime::Fixed { folder, version })
 }
 
+/// The browser of the web view out of the page's way: on Windows WebView2's
+/// accelerator keys, context menu and status bar off, so Ctrl+W, Ctrl+N,
+/// Ctrl+F, F5... reach the page; nothing to change in WKWebView or
+/// WebKitGTK. `what` names the window in the log.
+pub fn quiet<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>, what: &'static str) {
+    imp::quiet(window, what)
+}
+
 /// Finds a usable runtime; sets `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` for the
 /// fixed one. Must run before any thread starts (it sets a variable).
 pub fn locate(kit: &Kit) -> Option<Runtime> {
