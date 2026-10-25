@@ -63,7 +63,7 @@ fn rosetta_is_checked_only_for_its_components_on_that_mac() {
     // Not on a Mac: the probe says no, and nothing is ever missing here.
     #[cfg(not(target_os = "macos"))]
     {
-        assert!(!target::rosetta_present());
+        assert!(!crate::platform::host::rosetta_present());
         c.rosetta = true;
         for t in Target::ALL {
             assert_eq!(target::installable_on(&c, t), c.is_available_on(t));

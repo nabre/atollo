@@ -70,7 +70,7 @@ fn run() -> i32 {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     let command = cli::parse(&args);
     let host = Host::capture();
-    let windows_lang = i18n::windows_locale();
+    let windows_lang = platform::host::locale();
     // Language before settings exist: for the "cannot write" message.
     let early_lang = i18n::resolve(None, host.get("ATOLLO_LANG"), windows_lang.as_deref());
 
@@ -354,7 +354,7 @@ fn run() -> i32 {
         log::error("web view runtime not found");
         // WebView2 on Windows (same text as before), WebKitGTK on Linux
         // with the command of the distribution.
-        let os_release = std::fs::read_to_string("/etc/os-release").ok();
+        let os_release = platform::host::os_release();
         let text = platform::webview::missing_message(&kit, os_release.as_deref(), lang);
         fatal(lang, &text);
         return 1;

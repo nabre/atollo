@@ -79,35 +79,9 @@ pub enum Arch {
 }
 
 impl Arch {
-    /// Same rule as `_env.cmd` on Windows (ARM64 when the process or its WOW64
-    /// host reports ARM64, otherwise x64), and compile-time `target_arch` on
-    /// macOS and Linux.
+    /// The processor of this PC (`platform::host::arch`).
     pub fn detect() -> Arch {
-        #[cfg(windows)]
-        {
-            Self::from_env_values(
-                std::env::var("PROCESSOR_ARCHITECTURE").ok().as_deref(),
-                std::env::var("PROCESSOR_ARCHITEW6432").ok().as_deref(),
-            )
-        }
-        #[cfg(not(windows))]
-        {
-            if cfg!(target_arch = "aarch64") {
-                Arch::Arm64
-            } else {
-                Arch::X64
-            }
-        }
-    }
-
-    #[cfg_attr(not(any(windows, test)), allow(dead_code))]
-    pub(super) fn from_env_values(arch: Option<&str>, wow64: Option<&str>) -> Arch {
-        let is_arm = |v: Option<&str>| v.is_some_and(|v| v.eq_ignore_ascii_case("ARM64"));
-        if is_arm(arch) || is_arm(wow64) {
-            Arch::Arm64
-        } else {
-            Arch::X64
-        }
+        crate::platform::host::arch()
     }
 
     pub const fn as_str(self) -> &'static str {

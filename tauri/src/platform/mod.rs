@@ -12,6 +12,7 @@
 //! - `processes`, `sessions`: the PC's processes, the kit's programs open,
 //!   other kits, "Rimuovi l'unità";
 //! - `files`: owner-only files and folders, the executable bit;
+//! - `host`: what the app knows of the machine (processor, language...);
 //! - `instance`: one app per kit (D-08);
 //! - `lock`: the kit's locks across its processes;
 //! - `volume`: the disk of a folder (D-90, D-105);
@@ -21,6 +22,7 @@
 //! - `webview`: the web view of the windows (D-05).
 
 pub mod files;
+pub mod host;
 pub mod instance;
 pub mod jobs;
 pub mod lock;
@@ -44,10 +46,4 @@ pub const OS: Os = sys::OS;
 /// bundle name is chosen by whoever made the disk.
 pub fn sh_quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', r"'\''"))
-}
-
-/// The build of Windows (`26200`); `None` on macOS and Linux, and when it
-/// cannot be read.
-pub fn windows_build() -> Option<u32> {
-    sys::system::windows_build()
 }

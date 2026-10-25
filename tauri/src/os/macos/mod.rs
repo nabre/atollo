@@ -2,6 +2,7 @@
 //! with Linux, under the names of `crate::platform`.
 
 pub mod child;
+pub mod host;
 pub mod local_socket;
 pub mod memory;
 pub mod process_info;
@@ -9,7 +10,7 @@ pub mod processes;
 pub mod volume;
 pub mod webview;
 
-pub use super::unix::{files, instance, jobs, lock, sessions, system, temp};
+pub use super::unix::{files, instance, jobs, lock, sessions, temp};
 
 use crate::kit::Os;
 

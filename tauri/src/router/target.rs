@@ -4,7 +4,8 @@
 //!
 //! The rules are pure functions of the host, the target and (on a Mac with
 //! Apple Silicon) whether Rosetta 2 is installed, so the tests cover every
-//! pair from any system; only [`rosetta_present`] asks the machine.
+//! pair from any system; only `platform::host::rosetta_present` asks the
+//! machine.
 
 use serde::Serialize;
 
@@ -51,31 +52,9 @@ pub const fn can_execute_between(host: Target, target: Target, rosetta: bool) ->
 /// Whether Rosetta 2 matters for running `target` on `host`, and is there:
 /// probed only on a Mac with Apple Silicon asked about x64 programs.
 fn host_rosetta(host: Target, target: Target) -> bool {
-    host == Target::DARWIN_ARM64 && target == Target::DARWIN_X64 && rosetta_present()
-}
-
-/// Rosetta 2 runs x64 programs on this Mac: `/usr/bin/arch -x86_64
-/// /usr/bin/true` exits with 0. Asked once per start (installing Rosetta
-/// needs an administrator, and the app is started again after it); false
-/// on every other system.
-pub fn rosetta_present() -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        static PRESENT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        *PRESENT.get_or_init(|| {
-            std::process::Command::new("/usr/bin/arch")
-                .args(["-x86_64", "/usr/bin/true"])
-                .stdin(std::process::Stdio::null())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .status()
-                .is_ok_and(|s| s.success())
-        })
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        false
-    }
+    host == Target::DARWIN_ARM64
+        && target == Target::DARWIN_X64
+        && crate::platform::host::rosetta_present()
 }
 
 /// Pure rule: `component` runs on `target` only as an x64 build under
@@ -90,7 +69,7 @@ pub fn rosetta_missing(host: Target, target: Target, component: &Component, rose
 /// [`rosetta_missing`] on this host (Rosetta probed only when it matters).
 pub fn rosetta_missing_on_host(target: Target, component: &Component) -> bool {
     let host = Target::detect();
-    rosetta_missing(host, target, component, false) && !rosetta_present()
+    rosetta_missing(host, target, component, false) && !crate::platform::host::rosetta_present()
 }
 
 /// `component` can be installed for `target` from this host: the catalog

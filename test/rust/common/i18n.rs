@@ -214,37 +214,3 @@ fn translation_and_arguments() {
     assert_eq!(t("en", source, &["X"]), "Cannot write in the folder X.");
     assert_eq!(t("en", "testo assente", &[]), "testo assente");
 }
-
-#[test]
-fn locale_of_macos_and_linux() {
-    assert_eq!(posix_locale("it_IT.UTF-8").as_deref(), Some("it-IT"));
-    assert_eq!(posix_locale("de_DE@euro").as_deref(), Some("de-DE"));
-    assert_eq!(posix_locale("fr").as_deref(), Some("fr"));
-    assert_eq!(posix_locale("C.UTF-8"), None);
-    assert_eq!(posix_locale("POSIX"), None);
-    assert_eq!(
-        resolve(None, None, posix_locale("it_IT.UTF-8").as_deref()),
-        "it"
-    );
-}
-
-/// D-105: the output of `defaults read -g AppleLanguages`.
-#[test]
-fn apple_languages() {
-    let out = "(\n    \"it-IT\",\n    \"en-US\"\n)\n";
-    assert_eq!(first_apple_language(out).as_deref(), Some("it-IT"));
-    assert_eq!(
-        first_apple_language("(\n    de,\n    en\n)").as_deref(),
-        Some("de")
-    );
-    assert_eq!(
-        resolve(
-            None,
-            None,
-            first_apple_language("(\n    \"fr-CA\"\n)").as_deref()
-        ),
-        "fr"
-    );
-    assert_eq!(first_apple_language("(\n)\n"), None);
-    assert_eq!(first_apple_language(""), None);
-}

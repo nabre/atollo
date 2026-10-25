@@ -28,7 +28,6 @@ use crate::common::fsx::{read_text, write_atomic};
 use crate::platform::volume::VolumeInfo;
 
 pub use names::validate_project_name;
-use root::running_appimage;
 pub use root::{app_exe, launch_problem, root_from, watcher_unsafe_folder};
 pub(crate) use root::{same_root, strip_verbatim};
 pub use target::{Arch, Os, Target};
@@ -57,7 +56,7 @@ impl Kit {
     /// next to `Atollo.app` or the AppImage ([`root_from`]).
     pub fn from_exe(exe: &Path) -> Result<Kit, KitError> {
         let exe = strip_verbatim(exe);
-        let image = running_appimage(&exe);
+        let image = crate::platform::host::running_appimage(&exe);
         let root = root_from(Os::current(), &exe, image.as_deref())
             .ok_or_else(|| KitError::NoRoot(exe.clone()))?;
         Ok(Kit::at_target(root, Target::detect()))

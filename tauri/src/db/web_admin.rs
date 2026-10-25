@@ -94,7 +94,7 @@ impl Slot {
 /// 127.0.0.0/8 and never 127.0.0.1, where the projects' sites are. macOS
 /// answers only on 127.0.0.1 unless an alias is added: there it stays.
 pub fn private_loopback(random: [u8; 3]) -> Ipv4Addr {
-    if cfg!(target_os = "macos") {
+    if !crate::platform::host::LOOPBACK_RANGE {
         return Ipv4Addr::LOCALHOST;
     }
     Ipv4Addr::new(127, 1 + random[0] % 254, random[1], 1 + random[2] % 254)

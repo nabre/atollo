@@ -87,7 +87,7 @@ pub(super) fn apply_env(state: &AppState) -> &'static str {
     let lang = crate::common::i18n::resolve(
         settings.lang.as_deref(),
         state.host.get("ATOLLO_LANG"),
-        crate::common::i18n::windows_locale().as_deref(),
+        crate::platform::host::locale().as_deref(),
     );
     crate::net::ca::refresh(&state.kit, &settings);
     let env = KitEnv::build(&state.kit, &settings, lang, &state.host);

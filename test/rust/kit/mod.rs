@@ -5,17 +5,6 @@ use super::{names::*, root::*};
 pub use crate::test_support::TempDir;
 
 #[test]
-fn arch_follows_env_rule() {
-    assert_eq!(Arch::from_env_values(Some("AMD64"), None), Arch::X64);
-    assert_eq!(Arch::from_env_values(Some("ARM64"), None), Arch::Arm64);
-    assert_eq!(
-        Arch::from_env_values(Some("x86"), Some("arm64")),
-        Arch::Arm64
-    );
-    assert_eq!(Arch::from_env_values(None, None), Arch::X64);
-}
-
-#[test]
 fn root_is_exe_folder_with_odd_names() {
     for name in [
         "My Atollo",
@@ -101,22 +90,6 @@ fn root_next_to_the_bundle_or_the_appimage() {
         Some(p(r"E:\Kit"))
     );
     assert_eq!(root(Os::Win32, "Atollo.exe", None), None);
-}
-
-#[test]
-fn appimage_only_from_inside_its_mount() {
-    let os = |s: &str| Some(std::ffi::OsString::from(s));
-    let exe = Path::new("/tmp/.mount_ab/usr/bin/Atollo");
-    let (image, dir) = (os("/media/u/K/Atollo.AppImage"), os("/tmp/.mount_ab"));
-    assert_eq!(
-        appimage_of(exe, image.as_deref(), dir.as_deref()),
-        Some(PathBuf::from("/media/u/K/Atollo.AppImage"))
-    );
-    // A plain binary started from inside another AppImage: not its image.
-    let plain = Path::new("/media/u/K/Atollo");
-    assert_eq!(appimage_of(plain, image.as_deref(), dir.as_deref()), None);
-    assert_eq!(appimage_of(exe, image.as_deref(), None), None);
-    assert_eq!(appimage_of(exe, os("").as_deref(), dir.as_deref()), None);
 }
 
 /// D-113: a translocated bundle stops the start with the command to run.

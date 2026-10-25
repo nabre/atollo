@@ -125,7 +125,7 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
                     None => (false, None),
                 },
                 "x64-emulation" => {
-                    let build = crate::platform::windows_build();
+                    let build = crate::platform::host::windows_build();
                     (
                         build.is_none_or(|b| b >= 22000),
                         build.map(|b| format!("Windows build {b}")),
