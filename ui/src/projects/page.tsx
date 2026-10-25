@@ -35,7 +35,7 @@ import { ActionForm } from "./actionform";
 import { SiteForm } from "./site";
 import { COMPONENT_NAMES, Needs } from "./needs";
 import { Databases } from "./databases";
-import { Git } from "./git";
+import { Git, GithubInVm } from "./git";
 import { DeleteProjectDialog } from "./delete";
 import { SaveBaseDialog } from "./savebase";
 
@@ -343,7 +343,12 @@ export function ProjectPage({
             <ProjectMcpBox project={p.id} engines={dbs?.dbs.map((d) => d.engine) ?? []} />
           </>
         )}
-        {section === "git" && <Git status={status} />}
+        {section === "git" && (
+          <>
+            <Git status={status} />
+            <GithubInVm project={p.name} />
+          </>
+        )}
       </EditorBody>
     </div>
   );

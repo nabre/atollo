@@ -417,6 +417,8 @@ macro_rules! command_handler {
             $crate::ipc::projects::project_action_remove,
             $crate::ipc::projects::project_action_default,
             $crate::ipc::projects::project_pin,
+            $crate::ipc::projects::project_github_vm,
+            $crate::ipc::projects::project_github_vm_set,
             $crate::ipc::projects::project_status,
             $crate::ipc::databases::project_databases,
             $crate::ipc::databases::project_db_create,

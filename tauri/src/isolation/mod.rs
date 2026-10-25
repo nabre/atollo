@@ -207,7 +207,6 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
                 blockers.push(b);
             } else if let Sbx::Kit(_) = sbx {
                 daemon_settings(sbx, host, env);
-                kit_secrets(kit, sbx, host, env);
             }
         }
     }
@@ -301,46 +300,84 @@ fn daemon_settings(sbx: &Sbx, host: &Host, env: &KitEnv) {
     daemon_call(sbx, host, env, &["daemon", "restart"]);
 }
 
-/// The kit's secrets in the kit's `sbx` ([`secrets`], D-172): GitHub's,
-/// as a command of the app, when the kit is signed in to GitHub and the
-/// secret is not the user's own. Failures only go to the log: the VMs
-/// work without it.
-fn kit_secrets(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+/// The PC's name, to note per PC what Atollo registered in `sbx`.
+fn computer(host: &Host) -> String {
+    host.get("COMPUTERNAME")
+        .or(host.get("HOSTNAME"))
+        .unwrap_or("pc")
+        .to_owned()
+}
+
+/// The kit's GitHub access for the sandbox `sandbox` ([`secrets`], D-172),
+/// that one only (`--sandbox`), never global: given when `wanted` (the
+/// project allowed it) and the kit is signed in to GitHub; taken back when
+/// not wanted any more and Atollo had given it. A secret Atollo did not
+/// register (the user's own) is never touched. Failures only go to the
+/// log: the VM works without it.
+pub(crate) fn github_for_sandbox(
+    kit: &Kit,
+    sbx: &Sbx,
+    host: &Host,
+    env: &KitEnv,
+    sandbox: &str,
+    wanted: bool,
+) {
     let Some(exe) = crate::kit::app_exe() else {
         return;
     };
     let command = secrets::github_command(&exe, kit.target().is_windows());
-    let computer = host
-        .get("COMPUTERNAME")
-        .or(host.get("HOSTNAME"))
-        .unwrap_or("pc")
-        .to_owned();
-    let Ok(ls) = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT) else {
-        return;
+    let pc = computer(host);
+    let mine = secrets::mine(kit, "github", &pc, sandbox);
+    let warn = |what: &str, out: Result<std::process::Output, String>| match out {
+        Ok(o) if o.status.success() => true,
+        Ok(o) => {
+            crate::common::log::warn(&format!(
+                "sbx secret {what} github {sandbox}: {}",
+                String::from_utf8_lossy(&o.stderr).trim()
+            ));
+            false
+        }
+        Err(e) => {
+            crate::common::log::warn(&format!("sbx secret {what} github {sandbox}: {e}"));
+            false
+        }
     };
-    let noted = secrets::noted(kit);
-    let mine = noted
-        .get("github")
-        .and_then(|list| list.iter().find(|n| n.computer == computer));
-    let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), "github");
-    if secrets::step(listed, mine, &command) == secrets::Step::Keep {
-        return;
-    }
-    if crate::github::token(kit, env).is_none() {
-        return;
-    }
-    let args = ["secret", "set", "github", "--command", command.as_str()];
-    match run(sbx, host, env, &args, ASK_LIMIT) {
-        Ok(out) if out.status.success() => {
-            if let Err(e) = secrets::note(kit, "github", &computer, &command) {
+    let remove = || {
+        let args = ["secret", "rm", "github", "--sandbox", sandbox, "--force"];
+        warn("rm", run(sbx, host, env, &args, ASK_LIMIT))
+    };
+    if !wanted {
+        if mine.is_some() && remove() {
+            if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
                 crate::common::log::warn(&format!("secrets.json: {e:#}"));
             }
         }
-        Ok(out) => crate::common::log::warn(&format!(
-            "sbx secret set github: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        )),
-        Err(e) => crate::common::log::warn(&format!("sbx secret set github: {e}")),
+        return;
+    }
+    let Ok(ls) = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT) else {
+        return;
+    };
+    let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), "github", sandbox);
+    let step = secrets::step(listed, mine.as_ref(), &command);
+    if step == secrets::Step::Keep || crate::github::token(kit, env).is_none() {
+        return;
+    }
+    if step == secrets::Step::Replace && !remove() {
+        return;
+    }
+    let args = [
+        "secret",
+        "set",
+        "github",
+        "--sandbox",
+        sandbox,
+        "--command",
+        command.as_str(),
+    ];
+    if warn("set", run(sbx, host, env, &args, ASK_LIMIT)) {
+        if let Err(e) = secrets::note(kit, "github", &pc, sandbox, Some(&command)) {
+            crate::common::log::warn(&format!("secrets.json: {e:#}"));
+        }
     }
 }
 
@@ -724,6 +761,8 @@ pub fn is_atollos(name: &str) -> bool {
 pub fn remove_vm(kit: &Kit, host: &Host, env: &KitEnv, name: &str) -> anyhow::Result<()> {
     anyhow::ensure!(is_atollos(name), "not a sandbox of Atollo: {name}");
     if let Some(sbx) = Sbx::find(kit, host) {
+        // GitHub taken back first, if Atollo had given it (D-172).
+        github_for_sandbox(kit, &sbx, host, env, name, false);
         let out =
             run(&sbx, host, env, &["rm", "-f", name], START_LIMIT).map_err(anyhow::Error::msg)?;
         let text = String::from_utf8_lossy(&out.stderr).to_lowercase();
@@ -1039,7 +1078,9 @@ impl Vm {
                 &vm::start_args(&self.name, &self.dir, &self.read_only, None),
                 START_LIMIT,
             )?;
-            return self.sync_host_ports(env, false);
+            self.sync_host_ports(env, false)?;
+            self.sync_github(env);
+            return Ok(());
         }
         self.call(
             env,
@@ -1048,7 +1089,21 @@ impl Vm {
         )?;
         kit::mark_mounts(&self.kit, &self.name, &mounts)?;
         kit::mark_applied(&self.kit, &self.name, &print)?;
-        self.sync_host_ports(env, true)
+        self.sync_host_ports(env, true)?;
+        self.sync_github(env);
+        Ok(())
+    }
+
+    /// GitHub for this sandbox as its project chose (`github_in_vm`, off
+    /// unless turned on; never for a kit terminal), D-172.
+    fn sync_github(&self, env: &KitEnv) {
+        let wanted = match &self.owner {
+            kit::Owner::Project { project } => {
+                crate::projects::settings::load(&self.kit, project).github_in_vm
+            }
+            kit::Owner::Terminal { .. } => false,
+        };
+        github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, wanted);
     }
 
     /// Mounts the read-only folders an existing sandbox lacks, after those

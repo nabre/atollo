@@ -1102,5 +1102,8 @@
   "accesa": "running",
   "spenta": "stopped",
   "Rimuovi davvero": "Really remove",
-  "Si cancella il disco della sandbox: la sua home, /tmp e i database della VM. I file del progetto restano.": "The sandbox's disk is deleted: its home, /tmp and the VM's databases. The project's files stay."
+  "Si cancella il disco della sandbox: la sua home, /tmp e i database della VM. I file del progetto restano.": "The sandbox's disk is deleted: its home, /tmp and the VM's databases. The project's files stay.",
+  "GitHub nella VM": "GitHub in the VM",
+  "Il progetto nella VM usa il tuo accesso a GitHub del kit (push, gh)": "The project in the VM uses your GitHub access of the kit (push, gh)",
+  "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi.": "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But the project's code could act on GitHub on your behalf: turn it on only for projects you trust."
 }

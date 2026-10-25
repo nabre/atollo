@@ -97,6 +97,8 @@ const COMMANDS: &[&str] = &[
     "project_action_remove",
     "project_action_default",
     "project_pin",
+    "project_github_vm",
+    "project_github_vm_set",
     "project_status",
     "project_databases",
     "project_db_create",

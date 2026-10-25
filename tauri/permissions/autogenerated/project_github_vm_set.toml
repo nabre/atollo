@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-github-vm-set"
+description = "Enables the project_github_vm_set command without any pre-configured scope."
+commands.allow = ["project_github_vm_set"]
+
+[[permission]]
+identifier = "deny-project-github-vm-set"
+description = "Denies the project_github_vm_set command without any pre-configured scope."
+commands.deny = ["project_github_vm_set"]

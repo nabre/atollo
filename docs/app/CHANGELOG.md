@@ -2,7 +2,7 @@
 
 ## GitHub nella VM senza il token (25/10/2026)
 
-- **`git push` e `gh` dalla VM** (D-172): con il kit collegato a GitHub, il proxy di Docker Sandboxes aggiunge l'accesso alle richieste verso GitHub. Nella VM c'è solo un segnaposto; Atollo non copia il token, dà a Docker Sandboxes un comando del kit che lo legge quando serve. Un accesso a GitHub che avevi già dato a Docker Sandboxes non viene toccato.
+- **`git push` e `gh` dalla VM, per i progetti che scegli** (D-172): nella sezione Git del progetto, «GitHub nella VM» (spenta di serie). Accesa, il proxy di Docker Sandboxes aggiunge il tuo accesso alle richieste verso GitHub di quella sola VM; nella VM c'è solo un segnaposto, e Atollo non copia il token: dà a Docker Sandboxes un comando del kit che lo legge quando serve, e che risponde solo a Docker Sandboxes. Spenta, l'accesso viene tolto. Un accesso a GitHub che avevi già dato a Docker Sandboxes non viene toccato.
 
 ## Il database del progetto resta sul PC (25/10/2026)
 

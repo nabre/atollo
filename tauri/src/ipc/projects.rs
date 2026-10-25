@@ -245,6 +245,44 @@ pub fn project_pin<R: Runtime>(
     Ok(())
 }
 
+/// Whether the project's VM gets the kit's GitHub access (D-172).
+#[tauri::command]
+pub fn project_github_vm<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> CmdResult<bool> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(crate::projects::settings::load(&state.kit, &project).github_in_vm)
+}
+
+/// Gives the project's VM the kit's GitHub access, or takes it back (D-172):
+/// saved, then applied at its sandbox's next start; taken back now if the
+/// sandbox has it.
+#[tauri::command]
+pub async fn project_github_vm_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    on: bool,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::projects::settings::update(&kit, &project, |s| s.github_in_vm = on);
+        if !on {
+            if let Some(sbx) = crate::isolation::Sbx::find(&kit, &host) {
+                let sandbox = crate::isolation::vm::name(&project);
+                crate::isolation::github_for_sandbox(&kit, &sbx, &host, &env, &sandbox, false);
+            }
+        }
+    })
+    .await
+    .or_fail("project")
+}
+
 /// "Servi come sito web": a folder of the project served by the file server
 /// (`static`), PHP (`php`), Apache (`apache`) or Caddy (`caddy`), or the site removed (`none`).
 #[tauri::command]

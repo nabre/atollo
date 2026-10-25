@@ -1,8 +1,45 @@
-// The Git section of a project's page: its state, read from .git.
+// The Git section of a project's page: its state, read from .git, and
+// whether its VM may use the kit's GitHub access (D-172).
+import { useCallback, useState } from "react";
 import { ActionButton } from "../shared/common";
+import { useLoad } from "../shared/hooks";
 import { t } from "../i18n";
-import { urlOpen, type ProjectStatus } from "../ipc";
-import { codicon, EditorSection, Properties } from "../workbench";
+import { projectGithubVm, projectGithubVmSet, urlOpen, type ProjectStatus } from "../ipc";
+import { CheckboxLabel, codicon, EditorSection, Properties } from "../workbench";
+
+/** The kit's GitHub access in the project's VM: off unless turned on here,
+ * since the project's code could then act as the user on GitHub. */
+export function GithubInVm({ project }: { project: string }) {
+  const load = useCallback(() => projectGithubVm(project), [project]);
+  const { data, setData } = useLoad<boolean>(load, false, { onError: "keep" });
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <EditorSection id="github-vm" title={t("GitHub nella VM")}>
+      <CheckboxLabel
+        checked={data}
+        onChange={(on) => {
+          setError(null);
+          projectGithubVmSet(project, on).then(
+            () => {
+              setData(on);
+            },
+            (e: unknown) => {
+              setError(String(e));
+            },
+          );
+        }}
+      >
+        {t("Il progetto nella VM usa il tuo accesso a GitHub del kit (push, gh)")}
+      </CheckboxLabel>
+      <p className="text-[12px] text-vsc-desc">
+        {t(
+          "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi.",
+        )}
+      </p>
+      {error && <p className="text-vsc-error">{error}</p>}
+    </EditorSection>
+  );
+}
 
 export function Git({ status }: { status: ProjectStatus | null }) {
   const git = status?.git;

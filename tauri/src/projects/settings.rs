@@ -38,6 +38,11 @@ pub struct ProjectSettings {
     /// (`versions/mod.rs`); missing = the kit's.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub versions: BTreeMap<String, String>,
+    /// The kit's GitHub access in the project's VM (D-172): the proxy adds
+    /// it to the VM's requests to GitHub, so the project's code can act as
+    /// the user there. Off unless the user turns it on for this project.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub github_in_vm: bool,
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
 }
