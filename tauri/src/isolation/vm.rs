@@ -271,6 +271,12 @@ pub fn publish_args(vm: &str, port: u16, lan: bool) -> Vec<String> {
     ]
 }
 
+/// True when `sbx ports --publish`'s error `text` says `port` is published
+/// already on the very address asked ([`host_ip`]), never another one.
+pub fn published_already(text: &str, port: u16, lan: bool) -> bool {
+    text.contains(&format!(" {}:{port}/", host_ip(lan))) && text.contains("already published")
+}
+
 /// Takes `port` back from the PC (idempotent: nothing published is fine).
 pub fn unpublish_args(vm: &str, port: u16, lan: bool) -> Vec<String> {
     vec![
