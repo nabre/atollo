@@ -106,30 +106,6 @@ pub fn libicu_present() -> bool {
     true
 }
 
-/// `kern.uuid` (the hardware's IOPlatformUUID, the same `ioreg` prints),
-/// fixed for the life of the Mac.
-pub fn machine_id() -> Option<String> {
-    let mut buf = [0u8; 64];
-    let mut len = buf.len();
-    // SAFETY: a NUL-terminated name, the buffer and its length; nothing is
-    // written (new value null).
-    let ok = unsafe {
-        libc::sysctlbyname(
-            c"kern.uuid".as_ptr(),
-            buf.as_mut_ptr().cast(),
-            &mut len,
-            std::ptr::null_mut(),
-            0,
-        )
-    } == 0;
-    let end = buf[..len.min(buf.len())]
-        .iter()
-        .position(|b| *b == 0)
-        .unwrap_or(len.min(buf.len()));
-    let id = std::str::from_utf8(&buf[..end]).ok()?.trim().to_owned();
-    (ok && !id.is_empty()).then_some(id)
-}
-
 #[cfg(test)]
 #[path = "../../../../test/rust/os/macos/host.rs"]
 mod tests;

@@ -164,6 +164,9 @@ fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
         !chosen.contains_key("gh"),
         "a component of the app is no tool"
     );
+    for agent in ["claude", "codex", "pi", "antigravity"] {
+        assert!(!chosen.contains_key(agent), "no agent among the VM's tools");
+    }
 
     assert_eq!(kit::mounts(&kit, "atollo-p-shop-1"), None);
     kit::write(

@@ -2,6 +2,8 @@
 // where a program of Atollo runs, the label every terminal shows (§8.3),
 // and the refusal of a command with its reason and what to do.
 import type { AgentId } from "./agents";
+import { query, subscribe } from "./core";
+import { LEVELS_CHANGED } from "./events";
 import type { IsolationBlocker } from "./isolation";
 
 export type Level = "manual" | "project" | "agent";
@@ -45,4 +47,24 @@ export function errorText(e: unknown): string {
 /** The fix of a refused command's error; null for any other error. */
 export function fixOf(e: unknown): Fix | null {
   return isRefused(e) ? e.fix : null;
+}
+
+/** The levels now (LEVELS.md §4.1): the VM on or off, why, and whether the
+ * agents are enabled (I6). */
+export interface LevelsState {
+  vm: "on" | "off";
+  /** Why the VM is off and what to do, null when on. */
+  reason: string | null;
+  /** False exactly when vm is "off". */
+  agentsEnabled: boolean;
+}
+
+export function levelsState(): Promise<LevelsState> {
+  return query<LevelsState>("levels_state", { vm: "on", reason: null, agentsEnabled: true });
+}
+
+/** Every flip of the agents' availability (`levels-changed`, §4.2): what
+ * shows the agents is read again. */
+export function onLevelsChanged(handler: (state: LevelsState) => void): Promise<() => void> {
+  return subscribe<LevelsState>(LEVELS_CHANGED, handler);
 }

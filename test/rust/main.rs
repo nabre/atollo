@@ -198,6 +198,10 @@ fn splice_target_lines(old: &str, components_lines: &[&str], prepare_line: &str)
         "de"
     };
     for line in old.split('\n') {
+        // The `keyring` command went with D-179 (no agent on the PC).
+        if line.starts_with("  keyring ") {
+            continue;
+        }
         out.push(line);
         if line.starts_with("  components ") {
             out.extend_from_slice(components_lines);
@@ -275,8 +279,8 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
 }
 
 /// Windows keeps the help it has always printed, byte for byte, apart
-/// from the new `--target` lines: `Atollo.exe` whatever the file is
-/// called, and `agy.cmd` on the keyring line.
+/// from the new `--target` lines and without the `keyring` line (D-179):
+/// `Atollo.exe` whatever the file is called.
 #[test]
 fn help_on_windows_is_the_old_text_plus_target() {
     let exe = Path::new(r"D:\Kit\Atollo.exe");
@@ -327,20 +331,22 @@ fn help_on_windows_is_the_old_text_plus_target() {
     );
 }
 
-/// Elsewhere the keyring line names the kit's `agy`, never `agy.cmd`.
+/// No `keyring` command any more (D-179, LEVELS.md §7): no agent runs on
+/// the PC, so no launcher carries Antigravity's login around it.
 #[test]
-fn help_off_windows_names_agy() {
-    for os in [kit::Os::Linux, kit::Os::Darwin] {
+fn the_help_has_no_keyring_command() {
+    for os in [kit::Os::Win32, kit::Os::Linux, kit::Os::Darwin] {
         for lang in ["it", "en", "fr", "de"] {
             let text = help_text(lang, os, None);
-            assert!(
-                text.contains(" agy ") || text.contains(" agy)"),
-                "{os:?} {lang}"
-            );
-            assert!(!text.contains("agy.cmd"), "{os:?} {lang}");
+            assert!(!text.contains("keyring"), "{os:?} {lang}");
+            assert!(!text.contains("agy"), "{os:?} {lang}");
             assert!(!text.contains("{1}"), "{os:?} {lang}");
         }
     }
+    assert!(matches!(
+        crate::app::cli::parse(&[std::ffi::OsString::from("keyring"), "save".into()]),
+        crate::app::cli::Cli::Unknown(_)
+    ));
 }
 
 /// From an AppImage the help names the AppImage the user started (what

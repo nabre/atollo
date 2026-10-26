@@ -1,42 +1,16 @@
 use super::*;
 use crate::kit::{tests::TempDir, Kit, Target};
 
-/// On Windows a batch agent (`agy.cmd`) runs through the kit's PowerShell,
-/// in the app's terminal, never through cmd or a shell of the PC.
+/// The shell is always the kit's PowerShell on Windows, even before it is
+/// installed: the session then says it is missing, never bash or cmd.
 #[test]
-fn batch_runs_through_the_kit_powershell() {
+fn the_shell_is_the_kit_powershell_on_windows() {
     let tmp = TempDir::new("term");
     let kit = Kit::at(tmp.0.join("k & (1)"), crate::test_support::kit_arch())
         .for_target(Target::WIN32_X64);
     kit.prepare().unwrap();
-    let script = kit.root().join("it's").join("agy.cmd");
     let dir = kit.projects().join("app");
-    let l = pty::command(&kit, &script, &dir);
     let pwsh = crate::setup::kit_path(&kit, r"pwsh\pwsh.exe");
-    assert_eq!(l.program, pwsh);
-    assert_eq!(
-        l.args[..5],
-        [
-            "-NoLogo",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command"
-        ]
-    );
-    let quoted = format!("& '{}'; exit $LASTEXITCODE", script.display()).replace("it's", "it''s");
-    assert_eq!(l.args[5], quoted);
-    assert_eq!(l.title, "app · agy");
-    assert_eq!(l.conpty, Some(crate::setup::kit_path(&kit, "conpty")));
-
-    // An exe agent runs directly.
-    let claude = kit.apps().join("claude").join("claude.exe");
-    let l = pty::command(&kit, &claude, &dir);
-    assert_eq!(l.program, claude);
-    assert!(l.args.is_empty());
-
-    // The shell is always the kit's PowerShell on Windows, even before it
-    // is installed: the session then says it is missing, never bash or cmd.
     let shell = pty::shell(&kit, &dir);
     assert_eq!(shell.program, pwsh);
     assert!(shell.args.iter().any(|a| a.ends_with("profile.ps1")));

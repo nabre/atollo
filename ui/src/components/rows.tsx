@@ -8,6 +8,7 @@ import { composerOf, splitVersion, ToolInstallLine, ToolVersions, type KitVersio
 import { ByHandBox } from "./byhand";
 import { LinkProblems, outsideOf } from "./relations";
 import { sizeText } from "./model";
+import { leftoverText, providedText, toolStateLabel } from "./status";
 import { ComponentLogo } from "../shared/logos";
 import { Badge, Tag } from "../shared/tags";
 
@@ -194,7 +195,12 @@ export function ComponentRow({
             id={inputId}
             checked={on}
             disabled={
-              required || working || c.unavailableReason !== null || c.notNeeded !== null || (!c.available && !on)
+              required ||
+              working ||
+              c.agent !== null ||
+              c.unavailableReason !== null ||
+              c.notNeeded !== null ||
+              (!c.available && !on)
             }
             onChange={(v) => {
               onChange(v);
@@ -220,6 +226,18 @@ export function ComponentRow({
           >
             {state ? (
               <ItemStatus state={state} />
+            ) : c.leftover ? (
+              <span className="text-vsc-settings-modified" title={leftoverText()}>
+                {toolStateLabel("toRemove")}
+              </span>
+            ) : c.agent?.kind === "provided" ? (
+              <span className="text-vsc-link" title={providedText(c.name)}>
+                {toolStateLabel("provided")}
+              </span>
+            ) : c.agent?.kind === "needsVm" ? (
+              <span className="text-vsc-desc" title={c.agent.reason}>
+                {toolStateLabel("needsVm")}
+              </span>
             ) : versions ? null /* its versions are in the list below */ : c.installed ? (
               <span className="text-vsc-success">
                 <Codicon name="check" className="mr-1" size={12} />

@@ -136,6 +136,73 @@ pub(crate) fn ready_now(
     ready(fx, kit, base, req, &facts, needs, lang, host)
 }
 
+/// The levels now (LEVELS.md §4.1): the VM on or off, why, and whether the
+/// agents are enabled. Async: the status may ask `sbx`.
+#[tauri::command]
+pub async fn levels_state<R: Runtime>(
+    webview: tauri::Webview<R>,
+    state: tauri::State<'_, AppState>,
+) -> CmdResult<crate::levels::agents::LevelsState> {
+    super::ensure_main(&webview)?;
+    let (kit, host, env, lang) = (
+        state.kit.clone(),
+        state.host.clone(),
+        state.env(),
+        state.lang(),
+    );
+    tauri::async_runtime::spawn_blocking(move || {
+        let status = crate::isolation::status(&kit, &host, &env, false);
+        crate::levels::agents::LevelsState::of(&crate::levels::agents::vm_state(&status), lang)
+    })
+    .await
+    .or_fail("levels")
+}
+
+/// `levels-changed` to the window when the agents' availability flipped
+/// with `status` (a status read by [`watch_levels`], or the notice's
+/// forced check, `isolation_status`).
+pub(crate) fn observed<R: Runtime>(app: &AppHandle<R>, status: &crate::isolation::Status) {
+    let vm = crate::levels::agents::vm_state(status);
+    if crate::levels::agents::TOLD.flipped(&vm) {
+        tell_levels(app, &vm);
+    }
+}
+
+fn tell_levels<R: Runtime>(app: &AppHandle<R>, vm: &crate::levels::VmState) {
+    use tauri::{Emitter, Manager};
+    let lang = app
+        .try_state::<AppState>()
+        .map_or("it", |state| state.lang());
+    let payload = crate::levels::agents::LevelsState::of(vm, lang);
+    crate::common::log::info(&format!(
+        "levels: agents {}",
+        if payload.agents_enabled {
+            "enabled"
+        } else {
+            "disabled"
+        }
+    ));
+    let _ = app.emit_to(super::MAIN, super::events::LEVELS_CHANGED, payload);
+}
+
+/// Re-enabling (LEVELS.md §7): `levels::agents::watch` asks the status at
+/// its cadence from the app's start and tells each flip of the agents'
+/// availability as `levels-changed`; the interface reads again its agents,
+/// the Tools page and the quick panel. The editor's agent profiles follow
+/// at its next start (`editor::cfg::write`).
+pub(crate) fn watch_levels<R: Runtime>(app: AppHandle<R>) {
+    use tauri::Manager;
+    let state = app.state::<AppState>();
+    let (kit, host) = (state.kit.clone(), state.host.clone());
+    let env_app = app.clone();
+    crate::levels::agents::watch(
+        kit,
+        host,
+        move || env_app.state::<AppState>().env(),
+        move |vm| tell_levels(&app, vm),
+    );
+}
+
 /// Answers the request files of the processes outside the app while it
 /// runs (LEVELS.md §4.3, E11, E12, §6.8): each through `decide` →
 /// `environment` → `prepare` (`levels::requests::reply_to`, the app's

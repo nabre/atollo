@@ -692,3 +692,109 @@ fn removal_takes_the_files_added_for_it() {
         assert!(downloads.join("other.zip").is_file());
     });
 }
+
+/// The choice with every agent chosen.
+fn all_agents() -> Choice {
+    let catalog = Catalog::get();
+    let mut choice = Choice::defaults(catalog);
+    for id in ["claude", "codex", "pi", "antigravity"] {
+        choice.set(catalog, id, true);
+    }
+    choice
+}
+
+fn vm(vm: Option<crate::levels::VmState>) -> Options {
+    Options {
+        vm,
+        ..Options::default()
+    }
+}
+
+/// LEVELS.md §7 (I6): without the VM no agent is planned, for any system,
+/// in a run of the whole choice or of `only`.
+#[test]
+fn agents_are_never_planned_without_the_vm() {
+    let off = crate::levels::VmState::Off {
+        blockers: vec![crate::isolation::Blocker::HypervisorOff],
+    };
+    for target in crate::kit::Target::ALL {
+        with_target_ctx("plan-agents-off", target, |ctx| {
+            let catalog = Catalog::get();
+            for opts in [vm(None), vm(Some(off.clone()))] {
+                let p = plan(ctx, catalog, &all_agents(), &opts).unwrap();
+                for id in ["claude", "codex", "pi", "antigravity"] {
+                    assert!(!p.handle.contains(&id.into()), "{target} {id}");
+                }
+                let only = Options {
+                    only: vec!["pi".into()],
+                    ..opts
+                };
+                let p = plan(ctx, catalog, &all_agents(), &only).unwrap();
+                assert!(!p.handle.contains(&"pi".into()), "{target}");
+            }
+        });
+    }
+}
+
+/// Q11: with the VM on, Pi and Antigravity only for the VM's Linux;
+/// Claude Code and Codex never downloaded (the `sbx` images bring them).
+#[test]
+fn agents_only_for_the_vms_linux() {
+    let on = Some(crate::levels::VmState::On);
+    for target in crate::kit::Target::ALL {
+        with_target_ctx("plan-agents-on", target, |ctx| {
+            let catalog = Catalog::get();
+            let tools = Options {
+                scope: Scope::Tools,
+                ..vm(on.clone())
+            };
+            for opts in [vm(on.clone()), tools] {
+                let p = plan(ctx, catalog, &all_agents(), &opts).unwrap();
+                for id in ["claude", "codex"] {
+                    assert!(!p.handle.contains(&id.into()), "{target} {id}");
+                }
+                for id in ["pi", "antigravity"] {
+                    let available = catalog.find(id).unwrap().is_available_on(target);
+                    assert_eq!(
+                        p.handle.contains(&id.into()),
+                        target.is_linux() && available,
+                        "{target} {id}"
+                    );
+                }
+            }
+        });
+    }
+}
+
+/// An agent an earlier Atollo installed for the PC is removed by the next
+/// run that removes, chosen or not; Pi's build for the VM's Linux stays
+/// while the VM is off.
+#[test]
+fn an_agent_for_the_pc_is_removed() {
+    with_ctx("plan-agents-leftover", |ctx| {
+        let catalog = Catalog::get();
+        fake_install(ctx, "claude");
+        fake_install(ctx, "pi");
+        let p = plan(ctx, catalog, &all_agents(), &vm(None)).unwrap();
+        assert!(p.remove.contains(&"claude".into()) && p.remove.contains(&"pi".into()));
+        let system = Options {
+            scope: Scope::System,
+            ..vm(Some(crate::levels::VmState::On))
+        };
+        let p = plan(ctx, catalog, &all_agents(), &system).unwrap();
+        assert!(p.remove.contains(&"pi".into()), "with the VM on too");
+        let only = Options {
+            only: vec!["git".into()],
+            ..Options::default()
+        };
+        assert!(plan(ctx, catalog, &all_agents(), &only)
+            .unwrap()
+            .remove
+            .is_empty());
+    });
+    with_target_ctx("plan-agents-linux", crate::kit::Target::LINUX_X64, |ctx| {
+        fake_install(ctx, "pi");
+        let p = plan(ctx, Catalog::get(), &all_agents(), &vm(None)).unwrap();
+        assert!(!p.remove.contains(&"pi".into()), "the VM's build stays");
+    });
+}

@@ -45,6 +45,15 @@ pub struct ComponentInfo {
     /// Bootstrap archives pre-downloaded for this target; finishes installing
     /// on first start on that OS.
     pub bootstrap_staged: bool,
+    /// An agent's row (LEVELS.md §7, Q11): «fornito dalla VM» (Claude Code,
+    /// Codex), «serve la VM» with the reason (Pi, Antigravity without the
+    /// VM); `None` for every other component. With one, `available` is
+    /// false: nothing to install or update.
+    pub agent: Option<crate::levels::agents::AgentRow>,
+    /// An agent's folder for a system where the kit no longer keeps it (an
+    /// install for the PC of an earlier Atollo): never on a `PATH`, removed
+    /// by the next «Applica» (`levels::agents::obsolete`).
+    pub leftover: bool,
 }
 
 /// When the Tools page opens: what was deleted by hand from the kit's
@@ -83,7 +92,8 @@ pub fn components_list<R: Runtime>(
 ) -> CmdResult<Vec<ComponentInfo>> {
     ensure_main(&webview)?;
     let kit = kit_for(&state.kit, target.as_deref())?;
-    let mut infos = component_infos(&kit, state.lang());
+    let vm = crate::levels::agents::known_vm();
+    let mut infos = component_infos(&kit, state.lang(), &vm);
     if let Some(ids) = ids {
         infos.retain(|c| ids.contains(&c.id));
     }
@@ -271,8 +281,15 @@ pub(super) fn xcode_missing(
 
 /// The catalog as the "Linguaggi e strumenti" page shows it, from this PC:
 /// a component with an `unavailableReason` is not available on this
-/// target (see [`unavailable_reason`]).
-pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
+/// target (see [`unavailable_reason`]). The agents with the VM as `vm`
+/// says (LEVELS.md §7): Pi and Antigravity as installed for the VM's Linux
+/// (their only build the kit keeps, Q11), Claude Code and Codex brought by
+/// the VM; nothing of them installable without it.
+pub(super) fn component_infos(
+    kit: &Kit,
+    lang: &str,
+    vm: &crate::levels::VmState,
+) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
@@ -290,6 +307,9 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
             let off = !c.is_available_on(target);
             let unavailable_reason = unavailable_reason(c, target, lang);
             let not_needed = not_needed_reason(c, target, lang);
+            let agent = crate::levels::agents::agent_row(c, vm, lang);
+            // An agent's state is the one of its build for the VM's Linux.
+            let shown = agent_kit(kit, c);
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -297,21 +317,37 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 desc: crate::common::i18n::t(lang, &c.desc, &[]),
                 mb: c.mb,
                 chosen: choice.is_chosen(&c.id) || here.contains(c.id.as_str()),
-                installed: c.is_installed(kit),
-                present: c.is_present(kit),
+                installed: c.is_installed(&shown),
+                present: c.is_present(&shown),
                 locked: locked.contains(c.id.as_str()),
-                version: c.installed_version(kit),
-                available: install::installer(&c.id).is_some() && !off,
+                version: c.installed_version(&shown),
+                available: install::installer(&c.id).is_some() && !off && agent.is_none(),
                 unavailable_reason,
                 not_needed,
                 needs: c.needs_list_on(target),
                 xcode_missing: c.id == "cc" && xcode_missing,
                 versioned: c.versioned,
                 home: c.home.clone(),
-                bootstrap_staged: crate::router::bootstrap::is_staged(kit, c),
+                bootstrap_staged: crate::router::bootstrap::is_staged(&shown, c),
+                leftover: crate::levels::agents::obsolete(c, target) && c.is_present(kit),
+                agent,
             }
         })
         .collect()
+}
+
+/// Where the Tools page reads `c`'s state for `kit`: Pi's and
+/// Antigravity's on the VM's Linux of `kit`'s system (the only build the
+/// kit keeps, Q11; the same kit on Linux), `kit` for anything else.
+fn agent_kit(kit: &Kit, c: &crate::setup::Component) -> Kit {
+    let guest = crate::levels::agents::agent_of(c)
+        .filter(|a| a.runner() == crate::levels::AgentRunner::ProjectVm)
+        .and_then(|_| crate::isolation::vm::guest_target(kit.target()))
+        .filter(|g| *g != kit.target());
+    match guest {
+        Some(g) => kit.for_target(g),
+        None => kit.clone(),
+    }
 }
 
 /// Sends every change of the preparation to the app window.
@@ -375,7 +411,10 @@ pub fn updates_list<R: Runtime>(
     state: State<'_, AppState>,
 ) -> CmdResult<crate::setup::updates::Updates> {
     ensure_main(&webview)?;
-    Ok(crate::setup::updates::pending(&state.kit))
+    Ok(crate::setup::updates::pending(
+        &state.kit,
+        &crate::levels::agents::known_vm(),
+    ))
 }
 
 /// «Controlla ora»: each installed component's source asked now.
@@ -389,7 +428,10 @@ pub async fn updates_check<R: Runtime>(
     let token = super::app::github_token(&state.host);
     tauri::async_runtime::spawn_blocking(move || {
         crate::setup::updates::check(&kit, &env, token)?;
-        anyhow::Ok(crate::setup::updates::pending(&kit))
+        anyhow::Ok(crate::setup::updates::pending(
+            &kit,
+            &crate::levels::agents::known_vm(),
+        ))
     })
     .await
     .or_fail("updates")?

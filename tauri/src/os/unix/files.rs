@@ -136,20 +136,3 @@ pub fn program_version(exe: &Path) -> Result<String> {
 pub fn extract_msi(msi: &Path, _dest: &Path) -> Result<()> {
     anyhow::bail!("{}: an MSI package opens on Windows only", msi.display())
 }
-
-/// 600 in a 700 folder.
-pub fn write_secret(path: &Path, text: &str) -> Result<()> {
-    crate::platform::files::write_private(path, text)
-}
-
-/// Sets 600 on a probe and reads it back.
-pub fn mode_after_600(dir: &Path) -> Option<u32> {
-    use std::os::unix::fs::PermissionsExt;
-    fs::create_dir_all(dir).ok()?;
-    let probe = dir.join(".mode-probe");
-    fs::write(&probe, b"").ok()?;
-    let _ = fs::set_permissions(&probe, fs::Permissions::from_mode(0o600));
-    let mode = fs::metadata(&probe).ok().map(|m| m.permissions().mode());
-    let _ = fs::remove_file(&probe);
-    mode
-}

@@ -8,7 +8,7 @@ fn r_and_php_are_available_on_windows() {
     for target in Target::ALL {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
-        let infos = component_infos(&kit, "it");
+        let infos = component_infos(&kit, "it", &crate::levels::VmState::On);
         if target.is_windows() {
             for id in ["r", "php"] {
                 let c = infos.iter().find(|c| c.id == id).unwrap();
@@ -28,7 +28,7 @@ fn unavailable_for_the_system_is_not_arm64() {
     for target in [Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
-        let infos = component_infos(&kit, "en");
+        let infos = component_infos(&kit, "en", &crate::levels::VmState::On);
         // Apache is on every system since D-116.
         let apache = infos.iter().find(|c| c.id == "apache").unwrap();
         assert!(apache.available && apache.unavailable_reason.is_none());
@@ -45,7 +45,7 @@ fn catalog_reasons_reach_the_page() {
     let tmp = TempDir::new("cmd-comps-reason");
     let kit = Kit::at_target(tmp.0.join("la"), Target::LINUX_ARM64);
     kit.prepare().unwrap();
-    let infos = component_infos(&kit, "en");
+    let infos = component_infos(&kit, "en", &crate::levels::VmState::On);
     let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
     let c = row("android");
     assert!(!c.available, "android");
@@ -57,7 +57,7 @@ fn catalog_reasons_reach_the_page() {
     assert!(sqlite.available && sqlite.unavailable_reason.is_none());
     assert_eq!(row("apache").unavailable_reason, None);
     assert_eq!(row("python").unavailable_reason, None);
-    let it = component_infos(&kit, "it");
+    let it = component_infos(&kit, "it", &crate::levels::VmState::On);
     let android = it.iter().find(|c| c.id == "android").unwrap();
     assert_eq!(
         android.unavailable_reason.as_deref(),
@@ -68,7 +68,7 @@ fn catalog_reasons_reach_the_page() {
     for target in [Target::WIN32_X64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
-        for c in component_infos(&kit, "en")
+        for c in component_infos(&kit, "en", &crate::levels::VmState::On)
             .iter()
             .filter(|c| c.id == "android" || c.id == "sqlite")
         {
@@ -94,7 +94,7 @@ fn conpty_is_not_needed_on_macos_and_linux() {
             ("en", "the app's terminal uses the system's PTY"),
             ("it", "il terminale dell'app usa la pty del sistema"),
         ] {
-            let infos = component_infos(&kit, lang);
+            let infos = component_infos(&kit, lang, &crate::levels::VmState::On);
             let c = infos.iter().find(|c| c.id == "conpty").unwrap();
             assert_eq!(c.unavailable_reason, None, "{target}");
             if target.is_windows() {
@@ -109,7 +109,7 @@ fn conpty_is_not_needed_on_macos_and_linux() {
     // Serialized in camelCase for the page.
     let kit = Kit::at_target(tmp.0.join("json"), Target::LINUX_X64);
     kit.prepare().unwrap();
-    let infos = component_infos(&kit, "en");
+    let infos = component_infos(&kit, "en", &crate::levels::VmState::On);
     let json = serde_json::to_value(infos.iter().find(|c| c.id == "conpty").unwrap()).unwrap();
     assert_eq!(
         json["notNeeded"],
@@ -128,7 +128,7 @@ fn needs_and_xcode_follow_the_target() {
     for target in Target::ALL {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
-        let infos = component_infos(&kit, "it");
+        let infos = component_infos(&kit, "it", &crate::levels::VmState::On);
         let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
         let zig: &[&str] = if target.is_unix() { &["zig"] } else { &[] };
         assert_eq!(row("cc").needs, zig, "{target}");
@@ -187,7 +187,7 @@ fn needs_of_one_target_stay_out_of_the_choice() {
     let windows = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
     windows.prepare().unwrap();
     let page = |kit: &Kit| -> Vec<String> {
-        component_infos(kit, "it")
+        component_infos(kit, "it", &crate::levels::VmState::On)
             .into_iter()
             .filter(|c| c.chosen)
             .map(|c| c.id)
@@ -212,7 +212,7 @@ fn needs_of_one_target_stay_out_of_the_choice() {
             .unwrap();
         let mut chosen = page(&kit);
         chosen.extend(
-            component_infos(&kit, "it")
+            component_infos(&kit, "it", &crate::levels::VmState::On)
                 .into_iter()
                 .find(|c| c.id == "cc")
                 .unwrap()
@@ -352,4 +352,58 @@ fn tools_target_is_remembered() {
         std::fs::read_to_string(kit.settings_file()).unwrap(),
         "{ broken"
     );
+}
+
+/// LEVELS.md §7, Q11: the agents' rows of the Tools page. Claude Code and
+/// Codex «fornito dalla VM» on every system; Pi and Antigravity «serve la
+/// VM» with the reason without it, their state read on the VM's Linux; an
+/// install of an earlier Atollo for the PC is a leftover to remove.
+#[test]
+fn the_agents_rows_of_the_tools_page() {
+    use crate::levels::agents::AgentRow;
+    use crate::levels::VmState;
+    let tmp = TempDir::new("cmd-agents");
+    let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    kit.prepare().unwrap();
+    let off = VmState::Off {
+        blockers: vec![crate::isolation::Blocker::SbxSignedOut],
+    };
+    let row = |vm: &VmState, id: &str| {
+        component_infos(&kit, "it", vm)
+            .into_iter()
+            .find(|c| c.id == id)
+            .unwrap()
+    };
+    for vm in [VmState::On, off.clone()] {
+        for id in ["claude", "codex"] {
+            let c = row(&vm, id);
+            assert_eq!(c.agent, Some(AgentRow::Provided), "{id}");
+            assert!(!c.available && !c.leftover, "{id}");
+        }
+    }
+    let pi = row(&off, "pi");
+    let Some(AgentRow::NeedsVm { reason }) = &pi.agent else {
+        panic!("{:?}", pi.agent)
+    };
+    assert!(reason.contains("sbx login"), "{reason}");
+    assert!(!pi.available);
+    let pi = row(&VmState::On, "pi");
+    assert_eq!(pi.agent, None);
+    assert!(pi.available && !pi.installed);
+    // Its build for the VM's Linux is its state; one for the PC a leftover.
+    let guest = kit.for_target(Target::LINUX_X64);
+    let c = Catalog::get().find("pi").unwrap();
+    for k in [&guest, &kit] {
+        for p in c.key_paths(k) {
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(&p, b"").unwrap();
+        }
+    }
+    c.save_version(&guest, "0.70.2").unwrap();
+    let pi = row(&VmState::On, "pi");
+    assert!(pi.installed && pi.leftover);
+    assert_eq!(pi.version.as_deref(), Some("0.70.2"));
+    let json = serde_json::to_value(row(&off, "claude")).unwrap();
+    assert_eq!(json["agent"], serde_json::json!({"kind": "provided"}));
+    assert_eq!(json["leftover"], false);
 }

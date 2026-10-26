@@ -9,6 +9,7 @@ import {
   componentsCheck,
   componentsList,
   componentsSync,
+  onLevelsChanged,
   projectsList,
   targetProfiles,
   toolsTargetSet,
@@ -20,6 +21,7 @@ import {
 } from "../ipc";
 import { toggle } from "./model";
 import { useStepsDone } from "./setup";
+import { useSubscription } from "../shared/hooks";
 
 export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, onDone?: () => void) {
   const [target, setTargetState] = useState<string | undefined>(undefined);
@@ -159,6 +161,12 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
     if (ended) loadGrid();
   });
 
+  // The VM went on or off (LEVELS.md §7): the agents' rows read again, the
+  // choice not yet applied kept.
+  useSubscription(onLevelsChanged, () => {
+    refresh((list ?? []).filter((c) => c.group === "agents").map((c) => c.id));
+  });
+
   const plan = useMemo(() => {
     const items = list ?? [];
     const install = items.filter((c) => chosen.has(c.id) && !c.installed && !c.bootstrapStaged && c.available);
@@ -167,7 +175,9 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
     const shown = target ?? host;
     const elsewhere = (id: string) =>
       grid?.targets.some((s) => s.target !== shown && s.tools.some((x) => x.id === id && x.present)) ?? false;
-    const remove = items.filter((c) => !chosen.has(c.id) && (c.present || elsewhere(c.id)));
+    // An agent installed for the PC by an earlier Atollo goes too (Rust
+    // `levels::agents::obsolete`): chosen or not.
+    const remove = items.filter((c) => c.leftover || (!chosen.has(c.id) && (c.present || elsewhere(c.id))));
     return { install, remove, mb: install.reduce((n, c) => n + c.mb, 0) };
   }, [list, chosen, grid, target, host]);
 

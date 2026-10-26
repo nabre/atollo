@@ -1,7 +1,6 @@
 //! macOS: what only macOS has, and the modules of `os/unix/` it shares
 //! with Linux, under the names of `crate::platform`.
 
-pub mod agy_keyring;
 pub mod child;
 pub mod desktop;
 pub mod host;

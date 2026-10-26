@@ -33,14 +33,6 @@ const FILES: &[(&str, &str)] = &[
     ("launch.ps1", include_str!("../../../runtime/launch.ps1")),
     ("launch.sh", include_str!("../../../runtime/launch.sh")),
     ("bashrc", include_str!("../../../runtime/bashrc")),
-    // The agents' launchers in a folder of their own (D-178): the kit's
-    // environment has it on the PATH, the shells of the PC never
-    // (`levels::env::strip_agents`). Antigravity has none since it runs
-    // in the project's VM (D-179, LEVELS.md §9).
-    (
-        "agents/claude",
-        include_str!("../../../runtime/agents/claude"),
-    ),
     (
         "bin/gradle.cmd",
         include_str!("../../../runtime/bin/gradle.cmd"),
@@ -57,20 +49,22 @@ const FILES: &[(&str, &str)] = &[
 /// Files and folders an older Atollo wrote and this one no longer does: the
 /// agents' launchers that lived in `bin`, a folder the PC's shells keep on
 /// their PATH (D-178); the editor's VM client `vm.ps1` and the stand-ins
-/// of `no-agents`, replaced by the request clients and the forwarders;
-/// Antigravity's launchers with their keyring round trip, since `agy` runs
-/// in the project's VM (D-179). Removed at every start.
-const OBSOLETE: [&str; 7] = [
+/// of `no-agents`, replaced by the request clients and the forwarders; the
+/// folder of the agents' launchers ([`AGENTS_DIR`]: Antigravity's with
+/// their keyring round trip, Claude Code's with its token), since no agent
+/// runs on the PC (D-179, LEVELS.md §7). Removed at every start.
+const OBSOLETE: [&str; 6] = [
     "bin/agy.cmd",
     "bin/agy",
     "bin/claude",
     "vm.ps1",
     "no-agents",
-    "agents/agy.cmd",
-    "agents/agy",
+    AGENTS_DIR,
 ];
 
-/// The folder of the agents' launchers, in `data/kit`.
+/// The folder of the agents' launchers an earlier Atollo wrote in
+/// `data/kit`: removed at start ([`OBSOLETE`]), and kept off every `PATH`
+/// meanwhile (`levels::env::agent_dirs`).
 pub const AGENTS_DIR: &str = "agents";
 
 /// The folder of the forwarders, first on the PATH of the PC's shells
@@ -189,7 +183,7 @@ fn generated() -> Vec<(String, String)> {
 fn is_unix_bin(name: &str) -> bool {
     let folder = name.split('/').next().unwrap_or_default();
     let launcher = name.contains('/')
-        && ["bin", AGENTS_DIR, FORWARD_DIR].contains(&folder)
+        && ["bin", FORWARD_DIR].contains(&folder)
         && !name.ends_with(".cmd")
         && !name.ends_with(".ps1");
     launcher || name == "launch.sh"

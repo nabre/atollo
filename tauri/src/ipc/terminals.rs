@@ -105,9 +105,11 @@ pub(crate) fn kit_terminal_request(
 /// `data/apps/linux-…` when missing, waiting for the downloads (their
 /// progress in the status bar): those with a build for it that this PC can
 /// install, not those that finish on their own system
-/// (`router::bootstrap`). A failure only goes to the log: the session
-/// opens with what is there. The app's `levels::prepare::Effects` (D-179),
-/// and «Installa i mancanti» of a project with the VM on. `tick` gets the
+/// (`router::bootstrap`), nor Claude Code and Codex, which the `sbx` images
+/// bring (`levels::installable`). A failure only goes to the log: the
+/// session opens with what is there. The app's `levels::prepare::Effects`
+/// (D-179), and «Installa i mancanti» of a project, both with the VM on
+/// (so Pi's and Antigravity's builds are planned). `tick` gets the
 /// setup task's snapshot while one of these runs (a VM's preparation shows
 /// its download).
 pub(crate) fn ensure_guest_tools<R: Runtime>(
@@ -124,6 +126,7 @@ pub(crate) fn ensure_guest_tools<R: Runtime>(
         .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
         .filter(|(c, _)| {
             c.is_available_on(target)
+                && crate::levels::installable(c, target, &crate::levels::VmState::On)
                 && install::installer(&c.id)
                     .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
         })
@@ -151,6 +154,7 @@ pub(crate) fn ensure_guest_tools<R: Runtime>(
                 .iter()
                 .filter_map(|(c, line)| Some((c.id.clone(), (*line)?.clone())))
                 .collect(),
+            vm: Some(crate::levels::VmState::On),
             ..Options::default()
         });
     }

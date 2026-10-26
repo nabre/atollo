@@ -14,6 +14,10 @@ fn path_is_kit_then_system_only() {
             "python/python.exe",
             "pwsh/pwsh.exe",
             "go/bin/go.exe",
+            // An earlier Atollo's agents for the PC: never on the PATH.
+            "claude/claude.exe",
+            "codex/bin/codex.exe",
+            "pi/pi.exe",
         ],
     );
     let env = KitEnv::build(&kit, &Settings::default(), "en", &host());
@@ -52,7 +56,19 @@ fn path_is_kit_then_system_only() {
         }
     };
     let git = apps.join("git").join(if windows { "cmd" } else { "bin" });
-    assert!(pos(apps.join("claude")) < pos(bin("python")));
+    assert!(pos(kit.kit_files().join("bin")) < pos(bin("python")));
+    // No agent's folder (D-179, LEVELS.md §7): they run only in a VM.
+    for agent in ["claude", "codex", "pi", "antigravity"] {
+        assert!(
+            entries
+                .iter()
+                .all(|e| !Path::new(e).starts_with(apps.join(agent))),
+            "{agent}"
+        );
+    }
+    assert!(entries
+        .iter()
+        .all(|e| !Path::new(e).ends_with(Path::new("kit").join("agents"))));
     assert!(pos(bin("node")) < pos(apps.join("go").join("bin")));
     assert!(pos(apps.join("go").join("bin")) < pos(git));
     assert!(

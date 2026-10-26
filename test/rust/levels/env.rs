@@ -241,9 +241,10 @@ fn a_pc_environment_has_no_agent_folder() {
     for target in TARGETS {
         let (_tmp, kit) = kit_of(target, "no-agents");
         let base = base_of(&kit);
+        // Not even the kit's own environment has one since step 6.
         let apps = |rel: &str| kit.apps().join(rel).display().to_string();
-        assert!(base.path_entries().contains(&apps("claude").as_str()));
-        assert!(base.get("CP_ANTIGRAVITY").is_some());
+        assert!(!base.path_entries().contains(&apps("claude").as_str()));
+        assert!(base.get("CP_ANTIGRAVITY").is_none());
         let mut seen = 0;
         for (p, t) in shapes(&kit) {
             if let Placement::Pc { .. } = p {

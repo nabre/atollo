@@ -1,26 +1,18 @@
-//! Agents: their state, launch and sign-out (this file), the alignment of
+//! Agents: their state as the app shows it (this file), the alignment of
 //! instructions, skills and MCP servers (`sync`), the paths rewritten when
-//! the kit moves (`relocate`), Antigravity's login (`keyring`) and the
-//! usage of each agent (`stats`).
+//! the kit moves (`relocate`), Antigravity's login saved in the kit by an
+//! earlier Atollo (`keyring`) and the usage of each agent (`stats`).
 //!
-//! Claude Code, Codex, Antigravity and Pi: state, launch, sign-out.
-//!
-//! - signed in: Claude `.claude\.credentials.json` (OAuth token), the
-//!   token of `claude setup-token` in `data/agents/claude/oauth-token`
-//!   (macOS, `claude_token`, given as `CLAUDE_CODE_OAUTH_TOKEN`); Codex
-//!   `.codex\auth.json` (token, or the API key of `codex login
-//!   --with-api-key`);
-//!   Antigravity a login saved in the kit (`agents/keyring/`) or
-//!   `GEMINI_API_KEY`; Pi `.pi\agent\auth.json` (a provider of the
-//!   cloud), or the local model chosen for it (D-152);
-//! - launch: the agents are aligned first, the agent opens in a console
-//!   window of the app in the chosen folder (on macOS and Linux a session of
-//!   the app's terminal, `editor/pty.rs`), and they are aligned again when it
-//!   ends (`_agent.cmd` of the kit). Antigravity runs through
-//!   `data\kit\agents\agy.cmd` (`agy`, sh, on macOS and Linux), which carries
-//!   the login in and out of the system's store;
-//! - a watcher thread aligns when an agent of the kit ends anywhere (editor
-//!   terminals, consoles) and saves Antigravity's login left in Windows.
+//! Claude Code, Codex, Antigravity and Pi run only in a VM (D-179,
+//! LEVELS.md §7): nothing of an agent runs on the PC, and the kit keeps
+//! only Pi's and Antigravity's builds for the VM's Linux (Q11; Claude Code
+//! and Codex come with their `sbx` sandboxes). Their state ([`status`]) is
+//! the VM's: whether one can start now (the VM on), what the PC can tell of
+//! its sign-in there (the Gemini key through `sbx`'s proxy, Pi on the
+//! kit's local models; otherwise the agent signs in inside the VM at its
+//! first start). A sign-in of the PC an earlier Atollo saved in the kit's
+//! data stays there untouched until «Esci» removes it ([`sign_out`]): the
+//! agents in the VM never get it (I5).
 
 pub mod claude_token;
 pub mod github_mcp;
@@ -30,22 +22,21 @@ pub mod relocate;
 pub mod stats;
 pub mod sync;
 
-use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::env::KitEnv;
 use crate::kit::Kit;
-use crate::setup::Catalog;
+use crate::levels::{Agent, AgentRunner, VmState};
 
 pub const IDS: [&str; 4] = ["claude", "codex", "antigravity", "pi"];
 
-/// Program of each agent, relative to `data\apps\<platform>`.
+/// Program of each agent, relative to `data\apps\<platform>` (the VM's
+/// Linux: without `.exe`, `setup::kit_path`).
 pub fn exe_of(id: &str) -> Option<&'static str> {
     match id {
         "claude" => Some(r"claude\claude.exe"),
@@ -56,21 +47,45 @@ pub fn exe_of(id: &str) -> Option<&'static str> {
     }
 }
 
+/// Where an agent runs when the VM is on (LEVELS.md §4.1, `runsIn`).
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum RunsIn {
+    /// A sandbox of `sbx`'s own (`atollo-a-`): Claude Code, Codex.
+    SbxSandbox,
+    /// The project's VM (`atollo-p-`), its build for Linux: Pi, Antigravity.
+    ProjectVm,
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentInfo {
     pub id: String,
     pub name: String,
+    /// It can be started in the VM: Claude Code and Codex always (the `sbx`
+    /// images bring them), Pi and Antigravity once their build for the
+    /// VM's Linux is in the kit.
     pub installed: bool,
+    /// Claude Code, Codex: brought by the VM, nothing of the kit's.
+    pub provided: bool,
+    /// The version of its build for the VM's Linux (Pi, Antigravity).
     pub version: Option<String>,
+    /// Signed in for the VM, as far as the PC can tell (LEVELS.md §13 item
+    /// 12): Antigravity with the Gemini key of the settings, through
+    /// `sbx`'s proxy; Pi on the kit's local models. Otherwise the agent
+    /// signs in inside the VM, at its first start there.
     pub signed_in: bool,
-    /// How: "account", "token" (Claude Code on macOS), "api key" (Codex's
-    /// auth.json, Antigravity's Gemini key) or "local" (Pi on a local
+    /// "api key" (Antigravity's Gemini key) or "local" (Pi on a local
     /// model).
     pub sign_in_kind: Option<String>,
-    pub running: bool,
-    /// "Collega con un token" is offered (Claude Code on macOS).
-    pub token_link: bool,
+    /// A sign-in of the PC an earlier Atollo saved in the kit's data:
+    /// never given to the agents in the VM; «Esci» removes it.
+    pub kit_login: bool,
+    /// It can be started now: the VM is on (LEVELS.md §7).
+    pub available: bool,
+    /// Why not, when not: the VM's blockers and what to do.
+    pub unavailable_reason: Option<String>,
+    pub runs_in: RunsIn,
 }
 
 fn json(path: &Path) -> Option<Value> {
@@ -85,42 +100,12 @@ pub fn gemini_key(kit: &Kit) -> Option<String> {
         .filter(|k| !k.is_empty())
 }
 
-/// The environment agent `id` is started with: the kit's (`env`, or a
-/// project's) plus the secrets only that agent gets, never the other
-/// programs of the kit (SEC-V6-02): Claude Code's token saved in the kit
-/// (D-115), Antigravity's Gemini key, the address and key of the local
-/// models for Pi (its `/llama` command reads them, D-152). The agent hands
-/// them to what it starts itself (its MCP servers, its commands).
-// No agent starts on the PC since D-178 (the tests; the agents' secrets in
-// the VM are still to do, D-175).
-#[allow(dead_code)]
-pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
-    let mut env = env.clone();
-    match id {
-        "claude" => claude_token::apply_in(&kit.data(), &mut env),
-        "antigravity" => {
-            if let Some(key) = gemini_key(kit) {
-                env.set(GEMINI_VAR, key);
-            }
-        }
-        "pi" => {
-            if let (Some(port), Some(key)) = (
-                crate::llm::settings::load(kit).port,
-                crate::llm::settings::key(kit),
-            ) {
-                env.set("LLAMA_BASE_URL", crate::llm::service::url_of(port));
-                env.set("LLAMA_API_KEY", key);
-            }
-        }
-        _ => {}
-    }
-    env
-}
-
 /// The variable Antigravity reads its Gemini API key from.
 pub const GEMINI_VAR: &str = "GEMINI_API_KEY";
 
-/// How agent `id` is signed in ([`AgentInfo::sign_in_kind`]), if it is.
+/// How agent `id` is signed in in the kit's own data (the kit's home on
+/// the PC, `data/home`), if it is: what an earlier Atollo saved there, and
+/// what the usage of the agents reads (`stats`).
 pub(crate) fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
     let home = kit.home();
     let has = |v: Option<&str>| v.is_some_and(|s| !s.is_empty());
@@ -158,15 +143,7 @@ pub(crate) fn sign_in(kit: &Kit, id: &str) -> Option<&'static str> {
                 None
             }
         }
-        "antigravity" => {
-            if keyring::has_login(kit) {
-                Some("account")
-            } else if gemini_key(kit).is_some() {
-                Some("api key")
-            } else {
-                None
-            }
-        }
+        "antigravity" => keyring::has_login(kit).then_some("account"),
         "pi" => pi_sign_in(kit),
         _ => None,
     }
@@ -192,109 +169,74 @@ fn pi_sign_in(kit: &Kit) -> Option<&'static str> {
     }
 }
 
-/// Ids of the agents of this kit running now.
-pub fn running(kit: &Kit) -> BTreeSet<String> {
-    let procs = crate::platform::processes::running_under(&kit.apps());
-    IDS.iter()
-        .filter(|id| {
-            let exe = crate::setup::kit_path(kit, exe_of(id).unwrap_or_default());
-            procs.iter().any(|p| {
-                p.path
-                    .display()
-                    .to_string()
-                    .eq_ignore_ascii_case(&exe.display().to_string())
-            })
-        })
-        .map(|id| (*id).to_owned())
-        .collect()
+/// What the PC can tell of `agent`'s sign-in for the VM: Antigravity's
+/// Gemini key (through `sbx`'s proxy, LEVELS.md §9), Pi's local model
+/// (D-178); `None`: it signs in inside the VM.
+fn vm_sign_in(kit: &Kit, agent: Agent) -> Option<&'static str> {
+    match agent {
+        Agent::Antigravity => gemini_key(kit).map(|_| "api key"),
+        Agent::Pi => sync::pi::local_model(kit).map(|_| "local"),
+        Agent::Claude | Agent::Codex => None,
+    }
 }
 
-pub fn status(kit: &Kit) -> Vec<AgentInfo> {
-    let catalog = Catalog::get();
-    let now = running(kit);
-    IDS.iter()
-        .filter_map(|id| catalog.find(id))
-        .map(|c| {
-            let kind = sign_in(kit, &c.id);
+/// A sign-in of the PC saved in the kit's data: an account or a key of
+/// Claude Code, Codex or Pi, a Google login of Antigravity (Pi's local
+/// model is no sign-in).
+fn kit_login(kit: &Kit, agent: Agent) -> bool {
+    sign_in(kit, agent.id()).is_some_and(|k| k != "local")
+}
+
+/// The agents as the app shows them, with the VM as `vm` says (LEVELS.md
+/// §7): available only while it is on, else with the reason in `lang`.
+pub fn status(kit: &Kit, vm: &VmState, lang: &str) -> Vec<AgentInfo> {
+    let guest = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t));
+    let reason = crate::levels::agents::off_reason(vm, lang);
+    crate::levels::agents::catalog_agents()
+        .map(|(c, agent)| {
+            let provided = agent.runner() == AgentRunner::SbxAgent;
+            let kind = vm_sign_in(kit, agent);
             AgentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
-                installed: c.is_installed(kit),
-                version: c.installed_version(kit),
+                installed: provided || guest.as_ref().is_some_and(|g| c.is_installed(g)),
+                provided,
+                version: guest
+                    .as_ref()
+                    .filter(|_| !provided)
+                    .and_then(|g| c.installed_version(g)),
                 signed_in: kind.is_some(),
                 sign_in_kind: kind.map(str::to_owned),
-                running: now.contains(&c.id),
-                token_link: c.id == "claude" && claude_token::offered(crate::kit::Os::current()),
+                kit_login: kit_login(kit, agent),
+                available: crate::levels::agents_enabled(vm),
+                unavailable_reason: reason.clone(),
+                runs_in: if provided {
+                    RunsIn::SbxSandbox
+                } else {
+                    RunsIn::ProjectVm
+                },
             }
         })
         .collect()
 }
 
-/// Signs out in the kit: the saved login is removed (Claude's, Codex's and
-/// Pi's files, Antigravity's saved login). The account's sessions on the
-/// provider's site are not revoked: do it from the account settings.
-/// Antigravity is refused while an agy of the kit runs: its login would
-/// come back into the kit when it ends (BUG-V6-29). Errors in `lang`.
-pub fn sign_out(kit: &Kit, env: &KitEnv, id: &str, lang: &str) -> Result<()> {
+/// «Esci»: the sign-in of the PC saved in the kit's data is removed
+/// (Claude's credentials and token, Codex's and Pi's `auth.json`,
+/// Antigravity's saved login). Files only: no agent's program runs on the
+/// PC (LEVELS.md E17). The account's sessions on the provider's site are
+/// not revoked: do it from the account settings.
+pub fn sign_out(kit: &Kit, id: &str) -> Result<()> {
     let home = kit.home();
     match id {
         "claude" => {
             remove_if_exists(&home.join(".claude").join(".credentials.json"))?;
             claude_token::remove(kit)
         }
-        "codex" => {
-            let codex = crate::setup::kit_path(kit, "codex/bin/codex.exe");
-            if codex.is_file() && codex_logout(&codex, env)? {
-                return Ok(());
-            }
-            remove_if_exists(&home.join(".codex").join("auth.json"))
-        }
-        "antigravity" => {
-            if keyring::kit_agy_running(kit) {
-                bail!(
-                    "{}",
-                    crate::common::i18n::t(
-                        lang,
-                        "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.",
-                        &[]
-                    )
-                );
-            }
-            keyring::save(kit)?;
-            remove_if_exists(&kit.data().join("antigravity").join("keyring.json"))
-        }
+        "codex" => remove_if_exists(&home.join(".codex").join("auth.json")),
+        "antigravity" => remove_if_exists(&kit.data().join("antigravity").join("keyring.json")),
         // The providers of the cloud only: the local models need no login.
         "pi" => remove_if_exists(&sync::pi::dir(&home).join("auth.json")),
         _ => bail!("unknown agent: {id}"),
-    }
-}
-
-/// How long `codex logout` may take before it is stopped (and auth.json
-/// removed by the kit instead).
-const CODEX_LOGOUT_WITHIN: Duration = Duration::from_secs(20);
-
-/// `codex logout`; `false` when it failed or did not end in time.
-fn codex_logout(codex: &Path, env: &KitEnv) -> Result<bool> {
-    use std::process::Stdio;
-    let mut child = crate::platform::jobs::kit_command(codex, env)
-        .arg("logout")
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .context("codex logout")?;
-    let start = Instant::now();
-    loop {
-        if let Some(status) = child.try_wait().context("codex logout")? {
-            return Ok(status.success());
-        }
-        if start.elapsed() > CODEX_LOGOUT_WITHIN {
-            crate::common::log::warn("codex logout: no answer in 20 s, stopped");
-            let _ = child.kill();
-            let _ = child.wait();
-            return Ok(false);
-        }
-        std::thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -386,97 +328,6 @@ impl Closing {
     pub fn reopen(&self) {
         self.0.lock().closing = false;
     }
-}
-
-/// The first wait after a failed save of Antigravity's login (the watcher
-/// looks every 3 s); doubled after each failure, at most [`SAVE_MAX_WAIT`].
-const SAVE_FIRST_WAIT: Duration = Duration::from_secs(6);
-const SAVE_MAX_WAIT: Duration = Duration::from_secs(600);
-/// Failed saves of the same pending run after which the watcher stops.
-const SAVE_MAX_FAILURES: u32 = 8;
-
-/// The watcher's saves of Antigravity's login left in the system
-/// (BUG-V6-17): a store that cannot be used (Keychain locked, no Secret
-/// Service) is not asked every 3 s for ever, which logged a line each time
-/// and could raise the Keychain's prompt again on macOS. Counted per
-/// pending run ([`keyring::pending_stamp`]): a new agy run starts again
-/// from zero.
-#[derive(Debug, Default)]
-struct SaveRetry {
-    stamp: Option<std::time::SystemTime>,
-    failures: u32,
-    next: Option<Instant>,
-}
-
-impl SaveRetry {
-    /// A save is due now for the pending run `stamp`.
-    fn due(&mut self, stamp: Option<std::time::SystemTime>, now: Instant) -> bool {
-        if stamp != self.stamp {
-            *self = SaveRetry {
-                stamp,
-                ..SaveRetry::default()
-            };
-        }
-        stamp.is_some()
-            && self.failures < SAVE_MAX_FAILURES
-            && self.next.is_none_or(|next| now >= next)
-    }
-
-    /// A save failed at `now`; `true` when that was the last try.
-    fn failed(&mut self, now: Instant) -> bool {
-        self.failures += 1;
-        let wait = SAVE_FIRST_WAIT
-            .saturating_mul(1 << (self.failures - 1).min(16))
-            .min(SAVE_MAX_WAIT);
-        self.next = Some(now + wait);
-        self.failures == SAVE_MAX_FAILURES
-    }
-
-    fn succeeded(&mut self) {
-        self.failures = 0;
-        self.next = None;
-    }
-}
-
-/// Background: when an agent of the kit ends anywhere, align the agents and
-/// save Antigravity's login left in Windows; nothing while the drive is
-/// being removed (`closing`).
-pub fn watch(kit: Kit, closing: Closing) {
-    std::thread::spawn(move || {
-        let mut before = BTreeSet::new();
-        let mut retry = SaveRetry::default();
-        loop {
-            std::thread::sleep(Duration::from_secs(3));
-            let now = running(&kit);
-            let ended: Vec<&String> = before.difference(&now).collect();
-            if !ended.is_empty() {
-                crate::common::log::info(&format!("agents ended: {ended:?}"));
-                let _ = closing.run(|| sync::run(&kit, None));
-            }
-            // Antigravity's login still in Windows and no agy of the kit
-            // running: saved now (save waits for a fresh "starting" mark),
-            // tried again less and less often after a failure.
-            let at = Instant::now();
-            if keyring::pending(&kit)
-                && !now.contains("antigravity")
-                && retry.due(keyring::pending_stamp(&kit), at)
-            {
-                match closing.run(|| keyring::save(&kit)) {
-                    Some(Ok(())) => retry.succeeded(),
-                    Some(Err(e)) => {
-                        crate::common::log::warn(&format!("antigravity login: {e:#}"));
-                        if retry.failed(at) {
-                            crate::common::log::warn(&format!(
-                                "antigravity login: not saved after {SAVE_MAX_FAILURES} tries, no more tries until agy runs again or the app starts again"
-                            ));
-                        }
-                    }
-                    None => {}
-                }
-            }
-            before = now;
-        }
-    });
 }
 
 #[cfg(test)]

@@ -216,12 +216,6 @@ fn pwsh(kit: &Kit) -> PathBuf {
     crate::setup::kit_path(kit, r"pwsh\pwsh.exe")
 }
 
-/// A batch file (`agy.cmd`): Windows runs it with cmd only.
-fn is_batch(path: &Path) -> bool {
-    path.extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case("cmd") || e.eq_ignore_ascii_case("bat"))
-}
-
 fn title(dir: &Path, what: &str) -> String {
     let name = dir
         .file_name()
@@ -252,42 +246,6 @@ pub fn shell(kit: &Kit, dir: &Path) -> Launch {
         shell: PathBuf::from(BASH),
         title: title(dir, "bash"),
         conpty: None,
-        at: manual(),
-    }
-}
-
-/// An agent or another program of the kit, started directly (Antigravity's
-/// `agy` is a sh script of the kit, written with its execute bit). On
-/// Windows a batch (`agy.cmd`) runs through the kit's PowerShell
-/// (`-Command "& '<path>'; exit $LASTEXITCODE"`): cmd would read `&` and
-/// `%` in the path (D-17, D-45).
-pub fn command(kit: &Kit, command: &Path, dir: &Path) -> Launch {
-    let name = command.file_stem().map_or_else(
-        || command.display().to_string(),
-        |n| n.to_string_lossy().into(),
-    );
-    let (program, args) = if kit.target().is_windows() && is_batch(command) {
-        let quoted = super::terminal::ps_single_quoted(&command.display().to_string());
-        let mut args: Vec<String> = [
-            "-NoLogo",
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-        ]
-        .map(String::from)
-        .into();
-        args.push(format!("& '{quoted}'; exit $LASTEXITCODE"));
-        (pwsh(kit), args)
-    } else {
-        (command.to_path_buf(), Vec::new())
-    };
-    Launch {
-        program,
-        args,
-        shell: PathBuf::from(BASH),
-        title: title(dir, &name),
-        conpty: conpty_dir(kit),
         at: manual(),
     }
 }

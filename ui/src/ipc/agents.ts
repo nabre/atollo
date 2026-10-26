@@ -10,60 +10,50 @@ export type AgentId = "claude" | "codex" | "antigravity" | "pi";
 export interface AgentInfo {
   id: AgentId;
   name: string;
+  /** It can start in the VM: Claude Code and Codex always (the `sbx`
+   * images bring them), Pi and Antigravity once their build for the VM's
+   * Linux is in the kit. */
   installed: boolean;
+  /** Claude Code, Codex: brought by the VM, nothing of the kit's. */
+  provided: boolean;
+  /** The version of its build for the VM's Linux (Pi, Antigravity). */
   version: string | null;
+  /** Signed in for the VM, as far as the PC can tell (LEVELS.md §13 item
+   * 12): otherwise the agent signs in inside the VM at its first start. */
   signedIn: boolean;
-  /** "account", "api key", "token" (Claude Code on macOS) or "local" (Pi
-   * on a local model). */
+  /** "api key" (Antigravity's Gemini key through `sbx`'s proxy) or "local"
+   * (Pi on the kit's local models). */
   signInKind: string | null;
-  running: boolean;
-  /** "Collega con un token" offered: Claude Code on macOS (Rust `token_link`). */
-  tokenLink: boolean;
+  /** A sign-in of the PC an earlier Atollo saved in the kit's data, never
+   * given to the agents in the VM: «Esci» removes it. */
+  kitLogin: boolean;
+  /** It can start now: the VM is on (LEVELS.md §7). */
+  available: boolean;
+  /** Why not: the VM's blockers and what to do. */
+  unavailableReason: string | null;
+  runsIn: "sbxSandbox" | "projectVm";
 }
 
+const sample = (a: Partial<AgentInfo> & Pick<AgentInfo, "id" | "name">): AgentInfo => ({
+  installed: true,
+  provided: false,
+  version: null,
+  signedIn: false,
+  signInKind: null,
+  kitLogin: false,
+  available: true,
+  unavailableReason: null,
+  runsIn: "projectVm",
+  ...a,
+});
+
 export const SAMPLE_AGENTS: AgentInfo[] = [
-  {
-    id: "claude",
-    name: "Claude Code",
-    installed: true,
-    version: "2.1.299",
-    signedIn: true,
-    signInKind: "account",
-    running: true,
-    tokenLink: false,
-  },
-  {
-    id: "codex",
-    name: "Codex",
-    installed: true,
-    version: "0.98.0",
-    signedIn: false,
-    signInKind: null,
-    running: false,
-    tokenLink: false,
-  },
-  {
-    id: "antigravity",
-    name: "Antigravity",
-    installed: false,
-    version: null,
-    signedIn: false,
-    signInKind: null,
-    running: false,
-    tokenLink: false,
-  },
-  {
-    // Installed on a local model, so the screenshots show the fourth agent
-    // (DOC-V7-05).
-    id: "pi",
-    name: "Pi",
-    installed: true,
-    version: "0.70.2",
-    signedIn: true,
-    signInKind: "local",
-    running: false,
-    tokenLink: false,
-  },
+  sample({ id: "claude", name: "Claude Code", provided: true, runsIn: "sbxSandbox" }),
+  sample({ id: "codex", name: "Codex", provided: true, runsIn: "sbxSandbox" }),
+  sample({ id: "antigravity", name: "Antigravity", installed: false }),
+  // Installed on a local model, so the screenshots show the fourth agent
+  // (DOC-V7-05).
+  sample({ id: "pi", name: "Pi", version: "0.70.2", signedIn: true, signInKind: "local" }),
 ];
 
 export function agentsStatus(): Promise<AgentInfo[]> {
@@ -286,6 +276,8 @@ export function kitMcpSet(servers: McpServer[]): Promise<void> {
   return act("kit_mcp_set", { servers });
 }
 
+/** «Esci»: the sign-in of the PC an earlier Atollo saved in the kit's data,
+ * removed (files only). */
 export function agentSignOut(agent: AgentId): Promise<void> {
   return act("agent_sign_out", { agent });
 }

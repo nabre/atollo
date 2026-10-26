@@ -8,7 +8,7 @@ use crate::env::{Host, KitEnv};
 use crate::isolation::{self, vm};
 use crate::kit::Kit;
 
-use super::{AgentRunner, Facts, Origin, Place, Request, VmState};
+use super::{AgentRunner, Facts, Origin, Place, Request};
 
 /// Reads the facts for `req`: `isolation::status(kit, host, env, false)`
 /// (cached at most 60 s, `FRESH`), `vm::guest_path`,
@@ -16,14 +16,8 @@ use super::{AgentRunner, Facts, Origin, Place, Request, VmState};
 /// availability on `vm::guest_target`.
 pub fn facts(kit: &Kit, host: &Host, env: &KitEnv, req: &Request) -> Facts {
     let status = isolation::status(kit, host, env, false);
-    let vm = match status.level {
-        isolation::Level::Vm => VmState::On,
-        isolation::Level::Env => VmState::Off {
-            blockers: status.blockers,
-        },
-    };
     Facts {
-        vm,
+        vm: super::agents::vm_state(&status),
         guest_dir: guest_dir(kit, &req.place),
         restart_pending: isolation::restart_pending(kit),
         linux_build: linux_build(kit, &req.origin),

@@ -1,48 +1,25 @@
-//! Claude Code's sign-in on macOS kept in the kit (D-115).
+//! Claude Code's token an earlier Atollo saved in the kit (D-115, macOS):
+//! `data/agents/claude/oauth-token`, written by «Collega con un token»
+//! (`claude setup-token` on the PC) and given to Claude Code on the PC.
 //!
-//! On macOS Claude Code keeps its login in the Keychain, not in
-//! `.claude/.credentials.json` of the kit's home: a kit taken to another
-//! Mac is signed out there. "Collega con un token" (Agents page, macOS)
-//! runs `claude setup-token` in a session of the app's terminal; the
-//! long-lived token it prints is read from the session's output and saved
-//! in `data/agents/claude/oauth-token` (600, in a 700 folder). While that
-//! file exists Claude Code gets it as `CLAUDE_CODE_OAUTH_TOKEN`, and only
-//! Claude Code (SEC-V6-02): from the Agents page ([`apply_in`] in
-//! `agents::launch_env`), and from the kit's terminals and editor through
-//! the kit's `claude` wrapper (`data/kit/agents/claude`, sh), which reads the
-//! file when it starts. The kit's environment never holds it: projects'
-//! actions, scripts and the editor do not see it. "Esci" deletes the
-//! file. The token is never logged nor printed by `Atollo env` (masked):
-//! only "saved" or "not found".
-//!
-//! The reading of the output is plain code, tested on every system.
+//! No agent runs on the PC since D-179 (LEVELS.md §7, E16): the token is
+//! no longer made nor given to anything, and never to a VM (I5); Claude
+//! Code signs in inside its `sbx` sandbox. A file still there is kit data:
+//! the agents' page says so, «Esci» deletes it ([`remove`]), the
+//! diagnostics leave it out ([`path`]).
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 
-use crate::env::KitEnv;
-use crate::kit::{Kit, Os};
+use crate::kit::Kit;
 
-/// The variable Claude Code reads its token from.
-pub const VAR: &str = "CLAUDE_CODE_OAUTH_TOKEN";
-
-/// What starts every token `claude setup-token` prints.
-pub const PREFIX: &str = "sk-ant-oat";
-
-/// "Collega con un token" is offered on macOS only: elsewhere Claude Code
-/// keeps its login in the kit's home already.
-pub const fn offered(os: Os) -> bool {
-    os.is_macos()
-}
+/// What starts every token `claude setup-token` printed.
+const PREFIX: &str = "sk-ant-oat";
 
 /// `data/agents/claude/oauth-token`.
 pub fn path(kit: &Kit) -> PathBuf {
-    path_in(&kit.data())
-}
-
-pub fn path_in(data: &Path) -> PathBuf {
-    data.join("agents").join("claude").join("oauth-token")
+    kit.data().join("agents").join("claude").join("oauth-token")
 }
 
 fn token_char(c: char) -> bool {
@@ -50,245 +27,23 @@ fn token_char(c: char) -> bool {
 }
 
 /// A token as `claude setup-token` prints it.
-pub fn is_token(text: &str) -> bool {
+fn is_token(text: &str) -> bool {
     text.starts_with(PREFIX) && text.len() >= PREFIX.len() + 32 && text.chars().all(token_char)
 }
 
 /// The saved token, if any.
 pub fn read(kit: &Kit) -> Option<String> {
-    read_in(&kit.data())
-}
-
-pub fn read_in(data: &Path) -> Option<String> {
-    let text = std::fs::read_to_string(path_in(data)).ok()?;
+    let text = std::fs::read_to_string(path(kit)).ok()?;
     let token = text.trim();
     is_token(token).then(|| token.to_owned())
 }
 
-/// Saves `token` (owner-only file).
-pub fn save(kit: &Kit, token: &str) -> Result<()> {
-    let token = token.trim();
-    if !is_token(token) {
-        bail!("not a Claude Code token");
-    }
-    let file = path(kit);
-    crate::platform::files::write_private(&file, token)?;
-    // A kit on exFAT or FAT keeps no owner-only mode: anyone could read
-    // the token there, so it is not kept (as the Antigravity keyring).
-    if !owner_only(&file) {
-        let _ = std::fs::remove_file(&file);
-        bail!("the kit's disk does not keep owner-only permissions (600): the Claude Code token was not saved");
-    }
-    Ok(())
-}
-
-/// The file readable by its owner only (`platform::files::owner_only`:
-/// always true on Windows, where the app's folder is the user's own).
-fn owner_only(file: &Path) -> bool {
-    std::fs::metadata(file).is_ok_and(|m| crate::platform::files::owner_only(&m))
-}
-
-/// "Esci": the token is forgotten (no file is not an error).
+/// «Esci»: the token is forgotten (no file is not an error).
 pub fn remove(kit: &Kit) -> Result<()> {
     match std::fs::remove_file(path(kit)) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.into()),
         _ => Ok(()),
     }
-}
-
-/// Claude Code's environment (`agents::launch_env`, `data`: the kit's
-/// `data`): the saved token when there is one. Never printed
-/// (`cli::print_env` and `KitEnv`'s `Debug` mask it) nor written to a file
-/// by the kit.
-pub fn apply_in(data: &Path, env: &mut KitEnv) {
-    if let Some(token) = read_in(data) {
-        env.set(VAR, token);
-    }
-}
-
-/// The text of a terminal's output without its escape sequences (CSI,
-/// OSC, the two-byte ones) and with every line end as `\n`.
-pub fn plain_text(raw: &str) -> String {
-    let mut out = String::with_capacity(raw.len());
-    let mut chars = raw.chars().peekable();
-    while let Some(c) = chars.next() {
-        match c {
-            '\u{1b}' => match chars.next() {
-                // CSI: parameters, then one final byte in @..~.
-                Some('[') => {
-                    for d in chars.by_ref() {
-                        if ('@'..='~').contains(&d) {
-                            break;
-                        }
-                    }
-                }
-                // OSC: up to BEL or ESC \.
-                Some(']') => {
-                    while let Some(d) = chars.next() {
-                        if d == '\u{7}' {
-                            break;
-                        }
-                        if d == '\u{1b}' {
-                            chars.next();
-                            break;
-                        }
-                    }
-                }
-                _ => {}
-            },
-            '\r' => {
-                if chars.peek() != Some(&'\n') {
-                    out.push('\n');
-                }
-            }
-            '\u{7}' => {}
-            c => out.push(c),
-        }
-    }
-    out
-}
-
-/// Spaces and box borders around a line of the token (Ink draws boxes).
-fn trim_frame(line: &str) -> &str {
-    line.trim_matches(|c: char| {
-        c.is_whitespace() || c == '|' || ('\u{2500}'..='\u{257f}').contains(&c)
-    })
-}
-
-/// The last token in `text` (plain text), joined back when the terminal
-/// wrapped it on several lines: a token that reaches the end of its line
-/// goes on with the next lines made only of token characters.
-pub fn find_token(text: &str) -> Option<String> {
-    let lines: Vec<&str> = text.split('\n').collect();
-    let mut found = None;
-    for (i, line) in lines.iter().enumerate() {
-        let mut from = 0;
-        while let Some(at) = line[from..].find(PREFIX) {
-            let start = from + at;
-            let run: String = line[start..]
-                .chars()
-                .take_while(|c| token_char(*c))
-                .collect();
-            from = start + run.len();
-            let mut token = run;
-            if trim_frame(&line[from..]).is_empty() {
-                for next in &lines[i + 1..] {
-                    let next = trim_frame(next);
-                    if next.is_empty() || !next.chars().all(token_char) {
-                        break;
-                    }
-                    token.push_str(next);
-                }
-            }
-            if is_token(&token) {
-                found = Some(token);
-            }
-        }
-    }
-    found
-}
-
-/// The output of `claude setup-token`, kept until it ends (at most the
-/// last [`TokenScan::CAP`] bytes).
-#[derive(Default)]
-pub struct TokenScan {
-    raw: String,
-}
-
-impl TokenScan {
-    pub const CAP: usize = 64 * 1024;
-
-    pub fn push(&mut self, chunk: &str) {
-        self.raw.push_str(chunk);
-        if self.raw.len() > Self::CAP {
-            let mut cut = self.raw.len() - Self::CAP;
-            while !self.raw.is_char_boundary(cut) {
-                cut += 1;
-            }
-            self.raw.drain(..cut);
-        }
-    }
-
-    pub fn token(&self) -> Option<String> {
-        find_token(&plain_text(&self.raw))
-    }
-}
-
-/// Never the token itself in a message.
-impl std::fmt::Debug for TokenScan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "TokenScan({} bytes)", self.raw.len())
-    }
-}
-
-/// "Collega con un token": `claude setup-token` in a session of the app's
-/// terminal in the kit's home; when it ends, the token it printed is saved
-/// and `on_saved` runs. Errors in `lang`. Not on Windows, which keeps
-/// Claude Code's login in the kit's home already.
-pub fn link<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    kit: &Kit,
-    env: &KitEnv,
-    lang: &str,
-    on_saved: impl FnOnce() + Send + 'static,
-) -> Result<()> {
-    use std::sync::{Arc, Mutex, PoisonError};
-    use tauri::{Emitter, Manager};
-
-    use crate::editor::pty;
-
-    if crate::platform::OS.is_windows() {
-        bail!("claude setup-token: only on macOS");
-    }
-    let exe = crate::setup::kit_path(kit, super::exe_of("claude").unwrap_or_default());
-    if !exe.is_file() {
-        bail!(
-            "{}",
-            crate::common::i18n::t(lang, "{0} non è installato.", &["Claude Code"])
-        );
-    }
-    let dir = kit.home();
-    let mut launch = pty::command(kit, &exe, &dir);
-    launch.args.push("setup-token".into());
-    launch.title = "Claude Code: setup-token".into();
-    // A new token is asked for: not the saved one, nor an API key.
-    let mut env = env.clone();
-    env.remove(VAR);
-    let scan = Arc::new(Mutex::new(TokenScan::default()));
-    let (fed, out, end, after) = (Arc::clone(&scan), app.clone(), app.clone(), kit.clone());
-    let main = crate::ipc::MAIN;
-    app.state::<crate::editor::terminal::Consoles>().ptys.open(
-        &launch,
-        &env,
-        &dir,
-        lang,
-        |info| {
-            crate::common::log::info(&format!("terminal {}: {}", info.id, info.title));
-            let _ = app.emit_to(main, crate::ipc::events::PTY_OPENED, info);
-        },
-        move |id, chunk| {
-            fed.lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push(&chunk.data);
-            // Also to its own window, should it be detached (BUG-V7-16).
-            crate::editor::terminal::emit_output(&out, id, chunk);
-        },
-        move |info| {
-            let token = scan.lock().unwrap_or_else(PoisonError::into_inner).token();
-            match token.map(|t| save(&after, &t)) {
-                Some(Ok(())) => {
-                    crate::common::log::info("claude: token saved in the kit");
-                    on_saved();
-                }
-                Some(Err(e)) => {
-                    crate::common::log::warn(&format!("claude: token not saved: {e:#}"))
-                }
-                None => crate::common::log::warn("claude: setup-token ended without a token"),
-            }
-            crate::editor::terminal::emit_exit(&end, &info);
-        },
-    )?;
-    Ok(())
 }
 
 #[cfg(test)]

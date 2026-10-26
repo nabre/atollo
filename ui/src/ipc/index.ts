@@ -24,4 +24,15 @@ export * from "./terminals";
 export * from "./isolation";
 // Not `Level`: the agents' usage level of agents.ts has that name; the
 // terminal reads it from levels.ts itself.
-export { errorText, fixOf, isRefused, type Fix, type LevelLabel, type RefusedError, type Refusal } from "./levels";
+export {
+  errorText,
+  fixOf,
+  isRefused,
+  levelsState,
+  onLevelsChanged,
+  type Fix,
+  type LevelLabel,
+  type LevelsState,
+  type RefusedError,
+  type Refusal,
+} from "./levels";

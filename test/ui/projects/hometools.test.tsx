@@ -10,8 +10,12 @@ import { HomeTools, TOOLS_SHOWN } from "@/projects/tools";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
+let levelsListener: ((e: { payload: unknown }) => void) | null = null;
 vi.mock("@tauri-apps/api/event", () => ({
-  listen: () => Promise.resolve(() => undefined),
+  listen: (name: string, handler: (e: { payload: unknown }) => void) => {
+    if (name === "levels-changed") levelsListener = handler;
+    return Promise.resolve(() => undefined);
+  },
 }));
 
 afterEach(() => {
@@ -37,6 +41,8 @@ function tool(id: string, name: string, group: ComponentInfo["group"], extra: Pa
     needs: [],
     versioned: false,
     home: "https://example.org",
+    agent: null,
+    leftover: false,
     ...extra,
   } satisfies ComponentInfo;
 }
@@ -119,6 +125,30 @@ describe("the quick panel's «Strumenti»", () => {
     expect(conpty.getByText("non serve")).toBeTruthy();
     expect(conpty.getAllByRole("button")).toHaveLength(1);
     expect(within(tile("MongoDB")).getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("says «fornito dalla VM» and «serve la VM» on the agents' tiles, and reads them again when the VM comes", async () => {
+    const reason = "Gli agenti girano solo nella VM, che non è attiva: sbx non ha accesso a Docker.";
+    const agents = [
+      tool("claude", "Claude Code", "agents", { chosen: true, available: false, agent: { kind: "provided" } }),
+      tool("pi", "Pi", "agents", { chosen: true, available: false, agent: { kind: "needsVm", reason } }),
+    ];
+    answer(agents);
+    home();
+    await screen.findByText("Pi");
+    const pi = within(tile("Pi"));
+    expect(pi.getByText("serve la VM")).toBeTruthy();
+    expect(pi.getByRole("button", { name: /^Pi:/ }).title).toContain(reason);
+    expect(pi.queryByRole("button", { name: /Installa|Aggiorna/ })).toBeNull();
+    const claude = within(tile("Claude Code"));
+    expect(claude.getByText("fornito dalla VM")).toBeTruthy();
+    expect(claude.queryByRole("button", { name: /Installa|Aggiorna/ })).toBeNull();
+    // The VM comes on: the tiles read again, Pi can be installed.
+    answer([agents[0] as ComponentInfo, tool("pi", "Pi", "agents", { chosen: true })]);
+    levelsListener?.({ payload: { vm: "on", reason: null, agentsEnabled: true } });
+    await waitFor(() => {
+      expect(within(tile("Pi")).getByRole("button", { name: "Installa" })).toBeTruthy();
+    });
   });
 
   it("opens the tool's page on Tools from the tile", async () => {

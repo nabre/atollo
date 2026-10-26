@@ -1,8 +1,10 @@
 // The agents of the AI page (D-165) and the agent buttons of a project:
 // Claude Code, Codex, Antigravity, Pi, as VSCodium's Extensions view: the
 // installed agents in a pane of the AI side bar, the chosen one's page in
-// the editor with its state, usage and sign-in. Launch happens only in a
-// project. Instructions, skills and MCP servers are shared by all of them
+// the editor with its state, usage and its sign-in in the VM. They run
+// only in the VM (D-179, LEVELS.md §7): without it every one is disabled
+// with the reason, and what shows them is read again when the VM goes on
+// or off (`levels-changed`). Launch happens only in a project. Instructions, skills and MCP servers are shared by all of them
 // (data\agents, aligned by the app): their own row, under the agents.
 import { useState } from "react";
 import {
@@ -10,6 +12,7 @@ import {
   agentSignOut,
   agentsStatus,
   folderOpen,
+  onLevelsChanged,
   type AgentId,
   type AgentInfo,
   type AgentStats,
@@ -19,10 +22,9 @@ import { rich, t } from "../i18n";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { ComponentLogo, componentIcon } from "../shared/logos";
 import { AgentUsage, type useStats } from "./stats";
-import { TokenLink } from "./token";
 import { GeminiKey } from "./gemini";
 import { KitMcpBox } from "../projects/mcp";
-import { useAction, useLoad } from "../shared/hooks";
+import { useAction, useLoad, useSubscription } from "../shared/hooks";
 import {
   Button,
   Codicon,
@@ -41,14 +43,15 @@ import {
   type DotTone,
 } from "../workbench";
 
-/** The agents' state, refreshed every few seconds (running, signed in). A
- * poll that fails keeps what the last one read: an empty list would show
+/** The agents' state, refreshed every few seconds and at once when the VM
+ * goes on or off (`levels-changed`). A poll that fails keeps what the last one read: an empty list would show
  * the welcome page and hide the project's agents until the next poll. */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {
   const { data: agents, reload } = useLoad<AgentInfo[] | null>(agentsStatus, null, {
     onError: "keep",
     every: 5000,
   });
+  useSubscription(onLevelsChanged, reload);
   return { agents, reload };
 }
 
@@ -57,28 +60,24 @@ type Stats = ReturnType<typeof useStats>;
 /** The row of the shared instructions, skills and MCP servers. */
 export const SHARED = "shared";
 
+/** The sign-in in the VM, as far as the PC can tell (LEVELS.md §13 item
+ * 12); without the VM, that it needs it. */
 function signInText(a: AgentInfo): string {
-  if (!a.signedIn) return t("accesso non fatto: si fa al primo avvio dell'agente");
-  if (a.signInKind === "api key") return t("accesso con chiave API");
+  if (!a.available) return t("serve la VM");
+  if (a.signInKind === "api key") return t("chiave API, tramite il proxy di Docker Sandboxes");
   if (a.signInKind === "local") return t("modelli locali del kit, senza accesso");
-  return a.signInKind === "token" ? t("accesso con un token") : t("accesso fatto");
+  return t("l'accesso si fa nella VM, al primo avvio dell'agente");
 }
 
 const TONE: Record<Level, DotTone> = { none: "off", ok: "ok", warning: "warn", critical: "err" };
 
-/** The footer of an agent's row: running, and its most used limit. */
-function AgentFooter({ agent, stats }: { agent: AgentInfo; stats: AgentStats | undefined }) {
+/** The footer of an agent's row: its most used limit. */
+function AgentFooter({ stats }: { stats: AgentStats | undefined }) {
   const peak = stats?.peak ?? null;
-  if (!agent.running && peak === null) return null;
+  if (peak === null) return null;
   return (
     <span className="flex items-center gap-2">
-      {agent.running && (
-        <span className="flex items-center gap-1">
-          <Dot tone="ok" />
-          {t("in esecuzione")}
-        </span>
-      )}
-      {peak !== null && stats && (
+      {stats && (
         <span className="flex items-center gap-1 tabular-nums">
           <Dot tone={TONE[stats.level]} />
           {stats.peakLabel ? `${stats.peakLabel} ${String(peak)}%` : `${String(peak)}%`}
@@ -157,7 +156,7 @@ export function AgentsPane({
                 name={a.name}
                 meta={a.version ?? undefined}
                 description={signInText(a)}
-                footer={<AgentFooter agent={a} stats={stats.report?.agents.find((x) => x.id === a.id)} />}
+                footer={<AgentFooter stats={stats.report?.agents.find((x) => x.id === a.id)} />}
                 selected={selected === a.id}
                 onSelect={() => {
                   onSelect(a.id);
@@ -180,93 +179,101 @@ export function AgentsPane({
   );
 }
 
-/** An agent's page: its limits and usage, its sign-in. */
+/** An agent's page: its limits and usage, its sign-in in the VM; without
+ * the VM only the notice, with the reason (LEVELS.md §7). */
 export function AgentEditor({ agent, stats, onChanged }: { agent: AgentInfo; stats: Stats; onChanged: () => void }) {
   const { busy, error, run } = useAction(onChanged);
   const [confirm, setConfirm] = useState(false);
   const st = stats.report?.agents.find((x) => x.id === agent.id);
+  const where = agent.provided
+    ? t("Arriva con la sua sandbox di Docker Sandboxes e gira lì, una per progetto.")
+    : t("Gira nella VM del progetto, con la sua versione per Linux.");
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
         icon={<ComponentLogo id={agent.id} size={56} />}
         title={agent.name}
         meta={[
-          <span key="v">{agent.version ?? t("installato")}</span>,
-          agent.running ? (
-            <span key="run" className="flex items-center gap-1">
-              <Dot tone="ok" />
-              {t("in esecuzione")}
-            </span>
-          ) : null,
+          <span key="v">{agent.provided ? t("fornito dalla VM") : (agent.version ?? t("installato"))}</span>,
           <span key="in" className={agent.signedIn ? "" : "text-vsc-desc"}>
             {signInText(agent)}
           </span>,
         ]}
-        description={t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}
+        description={`${where} ${t("Gli agenti si aprono sempre nella cartella di un progetto, dalla pagina Progetti.")}`}
       />
       <EditorBody>
-        <ErrorLine error={stats.error ?? error} />
-        <EditorSection id="agent-usage" title={t("Limiti e consumi")}>
-          {st ? <AgentUsage stats={st} /> : <p className="text-vsc-desc">{t("Caricamento…")}</p>}
-        </EditorSection>
-        <EditorSection id="agent-account" title={t("Accesso")}>
-          <p className="flex items-center gap-2">
-            <Dot tone={agent.signedIn ? "ok" : "off"} />
-            {signInText(agent)}
-          </p>
-          <TokenLink agent={agent} onDone={onChanged} />
-          {agent.id === "antigravity" && <GeminiKey onDone={onChanged} />}
-          {agent.signedIn && agent.signInKind !== "api key" && agent.signInKind !== "local" && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {confirm ? (
-                <InlineConfirm
-                  row
-                  question={t("Togliere l'accesso salvato nel kit?")}
-                  onCancel={() => {
-                    setConfirm(false);
-                  }}
-                  actions={
-                    <>
+        {!agent.available ? (
+          <Notice tone="warning">{agent.unavailableReason ?? t("serve la VM")}</Notice>
+        ) : (
+          <>
+            <ErrorLine error={stats.error ?? error} />
+            <EditorSection id="agent-usage" title={t("Limiti e consumi")}>
+              {st ? <AgentUsage stats={st} /> : <p className="text-vsc-desc">{t("Caricamento…")}</p>}
+            </EditorSection>
+            <EditorSection id="agent-account" title={t("Accesso")}>
+              <p className="flex items-center gap-2">
+                <Dot tone={agent.signedIn ? "ok" : "off"} />
+                {signInText(agent)}
+              </p>
+              {agent.id === "antigravity" && <GeminiKey onDone={onChanged} />}
+              {agent.kitLogin && (
+                <div className="flex flex-col gap-1.5">
+                  <Notice tone="info" className="text-[12px] text-vsc-desc">
+                    {t(
+                      "Un accesso fatto sul PC con una versione precedente di Atollo resta salvato nel kit: gli agenti nella VM non lo usano.",
+                    )}
+                  </Notice>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {confirm ? (
+                      <InlineConfirm
+                        row
+                        question={t("Togliere l'accesso salvato nel kit?")}
+                        onCancel={() => {
+                          setConfirm(false);
+                        }}
+                        actions={
+                          <>
+                            <ActionButton
+                              icon={codicon("sign-out")}
+                              label={t("Esci")}
+                              primary
+                              busy={busy === `out:${agent.id}`}
+                              onClick={() => {
+                                setConfirm(false);
+                                run(`out:${agent.id}`, () => agentSignOut(agent.id));
+                              }}
+                            />
+                            <Button
+                              onClick={() => {
+                                setConfirm(false);
+                              }}
+                            >
+                              {t("Annulla")}
+                            </Button>
+                          </>
+                        }
+                      />
+                    ) : (
                       <ActionButton
                         icon={codicon("sign-out")}
                         label={t("Esci")}
-                        primary
-                        busy={busy === `out:${agent.id}`}
+                        title={t("Toglie l'accesso salvato nel kit")}
                         onClick={() => {
-                          setConfirm(false);
-                          run(`out:${agent.id}`, () => agentSignOut(agent.id));
+                          setConfirm(true);
                         }}
                       />
-                      <Button
-                        onClick={() => {
-                          setConfirm(false);
-                        }}
-                      >
-                        {t("Annulla")}
-                      </Button>
-                    </>
-                  }
-                />
-              ) : (
-                <ActionButton
-                  icon={codicon("sign-out")}
-                  label={t("Esci")}
-                  disabled={agent.running}
-                  title={agent.running ? t("Chiudi prima l'agente") : t("Toglie l'accesso salvato nel kit")}
-                  onClick={() => {
-                    setConfirm(true);
-                  }}
-                />
+                    )}
+                  </div>
+                  <Notice tone="info" className="text-[12px] text-vsc-desc">
+                    {t(
+                      "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
+                    )}
+                  </Notice>
+                </div>
               )}
-              {agent.running && <span className="text-[12px] text-vsc-desc">{t("Chiudi prima l'agente")}</span>}
-            </div>
-          )}
-          <Notice tone="info" className="text-[12px] text-vsc-desc">
-            {t(
-              "Uscire dal kit non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account.",
-            )}
-          </Notice>
-        </EditorSection>
+            </EditorSection>
+          </>
+        )}
       </EditorBody>
     </div>
   );
@@ -310,10 +317,12 @@ export function SharedEditor() {
   );
 }
 
-/** One button per installed agent, with its logo: a click opens that agent
- * in the project's VM (D-146, D-178, D-179: Antigravity too, like Pi). The
- * project's page, its row in the side bar and its card on the Home.
- * Nothing when no agent is installed. */
+/** One button per agent the VM can run, with its logo: a click opens that
+ * agent in the project's VM (D-146, D-178, D-179: Antigravity too, like
+ * Pi). Without the VM each is shown disabled with the reason as its title
+ * (LEVELS.md §7: not hidden, the user sees why). The project's page, its
+ * row in the side bar and its card on the Home. Nothing when none is
+ * there. */
 export function AgentButtons({ agents, project }: { agents: AgentInfo[] | null; project: string }) {
   const installed = (agents ?? []).filter((a) => a.installed);
   const { busy, error, run } = useAction();
@@ -330,7 +339,14 @@ export function AgentButtons({ agents, project }: { agents: AgentInfo[] | null; 
             icon={failed ? codicon("warning") : componentIcon(a.id)}
             label={t("Apri {0}", a.name)}
             busy={busy === `agent:${a.id}`}
-            title={failed ? error : t("Apre {0} nel progetto {1}", a.name, project)}
+            disabled={!a.available}
+            title={
+              !a.available
+                ? (a.unavailableReason ?? t("serve la VM"))
+                : failed
+                  ? error
+                  : t("Apre {0} nel progetto {1}", a.name, project)
+            }
             onClick={() => {
               setLast(a.id);
               run(`agent:${a.id}`, () => agentLaunch(a.id, project));

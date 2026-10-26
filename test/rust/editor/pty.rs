@@ -83,24 +83,6 @@ fn shell_is_the_kit_pwsh_when_installed() {
     assert!(l.title.ends_with(" · pwsh"));
 }
 
-#[test]
-fn agents_run_directly_with_bash_as_shell() {
-    let (_t, kit) = kit_on("pty-agent", Target::LINUX_X64, &[]);
-    let l = command(
-        &kit,
-        Path::new("/k/data/apps/linux-x64/claude/claude"),
-        Path::new("/k/projects/my app"),
-    );
-    assert_eq!(l.program, Path::new("/k/data/apps/linux-x64/claude/claude"));
-    assert!(l.args.is_empty());
-    assert_eq!(l.shell, Path::new("/bin/bash"));
-    assert_eq!(l.title, "my app · claude");
-    assert_eq!(l.conpty, None, "no ConPTY off Windows");
-    // A sh script named like a batch is not one off Windows.
-    let agy = command(&kit, Path::new("/k/agy.cmd"), Path::new("/p"));
-    assert_eq!(agy.program, Path::new("/k/agy.cmd"));
-}
-
 /// What a fake PTY was asked to do.
 #[derive(Default)]
 struct Calls {

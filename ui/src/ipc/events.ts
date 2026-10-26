@@ -24,6 +24,8 @@ export const LLM_PULL = "llm-pull";
 export const SETUP = "setup";
 /** A job changed: an install, an update, a VM's preparation. */
 export const JOB = "job";
+/** The VM went on or off, so the agents were enabled or disabled. */
+export const LEVELS_CHANGED = "levels-changed";
 /** A terminal session opened. */
 export const PTY_OPENED = "pty-opened";
 /** The program of a terminal session ended. */

@@ -16,6 +16,9 @@ export interface PaletteItem {
   run: () => void;
   /** Shift+Enter, when it has a second action (Quick Open: start). */
   alt?: (() => void) | undefined;
+  /** Why it cannot run now (an agent without the VM, LEVELS.md §7): shown
+   * dimmed with the reason as its title; Enter and a click do nothing. */
+  disabled?: string | undefined;
 }
 
 /** The items whose text has every word of `query`, in their order. */
@@ -65,6 +68,7 @@ export function Palette({
       const item = items[current];
       if (!item) return;
       e.preventDefault();
+      if (item.disabled !== undefined) return;
       done(e.shiftKey && item.alt ? item.alt : item.run);
     }
   };
@@ -101,15 +105,17 @@ export function Palette({
               key={item.key}
               role="option"
               aria-selected={i === current}
+              aria-disabled={item.disabled !== undefined || undefined}
+              title={item.disabled}
               onMouseMove={() => {
                 setAt(i);
               }}
               onClick={() => {
-                done(item.run);
+                if (item.disabled === undefined) done(item.run);
               }}
-              className={`flex h-[22px] cursor-pointer items-center gap-1.5 rounded px-1.5 ${
-                i === current ? "bg-vsc-list-active text-vsc-list-active-fg" : ""
-              }`}
+              className={`flex h-[22px] items-center gap-1.5 rounded px-1.5 ${
+                item.disabled !== undefined ? "cursor-default opacity-50" : "cursor-pointer"
+              } ${i === current ? "bg-vsc-list-active text-vsc-list-active-fg" : ""}`}
             >
               <span className="flex w-4 shrink-0 justify-center">{item.icon}</span>
               <span className="truncate">{item.label}</span>
