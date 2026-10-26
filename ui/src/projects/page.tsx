@@ -39,8 +39,9 @@ import { Git, GithubInVm } from "./git";
 import { DeleteProjectDialog } from "./delete";
 import { SaveBaseDialog } from "./savebase";
 import { VmPreparing } from "../shell/jobs";
+import { ProjectVm } from "./vm";
 
-export type ProjectSection = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
+export type ProjectSection = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git" | "vm";
 type Section = ProjectSection;
 
 export function ProjectPage({
@@ -128,6 +129,7 @@ export function ProjectPage({
     { id: "extensions", label: t("Estensioni") },
     { id: "editor", label: t("Editor") },
     { id: "git", label: t("Git") },
+    { id: "vm", label: t("VM") },
   ];
 
   return (
@@ -355,6 +357,7 @@ export function ProjectPage({
             <GithubInVm project={p.id} />
           </>
         )}
+        {section === "vm" && <ProjectVm project={p.id} />}
       </EditorBody>
     </div>
   );

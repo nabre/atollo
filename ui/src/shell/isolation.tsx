@@ -524,3 +524,27 @@ export function VmPillBadge({ pill }: { pill: VmPill }) {
     </span>
   );
 }
+
+/** A sandbox's state on the VM pill's colours (the project's «VM del
+ * progetto», LEVELS.md §8.5): green «accesa», blue and pulsing while an
+ * action works on it, grey «spenta» or «non c'è». The state is in the
+ * text, not in the colour alone. */
+export function SandboxPill({ state, busy = false }: { state: "running" | "stopped" | "missing"; busy?: boolean }) {
+  const tone: VmPill["tone"] = busy ? "busy" : state === "running" ? "ready" : "off";
+  const text = busy
+    ? t("in corso…")
+    : state === "running"
+      ? t("accesa")
+      : state === "stopped"
+        ? t("spenta")
+        : t("non c'è");
+  return (
+    <span
+      data-tone={tone}
+      className={`inline-flex h-[16px] items-center gap-vsc-size20 rounded-vsc-circle px-vsc-size60 font-semibold text-vsc-bg ${PILL[tone]}`}
+    >
+      <Codicon name="vm" size={12} />
+      <span>{text}</span>
+    </span>
+  );
+}
