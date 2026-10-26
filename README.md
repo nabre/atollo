@@ -211,6 +211,8 @@ Atollo.exe version                   shows the version
 Atollo.exe help                      shows the help
 ```
 
+In the kit's terminals the same commands are `atollo …` (`atollo components`, `atollo check --kit`): a launcher in `data/kit/bin` that runs the exe the kit runs with (`ATOLLO_EXE`).
+
 From PowerShell add `| Out-Host` (for example `.\Atollo.exe check | Out-Host`): `Atollo.exe` is a window program, and without a pipe PowerShell neither waits for it nor reads its output or exit code.
 
 ## Building

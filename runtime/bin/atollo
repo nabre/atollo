@@ -1,0 +1,7 @@
+#!/bin/sh
+# Atollo: the app's command line from the kit's terminals (see atollo.cmd).
+if [ -z "$ATOLLO_EXE" ]; then
+    echo "Atollo: ATOLLO_EXE is not set: open the terminal from Atollo" >&2
+    exit 1
+fi
+exec "$ATOLLO_EXE" "$@"

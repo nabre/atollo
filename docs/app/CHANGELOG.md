@@ -1,5 +1,9 @@
 # Novità
 
+## Il comando `atollo` (26/10/2026)
+
+- **`atollo` nei terminali del kit**: `atollo components` elenca i componenti con quelli installati, `atollo check --kit` controlla il kit, `atollo help` mostra tutti i comandi. Prima serviva il percorso dell'exe.
+
 ## Dove gira cosa (26/10/2026)
 
 - **Un posto per ogni cosa** (D-178): con la VM, il terminale del progetto, le sue azioni (`npm run dev`…), i loro siti, i siti dei pool di Server Web e la creazione di un progetto da un terminale o da un framework girano nella VM del progetto, con le porte pubblicate sul PC e i database del kit raggiunti per porta. Senza VM girano sul PC con l'ambiente sigillato, come prima, ma senza i comandi degli agenti.
