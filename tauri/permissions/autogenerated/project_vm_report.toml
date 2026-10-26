@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-vm-report"
+description = "Enables the project_vm_report command without any pre-configured scope."
+commands.allow = ["project_vm_report"]
+
+[[permission]]
+identifier = "deny-project-vm-report"
+description = "Denies the project_vm_report command without any pre-configured scope."
+commands.deny = ["project_vm_report"]

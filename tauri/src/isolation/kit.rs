@@ -7,7 +7,9 @@
 //!   (home, `/tmp`, the VM's Docker: tried with sbx 0.49.2);
 //! - `atollo.json`: whose sandbox it is (a project, a kit terminal and its
 //!   folder), for the list of the VMs and their removal with their owner;
-//! - `.applied`: the fingerprint of the kit `sbx` has.
+//! - `.applied`: the fingerprint of the kit `sbx` has;
+//! - `guest/`: what the sandbox sees of it, read-only (`info.json`, the
+//!   read-only `atollo`, the agents' stand-ins; LEVELS.md §8.4).
 //!
 //! What a kit cannot say stays with Atollo: the folders mounted (`sbx run`'s
 //! arguments), the daemon's settings, and what changes at every session
@@ -57,6 +59,16 @@ pub fn root(kit: &Kit) -> PathBuf {
 pub fn dir(kit: &Kit, sandbox: &str) -> PathBuf {
     root(kit).join(sandbox)
 }
+
+/// The folder of `sandbox` the VM sees, mounted read-only (LEVELS.md
+/// §8.4): its `info.json`, the read-only `atollo` and the agents'
+/// stand-ins; never the rest of its kit folder (`db.env`, `pi.env`).
+pub fn guest_dir(kit: &Kit, sandbox: &str) -> PathBuf {
+    dir(kit, sandbox).join(GUEST)
+}
+
+/// The name of [`guest_dir`] in the sandbox's kit folder.
+pub const GUEST: &str = "guest";
 
 /// The kit's name in the spec: `atollo-` and 24 hex digits of the sandbox's
 /// name (the spec takes at most 64 characters, `[a-z0-9-]`).

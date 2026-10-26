@@ -2234,10 +2234,10 @@
     "fr": "Installez-les avec le gestionnaire de paquets du système, par exemple : sudo apt install {0}",
     "de": "Installiere sie mit dem Paketmanager des Systems, zum Beispiel: sudo apt install {0}"
   },
-  "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.": {
-    "en": "Usage: {0} [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n      --target <id>       for another system: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n      --kit               the kit's health: drive, space, path, permissions, libraries\n      --files             the programs' files: missing or changed since the installation\n  prepare [options]       install and update the chosen components,\n                          remove the ones not chosen\n      --only a,b          only these and what they need, removing nothing\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n      --target <id>       prepare for another system (ids as for components)\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's {1})\n  serve <folder> <port>   file server for a static site\n  models                  the local models: the catalog's and the downloaded ones\n  models pull <model>     download a catalog id or a Hugging Face model\n                          (owner/name:quantization), resumed if interrupted\n  models rm <id>          delete a downloaded model\n  llm start|stop|status   the server of the local models (chat and agents)\n  diagnostics             make the zip to attach to a problem report (secrets masked)\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.",
-    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n      --kit               la santé du kit : disque, espace, chemin, permissions, bibliothèques\n      --files             les fichiers des programmes : manquants ou modifiés depuis l'installation\n  prepare [options]       installe et met à jour les composants choisis,\n                          supprime ceux qui ne le sont pas\n      --only a,b          ceux-ci et ce dont ils ont besoin, sans rien supprimer\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  models                  les modèles locaux : ceux du catalogue et les téléchargés\n  models pull <modèle>    télécharge un id du catalogue ou un modèle de Hugging Face\n                          (propriétaire/nom:quantification), reprend s'il est interrompu\n  models rm <id>          supprime un modèle téléchargé\n  llm start|stop|status   le serveur des modèles locaux (chat et agents)\n  diagnostics             crée le zip à joindre à un signalement (secrets masqués)\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.",
-    "de": "Verwendung: {0} [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n      --target <id>       für ein anderes System: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n      --kit               der Zustand des Kits: Laufwerk, Platz, Pfad, Rechte, Bibliotheken\n      --files             die Dateien der Programme: fehlend oder seit der Installation geändert\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten,\n                          entfernt die nicht gewählten\n      --only a,b          nur diese und was sie brauchen, ohne zu entfernen\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n      --target <id>       bereitet für ein anderes System vor (ids wie bei components)\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von {1} des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  models                  die lokalen Modelle: die des Katalogs und die heruntergeladenen\n  models pull <Modell>    lädt eine Katalog-id oder ein Modell von Hugging Face herunter\n                          (Besitzer/Name:Quantisierung), setzt nach Abbruch fort\n  models rm <id>          löscht ein heruntergeladenes Modell\n  llm start|stop|status   der Server der lokalen Modelle (Chat und Agenten)\n  diagnostics             erstellt das Zip für eine Problemmeldung (Geheimnisse maskiert)\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo."
+  "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  vm <progetto>           la VM del progetto: sandbox, cartelle, porte\n      --agent <id>        la sandbox di un agente (claude, codex)\n      --check             verifica gli strumenti nella VM\n      --restart           riavvia la sandbox (con Atollo chiuso)\n      --recreate [--yes]  la rifà: chiede conferma senza --yes\n      --refresh           aggiorna gli strumenti per il Linux della VM\n      --json              il resoconto in JSON\n  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.": {
+    "en": "Usage: {0} [command]\n\nCommands:\n  env                     show the kit environment\n      --project <name>    the one of a project's programs\n  components              list languages and tools, with the installed ones\n      --target <id>       for another system: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           the saved versions; with an id, those to download\n  check                   check that the installed programs answer\n      --kit               the kit's health: drive, space, path, permissions, libraries\n      --files             the programs' files: missing or changed since the installation\n  prepare [options]       install and update the chosen components,\n                          remove the ones not chosen\n      --only a,b          only these and what they need, removing nothing\n      --skip a,b          not these\n      --update-all        also update those already installed\n      --force             download again\n      --line id=x.y       save this version next to the default\n      --target <id>       prepare for another system (ids as for components)\n  sync [options]          align the agents' instructions, skills and MCP servers\n      --project <folder>  also the instructions of this project\n      --verbose           show every change\n  keyring restore|save    Antigravity sign-in (used by the kit's {1})\n  serve <folder> <port>   file server for a static site\n  models                  the local models: the catalog's and the downloaded ones\n  models pull <model>     download a catalog id or a Hugging Face model\n                          (owner/name:quantization), resumed if interrupted\n  models rm <id>          delete a downloaded model\n  llm start|stop|status   the server of the local models (chat and agents)\n  vm <project>            the project's VM: sandboxes, folders, ports\n      --agent <id>        an agent's sandbox (claude, codex)\n      --check             check the tools in the VM\n      --restart           restart the sandbox (with Atollo closed)\n      --recreate [--yes]  make it again: asks without --yes\n      --refresh           update the tools for the VM's Linux\n      --json              the report in JSON\n  diagnostics             make the zip to attach to a problem report (secrets masked)\n  version                 show the version\n  help                    show this help\n\nWithout a command, the Atollo window opens.",
+    "fr": "Utilisation : {0} [commande]\n\nCommandes :\n  env                     affiche l'environnement du kit\n      --project <nom>     celui des programmes d'un projet\n  components              liste les langages et outils, avec ceux installés\n      --target <id>       pour un autre système : win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           les versions gardées ; avec un id, celles à télécharger\n  check                   vérifie que les programmes installés répondent\n      --kit               la santé du kit : disque, espace, chemin, permissions, bibliothèques\n      --files             les fichiers des programmes : manquants ou modifiés depuis l'installation\n  prepare [options]       installe et met à jour les composants choisis,\n                          supprime ceux qui ne le sont pas\n      --only a,b          ceux-ci et ce dont ils ont besoin, sans rien supprimer\n      --skip a,b          pas ceux-ci\n      --update-all        met aussi à jour ceux déjà installés\n      --force             télécharge à nouveau\n      --line id=x.y       garde cette version à côté de celle par défaut\n      --target <id>       prépare pour un autre système (id comme pour components)\n  sync [options]          aligne les instructions, skills et serveurs MCP des agents\n      --project <dossier> aussi les instructions de ce projet\n      --verbose           affiche chaque modification\n  keyring restore|save    connexion d'Antigravity (utilisé par {1} du kit)\n  serve <dossier> <port>  serveur de fichiers pour un site statique\n  models                  les modèles locaux : ceux du catalogue et les téléchargés\n  models pull <modèle>    télécharge un id du catalogue ou un modèle de Hugging Face\n                          (propriétaire/nom:quantification), reprend s'il est interrompu\n  models rm <id>          supprime un modèle téléchargé\n  llm start|stop|status   le serveur des modèles locaux (chat et agents)\n  vm <projet>             la VM du projet : sandbox, dossiers, ports\n      --agent <id>        la sandbox d'un agent (claude, codex)\n      --check             vérifie les outils dans la VM\n      --restart           redémarre la sandbox (Atollo fermé)\n      --recreate [--yes]  la recrée : demande sans --yes\n      --refresh           met à jour les outils pour le Linux de la VM\n      --json              le rapport en JSON\n  diagnostics             crée le zip à joindre à un signalement (secrets masqués)\n  version                 affiche la version\n  help                    affiche cette aide\n\nSans commande, la fenêtre d'Atollo s'ouvre.",
+    "de": "Verwendung: {0} [Befehl]\n\nBefehle:\n  env                     zeigt die Umgebung des Kits\n      --project <Name>    die der Programme eines Projekts\n  components              listet Sprachen und Werkzeuge, mit den installierten\n      --target <id>       für ein anderes System: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           die behaltenen Versionen; mit einer id die herunterladbaren\n  check                   prüft, ob die installierten Programme antworten\n      --kit               der Zustand des Kits: Laufwerk, Platz, Pfad, Rechte, Bibliotheken\n      --files             die Dateien der Programme: fehlend oder seit der Installation geändert\n  prepare [Optionen]      installiert und aktualisiert die gewählten Komponenten,\n                          entfernt die nicht gewählten\n      --only a,b          nur diese und was sie brauchen, ohne zu entfernen\n      --skip a,b          diese nicht\n      --update-all        aktualisiert auch die bereits installierten\n      --force             lädt erneut herunter\n      --line id=x.y       behält diese Version neben der Standardversion\n      --target <id>       bereitet für ein anderes System vor (ids wie bei components)\n  sync [Optionen]         gleicht Anweisungen, Skills und MCP-Server der Agenten ab\n      --project <Ordner>  auch die Anweisungen dieses Projekts\n      --verbose           zeigt jede Änderung\n  keyring restore|save    Anmeldung von Antigravity (verwendet von {1} des Kits)\n  serve <Ordner> <Port>   Dateiserver für eine statische Website\n  models                  die lokalen Modelle: die des Katalogs und die heruntergeladenen\n  models pull <Modell>    lädt eine Katalog-id oder ein Modell von Hugging Face herunter\n                          (Besitzer/Name:Quantisierung), setzt nach Abbruch fort\n  models rm <id>          löscht ein heruntergeladenes Modell\n  llm start|stop|status   der Server der lokalen Modelle (Chat und Agenten)\n  vm <Projekt>            die VM des Projekts: Sandboxes, Ordner, Ports\n      --agent <id>        die Sandbox eines Agenten (claude, codex)\n      --check             prüft die Werkzeuge in der VM\n      --restart           startet die Sandbox neu (Atollo geschlossen)\n      --recreate [--yes]  erstellt sie neu: fragt ohne --yes\n      --refresh           aktualisiert die Werkzeuge für das Linux der VM\n      --json              der Bericht als JSON\n  diagnostics             erstellt das Zip für eine Problemmeldung (Geheimnisse maskiert)\n  version                 zeigt die Version\n  help                    zeigt diese Hilfe\n\nOhne Befehl öffnet sich das Fenster von Atollo."
   },
   "installato prima del manifesto, si verifica dalla prossima installazione": {
     "en": "installed before the manifest, checked from its next installation",
@@ -2548,5 +2548,200 @@
     "en": "Starting the VM",
     "fr": "Démarrage de la VM",
     "de": "Starte die VM"
+  },
+  "Atollo è aperto: usa il pannello «VM del progetto» nella pagina del progetto, o chiudi Atollo e riprova.": {
+    "en": "Atollo is open: use the «Project VM» panel on the project's page, or close Atollo and try again.",
+    "fr": "Atollo est ouvert : utilisez le panneau « VM du projet » dans la page du projet, ou fermez Atollo et réessayez.",
+    "de": "Atollo ist geöffnet: Verwende das Feld „VM des Projekts“ auf der Seite des Projekts, oder schließe Atollo und versuche es erneut."
+  },
+  "GitHub nella VM: no": {
+    "en": "GitHub in the VM: no",
+    "fr": "GitHub dans la VM : non",
+    "de": "GitHub in der VM: nein"
+  },
+  "GitHub nella VM: sì": {
+    "en": "GitHub in the VM: yes",
+    "fr": "GitHub dans la VM : oui",
+    "de": "GitHub in der VM: ja"
+  },
+  "La VM non è attiva.": {
+    "en": "The VM is not on.",
+    "fr": "La VM n'est pas active.",
+    "de": "Die VM ist nicht aktiv."
+  },
+  "La sandbox {0} si rimuove e si rifà.": {
+    "en": "The sandbox {0} is removed and made again.",
+    "fr": "La sandbox {0} est supprimée et recréée.",
+    "de": "Die Sandbox {0} wird entfernt und neu erstellt."
+  },
+  "Nulla è cambiato.": {
+    "en": "Nothing changed.",
+    "fr": "Rien n'a changé.",
+    "de": "Nichts wurde geändert."
+  },
+  "Porta del PC raggiunta: {0} ({1})": {
+    "en": "PC port reached: {0} ({1})",
+    "fr": "Port du PC atteint : {0} ({1})",
+    "de": "Erreichter Port des PCs: {0} ({1})"
+  },
+  "Porta pubblicata: {0}:{1} ({2})": {
+    "en": "Port published: {0}:{1} ({2})",
+    "fr": "Port publié : {0}:{1} ({2})",
+    "de": "Veröffentlichter Port: {0}:{1} ({2})"
+  },
+  "Procedo? [s/N]": {
+    "en": "Go on? [y/N]",
+    "fr": "Continuer ? [o/N]",
+    "de": "Fortfahren? [j/N]"
+  },
+  "Progetto": {
+    "en": "Project",
+    "fr": "Projet",
+    "de": "Projekt"
+  },
+  "Sessione fermata: {0}": {
+    "en": "Session stopped: {0}",
+    "fr": "Session arrêtée : {0}",
+    "de": "Sitzung beendet: {0}"
+  },
+  "VM del progetto {0}": {
+    "en": "VM of the project {0}",
+    "fr": "VM du projet {0}",
+    "de": "VM des Projekts {0}"
+  },
+  "accesa": {
+    "en": "on",
+    "fr": "allumée",
+    "de": "an"
+  },
+  "spenta": {
+    "en": "off",
+    "fr": "éteinte",
+    "de": "aus"
+  },
+  "non c'è": {
+    "en": "not there",
+    "fr": "absente",
+    "de": "nicht vorhanden"
+  },
+  "atteso {0}, trovato {1}": {
+    "en": "expected {0}, found {1}",
+    "fr": "attendu {0}, trouvé {1}",
+    "de": "erwartet {0}, gefunden {1}"
+  },
+  "manca": {
+    "en": "missing",
+    "fr": "manquant",
+    "de": "fehlt"
+  },
+  "non gira nella VM": {
+    "en": "does not run in the VM",
+    "fr": "ne tourne pas dans la VM",
+    "de": "läuft nicht in der VM"
+  },
+  "non è del kit: {0}": {
+    "en": "not the kit's: {0}",
+    "fr": "pas celui du kit : {0}",
+    "de": "nicht vom Kit: {0}"
+  },
+  "{0}: fermata; riparte con la prossima sessione in Atollo.": {
+    "en": "{0}: stopped; it starts again with the next session in Atollo.",
+    "fr": "{0} : arrêtée ; elle redémarre avec la prochaine session dans Atollo.",
+    "de": "{0}: angehalten; sie startet mit der nächsten Sitzung in Atollo neu."
+  },
+  "{0}: rimossa; si rifà con gli strumenti di adesso alla prossima sessione in Atollo.": {
+    "en": "{0}: removed; it is made again with today's tools at the next session in Atollo.",
+    "fr": "{0} : supprimée ; elle est recréée avec les outils actuels à la prochaine session dans Atollo.",
+    "de": "{0}: entfernt; sie wird mit den heutigen Werkzeugen bei der nächsten Sitzung in Atollo neu erstellt."
+  },
+  "{0}: strumenti per il Linux della VM aggiornati; il resto alla prossima sessione in Atollo.": {
+    "en": "{0}: tools for the VM's Linux updated; the rest at the next session in Atollo.",
+    "fr": "{0} : outils pour le Linux de la VM mis à jour ; le reste à la prochaine session dans Atollo.",
+    "de": "{0}: Werkzeuge für das Linux der VM aktualisiert; der Rest bei der nächsten Sitzung in Atollo."
+  },
+  "Verifica strumenti · {0}": {
+    "en": "Checking tools · {0}",
+    "fr": "Vérification des outils · {0}",
+    "de": "Werkzeuge prüfen · {0}"
+  },
+  "Agente: {0}": {
+    "en": "Agent: {0}",
+    "fr": "Agent : {0}",
+    "de": "Agent: {0}"
+  },
+  "Cartella: {0}": {
+    "en": "Folder: {0}",
+    "fr": "Dossier : {0}",
+    "de": "Ordner: {0}"
+  },
+  "Database: {0} {1}, utente {2}, su {3}": {
+    "en": "Database: {0} {1}, user {2}, at {3}",
+    "fr": "Base de données : {0} {1}, utilisateur {2}, sur {3}",
+    "de": "Datenbank: {0} {1}, Benutzer {2}, auf {3}"
+  },
+  "Il kit si gestisce dal PC: qui atollo mostra soltanto.": {
+    "en": "The kit is managed from the PC: here atollo only shows.",
+    "fr": "Le kit se gère depuis le PC : ici atollo ne fait que montrer.",
+    "de": "Das Kit wird vom PC aus verwaltet: hier zeigt atollo nur an."
+  },
+  "Porte del PC aperte per questa sandbox: {0}": {
+    "en": "PC ports open for this sandbox: {0}",
+    "fr": "Ports du PC ouverts pour cette sandbox : {0}",
+    "de": "Für diese Sandbox geöffnete Ports des PCs: {0}"
+  },
+  "Progetto: {0}": {
+    "en": "Project: {0}",
+    "fr": "Projet : {0}",
+    "de": "Projekt: {0}"
+  },
+  "Sandbox: {0}": {
+    "en": "Sandbox: {0}",
+    "fr": "Sandbox : {0}",
+    "de": "Sandbox: {0}"
+  },
+  "Strumenti: {0}": {
+    "en": "Tools: {0}",
+    "fr": "Outils : {0}",
+    "de": "Werkzeuge: {0}"
+  },
+  "la più recente": {
+    "en": "the newest",
+    "fr": "la plus récente",
+    "de": "die neueste"
+  },
+  "La VM non è attiva: non c'è una sandbox su cui agire.": {
+    "en": "The VM is not on: there is no sandbox to act on.",
+    "fr": "La VM n'est pas active : il n'y a pas de sandbox sur laquelle agir.",
+    "de": "Die VM ist nicht aktiv: Es gibt keine Sandbox, auf die man einwirken kann."
+  },
+  "La sandbox non è accesa: avvia il terminale o un'azione del progetto, poi verifica di nuovo.": {
+    "en": "The sandbox is not on: start the project's terminal or an action, then check again.",
+    "fr": "La sandbox n'est pas allumée : lancez le terminal ou une action du projet, puis vérifiez à nouveau.",
+    "de": "Die Sandbox ist nicht an: Starte das Terminal oder eine Aktion des Projekts und prüfe dann erneut."
+  },
+  "Resta: il progetto, i suoi database, gli strumenti del kit e gli accessi che il kit conserva.": {
+    "en": "Kept: the project, its databases, the kit's tools and the sign-ins the kit keeps.",
+    "fr": "Reste : le projet, ses bases de données, les outils du kit et les connexions que le kit conserve.",
+    "de": "Bleibt: das Projekt, seine Datenbanken, die Werkzeuge des Kits und die Anmeldungen, die das Kit aufbewahrt."
+  },
+  "Si perde: la home della VM e le immagini che ha scaricato.": {
+    "en": "Lost: the VM's home and the images it downloaded.",
+    "fr": "Perdu : le dossier personnel de la VM et les images qu'elle a téléchargées.",
+    "de": "Verloren: das Home der VM und die Images, die sie heruntergeladen hat."
+  },
+  "Il kit si gestisce dal PC: qui atollo mostra soltanto dove sei e cosa hai (atollo, atollo --json).": {
+    "en": "The kit is managed from the PC: here atollo only shows where you are and what you have (atollo, atollo --json).",
+    "fr": "Le kit se gère depuis le PC : ici atollo montre seulement où vous êtes et ce que vous avez (atollo, atollo --json).",
+    "de": "Das Kit wird vom PC aus verwaltet: hier zeigt atollo nur, wo du bist und was du hast (atollo, atollo --json)."
+  },
+  "Le informazioni di questa sandbox non ci sono ancora: le scrive Atollo quando prepara la VM.": {
+    "en": "This sandbox's information is not there yet: Atollo writes it when it prepares the VM.",
+    "fr": "Les informations de cette sandbox ne sont pas encore là : Atollo les écrit quand il prépare la VM.",
+    "de": "Die Informationen dieser Sandbox sind noch nicht da: Atollo schreibt sie, wenn es die VM vorbereitet."
+  },
+  "{0} non parte da qui. Gli agenti si avviano dalla pagina del progetto, dall'editor, o scrivendo il loro nome in un terminale del PC nella cartella del progetto.": {
+    "en": "{0} does not start from here. Agents start from the project's page, from the editor, or by typing their name in a terminal of the PC in the project's folder.",
+    "fr": "{0} ne démarre pas d'ici. Les agents se lancent depuis la page du projet, depuis l'éditeur, ou en tapant leur nom dans un terminal du PC dans le dossier du projet.",
+    "de": "{0} startet nicht von hier. Agenten starten von der Seite des Projekts, aus dem Editor oder durch Eingabe ihres Namens in einem Terminal des PCs im Ordner des Projekts."
   }
 }

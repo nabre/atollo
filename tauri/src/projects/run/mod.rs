@@ -273,6 +273,23 @@ impl Runner {
             .count()
     }
 
+    /// The actions running in the sandbox `sandbox` (LEVELS.md §8.5: «Riavvia»
+    /// and «Ricrea» list and stop them), with their port published on the
+    /// PC and its address, if any.
+    pub fn in_sandbox(&self, sandbox: &str) -> Vec<(RunInfo, Option<(u16, &'static str)>)> {
+        let mut out: Vec<_> = self
+            .entries()
+            .values()
+            .filter(|e| matches!(e.info.state, State::Starting | State::Running))
+            .filter_map(|e| {
+                let run = e.vm_run.as_ref().filter(|r| r.sandbox() == sandbox)?;
+                Some((e.info.clone(), run.published()))
+            })
+            .collect();
+        out.sort_by(|a, b| a.0.key.cmp(&b.0.key));
+        out
+    }
+
     /// Forgets the output of an action that ended.
     pub fn clear(&self, key: &str) {
         let mut entries = self.entries();

@@ -117,62 +117,11 @@ pub(crate) fn ensure_guest_tools<R: Runtime>(
     wanted: &std::collections::BTreeMap<String, Option<String>>,
     tick: &dyn Fn(&crate::setup::task::Snapshot),
 ) {
-    let catalog = Catalog::get();
-    let target = guest.target();
-    let tools: Vec<(&crate::setup::Component, Option<&String>)> = wanted
-        .iter()
-        .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
-        .filter(|(c, _)| {
-            c.is_available_on(target)
-                && install::installer(&c.id)
-                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
-        })
-        .collect();
     // In the setup task's queue, its own job; `tick` follows it.
-    let run = |opts: Options| {
+    for opts in crate::levels::prepare::guest_plans(guest, wanted) {
         if let Err(e) = task.start_and_wait(opts, true, setup_notify(app.clone()), tick) {
             crate::common::log::warn(&format!("tools for the VM: {e}"));
         }
-    };
-    let missing: Vec<_> = tools
-        .iter()
-        .filter(|(c, _)| !c.is_installed(guest))
-        .collect();
-    if !missing.is_empty() {
-        crate::common::log::info(&format!(
-            "tools for the VM ({}): {:?}",
-            target.as_str(),
-            missing.iter().map(|(c, _)| &c.id).collect::<Vec<_>>()
-        ));
-        run(Options {
-            target: Some(target),
-            only: missing.iter().map(|(c, _)| c.id.clone()).collect(),
-            at: missing
-                .iter()
-                .filter_map(|(c, line)| Some((c.id.clone(), (*line)?.clone())))
-                .collect(),
-            ..Options::default()
-        });
-    }
-    // A line chosen, beside the one installed.
-    let has_line = |c: &crate::setup::Component, line: &str| {
-        crate::versions::default_line(guest, c).as_deref() == Some(line)
-            || crate::versions::saved(guest, c)
-                .iter()
-                .any(|l| l.line == line)
-    };
-    let lines: Vec<(String, String)> = tools
-        .iter()
-        .filter_map(|(c, line)| Some((*c, (*line)?)))
-        .filter(|(c, line)| c.is_installed(guest) && !has_line(c, line))
-        .map(|(c, line)| (c.id.clone(), line.clone()))
-        .collect();
-    if !lines.is_empty() {
-        run(Options {
-            target: Some(target),
-            lines,
-            ..Options::default()
-        });
     }
 }
 

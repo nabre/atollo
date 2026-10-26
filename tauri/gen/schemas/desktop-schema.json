@@ -741,6 +741,24 @@
           "markdownDescription": "Enables the project_versions_set command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_vm_action command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-vm-action",
+          "markdownDescription": "Enables the project_vm_action command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_vm_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-vm-check",
+          "markdownDescription": "Enables the project_vm_check command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_vm_report command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-vm-report",
+          "markdownDescription": "Enables the project_vm_report command without any pre-configured scope."
+        },
+        {
           "description": "Enables the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-projects-list",
@@ -1603,6 +1621,24 @@
           "type": "string",
           "const": "deny-project-versions-set",
           "markdownDescription": "Denies the project_versions_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_vm_action command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-vm-action",
+          "markdownDescription": "Denies the project_vm_action command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_vm_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-vm-check",
+          "markdownDescription": "Denies the project_vm_check command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_vm_report command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-vm-report",
+          "markdownDescription": "Denies the project_vm_report command without any pre-configured scope."
         },
         {
           "description": "Denies the projects_list command without any pre-configured scope.",
