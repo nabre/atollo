@@ -17,6 +17,28 @@ use windows::Win32::Security::{SetFileSecurityW, DACL_SECURITY_INFORMATION, PSEC
 /// Windows has no executable bit: a program is one by its extension.
 pub const HAS_EXECUTABLE_BIT: bool = false;
 
+/// `path` with every 8.3 short name (`RUNNER~1`) written out in full
+/// (`GetLongPathNameW`), links and junctions left as they are; `None` when
+/// the path does not exist or cannot be read.
+pub fn long_path(path: &Path) -> Option<std::path::PathBuf> {
+    use std::os::windows::ffi::OsStringExt;
+    use windows::Win32::Storage::FileSystem::GetLongPathNameW;
+    let name = HSTRING::from(path.as_os_str());
+    // SAFETY: no buffer: the call returns the length the name needs.
+    let need = unsafe { GetLongPathNameW(&name, None) };
+    if need == 0 {
+        return None;
+    }
+    let mut buf = vec![0u16; need as usize];
+    // SAFETY: `buf` lives for the call and holds `need` wide characters.
+    let got = unsafe { GetLongPathNameW(&name, Some(&mut buf)) } as usize;
+    if got == 0 || got >= buf.len() {
+        return None;
+    }
+    buf.truncate(got);
+    Some(std::ffi::OsString::from_wide(&buf).into())
+}
+
 /// A symbolic link or a junction (reparse point), seen without following it.
 pub fn is_reparse(meta: &fs::Metadata) -> bool {
     use std::os::windows::fs::MetadataExt;

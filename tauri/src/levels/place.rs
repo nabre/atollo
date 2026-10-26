@@ -5,7 +5,7 @@
 //! link is no project's, whatever its name.
 
 use std::ffi::OsStr;
-use std::path::{Component, Path};
+use std::path::{Component, Path, PathBuf};
 
 use crate::kit::Kit;
 use crate::platform::safe_path;
@@ -22,13 +22,23 @@ pub fn place_of(kit: &Kit, dir: &Path) -> Place {
     project_of(kit, &dir).unwrap_or(Place::Folder { dir })
 }
 
+/// `path` with Windows' 8.3 short names written out (`RUNNER~1`), so that
+/// a kit reached through a short name and a folder given with long names
+/// (or the other way round) compare equal; links are never followed. Used
+/// to compare only: what `place_of` returns keeps the kit's own form.
+fn long(path: &Path) -> PathBuf {
+    crate::os::current::files::long_path(path)
+        .map(|p| crate::kit::strip_verbatim(&p))
+        .unwrap_or_else(|| path.to_path_buf())
+}
+
 fn project_of(kit: &Kit, dir: &Path) -> Option<Place> {
     if !dir.is_absolute() {
         return None;
     }
     let fold = folds_case(kit);
     let projects = kit.projects();
-    let rest = under(dir, &projects, fold)?;
+    let rest = under(dir, &projects, fold).or_else(|| under(&long(dir), &long(&projects), fold))?;
     let mut parts = rest.iter();
     let first = parts.next()?;
     let name = on_disk(&projects, first, fold)?;
