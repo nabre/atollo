@@ -74,8 +74,8 @@ flowchart LR
 Stesso schema del rilascio 0.3.0 (commit `446aeb1`, 13 file):
 1. Versione `0.4.0` in [`tauri/Cargo.toml:3`](../../../tauri/Cargo.toml#L3) e [`ui/package.json:4`](../../../ui/package.json#L4), con `Cargo.lock` e `package-lock.json`.
 2. Voce in [`docs/app/CHANGELOG.md`](../../app/CHANGELOG.md); sezione «Still to do» del [`README.md:99-108`](../../../README.md#L99-L108) e di `docs/README.{it,fr,de}.md`; `site/strings/{en,it,fr,de}.json` (testi `t1Text`, `t5Text`, `t6Text`).
-3. Tag `app-v0.4.0`: il job `release` rifiuta un tag diverso dalla versione del manifesto ([`.github/workflows/app.yml:844-853`](../../../.github/workflows/app.yml#L844-L853)) e pubblica `Atollo-<ver>-<target>.<ext>` con `.sha256` per i sei sistemi, verificati contro gli artefatti dei job `Bundle *` (D-119, D-129).
-- **Accettazione**: `cargo test` e `npx vitest run` verdi (oggi 780 + 178 superati); tutti i job di `app.yml` verdi sul tag; release con 6 sistemi e i relativi `.sha256`.
+3. Tag `app-v0.4.0`: il job `release` rifiuta un tag diverso dalla versione del manifesto ([`.github/workflows/app.yml:844-853`](../../../.github/workflows/app.yml#L844-L853)) e pubblica `Atollo-<ver>-<target>.<ext>` con `.sha256` per i quattro sistemi, verificati contro gli artefatti dei job `Bundle *` (D-119, D-129).
+- **Accettazione**: `cargo test` e `npx vitest run` verdi (oggi 780 + 178 superati); tutti i job di `app.yml` verdi sul tag; release con 4 sistemi e i relativi `.sha256`.
 
 ---
 
@@ -184,7 +184,7 @@ Base: confronto già fatto fra il CSS del workbench di VSCodium 1.135 e [`ui/src
 ## 6. Verifica finale e rilascio 0.5.0 alpha
 
 1. **Test**: `cd tauri && cargo test` e `cd ui && npx vitest run` verdi, con almeno un test nuovo per ognuno dei 9 rilievi `v5` chiusi e per i residui `BUG-V4-10/11/13` (oggi 780 + 178).
-2. **CI**: tutti i job di [`app.yml`](../../../.github/workflows/app.yml) verdi, compresi `test-unix` sui 4 target, `test-windows-arm64`, `bundle-macos`, `bundle-linux` e `release-smoke`.
+2. **CI**: tutti i job di [`app.yml`](../../../.github/workflows/app.yml) verdi, compresi `test-unix`, `bundle-macos`, `bundle-linux` e `release-smoke`.
 3. **Documenti**: decisioni nuove in [`docs/app/DECISIONS.md`](../../app/DECISIONS.md) (registro delle porte, lock dei servizi DB, allineamento a VSCodium); [`CHANGELOG.md`](../../app/CHANGELOG.md); Guida e schermate rigenerate.
 4. **Rilascio**: come la 0.4.0 (sez. 3): versione `0.5.0` in `tauri/Cargo.toml` e `ui/package.json`, «Still to do» in README ×4 e `site/strings` ×4, tag `app-v0.5.0`.
 5. **Fuori dal codice** (non bloccanti per la 0.5.0, da riportare nel README): prova su macchine pulite (issue #5), accessi su un Mac (issue #6), aggiornamento automatico su macOS e Linux, notarizzazione Apple e firma SignPath.

@@ -4,18 +4,19 @@
 
 - **Versione 0.7.1**: la 0.7.0 non è uscita (la CI di rilascio si è fermata sulle prove di macOS e Linux), la 0.7.1 la sostituisce con tutto ciò che è elencato qui sotto.
 - **La VM di un progetto riparte**: la seconda volta che si apriva un terminale, un'azione o il terminale dell'editor, la VM già creata non ripartiva («already exists and can't be given new workspaces») e il terminale dell'editor si chiudeva. Ora riparte, con la cartella del progetto e gli strumenti del kit (D-175).
+- **Solo i quattro sistemi, ovunque** (D-176): app, catalogo, guida, sito, documentazione e report parlano solo di Windows x64, macOS su Apple silicon, Linux x64 e ARM64. Niente più build di un'altra architettura per un componente: il segno «x64» e lo stato «in emulazione» della griglia di «Strumenti» non ci sono più. Su ogni altro sistema Atollo dice all'avvio dove gira e si ferma.
 - **Le prove su macOS e Linux** girano di nuovo: i kit di prova usano il processore del sistema (Apple silicon sul Mac) e le prove della VM tengono conto del PC che le esegue.
 
 ## Rilascio 0.7.0 alpha (26/10/2026)
 
-- **Versione 0.7.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.7.0` pubblica i file per i quattro sistemi di Docker Sandboxes (D-176): Windows x64, macOS su Apple silicon, Linux x64 e ARM64. Niente più file per Windows ARM64 e Mac Intel.
+- **Versione 0.7.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.7.0` pubblica i file per i quattro sistemi di Docker Sandboxes (D-176): Windows x64, macOS su Apple silicon, Linux x64 e ARM64.
 - **Nella 0.7.0** tutto ciò che è elencato qui sotto fino al rilascio 0.6.0: i progetti nella VM di Docker Sandboxes con gli strumenti del kit (D-167…D-175), i quattro sistemi (D-176), la VM che si crea di nuovo dove falliva con «failed to create network».
 
 ## Solo i sistemi di Docker Sandboxes (26/10/2026)
 
-- **Quattro sistemi** (D-176): Atollo gira su Windows x64, macOS con Apple Silicon, Linux x64 e Linux ARM64, i sistemi per cui Docker pubblica Docker Sandboxes, il cuore del kit. Windows su ARM64 e i Mac Intel non sono più supportati: niente più file di rilascio, build o prove per loro.
-- **Su un sistema non supportato Atollo lo dice e si ferma** all'avvio, invece di partire senza VM: anche l'exe x64 avviato in emulazione su un PC Windows ARM64.
-- **Via l'emulazione di Windows su ARM64**: niente più componenti x64 in emulazione né il requisito di Windows 11 per farli girare. Sui Mac Apple Silicon resta Rosetta 2 per un componente che ha solo la build x64.
+- **Quattro sistemi** (D-176): Atollo gira su Windows x64, macOS con Apple Silicon, Linux x64 e Linux ARM64, i sistemi per cui Docker pubblica Docker Sandboxes, il cuore del kit. Ogni altro sistema, con i suoi file di rilascio, build e prove, è uscito dal kit.
+- **Su un sistema non supportato Atollo lo dice e si ferma** all'avvio, invece di partire senza VM.
+- **Solo build native**: ogni componente usa la build del sistema su cui gira.
 - **La matrice degli strumenti** in «Strumenti», sul sito e in [TOOLS-MATRIX.html](TOOLS-MATRIX.html) ha quattro colonne; `prepare --target` accetta solo i quattro sistemi.
 - **La VM di un progetto si crea di nuovo** dove falliva con «failed to create network»: il daemon di Docker Sandboxes poteva tenere reti, immagini e dischi fuori dal kit, attraverso una giunzione lasciata nella cartella temporanea del PC da un'altra installazione. Atollo la toglie prima di avviarlo, e tutto torna nel kit (D-175).
 
@@ -84,14 +85,14 @@
 ## Isolamento dei progetti (25/10/2026)
 
 - **«Senza VM» nella barra di stato** (D-167): accanto ad Attività, sul colore di avviso, finché i progetti girano sul PC. Un clic dice perché la VM non è attiva, motivo per motivo (sistema, processore, Hypervisor Platform, KVM, AppArmor, Docker Sandboxes, accesso a Docker), con cosa fare e il comando: «Lancia» apre `sbx login` (o `sbx ls`) nel terminale di Atollo, «Copia» per i comandi del PC; «Ricontrolla» chiede di nuovo. Lo stato si calcola da solo, senza impostazioni.
-- **Docker Sandboxes obbligatorio**: si installa sempre, come PowerShell 7 e GitHub CLI, sui sistemi dove Docker lo pubblica (non Windows su Arm né i Mac Intel). Editor e console non lo aspettano: se manca o non c'è l'accesso a Docker, l'avviso «Senza VM» lo dice.
+- **Docker Sandboxes obbligatorio**: si installa sempre, come PowerShell 7 e GitHub CLI, sui sistemi dove Docker lo pubblica. Editor e console non lo aspettano: se manca o non c'è l'accesso a Docker, l'avviso «Senza VM» lo dice.
 - **Docker Sandboxes nel kit**: il componente `sandboxes` mette `sbx` in `data\apps` (su Windows l'MSI estratto senza installarlo, senza amministratore); sandbox, impostazioni e registri restano in `data\home` e viaggiano con il kit; il demone si ferma all'uscita e con «Rimuovi l'unità».
 - **Ambiente sigillato**: terminale, azioni e agenti non ricevono più il percorso del profilo vero, l'agente SSH, il bus di sessione né il login root di MySQL; `mysql` entra con l'utente del progetto. Git lanciato dall'app in un progetto ignora `core.fsmonitor`.
 - **Tutto nella VM** (acceso appena il PC è pronto; prova con un account Docker in corso): terminale, comandi e server web come container della VM sulle versioni del progetto (il database resta sul PC: D-171), Claude Code e Codex negli agenti di `sbx`, porte su `127.0.0.1`.
 
 ## Rilascio 0.6.0 alpha (24/10/2026)
 
-- **Versione 0.6.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.6.0` pubblica i file per i sei sistemi.
+- **Versione 0.6.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.6.0` pubblica i file di ogni sistema.
 - **«In arrivo nel prossimo rilascio» tolto** da README e sito, nelle quattro lingue (`DOC-V7-02`): le funzioni qui sotto sono nella 0.6.0; «C'è ancora da fare» parla della 0.6.0.
 - **Corretti prima del rilascio**: `docs/app/DECISIONS.md` torna al suo testo (il commit di D-165 aveva ripetuto una riga prima di ogni carattere, 78 MB); in `test/ui/App.test.tsx` la prima apertura della scelta iniziale e della Guida, pagine caricate al bisogno, ha 5 secondi invece di uno, come serve al runner Windows.
 - **Cosa porta**, rispetto alla 0.5.1:
@@ -285,7 +286,7 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Rilascio 0.5.1 alpha (21/10/2026)
 
-- **Versione 0.5.1** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.1` pubblica i file per i sei sistemi.
+- **Versione 0.5.1** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.1` pubblica i file di ogni sistema.
 - **Cosa porta**: tutti i rilievi del report v6 chiusi (database, installazioni, kit su un altro disco o PC, agenti, progetti e server web, interfaccia), i token degli agenti solo agli agenti e un progetto fidato quando ci avvii un agente (D-144), la documentazione allineata all'app nelle quattro lingue.
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.5.1.
 
@@ -301,7 +302,7 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Rilascio 0.5.0 alpha (21/10/2026)
 
-- **Versione 0.5.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.0` pubblica i file per i sei sistemi.
+- **Versione 0.5.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.5.0` pubblica i file di ogni sistema.
 - **Cosa porta**: i rilievi del report v5 chiusi (lock dei database e porte che restano, D-140; registro comune delle porte e `conf.d` del progetto anche nei pool e nel Caddy del progetto, D-141), l'aspetto del workbench di VSCodium 1.135 con le sue icone (D-142), le schermate del sito e dei README nella lingua della pagina (D-143).
 - **Anche**: la porta automatica di un'azione evita quelle dei pool e dei database; Esc chiude anche la domanda di eliminazione di un repository GitHub; gli stessi termini per le stesse cose in italiano, inglese, francese e tedesco; la Guida, i README, il sito, l'informativa e i documenti tecnici descrivono la 0.5.0; la matrice degli strumenti (`docs/app/TOOLS-MATRIX.html`) è tornata.
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.5.0.
@@ -339,7 +340,7 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Rilascio 0.4.0 alpha (20/10/2026)
 
-- **Versione 0.4.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.4.0` pubblica i file per i sei sistemi.
+- **Versione 0.4.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.4.0` pubblica i file di ogni sistema.
 - **Cosa porta**: impostazioni salvate da sole e scelte al primo avvio prima di ogni download (D-137), informativa sulla privacy, tema chiaro/scuro, chi firma i commit, Git limitato alla cartella del kit, proxy e certificati anche per i download dell'app, strumenti divisi per tipo come nel sito (D-139), il logo di MySQL, il server di sviluppo che si chiude con l'app (D-138).
 - **Report v5** in `docs/reports/v5`: valutazione `95,8/100`, 958 test, rilievi aperti e piano per la 0.5.0 alpha.
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.4.0.
@@ -373,7 +374,7 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Rilascio 0.3.0 alpha (20/10/2026)
 
-- **Versione 0.3.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.3.0` pubblica i file per i sei sistemi.
+- **Versione 0.3.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.3.0` pubblica i file di ogni sistema.
 - **PHP del kit**: su macOS e Linux le linee 8.4 e 8.5 vengono dalle release `php-v8.4.26-1` e `php-v8.5.11-1` (D-133), non più da static-php-cli.
 - **«C'è ancora da fare»** (README e sito, nelle quattro lingue) parla della 0.3.0.
 
@@ -423,8 +424,8 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Testi al passo con il rilascio 0.2.0 (19/10/2026)
 
-- **«C'è ancora da fare»** (README e sito, nelle quattro lingue): la 0.2.0 alpha è su GitHub per i sei sistemi e va provata su macchine pulite; su Windows esce senza firma, SignPath è ancora da attivare.
-- **Sistemi**: la hero e la statistica del sito nominano Windows, macOS e Linux, ognuno su x64 e ARM64; «Limiti noti» non parla più del «prossimo tag».
+- **«C'è ancora da fare»** (README e sito, nelle quattro lingue): la 0.2.0 alpha è su GitHub per ogni sistema e va provata su macchine pulite; su Windows esce senza firma, SignPath è ancora da attivare.
+- **Sistemi**: la hero e la statistica del sito nominano Windows, macOS e Linux; «Limiti noti» non parla più del «prossimo tag».
 - **GUIDE.it.md** e **CATALOG.it.md**: su macOS e Linux c'è anche Apache, build del kit con `php-fpm` (D-116), fissata su `2.4.69-1`; per Linux anche il `tar.gz`.
 - **Sito**: il titolo è «Sviluppo, tutto in una cartella, su qualsiasi computer.», il sottotitolo nomina Windows, macOS e Linux; le statistiche fanno parte della hero e restano sullo schermo con il titolo anche su finestre basse; tolta la sezione «Perché «Atollo»».
 - **Scarica**: il sito prende l'ultimo rilascio `app-v*`, mai quelli di Apache o PHP dello stesso repository; senza rilascio dell'app il pulsante porta all'elenco dei rilasci.
@@ -433,20 +434,16 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 - **«Dentro l'app»**: le tre schermate stanno in una finestra vestita come il sistema di chi visita, la stessa della cartella nella hero (Windows 11, macOS, Linux con GNOME); senza JavaScript restano i puntini del brand. Barra e controlli sono un componente solo del sito, `.win`.
 - **Testi**: «Come si usa» nomina le oltre 60 basi dei progetti, «Tutto da una finestra» il pannello rapido e Ctrl+P, i server web dicono «su ogni sistema». In «C'è ancora da fare» Apache fuori da Windows non è più in arrivo (D-116): resta da provare su macchine vere, con il PHP del kit con `pdo_sqlite` che arriva con il suo primo rilascio (D-133).
-- **README**: la riga Progetti descrive pannello rapido, ▶ nella lista, Ctrl+P e la scheda Nuovo progetto con le 63 basi in gruppi; la voce da fare su Apache come nel sito. **CATALOG.it.md** e **TESTING.it.md** non dicono più R assente su Windows ARM64 (D-132) né Apache solo su Windows.
+- **README**: la riga Progetti descrive pannello rapido, ▶ nella lista, Ctrl+P e la scheda Nuovo progetto con le 63 basi in gruppi; la voce da fare su Apache come nel sito. **CATALOG.it.md** e **TESTING.it.md** non dicono più Apache solo su Windows.
 
 ## PHP del kit per macOS e Linux, con pdo_sqlite (19/10/2026)
 
 - **Build propria di PHP** (D-133, issue #4): `scripts/build-php` e il workflow `php.yml` compilano PHP 8.4.26 e 8.5.11 con static-php-cli sui quattro sistemi, con le estensioni del set «bulk» e in più `pdo_sqlite` e `pdo_pgsql` veri: `ext-pdo_sqlite` nei `composer.json` e `extension_loaded('pdo_sqlite')` funzionano.
 - **Installazione**: una linea con la build del kit fissata nel catalogo viene dalle release del repository; le altre restano su static-php-cli fino alla prima release.
 
-## R su Windows ARM64 (19/10/2026)
-
-- **R** c'è anche sui PC Windows ARM64 (D-132): la stessa build `win-64` di conda-forge di Windows x64, con il compilatore per i pacchetti, in emulazione x64 come PHP, Apache e MySQL. conda-forge non ha R per `win-arm64` e l'R nativo ARM64 di CRAN è ancora sperimentale. Ora ogni componente del catalogo c'è su Windows ARM64.
-
 ## Apache su ogni sistema (19/10/2026)
 
-- **Apache** c'è su Windows, macOS e Linux, x64 e ARM64 (D-116): su macOS e Linux arriva dal primo rilascio della build del kit, `httpd-v2.4.69-1`, con gli SHA-256 dei quattro archivi fissati nel catalogo; PHP passa da `php-fpm`. Su Windows niente cambia: Apache Lounge con il modulo PHP, x64 in emulazione su ARM64.
+- **Apache** c'è su Windows, macOS e Linux (D-116): su macOS e Linux arriva dal primo rilascio della build del kit, `httpd-v2.4.69-1`, con gli SHA-256 dei quattro archivi fissati nel catalogo; PHP passa da `php-fpm`. Su Windows niente cambia: Apache Lounge con il modulo PHP.
 
 ## 52 nuove basi per i progetti, in gruppi (19/10/2026)
 
@@ -501,22 +498,19 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Strumenti descritti come li installa il codice (19/10/2026)
 
-- **Windows ARM64**: README, sito e catalogo elencano tutti i componenti che lì usano la build x64 in emulazione (editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX); prima mancavano MongoDB, Android SDK e Julia. L'etichetta «x64» della pagina Strumenti dice «Su Windows ARM64 gira in emulazione x64», non «sui PC ARM64»: su un Mac o un Linux ARM64 quei componenti sono nativi. L'etichetta compare solo nel kit Windows ARM64 (prima su ogni sistema), e l'editor non si dice più «in emulazione x64» su macOS e Linux ARM64, dove è nativo.
-- **SQLite su Windows ARM64** prende sempre lo zip `win-arm64` di sqlite.org: se mancasse, l'installazione lo dice invece di prendere in silenzio quello x64 (D-108).
-- **R** non c'è solo su Windows ARM64: su macOS e Linux, ARM64 compreso, viene da conda-forge (il catalogo diceva «non disponibile sui kit ARM64»). **Apache** oggi il catalogo lo offre solo su Windows: su macOS e Linux arriva quando la build del kit è fissata (D-116); il sito diceva «Caddy e Apache per i siti» senza distinguere.
+- **R** su macOS e Linux, ARM64 compreso, viene da conda-forge (il catalogo diceva «non disponibile sui kit ARM64»). **Apache** oggi il catalogo lo offre solo su Windows: su macOS e Linux arriva quando la build del kit è fissata (D-116); il sito diceva «Caddy e Apache per i siti» senza distinguere.
 - **Git** non arriva più con GitHub CLI (D-81): arriva con Claude Code, un clone o un progetto. README e catalogo dicevano ancora «Git per GitHub CLI». La sua descrizione dice che Git Bash c'è solo su Windows.
-- **Rust su Windows ARM64** usa l'host `gnullvm` collegato da C/C++ (D-112), non sempre MSVC come dicevano guida e catalogo; preparato da un altro sistema si completa al primo avvio, non dà errore.
 - **Guida nell'app**: la tabella delle fonti conta le sue righe (35 componenti e 5 parti, prima «36»), dice per Git, PHP, Apache, C/C++, Ruby, R, MongoDB, SQLite, Rust, TinyTeX, Antigravity e l'editor da dove li prendono macOS e Linux, e segna i componenti non disponibili sul sistema. La presentazione nomina macOS e Linux accanto a Windows.
 - **Matrice degli strumenti** ([TOOLS-MATRIX.html](TOOLS-MATRIX.html)): note, dimensioni e componenti tolti vengono dal catalogo e dal codice; R su Windows non è più segnato «conda» (segue il kit, D-104); la pagina non cambia se il catalogo non cambia (niente data né commit). Le fonti stanno in `scripts/matrix/sources.json`, che `cargo test` confronta con gli installatori.
-- **Altro**: ordine dei componenti, pnpm (corepack e yarn), SQLite x64 su Windows ARM64 quando manca lo zip arm64, phpMyAdmin al posto di Adminer nel testo di presentazione.
+- **Altro**: ordine dei componenti, pnpm (corepack e yarn), phpMyAdmin al posto di Adminer nel testo di presentazione.
 
 **Verificato**: `cargo test`, fmt e clippy, ESLint, `tsc -b` e i test dell'interfaccia (uno nuovo per la tabella delle fonti); `gen_matrix.py` rigenera la matrice senza differenze; build del sito.
 
 ## Sito di Atollo (19/10/2026)
 
-- **Pagina di presentazione** su GitHub Pages, `https://nabre.github.io/atollo/` (D-126): in italiano, inglese, francese e tedesco come i README, con i testi di [MARKETING.md](../brand/MARKETING.md), i colori dell'app e tre schermate della guida. Il pulsante «Scarica» riconosce il sistema del visitatore (Windows, macOS, Linux, x64 o ARM64) e punta al file giusto dell'ultimo rilascio; l'elenco dei sei sistemi ha il link a ogni file. Prima del primo rilascio, o senza JavaScript, ogni link apre la pagina dei rilasci.
+- **Pagina di presentazione** su GitHub Pages, `https://nabre.github.io/atollo/` (D-126): in italiano, inglese, francese e tedesco come i README, con i testi di [MARKETING.md](../brand/MARKETING.md), i colori dell'app e tre schermate della guida. Il pulsante «Scarica» riconosce il sistema del visitatore (Windows, macOS o Linux, e su Linux x64 o ARM64) e punta al file giusto dell'ultimo rilascio; l'elenco dei sistemi ha il link a ogni file. Prima del primo rilascio, o senza JavaScript, ogni link apre la pagina dei rilasci.
 - **«Come funziona»** al posto del confronto con altri prodotti: quattro aspetti di Atollo (isolato con i programmi nativi, tutto da una finestra, la cartella che viaggia, ogni componente verificato). In alto solo la scritta «ATOLLO», senza il simbolo accanto. [MARKETING.md](../brand/MARKETING.md) ora vieta i confronti e fissa la regola del logo.
-- **«Strumenti per sistema»**: tutti i componenti del catalogo divisi per genere (sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database), con una colonna per ognuno dei sei sistemi: nativo, x64 in emulazione o non disponibile, con il motivo passando sopra la casella. Si genera a ogni pubblicazione da `tauri/catalog/components.json` (stessa logica di `is_available_on`), con descrizioni e motivi tradotti da `tauri/i18n/catalog.json`.
+- **«Strumenti per sistema»**: tutti i componenti del catalogo divisi per genere (sistema ed editor, agenti AI, linguaggi, strumenti di sviluppo, server web, database), con una colonna per ognuno dei sistemi: disponibile o non disponibile, con il motivo passando sopra la casella. Si genera a ogni pubblicazione da `tauri/catalog/components.json` (stessa logica di `is_available_on`), con descrizioni e motivi tradotti da `tauri/i18n/catalog.json`.
 - **Landing rifatta**: hero a tutta pagina con `hero-dark.svg` / `hero-light.svg` del brand (secondo il tema) e un ingresso scaglionato, la cartella del kit com'è davvero accanto al titolo con il sistema del visitatore evidenziato, una fascia di numeri presi dal catalogo, funzioni in una griglia, schermate in cornice, una chiusura con l'hero specchiato e il download. Le animazioni rispettano «riduci movimento» e senza JavaScript la pagina è tutta visibile. Le schermate perdono la barra del titolo e quella di stato, che hanno ancora il vecchio nome, finché non si rifanno.
 - **Sorgente in `site/`**, compilata da `node site/build.mjs` in `_site/` (ignorata da Git) e pubblicata dal workflow `site.yml` a ogni push su `main` che tocca `site/`, `docs/brand/` o `docs/app/images/`.
 
@@ -532,7 +526,7 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Rilasci per macOS e Linux (19/10/2026)
 
-- **Ogni rilascio porta macOS e Linux** (D-119, [#5](https://github.com/nabre/atollo/issues/5)): accanto agli exe di Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon) e `Atollo-darwin-x64.app.zip` (Intel), `Atollo-linux-x64` e `Atollo-linux-arm64` in AppImage e `tar.gz`, ognuno con il suo `.sha256`. Sono i nomi che l'aggiornamento dell'app già cerca: un kit con il `.app` o l'AppImage si aggiornerà da solo dal prossimo rilascio.
+- **Ogni rilascio porta macOS e Linux** (D-119, [#5](https://github.com/nabre/atollo/issues/5)): accanto agli exe di Windows, `Atollo-darwin-arm64.app.zip` (Apple Silicon), `Atollo-linux-x64` e `Atollo-linux-arm64` in AppImage e `tar.gz`, ognuno con il suo `.sha256`. Sono i nomi che l'aggiornamento dell'app già cerca: un kit con il `.app` o l'AppImage si aggiornerà da solo dal prossimo rilascio.
 - **Prova prima di pubblicare**: un job nuovo scarica i file che il rilascio pubblicherà e li avvia di nuovo come farebbe un utente, su macOS dopo aver tolto la quarantena con `xattr`, su Linux l'AppImage senza FUSE e il `tar.gz` con il solo WebKitGTK del sistema. Se uno non parte, il rilascio non esce.
 - **README e note del rilascio** spiegano come aprire l'app su macOS (`xattr -dr com.apple.quarantine`, l'app aperta dalla cartella del kit, non da Download, per evitare App Translocation) e su Linux (`chmod +x`, `--appimage-extract-and-run` senza FUSE, oppure il `tar.gz` con WebKitGTK 4.1).
 
@@ -557,10 +551,9 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 ## Griglia dei sistemi in «Strumenti» (19/10/2026)
 
-- **«Matrice»**, nella Panoramica di «Strumenti» (D-121, [#7](https://github.com/nabre/atollo/issues/7)): una riga per componente e una colonna per ognuno dei sei sistemi (Windows x64 e ARM64, macOS Apple Silicon e Intel, Linux x64 e ARM64). Ogni casella dice se il componente lì è disponibile, in emulazione, pre-scaricato, se si completa al primo avvio su quel sistema o se non è disponibile, con il motivo; un punto verde se è installato. Un clic apre il dettaglio, con la versione e «Mostra questo sistema».
-- **«Piattaforma»** ha i nomi dei sistemi al posto degli id, con «questo PC», «in emulazione» o «non eseguibile qui», e il sistema scelto resta al prossimo avvio (`settings.json`). Il sistema di questo PC non si salva: lo stesso kit aperto su un altro PC mostra il suo.
+- **«Matrice»**, nella Panoramica di «Strumenti» (D-121, [#7](https://github.com/nabre/atollo/issues/7)): una riga per componente e una colonna per ognuno dei quattro sistemi (Windows x64, macOS Apple Silicon, Linux x64 e ARM64). Ogni casella dice se il componente lì è disponibile, pre-scaricato, se si completa al primo avvio su quel sistema o se non è disponibile, con il motivo; un punto verde se è installato. Un clic apre il dettaglio, con la versione e «Mostra questo sistema».
+- **«Piattaforma»** ha i nomi dei sistemi al posto degli id, con «questo PC» o «non eseguibile qui», e il sistema scelto resta al prossimo avvio (`settings.json`). Il sistema di questo PC non si salva: lo stesso kit aperto su un altro PC mostra il suo.
 - **Relazioni ed estensioni dell'editor** seguono il sistema scelto: niente collegamenti né colonne per i componenti che quel sistema non ha.
-- «non disponibile sui PC ARM64» solo su un PC Windows ARM64: da un altro PC un kit Windows ARM64 dice «non disponibile per win32-arm64».
 - `Atollo components` segna come scelto Zig accanto a C e C++ su macOS e Linux, come la pagina.
 - Su un Mac la pagina non lancia più `xcode-select` a ogni apertura: la risposta resta valida (gli strumenti installati intanto si vedono entro un minuto).
 - Zig cancellato a mano su macOS o Linux toglie dalla scelta anche C e C++, su ogni sistema del kit: ora è una decisione scritta (D-122).
@@ -599,7 +592,7 @@ Il report v7 (`docs/reports/v7/`) chiuso in quattro ondate, un commit per riliev
 
 MySQL è l'unico server SQL di Atollo, su ogni sistema (D-117, [#3](https://github.com/nabre/atollo/issues/3)): tutto ciò che chiede un database SQL usa MySQL.
 
-- **phpMyAdmin** apre MySQL e c'è sui sei sistemi, macOS e Linux ARM64 compresi.
+- **phpMyAdmin** apre MySQL e c'è su ogni sistema, macOS e Linux ARM64 compresi.
 - **Nuovo progetto**: WordPress, TYPO3, Drupal e l'aggiunta «MySQL» di Laravel creano il database su MySQL.
 - **Rilevamento**: le immagini Docker di un server SQL, i driver MySQL e i CMS chiedono MySQL; un `.env` di Laravel con un driver che MySQL non regge del tutto riceve un avviso (meglio `mysql`).
 - Su Linux MySQL vuole `libaio1t64` e `libnuma1` (Ubuntu 24.04): il README lo dice.
@@ -608,7 +601,7 @@ MySQL è l'unico server SQL di Atollo, su ogni sistema (D-117, [#3](https://gith
 
 ## macOS e Linux (18/10/2026)
 
-L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le prove, anche su Windows ARM64. Lo stesso kit su una chiavetta si apre sui tre sistemi: `projects/` e `data/` sono condivisi, i programmi stanno in `data/apps/<sistema>-<architettura>/`. Provato dall'utente su un Mac Apple Silicon, un Mac Intel e un PC Linux, in WSL2 e nella CI sui sei sistemi.
+L'app gira su macOS (Apple Silicon) e su Linux (x64 e ARM64). Lo stesso kit su una chiavetta si apre sui tre sistemi: `projects/` e `data/` sono condivisi, i programmi stanno in `data/apps/<sistema>-<architettura>/`. Provato dall'utente su un Mac Apple Silicon e un PC Linux, in WSL2 e nella CI.
 
 **L'app**
 - **Pacchetti**: `Atollo.app` per macOS (firma ad hoc, D-113), AppImage e `tar.gz` per Linux, costruiti con glibc 2.35 come minimo. `projects/` e `data/` stanno accanto a `.app` o all'AppImage, mai dentro. Un `.app` messo in quarantena da macOS (App Translocation) ferma l'avvio con il comando da eseguire.
@@ -621,13 +614,13 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 - Il catalogo dice per ogni sistema cosa c'è e perché manca quello che manca (Android su Linux ARM64), senza ripiegare su un'architettura che non parte.
 - **Git** su macOS e Linux da dugite-native: segue il kit quando si sposta, senza reinstallare.
 - **PHP** 8.4 e 8.5 su macOS e Linux da static-php-cli, con Composer e phpMyAdmin; un `php.ini` per sistema.
-- **C e C++** su macOS e Linux con `zig cc` del kit e GNU make, senza `build-essential` né Xcode (i framework Apple vogliono le Command Line Tools); scegliendo C e C++ arriva Zig. **Rust** su Windows ARM64 senza Visual Studio (`gnullvm`, con il C/C++ del kit).
+- **C e C++** su macOS e Linux con `zig cc` del kit e GNU make, senza `build-essential` né Xcode (i framework Apple vogliono le Command Line Tools); scegliendo C e C++ arriva Zig.
 - **Ruby** su macOS e Linux da conda-forge (linee 3.2 e successive), con le gem per linea; **MongoDB** su Linux da conda-forge; **SQLite** anche su Linux ARM64; **Antigravity** su macOS e Linux.
 - **Caddy**, nuovo componente su tutti i sistemi.
 
 **Server web e database**
 - **Caddy** è il server web dei pool e dei siti dei progetti su ogni sistema (D-111), con php-cgi su Windows e php-fpm su macOS e Linux. Apache resta su Windows per i progetti con regole proprie nel `.htaccess` (Drupal compreso).
-- **MySQL** 8.4 e 9.7 LTS sui sei sistemi (D-110), con le password dei progetti e le copie.
+- **MySQL** 8.4 e 9.7 LTS su ogni sistema (D-110), con le password dei progetti e le copie.
 
 **Accessi** (D-115)
 - **Antigravity** su macOS (Portachiavi) e Linux (Secret Service): l'accesso resta nel kit, come su Windows.
@@ -642,7 +635,7 @@ L'app gira su macOS (Apple Silicon e Intel), su Linux (x64 e ARM64) e, con le pr
 
 **Resta da fare**: i bisogni SQL verso MySQL ([#3](https://github.com/nabre/atollo/issues/3)); interfaccia di Caddy, Nginx da togliere, PHP su Unix ([#4](https://github.com/nabre/atollo/issues/4)); rilasci per macOS e Linux ([#5](https://github.com/nabre/atollo/issues/5)); accessi da provare su un Mac ([#6](https://github.com/nabre/atollo/issues/6)); griglia componente × sistema in «Strumenti» ([#7](https://github.com/nabre/atollo/issues/7)); arretrato ([#8](https://github.com/nabre/atollo/issues/8)).
 
-**Verificato**: su Windows 716 test Rust e 131 test dell'interfaccia, lint pulito, clippy pulito anche in modo incrociato sui quattro target Unix; in WSL2 708 test superati; CI verde su Windows x64 e ARM64, Linux x64 e ARM64, macOS Apple Silicon e Intel, con `.app` e AppImage costruiti e avviati (`ae42f65`). Installazioni reali in WSL: Git, Python, Ruby, MongoDB, SQLite, PHP, MySQL, Caddy con un pool di due siti.
+**Verificato**: su Windows 716 test Rust e 131 test dell'interfaccia, lint pulito, clippy pulito anche in modo incrociato sui target Unix; in WSL2 708 test superati; CI verde su Windows x64, Linux x64 e ARM64, macOS Apple Silicon, con `.app` e AppImage costruiti e avviati (`ae42f65`). Installazioni reali in WSL: Git, Python, Ruby, MongoDB, SQLite, PHP, MySQL, Caddy con un pool di due siti.
 
 ## phpMyAdmin al posto di Adminer (17/10/2026)
 
@@ -706,7 +699,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 - Apache e Nginx contano fra i requisiti solo se sono l'azione predefinita o scritti in `panel.json`.
 
 **Installazione e piattaforme** (D-104, D-105)
-- **C/C++ su macOS e Linux** usa l'ultimo rilascio di LLVM con l'archivio del sistema: macOS Intel resta su LLVM 20.1.7. La descrizione dice cosa serve sul PC (Xcode CLT; header della libc e `make`) (BUG-V3-05).
+- **C/C++ su macOS e Linux** usa l'ultimo rilascio di LLVM con l'archivio del sistema. La descrizione dice cosa serve sul PC (Xcode CLT; header della libc e `make`) (BUG-V3-05).
 - **Editor** con SHA-256 fissato per ogni sistema (BUG-V3-09).
 - **R su Windows**: `Makeconf` segue la cartella del kit a ogni avvio, così i pacchetti da sorgente si compilano dopo un cambio di lettera d'unità (BUG-V3-06, parte Windows).
 - **Il codice dell'app compila per macOS e Linux**: dipendenze Windows solo su Windows, icona PNG, strato `os` (istanza, temp, dischi, processi, job, sessioni) per Unix, programmi di shell e dei server web per sistema, altri kit aperti riconosciuti ovunque (B7, N-A1, BUG-V3-03/07/08). Nuovo job di CI `check-unix` su Ubuntu e macOS. Accesso di Antigravity, scelta di file e cartelle e console fuori dall'editor danno un errore chiaro fuori da Windows.
@@ -760,7 +753,7 @@ Bug, falle e lavori aperti raccolti da [`reports/v3/03`](../reports/v3/03-BUG-SI
 - **Git su macOS e Linux via micromamba** (D-92): il pacchetto `git` di conda-forge, con le sue librerie, in un ambiente nella cartella della sua linea, come R (BUG-23a). Un ambiente conda ha il percorso scritto dentro: quando il kit cambia cartella, Git e R fuori da Windows si segnano da reinstallare e l'installazione automatica all'avvio li rifà.
 - **PHP, Apache, Nginx e Adminer solo su Windows, per ora**: le fonti sono build Windows e `php.ini`/`httpd.conf` sono scritti per Windows; su macOS e Linux Nginx scaricava il sorgente (BUG-23b, BUG-24a). I progetti propongono solo componenti disponibili sul sistema del kit; [CATALOG.it.md](CATALOG.it.md) dice cosa c'è dove.
 - Python conserva i pacchetti e trova `pip` usando la linea davvero installata, non quella delle impostazioni (BUG-24b).
-- Un componente non disponibile dice perché: «non disponibile sui PC ARM64» solo su Windows ARM64, altrimenti il sistema (BUG-24c).
+- Un componente non disponibile dice perché, con il sistema (BUG-24c).
 - Il file da scaricare a mano nomina la cartella giusta (nel temp del sistema) in tutte e quattro le lingue (BUG-17r).
 
 **Interfaccia**
@@ -911,14 +904,13 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 ## Versioni affiancate per Java, .NET, Ruby e altri (15/10/2026)
 
 **Fatto** (D-81)
-- **Java su PC ARM64**: si installa la JDK LTS che esiste per ARM64 (oggi la 21); Maven resta alla 3.x.
+- **Java**: si installa la JDK LTS che esiste per l'architettura del sistema; Maven resta alla 3.x.
 - **Gradle con ogni Java**: il comando `gradle` del kit parte con la JDK più recente; il progetto compila con la sua tramite le toolchain, che trovano le JDK del kit (anche Maven, con `toolchains.xml`) e mai quelle del PC.
 - **.NET**: ogni versione vede SDK e runtime delle altre, così un'app net8 parte anche sotto l'SDK 10.
 - **CMake** usa Ninja e configura anche i progetti vecchi; **`make`** c'è con C/C++.
 - **uv** usa solo i suoi Python, dentro il kit; mai quelli del PC.
 - **Ruby**: le gem stanno con la loro versione di Ruby (e passano agli aggiornamenti di patch); versioni di Ruby da scaricare.
 - **TinyTeX** rimette i pacchetti aggiunti dopo ogni aggiornamento.
-- Sui PC ARM64 con Windows 10 i programmi solo x64 risultano «richiede Windows 11 su ARM64»; Julia è solo x64.
 - **Git** non è più obbligatorio: arriva quando serve (Claude Code, un clone, un progetto).
 
 **Verificato**: 241 test Rust (nuovi: JDK per Gradle e Maven, .NET affiancato con junction, rimozione che non segue le junction), clippy e fmt puliti; tipi, ESLint e 23 test dell'interfaccia; `gradle.cmd` provato senza Gradle. Da provare nell'app: un progetto Gradle su Java 11, un'app net8 con .NET 10 predefinito, `make` in un progetto C, l'aggiornamento di TinyTeX.
@@ -927,7 +919,7 @@ Nessun cambiamento per chi usa l'app: stesso comportamento, codice più facile d
 
 **Fatto**
 - **Relazioni fra strumenti** (D-81): una funzione dell'app genera la matrice di ciò che ogni strumento richiede e con quali versioni (Composer → PHP ≥ 7.2.5, Gradle → Java 17-27, Apache → PHP 8, pnpm → Node.js ≥ 18.12, CMake → compilatore C…), dei runtime che il PC deve fornire e delle versioni chieste dai progetti (`package.json`, `.nvmrc`, `.python-version`, `pyproject.toml`, `composer.json`, `go.mod`, `global.json`, `pom.xml`, `pubspec.yaml`, `Project.toml`, `CMakeLists.txt`…). Salvata in `data\app\relations.json`, si ricalcola solo quando cambia qualcosa.
-- **Nel punto giusto**: Visual C++ x64 e WebView2 (e l'emulazione x64 su ARM64) in «Obbligatori»; un legame non soddisfatto nella riga dello strumento; «non per Gradle» accanto alle versioni su cui un altro strumento non gira; la matrice completa nella sezione «Relazioni», con «Usa» o «Scarica e usa» per le versioni chieste dai progetti.
+- **Nel punto giusto**: Visual C++ x64 e WebView2 in «Obbligatori»; un legame non soddisfatto nella riga dello strumento; «non per Gradle» accanto alle versioni su cui un altro strumento non gira; la matrice completa nella sezione «Relazioni», con «Usa» o «Scarica e usa» per le versioni chieste dai progetti.
 - **Il kit usa la versione più recente**, senza scelta. **Un progetto nuovo la fissa** alla creazione, così non cambia quando ne arrivano di nuove; **un progetto clonato** installa i linguaggi che usa e prende (o scarica) la versione compatibile con quelle che dichiara.
 - «latest» sulla versione più recente offerta; colonna della versione vuota per i linguaggi con più versioni.
 - Apache carica il PHP in uso (modulo ed estensioni della stessa versione); PHP solo dalla 8.
@@ -1113,13 +1105,13 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - **Componenti di sistema con le loro dipendenze obbligatorie** (D-59): GitHub CLI, PowerShell 7 e l'editor, più quello che serve a loro: Git per GitHub CLI, PowerShell 7 per l'editor. Sempre installati, spuntati e non modificabili nella pagina.
 - **Scambio di una cartella tenuta aperta da un programma del PC** (D-60): l'aggiornamento dell'editor falliva sempre perché l'indicizzatore di Cloud Code teneva aperta una sua sottocartella. Ora, se nessun programma gira da quella cartella, la vecchia si sposta voce per voce; con un programma in esecuzione resta «in uso».
 - **Ambiente ricostruito dopo ogni installazione**: un programma appena installato è visto da editor, console, agenti e progetti senza riavviare l'app (D-49).
-- **Catalogo**: `keys` per i componenti fatti di più parti (Java con Maven e Gradle, CMake con Ninja, PHP con Composer, pnpm con yarn, l'editor con `node.exe`); `noArm64` per R; `tools\vcruntime` condiviso da PHP e Apache, tolto con l'ultimo dei due; Composer da `getcomposer.org/versions`; CodeLLDB x64 anche su ARM64, come l'editor; `--only` aggiunge ciò che serve e manca. VSCodium desktop tolto dal catalogo.
+- **Catalogo**: `keys` per i componenti fatti di più parti (Java con Maven e Gradle, CMake con Ninja, PHP con Composer, pnpm con yarn, l'editor con `node.exe`); `tools\vcruntime` condiviso da PHP e Apache, tolto con l'ultimo dei due; Composer da `getcomposer.org/versions`; `--only` aggiunge ciò che serve e manca. VSCodium desktop tolto dal catalogo.
 - **Rete locale** per tutti i server dei progetti, non solo Node: i comandi trovati dall'app ascoltano su `0.0.0.0` e `Atollo.exe serve` su tutte le interfacce, con un `Host` che sia un indirizzo IP (D-50, D-51). Le porte 7000-7099 dell'editor non si possono scegliere per un progetto.
 - **Isolamento di PowerShell**: `PSModulePath` nell'ambiente del kit senza i moduli del PC; Codex con `allow_login_shell = false` (D-34).
 - **Impostazioni**: dopo il salvataggio con l'editor aperto, pulsante «Riavvia l'editor».
 - **Traduzioni**: le descrizioni dei componenti e gli errori che arrivano all'interfaccia passano dai cataloghi delle quattro lingue.
 - **Dipendenze in Linguaggi e strumenti**: ogni componente mostra ciò che richiede in piccoli riquadri («Richiede PHP: si installa insieme.»), e un componente richiesto da uno scelto mostra «per Claude Code».
-- **CI**: niente più componente `terminal` nella prova reale; job di release sui tag `app-v*` (tag uguale alla versione di `Cargo.toml`, asset `Atollo-x64.exe` e `Atollo-arm64.exe` con i file `.sha256`); `rust-version` 1.93.
+- **CI**: niente più componente `terminal` nella prova reale; job di release sui tag `app-v*` (tag uguale alla versione di `Cargo.toml`, asset `Atollo-x64.exe` con il file `.sha256`); `rust-version` 1.93.
 
 **Verificato**
 - 155 test Rust, 19 test dell'interfaccia; lo scambio con una sottocartella aperta senza condivisione di cancellazione è provato da un test.
@@ -1340,7 +1332,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 
 **Fatto**
 - Progetto Tauri 2.12.0 (Rust) con interfaccia React 19 + TypeScript + Tailwind 4 + react-icons, in tema VSCodium (Dark Modern / Light Modern secondo Windows, icone Codicons).
-- `kit.rs`: radice = cartella di `Atollo.exe`; creazione di `data\` e `projects\` soltanto; piattaforma `win32-x64`/`win32-arm64`; rilevamento dello spostamento (`data\app\root.txt`, `old-root.txt`); regole dei nomi dei progetti.
+- `kit.rs`: radice = cartella di `Atollo.exe`; creazione di `data\` e `projects\` soltanto; piattaforma `win32-x64`; rilevamento dello spostamento (`data\app\root.txt`, `old-root.txt`); regole dei nomi dei progetti.
 - `env.rs`: porting di `_env.cmd` (≈90 variabili) sulla nuova struttura; ambiente costruito da un elenco di variabili di sistema, PATH = kit + `System32`, `Wbem`, `WindowsPowerShell\v1.0`; il processo dell'app punta profilo, AppData, temp e dati WebView2 in `data\`.
 - `settings.rs`: `data\app\settings.json` (lingua, proxy, certificati, rete locale, chiave Gemini, aggiornamenti) al posto di `proxy.cmd`; un file illeggibile non viene sovrascritto.
 - `jobs.rs`: Job Object con `KILL_ON_JOB_CLOSE`, l'app ci entra all'avvio.
@@ -1350,7 +1342,7 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 - `i18n.rs`: catalogo it/en/fr/de dei messaggi Rust, con test di completezza.
 - Sicurezza: comandi limitati con `AppManifest::commands`, capability solo per `main`, controllo dell'etichetta; test che verifica il rifiuto da una finestra `editor`.
 - Manifesto dell'exe con `asInvoker` (nessuna richiesta di amministratore).
-- CI `.github/workflows/app.yml`: lint, formattazione, test, build x64 e ARM64 senza installer, controllo del manifesto, prova di fumo.
+- CI `.github/workflows/app.yml`: lint, formattazione, test, build x64 senza installer, controllo del manifesto, prova di fumo.
 
 **Verificato**
 - `cargo fmt --check`, `cargo clippy --all-targets -D warnings`: puliti. `cargo test`: 27 test verdi. Frontend: ESLint, Prettier, `tsc`, 4 test Vitest verdi.
@@ -1361,7 +1353,6 @@ Tredici commit dopo `7187483`, da `a5aa09a` a `f5eadb4`.
 
 **Non ancora fatto (fasi successive)**
 - Testi dell'interfaccia solo in italiano: i cataloghi dell'interfaccia arrivano nella fase 6.
-- La build ARM64 è solo nella CI (il target non è installato su questo PC): da verificare al primo avvio della CI.
 - Compilazione con il Rust `gnu` di un kit: non provata (questo PC usa MSVC).
 
 **Da provare a mano**

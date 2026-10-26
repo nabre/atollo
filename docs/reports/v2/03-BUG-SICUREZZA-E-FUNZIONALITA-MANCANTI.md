@@ -84,7 +84,7 @@
 - **Analisi Tecnica**:
   1. In `install/web.rs`, `Php` e `Apache` scaricano ancora gli zip da `windows.php.net` e `apachelounge.com` anche quando `target.is_unix()`, mentre `setup/catalog.rs:189` (`translate_rel`) si aspetta `php/bin/php` e `apache/bin/httpd`.
   2. In `install/core.rs:237-254`, `Python::latest` scarica la minor line più recente disponibile (es. `3.14` se `settings.python_version` è `None`), ma in `before_swap` (riga 306) e `finish` (riga 342) chiama `python_minor(ctx)` che quando `settings.python_version` è `None` restituisce la costante `PYTHON_DEFAULT` (`"3.13"`). Di conseguenza, su Unix cerca `lib/python3.13/ensurepip/_bundled` anche dentro un'installazione di Python `3.14` o di una linea salvata `3.12`!
-  3. In `commands/mod.rs:141`, il messaggio di errore quando `!c.is_available_on(target)` dice ancora `"{0} non è disponibile sui PC ARM64."` anche se il componente è indisponibile perché escluso per OS (es. `Windows Terminal` su macOS/Linux).
+  3. In `commands/mod.rs:141`, il messaggio di errore quando `!c.is_available_on(target)` nomina ancora l'architettura del PC anche se il componente è indisponibile perché escluso per OS (es. `Windows Terminal` su macOS/Linux).
 - **Soluzione Raccomandata**:
   - In `Python::before_swap` e `finish`, ricavare la minor version dalla cartella `dest`/`old` (o scansionare `lib/python3*` in `dest`) invece di chiamare `python_minor(ctx)`.
   - Per `Php` e `Apache` su Unix, usare `static-php-cli` / `micromamba` (`conda-forge::php`, `conda-forge::httpd`).
@@ -135,8 +135,8 @@
 
 | Macro-Funzionalità | Stato in `v1` | Stato in `v2` | Progresso & Lavoro Residuo |
 | :--- | :---: | :---: | :--- |
-| **1. Matrice Download & Isolamento Multi-Target (`6` Piattaforme)** | Assente (Solo `win32-*`) | **88% Completata** | **Implementata in `fa8a34d`**: `Target` a 6 piattaforme, isolamento `versions/<target>`, `translate_rel`, `CodeLLDB` multi-OS, `self_update` multi-OS e 23/26 installer aggiornati. Restano solo da rifinire le fonti Unix di `Git`, `Nginx`, `Php` e `Apache`. |
+| **1. Matrice Download & Isolamento Multi-Target (`4` Piattaforme)** | Assente (Solo `win32-*`) | **88% Completata** | **Implementata in `fa8a34d`**: `Target` a 4 piattaforme, isolamento `versions/<target>`, `translate_rel`, `CodeLLDB` multi-OS, `self_update` multi-OS e 23/26 installer aggiornati. Restano solo da rifinire le fonti Unix di `Git`, `Nginx`, `Php` e `Apache`. |
 | **2. Integrazione Completa Pool Server Condivisi (`WEB-1..8`)** | Parziale (64%) | **Parziale (64%)** | Da collegare `projects/run.rs` a `WebServers`, aggiungere listener per-progetto (`SC-5`), flag `keepAlive`/`autostart`, visualizzatore log del pool e badge sull'Activity Bar. |
-| **3. Server Database Multi-Versione Concorrenti (`WEB-6`)** | Parziale (65%) | **Parziale (65%)** | Più linee di MySQL/MongoDB sono scaricabili fianco a fianco (su tutti i 6 target in `v2`), ma una sola istanza per motore può essere in esecuzione alla volta. |
+| **3. Server Database Multi-Versione Concorrenti (`WEB-6`)** | Parziale (65%) | **Parziale (65%)** | Più linee di MySQL/MongoDB sono scaricabili fianco a fianco (su tutti i 4 target in `v2`), ma una sola istanza per motore può essere in esecuzione alla volta. |
 | **4. Montaggio UI di `ProjectMcpBox` (`projectmcp.tsx`)** | 99% (Orfano) | **99% (Orfano)** | Basta importare e renderizzare `<ProjectMcpBox project={project.name} />` in `ui/src/projects/page.tsx`. |
 | **5. Rilevamento CMS Esteso & Lazy Loading Guida** | Parziale (70%) | **Parziale (70%)** | Da aggiungere Drupal/PrestaShop/Joomla in `detect/php.rs` e `React.lazy` per `GuidePage` in `ui/src/App.tsx`. |

@@ -73,8 +73,7 @@ xychart-beta
 | **Indice Globale Ponderato (9 Dimensioni)** | 82,6 / 100 | 88,3 / 100 | **92,8 / 100** | **98,4 / 100** |
 | **Compilazione Backend su Linux & macOS (`cargo check --bins --tests`)** | Fallisce (0%) | Fallisce (0%) | **100% Verde in CI** | **100% + `--all-targets`** |
 | **Componenti Operativi su Windows x64 (`win32-x64`)** | 36/36 (100%) | 36/36 (100%) | **35/35 (100%)** | **35/35 (100%)** |
-| **Componenti Operativi su Windows ARM64 (`win32-arm64`)** | 31/36 (86,1%) | 33/36 (91,7%) | **33/35 (94,3%)** | **35/35 (100%)** (con `x64Only` su Julia/Bun) |
 | **Componenti con Target Catalogo Linux x64 (`linux-x64`)** | 29/36 (80,6%) | 30/36 (83,3%) | **31/35 (88,6%)** | **35/35 (100%)** |
-| **Componenti con Target Catalogo macOS (`darwin-arm64` / `darwin-x64`)** | 28/36 (77,8%) | 29/36 (80,6%) | **31/35 (88,6%)** | **35/35 (100%)** |
+| **Componenti con Target Catalogo macOS (`darwin-arm64`)** | 28/36 (77,8%) | 29/36 (80,6%) | **31/35 (88,6%)** | **35/35 (100%)** |
 | **Modali / Dialoghi con Focus Trap & ARIA (`useModalFocus` / `InlineConfirm`)** | 4 / 28 (14%) | 9 / 28 (32%) | **28 / 28 (100%)** | **28 / 28 + 3 distruttive inline** |
 | **Vulnerabilità Critiche Aperte (Sicurezza Locale)** | 3 | 1 | **0** (1 Alta `SEC-V4-01`) | **0** |

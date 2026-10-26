@@ -14,11 +14,9 @@ La tabella seguente confronta le metriche oggettive misurate sul repository tra 
 | **K01** | **Punteggio Globale Ponderato (su 100)** | 82,4 | 85,4 | **93,1** | **+7,7** | **98,2** |
 | **K02** | **Componenti totali a catalogo (`components.json`)** | 36 | 36 | **36** | `=` | **36** |
 | **K03** | **Sotto-strumenti bundled automatici** (`composer`, `maven`, `gradle`, `ninja`, `micromamba`, `vcruntime`, `mongosh`, `mongodb-tools`, `codelldb`) | 9 | 9 | **9** | `=` | **9 + `sysroot`** |
-| **K04** | **Target OS/Arch modellati in `kit.rs`** | 2 (`win32-*`) | 6 | **6** | `=` | **6** |
+| **K04** | **Target OS/Arch modellati in `kit.rs`** | 1 (`win32-x64`) | 4 | **4** | `=` | **4** |
 | **K05** | **Componenti installabili su `win32-x64`** | 36 / 36 (100%) | 36 / 36 (100%) | **36 / 36 (100%)** | `=` | **36 / 36 (100%)** |
-| **K06** | **Componenti installabili su `win32-arm64` (Win 11 Prism)** | 35 / 36 (97%) | 35 / 36 (97%) | **35 / 36 (97%)** | `=` | **36 / 36 (100%)** |
 | **K07** | **Componenti installabili su `darwin-arm64` (macOS Silicon)** | 0 / 36 (0%) | 29 / 36 (81%) | **30 / 36 (83%)** | **+1** (`git`) | **35 / 36 (97%)** |
-| **K08** | **Componenti installabili su `darwin-x64` (macOS Intel)** | 0 / 36 (0%) | 28 / 36 (78%) | **29 / 36 (81%)** | **+1** (`git`) | **35 / 36 (97%)** |
 | **K09** | **Componenti installabili su `linux-x64` (Ubuntu/Debian)** | 0 / 36 (0%) | 30 / 36 (83%) | **31 / 36 (86%)** | **+1** (`git`) | **35 / 36 (97%)** |
 | **K10** | **Componenti installabili su `linux-arm64`** | 0 / 36 (0%) | 30 / 36 (83%) | **31 / 36 (86%)** | **+1** (`git`) | **35 / 36 (97%)** |
 | **K11** | **Componenti usabili su Linux `musl` (Alpine) / NixOS** | 0 / 36 (0%) | 8 / 36 (22%) | **9 / 36 (25%)** | **+1** | **34–35 / 36 (97%)** |

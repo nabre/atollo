@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" width="100%" height="100%">
   <defs>
     <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0b0f19"/>
@@ -6,7 +6,7 @@
     </linearGradient>
   </defs>
 
-  <rect width="980" height="560" rx="16" fill="url(#bg3)" stroke="#1f2937" stroke-width="1.5"/>
+  <rect width="980" height="460" rx="16" fill="url(#bg3)" stroke="#1f2937" stroke-width="1.5"/>
 
   <text x="490" y="36" fill="#f9fafb" font-family="system-ui, -apple-system, sans-serif" font-size="19" font-weight="700" text-anchor="middle">
     Matrice Sintetica Strumenti Usabili (36 Componenti) × Distribuzione Sistema Operativo
@@ -34,28 +34,8 @@
       <text x="795" y="20" fill="#9ca3af" font-size="11" text-anchor="middle">100% Nativo + Portable</text>
     </g>
 
-    <!-- Row 2: Windows 11 ARM64 -->
-    <g transform="translate(0, 76)">
-      <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
-      <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">Windows 11 (22H2–24H2) ARM64 (Snapdragon X)</text>
-      <text x="330" y="20" fill="#9ca3af" font-size="11.5">win32-arm64 + Prism</text>
-      <text x="470" y="20" fill="#34d399" font-size="12" font-weight="700" text-anchor="middle">35 / 36 (97%)</text>
-      <text x="630" y="20" fill="#10b981" font-size="12" font-weight="700" text-anchor="middle">36 / 36 (100%)</text>
-      <text x="795" y="20" fill="#9ca3af" font-size="11" text-anchor="middle">28 nativi + 7 Prism x64 + R fallback</text>
-    </g>
-
-    <!-- Row 3: Windows 10 ARM64 -->
-    <g transform="translate(0, 110)">
-      <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
-      <text x="14" y="20" fill="#fbbf24" font-size="12" font-weight="600">Windows 10 (1809–22H2) ARM64</text>
-      <text x="330" y="20" fill="#9ca3af" font-size="11.5">win32-arm64 (No x64 emu)</text>
-      <text x="470" y="20" fill="#f59e0b" font-size="12" font-weight="700" text-anchor="middle">28 / 36 (78%)</text>
-      <text x="630" y="20" fill="#34d399" font-size="12" font-weight="700" text-anchor="middle">32 / 36 (89%)</text>
-      <text x="795" y="20" fill="#fbbf24" font-size="11" text-anchor="middle">Win10 ARM64 non emula x64!</text>
-    </g>
-
     <!-- Row 4: Windows LTSC / Server / Sandbox -->
-    <g transform="translate(0, 144)">
+    <g transform="translate(0, 76)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">Windows 10/11 LTSC &amp; Server 2019–2025 / Sandbox</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">win32-x64 (No WebView2)</text>
@@ -65,7 +45,7 @@
     </g>
 
     <!-- Row 5: macOS 14-15 Apple Silicon -->
-    <g transform="translate(0, 178)">
+    <g transform="translate(0, 110)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">macOS 13–15 (Ventura / Sonoma / Sequoia) Apple Silicon</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">darwin-arm64 (libSystem)</text>
@@ -74,18 +54,8 @@
       <text x="795" y="20" fill="#9ca3af" font-size="11" text-anchor="middle">Tutti tranne Windows Terminal</text>
     </g>
 
-    <!-- Row 6: macOS 13-15 Intel -->
-    <g transform="translate(0, 212)">
-      <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
-      <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">macOS 13–15 (Ventura / Sonoma / Sequoia) Intel</text>
-      <text x="330" y="20" fill="#9ca3af" font-size="11.5">darwin-x64 (libSystem)</text>
-      <text x="470" y="20" fill="#38bdf8" font-size="12" font-weight="700" text-anchor="middle">29 / 36 (81%)</text>
-      <text x="630" y="20" fill="#10b981" font-size="12" font-weight="700" text-anchor="middle">35 / 36 (97%)</text>
-      <text x="795" y="20" fill="#9ca3af" font-size="11" text-anchor="middle">+ static-php-cli &amp; conda-forge</text>
-    </g>
-
     <!-- Row 7: Ubuntu 22.04/24.04 & Debian 12 -->
-    <g transform="translate(0, 246)">
+    <g transform="translate(0, 144)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">Ubuntu 22.04 / 24.04 LTS, Debian 12, Mint, Pop!_OS</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">linux-x64/arm64 (glibc ≥2.35)</text>
@@ -95,7 +65,7 @@
     </g>
 
     <!-- Row 8: Fedora 40/41 & RHEL 9 / Alma / Rocky -->
-    <g transform="translate(0, 280)">
+    <g transform="translate(0, 178)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">Fedora 40/41, RHEL 9, AlmaLinux 9, Rocky Linux 9</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">linux-x64/arm64 (glibc ≥2.34)</text>
@@ -105,7 +75,7 @@
     </g>
 
     <!-- Row 9: Arch Linux & openSUSE Tumbleweed -->
-    <g transform="translate(0, 314)">
+    <g transform="translate(0, 212)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#e5e7eb" font-size="12" font-weight="600">Arch Linux, Manjaro, EndeavourOS, openSUSE Tumbleweed</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">linux-x64/arm64 (glibc ≥2.39)</text>
@@ -115,7 +85,7 @@
     </g>
 
     <!-- Row 10: Debian 11 / Ubuntu 20.04 / Leap 15.6 -->
-    <g transform="translate(0, 348)">
+    <g transform="translate(0, 246)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#fbbf24" font-size="12" font-weight="600">Debian 11, Ubuntu 20.04, openSUSE Leap 15.6, RHEL 8</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">linux-x64 (glibc 2.28–2.31)</text>
@@ -125,7 +95,7 @@
     </g>
 
     <!-- Row 11: Alpine Linux / Void musl -->
-    <g transform="translate(0, 382)">
+    <g transform="translate(0, 280)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#fbbf24" font-size="12" font-weight="600">Alpine Linux (3.19–3.21) &amp; Void Linux (musl)</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">linux-x64/arm64 (musl libc)</text>
@@ -135,7 +105,7 @@
     </g>
 
     <!-- Row 12: NixOS & Immutable Distros -->
-    <g transform="translate(0, 416)">
+    <g transform="translate(0, 314)">
       <rect x="0" y="0" width="920" height="30" rx="4" fill="#111827" stroke="#1f2937"/>
       <text x="14" y="20" fill="#fbbf24" font-size="12" font-weight="600">NixOS &amp; Distro Immutabili (Silverblue, SteamOS, MicroOS)</text>
       <text x="330" y="20" fill="#9ca3af" font-size="11.5">Non-FHS (/nix/store)</text>

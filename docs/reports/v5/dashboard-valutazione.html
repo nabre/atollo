@@ -164,8 +164,8 @@
         <div class="k-delta">780 Rust + 178 Vitest · +78,7% vs 536</div>
       </div>
       <div class="kpi-card">
-        <div class="k-label">Catalogo × 6 sistemi</div>
-        <div class="k-val">209 / 210</div>
+        <div class="k-label">Catalogo × 4 sistemi</div>
+        <div class="k-val">139 / 140</div>
         <div class="k-delta">35 componenti · manca solo Android su Linux ARM64</div>
       </div>
       <div class="kpi-card">
@@ -184,7 +184,7 @@
       <button class="tab-btn active" role="tab" aria-selected="true" data-tab="overview">1. Scorecard</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="v4">2. Stato rilievi v4</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="v5">3. Rilievi v5</button>
-      <button class="tab-btn" role="tab" aria-selected="false" data-tab="matrix">4. Matrice 35 × 6</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="matrix">4. Matrice 35 × 4</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="vscodium">5. Allineamento VSCodium</button>
       <button class="tab-btn" role="tab" aria-selected="false" data-tab="roadmap">6. Roadmap</button>
     </div>
@@ -287,10 +287,10 @@
             <tr><td>3</td><td><strong>Rilocazione &amp; USB</strong></td><td class="num">12%</td><td class="num">93</td><td class="num"><strong>97</strong></td><td class="num">+4</td><td class="num">99</td><td>Symlink preservati, rilocazione Unix, conda offline (D-118), PEM e terminali relativi al kit, <code>settings.json</code>/<code>terminals.json</code> nel rilocatore.</td></tr>
             <tr><td>4</td><td><strong>Sicurezza Locale</strong></td><td class="num">12%</td><td class="num">91</td><td class="num"><strong>95</strong></td><td class="num">+4</td><td class="num">98</td><td>SEC-V4-01 e 04 chiusi (alias non eseguibili, <code>FCGI_WEB_SERVER_ADDRS</code>, chiave FastCGI); chiave Gemini in file privato; socket admin di Caddy mai TCP.</td></tr>
             <tr><td>5</td><td><strong>UX &amp; Accessibilità</strong></td><td class="num">10%</td><td class="num">93</td><td class="num"><strong>95</strong></td><td class="num">+2</td><td class="num">98</td><td>Impostazioni senza «Salva», primo avvio, Guida in 9 capitoli, pannello rapido, 63 basi del wizard; restano UX-V5-01/02.</td></tr>
-            <tr><td>6</td><td><strong>Ecosistema AI</strong></td><td class="num">8%</td><td class="num">96</td><td class="num"><strong>97</strong></td><td class="num">+1</td><td class="num">99</td><td>Agenti su sei sistemi, accessi portabili su macOS e Linux (D-115), terminale PTY con agenti (D-109).</td></tr>
+            <tr><td>6</td><td><strong>Ecosistema AI</strong></td><td class="num">8%</td><td class="num">96</td><td class="num"><strong>97</strong></td><td class="num">+1</td><td class="num">99</td><td>Agenti su quattro sistemi, accessi portabili su macOS e Linux (D-115), terminale PTY con agenti (D-109).</td></tr>
             <tr><td>7</td><td><strong>Dati &amp; DB</strong></td><td class="num">8%</td><td class="num">92</td><td class="num"><strong>93</strong></td><td class="num">+1</td><td class="num">98</td><td>Solo MySQL (D-117), phpMyAdmin per versione (D-107), <code>drop_db</code> su ogni linea; restano lock e porte (BUG-V5-02, Alta).</td></tr>
-            <tr><td>8</td><td><strong>Qualità &amp; Test</strong></td><td class="num">10%</td><td class="num">95</td><td class="num"><strong>97</strong></td><td class="num">+2</td><td class="num">98</td><td>958 test superati, 0 falliti; test Unix su 4 target e Windows ARM64; test sui separatori di percorso in tutto il crate.</td></tr>
-            <tr><td>9</td><td><strong>Readiness Multi-OS</strong></td><td class="num">10%</td><td class="num">81</td><td class="num"><strong>91</strong></td><td class="num">+10</td><td class="num">97</td><td>PORT-V4-01..08 chiusi, 0.3.0 per sei sistemi; manca la prova su macchine reali fuori da Windows x64 (#5, #6).</td></tr>
+            <tr><td>8</td><td><strong>Qualità &amp; Test</strong></td><td class="num">10%</td><td class="num">95</td><td class="num"><strong>97</strong></td><td class="num">+2</td><td class="num">98</td><td>958 test superati, 0 falliti; test Unix in CI; test sui separatori di percorso in tutto il crate.</td></tr>
+            <tr><td>9</td><td><strong>Readiness Multi-OS</strong></td><td class="num">10%</td><td class="num">81</td><td class="num"><strong>91</strong></td><td class="num">+10</td><td class="num">97</td><td>PORT-V4-01..08 chiusi, 0.3.0 per quattro sistemi; manca la prova su macchine reali fuori da Windows x64 (#5, #6).</td></tr>
             <tr><td></td><td><strong>Totale pesato</strong></td><td class="num">100%</td><td class="num">92,8</td><td class="num"><strong>95,8</strong></td><td class="num">+3,0</td><td class="num">98,6</td><td></td></tr>
           </tbody>
         </table>
@@ -335,8 +335,8 @@
             <tr data-k="OK"><td><code>PORT-V4-04</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Profili terminale per sistema (<code>editor/cfg.rs:274</code>).</td></tr>
             <tr data-k="OK"><td><code>PORT-V4-05</code></td><td><span class="badge b-ok">RISOLTO</span></td><td><code>translate_rel</code> (<code>setup/catalog.rs:262-292</code>), nomi da <code>DbEngine</code>.</td></tr>
             <tr data-k="OK"><td><code>PORT-V4-06</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Test sui separatori su tutto il crate (<code>test/rust/paths.rs</code>).</td></tr>
-            <tr data-k="OK"><td><code>PORT-V4-07</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Julia <code>x64Only</code>, Bun <code>aarch64</code>, <code>RunLock</code> con <code>flock</code>, <code>tauri = "=2.12.1"</code>.</td></tr>
-            <tr data-k="OK"><td><code>PORT-V4-08</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>dugite-native, conda offline, Apache e PHP del kit, Caddy, phpMyAdmin sui 6 target.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-07</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Bun <code>aarch64</code>, <code>RunLock</code> con <code>flock</code>, <code>tauri = "=2.12.1"</code>.</td></tr>
+            <tr data-k="OK"><td><code>PORT-V4-08</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>dugite-native, conda offline, Apache e PHP del kit, Caddy, phpMyAdmin sui 4 target.</td></tr>
             <tr data-k="OPEN"><td><code>UX-V4-01</code></td><td><span class="badge b-crit">APERTO</span></td><td>Pool e linee MySQL secondarie assenti da barra di stato e Attività (→ UX-V5-01).</td></tr>
             <tr data-k="OK"><td><code>UX-V4-02</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Stato <code>detached</code> e nome del server (<code>ui/src/servers.tsx:160-193</code>).</td></tr>
             <tr data-k="OK"><td><code>UX-V4-03</code></td><td><span class="badge b-ok">RISOLTO</span></td><td>Nome dal pool con ripiego <code>&lt;label&gt;.localhost</code>.</td></tr>
@@ -386,22 +386,22 @@
         <div class="table-wrap">
         <table class="mx">
           <thead>
-            <tr><th>Tipo</th><th class="num">Comp.</th><th>Win x64</th><th>Win ARM64</th><th>macOS ARM64</th><th>macOS x64</th><th>Linux x64</th><th>Linux ARM64</th></tr>
+            <tr><th>Tipo</th><th class="num">Comp.</th><th>Win x64</th><th>macOS ARM64</th><th>Linux x64</th><th>Linux ARM64</th></tr>
           </thead>
           <tbody>
-            <tr><td>Sistema</td><td class="num">4</td><td class="c-ok">4</td><td class="c-ok">3 + 1 emu</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td></tr>
-            <tr><td>Agenti</td><td class="num">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td></tr>
-            <tr><td>Linguaggi</td><td class="num">16</td><td class="c-ok">16</td><td class="c-ok">13 + 3 emu</td><td class="c-ok">16</td><td class="c-ok">16</td><td class="c-ok">16</td><td class="c-ok">16</td></tr>
-            <tr><td>Strumenti</td><td class="num">6</td><td class="c-ok">6</td><td class="c-ok">4 + 2 emu</td><td class="c-ok">6</td><td class="c-ok">6</td><td class="c-ok">6</td><td class="c-warn">5 (no Android)</td></tr>
-            <tr><td>Web</td><td class="num">2</td><td class="c-ok">2</td><td class="c-ok">1 + 1 emu</td><td class="c-ok">2</td><td class="c-ok">2</td><td class="c-ok">2</td><td class="c-ok">2</td></tr>
-            <tr><td>Database</td><td class="num">4</td><td class="c-ok">4</td><td class="c-ok">2 + 2 emu</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td></tr>
-            <tr><td><strong>Totale</strong></td><td class="num"><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>34</strong></td></tr>
-            <tr><td>v4</td><td class="num">35</td><td>35</td><td>33</td><td>31</td><td>31</td><td>31</td><td>—</td></tr>
-            <tr><td>Verifica</td><td></td><td class="c-ok">campo</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td></tr>
+            <tr><td>Sistema</td><td class="num">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td></tr>
+            <tr><td>Agenti</td><td class="num">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td><td class="c-ok">3</td></tr>
+            <tr><td>Linguaggi</td><td class="num">16</td><td class="c-ok">16</td><td class="c-ok">16</td><td class="c-ok">16</td><td class="c-ok">16</td></tr>
+            <tr><td>Strumenti</td><td class="num">6</td><td class="c-ok">6</td><td class="c-ok">6</td><td class="c-ok">6</td><td class="c-warn">5 (no Android)</td></tr>
+            <tr><td>Web</td><td class="num">2</td><td class="c-ok">2</td><td class="c-ok">2</td><td class="c-ok">2</td><td class="c-ok">2</td></tr>
+            <tr><td>Database</td><td class="num">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td><td class="c-ok">4</td></tr>
+            <tr><td><strong>Totale</strong></td><td class="num"><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>35</strong></td><td><strong>34</strong></td></tr>
+            <tr><td>v4</td><td class="num">35</td><td>35</td><td>31</td><td>31</td><td>—</td></tr>
+            <tr><td>Verifica</td><td></td><td class="c-ok">campo</td><td class="c-warn">CI</td><td class="c-warn">CI</td><td class="c-warn">CI</td></tr>
           </tbody>
         </table>
         </div>
-        <p class="note">Emulazione x64 su Windows ARM64: editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX, R. Su Linux l'app richiede glibc ≥ 2.35 (controllo <code>glibc floor</code> in CI): RHEL/Alma 8-9, NixOS e Alpine restano fuori. Dettaglio in <code>06-MATRICE-STRUMENTI-PER-DISTRIBUZIONE-OS.md</code>.</p>
+        <p class="note">Su Linux l'app richiede glibc ≥ 2.35 (controllo <code>glibc floor</code> in CI): RHEL/Alma 8-9, NixOS e Alpine restano fuori. Dettaglio in <code>06-MATRICE-STRUMENTI-PER-DISTRIBUZIONE-OS.md</code>.</p>
       </div>
     </section>
 
@@ -444,7 +444,7 @@
             <h3>0.3.0 alpha</h3>
             <div class="when">20/10/2026 · tag <code>app-v0.3.0</code></div>
             <ul>
-              <li>Sei sistemi, asset <code>Atollo-&lt;ver&gt;-&lt;target&gt;</code> con <code>.sha256</code> (D-119, D-129)</li>
+              <li>Quattro sistemi, asset <code>Atollo-&lt;ver&gt;-&lt;target&gt;</code> con <code>.sha256</code> (D-119, D-129)</li>
               <li>PHP del kit su macOS/Linux (D-133)</li>
             </ul>
           </div>

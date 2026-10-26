@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 600" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 456" width="100%" height="100%">
   <defs>
     <style>
       .bg { fill: #0d1117; }
@@ -9,7 +9,6 @@
       .plat-sub { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; fill: #8b949e; }
       .bar-bg { fill: #21262d; }
       .bar-ok { fill: #238636; }
-      .bar-emu { fill: #3fb950; opacity: 0.6; }
       .bar-conda { fill: #388bfd; }
       .bar-no { fill: #f85149; }
       .pct { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; font-weight: 700; fill: #f0f6fc; }
@@ -21,21 +20,19 @@
     </style>
   </defs>
 
-  <rect width="920" height="600" rx="12" class="bg"/>
-  <rect x="16" y="16" width="888" height="568" rx="10" class="panel"/>
+  <rect width="920" height="456" rx="12" class="bg"/>
+  <rect x="16" y="16" width="888" height="424" rx="10" class="panel"/>
 
   <text x="40" y="50" class="title">Readiness Multipiattaforma sui 35 Componenti — v5 (HEAD a8aad6c, rilascio 0.3.0)</text>
-  <text x="40" y="70" class="subtitle">Disponibilità da components.json (targets, unavailable, noArm64, x64Only, needsByTarget) con la regola di site/matrix.mjs · Multi-OS v4 81 → v5 91</text>
+  <text x="40" y="70" class="subtitle">Disponibilità da components.json (targets, unavailable, needsByTarget) con la regola di site/matrix.mjs · Multi-OS v4 81 → v5 91</text>
 
   <!-- Legend -->
   <rect x="40" y="88" width="12" height="12" rx="3" class="bar-ok"/>
   <text x="58" y="98" class="legend">Nativo e rilocabile</text>
-  <rect x="180" y="88" width="12" height="12" rx="3" class="bar-emu"/>
-  <text x="198" y="98" class="legend">Emulazione x64 (Prism)</text>
-  <rect x="350" y="88" width="12" height="12" rx="3" class="bar-conda"/>
-  <text x="368" y="98" class="legend">Nativo da conda, ricreato offline (D-118)</text>
-  <rect x="610" y="88" width="12" height="12" rx="3" class="bar-no"/>
-  <text x="628" y="98" class="legend">Non disponibile</text>
+  <rect x="180" y="88" width="12" height="12" rx="3" class="bar-conda"/>
+  <text x="198" y="98" class="legend">Nativo da conda, ricreato offline (D-118)</text>
+  <rect x="440" y="88" width="12" height="12" rx="3" class="bar-no"/>
+  <text x="458" y="98" class="legend">Non disponibile</text>
   <rect x="740" y="87" width="44" height="14" rx="3" class="tag-field"/>
   <text x="762" y="98" text-anchor="middle" class="tag-txt">CAMPO</text>
   <rect x="790" y="87" width="30" height="14" rx="3" class="tag-ci"/>
@@ -53,62 +50,40 @@
   <text x="812" y="149" class="pct">35/35</text>
   <text x="240" y="174" class="note">Unico sistema provato su macchine reali; installazioni reali anche in CI (README:101).</text>
 
-  <!-- 2. win32-arm64: 26 native + 9 emu -->
-  <text x="40" y="214" class="plat-label">Windows ARM64</text>
-  <text x="40" y="230" class="plat-sub">win32-arm64</text>
+  <!-- 2. darwin-arm64: 32 native + 3 conda -->
+  <text x="40" y="214" class="plat-label">macOS Apple Silicon</text>
+  <text x="40" y="230" class="plat-sub">darwin-arm64</text>
   <rect x="186" y="203" width="30" height="16" rx="3" class="tag-ci"/>
   <text x="201" y="215" text-anchor="middle" class="tag-txt">CI</text>
   <rect x="240" y="202" width="560" height="28" rx="5" class="bar-bg"/>
-  <rect x="240" y="202" width="416" height="28" rx="5" class="bar-ok"/>
-  <rect x="656" y="202" width="144" height="28" class="bar-emu"/>
+  <rect x="240" y="202" width="512" height="28" rx="5" class="bar-ok"/>
+  <rect x="752" y="202" width="48" height="28" class="bar-conda"/>
   <text x="812" y="221" class="pct">35/35</text>
-  <text x="240" y="246" class="note">26 nativi + 9 x64Only: editor, PHP, Apache, MySQL, MongoDB, Android, Julia, TinyTeX, R (D-132). v4: 33/35.</text>
+  <text x="240" y="246" class="note">Conda: C/C++ (make), Ruby, R. Stack web dal kit: PHP 8.4.26/8.5.11 (D-133), Apache 2.4.69 (D-116). v4: 31/35.</text>
 
-  <!-- 3. darwin-arm64: 32 native + 3 conda -->
-  <text x="40" y="286" class="plat-label">macOS Apple Silicon</text>
-  <text x="40" y="302" class="plat-sub">darwin-arm64</text>
+  <!-- 3. linux-x64: 31 native + 4 conda -->
+  <text x="40" y="286" class="plat-label">Linux x64</text>
+  <text x="40" y="302" class="plat-sub">linux-x64 (glibc ≥ 2.35)</text>
   <rect x="186" y="275" width="30" height="16" rx="3" class="tag-ci"/>
   <text x="201" y="287" text-anchor="middle" class="tag-txt">CI</text>
   <rect x="240" y="274" width="560" height="28" rx="5" class="bar-bg"/>
-  <rect x="240" y="274" width="512" height="28" rx="5" class="bar-ok"/>
-  <rect x="752" y="274" width="48" height="28" class="bar-conda"/>
+  <rect x="240" y="274" width="496" height="28" rx="5" class="bar-ok"/>
+  <rect x="736" y="274" width="64" height="28" class="bar-conda"/>
   <text x="812" y="293" class="pct">35/35</text>
-  <text x="240" y="318" class="note">Conda: C/C++ (make), Ruby, R. Stack web dal kit: PHP 8.4.26/8.5.11 (D-133), Apache 2.4.69 (D-116). v4: 31/35.</text>
+  <text x="240" y="318" class="note">Conda: C/C++ (make), Ruby, R, MongoDB. AppImage + tar.gz, glibc floor 2.35 controllato in CI. v4: 31/35.</text>
 
-  <!-- 4. darwin-x64 -->
-  <text x="40" y="358" class="plat-label">macOS Intel</text>
-  <text x="40" y="374" class="plat-sub">darwin-x64</text>
+  <!-- 4. linux-arm64: 29 native + 5 conda + 1 no -->
+  <text x="40" y="358" class="plat-label">Linux ARM64</text>
+  <text x="40" y="374" class="plat-sub">linux-arm64 (glibc ≥ 2.35)</text>
   <rect x="186" y="347" width="30" height="16" rx="3" class="tag-ci"/>
   <text x="201" y="359" text-anchor="middle" class="tag-txt">CI</text>
   <rect x="240" y="346" width="560" height="28" rx="5" class="bar-bg"/>
-  <rect x="240" y="346" width="512" height="28" rx="5" class="bar-ok"/>
-  <rect x="752" y="346" width="48" height="28" class="bar-conda"/>
-  <text x="812" y="365" class="pct">35/35</text>
-  <text x="240" y="390" class="note">Stessa composizione di Apple Silicon; job test-unix e bundle su macos-15-intel. Da provare su Mac reali (#5, #6).</text>
+  <rect x="240" y="346" width="464" height="28" rx="5" class="bar-ok"/>
+  <rect x="704" y="346" width="80" height="28" class="bar-conda"/>
+  <rect x="784" y="346" width="16" height="28" class="bar-no"/>
+  <text x="812" y="365" class="pct">34/35</text>
+  <text x="240" y="390" class="note">Manca solo Android (Google non pubblica platform-tools per Linux ARM64). Conda: C/C++, Ruby, R, MongoDB, SQLite.</text>
 
-  <!-- 5. linux-x64: 31 native + 4 conda -->
-  <text x="40" y="430" class="plat-label">Linux x64</text>
-  <text x="40" y="446" class="plat-sub">linux-x64 (glibc ≥ 2.35)</text>
-  <rect x="186" y="419" width="30" height="16" rx="3" class="tag-ci"/>
-  <text x="201" y="431" text-anchor="middle" class="tag-txt">CI</text>
-  <rect x="240" y="418" width="560" height="28" rx="5" class="bar-bg"/>
-  <rect x="240" y="418" width="496" height="28" rx="5" class="bar-ok"/>
-  <rect x="736" y="418" width="64" height="28" class="bar-conda"/>
-  <text x="812" y="437" class="pct">35/35</text>
-  <text x="240" y="462" class="note">Conda: C/C++ (make), Ruby, R, MongoDB. AppImage + tar.gz, glibc floor 2.35 controllato in CI. v4: 31/35.</text>
-
-  <!-- 6. linux-arm64: 29 native + 5 conda + 1 no -->
-  <text x="40" y="502" class="plat-label">Linux ARM64</text>
-  <text x="40" y="518" class="plat-sub">linux-arm64 (glibc ≥ 2.35)</text>
-  <rect x="186" y="491" width="30" height="16" rx="3" class="tag-ci"/>
-  <text x="201" y="503" text-anchor="middle" class="tag-txt">CI</text>
-  <rect x="240" y="490" width="560" height="28" rx="5" class="bar-bg"/>
-  <rect x="240" y="490" width="464" height="28" rx="5" class="bar-ok"/>
-  <rect x="704" y="490" width="80" height="28" class="bar-conda"/>
-  <rect x="784" y="490" width="16" height="28" class="bar-no"/>
-  <text x="812" y="509" class="pct">34/35</text>
-  <text x="240" y="534" class="note">Manca solo Android (Google non pubblica platform-tools per Linux ARM64). Conda: C/C++, Ruby, R, MongoDB, SQLite.</text>
-
-  <line x1="40" y1="550" x2="880" y2="550" stroke="#21262d" stroke-width="1"/>
-  <text x="40" y="570" class="legend">PORT-V4-01..08 tutti risolti · 209/210 celle disponibili · rilascio app-v0.3.0 per 6 sistemi con .sha256 (D-119, D-129) · 0.4.0 alpha subito dopo il v5</text>
+  <line x1="40" y1="406" x2="880" y2="406" stroke="#21262d" stroke-width="1"/>
+  <text x="40" y="426" class="legend">PORT-V4-01..08 tutti risolti · 139/140 celle disponibili · rilascio app-v0.3.0 per 4 sistemi con .sha256 (D-119, D-129) · 0.4.0 alpha subito dopo il v5</text>
 </svg>

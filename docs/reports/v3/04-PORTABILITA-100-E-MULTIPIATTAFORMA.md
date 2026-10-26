@@ -12,7 +12,7 @@ Un ambiente di sviluppo si definisce **100% Portatile e Multipiattaforma** quand
 1. **Zero-Reinstall Offline Relocation**: spostare la cartella del kit o la chiavetta USB su un altro percorso, mount point (`/Volumes/USB`, `/run/media/user/USB`, `E:\`) o PC **non richiede mai connessione Internet** né riscaricamento di pacchetti.
 2. **Zero-Host-Footprint**: nessun file permanente nel profilo utente, nessuna chiave di registro lasciata su Windows, nessuna credenziale lasciata nel Keychain/Credential Manager, e possibilità di contenere anche i file temporanei di setup interamente nel kit.
 3. **Zero-Host-Toolchain Coupling**: gli strumenti del kit non dipendono da compilatori, librerie dinamiche (`libssl`, `libcrypt`, `glibc` recente) o utility (`xz`, `tar`) installate sul sistema operativo ospite.
-4. **Parità Funzionale Web/DB/Linguaggi sui 6 Target**: tutti i 35 componenti multipiattaforma (36 su Windows con Windows Terminal) sono installabili ed eseguibili su `win32-x64`, `win32-arm64`, `darwin-arm64`, `darwin-x64`, `linux-x64` e `linux-arm64`.
+4. **Parità Funzionale Web/DB/Linguaggi sui 4 Target**: tutti i 35 componenti multipiattaforma (36 su Windows con Windows Terminal) sono installabili ed eseguibili su `win32-x64`, `darwin-arm64`, `linux-x64` e `linux-arm64`.
 5. **Compilazione Nativa Pulita del Backend Rust (`cargo build`)** su Windows, macOS e Linux.
 
 La tabella seguente mappa le **7 barriere residue** individuate nel codice a `HEAD 39b74bc` e le soluzioni ingegneristiche concrete promosse in questo documento:
@@ -170,7 +170,7 @@ exec "$PREFIX/bin/.git-real" "$@"
 
 Analogamente, in [`tauri/src/install/native.rs:731-733`](../../../tauri/src/install/native.rs#L731-L733) (`R::install_custom_at`), su macOS e Linux generiamo wrapper relativi in `bin/R` e `bin/Rscript` che esportano `R_HOME="$PREFIX/lib/R"` e `R_SHARE_DIR` / `R_INCLUDE_DIR` / `R_DOC_DIR` prima di eseguire `$PREFIX/lib/R/bin/exec/R`, e chiamiamo `write_conda_prefix_marker(target)`.  
 Con queste due modifiche:
-- `Git::relocatable` e `R::relocatable` diventano **`true` su tutti i 6 target** (il metodo `Installer::relocatable` e il meccanismo distruttivo `.reinstall` di `D-92` possono essere sostituiti da una chiamata a `relocate_conda_prefix` in `kit.rs`!).
+- `Git::relocatable` e `R::relocatable` diventano **`true` su tutti i 4 target** (il metodo `Installer::relocatable` e il meccanismo distruttivo `.reinstall` di `D-92` possono essere sostituiti da una chiamata a `relocate_conda_prefix` in `kit.rs`!).
 - Spostare il kit offline su qualunque PC o cartella funziona **al 100% all'istante**.
 
 ### 2.3 Rimozione Automatica Quarantena Gatekeeper su macOS (`com.apple.quarantine`)
@@ -243,19 +243,18 @@ env.set_path("GCM_DPAPI_STORE_PATH", home.join(".gcm").join("dpapi_store"));
 
 ## 4. Soluzione Concreta 3 — Web Stack Completo (`php`, `apache`, `nginx`, `adminer`) su macOS e Linux
 
-Nello Sciame (`BUG-23b` / `BUG-24a`), `php`, `apache`, `nginx` e `adminer` sono stati temporaneamente ristretti a `["win32-x64", "win32-arm64"]` (Opzione C) perché:
+Nello Sciame (`BUG-23b` / `BUG-24a`), `php`, `apache`, `nginx` e `adminer` sono stati temporaneamente ristretti a `["win32-x64"]` (Opzione C) perché:
 - `windows.php.net` pubblica solo build Windows;
 - `apachelounge.com` pubblica solo build Windows;
 - `nginx/nginx` su GitHub pubblica `.zip` per Windows e `.tar.gz` di soli sorgenti.
 
-Di seguito presentiamo l'architettura concreta e pronta all'uso per abilitare **tutti e 4 i componenti** su `darwin-arm64`, `darwin-x64`, `linux-x64` e `linux-arm64`, portando i componenti supportati su macOS e Linux da **31/36 a 35/36** (100% di tutti i componenti non-Windows-Terminal!).
+Di seguito presentiamo l'architettura concreta e pronta all'uso per abilitare **tutti e 4 i componenti** su `darwin-arm64`, `linux-x64` e `linux-arm64`, portando i componenti supportati su macOS e Linux da **31/36 a 35/36** (100% di tutti i componenti non-Windows-Terminal!).
 
 ### 4.1 PHP + Composer su macOS e Linux tramite `static-php-cli` (`dl.static-php.dev`)
 Il progetto open-source **`static-php-cli`** (`https://dl.static-php.dev/static-php-cli/common/`) pubblica regolarmente binari **100% statici e auto-contenuti** di `php` (CLI), `php-cgi` (FastCGI per Nginx e Apache) e `php-fpm` per:
 - `linux-x86_64` (`musl` statico: gira su **qualunque** distro Linux — Ubuntu, Fedora, Arch, Debian 11, Alpine, NixOS — con zero dipendenze `.so`!)
 - `linux-aarch64` (`musl` statico)
 - `macos-aarch64` (Apple Silicon M1–M4, linkato solo a `libSystem.B.dylib`)
-- `macos-x86_64` (macOS Intel)
 
 Ogni archivio (`php-8.4.x-cli-macos-aarch64.tar.gz` e `php-8.4.x-cgi-macos-aarch64.tar.gz`) include già compilate staticamente tutte le estensioni necessarie a WordPress, Laravel, Symfony e Adminer: `bcmath`, `bz2`, `calendar`, `ctype`, `curl`, `dom`, `exif`, `fileinfo`, `filter`, `ftp`, `gd`, `iconv`, `intl`, `mbstring`, `mysqli`, `mysqlnd`, `openssl`, `pcntl`, `pdo`, `pdo_mysql`, `pdo_pgsql`, `pdo_sqlite`, `phar`, `posix`, `redis`, `session`, `simplexml`, `soap`, `sockets`, `sodium`, `sqlite3`, `tokenizer`, `xml`, `xmlreader`, `xmlwriter`, `xsl`, `zip`, `zlib`, `opcache`.
 
@@ -264,17 +263,16 @@ Ogni archivio (`php-8.4.x-cli-macos-aarch64.tar.gz` e `php-8.4.x-cgi-macos-aarch
 pub fn static_php_os_arch(target: Target) -> Option<(&'static str, &'static str)> {
     match (target.os, target.arch) {
         (Os::Darwin, Arch::Arm64) => Some(("macos", "aarch64")),
-        (Os::Darwin, Arch::X64) => Some(("macos", "x86_64")),
         (Os::Linux, Arch::X64) => Some(("linux", "x86_64")),
         (Os::Linux, Arch::Arm64) => Some(("linux", "aarch64")),
-        (Os::Win32, _) => None,
+        _ => None,
     }
 }
 ```
 Quando `target.os != Os::Win32`, `Php::release_line` scarica la coppia `cli` + `cgi` da `dl.static-php.dev` (o `conda-forge::php` come fallback verificato tramite SHA-256 dell'API Anaconda), posiziona `bin/php` e `bin/php-cgi` (più un symlink/copia in radice per compatibilità) e aggiunge `composer.phar` + `composer` launcher esattamente come su Windows!
 
 ### 4.2 Nginx e Apache (`httpd`) su macOS e Linux tramite `conda-forge` (`micromamba`)
-`conda-forge` pubblica pacchetti binari precompilati e aggiornati per tutte le 4 piattaforme Unix (`osx-arm64`, `osx-64`, `linux-64`, `linux-aarch64`) sia per **`nginx`** (`https://api.anaconda.org/package/conda-forge/nginx`) sia per **`apache-httpd`** (`https://api.anaconda.org/package/conda-forge/apache-httpd`):
+`conda-forge` pubblica pacchetti binari precompilati e aggiornati per le piattaforme Unix del kit (`osx-arm64`, `linux-64`, `linux-aarch64`) sia per **`nginx`** (`https://api.anaconda.org/package/conda-forge/nginx`) sia per **`apache-httpd`** (`https://api.anaconda.org/package/conda-forge/apache-httpd`):
 - **`Nginx` su macOS e Linux**:
   - `Nginx::custom(target)` restituisce `!target.os.is_windows()`.
   - `Nginx::latest` su Unix interroga `conda_info(ctx, "nginx")` per `target.conda_subdir()` e chiama `micromamba_create(ctx, component, release, &dir, &[&format!("nginx={}", release.version)], progress)` seguito da `relocate_conda_prefix(&dir)`.

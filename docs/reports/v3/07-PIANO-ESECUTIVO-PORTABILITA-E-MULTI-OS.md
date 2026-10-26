@@ -20,7 +20,7 @@ flowchart LR
 | **Fase 1** | **Portabilità 100% Offline (Eliminazione `D-92`, `TempWork` in-kit, Gatekeeper macOS)** | [`kit.rs`](../../../tauri/src/kit.rs), [`install/mod.rs`](../../../tauri/src/install/mod.rs), [`install/core.rs`](../../../tauri/src/install/core.rs), [`install/native.rs`](../../../tauri/src/install/native.rs) | `B1` (`D-92`), `B3`, `B6`, `BUG-V3-06` |
 | **Fase 2** | **Hardening Sicurezza Web & Supervisione Dedicata `php-cgi`** | [`projects/apache.rs`](../../../tauri/src/projects/apache.rs), [`projects/nginx.rs`](../../../tauri/src/projects/nginx.rs), [`projects/run.rs`](../../../tauri/src/projects/run.rs), [`servers/mod.rs`](../../../tauri/src/servers/mod.rs) | `SEC-V3-01`, `SEC-V3-02`, `SEC-V3-03`, `BUG-V3-01`, `BUG-V3-02`, `BUG-V3-08` |
 | **Fase 3** | **Sblocco Compilazione Multi-OS (`Cargo.toml` + `os/*.rs` + `keyring.rs`)** | [`tauri/Cargo.toml`](../../../tauri/Cargo.toml), [`os/safe_path.rs`](../../../tauri/src/os/safe_path.rs), [`os/temp.rs`](../../../tauri/src/os/temp.rs), [`os/volume.rs`](../../../tauri/src/os/volume.rs), [`os/instance.rs`](../../../tauri/src/os/instance.rs), [`os/jobs.rs`](../../../tauri/src/os/jobs.rs), [`os/processes.rs`](../../../tauri/src/os/processes.rs), [`os/sessions.rs`](../../../tauri/src/os/sessions.rs), [`agents/keyring.rs`](../../../tauri/src/agents/keyring.rs) | `N-A1`, `B2`, `B7`, `BUG-V3-03`, `BUG-V3-07` |
-| **Fase 4** | **Abilitazione Web Stack (`php`, `apache`, `nginx`, `adminer`), `cc` su Unix e `r` su Win11 ARM64** | [`catalog/components.json`](../../../tauri/catalog/components.json), [`install/web.rs`](../../../tauri/src/install/web.rs), [`install/db.rs`](../../../tauri/src/install/db.rs), [`install/lang/cc.rs`](../../../tauri/src/install/lang/cc.rs) | `B4`, `BUG-V3-04`, `BUG-V3-05`, `BUG-V3-09` |
+| **Fase 4** | **Abilitazione Web Stack (`php`, `apache`, `nginx`, `adminer`), `cc` su Unix** | [`catalog/components.json`](../../../tauri/catalog/components.json), [`install/web.rs`](../../../tauri/src/install/web.rs), [`install/db.rs`](../../../tauri/src/install/db.rs), [`install/lang/cc.rs`](../../../tauri/src/install/lang/cc.rs) | `B4`, `BUG-V3-04`, `BUG-V3-05`, `BUG-V3-09` |
 | **Fase 5** | **Resilienza Universale Distro Linux (`Portable Sysroot` per Fedora/RHEL, Deb 11, Alpine `musl`, NixOS)** | `tauri/src/install/sysroot.rs` (nuovo), [`env.rs`](../../../tauri/src/env.rs) | `B5` (Compatibilità 18 distro OS) |
 | **Fase 6** | **Diagnostica Visuale Distro OS (`StatusPage`) & Focus Trap Universale (`useModalFocusTrap`)** | [`tauri/src/status.rs`](../../../tauri/src/status.rs), `src/hooks/useModalFocusTrap.ts`, [`src/pages/StatusPage.tsx`](../../../src/pages/StatusPage.tsx) | Miglioramenti UX/A11y `D4`/`D5` |
 
@@ -405,9 +405,8 @@ pub fn running_from(all: &[Proc], folder: &Path) -> Vec<u32> {
 ## 4. FASE 4 — Abilitazione Completa di `php`, `apache`, `nginx` e `adminer` in `components.json`
 
 Una volta applicate le estensioni multi-OS in [`tauri/src/install/web.rs`](../../../tauri/src/install/web.rs) descritte nel [`Documento 04 §4`](../../../reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md), in [`tauri/catalog/components.json`](../../../tauri/catalog/components.json):
-1. Rimuovere `"targets": ["win32-x64", "win32-arm64"]` da `php` (riga 103), `apache` (riga 115), `nginx` (riga 127) e `adminer` (riga 370), abilitandoli su tutti i **6 target**!
-2. In `r` (riga 336), aggiungere `"win32-arm64"` all'array `targets` (eseguito tramite Prism `win-64` su Windows 11 ARM64).
-3. In `vscodium-server` (riga 39), aggiungere `sha256ByTarget` per tutti i 6 target della release `1.112.01907`.
+1. Rimuovere `"targets": ["win32-x64"]` da `php` (riga 103), `apache` (riga 115), `nginx` (riga 127) e `adminer` (riga 370), abilitandoli su tutti i **4 target**!
+2. In `vscodium-server` (riga 39), aggiungere `sha256ByTarget` per tutti i 4 target della release `1.112.01907`.
 
 ---
 

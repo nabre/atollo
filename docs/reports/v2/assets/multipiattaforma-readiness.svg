@@ -8,7 +8,7 @@
 
   <rect width="960" height="540" rx="16" fill="url(#bg2)" stroke="#334155" stroke-width="1.5"/>
 
-  <text x="32" y="40" fill="#f8fafc" font-size="20" font-weight="700">Evoluzione Readiness Multipiattaforma v1 → v2 per Sottosistema (6 Target)</text>
+  <text x="32" y="40" fill="#f8fafc" font-size="20" font-weight="700">Evoluzione Readiness Multipiattaforma v1 → v2 per Sottosistema (4 Target)</text>
   <text x="32" y="62" fill="#94a3b8" font-size="13">Readiness globale salita dal 57% (v1) al 74% (v2, +17 pt) grazie a Target, translate_rel, join_rel, KitEnv Unix e Matrice Download</text>
 
   <!-- Legend -->

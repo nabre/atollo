@@ -1,6 +1,6 @@
 # 04 — Portabilità 100% e Architettura Multipiattaforma (`v5`)
 
-> **Riferimento Codice**: `HEAD a8aad6c` (20/10/2026) · **Baseline precedente**: `v4` `18698f9` · **Decisioni di Riferimento**: `D-108` (disponibilità per target), `D-109` (terminale PTY su Unix), `D-112` (fonti per macOS/Linux/Win ARM64), `D-113` (pacchetti macOS e Linux), `D-114` (router multi-target), `D-116` (Apache del kit), `D-118` (conda offline), `D-119` (rilasci Unix), `D-132` (R in emulazione su Win ARM64), `D-133` (PHP del kit), `D-137` (impostazioni, `safe.directory`, chiave Gemini).
+> **Riferimento Codice**: `HEAD a8aad6c` (20/10/2026) · **Baseline precedente**: `v4` `18698f9` · **Decisioni di Riferimento**: `D-108` (disponibilità per target), `D-109` (terminale PTY su Unix), `D-112` (fonti per macOS/Linux), `D-113` (pacchetti macOS e Linux), `D-114` (router multi-target), `D-116` (Apache del kit), `D-118` (conda offline), `D-119` (rilasci Unix), `D-133` (PHP del kit), `D-137` (impostazioni, `safe.directory`, chiave Gemini).
 
 ---
 
@@ -8,20 +8,16 @@
 
 ![Readiness Multipiattaforma sui 35 Componenti](./assets/multipiattaforma-readiness.svg)
 
-La dimensione **Readiness Multi-OS** passa da `81/100` (v4) a **`91/100`** (`+10`). Il v4 fotografava un backend che *compilava* su Unix ma non *funzionava* (8 blocchi `PORT-V4-01..08`); il v5 trova un'app che su sei sistemi **si costruisce, si testa, si impacchetta e si pubblica in CI**, con il catalogo completo ovunque tranne Android su Linux ARM64. I 9 punti mancanti non sono codice rotto: sono **prove sul campo** che ancora mancano fuori da Windows x64 (§8).
+La dimensione **Readiness Multi-OS** passa da `81/100` (v4) a **`91/100`** (`+10`). Il v4 fotografava un backend che *compilava* su Unix ma non *funzionava* (8 blocchi `PORT-V4-01..08`); il v5 trova un'app che su quattro sistemi **si costruisce, si testa, si impacchetta e si pubblica in CI**, con il catalogo completo ovunque tranne Android su Linux ARM64. I 9 punti mancanti non sono codice rotto: sono **prove sul campo** che ancora mancano fuori da Windows x64 (§8).
 
-| Target | Pacchetto (`D-113`, `D-119`, `D-129`) | Catalogo disponibile | di cui in emulazione x64 | Test automatici in CI | Provato su macchine reali |
-|---|---|:---:|:---:|---|:---:|
-| `win32-x64` | `Atollo.exe` (non firmato in 0.3.0) | **35/35** | 0 | `check` (lint, Vitest, `cargo test`), installazioni reali | **Sì** |
-| `win32-arm64` | `Atollo.exe` aarch64 | **35/35** | 9 (Prism) | `test-windows-arm64` su `windows-11-arm` | No |
-| `darwin-arm64` | `Atollo.app` zip, firma ad hoc | **35/35** | 0 | `test-unix`, `bundle-macos`, `release-smoke` | No ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)) |
-| `darwin-x64` | `Atollo.app` zip, firma ad hoc | **35/35** | 0 | idem su `macos-15-intel` | No |
-| `linux-x64` | AppImage + `tar.gz` (glibc ≥ 2.35) | **35/35** | 0 | `test-unix`, `bundle-linux`, `release-smoke` | No ([#5](https://github.com/nabre/atollo/issues/5)) |
-| `linux-arm64` | AppImage + `tar.gz` (glibc ≥ 2.35) | **34/35** | 0 | idem su `ubuntu-24.04-arm` | No |
+| Target | Pacchetto (`D-113`, `D-119`, `D-129`) | Catalogo disponibile | Test automatici in CI | Provato su macchine reali |
+|---|---|:---:|---|:---:|
+| `win32-x64` | `Atollo.exe` (non firmato in 0.3.0) | **35/35** | `check` (lint, Vitest, `cargo test`), installazioni reali | **Sì** |
+| `darwin-arm64` | `Atollo.app` zip, firma ad hoc | **35/35** | `test-unix`, `bundle-macos`, `release-smoke` | No ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)) |
+| `linux-x64` | AppImage + `tar.gz` (glibc ≥ 2.35) | **35/35** | `test-unix`, `bundle-linux`, `release-smoke` | No ([#5](https://github.com/nabre/atollo/issues/5)) |
+| `linux-arm64` | AppImage + `tar.gz` (glibc ≥ 2.35) | **34/35** | idem su `ubuntu-24.04-arm` | No |
 
-Fonti: disponibilità calcolata da `targets`, `unavailable`, `noArm64`, `x64Only`, `needsByTarget` di [`tauri/catalog/components.json`](../../../tauri/catalog/components.json) con la stessa regola di [`site/matrix.mjs:42-58`](../../../site/matrix.mjs#L42-L58); l'unico «no» è Android su `linux-arm64` ([`components.json:19`](../../../tauri/catalog/components.json#L19)). Job CI in [`.github/workflows/app.yml`](../../../.github/workflows/app.yml): `test-unix` (righe 210-300, matrice di 4 target), `test-windows-arm64` (riga 303), `bundle-macos` (356-457), `bundle-linux` (459-561), `release-smoke` (563-662). Confronto v4: `win32-arm64` 33/35, macOS e `linux-x64` 31/35.
-
-I 9 componenti in emulazione su Windows ARM64 sono: editor (`vscodium-server`), PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX, R (tutti `x64Only`; R da `noArm64` a `x64Only` con `D-132`, [`DECISIONS.md:1228`](../../../docs/app/DECISIONS.md#L1228)). Nessun componente è più `noArm64` e nessuno usa `rosetta` su `darwin-arm64`.
+Fonti: disponibilità calcolata da `targets`, `unavailable`, `needsByTarget` di [`tauri/catalog/components.json`](../../../tauri/catalog/components.json) con la stessa regola di [`site/matrix.mjs:42-58`](../../../site/matrix.mjs#L42-L58); l'unico «no» è Android su `linux-arm64` ([`components.json:19`](../../../tauri/catalog/components.json#L19)). Job CI in [`.github/workflows/app.yml`](../../../.github/workflows/app.yml): `test-unix` (righe 210-300), `bundle-macos` (356-457), `bundle-linux` (459-561), `release-smoke` (563-662). Confronto v4: macOS e `linux-x64` 31/35.
 
 ---
 
@@ -37,8 +33,8 @@ Tutti i rilievi di portabilità del v4, compresi i 4 critici, sono chiusi.
 | `PORT-V4-04` VSCodium server Windows-only | CRITICA | **Risolto** | Profili terminale per sistema `terminal.integrated.<name>.<os_key>` ([`editor/cfg.rs:274`](../../../tauri/src/editor/cfg.rs#L274)); `node.exe` e `out\server-main.js` restano solo nei commenti ([`editor/mod.rs:15, 87`](../../../tauri/src/editor/mod.rs#L15)). |
 | `PORT-V4-05` `.exe` e `php/php.exe` nei DB | ALTA | **Risolto** | `translate_rel` mappa `php/php.exe` → `php/bin/php` e toglie `.exe/.cmd/.bat` fuori da Windows ([`setup/catalog.rs:262-292`](../../../tauri/src/setup/catalog.rs#L262-L292)); i nomi dei programmi DB vengono da `DbEngine` (`D-110`, [`db/engine.rs`](../../../tauri/src/db/engine.rs)). |
 | `PORT-V4-06` backslash nei join | ALTA | **Risolto** | Test su tutto il crate «No separator written inside a joined path» ([`fsx.rs:142-145`](../../../tauri/src/fsx.rs#L142-L145) → [`test/rust/paths.rs`](../../../test/rust/paths.rs)), eseguito anche dai 4 job `test-unix`. |
-| `PORT-V4-07` Julia/Bun ARM64, `RunLock`, pin tauri | MEDIA | **Risolto** | Julia `x64Only` ([`components.json:23`](../../../tauri/catalog/components.json#L23)); Bun con asset nativo `aarch64` ([`install/lang/js.rs:18-29`](../../../tauri/src/install/lang/js.rs#L18-L29)); `RunLock` Unix con `flock` su `data/app/prepare.lock` ([`setup/runner.rs:141-200`](../../../tauri/src/setup/runner.rs#L141-L200)); `tauri = "=2.12.1"` ([`tauri/Cargo.toml:24`](../../../tauri/Cargo.toml#L24)). |
-| `PORT-V4-08` offline Git/R e stack web Unix | MEDIA | **Risolto** | Git da dugite-native (`D-112`), conda offline (`D-118`), Apache del kit (`D-116`), PHP del kit (`D-133`), Caddy (`D-111`), phpMyAdmin sui 6 target (`D-107`, `D-117`). Dettaglio nei §4-§5. |
+| `PORT-V4-07` Julia/Bun ARM64, `RunLock`, pin tauri | MEDIA | **Risolto** | Bun con asset nativo `aarch64` ([`install/lang/js.rs:18-29`](../../../tauri/src/install/lang/js.rs#L18-L29)); `RunLock` Unix con `flock` su `data/app/prepare.lock` ([`setup/runner.rs:141-200`](../../../tauri/src/setup/runner.rs#L141-L200)); `tauri = "=2.12.1"` ([`tauri/Cargo.toml:24`](../../../tauri/Cargo.toml#L24)). |
+| `PORT-V4-08` offline Git/R e stack web Unix | MEDIA | **Risolto** | Git da dugite-native (`D-112`), conda offline (`D-118`), Apache del kit (`D-116`), PHP del kit (`D-133`), Caddy (`D-111`), phpMyAdmin sui 4 target (`D-107`, `D-117`). Dettaglio nei §4-§5. |
 
 ---
 
@@ -94,10 +90,10 @@ Gli ambienti conda hanno il percorso scritto dentro e non possono seguire il kit
 
 | Componente | Windows | macOS / Linux | Decisione |
 |---|---|---|---|
-| **PHP** 8.4 / 8.5 | build ufficiale (x64 in emulazione su ARM64) | **build del kit** `php-v8.4.26-1`, `php-v8.5.11-1` (static-php-cli 2.8.5, statica, musl su Linux, macOS 12 minimo) con `pdo_sqlite`/`pdo_pgsql`; swoole solo su Linux; SHA-256 per target in `sha256ByLine` ([`components.json:12`](../../../tauri/catalog/components.json#L12)) | `D-133` ([`DECISIONS.md:1236`](../../../docs/app/DECISIONS.md#L1236)) |
-| **Apache** 2.4 | Apache Lounge (x64 in emulazione su ARM64) | **build del kit** `httpd-v2.4.69-1` (`scripts/build-httpd/`, sorgenti con firma GPG, Linux glibc 2.35), `php-fpm`; alias solo statici | `D-116` ([`DECISIONS.md:1061`](../../../docs/app/DECISIONS.md#L1061)) |
-| **Caddy** | nativo (anche ARM64) | release ufficiali `caddy_<v>_{mac,linux}_{arm64,amd64}` | `D-111`, `D-120` |
-| **phpMyAdmin** 5.2.3 | `php -S` su loopback casuale | idem, sui 6 target | `D-107`, `D-117` |
+| **PHP** 8.4 / 8.5 | build ufficiale | **build del kit** `php-v8.4.26-1`, `php-v8.5.11-1` (static-php-cli 2.8.5, statica, musl su Linux, macOS 12 minimo) con `pdo_sqlite`/`pdo_pgsql`; swoole solo su Linux; SHA-256 per target in `sha256ByLine` ([`components.json:12`](../../../tauri/catalog/components.json#L12)) | `D-133` ([`DECISIONS.md:1236`](../../../docs/app/DECISIONS.md#L1236)) |
+| **Apache** 2.4 | Apache Lounge | **build del kit** `httpd-v2.4.69-1` (`scripts/build-httpd/`, sorgenti con firma GPG, Linux glibc 2.35), `php-fpm`; alias solo statici | `D-116` ([`DECISIONS.md:1061`](../../../docs/app/DECISIONS.md#L1061)) |
+| **Caddy** | nativo (anche ARM64) | release ufficiali `caddy_<v>_mac_arm64`, `caddy_<v>_linux_{arm64,amd64}` | `D-111`, `D-120` |
+| **phpMyAdmin** 5.2.3 | `php -S` su loopback casuale | idem, sui 4 target | `D-107`, `D-117` |
 | **FastCGI** | `php-cgi` | `php-fpm`, con chiave per avvio e `FCGI_WEB_SERVER_ADDRS` | [`projects/fastcgi.rs:167-182`](../../../tauri/src/projects/fastcgi.rs#L167-L182) |
 
 `php.ini` è per linea su Windows (`data/php/<line>`) e per target e linea su Unix (`data/php/<target>/<line>`), con migrazione ([`install/web.rs:855-878, 919-937`](../../../tauri/src/install/web.rs#L855-L878)). Su Linux MySQL richiede `libaio` e `libnuma` del sistema, e l'app indica il comando da eseguire ([`README.md:115`](../../../README.md#L115)).
@@ -123,16 +119,16 @@ Gli ambienti conda hanno il percorso scritto dentro e non possono seguire il kit
 
 ---
 
-## 8. Rilascio 0.3.0 per sei sistemi, e cosa è solo CI
+## 8. Rilascio 0.3.0 per quattro sistemi, e cosa è solo CI
 
-Il tag `app-v0.3.0` (446aeb1, 20/10/2026) pubblica i file per i sei sistemi, nominati `Atollo-<ver>-<target>.<ext>` con il loro `.sha256` (`D-119`, `D-129`; [`docs/app/CHANGELOG.md:30-34`](../../../docs/app/CHANGELOG.md#L30-L34)). Il job `release` confronta gli asset con gli artefatti dei job `Bundle *`; `release-smoke` riscarica e avvia i pacchetti macOS e Linux. Il job `bundle-linux` fallisce se il binario richiede un simbolo glibc più recente di `GLIBC_2.35` ([`app.yml:506-512`](../../../.github/workflows/app.yml#L506-L512)): l'app parte su Ubuntu 22.04, Debian 12 e successive.
+Il tag `app-v0.3.0` (446aeb1, 20/10/2026) pubblica i file per i quattro sistemi, nominati `Atollo-<ver>-<target>.<ext>` con il loro `.sha256` (`D-119`, `D-129`; [`docs/app/CHANGELOG.md:30-34`](../../../docs/app/CHANGELOG.md#L30-L34)). Il job `release` confronta gli asset con gli artefatti dei job `Bundle *`; `release-smoke` riscarica e avvia i pacchetti macOS e Linux. Il job `bundle-linux` fallisce se il binario richiede un simbolo glibc più recente di `GLIBC_2.35` ([`app.yml:506-512`](../../../.github/workflows/app.yml#L506-L512)): l'app parte su Ubuntu 22.04, Debian 12 e successive.
 
 Il README dichiara apertamente il confine fra verificato e da provare ([`README.md:99-110`](../../../README.md#L99-L110)):
 
 | Area | Stato | Fonte |
 |---|---|---|
 | Windows x64 | **Provato sul campo**, installazioni reali anche in CI | README:101 |
-| macOS ARM64/x64, Linux x64/ARM64, Windows ARM64 | **Solo CI**: costruiti, testati, avviati (smoke) | README:101, 103 |
+| macOS ARM64, Linux x64/ARM64 | **Solo CI**: costruiti, testati, avviati (smoke) | README:101, 103 |
 | macOS su Mac reali: zip dal browser, quarantena, Gatekeeper, App Translocation, kit su exFAT, accessi degli agenti da un Mac all'altro | Da provare ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)) | README:105 |
 | Linux su Ubuntu 24.04, Fedora 42, Debian 13: AppImage con e senza FUSE, `tar.gz` con WebKitGTK 4.1, chiavette exFAT o `noexec`, accesso con GNOME, KeePassXC, KWallet | Da provare ([#5](https://github.com/nabre/atollo/issues/5)) | README:106 |
 | Aggiornamento dell'app fra versioni su macOS/Linux; Apache 2.4.69 e PHP 8.4.26/8.5.11 del kit | Solo CI | README:107; `D-133` «Su macOS e Linux restano da rifare con un kit vero» |
@@ -149,11 +145,11 @@ Il README dichiara apertamente il confine fra verificato e da provare ([`README.
 | Documentazione | — | [`docs/app/CATALOG.md:24, 50, 78`](../../../docs/app/CATALOG.md#L24) | Fonti PHP/Apache Unix non aggiornate a `D-116`/`D-133` (§5). |
 | Prove sul campo | — | README:99-110 | Nessun avvio su macchine reali fuori da Windows x64 (§8). |
 
-**Punteggio Multi-OS: 91/100.** Il codice e la CI coprono i sei target (catalogo 35/35 su cinque, 34/35 su Linux ARM64, `PORT-V4-01..08` chiusi, pacchetti pubblicati con il loro `.sha256` e verificati dal job `release`). Il passo verso il **target post-v5 di 97/100** non richiede nuove funzioni ma **evidenza**: le prove su Mac e PC Linux reali richieste dalle issue #5 e #6, la notarizzazione macOS e la firma SignPath su Windows.
+**Punteggio Multi-OS: 91/100.** Il codice e la CI coprono i quattro target (catalogo 35/35 su tre, 34/35 su Linux ARM64, `PORT-V4-01..08` chiusi, pacchetti pubblicati con il loro `.sha256` e verificati dal job `release`). Il passo verso il **target post-v5 di 97/100** non richiede nuove funzioni ma **evidenza**: le prove su Mac e PC Linux reali richieste dalle issue #5 e #6, la notarizzazione macOS e la firma SignPath su Windows.
 
 ### Tappe
 
 | Tappa | Contenuto | Effetto sul Multi-OS |
 |---|---|---|
-| **0.4.0 alpha** (subito dopo questo rapporto) | Il codice di `a8aad6c` più la correzione di `BUG-V5-03` (`safe.directory` dell'utente non più cancellato) | Stesso catalogo e stessi pacchetti per i sei sistemi; nuova occasione di prova sul campo |
+| **0.4.0 alpha** (subito dopo questo rapporto) | Il codice di `a8aad6c` più la correzione di `BUG-V5-03` (`safe.directory` dell'utente non più cancellato) | Stesso catalogo e stessi pacchetti per i quattro sistemi; nuova occasione di prova sul campo |
 | **0.5.0 alpha** | Rilievi aperti e parziali del v5 (fra cui `PORT-V5-01`) e allineamento a VSCodium, fasi 0-5 | Da 91 verso 97, insieme alle prove su macchine reali (#5, #6) |

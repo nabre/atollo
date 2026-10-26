@@ -48,7 +48,7 @@ Ogni dimensione principale è scomposta in **4 KPI misurabili** (scala `0–100`
 
 | Codice KPI | Indicatore | Score `v1` | Score `v2` | Delta | Target `1.0` | Evidenza Tecnica in `v2` |
 | :--- | :--- | :-: | :-: | :-: | :-: | :--- |
-| **CMP-01** | Copertura Stack Didattici/Professionali | 94 | **95** | **`+1`** | 96 | 26 componenti + matrice 6 target (`codelldb` e `self_update` inclusi) |
+| **CMP-01** | Copertura Stack Didattici/Professionali | 94 | **95** | **`+1`** | 96 | 26 componenti + matrice 4 target (`codelldb` e `self_update` inclusi) |
 | **CMP-02** | Completezza Comandi IPC (UI ↔ Backend) | 82 | **82** | `=` | 92 | `check_updates` e `health_check` non ancora esposti nella UI |
 | **CMP-03** | Configurabilità Avanzata (Proxy/Offline/Lingua) | 64 | **64** | `=` | 85 | Manca ancora import/export offline e i18n |
 | **CMP-04** | Copertura Test Automatici (Unit + E2E) | 72 | **79** | **`+7`** | 88 | `+221` righe di test Rust su `Target`, `catalog`, `safe_join`, `write_atomic` |
@@ -56,9 +56,9 @@ Ogni dimensione principale è scomposta in **4 KPI misurabili** (scala `0–100`
 | **ROB-02** | Sicurezza Estrazione Archivi (`Zip-Slip`) | 85 | **84** | `-1` | 95 | `safe_join` migliorato, ma `extract_tar_xz` usa `tar` esterno (`BUG-22`) |
 | **ROB-03** | Assenza di Race Condition su File e Stato | 72 | **84** | **`+12`** | 92 | Risolto `BUG-02` in `write_atomic`; resta `BUG-05` su `cancel_flag` |
 | **ROB-04** | Gestione Graceful di Timeout e Zombie | 79 | **76** | `-3` | 90 | `BUG-03`/`BUG-04` aperti + 2 installer Unix incompleti (`BUG-23`) |
-| **MP-01** | Astrazione Data Model (`Os`, `Arch`, `Target`) | 35 | **96** | **`+61`** | 98 | Completato in `kit.rs` con 6 target e migrazione automatica |
+| **MP-01** | Astrazione Data Model (`Os`, `Arch`, `Target`) | 35 | **96** | **`+61`** | 98 | Completato in `kit.rs` con 4 target e migrazione automatica |
 | **MP-02** | Traduzione Path, Shim e Variabili d'Ambiente | 48 | **92** | **`+44`** | 95 | `translate_rel`, `KitEnv` POSIX (`:` + `XDG_*`), `runtime/bashrc` |
-| **MP-03** | Copertura URL/Asset Matrice 6 Target | 30 | **84** | **`+54`** | 95 | 22/26 componenti completi sui 6 target; 4 da rifinire su Unix |
+| **MP-03** | Copertura URL/Asset Matrice 4 Target | 30 | **84** | **`+54`** | 95 | 22/26 componenti completi sui 4 target; 4 da rifinire su Unix |
 | **MP-04** | Compilabilità `Cargo.toml` e `os/*` su Unix | 15 | **24** | **`+9`** | 92 | `windows-sys`/`winreg` e `os/*` richiedono ancora `#[cfg(windows)]` |
 
 ---
@@ -94,7 +94,7 @@ xychart-beta
 | Metrica | Valore `v1` (`66499b5`) | Valore `v2` (`fa8a34d`) | Variazione (`Δ`) | Significato |
 | :--- | :-: | :-: | :-: | :--- |
 | **File modificati in `fa8a34d`** | — | **44 file** | `+2.396 / -662` righe | Refactoring profondo ma chirurgico sul backend Rust e test |
-| **Target supportati nel modello dati** | 2 (`x64`, `arm64`) | **6 (`Os × Arch`)** | **`+200%`** | `win32-x64/arm64`, `darwin-x64/arm64`, `linux-x64/arm64` |
+| **Target supportati nel modello dati** | 2 (`x64`, `arm64`) | **4 (`Os × Arch`)** | **`+100%`** | `win32-x64`, `darwin-arm64`, `linux-x64/arm64` |
 | **Componenti con URL multi-OS** | 2 / 26 (`7.7%`) | **23 / 26 (`88.5%`)** | **`+80.8 pt`** | Solo `Terminal` (Win-only), `Php` e `Apache` restano Win-bound |
 | **Componenti funzionanti E2E su Unix** | 0 / 26 (`0%`) | **21 / 25 (`84.0%`)** | **`+84.0 pt`** | Esclusi `Git`, `Nginx`, `Php`, `Apache` da correggere (`BUG-23/24`) |
 | **Righe di Test Rust (`test/rust/`)** | ~1.420 righe | **~1.641 righe** | **`+221 righe (+15.5%)`** | Nuovi test per `Target`, `translate_rel`, `safe_join`, `write_atomic` |

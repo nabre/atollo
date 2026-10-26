@@ -12,7 +12,7 @@ Pi è l'agente di programmazione da terminale di Mario Zechner. **Attenzione al 
 
 | Aspetto | Pi 1.3 | Impatto per Atollo |
 |---|---|---|
-| Distribuzione | **binari autonomi** (Bun) per i sei target: `pi-windows-x64.zip` (43 MB), `pi-windows-arm64.zip`, `pi-darwin-{arm64,x64}.tar.gz`, `pi-linux-{x64,arm64}.tar.gz`, con **`SHA256SUMS`** | installatore come Antigravity, senza Node. La cartella intera serve (`pi.exe` + `theme/`, `export-html/`, `photon_rs_bg.wasm`) |
+| Distribuzione | **binari autonomi** (Bun) per i quattro target: `pi-windows-x64.zip` (43 MB), `pi-darwin-arm64.tar.gz`, `pi-linux-{x64,arm64}.tar.gz`, con **`SHA256SUMS`** | installatore come Antigravity, senza Node. La cartella intera serve (`pi.exe` + `theme/`, `export-html/`, `photon_rs_bg.wasm`) |
 | Cartella di configurazione | `~/.pi/agent`, spostabile con **`PI_CODING_AGENT_DIR`** | già dentro `data/home` grazie a `HOME`; la variabile va messa esplicita |
 | Variabili utili | `PI_SKIP_VERSION_CHECK`, `PI_TELEMETRY=0`, `PI_OFFLINE`, `PI_CODING_AGENT_SESSION_DIR`, proxy | come `DISABLE_UPDATES` di Claude |
 | Istruzioni | `AGENTS.md`/`CLAUDE.md` nella cartella dell'agente, nella cartella di lavoro e nei genitori; `APPEND_SYSTEM.md` | la convenzione del kit (`AGENTS.md` nei progetti) funziona senza modifiche |
@@ -30,7 +30,7 @@ Pi è l'agente di programmazione da terminale di Mario Zechner. **Attenzione al 
 | Ollama | sì (archivi con `sha256sum.txt`) | 1,4-1,5 GB su Windows/Linux x64 (CUDA incluso) | no: blob con indirizzo di contenuto + manifesti | via `models.json` | opzionale, dopo |
 | LM Studio / `lms` | no: installer, stato in `~/.lmstudio`, licenza proprietaria | — | parziale | via `models.json` | escluso |
 
-Motivi della scelta: MIT, piccolo, sei target, i modelli restano file normali condivisi da **tutti i target** (una sola copia sulla chiavetta per Windows, macOS e Linux), modalità router integrata (più modelli, carica e scarica a richiesta, `POST /models` per scaricare), API OpenAI (`/v1/chat/completions`, `/v1/models`) e anche Anthropic (`/v1/messages`), tool calling con template Jinja (ora attivi per default).
+Motivi della scelta: MIT, piccolo, una build per ogni target, i modelli restano file normali condivisi da **tutti i target** (una sola copia sulla chiavetta per Windows, macOS e Linux), modalità router integrata (più modelli, carica e scarica a richiesta, `POST /models` per scaricare), API OpenAI (`/v1/chat/completions`, `/v1/models`) e anche Anthropic (`/v1/messages`), tool calling con template Jinja (ora attivi per default).
 
 **Versioni**: le release `bNNNNN` sono rolling (più al giorno, marcate *prerelease*); le release semver (`v0.7.0`) contengono solo `nightly-tag.txt` con il b-tag. Il catalogo del kit deve **fissare un b-tag** letto da `releases/latest` → `nightly-tag.txt`. Non c'è `SHA256SUMS`, ma l'API GitHub dà `digest: "sha256:…"` per ogni asset (lo stesso meccanismo che l'aggiornamento di Atollo usa già) e le release hanno attestazioni di build.
 
@@ -39,9 +39,7 @@ Motivi della scelta: MIT, piccolo, sei target, i modelli restano file normali co
 | Target | Build | Nota |
 |---|---|---|
 | `win32-x64` | `win-vulkan-x64` + `win-cpu-x64` | Vulkan copre NVIDIA, AMD e Intel senza CUDA; CUDA come scelta esplicita in Strumenti |
-| `win32-arm64` | `win-cpu-arm64` (+ `win-vulkan-arm64`, `win-opencl-adreno-arm64`) | nativo ARM64, niente emulazione |
 | `darwin-arm64` | `macos-arm64` | Metal incluso |
-| `darwin-x64` | `macos-x64` | solo CPU in pratica |
 | `linux-x64` / `linux-arm64` | `ubuntu-vulkan-*` + `ubuntu-*` (CPU) | Vulkan richiede `libvulkan1` del sistema: se manca, CPU, con il comando da lanciare (come per `libaio` di MySQL) |
 
 Proposta semplice: installare **entrambe** le build CPU e Vulkan (circa 60 MB in tutto) e scegliere all'avvio con `llama-server --list-devices`: se non elenca GPU si usa la CPU. Nessuna domanda all'utente.
@@ -221,4 +219,4 @@ Sviluppato sul ramo `feature/local-llm-pi` (decisioni [D-151](../../app/DECISION
 
 **Differenze dalla proposta**: una build per target invece di CPU + Vulkan; router su preset invece di `--models-dir`; Pi collegato con `models.json` invece del provider integrato; nessuna voce in `relocate.rs` (le chiavi del kit in `settings.json` si riscrivono a ogni allineamento); la chat del browser chiede la chiave nelle sue impostazioni («Copia la chiave»).
 
-**Restano**: F5 (Claude Code e Codex sul server locale, Ollama, CUDA); prova a mano su macOS, Linux, Windows ARM64 e su exFAT; prova del tool calling con i tre modelli grandi.
+**Restano**: F5 (Claude Code e Codex sul server locale, Ollama, CUDA); prova a mano su macOS, Linux e su exFAT; prova del tool calling con i tre modelli grandi.

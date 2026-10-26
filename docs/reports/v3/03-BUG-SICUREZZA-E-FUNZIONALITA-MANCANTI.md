@@ -27,8 +27,8 @@ La tabella seguente certifica, tramite ispezione diretta del codice a `HEAD 39b7
 | **BUG-23a** | Critica | ✅ **CHIUSO** | [`install/core.rs:26-66`](../../../tauri/src/install/core.rs#L26-L66) installa `git` su macOS/Linux via `micromamba` da `conda-forge` (con compromesso `D-92` che risolviamo al 100% nel [`Documento 04`](../../../reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md)). |
 | **BUG-23b** | Alta | ✅ **MITIGATO (Opz. C)** | `nginx` limitato a Windows in `components.json:127`; nel [`Documento 04 §4`](../../../reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md) forniamo l'installer Unix completo via `conda-forge`. |
 | **BUG-24a** | Alta | ✅ **MITIGATO (Opz. C)** | `php`, `apache`, `adminer` limitati a Windows in `components.json`; nel [`Documento 04 §4`](../../../reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md) forniamo l'installer Unix `static-php-cli` + `conda-forge`. |
-| **BUG-24b** | Media | ✅ **CHIUSO** | [`setup/catalog.rs:188-221`](../../../tauri/src/setup/catalog.rs#L188-L221) (`translate_rel`) converte `.exe`, `.cmd`, `.bat` e `bin/windows/tlmgr.bat` per tutti i 6 target. |
-| **BUG-24c** | Media | ✅ **CHIUSO** | [`install/mod.rs:92-97`](../../../tauri/src/install/mod.rs#L92-L97) (`target_of`) usa `component.effective_target(ctx.kit.target())` per scaricare `win32-x64` su `win32-arm64` quando il componente è x64-only. |
+| **BUG-24b** | Media | ✅ **CHIUSO** | [`setup/catalog.rs:188-221`](../../../tauri/src/setup/catalog.rs#L188-L221) (`translate_rel`) converte `.exe`, `.cmd`, `.bat` e `bin/windows/tlmgr.bat` per tutti i target. |
+| **BUG-24c** | Media | ✅ **CHIUSO** | [`install/mod.rs:92-97`](../../../tauri/src/install/mod.rs#L92-L97) (`target_of`) usa `component.effective_target(ctx.kit.target())` per scaricare la build del target. |
 | **N-U1** | Media | ✅ **CHIUSO** | [`versions/mod.rs:168-196`](../../../tauri/src/versions/mod.rs#L168-L196) (`has_key_for` + `target_from_path`) verifica il binario chiave corretto per il target. |
 | **BUG-18r** | Bassa | ✅ **CHIUSO** | [`projects/alias.rs`](../../../tauri/src/projects/alias.rs) accetta sia `a.localhost` sia `a.b.localhost` in `valid_domain`. |
 | **BUG-11r** | Bassa | ✅ **CHIUSO** | [`src/components/Sidebar.tsx`](../../../src/components/Sidebar.tsx) implementa navigazione frecce + Home/End. |
@@ -165,15 +165,14 @@ La tabella seguente certifica, tramite ispezione diretta del codice a `HEAD 39b7
 ---
 
 ### `BUG-V3-04` — Ritirato (18/10/2026)
-- Riguardava le build del server SQL su macOS e Linux. Il server SQL del kit è MySQL, con gli archivi ufficiali di Oracle per i sei target e gli SHA-256 fissati nel catalogo (`D-110`): il problema non esiste più.
+- Riguardava le build del server SQL su macOS e Linux. Il server SQL del kit è MySQL, con gli archivi ufficiali di Oracle per i quattro target e gli SHA-256 fissati nel catalogo (`D-110`): il problema non esiste più.
 
 ---
 
-### `BUG-V3-05` (Media Multi-OS) — `Cc` (`llvm/llvm-project`) su macOS x64 e Linux: Nomi Asset Inconsistenti e Assenza di `make` + `sysroot` C/C++
+### `BUG-V3-05` (Media Multi-OS) — `Cc` (`llvm/llvm-project`) su macOS e Linux: Nomi Asset Inconsistenti e Assenza di `make` + `sysroot` C/C++
 - **File e Righe**: [`tauri/src/install/lang/cc.rs:110-166`](../../../tauri/src/install/lang/cc.rs#L110-L166).
 - **Causa**:
-  1. Nelle release recenti di `llvm/llvm-project` (LLVM 19 / 20 / 21), gli asset macOS x86_64 (`macOS-X64`) spesso **non vengono pubblicati** nella release `latest` (viene pubblicato solo `LLVM-X.Y.Z-macOS-ARM64.tar.xz`), facendo fallire `Cc::latest` su `darwin-x64`.
-  2. Inoltre, l'archivio `LLVM-*.tar.xz` di `llvm/llvm-project` su Linux e macOS contiene il compilatore `clang`/`clang++`, ma **non include né `make`, né gli header C standard (`stdio.h`, `stdlib.h` di `glibc`/`libSystem`), né `crt1.o`/`libc.so`**! Se sul Mac non sono installati gli Xcode Command Line Tools o sulla distro Linux non c'è `libc6-dev`/`glibc-devel` + `make`, `clang hello.c` fallisce con `fatal error: 'stdio.h' file not found`!
+  1. L'archivio `LLVM-*.tar.xz` di `llvm/llvm-project` su Linux e macOS contiene il compilatore `clang`/`clang++`, ma **non include né `make`, né gli header C standard (`stdio.h`, `stdlib.h` di `glibc`/`libSystem`), né `crt1.o`/`libc.so`**! Se sul Mac non sono installati gli Xcode Command Line Tools o sulla distro Linux non c'è `libc6-dev`/`glibc-devel` + `make`, `clang hello.c` fallisce con `fatal error: 'stdio.h' file not found`!
 - **Soluzione Concreta Promossa (100% Self-Contained su Tutti gli OS)**:
   Su macOS e Linux, installare il componente `cc` tramite `micromamba` da `conda-forge` con il metapacchetto `c-compiler`, `cxx-compiler` e `make` (che su Linux installa `gcc`/`g++`/`clang`, `binutils`, `make` e **`sysroot_linux-64` con `glibc` + header completi `stdio.h`**, e su macOS installa `clang`, `cctools`, `ld64`, `make` e l'SDK macOS `MacOSX.sdk`!). In questo modo il compilatore C/C++ del kit compila codice C/C++ e crate Rust nativi **anche su un Mac senza Xcode CLT e su una distro Linux minimale senza `build-essential`**!
 
@@ -234,7 +233,7 @@ La tabella seguente certifica, tramite ispezione diretta del codice a `HEAD 39b7
 
 ### `BUG-V3-09` (Bassa) — `vscodium-server` (`components.json:39`) Non Pre-Popola `sha256ByTarget` per i 5 Target Non-`win32-x64`
 - **File e Righe**: [`tauri/catalog/components.json:35-41`](../../../tauri/catalog/components.json#L35-L41) e [`tauri/src/install/editor.rs:87-102`](../../../tauri/src/install/editor.rs#L87-L102).
-- **Analisi**: In `install/editor.rs:89-101`, lo Sciame ha aggiunto un ottimo fallback che scarica `{url}.sha256` da GitHub quando `component.sha256_for(target)` è `None`. Tuttavia, in `components.json:39` è presente `"sha256": "be8c80fad63268255ba8ca8a9ebbd54eb39dc4b13c4fe2f963700e898a220420"` (che `sha256_for` usa solo per `Target::WIN32_X64`), mentre `sha256ByTarget` è omesso. Pre-popolare `sha256ByTarget` in `components.json` per tutti i 6 target della release `1.112.01907` evita una richiesta HTTP extra e garantisce il pinning crittografico offline/immutabile (`D-58`) su tutte le piattaforme.
+- **Analisi**: In `install/editor.rs:89-101`, lo Sciame ha aggiunto un ottimo fallback che scarica `{url}.sha256` da GitHub quando `component.sha256_for(target)` è `None`. Tuttavia, in `components.json:39` è presente `"sha256": "be8c80fad63268255ba8ca8a9ebbd54eb39dc4b13c4fe2f963700e898a220420"` (che `sha256_for` usa solo per `Target::WIN32_X64`), mentre `sha256ByTarget` è omesso. Pre-popolare `sha256ByTarget` in `components.json` per tutti i 4 target della release `1.112.01907` evita una richiesta HTTP extra e garantisce il pinning crittografico offline/immutabile (`D-58`) su tutte le piattaforme.
 
 ---
 
@@ -250,8 +249,8 @@ La tabella seguente certifica, tramite ispezione diretta del codice a `HEAD 39b7
 | 4 | BUG-V3-01 | ✅ chiuso | `948a1f3` fix(run): stop a project's Nginx when its php-cgi ends (chiude anche BUG-05r di v2) |
 | 5 | BUG-V3-02 | ✅ chiuso | `8b50e51` fix(servers): one ServerName and vhost file per project action |
 | 6 | BUG-V3-03 | ✅ chiuso | `e48acda` fix(run): shell_command instead of a fixed cmd.exe |
-| 7 | BUG-V3-04 | ➖ ritirato | il server SQL è MySQL, con build per i sei target (D-110) |
-| 8 | BUG-V3-05 | ✅ chiuso | `706dfb5` fix(cc): newest LLVM release with the system's archive — ripiego su un rilascio più vecchio (macOS Intel su 20.1.7) invece di conda-forge; requisiti del PC nella descrizione |
+| 7 | BUG-V3-04 | ➖ ritirato | il server SQL è MySQL, con build per i quattro target (D-110) |
+| 8 | BUG-V3-05 | ✅ chiuso | `706dfb5` fix(cc): newest LLVM release with the system's archive — ripiego su un rilascio più vecchio invece di conda-forge; requisiti del PC nella descrizione |
 | 9 | BUG-V3-06 | 🟡 parziale | `1412e9e` fix(r): R's Makeconf follows the kit on Windows — la parte Unix (rilocazione offline di Git e R dopo uno spostamento) non è fatta |
 | 10 | BUG-V3-07 | ✅ chiuso | `cbcca8e` fix(sessions): other kits on macOS and Linux too |
 | 11 | BUG-V3-08 | ✅ chiuso | `f159ad4` fix(servers): httpd, nginx and php-cgi per system |
@@ -277,7 +276,6 @@ Voci dei piani chiuse nello stesso ramo:
 | Versioni del progetto in due zone (PLAN-DATA §9 riga 4) | ✅ chiuso | `50cba6d` |
 | Focus dei dialoghi (v3/02 §2.3) e quattro conferme `alertdialog` | ✅ chiuso | `384d6f4`, `98421ed`, `475ad2c`, `f03d0a5` |
 | B6 (temporanei con «Nel kit») | ➖ non un bug | voluto da D-90 |
-| R su Windows ARM64 | ➖ non fatto | R è `noArm64`; servirebbe rifare l'installatore |
 
 Totale per questo documento: **10 chiusi, 1 ritirato, 2 parziali** (BUG-V3-06 per la parte Unix, N-A1 in attesa di prova su macOS e Linux reali).
 
@@ -301,7 +299,6 @@ Totale per questo documento: **10 chiusi, 1 ritirato, 2 parziali** (BUG-V3-06 pe
 | Versione disinstallata | `db/services` | avvio e creazione falliscono con «not installed»; l'interfaccia non lo segnala |
 | Lock di `db.json` | `db/auth.rs` | per processo: un CLI insieme all'app potrebbe correre |
 | `Project.lines` | `ui/src/api/projects.ts`, `ui/src/versions/project.tsx` | rilevato da Compose/Dockerfile, non usato dall'interfaccia |
-| LLVM su macOS Intel | `install/lang/cc.rs` | quando 20.1.7 esce dagli ultimi 100 rilasci, `cc` su darwin-x64 fallisce: segnarlo non disponibile o fissare il rilascio |
 | Editor aggiornato | `tauri/catalog/components.json` | a ogni nuova versione di `vscodium-server` rinnovare tutti i `sha256ByTarget` |
 | Unix: prova reale | `os/*`, `os/jobs.rs`, `stats` | istanza (flock e socket), sweep del temp, `killpg`, `/proc` e libproc, `local_day_start` con l'ora legale, test `cfg(unix)` |
 | Unix: ancora a forma di Windows | `env.rs`, conf di Apache/Nginx, `db/services`, `editor/ext` | `apache\bin`, `httpd.exe`, `mongod.exe`, `mysqld.exe`, `node.exe` senza `translate_rel` |

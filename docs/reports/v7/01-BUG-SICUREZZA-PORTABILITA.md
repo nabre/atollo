@@ -191,7 +191,7 @@ Tema comune: su macOS e Linux le regole dei percorsi e dei processi non seguono 
 
 - **Dove**: [`tauri/src/editor/mod.rs:144`](../../../tauri/src/editor/mod.rs#L144) (`ensure_running`).
 - **Problema**: `ensure_running` tiene il lock di `server` mentre `self.start()` prova fino a 3 porte con `START_TIMEOUT` di 30 s ciascuna. `status()` prende lo stesso mutex ed è chiamato sul thread principale da `editor_status` (comando sincrono, [`tauri/src/commands/editing.rs:7`](../../../tauri/src/commands/editing.rs#L7), interrogato ogni 5 s da `ui/src/App.tsx:119`), da `open_now` ([`tauri/src/commands/window.rs:43`](../../../tauri/src/commands/window.rs#L43)) per `eject_list` e per la chiusura della finestra, anche dal «Esci» del vassoio. Anche `sync_extensions` (riga 168) prende lo stesso lock.
-- **Impatto**: durante un avvio lento dell'editor (primo avvio, disco lento, emulazione ARM64, una porta che non risponde) la finestra intera si blocca fino a circa 90 s: l'interrogazione periodica, il pulsante di chiusura e «Esci» dal vassoio aspettano il mutex.
+- **Impatto**: durante un avvio lento dell'editor (primo avvio, disco lento, una porta che non risponde) la finestra intera si blocca fino a circa 90 s: l'interrogazione periodica, il pulsante di chiusura e «Esci» dal vassoio aspettano il mutex.
 - **Correzione**: serializzare gli avvii con un `starting: Mutex<()>` separato (o uno stato `Starting/Running`) e prendere `server` solo per controllare, svuotare e salvare; in `status()` usare `try_lock` e rispondere `running: false` (o «in avvio») su `WouldBlock`. In alternativa rendere asincroni `editor_status` ed `eject_list` con `spawn_blocking`.
 
 ### `BUG-V7-16` [BASSA] — La sessione «Collega con un token» non parla alla sua finestra staccata

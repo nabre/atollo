@@ -43,8 +43,8 @@ flowchart TD
 
 Oltre ai 5 pilastri già certificati in `v1` (binario dual-mode GUI+CLI, `deny(unwrap_used, expect_used)`, isolamento IPC `ensure_main`, Win32 Job Objects, separazione dati `D-89`/`D-90`), la versione `v2` introduce **3 progressi architetturali di rilievo**:
 
-1. **Modello `Target` Unificato per 6 Piattaforme × Architetture ([`tauri/src/kit.rs:19-352`](../../../tauri/src/kit.rs#L19-L352))**:
-   - Sostituita la vecchia assunzione `win32-<arch>` con `Os` (`Win32`, `Darwin`, `Linux`), `Arch` (`X64`, `Arm64`) e `Target` (`WIN32_X64`, `WIN32_ARM64`, `DARWIN_ARM64`, `DARWIN_X64`, `LINUX_X64`, `LINUX_ARM64`).
+1. **Modello `Target` Unificato per 4 Piattaforme × Architetture ([`tauri/src/kit.rs:19-352`](../../../tauri/src/kit.rs#L19-L352))**:
+   - Sostituita la vecchia assunzione `win32-<arch>` con `Os` (`Win32`, `Darwin`, `Linux`), `Arch` (`X64`, `Arm64`) e `Target` (`WIN32_X64`, `DARWIN_ARM64`, `LINUX_X64`, `LINUX_ARM64`).
    - `Target` incapsula centralmente tutte le convenzioni di nomenclatura dei fornitori upstream (`rust_triple()`, `gnu_arch()`, `go_os()`, `go_arch()`, `node_os()`, `adoptium_os()`, `adoptium_arch()`, `conda_subdir()`, `micromamba_asset()`, `texlive_bin()`), eliminando stringhe magiche duplicate nei singoli installer.
    - `Kit::at_target(root, target)` ([`kit.rs:389`](../../../tauri/src/kit.rs#L389)) permette di istanziare e testare un `Kit` per qualsiasi sistema operativo (es. testare `DARWIN_ARM64` e `LINUX_ARM64` direttamente da un runner Windows, come dimostrato in [`test/rust/env.rs:317-363`](../../../test/rust/env.rs#L317-L363) e [`test/rust/setup/catalog.rs:273-329`](../../../test/rust/setup/catalog.rs#L273-L329)).
 

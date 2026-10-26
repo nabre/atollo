@@ -24,7 +24,7 @@
     Prontezza Multipiattaforma &amp; Portabilità 100% per Sottosistema (HEAD 39b74bc vs Target Blueprint v3)
   </text>
   <text x="480" y="60" fill="#9ca3af" font-family="system-ui, -apple-system, sans-serif" font-size="13" text-anchor="middle">
-    Avanzamento sui 6 Target (win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64) e 36 Componenti
+    Avanzamento sui 4 Target (win32-x64, darwin-arm64, linux-x64, linux-arm64) e 36 Componenti
   </text>
 
   <!-- Grid lines: x=290 (0%) to x=890 (100%), width=600 -->
@@ -62,7 +62,7 @@
     <text x="900" y="204" fill="#10b981" font-weight="700" font-size="12">96%</text>
 
     <!-- Row 4: Installer Multi-OS (31/36 attivi su Unix, 36/36 con Blueprint v3) -->
-    <text x="275" y="250" text-anchor="end" font-weight="600">4. Installer Catalogo su 6 Target</text>
+    <text x="275" y="250" text-anchor="end" font-weight="600">4. Installer Catalogo su 4 Target</text>
     <rect x="290" y="234" width="600" height="22" rx="5" fill="#1f2937"/>
     <rect x="290" y="234" width="600" height="22" rx="5" fill="url(#barPurple)" opacity="0.35"/>
     <rect x="290" y="234" width="516" height="22" rx="5" fill="url(#barCyan)"/>

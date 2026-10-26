@@ -7,7 +7,7 @@
 ## 1. Cosa torna
 
 - **Conteggi**: 35 componenti, 63 basi + 18 aggiunte in 10 gruppi, 9 capitoli della Guida, 7 sezioni di Impostazioni, 7 sezioni del progetto, 9 pagine.
-- **Piattaforme**: i 9 componenti `x64Only` in emulazione su Windows ARM64; Android assente su `linux-arm64`.
+- **Piattaforme**: Android assente su `linux-arm64`.
 - **Versioni**: 0.5.0 in `tauri/Cargo.toml` e `ui/package.json`; editor 1.135.06055, 1845 MB del primo avvio, MySQL 8.4/9.7, PHP 8.4.26/8.5.11, Apache 2.4.69-1.
 - **Collegamenti**: 633 link relativi e ancore validi; albero dei moduli di ARCHITECTURE coerente col codice.
 - **File generati**: `node scripts/guide-docs.cjs --check` dice GUIDE.md e GUIDE.it.md aggiornati; `TOOLS-MATRIX.html` rigenerato è identico.

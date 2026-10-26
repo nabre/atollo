@@ -163,7 +163,7 @@
         <p>Confronto Analitico <strong>v1 (commit 66499b5)</strong> vs <strong>v2 (commit fa8a34d)</strong> — 44 file modificati (+2.396 / -662 righe)</p>
         <div class="badge-row">
           <span class="pill green">✓ BUG-02 (write_atomic race) RISOLTO</span>
-          <span class="pill">✓ 6 Target Runtime (Os × Arch)</span>
+          <span class="pill">✓ 4 Target Runtime (Os × Arch)</span>
           <span class="pill">✓ 23/26 Componenti con URL Multi-OS</span>
           <span class="pill purple">! 3 Nuovi Bug Multi-OS (BUG-22..24)</span>
         </div>
@@ -190,8 +190,8 @@
       </div>
       <div class="kpi-card">
         <div class="label">Target Runtime Isolati</div>
-        <div class="val">6 Target <span class="delta">+4 vs v1</span></div>
-        <div class="sub">win32/darwin/linux × x64/arm64 su stessa USB</div>
+        <div class="val">4 Target <span class="delta">+2 vs v1</span></div>
+        <div class="sub">win32-x64, darwin-arm64, linux-x64/arm64 su stessa USB</div>
       </div>
       <div class="kpi-card">
         <div class="label">Matrice Download Multi-OS</div>
@@ -406,7 +406,7 @@
             <td><strong>BUG-16..21</strong></td>
             <td><span class="sev-badge sev-BASSA">BASSA (×7)</span></td>
             <td><code>ui/src/components/*</code>, <code>commands/*</code></td>
-            <td>7 bug bassi da v1 rimasti invariati (focus trap modali, <code>check_updates</code> non esposto in UI, messaggio errore ARM64).</td>
+            <td>7 bug bassi da v1 rimasti invariati (focus trap modali, <code>check_updates</code> non esposto in UI, messaggio errore legato all'architettura).</td>
           </tr>
         </tbody>
       </table>
