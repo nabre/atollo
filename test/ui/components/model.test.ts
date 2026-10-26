@@ -24,6 +24,8 @@ function row(id: string, needs: string[] = [], more: Partial<ComponentInfo> = {}
     needs,
     versioned: false,
     home: "https://example.org",
+    agent: null,
+    leftover: false,
     ...more,
   };
 }

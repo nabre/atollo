@@ -55,15 +55,6 @@ pub fn libicu_present() -> bool {
         .get_or_init(|| crate::env::has_libicu(&crate::env::linux_lib_dirs(std::env::consts::ARCH)))
 }
 
-/// systemd's machine id, or D-Bus's copy of it.
-pub fn machine_id() -> Option<String> {
-    ["/etc/machine-id", "/var/lib/dbus/machine-id"]
-        .iter()
-        .filter_map(|p| std::fs::read_to_string(p).ok())
-        .map(|t| t.trim().to_owned())
-        .find(|t| !t.is_empty())
-}
-
 #[cfg(test)]
 #[path = "../../../../test/rust/os/linux/host.rs"]
 mod tests;

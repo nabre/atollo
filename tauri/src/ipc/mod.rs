@@ -296,6 +296,7 @@ macro_rules! command_handler {
         tauri::generate_handler![
             $crate::ipc::app::app_info,
             $crate::ipc::isolation::isolation_status,
+            $crate::ipc::levels::levels_state,
             $crate::ipc::isolation::isolation_run,
             $crate::ipc::isolation::vms_list,
             $crate::ipc::isolation::vm_remove,
@@ -361,8 +362,6 @@ macro_rules! command_handler {
             $crate::ipc::agents::kit_mcp,
             $crate::ipc::agents::kit_mcp_set,
             $crate::ipc::agents::agent_sign_out,
-            $crate::ipc::agents::agent_token_link,
-            $crate::ipc::agents::agent_token_save,
             $crate::ipc::app::folder_open,
             $crate::ipc::projects::project_create,
             $crate::ipc::projects::project_delete,

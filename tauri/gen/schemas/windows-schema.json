@@ -531,6 +531,12 @@
           "markdownDescription": "Enables the lan_link command without any pre-configured scope."
         },
         {
+          "description": "Enables the levels_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-levels-state",
+          "markdownDescription": "Enables the levels_state command without any pre-configured scope."
+        },
+        {
           "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
           "type": "string",
           "const": "allow-local-models",
@@ -1399,6 +1405,12 @@
           "type": "string",
           "const": "deny-lan-link",
           "markdownDescription": "Denies the lan_link command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the levels_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-levels-state",
+          "markdownDescription": "Denies the levels_state command without any pre-configured scope."
         },
         {
           "description": "Denies the mcp_presets command without any pre-configured scope.",

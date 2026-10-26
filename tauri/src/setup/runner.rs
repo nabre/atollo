@@ -43,6 +43,10 @@ pub struct Options {
     /// After this run, the chosen tools for this target too (the VM's
     /// Linux, D-173), in the same task.
     pub then_tools_for: Option<Target>,
+    /// The VM as the caller found it, for the agents (LEVELS.md §7, Q11:
+    /// installed only for the VM's Linux, while it is on); `None`: not
+    /// asked, the agents are left out.
+    pub vm: Option<crate::levels::VmState>,
 }
 
 /// What a run prepares of the choice (D-173).
@@ -204,6 +208,16 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         Scope::System => wanted.retain(|id| locked.contains(id)),
         Scope::Tools => wanted.retain(|id| tool(id)),
     }
+    // The agents (LEVELS.md §7, Q11): only for the VM's Linux, only while
+    // it is on; Claude Code and Codex never (the `sbx` images bring them).
+    let vm = opts.vm.clone().unwrap_or(crate::levels::VmState::Off {
+        blockers: Vec::new(),
+    });
+    wanted.retain(|id| {
+        catalog
+            .find(id)
+            .is_some_and(|c| crate::levels::installable(c, target, &vm))
+    });
     let removes = opts.only.is_empty() && opts.scope != Scope::Tools;
     // What the chosen components need on this target only (Zig for C and
     // C++ on macOS and Linux): not in the choice, yet not removed while
@@ -215,12 +229,14 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
         } else if removes
-            && !choice.is_chosen(&c.id)
+            && (!choice.is_chosen(&c.id) || crate::levels::agents::obsolete(c, target))
             && !kept.contains(c.id.as_str())
             && has_trace(ctx.kit, c)
         {
             // Also when only part of it is there (an installation that
-            // failed halfway), or only what was pre-downloaded for it.
+            // failed halfway), or only what was pre-downloaded for it; an
+            // agent the kit no longer keeps on this system (an install for
+            // the PC of an earlier Atollo) even when chosen.
             plan.remove.push(c.id.clone());
         }
     }
@@ -251,7 +267,9 @@ pub fn remove_elsewhere(
         let other = kit.for_target(target);
         let kept = catalog.needs_only_on(&chosen, target);
         for c in catalog.in_page_order() {
-            if !choice.is_chosen(&c.id) && !kept.contains(c.id.as_str()) && has_trace(&other, c) {
+            let unwanted =
+                !choice.is_chosen(&c.id) || crate::levels::agents::obsolete(c, target);
+            if unwanted && !kept.contains(c.id.as_str()) && has_trace(&other, c) {
                 out.push((target, c.id.clone()));
             }
         }

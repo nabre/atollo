@@ -41,10 +41,6 @@ const GATES_ALLOWED: &[(&str, &str)] = &[
     ("projects/run/start.rs", "defines start_in and its sbx exec"),
     ("projects/frameworks/runner.rs", "defines line_command"),
     ("ipc/isolation.rs", "isolation_run: the kit's sbx (§5.2)"),
-    (
-        "agents/claude_token.rs",
-        "claude setup-token (E16): removed by step 6",
-    ),
 ];
 
 /// What spawns a process.
@@ -62,7 +58,7 @@ const SPAWNS_ALLOWED: &[(&str, &str)] = &[
     ("platform/", "the system's layer"),
     (
         "os/",
-        "the system's layer (and Antigravity's keyring helpers, §5.2)",
+        "the system's layer",
     ),
     (
         "db/",
@@ -99,7 +95,6 @@ const SPAWNS_ALLOWED: &[(&str, &str)] = &[
         "a creation's line, from levels::start::scaffold_command",
     ),
     ("servers/process.rs", "a pool, decided (R2/R6) since step 3"),
-    ("agents/mod.rs", "codex logout (E17): removed by step 6"),
 ];
 
 fn sources(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -180,4 +175,63 @@ fn no_process_outside_levels() {
         assert!(requests.contains(step), "{step}");
     }
     assert!(!src.join("isolation/session.rs").exists());
+}
+
+/// Step 6 (LEVELS.md I3, E16, E17): the app starts no agent's program on
+/// the PC. No file of the app names an agent's binary (`agents::exe_of`,
+/// `claude.exe`, `codex.exe`, `agy.exe`, `pi.exe`, `setup-token`) beside
+/// a spawn or a pty session (`codex logout` is checked by name below:
+/// `gh auth logout` is the kit's own); the only reader of
+/// `exe_of` is the VM's program of an agent (`isolation::agent_in_vm`,
+/// the build for the VM's Linux, run by `sbx exec`).
+#[test]
+fn no_agent_binary_is_started_by_the_app_on_the_pc() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut files = Vec::new();
+    sources(&root, &mut files);
+    let binaries = ["claude.exe", "codex.exe", "agy.exe", "pi.exe"];
+    let mut exe_of = Vec::new();
+    let mut found = Vec::new();
+    for file in files {
+        let rel = file
+            .strip_prefix(&root)
+            .unwrap()
+            .to_string_lossy()
+            .replace('\\', "/");
+        let text = std::fs::read_to_string(&file).unwrap();
+        let code: Vec<&str> = text
+            .lines()
+            .map(str::trim_start)
+            .filter(|l| !l.starts_with("//"))
+            .collect();
+        if code.iter().any(|l| l.contains("exe_of(")) && rel != "agents/mod.rs" {
+            exe_of.push(rel.clone());
+        }
+        let spawns = code.iter().any(|l| {
+            SPAWNS.iter().chain(GATES).any(|p| l.contains(p))
+        });
+        let names = code.iter().any(|l| {
+            binaries.iter().any(|b| l.contains(b))
+                || l.contains("setup-token")
+        });
+        if spawns && names {
+            found.push(rel);
+        }
+    }
+    assert_eq!(exe_of, ["isolation/mod.rs"], "who reads an agent's binary");
+    assert!(
+        found.is_empty(),
+        "an agent's binary near a spawn on the PC: {found:?}"
+    );
+    // Gone with it: the token's terminal session, `codex logout`, the
+    // launchers and the agents' environment of the PC.
+    let agents = std::fs::read_to_string(root.join("agents/mod.rs")).unwrap();
+    for gone in ["fn launch_env", "fn codex_logout", "fn running"] {
+        assert!(!agents.contains(gone), "{gone}");
+    }
+    let token = std::fs::read_to_string(root.join("agents/claude_token.rs")).unwrap();
+    assert!(!token.contains("fn link"));
+    assert!(!Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../runtime/agents")
+        .exists());
 }

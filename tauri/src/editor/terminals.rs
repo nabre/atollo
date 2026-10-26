@@ -157,12 +157,14 @@ fn selectable() -> impl Iterator<Item = &'static Component> {
 /// The tools the kit chose (Linguaggi e strumenti), each at its newest
 /// line: what the default terminal and a project have in the VM, where
 /// the tools come from the kit's choice for Linux, not from what is on the
-/// PC's disk (D-170).
+/// PC's disk (D-170). Never an agent (LEVELS.md §7, Q11): Claude Code and
+/// Codex come with their `sbx` sandboxes, Pi's or Antigravity's build is
+/// asked by its own session only (`levels::prepare::wanted_tools`).
 pub fn chosen_tools(kit: &Kit) -> BTreeMap<String, Option<String>> {
     let catalog = Catalog::get();
     let choice = crate::setup::catalog::Choice::read_or_defaults(kit, catalog);
     selectable()
-        .filter(|c| choice.is_chosen(&c.id))
+        .filter(|c| c.group != Group::Agents && choice.is_chosen(&c.id))
         .map(|c| (c.id.clone(), None))
         .collect()
 }

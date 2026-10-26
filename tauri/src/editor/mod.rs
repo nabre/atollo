@@ -269,7 +269,10 @@ impl Editor {
         }
         let env = self.env();
         let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
-        match cfg::write(&self.kit, &system_root)? {
+        // The agents' profiles only with the VM as last seen (LEVELS.md §7):
+        // a VM that goes on or off later changes them at the next start.
+        let agents = crate::levels::agents_enabled(&crate::levels::agents::known_vm());
+        match cfg::write(&self.kit, &system_root, agents)? {
             cfg::Outcome::Replaced(aside) => crate::common::log::warn(&format!(
                 "editor settings were no JSON: moved to {}, written anew",
                 aside.display()

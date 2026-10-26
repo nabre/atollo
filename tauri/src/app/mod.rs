@@ -222,6 +222,9 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                 log::warn(&format!("levels requests: {e:#}"));
             }
             ipc::levels::serve_requests(app.handle().clone());
+            // The agents follow the VM (LEVELS.md §7): its status asked now
+            // and every minute, each flip told as `levels-changed`.
+            ipc::levels::watch_levels(app.handle().clone());
             // Docker Sandboxes failed to install (the network, a checksum):
             // tried again every hour while the kit has none (D-175).
             let (retry_app, retry_kit) = (app.handle().clone(), kit.clone());
@@ -233,15 +236,12 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                     start_missing_required(&retry_app, &retry_kit);
                 }
             });
-            // Antigravity's login left in Windows by a run that did not end
-            // cleanly, the kit moved, the agents aligned; then the watcher.
+            // Git follows the GitHub account; the agents' instructions,
+            // skills and MCP servers aligned (kit data, LEVELS.md §7).
             let background = kit.clone();
             let env = app.state::<AppState>().env();
             let closing = app.state::<AppState>().closing.clone();
             std::thread::spawn(move || {
-                if let Some(Err(e)) = closing.run(|| agents::keyring::save(&background)) {
-                    log::warn(&format!("antigravity login: {e:#}"));
-                }
                 // Git follows the GitHub account, also after a sign-in or a
                 // sign-out made with gh in a console.
                 let signed_in = github::token(&background, &env).is_some();
@@ -249,7 +249,6 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                     log::warn(&format!("github: git helper: {e:#}"));
                 }
                 let _ = closing.run(|| agents::sync::run(&background, None));
-                agents::watch(background, closing);
             });
             let handle = app.handle().clone();
             platform::instance::listen(&kit, move |message| {

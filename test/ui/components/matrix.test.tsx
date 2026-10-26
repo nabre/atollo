@@ -34,6 +34,8 @@ const component = (id: string, name: string, group: ComponentInfo["group"]): Com
   needs: [],
   versioned: false,
   home: "https://example.org",
+  agent: null,
+  leftover: false,
 });
 
 const LIST = [

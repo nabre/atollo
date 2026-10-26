@@ -119,10 +119,20 @@ pub(super) fn install_now<R: Runtime>(
     target: Option<String>,
 ) -> CmdResult<()> {
     let catalog = Catalog::get();
-    if catalog.find(&id).is_none() {
+    let Some(component) = catalog.find(&id) else {
         return Err(format!("unknown component: {id}").into());
-    }
+    };
     let kit = tools_kit(state, kit_for(&state.kit, target.as_deref())?, &id);
+    // An agent only for the VM's Linux, while it is on (LEVELS.md §7).
+    let vm = crate::levels::agents::known_vm();
+    if !crate::levels::installable(component, kit.target(), &vm) {
+        return Err(crate::levels::agents::refused_install(
+            component,
+            &vm,
+            state.lang(),
+        )
+        .into());
+    }
     {
         let _one = crate::setup::catalog::choice_lock();
         let mut choice = crate::setup::Choice::read(&kit, catalog)
@@ -134,6 +144,7 @@ pub(super) fn install_now<R: Runtime>(
         target: Some(kit.target()),
         only: vec![id.clone()],
         at: line.map(|l| vec![(id, l)]).unwrap_or_default(),
+        vm: Some(vm),
         ..Options::default()
     };
     state.setup.start(opts, false, setup_notify(app))?;

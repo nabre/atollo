@@ -253,6 +253,12 @@ fn last() -> std::sync::MutexGuard<'static, Option<(Instant, Status)>> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
+/// The last status worked out, however old, without asking `sbx`; `None`
+/// before the first (`levels::agents::known_vm`).
+pub fn last_status() -> Option<Status> {
+    last().as_ref().map(|(_, st)| st.clone())
+}
+
 /// The status, asked again when older than a minute or when `force` (the
 /// notice's "Ricontrolla", an installation of Docker Sandboxes).
 ///

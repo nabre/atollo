@@ -54,10 +54,14 @@ pub fn newer(latest: &str, installed: &str) -> bool {
 }
 
 /// The components it asks for: installed, with an installer, not a part of
-/// the app (those follow Atollo's own version).
+/// the app (those follow Atollo's own version), not an agent the kit no
+/// longer keeps on this system (LEVELS.md §7, Q11).
 fn watched(kit: &Kit) -> impl Iterator<Item = &'static Component> + '_ {
     Catalog::get().all().iter().filter(move |c| {
-        c.version.is_none() && crate::install::installer(&c.id).is_some() && c.is_installed(kit)
+        c.version.is_none()
+            && crate::install::installer(&c.id).is_some()
+            && !crate::levels::agents::obsolete(c, kit.target())
+            && c.is_installed(kit)
     })
 }
 
@@ -121,10 +125,12 @@ pub fn notes_url(c: &Component, version: &str) -> String {
 }
 
 /// The watched components whose latest version is newer than the one
-/// installed, in the catalog's order. Nothing is asked.
-pub fn pending(kit: &Kit) -> Updates {
+/// installed, in the catalog's order; an agent only while the VM (`vm`)
+/// is on (LEVELS.md §7). Nothing is asked.
+pub fn pending(kit: &Kit, vm: &crate::levels::VmState) -> Updates {
     let latest = load(kit);
     let items = watched(kit)
+        .filter(|c| crate::levels::installable(c, kit.target(), vm))
         .filter_map(|c| {
             let installed = c.installed_version(kit)?;
             let new = latest.versions.get(&c.id)?;

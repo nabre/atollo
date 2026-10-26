@@ -89,11 +89,6 @@ pub fn libicu_present() -> bool {
 }
 
 /// Not read on Windows.
-pub fn machine_id() -> Option<String> {
-    None
-}
-
-/// Not read on Windows.
 pub fn host_name() -> String {
     String::new()
 }

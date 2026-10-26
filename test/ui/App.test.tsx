@@ -13,6 +13,7 @@ import {
   SAMPLE_SETUP,
   SAMPLE_TARGETS,
   SAMPLE_UPDATE,
+  type AgentInfo,
   type Job,
   type OpenNow,
   type ProjectInfo,
@@ -72,8 +73,14 @@ let jobListener: ((e: { payload: Job }) => void) | null = null;
 let runListener: ((e: { payload: RunEvent }) => void) | null = null;
 let closeListener: ((e: { payload: OpenNow }) => void) | null = null;
 let openProjectListener: ((e: { payload: string }) => void) | null = null;
+/** Every listener of `levels-changed`: the agents, the Tools page, the tiles. */
+const levelsListeners = new Set<(e: { payload: unknown }) => void>();
 vi.mock("@tauri-apps/api/event", () => ({
   listen: (name: string, handler: (e: { payload: unknown }) => void) => {
+    if (name === "levels-changed") {
+      levelsListeners.add(handler);
+      return Promise.resolve(() => levelsListeners.delete(handler));
+    }
     if (name === "setup") setupListener = handler;
     if (name === "job") jobListener = handler;
     if (name === "run") runListener = handler;
@@ -1081,23 +1088,46 @@ describe("App", () => {
     expect((call?.[1] as { chosen: string[] }).chosen).not.toContain("apache");
   });
 
-  it("shows the agents and opens one", async () => {
-    // The preview's agents: Claude Code signed in, Codex not, Antigravity
-    // not installed; none running, so the sign-out is offered.
-    const agents = SAMPLE_AGENTS.map((a) => ({ ...a, running: false }));
+  it("shows the agents and their sign-in in the VM", async () => {
+    // The preview's agents: Claude Code and Codex brought by the VM, Pi on
+    // the kit's local models, Antigravity not installed for the VM's
+    // Linux; Claude Code's sign-in of the PC still saved in the kit.
+    const agents = SAMPLE_AGENTS.map((a) => (a.id === "claude" ? { ...a, kitLogin: true } : a));
     invoke.mockImplementation(answers({ agents_status: agents, agent_launch: null, agent_sign_out: null }));
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "AI" }));
-    expect((await screen.findAllByText("2.1.299")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("accesso fatto").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("fornito dalla VM")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("l'accesso si fa nella VM, al primo avvio dell'agente").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("modelli locali del kit, senza accesso").length).toBeGreaterThan(0);
 
-    // only the installed agents, and no launch outside a project
+    // only the agents the VM can run, and no launch outside a project
     expect(screen.getAllByText("Codex").length).toBeGreaterThan(0);
     expect(screen.queryByText("Antigravity")).toBeNull();
     expect(screen.queryByRole("button", { name: "Apri" })).toBeNull();
+    // the PC's sign-in left in the kit: told, and removed only on confirm
+    expect(screen.getByText(/resta salvato nel kit: gli agenti nella VM non lo usano/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Esci" }));
     expect(screen.getByText("Togliere l'accesso salvato nel kit?")).toBeTruthy();
     expect(invoke).not.toHaveBeenCalledWith("agent_sign_out", expect.anything());
+  });
+
+  it("shows only the notice without the VM, and the agents again when it comes back", async () => {
+    const reason = "Gli agenti girano solo nella VM, che non è attiva: Windows Hypervisor Platform non è attivo.";
+    const off = SAMPLE_AGENTS.map((a) => ({ ...a, available: false, unavailableReason: reason }));
+    let agents: AgentInfo[] = off;
+    const base = answers();
+    invoke.mockImplementation((cmd) => (cmd === "agents_status" ? Promise.resolve(agents) : base(cmd)));
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    expect(await screen.findByText(reason)).toBeTruthy();
+    expect(screen.queryByText("Limiti e consumi")).toBeNull();
+    expect(screen.getAllByText("serve la VM").length).toBeGreaterThan(0);
+    agents = SAMPLE_AGENTS;
+    act(() => {
+      for (const l of levelsListeners) l({ payload: { vm: "on", reason: null, agentsEnabled: true } });
+    });
+    expect(await screen.findByText("Limiti e consumi")).toBeTruthy();
+    expect(screen.queryByText(reason)).toBeNull();
   });
 
   it("opens the Guide from the activity bar and contextual buttons and navigates topics", async () => {
