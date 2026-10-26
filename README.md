@@ -77,7 +77,7 @@ Open work is tracked in the [issues](https://github.com/nabre/atollo/issues).
 
 ## How to use it
 
-1. Copy Atollo's exe (for example `Atollo-0.7.1-win32-x64.exe`) into an empty folder: a USB stick, an external drive or a folder in your profile (spaces, brackets or `&` in the name are fine).
+1. Copy Atollo's exe (for example `Atollo-0.7.2-win32-x64.exe`) into an empty folder: a USB stick, an external drive or a folder in your profile (spaces, brackets or `&` in the name are fine).
 2. Double-click it: the app creates `projects\` and `data\`. On first start choose agents, languages and tools: the app downloads and verifies them (checksum or signature), Docker Sandboxes included.
 3. Sign in to Docker once per PC: with a (free) Docker account, click **No VM** in the status bar and **Run** beside `sbx login`: the command opens in Atollo's terminal with the kit's `sbx`, and the sign-in link appears there (a click opens it in your browser). The other reasons in the same list say what else the PC needs.
 4. Create or clone a project on the **Projects** page. A project's editor, terminal and agents always open in its folder; with the VM on, the terminal, actions and Claude Code and Codex open in the project's microVM.
@@ -115,15 +115,15 @@ Atollo's console is a tab of the app's terminal panel on every system, with the 
 
 ## Still to do
 
-Atollo is in alpha (version 0.7.1). Windows x64 is the most tested system, real installs in CI included; macOS and Linux are built and tested in CI only. The full checklist is in [docs/app/TESTING.md](docs/app/TESTING.md).
+Atollo is in alpha (version 0.7.2). Windows x64 is the most tested system, real installs in CI included; macOS and Linux are built and tested in CI only. The full checklist is in [docs/app/TESTING.md](docs/app/TESTING.md).
 
 - **The VM, to be finished** ([D-175](docs/app/DECISIONS.md)). Projects in their microVMs are tried for real only on Windows 11 x64 with Docker Sandboxes 0.49.2; macOS and Ubuntu are untested, and so is "GitHub in the VM" with a real account. Still to do: the kit's MCP servers for the agents in the VM (their commands are programs of the PC), to be brought into `sbx`'s MCP gateway or said missing.
-- **The alpha, to be tried.** [The 0.7.1 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.7.1) is on GitHub for Windows x64, macOS on Apple silicon and Linux x64 and ARM64, the four systems Docker Sandboxes runs on ([D-176](docs/app/DECISIONS.md)). The published files are built and tested in CI: now they need downloading and starting on clean machines.
+- **The alpha, to be tried.** [The 0.7.2 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.7.2) is on GitHub for Windows x64, macOS on Apple silicon and Linux x64 and ARM64, the four systems Docker Sandboxes runs on ([D-176](docs/app/DECISIONS.md)). The published files are built and tested in CI: now they need downloading and starting on clean machines.
 - **Alpha testing.** We need people using Atollo on real projects and different PCs, and reporting what goes wrong: component installs, projects, databases, agents. Settings › The kit › “Report a problem” opens a GitHub issue with the version and the system already filled in; attach the zip of “Export diagnostics” next to it (secrets masked, made on your PC, never sent by the app).
 - **macOS on real Macs** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). The Apple Silicon app is built and started in CI, never on a clean Mac: the zip downloaded with a browser, quarantine and Gatekeeper, App Translocation, a kit on an exFAT stick, the agents' sign-in carried from one Mac to another.
 - **Linux on real machines** ([#5](https://github.com/nabre/atollo/issues/5)). x64 and ARM64 on Ubuntu 24.04, Fedora 42 and Debian 13: AppImage with and without FUSE, the `tar.gz` with WebKitGTK 4.1, exFAT sticks or sticks mounted `noexec`, sign-in with GNOME, KeePassXC or KWallet.
 - **Updates and the kit's builds outside Windows.** Updating the app from one version to the next on macOS and Linux is not tried yet. The kit's Apache (2.4.69, D-116) is in the catalog but tried only in CI; so is the kit's PHP with `pdo_sqlite` (8.4.26 and 8.5.11, D-133), which the app uses from 0.3.0 on.
-- **Code signing.** On macOS only an ad hoc signature, without Apple notarization: `xattr -dr com.apple.quarantine` is needed. On Windows 0.7.1 ships unsigned: the SignPath signature is still to be activated, and until then SmartScreen may warn on first launch.
+- **Code signing.** On macOS only an ad hoc signature, without Apple notarization: `xattr -dr com.apple.quarantine` is needed. On Windows 0.7.2 ships unsigned: the SignPath signature is still to be activated, and until then SmartScreen may warn on first launch.
 
 Have an Apple Silicon Mac or a Linux PC? Try Atollo and tell us how it went: [open an issue on GitHub](https://github.com/nabre/atollo/issues).
 

@@ -1,5 +1,9 @@
 # Novità
 
+## Rilascio 0.7.2 alpha (26/10/2026)
+
+- **Versione 0.7.2**: la 0.7.1 non è uscita (la CI di rilascio non trovava l'exe di Windows: rimasto il solo exe x64, l'artifact si estraeva fuori dalla sua cartella); la 0.7.2 la sostituisce con tutto ciò che è elencato qui sotto. Il rilascio scarica l'exe per nome, nella cartella che il passo di pubblicazione legge.
+
 ## Rilascio 0.7.1 alpha (26/10/2026)
 
 - **Versione 0.7.1**: la 0.7.0 non è uscita (la CI di rilascio si è fermata sulle prove di macOS e Linux), la 0.7.1 la sostituisce con tutto ciò che è elencato qui sotto.
