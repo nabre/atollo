@@ -1127,7 +1127,7 @@ fn the_shells_print_their_level_line() {
     } else {
         eprintln!("no bash on this host: bashrc skipped");
     }
-    let Some(pwsh) = host_pwsh() else {
+    let Some((pwsh, _turn)) = host_pwsh() else {
         eprintln!("no pwsh on this host: profile.ps1 skipped");
         return;
     };
