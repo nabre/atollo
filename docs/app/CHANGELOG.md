@@ -1,5 +1,9 @@
 # Novità
 
+## Il pannello rapido con gli strumenti (26/10/2026)
+
+- **Gli strumenti nel «Pannello rapido»**: una griglia con i componenti che si possono installare su questo PC, nei gruppi di «Strumenti» (le parti dell'app e quelle obbligatorie restano fuori), ognuno con logo, nome e stato (versione, «non installato», «non serve», perché non è disponibile). «Installa» e «Aggiorna ora» fanno come in «Strumenti», con l'avanzamento in «Attività»; un clic sul riquadro apre la sua pagina in «Strumenti». Oltre dodici, «Mostra tutti».
+
 ## Il comando `atollo` (26/10/2026)
 
 - **`atollo` nei terminali del kit**: `atollo components` elenca i componenti con quelli installati, `atollo check --kit` controlla il kit, `atollo help` mostra tutti i comandi. Prima serviva il percorso dell'exe.

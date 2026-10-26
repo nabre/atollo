@@ -238,6 +238,11 @@ export function App() {
                 }}
                 quickOpen={quickOpen}
                 onQuickOpen={setQuickOpen}
+                setup={setup}
+                onTool={(id) => {
+                  toolTabs.show(id);
+                  setPage("components");
+                }}
               />
             ) : page === "ai" ? (
               <AiPage key={aiFocus} focus={aiFocus} onGuide={openGuide} />
