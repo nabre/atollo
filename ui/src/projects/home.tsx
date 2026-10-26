@@ -1,6 +1,6 @@
 // The home of Projects, the editor with no project open: what runs, the
 // favorite and recent projects with their buttons, what needs a hand, the
-// ways to make a new one. Each project starts, stops and opens from here
+// ways to make a new one, the tools to install or update (./tools.tsx). Each project starts, stops and opens from here
 // without its page.
 import type { ReactNode } from "react";
 import {
@@ -12,6 +12,7 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
+  type SetupSnapshot,
 } from "../ipc";
 import { AgentButtons } from "../agents";
 import { basesByGroup, PieceLogo, textOf, type BaseGroup, type Frameworks } from "../frameworks";
@@ -22,6 +23,7 @@ import { COMPONENT_NAMES } from "./needs";
 import { GROUP_ICON, wayLabel, type NewWay } from "./new";
 import type { ProjectSection } from "./page";
 import { alive } from "./runs";
+import { HomeTools } from "./tools";
 
 /** Recent projects shown besides the favorites. */
 const RECENT = 6;
@@ -48,6 +50,8 @@ export interface HomeHandlers {
   onGithub: () => void;
   onFolder: () => void;
   onGuide?: (() => void) | undefined;
+  /** Opens a tool's page on Tools. */
+  onTool: (id: string) => void;
 }
 
 export function ProjectsHome({
@@ -58,6 +62,7 @@ export function ProjectsHome({
   agents,
   fw,
   handlers,
+  setup = null,
 }: {
   projects: ProjectInfo[];
   runs: Record<string, RunInfo>;
@@ -66,6 +71,8 @@ export function ProjectsHome({
   agents: AgentInfo[] | null;
   fw: Frameworks;
   handlers: HomeHandlers;
+  /** The preparation under way: the tools' progress and buttons. */
+  setup?: SetupSnapshot | null;
 }) {
   const byId = new Map(projects.map((p) => [p.id, p]));
   const live = Object.values(runs)
@@ -207,6 +214,8 @@ export function ProjectsHome({
             )}
           </ul>
         </EditorSection>
+
+        <HomeTools setup={setup} onOpen={handlers.onTool} />
 
         <p className="text-[12px] text-vsc-desc">
           {t(

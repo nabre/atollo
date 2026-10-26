@@ -602,10 +602,10 @@ export const PROJECTS: TopicTexts = {
             "In der Seitenleiste findest du die Liste der Projekte; ein Klick öffnet die Seite eines Projekts in einem Tab.",
           ),
           tr(
-            "Il «Pannello rapido» raccoglie ciò che è avviato, i preferiti, i recenti e ciò che va sistemato.",
-            "The “Quick panel” gathers what is running, the favorites, the recent ones and what needs fixing.",
-            "Le « Panneau rapide » rassemble ce qui est démarré, les favoris, les récents et ce qui est à corriger.",
-            "Die „Schnellübersicht“ sammelt, was gestartet ist, die Favoriten, die zuletzt verwendeten und was zu beheben ist.",
+            "Il «Pannello rapido» raccoglie ciò che è avviato, i preferiti, i recenti, ciò che va sistemato e gli strumenti da installare o aggiornare.",
+            "The “Quick panel” gathers what is running, the favorites, the recent ones, what needs fixing and the tools to install or update.",
+            "Le « Panneau rapide » rassemble ce qui est démarré, les favoris, les récents, ce qui est à corriger et les outils à installer ou à mettre à jour.",
+            "Die „Schnellübersicht“ sammelt, was gestartet ist, die Favoriten, die zuletzt verwendeten, was zu beheben ist und die Werkzeuge zum Installieren oder Aktualisieren.",
           ),
           tr(
             "La pagina di un progetto ha in alto i pulsanti principali e sotto sette sezioni.",
@@ -766,6 +766,15 @@ export const PROJECTS: TopicTexts = {
                 "Beside the title “Empty project” and “From a Git address”; below, a block per group, My bases, Web, CMS, App and Other, with the bases as buttons (a click opens the wizard on that base); at the bottom the links to GitHub repositories, the projects folder and the guide.",
                 "À côté du titre « Projet vide » et « Depuis une adresse Git » ; en dessous, un bloc par groupe, Mes bases, Web, CMS, App et Autre, avec les bases en boutons (un clic ouvre l'assistant sur cette base) ; en bas les liens vers les dépôts GitHub, le dossier des projets et le guide.",
                 "Neben dem Titel „Leeres Projekt“ und „Von einer Git-Adresse“; darunter ein Block je Gruppe, Meine Basen, Web, CMS, App und Sonstiges, mit den Basen als Schaltflächen (ein Klick öffnet den Assistenten mit dieser Basis); unten die Links zu den GitHub-Repositorys, zum Projektordner und zur Anleitung.",
+              ),
+            ],
+            [
+              tr("Strumenti", "Tools", "Outils", "Werkzeuge"),
+              tr(
+                "Una griglia con i componenti che puoi installare su questo PC, nei gruppi della pagina Strumenti (le parti dell'app e quelle obbligatorie, sempre installate, non ci sono): logo, nome e stato (la versione, «non installato», «non serve» o perché non è disponibile). «Installa» lo installa subito all'ultima versione, «Aggiorna ora» scarica la versione nuova; l'avanzamento è nel pannello «Attività». Un clic sul riquadro apre la sua pagina in Strumenti. Oltre dodici, «Mostra tutti» apre l'elenco intero.",
+                "A grid of the components you can install on this PC, in the groups of the Tools page (the app's own parts and the required ones, always installed, are not there): logo, name and state (the version, “not installed”, “not needed” or why it is not available). “Install” installs it right away at its latest version, “Update now” downloads the new version; the progress is in the “Activity” panel. A click on the tile opens its page in Tools. Beyond twelve, “Show all” opens the whole list.",
+                "Une grille des composants que vous pouvez installer sur ce PC, dans les groupes de la page Outils (les parties de l'application et les obligatoires, toujours installées, n'y sont pas) : logo, nom et état (la version, « non installé », « pas nécessaire » ou pourquoi il n'est pas disponible). « Installer » l'installe aussitôt à sa dernière version, « Mettre à jour » télécharge la nouvelle version ; l'avancement est dans le panneau « Activité ». Un clic sur la tuile ouvre sa page dans Outils. Au-delà de douze, « Tout afficher » ouvre la liste entière.",
+                "Ein Raster der Komponenten, die du auf diesem PC installieren kannst, in den Gruppen der Seite Werkzeuge (die Teile der App und die Pflichtkomponenten, immer installiert, fehlen dort): Logo, Name und Zustand (die Version, „nicht installiert“, „nicht nötig“ oder warum sie nicht verfügbar ist). „Installieren“ installiert sie sofort in der neuesten Version, „Jetzt aktualisieren“ lädt die neue Version herunter; der Fortschritt steht im Bereich „Aktivität“. Ein Klick auf die Kachel öffnet ihre Seite in Werkzeuge. Bei mehr als zwölf öffnet „Alle anzeigen“ die ganze Liste.",
               ),
             ],
           ]}

@@ -1098,5 +1098,10 @@
   "Senza VM i progetti, il loro terminale e le azioni (npm run dev, i siti, i server condivisi) girano sul PC con il tuo utente, senza gli agenti: possono leggere i tuoi file e usare la rete, il kit ne filtra solo l'ambiente.": "Sans VM, les projets, leur terminal et les actions (npm run dev, les sites, les serveurs partagés) tournent sur le PC avec votre utilisateur, sans les agents : ils peuvent lire vos fichiers et utiliser le réseau, le kit ne filtre que leur environnement.",
   "I terminali, i task e gli agenti dell'editor e gli agenti del progetto partono solo nella VM: senza, non si aprono. Atollo ricontrolla da solo ogni minuto.": "Les terminaux, les tâches et les agents de l'éditeur et les agents du projet ne démarrent que dans la VM : sans elle, ils ne s'ouvrent pas. Atollo revérifie de lui-même chaque minute.",
   "Senza VM: progetti e azioni sul PC senza agenti; terminali dell'editor e agenti solo nella VM": "Sans VM : projets et actions sur le PC sans agents ; terminaux de l'éditeur et agents seulement dans la VM",
-  "Gli agenti (Claude Code, Codex, Antigravity, Pi) non ci sono nei terminali: girano solo nella VM. Avviali dalla pagina del progetto o dall'editor.": "Les agents (Claude Code, Codex, Antigravity, Pi) ne sont pas dans les terminaux : ils tournent seulement dans la VM. Lancez-les depuis la page du projet ou depuis l'éditeur."
+  "Gli agenti (Claude Code, Codex, Antigravity, Pi) non ci sono nei terminali: girano solo nella VM. Avviali dalla pagina del progetto o dall'editor.": "Les agents (Claude Code, Codex, Antigravity, Pi) ne sont pas dans les terminaux : ils tournent seulement dans la VM. Lancez-les depuis la page du projet ou depuis l'éditeur.",
+  "{0} installati su {1}": "{0} installés sur {1}",
+  "Mostra meno": "Afficher moins",
+  "Mostra tutti ({0})": "Tout afficher ({0})",
+  "{0}: {1}. Apre la sua pagina in Strumenti": "{0} : {1}. Ouvre sa page dans Outils",
+  "Aggiorna ora": "Mettre à jour"
 }
