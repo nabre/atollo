@@ -4,7 +4,7 @@
 
 Documento normativo della decisione D-179 (DECISIONS.md, 26/10/2026). È l'unica fonte di verità su: quale programma gira dove, con quale `PATH`, con quali agenti, con quale rete e quali montaggi; il codice che lo decide; l'IPC che lo trasporta; e come l'utente lo verifica. Codice, prove, Guida e ARCHITECTURE.md seguono questo file; dove differiscono, vale questo file e la differenza è un errore.
 
-Stato: **progetto, fase 1**. Nulla di quanto scritto è già fatto, salvo dove il testo dice «oggi». Ogni affermazione non provata su un sistema vero è segnata **[non verificato]**; ogni scelta di questo documento non ancora confermata dall'utente è segnata **[ipotesi]**. I nomi nel codice (tipi, funzioni, file, comandi) sono quelli della versione inglese, [LEVELS.md](LEVELS.md).
+Stato: **progetto, fase 1**; fatto il passo 1 di 12.2 (tipi, `place_of`, `facts`, `decide`, etichette), non ancora chiamato dall'app. Nient'altro di quanto scritto è già fatto, salvo dove il testo dice «oggi». Ogni affermazione non provata su un sistema vero è segnata **[non verificato]**; ogni scelta di questo documento non ancora confermata dall'utente è segnata **[ipotesi]**. I nomi nel codice (tipi, funzioni, file, comandi) sono quelli della versione inglese, [LEVELS.md](LEVELS.md).
 
 Indice:
 
@@ -74,7 +74,7 @@ Invarianti che seguono dalla tabella (normative; ognuna ha la sua prova, sezione
 - **I5** Un collocamento `Vm` non porta mai un segreto del kit: né negli argomenti, né in `-e`, né in `--env-file` (la sezione 11 definisce «segreto del kit»).
 - **I6** Senza VM nulla del livello 3 si installa, si aggiorna, si avvia o si configura nell'editor; i dati degli agenti nel kit restano sul disco, intatti.
 - **I7** Un rifiuto porta sempre un motivo e un rimedio (`Refusal`, `Fix`); nulla ripiega in silenzio dalla VM al PC.
-- **I8** `decide()` è pura e totale: stessi ingressi, stessa uscita; ogni combinazione di ingressi ha esattamente una riga di 3.4.
+- **I8** `decide()` è pura e totale: stessi ingressi, stessa uscita; ogni combinazione di ingressi ha una riga di 3.4, e la prima riga che corrisponde dà il suo unico collocamento.
 
 ## 3. Il modello del codice: `tauri/src/levels/`
 
@@ -82,7 +82,7 @@ Invarianti che seguono dalla tabella (normative; ognuna ha la sua prova, sezione
 
 | File | Contenuto | Viene da |
 |---|---|---|
-| `levels/mod.rs` | `Level`, `Agent`, `AgentRunner`, `Origin`, `Place`, `Request`, `VmState`, `Facts`, `Placement`, `Sandbox`, `VmProgram`, `HostAccess`, `Refusal`, `Fix`; `decide()` | nuovo |
+| `levels/mod.rs` | `Level`, `Agent`, `AgentRunner`, `Origin`, `Place`, `Request`, `VmState`, `Facts`, `Placement`, `Sandbox`, `Mounts`, `VmProgram`, `HostAccess`, `Refusal`, `Fix`, `Rule`; `decide()`, `decided()` | nuovo |
 | `levels/place.rs` | `place_of(kit, dir) -> Place` (a quale progetto appartiene una cartella) | la logica di `runtime/vm.ps1` (`$projects`, `$below`) e `ipc::project_dir` |
 | `levels/facts.rs` | `facts(kit, host, env, request) -> Facts` (l'unica lettura con effetti prima di `decide`) | `isolation::status`, `vm::guest_path`, `isolation::restart_pending`, disponibilità nel catalogo |
 | `levels/env.rs` | `environment()`, `SEALED`, `seal()`, `agent_dirs()`, `strip_agents()`, `FORWARD_DIR`, `LEVEL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (la parte che sigilla), `editor::terminals::env` (la parte degli agenti) |
@@ -90,7 +90,7 @@ Invarianti che seguono dalla tabella (normative; ognuna ha la sua prova, sezione
 | `levels/start.rs` | `start_terminal()`, `action_command()`, `scaffold_command()`: da `Ready` a un `Launch` della pty o a un `Command` | le code di `terminal_launch`, `terminal_open`, `agent_launch`, `Runner::start_in`, `frameworks::run_line` |
 | `levels/requests.rs` | il protocollo a file per i processi fuori dall'app (editor, inoltri) | sostituisce `isolation/session.rs` |
 | `levels/report.rs` | `VmReport`, `ToolCheck`, `report()`, `check_tools()` | nuovo |
-| `levels/labels.rs` | i testi di `label(level, placement)`, `banner_line()` | nuovo |
+| `levels/labels.rs` | `LevelLabel`, `label_of(placement)`, i testi di `label(placement, lang)`, `banner_line(placement, lang)`, `refusal_text(reason, lang)` | nuovo; i testi di rifiuto di `ipc::agents::no_vm_for_agents` e `ipc::servers::refused_with_vm` |
 
 `isolation/` tiene ciò che riguarda `sbx` in sé: `status`, `Blocker`, `Sbx`, `Vm` (vita della sandbox, montaggi, porte, pubblicazione, arresto), `vm.rs` (costruttori di argomenti), `daemon.rs`, `kit.rs`, `secrets.rs`. Non decide più chi va dove.
 
@@ -126,6 +126,8 @@ impl Agent {
     pub const ALL: [Agent; 4] = [Agent::Claude, Agent::Codex, Agent::Pi, Agent::Antigravity];
     /// L'id del catalogo: "claude", "codex", "pi", "antigravity".
     pub fn id(self) -> &'static str;
+    /// Il nome che legge l'utente: "Claude Code", "Codex", "Pi", "Antigravity".
+    pub fn name(self) -> &'static str;
     /// I comandi che l'utente scrive: ["claude"], ["codex"], ["pi"], ["agy", "antigravity"].
     pub fn commands(self) -> &'static [&'static str];
     /// Dove gira nella VM.
@@ -182,6 +184,12 @@ pub enum Place {
     Folder { dir: PathBuf },
 }
 
+impl Place {
+    /// La cartella ricavata: quella del progetto con `below`, o la cartella.
+    pub fn dir(&self) -> PathBuf;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
     pub origin: Origin,
     pub place: Place,
@@ -198,14 +206,20 @@ pub enum VmState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Facts {
     pub vm: VmState,
-    /// La cartella del luogo come la vede la VM (`vm::guest_path`); `None` per
-    /// un percorso che la VM non monta (una cartella di rete).
+    /// La cartella del luogo come la vede la VM (`vm::guest_path`): per un
+    /// progetto la sua cartella, senza `below`; `None` per un percorso che la
+    /// VM non monta (una cartella di rete).
     pub guest_dir: Option<String>,
     /// `isolation::restart_pending`: il daemon del kit deve ripartire prima di aprire una VM.
     pub restart_pending: bool,
     /// Per gli agenti `AgentRunner::ProjectVm`: il catalogo ha una build per il
     /// target Linux della VM (`Component::is_available_on(guest)`), installata o installabile.
+    /// `false` per ogni altra origine (allora non si legge).
     pub linux_build: bool,
+    /// Gli strumenti del kit per il Linux della VM (`kit.for_target(guest).apps()`),
+    /// montati in sola lettura; vuoto dove il PC non ha VM. Sta in `Facts`
+    /// perché `decide` non ha un `Kit`.
+    pub guest_tools: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -262,7 +276,8 @@ pub struct HostAccess {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum VmProgram {
     Shell,                                   // `bash -l` interattivo
-    Line { command: String },                // task dell'editor, passo di creazione: `sh -lc`
+    Line { command: String },                // task dell'editor: `sh -lc`
+    Scaffold { base: String },               // i passi della base, ognuno `sh -lc` (`start::scaffold_command`)
     Action { action: String },               // `sh -lc`, annotato (vm::tracked)
     Site { action: String },                 // un container del Docker della VM (vm::web_line)
     SbxAgent { agent: Agent },               // `sbx run --name <atollo-a-…>`
@@ -288,6 +303,14 @@ pub enum Refusal {
     DaemonRestartPending,
 }
 
+impl Refusal {
+    /// L'unico rimedio di ogni motivo (I7): AgentsNeedVm → OpenVmNotice;
+    /// AgentOutsideProject, NotAProject → OpenFromProject; NoPathInVm →
+    /// UseLocalDisk; PoolsOnlyWithoutVm → StartFromProject; NoLinuxBuild →
+    /// None; DaemonRestartPending → RestartDaemon.
+    pub fn fix(&self) -> Fix;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Fix {
@@ -311,7 +334,12 @@ pub enum Fix {
 ```rust
 // levels/place.rs
 /// Il progetto di `dir`: la prima cartella sotto `kit.projects()`, letta senza
-/// seguire i link (`safe_path::is_dir`); altrimenti `Folder`.
+/// seguire i link (`safe_path::is_dir`, e nessun link da `projects/` fino a
+/// `dir`: una cartella raggiunta attraverso un link non è di nessun
+/// progetto); altrimenti `Folder`. `dir` si legge come testo (`\\?\` tolto,
+/// `.`/`..` risolti); i nomi si confrontano come fa il file system del PC,
+/// senza badare alle maiuscole su Windows e macOS, e il nome del progetto è
+/// quello sul disco.
 pub fn place_of(kit: &Kit, dir: &Path) -> Place;
 
 // levels/facts.rs
@@ -321,6 +349,8 @@ pub fn place_of(kit: &Kit, dir: &Path) -> Place;
 pub fn facts(kit: &Kit, host: &Host, env: &KitEnv, req: &Request) -> Facts;
 ```
 
+Chi avvia una creazione crea prima la cartella (vuota) del progetto nuovo, poi chiama `place_of`, così la creazione ha un `Place::Project` e la sua sandbox (R15).
+
 Lo stato usato è quello del momento della richiesta: nessun livello resta più annotato in file (il `.level` di oggi di `isolation::session`, scritto all'apertura dell'editor, sparisce).
 
 ### 3.4 `decide`: la tabella delle decisioni
@@ -328,6 +358,9 @@ Lo stato usato è quello del momento della richiesta: nessun livello resta più 
 ```rust
 /// L'unica decisione (D-179): pura, totale, senza I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement;
+/// `decide` con la riga (`Rule::R1` … `Rule::R17`) che ha dato il collocamento:
+/// per le prove e il log.
+pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 ```
 
 `Origin::level()`:
@@ -356,11 +389,11 @@ Regole, valutate dall'alto in basso; la prima che corrisponde dà il collocament
 | R12 | 3 | agente con `runner() == SbxAgent` | Project | On | — | `Vm { Agent, sandbox: Agent{agent_name(project, id)}, program: SbxAgent, host: {databases: true, local_models: false}, publish: false }` |
 | R13 | 3 | agente con `runner() == ProjectVm` | Project | On | — | `Vm { Agent, sandbox: Project{name(project)}, program: AgentBinary, host: {databases: true, local_models: agent == Pi}, publish: false }` |
 | R14 | 2 | `ProjectTerminal` | Project | On | — | `Vm { Project, sandbox del progetto, Shell, publish: false }` |
-| R15 | 2 | `EditorTask { command }`, `Scaffold` | Project | On | — | `Vm { Project, sandbox del progetto, Line { command }, publish: false }` |
+| R15 | 2 | `EditorTask { command }`, `Scaffold { base }` | Project | On | — | `Vm { Project, sandbox del progetto, Line { command }` (task) o `Scaffold { base }` (creazione)`, publish: false }` |
 | R16 | 2 | `Action { action, web }` | Project | On | — | `Vm { Project, sandbox del progetto, Action, publish: web }` |
 | R17 | 2 | `Site { action }` | Project | On | — | `Vm { Project, sandbox del progetto, Site, publish: true }` |
 
-Totalità: il livello 1 è coperto da R3/R4 per ogni luogo e stato della VM; il livello 2 da R2, R5–R7, R9, R10, R14–R17 (ogni origine del livello 2 compare in R14–R17 salvo `Pool`, rifiutato da R2 con la VM attiva e collocato da R5/R6 senza); il livello 3 da R1, R8–R13. In ogni collocamento `Vm`, `mounts` è `{ workspace_rw: cartella del progetto, tools_ro: [kit.for_target(guest).apps()] }` e `workdir` è `guest_dir` unito a `below`. La prova `every_request_has_exactly_one_placement` enumera tutte le origini × i due luoghi × i due stati della VM × ogni combinazione di fatti e verifica che corrisponda esattamente una regola (12.3).
+Totalità: il livello 1 è coperto da R3/R4 per ogni luogo e stato della VM; il livello 2 da R2, R5–R7, R9, R10, R14–R17 (ogni origine del livello 2 compare in R14–R17 salvo `Pool`, rifiutato da R2 con la VM attiva e collocato da R5/R6 senza); il livello 3 da R1, R8–R13. In ogni collocamento `Vm`, `mounts` è `{ workspace_rw: cartella del progetto, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`), `workdir` è `guest_dir` unito a `below`, e il livello 2 (R14–R17) ha `host: { databases: true, local_models: false }`. Il `dir` di un collocamento `Pc` è la cartella del luogo (`Place::dir`: quella del progetto unita a `below`, o la cartella). Il `fix` di un rifiuto è sempre `reason.fix()`. Le righe possono sovrapporsi (R2 e R7 per un pool fuori da un progetto, R9 e R10): vince la prima. La prova `every_request_has_exactly_one_placement` enumera tutte le origini × {progetto, sottocartella del progetto, cartella} × ogni combinazione di fatti (VM attiva, spenta con e senza motivi, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) e verifica che una riga corrisponda, che la prima riga che corrisponde (la tabella scritta riga per riga nella prova) sia quella che riporta `decided`, e le invarianti (12.3).
 
 Su `Forwarded { from }`: `from` serve solo al log e all'etichetta; non cambia mai la riga. Un inoltro esiste solo sul PC (livello 1, o livello 2 senza VM); le sessioni di livello 2 nella VM non hanno inoltri, quindi un agente non si avvia dall'interno della VM di un progetto (sezione 6.8).
 
@@ -699,7 +732,7 @@ L'elenco completo, simbolo per simbolo, è in [LEVELS.md, 12.1](LEVELS.md#121-re
 
 I nomi delle prove sono in [LEVELS.md, 12.3](LEVELS.md#123-test-plan) e valgono così come sono (le prove si chiamano in inglese). Riassunto:
 
-- **Unitarie** (`test/rust/levels/`): `decide.rs` (livello dall'origine, totalità esaustiva, una prova per regola R1–R17, `an_agent_is_never_on_the_pc`, `a_refusal_always_has_a_reason_and_a_fix`); `env.rs` sui quattro target `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64` (nessuna cartella di agente sul PC, inoltri in testa, versioni del progetto, variabili sigillate, solo strumenti del kit per Linux nella VM, `no_kit_secret_reaches_a_vm_environment`); `place.rs`; `requests.rs`; `report.rs` (il comando di ogni strumento del catalogo, confronto per linea, `notFromKit`, `java -version` sullo standard error); `prepare.rs` con `Effects` finto; `rule.rs` (`no_process_outside_levels`, `no_agent_binary_is_started_by_the_app_on_the_pc`).
+- **Unitarie** (`test/rust/levels/`): `decide.rs` (livello dall'origine, totalità esaustiva, una prova per ciascuna regola R1–R17, `an_agent_is_never_on_the_pc`, `a_refusal_always_has_a_reason_and_a_fix`, la serializzazione per l'IPC); `facts.rs` (le parti pure: `guest_dir`, `guest_tools`, `linux_build`); `labels.rs` (etichette, intestazioni, testi dei rifiuti); `env.rs` sui quattro target `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64` (nessuna cartella di agente sul PC, inoltri in testa, versioni del progetto, variabili sigillate, solo strumenti del kit per Linux nella VM, `no_kit_secret_reaches_a_vm_environment`); `place.rs`; `requests.rs`; `report.rs` (il comando di ogni strumento del catalogo, confronto per linea, `notFromKit`, `java -version` sullo standard error); `prepare.rs` con `Effects` finto; `rule.rs` (`no_process_outside_levels`, `no_agent_binary_is_started_by_the_app_on_the_pc`).
 - **Prove di oggi che cambiano**: `test/rust/isolation/{mod,session,vm}.rs`, `test/rust/ipc/agents.rs`, `test/rust/setup/kit_files.rs`, `test/rust/editor/{cfg,terminals,ext}.rs`, `test/rust/setup/runner.rs`.
 - **Integrazione per punto di avvio** (Rust con finti dove si può; il resto a mano su Windows 11 con sbx e su un Linux, annotato nelle «Prove» di D-179): E1–E12, l'inoltro di 6.8 dentro e fuori un progetto e senza VM, E14, `atollo vm shop --check`.
 - **Interfaccia** (`test/ui/`): `terminal/panel.test.tsx`, `agents/page.test.tsx`, `projects/vm.test.tsx`, `components/table.test.tsx`, `shell/commands.test.tsx`, `servers/page.test.tsx`.

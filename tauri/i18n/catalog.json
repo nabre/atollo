@@ -2413,5 +2413,55 @@
     "en": "No VM: the editor's terminals, tasks and agents start only in the project's VM, and nothing opens on the PC.",
     "fr": "Sans VM : les terminaux, les tâches et les agents de l'éditeur ne démarrent que dans la VM du projet, et rien ne s'ouvre sur le PC.",
     "de": "Ohne VM: Die Terminals, Tasks und Agenten des Editors starten nur in der VM des Projekts, und auf dem PC öffnet sich nichts."
+  },
+  "PC": {
+    "en": "PC",
+    "fr": "PC",
+    "de": "PC"
+  },
+  "PC · senza VM": {
+    "en": "PC · no VM",
+    "fr": "PC · sans VM",
+    "de": "PC · ohne VM"
+  },
+  "VM progetto": {
+    "en": "Project VM",
+    "fr": "VM du projet",
+    "de": "Projekt-VM"
+  },
+  "Agente · VM": {
+    "en": "Agent · VM",
+    "fr": "Agent · VM",
+    "de": "Agent · VM"
+  },
+  "[Atollo] Agente · VM: {0} in {1}": {
+    "en": "[Atollo] Agent · VM: {0} in {1}",
+    "fr": "[Atollo] Agent · VM : {0} dans {1}",
+    "de": "[Atollo] Agent · VM: {0} in {1}"
+  },
+  "[Atollo] VM progetto: {0} · {1}": {
+    "en": "[Atollo] Project VM: {0} · {1}",
+    "fr": "[Atollo] VM du projet : {0} · {1}",
+    "de": "[Atollo] Projekt-VM: {0} · {1}"
+  },
+  "Gli agenti partono solo nella cartella di un progetto: apri il terminale nella cartella del progetto, o avvia l'agente dalla pagina del progetto.": {
+    "en": "Agents start only in a project's folder: open the terminal in the project's folder, or start the agent from the project's page.",
+    "fr": "Les agents ne démarrent que dans le dossier d'un projet : ouvre le terminal dans le dossier du projet, ou lance l'agent depuis la page du projet.",
+    "de": "Agenten starten nur im Ordner eines Projekts: Öffne das Terminal im Ordner des Projekts oder starte den Agenten von der Seite des Projekts."
+  },
+  "Con la VM attiva il codice di un progetto parte solo nella cartella di un progetto: aprila dalla pagina del progetto.": {
+    "en": "With the VM active, a project's code starts only in a project's folder: open it from the project's page.",
+    "fr": "Avec la VM active, le code d'un projet ne démarre que dans le dossier d'un projet : ouvre-le depuis la page du projet.",
+    "de": "Mit aktiver VM startet der Code eines Projekts nur im Ordner eines Projekts: Öffne ihn von der Seite des Projekts."
+  },
+  "La cartella {0} non ha un percorso nella VM (è su una condivisione di rete): sposta il progetto su un disco locale.": {
+    "en": "The folder {0} has no path in the VM (it is on a network share): move the project to a local disk.",
+    "fr": "Le dossier {0} n'a pas de chemin dans la VM (il est sur un partage réseau) : déplace le projet sur un disque local.",
+    "de": "Der Ordner {0} hat keinen Pfad in der VM (er liegt auf einer Netzwerkfreigabe): Verschiebe das Projekt auf eine lokale Festplatte."
+  },
+  "{0} non ha una versione per il Linux della VM: per ora non può partire.": {
+    "en": "{0} has no build for the VM's Linux: it cannot start for now.",
+    "fr": "{0} n'a pas de version pour le Linux de la VM : il ne peut pas démarrer pour l'instant.",
+    "de": "{0} hat keine Version für das Linux der VM: Es kann vorerst nicht starten."
   }
 }
