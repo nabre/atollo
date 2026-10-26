@@ -153,7 +153,7 @@ fn launch_sh_writes_waits_and_runs() {
     }
 }
 
-/// Takes the first request of `kit` (within a minute) and answers it with
+/// Takes the first request of `kit` (within three minutes: a slow CI) and answers it with
 /// `answer_with`; the request it answered.
 fn responder(
     kit: &Kit,
@@ -161,7 +161,7 @@ fn responder(
 ) -> std::thread::JoinHandle<Option<Asked>> {
     let kit = kit.clone();
     std::thread::spawn(move || {
-        let until = Instant::now() + Duration::from_secs(60);
+        let until = Instant::now() + Duration::from_secs(180);
         while Instant::now() < until {
             match requests::take(&kit).into_iter().next() {
                 Some(Taken::Asked(asked)) => {
@@ -381,10 +381,17 @@ fn launch_sh_says_when_atollo_is_not_open() {
 }
 
 /// The PowerShell 7 to run `launch.ps1` with on this host: `ATOLLO_TEST_PWSH`,
-/// or `pwsh` on the PATH; `None` without one (the test is skipped).
-fn host_pwsh() -> Option<PathBuf> {
+/// or `pwsh` on the PATH; `None` without one (the test is skipped). With it
+/// the turn of the tests that run it: one at a time, as two first starts of
+/// pwsh at once took over a minute on the CI's linux-arm64.
+fn host_pwsh() -> Option<(PathBuf, std::sync::MutexGuard<'static, ()>)> {
+    static TURN: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let turn = || {
+        TURN.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    };
     if let Some(p) = std::env::var_os("ATOLLO_TEST_PWSH") {
-        return Some(PathBuf::from(p));
+        return Some((PathBuf::from(p), turn()));
     }
     let ok = Command::new("pwsh")
         .args(["-NoProfile", "-Command", "exit 0"])
@@ -392,7 +399,7 @@ fn host_pwsh() -> Option<PathBuf> {
         .stderr(Stdio::null())
         .status()
         .is_ok_and(|s| s.success());
-    ok.then(|| PathBuf::from("pwsh"))
+    ok.then(|| (PathBuf::from("pwsh"), turn()))
 }
 
 /// `launch.ps1` for real: a forwarder's request with the words after `--`
@@ -400,7 +407,7 @@ fn host_pwsh() -> Option<PathBuf> {
 /// environment and its exit code; a refusal prints its text, exits 1.
 #[test]
 fn launch_ps1_forwards_and_refuses() {
-    let Some(pwsh) = host_pwsh() else {
+    let Some((pwsh, _turn)) = host_pwsh() else {
         eprintln!("no pwsh on this host: skipped");
         return;
     };
@@ -896,7 +903,7 @@ fn the_claude_extension_wrapper_asks_for_the_vms_claude() {
 /// The same through `launch.ps1` (`claude-extension.cmd`'s client).
 #[test]
 fn launch_ps1_asks_for_an_extensions_agent() {
-    let Some(pwsh) = host_pwsh() else {
+    let Some((pwsh, _turn)) = host_pwsh() else {
         eprintln!("no pwsh on this host: skipped");
         return;
     };
