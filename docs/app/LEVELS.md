@@ -851,6 +851,10 @@ ED extension anthropic.claude-code (only while agentsEnabled; section 10)
 
 Feasibility is **unverified** (Q2): path arguments of the PC inside the VM, the extension's own local connection, a non-TTY `sbx run`. Until a spike proves it, the extension is **disabled** in Atollo's editor (section 10).
 
+### 6.10 An agent typed in the project's VM terminal (decided by the user, 26/10/2026)
+
+A VM cannot ask the PC to open an agent's sandbox, so there is no forwarder inside a VM. The project's guest PATH has stand-ins `claude`, `codex`, `pi`, `agy` (in the read-only guest folder of §8.4) that print, translated: «Gli agenti si avviano dalla pagina del progetto, dall'editor, o scrivendo il loro nome in un terminale del PC nella cartella del progetto» and exit 1. They are absent from an agent's own placement (Pi and Antigravity running their build). Test: `an_agent_typed_in_the_vm_says_where_to_start_it`.
+
 ## 7. Agents disabled without the VM
 
 `agentsEnabled = (isolation availability == Vm)`. One function decides it: `levels::agents_enabled(&VmState) -> bool`; everything below reads it.
@@ -974,6 +978,29 @@ Banner text (stderr, one line, before the program):
 
 - profile.ps1 / bashrc, from `ATOLLO_LEVEL`: `PC · <terminal or "editor"> · <project or "nessun progetto"> · agenti: inoltrati alla VM del progetto se attiva`. The shell does not know the VM's state at every moment, so the banner does not say whether it is on; the forwarder says it when used **[assumption]**.
 - VM sessions (`start_terminal`, `launch` reply `banner`): `[Atollo] VM progetto: <sandbox> · <cartella nella VM>` and `[Atollo] Agente · VM: <agent> in <sandbox>`. Printed by the PC side before `sbx` starts, so it does not depend on the VM's shell; a prompt prefix inside the VM is not set (the image's `/etc/profile` may override `PS1`) **[unverified]**.
+
+### 8.4 `atollo` inside the VM: read only (decided by the user, 26/10/2026)
+
+Inside a sandbox, `atollo` tells where you are and what you have; it never commands the kit (the kit's command line installs, removes, changes versions, moves sign-ins and prints secrets such as `atollo secret github`: none of it is ever reachable from a VM).
+
+- **What it shows:** the level and the sandbox, the project, the tools with their versions (the same lines as the VM report, §8.1), the project's databases with their address in the VM (`host.docker.internal:<port>`) and user, never a password, and the PC's ports opened for this sandbox.
+- **How:** Atollo writes `info.json` into the sandbox's kit folder (`data/app/sandboxes/<sandbox>/`, never the project's folder) at every `prepare`; that folder is mounted read-only in the VM. A small POSIX script, `atollo`, first on the guest PATH, prints it (`atollo`, `atollo --json`); any other argument says that the kit is managed from the PC and exits 1.
+- **Never:** a call to the PC, a write, a secret. Tests: `the_vm_info_holds_no_secret` (no password, key or token field; database passwords absent), `the_vm_atollo_is_read_only` (the script has no network or write command and refuses other arguments), `the_vm_info_follows_the_report`.
+
+### 8.5 The project's VM: restart, make again, refresh (decided by the user, 26/10/2026)
+
+**Every sandbox, one per agent (decided by the user, 26/10/2026).** §8.1–§8.5 and §6.10 hold for each sandbox of a project, not only `atollo-p-`: Claude Code and Codex each have their own (`atollo-a-<agent>-<project>-<hash>`), and each gets its `info.json` and read-only `atollo` (level «Agente · VM», the agent's name, its sandbox), its own «Verifica strumenti», and the four actions. The panel lists the project's sandbox, then each agent's sandbox with its state; the CLI takes `--agent <id>` (`atollo vm <project> --agent claude --restart`), without it the project's sandbox. The agents' stand-ins (§6.10) are in every sandbox except where that agent itself runs. Tests: `every_sandbox_of_a_project_has_its_info`, `the_actions_take_the_agents_sandbox`.
+
+The «VM del progetto» panel (§8.1) has four actions, and the CLI on the PC the same ones:
+
+| Action | What it does | CLI |
+|---|---|---|
+| **Riavvia** | stops and starts the project's sandbox (`sbx stop`, then the start of §3.6) | `atollo vm <project> --restart` |
+| **Ricrea** | removes the sandbox and makes it again with the kit's current tools (`Vm::make_again`), after a confirmation that says what is lost (the VM's home, the images it pulled) and what stays (the project, its databases, the tools, the sign-ins kept by the kit) | `atollo vm <project> --recreate` (asks unless `--yes`) |
+| **Aggiorna strumenti** | runs `prepare` again: tools for the guest, project versions, databases, ports, `info.json`; no restart unless the kit of the sandbox changed | `atollo vm <project> --refresh` |
+| **Verifica strumenti** | §8.2 | `atollo vm <project> --check` |
+
+Every action goes through `decide` with the project terminal's origin (a refusal says why and how to fix it) and takes the sandbox's lock. Running sessions in the sandbox (terminals, actions, agents) are listed before «Riavvia» and «Ricrea», which stop them.
 
 ## 9. Antigravity
 

@@ -619,6 +619,10 @@ I diagrammi dei flussi sono in [LEVELS.md, 6](LEVELS.md#6-flows), uguali per le 
 - **6.8 `claude` scritto in un terminale sul PC (inoltro)**: in `data/kit/forward/` (scritti da `setup::kit_files`, al posto di `data/kit/no-agents`), per ogni comando di `Agent::commands()`: `<cmd>.ps1` (`& "$env:CP_DATA/kit/launch.ps1" -Origin forwarded -Agent <id> -From $env:ATOLLO_LEVEL -- @args`; PowerShell trova `.ps1` nel `PATH` prima di `.cmd` **[non verificato con pwsh 7 quando ci sono tutti e due; da provare]**), `<cmd>.cmd` (`pwsh … -File "%CP_DATA%\kit\launch.ps1" … -- %*`; argomenti con `"`, `%` o `^` possono cambiare: limite dichiarato, Q16), `<cmd>` per sh (`exec "$CP_DATA/kit/launch.sh" forwarded <id> "$ATOLLO_LEVEL" "$@"`). Nella cartella di un progetto con la VM: R12/R13, stesso terminale, ingressi e uscite passati; senza VM: R1, «Gli agenti partono solo nella VM e la VM non è attiva: <motivo>. <cosa fare>», uscita 1; fuori da un progetto: R8, uscita 1. Da una sessione di livello 2 nella VM non c'è inoltro (`data/kit` non è montata e le cartelle Linux degli agenti sono tolte): lì `claude` dà «command not found» della VM **[non verificato: se l'immagine `shell` di `sbx` porta la CLI di un agente]**.
 - **6.9 Estensione dell'editor (livello 3)**: Claude Code con `claudeCode.claudeProcessWrapper` = `data/kit/forward/claude-extension(.cmd|sh)`; l'estensione esegue `<involucro> <percorso-del-binario-incorporato> <suoi argomenti…>`; l'involucro toglie il primo argomento e poi fa come 6.8 con origine `editorExtension` → R12. Fattibilità **non verificata** (Q2): percorsi del PC negli argomenti, la connessione locale dell'estensione, `sbx run` senza TTY. Finché una prova non lo dimostra, l'estensione è **disattivata** nell'editor di Atollo (sezione 10).
 
+### 6.10 Un agente scritto nel terminale «VM progetto» (deciso dall'utente, 26/10/2026)
+
+Una VM non può chiedere al PC di aprire la sandbox di un agente, quindi nella VM non c'è inoltro. Il PATH della VM del progetto ha dei sostituti `claude`, `codex`, `pi`, `agy` (nella cartella in sola lettura del §8.4) che stampano «Gli agenti si avviano dalla pagina del progetto, dall'editor, o scrivendo il loro nome in un terminale del PC nella cartella del progetto» ed escono con 1. Non ci sono quando l'agente stesso gira lì (Pi e Antigravity con la loro build). Prova: `an_agent_typed_in_the_vm_says_where_to_start_it`.
+
 ## 7. Agenti disattivati senza VM
 
 `agentsEnabled = (disponibilità di isolation == Vm)`. Lo decide una sola funzione, `levels::agents_enabled(&VmState) -> bool`; tutto ciò che segue la legge.
@@ -679,6 +683,29 @@ Testo dell'intestazione (standard error, una riga, prima del programma):
 
 - profile.ps1 / bashrc, da `ATOLLO_LEVEL`: `PC · <terminale o "editor"> · <progetto o "nessun progetto"> · agenti: inoltrati alla VM del progetto se attiva`. La shell non conosce lo stato della VM in ogni momento, quindi l'intestazione non dice se è attiva **[ipotesi]**.
 - sessioni nella VM (`start_terminal`, `banner` della risposta di `launch`): `[Atollo] VM progetto: <sandbox> · <cartella nella VM>` e `[Atollo] Agente · VM: <agente> in <sandbox>`. La scrive il lato del PC prima che parta `sbx`, quindi non dipende dalla shell della VM; un prefisso nel prompt della VM non si imposta (il `/etc/profile` dell'immagine può cambiare `PS1`) **[non verificato]**.
+
+### 8.4 `atollo` nella VM: solo lettura (deciso dall'utente, 26/10/2026)
+
+Dentro una sandbox `atollo` dice dove sei e cosa hai; non comanda mai il kit (la riga di comando del kit installa, toglie, cambia versioni, sposta gli accessi e stampa segreti come `atollo secret github`: nulla di questo è mai raggiungibile da una VM).
+
+- **Cosa mostra:** livello e sandbox, progetto, strumenti con le versioni (le stesse righe del rapporto della VM, §8.1), i database del progetto con indirizzo nella VM (`host.docker.internal:<porta>`) e utente, mai la password, e le porte del PC aperte per questa sandbox.
+- **Come:** Atollo scrive `info.json` nella cartella del kit della sandbox (`data/app/sandboxes/<sandbox>/`, mai nella cartella del progetto) a ogni `prepare`; quella cartella è montata nella VM in sola lettura. Un piccolo script POSIX, `atollo`, primo nel PATH della VM, la stampa (`atollo`, `atollo --json`); ogni altro argomento dice che il kit si gestisce dal PC ed esce con 1.
+- **Mai:** una chiamata al PC, una scrittura, un segreto. Prove: `the_vm_info_holds_no_secret`, `the_vm_atollo_is_read_only`, `the_vm_info_follows_the_report`.
+
+### 8.5 La VM del progetto: riavvia, ricrea, aggiorna (deciso dall'utente, 26/10/2026)
+
+**Ogni sandbox, una per agente (deciso dall'utente, 26/10/2026).** I §8.1–§8.5 e il §6.10 valgono per ogni sandbox di un progetto, non solo per `atollo-p-`: Claude Code e Codex hanno ciascuno la propria (`atollo-a-<agente>-<progetto>-<hash>`), e ognuna ha il suo `info.json` e il suo `atollo` in sola lettura (livello «Agente · VM», nome dell'agente, la sua sandbox), la sua «Verifica strumenti» e le quattro azioni. Il riquadro elenca la sandbox del progetto, poi quella di ogni agente con il suo stato; la riga di comando accetta `--agent <id>` (`atollo vm <progetto> --agent claude --restart`), senza vale la sandbox del progetto. I sostituti degli agenti (§6.10) sono in ogni sandbox tranne dove gira quell'agente. Prove: `every_sandbox_of_a_project_has_its_info`, `the_actions_take_the_agents_sandbox`.
+
+Il riquadro «VM del progetto» (§8.1) ha quattro azioni, e la riga di comando sul PC le stesse:
+
+| Azione | Cosa fa | Riga di comando |
+|---|---|---|
+| **Riavvia** | ferma e riavvia la sandbox del progetto | `atollo vm <progetto> --restart` |
+| **Ricrea** | toglie la sandbox e la rifà con gli strumenti attuali del kit (`Vm::make_again`), dopo una conferma che dice cosa si perde (la home della VM, le immagini scaricate) e cosa resta (progetto, database, strumenti, accessi tenuti dal kit) | `atollo vm <progetto> --recreate` (chiede, salvo `--yes`) |
+| **Aggiorna strumenti** | rifà `prepare`: strumenti per la VM, versioni del progetto, database, porte, `info.json`; nessun riavvio se il kit della sandbox non è cambiato | `atollo vm <progetto> --refresh` |
+| **Verifica strumenti** | §8.2 | `atollo vm <progetto> --check` |
+
+Ogni azione passa da `decide` con l'origine del terminale del progetto (un rifiuto dice perché e come rimediare) e prende il blocco della sandbox. Le sessioni in corso nella sandbox (terminali, azioni, agenti) sono elencate prima di «Riavvia» e «Ricrea», che le fermano.
 
 ## 9. Antigravity
 
