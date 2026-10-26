@@ -104,7 +104,7 @@ The screenshot scripts read the browser preview: first `npm -w ui run dev` (`127
 
 Each test job writes the passed, failed and ignored tests to the run summary, with the names of the failed ones. On macOS all of `cargo test` runs: with tauri 2.12.1 the `test` feature (the fake runtime of `test\rust\main.rs`) compiles there too, so no separate feature is needed (with 2.12.0 `transparent` was missing). In a repository without ARM64 runners (private) the repository variable `ARM64_RUNNERS=off` removes the `linux-arm64` jobs, which would otherwise stay queued: `linux-arm64` drops out of the matrix's target list (the runner is derived from the target, without `include`, which GitHub applies after `exclude` and would put the removed target back).
 
-The CI builds and tests only the four systems Docker Sandboxes runs on (D-176): `win32-x64`, `darwin-arm64`, `linux-x64` and `linux-arm64`. There is no Windows ARM64 or Intel macOS job, build or release file.
+The CI builds and tests only the four systems Docker Sandboxes runs on (D-176): `win32-x64`, `darwin-arm64`, `linux-x64` and `linux-arm64`, with no job, build or release file for any other system.
 
 A test that only holds on Windows (paths with `\`, `cmd.exe`, `ping.exe`, junctions with `mklink /J`, the kit's `.exe` layout) carries `#[cfg_attr(not(windows), ignore = "<reason>")]`: on Windows it runs, elsewhere it counts among the ignored ones with the reason. A new test instead uses, when it can, pure functions with the target as a parameter (`Kit::at_target`, `fsx::join_rel` with `/`), so it holds for all four targets.
 
@@ -186,7 +186,7 @@ To be run before every release, with the release exe (`npm run build`), on a PC 
 - [ ] **Authenticated proxy and SSL inspection.** Settings › Network with a proxy and a PEM file: installation, editor extensions and agents work.
 - [ ] **No network.** The app and the editor start, download errors are readable, the update check fails without blocking anything.
 - [ ] **Forced close from Task Manager.** No `node.exe`, editor server, kit terminal (`OpenConsole.exe`, `pwsh.exe`) or project server is left.
-- [ ] **Unsupported system** (D-176). On Windows ARM64 (and on an Intel Mac) Atollo does not start: a message says that Docker Sandboxes does not run there, and the app closes.
+- [ ] **Unsupported system** (D-176). On a system that is not one of the four Atollo does not start: a message says that Docker Sandboxes does not run there, and the app closes.
 - [ ] **Moved R** (D-104). Kit with R on `D:`, then on `E:`: after startup `lib\R\etc\x64\Makeconf` has `LOCAL_SOFT` on the new folder and `install.packages(..., type="source")` compiles.
 - [ ] **macOS and Linux**: the “macOS and Linux” section below.
 
@@ -286,7 +286,7 @@ Sign-ins and package:
 Kit prepared on Windows for another system (at every release):
 - [ ] On Windows `Atollo.exe prepare --target linux-x64` (then `darwin-arm64`, `linux-arm64`) on an exFAT USB stick, with the app for that system copied next to it.
 - [ ] The “Platform” selector shows for that target what is pre-downloaded, what completes on first start and what is not available.
-- [ ] “Tools” › Overview › “Grid” (D-121, D-176): the four columns with readable names and “this PC”, “in emulation” (Rosetta 2 only) or “cannot run here”; on the prepared USB stick the target's cells say “pre-downloaded” or “completes on first start”, the unavailable ones the reason; a click opens the detail and “Show this system” changes “Platform”. With the app closed and reopened, “Platform” is still that system; once this PC's one is chosen, on the other system the page opens on its own.
+- [ ] “Tools” › Overview › “Grid” (D-121, D-176): the four columns with readable names and “this PC” or “cannot run here”; on the prepared USB stick the target's cells say “pre-downloaded” or “completes on first start”, the unavailable ones the reason; a click opens the detail and “Show this system” changes “Platform”. With the app closed and reopened, “Platform” is still that system; once this PC's one is chosen, on the other system the page opens on its own.
 - [ ] On the other system: first start from the USB stick, installations from `.bootstrap` completed (Rust, Git from dugite-native, R and the conda components, Android, pnpm), no new download for what was already downloaded.
 - [ ] Back on Windows: the kit opens as before; `data/apps/win32-x64` and the Windows settings are intact, the choice of components has not changed.
 - [ ] Same project opened on the two systems: the project's settings, ports and databases are shared (`data/projects/<p>`).

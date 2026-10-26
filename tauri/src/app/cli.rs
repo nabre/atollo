@@ -425,8 +425,7 @@ pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Resul
         } else {
             "[ ]"
         };
-        let unavailable =
-            crate::router::availability::unavailable_message_on_host(c, kit.target(), lang);
+        let unavailable = crate::router::availability::unavailable_message(c, kit.target(), lang);
         let state = if let Some(why) = unavailable {
             why
         } else if c.is_installed(kit) {

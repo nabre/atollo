@@ -31,13 +31,13 @@ fn sqlite_and_mongodb_across_targets() {
     use crate::kit::Target;
 
     let page = format!(
-        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-osx-x64-3540000.zip,123,{m}\n\
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-osx-arm64-3540000.zip,123,{m}\n\
              PRODUCT,3.54.0,2026/sqlite-tools-linux-x64-3540000.zip,456,{l}\n-->",
         m = "b".repeat(64),
         l = "c".repeat(64)
     );
-    let (_, osx_path, osx_sha) = sqlite_tools_for(&page, "osx", "x64").unwrap();
-    assert_eq!(osx_path, "2026/sqlite-tools-osx-x64-3540000.zip");
+    let (_, osx_path, osx_sha) = sqlite_tools_for(&page, "osx", "arm64").unwrap();
+    assert_eq!(osx_path, "2026/sqlite-tools-osx-arm64-3540000.zip");
     assert_eq!(osx_sha, "b".repeat(64));
     let (_, lin_path, lin_sha) = sqlite_tools_for(&page, "linux", "x64").unwrap();
     assert_eq!(lin_path, "2026/sqlite-tools-linux-x64-3540000.zip");
@@ -67,7 +67,6 @@ fn sqlite_and_mongodb_across_targets() {
 fn mongosh_asset_per_target() {
     use crate::kit::Target;
 
-    let mongodb = crate::setup::Catalog::get().find("mongodb").unwrap();
     let names = [
         (Target::WIN32_X64, "mongosh-2.5.9-win32-x64.zip"),
         (Target::DARWIN_ARM64, "mongosh-2.5.9-darwin-arm64.zip"),
@@ -75,8 +74,7 @@ fn mongosh_asset_per_target() {
         (Target::LINUX_ARM64, "mongosh-2.5.9-linux-arm64.tgz"),
     ];
     for (target, name) in names {
-        let download = crate::router::target::effective_target(target, mongodb);
-        let (re, kind) = mongosh_asset_pattern(download);
+        let (re, kind) = mongosh_asset_pattern(target);
         let re = pattern(re).unwrap();
         assert!(re.is_match(name), "{target}: {name}");
         for (other, other_name) in names {
@@ -86,13 +84,6 @@ fn mongosh_asset_per_target() {
         }
         let tgz = name.ends_with(".tgz");
         assert_eq!(kind == Kind::TarGz, tgz, "{target}");
-        // Never the builds of Windows ARM64 or an Intel Mac (D-176).
-        for removed in [
-            "mongosh-2.5.9-win32-arm64.zip",
-            "mongosh-2.5.9-darwin-x64.zip",
-        ] {
-            assert!(!re.is_match(removed), "{target} took {removed}");
-        }
     }
 }
 

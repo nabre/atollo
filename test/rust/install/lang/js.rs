@@ -7,9 +7,6 @@ use super::*;
 fn bun_asset_per_target_and_cpu() {
     let names = [
         "bun-darwin-aarch64.zip",
-        "bun-darwin-x64-baseline.zip",
-        "bun-darwin-x64.zip",
-        "bun-darwin-x64-baseline-profile.zip",
         "bun-linux-aarch64.zip",
         "bun-linux-aarch64-musl.zip",
         "bun-linux-x64-android-baseline.zip",

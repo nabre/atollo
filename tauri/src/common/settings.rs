@@ -280,8 +280,8 @@ impl Settings {
 }
 
 /// `tools_target` as read from the file, kept only when it is a supported
-/// system: one an older kit saved (`win32-arm64`, `darwin-x64`, removed by
-/// D-176) reads as this PC's, so the Settings page can still save.
+/// system (D-176): any other one an older kit saved reads as this PC's, so
+/// the Settings page can still save.
 pub(crate) fn known_tools_target(target: Option<String>) -> Option<String> {
     target.filter(|t| crate::kit::Target::parse(t).is_some())
 }

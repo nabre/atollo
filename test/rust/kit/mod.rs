@@ -245,6 +245,15 @@ fn apps_folder_per_platform() {
     }
 }
 
+/// Every pair of system and processor outside the four.
+fn unsupported_pairs() -> Vec<Target> {
+    [Os::Win32, Os::Darwin, Os::Linux]
+        .into_iter()
+        .flat_map(|os| [Arch::X64, Arch::Arm64].map(|arch| Target::new(os, arch)))
+        .filter(|t| !Target::ALL.contains(t))
+        .collect()
+}
+
 /// D-176: the systems Docker builds Docker Sandboxes for, and only those.
 #[test]
 fn the_four_supported_targets() {
@@ -256,45 +265,48 @@ fn the_four_supported_targets() {
         assert!(t.is_supported(), "{t}");
         assert_eq!(Target::parse(t.as_str()), Some(t));
     }
-    let windows_arm = Target::new(Os::Win32, Arch::Arm64);
-    let intel_mac = Target::new(Os::Darwin, Arch::X64);
-    for removed in [windows_arm, intel_mac] {
-        assert!(!removed.is_supported(), "{removed}");
+    let others = unsupported_pairs();
+    assert_eq!(others.len(), 2);
+    for t in others {
+        assert!(!t.is_supported(), "{t:?}");
+        assert_eq!(t.as_str(), "unsupported");
+        assert_eq!(Target::parse(t.as_str()), None);
     }
-    // A target an older kit saved reads as no target: the caller takes the host's.
-    for name in ["win32-arm64", "darwin-x64", " win32-arm64 ", "", "linux"] {
+    // A name that is not one of the four reads as no target: the caller
+    // takes the host's.
+    for name in ["beos-x64", "unsupported", "", "linux"] {
         assert_eq!(Target::parse(name), None, "{name:?}");
     }
     assert_eq!(Target::parse(" linux-arm64 "), Some(Target::LINUX_ARM64));
 }
 
-/// Atollo stops at start on Windows on Arm and on an Intel Mac, saying why
-/// and naming the system; it starts on the four.
+/// Atollo stops at start on any other system, saying why without naming
+/// it; it starts on the four.
 #[test]
 fn an_unsupported_host_stops_the_app() {
     for t in Target::ALL {
         assert_eq!(unsupported_host(t, "en"), None, "{t}");
     }
-    for (host, name) in [
-        (Target::new(Os::Win32, Arch::Arm64), "win32-arm64"),
-        (Target::new(Os::Darwin, Arch::X64), "darwin-x64"),
-    ] {
+    for host in unsupported_pairs() {
         let it = unsupported_host(host, "it").unwrap();
-        assert!(it.contains("Docker Sandboxes") && it.contains(name), "{it}");
+        assert!(it.contains("Docker Sandboxes"), "{it}");
         let en = unsupported_host(host, "en").unwrap();
-        assert!(en.starts_with("Atollo needs Docker Sandboxes"), "{en}");
-        assert!(en.contains(&format!("({name})")), "{en}");
+        assert!(
+            en.starts_with("Atollo works only on the systems Docker Sandboxes runs on"),
+            "{en}"
+        );
+        assert!(!en.contains(host.as_str()), "{en}");
         assert_ne!(it, en);
     }
 }
 
-/// A settings.json of an older kit with the Tools page on a removed system
-/// reads as this PC's, so the Settings page can still save.
+/// A settings.json of an older kit with the Tools page on a system that is
+/// not one of the four reads as this PC's, so the Settings page can still
+/// save.
 #[test]
-fn a_removed_tools_target_reads_as_none() {
+fn an_unknown_tools_target_reads_as_none() {
     use crate::common::settings::known_tools_target;
-    assert_eq!(known_tools_target(Some("win32-arm64".into())), None);
-    assert_eq!(known_tools_target(Some("darwin-x64".into())), None);
+    assert_eq!(known_tools_target(Some("beos-x64".into())), None);
     assert_eq!(
         known_tools_target(Some("linux-arm64".into())).as_deref(),
         Some("linux-arm64")

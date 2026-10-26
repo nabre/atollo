@@ -2,10 +2,8 @@
 //! OS/architecture targets (`win32-x64`, `darwin-arm64`, `linux-x64`,
 //! `linux-arm64`, D-176).
 //!
-//! The rules are pure functions of the host, the target and (on a Mac with
-//! Apple Silicon) whether Rosetta 2 is installed, so the tests cover every
-//! pair from any system; only `platform::host::rosetta_present` asks the
-//! machine.
+//! The rules are pure functions of the host and the target, so the tests
+//! cover every pair from any system.
 
 use serde::Serialize;
 
@@ -21,77 +19,24 @@ pub struct TargetProfile {
     pub arch: Arch,
     pub is_host: bool,
     pub executable_on_host: bool,
-    pub emulated_on_host: bool,
 }
 
-/// True when binaries of `target` can be executed on the current host OS and CPU
-/// (either natively, or the x64 build of a component with Rosetta 2 on
-/// `darwin-arm64`, [`effective_target`]).
+/// True when binaries of `target` can be executed on the current host OS and CPU.
 pub fn can_execute_on_host(target: Target) -> bool {
-    let host = Target::detect();
-    can_execute_between(host, target, host_rosetta(host, target))
+    can_execute_between(Target::detect(), target)
 }
 
-/// Pure capability rule between `host` and `target`: the same system, and
-/// the same CPU, or x64 programs on a Mac with Apple silicon when Rosetta 2
-/// is there (`rosetta`). Linux on ARM64 has no such layer.
-pub const fn can_execute_between(host: Target, target: Target, rosetta: bool) -> bool {
-    if host.os as u8 != target.os as u8 {
-        return false;
-    }
-    if host.arch as u8 == target.arch as u8 {
-        return true;
-    }
-    match (host.os, host.arch, target.arch) {
-        (Os::Darwin, Arch::Arm64, Arch::X64) => rosetta,
-        _ => false,
-    }
-}
-
-/// Whether Rosetta 2 matters for running `target` on `host`, and is there:
-/// probed only on a Mac with Apple silicon asked about an x64 build.
-fn host_rosetta(host: Target, target: Target) -> bool {
-    host == Target::DARWIN_ARM64
-        && target == Target::DARWIN_ARM64.with_arch(Arch::X64)
-        && crate::platform::host::rosetta_present()
-}
-
-/// Pure rule: `component` runs on `target` only as an x64 build under
-/// Rosetta 2 (`rosetta` in the catalog), this host is that Mac, and
-/// Rosetta is not installed (`rosetta`). A kit prepared for `darwin-arm64`
-/// from another system cannot know: there it stays available, and the Mac
-/// says it when the kit starts there.
-pub fn rosetta_missing(host: Target, target: Target, component: &Component, rosetta: bool) -> bool {
-    host == target && target == Target::DARWIN_ARM64 && component.is_emulated_on(target) && !rosetta
-}
-
-/// [`rosetta_missing`] on this host (Rosetta probed only when it matters).
-pub fn rosetta_missing_on_host(target: Target, component: &Component) -> bool {
-    let host = Target::detect();
-    rosetta_missing(host, target, component, false) && !crate::platform::host::rosetta_present()
+/// Pure capability rule between `host` and `target`: the same system on the
+/// same CPU. No translation layer is used, so an ARM64 Linux or Mac does
+/// not run x64 programs.
+pub fn can_execute_between(host: Target, target: Target) -> bool {
+    host == target
 }
 
 /// `component` can be installed for `target` from this host: the catalog
-/// has a build for it ([`Component::is_available_on`]) and, for an x64
-/// build on a Mac with Apple Silicon, Rosetta 2 is there.
+/// has a build for it ([`Component::is_available_on`]).
 pub fn installable_on(component: &Component, target: Target) -> bool {
-    component.is_available_on(target) && !rosetta_missing_on_host(target, component)
-}
-
-/// True when `target` runs on `host` through binary translation (Rosetta 2).
-pub fn is_emulated_on_host(target: Target) -> bool {
-    let host = Target::detect();
-    can_execute_on_host(target) && host.arch != target.arch
-}
-
-/// Effective [`Target`] used when downloading `component` for `target`:
-/// the x64 build where it runs emulated (`rosetta` on `darwin-arm64`).
-pub fn effective_target(target: Target, component: &Component) -> Target {
-    if component.is_emulated_on(target) {
-        target.with_arch(Arch::X64)
-    } else {
-        target
-    }
+    component.is_available_on(target)
 }
 
 /// Capability profile of `target` on the current host.
@@ -102,7 +47,6 @@ pub fn profile(target: Target) -> TargetProfile {
         arch: target.arch,
         is_host: Target::detect() == target,
         executable_on_host: can_execute_on_host(target),
-        emulated_on_host: is_emulated_on_host(target),
     }
 }
 

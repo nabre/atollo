@@ -14,14 +14,9 @@ pub fn os_release() -> Option<String> {
         .find_map(|p| std::fs::read_to_string(p).ok())
 }
 
-/// No Rosetta on Linux.
 /// No Xcode here.
 pub fn xcode_tools() -> Option<String> {
     None
-}
-
-pub fn rosetta_present() -> bool {
-    false
 }
 
 /// `$APPIMAGE`, when `exe` is inside the image's mount (`$APPDIR`).

@@ -74,9 +74,6 @@ pub struct Status {
     pub installed: bool,
     pub running: bool,
     pub port: Option<u16>,
-    /// The server's x64 build runs with Rosetta 2 (`rosetta` in the
-    /// catalog): never today.
-    pub emulated: bool,
     /// Recommended extensions being installed in the background.
     pub extensions: ext::ExtState,
 }
@@ -151,11 +148,6 @@ impl Editor {
             installed: is_installed(&self.kit),
             running: alive,
             port: guard.as_ref().map(|s| s.port),
-            // The x64 build only where the catalog says so (`rosetta`):
-            // native everywhere today.
-            emulated: crate::setup::Catalog::get()
-                .find("vscodium-server")
-                .is_some_and(|c| c.is_emulated_on(self.kit.target())),
             extensions: self
                 .extensions
                 .lock()

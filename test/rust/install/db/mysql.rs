@@ -1,17 +1,6 @@
 use super::*;
 use crate::install::Dest;
 
-/// The download target of MySQL on each kit target: native everywhere
-/// unless the catalog runs it with Rosetta 2.
-fn mysql_download_target(t: Target) -> Target {
-    let c = crate::setup::Catalog::get().find("mysql").unwrap();
-    if c.is_emulated_on(t) {
-        t.with_arch(Arch::X64)
-    } else {
-        t
-    }
-}
-
 /// The lines of the catalog (8.4 and 9.7 LTS), each with its version and a
 /// SHA-256 for every download target; asset names and URLs per target.
 #[test]
@@ -38,7 +27,8 @@ fn mysql_pinned_lines_on_every_target() {
         ),
     ];
     for (t, file, kind) in files {
-        let dl = mysql_download_target(t);
+        // The native build everywhere.
+        let dl = t;
         assert_eq!(mysql_lines_for(pins, dl), ["9.7", "8.4"], "{}", t.as_str());
         let r = mysql_release_for(pins, dl, "9.7").unwrap();
         assert_eq!(r.version, "9.7.2");

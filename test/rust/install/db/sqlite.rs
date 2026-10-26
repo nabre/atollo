@@ -7,7 +7,7 @@ use super::*;
 fn sqlite_tools_for_each_arch() {
     let page = format!(
         "<!--\nPRODUCT,3.54.0,2026/sqlite-dll-win-x64-3540000.zip,1450308,{d}\n\
-             PRODUCT,3.54.0,2026/sqlite-tools-win-arm64-3540000.zip,5619849,{a}\n\
+             PRODUCT,3.54.0,2026/sqlite-tools-linux-arm64-3540000.zip,5619849,{a}\n\
              PRODUCT,3.54.0,2026/sqlite-tools-win-x64-3540000.zip,6982216,{x}\n-->",
         d = "d".repeat(64),
         a = "a".repeat(64),
@@ -17,7 +17,10 @@ fn sqlite_tools_for_each_arch() {
     assert_eq!(v, "3.54.0");
     assert_eq!(path, "2026/sqlite-tools-win-x64-3540000.zip");
     assert_eq!(sha, "c".repeat(64));
-    assert_eq!(sqlite_tools(&page, "arm64").unwrap().2, "a".repeat(64));
+    assert_eq!(
+        sqlite_tools_for(&page, "linux", "arm64").unwrap().2,
+        "a".repeat(64)
+    );
 }
 
 /// No fallback to x64 for SQLite (D-108): the build of the architecture
@@ -25,18 +28,18 @@ fn sqlite_tools_for_each_arch() {
 #[test]
 fn sqlite_never_falls_back_to_x64() {
     let both = format!(
-        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-win-x64-3540000.zip,456,{c}\nPRODUCT,3.54.0,2026/sqlite-tools-win-arm64-3540000.zip,457,{a}\n-->",
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-linux-x64-3540000.zip,456,{c}\nPRODUCT,3.54.0,2026/sqlite-tools-linux-arm64-3540000.zip,457,{a}\n-->",
         c = "c".repeat(64),
         a = "a".repeat(64)
     );
-    let (_, path, _) = sqlite_tools_for(&both, "win", "arm64").unwrap();
-    assert_eq!(path, "2026/sqlite-tools-win-arm64-3540000.zip");
-    let x64_only = format!(
-        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-win-x64-3540000.zip,456,{c}\n-->",
+    let (_, path, _) = sqlite_tools_for(&both, "linux", "arm64").unwrap();
+    assert_eq!(path, "2026/sqlite-tools-linux-arm64-3540000.zip");
+    let x64_page = format!(
+        "<!--\nPRODUCT,3.54.0,2026/sqlite-tools-linux-x64-3540000.zip,456,{c}\n-->",
         c = "c".repeat(64)
     );
-    assert!(sqlite_tools_for(&x64_only, "win", "arm64").is_err());
-    assert!(sqlite_tools_for(&x64_only, "linux", "arm64").is_err());
+    assert!(sqlite_tools_for(&x64_page, "linux", "arm64").is_err());
+    assert!(sqlite_tools_for(&x64_page, "win", "x64").is_err());
 }
 
 /// D-112: SQLite on Linux ARM64 from conda-forge (sqlite 3.54.x for

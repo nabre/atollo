@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the kit's relocatable Apache httpd for one macOS or Linux target
 # (DECISIONS.md D-116): bash build.sh <target> <build> <out-dir>
-#   target  linux-x64 | linux-arm64 | darwin-arm64 (the host's own; D-176: no Intel macOS)
+#   target  linux-x64 | linux-arm64 | darwin-arm64 (the host's own; D-176)
 #   build   the kit's build number of this httpd version (1, 2, ...)
 # Writes <out-dir>/httpd-<version>-<build>-<target>.tar.gz and its .sha256.
 #

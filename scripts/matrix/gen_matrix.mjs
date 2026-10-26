@@ -6,7 +6,7 @@
 //   (default: this repository and docs/app/TOOLS-MATRIX.html)
 //
 // The page is in English, as the documentation. Everything comes from the
-// code: availability, Rosetta 2, needs and sizes from
+// code: availability, needs and sizes from
 // tauri/catalog/components.json with the rules of site/matrix.mjs (`status`,
 // which follows Component::is_available_on of tauri/src/setup/catalog.rs:
 // one copy for the site and this page), its Italian reasons in English from
@@ -64,7 +64,6 @@ const byid = Object.fromEntries(cat.map((c) => [c.id, c]));
 const WHY = {
   notBuilt: (c) => SRC[c.id].notOffered ?? "the catalog does not offer it on this system",
   unavailable: en,
-  rosetta: "x64 build with Rosetta 2",
   native: "native build",
   needs: (name) => `needs ${name}, not available here`,
 };
@@ -92,11 +91,6 @@ function where(list) {
 
 // Notes, from the same catalog.
 const notes = [];
-const rosetta = cat.filter((c) => c.rosetta).map((c) => c.id);
-notes.push(
-  "<b>macOS Apple Silicon</b>: " +
-    (rosetta.length ? `${esc(names(rosetta))} with Rosetta 2.` : "all native, no component needs Rosetta 2."),
-);
 for (const c of cat) {
   for (const [t, why] of Object.entries(c.unavailable ?? {})) {
     notes.push(`<b>${esc(c.name)}</b> on ${where([t])}: ${esc(en(why))}.`);
@@ -132,17 +126,17 @@ if (RETIRED.length) {
 }
 notes.push(
   "Source of the data: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, " +
-    "<code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>, " +
+    "<code>needs</code>, <code>needsByTarget</code>, " +
     "<code>mb</code>) with the logic of <code>Component::is_available_on</code>; sources and non-relocatable components from " +
     "<code>scripts/matrix/sources.json</code>, checked against the installers by <code>cargo test</code>.",
 );
 const NOTES = notes.map((n) => `  <li>${n}</li>`).join("\n");
 
-const LABEL = { ok: "Native", emu: "Rosetta 2", no: "Not available", dep: "Blocked" };
-const ICON = { ok: "●", emu: "◐", no: "○", dep: "◌" };
+const LABEL = { ok: "Native", no: "Not available", dep: "Blocked" };
+const ICON = { ok: "●", no: "○", dep: "◌" };
 
 const rows = [];
-const counts = Object.fromEntries(TARGETS.map(([t]) => [t, { ok: 0, emu: 0, no: 0, dep: 0 }]));
+const counts = Object.fromEntries(TARGETS.map(([t]) => [t, { ok: 0, no: 0, dep: 0 }]));
 const groupOrder = ["required", "app", "agents", "ai", "languages", "databases"];
 for (const g of groupOrder) {
   const items = cat.filter((c) => c.group === g);
@@ -159,7 +153,7 @@ for (const g of groupOrder) {
         tips.push("here it also needs " + names(ndeps));
         extra += '<i class="tag">+dep</i>';
       }
-      if ((k === "ok" || k === "emu") && nonreloc(cid, t)) {
+      if (k === "ok" && nonreloc(cid, t)) {
         tips.push("conda environment, not relocatable: created again from the kept packages if the kit changes folder (D-92, D-118)");
         extra += '<i class="tag">conda</i>';
       }
@@ -186,12 +180,11 @@ const summary = TARGETS.map(
   ([t, os, ar]) =>
     `<div class="card"><div class="cos">${os} <em>${ar}</em></div><code>${t}</code>` +
     `<div class="bar">` +
-    ["ok", "emu", "dep", "no"]
+    ["ok", "dep", "no"]
       .filter((k) => counts[t][k])
       .map((k) => `<span class="b-${k}" style="flex:${counts[t][k]}"></span>`)
       .join("") +
     `</div><div class="nums"><span class="c-ok">${counts[t].ok} native</span>` +
-    `<span class="c-emu">${counts[t].emu} Rosetta 2</span>` +
     `<span class="c-no">${counts[t].no + counts[t].dep} missing</span></div></div>`,
 ).join("");
 const page = `<!doctype html>
@@ -200,21 +193,21 @@ const page = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atollo tools matrix by system</title>
-<meta name="description" content="Every component of Atollo's catalog on the systems of Docker Sandboxes (Windows x64, macOS Apple Silicon, Linux x64 and ARM64): native, with Rosetta 2 or not available, with its source.">
+<meta name="description" content="Every component of Atollo's catalog on the systems of Docker Sandboxes (Windows x64, macOS Apple Silicon, Linux x64 and ARM64): native or not available, with its source.">
 <link rel="canonical" href="https://nabre.github.io/atollo/#tools">
 <style>
 :root {
   --bg:#f7f7f5; --panel:#fff; --ink:#1d1f23; --mute:#6b7079; --line:#e3e3df; --head:#efefeb;
-  --ok:#1f7a4d; --ok-bg:#e3f3ea; --emu:#9a5b00; --emu-bg:#fbefd9; --no:#8a8f98; --no-bg:#f0f0ee;
+  --ok:#1f7a4d; --ok-bg:#e3f3ea; --no:#8a8f98; --no-bg:#f0f0ee;
   --dep:#a3364a; --dep-bg:#f8e4e8; --accent:#2f5bd3;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg:#141518; --panel:#1c1d21; --ink:#e6e6e3; --mute:#9a9ea6; --line:#2d2f35; --head:#23252a;
-  --ok:#5fd39a; --ok-bg:#163326; --emu:#f0b45a; --emu-bg:#3a2a12; --no:#8a8f98; --no-bg:#24262b;
+  --ok:#5fd39a; --ok-bg:#163326; --no:#8a8f98; --no-bg:#24262b;
   --dep:#f08a9c; --dep-bg:#3b1d24; --accent:#7f9cff; } }
 :root[data-theme="dark"] {
   --bg:#141518; --panel:#1c1d21; --ink:#e6e6e3; --mute:#9a9ea6; --line:#2d2f35; --head:#23252a;
-  --ok:#5fd39a; --ok-bg:#163326; --emu:#f0b45a; --emu-bg:#3a2a12; --no:#8a8f98; --no-bg:#24262b;
+  --ok:#5fd39a; --ok-bg:#163326; --no:#8a8f98; --no-bg:#24262b;
   --dep:#f08a9c; --dep-bg:#3b1d24; --accent:#7f9cff; }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
@@ -226,9 +219,9 @@ code { font:12px ui-monospace,Consolas,monospace; color:var(--mute); }
 .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
 .cos { font-weight:600; } .cos em { font-style:normal; color:var(--mute); font-weight:500; }
 .bar { display:flex; height:8px; border-radius:4px; overflow:hidden; margin:10px 0 6px; gap:2px; }
-.b-ok { background:var(--ok); } .b-emu { background:var(--emu); } .b-no { background:var(--no); opacity:.5; } .b-dep { background:var(--dep); }
+.b-ok { background:var(--ok); } .b-no { background:var(--no); opacity:.5; } .b-dep { background:var(--dep); }
 .nums { display:flex; gap:10px; font-size:12px; flex-wrap:wrap; }
-.c-ok { color:var(--ok); } .c-emu { color:var(--emu); } .c-no { color:var(--mute); }
+.c-ok { color:var(--ok); } .c-no { color:var(--mute); }
 .tools { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
 .tools input { flex:1 1 220px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); font:inherit; }
 .tools button { padding:7px 12px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); cursor:pointer; font:inherit; }
@@ -247,7 +240,6 @@ td[class^="s-"] { text-align:center; white-space:nowrap; cursor:help; }
 .pill { display:inline-flex; gap:5px; align-items:center; padding:2px 8px; border-radius:999px; font-size:12px; }
 .pill b { font-weight:400; }
 .s-ok .pill { background:var(--ok-bg); color:var(--ok); }
-.s-emu .pill { background:var(--emu-bg); color:var(--emu); }
 .s-no .pill { background:var(--no-bg); color:var(--no); }
 .s-dep .pill { background:var(--dep-bg); color:var(--dep); }
 .tag { display:inline-block; font-style:normal; font-size:10px; margin-left:4px; padding:0 5px; border:1px solid var(--line); border-radius:4px; color:var(--mute); }
@@ -269,7 +261,6 @@ tr.hide { display:none; }
 </div>
 <div class="legend">
   <span>● <b style="color:var(--ok)">Native</b>: a build for the architecture</span>
-  <span>◐ <b style="color:var(--emu)">Rosetta 2</b>: x64 build on macOS Apple Silicon</span>
   <span>◌ <b style="color:var(--dep)">Blocked</b>: a dependency is missing on that target</span>
   <span>○ Not available</span>
   <span><i class="tag">+dep</i> one more dependency on that target</span>
@@ -314,5 +305,5 @@ document.querySelectorAll('.tools button').forEach(b => b.addEventListener('clic
 writeFileSync(out, page);
 for (const [t] of TARGETS) {
   const c = counts[t];
-  console.log(t, `{'ok': ${c.ok}, 'emu': ${c.emu}, 'no': ${c.no}, 'dep': ${c.dep}}`);
+  console.log(t, `{'ok': ${c.ok}, 'no': ${c.no}, 'dep': ${c.dep}}`);
 }

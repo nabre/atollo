@@ -142,7 +142,6 @@ export function useRetryFocus<E extends HTMLElement>(retry: () => Promise<boolea
 export function editorHint(status: EditorStatus | null): string | undefined {
   if (!status) return undefined;
   if (!status.installed) return t("L'editor non è installato: installalo da Strumenti.");
-  if (status.emulated) return t("Su questo Mac l'editor gira in emulazione x64 con Rosetta 2: può essere più lento.");
   return undefined;
 }
 

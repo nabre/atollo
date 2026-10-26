@@ -1,17 +1,14 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch, Os, Target};
 
-/// Every component of the catalog has a native build on the four targets
-/// (none is `rosetta` today): the «x64» mark is nowhere, R and PHP are
-/// available on Windows.
+/// R and PHP are available on Windows.
 #[test]
-fn nothing_is_emulated_on_the_four_targets() {
+fn r_and_php_are_available_on_windows() {
     let tmp = TempDir::new("cmd-comps");
     for target in Target::ALL {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
         let infos = component_infos(&kit, "it");
-        assert!(infos.iter().all(|c| !c.x64_only), "{target}");
         if target.is_windows() {
             for id in ["r", "php"] {
                 let c = infos.iter().find(|c| c.id == id).unwrap();
@@ -37,9 +34,6 @@ fn unavailable_for_the_system_is_not_arm64() {
         assert!(apache.available && apache.unavailable_reason.is_none());
         let python = infos.iter().find(|c| c.id == "python").unwrap();
         assert_eq!(python.unavailable_reason, None);
-        // Native on macOS and Linux: no «x64» mark.
-        let php = infos.iter().find(|c| c.id == "php").unwrap();
-        assert!(!php.x64_only, "{target:?}");
     }
 }
 
@@ -291,10 +285,9 @@ fn tools_target_is_remembered() {
     save_tools_target(&kit, None).unwrap();
     assert_eq!(Settings::load(&kit).settings.tools_target, None);
 
-    // A value written by hand that the app does not know is not chosen, nor
-    // one of a system removed by D-176: it reads as this PC's, and the
-    // Settings page can still save.
-    for unknown in ["beos-x64", "win32-arm64", "darwin-x64"] {
+    // A value written by hand that is not one of the four is not chosen
+    // (D-176): it reads as this PC's, and the Settings page can still save.
+    for unknown in ["beos-x64", "unsupported"] {
         let text = format!(r#"{{"toolsTarget":"{unknown}","lang":"fr"}}"#);
         std::fs::write(kit.settings_file(), text).unwrap();
         assert_eq!(target_grid(&kit, "en", None).chosen, None, "{unknown}");

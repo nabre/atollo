@@ -55,18 +55,13 @@ pub(crate) fn check_key_for(
     Ok(())
 }
 
-/// Effective [`crate::kit::Target`] for downloading `component`: its x64
-/// build where it runs with Rosetta 2 (`rosetta` on `darwin-arm64`).
-pub(super) fn target_of(ctx: &Ctx, component: &Component) -> crate::kit::Target {
-    let t = ctx.kit.target();
-    if component.is_emulated_on(t) {
-        t.with_arch(crate::kit::Arch::X64)
-    } else {
-        t
-    }
+/// [`crate::kit::Target`] for downloading a component: the kit's own, since
+/// every component is installed with its native build.
+pub(super) fn target_of(ctx: &Ctx, _component: &Component) -> crate::kit::Target {
+    ctx.kit.target()
 }
 
-/// `x64` or `arm64` as used by most download names, honouring `rosetta` on macOS.
+/// `x64` or `arm64` as used by most download names.
 pub(super) fn arch_of(ctx: &Ctx, component: &Component) -> &'static str {
     target_of(ctx, component).arch.as_str()
 }

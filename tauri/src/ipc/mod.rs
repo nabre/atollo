@@ -162,11 +162,11 @@ fn ensure<R: Runtime>(
     let catalog = Catalog::get();
     let target = kit.target();
     let needed = with_needs(catalog, wanted, target);
-    // With the catalog's reason (Android, SQLite on Linux ARM64) or Rosetta 2
-    // missing; the same sentences as before otherwise.
+    // With the catalog's reason (Android, SQLite on Linux ARM64); the same
+    // sentences as before otherwise.
     if let Some(msg) = needed
         .iter()
-        .find_map(|c| crate::router::availability::unavailable_message_on_host(c, target, lang))
+        .find_map(|c| crate::router::availability::unavailable_message(c, target, lang))
     {
         return Err(msg.into());
     }

@@ -50,9 +50,7 @@ fn antigravity_download_by_url() {
 fn pi_archive_per_target() {
     let names = [
         "pi-windows-x64.zip",
-        "pi-windows-arm64.zip",
         "pi-darwin-arm64.tar.gz",
-        "pi-darwin-x64.tar.gz",
         "pi-linux-x64.tar.gz",
         "pi-linux-arm64.tar.gz",
         "pi-1.3.0-source.tar.gz",

@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use super::bins::exe_name;
-use super::target::{can_execute_on_host, effective_target};
+use super::target::can_execute_on_host;
 use crate::install::{self, Ctx, Dest, Installer, Progress, Release};
 use crate::kit::{Kit, Target};
 use crate::net::archive::{self, InUse};
@@ -162,15 +162,12 @@ pub fn should_stage(ctx: &Ctx, inst: &dyn Installer, component: &Component) -> b
 /// finishes on the first start on that system (the grid's "completes on
 /// first start").
 pub fn stages_for(inst: &dyn Installer, component: &Component, target: Target) -> bool {
-    let effective = effective_target(target, component);
-    if !inst.custom(effective) {
+    if !inst.custom(target) {
         return false;
     }
     // Android's sdkmanager runs with the kit's own Java, built for `target`:
-    // it waits for that system.
-    !can_execute_on_host(effective)
-        || (component.id == "rust" && target != Target::detect())
-        || (component.id == "android" && !can_execute_on_host(target))
+    // like the others it waits for that system.
+    !can_execute_on_host(target) || (component.id == "rust" && target != Target::detect())
 }
 
 /// Returns `true` when `component`'s bootstrap has been pre-downloaded for `kit`

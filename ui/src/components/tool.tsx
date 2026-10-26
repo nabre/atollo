@@ -119,15 +119,6 @@ export function ToolPage({
           <span key="size" className="text-vsc-desc">
             {sizeText(c.mb)}
           </span>,
-          c.x64Only ? (
-            <span
-              key="x64"
-              className="text-vsc-desc"
-              title={t("Su un Mac con Apple Silicon gira in emulazione x64 con Rosetta 2")}
-            >
-              x64
-            </span>
-          ) : null,
           pending ? (
             <span key="pending" className="flex items-center gap-1 text-vsc-settings-modified">
               <Dot tone="warn" />

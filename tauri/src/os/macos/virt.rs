@@ -1,6 +1,6 @@
 //! What this Mac lacks for Docker Sandboxes (`platform::virt`): macOS 14
 //! or later. The Virtualization framework is always there, and the Mac has
-//! Apple silicon: Atollo stops at start on an Intel Mac (D-176).
+//! Apple silicon: Atollo stops at start on any other (D-176).
 
 use std::process::{Command, Stdio};
 

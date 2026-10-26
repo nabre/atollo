@@ -8,9 +8,6 @@ export interface EditorStatus {
   installed: boolean;
   running: boolean;
   port: number | null;
-  /** The editor server runs its x64 build with Rosetta 2 on a Mac with
-   * Apple Silicon. */
-  emulated: boolean;
   /** The recommended extensions being installed in the background. */
   extensions: EditorExtensions;
 }
@@ -49,7 +46,6 @@ export const SAMPLE_EDITOR: EditorStatus = {
   installed: true,
   running: false,
   port: null,
-  emulated: false,
   extensions: { running: false, total: 0, done: 0, failed: [] },
 };
 

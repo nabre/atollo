@@ -484,7 +484,6 @@ fn multi_platform_availability_and_paths_across_targets() {
     let apache = catalog.find("apache").unwrap();
     assert!(apache.is_available_on(Target::DARWIN_ARM64));
     assert!(apache.is_available_on(Target::LINUX_X64));
-    assert!(!apache.is_emulated_on(Target::LINUX_ARM64));
 
     let tex = catalog.find("tinytex").unwrap();
     assert!(tex.is_available_on(Target::DARWIN_ARM64));
@@ -501,11 +500,9 @@ fn multi_platform_availability_and_paths_across_targets() {
     let r = catalog.find("r").unwrap();
     assert!(r.is_available_on(Target::WIN32_X64));
     assert!(r.is_available_on(Target::DARWIN_ARM64));
-    assert!(!r.is_emulated_on(Target::DARWIN_ARM64));
     assert_eq!(r.key_for(Target::LINUX_X64), "r/bin/R");
 
     let php = catalog.find("php").unwrap();
-    assert!(!php.is_emulated_on(Target::DARWIN_ARM64));
     assert_eq!(php.key_for(Target::DARWIN_ARM64), "php/bin/php");
 
     let node = catalog.find("node").unwrap();
@@ -566,15 +563,22 @@ fn unavailable_targets_have_a_reason() {
     assert!(!windows.is_available_on(Target::LINUX_X64));
     assert!(windows.is_available_on(Target::WIN32_X64));
     assert_eq!(windows.unavailable_reason(Target::LINUX_X64), None);
-    // A removed system (D-176) is never one of a component, even listed.
+    // A system outside the four (D-176) is never one of a component, even
+    // listed by its name.
     let old: Component = serde_json::from_value(serde_json::json!({
         "id": "o", "name": "O", "group": "languages", "def": false, "mb": 1,
         "desc": "o", "home": "https://o", "key": "o/o.exe",
-        "targets": ["win32-x64", "win32-arm64"]
+        "targets": ["win32-x64", "unsupported"]
     }))
     .unwrap();
-    let windows_arm = Target::new(crate::kit::Os::Win32, crate::kit::Arch::Arm64);
-    assert!(!old.is_available_on(windows_arm));
+    use crate::kit::{Arch, Os};
+    let others = [Os::Win32, Os::Darwin, Os::Linux]
+        .into_iter()
+        .flat_map(|os| [Arch::X64, Arch::Arm64].map(|arch| Target::new(os, arch)))
+        .filter(|t| !Target::ALL.contains(t));
+    for other in others {
+        assert!(!old.is_available_on(other), "{other:?}");
+    }
     assert!(old.is_available_on(Target::WIN32_X64));
 
     // Every key a target, every reason translated.
@@ -600,15 +604,6 @@ fn unavailable_targets_have_a_reason() {
         {
             assert!(Target::parse(t).is_some(), "{}: unknown target {t}", c.id);
         }
-    }
-}
-
-/// `rosetta` comes only with a reason to: no catalog entry needs it today
-/// (every component has an Apple silicon build).
-#[test]
-fn rosetta_is_off_in_the_catalog() {
-    for c in Catalog::get().all() {
-        assert!(!c.rosetta, "{}: check the Apple Silicon build first", c.id);
     }
 }
 

@@ -17,7 +17,6 @@ pub struct TargetToolStatus {
     pub id: String,
     pub name: String,
     pub available: bool,
-    pub emulated: bool,
     /// Chosen in the kit's choice, or needed by a chosen one on this target
     /// only (Zig for C and C++ on macOS and Linux).
     pub chosen: bool,
@@ -53,15 +52,13 @@ pub struct TargetSummary {
     pub arch: Arch,
     pub is_host: bool,
     pub executable_on_host: bool,
-    pub emulated_on_host: bool,
     pub available_count: usize,
     pub installed_count: usize,
     pub tools: Vec<TargetToolStatus>,
 }
 
 /// Probes the on-disk state of every catalog component for `target` without
-/// spawning any child processes (Rosetta 2 aside, asked once on a Mac with
-/// Apple Silicon); the reasons are in `lang`.
+/// spawning any child processes; the reasons are in `lang`.
 pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
     let scoped = kit.for_target(target);
     let catalog = Catalog::get();
@@ -76,7 +73,6 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
 
     for c in catalog.all() {
         let available = super::target::installable_on(c, target);
-        let emulated = c.is_emulated_on(target);
         let chosen = available && (choice.is_chosen(&c.id) || here.contains(c.id.as_str()));
         let installed = available && c.is_installed(&scoped);
         let present = c.is_present(&scoped);
@@ -95,9 +91,8 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             && !bootstrap_staged
             && crate::install::installer(&c.id)
                 .is_some_and(|i| super::bootstrap::stages_for(i, c, target));
-        let no_rosetta = c.is_available_on(target) && !available;
         let unavailable_reason = (!available)
-            .then(|| unavailable_reason(c, target, no_rosetta, lang))
+            .then(|| unavailable_reason(c, target, lang))
             .flatten();
 
         if available {
@@ -111,7 +106,6 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             id: c.id.clone(),
             name: c.name.clone(),
             available,
-            emulated,
             chosen,
             installed,
             present,
@@ -131,7 +125,6 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
         arch: target.arch,
         is_host: prof.is_host,
         executable_on_host: prof.executable_on_host,
-        emulated_on_host: prof.emulated_on_host,
         available_count,
         installed_count,
         tools,

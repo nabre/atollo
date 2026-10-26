@@ -45,7 +45,6 @@ export interface TargetProfile {
   arch: "x64" | "arm64";
   isHost: boolean;
   executableOnHost: boolean;
-  emulatedOnHost: boolean;
 }
 
 /** One cell of the grid: a component on a system (Rust
@@ -54,7 +53,6 @@ export interface TargetToolStatus {
   id: string;
   name: string;
   available: boolean;
-  emulated: boolean;
   /** Chosen, or needed on this system only by a chosen one (Zig next to C
    * and C++ on macOS and Linux). */
   chosen: boolean;
@@ -130,10 +128,8 @@ export interface ComponentInfo {
   version: string | null;
   /** This version of the app can install it on this kit. */
   available: boolean;
-  x64Only: boolean;
   /** Not made for this kit's system (Windows only, on macOS or Linux; no
-   * build for Linux ARM64; Rosetta 2 missing on this Mac): why it is not
-   * available, already translated. */
+   * build for Linux ARM64): why it is not available, already translated. */
   unavailableReason: string | null;
   needs: string[];
   /** One folder per minor version, side by side; the others are always at
@@ -189,7 +185,6 @@ function sampleComponent(
     locked: false,
     version: null,
     available: true,
-    x64Only: false,
     unavailableReason: null,
     needs: [],
     versioned: ["python", "node", "php", "go", "java"].includes(id),
@@ -222,14 +217,14 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
   sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.11.0" }),
   sampleComponent("python", "Python", "languages", "con uv", 120),
   sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
-  sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"], x64Only: true }),
+  sampleComponent("apache", "Apache", "languages", "server web per PHP", 30, { needs: ["php"] }),
   sampleComponent("uv", "uv", "languages", "ambienti e pacchetti Python", 40, { ...ON, version: "0.9.5" }),
   sampleComponent("typst", "Typst", "languages", "documenti e PDF da testo", 50),
   sampleComponent("mysql", "MySQL", "databases", "database SQL del kit: server e client MySQL", 520, {
     ...ON,
     version: "9.7.2",
   }),
-  sampleComponent("mongodb", "MongoDB", "databases", "database a documenti", 650, { x64Only: true }),
+  sampleComponent("mongodb", "MongoDB", "databases", "database a documenti", 650),
 ];
 
 /** When the Tools page opens: what was deleted by hand from the kit's
@@ -360,19 +355,17 @@ function sampleGrid(): TargetGrid {
   const profiles: TargetProfile[] = TARGETS.map((id) => {
     const [os, arch] = id.split("-") as [TargetProfile["os"], TargetProfile["arch"]];
     const win = os === "win32";
-    return { id, os, arch, isHost: id === "win32-x64", executableOnHost: win, emulatedOnHost: false };
+    return { id, os, arch, isHost: id === "win32-x64", executableOnHost: win };
   });
   const targets = profiles.map(({ id, ...p }): TargetSummary => {
     const tools = SAMPLE_COMPONENTS.map((c): TargetToolStatus => {
       // Every sample component has a build for every system (Apache too,
-      // D-116); the x64 ones run with Rosetta 2 on a Mac with Apple Silicon.
-      const emulated = c.x64Only && id === "darwin-arm64";
+      // D-116).
       const here = id === "win32-x64";
       return {
         id: c.id,
         name: c.name,
         available: true,
-        emulated,
         chosen: c.chosen,
         installed: here && c.installed,
         present: here && c.present,

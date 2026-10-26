@@ -1,6 +1,6 @@
 //! What the app knows of the machine it runs on: its processor, the user's
-//! language, the build of Windows, the Linux distribution, Rosetta 2 on a
-//! Mac, the AppImage the app runs from, which loopback addresses answer.
+//! language, the build of Windows, the Linux distribution, the AppImage the
+//! app runs from, which loopback addresses answer.
 //! Each system finds them its own way (`os/*/host.rs`).
 
 use std::path::{Path, PathBuf};
@@ -8,9 +8,10 @@ use std::path::{Path, PathBuf};
 use crate::kit::Arch;
 use crate::os::current::host as imp;
 
-/// The processor programs run on: on Windows from `PROCESSOR_ARCHITECTURE`
-/// and its WOW64 host (ARM64 when either says so, as `_env.cmd`), on macOS
-/// and Linux the one the app is built for.
+/// The processor programs run on: on Windows the PC's processor, also when
+/// this exe runs translated (`PROCESSOR_ARCHITECTURE` and
+/// `PROCESSOR_ARCHITEW6432`, as `_env.cmd`), on macOS and Linux the one
+/// the app is built for.
 pub fn arch() -> Arch {
     imp::arch()
 }
@@ -33,13 +34,6 @@ pub fn windows_build() -> Option<u32> {
 /// `None` elsewhere.
 pub fn os_release() -> Option<String> {
     imp::os_release()
-}
-
-/// Rosetta 2 runs x64 programs on this Mac (asked once per start:
-/// installing it needs an administrator, and the app is started again
-/// after it); false on every other system.
-pub fn rosetta_present() -> bool {
-    imp::rosetta_present()
 }
 
 /// The folder of the Mac's active developer tools (`xcode-select -p`):

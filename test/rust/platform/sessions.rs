@@ -84,7 +84,7 @@ fn other_kit_roots_on_every_system() {
             "/media/u/kit/data/apps/linux-x64/php/bin/php",
             "/media/u/kit",
         ),
-        (r"E:\Kit\DATA\Apps\Win32-arm64\git\git.exe", r"E:\Kit"),
+        (r"E:\Kit\DATA\Apps\Win32-X64\git\git.exe", r"E:\Kit"),
     ] {
         assert_eq!(
             kit_root_of(Path::new(path), "x", no),

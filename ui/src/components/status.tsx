@@ -1,9 +1,8 @@
 // The state of a tool on a system, as an icon: the columns of the systems
 // in «Tutti gli strumenti» (./table.tsx). What is on disk takes five states
 // only: missing, staged, installed, to update and error; why a tool is
-// missing (not available there, x64 under emulation, chosen but not
-// downloaded) goes in the tooltip, not in a state of its own. On the system
-// shown it adds what the page knows only there: the preparation under way
+// missing (not available there, chosen but not downloaded) goes in the
+// tooltip, not in a state of its own. On the system shown it adds what the page knows only there: the preparation under way
 // (queued, download) and the choice waiting for "Apply".
 import type { IconType } from "react-icons";
 import type { ComponentInfo, TargetToolStatus } from "../ipc";

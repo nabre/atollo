@@ -27,7 +27,7 @@ pub fn gaps(_shim: Option<&std::path::Path>) -> Vec<Gap> {
 }
 
 /// The gaps of a Windows `build`, the hypervisor asked last. The processor
-/// is x64: Atollo does not start on Windows on Arm (D-176).
+/// is x64: Atollo does not start on any other (D-176).
 pub(crate) fn gaps_of(build: Option<u32>, hypervisor: impl Fn() -> bool) -> Vec<Gap> {
     if let Some(build) = build.filter(|b| *b < WINDOWS_11) {
         return vec![Gap::OldWindows(build)];

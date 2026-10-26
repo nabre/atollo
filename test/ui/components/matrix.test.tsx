@@ -29,7 +29,6 @@ const component = (id: string, name: string, group: ComponentInfo["group"]): Com
   locked: false,
   version: null,
   available: true,
-  x64Only: false,
   unavailableReason: null,
   needs: [],
   versioned: false,
@@ -46,7 +45,6 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
   id,
   name: id,
   available: true,
-  emulated: false,
   chosen: false,
   installed: false,
   present: false,
@@ -61,8 +59,7 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
 });
 
 /** This PC a Mac with Apple Silicon, the others not run here. The cells say
- *  what the catalog says: Android SDK x64 with Rosetta 2 on the Mac and
- *  missing on Linux ARM64. */
+ *  what the catalog says: Android SDK missing on Linux ARM64. */
 function grid(chosen: TargetGrid["chosen"] = null, vm: TargetGrid["vm"] = null): TargetGrid {
   const profiles: TargetProfile[] = TARGETS.map((id) => {
     const [os, arch] = id.split("-") as [TargetProfile["os"], TargetProfile["arch"]];
@@ -72,12 +69,11 @@ function grid(chosen: TargetGrid["chosen"] = null, vm: TargetGrid["vm"] = null):
       arch,
       isHost: id === "darwin-arm64",
       executableOnHost: id === "darwin-arm64",
-      emulatedOnHost: false,
     };
   });
   const cells: Record<string, TargetToolStatus[]> = {
     "win32-x64": [status("git", { installed: true, version: "2.56.0", chosen: true }), status("r"), status("android")],
-    "darwin-arm64": [status("git", { installed: true }), status("r"), status("android", { emulated: true })],
+    "darwin-arm64": [status("git", { installed: true }), status("r"), status("android")],
     "linux-x64": [status("git", { bootstrapStaged: true }), status("r"), status("android")],
     "linux-arm64": [
       status("git", { firstStart: true }),
@@ -119,19 +115,13 @@ describe("target names and cells", () => {
     expect(targetName("darwin-arm64")).toBe("macOS Apple Silicon");
     expect(targetName("beos-x64")).toBe("beos-x64");
     const { profiles } = grid();
-    expect(targetName("win32-arm64")).toBe("win32-arm64");
-    expect(targetName("darwin-x64")).toBe("darwin-x64");
     expect(targetLabel("darwin-arm64", profiles)).toBe("macOS Apple Silicon (questo PC)");
     expect(targetLabel("linux-x64", profiles)).toBe("Linux x64 (non eseguibile qui)");
-    const emulated = profiles.map((p) => (p.id === "win32-x64" ? { ...p, emulatedOnHost: true } : p));
-    expect(targetLabel("win32-x64", emulated)).toBe("Windows x64 (in emulazione)");
     expect(targetLabel("linux-x64", [])).toBe("Linux x64");
   });
 
   it("gives each cell one state, unavailable first", () => {
     expect(cellState(status("x"))).toBe("available");
-    expect(cellState(status("x", { emulated: true }))).toBe("emulated");
-    expect(cellState(status("x", { firstStart: true, emulated: true }))).toBe("firstStart");
     expect(cellState(status("x", { bootstrapStaged: true, firstStart: true }))).toBe("staged");
     expect(cellState(status("x", { available: false, bootstrapStaged: true }))).toBe("unavailable");
   });
@@ -162,7 +152,7 @@ describe("TargetMatrix", () => {
     expect(screen.getByRole("button", { name: "Git, Windows x64: disponibile" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Git, Linux x64: pre-installato" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Git, Linux ARM64: si completa al primo avvio" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Android SDK, macOS Apple Silicon: in emulazione" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Android SDK, macOS Apple Silicon: disponibile" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "R, macOS Apple Silicon: disponibile" })).toBeTruthy();
     expect(
       screen.getByRole("button", {

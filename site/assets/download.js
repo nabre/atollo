@@ -20,12 +20,12 @@
     "linux-arm64": "linux-arm64.AppImage",
   };
 
-  // The visitor's system as <os>-<arch> (win32-arm64 and darwin-x64 too,
-  // which Atollo does not support), or null when it is not one of the three.
+  // The visitor's system as <os>-<arch>, or null when it is not one of the
+  // three operating systems.
   async function detect() {
     // ?os=<target> shows the page as another system sees it.
     const forced = new URLSearchParams(location.search).get("os");
-    if (forced && (names[forced] || forced === "win32-arm64" || forced === "darwin-x64")) return forced;
+    if (forced && names[forced]) return forced;
     const ua = navigator.userAgent;
     let os = /Windows/.test(ua) ? "win32" : /Mac OS X|Macintosh/.test(ua) ? "darwin" : /Linux|X11/.test(ua) && !/Android/.test(ua) ? "linux" : null;
     if (!os) return null;
@@ -42,7 +42,7 @@
     }
     if (!arch) {
       if (/aarch64|arm64/i.test(ua)) arch = "arm64";
-      // Safari says "Intel Mac" on Apple Silicon too: most Macs sold since 2020 are ARM.
+      // Safari names no architecture on a Mac: Atollo's is Apple Silicon.
       else arch = os === "darwin" ? "arm64" : "x64";
     }
     return os + "-" + arch;
@@ -90,12 +90,8 @@
     const note = document.getElementById("dl-note");
     if (!cta || !button) return;
     const [seen, rel] = await Promise.all([detect(), release()]);
-    // Windows on ARM and Intel Macs: no Docker Sandboxes, so no Atollo
-    // (D-176). The button keeps the releases page, the note says why.
+    // Another system: the button keeps the releases page.
     const target = seen && names[seen] ? seen : null;
-    if (seen && !target && note) {
-      note.textContent = cta.dataset.unsupported;
-    }
 
     if (target) {
       kit(target);

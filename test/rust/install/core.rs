@@ -8,7 +8,7 @@ fn python_build_is_the_newest_patch() {
              {h}  cpython-3.13.10+20260901-x86_64-pc-windows-msvc-install_only_stripped.tar.gz\n\
              {h}  cpython-3.13.10+20260901-x86_64-pc-windows-msvc-install_only.tar.gz\n\
              {h}  cpython-3.14.0+20260901-x86_64-pc-windows-msvc-install_only_stripped.tar.gz\n\
-             {h}  cpython-3.13.10+20260901-aarch64-pc-windows-msvc-install_only_stripped.tar.gz\n"
+             {h}  cpython-3.13.10+20260901-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz\n"
     );
     let (file, version, _) = pick_python(&sums, "3.13", "x86_64-pc-windows-msvc").unwrap();
     assert_eq!(version, "3.13.10");
@@ -18,7 +18,7 @@ fn python_build_is_the_newest_patch() {
         python_lines(&sums, "x86_64-pc-windows-msvc"),
         ["3.14", "3.13"]
     );
-    assert_eq!(python_lines(&sums, "aarch64-pc-windows-msvc"), ["3.13"]);
+    assert_eq!(python_lines(&sums, "aarch64-unknown-linux-gnu"), ["3.13"]);
 }
 
 /// The line of the Python actually in the tree, not the one of the settings
@@ -64,7 +64,7 @@ fn node_lines_are_lts_majors_and_the_newest() {
         {"version": "v23.11.1", "files": ["win-x64-zip"], "lts": false},
         {"version": "v22.21.1", "files": ["win-x64-zip"], "lts": "Jod"},
         {"version": "v22.21.0", "files": ["win-x64-zip"], "lts": "Jod"},
-        {"version": "v20.19.5", "files": ["win-arm64-zip"], "lts": "Iron"},
+        {"version": "v20.19.5", "files": ["linux-arm64"], "lts": "Iron"},
         {"version": "v16.20.2", "files": ["win-x64-zip"], "lts": "Gallium"}
     ]))
     .unwrap();
@@ -72,7 +72,7 @@ fn node_lines_are_lts_majors_and_the_newest() {
         node_lines(&index, "win-x64-zip"),
         ["25.1", "25.0", "24.11", "24.10", "22.21"]
     );
-    assert_eq!(node_lines(&index, "win-arm64-zip"), ["20.19"]);
+    assert_eq!(node_lines(&index, "linux-arm64"), ["20.19"]);
 }
 
 /// The newest LTS, not the newest release (D-108); a line asked for gives
@@ -109,7 +109,7 @@ fn node_pick_is_the_newest_lts() {
     assert_eq!(pick("win-x64-zip", Some("23.11"), None), None);
     // No LTS for that archive: the newest there is.
     assert_eq!(pick("osx-arm64-tar", None, None), Some("v21.7.3"));
-    assert_eq!(pick("osx-x64-tar", None, None), None);
+    assert_eq!(pick("win-x86-zip", None, None), None);
     // The major installed has no build here: the LTS.
     assert_eq!(pick("linux-arm64", None, Some("v26.0.0")), Some("v24.11.1"));
 }
@@ -143,12 +143,10 @@ fn dugite_asset_per_target() {
         "dugite-native-v2.53.0-4098283-macOS-arm64.tar.gz",
         "dugite-native-v2.53.0-4098283-macOS-arm64.tar.gz.sha256",
         "dugite-native-v2.53.0-4098283-macOS-arm64.lzma",
-        "dugite-native-v2.53.0-4098283-macOS-x64.tar.gz",
         "dugite-native-v2.53.0-4098283-ubuntu-arm.tar.gz",
         "dugite-native-v2.53.0-4098283-ubuntu-arm64.tar.gz",
         "dugite-native-v2.53.0-4098283-ubuntu-x64.tar.gz",
         "dugite-native-v2.53.0-4098283-ubuntu-x86.tar.gz",
-        "dugite-native-v2.53.0-4098283-windows-arm64.tar.gz",
         "dugite-native-v2.53.0-4098283-windows-x64.tar.gz",
     ];
     for (t, want) in [
@@ -206,15 +204,15 @@ fn unix_gitconfig_gets_the_credential_helper_once() {
 /// unpacked there; PortableGit and the host's own target install directly.
 #[test]
 fn git_is_staged_where_its_target_cannot_run() {
-    let between = |host: Target, target: Target, rosetta: bool| {
+    let between = |host: Target, target: Target| {
         git_staged(
             target,
-            crate::router::target::can_execute_between(host, target, rosetta),
+            crate::router::target::can_execute_between(host, target),
         )
     };
     for host in Target::ALL {
         for target in Target::ALL {
-            let staged = between(host, target, false);
+            let staged = between(host, target);
             // PortableGit is never staged (the 7z self-extractor unpacks
             // anywhere); from Windows every Unix Git is.
             if target.is_windows() {
@@ -227,9 +225,9 @@ fn git_is_staged_where_its_target_cannot_run() {
             }
         }
     }
-    // Another system or CPU without translation: staged.
-    assert!(between(Target::LINUX_X64, Target::DARWIN_ARM64, false));
-    assert!(between(Target::LINUX_X64, Target::LINUX_ARM64, false));
+    // Another system or CPU: staged.
+    assert!(between(Target::LINUX_X64, Target::DARWIN_ARM64));
+    assert!(between(Target::LINUX_X64, Target::LINUX_ARM64));
 
     // `should_stage` on this host, for a kit of every target.
     let tmp = crate::kit::tests::TempDir::new("git-stage");

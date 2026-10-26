@@ -198,8 +198,6 @@ fn codelldb_follows_the_server() {
     use crate::kit::Target;
     let tmp = TempDir::new("codelldb");
     let on = |target| codelldb_asset(&Kit::at_target(tmp.0.clone(), target));
-    // Native servers everywhere (no `rosetta` on the editor's server).
-    assert!(!Catalog::get().find("vscodium-server").unwrap().rosetta);
     assert_eq!(on(Target::WIN32_X64), "codelldb-win32-x64.vsix");
     assert_eq!(on(Target::LINUX_X64), "codelldb-linux-x64.vsix");
     assert_eq!(on(Target::LINUX_ARM64), "codelldb-linux-arm64.vsix");

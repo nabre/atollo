@@ -7,70 +7,27 @@ use std::fs;
 #[test]
 fn target_execution_matrix_across_os_and_arch() {
     use target::can_execute_between as can;
-    for rosetta in [false, true] {
-        for host in Target::ALL {
-            for t in Target::ALL {
-                // Each of the four runs its own programs only: Linux ARM64
-                // does not assume user-mode x64 emulation, x64 never runs
-                // ARM64, and cross-OS execution is never allowed.
-                assert_eq!(can(host, t, rosetta), host == t, "{host} -> {t}");
-            }
-        }
-    }
-    // macOS Apple silicon runs the x64 build of a component only with
-    // Rosetta 2: the one pair Rosetta changes.
-    let x64_mac = Target::DARWIN_ARM64.with_arch(Arch::X64);
-    assert!(can(Target::DARWIN_ARM64, x64_mac, true));
-    assert!(!can(Target::DARWIN_ARM64, x64_mac, false));
-}
-
-#[test]
-fn rosetta_is_checked_only_for_its_components_on_that_mac() {
-    let mut c: crate::setup::Component = serde_json::from_value(serde_json::json!({
-        "id": "x", "name": "X", "group": "languages", "def": false, "mb": 1,
-        "desc": "x", "home": "https://x", "key": "x/x.exe", "rosetta": true
-    }))
-    .unwrap();
-    let mac = Target::DARWIN_ARM64;
-    assert!(c.is_emulated_on(mac) && !c.is_emulated_on(Target::WIN32_X64));
-    assert_eq!(
-        target::effective_target(mac, &c),
-        Target::new(Os::Darwin, Arch::X64)
-    );
-    // On the Mac itself, without Rosetta: not available.
-    assert!(target::rosetta_missing(mac, mac, &c, false));
-    assert!(!target::rosetta_missing(mac, mac, &c, true));
-    // A kit prepared for that Mac from another system cannot know.
-    for host in [Target::WIN32_X64, Target::LINUX_X64, Target::LINUX_ARM64] {
-        assert!(!target::rosetta_missing(host, mac, &c, false), "{host}");
-    }
-    // Other targets never need it.
-    for t in Target::ALL.into_iter().filter(|t| *t != mac) {
-        assert!(!target::rosetta_missing(t, t, &c, false), "{t}");
-    }
-    // A component with a native Apple Silicon build never needs it.
-    c.rosetta = false;
-    assert!(!target::rosetta_missing(mac, mac, &c, false));
-    assert_eq!(target::effective_target(mac, &c), mac);
-    // Not on a Mac: the probe says no, and nothing is ever missing here.
-    #[cfg(not(target_os = "macos"))]
-    {
-        assert!(!crate::platform::host::rosetta_present());
-        c.rosetta = true;
+    for host in Target::ALL {
         for t in Target::ALL {
-            assert_eq!(target::installable_on(&c, t), c.is_available_on(t));
+            // Each of the four runs its own programs only: no translation
+            // layer, x64 never runs ARM64 nor ARM64 x64, and cross-OS
+            // execution is never allowed.
+            assert_eq!(can(host, t), host == t, "{host} -> {t}");
         }
     }
 }
 
-/// Every component of the catalog downloads the build of its own target:
-/// none runs emulated on the four (no `rosetta` component today).
+/// Installable is available: no host-side condition is left.
 #[test]
-fn every_component_downloads_its_own_target() {
+fn installable_is_available_in_the_catalog() {
     for c in Catalog::get().all() {
         for t in Target::ALL {
-            assert!(!c.is_emulated_on(t), "{} on {t}", c.id);
-            assert_eq!(target::effective_target(t, c), t, "{} on {t}", c.id);
+            assert_eq!(
+                target::installable_on(c, t),
+                c.is_available_on(t),
+                "{} on {t}",
+                c.id
+            );
         }
     }
 }
