@@ -166,8 +166,12 @@ pub(crate) fn agent_vm_ready<R: Runtime>(
                     &[],
                 )
             })?;
-        let vm = pi_local_models(app, kit, lang, vm)?;
+        let db_ports = vm.host_ports().to_vec();
+        let (vm, port) = pi_local_models(app, kit, lang, vm)?;
         vm.start(&env, lang).or_fail_chain("vm")?;
+        if let Some(port) = port {
+            crate::isolation::watch_pi_port(vm.clone(), env.clone(), pi.clone(), port, db_ports);
+        }
         let args = crate::isolation::vm::pi_session_args(&vm.name, &guest_dir, &pi, vm.tools());
         return Ok((vm, args));
     }
@@ -187,23 +191,28 @@ pub(crate) fn agent_vm_ready<R: Runtime>(
 /// database's, D-171) and its address and key in Pi's variables, through
 /// the VM's way to the PC, in a file readable by its owner only
 /// (`pi.env` beside the sandbox's kit, with the database's variables). A
-/// provider of the cloud needs nothing: `vm` as it is.
+/// provider of the cloud needs nothing: `vm` as it is. With the port to
+/// close once Pi ends (`isolation::watch_pi_port`), when it is not also a
+/// database's.
 fn pi_local_models<R: Runtime>(
     app: &AppHandle<R>,
     kit: &Kit,
     lang: &str,
     vm: crate::isolation::Vm,
-) -> CmdResult<crate::isolation::Vm> {
+) -> CmdResult<(crate::isolation::Vm, Option<u16>)> {
     use tauri::Manager;
     if crate::agents::sync::pi::local_model(kit).is_none() {
-        return Ok(vm);
+        return Ok((vm, None));
     }
     let (Some(port), Some(key)) = (
         crate::llm::settings::load(kit).port,
         crate::llm::settings::key(kit),
     ) else {
-        return Ok(vm);
+        return Ok((vm, None));
     };
+    // A watcher of the port waits again: it never closes it while this
+    // Pi is being started.
+    crate::isolation::pi_port_touch(&vm.name);
     if let Some(state) = app.try_state::<AppState>() {
         if let Err(e) = state.llm.start(&state.env(), lang) {
             crate::common::log::warn(&format!("pi: local models: {e:#}"));
@@ -224,7 +233,8 @@ fn pi_local_models<R: Runtime>(
     }
     crate::platform::files::replace_private(&file, &text).or_fail_chain("pi")?;
     tools.env_file = Some(file);
-    Ok(vm.with_tools(tools).with_host_port(port))
+    let watched = (!vm.host_ports().contains(&port)).then_some(port);
+    Ok((vm.with_tools(tools).with_host_port(port), watched))
 }
 
 /// The agents' sandboxes the editor's profiles ask for (`vm.ps1`,

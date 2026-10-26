@@ -514,6 +514,69 @@ fn pi_in_the_vm_reaches_the_local_models_on_the_pc() {
     );
 }
 
+/// D-178: the port of the local models stays open while the VM says a Pi
+/// runs; it closes when none does or the VM does not answer, only while
+/// it is open and never when a database needs it; it leaves the noted
+/// ports alone, the others kept in their order.
+#[test]
+fn the_port_of_the_local_models_closes_when_pi_ends() {
+    assert_eq!(pi_check_of(Ok((true, "running\n", ""))), PiCheck::Running);
+    assert_eq!(pi_check_of(Ok((true, "none\n", ""))), PiCheck::Ended);
+    assert_eq!(
+        pi_check_of(Ok((false, "", "sandbox not running"))),
+        PiCheck::Failed("sandbox not running".into())
+    );
+    assert!(matches!(
+        pi_check_of(Ok((false, "running", ""))),
+        PiCheck::Failed(_)
+    ));
+    assert!(matches!(
+        pi_check_of(Ok((true, "", ""))),
+        PiCheck::Failed(_)
+    ));
+    assert_eq!(
+        pi_check_of(Err("sbx: no answer in 15 s")),
+        PiCheck::Failed("sbx: no answer in 15 s".into())
+    );
+    assert!(pi_port_closes(8085, &[3307, 8085], &[3307]));
+    assert!(!pi_port_closes(8085, &[3307], &[3307]), "closed already");
+    assert!(!pi_port_closes(8085, &[8085], &[8085]), "a database's too");
+    assert_eq!(ports_without(&[3307, 8085, 27018], 8085), [3307, 27018]);
+    assert_eq!(ports_without(&[3307], 8085), [3307]);
+    // The noted ports of the sandbox, rewritten without it.
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-pi-port");
+    let name = vm::name("shop");
+    kit::write(
+        &kit,
+        &name,
+        &kit::Owner::Project {
+            project: "shop".into(),
+        },
+    )
+    .unwrap();
+    kit::mark_host_ports(&kit, &name, &[3307, 8085]).unwrap();
+    let noted = ports_without(&kit::host_ports(&kit, &name), 8085);
+    kit::mark_host_ports(&kit, &name, &noted).unwrap();
+    assert_eq!(kit::host_ports(&kit, &name), [3307]);
+    // The databases' ports of a VM, before Pi's is added.
+    let vm = Vm::for_tests(&kit, "shop", &kit.projects().join("shop")).with_host_ports(vec![3307]);
+    assert_eq!(vm.host_ports(), [3307]);
+    assert_eq!(vm.with_host_port(8085).host_ports(), [3307, 8085]);
+}
+
+/// D-178: while Pi's watcher keeps the port of the local models open, any
+/// other start of the sandbox (the project's terminal, an action, the
+/// editor) opens it too, once, so it never closes it under a running Pi;
+/// with no watcher, its own ports only.
+#[test]
+fn another_start_keeps_the_port_of_a_running_pi() {
+    assert_eq!(ports_with(&[3307], Some(8085)), [3307, 8085]);
+    assert_eq!(ports_with(&[3307, 8085], Some(8085)), [3307, 8085]);
+    assert_eq!(ports_with(&[], Some(8085)), [8085]);
+    assert_eq!(ports_with(&[3307, 27018], None), [3307, 27018]);
+    assert_eq!(pi_port_of("atollo-p-never-watched"), None);
+}
+
 /// D-178: every reason the VM is off has a line for the editor's terminals
 /// and the agents refused, with the administrator's command named (never
 /// run), in Italian and in the other languages; then that Atollo checks

@@ -271,6 +271,35 @@ pub fn pi_session_args(
     args
 }
 
+/// What [`pi_running_args`] prints when a Pi runs in the VM.
+pub const PI_RUNNING: &str = "running";
+/// What it prints when none does.
+pub const PI_NONE: &str = "none";
+
+/// Asks the VM `vm` whether a Pi runs in it (D-178): `sbx exec <vm> sh -c
+/// '…'`, which prints [`PI_RUNNING`] when a process of the VM is the
+/// program `pi` (the VM's path, [`pi_session_args`]): its executable, or
+/// one of the first two words of its command line (the program itself, or
+/// a script after its interpreter), the whole word. The check's own shell
+/// is never one: the path is in its third word. [`PI_NONE`] otherwise, also
+/// where `/proc` cannot be read. Only POSIX `sh` and the tools every Linux
+/// has (`tr`, `head`, `grep`, `readlink`): no `pgrep` needed.
+pub fn pi_running_args(vm: &str, pi: &str) -> Vec<String> {
+    let script = format!(
+        concat!(
+            "p={}; for d in /proc/[0-9]*; do ",
+            "[ \"$d\" = \"/proc/$$\" ] && continue; ",
+            "if [ \"$(readlink \"$d/exe\" 2>/dev/null)\" = \"$p\" ] || ",
+            "tr '\\000' '\\n' < \"$d/cmdline\" 2>/dev/null | head -n 2 | grep -qxF -e \"$p\"; ",
+            "then echo {}; exit 0; fi; done; echo {}"
+        ),
+        shell_quote_posix(pi),
+        PI_RUNNING,
+        PI_NONE
+    );
+    vec!["exec".into(), vm.into(), "sh".into(), "-c".into(), script]
+}
+
 /// The session of an agent in its sandbox `vm` (made by `Vm::start`):
 /// `sbx run --name <vm>`, which attaches to the agent, with the project's
 /// database variables (`--env-file`), the kit's tools for Linux first on
