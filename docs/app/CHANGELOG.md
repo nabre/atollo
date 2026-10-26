@@ -1,5 +1,10 @@
 # Novità
 
+## Rilascio 0.7.0 alpha (26/10/2026)
+
+- **Versione 0.7.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.7.0` pubblica i file per i quattro sistemi di Docker Sandboxes (D-176): Windows x64, macOS su Apple silicon, Linux x64 e ARM64. Niente più file per Windows ARM64 e Mac Intel.
+- **Nella 0.7.0** tutto ciò che è elencato qui sotto fino al rilascio 0.6.0: i progetti nella VM di Docker Sandboxes con gli strumenti del kit (D-167…D-175), i quattro sistemi (D-176), la VM che si crea di nuovo dove falliva con «failed to create network».
+
 ## Solo i sistemi di Docker Sandboxes (26/10/2026)
 
 - **Quattro sistemi** (D-176): Atollo gira su Windows x64, macOS con Apple Silicon, Linux x64 e Linux ARM64, i sistemi per cui Docker pubblica Docker Sandboxes, il cuore del kit. Windows su ARM64 e i Mac Intel non sono più supportati: niente più file di rilascio, build o prove per loro.

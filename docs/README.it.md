@@ -77,7 +77,7 @@ Il lavoro aperto è nelle [segnalazioni](https://github.com/nabre/atollo/issues)
 
 ## Come si usa
 
-1. Copia l'exe di Atollo (per esempio `Atollo-0.6.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
+1. Copia l'exe di Atollo (per esempio `Atollo-0.7.0-win32-x64.exe`) in una cartella vuota: una chiavetta, un disco esterno o una cartella del tuo profilo (anche con spazi, parentesi o `&` nel nome).
 2. Doppio clic: l'app crea `projects\` e `data\`. Al primo avvio scegli agenti, linguaggi e strumenti: l'app li scarica e li verifica (checksum o firma), Docker Sandboxes compreso.
 3. Accedi a Docker una volta per PC: con un account Docker (gratuito), clic su **Senza VM** nella barra di stato e su **Lancia** accanto a `sbx login`: il comando si apre nel terminale di Atollo con l'`sbx` del kit, e lì compare il link di accesso (un clic lo apre nel tuo browser). Gli altri motivi della stessa lista dicono che altro serve al PC.
 4. Crea o clona un progetto nella pagina **Progetti**. Editor, terminale e agenti di un progetto si aprono sempre nella sua cartella; con la VM attiva, terminale, azioni e Claude Code e Codex si aprono nella microVM del progetto.
@@ -115,15 +115,15 @@ La console di Atollo è una scheda del pannello dei terminali dell'app su ogni s
 
 ## C'è ancora da fare
 
-Atollo è in alpha (versione 0.6.0). Windows x64 è il sistema provato di più, anche con installazioni reali in CI; macOS e Linux sono costruiti e provati solo in CI. La checklist completa è in [docs/app/TESTING.it.md](app/TESTING.it.md).
+Atollo è in alpha (versione 0.7.0). Windows x64 è il sistema provato di più, anche con installazioni reali in CI; macOS e Linux sono costruiti e provati solo in CI. La checklist completa è in [docs/app/TESTING.it.md](app/TESTING.it.md).
 
 - **La VM, da finire** ([D-175](app/DECISIONS.md)). I progetti nelle loro microVM sono provati dal vero solo su Windows 11 x64 con Docker Sandboxes 0.49.2; macOS e Ubuntu non sono provati, e nemmeno «GitHub nella VM» con un account vero. Ancora da fare: i server MCP del kit per gli agenti nella VM (i loro comandi sono programmi del PC), da portare nel gateway MCP di `sbx` o da dire assenti.
-- **L'alpha, da provare.** [La 0.6.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.6.0) è su GitHub per Windows, macOS e Linux (aveva anche le build per Windows ARM64 e Mac Intel, che le versioni successive tolgono: [D-176](app/DECISIONS.md)). I file pubblicati sono costruiti e provati in CI: ora vanno scaricati e avviati su macchine pulite.
+- **L'alpha, da provare.** [La 0.7.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.7.0) è su GitHub per Windows x64, macOS su Apple silicon e Linux x64 e ARM64, i sistemi dove gira Docker Sandboxes (dalla 0.7.0 non ci sono più le build per Windows ARM64 e Mac Intel: [D-176](app/DECISIONS.md)). I file pubblicati sono costruiti e provati in CI: ora vanno scaricati e avviati su macchine pulite.
 - **Alpha test.** Servono persone che usino Atollo su progetti veri e su PC diversi, e che segnalino cosa non va: installazione dei componenti, progetti, database, agenti. Impostazioni › Il kit › «Segnala un problema» apre una segnalazione su GitHub con versione e sistema già scritti; allegale lo zip di «Esporta diagnostica» (segreti mascherati, creato sul tuo PC, mai inviato dall'app).
 - **macOS su Mac veri** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). L'app per Apple Silicon è costruita e avviata in CI, mai su un Mac pulito: lo zip scaricato con il browser, quarantena e Gatekeeper, App Translocation, il kit su una chiavetta exFAT, gli accessi degli agenti portati da un Mac all'altro.
 - **Linux su macchine vere** ([#5](https://github.com/nabre/atollo/issues/5)). x64 e ARM64 su Ubuntu 24.04, Fedora 42 e Debian 13: AppImage con e senza FUSE, il `tar.gz` con WebKitGTK 4.1, chiavette exFAT o montate `noexec`, accessi con GNOME, KeePassXC o KWallet.
 - **Aggiornamenti e build del kit fuori da Windows.** L'aggiornamento dell'app da una versione all'altra su macOS e Linux non è ancora provato. L'Apache del kit (2.4.69, D-116) è nel catalogo ma provato solo in CI; anche il PHP del kit con `pdo_sqlite` (8.4.26 e 8.5.11, D-133), che l'app usa dalla 0.3.0.
-- **Firma del codice.** Su macOS solo una firma ad hoc, senza notarizzazione di Apple: serve `xattr -dr com.apple.quarantine`. Su Windows la 0.6.0 esce senza firma: la firma con SignPath è ancora da attivare, e fino ad allora SmartScreen può avvisare al primo avvio.
+- **Firma del codice.** Su macOS solo una firma ad hoc, senza notarizzazione di Apple: serve `xattr -dr com.apple.quarantine`. Su Windows la 0.7.0 esce senza firma: la firma con SignPath è ancora da attivare, e fino ad allora SmartScreen può avvisare al primo avvio.
 
 Hai un Mac con Apple Silicon o un PC Linux? Prova Atollo e raccontaci com'è andata: [apri una segnalazione su GitHub](https://github.com/nabre/atollo/issues).
 
