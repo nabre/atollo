@@ -844,3 +844,214 @@ fn bashrc_swaps_project_versions() {
         .args(["-i", "-c", "echo \"J=$JAVA_HOME\""]));
     assert!(out.contains(&format!("J={from}0")), "{out}");
 }
+
+/// LEVELS.md §8.4: the read-only `atollo` of a sandbox has no network or
+/// write command; it prints `info.txt`, `info.json` with `--json`, and
+/// refuses any other word. Run for real with a bash (the system's, Git
+/// Bash on Windows), on a fake `guest` folder.
+#[test]
+fn the_vm_atollo_is_read_only() {
+    let script = vm_atollo("it");
+    assert!(script.starts_with("#!/bin/sh\n"), "{script}");
+    assert!(!script.contains('\r'));
+    assert!(script.contains("Il kit si gestisce dal PC"), "{script}");
+    let code: Vec<&str> = script
+        .lines()
+        .filter(|l| !l.trim_start().starts_with('#'))
+        .collect();
+    for word in [
+        "curl",
+        "wget",
+        " nc ",
+        "ssh",
+        "http",
+        "sbx",
+        "Atollo.exe",
+        "rm ",
+        "mv ",
+        "cp ",
+        "touch",
+        "mkdir",
+        "tee",
+        "dd ",
+        "chmod",
+        "export",
+        "secret",
+    ] {
+        assert!(
+            !code.iter().any(|l| l.contains(word)),
+            "{word:?} in {script}"
+        );
+    }
+    // The only redirection is to stderr.
+    for line in &code {
+        assert!(
+            line.replace(">&2", "").find('>').is_none(),
+            "a write: {line}"
+        );
+    }
+    let Some(bash) = host_bash() else {
+        eprintln!("no bash on this host: skipped");
+        return;
+    };
+    let tmp = TempDir::new("vm-atollo");
+    let guest = tmp.0.join("guest");
+    write_guest(&guest, "it").unwrap();
+    fs::write(
+        guest.join("info.txt"),
+        "Atollo · VM progetto\nSandbox: atollo-p-x\n",
+    )
+    .unwrap();
+    fs::write(guest.join("info.json"), "{\"v\":1}\n").unwrap();
+    let atollo = guest.join("bin").join("atollo");
+    let run_with = |args: &[&str]| run(bash_cmd(&bash, &tmp.0).arg(for_sh(&atollo)).args(args));
+    let (ok, out, _) = run_with(&[]);
+    assert!(ok);
+    assert_eq!(out, "Atollo · VM progetto\nSandbox: atollo-p-x\n");
+    let (ok, out, _) = run_with(&["--json"]);
+    assert!(ok);
+    assert_eq!(out, "{\"v\":1}\n");
+    for words in [
+        &["install", "node"][..],
+        &["secret", "github"],
+        &["--json", "x"],
+    ] {
+        let (ok, out, err) = run_with(words);
+        assert!(!ok, "{words:?}");
+        assert!(out.is_empty(), "{out}");
+        assert!(err.contains("Il kit si gestisce dal PC"), "{err}");
+    }
+    // Nothing written in the folder.
+    let mut names: Vec<String> = fs::read_dir(&guest)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    assert_eq!(names, ["agents", "bin", "info.json", "info.txt"]);
+}
+
+/// The guest folder's files: LF, the stand-in of each agent's command in
+/// the agent's own folder, executable on Unix.
+#[test]
+fn the_guest_files_are_lf_and_executable() {
+    let tmp = TempDir::new("vm-guest");
+    write_guest(&tmp.0, "en").unwrap();
+    let mut files = vec![tmp.0.join("bin").join("atollo")];
+    for agent in crate::levels::Agent::ALL {
+        for cmd in agent.commands() {
+            files.push(tmp.0.join("agents").join(agent.id()).join(cmd));
+        }
+    }
+    assert_eq!(files.len(), 6);
+    for file in files {
+        let text = fs::read_to_string(&file).unwrap();
+        assert!(!text.contains('\r'), "{}", file.display());
+        assert!(text.starts_with("#!/bin/sh\n"), "{}", file.display());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&file).unwrap().permissions().mode();
+            assert_eq!(mode & 0o111, 0o111, "{}", file.display());
+        }
+    }
+    let text = fs::read_to_string(tmp.0.join("bin").join("atollo")).unwrap();
+    assert!(text.contains("The kit is managed from the PC"), "{text}");
+}
+
+/// LEVELS.md §8.3: the shells print their level line on stderr from what
+/// the app set (`ATOLLO_LEVEL`, `ATOLLO_PROJECT`, `ATOLLO_TERMINAL`), in
+/// the kit's language; nothing without a level.
+#[test]
+fn the_shells_print_their_level_line() {
+    type Case<'a> = (&'a [(&'a str, &'a str)], Option<&'a str>);
+    let cases: [Case; 4] = [
+        (
+            &[
+                ("ATOLLO_LEVEL", "manual"),
+                ("ATOLLO_PROJECT", "shop"),
+                ("ATOLLO_TERMINAL", "Mio"),
+                ("ATOLLO_LANG", "it"),
+            ],
+            Some("PC · Mio · shop · agenti: inoltrati alla VM del progetto se attiva"),
+        ),
+        (
+            &[("ATOLLO_LEVEL", "manual"), ("ATOLLO_LANG", "it")],
+            Some("PC · editor · nessun progetto · agenti: inoltrati alla VM del progetto se attiva"),
+        ),
+        (
+            &[
+                ("ATOLLO_LEVEL", "project"),
+                ("ATOLLO_PROJECT", "shop"),
+                ("ATOLLO_LANG", "en"),
+            ],
+            Some("PC · no VM · project's terminal · shop · agents: forwarded to the project's VM when it is on"),
+        ),
+        (&[("ATOLLO_LANG", "it")], None),
+    ];
+    let tmp = TempDir::new("kitfiles-level");
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
+    write_all(&kit).unwrap();
+    let clean = |cmd: &mut Command, vars: &[(&str, &str)]| {
+        for name in [
+            "ATOLLO_LEVEL",
+            "ATOLLO_PROJECT",
+            "ATOLLO_TERMINAL",
+            "ATOLLO_LANG",
+        ] {
+            cmd.env_remove(name);
+        }
+        cmd.env("ATOLLO_QUIET", "1");
+        for (k, v) in vars {
+            cmd.env(k, v);
+        }
+    };
+    if let Some(bash) = host_bash() {
+        for (vars, line) in &cases {
+            let mut cmd = bash_cmd(&bash, &tmp.0);
+            clean(&mut cmd, vars);
+            let (ok, _, err) = run(cmd
+                .arg("--rcfile")
+                .arg(kit.kit_files().join("bashrc"))
+                .args(["-i", "-c", "true"]));
+            assert!(ok, "{err}");
+            match line {
+                Some(line) => assert!(err.contains(line), "{vars:?}: {err}"),
+                None => assert!(!err.contains(" · "), "{vars:?}: {err}"),
+            }
+        }
+    } else {
+        eprintln!("no bash on this host: bashrc skipped");
+    }
+    let Some(pwsh) = host_pwsh() else {
+        eprintln!("no pwsh on this host: profile.ps1 skipped");
+        return;
+    };
+    for (vars, line) in &cases {
+        let mut cmd = Command::new(&pwsh);
+        clean(&mut cmd, vars);
+        cmd.env("CP_ROOT", &tmp.0)
+            .env("CP_DATA", tmp.0.join("data"));
+        let (_, _, err) = run(cmd
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+            ])
+            .arg(kit.kit_files().join("profile.ps1")));
+        // Its parts: the console's code page may change the `·` between
+        // them when the output is read through a pipe.
+        match line {
+            Some(line) => {
+                for part in line.split(" · ") {
+                    assert!(err.contains(part), "{vars:?}: {part}: {err}");
+                }
+            }
+            None => assert!(
+                !err.contains("agents:") && !err.contains("agenti:"),
+                "{err}"
+            ),
+        }
+    }
+}
