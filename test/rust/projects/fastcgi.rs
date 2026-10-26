@@ -1,7 +1,7 @@
 use super::*;
 use crate::kit::Target;
 
-/// The FastCGI server Caddy runs on each of the six targets: php-cgi on
+/// The FastCGI server Caddy runs on each of the four targets: php-cgi on
 /// Windows, static-php-cli's `php-fpm` elsewhere (no php-cgi).
 #[test]
 fn fastcgi_program_per_target() {

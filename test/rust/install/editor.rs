@@ -54,8 +54,7 @@ fn the_editor_is_pinned() {
 }
 
 /// BUG-V3-09: every system the editor is downloaded for has its SHA-256
-/// fixed in the catalog (no `.sha256` fetched next to the archive); on
-/// Windows ARM64 the x64 build, emulated.
+/// fixed in the catalog (no `.sha256` fetched next to the archive).
 #[test]
 fn the_editor_is_pinned_on_every_target() {
     use crate::kit::Target;
@@ -88,7 +87,7 @@ fn the_editor_is_pinned_on_every_target() {
 /// new hash for every target: this record is renewed with them, after the
 /// hashes are checked against the release's `.sha256` files.
 const HASHED_VERSION: &str = "1.135.06055";
-const HASHED: [(&str, &str); 5] = [
+const HASHED: [(&str, &str); 4] = [
     (
         "win32-x64",
         "579121d3043b94fbd054aee3f1155b53b00dc2786995604a685fda9ba7e2b560",
@@ -96,10 +95,6 @@ const HASHED: [(&str, &str); 5] = [
     (
         "darwin-arm64",
         "87ffebc1df7bde31b9e863d38fa6121cdebe3e5f9794d65f95f062f986dcfa73",
-    ),
-    (
-        "darwin-x64",
-        "b0038f4ae482d6454bb293ae5b04d4af0834f8c7094f95dfeec3c6519d9fcb74",
     ),
     (
         "linux-x64",

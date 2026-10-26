@@ -237,10 +237,10 @@ export const START: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona su Windows 10 e 11, macOS e Linux, con processori x64 e ARM64 (su ARM64 serve Windows 11).",
-            "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works on Windows 10 and 11, macOS and Linux, with x64 and ARM64 processors (on ARM64 Windows 11 is needed).",
-            "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne sous Windows 10 et 11, macOS et Linux, avec des processeurs x64 et ARM64 (sur ARM64, Windows 11 est nécessaire).",
-            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft unter Windows 10 und 11, macOS und Linux, mit x64- und ARM64-Prozessoren (auf ARM64 braucht es Windows 11).",
+            "Atollo è quello zaino. È un unico programma che sta in una cartella insieme a due sottocartelle: projects, dove vivono i tuoi progetti, e data, dove il kit tiene i suoi programmi, le impostazioni e i dati dei database. Funziona dove gira Docker Sandboxes: Windows 10 e 11 su processori x64, macOS sui Mac con Apple silicon, Linux su processori x64 e ARM64.",
+            "Atollo is that backpack. It is a single program that sits in a folder together with two subfolders: projects, where your projects live, and data, where the kit keeps its programs, settings and database data. It works where Docker Sandboxes runs: Windows 10 and 11 on x64 processors, macOS on Macs with Apple silicon, Linux on x64 and ARM64 processors.",
+            "Atollo est ce sac. C'est un seul programme qui se trouve dans un dossier avec deux sous-dossiers : projects, où vivent vos projets, et data, où le kit garde ses programmes, ses paramètres et les données des bases de données. Il fonctionne là où Docker Sandboxes tourne : Windows 10 et 11 sur processeurs x64, macOS sur les Mac avec Apple silicon, Linux sur processeurs x64 et ARM64.",
+            "Atollo ist dieser Rucksack. Es ist ein einziges Programm, das in einem Ordner zusammen mit zwei Unterordnern liegt: projects, wo deine Projekte leben, und data, wo das Kit seine Programme, Einstellungen und die Daten der Datenbanken aufbewahrt. Es läuft dort, wo Docker Sandboxes läuft: Windows 10 und 11 auf x64-Prozessoren, macOS auf Macs mit Apple Silicon, Linux auf x64- und ARM64-Prozessoren.",
           )}
         </P>
         <P>
@@ -672,10 +672,10 @@ export const START: TopicTexts = {
                 "Der Editor, PowerShell 7 (die Konsole des Kits), GitHub CLI, Docker Sandboxes (die VM der Projekte) und Git. Darunter die Anforderungen an den PC.",
               ),
               tr(
-                "L'editor, PowerShell 7, GitHub CLI e Docker Sandboxes sono sempre installati, insieme agli altri, quando premi «Installa»: le loro caselle sono bloccate. Docker Sandboxes solo dove Docker lo pubblica (non su Windows ARM64 né sui Mac Intel). Git si sceglie, e arriva comunque con Claude Code e Pi.",
-                "The editor, PowerShell 7, GitHub CLI and Docker Sandboxes are always installed, together with the others, when you press “Install”: their checkboxes are locked. Docker Sandboxes only where Docker publishes it (not on Windows ARM64 nor on Intel Macs). Git is your choice, and it comes anyway with Claude Code and Pi.",
-                "L'éditeur, PowerShell 7, GitHub CLI et Docker Sandboxes sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : leurs cases sont verrouillées. Docker Sandboxes seulement là où Docker le publie (ni sur Windows ARM64 ni sur les Mac Intel). Git est à choisir, et il arrive de toute façon avec Claude Code et Pi.",
-                "Der Editor, PowerShell 7, GitHub CLI und Docker Sandboxes werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Ihre Kontrollkästchen sind gesperrt. Docker Sandboxes nur dort, wo Docker es veröffentlicht (nicht unter Windows ARM64 und nicht auf Intel-Macs). Git wählst du selbst, und es kommt ohnehin mit Claude Code und Pi.",
+                "L'editor, PowerShell 7, GitHub CLI e Docker Sandboxes sono sempre installati, insieme agli altri, quando premi «Installa»: le loro caselle sono bloccate. Git si sceglie, e arriva comunque con Claude Code e Pi.",
+                "The editor, PowerShell 7, GitHub CLI and Docker Sandboxes are always installed, together with the others, when you press “Install”: their checkboxes are locked. Git is your choice, and it comes anyway with Claude Code and Pi.",
+                "L'éditeur, PowerShell 7, GitHub CLI et Docker Sandboxes sont toujours installés, avec les autres, quand vous appuyez sur « Installer » : leurs cases sont verrouillées. Git est à choisir, et il arrive de toute façon avec Claude Code et Pi.",
+                "Der Editor, PowerShell 7, GitHub CLI und Docker Sandboxes werden immer installiert, zusammen mit den anderen, wenn du auf „Installieren“ klickst: Ihre Kontrollkästchen sind gesperrt. Git wählst du selbst, und es kommt ohnehin mit Claude Code und Pi.",
               ),
             ],
             [

@@ -1,21 +1,17 @@
-// The six systems as people call them («macOS Apple Silicon», not
-// darwin-arm64), with what each one is for this PC: the «Piattaforma»
+// The four systems Docker Sandboxes runs on (D-176), as people call them
+// («macOS Apple Silicon», not darwin-arm64), with what each one is for this PC: the «Piattaforma»
 // selector of the Tools page and the columns of its grid (D-121).
 import type { TargetProfile, TargetToolStatus } from "../ipc";
 import { t } from "../i18n";
 
-/** The readable name of a system id (`win32-arm64`…); the id itself for
+/** The readable name of a system id (`darwin-arm64`…); the id itself for
  * one the interface does not know. */
 export function targetName(id: string): string {
   switch (id) {
     case "win32-x64":
       return t("Windows x64");
-    case "win32-arm64":
-      return t("Windows ARM64");
     case "darwin-arm64":
       return t("macOS Apple Silicon");
-    case "darwin-x64":
-      return t("macOS Intel");
     case "linux-x64":
       return t("Linux x64");
     case "linux-arm64":
@@ -25,9 +21,11 @@ export function targetName(id: string): string {
   }
 }
 
-/** What the system is for this PC: itself, run in emulation (x64 Windows
- * on an ARM64 PC, an Intel Mac's programs with Rosetta 2), or not run
- * here at all (its kit is prepared, it completes on that system). */
+/** What the system is for this PC: itself, run in emulation (the Rust
+ * side's `emulatedOnHost`; of the four systems only the x64 builds of some
+ * components run emulated, with Rosetta 2 on a Mac with Apple Silicon, and
+ * those are marked per cell), or not run here at all (its kit is prepared,
+ * it completes on that system). */
 export function targetMark(p: TargetProfile): string {
   if (p.isHost) return t("questo PC");
   if (p.emulatedOnHost) return t("in emulazione");
@@ -88,6 +86,5 @@ export function cellHint(state: CellState): string {
 /** Why a component is not available there, already translated. */
 export function cellReason(s: TargetToolStatus): string | null {
   if (s.available) return null;
-  if (s.noArm64) return t("non disponibile su PC ARM64");
   return s.unavailableReason;
 }

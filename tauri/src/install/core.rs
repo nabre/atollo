@@ -30,8 +30,7 @@ pub struct Git;
 pub fn dugite_asset_pattern(target: Target) -> Option<String> {
     let suffix = match (target.os, target.arch) {
         (Os::Win32, _) => return None,
-        (Os::Darwin, Arch::Arm64) => "macOS-arm64",
-        (Os::Darwin, Arch::X64) => "macOS-x64",
+        (Os::Darwin, _) => "macOS-arm64",
         (Os::Linux, Arch::X64) => "ubuntu-x64",
         (Os::Linux, Arch::Arm64) => "ubuntu-arm64",
     };

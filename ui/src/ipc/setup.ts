@@ -32,9 +32,9 @@ export interface SetupStep {
   outcome: Outcome | null;
 }
 
-/** The six systems, in the order of the columns of the grid (Rust
- * `Target::ALL`). */
-export const TARGETS = ["win32-x64", "win32-arm64", "darwin-arm64", "darwin-x64", "linux-x64", "linux-arm64"] as const;
+/** The four systems Docker Sandboxes runs on, in the order of the columns
+ * of the grid (Rust `Target::ALL`, D-176). */
+export const TARGETS = ["win32-x64", "darwin-arm64", "linux-x64", "linux-arm64"] as const;
 
 export type TargetId = (typeof TARGETS)[number];
 
@@ -69,8 +69,6 @@ export interface TargetToolStatus {
   /** Prepared from this PC it is only pre-downloaded: it completes on the
    * first start on that system. */
   firstStart: boolean;
-  /** No ARM64 build, on a Windows ARM64 PC looking at its own system. */
-  noArm64: boolean;
   /** Why it is not available, already translated. */
   unavailableReason: string | null;
   /** On the PC's system with the VM on: the VM runs it with its build for
@@ -133,16 +131,11 @@ export interface ComponentInfo {
   /** This version of the app can install it on this kit. */
   available: boolean;
   x64Only: boolean;
-  /** No ARM64 build, this kit is Windows ARM64 and so is this PC: why it is
-   * not available. */
-  noArm64: boolean;
   /** Not made for this kit's system (Windows only, on macOS or Linux; no
-   * ARM64 build, for Windows ARM64 seen from another PC): why it is not
-   * available, already translated. null on a Windows ARM64 PC (noArm64). */
+   * build for Linux ARM64; Rosetta 2 missing on this Mac): why it is not
+   * available, already translated. */
   unavailableReason: string | null;
   needs: string[];
-  /** x64 only, on an ARM64 PC with Windows 10 (no x64 emulation there). */
-  needsWindows11: boolean;
   /** One folder per minor version, side by side; the others are always at
    * their latest version. */
   versioned: boolean;
@@ -197,10 +190,8 @@ function sampleComponent(
     version: null,
     available: true,
     x64Only: false,
-    noArm64: false,
     unavailableReason: null,
     needs: [],
-    needsWindows11: false,
     versioned: ["python", "node", "php", "go", "java"].includes(id),
     home: "https://example.org",
     bootstrapStaged: false,
@@ -363,7 +354,7 @@ export function componentsRepair(items: { id: string; line: string | null }[], t
   return act("components_repair", target ? { items, target } : { items });
 }
 
-/** The preview's grid: the sample components on the six systems, this PC
+/** The preview's grid: the sample components on the four systems, this PC
  * Windows x64. */
 function sampleGrid(): TargetGrid {
   const profiles: TargetProfile[] = TARGETS.map((id) => {
@@ -374,8 +365,8 @@ function sampleGrid(): TargetGrid {
   const targets = profiles.map(({ id, ...p }): TargetSummary => {
     const tools = SAMPLE_COMPONENTS.map((c): TargetToolStatus => {
       // Every sample component has a build for every system (Apache too,
-      // D-116); the x64 ones run emulated on Windows ARM64.
-      const emulated = c.x64Only && id === "win32-arm64";
+      // D-116); the x64 ones run with Rosetta 2 on a Mac with Apple Silicon.
+      const emulated = c.x64Only && id === "darwin-arm64";
       const here = id === "win32-x64";
       return {
         id: c.id,
@@ -390,7 +381,6 @@ function sampleGrid(): TargetGrid {
         needsReinstall: false,
         bootstrapStaged: false,
         firstStart: !p.executableOnHost && ["git", "python"].includes(c.id),
-        noArm64: false,
         unavailableReason: null,
         viaVm: false,
       };

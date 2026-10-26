@@ -153,11 +153,9 @@ fn dugite_asset_per_target() {
     ];
     for (t, want) in [
         (Target::DARWIN_ARM64, Some("macOS-arm64.tar.gz")),
-        (Target::DARWIN_X64, Some("macOS-x64.tar.gz")),
         (Target::LINUX_X64, Some("ubuntu-x64.tar.gz")),
         (Target::LINUX_ARM64, Some("ubuntu-arm64.tar.gz")),
         (Target::WIN32_X64, None),
-        (Target::WIN32_ARM64, None),
     ] {
         let Some(re) = dugite_asset_pattern(t) else {
             assert_eq!(want, None, "{t}");
@@ -232,9 +230,6 @@ fn git_is_staged_where_its_target_cannot_run() {
     // Another system or CPU without translation: staged.
     assert!(between(Target::LINUX_X64, Target::DARWIN_ARM64, false));
     assert!(between(Target::LINUX_X64, Target::LINUX_ARM64, false));
-    assert!(between(Target::DARWIN_ARM64, Target::DARWIN_X64, false));
-    // With Rosetta 2 an Apple Silicon Mac runs the x64 Git itself.
-    assert!(!between(Target::DARWIN_ARM64, Target::DARWIN_X64, true));
 
     // `should_stage` on this host, for a kit of every target.
     let tmp = crate::kit::tests::TempDir::new("git-stage");

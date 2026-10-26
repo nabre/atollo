@@ -12,7 +12,7 @@ Quando ti viene chiesto di lavorare su qualsiasi aspetto di comunicazione, marke
 2. **Nessun confronto con altri prodotti:** Non nominare né paragonare altri strumenti, servizi o sistemi (niente tabelle "noi contro loro", niente "meglio di…", niente "l'isolamento di X senza Y"). Atollo si presenta con le sue funzionalità e il suo modo di lavorare: cosa fa, come lo fa, cosa garantisce. Alla domanda «in cosa è diverso?» si risponde con gli aspetti della **Sezione 4**.
 3. **Coerenza cromatica assoluta con `vscode-defaults`:** Ogni pagina web, presentazione, grafico SVG, documento HTML o componente UI deve utilizzare esclusivamente la tavolozza definita nella **Sezione 5**, derivata da [`docs/brand/vscode-defaults/dark.json`](vscode-defaults/dark.json), [`docs/brand/vscode-defaults/light.json`](vscode-defaults/light.json), [`docs/brand/themes.py`](themes.py) e [`docs/brand/make.py`](make.py).
 4. **Tono di voce (*Voice & Tone*):**
-   * **Sobrio, ingegneristico, concreto, mai gonfiato:** Evita superlativi vuoti (*"rivoluzionario"*, *"magico"*, *"il migliore al mondo"*). Gli sviluppatori si convincono con i fatti tecnici (*zero installazione, zero diritti di amministratore, una microVM di Docker Sandboxes per progetto configurata dal kit, 6 architetture native, isolamento del PATH, sincronizzazione di 4 agenti AI: Claude Code, Codex, Antigravity, Pi*).
+   * **Sobrio, ingegneristico, concreto, mai gonfiato:** Evita superlativi vuoti (*"rivoluzionario"*, *"magico"*, *"il migliore al mondo"*). Gli sviluppatori si convincono con i fatti tecnici (*zero installazione, zero diritti di amministratore, una microVM di Docker Sandboxes per progetto configurata dal kit, 4 sistemi nativi (quelli di Docker Sandboxes), isolamento del PATH, sincronizzazione di 4 agenti AI: Claude Code, Codex, Antigravity, Pi*).
    * **Evocativo ma funzionale:** La metafora marina dell'**Atollo** (laguna protetta, isola autosufficiente in qualsiasi oceano/OS) serve a rendere immediato il concetto di isolamento e portabilità, senza mai appesantire l'interfaccia tecnica con gergo nautico forzato.
 5. **Parità multilingua obbligatoria (`IT`, `EN`, `FR`, `DE`):** Ogni testo rivolto all'utente finale va mantenuto allineato nelle quattro lingue supportate dal progetto.
 6. **Trasparenza tecnica:** Dichiara sempre con onestà cosa gira nativo (`✓`), cosa in emulazione (`≈`) e quali sono i limiti fisici dei sistemi operativi ospiti (come documentato in [`docs/app/CATALOG.md`](../app/CATALOG.md), “Availability per target” e “Sources per system”; in italiano [`CATALOG.it.md`](../app/CATALOG.it.md), «Disponibilità per target» e «Fonti per sistema»). Per le sandbox dichiara anche dove la microVM c'è (Windows 11 x64 con Windows Hypervisor Platform, Mac Apple silicon con macOS 14+, Ubuntu 24.04+ con KVM), che serve un account Docker (`sbx login`), che l'hypervisor lo attiva l'utente una volta (mai Atollo) e quali tracce restano fuori dalla cartella (DECISIONS.md D-175). Dove la VM non c'è, i progetti girano sul PC e l'app lo dice («Senza VM»): mai promettere un isolamento che quel PC non dà.
@@ -28,23 +28,23 @@ Quando ti viene chiesto di lavorare su qualsiasi aspetto di comunicazione, marke
 | **Nome del prodotto** | **Atollo** |
 | **Comando CLI / Binario** | `atollo` (Windows: `Atollo.exe`, macOS: `Atollo.app`, Linux: `Atollo.AppImage`) |
 | **Categoria di mercato** | **Universal Portable Dev & AI Workspace** |
-| **Target Piattaforme (`6/6`)** | `win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64` |
+| **Target Piattaforme (`4/4`)** | `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`: i sistemi su cui gira Docker Sandboxes, il cuore di Atollo (D-176) |
 | **Licenza** | MIT |
 
 ### 2.2 Definizione Canonica (Da usare come base ovunque)
 
 * **Italiano:**
   > **Atollo — Universal Portable Dev & AI Workspace.**
-  > Un ambiente di sviluppo autonomo, multi-OS e multi-architettura (*Windows, macOS, Linux × x64/ARM64*) che unisce **Editor**, **Toolchain/Runtime Manager**, **Server/Database locali** e **Orchestratore di Agenti AI** in una singola cartella portabile e senza installazione. Ogni progetto gira nella sua **microVM di Docker Sandboxes**, configurata da Atollo e tenuta nella cartella.
+  > Un ambiente di sviluppo autonomo, multi-OS e multi-architettura (*Windows x64, macOS Apple Silicon, Linux x64/ARM64*) che unisce **Editor**, **Toolchain/Runtime Manager**, **Server/Database locali** e **Orchestratore di Agenti AI** in una singola cartella portabile e senza installazione. Ogni progetto gira nella sua **microVM di Docker Sandboxes**, configurata da Atollo e tenuta nella cartella.
 * **English:**
   > **Atollo — Universal Portable Dev & AI Workspace.**
-  > A self-contained, multi-OS and multi-architecture development environment (*Windows, macOS, Linux × x64/ARM64*) that unifies an **Editor**, **Toolchain/Runtime Manager**, **Local Servers/Databases**, and an **AI Agent Orchestrator** into a single portable, zero-install folder. Each project runs in its own **Docker Sandboxes microVM**, configured by Atollo and kept in the folder.
+  > A self-contained, multi-OS and multi-architecture development environment (*Windows x64, macOS Apple Silicon, Linux x64/ARM64*) that unifies an **Editor**, **Toolchain/Runtime Manager**, **Local Servers/Databases**, and an **AI Agent Orchestrator** into a single portable, zero-install folder. Each project runs in its own **Docker Sandboxes microVM**, configured by Atollo and kept in the folder.
 * **Français:**
   > **Atollo — Universal Portable Dev & AI Workspace.**
-  > Un environnement de développement autonome, multi-OS et multi-architecture (*Windows, macOS, Linux × x64/ARM64*) qui réunit **Éditeur**, **Gestionnaire de langages et d'outils**, **Serveurs/Bases de données locales** et **Orchestrateur d'agents IA** dans un seul dossier portable sans installation. Chaque projet s'exécute dans sa propre **microVM Docker Sandboxes**, configurée par Atollo et conservée dans le dossier.
+  > Un environnement de développement autonome, multi-OS et multi-architecture (*Windows x64, macOS Apple Silicon, Linux x64/ARM64*) qui réunit **Éditeur**, **Gestionnaire de langages et d'outils**, **Serveurs/Bases de données locales** et **Orchestrateur d'agents IA** dans un seul dossier portable sans installation. Chaque projet s'exécute dans sa propre **microVM Docker Sandboxes**, configurée par Atollo et conservée dans le dossier.
 * **Deutsch:**
   > **Atollo — Universal Portable Dev & AI Workspace.**
-  > Eine eigenständige Multi-OS- und Multi-Architektur-Entwicklungsumgebung (*Windows, macOS, Linux × x64/ARM64*), die **Editor**, **Toolchain-/Runtime-Manager**, **lokale Server/Datenbanken** und **KI-Agenten-Orchestrierung** in einem einzigen portablen Ordner ohne Installation vereint. Jedes Projekt läuft in seiner eigenen **Docker-Sandboxes-microVM**, von Atollo konfiguriert und im Ordner aufbewahrt.
+  > Eine eigenständige Multi-OS- und Multi-Architektur-Entwicklungsumgebung (*Windows x64, macOS Apple Silicon, Linux x64/ARM64*), die **Editor**, **Toolchain-/Runtime-Manager**, **lokale Server/Datenbanken** und **KI-Agenten-Orchestrierung** in einem einzigen portablen Ordner ohne Installation vereint. Jedes Projekt läuft in seiner eigenen **Docker-Sandboxes-microVM**, von Atollo konfiguriert und im Ordner aufbewahrt.
 
 ---
 
@@ -79,7 +79,7 @@ Ogni presentazione completa di Atollo deve articolarsi su questi **5 punti**:
    * **Modelli AI locali:** modelli GGUF (dal catalogo di Atollo o da Hugging Face) che girano sul PC con llama.cpp, senza rete e senza account; download che riprendono, verificati con lo SHA-256; il server ascolta solo su `127.0.0.1` con una chiave e Pi lo usa senza altre impostazioni. Una sola copia in `data/models` per Windows, macOS e Linux.
    * **Controllo dei consumi:** monitoraggio in tempo reale dei limiti del piano e dei consumi giornalieri e degli ultimi 7 giorni.
 5. **Il Fondamento: Continuità Fisica Multi-OS (`6/6`) e Rimozione Sicura**
-   * Grazie al Router multipiattaforma (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite (su Windows ARM64 alcuni componenti usano la build x64 in emulazione, come dice la matrice in [`docs/app/TOOLS-MATRIX.html`](../app/TOOLS-MATRIX.html)).
+   * Grazie al Router multipiattaforma (`win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`, i sistemi di Docker Sandboxes), la stessa cartella o lo stesso SSD esterno può passare da Windows a macOS a Linux mantenendo intatti progetti, database, credenziali e configurazioni AI, eseguendo su ogni macchina i binari nativi del sistema ospite (la matrice in [`docs/app/TOOLS-MATRIX.html`](../app/TOOLS-MATRIX.html) dice cosa c'è dove).
    * La funzione **Rimuovi l'unità** chiude tutti i processi figli, mette in sicurezza le sessioni e le credenziali nel kit e permette di espellere il disco senza rischi.
 
 ---
@@ -92,7 +92,7 @@ Alla domanda «in cosa è diverso?» non si risponde con un confronto (Direttiva
 | :--- | :--- | :--- |
 | **Ogni progetto nella sua sandbox** | Il codice di un progetto gira nella sua microVM, che Atollo configura e tiene nella cartella; il resto del PC e gli altri progetti restano fuori. | Docker Sandboxes (`sbx`) nel kit, una microVM per progetto e per terminale, gli strumenti del kit per Linux in sola lettura, il database sul PC raggiunto solo sulla sua porta, le chiavi mai nella VM; nessun diritto di amministratore per Atollo, nessun servizio di sistema, registro e `PATH` del sistema mai toccati; dove la VM non c'è, «Senza VM» nella barra di stato con il motivo; avvio anche da chiavetta USB o SSD esterno. |
 | **Tutto da una finestra** | Ogni area del lavoro ha la sua pagina, e ciò che succede si vede in un posto solo. | Pagine **Progetti**, **AI** (agenti e modelli locali), **Database**, **Strumenti**, **Impostazioni**; pannello **Attività** con output ed errori; riga di comando per gli script (`atollo check`, `atollo prepare`, `atollo sync`). |
-| **La cartella viaggia con te** | Cambiano unità, cartella o sistema: il lavoro resta lo stesso. | Percorsi riallineati al cambio di lettera o cartella; su ognuno dei 6 target i programmi di quel sistema; progetti, database, accessi, configurazioni degli agenti e il kit di ogni sandbox intatti (l'accesso a Docker si rifà su ogni PC con `sbx login`). |
+| **La cartella viaggia con te** | Cambiano unità, cartella o sistema: il lavoro resta lo stesso. | Percorsi riallineati al cambio di lettera o cartella; su ognuno dei 4 target i programmi di quel sistema; progetti, database, accessi, configurazioni degli agenti e il kit di ogni sandbox intatti (l'accesso a Docker si rifà su ogni PC con `sbx login`). |
 | **Ogni componente verificato** | Nulla si usa senza essere controllato, e le versioni non si pestano i piedi. | Checksum SHA-256 o firma su ogni download; versioni *side-by-side* per progetto; matrice delle relazioni che avvisa delle incompatibilità. |
 
 ---
@@ -203,7 +203,7 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 
 ### Persona 3: Lo Studente, Docente o Consulente Nomade
 * **Dolore:** Lavora su PC scolastici, universitari, di laboratorio o aziendali dove non ha i permessi di amministratore, oppure si sposta continuamente tra un fisso Windows, un MacBook e una macchina Linux.
-* **Hook:** *"Il tuo intero studio di sviluppo in tasca. Su 6 architetture, senza permessi di amministratore."*
+* **Hook:** *"Il tuo intero studio di sviluppo in tasca. Su Windows, macOS e Linux, senza permessi di amministratore."*
 * **Funzionalità da evidenziare:** Esecuzione da chiavetta USB o SSD esterno, rilocazione automatica dei percorsi al cambio di lettera/cartella, account GitHub unico per tutto il kit, pulsante **Rimuovi l'unità**.
 
 ---
@@ -216,17 +216,17 @@ Quando generi copy per una campagna, una sezione del sito o un post social, sceg
 | :--- | :--- | :--- | :--- | :--- |
 | **Definizione di Categoria** | Universal Portable Dev & AI Workspace | Universal Portable Dev & AI Workspace | Universal Portable Dev & AI Workspace | Universal Portable Dev & AI Workspace |
 | **Headline Hero (Primaria)** | Sviluppo, tutto in una cartella, su qualsiasi computer. | Dev & AI, all in one folder, on any machine. | Développement, tout dans un dossier, sur n'importe quel ordinateur. | Dev & KI, alles in einem Ordner, auf jedem Computer. |
-| **Headline Tecnica** | Editor, Runtime, Database e Agenti AI. In una sola cartella, su 6 architetture. | Editor, Runtimes, Databases, and AI Agents. One portable folder across 6 targets. | Éditeur, Runtimes, Bases de données et Agents IA. Un seul dossier sur 6 architectures. | Editor, Runtimes, Datenbanken und KI-Agenten. Ein portabler Ordner für 6 Architekturen. |
+| **Headline Tecnica** | Editor, Runtime, Database e Agenti AI. In una sola cartella, su 4 sistemi. | Editor, Runtimes, Databases, and AI Agents. One portable folder across 4 systems. | Éditeur, Runtimes, Bases de données et Agents IA. Un seul dossier sur 4 systèmes. | Editor, Runtimes, Datenbanken und KI-Agenten. Ein portabler Ordner für 4 Systeme. |
 | **Sandbox** | Ogni progetto nella sua microVM. La configurazione nella tua cartella. | Every project in its own microVM. The setup in your folder. | Chaque projet dans sa propre microVM. La configuration dans votre dossier. | Jedes Projekt in seiner eigenen microVM. Die Konfiguration in deinem Ordner. |
 | **Sottotitolo "Zero-Friction"** | Niente installazione. Niente diritti di amministratore. Nessuna traccia fuori dal tuo Atollo. | Zero install. Zero admin rights. Zero footprint outside your Atollo. | Aucune installation. Aucun droit d'administrateur. Aucune trace hors de votre Atollo. | Keine Installation. Keine Admin-Rechte. Keine Spuren außerhalb deines Atollo. |
 
 ### 8.2 Elevator Pitch Completo (Per GitHub README / Pagina "Informazioni")
 
 **Italiano:**
-> **Atollo** è un *Universal Portable Dev & AI Workspace* per Windows, macOS e Linux (`x64` e `ARM64`). Racchiude in un'unica cartella portabile un editor integrato (VSCodium), più di 20 linguaggi e strumenti scaricati su richiesta, database e server web locali (MySQL, MongoDB, SQLite, Caddy/Apache), modelli AI locali (llama.cpp) e gli agenti **Claude Code, Codex, Antigravity e Pi** con istruzioni, skill e server MCP sincronizzati. Ogni progetto gira nella sua microVM di Docker Sandboxes, che Atollo configura e tiene nella cartella (dove il PC la permette; altrimenti l'app lo dice). Non richiede installazione né diritti di amministratore, tiene il proprio ambiente separato dal sistema ospite e ti segue su qualsiasi disco o computer.
+> **Atollo** è un *Universal Portable Dev & AI Workspace* per Windows x64, macOS su Apple Silicon e Linux (`x64` e `ARM64`), i sistemi su cui gira Docker Sandboxes. Racchiude in un'unica cartella portabile un editor integrato (VSCodium), più di 20 linguaggi e strumenti scaricati su richiesta, database e server web locali (MySQL, MongoDB, SQLite, Caddy/Apache), modelli AI locali (llama.cpp) e gli agenti **Claude Code, Codex, Antigravity e Pi** con istruzioni, skill e server MCP sincronizzati. Ogni progetto gira nella sua microVM di Docker Sandboxes, che Atollo configura e tiene nella cartella (dove il PC la permette; altrimenti l'app lo dice). Non richiede installazione né diritti di amministratore, tiene il proprio ambiente separato dal sistema ospite e ti segue su qualsiasi disco o computer.
 
 **English:**
-> **Atollo** is a *Universal Portable Dev & AI Workspace* for Windows, macOS, and Linux (`x64` and `ARM64`). It packs into a single portable folder a built-in editor (VSCodium), 20+ on-demand languages and toolchains, local databases and web servers (MySQL, MongoDB, SQLite, Caddy/Apache), local AI models (llama.cpp), and **Claude Code, Codex, Antigravity, and Pi** agents with synchronized instructions, skills, and MCP servers. Each project runs in its own Docker Sandboxes microVM, which Atollo configures and keeps in the folder (where the PC supports it; otherwise the app says so). It requires no installation and no administrator rights, keeps its environment apart from the host OS, and travels with you on any drive or machine.
+> **Atollo** is a *Universal Portable Dev & AI Workspace* for Windows x64, macOS on Apple Silicon, and Linux (`x64` and `ARM64`), the systems Docker Sandboxes runs on. It packs into a single portable folder a built-in editor (VSCodium), 20+ on-demand languages and toolchains, local databases and web servers (MySQL, MongoDB, SQLite, Caddy/Apache), local AI models (llama.cpp), and **Claude Code, Codex, Antigravity, and Pi** agents with synchronized instructions, skills, and MCP servers. Each project runs in its own Docker Sandboxes microVM, which Atollo configures and keeps in the folder (where the PC supports it; otherwise the app says so). It requires no installation and no administrator rights, keeps its environment apart from the host OS, and travels with you on any drive or machine.
 
 ---
 
@@ -238,12 +238,12 @@ Quando un agente prepara materiali per il lancio pubblico, deve dare priorità a
 1. **0:00 – 0:15 (In mezzo all'oceano Windows):** Apertura di `Atollo` da un'unità esterna su Windows. Avvio con un clic di un progetto full-stack + database + agente AI attivo nell'editor.
 2. **0:15 – 0:25 (Chiusura senza tracce):** Clic su **Rimuovi l'unità**. Tutti i processi del kit si chiudono istantaneamente, le credenziali rientrano nel kit, l'unità è pronta per l'espulsione.
 3. **0:25 – 0:40 (Approdo su macOS / Linux):** Lo stesso disco viene collegato a un Mac Apple Silicon o a una macchina Linux. Si apre `Atollo`: il Router rileva il nuovo target (`darwin-arm64` / `linux-x64`), e lo stesso identico progetto, con lo stesso database e gli stessi 4 agenti AI sincronizzati, riparte con i binari nativi del nuovo sistema operativo.
-4. **0:40 – 0:45 (Payoff finale):** Logo **Atollo** su sfondo `#1F1F1F` con accento `#10B981` — *"Universal Portable Dev & AI Workspace. Zero install. Six architectures."*
+4. **0:40 – 0:45 (Payoff finale):** Logo **Atollo** su sfondo `#1F1F1F` con accento `#10B981` — *"Universal Portable Dev & AI Workspace. Zero install. Four systems."*
 
 ### 9.2 Canali Prioritari e Angoli Editoriali
 * **Hacker News (`Show HN`):**
-  * *Titolo consigliato:* `Show HN: Atollo – Portable, zero-install dev environment and AI agent hub (Win/Mac/Linux, x64/ARM64)`
-  * *Primo commento tecnico:* Spiegare l'architettura in Rust + Tauri 2, come funziona il `Router` sui 6 target, Docker Sandboxes configurato dal kit (una microVM per progetto, `sbx` e il kit di ogni sandbox nella cartella, i tre «box»: VM, kit sul PC, Senza VM), l'ambiente del kit senza permessi di root, la gestione dei processi tramite Job Object / gruppi di processi e la sincronizzazione unificata di Claude Code, Codex, Antigravity e Pi, il server llama.cpp dei modelli locali su `127.0.0.1` con chiave.
+  * *Titolo consigliato:* `Show HN: Atollo – Portable, zero-install dev environment and AI agent hub (Windows x64, Apple Silicon, Linux x64/ARM64)`
+  * *Primo commento tecnico:* Spiegare l'architettura in Rust + Tauri 2, come funziona il `Router` sui 4 target (quelli di Docker Sandboxes), Docker Sandboxes configurato dal kit (una microVM per progetto, `sbx` e il kit di ogni sandbox nella cartella, i tre «box»: VM, kit sul PC, Senza VM), l'ambiente del kit senza permessi di root, la gestione dei processi tramite Job Object / gruppi di processi e la sincronizzazione unificata di Claude Code, Codex, Antigravity e Pi, il server llama.cpp dei modelli locali su `127.0.0.1` con chiave.
 * **Scuole, Università, Bootcamp e Formazione IT:**
   * Proporre **Atollo** come soluzione definitiva al *"Laboratorio bloccato"*: gli studenti tengono `Atollo` sulla propria chiavetta USB o cartella profilo, lavorano in aula senza chiedere la password di amministratore al tecnico IT e continuano a casa sullo stesso identico ambiente.
 * **Community AI & Developer (`r/ClaudeAI`, `r/LocalLLaMA`, `r/rust`, `r/webdev`, X/Twitter):**

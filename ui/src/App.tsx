@@ -26,7 +26,7 @@ import { updateFound, updateText } from "./shell/update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";
 import { TitleBar } from "./shell/titlebar";
-import { IsolationDialog, systemOf, useIsolation } from "./shell/isolation";
+import { IsolationDialog, useIsolation } from "./shell/isolation";
 import { useAgents } from "./agents";
 import { AiPage, type AiPane } from "./ai";
 import { setupStatusText, useSetup } from "./components/setup";
@@ -573,7 +573,7 @@ function StatusItem({
 /** How shut in the projects are (D-167), right after the Activity item:
  * "VM" when every project runs in its microVM; otherwise "Senza VM" on the
  * warning color, always in sight. A click opens why and what to do. */
-function IsolationItem({ platform, installing }: { platform: string; installing: boolean }) {
+function IsolationItem({ installing }: { installing: boolean }) {
   const { status, checking, check } = useIsolation(installing);
   const [open, setOpen] = useState(false);
   if (!status) return null;
@@ -599,7 +599,6 @@ ${t("Dettagli e cosa serve per la VM")}`}
       {open && (
         <IsolationDialog
           status={status}
-          system={systemOf(platform)}
           checking={checking}
           onCheck={check}
           onClose={() => {
@@ -720,7 +719,7 @@ function StatusBar({
         <Codicon name="error" size={14} className="ml-1" />
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
-      {info && <IsolationItem platform={info.platform} installing={installing !== null} />}
+      {info && <IsolationItem installing={installing !== null} />}
       {installing && (
         <StatusItem>
           {/* The item's color, as the editor's status-bar codicons. */}

@@ -36,9 +36,10 @@ fn sandboxes_never_block_and_skip_systems_without_a_build() {
     assert!(missing_required(&kit).contains(&"sandboxes".to_owned()));
     assert!(!missing_to_open(&kit).contains(&"sandboxes".to_owned()));
 
+    use crate::kit::{Arch, Os, Target};
     for target in [
-        crate::kit::Target::WIN32_ARM64,
-        crate::kit::Target::DARWIN_X64,
+        Target::new(Os::Win32, Arch::Arm64),
+        Target::new(Os::Darwin, Arch::X64),
     ] {
         let other = kit.for_target(target);
         assert!(

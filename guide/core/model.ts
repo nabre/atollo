@@ -575,10 +575,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Le viste d'insieme della pagina Strumenti: i sei sistemi, chi richiede chi, le estensioni per linguaggio e ciò che serve al PC.",
-        "The overall views of the Tools page: the six systems, who requires whom, the extensions per language and what the PC needs.",
-        "Les vues d'ensemble de la page Outils : les six systèmes, qui requiert qui, les extensions par langage et ce dont le PC a besoin.",
-        "Die Gesamtansichten der Seite Werkzeuge: die sechs Systeme, wer wen benötigt, die Erweiterungen je Sprache und was der PC braucht.",
+        "Le viste d'insieme della pagina Strumenti: i quattro sistemi, chi richiede chi, le estensioni per linguaggio e ciò che serve al PC.",
+        "The overall views of the Tools page: the four systems, who requires whom, the extensions per language and what the PC needs.",
+        "Les vues d'ensemble de la page Outils : les quatre systèmes, qui requiert qui, les extensions par langage et ce dont le PC a besoin.",
+        "Die Gesamtansichten der Seite Werkzeuge: die vier Systeme, wer wen benötigt, die Erweiterungen je Sprache und was der PC braucht.",
       ),
     icon: "table",
     keywords:

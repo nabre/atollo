@@ -24,18 +24,11 @@ pub(crate) fn cmake_spec(
     target: Target,
 ) -> (&'static str, Kind, Inner, &'static str, &'static str) {
     match (target.os, target.arch) {
-        (Os::Win32, Arch::X64) => (
+        (Os::Win32, _) => (
             r"^cmake-[\d.]+-windows-x86_64\.zip$",
             Kind::Zip,
             Inner::Single,
             "ninja-win.zip",
-            "ninja.exe",
-        ),
-        (Os::Win32, Arch::Arm64) => (
-            r"^cmake-[\d.]+-windows-arm64\.zip$",
-            Kind::Zip,
-            Inner::Single,
-            "ninja-winarm64.zip",
             "ninja.exe",
         ),
         (Os::Darwin, _) => (

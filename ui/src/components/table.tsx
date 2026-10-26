@@ -43,7 +43,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
   const lines = tool?.downloadable ? tool : null;
   const doing = running || busy !== null;
   const ready = c.installed || Boolean(c.bootstrapStaged);
-  if (c.noArm64 || c.unavailableReason !== null || c.needsWindows11) return null;
+  if (c.unavailableReason !== null) return null;
   if (!ready) {
     if (!c.available) return null;
     return (
@@ -236,7 +236,7 @@ export function ToolsTable({
           <Checkbox
             label={t("Scegli {0}", c.name)}
             checked={on}
-            disabled={c.locked || running || c.noArm64 || c.unavailableReason !== null || (!c.available && !on)}
+            disabled={c.locked || running || c.unavailableReason !== null || (!c.available && !on)}
             onChange={(v) => {
               choose(c.id, v);
             }}

@@ -8,7 +8,8 @@ export interface EditorStatus {
   installed: boolean;
   running: boolean;
   port: number | null;
-  /** The editor server is x64 only: emulated on ARM64 PCs. */
+  /** The editor server runs its x64 build with Rosetta 2 on a Mac with
+   * Apple Silicon. */
   emulated: boolean;
   /** The recommended extensions being installed in the background. */
   extensions: EditorExtensions;

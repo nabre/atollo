@@ -165,8 +165,7 @@ pub struct Plan {
     pub remove: Vec<String>,
 }
 
-/// Nothing unavailable on the kit's target (e.g. `noArm64` on `win32-arm64`,
-/// PHP on macOS/Linux, Android on Linux ARM64, an x64 build on a Mac
+/// Nothing unavailable on the kit's target (e.g. PHP on macOS/Linux, Android on Linux ARM64, an x64 build on a Mac
 /// without Rosetta 2) is ever planned.
 pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Result<Plan> {
     for id in opts.only.iter().chain(&opts.skip) {
@@ -279,8 +278,6 @@ fn only_with_needs<'a>(
             let platform = if c.is_available_on(target) {
                 // Available, but this Mac has no Rosetta 2 for its x64 build.
                 "this Mac without Rosetta 2"
-            } else if target == Target::WIN32_ARM64 {
-                "ARM64"
             } else {
                 target.as_str()
             };

@@ -26,14 +26,14 @@ fn versions_and_choice() {
     let list = vec![
         release("app-v1.0.1", "Atollo-1.0.1-win32-x64.exe"),
         release("app-v1.2.0", "Atollo-1.2.0-win32-x64.exe"),
-        release("app-v1.3.0", "Atollo-1.3.0-win32-arm64.exe"),
+        release("app-v1.3.0", "Atollo-1.3.0-linux-arm64.AppImage"),
         // Another version's name: not this release's asset.
         release("app-v1.4.0", "Atollo-1.3.0-win32-x64.exe"),
         release("node-v1", "Atollo-1.0.0-win32-x64.exe"),
         pre,
     ];
     let x64 = |v: &str| format!("Atollo-{v}-win32-x64.exe");
-    let arm64 = |v: &str| format!("Atollo-{v}-win32-arm64.exe");
+    let arm64 = |v: &str| format!("Atollo-{v}-linux-arm64.AppImage");
     assert_eq!(
         newest(&list, "1.0.0", x64).map(|r| r.tag_name.as_str()),
         Some("app-v1.2.0")
@@ -45,7 +45,7 @@ fn versions_and_choice() {
     );
 }
 
-/// The release asset of each of the six targets, with the version: no
+/// The release asset of each of the four targets, with the version: no
 /// `.exe` off Windows.
 #[test]
 fn asset_names_per_target() {
@@ -56,9 +56,7 @@ fn asset_names_per_target() {
     for (target, name) in Target::ALL.iter().zip(&names) {
         let expected = match target.as_str() {
             "win32-x64" => "Atollo-1.2.3-win32-x64.exe",
-            "win32-arm64" => "Atollo-1.2.3-win32-arm64.exe",
             "darwin-arm64" => "Atollo-1.2.3-darwin-arm64.app.zip",
-            "darwin-x64" => "Atollo-1.2.3-darwin-x64.app.zip",
             "linux-x64" => "Atollo-1.2.3-linux-x64.AppImage",
             _ => "Atollo-1.2.3-linux-arm64.AppImage",
         };

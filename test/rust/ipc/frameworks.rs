@@ -52,7 +52,7 @@ fn env_goes_in_gitignore() {
 }
 
 /// Issue #3: phpMyAdmin and the databases of WordPress and Laravel install
-/// MySQL, and phpMyAdmin is available on the six targets.
+/// MySQL, and phpMyAdmin is available on the four targets.
 #[test]
 fn a_new_kit_installs_mysql_for_phpmyadmin_wordpress_and_laravel() {
     use crate::kit::Target;

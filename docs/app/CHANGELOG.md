@@ -1,5 +1,13 @@
 # Novità
 
+## Solo i sistemi di Docker Sandboxes (26/10/2026)
+
+- **Quattro sistemi** (D-176): Atollo gira su Windows x64, macOS con Apple Silicon, Linux x64 e Linux ARM64, i sistemi per cui Docker pubblica Docker Sandboxes, il cuore del kit. Windows su ARM64 e i Mac Intel non sono più supportati: niente più file di rilascio, build o prove per loro.
+- **Su un sistema non supportato Atollo lo dice e si ferma** all'avvio, invece di partire senza VM: anche l'exe x64 avviato in emulazione su un PC Windows ARM64.
+- **Via l'emulazione di Windows su ARM64**: niente più componenti x64 in emulazione né il requisito di Windows 11 per farli girare. Sui Mac Apple Silicon resta Rosetta 2 per un componente che ha solo la build x64.
+- **La matrice degli strumenti** in «Strumenti», sul sito e in [TOOLS-MATRIX.html](TOOLS-MATRIX.html) ha quattro colonne; `prepare --target` accetta solo i quattro sistemi.
+- **La VM di un progetto si crea di nuovo** dove falliva con «failed to create network»: il daemon di Docker Sandboxes poteva tenere reti, immagini e dischi fuori dal kit, attraverso una giunzione lasciata nella cartella temporanea del PC da un'altra installazione. Atollo la toglie prima di avviarlo, e tutto torna nel kit (D-175).
+
 ## Solo il Docker Sandboxes del kit (25/10/2026)
 
 - **«Ferma» ferma davvero un'azione nella VM**: prima il programma restava acceso dentro la VM e teneva la porta; ora si ferma lì (anche se ignora la richiesta, dopo cinque secondi) e la porta torna libera. Riavviare un'azione sulla stessa porta non dà più errore.

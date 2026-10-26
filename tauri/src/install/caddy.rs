@@ -2,7 +2,7 @@
 //! official build from GitHub `caddyserver/caddy`, one binary per archive
 //! (`caddy.exe` or `caddy` at the archive root, next to its licence).
 //!
-//! Every target has a native build, Windows ARM64 included. Each archive is
+//! Every target has a native build. Each archive is
 //! checked against GitHub's SHA-256 `digest` (releases from 2.10.1 on), the
 //! older ones against the SHA-512 in the release's `caddy_<v>_checksums.txt`.
 //! A release with neither is not offered.

@@ -70,23 +70,18 @@ fn mac_tools_by_processor() {
         Some("commandlinetools-mac_arm64-15859902_latest.zip")
     );
     assert_eq!(
-        pick(Target::DARWIN_X64, &page).as_deref(),
-        Some("commandlinetools-mac_x86_64-15859902_latest.zip")
-    );
-    assert_eq!(
         pick(Target::LINUX_ARM64, &page).as_deref(),
         Some("commandlinetools-linux-15859902_latest.zip")
     );
     let old = row("commandlinetools-mac-13114758_latest.zip");
     assert_eq!(
-        pick(Target::DARWIN_X64, &old).as_deref(),
+        pick(Target::DARWIN_ARM64, &old).as_deref(),
         Some("commandlinetools-mac-13114758_latest.zip")
     );
 }
 
-/// The x64 SDK of Windows ARM64 runs emulated, but its sdkmanager needs
-/// that kit's own (ARM64) Java: from a PC that cannot run Windows ARM64 it
-/// completes on the first start there.
+/// The sdkmanager needs the kit's own Java, built for its target: from a
+/// PC that cannot run that target it completes on the first start there.
 #[test]
 fn android_waits_for_a_system_whose_java_cannot_run_here() {
     let android = Catalog::get().find("android").unwrap();

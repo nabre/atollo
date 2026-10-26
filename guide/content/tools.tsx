@@ -605,16 +605,16 @@ export const TOOLS: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "«Piattaforma» sceglie per quale sistema guardare (e preparare) i componenti: Windows x64 o ARM64, macOS Apple Silicon o Intel, Linux x64 o ARM64. Lo stesso kit su una chiavetta si apre su tutti e sei: da qui puoi preparare i programmi per un altro sistema prima di portarci la chiavetta.",
-              "“Platform” chooses which system to view (and prepare) the components for: Windows x64 or ARM64, macOS Apple Silicon or Intel, Linux x64 or ARM64. The same kit on a USB stick opens on all six: from here you can prepare the programs for another system before taking the stick there.",
-              "« Plateforme » choisit pour quel système regarder (et préparer) les composants : Windows x64 ou ARM64, macOS Apple Silicon ou Intel, Linux x64 ou ARM64. Le même kit sur une clé USB s'ouvre sur les six : d'ici, vous pouvez préparer les programmes pour un autre système avant d'y apporter la clé.",
-              "„Plattform“ wählt, für welches System du die Komponenten ansiehst (und vorbereitest): Windows x64 oder ARM64, macOS Apple Silicon oder Intel, Linux x64 oder ARM64. Dasselbe Kit auf einem USB-Stick öffnet sich auf allen sechs: Hier kannst du die Programme für ein anderes System vorbereiten, bevor du den Stick dorthin mitnimmst.",
+              "«Piattaforma» sceglie per quale sistema guardare (e preparare) i componenti: Windows x64, macOS Apple Silicon, Linux x64 o ARM64, i sistemi dove gira Docker Sandboxes. Lo stesso kit su una chiavetta si apre su tutti e quattro: da qui puoi preparare i programmi per un altro sistema prima di portarci la chiavetta.",
+              "“Platform” chooses which system to view (and prepare) the components for: Windows x64, macOS Apple Silicon, Linux x64 or ARM64, the systems Docker Sandboxes runs on. The same kit on a USB stick opens on all four: from here you can prepare the programs for another system before taking the stick there.",
+              "« Plateforme » choisit pour quel système regarder (et préparer) les composants : Windows x64, macOS Apple Silicon, Linux x64 ou ARM64, les systèmes où Docker Sandboxes fonctionne. Le même kit sur une clé USB s'ouvre sur les quatre : d'ici, vous pouvez préparer les programmes pour un autre système avant d'y apporter la clé.",
+              "„Plattform“ wählt, für welches System du die Komponenten ansiehst (und vorbereitest): Windows x64, macOS Apple Silicon, Linux x64 oder ARM64, die Systeme, auf denen Docker Sandboxes läuft. Dasselbe Kit auf einem USB-Stick öffnet sich auf allen vier: Hier kannst du die Programme für ein anderes System vorbereiten, bevor du den Stick dorthin mitnimmst.",
             ),
             tr(
-              "«Espandi» aggiunge una colonna di stato per ognuno dei sei sistemi; «Riduci» torna a quella del sistema scelto.",
-              "“Expand” adds a status column for each of the six systems; “Collapse” goes back to the one of the chosen system.",
-              "« Développer » ajoute une colonne d'état pour chacun des six systèmes ; « Réduire » revient à celle du système choisi.",
-              "„Erweitern“ fügt für jedes der sechs Systeme eine Statusspalte hinzu; „Reduzieren“ kehrt zu der des gewählten Systems zurück.",
+              "«Espandi» aggiunge una colonna di stato per ognuno dei quattro sistemi; «Riduci» torna a quella del sistema scelto.",
+              "“Expand” adds a status column for each of the four systems; “Collapse” goes back to the one of the chosen system.",
+              "« Développer » ajoute une colonne d'état pour chacun des quatre systèmes ; « Réduire » revient à celle du système choisi.",
+              "„Erweitern“ fügt für jedes der vier Systeme eine Statusspalte hinzu; „Reduzieren“ kehrt zu der des gewählten Systems zurück.",
             ),
             tr(
               "«Verifica» chiede a ogni componente installato di rispondere con la sua versione, e aggiunge un segno ✓ o ⚠ nella cella dello stato.",
@@ -953,10 +953,10 @@ export const TOOLS: TopicTexts = {
       <InBrief
         points={[
           tr(
-            "«Matrice»: dove può stare ogni componente, sui sei sistemi che il kit supporta.",
-            "“Matrix”: where each component can be, on the six systems the kit supports.",
-            "« Matrice » : où chaque composant peut se trouver, sur les six systèmes que le kit prend en charge.",
-            "„Matrix“: wo jede Komponente sein kann, auf den sechs Systemen, die das Kit unterstützt.",
+            "«Matrice»: dove può stare ogni componente, sui quattro sistemi che il kit supporta.",
+            "“Matrix”: where each component can be, on the four systems the kit supports.",
+            "« Matrice » : où chaque composant peut se trouver, sur les quatre systèmes que le kit prend en charge.",
+            "„Matrix“: wo jede Komponente sein kann, auf den vier Systemen, die das Kit unterstützt.",
           ),
           tr(
             "«Relazioni»: chi richiede chi e con quali versioni, e le versioni chieste dai progetti.",
@@ -982,10 +982,10 @@ export const TOOLS: TopicTexts = {
       <Section title={tr("Matrice", "Matrix", "Matrice", "Matrix")}>
         <P>
           {tr(
-            "Una tabella con un componente per riga, divisa negli stessi otto tipi della tabella «Tutti gli strumenti», e i sei sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un PC ARM64), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
-            "A table with one component per row, split into the same eight kinds as the “All tools” table, and the six systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on an ARM64 PC), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
-            "Un tableau avec un composant par ligne, réparti dans les mêmes huit types que le tableau « Tous les outils », et les six systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ≈ en émulation (la version x64 sur un PC ARM64), ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
-            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben acht Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den sechs Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ≈ in Emulation (die x64-Version auf einem ARM64-PC), ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
+            "Una tabella con un componente per riga, divisa negli stessi otto tipi della tabella «Tutti gli strumenti», e i quattro sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ≈ in emulazione (la versione x64 su un Mac con Apple silicon, con Rosetta 2), ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
+            "A table with one component per row, split into the same eight kinds as the “All tools” table, and the four systems as columns. Each cell says whether the component can be on that system: ✓ available, ≈ emulated (the x64 version on a Mac with Apple silicon, with Rosetta 2), ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
+            "Un tableau avec un composant par ligne, réparti dans les mêmes huit types que le tableau « Tous les outils », et les quatre systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ≈ en émulation (la version x64 sur un Mac avec Apple silicon, avec Rosetta 2), ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
+            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben acht Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den vier Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ≈ in Emulation (die x64-Version auf einem Mac mit Apple Silicon, mit Rosetta 2), ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
           )}
         </P>
         <Callout tone="info">
@@ -1072,10 +1072,10 @@ export const TOOLS: TopicTexts = {
       <Section title={tr("Requisiti del PC", "PC requirements", "Configuration requise du PC", "PC-Voraussetzungen")}>
         <P>
           {tr(
-            "Alcuni componenti hanno bisogno di qualcosa del sistema: Visual C++ 2015-2026 per PHP, Apache e MongoDB su Windows, WebView2 per la finestra dell'app, l'emulazione x64 di Windows 11 sui PC ARM64. Ogni riga dice per quali componenti serve e se è «presente», se «manca» o se «non serve».",
-            "Some components need something from the system: Visual C++ 2015-2026 for PHP, Apache and MongoDB on Windows, WebView2 for the app window, the Windows 11 x64 emulation on ARM64 PCs. Each row says which components need it and whether it is “present”, “missing” or “not needed”.",
-            "Certains composants ont besoin de quelque chose du système : Visual C++ 2015-2026 pour PHP, Apache et MongoDB sur Windows, WebView2 pour la fenêtre de l'application, l'émulation x64 de Windows 11 sur les PC ARM64. Chaque ligne dit pour quels composants c'est nécessaire et si c'est « présent », « manquant » ou « pas nécessaire ».",
-            "Einige Komponenten brauchen etwas vom System: Visual C++ 2015-2026 für PHP, Apache und MongoDB unter Windows, WebView2 für das Fenster der App, die x64-Emulation von Windows 11 auf ARM64-PCs. Jede Zeile sagt, für welche Komponenten es nötig ist und ob es „vorhanden“ ist, „fehlt“ oder „nicht nötig“ ist.",
+            "Alcuni componenti hanno bisogno di qualcosa del sistema: Visual C++ 2015-2026 per PHP, Apache e MongoDB su Windows, WebView2 per la finestra dell'app, Rosetta 2 sui Mac con Apple silicon. Ogni riga dice per quali componenti serve e se è «presente», se «manca» o se «non serve».",
+            "Some components need something from the system: Visual C++ 2015-2026 for PHP, Apache and MongoDB on Windows, WebView2 for the app window, Rosetta 2 on Macs with Apple silicon. Each row says which components need it and whether it is “present”, “missing” or “not needed”.",
+            "Certains composants ont besoin de quelque chose du système : Visual C++ 2015-2026 pour PHP, Apache et MongoDB sur Windows, WebView2 pour la fenêtre de l'application, Rosetta 2 sur les Mac avec Apple silicon. Chaque ligne dit pour quels composants c'est nécessaire et si c'est « présent », « manquant » ou « pas nécessaire ».",
+            "Einige Komponenten brauchen etwas vom System: Visual C++ 2015-2026 für PHP, Apache und MongoDB unter Windows, WebView2 für das Fenster der App, Rosetta 2 auf Macs mit Apple Silicon. Jede Zeile sagt, für welche Komponenten es nötig ist und ob es „vorhanden“ ist, „fehlt“ oder „nicht nötig“ ist.",
           )}
         </P>
       </Section>

@@ -176,8 +176,8 @@ tauri\src\
                               data\app\ca-bundle.pem: D-137), verify (SHA), archive\ (extraction, links, folder
                               swap), resume (large downloads: <file>.part resumed with Range, SHA-256 while the
                               bytes arrive, D-151), lan (the site's address on the local network and its QR, D-158)
-  router\                     targets (Windows, macOS, Linux × x64, ARM64): target, bins (programs and launchers
-                              per system), probe (what is on disk, health), bootstrap (setup for another system,
+  router\                     targets (the four systems of Docker Sandboxes, D-176: win32-x64, darwin-arm64,
+                              linux-x64, linux-arm64): target, bins (programs and launchers per system), probe (what is on disk, health), bootstrap (setup for another system,
                               D-114), availability (why a component cannot be installed on a target)
   platform\                   the abstract layer over the operating system (below)
   os\                         the code of each system (below)

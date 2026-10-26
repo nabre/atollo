@@ -5,7 +5,7 @@ name: PHP
 # extensions of static-php-cli's "bulk" set with the real pdo_sqlite and
 # pdo_pgsql. Pull requests that touch the build only build and test it (the
 # newest PHP of sources.txt); a tag php-v<version>-<build> (php-v8.4.26-1)
-# builds that version and publishes the four tarballs and their .sha256
+# builds that version and publishes the three tarballs and their .sha256
 # files as a GitHub release, whose digests the catalog pins (sha256ByLine of
 # php in components.json).
 on:
@@ -28,7 +28,7 @@ jobs:
   build:
     name: php ${{ matrix.target }}
     # Native runners only: build.sh refuses a host of another architecture.
-    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest"}')[matrix.target] }}
     # On Linux static-php-cli links PHP statically against musl (its doctor
     # installs the musl toolchain on the Ubuntu runner), so the binaries run
     # on any Linux. No Alpine container: GitHub's JavaScript actions do not
@@ -41,8 +41,8 @@ jobs:
       fail-fast: false
       matrix:
         # Without ARM64 runners (ARM64_RUNNERS=off) linux-arm64 is left out,
-        # as in app.yml. A release needs all four.
-        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
+        # as in app.yml. A release needs all three (D-176: no Intel macOS).
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64"]' || '["linux-x64","linux-arm64","darwin-arm64"]') }}
     steps:
       - name: System packages (Linux)
         if: startsWith(matrix.target, 'linux')
@@ -119,10 +119,10 @@ jobs:
           pattern: php-*
           path: artifacts
           merge-multiple: true
-      - name: Four targets
+      - name: Three targets
         run: |
           ls -l artifacts
-          for t in linux-x64 linux-arm64 darwin-arm64 darwin-x64; do
+          for t in linux-x64 linux-arm64 darwin-arm64; do
             ls artifacts/php-*-"$t".tar.gz >/dev/null || { echo "no tarball for $t" >&2; exit 1; }
           done
           # Only the tarballs and their .sha256 go in the release.
@@ -137,4 +137,4 @@ jobs:
           tag=$GITHUB_REF_NAME
           # Never the repository's latest release: that is the app's (app.yml).
           gh release create "$tag" artifacts/* --verify-tag --latest=false --title "PHP ${tag#php-v}" \
-            --notes "Static PHP (CLI and FPM) for the kit on macOS (arm64, x64) and Linux (x64, arm64), built by scripts/build-php with static-php-cli: the extensions of its bulk set with pdo_sqlite and pdo_pgsql (see BUILDINFO.txt in each tarball)."
+            --notes "Static PHP (CLI and FPM) for the kit on macOS (Apple Silicon) and Linux (x64, arm64), built by scripts/build-php with static-php-cli: the extensions of its bulk set with pdo_sqlite and pdo_pgsql (see BUILDINFO.txt in each tarball)."

@@ -17,7 +17,6 @@ export interface GuideComponentState {
   installed: boolean;
   version: string | null;
   available: boolean;
-  noArm64: boolean;
   unavailableReason: string | null;
 }
 

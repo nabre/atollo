@@ -3,8 +3,7 @@
 //! The Visual C++ runtime is not installed: its DLLs are extracted from
 //! Microsoft's `vc_redist.x64.exe` (signature required: Microsoft publishes
 //! no checksum) and copied next to `php.exe` and `httpd.exe`, the app-local
-//! deployment Microsoft allows. PHP and Apache exist only for x64: on ARM64
-//! they run emulated with the x64 DLLs.
+//! deployment Microsoft allows.
 //!
 //! On macOS and Linux PHP is static-php-cli's ([`php_unix::STATIC_PHP`],
 //! D-112): the CLI and FPM archives of the lines with a SHA-256 fixed in the

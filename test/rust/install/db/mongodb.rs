@@ -62,8 +62,7 @@ fn sqlite_and_mongodb_across_targets() {
     assert_eq!(kind_lin, Kind::TarGz);
 }
 
-/// mongosh follows MongoDB's download target (`x64Only`): the x64 build on
-/// Windows ARM64, the native one everywhere else.
+/// mongosh follows MongoDB's download target: the native build everywhere.
 #[test]
 fn mongosh_asset_per_target() {
     use crate::kit::Target;
@@ -71,9 +70,7 @@ fn mongosh_asset_per_target() {
     let mongodb = crate::setup::Catalog::get().find("mongodb").unwrap();
     let names = [
         (Target::WIN32_X64, "mongosh-2.5.9-win32-x64.zip"),
-        (Target::WIN32_ARM64, "mongosh-2.5.9-win32-x64.zip"),
         (Target::DARWIN_ARM64, "mongosh-2.5.9-darwin-arm64.zip"),
-        (Target::DARWIN_X64, "mongosh-2.5.9-darwin-x64.zip"),
         (Target::LINUX_X64, "mongosh-2.5.9-linux-x64.tgz"),
         (Target::LINUX_ARM64, "mongosh-2.5.9-linux-arm64.tgz"),
     ];
@@ -89,12 +86,14 @@ fn mongosh_asset_per_target() {
         }
         let tgz = name.ends_with(".tgz");
         assert_eq!(kind == Kind::TarGz, tgz, "{target}");
+        // Never the builds of Windows ARM64 or an Intel Mac (D-176).
+        for removed in [
+            "mongosh-2.5.9-win32-arm64.zip",
+            "mongosh-2.5.9-darwin-x64.zip",
+        ] {
+            assert!(!re.is_match(removed), "{target} took {removed}");
+        }
     }
-    // The arm64 Windows pattern is honest, in case it is ever asked for.
-    let (re, _) = mongosh_asset_pattern(Target::WIN32_ARM64);
-    assert!(pattern(re)
-        .unwrap()
-        .is_match("mongosh-2.5.9-win32-arm64.zip"));
 }
 
 /// D-112: the server on Linux from conda-forge (production lines only;

@@ -40,7 +40,7 @@ p { margin-top: 22px; font-size: 21px; line-height: 1.45; color: #b8b8b8; }
   <h1>Dev &amp; AI, all in one folder, on any machine.</h1>
   <p>Editor, 20+ languages, local databases and the Claude Code, Codex and Antigravity agents. Zero install, zero admin rights.</p>
 </div>
-<div class="targets">Windows · macOS · Linux — x64 &amp; ARM64 · MIT</div>
+<div class="targets">Windows x64 · macOS Apple silicon · Linux x64 &amp; ARM64 · MIT</div>
 <div class="shot"><img src="${url("site", "shots", "en", "shot-projects-dark.png")}"></div>
 </body></html>`;
 

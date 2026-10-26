@@ -10,16 +10,8 @@ fn one_archive_per_target() {
         "llama-b11669-bin-win-vulkan-x64.zip"
     );
     assert_eq!(
-        asset_for("b11669", t("win32-arm64")).0,
-        "llama-b11669-bin-win-vulkan-arm64.zip"
-    );
-    assert_eq!(
         asset_for("b11669", t("darwin-arm64")).0,
         "llama-b11669-bin-macos-arm64.tar.gz"
-    );
-    assert_eq!(
-        asset_for("b11669", t("darwin-x64")).0,
-        "llama-b11669-bin-macos-x64.tar.gz"
     );
     assert_eq!(
         asset_for("b11669", t("linux-arm64")).0,

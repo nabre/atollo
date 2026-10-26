@@ -1,5 +1,6 @@
 //! What this Windows lacks for Docker Sandboxes (`platform::virt`):
-//! Windows 11 on an x64 processor, and Windows Hypervisor Platform on.
+//! Windows 11 and Windows Hypervisor Platform on (the processor is x64:
+//! Atollo stops at start on any other, D-176).
 //! The feature is read without an administrator: `WinHvPlatform.dll` is
 //! there only when it is on, and its `WHvGetCapability` says whether the
 //! hypervisor runs (on, but not yet restarted: it does not).
@@ -10,7 +11,6 @@ use windows::Win32::System::LibraryLoader::{
     GetProcAddress, LoadLibraryExW, LOAD_LIBRARY_SEARCH_SYSTEM32,
 };
 
-use crate::kit::Arch;
 use crate::platform::virt::Gap;
 
 /// The first build of Windows 11.
@@ -23,20 +23,14 @@ type GetCapabilityFn =
     unsafe extern "system" fn(i32, *mut core::ffi::c_void, u32, *mut u32) -> HRESULT;
 
 pub fn gaps(_shim: Option<&std::path::Path>) -> Vec<Gap> {
-    gaps_of(
-        super::host::windows_build(),
-        super::host::arch(),
-        hypervisor_runs,
-    )
+    gaps_of(super::host::windows_build(), hypervisor_runs)
 }
 
-/// The gaps of a Windows `build` on `arch`, the hypervisor asked last.
-pub(crate) fn gaps_of(build: Option<u32>, arch: Arch, hypervisor: impl Fn() -> bool) -> Vec<Gap> {
+/// The gaps of a Windows `build`, the hypervisor asked last. The processor
+/// is x64: Atollo does not start on Windows on Arm (D-176).
+pub(crate) fn gaps_of(build: Option<u32>, hypervisor: impl Fn() -> bool) -> Vec<Gap> {
     if let Some(build) = build.filter(|b| *b < WINDOWS_11) {
         return vec![Gap::OldWindows(build)];
-    }
-    if arch == Arch::Arm64 {
-        return vec![Gap::Processor];
     }
     if hypervisor() {
         Vec::new()

@@ -13,7 +13,7 @@ fn cgi(port: u16) -> FastCgi {
 }
 
 /// `caddy.exe` on Windows, `caddy` elsewhere, at the root of its folder:
-/// the key of the component on each of the six targets (D-111).
+/// the key of the component on each of the four targets (D-111).
 #[test]
 fn caddy_program_per_target() {
     let dir = Path::new("kit/caddy/2.11");

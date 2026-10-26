@@ -8,26 +8,24 @@
   const latest = "https://github.com/" + repo + "/releases/latest";
   const names = {
     "win32-x64": "Windows x64",
-    "win32-arm64": "Windows ARM64",
     "darwin-arm64": "macOS Apple Silicon",
-    "darwin-x64": "macOS Intel",
     "linux-x64": "Linux x64",
     "linux-arm64": "Linux ARM64",
   };
   // The file the main button downloads for each target, after the version.
   const main = {
     "win32-x64": "win32-x64.exe",
-    "win32-arm64": "win32-arm64.exe",
     "darwin-arm64": "darwin-arm64.app.zip",
-    "darwin-x64": "darwin-x64.app.zip",
     "linux-x64": "linux-x64.AppImage",
     "linux-arm64": "linux-arm64.AppImage",
   };
 
+  // The visitor's system as <os>-<arch> (win32-arm64 and darwin-x64 too,
+  // which Atollo does not support), or null when it is not one of the three.
   async function detect() {
     // ?os=<target> shows the page as another system sees it.
     const forced = new URLSearchParams(location.search).get("os");
-    if (forced && names[forced]) return forced;
+    if (forced && (names[forced] || forced === "win32-arm64" || forced === "darwin-x64")) return forced;
     const ua = navigator.userAgent;
     let os = /Windows/.test(ua) ? "win32" : /Mac OS X|Macintosh/.test(ua) ? "darwin" : /Linux|X11/.test(ua) && !/Android/.test(ua) ? "linux" : null;
     if (!os) return null;
@@ -91,7 +89,13 @@
     const button = document.getElementById("dl-main");
     const note = document.getElementById("dl-note");
     if (!cta || !button) return;
-    const [target, rel] = await Promise.all([detect(), release()]);
+    const [seen, rel] = await Promise.all([detect(), release()]);
+    // Windows on ARM and Intel Macs: no Docker Sandboxes, so no Atollo
+    // (D-176). The button keeps the releases page, the note says why.
+    const target = seen && names[seen] ? seen : null;
+    if (seen && !target && note) {
+      note.textContent = cta.dataset.unsupported;
+    }
 
     if (target) {
       kit(target);

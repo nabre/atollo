@@ -38,7 +38,7 @@ fn conda_versions_per_subdir() {
         conda_versions(&info, Target::LINUX_ARM64.conda_subdir()),
         ["2.51.0"]
     );
-    assert!(conda_versions(&info, Target::DARWIN_X64.conda_subdir()).is_empty());
+    assert!(conda_versions(&info, "osx-64").is_empty());
     assert!(conda_versions(&serde_json::json!({}), "linux-64").is_empty());
 }
 
@@ -71,52 +71,42 @@ fn micromamba_create_args_git() {
     assert!(!r.iter().any(|a| a == "--platform"));
 }
 
-/// R on Windows ARM64: the native micromamba makes a `win-64` environment
-/// (`--platform` before the specs), run in emulation; its own platform
-/// needs no flag.
+/// A component run with Rosetta 2 on Apple silicon: the native micromamba
+/// makes an `osx-64` environment (`--platform` before the specs); its own
+/// platform needs no flag.
 #[test]
 fn micromamba_create_args_for_another_platform() {
-    let prefix = Path::new(r"D:\kit\data\apps\win32-arm64\r\4.6");
+    let prefix = Path::new("/kit/data/apps/darwin-arm64/r/4.6");
     let specs = ["r-base=4.6.1", "libblas=*=*openblas"];
-    let args = micromamba_create_args(prefix, &specs, Some("win-64"));
+    let args = micromamba_create_args(prefix, &specs, Some("osx-64"));
     let p = args.iter().position(|a| a == "--platform").unwrap();
-    assert_eq!(args[p + 1], "win-64");
+    assert_eq!(args[p + 1], "osx-64");
     assert_eq!(&args[p + 2..], specs);
-    // conda-forge's R exists for win-64, not for win-arm64.
     assert_eq!(
-        Target::WIN32_ARM64
+        Target::DARWIN_ARM64
             .with_arch(crate::kit::Arch::X64)
             .conda_subdir(),
-        "win-64"
+        "osx-64"
     );
 }
 
-/// R x64 for a Windows ARM64 kit prepared from Windows x64: the kit's ARM64
-/// micromamba does not start there (os error 216), so this PC's x64 one
-/// creates the `win-64` environment. Where the PC runs the kit, or the
-/// systems differ (the component is staged), the kit's own.
+/// A kit this PC cannot run, of the same system (Linux ARM64 prepared from
+/// Linux x64): the kit's micromamba does not start here, so this PC's one
+/// creates the environment. Where the PC runs the kit, or the systems
+/// differ (the component is staged), the kit's own.
 #[test]
 fn micromamba_runs_on_this_pc() {
     use crate::kit::Target;
     assert_eq!(
-        micromamba_runner_on(Target::WIN32_ARM64, Target::WIN32_X64, false),
-        Target::WIN32_X64
+        micromamba_runner_on(Target::LINUX_ARM64, Target::LINUX_X64, false),
+        Target::LINUX_X64
     );
     assert_eq!(
-        micromamba_runner_on(Target::WIN32_ARM64, Target::WIN32_ARM64, true),
-        Target::WIN32_ARM64
-    );
-    assert_eq!(
-        micromamba_runner_on(Target::WIN32_X64, Target::WIN32_ARM64, true),
-        Target::WIN32_X64
+        micromamba_runner_on(Target::LINUX_ARM64, Target::LINUX_ARM64, true),
+        Target::LINUX_ARM64
     );
     assert_eq!(
         micromamba_runner_on(Target::LINUX_X64, Target::WIN32_X64, false),
         Target::LINUX_X64
-    );
-    // On the runner's own platform `win-64` needs no `--platform`.
-    assert_eq!(
-        micromamba_runner_on(Target::WIN32_ARM64, Target::WIN32_X64, false).conda_subdir(),
-        "win-64"
     );
 }

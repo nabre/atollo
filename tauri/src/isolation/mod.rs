@@ -79,7 +79,6 @@ pub enum Blocker {
     OldWindows {
         build: u32,
     },
-    Processor,
     OldMacos {
         version: String,
     },
@@ -121,7 +120,6 @@ impl From<Gap> for Blocker {
     fn from(gap: Gap) -> Blocker {
         match gap {
             Gap::OldWindows(build) => Blocker::OldWindows { build },
-            Gap::Processor => Blocker::Processor,
             Gap::OldMacos(version) => Blocker::OldMacos { version },
             Gap::Distribution(name) => Blocker::Distribution { name },
             Gap::HypervisorOff => Blocker::HypervisorOff,
@@ -139,10 +137,7 @@ impl Blocker {
     pub fn unsupported(&self) -> bool {
         matches!(
             self,
-            Blocker::OldWindows { .. }
-                | Blocker::Processor
-                | Blocker::OldMacos { .. }
-                | Blocker::Distribution { .. }
+            Blocker::OldWindows { .. } | Blocker::OldMacos { .. } | Blocker::Distribution { .. }
         )
     }
 }

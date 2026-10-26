@@ -1,8 +1,8 @@
 use super::*;
 use crate::install::Dest;
 
-/// The download target of MySQL on each kit target: x64 on Windows ARM64
-/// (`x64Only`), native elsewhere.
+/// The download target of MySQL on each kit target: native everywhere
+/// unless the catalog runs it with Rosetta 2.
 fn mysql_download_target(t: Target) -> Target {
     let c = crate::setup::Catalog::get().find("mysql").unwrap();
     if c.is_emulated_on(t) {
@@ -21,15 +21,9 @@ fn mysql_pinned_lines_on_every_target() {
     assert_eq!(pins["9.7"].version, "9.7.2");
     let files = [
         (Target::WIN32_X64, "mysql-9.7.2-winx64.zip", Kind::Zip),
-        (Target::WIN32_ARM64, "mysql-9.7.2-winx64.zip", Kind::Zip),
         (
             Target::DARWIN_ARM64,
             "mysql-9.7.2-macos15-arm64.tar.gz",
-            Kind::TarGz,
-        ),
-        (
-            Target::DARWIN_X64,
-            "mysql-9.7.2-macos15-x86_64.tar.gz",
             Kind::TarGz,
         ),
         (
@@ -69,8 +63,7 @@ fn mysql_pinned_lines_on_every_target() {
             mysql_url("8.4", &mysql_file(dl, "8.4.11").0)
         );
     }
-    // No pin, no download: Windows ARM64 itself has none (x64 runs there).
-    assert!(mysql_release_for(pins, Target::WIN32_ARM64, "9.7").is_err());
+    // No pin, no download.
     assert!(mysql_release_for(pins, Target::LINUX_X64, "9.6").is_err());
 }
 

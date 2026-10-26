@@ -167,7 +167,7 @@ pub fn stages_for(inst: &dyn Installer, component: &Component, target: Target) -
         return false;
     }
     // Android's sdkmanager runs with the kit's own Java, built for `target`:
-    // the x64 SDK of Windows ARM64 (emulated) still waits for that system.
+    // it waits for that system.
     !can_execute_on_host(effective)
         || (component.id == "rust" && target != Target::detect())
         || (component.id == "android" && !can_execute_on_host(target))

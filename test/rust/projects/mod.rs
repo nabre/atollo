@@ -458,8 +458,8 @@ fn a_failed_drop_deletes_nothing_and_force_skips_the_servers() {
 }
 
 /// A4 handoff: what a project can add follows the catalog's targets, not
-/// only ARM64 (Apache everywhere since D-116, PHP since D-112, R emulated
-/// on Windows ARM64; the Android SDK not on Linux ARM64).
+/// only ARM64 (Apache everywhere since D-116, PHP since D-112; the Android
+/// SDK not on Linux ARM64).
 #[test]
 fn addable_follows_the_platform() {
     use crate::kit::Target;
@@ -474,8 +474,6 @@ fn addable_follows_the_platform() {
     let on = |t: Target| Kit::at_target(tmp.0.clone(), t);
     let win = on(Target::WIN32_X64);
     assert!(addable(&win, apache, false) && addable(&win, r, false) && addable(&win, node, false));
-    let win_arm = on(Target::WIN32_ARM64);
-    assert!(addable(&win_arm, apache, false) && addable(&win_arm, r, false));
     for t in [Target::LINUX_ARM64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = on(t);
         assert!(addable(&kit, apache, false), "{t:?}");

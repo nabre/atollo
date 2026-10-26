@@ -17,7 +17,7 @@ use anyhow::{anyhow, bail, Context, Result};
 
 use super::{fetch, target_of, work_dir, Ctx, Installer, Progress, Release};
 use crate::common::fsx::join_rel;
-use crate::kit::{Arch, Kit, Os, Target};
+use crate::kit::{Kit, Os, Target};
 use crate::net::archive::{self, Inner, Kind};
 use crate::net::verify::Expect;
 use crate::setup::catalog::{translate_rel, Catalog, Component};
@@ -29,14 +29,13 @@ const REPOSITORY: &str = "https://dl.google.com/android/repository/";
 
 /// The names of the zip of `target` on the download page, the preferred
 /// first: since build 15859902 a Mac has one zip per processor
-/// (`commandlinetools-mac_arm64-…`, `commandlinetools-mac_x86_64-…`),
-/// before that one for both (`commandlinetools-mac-…`).
+/// (`commandlinetools-mac_arm64-…`), before that one for both
+/// (`commandlinetools-mac-…`).
 pub fn os_tags_of(target: Target) -> &'static [&'static str] {
-    match (target.os, target.arch) {
-        (Os::Win32, _) => &["win"],
-        (Os::Darwin, Arch::Arm64) => &["mac_arm64", "mac"],
-        (Os::Darwin, Arch::X64) => &["mac_x86_64", "mac"],
-        (Os::Linux, _) => &["linux"],
+    match target.os {
+        Os::Win32 => &["win"],
+        Os::Darwin => &["mac_arm64", "mac"],
+        Os::Linux => &["linux"],
     }
 }
 

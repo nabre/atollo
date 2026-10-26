@@ -180,6 +180,7 @@ impl Settings {
                     .to_string();
             }
         }
+        s.tools_target = known_tools_target(s.tools_target.take());
         loaded
     }
 
@@ -276,6 +277,13 @@ impl Settings {
         settings.save(kit)?;
         Ok(settings)
     }
+}
+
+/// `tools_target` as read from the file, kept only when it is a supported
+/// system: one an older kit saved (`win32-arm64`, `darwin-x64`, removed by
+/// D-176) reads as this PC's, so the Settings page can still save.
+pub(crate) fn known_tools_target(target: Option<String>) -> Option<String> {
+    target.filter(|t| crate::kit::Target::parse(t).is_some())
 }
 
 /// The Gemini API key, owner-only (D-137).

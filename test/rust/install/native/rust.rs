@@ -16,56 +16,25 @@ fn rust_plan_by_kit_and_temp() {
     assert_eq!(rust_plan(false, false, || true).unwrap(), RustPlan::Fresh);
 }
 
-/// D-112: GNU by default on both Windows, `gnullvm` on ARM64 (linked by
-/// llvm-mingw's clang); MSVC only when chosen; the native triple elsewhere,
-/// whatever the setting says.
+/// D-112: GNU by default on Windows; MSVC only when chosen; the native
+/// triple elsewhere, whatever the setting says.
 #[test]
 fn rust_host_per_target_and_setting() {
-    for (toolchain, x64, arm64) in [
-        (None, "x86_64-pc-windows-gnu", "aarch64-pc-windows-gnullvm"),
-        (
-            Some("gnu"),
-            "x86_64-pc-windows-gnu",
-            "aarch64-pc-windows-gnullvm",
-        ),
-        (
-            Some("msvc"),
-            "x86_64-pc-windows-msvc",
-            "aarch64-pc-windows-msvc",
-        ),
+    for (toolchain, x64) in [
+        (None, "x86_64-pc-windows-gnu"),
+        (Some("gnu"), "x86_64-pc-windows-gnu"),
+        (Some("msvc"), "x86_64-pc-windows-msvc"),
     ] {
         assert_eq!(rust_host_for(Target::WIN32_X64, toolchain), x64);
-        assert_eq!(rust_host_for(Target::WIN32_ARM64, toolchain), arm64);
-        for t in [
-            Target::DARWIN_ARM64,
-            Target::DARWIN_X64,
-            Target::LINUX_X64,
-            Target::LINUX_ARM64,
-        ] {
+        for t in [Target::DARWIN_ARM64, Target::LINUX_X64, Target::LINUX_ARM64] {
             assert_eq!(rust_host_for(t, toolchain), t.rust_triple(), "{t}");
         }
     }
 }
 
-/// Only the `gnullvm` host needs C, C++ (llvm-mingw) to link.
 #[test]
-fn only_gnullvm_needs_cc() {
-    assert!(host_needs_cc("aarch64-pc-windows-gnullvm"));
-    for t in Target::ALL {
-        for toolchain in [None, Some("msvc")] {
-            let host = rust_host_for(t, toolchain);
-            assert_eq!(
-                host_needs_cc(host),
-                t == Target::WIN32_ARM64 && toolchain.is_none(),
-                "{t} {toolchain:?}"
-            );
-        }
-    }
-}
-
-#[test]
-fn rustup_init_args_for_both_arm64_hosts() {
-    for host in ["aarch64-pc-windows-gnullvm", "aarch64-pc-windows-msvc"] {
+fn rustup_init_args_for_both_windows_hosts() {
+    for host in ["x86_64-pc-windows-gnu", "x86_64-pc-windows-msvc"] {
         let args = rustup_init_args(host);
         let at = args.iter().position(|a| *a == "--default-host").unwrap();
         assert_eq!(args[at + 1], host);

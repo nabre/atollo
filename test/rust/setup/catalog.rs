@@ -20,7 +20,6 @@ fn catalog_is_valid() {
             "{}: keys",
             c.id
         );
-        assert!(!(c.x64_only && c.no_arm64), "{}: x64Only or noArm64", c.id);
         if let Some(folder) = &c.folder {
             assert!(
                 c.key == *folder || c.key.starts_with(&format!("{folder}/")),
@@ -95,7 +94,7 @@ fn choice_file_compatible_with_atollo() {
     // As written by nabre/atollo Save-ComponentChoice (plus a BOM and LF).
     let text =
         "\u{feff}# comment\napache=1\nphp=0\nrust=1\ngh=0\nunknown=1\nbad line\nkotlin = 1\nvscodium=1\n";
-    // Rust stays on: C and C++ is a need of Windows ARM64 only.
+    // Rust stays on: it needs nothing on any target.
     let choice = Choice::parse(text, catalog);
     assert!(!choice.is_chosen("php"));
     assert!(!choice.is_chosen("apache"), "apache needs php");
@@ -156,29 +155,13 @@ fn needs_follow_the_target() {
             if unix { vec!["zig"] } else { vec![] },
             "{t}"
         );
-        let arm = t == Target::WIN32_ARM64;
-        assert_eq!(
-            needs("rust", t),
-            if arm { vec!["cc"] } else { vec![] },
-            "{t}"
-        );
-        assert_eq!(
-            catalog.find("rust").unwrap().needs_list_on(t).len(),
-            usize::from(arm)
-        );
+        assert!(needs("rust", t).is_empty(), "{t}");
+        assert!(catalog.find("rust").unwrap().needs_list_on(t).is_empty());
         // The same everywhere for the others.
         assert_eq!(needs("kotlin", t), ["java"], "{t}");
         assert_eq!(needs("claude", t), ["git"], "{t}");
         let with: Vec<&str> = catalog.with_needs_on(&["rust"], t).into_iter().collect();
-        assert_eq!(
-            with,
-            if arm {
-                vec!["cc", "rust"]
-            } else {
-                vec!["rust"]
-            },
-            "{t}"
-        );
+        assert_eq!(with, vec!["rust"], "{t}");
         // What a run adds to the choice: the needs of this target only,
         // never one of every target, nor the ids themselves.
         assert_eq!(
@@ -193,11 +176,7 @@ fn needs_follow_the_target() {
         );
         assert!(only(&["kotlin", "claude"], t).is_empty(), "{t}");
         assert!(only(&["zig"], t).is_empty(), "{t}");
-        assert_eq!(
-            only(&["rust"], t),
-            if arm { vec!["cc"] } else { vec![] },
-            "{t}"
-        );
+        assert!(only(&["rust"], t).is_empty(), "{t}");
         // No cycle on any target: every chain ends.
         for c in catalog.all() {
             assert!(
@@ -489,12 +468,7 @@ fn unavailable_on_linux_names_the_system() {
         .unwrap()
         .to_string();
     assert_eq!(e, "android is not available on linux-arm64");
-    let msg = crate::ipc::unavailable_msg(
-        "en",
-        "Android SDK",
-        Target::LINUX_ARM64,
-        Target::WIN32_ARM64,
-    );
+    let msg = crate::ipc::unavailable_msg("en", "Android SDK", Target::LINUX_ARM64);
     assert_eq!(msg, "Android SDK is not available for linux-arm64.");
 }
 
@@ -505,17 +479,14 @@ fn multi_platform_availability_and_paths_across_targets() {
     let catalog = Catalog::get();
     let php = catalog.find("php").unwrap();
     assert!(php.is_available_on(Target::WIN32_X64));
-    assert!(php.is_available_on(Target::WIN32_ARM64));
     assert!(php.is_available_on(Target::DARWIN_ARM64));
     assert!(php.is_available_on(Target::LINUX_X64));
     let apache = catalog.find("apache").unwrap();
     assert!(apache.is_available_on(Target::DARWIN_ARM64));
     assert!(apache.is_available_on(Target::LINUX_X64));
-    assert!(apache.is_emulated_on(Target::WIN32_ARM64));
     assert!(!apache.is_emulated_on(Target::LINUX_ARM64));
 
     let tex = catalog.find("tinytex").unwrap();
-    assert!(tex.is_emulated_on(Target::WIN32_ARM64));
     assert!(tex.is_available_on(Target::DARWIN_ARM64));
     assert!(tex.is_available_on(Target::LINUX_ARM64));
     assert_eq!(
@@ -528,14 +499,12 @@ fn multi_platform_availability_and_paths_across_targets() {
     );
 
     let r = catalog.find("r").unwrap();
-    assert!(r.is_available_on(Target::WIN32_ARM64));
-    assert!(r.is_emulated_on(Target::WIN32_ARM64));
+    assert!(r.is_available_on(Target::WIN32_X64));
     assert!(r.is_available_on(Target::DARWIN_ARM64));
     assert!(!r.is_emulated_on(Target::DARWIN_ARM64));
     assert_eq!(r.key_for(Target::LINUX_X64), "r/bin/R");
 
     let php = catalog.find("php").unwrap();
-    assert!(php.is_emulated_on(Target::WIN32_ARM64));
     assert!(!php.is_emulated_on(Target::DARWIN_ARM64));
     assert_eq!(php.key_for(Target::DARWIN_ARM64), "php/bin/php");
 
@@ -550,7 +519,6 @@ fn multi_platform_availability_and_paths_across_targets() {
         vec!["vscodium-server/node".to_string()]
     );
     assert!(vsc.sha256_for(Target::WIN32_X64).is_some());
-    assert!(vsc.sha256_for(Target::WIN32_ARM64).is_some());
 
     // Per-target version files stay isolated in data/app/versions/<target>/<id>.txt
     let tmp = TempDir::new("catalog-targets");
@@ -588,24 +556,26 @@ fn unavailable_targets_have_a_reason() {
             assert_eq!(c.unavailable_reason(t), None, "{id} on {t}");
         }
     }
-    // Outside `targets` or `noArm64`: not available, no reason of its own.
+    // Outside `targets`: not available, no reason of its own.
     let windows: Component = serde_json::from_value(serde_json::json!({
         "id": "w", "name": "W", "group": "languages", "def": false, "mb": 1,
         "desc": "w", "home": "https://w", "key": "w/w.exe",
-        "targets": ["win32-x64", "win32-arm64"]
+        "targets": ["win32-x64"]
     }))
     .unwrap();
     assert!(!windows.is_available_on(Target::LINUX_X64));
-    assert!(windows.is_available_on(Target::WIN32_ARM64));
+    assert!(windows.is_available_on(Target::WIN32_X64));
     assert_eq!(windows.unavailable_reason(Target::LINUX_X64), None);
-    let no_arm64: Component = serde_json::from_value(serde_json::json!({
-        "id": "n", "name": "N", "group": "languages", "def": false, "mb": 1,
-        "desc": "n", "home": "https://n", "key": "n/n.exe", "noArm64": true
+    // A removed system (D-176) is never one of a component, even listed.
+    let old: Component = serde_json::from_value(serde_json::json!({
+        "id": "o", "name": "O", "group": "languages", "def": false, "mb": 1,
+        "desc": "o", "home": "https://o", "key": "o/o.exe",
+        "targets": ["win32-x64", "win32-arm64"]
     }))
     .unwrap();
-    assert!(!no_arm64.is_available_on(Target::WIN32_ARM64));
-    assert!(no_arm64.is_available_on(Target::LINUX_ARM64));
-    assert_eq!(no_arm64.unavailable_reason(Target::WIN32_ARM64), None);
+    let windows_arm = Target::new(crate::kit::Os::Win32, crate::kit::Arch::Arm64);
+    assert!(!old.is_available_on(windows_arm));
+    assert!(old.is_available_on(Target::WIN32_X64));
 
     // Every key a target, every reason translated.
     let i18n: BTreeMap<String, BTreeMap<String, String>> =
@@ -622,14 +592,19 @@ fn unavailable_targets_have_a_reason() {
                 );
             }
         }
-        for t in c.targets.iter().chain(c.sha256_by_target.keys()) {
+        for t in c
+            .targets
+            .iter()
+            .chain(c.sha256_by_target.keys())
+            .chain(c.needs_by_target.keys())
+        {
             assert!(Target::parse(t).is_some(), "{}: unknown target {t}", c.id);
         }
     }
 }
 
 /// `rosetta` comes only with a reason to: no catalog entry needs it today
-/// (every x64Only component has an Apple Silicon build).
+/// (every component has an Apple silicon build).
 #[test]
 fn rosetta_is_off_in_the_catalog() {
     for c in Catalog::get().all() {
@@ -651,20 +626,18 @@ fn remove_unix_on_macos_and_linux() {
                 .any(|e| r.ends_with(e));
             assert!(!r.contains('\\') && !windows_name, "{}: {r}", c.id);
         }
-        for t in [Target::WIN32_X64, Target::WIN32_ARM64] {
-            assert_eq!(c.remove_for(t), c.remove.as_slice(), "{}", c.id);
-        }
+        assert_eq!(
+            c.remove_for(Target::WIN32_X64),
+            c.remove.as_slice(),
+            "{}",
+            c.id
+        );
         let unix = if c.remove_unix.is_empty() {
             &c.remove
         } else {
             &c.remove_unix
         };
-        for t in [
-            Target::DARWIN_ARM64,
-            Target::DARWIN_X64,
-            Target::LINUX_X64,
-            Target::LINUX_ARM64,
-        ] {
+        for t in [Target::DARWIN_ARM64, Target::LINUX_X64, Target::LINUX_ARM64] {
             assert_eq!(c.remove_for(t), unix.as_slice(), "{}", c.id);
         }
     }

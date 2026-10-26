@@ -44,13 +44,6 @@ pub(super) fn os_vars(env: &mut KitEnv, cx: &Cx) -> OsTools {
             env.set(&name, linker);
         }
     }
-    // Rust on Windows ARM64 (D-112): the `gnullvm` host links with
-    // llvm-mingw's clang for aarch64 (the `cc` component).
-    if kit.target() == Target::WIN32_ARM64 {
-        if let Some(linker) = arm64_rust_linker(&app(r"cc\bin"), |p| p.is_file()) {
-            env.set_path("CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER", linker);
-        }
-    }
     // Git of dugite-native on macOS and Linux (D-112).
     if !is_win {
         for (name, value) in git_unix_env(kit.os(), &app("git"), |p| p.exists()) {
@@ -151,16 +144,6 @@ pub(crate) fn macos_rust_linker(target: Target, clt: bool) -> Option<(String, &'
 /// prepared on another system cannot know.
 fn xcode_clt_present() -> bool {
     crate::platform::host::apple_clang_present()
-}
-
-/// The linker of Rust's `aarch64-pc-windows-gnullvm` host in llvm-mingw's
-/// `cc_bin`: its aarch64 wrapper (the linker rustc looks for by default),
-/// else `clang.exe`; `None` without the `cc` component.
-pub(crate) fn arm64_rust_linker(cc_bin: &Path, is_file: impl Fn(&Path) -> bool) -> Option<PathBuf> {
-    ["aarch64-w64-mingw32-clang.exe", "clang.exe"]
-        .iter()
-        .map(|name| cc_bin.join(name))
-        .find(|p| is_file(p))
 }
 
 /// The environment of a Git laid out as dugite-native (`git/libexec/git-core`)

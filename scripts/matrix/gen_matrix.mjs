@@ -1,10 +1,12 @@
-// Tool x system x architecture matrix of the catalog, as one HTML page.
+// Tool x system x architecture matrix of the catalog, as one HTML page: the
+// systems of TARGETS in site/matrix.mjs, those Docker Sandboxes runs on
+// (D-176).
 //
 //   node scripts/matrix/gen_matrix.mjs [<repo> [<out>]]
 //   (default: this repository and docs/app/TOOLS-MATRIX.html)
 //
 // The page is in English, as the documentation. Everything comes from the
-// code: availability, emulation, needs and sizes from
+// code: availability, Rosetta 2, needs and sizes from
 // tauri/catalog/components.json with the rules of site/matrix.mjs (`status`,
 // which follows Component::is_available_on of tauri/src/setup/catalog.rs:
 // one copy for the site and this page), its Italian reasons in English from
@@ -62,8 +64,6 @@ const byid = Object.fromEntries(cat.map((c) => [c.id, c]));
 const WHY = {
   notBuilt: (c) => SRC[c.id].notOffered ?? "the catalog does not offer it on this system",
   unavailable: en,
-  noArm64: "no build for Windows ARM64, not even under emulation",
-  emulated: "x64 build under emulation (Prism)",
   rosetta: "x64 build with Rosetta 2",
   native: "native build",
   needs: (name) => `needs ${name}, not available here`,
@@ -92,13 +92,6 @@ function where(list) {
 
 // Notes, from the same catalog.
 const notes = [];
-const emu = cat.filter((c) => c.x64Only).map((c) => c.id);
-const noarm = cat.filter((c) => c.noArm64).map((c) => c.id);
-const armNeeds = cat.filter((c) => "win32-arm64" in (c.needsByTarget ?? {})).map((c) => [c.id, c.needsByTarget["win32-arm64"]]);
-let line = `<b>Windows ARM64</b>: ${esc(names(emu))} use the x64 build under emulation`;
-if (noarm.length) line += `; ${esc(names(noarm))} has no build`;
-for (const [cid, deps] of armNeeds) line += `; ${esc(byid[cid].name)} also needs ${esc(names(deps))}`;
-notes.push(line + ".");
 const rosetta = cat.filter((c) => c.rosetta).map((c) => c.id);
 notes.push(
   "<b>macOS Apple Silicon</b>: " +
@@ -110,13 +103,15 @@ for (const c of cat) {
   }
   if (c.targets?.length) {
     const off = TARGETS.map(([t]) => t).filter((t) => !c.targets.includes(t));
+    // `targets` naming every system (Docker Sandboxes, D-176) is no note.
+    if (!off.length) continue;
     const why = SRC[c.id].notOffered ?? "the catalog does not offer it";
     notes.push(`<b>${esc(c.name)}</b> is missing on ${where(off)}: ${esc(why)}.`);
   }
 }
 const order = TARGETS.map(([t]) => t);
 for (const c of cat) {
-  const extra = Object.entries(c.needsByTarget ?? {}).filter(([t]) => t !== "win32-arm64");
+  const extra = Object.entries(c.needsByTarget ?? {});
   if (extra.length) {
     const ts = extra.map(([t]) => t).sort((a, b) => order.indexOf(a) - order.indexOf(b));
     const deps = [...new Set(extra.flatMap(([, d]) => d))].sort();
@@ -137,13 +132,13 @@ if (RETIRED.length) {
 }
 notes.push(
   "Source of the data: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, " +
-    "<code>noArm64</code>, <code>x64Only</code>, <code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>, " +
+    "<code>rosetta</code>, <code>needs</code>, <code>needsByTarget</code>, " +
     "<code>mb</code>) with the logic of <code>Component::is_available_on</code>; sources and non-relocatable components from " +
     "<code>scripts/matrix/sources.json</code>, checked against the installers by <code>cargo test</code>.",
 );
 const NOTES = notes.map((n) => `  <li>${n}</li>`).join("\n");
 
-const LABEL = { ok: "Native", emu: "x64 emulated", no: "Not available", dep: "Blocked" };
+const LABEL = { ok: "Native", emu: "Rosetta 2", no: "Not available", dep: "Blocked" };
 const ICON = { ok: "●", emu: "◐", no: "○", dep: "◌" };
 
 const rows = [];
@@ -196,7 +191,7 @@ const summary = TARGETS.map(
       .map((k) => `<span class="b-${k}" style="flex:${counts[t][k]}"></span>`)
       .join("") +
     `</div><div class="nums"><span class="c-ok">${counts[t].ok} native</span>` +
-    `<span class="c-emu">${counts[t].emu} emulated</span>` +
+    `<span class="c-emu">${counts[t].emu} Rosetta 2</span>` +
     `<span class="c-no">${counts[t].no + counts[t].dep} missing</span></div></div>`,
 ).join("");
 const page = `<!doctype html>
@@ -205,7 +200,7 @@ const page = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atollo tools matrix by system</title>
-<meta name="description" content="Every component of Atollo's catalog on Windows, macOS and Linux, x64 and ARM64: native, emulated or not available, with its source.">
+<meta name="description" content="Every component of Atollo's catalog on the systems of Docker Sandboxes (Windows x64, macOS Apple Silicon, Linux x64 and ARM64): native, with Rosetta 2 or not available, with its source.">
 <link rel="canonical" href="https://nabre.github.io/atollo/#tools">
 <style>
 :root {
@@ -265,7 +260,7 @@ tr.hide { display:none; }
 <body>
 <main>
 <h1>Tools × operating system × architecture matrix</h1>
-<p class="sub">${cat.length} components of <code>tauri/catalog/components.json</code> · 6 targets · generated by <code>scripts/matrix/gen_matrix.mjs</code></p>
+<p class="sub">${cat.length} components of <code>tauri/catalog/components.json</code> · ${TARGETS.length} targets, the systems of Docker Sandboxes · generated by <code>scripts/matrix/gen_matrix.mjs</code></p>
 <div class="cards">${summary}</div>
 <div class="tools">
   <input id="q" type="search" placeholder="Search a component or source…" aria-label="Search">
@@ -274,7 +269,7 @@ tr.hide { display:none; }
 </div>
 <div class="legend">
   <span>● <b style="color:var(--ok)">Native</b>: a build for the architecture</span>
-  <span>◐ <b style="color:var(--emu)">x64 emulated</b>: x64 build on Windows ARM64 (Prism)</span>
+  <span>◐ <b style="color:var(--emu)">Rosetta 2</b>: x64 build on macOS Apple Silicon</span>
   <span>◌ <b style="color:var(--dep)">Blocked</b>: a dependency is missing on that target</span>
   <span>○ Not available</span>
   <span><i class="tag">+dep</i> one more dependency on that target</span>

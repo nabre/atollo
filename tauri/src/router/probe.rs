@@ -1,10 +1,9 @@
-//! Multi-target disk probing and health verification across all 6 targets
-//! (`win32-x64`, `win32-arm64`, `darwin-arm64`, `darwin-x64`, `linux-x64`,
-//! `linux-arm64`).
+//! Multi-target disk probing and health verification across the 4 supported
+//! targets (`win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`).
 
 use serde::Serialize;
 
-use super::availability::{on_arm64_pc, unavailable_reason};
+use super::availability::unavailable_reason;
 use super::target::{can_execute_on_host, profile};
 use crate::env::KitEnv;
 use crate::kit::{Arch, Kit, Os, Target};
@@ -36,11 +35,8 @@ pub struct TargetToolStatus {
     /// ([`super::bootstrap::stages_for`]). False once it is installed or
     /// staged.
     pub first_start: bool,
-    /// No ARM64 build, the target is Windows ARM64 and so is this PC: the
-    /// interface says "not available on ARM64 PCs" (as `ComponentInfo`).
-    pub no_arm64: bool,
     /// Why it is not available, already translated (see
-    /// [`unavailable_reason`]); `None` when available or `no_arm64`.
+    /// [`unavailable_reason`]); `None` when available.
     pub unavailable_reason: Option<String>,
     /// On the PC's system with the VM on: a tool the VM runs with its build
     /// for Linux, not needed here (D-174).
@@ -73,7 +69,6 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
     // As the Tools page: what a chosen one needs on this target only.
     let here = catalog.needs_only_on(&choice.chosen_ids(catalog), target);
     let prof = profile(target);
-    let host = Target::detect();
 
     let mut available_count = 0;
     let mut installed_count = 0;
@@ -102,9 +97,8 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
                 .is_some_and(|i| super::bootstrap::stages_for(i, c, target));
         let no_rosetta = c.is_available_on(target) && !available;
         let unavailable_reason = (!available)
-            .then(|| unavailable_reason(c, target, host, no_rosetta, lang))
+            .then(|| unavailable_reason(c, target, no_rosetta, lang))
             .flatten();
-        let no_arm64 = !available && unavailable_reason.is_none() && on_arm64_pc(target, host);
 
         if available {
             available_count += 1;
@@ -126,7 +120,6 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             needs_reinstall,
             bootstrap_staged,
             first_start,
-            no_arm64,
             unavailable_reason,
             via_vm: false,
         });
@@ -145,7 +138,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
     }
 }
 
-/// Probes all 6 supported targets (`Target::ALL`) on the kit's disk: the
+/// Probes the 4 supported targets (`Target::ALL`) on the kit's disk: the
 /// component × target grid of the Tools page (`ipc::setup::target_profiles`).
 pub fn probe_all_targets(kit: &Kit, lang: &str) -> Vec<TargetSummary> {
     Target::ALL

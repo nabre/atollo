@@ -58,12 +58,7 @@ export function ToolPage({
   const item = itemState(setup, c.id, c.name);
   const versioned = kit.byId.get(c.id);
   const installable =
-    versioned &&
-    !versioned.installed &&
-    versioned.downloadable &&
-    c.available &&
-    !c.noArm64 &&
-    c.unavailableReason === null
+    versioned && !versioned.installed && versioned.downloadable && c.available && c.unavailableReason === null
       ? versioned
       : null;
   const group = groups().find((g) => g.has(c));
@@ -112,17 +107,9 @@ export function ToolPage({
               <Codicon name="check" size={14} />
               {shown ? `${shown} (${t("pre-installato")})` : t("pre-installato")}
             </span>
-          ) : c.noArm64 ? (
-            <span key="state" className="text-vsc-desc">
-              {t("non disponibile su PC ARM64")}
-            </span>
           ) : c.unavailableReason !== null ? (
             <span key="state" className="text-vsc-desc">
               {c.unavailableReason}
-            </span>
-          ) : c.needsWindows11 ? (
-            <span key="state" className="text-vsc-desc">
-              {t("richiede Windows 11 su ARM64")}
             </span>
           ) : (
             <span key="state" className="text-vsc-desc">
@@ -133,7 +120,11 @@ export function ToolPage({
             {sizeText(c.mb)}
           </span>,
           c.x64Only ? (
-            <span key="x64" className="text-vsc-desc" title={t("Su Windows ARM64 gira in emulazione x64")}>
+            <span
+              key="x64"
+              className="text-vsc-desc"
+              title={t("Su un Mac con Apple Silicon gira in emulazione x64 con Rosetta 2")}
+            >
               x64
             </span>
           ) : null,

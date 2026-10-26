@@ -32,19 +32,9 @@ fn bun_asset_per_target_and_cpu() {
             "bun-windows-x64-baseline.zip",
         ),
         (
-            Target::WIN32_ARM64,
-            "bun-windows-aarch64.zip",
-            "bun-windows-aarch64.zip",
-        ),
-        (
             Target::DARWIN_ARM64,
             "bun-darwin-aarch64.zip",
             "bun-darwin-aarch64.zip",
-        ),
-        (
-            Target::DARWIN_X64,
-            "bun-darwin-x64.zip",
-            "bun-darwin-x64-baseline.zip",
         ),
         (
             Target::LINUX_X64,

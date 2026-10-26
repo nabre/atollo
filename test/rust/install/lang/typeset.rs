@@ -49,17 +49,7 @@ fn tinytex_new_asset_names() {
             Kind::SevenZip,
         ),
         (
-            Target::WIN32_ARM64,
-            "TinyTeX-1-windows-v2026.10.exe",
-            Kind::SevenZip,
-        ),
-        (
             Target::DARWIN_ARM64,
-            "TinyTeX-1-darwin-v2026.10.tar.xz",
-            Kind::TarXz,
-        ),
-        (
-            Target::DARWIN_X64,
             "TinyTeX-1-darwin-v2026.10.tar.xz",
             Kind::TarXz,
         ),
@@ -136,9 +126,7 @@ fn tinytex_old_asset_names_as_fallback() {
 fn tlmgr_in_the_binary_folder_of_each_system() {
     for (target, rel) in [
         (Target::WIN32_X64, "bin/windows/tlmgr.bat"),
-        (Target::WIN32_ARM64, "bin/windows/tlmgr.bat"),
         (Target::DARWIN_ARM64, "bin/universal-darwin/tlmgr"),
-        (Target::DARWIN_X64, "bin/universal-darwin/tlmgr"),
         (Target::LINUX_X64, "bin/x86_64-linux/tlmgr"),
         (Target::LINUX_ARM64, "bin/aarch64-linux/tlmgr"),
     ] {

@@ -50,7 +50,7 @@ impl Router {
         probe::probe_target(&self.kit, self.kit.target(), lang)
     }
 
-    /// Static disk probe of all 6 supported targets (`Target::ALL`).
+    /// Static disk probe of the 4 supported targets (`Target::ALL`).
     pub fn probe_all_targets(&self, lang: &str) -> Vec<probe::TargetSummary> {
         probe::probe_all_targets(&self.kit, lang)
     }

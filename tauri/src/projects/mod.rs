@@ -83,7 +83,7 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
 
 /// What can be added from "Linguaggi e strumenti" for the tools' kit
 /// `tools` (the kit, or with the VM on the kit of its Linux, D-173): not
-/// installed, available there (no R on Windows ARM64), and for the VM's
+/// installed, available there (no Android on Linux ARM64), and for the VM's
 /// Linux one this PC can install (not what only finishes on its own
 /// system).
 fn addable(tools: &Kit, c: &crate::setup::Component, cross: bool) -> bool {

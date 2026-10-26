@@ -294,7 +294,7 @@ pub fn export(kit: &Kit, env: &KitEnv, lang: &str) -> Result<PathBuf> {
 /// nothing is sent until the user presses «Create» on GitHub. Relative to
 /// github.com.
 pub fn issue_path(kit: &Kit) -> String {
-    // The kit's system, and the PC's when it differs (x64 emulation).
+    // The kit's system, and the PC's when it differs.
     let (kit_target, host) = (kit.target(), crate::kit::Target::detect());
     let mut system = kit_target.as_str().to_owned();
     if host != kit_target {

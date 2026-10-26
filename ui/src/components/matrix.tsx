@@ -125,7 +125,7 @@ export function TargetMatrix({ state, onOpen }: { state: ComponentsState; onOpen
       <div className="shrink-0 space-y-2 px-5 pt-4 pb-2">
         <p className="text-[12px] text-vsc-desc">
           {t(
-            "Lo stato di ogni componente sui sei sistemi che il kit supporta: lo stesso kit su una chiavetta si apre su ciascuno. Fai clic su una casella per il dettaglio.",
+            "Lo stato di ogni componente sui quattro sistemi che il kit supporta, quelli dove gira Docker Sandboxes: lo stesso kit su una chiavetta si apre su ciascuno. Fai clic su una casella per il dettaglio.",
           )}
         </p>
         <ul aria-label={t("Legenda")} className="flex flex-wrap gap-x-4 gap-y-1 text-[12px]">

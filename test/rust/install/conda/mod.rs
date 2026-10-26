@@ -94,7 +94,7 @@ fn conda_environments_by_component_and_target() {
         ruby.conda_prefix(Target::DARWIN_ARM64, dir),
         Some(dir.to_path_buf())
     );
-    assert_eq!(ruby.conda_prefix(Target::WIN32_ARM64, dir), None);
+    assert_eq!(ruby.conda_prefix(Target::WIN32_X64, dir), None);
     let mongo = installer("mongodb").unwrap();
     assert!(mongo.conda_prefix(Target::LINUX_ARM64, dir).is_some());
     assert!(mongo.conda_prefix(Target::DARWIN_ARM64, dir).is_none());
@@ -102,12 +102,7 @@ fn conda_environments_by_component_and_target() {
     assert!(sqlite.conda_prefix(Target::LINUX_ARM64, dir).is_some());
     assert!(sqlite.conda_prefix(Target::LINUX_X64, dir).is_none());
     // Every component that cannot follow the kit says where its environment is.
-    for t in [
-        Target::LINUX_X64,
-        Target::LINUX_ARM64,
-        Target::DARWIN_X64,
-        Target::DARWIN_ARM64,
-    ] {
+    for t in [Target::LINUX_X64, Target::LINUX_ARM64, Target::DARWIN_ARM64] {
         for c in Catalog::get().all() {
             let inst = installer(&c.id).unwrap();
             if !inst.relocatable(t) {

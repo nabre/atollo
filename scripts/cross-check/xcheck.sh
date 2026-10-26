@@ -9,7 +9,7 @@
 #   bash scripts/cross-check/xcheck.sh <target> <cargo subcommand> [args...]
 #   bash scripts/cross-check/xcheck.sh x86_64-unknown-linux-gnu clippy --all-targets -- -D warnings
 # Targets: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu,
-#          aarch64-apple-darwin, x86_64-apple-darwin
+#          aarch64-apple-darwin (the systems of Docker Sandboxes, D-176)
 #          (rustup target add <target> once).
 # The build goes to target/xcheck-<target> so it never mixes with the
 # Windows build.

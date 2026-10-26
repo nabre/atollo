@@ -8,31 +8,20 @@ use std::fs;
 fn target_execution_matrix_across_os_and_arch() {
     use target::can_execute_between as can;
     for rosetta in [false, true] {
-        for t in Target::ALL {
-            assert!(can(t, t, rosetta), "{t} on itself");
-        }
-        // Windows ARM64 runs x64 binaries via emulation, Rosetta or not.
-        assert!(can(Target::WIN32_ARM64, Target::WIN32_X64, rosetta));
-        // Linux ARM64 does not assume user-mode x64 emulation, and x64 never runs ARM64.
-        assert!(!can(Target::LINUX_ARM64, Target::LINUX_X64, rosetta));
-        assert!(!can(Target::WIN32_X64, Target::WIN32_ARM64, rosetta));
-        assert!(!can(Target::DARWIN_X64, Target::DARWIN_ARM64, rosetta));
-        // Cross-OS execution is never allowed.
-        assert!(!can(Target::WIN32_X64, Target::LINUX_X64, rosetta));
-        assert!(!can(Target::LINUX_X64, Target::DARWIN_X64, rosetta));
-        assert!(!can(Target::DARWIN_ARM64, Target::LINUX_ARM64, rosetta));
-    }
-    // macOS Apple Silicon runs x64 binaries only with Rosetta 2.
-    assert!(can(Target::DARWIN_ARM64, Target::DARWIN_X64, true));
-    assert!(!can(Target::DARWIN_ARM64, Target::DARWIN_X64, false));
-    // Every pair: Rosetta changes that one pair only.
-    for host in Target::ALL {
-        for t in Target::ALL {
-            let differs = can(host, t, true) != can(host, t, false);
-            let mac = host == Target::DARWIN_ARM64 && t == Target::DARWIN_X64;
-            assert_eq!(differs, mac, "{host} -> {t}");
+        for host in Target::ALL {
+            for t in Target::ALL {
+                // Each of the four runs its own programs only: Linux ARM64
+                // does not assume user-mode x64 emulation, x64 never runs
+                // ARM64, and cross-OS execution is never allowed.
+                assert_eq!(can(host, t, rosetta), host == t, "{host} -> {t}");
+            }
         }
     }
+    // macOS Apple silicon runs the x64 build of a component only with
+    // Rosetta 2: the one pair Rosetta changes.
+    let x64_mac = Target::DARWIN_ARM64.with_arch(Arch::X64);
+    assert!(can(Target::DARWIN_ARM64, x64_mac, true));
+    assert!(!can(Target::DARWIN_ARM64, x64_mac, false));
 }
 
 #[test]
@@ -43,13 +32,16 @@ fn rosetta_is_checked_only_for_its_components_on_that_mac() {
     }))
     .unwrap();
     let mac = Target::DARWIN_ARM64;
-    assert!(c.is_emulated_on(mac) && !c.is_emulated_on(Target::WIN32_ARM64));
-    assert_eq!(target::effective_target(mac, &c), Target::DARWIN_X64);
+    assert!(c.is_emulated_on(mac) && !c.is_emulated_on(Target::WIN32_X64));
+    assert_eq!(
+        target::effective_target(mac, &c),
+        Target::new(Os::Darwin, Arch::X64)
+    );
     // On the Mac itself, without Rosetta: not available.
     assert!(target::rosetta_missing(mac, mac, &c, false));
     assert!(!target::rosetta_missing(mac, mac, &c, true));
     // A kit prepared for that Mac from another system cannot know.
-    for host in [Target::WIN32_X64, Target::LINUX_X64, Target::DARWIN_X64] {
+    for host in [Target::WIN32_X64, Target::LINUX_X64, Target::LINUX_ARM64] {
         assert!(!target::rosetta_missing(host, mac, &c, false), "{host}");
     }
     // Other targets never need it.
@@ -71,32 +63,19 @@ fn rosetta_is_checked_only_for_its_components_on_that_mac() {
     }
 }
 
-/// `x64Only` is about Windows ARM64: the same components have a native
-/// build for Apple Silicon, which must not become x64 there.
+/// Every component of the catalog downloads the build of its own target:
+/// none runs emulated on the four (no `rosetta` component today).
 #[test]
-fn x64_only_components_stay_native_on_apple_silicon() {
+fn every_component_downloads_its_own_target() {
     for c in Catalog::get().all() {
-        if c.x64_only && c.is_available_on(Target::DARWIN_ARM64) {
-            assert!(!c.is_emulated_on(Target::DARWIN_ARM64), "{}", c.id);
-            assert_eq!(
-                target::effective_target(Target::DARWIN_ARM64, c),
-                Target::DARWIN_ARM64,
-                "{}",
-                c.id
-            );
-        }
-        if c.x64_only {
-            assert_eq!(
-                target::effective_target(Target::WIN32_ARM64, c),
-                Target::WIN32_X64,
-                "{}",
-                c.id
-            );
+        for t in Target::ALL {
+            assert!(!c.is_emulated_on(t), "{} on {t}", c.id);
+            assert_eq!(target::effective_target(t, c), t, "{} on {t}", c.id);
         }
     }
 }
 
-/// micromamba has a native build on every target, Windows ARM64 too.
+/// micromamba has a native build on every target.
 #[test]
 fn micromamba_asset_per_target() {
     let assets: Vec<&str> = Target::ALL.iter().map(|t| t.micromamba_asset()).collect();
@@ -104,9 +83,7 @@ fn micromamba_asset_per_target() {
         assets,
         [
             "micromamba-win-64",
-            "micromamba-win-arm64",
             "micromamba-osx-arm64",
-            "micromamba-osx-64",
             "micromamba-linux-64",
             "micromamba-linux-aarch64",
         ]
@@ -169,7 +146,7 @@ fn probe_all_targets_and_static_health_work_without_spawning() {
 
     let router = Router::new(kit.clone());
     let all = router.probe_all_targets("en");
-    assert_eq!(all.len(), 6);
+    assert_eq!(all.len(), 4);
 
     let linux_summary = all.iter().find(|s| s.target == "linux-arm64").unwrap();
     assert_eq!(linux_summary.os, Os::Linux);
@@ -193,8 +170,8 @@ fn probe_all_targets_and_static_health_work_without_spawning() {
 
 /// The cells of the grid of the Tools page: the needs of one target are
 /// chosen there (Zig next to C and C++ on macOS and Linux), every
-/// unavailable cell says why (or "no ARM64 build" only on a Windows ARM64
-/// PC), and what this host cannot run completes on the first start.
+/// unavailable cell says why, and what this host cannot run completes on
+/// the first start.
 #[test]
 fn grid_cells_say_chosen_reason_and_first_start() {
     use crate::setup::Choice;
@@ -220,13 +197,7 @@ fn grid_cells_say_chosen_reason_and_first_start() {
             assert_eq!(tool("zig").chosen, t.is_unix(), "{t}");
         }
         for x in &s.tools {
-            assert_eq!(
-                !x.available,
-                x.unavailable_reason.is_some() || x.no_arm64,
-                "{} {t}",
-                x.id
-            );
-            assert!(!(x.no_arm64 && x.unavailable_reason.is_some()));
+            assert_eq!(!x.available, x.unavailable_reason.is_some(), "{} {t}", x.id);
             assert!(!x.first_start || (x.available && !x.installed && !x.bootstrap_staged));
             // The host's own target runs its installers now.
             if t == host {
@@ -238,12 +209,6 @@ fn grid_cells_say_chosen_reason_and_first_start() {
         let rust = tool("rust");
         if rust.available && !target::can_execute_on_host(t) {
             assert!(rust.first_start, "{t}");
-        }
-        if t == Target::WIN32_ARM64 {
-            // R's x64 build in emulation (it was `noArm64`).
-            let r = tool("r");
-            assert!(r.available && r.emulated && !r.no_arm64);
-            assert_eq!(r.unavailable_reason, None);
         }
         if t == Target::LINUX_ARM64 {
             assert_eq!(

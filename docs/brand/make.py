@@ -597,7 +597,7 @@ def brand_board_svg():
   <line x1="770" y1="1074" x2="1280" y2="1074" stroke="#2B2B2B"/>
   <text x="790" y="1096" font-family="{mono}" font-size="12" fill="#10B981">✓ PATH isolated to kit/data · 0 host services</text>
   <text x="790" y="1116" font-family="{mono}" font-size="12" fill="#10B981">✓ Claude Code, Codex &amp; Antigravity MCP/skills synchronized</text>
-  <text x="790" y="1136" font-family="{mono}" font-size="12" fill="#34D399">✓ Ready on win32-x64, win32-arm64, darwin, linux</text>
+  <text x="790" y="1136" font-family="{mono}" font-size="12" fill="#34D399">✓ Ready on win32-x64, darwin-arm64, linux</text>
 
   <!-- Right AI Panel -->
   <rect x="1280" y="930" width="282" height="218" fill="#181818"/>

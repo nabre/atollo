@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the kit's relocatable Apache httpd for one macOS or Linux target
 # (DECISIONS.md D-116): bash build.sh <target> <build> <out-dir>
-#   target  linux-x64 | linux-arm64 | darwin-arm64 | darwin-x64 (the host's own)
+#   target  linux-x64 | linux-arm64 | darwin-arm64 (the host's own; D-176: no Intel macOS)
 #   build   the kit's build number of this httpd version (1, 2, ...)
 # Writes <out-dir>/httpd-<version>-<build>-<target>.tar.gz and its .sha256.
 #
@@ -24,7 +24,6 @@ case "$target" in
   linux-x64) os=linux; ossl=linux-x86_64; want_arch=x86_64 ;;
   linux-arm64) os=linux; ossl=linux-aarch64; want_arch=aarch64 ;;
   darwin-arm64) os=darwin; ossl=darwin64-arm64-cc; want_arch=arm64 ;;
-  darwin-x64) os=darwin; ossl=darwin64-x86_64-cc; want_arch=x86_64 ;;
   *) echo "unknown target $target" >&2; exit 2 ;;
 esac
 [ "$(uname -m)" = "$want_arch" ] || { echo "$target is built on a $want_arch host, not $(uname -m)" >&2; exit 2; }
