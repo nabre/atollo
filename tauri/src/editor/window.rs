@@ -158,9 +158,23 @@ fn data_uri(png: &[u8]) -> String {
 /// The script that sets the title bar defaults and fills the editor's title
 /// bar with the Windows buttons, with the editor's own classes, so its
 /// colors (codicons, red on close).
-fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> String {
+/// `agents`: the names of the extensions that run an agent the editor's
+/// start uninstalled, told once (LEVELS.md §10).
+fn controls_script(
+    lang: &str,
+    port: u16,
+    project: &str,
+    hidden: &[String],
+    agents: &[String],
+) -> String {
     let label = |it: &str| {
         serde_json::to_string(&crate::common::i18n::t(lang, it, &[])).unwrap_or_default()
+    };
+    let agents = if agents.is_empty() {
+        "\"\"".to_owned()
+    } else {
+        serde_json::to_string(&crate::editor::ext::agents_notice(lang, agents))
+            .unwrap_or_else(|_| "\"\"".into())
     };
     let (logo32, logo256) = (data_uri(LOGO_32), data_uri(LOGO_256));
     let hidden_key = serde_json::to_string(&hidden_key(project)).unwrap_or_default();
@@ -372,6 +386,45 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
     notice.append(head, actions);
     (document.querySelector(".monaco-workbench") || document.body).appendChild(notice);
   }};
+  // Extensions that run an agent Atollo uninstalled at the editor's start
+  // (LEVELS.md §10): why, once; above the other notice.
+  window.__atolloAgents = (text) => {{
+    if (!text) return;
+    const show = () => {{
+      const old = document.getElementById("atollo-agents");
+      if (old) old.remove();
+      const box = document.createElement("div");
+      box.id = "atollo-agents";
+      box.setAttribute("role", "alert");
+      box.style.bottom = "auto";
+      box.style.top = "42px";
+      const head = document.createElement("div");
+      head.className = "head";
+      const icon = document.createElement("span");
+      icon.className = "codicon codicon-info";
+      const msg = document.createElement("div");
+      msg.className = "msg";
+      msg.textContent = text;
+      head.append(icon, msg);
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const ok = document.createElement("button");
+      ok.className = "primary";
+      ok.textContent = {ok};
+      ok.addEventListener("click", () => box.remove());
+      actions.appendChild(ok);
+      box.append(head, actions);
+      (document.querySelector(".monaco-workbench") || document.body).appendChild(box);
+    }};
+    // Once the workbench is there (a few seconds at most), else on the page.
+    let tries = 0;
+    const when = () => {{
+      if (document.querySelector(".monaco-workbench") || (document.body && ++tries > 40)) show();
+      else setTimeout(when, 250);
+    }};
+    when();
+  }};
+  window.__atolloAgents({agents});
   const start = () => {{
     const style = document.createElement("style");
     // The workbench's own font is per system (.windows, .mac, .linux, also
@@ -402,22 +455,22 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
       + "color:var(--vscode-foreground)}}"
       + ".atollo-welcome .project{{font-size:15px;margin-top:4px}}"
       + ".atollo-welcome .tagline{{font-size:13px;margin-top:8px;opacity:.85}}"
-      + "#atollo-notice{{position:fixed;right:12px;bottom:34px;width:440px;z-index:3000;"
+      + ":is(#atollo-notice,#atollo-agents){{position:fixed;right:12px;bottom:34px;width:440px;z-index:3000;"
       + "box-sizing:border-box;padding:12px 14px;border-radius:6px;font-size:13px;"
       + "background:var(--vscode-notifications-background,#252526);"
       + "color:var(--vscode-notifications-foreground,#ccc);"
       + "border:1px solid var(--vscode-notificationToast-border,transparent);"
       + "box-shadow:0 0 8px 2px var(--vscode-widget-shadow,#0000005c)}}"
-      + "#atollo-notice .head{{display:flex;gap:8px;align-items:flex-start;line-height:1.4}}"
-      + "#atollo-notice .codicon{{color:var(--vscode-notificationsInfoIcon-foreground,#3794ff);"
+      + ":is(#atollo-notice,#atollo-agents) .head{{display:flex;gap:8px;align-items:flex-start;line-height:1.4}}"
+      + ":is(#atollo-notice,#atollo-agents) .codicon{{color:var(--vscode-notificationsInfoIcon-foreground,#3794ff);"
       + "margin-top:2px}}"
-      + "#atollo-notice .actions{{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}}"
-      + "#atollo-notice button{{border:none;border-radius:2px;padding:4px 10px;font:inherit;"
+      + ":is(#atollo-notice,#atollo-agents) .actions{{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}}"
+      + ":is(#atollo-notice,#atollo-agents) button{{border:none;border-radius:2px;padding:4px 10px;font:inherit;"
       + "cursor:pointer}}"
-      + "#atollo-notice .primary{{background:var(--vscode-button-background,#0e639c);"
+      + ":is(#atollo-notice,#atollo-agents) .primary{{background:var(--vscode-button-background,#0e639c);"
       + "color:var(--vscode-button-foreground,#fff)}}"
-      + "#atollo-notice .primary:hover{{background:var(--vscode-button-hoverBackground,#1177bb)}}"
-      + "#atollo-notice .secondary{{background:var(--vscode-button-secondaryBackground,#3a3d41);"
+      + ":is(#atollo-notice,#atollo-agents) .primary:hover{{background:var(--vscode-button-hoverBackground,#1177bb)}}"
+      + ":is(#atollo-notice,#atollo-agents) .secondary{{background:var(--vscode-button-secondaryBackground,#3a3d41);"
       + "color:var(--vscode-button-secondaryForeground,#fff)}}";
     document.head.appendChild(style);
     fill();
@@ -437,6 +490,7 @@ fn controls_script(lang: &str, port: u16, project: &str, hidden: &[String]) -> S
         ext = label("Atollo ha installato nuove estensioni: {0}. Riavvia le estensioni perché partano tutte."),
         restart = label("Riavvia le estensioni"),
         later = label("Più tardi"),
+        ok = label("Ho capito"),
         tagline = label("Ambiente di sviluppo portabile: linguaggi, agenti ed editor in una cartella."),
     )
 }
@@ -569,6 +623,35 @@ pub fn notify_installed<R: Runtime>(app: &AppHandle<R>, ids: &[String]) {
     }
 }
 
+/// Tells the open editor windows which extensions that run an agent the
+/// editor's last start uninstalled (LEVELS.md §10); kept for the next
+/// window when none is open.
+pub fn notify_agents_removed<R: Runtime>(
+    app: &AppHandle<R>,
+    editor: &crate::editor::Editor,
+    lang: &str,
+) {
+    let names = editor.take_agents_removed();
+    if names.is_empty() {
+        return;
+    }
+    let text = crate::editor::ext::agents_notice(lang, &names);
+    let json = serde_json::to_string(&text).unwrap_or_else(|_| "\"\"".into());
+    let mut told = false;
+    for (label, window) in app.webview_windows() {
+        if label.starts_with(LABEL_PREFIX) {
+            told |= window
+                .eval(format!(
+                    "window.__atolloAgents && window.__atolloAgents({json})"
+                ))
+                .is_ok();
+        }
+    }
+    if !told {
+        editor.keep_agents_removed(names);
+    }
+}
+
 /// Only the server, exactly: scheme, host and port.
 pub fn same_origin(url: &Url, port: u16) -> bool {
     url.scheme() == "http" && url.host_str() == Some("127.0.0.1") && url.port() == Some(port)
@@ -645,6 +728,8 @@ pub fn open<R: Runtime>(
     let (project, project_new) = (folder.to_path_buf(), folder.to_path_buf());
     let name = title.to_owned();
     let this = label.clone();
+    let editor = std::sync::Arc::clone(&app.state::<crate::ipc::AppState>().editor);
+    let agents = editor.take_agents_removed();
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(target))
         .title(format!("{title} - Atollo"))
         .inner_size(1280.0, 820.0)
@@ -657,6 +742,7 @@ pub fn open<R: Runtime>(
             port,
             title,
             &crate::editor::ext::hidden_of(&app.state::<crate::ipc::AppState>().kit, folder),
+            &agents,
         ))
         .data_directory(data_dir.to_path_buf())
         // Light or dark as the settings say (D-137); VSCodium follows it.
@@ -723,7 +809,15 @@ pub fn open<R: Runtime>(
             NewWindowResponse::Deny
         })
         .build()
-        .context("editor window")?;
+        .context("editor window");
+    let window = match window {
+        Ok(window) => window,
+        Err(e) => {
+            // Not told: the next window says it.
+            editor.keep_agents_removed(agents);
+            return Err(e);
+        }
+    };
     OPEN.lock()
         .unwrap_or_else(|e| e.into_inner())
         .insert(label.clone(), folder.to_path_buf());

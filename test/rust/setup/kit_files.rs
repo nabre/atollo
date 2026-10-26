@@ -93,7 +93,7 @@ fn launch_ps1_writes_waits_and_runs() {
     assert!(!script.contains("param("), "no binding of the user's words");
     for part in [
         "$words = @($args)",
-        "if ($word -eq '--' -or ($Origin -eq 'forwarded' -and $Agent)) {",
+        "if ($word -eq '--' -or (($Origin -eq 'forwarded' -or $Origin -eq 'editorExtension') -and $Agent)) {",
         "{ $_ -eq '-Command' -or $_ -eq '-c' } { $Command = $value }",
         "[IO.Path]::Combine($PSScriptRoot, '..', 'app', 'levels', 'requests')",
         "$id = [guid]::NewGuid().ToString('N')",
@@ -840,4 +840,105 @@ fn bashrc_swaps_project_versions() {
         .arg(kit.kit_files().join("bashrc"))
         .args(["-i", "-c", "echo \"J=$JAVA_HOME\""]));
     assert!(out.contains(&format!("J={from}0")), "{out}");
+}
+
+/// LEVELS.md §6.9, Q2: the wrapper for `claudeCode.claudeProcessWrapper`
+/// (ready, not wired: Atollo never sets the setting) asks the app with
+/// origin `editorExtension` and every word the extension gave, the bundled
+/// binary first; the app drops that one (`requests::agent_args`).
+#[test]
+fn the_claude_extension_wrapper_asks_for_the_vms_claude() {
+    let bat = claude_extension_cmd();
+    assert!(
+        bat.contains(
+            "-File \"%~dp0..\\launch.ps1\" -Origin editorExtension -Extension anthropic.claude-code -Agent claude -- %*\r\n"
+        ),
+        "{bat}"
+    );
+    assert!(!bat.contains('(') && bat.ends_with("exit /b 1\r\n"));
+    assert!(is_unix_bin(&format!("{FORWARD_DIR}/{CLAUDE_EXTENSION}")));
+    let Some(bash) = host_bash() else {
+        eprintln!("no bash on this host: skipped");
+        return;
+    };
+    let (_tmp, kit) = kit_with_shop("kitfiles-extension");
+    let shop = kit.projects().join("shop");
+    let app = responder(&kit, |_| sh_reply("echo \"ran $*\"", &[]));
+    let wrapper = kit.kit_files().join(FORWARD_DIR).join(CLAUDE_EXTENSION);
+    let words = [
+        "/home/me/.ext/anthropic.claude-code/resources/native-binary/claude",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+    ];
+    let out = sh_in(&bash, &wrapper, &shop, &words)
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    let asked = app.join().unwrap().expect("a request");
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(
+        asked.origin,
+        crate::levels::Origin::EditorExtension {
+            extension: "anthropic.claude-code".into(),
+            agent: crate::levels::Agent::Claude,
+        }
+    );
+    assert_eq!(asked.args, words);
+    assert_eq!(requests::agent_args(&asked.origin, &asked.args), words[1..]);
+}
+
+/// The same through `launch.ps1` (`claude-extension.cmd`'s client).
+#[test]
+fn launch_ps1_asks_for_an_extensions_agent() {
+    let Some(pwsh) = host_pwsh() else {
+        eprintln!("no pwsh on this host: skipped");
+        return;
+    };
+    let (_tmp, kit) = kit_with_shop("kitfiles-extension-ps1");
+    let shop = kit.projects().join("shop");
+    let app = responder(&kit, |_| Reply::error("Gli agenti partono solo nella VM."));
+    let out = Command::new(&pwsh)
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+        ])
+        .arg(kit.kit_files().join("launch.ps1"))
+        .args([
+            "-Origin",
+            "editorExtension",
+            "-Extension",
+            "anthropic.claude-code",
+            "-Agent",
+            "claude",
+            "--",
+            r"C:\ext\claude.exe",
+            "--output-format",
+            "stream-json",
+        ])
+        .current_dir(&shop)
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    let asked = app.join().unwrap().expect("a request");
+    assert_eq!(out.status.code(), Some(1), "the refusal");
+    assert_eq!(
+        asked.origin,
+        crate::levels::Origin::EditorExtension {
+            extension: "anthropic.claude-code".into(),
+            agent: crate::levels::Agent::Claude,
+        }
+    );
+    assert_eq!(
+        asked.args,
+        [r"C:\ext\claude.exe", "--output-format", "stream-json"]
+    );
 }

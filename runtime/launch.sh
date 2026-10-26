@@ -6,6 +6,9 @@
 #   sh launch.sh editorTask [-c] <line>          (a task: VSCodium adds -c)
 #   sh launch.sh editorAgentProfile <agent>      (an agent's profile)
 #   sh launch.sh forwarded <agent> [args...]     (claude, codex, pi, agy typed)
+#   sh launch.sh editorExtension <ext-id> <agent> [args...]
+#                                                (an editor extension's wrapper,
+#                                                 LEVELS.md 6.9; not wired, Q2)
 #
 # It decides nothing: it writes a request in data/app/levels/requests/ with
 # the origin and the current folder, waits for Atollo's reply (written for
@@ -61,8 +64,15 @@ case $origin in
         esac
         what="{\"kind\":\"forwarded\",\"agent\":\"$(json "$agent")\",\"from\":\"$from\"}"
         ;;
+    editorExtension)
+        extension=$1
+        [ $# -gt 0 ] && shift
+        agent=$1
+        [ $# -gt 0 ] && shift
+        what="{\"kind\":\"editorExtension\",\"extension\":\"$(json "$extension")\",\"agent\":\"$(json "$agent")\"}"
+        ;;
     *)
-        say "launch.sh: editorTask|editorAgentProfile|forwarded"
+        say "launch.sh: editorTask|editorAgentProfile|forwarded|editorExtension"
         exit 2
         ;;
 esac

@@ -4,10 +4,17 @@
     "languages: nomi dei linguaggi come li rileva detect/mod.rs (LANGUAGES); tools: id dei componenti che un progetto richiede (Deno, Bun, CMake).",
     "Un'estensione con languages o tools è predefinita nei progetti che li hanno; senza nessuno dei due è generale: sempre installata.",
     "programs: per le generali, solo quando quel componente è nel kit. optional: non predefinita, si aggiunge a mano a un progetto.",
-    "Ogni estensione viene proposta una volta sola: se la disinstalli non torna, a meno che un progetto non la aggiunga a mano."
+    "Ogni estensione viene proposta una volta sola: se la disinstalli non torna, a meno che un progetto non la aggiunga a mano.",
+    "level: agent: l'estensione esegue un agente (D-179, docs/app/LEVELS.md §10). Mai installata, tolta a ogni avvio dell'editor: gli agenti girano solo nella VM. Elenco degli id noti, non completo [assumption]."
   ],
   "extensions": [
-    { "id": "anthropic.claude-code", "name": "Claude Code", "programs": ["claude"], "note": "usa accesso e impostazioni del kit (editor_cfg.rs)" },
+    { "id": "anthropic.claude-code", "name": "Claude Code", "level": "agent", "note": "esegue la sua copia della CLI sul PC; claudeCode.claudeProcessWrapper da provare (LEVELS.md Q2)" },
+    { "id": "openai.chatgpt", "name": "Codex", "level": "agent", "note": "chatgpt.cliExecutable è solo per lo sviluppo (LEVELS.md Q3)" },
+    { "id": "google.geminicodeassist", "name": "Gemini Code Assist", "level": "agent" },
+    { "id": "saoudrizwan.claude-dev", "name": "Cline", "level": "agent" },
+    { "id": "rooveterinaryinc.roo-cline", "name": "Roo Code", "level": "agent" },
+    { "id": "continue.continue", "name": "Continue", "level": "agent" },
+    { "id": "kilocode.kilo-code", "name": "Kilo Code", "level": "agent" },
 
     { "id": "ms-python.python", "name": "Python", "languages": ["Python"] },
     { "id": "ms-python.debugpy", "name": "Python Debugger", "languages": ["Python"] },
