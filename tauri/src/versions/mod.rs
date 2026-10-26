@@ -42,7 +42,7 @@ pub(crate) mod disk;
 mod offered;
 
 pub use choice::{
-    apply_kit_choice, check, kit_choice, newest_line, pin_newest, project_choice, project_env,
+    apply_kit_choice, check, kit_choice, newest_line, pin_newest, project_choice,
     set_project_choice, swap_lines, write_project_file, write_project_files, Choice,
 };
 pub use disk::{drop_old_lines, migrate, remove, sync_with_disk};

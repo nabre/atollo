@@ -359,7 +359,9 @@ fn runs_and_stops_commands() {
         &crate::env::Host::capture(),
     );
     let action = Action::for_test("echo", echo, Kind::Command);
-    let info = r.start("demo", &proj, &action, &env, "it").unwrap();
+    let info = r
+        .start_in("demo", &proj, &action, &env, "it", None)
+        .unwrap();
     assert_eq!(info.state, State::Running);
     let key = info.key.clone();
     let start = std::time::Instant::now();
@@ -379,7 +381,7 @@ fn runs_and_stops_commands() {
 
     // A server that never ends: stopped through its job.
     let long = Action::for_test("wait", wait, Kind::Command);
-    let info = r.start("demo", &proj, &long, &env, "it").unwrap();
+    let info = r.start_in("demo", &proj, &long, &env, "it", None).unwrap();
     assert_eq!(r.running(), 1);
     r.stop(&info.key);
     let start = std::time::Instant::now();
@@ -417,7 +419,7 @@ fn replaced_run_does_not_end_the_new_one() {
         .map(|_| {
             let (r, proj, env, long) = (Arc::clone(&r), proj.clone(), env.clone(), long.clone());
             std::thread::spawn(move || {
-                r.start("My App’s {demo}", &proj, &long, &env, "it")
+                r.start_in("My App’s {demo}", &proj, &long, &env, "it", None)
                     .unwrap()
             })
         })

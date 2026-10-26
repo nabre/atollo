@@ -5,6 +5,11 @@ use crate::test_support::prepared_kit;
 use crate::versions::tests::install_fake;
 use crate::versions::{default_dir, install_dir, remove, saved_dir, write_version, Line};
 
+/// The environment of a program of `project` on the PC (level 2, D-179).
+fn project_env(kit: &Kit, project: &str, env: KitEnv) -> KitEnv {
+    crate::levels::env::pc_environment(kit, env, crate::levels::Level::Project, Some(project), None)
+}
+
 #[test]
 fn choices_rewrite_the_environment() {
     let (_tmp, kit) = prepared_kit("versions");

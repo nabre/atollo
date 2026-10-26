@@ -27,10 +27,7 @@ pub(crate) fn pool_env(
     lang: &str,
 ) -> CmdResult<KitEnv> {
     let req = pool_request(kit, id);
-    match super::levels::place_now(kit, base, &req, None, lang, host)? {
-        super::levels::Placed::Pc { env, .. } => Ok(env),
-        super::levels::Placed::Vm { .. } => Err("levels: a pool is never in the VM".into()),
-    }
+    Ok(super::levels::place_now(kit, base, &req, None, lang, host)?.env)
 }
 
 #[tauri::command]

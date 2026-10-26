@@ -4,7 +4,7 @@ English · [Italiano](LEVELS.it.md)
 
 Normative document of decision D-179 (DECISIONS.md, 26/10/2026). It is the single source of truth for: which program runs where, with which `PATH`, with which agents, with which network and mounts; the code that decides it; the IPC that carries it; and how the user can check it. Code, tests, the Guide and ARCHITECTURE.md follow this file; where they differ, this file wins and the difference is a bug.
 
-Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app; step 2 (`levels::env`, the one environment builder) implemented and used by today's callers; step 3 (the PC's entry points E1, E3, E5–E9, E20 through `decide` and `environment`, `PtyInfo.level/label/sandbox`, `CmdError.refusal/fix`, the pools sealed) implemented, their VM paths still today's until step 4. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
+Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app; step 2 (`levels::env`, the one environment builder) implemented and used by today's callers; step 3 (the PC's entry points E1, E3, E5–E9, E20 through `decide` and `environment`, `PtyInfo.level/label/sandbox`, `CmdError.refusal/fix`, the pools sealed) implemented; step 4 (`levels::prepare` with `Effects`, `levels::start`, the VM's entry points E3, E4, E9, E10 through `decide` → `prepare` → `start`, the editor's E11/E12 sessions prepared the same way until step 5, the rule test `no_process_outside_levels`) implemented. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
 
 Contents:
 
@@ -86,8 +86,8 @@ Invariants that follow from the table (normative; each has a test, section 12.3)
 | `levels/place.rs` | `place_of(kit, dir) -> Place` (which project a folder belongs to) | the logic of `runtime/vm.ps1` (`$projects`, `$below`) and `ipc::project_dir` |
 | `levels/facts.rs` | `facts(kit, host, env, request) -> Facts` (the only impure read before `decide`) | `isolation::status`, `vm::guest_path`, `isolation::restart_pending`, catalog availability |
 | `levels/env.rs` | `Environment`, `environment()`, `pc_environment()` (its `Pc` part, each step a function: `project_lines`, `seal`, `strip_agents`, `forward_first`, `mark`), `SEALED`, `SSH_AGENT`, `agent_dirs()`, `forward_dir()`, `FORWARD_DIR`, `LEVEL_VAR`, `PROJECT_VAR`, `TERMINAL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (their sealing part), `editor::terminals::env` (its agent part) |
-| `levels/prepare.rs` | `prepare()`: tools for the VM's Linux, databases and their ports, Pi's local models, `Vm::start` | `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs, ensure_guest_tools}`, `ipc::agents::{agent_vm_ready, pi_local_models}`, `isolation::vm_for` |
-| `levels/start.rs` | `start_terminal()`, `action_command()`, `scaffold_command()`: from `Ready` to a pty `Launch` or a `Command` | the tails of `terminal_launch`, `terminal_open`, `agent_launch`, `Runner::start_in`, `frameworks::run_line` |
+| `levels/prepare.rs` | `Effects`, `Ready`, `prepare()`: tools for the VM's Linux, databases and their ports (`db.env`), Pi's local models (`pi.env`), the sandbox built and started, `info.json` (§8.4) | `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs}`, `ipc::agents::{agent_vm_ready, pi_local_models}`, `isolation::vm_for` |
+| `levels/start.rs` | `vm_session_args()`, `start_terminal()`, `open_terminal()`, `start_action()`, `scaffold_command()`, `scaffold_end()`: from `Ready` to a pty session, an action, or a creation's `Command` | the tails of `terminal_launch`, `terminal_open`, `agent_launch`, `run_start`, `frameworks_create` |
 | `levels/requests.rs` | the file protocol for processes outside the app (editor, forwarders) | replaces `isolation/session.rs` |
 | `levels/report.rs` | `VmReport`, `ToolCheck`, `report()`, `check_tools()` | new |
 | `levels/labels.rs` | `LevelLabel`, `label_of(placement)`, `label(placement, lang)` texts, `banner_line(placement, lang)`, `refusal_text(reason, lang)` | new; the refusal texts of `ipc::agents::no_vm_for_agents` and `ipc::servers::refused_with_vm` |
@@ -275,7 +275,7 @@ pub struct HostAccess {
 pub enum VmProgram {
     Shell,                                   // interactive `bash -l`
     Line { command: String },                // editor task: `sh -lc`
-    Scaffold { base: String },               // the base's steps, each `sh -lc` (`start::scaffold_command`)
+    Scaffold { base: String },               // the base's lines, each the kit's PowerShell for Linux through `sbx exec` (`start::scaffold_command`)
     Action { action: String },               // `sh -lc`, tracked (vm::tracked)
     Site { action: String },                 // a container of the VM's Docker (vm::web_line)
     SbxAgent { agent: Agent },               // `sbx run --name <atollo-a-…>`
@@ -458,7 +458,9 @@ pub fn pc_environment(
 
 `Vm { project, sandbox, program, .. }`:
 
-1. `guest = kit.for_target(vm::guest_target(kit.target()))`; `base_guest = KitEnv::build(&guest, settings, lang, host)`, `settings` read with `Settings::load(kit)` (as `ipc::terminals::project_vm_tools` does today).
+Steps 1–3 are `levels::env::guest_tools(kit, level, project, program, lang, host)`, which `prepare` calls again once it has installed what was missing (a tool installed then is on the `PATH`):
+
+1. `guest = kit.for_target(vm::guest_target(kit.target()))`; `base_guest = KitEnv::build(&guest, settings, lang, host)`, `settings` read with `Settings::load(kit)`.
 2. `isolation::project_guest_tools(kit, &guest, project, base_guest)`: `pc_environment` of `guest` at level 2 (the project's lines, sealed, agents stripped: step 5 above applied to `guest`), then `guest_view`: only `PATH` entries and variables inside `data/apps/linux-…`, as the VM sees them. For `AgentBinary { agent }` the agent's own Linux folder is added back, last, to `guest.path` (it is the program being run, not a command offered to others).
 3. `-e ATOLLO_LEVEL=project|agent` added to `guest.vars`.
 4. `sbx_env = isolation::sbx_session_env(base, host)`.
@@ -466,40 +468,58 @@ pub fn pc_environment(
 
 `Refused` → `None`.
 
-The old functions (step 2 of 12.2): `versions::project_env(kit, p, env)` is a thin wrapper of `pc_environment(kit, env, Project, Some(p), None)` for its many callers, removed by steps 3–4; `versions::choice_env` and `editor::terminals::env` are gone: `terminal_launch` calls `pc_environment(kit, base, Manual, place_of(dir)'s project, Some(terminal))`.
+The old functions (step 2 of 12.2): `versions::project_env(kit, p, env)` was a thin wrapper of `pc_environment(kit, env, Project, Some(p), None)` for its many callers, removed with its last callers by step 4; `versions::choice_env` and `editor::terminals::env` are gone: `terminal_launch` calls `pc_environment(kit, base, Manual, place_of(dir)'s project, Some(terminal))`.
 
 ### 3.6 `prepare` and `start`
 
 ```rust
 // levels/prepare.rs
 
-/// What `prepare` needs from the app, so that it can be tested without Tauri.
+/// What `prepare` needs from the app, so that it can be tested without
+/// Tauri and without `sbx` (the app's: `ipc::levels::AppEffects`).
 pub trait Effects {
-    /// `ensure_guest_tools` today: installs for the VM's Linux what `wanted` lacks.
+    /// `ipc::terminals::ensure_guest_tools`: installs for the VM's Linux what `wanted` lacks.
     fn ensure_guest_tools(&self, guest: &Kit, wanted: &BTreeMap<String, Option<String>>);
-    /// Starts the project's database servers on the PC; their ports.
-    fn start_databases(&self, project: &str, env: &KitEnv) -> anyhow::Result<Vec<(crate::db::auth::ProjectDb, u16)>>;
-    /// Starts llama-server on the PC (Pi's local models); its port.
-    fn start_local_models(&self, lang: &str) -> Option<u16>;
+    /// Starts the project's database servers on the PC, with the kit's
+    /// environment the effects hold (the servers are the kit's own programs);
+    /// each database with its port.
+    fn start_databases(&self, project: &str) -> anyhow::Result<Vec<(crate::db::auth::ProjectDb, u16)>>;
+    /// Starts llama-server on the PC when Pi uses a local model; its port and key.
+    fn start_local_models(&self, lang: &str) -> Option<LocalModels>;
+    /// `Vm::start` with `sbx`'s environment (made the first time, kit, mounts,
+    /// PC ports and GitHub synced).
+    fn start_sandbox(&self, vm: &Vm, env: &KitEnv, lang: &str) -> anyhow::Result<()>;
+    /// `isolation::watch_pi_port`: closes the models' port once no Pi runs there.
+    fn watch_local_models(&self, vm: &Vm, env: &KitEnv, project: &str, port: u16, db_ports: &[u16]);
 }
+
+pub struct LocalModels { pub port: u16, pub key: String }
 
 /// A placement made ready to start.
 pub struct Ready {
     pub placement: Placement,     // never Refused
-    pub env: Environment,
+    pub env: Environment,         // Vm: `guest` as the sandbox got it, with its `env_file`
     pub vm: Option<crate::isolation::Vm>,   // started, ports synced, GitHub synced
 }
 
-/// For `Vm`: installs the tools (D-170), starts the databases and writes
-/// `db.env` (D-171), adds Pi's local models (D-178), builds the `isolation::Vm`
-/// (project's or agent's sandbox) and starts it (`Vm::start`). For `Pc`: nothing
-/// but the `ensure` of what the action needs (today's `ensure(&app, …, &wanted)`).
+/// For `Vm`, in this order: the tools for the VM's Linux (D-170: the kit's
+/// choice, `needs`, the kit's PowerShell for a `Scaffold`, the agent's own
+/// build for `AgentBinary`, at the project's lines) through
+/// `fx.ensure_guest_tools`, `guest_tools` read again; the databases
+/// (`fx.start_databases`) and `db.env` (D-171); the `isolation::Vm` built from
+/// the placement (`isolation::project_vm`, then `Vm::for_agent` for an agent's
+/// sandbox; no kit `sbx`: an error, never the PC); Pi's local models
+/// (`fx.start_local_models`, `pi.env`, the port, D-178); `info.json` (§8.4);
+/// `fx.start_sandbox`; `fx.watch_local_models` for a port not a database's.
+/// For `Pc`: nothing (the caller's `ensure` ran before `environment`, which is
+/// built from what it returns). `Refused`: an error.
 pub fn prepare(
     fx: &dyn Effects,
     kit: &Kit,
     host: &Host,
     placement: Placement,
     env: Environment,
+    needs: &[String],
     lang: &str,
 ) -> anyhow::Result<Ready>;
 ```
@@ -507,58 +527,54 @@ pub fn prepare(
 ```rust
 // levels/start.rs
 
-/// The pty session of a terminal-like placement (Shell, SbxAgent, AgentBinary,
-/// or a PC shell). Its `PtyInfo` carries `level` and `label` (section 8.3).
-pub fn start_terminal(kit: &Kit, ready: &Ready, title: &str, lang: &str) -> anyhow::Result<crate::editor::pty::Launch>;
+/// The `sbx` arguments of a terminal-like `Vm` session: `Shell`
+/// (`vm::kit_terminal_args`), `SbxAgent` (`Vm::agent_session_args`),
+/// `AgentBinary { Pi }` (`vm::pi_session_args`); Antigravity at step 7.
+pub fn vm_session_args(kit: &Kit, ready: &Ready) -> anyhow::Result<Vec<String>>;
 
-/// What `Runner::start_in` runs and keeps for an action or a site.
-pub struct ActionCommand {
-    pub cmd: std::process::Command,
-    /// The line shown in the action's log.
-    pub shown: String,
-    /// In the VM: what stops it there (`run::start::VmRun`, D-175).
-    pub vm_run: Option<crate::projects::run::start::VmRun>,
-    /// Lines for the log (an alias not in the VM, a Caddy site served by Apache).
-    pub notes: Vec<String>,
-    /// On the PC: the FastCGI server of a Caddy/Apache site, kept with the action.
-    pub fastcgi: Option<(crate::projects::fastcgi::FastCgi, std::process::Child)>,
-}
+/// The pty session of a terminal-like placement (a PC shell, or Shell,
+/// SbxAgent, AgentBinary in a VM), with the environment and the folder it
+/// opens with. Its `PtyInfo` carries `level`, `label`, `sandbox` (section 8.3).
+pub fn start_terminal(kit: &Kit, ready: &Ready, lang: &str) -> anyhow::Result<(crate::editor::pty::Launch, KitEnv, PathBuf)>;
 
-/// The command of an action or a site (PC: today's branches of
-/// `Runner::start_in`; VM: `vm::exec_args`/`vm::web_line` through `Vm::command`,
-/// the port published with `Vm::publish`). `port`: the action's, for web ones.
-#[allow(clippy::too_many_arguments)]
-pub fn action_command(
-    kit: &Kit,
-    ready: &Ready,
-    project: &str,
-    dir: &Path,
-    cwd: &Path,
-    action: &crate::detect::Action,
-    port: Option<u16>,
-    lan: bool,
-    job: &crate::platform::jobs::Job,
-    lang: &str,
-) -> anyhow::Result<ActionCommand>;
+/// `start_terminal` opened in the app's terminal; Pi's session holds its
+/// models' port open while it runs (`isolation::pi_session`).
+pub fn open_terminal<R: Runtime>(app: &AppHandle<R>, kit: &Kit, ready: &Ready, lang: &str) -> anyhow::Result<()>;
 
-/// One step of a scaffold: PC: `frameworks::run_line` with the Pc environment;
-/// VM: `vm::exec_args` in the new project's sandbox.
-pub fn scaffold_command(ready: &Ready, line: &str, at: &Path, vars: &[(String, String)]) -> anyhow::Result<std::process::Command>;
+/// An action or a site as `ready` placed it: `Runner::start_in` with the Pc
+/// environment, or in the VM with `sbx`'s environment and the started `Vm`
+/// (`in_vm`: `vm::exec_args`/`vm::web_line` through `Vm::command`, the port
+/// published with `Vm::publish`; the sandbox is no longer started there).
+pub fn start_action(runner: &Arc<Runner>, ready: &Ready, project: &str, dir: &Path, action: &crate::detect::Action, lang: &str) -> anyhow::Result<RunInfo>;
+
+/// One line of a creation, in `at` with `vars`: PC: `frameworks::line_command`
+/// (the kit's PowerShell, the Pc environment); VM: `vm::scaffold_args`, the
+/// kit's PowerShell for the VM's Linux through `sbx exec -w <at in the VM>`,
+/// `vars` with the databases' variables in `scaffold.env` (owner only, never
+/// on the command line). Run by `frameworks::run_command`.
+pub fn scaffold_command(kit: &Kit, ready: &Ready, line: &str, at: &Path, vars: &[(String, String)]) -> anyhow::Result<std::process::Command>;
+
+/// The creation is over: `scaffold.env` goes.
+pub fn scaffold_end(kit: &Kit, ready: &Ready);
 ```
+
+A creation in the VM (R15): the catalog's lines are PowerShell (`frameworks.json`: "one command run with the kit's PowerShell"), so each runs with the kit's PowerShell for the VM's Linux, not `sh -lc`. Its `create` lines make `{name}` in the current folder, which on the PC is `projects/`; the VM reaches only the project's folder, so they run in `<project>/.atollo-new` (`ipc::frameworks::VM_STAGING`), and what they made is moved into the project (kept files listed, as D-90), the staging folder removed. The project's folder, the sandbox's workspace, is never removed and made again as on the PC. A database of the plan is created on the kit's server, then `prepare` runs again (its port opened for the sandbox, `db.env` rewritten) and the steps get `ATOLLO_DB_*` with the VM's way to the PC.
 
 What stays where:
 
 | Today | Fate |
 |---|---|
-| `isolation::vm_for` | private to `levels::prepare` (`Vm` is built only from a `Placement::Vm`) |
+| `isolation::vm_for` | done in step 4: `isolation::project_vm` (`pub(crate)`, no status asked: the decision did), called only by `levels::prepare` (`Vm` is built only from a `Placement::Vm`) |
 | `isolation::Vm::for_agent`, `agent_session_args`, `launch`, `start`, `publish`, `stop_run` | stay in `isolation` (sandbox lifecycle); called only from `levels::prepare`/`start` and `projects::run` (stop) |
 | `isolation::vm::*` builders | stay (pure `sbx` argument builders, D-175 rule) |
 | `isolation::seal`, `SEALED`, `agent_dirs`, `without_agents` | move to `levels::env` (`without_agents` renamed `strip_agents`, and no longer prepends stand-ins: step 6 does) |
 | `isolation::agents_notice`, `with_agents_notice`, `AGENTS_NOTICE_VAR` | removed; the forwarders get the reason from the reply (section 4.3) |
 | `isolation::session` (whole file) | replaced by `levels::requests` |
-| `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs, ensure_guest_tools}` | move to `levels::prepare` (`ensure_guest_tools` behind `Effects`) |
-| `ipc::agents::{agent_vm_ready, refused_on_project, no_vm_for_agents, pi_local_models, watch_agent_requests}` | `agent_vm_ready`, `pi_local_models` → `levels::prepare`; `refused_on_project`, `no_vm_for_agents` → `Refusal` texts in `levels::labels`; `watch_agent_requests` → `levels::requests::serve` |
-| `ipc::editing::{editor_vm_begin, editor_vm_session}` | removed (no per-editor VM session: each task/agent request is decided when it comes) |
+| `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs, ensure_guest_tools}` | done in step 4: the first three moved into `levels::prepare`; `ensure_guest_tools` stays in `ipc::terminals` as the app's `Effects::ensure_guest_tools` (also «Installa i mancanti» with the VM on) |
+| `ipc::agents::{agent_vm_ready, refused_on_project, no_vm_for_agents, pi_local_models, watch_agent_requests}` | step 4: `agent_vm_ready`, `pi_local_models` → `levels::prepare` (the local models' watch kept: `pi_port_touch` in `prepare`, `watch_pi_port` behind `Effects`, `pi_session` in `start::open_terminal`); `no_vm_for_agents` → R1's text in `levels::labels`; `refused_on_project` kept for Antigravity until step 7; `watch_agent_requests` goes through `decide(EditorAgentProfile)` → `prepare` → `start::vm_session_args` until step 5 replaces it with `levels::requests::serve` |
+| `ipc::editing::{editor_vm_begin, editor_vm_session}` | removed in step 5 (no per-editor VM session: each task/agent request is decided when it comes); in step 4 they go through `decide(ProjectTerminal)` → `prepare` |
+| `Runner::start` (the PC wrapper of `start_in`), `frameworks::run_line` | removed in step 4: `levels::start::start_action` calls `Runner::start_in`; `frameworks::run_line` split into `line_command` (built by `levels::start::scaffold_command`) and `run_command` |
+| `editor::terminal::open_console` | removed in step 4: `levels::start::start_terminal` (`pty::shell`) and `open_terminal` (`open_launch_then`) |
 | `ipc::servers::refused_with_vm` | removed (R2) |
 | `vm::starts_in_vm`, `vm::sbx_agent` | replaced by `Agent::runner()` |
 | `setup::kit_files::{NO_AGENTS_DIR, AGENT_COMMANDS, no_agent_cmd, no_agent_sh, AGENTS_NOTICE_FALLBACK}` | replaced by `FORWARD_DIR` and the forwarder files (6.8) |
@@ -697,7 +713,7 @@ Every place in today's code that starts a terminal, task, action, site, pool, sc
 | E1 | `ipc/terminals.rs: terminal_launch` → `editor/terminal.rs: open_console` | kit terminal (pty) | 1 | PC; `terminals::env` (choice, `without_agents`, stand-ins); `with_agents_notice`; **no project versions** (`ATOLLO_TERMINAL` makes profile.ps1/bashrc skip them) | `decide(KitTerminal)` → R3/R4 → `environment(Pc, terminal)` → `start_terminal` |
 | E2 | `editor/cfg.rs: kit_profiles` ("Atollo", "Atollo - Git Bash", "Atollo - cmd", "Atollo - Bash", "Atollo - zsh") → `runtime/vm.ps1 -Shell` | editor terminal | 1 | VM only (D-178), fail closed; on the PC nothing | direct kit shell (`pwsh_args`/`bash_args`), no request; `decide(EditorTerminal)` is R3/R4 by construction; the editor server's environment is already level 1 (E13) |
 | E3 | `ipc/editing.rs: terminal_open` | project terminal | 2 | `vm_for` → `project_vm_ready` → `kit_terminal_args`; else `open_console` with `project_env` | `decide(ProjectTerminal)` → R14 or R5 |
-| E4 | `ipc/runs.rs: run_start` (VM branch) → `projects/run/start.rs: Runner::start_in` → `in_vm` (`exec_args`, `web_line`, `publish`) | action / site in VM | 2 | `vm_for` → `project_vm_ready` | `decide(Action|Site)` → R16/R17 → `prepare` → `action_command` |
+| E4 | `ipc/runs.rs: run_start` (VM branch) → `projects/run/start.rs: Runner::start_in` → `in_vm` (`exec_args`, `web_line`, `publish`) | action / site in VM | 2 | `vm_for` → `project_vm_ready` | `decide(Action|Site)` → R16/R17 → `prepare` → `start_action` (step 4) |
 | E5 | `ipc/runs.rs: run_start` (PC branch) → `Runner::start_in` (`Atollo.exe serve`, `projects/apache.rs: command`, `projects/caddy/command.rs`, `projects/fastcgi.rs: spawn_fastcgi_if_present`, plain command) | action / site on PC | 2 | `project_env` | R5 → `environment(Pc{Project})` |
 | E6 | `ipc/runs.rs: run_start` (pool branch) → `servers.attach` → `servers/process.rs` (pool start, `without_agents`) | site in a pool | 2 | PC; with VM the VM branch wins first | `decide(Site)` first; R5 only then pool |
 | E7 | `ipc/servers.rs: server_start`, `server_reload` (`refused_with_vm`) → `servers/process.rs` | pool | 2 | refused with VM | `decide(Pool)` → R2 or R6 |
@@ -730,7 +746,7 @@ Count: level 1: 2 (E1, E2); level 2: 12 (E3–E9, E12, E19, E20, plus the pool r
 | `sbx` (status, login, ls, daemon) | `isolation/**`, `ipc/isolation.rs: isolation_run` |
 | Antigravity keyring helpers | `os/macos/agy_keyring.rs`, `agents/keyring` (no agent run) |
 
-The rule test (12.3, `no_process_outside_levels`) scans the crate for `open_console`, `open_launch`, `pty::shell`, `pty::command`, `pty::program`, `Runner::start_in`, `frameworks::run_line` and `Vm::command` and fails for any caller outside `levels/` and the list above.
+The rule test (12.3, `no_process_outside_levels`, on since step 4) scans `tauri/src` (comments left out) twice. The gates: `open_launch`, `open_launch_then`, `pty::shell`, `pty::command`, `pty::program`, `.start_in`, `line_command`, `scaffold_args`, `kit_terminal_args`, `pi_session_args`, `agent_session_args`, `exec_args`, `web_line`, allowed only in `levels/`, their own definitions (`editor/terminal.rs`, `editor/pty.rs`, `isolation/vm.rs`, `isolation/mod.rs`, `projects/run/start.rs`, `projects/frameworks/runner.rs`) and named exceptions: `ipc/isolation.rs` (`isolation_run`, the kit's `sbx`), `isolation/session.rs` (E11/E12, until step 5), `agents/claude_token.rs` (E16, until step 6). The spawns: `Command::new`, `kit_command`, `spawn_in`, `shell_command`, allowed only in `levels/`, the system's layer (`platform/`, `os/`), the table above by file, and the level-2 programs that only a decided entry point starts (`projects/run/start.rs`, `projects/apache.rs`, `projects/caddy/command.rs`, `projects/fastcgi.rs`, `projects/frameworks/runner.rs`, `servers/process.rs`), plus `agents/mod.rs` (E17, until step 6). Each exception is written in the test with its reason.
 
 ## 6. Flows
 
@@ -766,7 +782,7 @@ ED runs task "npm test" with automationProfile = pwsh -File data/kit/launch.ps1 
 C writes requests/<id>.json {origin:{kind:editorTask,command}, cwd}
 L requests::serve: place_of(cwd) ─ facts ─ decide
    VM on,  Project ─▶ Vm{Project, Line{command}} (R15) ─ environment ─ prepare (tools, dbs, Vm::start)
-                      reply {placement:vm, program:sbx, argv: exec_args(vm, below, command, [], tools)}
+                      reply {placement:vm, program:sbx, argv: exec_args(vm, below, command, [], tools)}   (step 5)
    VM off, Project ─▶ Pc{Project} (R5)         reply {placement:pc, program: kit shell, env diff}
    VM on,  Folder  ─▶ Refused{NotAProject}     reply {placement:refused, text}
 C prints banner, runs program argv (stdio inherited), exits with its code
@@ -778,8 +794,8 @@ C prints banner, runs program argv (stdio inherited), exits with its code
 UI projects/explorer.tsx ──run_start{project,action}──▶ IPC ipc/runs.rs
   detect action a; origin = a.static_dir|apache_dir|caddy_dir ? Site{a} : Action{a, web: a.kind == Web}
   p = decide({origin, Project{project}}, facts)
-   ├ Vm (R16/R17) ─ environment ─ prepare (tools, db.env, ports, Vm::start)
-   │     ─ Runner::start_in(…, ready) ─ vm.command(exec_args | web_line) ; publish port
+   ├ Vm (R16/R17) ─ environment ─ prepare (tools, db.env, ports, info.json, Vm::start)
+   │     ─ start::start_action ─ Runner::start_in(…, Some(vm)) ─ vm.command(exec_args | web_line) ; publish port
    ├ Pc (R5) ─ site? pool_of → servers.attach (pool) | own server ; else command
    │     ─ environment(Pc{Project}) ─ Runner::start_in(…)
    └ Refused (R9/R10) ─ CmdError{refusal, fix}
@@ -803,9 +819,9 @@ UI AgentButtons ──agent_launch{agent,project}──▶ IPC ipc/agents.rs
    ├ claude|codex ─▶ Vm{Agent, Sandbox::Agent, SbxAgent} (R12)
    │     prepare: Vm::for_agent, tools, db.env, ports, start; args = agent_session_args
    ├ pi|antigravity ─▶ Vm{Agent, Sandbox::Project, AgentBinary} (R13)
-   │     prepare: ensure Linux build (D-173), tools, db.env (+ Pi local models), start
-   │     args = pi_session_args / agy_session_args
-   └ PTY open_launch(sbx, args) with PtyInfo{level:agent, label:"Agente · VM", sandbox}
+   │     prepare: ensure Linux build (D-173), tools, db.env (+ Pi local models, pi.env), start
+   │     args = pi_session_args / agy_session_args (step 7; refused before decide until then)
+   └ start::open_terminal: PTY open_launch_then(sbx, args) with PtyInfo{level:agent, label:"Agente · VM", sandbox}
 ```
 
 ### 6.7 Agent from the editor's profile (level 3)
@@ -984,7 +1000,7 @@ Banner text (stderr, one line, before the program):
 Inside a sandbox, `atollo` tells where you are and what you have; it never commands the kit (the kit's command line installs, removes, changes versions, moves sign-ins and prints secrets such as `atollo secret github`: none of it is ever reachable from a VM).
 
 - **What it shows:** the level and the sandbox, the project, the tools with their versions (the same lines as the VM report, §8.1), the project's databases with their address in the VM (`host.docker.internal:<port>`) and user, never a password, and the PC's ports opened for this sandbox.
-- **How:** Atollo writes `info.json` into the sandbox's kit folder (`data/app/sandboxes/<sandbox>/`, never the project's folder) at every `prepare`; that folder is mounted read-only in the VM. A small POSIX script, `atollo`, first on the guest PATH, prints it (`atollo`, `atollo --json`); any other argument says that the kit is managed from the PC and exits 1.
+- **How:** Atollo writes `info.json` into the sandbox's kit folder (`data/app/sandboxes/<sandbox>/`, never the project's folder) at every `prepare` (done in step 4: `levels::prepare::SandboxInfo`: `v`, `level`, `sandbox`, `project`, `agent`, `workdir`, `tools` (id → line chosen), `databases` (`engine`, `database`, `user`, `address`), `hostPorts`); that folder is mounted read-only in the VM (step 8). A small POSIX script, `atollo`, first on the guest PATH, prints it (`atollo`, `atollo --json`); any other argument says that the kit is managed from the PC and exits 1.
 - **Never:** a call to the PC, a write, a secret. Tests: `the_vm_info_holds_no_secret` (no password, key or token field; database passwords absent), `the_vm_atollo_is_read_only` (the script has no network or write command and refuses other arguments), `the_vm_info_follows_the_report`.
 
 ### 8.5 The project's VM: restart, make again, refresh (decided by the user, 26/10/2026)
@@ -1059,9 +1075,9 @@ Facts from the Docker page (read 26/10/2026): service secrets are global by defa
 | `isolation::Level` (`isolation/mod.rs`) | renamed `Availability { Vm, NoVm }` |
 | `isolation::{SEALED, seal, agent_dirs, without_agents}` | moved to `levels::env` (`without_agents` = `strip_agents` + `forward_first`; `seal` no longer strips the agents itself) — done in step 2 |
 | `versions::choice_env`, `editor::terminals::env` | removed in step 2: `levels::env::pc_environment` (with `versions::swap_lines`, `editor::terminals::apply_tools`) |
-| `versions::project_env` | a thin wrapper of `levels::env::pc_environment` since step 2; step 3 removed its callers in E1, E3, E5, E20; left in `ipc/agents.rs` (E10, E11) and `ipc/editing.rs: editor_vm_begin, editor_vm_session`, removed with them by steps 4–5 |
+| `versions::project_env` | a thin wrapper of `levels::env::pc_environment` since step 2; step 3 removed its callers in E1, E3, E5, E20, step 4 the last ones (E10, E11, `editor_vm_begin`, `editor_vm_session`) and the wrapper |
 | `isolation::{agents_notice, with_agents_notice}`, `setup::kit_files::{AGENTS_NOTICE_VAR, AGENTS_NOTICE_FALLBACK, NO_AGENTS_DIR, AGENT_COMMANDS, no_agent_cmd, no_agent_sh}` | removed; `FORWARD_DIR` and forwarder generators instead; `data/kit/no-agents` added to `OBSOLETE` (removed at start) |
-| `isolation::vm_for` | private in `levels::prepare` |
+| `isolation::vm_for` | `isolation::project_vm`, called only by `levels::prepare` (step 4) |
 | `isolation/session.rs` (all), `test/rust/isolation/session.rs` | replaced by `levels/requests.rs`, `test/rust/levels/requests.rs` |
 | `isolation::vm::{starts_in_vm, sbx_agent}` | `Agent::runner()` |
 | `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs, ensure_guest_tools}` | `levels::prepare` |
@@ -1084,7 +1100,7 @@ Facts from the Docker page (read 26/10/2026): service secrets are global by defa
 1. **Types and decide.** `levels/mod.rs`, `place.rs`, `facts.rs` (reading only), `labels.rs`; tests R1–R17 and totality. No caller changes.
 2. **Environment.** `levels/env.rs`: move `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` for `Pc` and `Vm`; `versions::{project_env, choice_env}` and `editor::terminals::env` become calls to it (behaviour unchanged except: project versions in kit terminals (Q1), every kit terminal sealed the level-1 way, keeping only the user's SSH agent, `ATOLLO_LEVEL`/`ATOLLO_PROJECT`). The folder first on `PATH` stays the stand-ins' `data/kit/no-agents` (`forward_dir`) until step 5 makes the forwarders. The pools kept their unsealed environment without agents until step 3.
 3. **PC entry points.** E1, E3 (PC branch), E5, E6, E7, E8, E9 (PC branch), E20 through `decide` + `environment`; `PtyInfo.level/label/sandbox`; `CmdError.refusal/fix`. Done as follows: each entry point builds its `Request` (place from `place_of`), reads `facts`, and `decide` answers; `Refused` is the command's error with its reason and fix; `Pc` starts with `environment`; `Vm` keeps today's VM path (E3, E4) with the refusals R9/R10 already applied. E6 decides the site first (`Site`), then the pool it joins is decided as a pool (`Pool`, R6). E8 decides per pool (`WebServers::autostart` takes the environment per pool). Every pool start (page, app start, a project's site, a reload) runs with `pc_environment(Project, None)`: sealed, no agent, the forwarders' folder first (`servers/process.rs`, again on the environment the command passes: it changes nothing then). E9 makes the new project's folder (empty) before `place_of` and removes it again before the creation (as an empty project's); with the VM on it still runs on the PC, sealed for no project, until step 4. E20 starts nothing, so it asks no `decide`: `environment(Pc{Project, p})` whatever the VM.
-4. **Prepare and VM entry points.** `levels/prepare.rs` with `Effects`; E3, E4, E10 through it; E9 in the VM (new: scaffold in the new project's sandbox); rule test `no_process_outside_levels` on.
+4. **Prepare and VM entry points.** `levels/prepare.rs` with `Effects`; E3, E4, E10 through it; E9 in the VM (new: scaffold in the new project's sandbox); rule test `no_process_outside_levels` on. Done as follows: `ipc::levels::ready` is `admitted` → `environment` → `prepare` with the app's `AppEffects`; E3 and E10 open their session with `levels::start::open_terminal` (E1 too, its `Ready` on the PC), E4/E5 start with `start::start_action`, E9 builds each line with `start::scaffold_command` (3.6). The VM's sandbox is started by `prepare` only (no longer by `Runner::start_in`). The editor's sessions (E11 `watch_agent_requests`, `editor_vm_begin`/`editor_vm_session` for E12) go through the same `decide` → `prepare` until step 5 removes them; Antigravity stays refused before `decide` (`refused_on_project`) until step 7. `sbx` runs with `environment`'s `sbx_env` (the kit's environment with the daemon's variables, 3.5), no longer with the project's sealed one. Removed: `isolation::vm_for`, `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs}`, `ipc::agents::{agent_vm_ready, pi_local_models, no_vm_for_agents}`, `ipc::editing::no_sbx`, `versions::project_env`, `Runner::start`, `frameworks::run_line`, `editor::terminal::open_console`, `ipc::levels::Placed::Vm`.
 5. **Requests.** `levels/requests.rs`, `runtime/launch.ps1`, `runtime/launch.sh`; editor profiles: terminals direct (E2 level 1), tasks and agents through `launch` (E11, E12); forwarder files in `data/kit/forward` (`FORWARD_DIR`, replacing `data/kit/no-agents` in `forward_dir`), forwarding (6.8); editor server environment = `environment(Pc{Manual})` (with its profiles: until then its terminals still go through `vm.ps1` on the editor's environment); remove `session.rs`, `vm.ps1`, `editor_vm_*`; editor settings: only Atollo's profiles.
 6. **Agents disabled without the VM.** `levels::agents_enabled`, `levels::installable`, runner filter, `AgentInfo.available`, `levels-changed` and `levels::watch`, editor profile gating, UI (Tools, Agents page, buttons, palette). Remove `agent_token_link`, `codex_logout`, `runtime/agents/*`, agent entries of `env/path.rs` (E16, E17, E18).
 7. **Antigravity in the VM.** `vm::agy_session_args`, `Agent::Antigravity.runner() = ProjectVm`, `secret gemini`, UI.
@@ -1105,8 +1121,8 @@ Unit (Rust, `test/rust/levels/`):
 | `place.rs` | `the_project_of_a_subfolder`, `a_link_is_never_a_project`, `projects_itself_is_a_folder`, `case_rules_follow_the_file_system` |
 | `requests.rs` | `a_request_round_trips`, `a_refused_reply_carries_reason_fix_and_text`, `a_pc_reply_carries_only_the_environment_difference`, `a_request_is_taken_once`, `args_are_appended_after_the_agent`, `a_malformed_request_is_ignored_and_removed` |
 | `report.rs` | `the_check_command_of_every_catalog_tool` (the table of 8.2 from `components.json`), `versions_are_compared_by_line`, `a_tool_outside_the_mount_is_not_from_the_kit`, `java_version_on_stderr_is_read` |
-| `prepare.rs` | with a fake `Effects`: `a_project_vm_gets_tools_databases_and_ports`, `pi_gets_the_local_models_port`, `an_agent_sandbox_mirrors_the_projects`, `nothing_is_prepared_for_the_pc_but_ensure` |
-| `rule.rs` | `no_process_outside_levels` (source scan, I1), `no_agent_binary_is_started_by_the_app_on_the_pc` (no `kit_command`/`pty::command` with an `agents::exe_of` path) |
+| `prepare.rs` | with a fake `Effects`: `a_project_vm_gets_tools_databases_and_ports`, `pi_gets_the_local_models_port`, `an_agent_sandbox_mirrors_the_projects`, `the_vm_info_holds_no_secret` (§8.4: the writing part), `a_scaffold_gets_the_kits_powershell_and_the_plans_tools`, `no_sandbox_without_the_kits_sbx`, `nothing_is_prepared_for_the_pc` (named `…_but_ensure` before step 4: the PC's `ensure` is the caller's, before `environment`) |
+| `rule.rs` | `no_process_outside_levels` (source scan, I1; on since step 4, section 5.2), `no_agent_binary_is_started_by_the_app_on_the_pc` (no `kit_command`/`pty::command` with an `agents::exe_of` path; with step 6) |
 
 Existing tests that change: `test/rust/isolation/mod.rs` (`the_pcs_shells_have_no_agent_on_any_system` and `a_project_gets_a_sealed_environment` moved to `levels/env.rs` in step 2, the first merged into `a_pc_environment_has_no_agent_folder`), `test/rust/isolation/session.rs` (removed), `test/rust/isolation/vm.rs` (`agy_session_args`), `test/rust/ipc/agents.rs` (`antigravity_never_starts_on_a_project` replaced by `r13_…`; `no_agent_starts_without_the_vm` stays as an integration of R1), `test/rust/setup/kit_files.rs` (`a_stand_in_says_where_the_agents_run` → `a_forwarder_asks_the_app`), `test/rust/editor/cfg.rs` (`only_atollos_profiles`, `no_agent_profile_without_the_vm`, `terminals_are_level_one`, `tasks_and_agents_go_through_launch`), `test/rust/editor/terminals.rs` (project versions), `test/rust/setup/runner.rs` (`agents_are_never_planned_without_the_vm`, `agents_only_for_the_vms_linux`), `test/rust/editor/ext.rs` (`an_agent_extension_is_never_installed`).
 
@@ -1118,7 +1134,7 @@ UI (`test/ui/`): `terminal/panel.test.tsx` (label per level, sandbox name), `age
 
 1. ~~**Kit terminals ignore the project's versions** in a project folder: `editor/terminals.rs: env` sets `ATOLLO_TERMINAL` for every kit terminal, and `profile.ps1`/`bashrc` skip the project's swaps when it is set.~~ Fixed by step 2: `terminal_launch` gives `pc_environment` the project of its folder (`place_of`); `ATOLLO_TERMINAL` now only keeps the profile from applying them twice.
 2. **Editor terminals are VM-only** (D-178, `vm.ps1` fail-closed); D-179 makes them level 1 on the PC.
-3. **Project creation always runs on the PC**: `ipc/frameworks.rs: frameworks_create` uses `frameworks::run_line` even with the VM on; ARCHITECTURE.md already says it runs in the VM. Since step 3 it is decided (`Scaffold`, R5/R9/R10/R15) and sealed, but a `Vm` placement still runs on the PC until step 4.
+3. ~~**Project creation always runs on the PC**: `ipc/frameworks.rs: frameworks_create` uses `frameworks::run_line` even with the VM on.~~ Fixed by step 4: decided (`Scaffold`, R5/R9/R10/R15), and with the VM on it runs in the new project's sandbox (3.6).
 4. **The editor server, hence every extension, has the agents on `PATH`**: `env/path.rs` puts `data/kit/agents`, `claude`, `codex/bin`, `codex/codex-path`, `pi` on the kit's `PATH`, and `editor/mod.rs: Editor::start_on` starts the server with the full kit environment.
 5. **The kit installs the Claude Code extension** (`extensions.json`, general, `programs: ["claude"]`), which runs its bundled CLI on the PC (level 3 on the PC).
 6. **Agent binaries started on the PC by the app**: `agents/claude_token.rs: link` (`claude setup-token`, macOS) and `agents/mod.rs: codex_logout`.
@@ -1155,3 +1171,4 @@ UI (`test/ui/`): `terminal/panel.test.tsx` (label per level, sandbox name), `age
 | Q16 | Windows `.cmd` forwarder: arguments with `"`, `%`, `^` through `%*` | declared limit; `.ps1` and sh forwarders pass them intact |
 | Q17 | MongoDB in the VM: is `mongod` the right check, or `mongosh` | `mongod --version` [assumption] |
 | Q18 | Can PowerShell capture the stdout of `Atollo.exe` (GUI subsystem)? Relevant only if a client ever calls the CLI | not used: clients use files |
+| Q19 | A creation in the VM: do the catalog's PowerShell lines written for Windows (`vendor\bin\wp`, `Expand-Archive`, `Invoke-WebRequest`) run with PowerShell for Linux; does «Annulla» (ending `sbx exec` on the PC) stop the line inside the VM? | [unverified]; a line that fails says so in the wizard, as on the PC; a cancelled line may go on in the VM until it ends (as an action before `vm::tracked`) |

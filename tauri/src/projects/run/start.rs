@@ -37,7 +37,8 @@ impl Runner {
         lang: &str,
     ) -> Result<(std::process::Command, String, VmRun, Vec<String>)> {
         use crate::isolation::vm::{exec_args, guest_path, run_tag, tracked, web_line, Web};
-        vm.start(env, lang)?;
+        // Started by `levels::prepare` (D-179): its tools, databases and
+        // ports ready; here only the action's port.
         if let Some(p) = port {
             vm.publish(env, p, lan)?;
         }
@@ -179,23 +180,12 @@ pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
 }
 
 impl Runner {
-    /// Starts `action` of `project` (folder `dir`). Already running: the
-    /// same process, not a second one.
-    pub fn start(
-        self: &Arc<Self>,
-        id: &str,
-        dir: &Path,
-        action: &Action,
-        env: &KitEnv,
-        lang: &str,
-    ) -> Result<RunInfo> {
-        self.start_in(id, dir, action, env, lang, None)
-    }
-
-    /// [`Runner::start`] in the project's microVM when `vm` (D-167): the
-    /// command line, or the container of its web server, through `sbx
-    /// exec`, its port published on the PC's `127.0.0.1`, the project's
-    /// MySQL started in the VM first.
+    /// Starts `action` of `project` (folder `dir`), on the PC with `env`,
+    /// or in the project's microVM when `vm` (D-167, started by
+    /// `levels::prepare`; `env` then `sbx`'s): the command line, or the
+    /// container of its web server, through `sbx exec`, its port published
+    /// on the PC's `127.0.0.1`. Already running: the same process, not a
+    /// second one. Called only by `levels::start::start_action` (D-179).
     pub fn start_in(
         self: &Arc<Self>,
         id: &str,

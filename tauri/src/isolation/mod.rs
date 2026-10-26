@@ -951,7 +951,8 @@ pub(crate) fn policy_answer(success: bool, text: &str) -> Result<(), Blocker> {
 /// image.
 const START_LIMIT: Duration = Duration::from_secs(600);
 
-/// A project's microVM, when the level is the VM (`vm_for`).
+/// A project's microVM, when the level is the VM (`project_vm`, built by
+/// `levels::prepare`).
 #[derive(Debug, Clone)]
 pub struct Vm {
     sbx: Sbx,
@@ -1111,16 +1112,18 @@ pub fn remove_owned(kit: &Kit, host: &Host, env: &KitEnv, names: &[String]) {
     }
 }
 
-/// The microVM of `project` (folder `dir`) when every project runs in one
-/// (the level of the last status); `None` on the kit's environment.
-pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -> Option<Vm> {
-    if status(kit, host, env, false).level != Level::Vm {
-        return None;
-    }
-    // The kit's tools for the VM's Linux, read-only (D-170).
-    let read_only = vm::guest_target(kit.target())
-        .map(|t| vec![kit.for_target(t).apps()])
-        .unwrap_or_default();
+/// The microVM of `project` (folder `dir`, its workspace) with the
+/// `read_only` folders (the kit's tools for the VM's Linux, D-170); `None`
+/// without the kit's `sbx`. Built only by `levels::prepare`, from a
+/// `Placement::Vm` that `levels::decide` gave (LEVELS.md §3.6): whether
+/// the VM is on is the decision's business, not asked again here.
+pub(crate) fn project_vm(
+    kit: &Kit,
+    host: &Host,
+    project: &str,
+    dir: &Path,
+    read_only: Vec<PathBuf>,
+) -> Option<Vm> {
     Some(Vm {
         sbx: Sbx::find(kit, host)?,
         host: host.clone(),

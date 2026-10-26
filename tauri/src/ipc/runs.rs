@@ -30,7 +30,7 @@ pub async fn run_start<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let (runner, servers) = (Arc::clone(&runner), Arc::clone(&state.servers));
     let (host, kit_env) = (state.host.clone(), state.env());
-    let services = Arc::clone(&state.services);
+    let fx = super::levels::AppEffects::of(&app, &state, kit_env.clone());
     tauri::async_runtime::spawn_blocking(move || {
         let detected = crate::detect::detect(&dir, lang);
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
@@ -41,25 +41,12 @@ pub async fn run_start<R: Runtime>(
         let facts = super::levels::facts_now(&kit, &host, &kit_env, &req);
         let placement = super::levels::admitted(&req, &facts, lang)?;
         if let crate::levels::Placement::Vm { .. } = placement {
-            // In the project's microVM (R16, R17): the action there, its
-            // web server a container of the VM, never a pool of the PC; the
-            // kit's tools and its databases on the PC (D-170, D-171). The
-            // VM's path as before D-179 (step 4 of LEVELS.md §12.2 moves it
-            // to `levels::prepare`).
-            let env = crate::levels::env::pc_environment(
-                &kit,
-                kit_env.clone(),
-                crate::levels::Level::Project,
-                Some(&project),
-                None,
-            );
-            let vm = crate::isolation::vm_for(&kit, &host, &env, &project, &dir)
-                .ok_or_else(|| super::editing::no_sbx(lang))?;
-            let vm = super::terminals::project_vm_ready(
-                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
-            )?;
-            return runner
-                .start_in(&project, &dir, a, &env, lang, Some(&vm))
+            // In the project's microVM (R16, R17), made ready by
+            // `levels::prepare` (the kit's tools and the databases on the
+            // PC, D-170, D-171): the action there, its web server a
+            // container of the VM, never a pool of the PC.
+            let ready = super::levels::ready(&fx, &kit, &kit_env, &req, &facts, &[], lang, &host)?;
+            return crate::levels::start::start_action(&runner, &ready, &project, &dir, a, lang)
                 .or_fail_chain("run");
         }
         // On the PC without the VM (R5), sealed.
@@ -119,8 +106,8 @@ pub async fn run_start<R: Runtime>(
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
         let base = ensure(&app, &task, &kit, lang, &wanted)?;
         let env = super::levels::pc_env(&kit, &base, &placement, None, lang, &host)?;
-        let info = runner
-            .start(&project, &dir, a, &env, lang)
+        let ready = crate::levels::prepare::Ready::on_the_pc(placement, env);
+        let info = crate::levels::start::start_action(&runner, &ready, &project, &dir, a, lang)
             .or_fail_chain("run")?;
         if let Some(text) = fallback {
             runner.note(&info.key, &text);
