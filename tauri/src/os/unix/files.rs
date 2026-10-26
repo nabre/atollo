@@ -10,6 +10,11 @@ use anyhow::{Context, Result};
 /// A program needs its executable bit.
 pub const HAS_EXECUTABLE_BIT: bool = true;
 
+/// Unix has no short names: the path is already the long one.
+pub fn long_path(_path: &Path) -> Option<std::path::PathBuf> {
+    None
+}
+
 /// A symbolic link (Unix has no junctions), seen without following it.
 pub fn is_reparse(meta: &fs::Metadata) -> bool {
     meta.file_type().is_symlink()

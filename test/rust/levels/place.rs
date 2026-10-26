@@ -22,6 +22,44 @@ fn shop(kit: &Kit, below: Option<&str>) -> Place {
     }
 }
 
+/// A kit reached through an 8.3 short name (`C:\Users\RUNNER~1\…` on the
+/// CI) and a folder given with long names, or the other way round, are the
+/// same place. Skipped where the volume makes no short names.
+#[cfg(windows)]
+#[test]
+fn short_and_long_names_are_the_same_place() {
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+    use windows::Win32::Storage::FileSystem::GetShortPathNameW;
+    let (tmp, _) = kit_with_shop("levels-place-short");
+    let long_root = tmp.0.join("A Long Folder Name");
+    fs::create_dir_all(long_root.join("projects").join("shop").join("web")).unwrap();
+    let wide: Vec<u16> = long_root.as_os_str().encode_wide().chain([0]).collect();
+    let mut buf = vec![0u16; 1024];
+    // SAFETY: `wide` ends with a NUL and `buf` lives for the call.
+    let got =
+        unsafe { GetShortPathNameW(windows::core::PCWSTR(wide.as_ptr()), Some(&mut buf)) } as usize;
+    if got == 0 || got >= buf.len() {
+        return;
+    }
+    let short_root = PathBuf::from(std::ffi::OsString::from_wide(&buf[..got]));
+    if short_root == long_root {
+        return;
+    }
+    for (kit_root, given) in [(&short_root, &long_root), (&long_root, &short_root)] {
+        let kit = Kit::at_target(kit_root.clone(), Target::new(Os::Win32, kit_arch()));
+        let place = place_of(&kit, &given.join("projects").join("shop").join("web"));
+        assert_eq!(
+            place,
+            Place::Project {
+                name: "shop".into(),
+                dir: kit.projects().join("shop"),
+                below: Some("web".into()),
+            },
+            "kit at {kit_root:?}, folder under {given:?}"
+        );
+    }
+}
+
 #[test]
 fn the_project_of_a_subfolder() {
     let (_tmp, kit) = kit_with_shop("levels-place-sub");
