@@ -200,23 +200,31 @@ fn project_swaps(kit: &Kit, project: &str) -> Vec<Swap> {
     swaps(kit, &kit_choice(kit), &project_choice(kit, project))
 }
 
-/// The kit environment (with the kit's lines) for a program of `project`,
-/// sealed for it (`isolation::seal`, D-167).
-pub fn project_env(kit: &Kit, project: &str, mut env: KitEnv) -> KitEnv {
-    apply(&mut env, &project_swaps(kit, project));
-    crate::isolation::seal(kit, Some(project), &mut env);
-    env
+/// `env`, on the lines `lines` (the kit's, [`kit_choice`], or a kit
+/// terminal's on top of them), moved to the lines of `choice` (cleaned);
+/// the lines it is on afterwards: `lines` with those of `choice` that are
+/// on disk (a line not on disk leaves the tool where it was). The steps 2
+/// and 3 of `levels::env::pc_environment` (LEVELS.md §3.5).
+pub fn swap_lines(kit: &Kit, env: &mut KitEnv, lines: &Choice, choice: &Choice) -> Choice {
+    let choice = clean(choice.clone());
+    apply(env, &swaps(kit, lines, &choice));
+    let mut now = lines.clone();
+    for (id, line) in choice {
+        if find(&id).is_some_and(|c| is_present(kit, c, &line)) {
+            now.insert(id, line);
+        }
+    }
+    now
 }
 
-/// The kit environment (with the kit's lines) on the lines of `choice`
-/// instead: a kit terminal's (terminals.rs), sealed as a project's.
-pub fn choice_env(kit: &Kit, choice: &Choice, mut env: KitEnv) -> KitEnv {
-    apply(
-        &mut env,
-        &swaps(kit, &kit_choice(kit), &clean(choice.clone())),
-    );
-    crate::isolation::seal(kit, None, &mut env);
-    env
+/// The kit environment (with the kit's lines) for a program of `project`
+/// on the PC: `levels::env::pc_environment` at level 2 (D-179).
+///
+/// A thin wrapper for its many callers (actions, terminals, agents, the
+/// editor, `Atollo env --project`): removed by steps 3 and 4 of LEVELS.md
+/// §12.2, when they go through `levels::decide` and `levels::env::environment`.
+pub fn project_env(kit: &Kit, project: &str, env: KitEnv) -> KitEnv {
+    crate::levels::env::pc_environment(kit, env, crate::levels::Level::Project, Some(project), None)
 }
 
 pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>) -> Result<()> {

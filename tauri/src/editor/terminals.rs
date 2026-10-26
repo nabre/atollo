@@ -7,16 +7,18 @@
 //! - The user's terminals are in `data\app\terminals.json`: a name, the
 //!   folder they start in (`projects\` when none) and the tools they
 //!   include, each at its newest line on disk or at a chosen one (the
-//!   rewrites of `versions::choice_env`). A tool left out leaves the PATH,
+//!   rewrites of `versions::swap_lines`). A tool left out leaves the PATH,
 //!   and so do the variables that point into its folders. The kit's own
 //!   commands, the tools of the Required group (PowerShell, GitHub CLI) and
 //!   the system folders are always there.
 //! - Only what is on disk: a tool or a line removed meanwhile is left out
 //!   (a line falls back to the newest, shown on the page as `replaced`),
 //!   never downloaded at the start.
-//! - Every console gets `ATOLLO_TERMINAL` (its name): the kit's profile
-//!   then keeps the terminal's versions in a project folder too, instead of
-//!   the project's (profile.ps1, bashrc).
+//! - Opened in a project's folder, the project's lines win for the tools
+//!   the project chose, the terminal's stay for the others (D-179, Q1 of
+//!   LEVELS.md): `levels::env::pc_environment` applies both. Every console
+//!   gets `ATOLLO_TERMINAL` (its name), so the kit's profile does not apply
+//!   the project's lines again (profile.ps1, bashrc).
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -484,29 +486,31 @@ pub fn strip(env: &mut KitEnv, dirs: &[PathBuf]) {
     env.set("PATH", path);
 }
 
-/// The environment of `terminal`, from the kit's (`base`).
-pub fn env(kit: &Kit, terminal: &Terminal, base: KitEnv) -> KitEnv {
-    let mut env = if terminal.id == DEFAULT_ID {
-        base
-    } else {
-        let choice: crate::versions::Choice = terminal
-            .tools
-            .iter()
-            .filter_map(|(id, line)| Some((id.clone(), line.clone()?)))
-            .collect();
-        let mut env = crate::versions::choice_env(kit, &choice, base);
-        let left_out: Vec<PathBuf> = selectable()
-            .filter(|c| !terminal.tools.contains_key(&c.id))
-            .flat_map(|c| owned_dirs(kit, c, &env))
-            .collect();
-        strip(&mut env, &left_out);
-        env
-    };
-    // Every kit terminal runs on the PC, never with an agent's command
-    // (D-178): the agents run only in the VM.
-    crate::isolation::without_agents(kit, &mut env);
-    env.set("ATOLLO_TERMINAL", terminal.name.clone());
-    env
+/// `terminal`'s tools in `env` (a kit environment on the kit's lines,
+/// [`crate::versions::kit_choice`]): the lines it chose
+/// ([`crate::versions::swap_lines`]) and the tools it left out stripped
+/// ([`strip`]); the lines `env` is on afterwards. The default terminal
+/// changes nothing. Step 2 of `levels::env::pc_environment` (LEVELS.md
+/// §3.5), which gives a terminal its whole environment: the project's
+/// lines in a project's folder, sealed, without the agents, with
+/// `ATOLLO_TERMINAL`.
+pub fn apply_tools(kit: &Kit, terminal: &Terminal, env: &mut KitEnv) -> crate::versions::Choice {
+    let lines = crate::versions::kit_choice(kit);
+    if terminal.id == DEFAULT_ID {
+        return lines;
+    }
+    let choice: crate::versions::Choice = terminal
+        .tools
+        .iter()
+        .filter_map(|(id, line)| Some((id.clone(), line.clone()?)))
+        .collect();
+    let lines = crate::versions::swap_lines(kit, env, &lines, &choice);
+    let left_out: Vec<PathBuf> = selectable()
+        .filter(|c| !terminal.tools.contains_key(&c.id))
+        .flat_map(|c| owned_dirs(kit, c, env))
+        .collect();
+    strip(env, &left_out);
+    lines
 }
 
 /// The folder `terminal` starts in: `dir` when given, its own, or

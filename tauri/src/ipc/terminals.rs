@@ -72,10 +72,21 @@ pub async fn terminal_launch<R: Runtime>(
             return Err(crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&id]).into());
         };
         let dir = terminals::start_dir(&kit, &terminal, dir.as_deref(), lang)?;
-        // Always on the PC (D-178): the kit's tools, never an agent's
-        // command (`terminals::env`), and the terminal says where the
-        // agents run.
-        let mut env = terminals::env(&kit, &terminal, ensure(&app, &task, &kit, lang, &[])?);
+        // Always on the PC (level 1, D-179): the terminal's tools, at the
+        // project's lines in a project's folder (Q1), sealed, never an
+        // agent's command, and the terminal says where the agents run.
+        // Step 3 of LEVELS.md §12.2 gets the placement from `decide`.
+        let project = match crate::levels::place::place_of(&kit, &dir) {
+            crate::levels::Place::Project { name, .. } => Some(name),
+            crate::levels::Place::Folder { .. } => None,
+        };
+        let mut env = crate::levels::env::pc_environment(
+            &kit,
+            ensure(&app, &task, &kit, lang, &[])?,
+            crate::levels::Level::Manual,
+            project.as_deref(),
+            Some(&terminal),
+        );
         crate::isolation::with_agents_notice(&mut env, lang);
         terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })

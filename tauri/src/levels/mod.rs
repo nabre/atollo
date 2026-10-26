@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::isolation::vm;
 
+pub mod env;
 pub mod facts;
 pub mod labels;
 pub mod place;

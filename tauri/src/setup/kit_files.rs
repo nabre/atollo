@@ -32,7 +32,7 @@ const FILES: &[(&str, &str)] = &[
     ("bashrc", include_str!("../../../runtime/bashrc")),
     // The agents' launchers in a folder of their own (D-178): the kit's
     // environment has it on the PATH, the shells of the PC never
-    // (`isolation::without_agents`).
+    // (`levels::env::strip_agents`).
     (
         "agents/agy.cmd",
         include_str!("../../../runtime/agents/agy.cmd"),
