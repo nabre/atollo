@@ -36,6 +36,12 @@ export const TOOLS: TopicTexts = {
             "Die Symbole in den Zeilen wirken sofort: „Installieren“ und „Aktualisieren“ starten, sobald du sie drückst.",
           ),
           tr(
+            "Ogni riga mostra la propria installazione: «in coda», il download con la sua barra, «Riprova» se non riesce, «Annulla» mentre aspetta o scarica. Intanto puoi installarne altri: vanno in coda, e il resto della pagina non si ricarica. La barra di stato mostra il lavoro in corso con il suo passo e la percentuale; un clic apre i dettagli in Attività.",
+            "Each row shows its own installation: “queued”, the download with its bar, “Retry” if it fails, “Cancel” while it waits or downloads. Meanwhile you can install others: they queue, and the rest of the page does not reload. The status bar shows the job in progress with its step and percent; a click opens the details in Activity.",
+            "Chaque ligne montre sa propre installation : « en file d'attente », le téléchargement avec sa barre, « Réessayer » en cas d'échec, « Annuler » pendant l'attente ou le téléchargement. Entre-temps vous pouvez en installer d'autres : ils attendent leur tour, et le reste de la page ne se recharge pas. La barre d'état montre la tâche en cours avec son étape et son pourcentage ; un clic ouvre les détails dans Activité.",
+            "Jede Zeile zeigt ihre eigene Installation: „in der Warteschlange“, den Download mit seinem Balken, „Erneut versuchen“, wenn er fehlschlägt, „Abbrechen“, während er wartet oder lädt. Inzwischen kannst du weitere installieren: Sie reihen sich ein, und der Rest der Seite lädt nicht neu. Die Statusleiste zeigt die laufende Aufgabe mit Schritt und Prozentsatz; ein Klick öffnet die Details in Aktivität.",
+          ),
+          tr(
             "Il riquadro «Aggiornamenti» elenca i componenti installati con una versione nuova, con «Cosa cambia» e «Aggiorna»; il loro numero compare sull'icona di Strumenti.",
             "The “Updates” box lists the installed components with a new version, with “What changes” and “Update”; their number appears on the Tools icon.",
             "Le panneau « Mises à jour » liste les composants installés ayant une nouvelle version, avec « Ce qui change » et « Mettre à jour » ; leur nombre apparaît sur l'icône d'Outils.",
