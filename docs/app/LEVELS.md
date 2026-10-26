@@ -4,7 +4,7 @@ English · [Italiano](LEVELS.it.md)
 
 Normative document of decision D-179 (DECISIONS.md, 26/10/2026). It is the single source of truth for: which program runs where, with which `PATH`, with which agents, with which network and mounts; the code that decides it; the IPC that carries it; and how the user can check it. Code, tests, the Guide and ARCHITECTURE.md follow this file; where they differ, this file wins and the difference is a bug.
 
-Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app; step 2 (`levels::env`, the one environment builder) implemented and used by today's callers. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
+Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app; step 2 (`levels::env`, the one environment builder) implemented and used by today's callers; step 3 (the PC's entry points E1, E3, E5–E9, E20 through `decide` and `environment`, `PtyInfo.level/label/sandbox`, `CmdError.refusal/fix`, the pools sealed) implemented, their VM paths still today's until step 4. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
 
 Contents:
 
@@ -624,7 +624,7 @@ export interface RefusedError { message: string; refusal: Refusal; fix: Fix }
 | `components_apply`, `components_install`, `versions_install`, `updates_list`, `setup_start` | as today | as today | agents filtered out when `agentsEnabled == false` (section 7) |
 | `vms_list`, `vm_remove`, `isolation_run` | as today | as today | unchanged |
 
-Every refused command returns `CmdError` with the new optional fields `refusal` and `fix` (`ipc/error.rs`), so the UI can show the right button without parsing text.
+Every refused command returns `CmdError` with the new optional fields `refusal` and `fix` (`ipc/error.rs`), so the UI can show the right button without parsing text. On the wire (done in step 3): a `CmdError` without a refusal stays the plain string it always was, so every other error reaches the UI unchanged; a refusal is the object `RefusedError` (`{ message, refusal, fix }`). The UI reads both with `errorText(e)`/`fixOf(e)` (`ui/src/ipc/levels.ts`); `useAction` keeps the `fix` beside the error and `ErrorLine` shows the action of the fixes the app can act on: «Apri l'avviso VM» for `open_vm_notice` and `restart_daemon` (the notice holds «Ricontrolla»); the other fixes are said by the refusal's text. The Rust side: `ipc/levels.rs` (`admitted`, `pc_env`, `placed`, `place_now`), with one request builder per entry point (`kit_terminal_request`, `project_terminal_request`, `action_request`, `pool_request`, `scaffold_request`). A `Vm` placement whose `sbx` is not in the kit is an error ("Docker Sandboxes (sbx) non è nel kit."), never a start on the PC (I7).
 
 ### 4.2 Events
 
@@ -963,10 +963,12 @@ Comparison: `chosen` = `versions::project_choice(project)[id]`, else `versions::
 
 | Level / placement | Label (it) | Label (en) | Where |
 |---|---|---|---|
-| 1, `Pc` | «PC» | "PC" | terminal tab and detached window title (`PtyInfo.label`, `ui/src/terminal/panel.tsx`, `window.tsx`); banner of profile.ps1/bashrc |
+| 1, `Pc` | «PC» | "PC" | terminal tab and detached window title (`PtyInfo.label`, `ui/src/terminal/panel.tsx`; the window's title is set by `editor/terminal.rs: detach`); banner of profile.ps1/bashrc |
 | 2, `Pc` | «PC · senza VM» | "PC · no VM" | same, plus the status bar's "No VM" (unchanged) |
 | 2, `Vm` | «VM progetto» | "Project VM" | tab; `launch` banner; action log first line |
 | 3, `Vm` | «Agente · VM» | "Agent · VM" | tab; `launch` banner |
+
+On the tab (step 3): the label follows the session's title in the description colour and is the tab's accessible description (`aria-describedby`), the name staying the title; the sandbox's name is the tab's tooltip («Gira in <sandbox>»). Sessions of the kit's own programs (`isolation_run`'s `sbx`, macOS `claude setup-token` until step 6) are labelled «PC», level 1. The shells' banner below comes with step 8: profile.ps1/bashrc compose it from `ATOLLO_LEVEL`/`ATOLLO_PROJECT`/`ATOLLO_TERMINAL`, which `mark` already sets; no variable carries a ready line (`labels::banner_line` is `None` on the PC).
 
 Banner text (stderr, one line, before the program):
 
@@ -1030,7 +1032,7 @@ Facts from the Docker page (read 26/10/2026): service secrets are global by defa
 | `isolation::Level` (`isolation/mod.rs`) | renamed `Availability { Vm, NoVm }` |
 | `isolation::{SEALED, seal, agent_dirs, without_agents}` | moved to `levels::env` (`without_agents` = `strip_agents` + `forward_first`; `seal` no longer strips the agents itself) — done in step 2 |
 | `versions::choice_env`, `editor::terminals::env` | removed in step 2: `levels::env::pc_environment` (with `versions::swap_lines`, `editor::terminals::apply_tools`) |
-| `versions::project_env` | a thin wrapper of `levels::env::pc_environment` since step 2; removed by steps 3–4 |
+| `versions::project_env` | a thin wrapper of `levels::env::pc_environment` since step 2; step 3 removed its callers in E1, E3, E5, E20; left in `ipc/agents.rs` (E10, E11) and `ipc/editing.rs: editor_vm_begin, editor_vm_session`, removed with them by steps 4–5 |
 | `isolation::{agents_notice, with_agents_notice}`, `setup::kit_files::{AGENTS_NOTICE_VAR, AGENTS_NOTICE_FALLBACK, NO_AGENTS_DIR, AGENT_COMMANDS, no_agent_cmd, no_agent_sh}` | removed; `FORWARD_DIR` and forwarder generators instead; `data/kit/no-agents` added to `OBSOLETE` (removed at start) |
 | `isolation::vm_for` | private in `levels::prepare` |
 | `isolation/session.rs` (all), `test/rust/isolation/session.rs` | replaced by `levels/requests.rs`, `test/rust/levels/requests.rs` |
@@ -1053,8 +1055,8 @@ Facts from the Docker page (read 26/10/2026): service secrets are global by defa
 ### 12.2 Order (each step compiles and passes `cargo test` and `npm test`)
 
 1. **Types and decide.** `levels/mod.rs`, `place.rs`, `facts.rs` (reading only), `labels.rs`; tests R1–R17 and totality. No caller changes.
-2. **Environment.** `levels/env.rs`: move `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` for `Pc` and `Vm`; `versions::{project_env, choice_env}` and `editor::terminals::env` become calls to it (behaviour unchanged except: project versions in kit terminals (Q1), every kit terminal sealed the level-1 way, keeping only the user's SSH agent, `ATOLLO_LEVEL`/`ATOLLO_PROJECT`). The folder first on `PATH` stays the stand-ins' `data/kit/no-agents` (`forward_dir`) until step 5 makes the forwarders. The pools keep their unsealed environment without agents until step 3.
-3. **PC entry points.** E1, E3 (PC branch), E5, E6, E7, E8, E9 (PC branch), E20 through `decide` + `environment`; `PtyInfo.level/label/sandbox`; `CmdError.refusal/fix`.
+2. **Environment.** `levels/env.rs`: move `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` for `Pc` and `Vm`; `versions::{project_env, choice_env}` and `editor::terminals::env` become calls to it (behaviour unchanged except: project versions in kit terminals (Q1), every kit terminal sealed the level-1 way, keeping only the user's SSH agent, `ATOLLO_LEVEL`/`ATOLLO_PROJECT`). The folder first on `PATH` stays the stand-ins' `data/kit/no-agents` (`forward_dir`) until step 5 makes the forwarders. The pools kept their unsealed environment without agents until step 3.
+3. **PC entry points.** E1, E3 (PC branch), E5, E6, E7, E8, E9 (PC branch), E20 through `decide` + `environment`; `PtyInfo.level/label/sandbox`; `CmdError.refusal/fix`. Done as follows: each entry point builds its `Request` (place from `place_of`), reads `facts`, and `decide` answers; `Refused` is the command's error with its reason and fix; `Pc` starts with `environment`; `Vm` keeps today's VM path (E3, E4) with the refusals R9/R10 already applied. E6 decides the site first (`Site`), then the pool it joins is decided as a pool (`Pool`, R6). E8 decides per pool (`WebServers::autostart` takes the environment per pool). Every pool start (page, app start, a project's site, a reload) runs with `pc_environment(Project, None)`: sealed, no agent, the forwarders' folder first (`servers/process.rs`, again on the environment the command passes: it changes nothing then). E9 makes the new project's folder (empty) before `place_of` and removes it again before the creation (as an empty project's); with the VM on it still runs on the PC, sealed for no project, until step 4. E20 starts nothing, so it asks no `decide`: `environment(Pc{Project, p})` whatever the VM.
 4. **Prepare and VM entry points.** `levels/prepare.rs` with `Effects`; E3, E4, E10 through it; E9 in the VM (new: scaffold in the new project's sandbox); rule test `no_process_outside_levels` on.
 5. **Requests.** `levels/requests.rs`, `runtime/launch.ps1`, `runtime/launch.sh`; editor profiles: terminals direct (E2 level 1), tasks and agents through `launch` (E11, E12); forwarder files in `data/kit/forward` (`FORWARD_DIR`, replacing `data/kit/no-agents` in `forward_dir`), forwarding (6.8); editor server environment = `environment(Pc{Manual})` (with its profiles: until then its terminals still go through `vm.ps1` on the editor's environment); remove `session.rs`, `vm.ps1`, `editor_vm_*`; editor settings: only Atollo's profiles.
 6. **Agents disabled without the VM.** `levels::agents_enabled`, `levels::installable`, runner filter, `AgentInfo.available`, `levels-changed` and `levels::watch`, editor profile gating, UI (Tools, Agents page, buttons, palette). Remove `agent_token_link`, `codex_logout`, `runtime/agents/*`, agent entries of `env/path.rs` (E16, E17, E18).
@@ -1089,7 +1091,7 @@ UI (`test/ui/`): `terminal/panel.test.tsx` (label per level, sandbox name), `age
 
 1. ~~**Kit terminals ignore the project's versions** in a project folder: `editor/terminals.rs: env` sets `ATOLLO_TERMINAL` for every kit terminal, and `profile.ps1`/`bashrc` skip the project's swaps when it is set.~~ Fixed by step 2: `terminal_launch` gives `pc_environment` the project of its folder (`place_of`); `ATOLLO_TERMINAL` now only keeps the profile from applying them twice.
 2. **Editor terminals are VM-only** (D-178, `vm.ps1` fail-closed); D-179 makes them level 1 on the PC.
-3. **Project creation always runs on the PC**: `ipc/frameworks.rs: frameworks_create` uses `seal(&kit, None, …)` and `frameworks::run_line` even with the VM on; ARCHITECTURE.md already says it runs in the VM.
+3. **Project creation always runs on the PC**: `ipc/frameworks.rs: frameworks_create` uses `frameworks::run_line` even with the VM on; ARCHITECTURE.md already says it runs in the VM. Since step 3 it is decided (`Scaffold`, R5/R9/R10/R15) and sealed, but a `Vm` placement still runs on the PC until step 4.
 4. **The editor server, hence every extension, has the agents on `PATH`**: `env/path.rs` puts `data/kit/agents`, `claude`, `codex/bin`, `codex/codex-path`, `pi` on the kit's `PATH`, and `editor/mod.rs: Editor::start_on` starts the server with the full kit environment.
 5. **The kit installs the Claude Code extension** (`extensions.json`, general, `programs: ["claude"]`), which runs its bundled CLI on the PC (level 3 on the PC).
 6. **Agent binaries started on the PC by the app**: `agents/claude_token.rs: link` (`claude setup-token`, macOS) and `agents/mod.rs: codex_logout`.

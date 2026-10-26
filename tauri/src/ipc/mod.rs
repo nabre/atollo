@@ -40,6 +40,7 @@ pub mod events;
 pub(crate) mod frameworks;
 pub(crate) mod github;
 pub(crate) mod isolation;
+pub(crate) mod levels;
 pub(crate) mod llm;
 pub(crate) mod orphans;
 pub(crate) mod projects;

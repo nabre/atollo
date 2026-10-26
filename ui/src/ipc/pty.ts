@@ -4,6 +4,7 @@
 // window (D-109, D-148) or by a window of their own (D-149).
 import { act, query, subscribe } from "./core";
 import { PTY_CLOSED, PTY_EXIT, PTY_MOVED, PTY_OPENED, ptyOutput } from "./events";
+import type { Level, LevelLabel } from "./levels";
 
 export interface PtyInfo {
   id: number;
@@ -16,6 +17,11 @@ export interface PtyInfo {
   code: number | null;
   /** Shown by a window of its own, not by the panel (D-149). */
   detached: boolean;
+  /** Where it runs (D-179, LEVELS.md §8.3): its level, the label of its
+   * tab, and its sandbox in the VM (null on the PC). */
+  level: Level;
+  label: LevelLabel;
+  sandbox: string | null;
 }
 
 /** Output of a session: the chunk `seq`, or for a backlog everything kept

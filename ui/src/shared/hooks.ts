@@ -4,6 +4,7 @@
 // read does (`useLoad`); an action with its wait and its error (`useAction`);
 // a copy to the clipboard (`useCopy`).
 import { useCallback, useEffect, useRef, useState } from "react";
+import { errorText, fixOf, type Fix } from "../ipc/levels";
 
 /** One of the `on…` functions of ./api: starts listening, resolves to the
  * function that stops. */
@@ -135,10 +136,13 @@ function attempt(action: () => Promise<void>): Promise<void> {
   }
 }
 
-/** Runs an action, keeping track of what is busy and of the last error. */
+/** Runs an action, keeping track of what is busy and of the last error;
+ * `fix`: what to do about it when the levels refused the command
+ * (D-179, LEVELS.md §4.1). */
 export function useAction(onDone?: () => void) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fix, setFix] = useState<Fix | null>(null);
   const mounted = useRef(true);
   const seq = useRef(0);
   useEffect(() => {
@@ -152,6 +156,7 @@ export function useAction(onDone?: () => void) {
       const id = ++seq.current;
       setBusy(key);
       setError(null);
+      setFix(null);
       attempt(action).then(
         () => {
           if (!mounted.current) return;
@@ -161,13 +166,14 @@ export function useAction(onDone?: () => void) {
         (e: unknown) => {
           if (!mounted.current) return;
           if (id === seq.current) setBusy(null);
-          setError(String(e));
+          setError(errorText(e));
+          setFix(fixOf(e));
         },
       );
     },
     [onDone],
   );
-  return { busy, error, run };
+  return { busy, error, fix, run };
 }
 
 /** Copies text to the clipboard; `copied` turns true once it is there, and

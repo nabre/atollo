@@ -84,7 +84,7 @@ export function ProjectPage({
   const readDbs = useCallback(() => projectDatabases(p.id), [p.id]);
   const { data: status, reload: reloadStatus } = useLoad<ProjectStatus | null>(readStatus, null, { onError: "keep" });
   const { data: dbs, reload: reloadDbs } = useLoad<ProjectDatabases | null>(readDbs, null, { onError: "keep" });
-  const { busy: opening, error, run } = useAction();
+  const { busy: opening, error, fix, run } = useAction();
   const reload = useCallback(() => {
     reloadStatus();
     reloadDbs();
@@ -241,7 +241,7 @@ export function ProjectPage({
         }
       />
       <div className="px-5 empty:hidden">
-        <ErrorLine error={error} />
+        <ErrorLine error={error} fix={fix} />
       </div>
       <NavBar label={t("Sezioni del progetto")} items={items} active={section} onSelect={setSection} />
       <EditorBody fill={section === "run"}>

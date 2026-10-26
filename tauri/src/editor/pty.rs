@@ -35,6 +35,7 @@ use anyhow::{bail, Result};
 use serde::Serialize;
 
 use crate::kit::Kit;
+use crate::levels::labels::{LevelLabel, SessionLabel};
 use crate::platform::pty::{Io, Spawned};
 
 /// Output kept per session for a view that attaches late.
@@ -62,6 +63,11 @@ pub struct PtyInfo {
     pub code: Option<u32>,
     /// Shown by a window of its own (`terminal-<id>`), not by the panel.
     pub detached: bool,
+    /// Where it runs (LEVELS.md §4.1, §8.3): its level, the label of its
+    /// tab, and the sandbox in the VM (`None` on the PC).
+    pub level: crate::levels::Level,
+    pub label: LevelLabel,
+    pub sandbox: Option<String>,
 }
 
 /// Output of a session: the chunk `seq` (1, 2, ...), or for a backlog
@@ -187,6 +193,15 @@ pub struct Launch {
     /// The folder of the kit's ConPTY (Windows): `conpty.dll` and
     /// `OpenConsole.exe`.
     pub conpty: Option<PathBuf>,
+    /// Where it runs, for its `PtyInfo`: [`shell`], [`command`] and
+    /// [`program`] say the PC at level 1; `terminal::open_console` and
+    /// `open_launch` set the one of the session's placement.
+    pub at: SessionLabel,
+}
+
+/// A session of the PC at level 1, until its opener says otherwise.
+fn manual() -> SessionLabel {
+    SessionLabel::pc(crate::levels::Level::Manual)
 }
 
 /// The kit's ConPTY folder for a session of `kit` (Windows only).
@@ -228,6 +243,7 @@ pub fn shell(kit: &Kit, dir: &Path) -> Launch {
             program: pwsh,
             title: title(dir, "pwsh"),
             conpty: conpty_dir(kit),
+            at: manual(),
         };
     }
     Launch {
@@ -236,6 +252,7 @@ pub fn shell(kit: &Kit, dir: &Path) -> Launch {
         shell: PathBuf::from(BASH),
         title: title(dir, "bash"),
         conpty: None,
+        at: manual(),
     }
 }
 
@@ -271,6 +288,7 @@ pub fn command(kit: &Kit, command: &Path, dir: &Path) -> Launch {
         shell: PathBuf::from(BASH),
         title: title(dir, &name),
         conpty: conpty_dir(kit),
+        at: manual(),
     }
 }
 
@@ -283,6 +301,7 @@ pub fn program(kit: &Kit, program: &Path, args: Vec<String>, dir: &Path, what: &
         shell: PathBuf::from(BASH),
         title: title(dir, what),
         conpty: conpty_dir(kit),
+        at: manual(),
     }
 }
 
@@ -329,6 +348,7 @@ pub struct Session {
     id: u64,
     title: String,
     dir: String,
+    at: SessionLabel,
     io: Box<dyn Io>,
     state: Mutex<State>,
 }
@@ -347,6 +367,9 @@ impl Session {
             running: s.running,
             code: s.code,
             detached: s.detached,
+            level: self.at.level,
+            label: self.at.label,
+            sandbox: self.at.sandbox.clone(),
         }
     }
 
@@ -465,13 +488,26 @@ impl Sessions {
         }
     }
 
-    /// Adds a session whose program runs now.
+    /// Adds a session whose program runs now, on the PC at level 1.
+    #[cfg(test)]
     pub(crate) fn insert(&self, title: String, dir: &Path, io: Box<dyn Io>) -> Arc<Session> {
+        self.insert_at(title, dir, manual(), io)
+    }
+
+    /// Adds a session whose program runs now, where `at` says.
+    pub(crate) fn insert_at(
+        &self,
+        title: String,
+        dir: &Path,
+        at: SessionLabel,
+        io: Box<dyn Io>,
+    ) -> Arc<Session> {
         let id = self.next.fetch_add(1, Ordering::Relaxed) + 1;
         let session = Arc::new(Session {
             id,
             title,
             dir: dir.display().to_string(),
+            at,
             io,
             state: Mutex::new(State {
                 backlog: Backlog::default(),
@@ -592,7 +628,7 @@ impl Sessions {
         on_exit: impl FnOnce(PtyInfo) + Send + 'static,
     ) -> Result<PtyInfo> {
         let spawned = spawn(launch, env, dir, lang)?;
-        let session = self.insert(launch.title.clone(), dir, spawned.io);
+        let session = self.insert_at(launch.title.clone(), dir, launch.at.clone(), spawned.io);
         let opened = session.info();
         on_open(&opened);
         let id = session.id;

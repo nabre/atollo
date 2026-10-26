@@ -1103,5 +1103,11 @@
   "Mostra meno": "Weniger anzeigen",
   "Mostra tutti ({0})": "Alle anzeigen ({0})",
   "{0}: {1}. Apre la sua pagina in Strumenti": "{0}: {1}. Öffnet seine Seite in Werkzeuge",
-  "Aggiorna ora": "Jetzt aktualisieren"
+  "Aggiorna ora": "Jetzt aktualisieren",
+  "PC": "PC",
+  "PC · senza VM": "PC · ohne VM",
+  "VM progetto": "Projekt-VM",
+  "Agente · VM": "Agent · VM",
+  "Apri l'avviso VM": "VM-Hinweis öffnen",
+  "Gira in {0}": "Läuft in {0}"
 }

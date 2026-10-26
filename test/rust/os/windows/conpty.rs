@@ -62,6 +62,7 @@ fn cmd(args: &[&str]) -> Launch {
         title: "test".into(),
         // Windows' own ConPTY: no kit here.
         conpty: None,
+        at: crate::levels::labels::SessionLabel::pc(crate::levels::Level::Manual),
     }
 }
 

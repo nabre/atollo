@@ -115,7 +115,7 @@ export function ProjectsPage({
   const fw = useFrameworks();
   const { load: loadFrameworks } = fw;
   useEffect(loadFrameworks, [loadFrameworks]);
-  const { busy, error, run } = useAction(onChanged);
+  const { busy, error, fix, run } = useAction(onChanged);
   const { keep } = tabs;
   /** Where the next project page opens (the home's links). */
   const [jump, setJump] = useState<{ id: string; section?: ProjectSection; action?: string } | null>(null);
@@ -302,7 +302,7 @@ export function ProjectsPage({
             </div>
           )}
           <div className="px-3 empty:hidden">
-            <ErrorLine error={loadError ?? error} />
+            <ErrorLine error={loadError ?? error} fix={loadError ? null : fix} />
           </div>
           {projects === null ? (
             <p className="px-5 py-1 text-vsc-desc">{t("Caricamento…")}</p>

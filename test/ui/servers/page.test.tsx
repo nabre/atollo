@@ -105,6 +105,37 @@ describe("ServersPage", () => {
     });
   });
 
+  it("shows a pool's refusal by the levels with its text (D-179)", async () => {
+    const refused = {
+      message: "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto.",
+      refusal: { code: "pools_only_without_vm" },
+      fix: "start_from_project",
+    };
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "servers_list") return Promise.resolve(VIEW);
+      // What Tauri rejects with: the command's error as Rust sent it, not an Error.
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+      if (cmd === "server_start") return Promise.reject(refused);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<ServersPage />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const start = screen.getAllByRole("button", { name: "Avvia" })[0];
+    if (!start) throw new Error("no start button");
+    await act(async () => {
+      fireEvent.click(start);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(invoke).toHaveBeenCalledWith("server_start", { id: "legacy" });
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(refused.message);
+    expect(alert.textContent).not.toContain("[object Object]");
+    // Its fix is in the text (start the site from its project): no button.
+    expect(screen.queryByRole("button", { name: "Apri l'avviso VM" })).toBeNull();
+  });
+
   it("explains how an automatic pool starts and stops", async () => {
     invoke.mockImplementation((cmd) => {
       if (cmd === "servers_list") return Promise.resolve(VIEW);

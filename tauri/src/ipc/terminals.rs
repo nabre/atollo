@@ -55,8 +55,8 @@ pub async fn terminal_remove<R: Runtime>(
 }
 
 /// Opens the terminal `id` in `dir` (`None`: its own folder), installing
-/// first what every console needs (the kit's PowerShell). Always on the PC,
-/// with or without the VM (D-178): no sandbox for a kit terminal.
+/// first what every console needs (the kit's PowerShell). Level 1 (D-179):
+/// `decide` places it on the PC, with or without the VM (R3/R4).
 #[tauri::command]
 pub async fn terminal_launch<R: Runtime>(
     app: AppHandle<R>,
@@ -67,31 +67,47 @@ pub async fn terminal_launch<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let Some(terminal) = terminals::find(&kit, &id, lang) else {
             return Err(crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&id]).into());
         };
         let dir = terminals::start_dir(&kit, &terminal, dir.as_deref(), lang)?;
-        // Always on the PC (level 1, D-179): the terminal's tools, at the
-        // project's lines in a project's folder (Q1), sealed, never an
-        // agent's command, and the terminal says where the agents run.
-        // Step 3 of LEVELS.md §12.2 gets the placement from `decide`.
-        let project = match crate::levels::place::place_of(&kit, &dir) {
-            crate::levels::Place::Project { name, .. } => Some(name),
-            crate::levels::Place::Folder { .. } => None,
+        let base = ensure(&app, &task, &kit, lang, &[])?;
+        let req = kit_terminal_request(&kit, &terminal, &dir);
+        // The terminal's tools, at the project's lines in a project's
+        // folder (Q1), sealed the level-1 way, never an agent's command.
+        let placed = super::levels::place_now(&kit, &base, &req, Some(&terminal), lang, &host)?;
+        let super::levels::Placed::Pc {
+            placement,
+            dir,
+            mut env,
+        } = placed
+        else {
+            return Err("levels: a kit terminal is placed on the PC".into());
         };
-        let mut env = crate::levels::env::pc_environment(
-            &kit,
-            ensure(&app, &task, &kit, lang, &[])?,
-            crate::levels::Level::Manual,
-            project.as_deref(),
-            Some(&terminal),
-        );
+        // The stand-ins say where the agents run (until step 5's forwarders).
         crate::isolation::with_agents_notice(&mut env, lang);
-        terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
+        let at = crate::levels::labels::SessionLabel::pc(placement.level());
+        terminal::open_console(&app, &kit, &env, &dir, at).or_fail_chain("terminal")
     })
     .await
     .or_fail("terminals")?
+}
+
+/// The request of the kit terminal `terminal` opened in `dir` (E1,
+/// `Origin::KitTerminal`): the place from the folder (`place_of`).
+pub(crate) fn kit_terminal_request(
+    kit: &Kit,
+    terminal: &Terminal,
+    dir: &std::path::Path,
+) -> crate::levels::Request {
+    crate::levels::Request {
+        origin: crate::levels::Origin::KitTerminal {
+            terminal: terminal.id.clone(),
+        },
+        place: crate::levels::place::place_of(kit, dir),
+    }
 }
 
 /// The kit's tools `wanted` (id → the line chosen; `None`: the newest) for

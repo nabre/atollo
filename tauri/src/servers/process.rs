@@ -248,8 +248,11 @@ pub(super) fn pool_error_tail(pool_dir: &Path) -> String {
 
 impl WebServers {
     /// Starts the profiles marked «Avvia con Atollo» (when the app opens),
-    /// as if from the "Server Web" page; a failure only goes to the log.
-    pub fn autostart(&self, env: &KitEnv, lang: &str) {
+    /// as if from the "Server Web" page, each with the environment `env_of`
+    /// gives it (`ipc::servers::pool_env`: `levels::decide` per pool, R2
+    /// refusing them all with the VM on); a failure or a refusal only goes
+    /// to the log.
+    pub fn autostart(&self, env_of: impl Fn(&str) -> Result<KitEnv>, lang: &str) {
         // A fresh list when the app opens: the ports of pools gone since
         // the last session leave `servers.json`.
         self.list(lang, true);
@@ -260,7 +263,7 @@ impl WebServers {
             .map(|p| p.id)
             .collect();
         for id in ids {
-            if let Err(e) = self.start(&id, env, lang) {
+            if let Err(e) = env_of(&id).and_then(|env| self.start(&id, &env, lang)) {
                 crate::common::log::warn(&format!("server pool {id}: automatic start: {e:#}"));
             }
         }
@@ -461,12 +464,18 @@ impl WebServers {
             }
         }
 
-        let mut env = base_env.clone();
-        // The projects' sites run here without the VM: never an agent's
-        // command for their code (D-178). Not sealed yet: step 3 of
-        // LEVELS.md §12.2 gives the pools `levels::env::environment`.
-        crate::levels::env::strip_agents(&self.kit, &mut env);
-        crate::levels::env::forward_first(&self.kit, &mut env);
+        // The projects' sites run here without the VM: project code of no
+        // one project (level 2, R6 of LEVELS.md §3.4), sealed, never an
+        // agent's command (D-178, D-179). The commands pass the pool's
+        // `Pc` environment already; built again here (it changes nothing
+        // then) for every start, a project's attach and a reload included.
+        let mut env = crate::levels::env::pc_environment(
+            &self.kit,
+            base_env.clone(),
+            crate::levels::Level::Project,
+            None,
+            None,
+        );
         if let Some(php_line) = &pool.php_line {
             let php_dir = component_dir(&self.kit, "php", Some(php_line));
             env.set_php(&self.kit.data(), &php_dir);

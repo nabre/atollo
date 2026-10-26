@@ -36,11 +36,25 @@ pub async fn run_start<R: Runtime>(
         let Some(a) = detected.actions.iter().find(|a| a.id == action) else {
             return Err(crate::common::i18n::t(lang, "Azione non trovata: premi Aggiorna", &[]).into());
         };
-        // Every project in its microVM (D-167): the action there, its web
-        // server a container of the VM, never a pool of the PC; the kit's
-        // tools and its databases on the PC (D-170, D-171).
-        let env = crate::versions::project_env(&kit, &project, kit_env.clone());
-        if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
+        // Level 2 (D-179): `decide` places the action or the site.
+        let req = action_request(&kit, &dir, a);
+        let facts = super::levels::facts_now(&kit, &host, &kit_env, &req);
+        let placement = super::levels::admitted(&req, &facts, lang)?;
+        if let crate::levels::Placement::Vm { .. } = placement {
+            // In the project's microVM (R16, R17): the action there, its
+            // web server a container of the VM, never a pool of the PC; the
+            // kit's tools and its databases on the PC (D-170, D-171). The
+            // VM's path as before D-179 (step 4 of LEVELS.md §12.2 moves it
+            // to `levels::prepare`).
+            let env = crate::levels::env::pc_environment(
+                &kit,
+                kit_env.clone(),
+                crate::levels::Level::Project,
+                Some(&project),
+                None,
+            );
+            let vm = crate::isolation::vm_for(&kit, &host, &env, &project, &dir)
+                .ok_or_else(|| super::editing::no_sbx(lang))?;
             let vm = super::terminals::project_vm_ready(
                 &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
             )?;
@@ -48,6 +62,7 @@ pub async fn run_start<R: Runtime>(
                 .start_in(&project, &dir, a, &env, lang, Some(&vm))
                 .or_fail_chain("run");
         }
+        // On the PC without the VM (R5), sealed.
         // An Apache/Caddy site is started in a shared pool: the profile it
         // was assigned to (GAP-RUN), else the automatic pool of its lines
         // (D-101). A profile gone since: the pool `list` puts it in,
@@ -62,7 +77,10 @@ pub async fn run_start<R: Runtime>(
                 if pool.php_line.is_some() {
                     wanted.push("php");
                 }
-                let env = ensure(&app, &task, &kit, lang, &wanted)?;
+                let base = ensure(&app, &task, &kit, lang, &wanted)?;
+                // The pool itself is placed too (R6; R2 with the VM on, not
+                // reached: the site went to the VM first).
+                let env = super::servers::pool_env(&kit, &host, &base, &pool.id, lang)?;
                 // The site joins the pool (started, or reloaded when it was
                 // left out of it); the run follows the pool while it runs.
                 let attached = servers.attach(&project, &a.id, &env, lang).and_then(
@@ -99,8 +117,8 @@ pub async fn run_start<R: Runtime>(
             }
         }
         let wanted: Vec<&str> = crate::setup::needs::of_action(a).into_iter().collect();
-        let env =
-            crate::versions::project_env(&kit, &project, ensure(&app, &task, &kit, lang, &wanted)?);
+        let base = ensure(&app, &task, &kit, lang, &wanted)?;
+        let env = super::levels::pc_env(&kit, &base, &placement, None, lang, &host)?;
         let info = runner
             .start(&project, &dir, a, &env, lang)
             .or_fail_chain("run")?;
@@ -111,6 +129,31 @@ pub async fn run_start<R: Runtime>(
     })
     .await
     .or_fail("run")?
+}
+
+/// The request of the action `a` of the project in `dir` (E4–E6): a
+/// `Site` when a web server of the kit serves it (static, Apache, Caddy),
+/// else an `Action`, `web` when it listens on a port.
+pub(crate) fn action_request(
+    kit: &Kit,
+    dir: &std::path::Path,
+    a: &crate::detect::Action,
+) -> crate::levels::Request {
+    let served = a.static_dir.is_some() || a.apache_dir.is_some() || a.caddy_dir.is_some();
+    let origin = if served {
+        crate::levels::Origin::Site {
+            action: a.id.clone(),
+        }
+    } else {
+        crate::levels::Origin::Action {
+            action: a.id.clone(),
+            web: a.kind == crate::detect::Kind::Web,
+        }
+    };
+    crate::levels::Request {
+        origin,
+        place: crate::levels::place::place_of(kit, dir),
+    }
 }
 
 /// Stops an action. A site served by a pool leaves it (a reload, or the

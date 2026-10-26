@@ -72,7 +72,7 @@ fn save_profile_takes_the_port_of_a_gone_pool() {
     store.ports.insert("caddy-2.10".to_owned(), 8125);
     store.ports.insert("nginx-1.20".to_owned(), 8126);
     save_store(&kit, &store).unwrap();
-    servers.autostart(&KitEnv::default(), "it");
+    servers.autostart(|_| Ok(KitEnv::default()), "it");
     let ports = load_store(&kit).ports;
     assert!(!ports.contains_key("caddy-2.10"));
     assert_eq!(ports.get("nginx-1.20"), Some(&8126));
@@ -374,7 +374,7 @@ fn profile_options_default_and_round_trip() {
     );
 
     // With the app: tried, and with no Caddy in this kit only logged.
-    servers.autostart(&KitEnv::default(), "it");
+    servers.autostart(|_| Ok(KitEnv::default()), "it");
     assert!(!servers.is_running("legacy"));
 }
 

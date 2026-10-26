@@ -1103,5 +1103,11 @@
   "Mostra meno": "Show less",
   "Mostra tutti ({0})": "Show all ({0})",
   "{0}: {1}. Apre la sua pagina in Strumenti": "{0}: {1}. Opens its page in Tools",
-  "Aggiorna ora": "Update now"
+  "Aggiorna ora": "Update now",
+  "PC": "PC",
+  "PC · senza VM": "PC · no VM",
+  "VM progetto": "Project VM",
+  "Agente · VM": "Agent · VM",
+  "Apri l'avviso VM": "Open the VM notice",
+  "Gira in {0}": "Runs in {0}"
 }

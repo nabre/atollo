@@ -13,6 +13,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindowBuild
 use super::pty;
 use crate::env::KitEnv;
 use crate::kit::Kit;
+use crate::levels::labels::SessionLabel;
 
 /// The app's terminal sessions.
 #[derive(Default, Clone)]
@@ -101,25 +102,30 @@ pub fn emit_exit<R: Runtime>(app: &AppHandle<R>, info: &pty::PtyInfo) {
 }
 
 /// Opens the kit's shell (its PowerShell; on macOS and Linux bash when it
-/// is not installed) in a new session in `dir`. Inside the job.
+/// is not installed) in a new session in `dir`, on the PC at the level of
+/// `at` (LEVELS.md §8.3: its tab says it). Inside the job.
 pub fn open_console<R: Runtime>(
     app: &AppHandle<R>,
     kit: &Kit,
     env: &KitEnv,
     dir: &Path,
+    at: SessionLabel,
 ) -> Result<()> {
-    open(app, env, dir, pty::shell(kit, dir), Box::new(|| {}))
+    let mut launch = pty::shell(kit, dir);
+    launch.at = at;
+    open(app, env, dir, launch, Box::new(|| {}))
 }
 
 /// Runs `launch` (a project's microVM, D-167) in a new session of the
-/// app's terminal in `dir`. Inside the job.
+/// app's terminal in `dir`, where `at` says. Inside the job.
 pub fn open_launch<R: Runtime>(
     app: &AppHandle<R>,
     env: &KitEnv,
     dir: &Path,
     launch: pty::Launch,
+    at: SessionLabel,
 ) -> Result<()> {
-    open(app, env, dir, launch, Box::new(|| {}))
+    open_launch_then(app, env, dir, launch, at, Box::new(|| {}))
 }
 
 /// [`open_launch`], then `on_exit` once its program ended; dropped
@@ -128,9 +134,11 @@ pub fn open_launch_then<R: Runtime>(
     app: &AppHandle<R>,
     env: &KitEnv,
     dir: &Path,
-    launch: pty::Launch,
+    mut launch: pty::Launch,
+    at: SessionLabel,
     on_exit: Box<dyn FnOnce() + Send>,
 ) -> Result<()> {
+    launch.at = at;
     open(app, env, dir, launch, on_exit)
 }
 
@@ -167,9 +175,11 @@ pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
     let ptys = &app.state::<Consoles>().ptys;
     let info = ptys.info(id)?;
     let state = app.state::<crate::ipc::AppState>();
+    // Where it runs, in the title too (LEVELS.md §8.3).
+    let at = crate::levels::labels::label_text(info.label, info.level, state.lang());
     let lang = serde_json::to_string(state.lang())?;
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("terminal.html".into()))
-        .title(format!("{} - Atollo", info.title))
+        .title(format!("{} · {at} - Atollo", info.title))
         .inner_size(960.0, 600.0)
         .min_inner_size(420.0, 260.0)
         // The window's own title bar: the page is only the terminal.
