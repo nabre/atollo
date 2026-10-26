@@ -85,7 +85,21 @@ fn a_vm_never_gets_the_kit_or_the_profile_writable() {
     let pc_root = real(&pc.0);
     let profile = pc_root.join("user");
     let in_profile = profile.join("Documents").join("shop");
-    let sites = pc_root.join("sites").join("shop");
+    // A folder elsewhere: on macOS the real temporary folder is under
+    // /private/var, a system folder, so one in the user's real home (this
+    // test's profile is another folder).
+    let elsewhere = if cfg!(target_os = "macos") {
+        Some(crate::kit::tests::TempDir(
+            PathBuf::from(std::env::var_os("HOME").unwrap())
+                .join(format!(".atollo-test-sites-{}", std::process::id())),
+        ))
+    } else {
+        None
+    };
+    let sites = elsewhere
+        .as_ref()
+        .map_or_else(|| pc_root.join("sites"), |d| d.0.clone())
+        .join("shop");
     let system = pc_root.join("Windows");
     for d in [
         &in_profile,
