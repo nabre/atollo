@@ -425,6 +425,53 @@ fn an_editors_pi_runs_only_as_the_kits_powershell() {
     assert!(keys.iter().all(|k| !k.starts_with(r"\\?\")), "{keys:?}");
 }
 
+/// LEVELS.md §4.3: a request's client runs Pi from the kit's PowerShell
+/// (`launch.ps1`) or from a shell (`launch.sh`): its marker's pid counts
+/// when it runs as one of them, on every system; any other program does
+/// not.
+#[test]
+fn a_clients_pi_runs_as_the_kits_powershell_or_a_shell() {
+    use crate::kit::Target;
+    for target in [Target::WIN32_X64, Target::DARWIN_ARM64, Target::LINUX_X64] {
+        let (_tmp, kit) = crate::test_support::prepared_kit("isolation-client-keys");
+        let kit = kit.for_target(target);
+        let keys = client_keys(&kit);
+        let pwsh = crate::setup::kit_path(&kit, r"pwsh\pwsh.exe");
+        assert!(
+            keys.contains(&path_key(&pwsh.display().to_string())),
+            "{target:?}"
+        );
+        let shell = if target.is_windows() {
+            crate::setup::kit_path(&kit, r"git\usr\bin\sh.exe")
+        } else {
+            PathBuf::from("/bin/sh")
+        };
+        assert!(
+            keys.contains(&path_key(&shell.display().to_string())),
+            "{target:?}"
+        );
+        let procs = [
+            Proc {
+                pid: 7,
+                parent: 1,
+                name: "sh".into(),
+                path: shell.clone(),
+            },
+            Proc {
+                pid: 8,
+                parent: 1,
+                name: "node".into(),
+                path: kit.apps().join("node").join("node"),
+            },
+        ];
+        assert_eq!(
+            editor_pis_alive(&[7, 8, 9], &procs, &keys),
+            [7],
+            "{target:?}"
+        );
+    }
+}
+
 /// D-178: once Pi ended, every port of the local models opened for it in
 /// the sandbox closes, the one of before a change of the settings too,
 /// once each; never a database's, nor one closed already. A session or a
@@ -539,11 +586,6 @@ fn every_reason_is_told_outside_the_notice() {
     assert_eq!(text.lines().filter(|l| l.starts_with("- ")).count(), 2);
     assert!(text.starts_with("Perché la VM non è attiva:"), "{text}");
     assert!(text.contains("ricontrolla da solo"), "{text}");
-    let editor = session::no_vm_text(&status, "it");
-    assert!(editor.contains("sul PC non si apre nulla"), "{editor}");
-    assert!(editor.contains(HYPERVISOR_COMMAND), "{editor}");
-    assert!(agents_notice("it").contains("solo nella VM"));
-    assert_ne!(agents_notice("en"), agents_notice("it"));
 }
 
 /// A note written under the old name of a PC without `HOSTNAME` moves to

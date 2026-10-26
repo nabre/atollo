@@ -207,12 +207,12 @@ pub(crate) fn build_app<R: tauri::Runtime>(
                 });
             }
             start_missing_required(app.handle(), &kit);
-            // The editor's VM sessions of the last run hold nothing now: each
-            // editor that opens notes its own (D-175).
-            if let Err(e) = crate::isolation::session::clear_all(&kit) {
-                log::warn(&format!("editor sessions: {e:#}"));
+            // The requests of the last run hold nothing now (LEVELS.md §4.3);
+            // the editor's tasks and agents and the forwarders ask from here.
+            if let Err(e) = crate::levels::requests::clear_all(&kit) {
+                log::warn(&format!("levels requests: {e:#}"));
             }
-            ipc::agents::watch_agent_requests(app.handle().clone());
+            ipc::levels::serve_requests(app.handle().clone());
             // Docker Sandboxes failed to install (the network, a checksum):
             // tried again every hour while the kit has none (D-175).
             let (retry_app, retry_kit) = (app.handle().clone(), kit.clone());

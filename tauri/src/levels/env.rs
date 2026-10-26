@@ -1,6 +1,6 @@
 //! The one `PATH`/environment builder (LEVELS.md §3.5): what a
 //! [`Placement`] runs with. On the PC the kit's environment at the right
-//! lines, sealed (D-167), without the agents (I4), the stand-ins of their
+//! lines, sealed (D-167), without the agents (I4), the forwarders of their
 //! commands first, with the level and the project named; in the VM only
 //! the kit's Linux tools, as the VM sees them, and the environment of
 //! `sbx` on the PC.
@@ -29,9 +29,8 @@ pub const PROJECT_VAR: &str = "ATOLLO_PROJECT";
 /// A kit terminal's name (`Origin::KitTerminal`): its banner, and the
 /// kit's profile does not apply the project's lines again.
 pub const TERMINAL_VAR: &str = "ATOLLO_TERMINAL";
-/// `data/kit/forward`: the forwarders, first on every PC `PATH`. Made by
-/// step 5 of LEVELS.md §12.2; until then [`forward_dir`] is the stand-ins'
-/// `data/kit/no-agents`.
+/// `data/kit/forward`: the forwarders of the agents' commands, first on
+/// every PC `PATH` (LEVELS.md §6.8, written by `setup::kit_files`).
 pub const FORWARD_DIR: &str = "forward";
 
 /// What a project's programs never get from the kit's environment: the
@@ -214,11 +213,11 @@ pub fn strip_agents(kit: &Kit, env: &mut KitEnv) {
 
 /// The folder first on every PC `PATH`, so that `claude`, `codex`, `agy`,
 /// `antigravity` and `pi` never start one the PC installed elsewhere
-/// (Homebrew, npm). Today the stand-ins of `data/kit/no-agents`, which say
-/// where the agents run; step 5 of LEVELS.md §12.2 swaps it for the
-/// forwarders of `data/kit/forward` ([`FORWARD_DIR`]).
+/// (Homebrew, npm): the forwarders of `data/kit/forward` ([`FORWARD_DIR`]),
+/// which ask the app to run the agent in the project's VM, or say why not
+/// (LEVELS.md §6.8).
 pub fn forward_dir(kit: &Kit) -> PathBuf {
-    kit.kit_files().join(crate::setup::kit_files::NO_AGENTS_DIR)
+    kit.kit_files().join(FORWARD_DIR)
 }
 
 /// Step 6: [`forward_dir`] first on `env`'s `PATH`, once.

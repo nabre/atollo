@@ -111,10 +111,3 @@ if (-not $env:ATOLLO_QUIET) {
     Write-Host "  $title" -ForegroundColor Cyan -NoNewline
     Write-Host ($found -join '  ') -ForegroundColor DarkGray
 }
-
-# The agents are not in this terminal: they run only in the VM (D-178).
-if ($env:ATOLLO_AGENTS_NOTICE) {
-    Write-Host
-    Write-Host "  $env:ATOLLO_AGENTS_NOTICE" -ForegroundColor Yellow
-    Write-Host
-}

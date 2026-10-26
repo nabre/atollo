@@ -1,5 +1,5 @@
 //! Which project a folder belongs to (LEVELS.md §3.3): the rule of
-//! `runtime/vm.ps1` (`$projects`, `$below`) and `ipc::project_dir`, in one
+//! the editor's former `vm.ps1` (`$projects`, `$below`) and `ipc::project_dir`, in one
 //! place. A project is a real folder right under `projects/`, reached
 //! without a link or a junction on the way (D-77): a folder seen through a
 //! link is no project's, whatever its name.

@@ -114,11 +114,6 @@ __atollo_banner() {
 [ -z "$ATOLLO_QUIET" ] && __atollo_banner
 unset -f __atollo_banner
 
-# The agents are not in this terminal: they run only in the VM (D-178).
-if [ -n "$ATOLLO_AGENTS_NOTICE" ]; then
-    printf '  \033[33m%s\033[0m\n\n' "$ATOLLO_AGENTS_NOTICE"
-fi
-
 if [ -f "$HOME/.bashrc" ]; then
     . "$HOME/.bashrc"
 fi

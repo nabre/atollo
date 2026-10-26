@@ -28,7 +28,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../../runtime/fcgi-guard.php"),
     ),
     ("profile.ps1", include_str!("../../../runtime/profile.ps1")),
-    ("vm.ps1", include_str!("../../../runtime/vm.ps1")),
+    // The request clients of the levels (LEVELS.md §4.3): the editor's
+    // tasks and agent profiles and the forwarders run through them.
+    ("launch.ps1", include_str!("../../../runtime/launch.ps1")),
+    ("launch.sh", include_str!("../../../runtime/launch.sh")),
     ("bashrc", include_str!("../../../runtime/bashrc")),
     // The agents' launchers in a folder of their own (D-178): the kit's
     // environment has it on the PATH, the shells of the PC never
@@ -55,53 +58,70 @@ const FILES: &[(&str, &str)] = &[
     ("bin/atollo", include_str!("../../../runtime/bin/atollo")),
 ];
 
-/// Files an older Atollo wrote and this one no longer does: the agents'
-/// launchers that lived in `bin`, a folder the PC's shells keep on their
-/// PATH (D-178). Removed at every start.
-const OBSOLETE: [&str; 3] = ["bin/agy.cmd", "bin/agy", "bin/claude"];
+/// Files and folders an older Atollo wrote and this one no longer does: the
+/// agents' launchers that lived in `bin`, a folder the PC's shells keep on
+/// their PATH (D-178); the editor's VM client `vm.ps1` and the stand-ins
+/// of `no-agents`, replaced by the request clients and the forwarders
+/// (D-179). Removed at every start.
+const OBSOLETE: [&str; 5] = [
+    "bin/agy.cmd",
+    "bin/agy",
+    "bin/claude",
+    "vm.ps1",
+    "no-agents",
+];
 
 /// The folder of the agents' launchers, in `data/kit`.
 pub const AGENTS_DIR: &str = "agents";
 
-/// The folder of the stand-ins first on the PATH of the PC's shells
-/// (D-178), in `data/kit`: a command of an agent there says where the
-/// agents run and starts nothing, whatever the PC has installed after it.
-pub const NO_AGENTS_DIR: &str = "no-agents";
+/// The folder of the forwarders, first on the PATH of the PC's shells
+/// (`levels::env::FORWARD_DIR`): a command of an agent there asks the app to
+/// run the agent in the project's VM, whatever the PC has installed after
+/// it (LEVELS.md §6.8).
+pub const FORWARD_DIR: &str = crate::levels::env::FORWARD_DIR;
 
-/// The commands of the agents the stand-ins take the place of.
-pub const AGENT_COMMANDS: [&str; 5] = ["claude", "codex", "agy", "antigravity", "pi"];
+/// What a forwarder says when the kit's PowerShell is missing (Windows'
+/// `cmd`: its client is `launch.ps1`).
+const NO_PWSH: &str =
+    "Atollo: senza il PowerShell del kit gli agenti non si inoltrano alla VM: installalo da Strumenti.";
 
-/// The variable whose text a stand-in prints (the app's language).
-pub const AGENTS_NOTICE_VAR: &str = "ATOLLO_AGENTS_NOTICE";
-
-/// What a stand-in says when the shell has no [`AGENTS_NOTICE_VAR`].
-const AGENTS_NOTICE_FALLBACK: &str =
-    "Atollo: gli agenti girano solo nella VM: avviali dalla pagina del progetto o dall'editor.";
-
-/// `no-agents\<stem>.cmd`: says where the agents run, exits with 1. Jumps,
-/// not blocks: a block breaks on a `)` of the text.
-pub fn no_agent_cmd(stem: &str) -> String {
+/// `forward\<cmd>.cmd`: `<cmd>` typed in `cmd` asks for `agent` through
+/// `launch.ps1` (origin `forwarded`, the arguments as typed after `--`;
+/// `cmd`'s `%*` may alter `"`, `%`, `^`: Q16). Jumps, not blocks: a block
+/// breaks on a `)` of the arguments.
+pub fn forward_cmd(cmd: &str, agent: &str) -> String {
     format!(
         "@echo off\r\n\
-         rem Atollo: {stem} does not start in this shell (D-178).\r\n\
-         if not defined {AGENTS_NOTICE_VAR} goto plain\r\n\
-         echo %{AGENTS_NOTICE_VAR}% 1>&2\r\n\
-         exit /b 1\r\n\
-         :plain\r\n\
-         echo {AGENTS_NOTICE_FALLBACK} 1>&2\r\n\
+         rem Atollo: {cmd} runs {agent} in the project's VM: D-179, LEVELS.md 6.8.\r\n\
+         where pwsh >nul 2>nul\r\n\
+         if errorlevel 1 goto nopwsh\r\n\
+         pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"%~dp0..\\launch.ps1\" -Origin forwarded -Agent {agent} -- %*\r\n\
+         exit /b %ERRORLEVEL%\r\n\
+         :nopwsh\r\n\
+         echo {NO_PWSH} 1>&2\r\n\
          exit /b 1\r\n"
     )
 }
 
-/// `no-agents/<stem>`: the same as [`no_agent_cmd`] for sh.
-pub fn no_agent_sh(stem: &str) -> String {
+/// `forward/<cmd>.ps1`: the same in PowerShell, which passes the arguments
+/// intact; `launch.ps1` runs in a PowerShell of its own (it sets variables
+/// and exits), the one of this terminal.
+pub fn forward_ps1(cmd: &str, agent: &str) -> String {
+    format!(
+        "# Atollo: {cmd} runs {agent} in the project's VM (D-179, LEVELS.md 6.8).\n\
+         $pwsh = (Get-Process -Id $PID).Path\n\
+         & $pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot '..' 'launch.ps1') -Origin forwarded -Agent {agent} -- @args\n\
+         exit $LASTEXITCODE\n"
+    )
+}
+
+/// `forward/<cmd>`: the same for sh, through `launch.sh` (run by `/bin/sh`,
+/// whatever its mode on the kit's disk).
+pub fn forward_sh(cmd: &str, agent: &str) -> String {
     format!(
         "#!/bin/sh\n\
-         # Atollo: {stem} does not start in this shell (D-178).\n\
-         msg=${AGENTS_NOTICE_VAR}\n\
-         [ -n \"$msg\" ] || msg=\"{AGENTS_NOTICE_FALLBACK}\"\n\
-         printf '%s\\n' \"$msg\" >&2\n\
-         exit 1\n"
+         # Atollo: {cmd} runs {agent} in the project's VM (D-179, LEVELS.md 6.8).\n\
+         exec /bin/sh \"$(dirname \"$0\")/../launch.sh\" forwarded {agent} \"$@\"\n"
     )
 }
 
@@ -155,9 +175,13 @@ fn generated() -> Vec<(String, String)> {
         out.push((format!("bin/{stem}.cmd"), mysql_launcher_cmd(stem)));
         out.push((format!("bin/{stem}"), mysql_launcher_sh(stem)));
     }
-    for stem in AGENT_COMMANDS {
-        out.push((format!("{NO_AGENTS_DIR}/{stem}.cmd"), no_agent_cmd(stem)));
-        out.push((format!("{NO_AGENTS_DIR}/{stem}"), no_agent_sh(stem)));
+    for agent in crate::levels::Agent::ALL {
+        for cmd in agent.commands() {
+            let id = agent.id();
+            out.push((format!("{FORWARD_DIR}/{cmd}.cmd"), forward_cmd(cmd, id)));
+            out.push((format!("{FORWARD_DIR}/{cmd}.ps1"), forward_ps1(cmd, id)));
+            out.push((format!("{FORWARD_DIR}/{cmd}"), forward_sh(cmd, id)));
+        }
     }
     out
 }
@@ -165,9 +189,11 @@ fn generated() -> Vec<(String, String)> {
 /// Launchers run by a Unix shell (and Git Bash): mode 755 on Unix.
 fn is_unix_bin(name: &str) -> bool {
     let folder = name.split('/').next().unwrap_or_default();
-    name.contains('/')
-        && ["bin", AGENTS_DIR, NO_AGENTS_DIR].contains(&folder)
+    let launcher = name.contains('/')
+        && ["bin", AGENTS_DIR, FORWARD_DIR].contains(&folder)
         && !name.ends_with(".cmd")
+        && !name.ends_with(".ps1");
+    launcher || name == "launch.sh"
 }
 
 /// Files read by sh or bash, which take a CR as part of the line.
@@ -217,7 +243,14 @@ pub fn write_all(kit: &Kit) -> Result<()> {
     }
     for name in OBSOLETE {
         let path = join_rel(&dir, name);
-        match fs::remove_file(&path) {
+        // A folder (never followed if it is a link: the link goes).
+        let folder = fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir());
+        let removed = if folder {
+            fs::remove_dir_all(&path)
+        } else {
+            fs::remove_file(&path)
+        };
+        match removed {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
                 return Err(e).with_context(|| path.display().to_string());
             }

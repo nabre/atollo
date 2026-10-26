@@ -13,11 +13,6 @@ pub fn exe_name(os: Os, stem: &str) -> String {
     format!("{stem}{}", os.exe_suffix())
 }
 
-/// Command wrapper file name on `os` (`"agy.cmd"` on Windows, `"agy"` on Unix).
-pub fn cmd_name(os: Os, stem: &str) -> String {
-    format!("{stem}{}", os.cmd_suffix())
-}
-
 /// Executable inside `<dir>/bin/<stem>[.exe]` for `os`.
 pub fn db_bin_in(os: Os, dir: &Path, stem: &str) -> PathBuf {
     dir.join("bin").join(exe_name(os, stem))

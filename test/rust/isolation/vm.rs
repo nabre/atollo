@@ -67,7 +67,7 @@ fn pi_runs_in_the_projects_vm_with_its_tools() {
     };
     let vm = name("shop");
     let pi = "/d/kit/data/apps/linux-x64/pi/pi";
-    let args = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools);
+    let args = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools, &[]);
     assert_eq!(args[..4], ["exec", "-it", "-w", "/d/kit/projects/shop"]);
     let at = |s: &str| args.iter().position(|a| a == s).unwrap();
     assert!(at("--env-file") < at(&vm));
@@ -75,9 +75,19 @@ fn pi_runs_in_the_projects_vm_with_its_tools() {
     assert!(args.contains(&"JAVA_HOME=/d/kit/java".to_owned()));
     assert!(vm.starts_with("atollo-p-"), "the project's own VM");
     assert_eq!(args[at(&vm) + 1..at(&vm) + 3], ["sh", "-c"]);
-    let script = args.last().unwrap();
+    let script = &args[at(&vm) + 3];
     assert!(script.starts_with(TOOLS_FIRST), "{script}");
-    assert!(script.ends_with(&format!("exec '{pi}'")), "{script}");
+    assert!(script.ends_with(r#"exec "$0" "$@""#), "{script}");
+    assert_eq!(
+        args.last().unwrap(),
+        pi,
+        "Pi is the program, nothing after it"
+    );
+    // What the user typed after `pi` (a forwarder) follows, as it is.
+    let typed = ["--continue".to_owned(), "it's \"mine\"".to_owned()];
+    let with = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools, &typed);
+    assert_eq!(with[..args.len()], args[..]);
+    assert_eq!(with[args.len()..], typed);
     // Which agents start in the VM: never Antigravity.
     assert!(starts_in_vm("claude") && starts_in_vm("codex") && starts_in_vm("pi"));
     assert!(!starts_in_vm("antigravity") && !starts_in_vm("gemini"));
