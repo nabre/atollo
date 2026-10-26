@@ -1623,8 +1623,8 @@ impl Vm {
     /// `sbx kit add` (its disk kept); then it starts again when stopped.
     ///
     /// A read-only folder an existing sandbox lacks (one made before the
-    /// kit's tools were mounted, D-170) is mounted with `sbx mount`, its
-    /// disk kept ([`Vm::mount_missing`]).
+    /// kit's tools were mounted, D-170) is mounted with `sbx mount` once it
+    /// runs (a stopped one is refused), its disk kept ([`Vm::mount_missing`]).
     ///
     /// `making` is called just before the sandbox is made (the first time,
     /// or again after the kit moved): `sbx` then pulls its image, without a
@@ -1645,7 +1645,6 @@ impl Vm {
             exists = false;
         }
         if exists {
-            self.mount_missing(env, lang)?;
             if kit::applied(&self.kit, &self.name).as_deref() != Some(print.as_str()) {
                 let args = vec![
                     "kit".to_owned(),
@@ -1657,6 +1656,9 @@ impl Vm {
                 kit::mark_applied(&self.kit, &self.name, &print)?;
             }
             self.call(env, &vm::restart_args(&self.name), START_LIMIT)?;
+            // After the start: `sbx mount` refuses a stopped sandbox
+            // ("409 Conflict: sandbox … is not running").
+            self.mount_missing(env, lang)?;
             self.sync_host_ports(env, false)?;
             self.sync_github(env);
             self.sync_gemini(env);
