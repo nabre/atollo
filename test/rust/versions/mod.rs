@@ -52,7 +52,7 @@ fn tools_have_a_folder_per_line() {
     }
 
     let tmp = crate::kit::tests::TempDir::new("versions-lined");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let git = Catalog::get().find("git").unwrap();
     let dir = install_dir(&kit, git, "2.56.0.2");
     assert!(dir.ends_with(Path::new("git").join("2.56")));

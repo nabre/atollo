@@ -1,13 +1,15 @@
 use super::*;
 use crate::app::cli::{help_text, program_name, HELP};
 use crate::ipc::MAIN;
-use crate::kit::Arch;
 use tauri::test::{get_ipc_response, mock_builder, INVOKE_KEY};
 use tauri::webview::InvokeRequest;
 use tauri::{WebviewUrl, WebviewWindowBuilder};
 
 fn state() -> AppState {
-    let kit = Kit::at(std::env::temp_dir().join("atollo-ipc-test"), Arch::X64);
+    let kit = Kit::at(
+        std::env::temp_dir().join("atollo-ipc-test"),
+        crate::test_support::kit_arch(),
+    );
     let editor = std::sync::Arc::new(editor::Editor::new(kit.clone(), KitEnv::default()));
     let setup = std::sync::Arc::new(setup::task::SetupTask::new(
         kit.clone(),
@@ -91,7 +93,10 @@ fn start_checks_silent_on_windows() {
     assert_eq!(kit::launch_problem(kit::Os::Linux, exe, "it"), None);
     assert!(kit::launch_problem(kit::Os::Darwin, exe, "it").is_some());
     if cfg!(windows) {
-        let kit = Kit::at(std::env::temp_dir().join("atollo-ipc-test"), Arch::X64);
+        let kit = Kit::at(
+            std::env::temp_dir().join("atollo-ipc-test"),
+            crate::test_support::kit_arch(),
+        );
         assert_eq!(platform::volume::disk_notice(&kit, "it"), None);
     }
 }

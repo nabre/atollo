@@ -247,9 +247,12 @@ fn the_grid_marks_the_vm() {
             .via_vm
     };
     assert!(via("node") && via("python") && via("go"));
-    for kept in ["pwsh", "gh", "sandboxes", "vscodium-server", "rust"] {
+    for kept in ["pwsh", "gh", "sandboxes", "vscodium-server"] {
         assert!(!via(kept), "{kept}");
     }
+    // Rust finishes on its own system only: from a PC with Linux x64 (the
+    // tests on Linux) the VM's Linux is that system.
+    assert_eq!(via("rust"), Target::detect() == Target::LINUX_X64);
     assert!(column(Target::LINUX_X64).tools.iter().all(|x| !x.via_vm));
 }
 

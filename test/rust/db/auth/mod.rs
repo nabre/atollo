@@ -117,7 +117,7 @@ fn mysql_users_grants_and_login() {
 #[test]
 fn secrets_round_trip_and_gitignore() {
     let tmp = crate::kit::tests::TempDir::new("db-auth");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let mut s = load(&kit);
     assert_eq!(s, Secrets::default());
@@ -147,7 +147,7 @@ fn secrets_round_trip_and_gitignore() {
 #[test]
 fn unreadable_secrets_are_never_overwritten() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-secrets-damaged");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let path = secrets_path(&kit);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -263,7 +263,7 @@ pub(crate) fn assert_owner_only(path: &Path) {
 #[test]
 fn project_passwords_in_private_folder() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-project");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     assert_eq!(project_password(&kit, "shop", "mysql"), None);
     assert!(set_project_password(&kit, "..", "mysql", "x").is_err());
@@ -349,7 +349,7 @@ fn project_passwords_in_private_folder() {
 #[test]
 fn unreadable_passwords_stop_the_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-unreadable");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let projects = tmp.0.join("data").join("projects");
     let private = projects.join("shop").join("private");
@@ -429,7 +429,7 @@ fn db_json(kit: &Kit, project: &str) -> serde_json::Value {
 #[test]
 fn names_stored_legacy_and_new() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-names");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
 
     // nothing stored: the new rule, per server, nothing created
@@ -524,7 +524,7 @@ fn names_stored_legacy_and_new() {
 #[test]
 fn data_of_before_is_never_unseen() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-pending");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     // layout 1 still there: refused, nothing stored
     fs::create_dir_all(kit.project_states().join("my-app")).unwrap();
@@ -553,7 +553,7 @@ fn data_of_before_is_never_unseen() {
 #[test]
 fn same_name_refused_on_creation() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-collision");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     ensure_project_db(&kit, "my-app", "mysql").unwrap();
     let err = ensure_project_db(&kit, "my_app", "mysql").unwrap_err();
@@ -602,7 +602,7 @@ fn drop_scripts() {
 #[test]
 fn project_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lines");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     assert_eq!(project_line(&kit, "shop", "mysql").unwrap(), None);
     set_project_line(&kit, "shop", "mysql", None).unwrap();
@@ -651,7 +651,7 @@ fn project_lines_in_db_json() {
 #[test]
 fn used_lines_in_db_json() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-used");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     add_project_used_line(&kit, "shop", "mysql", "9.7").unwrap();
     assert!(
@@ -705,7 +705,7 @@ fn used_lines_in_db_json() {
 #[test]
 fn db_json_lock_waits_for_the_kit_lock() {
     let tmp = crate::kit::tests::TempDir::new("db-auth-lock");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     write_db_json(&kit, "shop", r#"{ "mysql": "pw" }"#);
     let (held_tx, held_rx) = std::sync::mpsc::channel();

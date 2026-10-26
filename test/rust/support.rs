@@ -32,11 +32,22 @@ impl Drop for TempDir {
     }
 }
 
-/// A kit (x64) prepared in a fresh folder named after `name`; the folder
-/// goes when the returned [`TempDir`] is dropped.
+/// The processor of a kit for the system running the tests, one of the
+/// supported targets whatever the runner's CPU (D-176): Apple silicon on
+/// macOS, x64 elsewhere.
+pub fn kit_arch() -> Arch {
+    if crate::kit::Os::current().is_macos() {
+        Arch::Arm64
+    } else {
+        Arch::X64
+    }
+}
+
+/// A kit ([`kit_arch`]) prepared in a fresh folder named after `name`; the
+/// folder goes when the returned [`TempDir`] is dropped.
 pub fn prepared_kit(name: &str) -> (TempDir, Kit) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), kit_arch());
     kit.prepare().unwrap();
     (tmp, kit)
 }

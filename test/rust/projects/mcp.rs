@@ -88,7 +88,7 @@ fn servers_in_mcp_json_and_codex() {
 #[test]
 fn servers_of_the_kit() {
     let tmp = TempDir::new("kit-mcp");
-    let kit = crate::kit::Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = crate::kit::Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     assert!(kit_get(&kit).servers.is_empty());
     let file = crate::agents::sync::Paths::of(&kit).mcp_file();

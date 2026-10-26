@@ -257,7 +257,7 @@ fn the_four_supported_targets() {
         assert_eq!(Target::parse(t.as_str()), Some(t));
     }
     let windows_arm = Target::new(Os::Win32, Arch::Arm64);
-    let intel_mac = Target::new(Os::Darwin, Arch::X64);
+    let intel_mac = Target::new(Os::Darwin, crate::test_support::kit_arch());
     for removed in [windows_arm, intel_mac] {
         assert!(!removed.is_supported(), "{removed}");
     }
@@ -304,8 +304,8 @@ fn a_removed_tools_target_reads_as_none() {
 
 #[test]
 fn id_ignores_case_where_the_disk_does() {
-    let a = Kit::at(PathBuf::from(r"E:\Kit"), Arch::X64);
-    let b = Kit::at(PathBuf::from(r"e:\kit"), Arch::X64);
+    let a = Kit::at(PathBuf::from(r"E:\Kit"), crate::test_support::kit_arch());
+    let b = Kit::at(PathBuf::from(r"e:\kit"), crate::test_support::kit_arch());
     assert_eq!(a.id().len(), 16);
     // Two folders on Linux: two kits, two ids (BUG-V7-18).
     assert_eq!(a.id() == b.id(), cfg!(any(windows, target_os = "macos")));
@@ -314,7 +314,7 @@ fn id_ignores_case_where_the_disk_does() {
 #[test]
 fn host_temp_and_disk() {
     let tmp = TempDir::new("with-host");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     assert_eq!(kit.system_temp(), None);
     assert_eq!(kit.project_data(), tmp.0.join("data").join("projects"));
     // An absolute TEMP of the host's system.
@@ -344,7 +344,7 @@ fn host_temp_and_disk() {
 #[test]
 fn prepare_creates_only_inside_root_and_detects_move() {
     let tmp = TempDir::new("prepare");
-    let first = Kit::at(tmp.0.join("one (1) & co"), Arch::X64);
+    let first = Kit::at(tmp.0.join("one (1) & co"), crate::test_support::kit_arch());
     assert_eq!(first.prepare().unwrap(), None);
     assert!(first.projects().is_dir() && first.logs().is_dir());
     assert_eq!(first.prepare().unwrap(), None, "same root: not moved");
@@ -352,7 +352,7 @@ fn prepare_creates_only_inside_root_and_detects_move() {
     // Same data folder seen from another root (drive letter change).
     let moved_root = tmp.0.join("two");
     fs::rename(first.root(), &moved_root).unwrap();
-    let moved = Kit::at(moved_root, Arch::X64);
+    let moved = Kit::at(moved_root, crate::test_support::kit_arch());
     assert_eq!(moved.prepare().unwrap(), Some(first.root().to_path_buf()));
     // `old-root.txt` on Windows, `old-root-<os>.txt` elsewhere.
     let name = match Os::current() {

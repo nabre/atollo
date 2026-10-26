@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{Arch, Os};
+use crate::kit::Os;
 use std::sync::mpsc;
 
 /// D-105: never a socket inside the kit; on macOS a name that
@@ -27,7 +27,7 @@ fn socket_names() {
     // A kit in a 150-character folder: the id is a fixed 16 characters.
     let deep = Kit::at(
         PathBuf::from(format!("/media/u/{}", "k".repeat(150))),
-        Arch::X64,
+        crate::test_support::kit_arch(),
     );
     assert_eq!(deep.id().len(), 16);
 }

@@ -1,5 +1,11 @@
 # Novità
 
+## Rilascio 0.7.1 alpha (26/10/2026)
+
+- **Versione 0.7.1**: la 0.7.0 non è uscita (la CI di rilascio si è fermata sulle prove di macOS e Linux), la 0.7.1 la sostituisce con tutto ciò che è elencato qui sotto.
+- **La VM di un progetto riparte**: la seconda volta che si apriva un terminale, un'azione o il terminale dell'editor, la VM già creata non ripartiva («already exists and can't be given new workspaces») e il terminale dell'editor si chiudeva. Ora riparte, con la cartella del progetto e gli strumenti del kit (D-175).
+- **Le prove su macOS e Linux** girano di nuovo: i kit di prova usano il processore del sistema (Apple silicon sul Mac) e le prove della VM tengono conto del PC che le esegue.
+
 ## Rilascio 0.7.0 alpha (26/10/2026)
 
 - **Versione 0.7.0** in `tauri/Cargo.toml` e `ui/package.json`; il tag `app-v0.7.0` pubblica i file per i quattro sistemi di Docker Sandboxes (D-176): Windows x64, macOS su Apple silicon, Linux x64 e ARM64. Niente più file per Windows ARM64 e Mac Intel.

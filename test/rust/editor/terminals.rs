@@ -1,6 +1,6 @@
 use super::*;
 use crate::common::fsx::join_rel;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use crate::setup::catalog::translate_rel;
 use crate::test_support::prepared_kit;
 use crate::versions::{install_dir, saved_dir, write_version};
@@ -320,7 +320,7 @@ fn a_folder_in_the_kit_follows_it() {
     );
 
     // The kit moved: the same file, read from the new folder.
-    let moved = Kit::at(tmp.0.join("moved"), Arch::X64);
+    let moved = Kit::at(tmp.0.join("moved"), crate::test_support::kit_arch());
     moved.prepare().unwrap();
     fs::create_dir_all(moved.projects().join("shop")).unwrap();
     fs::copy(file(&kit), file(&moved)).unwrap();

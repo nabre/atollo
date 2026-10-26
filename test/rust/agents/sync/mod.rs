@@ -1,11 +1,11 @@
 use std::time::SystemTime;
 
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 
 pub fn kit(name: &str) -> (TempDir, Kit, Paths) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.join("k (1) & co"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("k (1) & co"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let p = Paths::of(&kit);
     (tmp, kit, p)

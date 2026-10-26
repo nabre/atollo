@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use serde_json::Value;
 
 #[test]
@@ -29,7 +29,7 @@ fn embedded_extension_is_valid() {
 #[test]
 fn vsix_holds_the_extension() {
     let tmp = TempDir::new("theme-vsix");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let path = tmp.0.join("t.vsix");
     write_vsix(&path).unwrap();
     let mut zip = zip::ZipArchive::new(fs::File::open(&path).unwrap()).unwrap();

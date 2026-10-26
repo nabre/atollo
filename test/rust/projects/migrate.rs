@@ -5,7 +5,7 @@ use serde_json::json;
 
 use super::*;
 use crate::db::auth::tests::assert_owner_only;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use crate::test_support::prepared_kit;
 
 thread_local! {
@@ -31,7 +31,7 @@ fn json_of(path: &Path) -> Value {
 
 /// A kit with every file of layout 1.
 fn v1_kit(tmp: &TempDir) -> Kit {
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let old = kit.project_states();
     write(

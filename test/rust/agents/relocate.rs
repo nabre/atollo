@@ -83,7 +83,7 @@ fn drive_roots_on_either_end() {
 #[test]
 fn claude_folders_of_drive_roots() {
     let tmp = TempDir::new("relocate-drive-root");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     let p = Paths::of(&kit);
     let dir = p.claude.join("projects");
     for (from, to, old, new) in [
@@ -160,7 +160,7 @@ fn toml_tables_deduped_by_the_rules_of_the_os() {
 #[test]
 fn relocates_agents_and_claude_projects() {
     let tmp = TempDir::new("relocate");
-    let kit = Kit::at(tmp.0.join("new kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("new kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let p = Paths::of(&kit);
     let old = r"E:\old kit";
@@ -274,7 +274,7 @@ fn case_only_rename_is_a_move_on_unix() {
 )]
 fn claude_folder_renamed_only_in_case() {
     let tmp = TempDir::new("relocate-claude-case");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     let p = Paths::of(&kit);
     let from = tmp.0.join("Kit").display().to_string();
     let to = kit.root().display().to_string();
@@ -329,7 +329,7 @@ fn length_change_found_by_the_rules_of_the_os() {
 fn files_held_during_the_move_are_tried_again() {
     use std::os::windows::fs::OpenOptionsExt;
     let tmp = TempDir::new("relocate-held");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let p = Paths::of(&kit);
     fs::create_dir_all(&p.claude).unwrap();
@@ -371,7 +371,7 @@ fn files_held_during_the_move_are_tried_again() {
 #[test]
 fn files_left_follow_a_further_move() {
     let tmp = TempDir::new("relocate-left");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let p = Paths::of(&kit);
     fs::create_dir_all(&p.claude).unwrap();

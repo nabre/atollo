@@ -1,11 +1,11 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use crate::test_support::prepared_kit;
 
 #[test]
 fn one_folder_per_project() {
     let tmp = TempDir::new("project-state");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     for bad in ["", "..", r"..\x", "a/b", "con", "x."] {
         assert!(ProjectState::of(&kit, bad).is_none(), "{bad:?}");
     }

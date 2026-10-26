@@ -388,7 +388,7 @@ fn swap_renames_a_release_name_linux() {
 #[test]
 fn apply_staged_on_this_system() {
     let tmp = TempDir::new("self-update-host");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let exe = tmp.0.join("Atollo.exe");
     fs::write(&exe, b"old").unwrap();
     fs::create_dir_all(update_dir(&kit)).unwrap();

@@ -1,9 +1,9 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 
 fn kit_with(name: &str, installed: &[&str]) -> (TempDir, Kit) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.join("k (1) & co"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("k (1) & co"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     for rel in installed {
         let f = kit.apps().join(rel);

@@ -167,7 +167,10 @@ fn pool_with_dead_php_cgi_is_not_running() {
         },
     );
     // I2: `is_running` (what the runs follow) says so too.
-    let servers = WebServers::new(Kit::at(std::env::temp_dir(), Arch::X64));
+    let servers = WebServers::new(Kit::at(
+        std::env::temp_dir(),
+        crate::test_support::kit_arch(),
+    ));
     std::mem::swap(&mut *servers.running.lock().unwrap(), &mut running);
     assert!(!servers.is_running("caddy-php"));
     assert!(!servers.is_running("nope"));

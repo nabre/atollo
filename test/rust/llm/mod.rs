@@ -20,7 +20,7 @@ fn ids_are_lowercase_names() {
 #[test]
 fn an_unreadable_token_does_not_block_a_public_download() {
     let tmp = crate::kit::tests::TempDir::new("llm-token");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     assert_eq!(hf_token_if_readable(&kit), None);
     std::fs::create_dir_all(hf_token_file(&kit)).unwrap();

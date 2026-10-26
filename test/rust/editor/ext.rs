@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use crate::test_support::prepared_kit;
 
 #[test]
@@ -60,7 +60,10 @@ fn matrix_is_valid() {
             "no extension for {l}"
         );
     }
-    let info = matrix_info(&Kit::at(std::env::temp_dir(), Arch::X64));
+    let info = matrix_info(&Kit::at(
+        std::env::temp_dir(),
+        crate::test_support::kit_arch(),
+    ));
     assert_eq!(info.languages.len(), languages.len());
     assert_eq!(
         info.tools

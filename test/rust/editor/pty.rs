@@ -1,6 +1,6 @@
 use super::*;
 use crate::kit::tests::TempDir;
-use crate::kit::{Arch, Target};
+use crate::kit::Target;
 
 #[test]
 fn utf8_split_between_reads_is_kept() {
@@ -46,7 +46,7 @@ fn backlog_keeps_the_tail_at_a_line_start() {
 
 fn kit_on(name: &str, target: Target, installed: &[&str]) -> (TempDir, Kit) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.join("k (1) & co"), Arch::X64).for_target(target);
+    let kit = Kit::at(tmp.0.join("k (1) & co"), crate::test_support::kit_arch()).for_target(target);
     kit.prepare().unwrap();
     for rel in installed {
         let f = crate::common::fsx::join_rel(kit.apps(), rel);

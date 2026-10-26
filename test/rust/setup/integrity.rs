@@ -115,7 +115,7 @@ fn files_changed_on_purpose() {
 #[test]
 fn repair_marks_the_folder() {
     let tmp = TempDir::new("integrity-kit");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let python = Catalog::get().find("python").unwrap();
     python.save_version(&kit, "3.13.1").unwrap();
