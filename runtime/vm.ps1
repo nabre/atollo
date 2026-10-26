@@ -133,7 +133,21 @@ if ($session -and (Test-Path -LiteralPath (Join-Path $session 'sbx'))) {
         $w = [Array]::IndexOf($argv, '-w')
         if ($w -ge 0 -and $below) { $argv[$w + 1] = $argv[$w + 1].TrimEnd('/') + '/' + $below }
     }
-    & $sbx @argv
+    if ($Agent -eq 'pi') {
+        # Pi's session, seen by the app on the PC (D-178): a marker with
+        # this PowerShell's pid while `sbx exec` runs, beside the project's
+        # session in a folder no VM mounts. The port of the local models
+        # stays open only while a marker's pid runs the kit's PowerShell.
+        $marker = Join-Path $sessions "$project.pi.$PID"
+        Set-Content -LiteralPath $marker -Value $PID
+        try {
+            & $sbx @argv
+        } finally {
+            Remove-Item -LiteralPath $marker -ErrorAction SilentlyContinue
+        }
+    } else {
+        & $sbx @argv
+    }
     Leave $LASTEXITCODE
 }
 

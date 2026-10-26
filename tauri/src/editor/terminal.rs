@@ -122,6 +122,18 @@ pub fn open_launch<R: Runtime>(
     open(app, env, dir, launch, Box::new(|| {}))
 }
 
+/// [`open_launch`], then `on_exit` once its program ended; dropped
+/// unrun when the session does not open.
+pub fn open_launch_then<R: Runtime>(
+    app: &AppHandle<R>,
+    env: &KitEnv,
+    dir: &Path,
+    launch: pty::Launch,
+    on_exit: Box<dyn FnOnce() + Send>,
+) -> Result<()> {
+    open(app, env, dir, launch, on_exit)
+}
+
 /// The label of the window of a detached session (D-149).
 pub const LABEL_PREFIX: &str = "terminal-";
 

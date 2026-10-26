@@ -514,6 +514,130 @@ fn pi_in_the_vm_reaches_the_local_models_on_the_pc() {
     );
 }
 
+/// D-178: whether Pi runs is decided on the PC, never asked to the VM: the
+/// port stays open while Pi is being started, or while a session of the
+/// app or of the editor runs; never past twelve hours since the last start
+/// from the PC.
+#[test]
+fn the_port_of_the_local_models_follows_the_pcs_sessions_of_pi() {
+    let s = Duration::from_secs;
+    assert!(pi_port_kept(s(0), 0, 0), "being started");
+    assert!(pi_port_kept(PI_GRACE - s(1), 0, 0));
+    assert!(!pi_port_kept(PI_GRACE, 0, 0), "no session: it closes");
+    assert!(pi_port_kept(s(3600), 1, 0), "the app's session runs");
+    assert!(pi_port_kept(s(3600), 0, 2), "the editor's sessions run");
+    assert_eq!(PI_MAX, s(12 * 60 * 60));
+    assert!(pi_port_kept(PI_MAX - s(1), 1, 1));
+    assert!(!pi_port_kept(PI_MAX, 1, 1), "past the cap, whatever runs");
+    assert!(!pi_port_kept(PI_MAX + s(60), 0, 3));
+}
+
+/// D-178: an editor's session of Pi runs only while its marker's pid runs
+/// on the PC as the kit's PowerShell: a marker left behind, its pid now
+/// another program's, or another PowerShell, is none.
+#[test]
+fn an_editors_pi_runs_only_as_the_kits_powershell() {
+    let pwsh = std::env::temp_dir()
+        .join("atollo-no-kit")
+        .join("pwsh")
+        .join("pwsh.exe");
+    let keys = pwsh_keys(&pwsh);
+    assert_eq!(keys, [path_key(&pwsh.display().to_string())]);
+    let proc = |pid: u32, path: &Path| Proc {
+        pid,
+        parent: 1,
+        name: "pwsh".into(),
+        path: path.to_path_buf(),
+    };
+    let other = std::env::temp_dir().join("pwsh").join("pwsh.exe");
+    let procs = [
+        proc(40, &pwsh),
+        proc(41, &other),
+        proc(42, Path::new("/usr/bin/sleep")),
+        proc(43, &pwsh),
+    ];
+    assert_eq!(
+        editor_pis_alive(&[40, 41, 42, 43, 44], &procs, &keys),
+        [40, 43]
+    );
+    assert!(editor_pis_alive(&[44], &procs, &keys).is_empty(), "stale");
+    assert!(editor_pis_alive(&[], &procs, &keys).is_empty());
+    // A real file: its resolved path names it too, once.
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-pwsh-keys");
+    let real = kit.root().join("pwsh");
+    std::fs::write(&real, "").unwrap();
+    let keys = pwsh_keys(&real);
+    assert!(!keys.is_empty() && keys.len() <= 2, "{keys:?}");
+    assert!(keys.iter().all(|k| !k.starts_with(r"\\?\")), "{keys:?}");
+}
+
+/// D-178: once Pi ended, every port of the local models opened for it in
+/// the sandbox closes, the one of before a change of the settings too,
+/// once each; never a database's, nor one closed already. A session or a
+/// start in a sandbox never watched changes nothing.
+#[test]
+fn every_port_opened_for_pi_closes_when_it_ends() {
+    assert_eq!(
+        pi_ports_to_close(&[8085, 8090], &[3307, 8085, 8090], &[3307]),
+        [8085, 8090]
+    );
+    assert_eq!(
+        pi_ports_to_close(&[8085, 8090, 8085], &[8085, 8090], &[]),
+        [8085, 8090]
+    );
+    assert_eq!(pi_ports_to_close(&[8085, 8090], &[8090], &[]), [8090]);
+    assert!(pi_ports_to_close(&[3307], &[3307], &[3307]).is_empty());
+    let name = "atollo-p-never-watched-2";
+    pi_port_touch(name, 8090);
+    assert_eq!(pi_port_of(name), None);
+    drop(pi_session(name));
+    assert_eq!(pi_port_of(name), None);
+}
+
+/// D-178: the ports of the local models close only while open for the
+/// sandbox and never when a database needs them; the noted ports are
+/// rewritten without the closed one, the others kept in their order.
+#[test]
+fn the_port_of_the_local_models_closes_when_pi_ends() {
+    assert!(pi_port_closes(8085, &[3307, 8085], &[3307]));
+    assert!(!pi_port_closes(8085, &[3307], &[3307]), "closed already");
+    assert!(!pi_port_closes(8085, &[8085], &[8085]), "a database's too");
+    assert_eq!(ports_without(&[3307, 8085, 27018], 8085), [3307, 27018]);
+    assert_eq!(ports_without(&[3307], 8085), [3307]);
+    // The noted ports of the sandbox, rewritten without it.
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-pi-port");
+    let name = vm::name("shop");
+    kit::write(
+        &kit,
+        &name,
+        &kit::Owner::Project {
+            project: "shop".into(),
+        },
+    )
+    .unwrap();
+    kit::mark_host_ports(&kit, &name, &[3307, 8085]).unwrap();
+    let noted = ports_without(&kit::host_ports(&kit, &name), 8085);
+    kit::mark_host_ports(&kit, &name, &noted).unwrap();
+    assert_eq!(kit::host_ports(&kit, &name), [3307]);
+    // The databases' ports of a VM, before Pi's is added.
+    let vm = Vm::for_tests(&kit, "shop", &kit.projects().join("shop")).with_host_ports(vec![3307]);
+    assert_eq!(vm.host_ports(), [3307]);
+    assert_eq!(vm.with_host_port(8085).host_ports(), [3307, 8085]);
+}
+
+/// D-178: while Pi's watcher keeps the port of the local models open, any
+/// other start of the sandbox (the project's terminal, an action, the
+/// editor) opens it too, once, so it never closes it under a running Pi;
+/// with no watcher, its own ports only.
+#[test]
+fn another_start_keeps_the_port_of_a_running_pi() {
+    assert_eq!(ports_with(&[3307], Some(8085)), [3307, 8085]);
+    assert_eq!(ports_with(&[3307, 8085], Some(8085)), [3307, 8085]);
+    assert_eq!(ports_with(&[], Some(8085)), [8085]);
+    assert_eq!(ports_with(&[3307, 27018], None), [3307, 27018]);
+    assert_eq!(pi_port_of("atollo-p-never-watched"), None);
+}
+
 /// D-178: every reason the VM is off has a line for the editor's terminals
 /// and the agents refused, with the administrator's command named (never
 /// run), in Italian and in the other languages; then that Atollo checks
