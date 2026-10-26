@@ -22,6 +22,7 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
+  type SetupSnapshot,
 } from "../ipc";
 import { AgentButtons } from "../agents";
 import { groupOf, useFrameworks } from "../frameworks";
@@ -77,6 +78,8 @@ export function ProjectsPage({
   onSettings,
   quickOpen = false,
   onQuickOpen,
+  setup = null,
+  onTool,
 }: {
   status: EditorStatus | null;
   agents: AgentInfo[] | null;
@@ -94,6 +97,10 @@ export function ProjectsPage({
   /** The Quick Open box is open (Ctrl+P, kept by the app). */
   quickOpen?: boolean;
   onQuickOpen?: ((open: boolean) => void) | undefined;
+  /** The preparation under way (useSetup, kept by the app): the home's tools. */
+  setup?: SetupSnapshot | null;
+  /** Opens a tool's page on Tools (the home's tools). */
+  onTool?: ((id: string) => void) | undefined;
 }) {
   const [panes, setPanes] = useState<Set<PaneId>>(() => new Set(["projects"]));
   const [filter, setFilter] = useState("");
@@ -215,6 +222,9 @@ export function ProjectsPage({
           onGuide("project-page");
         }
       : undefined,
+    onTool: (id) => {
+      onTool?.(id);
+    },
   };
 
   const words = filter.toLowerCase().split(/\s+/).filter(Boolean);
@@ -469,6 +479,7 @@ export function ProjectsPage({
           agents={agents}
           fw={fw}
           handlers={home}
+          setup={setup}
         />
       )}
       {quickOpen && (
