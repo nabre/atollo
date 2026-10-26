@@ -1272,11 +1272,7 @@ impl Vm {
                 self.call(env, &args, START_LIMIT)?;
                 kit::mark_applied(&self.kit, &self.name, &print)?;
             }
-            self.call(
-                env,
-                &vm::start_args(&self.name, &self.dir, &self.read_only, None, &self.agent),
-                START_LIMIT,
-            )?;
+            self.call(env, &vm::restart_args(&self.name), START_LIMIT)?;
             self.sync_host_ports(env, false)?;
             self.sync_github(env);
             return Ok(());
