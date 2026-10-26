@@ -491,6 +491,8 @@ pub trait Effects {
     fn start_sandbox(&self, vm: &Vm, env: &KitEnv, lang: &str) -> anyhow::Result<()>;
     /// `isolation::watch_pi_port`: closes the models' port once no Pi runs there.
     fn watch_local_models(&self, vm: &Vm, env: &KitEnv, project: &str, port: u16, db_ports: &[u16]);
+    /// Where the preparation stands (§8.6): Begin, each Step before it runs, Done or Failed.
+    fn progress(&self, event: PrepareProgress);
 }
 
 pub struct LocalModels { pub port: u16, pub key: String }
@@ -649,6 +651,7 @@ Every refused command returns `CmdError` with the new optional fields `refusal` 
 |---|---|---|
 | `levels-changed` | `LevelsState` | **new**: the VM went on or off (`levels::watch`, a thread that asks `isolation::status` every 60 s and on every forced check, and emits only on change) |
 | `pty-opened`, `pty-exit`, `pty-moved` | `PtyInfo` (with `level`, `label`, `sandbox`) | changed payload |
+| `job` | `Job` (§8.6) | **new**: an install, an update or a VM's preparation changed (queued, a step, its bytes, its end); with the commands `jobs_list` and `job_cancel` |
 
 ### 4.3 Request files (editor and forwarders)
 
@@ -1024,6 +1027,21 @@ The «VM del progetto» panel (§8.1) has four actions, and the CLI on the PC th
 | **Verifica strumenti** | §8.2 | `atollo vm <project> --check` |
 
 Every action goes through `decide` with the project terminal's origin (a refusal says why and how to fix it) and takes the sandbox's lock. Running sessions in the sandbox (terminals, actions, agents) are listed before «Riavvia» and «Ricrea», which stop them.
+
+### 8.6 Progress in sight and the VM's pill (decided by the user, 26/10/2026)
+
+The user (26/10/2026): «tutto il processo di download e preparazione della VM e strumenti deve essere evidente che si sta svolgendo»; «per il pulsante della VM, metti un'icona dedicata con un colore di fondo o pill che fa capire lo stato»; «per aggiornamento e download degli strumenti sia la pagina sia il resto deve essere più fluido e meno macchinoso».
+
+**One model for long work**: `common::jobs::Job` (`tauri/src/common/jobs.rs`, `ui/src/ipc/jobs.ts`): `{ id, kind: install | update | vm-prepare, title, project, items, step: { index, total, label, state, error }, steps, bytes: { done, total }, note, state: queued | running | done | error | cancelled, error, created, automatic }`. Every change is the event `job`; `jobs_list` returns those kept (running, queued and the last 20 that ended), `job_cancel(id)` cancels one. The registry is the setup task's (`SetupTask::jobs`); the app sets its emitter at start.
+
+- **Installs and updates**: each `SetupTask::start` is a job, titled by `setup::task::describe` («Installo Node.js», «Aggiorno 3 strumenti», «Scarico Node.js 22.11», «… · VM» for the VM's Linux). Asked while another run runs, it **waits in the queue** (`Snapshot.pending`, state `queued`) instead of being refused («C'è già un'installazione in corso» is gone from installs, updates and Apply); the queue runs in the run's thread, one after another, `running` until it is empty (still one run per kit: the runner's lock is unchanged). `job_cancel` takes a queued run out, or stops the running one (the downloads' cancel flag, as before); the others go on; `setup_cancel` cancels all. The runner's events become the job's: `Step` → step i/n with the component's name, `Bytes` → bytes, `Note` → note, `Done` → the step's state and error. Verification, rollback and outcomes are unchanged. `ensure_guest_tools` uses `start_and_wait` (its own job, waited by id).
+- **A VM's preparation**: `levels::prepare` tells `Effects::progress(PrepareProgress)` (the trait's new method, so the tests' fake records it without `sbx`): `Begin { project, sandbox, agent, total }`, then `Step { index, total, label }` **before** each step («Strumenti per il Linux della VM»; «Database del progetto» when it reaches them; «Modelli locali» for Pi; «Informazioni della VM»; «Avvio la VM»), then `Done` or `Failed { error }`; nothing for the PC. The app's `AppEffects` makes it the job «Preparazione VM · <project>[ · <agent>]» (`ipc::levels::VmJob`): the guest tools' download is followed in its step (the tool as note, its bytes, `VmJob::follow`); `sbx` prints no progress while it pulls its image the first time, so `Vm::start(env, lang, making)` calls `making` just before `sbx create` and the step becomes «Scarico l'immagine della VM…» (indeterminate). A preparation is not cancelled (its step ends). The editor's and the forwarders' requests (`levels::requests::reply_to`, served by `ipc::levels::serve_requests`) prepare with the same `AppEffects`: a VM they prepare is a job too, in the status bar and the pill (test `a_request_in_the_vm_reports_its_progress`).
+- **Status bar** (`ui/src/shell/statusbar.tsx`, `JobsItem`): while a job runs or waits, its title · step i/n and label · a small bar with the percent (the download's when its size is known, else the steps'; a part going across when unknown); with several, «3 lavori in corso:» and the running one first. A click opens Activity on that job (`JobDetails`: each step with its error, «Annulla» for an install, «Riprova» for a failed one). The Activity panel lists the jobs going on and the last five ended.
+- **The session waiting for its VM** (a terminal, an action, an agent): the project's page shows «Preparazione della VM…» with the job's step and bar under its buttons (`VmPreparing`); on the other pages the same card is above the status bar, with «Dettagli».
+- **The VM's pill** (`vmPill`, `VmPillBadge` in `ui/src/shell/isolation.tsx`, `VmItem`): the codicon `vm` and the state's text on a pill: green «VM» ready; blue, pulsing «VM… n%» while a VM is prepared; orange «Senza VM» when the user can fix it (`hypervisor_off`, `kvm_denied`, `apparmor`, `sbx_missing`, `sbx_signed_out`, `foreign_daemon`); grey «Senza VM» when this PC cannot have it (`old_windows`, `old_macos`, `distribution`, `kvm_missing`: firmware, `kit_disk`); red «VM ⚠» when the last preparation failed (none ended well after it), red «Senza VM» on `sbx_failed`. The colours are the tokens `--vsc-pill-*` (aliases of the workbench's success, info, orange, description and error colours, light and dark), the text in the editor's background; the button's name and tooltip say the state and what to do, never the colour alone. A click opens the VM dialog as before.
+- **Fluid tools** (Tools page, quick panel, Updates pane, tool page, first start): each row or tile shows its own install (`in coda`, running with its bar, failed with «Riprova»), «Annulla» per item (`itemJob` → `job_cancel`); only the item worked on waits (`itemBusy`), the others can be asked meanwhile and queue; a step that ends reads that row only (`components_list { ids }`) and merges it, keeping the choice not applied yet, nothing remounted; the four systems' grid is read when the queue ends; «Applica» asks first only when it removes something.
+
+Tests: `test/rust/common/jobs.rs` (steps, end, emit, kept), `test/rust/setup/task.rs` (`runs_asked_meanwhile_wait_in_the_queue`, `cancelling_the_running_job_stops_its_run`, `the_runs_events_are_its_jobs_progress`, `a_runs_title_says_what_it_does`), `test/rust/levels/prepare.rs` (`prepare_tells_its_steps_through_the_effects`, `prepare_tells_the_agent_and_the_error`, `nothing_is_told_for_the_pc`), `test/rust/ipc/levels.rs` (`a_vms_preparation_is_a_job`); `test/ui/shell/jobs.test.tsx` (status bar item, pill per state, details, waiting card, events), `test/ui/projects/hometools.test.tsx` and `test/ui/components/setup.test.tsx` (inline progress, queue, cancel, no remount).
 
 ## 9. Antigravity
 

@@ -8,7 +8,7 @@ import { t } from "../i18n";
 import { ByHandBox } from "./byhand";
 import { ComponentLogo } from "../shared/logos";
 import { LinkProblems, outsideOf } from "./relations";
-import { ItemBar, ItemStatus, itemState } from "./setup";
+import { ItemBar, ItemStatus, itemBusy, itemState } from "./setup";
 import { Tag } from "../shared/tags";
 import { ToolInstallLine, ToolVersions, splitVersion, composerOf, type KitVersions } from "../versions";
 import {
@@ -51,7 +51,8 @@ export function ToolPage({
   const list = state.list ?? [];
   const { chosen, choose, neededBy, projects } = state;
   const [section, setSection] = useState<Section>(c.versioned ? "versions" : "details");
-  const running = setup?.running ?? false;
+  // Only this tool's install makes its buttons wait (the others queue).
+  const working = itemBusy(setup, c.id);
   const on = chosen.has(c.id);
   const pending = on !== (c.chosen || c.locked);
   const forProjects = neededBy.get(c.id) ?? [];
@@ -139,7 +140,7 @@ export function ToolPage({
               </Button>
             ) : on ? (
               <Button
-                disabled={running}
+                disabled={working}
                 onClick={() => {
                   choose(c.id, false);
                 }}
@@ -149,7 +150,7 @@ export function ToolPage({
             ) : (
               <Button
                 variant="primary"
-                disabled={running || !c.available}
+                disabled={working || !c.available}
                 onClick={() => {
                   choose(c.id, true);
                 }}
@@ -177,7 +178,7 @@ export function ToolPage({
               id={c.id}
               name={c.name}
               byHand={item.byHand}
-              disabled={running}
+              disabled={working}
               onRetry={() => setupStart([c.id], false, state.target)}
             />
           )}

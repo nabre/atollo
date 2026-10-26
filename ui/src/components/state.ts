@@ -19,6 +19,7 @@ import {
   type TargetGrid,
 } from "../ipc";
 import { toggle } from "./model";
+import { useStepsDone } from "./setup";
 
 export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, onDone?: () => void) {
   const [target, setTargetState] = useState<string | undefined>(undefined);
@@ -128,16 +129,35 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
       },
     );
   }, [firstRun, load, target, ready]);
-  // Reload as each component of an installation ends, and when it ends:
-  // versions and "installed" change.
-  const finished = setup?.steps.filter((s) => s.outcome !== null).length ?? 0;
-  const ended = setup !== null && !setup.running && setup.steps.length > 0;
-  useEffect(() => {
-    if (finished > 0 || ended) load();
-  }, [finished, ended, load]);
-  useEffect(() => {
-    if (finished > 0 || ended) loadGrid();
-  }, [finished, ended, loadGrid]);
+  /** The rows of `ids` read again and put in place: the list is not read
+   * whole, its rows not made again, the choice not yet applied kept; one
+   * installed now becomes chosen, as the install did on disk. */
+  const refresh = useCallback(
+    (ids: string[]) => {
+      if (!ready || ids.length === 0) return;
+      componentsList(target, ids).then(
+        (fresh) => {
+          const byId = new Map(fresh.map((c) => [c.id, c]));
+          setList((current) => current?.map((c) => byId.get(c.id) ?? c) ?? current);
+          setChosen((current) => {
+            const add = fresh.filter((c) => (c.chosen || c.locked) && !current.has(c.id));
+            if (add.length === 0) return current;
+            const next = new Set(current);
+            for (const c of add) next.add(c.id);
+            return next;
+          });
+        },
+        () => undefined,
+      );
+    },
+    [target, ready],
+  );
+  // As each component of an installation ends, its row (versions,
+  // "installed"); the grid of the four systems once the installs end.
+  useStepsDone(setup, (ids, ended) => {
+    refresh(ids);
+    if (ended) loadGrid();
+  });
 
   const plan = useMemo(() => {
     const items = list ?? [];
@@ -198,6 +218,7 @@ export function useComponents(setup: SetupSnapshot | null, firstRun: boolean, on
     error,
     synced,
     load,
+    refresh,
     plan,
     neededBy,
     apply,

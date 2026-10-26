@@ -221,3 +221,207 @@ fn run_reports_steps_and_ends() {
             )
         })));
 }
+
+/// A kit whose required components (of its system) are all installed,
+/// and the options of a run that has nothing to download.
+fn idle_kit(name: &str) -> (TempDir, Kit, Options) {
+    let (tmp, kit) = prepared_kit(name);
+    let catalog = Catalog::get();
+    for c in catalog
+        .all()
+        .iter()
+        .filter(|c| catalog.is_locked(&c.id) && c.is_available_on(kit.target()))
+    {
+        for key in c.key_paths(&kit) {
+            fs::create_dir_all(key.parent().unwrap()).unwrap();
+            fs::write(&key, b"").unwrap();
+        }
+        c.save_version(&kit, c.version.as_deref().unwrap_or("1.0"))
+            .unwrap();
+    }
+    let opts = Options {
+        skip: catalog.all().iter().map(|c| c.id.clone()).collect(),
+        ..Options::default()
+    };
+    (tmp, kit, opts)
+}
+
+fn quiet() -> Notify {
+    Box::new(|_| ())
+}
+
+/// LEVELS.md §8.6: a run asked while another one runs waits in the queue
+/// with its job (not refused); one cancelled there never runs; when the
+/// run going on ends, the next of the queue starts in the same thread and
+/// the snapshot stays `running` until the queue is empty.
+#[test]
+fn runs_asked_meanwhile_wait_in_the_queue() {
+    let (_tmp, kit, opts) = idle_kit("task-queue");
+    let task = Arc::new(SetupTask::new(
+        kit,
+        KitEnv::default(),
+        Settings::default(),
+        None,
+    ));
+    // A run going on.
+    task.lock().running = true;
+    let node = Options {
+        only: vec!["node".into()],
+        ..opts.clone()
+    };
+    let a = task.start(node, false, quiet()).unwrap();
+    let b = task.start(opts.clone(), false, quiet()).unwrap();
+    let jobs = Arc::clone(task.jobs());
+    assert_eq!(jobs.get(&a).unwrap().state, JobState::Queued);
+    assert_eq!(jobs.get(&a).unwrap().items, ["node"]);
+    let pending: Vec<String> = task.snapshot().pending.into_iter().map(|p| p.job).collect();
+    assert_eq!(pending, [a.clone(), b.clone()]);
+
+    assert!(task.cancel_job(&a, &quiet()));
+    assert_eq!(jobs.get(&a).unwrap().state, JobState::Cancelled);
+    assert_eq!(task.snapshot().pending.len(), 1);
+    assert!(!task.cancel_job(&a, &quiet()), "already cancelled");
+
+    // The run going on ends: `b` runs, then the queue is empty.
+    let first = jobs.add(
+        JobKind::Install,
+        "first".into(),
+        None,
+        Vec::new(),
+        JobState::Running,
+        false,
+    );
+    task.chain(Pending {
+        job: first.clone(),
+        opts,
+        automatic: false,
+        notify: quiet(),
+    });
+    let last = task.snapshot();
+    assert!(!last.running);
+    assert!(last.pending.is_empty());
+    assert_eq!(jobs.get(&first).unwrap().state, JobState::Done);
+    assert_eq!(jobs.get(&b).unwrap().state, JobState::Done);
+    assert_eq!(jobs.get(&a).unwrap().state, JobState::Cancelled);
+    assert!(task.is_over(&b));
+}
+
+/// Cancelling the job that runs stops that run only (the flag the
+/// downloads read), never a job of another task.
+#[test]
+fn cancelling_the_running_job_stops_its_run() {
+    let (_tmp, kit, _) = idle_kit("task-cancel");
+    let task = Arc::new(SetupTask::new(
+        kit,
+        KitEnv::default(),
+        Settings::default(),
+        None,
+    ));
+    {
+        let mut state = task.lock();
+        state.running = true;
+        state.job = Some("job-running".into());
+    }
+    assert!(!task.cancel_job("job-other", &quiet()));
+    assert!(!task.cancel.load(Ordering::Relaxed));
+    assert!(task.cancel_job("job-running", &quiet()));
+    assert!(task.cancel.load(Ordering::Relaxed));
+    assert!(task.snapshot().cancelling);
+}
+
+/// The installer's events become the job's: the step `index` of `total`
+/// with its name, the bytes of the download, a failure as the step's
+/// error and the run's.
+#[test]
+fn the_runs_events_are_its_jobs_progress() {
+    let (_tmp, kit, _) = idle_kit("task-progress");
+    let task = SetupTask::new(kit, KitEnv::default(), Settings::default(), None);
+    let job = task.jobs().add(
+        JobKind::Update,
+        "Aggiorno Node.js".into(),
+        None,
+        vec!["node".into()],
+        JobState::Running,
+        false,
+    );
+    let notify = quiet();
+    let mut sink = TaskSink {
+        task: &task,
+        notify: &notify,
+        job: &job,
+        lang: "it",
+    };
+    sink.emit(Event::Step {
+        index: 1,
+        total: 2,
+        id: "node".into(),
+        name: "Node.js".into(),
+    });
+    sink.emit(Event::Bytes {
+        id: "node".into(),
+        done: 5 << 20,
+        total: Some(20 << 20),
+    });
+    let now = task.jobs().get(&job).unwrap();
+    let step = now.step.unwrap();
+    assert_eq!(
+        (step.index, step.total, step.label.as_str()),
+        (1, 2, "Node.js")
+    );
+    assert_eq!(
+        now.bytes,
+        Some(crate::common::jobs::JobBytes {
+            done: 5 << 20,
+            total: Some(20 << 20)
+        })
+    );
+    sink.emit(Event::Done {
+        id: "node".into(),
+        outcome: Outcome::Failed {
+            message: "checksum".into(),
+            by_hand: None,
+        },
+    });
+    let now = task.jobs().get(&job).unwrap();
+    assert_eq!(now.steps[0].state, JobState::Error);
+    assert_eq!(now.steps[0].error.as_deref(), Some("checksum"));
+    assert_eq!(task.snapshot().steps[0].done, Some(5 << 20));
+}
+
+/// The title of a run says what it does, in the window's language.
+#[test]
+fn a_runs_title_says_what_it_does() {
+    let (_tmp, kit, _) = idle_kit("task-title");
+    let of = |opts: Options| describe(&kit, &opts, false, "it");
+    let (kind, title, items) = of(Options {
+        only: vec!["node".into()],
+        update_all: true,
+        ..Options::default()
+    });
+    assert_eq!(
+        (kind, title.as_str()),
+        (JobKind::Update, "Aggiorno Node.js")
+    );
+    assert_eq!(items, ["node"]);
+    let (kind, title, _) = of(Options {
+        lines: vec![("node".into(), "22.11".into())],
+        ..Options::default()
+    });
+    assert_eq!(
+        (kind, title.as_str()),
+        (JobKind::Install, "Scarico Node.js 22.11")
+    );
+    let (_, title, items) = of(Options::default());
+    assert_eq!(title, "Applico la scelta degli strumenti");
+    assert!(items.is_empty());
+    if let Some(guest) = crate::isolation::vm::guest_target(kit.target()) {
+        if guest != kit.target() {
+            let (_, title, _) = of(Options {
+                target: Some(guest),
+                only: vec!["node".into()],
+                ..Options::default()
+            });
+            assert_eq!(title, "Installo Node.js · VM");
+        }
+    }
+}

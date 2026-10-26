@@ -1,10 +1,13 @@
 //! The preparation started from the app window ("Linguaggi e strumenti"
 //! page, and automatically at start when a required component is missing).
 //!
-//! One run at a time, in its own thread. The state is a snapshot the
+//! One run at a time, in its own thread; a run asked meanwhile waits in a
+//! queue and starts when the one before it ends, each with its job
+//! (`common::jobs`), cancelled alone. The state is a snapshot the
 //! interface reads at load (`setup_state`) and receives at every change
 //! (event `setup`), so a page opened mid-run shows the same progress.
 
+use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
@@ -12,6 +15,8 @@ use serde::Serialize;
 
 use super::catalog::Catalog;
 use super::runner::{self, Busy, Event, Options, Outcome, Sink};
+use crate::common::i18n::t;
+use crate::common::jobs::{JobKind, JobState, Jobs};
 use crate::common::settings::Settings;
 use crate::env::KitEnv;
 use crate::install::{self, Ctx};
@@ -54,6 +59,29 @@ pub struct Snapshot {
     pub queue: Vec<Queued>,
     /// Why the run could not start or stopped early.
     pub error: Option<String>,
+    /// The job of the run (`common::jobs`).
+    pub job: Option<String>,
+    /// The runs asked while this one runs, in order: each starts when the
+    /// one before it ends (LEVELS.md §8.6).
+    pub pending: Vec<PendingRun>,
+}
+
+/// A run waiting for the one before it: its job, its title and the
+/// components it touches (empty: the whole choice).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingRun {
+    pub job: String,
+    pub title: String,
+    pub items: Vec<String>,
+}
+
+/// A run asked while another one runs.
+struct Pending {
+    job: String,
+    opts: Options,
+    automatic: bool,
+    notify: Notify,
 }
 
 pub struct SetupTask {
@@ -63,6 +91,8 @@ pub struct SetupTask {
     github_token: Option<String>,
     state: Mutex<Snapshot>,
     cancel: AtomicBool,
+    pending: Mutex<VecDeque<Pending>>,
+    jobs: Arc<Jobs>,
 }
 
 /// Called with the new snapshot after every change.
@@ -136,7 +166,15 @@ impl SetupTask {
                 ..Snapshot::default()
             }),
             cancel: AtomicBool::new(false),
+            pending: Mutex::new(VecDeque::new()),
+            jobs: Arc::new(Jobs::new()),
         }
+    }
+
+    /// The app's jobs: this task's runs, and the VMs' preparations the
+    /// app adds (`ipc::levels::AppEffects`).
+    pub fn jobs(&self) -> &Arc<Jobs> {
+        &self.jobs
     }
 
     /// New environment and settings (Settings page), for the next runs.
@@ -155,59 +193,147 @@ impl SetupTask {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
+    fn queue(&self) -> MutexGuard<'_, VecDeque<Pending>> {
+        self.pending.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     pub fn snapshot(&self) -> Snapshot {
         self.lock().clone()
     }
 
-    /// Starts a run in the background; refused while another one runs.
+    /// Starts a run in the background, or, while another one runs, puts it
+    /// in the queue (it starts when the ones before it end); its job's id.
     pub fn start(
         self: &Arc<Self>,
         opts: Options,
         automatic: bool,
         notify: Notify,
-    ) -> Result<(), String> {
+    ) -> Result<String, String> {
         let target = opts.target.unwrap_or_else(|| self.kit.target());
-        {
-            let mut state = self.lock();
-            if state.running {
-                return Err(crate::common::i18n::t(
-                    self.lang(),
-                    "C'è già un'installazione in corso.",
-                    &[],
-                ));
-            }
-            *state = Snapshot {
-                running: true,
+        let (kind, title, items) = describe(&self.kit, &opts, automatic, self.lang());
+        let mut state = self.lock();
+        if state.running {
+            let job = self.jobs.add(
+                kind,
+                title.clone(),
+                None,
+                items.clone(),
+                JobState::Queued,
                 automatic,
-                target: target.as_str().to_owned(),
-                ..Snapshot::default()
-            };
+            );
+            crate::common::log::info(&format!("setup queued ({job}): {opts:?}"));
+            state.pending.push(PendingRun {
+                job: job.clone(),
+                title,
+                items,
+            });
             notify(&state);
+            self.queue().push_back(Pending {
+                job: job.clone(),
+                opts,
+                automatic,
+                notify,
+            });
+            return Ok(job);
         }
+        let job = self
+            .jobs
+            .add(kind, title, None, items, JobState::Running, automatic);
+        *state = Snapshot {
+            running: true,
+            automatic,
+            target: target.as_str().to_owned(),
+            job: Some(job.clone()),
+            ..Snapshot::default()
+        };
+        notify(&state);
+        drop(state);
         self.cancel.store(false, Ordering::Relaxed);
         crate::common::log::info(&format!(
             "setup from the window: {opts:?} automatic={automatic}"
         ));
         let task = Arc::clone(self);
-        std::thread::spawn(move || {
-            // A panic in an installer ends the run like an error: otherwise
-            // `running` stays and every next run is refused until restart.
-            let run = std::panic::AssertUnwindSafe(|| task.run(&opts, &notify));
-            let error = std::panic::catch_unwind(run).unwrap_or_else(|p| Err(panic_text(&*p)));
-            let mut state = task.lock();
-            state.running = false;
-            state.cancelling = false;
-            state.queue.clear();
-            state.error = error.err();
-            for step in &state.steps {
-                crate::common::log::info(&format!("setup {}: {:?}", step.id, step.outcome));
-            }
-            notify(&state);
-        });
-        Ok(())
+        let first = Pending {
+            job: job.clone(),
+            opts,
+            automatic,
+            notify,
+        };
+        std::thread::spawn(move || task.chain(first));
+        Ok(job)
     }
 
-    fn run(&self, opts: &Options, notify: &Notify) -> Result<(), String> {
+    /// Runs `first`, then each run of the queue, in this thread; the
+    /// snapshot stays `running` until the queue is empty, its steps
+    /// appended run after run.
+    fn chain(&self, first: Pending) {
+        let mut current = first;
+        loop {
+            let from = self.lock().steps.len();
+            // A panic in an installer ends the run like an error: otherwise
+            // `running` stays and every next run is refused until restart.
+            let run = std::panic::AssertUnwindSafe(|| {
+                self.run(&current.opts, &current.job, &current.notify)
+            });
+            let error = std::panic::catch_unwind(run).unwrap_or_else(|p| Err(panic_text(&*p)));
+            let cancelled = self.cancel.load(Ordering::Relaxed);
+            let mut state = self.lock();
+            for step in &state.steps[from.min(state.steps.len())..] {
+                crate::common::log::info(&format!("setup {}: {:?}", step.id, step.outcome));
+            }
+            let failed = state.steps[from.min(state.steps.len())..]
+                .iter()
+                .find_map(|s| match &s.outcome {
+                    Some(o) if o.is_failure() => {
+                        Some(format!("{}: {}", s.name, outcome_text(o, self.lang())))
+                    }
+                    _ => None,
+                });
+            let (end, why) = match (&error, cancelled) {
+                (_, true) => (JobState::Cancelled, None),
+                (Err(e), _) => (JobState::Error, Some(e.clone())),
+                (Ok(()), _) if failed.is_some() => (JobState::Error, failed),
+                _ => (JobState::Done, None),
+            };
+            self.jobs.update(&current.job, |j| j.finish(end, why));
+            state.error = error.err();
+            let next = self.queue().pop_front();
+            let Some(next) = next else {
+                state.running = false;
+                state.cancelling = false;
+                state.queue.clear();
+                state.pending.clear();
+                (current.notify)(&state);
+                return;
+            };
+            // The next run of the queue: the same snapshot, its steps
+            // appended to the ones before (the rows keep their outcome).
+            state.pending.retain(|p| p.job != next.job);
+            state.running = true;
+            state.cancelling = false;
+            state.automatic = next.automatic;
+            state.target = next
+                .opts
+                .target
+                .unwrap_or_else(|| self.kit.target())
+                .as_str()
+                .to_owned();
+            state.total = 0;
+            state.queue.clear();
+            state.job = Some(next.job.clone());
+            self.cancel.store(false, Ordering::Relaxed);
+            self.jobs.update(&next.job, |j| j.state = JobState::Running);
+            crate::common::log::info(&format!(
+                "setup from the queue ({}): {:?}",
+                next.job, next.opts
+            ));
+            (next.notify)(&state);
+            drop(state);
+            current = next;
+        }
+    }
+
+    fn run(&self, opts: &Options, job: &str, notify: &Notify) -> Result<(), String> {
         let settings = self
             .settings
             .lock()
@@ -237,7 +363,12 @@ impl SetupTask {
             env: &env,
             cancel: &self.cancel,
         };
-        let mut sink = TaskSink { task: self, notify };
+        let mut sink = TaskSink {
+            task: self,
+            notify,
+            job,
+            lang: self.lang(),
+        };
         // With the VM on (D-173): the PC's side first, then the chosen
         // tools for the VM's Linux, one task.
         let both = runner::run(&ctx, opts, &mut sink).and_then(|first| {
@@ -260,7 +391,7 @@ impl SetupTask {
         });
         match both {
             Ok(_) => Ok(()),
-            Err(e) if e.is::<Busy>() => Err(crate::common::i18n::t(
+            Err(e) if e.is::<Busy>() => Err(t(
                 self.lang(),
                 "Un'altra installazione è in corso in questo kit (un'altra finestra di Atollo o il menu del kit).",
                 &[],
@@ -269,25 +400,161 @@ impl SetupTask {
         }
     }
 
-    /// Stops during a download, otherwise at the end of the current step.
+    /// Stops the run during a download, otherwise at the end of the
+    /// current step; the runs of the queue are cancelled too.
     pub fn cancel(&self, notify: &Notify) {
         let mut state = self.lock();
+        let waiting: Vec<Pending> = self.queue().drain(..).collect();
+        for p in &waiting {
+            self.jobs
+                .update(&p.job, |j| j.finish(JobState::Cancelled, None));
+        }
+        state.pending.clear();
         if state.running {
             self.cancel.store(true, Ordering::Relaxed);
             state.cancelling = true;
             notify(&state);
         }
     }
+
+    /// Cancels job `id` alone: out of the queue if it waits there, stopped
+    /// as [`SetupTask::cancel`] stops a run if it runs; the others go on.
+    /// False when it is neither (ended, or not this task's).
+    pub fn cancel_job(&self, id: &str, notify: &Notify) -> bool {
+        let mut state = self.lock();
+        let waiting = {
+            let mut queue = self.queue();
+            let at = queue.iter().position(|p| p.job == id);
+            at.and_then(|i| queue.remove(i))
+        };
+        if waiting.is_some() {
+            state.pending.retain(|p| p.job != id);
+            self.jobs
+                .update(id, |j| j.finish(JobState::Cancelled, None));
+            notify(&state);
+            return true;
+        }
+        if state.running && state.job.as_deref() == Some(id) {
+            self.cancel.store(true, Ordering::Relaxed);
+            state.cancelling = true;
+            notify(&state);
+            return true;
+        }
+        false
+    }
+
+    /// Job `id` ended (done, failed or cancelled), or is not known.
+    pub fn is_over(&self, id: &str) -> bool {
+        self.jobs.get(id).is_none_or(|j| j.state.is_over())
+    }
+
+    /// [`SetupTask::start`], then waits for its job to end, calling `tick`
+    /// with the snapshot while it waits (a VM's preparation shows the
+    /// download's progress in its own job). Blocking: off the window's
+    /// thread.
+    pub fn start_and_wait(
+        self: &Arc<Self>,
+        opts: Options,
+        automatic: bool,
+        notify: Notify,
+        tick: &dyn Fn(&Snapshot),
+    ) -> Result<(), String> {
+        let job = self.start(opts, automatic, notify)?;
+        while !self.is_over(&job) {
+            let snapshot = self.snapshot();
+            if snapshot.job.as_deref() == Some(job.as_str()) {
+                tick(&snapshot);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(300));
+        }
+        Ok(())
+    }
+}
+
+/// What a run is for the interface: its kind, its title (already in
+/// `lang`) and the components it touches (empty: the whole choice).
+pub fn describe(
+    kit: &Kit,
+    opts: &Options,
+    automatic: bool,
+    lang: &str,
+) -> (JobKind, String, Vec<String>) {
+    let catalog = Catalog::get();
+    let name = |id: &str| {
+        catalog
+            .find(id)
+            .map_or_else(|| id.to_owned(), |c| c.name.clone())
+    };
+    let (kind, title, items) = if !opts.lines.is_empty() {
+        let items: Vec<String> = opts.lines.iter().map(|(id, _)| id.clone()).collect();
+        let title = match opts.lines.as_slice() {
+            [(id, line)] => t(lang, "Scarico {0} {1}", &[&name(id), line]),
+            more => t(lang, "Scarico {0} versioni", &[&more.len().to_string()]),
+        };
+        (JobKind::Install, title, items)
+    } else if !opts.only.is_empty() {
+        let update = opts.update_all;
+        let kind = if update {
+            JobKind::Update
+        } else {
+            JobKind::Install
+        };
+        let title = match opts.only.as_slice() {
+            [id] if update => t(lang, "Aggiorno {0}", &[&name(id)]),
+            [id] => match opts.at.iter().find(|(a, _)| a == id) {
+                Some((_, line)) => t(lang, "Installo {0} {1}", &[&name(id), line]),
+                None => t(lang, "Installo {0}", &[&name(id)]),
+            },
+            _ if automatic && !update => t(lang, "Installo i componenti del kit", &[]),
+            more if update => t(lang, "Aggiorno {0} strumenti", &[&more.len().to_string()]),
+            more => t(lang, "Installo {0} strumenti", &[&more.len().to_string()]),
+        };
+        (kind, title, opts.only.clone())
+    } else if opts.update_all {
+        (
+            JobKind::Update,
+            t(lang, "Aggiorno gli strumenti", &[]),
+            Vec::new(),
+        )
+    } else {
+        (
+            JobKind::Install,
+            t(lang, "Applico la scelta degli strumenti", &[]),
+            Vec::new(),
+        )
+    };
+    // Another system than the kit's: the VM's Linux, or one prepared
+    // from this PC.
+    let title = match opts.target.filter(|t| *t != kit.target()) {
+        Some(other) if crate::isolation::vm::guest_target(kit.target()) == Some(other) => {
+            format!("{title} · {}", t(lang, "VM", &[]))
+        }
+        Some(other) => format!("{title} · {}", other.as_str()),
+        None => title,
+    };
+    (kind, title, items)
+}
+
+/// An outcome said in a job's error.
+fn outcome_text(o: &Outcome, lang: &str) -> String {
+    match o {
+        Outcome::Failed { message, .. } => message.clone(),
+        Outcome::InUse => t(lang, "in uso: chiudi i programmi del kit e riprova", &[]),
+        _ => String::new(),
+    }
 }
 
 struct TaskSink<'a> {
     task: &'a SetupTask,
     notify: &'a Notify,
+    job: &'a str,
+    lang: &'static str,
 }
 
 impl Sink for TaskSink<'_> {
     fn emit(&mut self, event: Event) {
         let mut state = self.task.lock();
+        let jobs = &self.task.jobs;
         match event {
             Event::Queue { steps } => {
                 state.queue = steps
@@ -296,7 +563,10 @@ impl Sink for TaskSink<'_> {
                     .collect();
             }
             Event::Step {
-                total, id, name, ..
+                index,
+                total,
+                id,
+                name,
             } => {
                 state.total = total;
                 if let Some(i) = state
@@ -306,6 +576,7 @@ impl Sink for TaskSink<'_> {
                 {
                     state.queue.remove(i);
                 }
+                jobs.update(self.job, |j| j.begin_step(index, total, name.clone()));
                 state.steps.push(Step {
                     id,
                     name,
@@ -313,17 +584,28 @@ impl Sink for TaskSink<'_> {
                 });
             }
             Event::Note { id, text } => {
+                let text = crate::env::mask_secrets(&text);
+                jobs.update(self.job, |j| j.note = Some(text.clone()));
                 if let Some(step) = state.steps.iter_mut().rfind(|s| s.id == id) {
-                    step.note = Some(crate::env::mask_secrets(&text));
+                    step.note = Some(text);
                 }
             }
             Event::Bytes { id, done, total } => {
+                jobs.update(self.job, |j| {
+                    j.bytes = Some(crate::common::jobs::JobBytes { done, total });
+                });
                 if let Some(step) = state.steps.iter_mut().rfind(|s| s.id == id) {
                     step.done = Some(done);
                     step.size = total;
                 }
             }
             Event::Done { id, outcome } => {
+                let (end, why) = match &outcome {
+                    o if o.is_failure() => (JobState::Error, Some(outcome_text(o, self.lang))),
+                    Outcome::Cancelled => (JobState::Cancelled, None),
+                    _ => (JobState::Done, None),
+                };
+                jobs.update(self.job, |j| j.end_step(end, why));
                 if let Some(step) = state.steps.iter_mut().rfind(|s| s.id == id) {
                     step.outcome = Some(outcome);
                 }

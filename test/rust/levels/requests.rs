@@ -577,3 +577,53 @@ fn pi_sessions_are_the_clients_markers() {
     assert!(pi_markers(&kit, "shop").is_empty());
     clear_all(&kit).unwrap();
 }
+
+/// LEVELS.md §8.6: a request from the editor or a forwarder that prepares
+/// a VM reports its progress through the effects like the app's entry
+/// points (the app makes it a job): it begins, its steps, its end.
+#[test]
+fn a_request_in_the_vm_reports_its_progress() {
+    use crate::levels::prepare::PrepareProgress;
+    let (_tmp, kit) = kit_with_shop("requests-progress");
+    let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    install(&guest, "pi");
+    let base = base(&kit);
+    let editor = editor(&kit, &base);
+    let fx = Fake::default();
+    let req = request(
+        &kit,
+        Origin::Forwarded {
+            agent: Agent::Pi,
+            from: Level::Manual,
+        },
+        &kit.projects().join("shop"),
+    );
+    let facts = facts_of(&kit, &req, true);
+    let reply = reply_to(
+        &fx,
+        &kit,
+        &base,
+        &editor,
+        &Host::default(),
+        &req,
+        &[],
+        &facts,
+        "it",
+    );
+    assert_eq!(reply.placement, Where::Vm, "{reply:?}");
+    let events = fx.progress();
+    assert!(
+        matches!(
+            events.first(),
+            Some(PrepareProgress::Begin {
+                agent: Some(Agent::Pi),
+                ..
+            })
+        ),
+        "{events:?}"
+    );
+    assert!(events
+        .iter()
+        .any(|e| matches!(e, PrepareProgress::Step { index: 1, .. })));
+    assert_eq!(events.last(), Some(&PrepareProgress::Done));
+}

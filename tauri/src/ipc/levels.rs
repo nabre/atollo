@@ -7,17 +7,19 @@
 //! with its reason and fix.
 
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use tauri::{AppHandle, Runtime};
 
+use crate::common::i18n::t;
+use crate::common::jobs::{JobBytes, JobKind, JobState, Jobs};
 use crate::db::auth::ProjectDb;
 use crate::editor::terminals::Terminal;
 use crate::env::{Host, KitEnv};
 use crate::isolation::Vm;
 use crate::kit::Kit;
 use crate::levels::env::{environment, Environment};
-use crate::levels::prepare::{prepare, Effects, LocalModels, Ready};
+use crate::levels::prepare::{prepare, Effects, LocalModels, PrepareProgress, Ready};
 use crate::levels::{decide, facts, Facts, Placement, Request};
 use crate::setup::task::SetupTask;
 
@@ -185,6 +187,104 @@ pub(crate) struct AppEffects<R: Runtime> {
     pub services: Arc<crate::db::services::Services>,
     pub kit: Kit,
     pub kit_env: KitEnv,
+    /// The job of the preparation (LEVELS.md §8.6), once it began, with
+    /// its step running (index, total).
+    pub job: VmJob,
+}
+
+/// The job of a VM's preparation as the app tells it: its id and step.
+#[derive(Default)]
+pub(crate) struct VmJob {
+    id: Mutex<Option<String>>,
+    step: Mutex<(usize, usize)>,
+}
+
+impl VmJob {
+    /// `event` in the job of `jobs` (made at `Begin`), in `lang`.
+    pub(crate) fn tell(&self, jobs: &Jobs, event: PrepareProgress, lang: &str) {
+        let mut id = self.id.lock().unwrap_or_else(PoisonError::into_inner);
+        match event {
+            PrepareProgress::Begin {
+                project,
+                agent,
+                total,
+                ..
+            } => {
+                let title = match agent {
+                    Some(agent) => t(
+                        lang,
+                        "Preparazione VM · {0} · {1}",
+                        &[project.as_str(), agent.id()],
+                    ),
+                    None => t(lang, "Preparazione VM · {0}", &[&project]),
+                };
+                *id = Some(jobs.add(
+                    JobKind::VmPrepare,
+                    title,
+                    Some(project),
+                    Vec::new(),
+                    JobState::Running,
+                    true,
+                ));
+                *self.step.lock().unwrap_or_else(PoisonError::into_inner) = (0, total);
+            }
+            PrepareProgress::Step {
+                index,
+                total,
+                label,
+            } => {
+                *self.step.lock().unwrap_or_else(PoisonError::into_inner) = (index, total);
+                if let Some(id) = id.as_deref() {
+                    jobs.update(id, |j| j.begin_step(index, total, label));
+                }
+            }
+            PrepareProgress::Done => {
+                if let Some(id) = id.take() {
+                    jobs.update(&id, |j| j.finish(JobState::Done, None));
+                }
+            }
+            PrepareProgress::Failed { error } => {
+                if let Some(id) = id.take() {
+                    jobs.update(&id, |j| j.finish(JobState::Error, Some(error)));
+                }
+            }
+        }
+    }
+
+    /// The step running said again with `label` (the image's download).
+    pub(crate) fn relabel(&self, jobs: &Jobs, label: String) {
+        let (index, total) = *self.step.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(id) = self
+            .id
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .as_deref()
+        {
+            jobs.update(id, |j| j.begin_step(index, total, label));
+        }
+    }
+
+    /// The download of the setup task's run in the step running: its
+    /// component as the note, its bytes.
+    pub(crate) fn follow(&self, jobs: &Jobs, snapshot: &crate::setup::task::Snapshot) {
+        let Some(step) = snapshot.steps.last() else {
+            return;
+        };
+        if let Some(id) = self
+            .id
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .as_deref()
+        {
+            jobs.update(id, |j| {
+                j.note = Some(step.name.clone());
+                j.bytes = step.done.map(|done| JobBytes {
+                    done,
+                    total: step.size,
+                });
+            });
+        }
+    }
 }
 
 impl<R: Runtime> AppEffects<R> {
@@ -196,13 +296,24 @@ impl<R: Runtime> AppEffects<R> {
             services: Arc::clone(&state.services),
             kit: state.kit.clone(),
             kit_env,
+            job: VmJob::default(),
         }
+    }
+
+    fn lang(&self) -> &'static str {
+        use tauri::Manager;
+        self.app
+            .try_state::<AppState>()
+            .map_or("it", |state| state.lang())
     }
 }
 
 impl<R: Runtime> Effects for AppEffects<R> {
     fn ensure_guest_tools(&self, guest: &Kit, wanted: &BTreeMap<String, Option<String>>) {
-        super::terminals::ensure_guest_tools(&self.app, &self.task, guest, wanted);
+        let jobs = self.task.jobs();
+        super::terminals::ensure_guest_tools(&self.app, &self.task, guest, wanted, &|snapshot| {
+            self.job.follow(jobs, snapshot);
+        });
     }
 
     fn start_databases(&self, project: &str) -> anyhow::Result<Vec<(ProjectDb, u16)>> {
@@ -232,7 +343,13 @@ impl<R: Runtime> Effects for AppEffects<R> {
     }
 
     fn start_sandbox(&self, vm: &Vm, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
-        vm.start(env, lang)
+        // `sbx` says nothing while it pulls the image: the step says it.
+        vm.start(env, lang, &|| {
+            self.job.relabel(
+                self.task.jobs(),
+                t(lang, "Scarico l'immagine della VM…", &[]),
+            );
+        })
     }
 
     fn watch_local_models(
@@ -250,6 +367,10 @@ impl<R: Runtime> Effects for AppEffects<R> {
             port,
             db_ports.to_vec(),
         );
+    }
+
+    fn progress(&self, event: PrepareProgress) {
+        self.job.tell(self.task.jobs(), event, self.lang());
     }
 }
 

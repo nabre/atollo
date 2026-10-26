@@ -107,12 +107,15 @@ pub(crate) fn kit_terminal_request(
 /// install, not those that finish on their own system
 /// (`router::bootstrap`). A failure only goes to the log: the session
 /// opens with what is there. The app's `levels::prepare::Effects` (D-179),
-/// and «Installa i mancanti» of a project with the VM on.
+/// and «Installa i mancanti» of a project with the VM on. `tick` gets the
+/// setup task's snapshot while one of these runs (a VM's preparation shows
+/// its download).
 pub(crate) fn ensure_guest_tools<R: Runtime>(
     app: &AppHandle<R>,
     task: &Arc<SetupTask>,
     guest: &Kit,
     wanted: &std::collections::BTreeMap<String, Option<String>>,
+    tick: &dyn Fn(&crate::setup::task::Snapshot),
 ) {
     let catalog = Catalog::get();
     let target = guest.target();
@@ -125,15 +128,10 @@ pub(crate) fn ensure_guest_tools<R: Runtime>(
                     .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
         })
         .collect();
+    // In the setup task's queue, its own job; `tick` follows it.
     let run = |opts: Options| {
-        while task.snapshot().running {
-            std::thread::sleep(std::time::Duration::from_millis(300));
-        }
-        if let Err(e) = task.start(opts, true, setup_notify(app.clone())) {
+        if let Err(e) = task.start_and_wait(opts, true, setup_notify(app.clone()), tick) {
             crate::common::log::warn(&format!("tools for the VM: {e}"));
-        }
-        while task.snapshot().running {
-            std::thread::sleep(std::time::Duration::from_millis(300));
         }
     };
     let missing: Vec<_> = tools

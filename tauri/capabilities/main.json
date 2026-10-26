@@ -44,6 +44,8 @@
     "allow-setup-state",
     "allow-setup-start",
     "allow-setup-cancel",
+    "allow-jobs-list",
+    "allow-job-cancel",
     "allow-downloads-add",
     "allow-downloads-pick",
     "allow-setup-by-hand-open",

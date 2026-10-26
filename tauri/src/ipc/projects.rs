@@ -343,7 +343,7 @@ pub async fn project_install_missing<R: Runtime>(
         if let Some(guest) = guest {
             let missing = crate::projects::info_in(&kit, &guest, &dir, lang).missing;
             let wanted = missing.into_iter().map(|id| (id, None)).collect();
-            super::terminals::ensure_guest_tools(&app, &task, &guest, &wanted);
+            super::terminals::ensure_guest_tools(&app, &task, &guest, &wanted, &|_| ());
             return Ok(());
         }
         let missing = crate::projects::info(&kit, &dir, lang).missing;

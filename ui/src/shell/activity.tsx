@@ -1,7 +1,8 @@
 // The Activity panel (D-76): at the bottom of every page, as VSCodium's
 // panel, what is running or installing in the kit (projects' actions,
 // database servers, the server of the local models, web server pools, the
-// setup) and its output or error.
+// jobs: installs, updates and VMs being prepared, LEVELS.md §8.6) and its
+// output, its steps or its error.
 // The status bar's Activity item opens and closes it. `useRunning` is what
 // the status bar, the Projects badge and the panel count (UX-V5-01).
 import { useEffect, useRef, useState } from "react";
@@ -16,13 +17,15 @@ import {
   type LlmInfo,
   type RunInfo,
   type ServiceInfo,
+  type Job,
   type ServiceState,
   type SetupSnapshot,
   type WebServerPool,
 } from "../ipc";
 import { t } from "../i18n";
 import { alive, stateText } from "../projects";
-import { SetupProgress, setupStatusText } from "../components/setup";
+import { SetupProgress } from "../components/setup";
+import { isActive, JobDetails, jobStateText, stepText } from "./jobs";
 import {
   ActionBar,
   Button,
@@ -129,8 +132,14 @@ type Selected =
   | { kind: "service"; key: string }
   | { kind: "pool"; id: string }
   | { kind: "llm" }
-  | { kind: "setup" }
+  | { kind: "job"; id: string }
   | null;
+
+function jobTone(j: Job): DotTone {
+  if (j.state === "error") return "err";
+  if (j.state === "done") return "ok";
+  return isActive(j) ? "warn" : "off";
+}
 
 function runTone(r: RunInfo): DotTone {
   if (r.state === "error") return "err";
@@ -147,6 +156,8 @@ export function ActivityPanel({
   onStop,
   onForget,
   setup,
+  jobs = [],
+  focus = null,
   onClose,
 }: {
   height: number;
@@ -157,9 +168,20 @@ export function ActivityPanel({
   onStop: (key: string) => Promise<void>;
   onForget: (key: string) => void;
   setup: SetupSnapshot | null;
+  /** The installs and the VMs' preparations. */
+  jobs?: Job[];
+  /** A job to show, chosen in the status bar (a new object each time). */
+  focus?: { id: string } | null;
   onClose: () => void;
 }) {
-  const [selected, setSelected] = useState<Selected>(null);
+  const [selected, setSelected] = useState<Selected>(focus ? { kind: "job", id: focus.id } : null);
+  // A job chosen again in the status bar is shown (during the render, as
+  // React adjusts state to a new prop).
+  const [shownFocus, setShownFocus] = useState(focus);
+  if (focus !== shownFocus) {
+    setShownFocus(focus);
+    if (focus) setSelected({ kind: "job", id: focus.id });
+  }
   const [confirmStop, setConfirmStop] = useState(false);
   // The stops, with why one failed: a process in use or a port held.
   const { busy, error, run } = useAction();
@@ -167,14 +189,21 @@ export function ActivityPanel({
   const logRef = useRef<HTMLPreElement>(null);
 
   const list = Object.values(runs).sort((a, b) => b.start - a.start);
-  const installing = setupStatusText(setup);
+  // The jobs going on, then the last five that ended (the newest first).
+  const going = jobs.filter(isActive);
+  const ended = jobs
+    .filter((j) => !isActive(j))
+    .slice(-5)
+    .reverse();
+  const shownJobs = [...going, ...ended];
+  const installing = going.length > 0;
 
-  // Nothing chosen: the installation, else the newest action, else a
+  // Nothing chosen: a job going on, else the newest action, else a
   // database, else a pool.
   const current: Selected =
     selected ??
-    (installing
-      ? { kind: "setup" }
+    (going[0]
+      ? { kind: "job", id: going[0].id }
       : list[0]
         ? { kind: "run", key: list[0].key }
         : liveServices[0]
@@ -197,7 +226,14 @@ export function ActivityPanel({
     if (el) el.scrollTop = el.scrollHeight;
   }, [lines.length]);
 
-  const nothing = list.length === 0 && liveServices.length === 0 && pools.length === 0 && !llm && !installing;
+  const currentJob = current?.kind === "job" ? jobs.find((j) => j.id === current.id) : undefined;
+  const nothing =
+    list.length === 0 &&
+    liveServices.length === 0 &&
+    pools.length === 0 &&
+    !llm &&
+    !installing &&
+    shownJobs.length === 0;
   const count = list.length + liveServices.length + pools.length + (llm ? 1 : 0);
   const anyLive = liveRuns.length + liveServices.length + pools.length + (llm ? 1 : 0) > 0;
 
@@ -287,16 +323,18 @@ export function ActivityPanel({
           <div className="flex min-h-0 flex-1">
             <div className="w-[260px] shrink-0 overflow-auto border-r border-vsc-border">
               <List label={t("Attività")}>
-                {installing && (
+                {shownJobs.map((j) => (
                   <ListRow
-                    icon={<Dot tone="warn" />}
-                    label={t("Installazione")}
-                    selected={current?.kind === "setup"}
+                    key={j.id}
+                    icon={<Dot tone={jobTone(j)} />}
+                    label={j.title}
+                    description={isActive(j) ? stepText(j) : jobStateText(j)}
+                    selected={current?.kind === "job" && current.id === j.id}
                     onSelect={() => {
-                      setSelected({ kind: "setup" });
+                      setSelected({ kind: "job", id: j.id });
                     }}
                   />
-                )}
+                ))}
                 {liveServices.map((s) => (
                   <ListRow
                     key={s.key}
@@ -476,9 +514,14 @@ export function ActivityPanel({
                   </p>
                 </div>
               )}
-              {current?.kind === "setup" && setup && (
+              {currentJob && (
                 <div className="overflow-auto">
-                  <SetupProgress snapshot={setup} />
+                  <JobDetails job={currentJob} />
+                  {/* An install's components, each with its outcome and
+                      the download to do by hand when one failed. */}
+                  {setup && currentJob.kind !== "vm-prepare" && setup.job === currentJob.id && (
+                    <SetupProgress snapshot={setup} />
+                  )}
                 </div>
               )}
             </div>

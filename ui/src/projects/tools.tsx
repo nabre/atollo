@@ -4,11 +4,13 @@
 // actions as the Tools page (../components): «Installa» installs at once as
 // the row of «Tutti gli strumenti», «Aggiorna» as the pane «Aggiornamenti»;
 // both run as a preparation, shown in Activity. The app's own parts and the
-// required ones (locked) are always there and stay out.
-import { useCallback, useEffect, useState } from "react";
+// required ones (locked) are always there and stay out. Each tile shows its
+// own install (waiting, its bar, «Riprova», «Annulla»); asked while another
+// runs, it queues; a tile that ends is read again alone, the grid stays.
+import { useCallback, useState } from "react";
 import { componentsInstall, componentsList, setupStart, type ComponentInfo, type SetupSnapshot } from "../ipc";
 import { groups } from "../components/model";
-import { itemState } from "../components/setup";
+import { ItemBar, ItemCancel, itemBusy, itemState, useStepsDone, type ItemState } from "../components/setup";
 import { shownStatus, ToolStateIcon, toolStateLabel, type ToolStatus } from "../components/status";
 import { useUpdates } from "../components/updates";
 import { t } from "../i18n";
@@ -42,20 +44,37 @@ export function HomeTools({ setup, onOpen }: { setup: SetupSnapshot | null; onOp
   const running = setup?.running ?? false;
   const {
     data: list,
+    setData: setList,
     error: loadError,
-    reload,
   } = useLoad<ComponentInfo[] | null>(componentsList, null, {
     onError: "show",
   });
-  const { updates } = useUpdates(running);
+  const { updates, setUpdates } = useUpdates(running);
   const { busy, error, run } = useAction();
   const [all, setAll] = useState(false);
-  // Read again as each component of a preparation ends, and when it ends.
-  const finished = setup?.steps.filter((s) => s.outcome !== null).length ?? 0;
-  const ended = setup !== null && !setup.running && setup.steps.length > 0;
-  useEffect(() => {
-    if (finished > 0 || ended) reload();
-  }, [finished, ended, reload]);
+  // As each component of a preparation ends: its tile alone read again (the
+  // others and the grid stay), and an update done leaves the list of the
+  // new versions.
+  useStepsDone(setup, (ids) => {
+    if (ids.length === 0) return;
+    componentsList(undefined, ids).then(
+      (fresh) => {
+        const byId = new Map(fresh.map((c) => [c.id, c]));
+        setList((current) => current?.map((c) => byId.get(c.id) ?? c) ?? current);
+        setUpdates((current) =>
+          current
+            ? {
+                ...current,
+                items: current.items.filter(
+                  (u) => !fresh.some((c) => c.id === u.id && c.version !== null && c.version !== u.installed),
+                ),
+              }
+            : current,
+        );
+      },
+      () => undefined,
+    );
+  });
 
   const status = useCallback(
     (c: ComponentInfo): ToolStatus => {
@@ -109,8 +128,10 @@ export function HomeTools({ setup, onOpen }: { setup: SetupSnapshot | null; onOp
                 key={c.id}
                 c={c}
                 st={status(c)}
+                item={itemState(setup, c.id, c.name)}
+                setup={setup}
                 busy={busy}
-                disabled={running || busy !== null}
+                disabled={itemBusy(setup, c.id) || (busy?.endsWith(`:${c.id}`) ?? false)}
                 onOpen={onOpen}
                 onInstall={() => {
                   run(`install:${c.id}`, () => componentsInstall(c.id));
@@ -141,6 +162,8 @@ export function HomeTools({ setup, onOpen }: { setup: SetupSnapshot | null; onOp
 function ToolTile({
   c,
   st,
+  item,
+  setup,
   busy,
   disabled,
   onOpen,
@@ -149,6 +172,9 @@ function ToolTile({
 }: {
   c: ComponentInfo;
   st: ToolStatus;
+  /** Its install: waiting, running, failed; null when none. */
+  item: ItemState | null;
+  setup: SetupSnapshot | null;
   busy: string | null;
   disabled: boolean;
   onOpen: (id: string) => void;
@@ -170,8 +196,9 @@ function ToolTile({
   const hint = [c.desc, st.state === "missing" || st.state === "running" ? null : st.detail]
     .filter(Boolean)
     .join(" — ");
+  const working = item?.kind === "queued" || item?.kind === "running";
   return (
-    <li className="flex min-w-0 items-center gap-2 rounded-md border border-vsc-border p-2 hover:bg-vsc-list-hover">
+    <li className="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-vsc-border p-2 hover:bg-vsc-list-hover">
       <button
         type="button"
         title={hint || undefined}
@@ -194,7 +221,13 @@ function ToolTile({
           </span>
         </span>
       </button>
-      {act === "install" && (
+      {working && <ItemCancel setup={setup} id={c.id} name={c.name} />}
+      {item?.kind === "problem" && !working && (
+        <Button small title={item.text} disabled={disabled} onClick={act === "update" ? onUpdate : onInstall}>
+          {t("Riprova")}
+        </Button>
+      )}
+      {act === "install" && !working && item?.kind !== "problem" && (
         <Button
           small
           variant="primary"
@@ -206,7 +239,7 @@ function ToolTile({
           {t("Installa")}
         </Button>
       )}
-      {act === "update" && (
+      {act === "update" && !working && item?.kind !== "problem" && (
         <Button
           small
           title={t("Scarica la versione nuova di {0}, se c'è", c.name)}
@@ -217,6 +250,7 @@ function ToolTile({
           {t("Aggiorna ora")}
         </Button>
       )}
+      {item && <ItemBar state={item} label={c.name} className="w-full basis-full" />}
     </li>
   );
 }

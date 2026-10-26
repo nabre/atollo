@@ -54,10 +54,10 @@ function problems(): { title: string; items: GuideProblem[] }[] {
             "„Es läuft bereits eine Installation.“ oder „Es läuft bereits eine Installation“",
           ),
           a: tr(
-            "Aspetta che finisca (la barra di stato mostra il passo) o premi «Annulla» nella barra «Applica».",
-            "Wait for it to finish (the status bar shows the step) or press “Cancel” in the “Apply” bar.",
-            "Attendez qu'elle se termine (la barre d'état affiche l'étape) ou appuyez sur « Annuler » dans la barre « Appliquer ».",
-            "Warte, bis sie fertig ist (die Statusleiste zeigt den Schritt), oder klicke in der Leiste „Übernehmen“ auf „Abbrechen“.",
+            "Le installazioni e gli aggiornamenti chiesti dall'app non si rifiutano più: vanno in coda. Il messaggio resta quando togli una versione mentre si installa, o quando installa un'altra finestra di Atollo o il menu del kit: aspetta che finisca (la barra di stato mostra il passo) o annullala da Attività.",
+            "Installations and updates asked from the app are no longer refused: they queue. The message remains when you remove a version while something installs, or when another Atollo window or the kit's menu is installing: wait for it to finish (the status bar shows the step) or cancel it from Activity.",
+            "Les installations et mises à jour demandées depuis l'app ne sont plus refusées : elles attendent leur tour. Le message reste quand vous retirez une version pendant une installation, ou quand une autre fenêtre d'Atollo ou le menu du kit installe : attendez la fin (la barre d'état affiche l'étape) ou annulez depuis Activité.",
+            "Installationen und Updates, die in der App angefordert werden, werden nicht mehr abgelehnt: Sie reihen sich ein. Die Meldung bleibt, wenn du während einer Installation eine Version entfernst oder wenn ein anderes Atollo-Fenster oder das Menü des Kits installiert: Warte, bis sie fertig ist (die Statusleiste zeigt den Schritt), oder brich sie in Aktivität ab.",
           ),
         },
         {
