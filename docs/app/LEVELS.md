@@ -1054,8 +1054,8 @@ UI (`test/ui/`): `terminal/panel.test.tsx` (label per level, sandbox name), `age
 
 | # | Question | Default in this document |
 |---|---|---|
-| Q1 | A user terminal with explicit lines opened in a project folder: project's lines or terminal's? | project's lines for the tools the project chose, the terminal's for the others [assumption] |
-| Q2 | Can the Claude Code extension run through `claudeCode.claudeProcessWrapper` → forwarder → `sbx run` (PC paths in its arguments, its local connection to the editor, no TTY)? | disabled until a spike proves it |
+| Q1 | A user terminal with explicit lines opened in a project folder: project's lines or terminal's? | project's lines for the tools the project chose, the terminal's for the others **decided by the user, 26/10/2026** |
+| Q2 | Can the Claude Code extension run through `claudeCode.claudeProcessWrapper` → forwarder → `sbx run` (PC paths in its arguments, its local connection to the editor, no TTY)? | **decided by the user, 26/10/2026**: disabled now; a separate spike tries the wrapper and, if it holds, re-enables it through the VM |
 | Q3 | Codex extension: `chatgpt.cliExecutable` is "Development only" | disabled |
 | Q4 | Does `sbx run --name <sandbox>` pass extra arguments to the agent (`-- --resume`)? | [unverified]; if not, forwarded args are refused for Claude/Codex with a message |
 | Q5 | Does `sbx run` work without a TTY (an extension's pipe)? | [unverified] |
@@ -1064,7 +1064,7 @@ UI (`test/ui/`): `terminal/panel.test.tsx` (label per level, sandbox name), `age
 | Q8 | Does `sbx`'s `shell` image contain any agent CLI? | [unverified]; if yes, `environment(Vm{Project})` must hide it (a `PATH` without the image's agent folder) |
 | Q9 | VSCodium: `automationProfile` also used for debug terminals; can a trusted workspace add terminal profiles; is Machine `settings.json` reloaded live? | [unverified] |
 | Q10 | VSCodium web server `--disable-extension` | [unverified]; uninstall as fallback |
-| Q11 | Stop installing agents for the PC entirely, and Claude Code/Codex for the VM's Linux (the `sbx` images have them)? | yes [assumption, needs the user's confirmation] |
+| Q11 | Stop installing agents for the PC entirely, and Claude Code/Codex for the VM's Linux (the `sbx` images have them)? | yes: agents are installed only for the VM (Pi and Antigravity Linux builds; Claude Code and Codex from the `sbx` images) — **decided by the user, 26/10/2026** |
 | Q12 | A prompt label inside the VM's `bash -l` | banner only [unverified] |
 | Q13 | The kit's MCP servers for agents in the VM (D-175 "Da fare") | unchanged, out of D-179's scope |
 | Q14 | Debug adapters and language extensions executing project code on the PC with the VM on | declared limit kept; candidate for a later decision |

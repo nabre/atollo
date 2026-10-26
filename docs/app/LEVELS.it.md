@@ -727,8 +727,8 @@ I nomi delle prove sono in [LEVELS.md, 12.3](LEVELS.md#123-test-plan) e valgono 
 
 | # | Domanda | Scelta in questo documento |
 |---|---|---|
-| Q1 | Un terminale dell'utente con linee esplicite aperto nella cartella di un progetto: linee del progetto o del terminale? | del progetto per gli strumenti che il progetto ha scelto, del terminale per gli altri [ipotesi] |
-| Q2 | L'estensione Claude Code può girare con `claudeCode.claudeProcessWrapper` → inoltro → `sbx run` (percorsi del PC negli argomenti, la sua connessione locale all'editor, nessun TTY)? | disattivata finché una prova non lo dimostra |
+| Q1 | Un terminale dell'utente con linee esplicite aperto nella cartella di un progetto: linee del progetto o del terminale? | del progetto per gli strumenti che il progetto ha scelto, del terminale per gli altri — **deciso dall'utente, 26/10/2026** |
+| Q2 | L'estensione Claude Code può girare con `claudeCode.claudeProcessWrapper` → inoltro → `sbx run` (percorsi del PC negli argomenti, la sua connessione locale all'editor, nessun TTY)? | disattivata finché una prova non lo dimostra — **deciso dall'utente, 26/10/2026**: disattivata ora; una prova a parte tenta l'involucro e, se regge, la riattiva attraverso la VM |
 | Q3 | Estensione Codex: `chatgpt.cliExecutable` è «Development only» | disattivata |
 | Q4 | `sbx run --name <sandbox>` passa argomenti in più all'agente (`-- --resume`)? | [non verificato]; se no, gli argomenti inoltrati sono rifiutati per Claude e Codex con un messaggio |
 | Q5 | `sbx run` funziona senza TTY (il canale di un'estensione)? | [non verificato] |
@@ -737,7 +737,7 @@ I nomi delle prove sono in [LEVELS.md, 12.3](LEVELS.md#123-test-plan) e valgono 
 | Q8 | L'immagine `shell` di `sbx` contiene la CLI di un agente? | [non verificato]; se sì, `environment(Vm{Project})` deve nasconderla (un `PATH` senza la cartella dell'agente dell'immagine) |
 | Q9 | VSCodium: `automationProfile` vale anche per i terminali del debug; un workspace fidato può aggiungere profili di terminale; il `settings.json` di Machine si ricarica da solo? | [non verificato] |
 | Q10 | `--disable-extension` del server web di VSCodium | [non verificato]; in mancanza, disinstallazione |
-| Q11 | Smettere del tutto di installare gli agenti per il PC, e Claude Code e Codex per il Linux della VM (le immagini di `sbx` li hanno)? | sì [ipotesi, da confermare con l'utente] |
+| Q11 | Smettere del tutto di installare gli agenti per il PC, e Claude Code e Codex per il Linux della VM (le immagini di `sbx` li hanno)? | sì: gli agenti si installano solo per la VM (build Linux di Pi e Antigravity; Claude Code e Codex dalle immagini di `sbx`) — **deciso dall'utente, 26/10/2026** |
 | Q12 | Un'etichetta nel prompt del `bash -l` della VM | solo l'intestazione [non verificato] |
 | Q13 | I server MCP del kit per gli agenti nella VM («Da fare» di D-175) | invariato, fuori da D-179 |
 | Q14 | Adattatori del debugger ed estensioni dei linguaggi che eseguono codice del progetto sul PC con la VM attiva | limite dichiarato mantenuto; candidato a una decisione successiva |
