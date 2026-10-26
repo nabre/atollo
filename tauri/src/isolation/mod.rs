@@ -289,6 +289,9 @@ fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blo
             // reader waits for it until its limit.
             // A daemon started now reads the settings as they are: a
             // restart owed to the one before is not owed any more.
+            if let Some(temp) = host.temp() {
+                daemon::unlink_foreign(Path::new(temp), &kit.home());
+            }
             if daemon_call(sbx, host, env, &["daemon", "start"]) {
                 let _ = std::fs::remove_file(kit::root(kit).join(".restart-pending"));
             }
