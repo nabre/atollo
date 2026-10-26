@@ -82,7 +82,9 @@ tauri\src\
                               (masked secrets), time (now_secs, now_ms), i18n (language and catalogs), settings
                               (data\app\settings.json, one change at a time: `Settings::update`; Gemini key
                               file), ports (who has each port: pools, database versions, actions, editor, local
-                              models, D-141, below)
+                              models, D-141, below), jobs (the long work the interface follows: installs,
+                              updates, a VM's preparation, each a `Job` with its step, bytes and state, the
+                              event `job`, LEVELS.md §8.6)
   kit\                        mod (paths, first run, move), target (Os, Arch, Target), root (bundle), names
                               (valid project names), backup ("Copy of the kit": export to a folder or a zip;
                               an import applied at the next start, D-163)
@@ -95,7 +97,8 @@ tauri\src\
     catalog  needs            embedded catalog (`minVersion`: `Component::outdated`), components.txt; what
                               agents, clone, actions need (D-59)
     runner  task              plan and steps of a setup, its scope (`Scope`: All, System, Tools, D-173); the
-                              setup started from the window
+                              setup started from the window, one run at a time with a queue of the runs asked
+                              meanwhile, each a job cancelled alone (LEVELS.md §8.6)
     checkup  downloads        final check (D-39); files downloaded by hand (D-82)
     integrity  updates        "Check the files" (`.atollo-manifest`, D-159); components with a new version
                               (data\app\updates.json, D-161)
@@ -297,7 +300,7 @@ Everything that crosses between the interface and Rust is in two folders with th
 | --- | --- |
 | `mod.rs` | `AppState`, the shared checks (`ensure_main`, `project_dir`, `tr`), `ensure` (installs what is missing before an action), the `command_handler!` macro |
 | `error.rs` | `CmdError`, `CmdResult`, `fail` and `OrFail` (below, "Errors") |
-| `events.rs` | the names of the events sent to the interface (`run`, `setup`, `pty-*`…) |
+| `events.rs` | the names of the events sent to the interface (`run`, `setup`, `job`, `pty-*`…) |
 | `app.rs` | information, settings, updates, opening addresses and folders |
 | `window.rs` | what is open, "Remove drive", shutdown and confirmation |
 | `editing.rs` | editor, console, editor settings and extensions of a project; the editor's session in the project's VM (`editor_vm_begin`, `editor_vm_session`, D-175) |
@@ -388,14 +391,14 @@ In the modules `anyhow::Result`, with the context the log needs. Commands return
 
 | Part | Files | What it holds |
 | --- | --- | --- |
-| Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar (with the "VM" / "No VM" item, `IsolationItem`) |
+| Entry point | `main.tsx`, `App.tsx` | VSCodium-style window: activity bar, page, Activity panel, status bar (the VM's pill, `VmItem`, and the jobs' item, `JobsItem`, in `shell\statusbar.tsx`) |
 | Toward Rust | `ipc\` | one file per area, like `tauri\src\ipc\` (above); `index.ts` re-exports them, pages import from `@/ipc`; `events.ts` has the events' names, `pty.ts` the in-app terminal's commands and events (imported by itself, so the window of a detached session carries no other area), `window.ts` the controls of the title bar; `preview-runs.ts` plays the actions in the browser preview. An ESLint rule keeps `@tauri-apps/*` out of every other file of `ui\src` |
 | Shared helpers | `shared\`: `hooks.ts`, `common.tsx`, `format.ts`, `tags.tsx`, `logos.tsx`, `brand.tsx`, `palette.tsx` | helpers without a page, used by several folders: `useSubscription`, `useEvery`, `useLoad`, `useAction`, `useCopy` (below); `ActionButton`, `ErrorLine`, `editorHint`, the port fields (`usePortField`, `validPort`); sizes as text (`formatBytes`, `gb`, `sizeText`); tags, the brands' logos, the brand; the quick pick of Quick Open and of the command palette |
 | Base components | `workbench\` | the VSCodium controls (`@vscode-elements/elements`), the codicons and the workbench parts (below); from the rest of the app it imports only `i18n` |
 | Theme | `theme\`: `theme.css`, `theme-colors.css`, `theme-vscode.css`, `theme-sizes.css` | fonts, the codicon font and brand touches; `--vsc-*` colors for Tailwind; all the VS Code `--vscode-*` variables; VSCodium 1.135's sizes and the `--vsc-size-*` measures (the last three generated, below) |
 | Pages | `projects\`, `frameworks\`, `versions\`, `github\`, `settings\`, `components\`, `databases\`, `ai\`, `agents\`, `models\`, `servers\`, `terminal\`, `guide\` | one folder per page or part, with an `index.ts` that exports only what the other pages use |
 | Images | `assets\` | the logo (`logo-32.png`, `logo-256.png`) and `brand\` |
-| Window frame | `shell\`: `titlebar.tsx`, `activity.tsx`, `commands.tsx`, `eject.tsx`, `isolation.tsx`, `update.ts`, `freeze.ts`, `freezeproto.ts` | the title bar; `activity.tsx` has the Activity panel and `useRunning`, the one count of what runs (actions, database versions, local models, pools) for the status bar, the Projects badge and the panel, with "Stop all" after a confirmation; the command palette (D-160); "Remove the drive" and closing; `isolation.tsx` (D-167, D-169): `useIsolation`, the "No VM" dialog with each reason, what to do and its command ("Run" for `sbx`, "Copy" for the PC's, "Install in the kit" with the reason of a failed installation, "Check again"), and Atollo's sandboxes with the room they take and "Remove" on a second click; the update's words; `freeze.ts` freezes the prototypes of the main window only |
+| Window frame | `shell\`: `titlebar.tsx`, `activity.tsx`, `commands.tsx`, `eject.tsx`, `isolation.tsx`, `jobs.tsx`, `statusbar.tsx`, `update.ts`, `freeze.ts`, `freezeproto.ts` | the title bar; `jobs.tsx` (LEVELS.md §8.6): `useJobs` (the jobs read once and kept by the `job` events, one subscription for the window through `JobsProvider`), the job's bar (its percent, or a part going across), `JobDetails` for Activity (steps, errors, «Annulla», «Riprova») and `VmPreparing`, the card of a session waiting for its VM; `statusbar.tsx`: the status bar's `StatusItem`, the jobs' item (title, step, bar, «3 lavori in corso») and the VM's pill (`VmItem`, with `vmPill` of `isolation.tsx`: green, blue with the percent, orange, grey, red, said in its name); `activity.tsx` has the Activity panel (the jobs going on and the last ended among its rows) and `useRunning`, the one count of what runs (actions, database versions, local models, pools) for the status bar, the Projects badge and the panel, with "Stop all" after a confirmation; the command palette (D-160); "Remove the drive" and closing; `isolation.tsx` (D-167, D-169): `useIsolation`, the "No VM" dialog with each reason, what to do and its command ("Run" for `sbx`, "Copy" for the PC's, "Install in the kit" with the reason of a failed installation, "Check again"), and Atollo's sandboxes with the room they take and "Remove" on a second click; the update's words; `freeze.ts` freezes the prototypes of the main window only |
 | Texts | `i18n.ts`, `locales\*.json` | `t("Italian sentence")`; the test checks the four languages |
 
 The page folders:

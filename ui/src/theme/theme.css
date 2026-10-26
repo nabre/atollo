@@ -302,6 +302,17 @@ textarea,
   }
 }
 
+/* A job's bar whose size is not known (common/jobs.rs): a third of the
+   track going across. */
+@keyframes indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
 /* Windows "show animations" off: no spinning or pulsing icons. */
 @media (prefers-reduced-motion: reduce) {
   *,

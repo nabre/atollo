@@ -34,6 +34,8 @@ const COMMANDS: &[&str] = &[
     "setup_state",
     "setup_start",
     "setup_cancel",
+    "jobs_list",
+    "job_cancel",
     "downloads_add",
     "downloads_pick",
     "setup_by_hand_open",

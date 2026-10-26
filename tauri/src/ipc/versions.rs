@@ -118,9 +118,6 @@ pub(super) fn install_now<R: Runtime>(
     line: Option<String>,
     target: Option<String>,
 ) -> CmdResult<()> {
-    if state.setup.snapshot().running {
-        return Err(tr(state, "C'è già un'installazione in corso.", &[]).into());
-    }
     let catalog = Catalog::get();
     if catalog.find(&id).is_none() {
         return Err(format!("unknown component: {id}").into());
@@ -139,7 +136,8 @@ pub(super) fn install_now<R: Runtime>(
         at: line.map(|l| vec![(id, l)]).unwrap_or_default(),
         ..Options::default()
     };
-    Ok(state.setup.start(opts, false, setup_notify(app))?)
+    state.setup.start(opts, false, setup_notify(app))?;
+    Ok(())
 }
 
 pub(super) fn download_line<R: Runtime>(
@@ -155,7 +153,8 @@ pub(super) fn download_line<R: Runtime>(
         lines: vec![(id, line)],
         ..Options::default()
     };
-    Ok(state.setup.start(opts, false, setup_notify(app))?)
+    state.setup.start(opts, false, setup_notify(app))?;
+    Ok(())
 }
 
 /// Where component `id` asked for `kit` is installed (D-173): with the VM

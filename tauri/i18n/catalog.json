@@ -2458,5 +2458,105 @@
     "en": "{0} has no build for the VM's Linux: it cannot start for now.",
     "fr": "{0} n'a pas de version pour le Linux de la VM : il ne peut pas démarrer pour l'instant.",
     "de": "{0} hat keine Version für das Linux der VM: Es kann vorerst nicht starten."
+  },
+  "Scarico {0} {1}": {
+    "en": "Downloading {0} {1}",
+    "fr": "Téléchargement de {0} {1}",
+    "de": "Lade {0} {1} herunter"
+  },
+  "Scarico {0} versioni": {
+    "en": "Downloading {0} versions",
+    "fr": "Téléchargement de {0} versions",
+    "de": "Lade {0} Versionen herunter"
+  },
+  "Aggiorno {0}": {
+    "en": "Updating {0}",
+    "fr": "Mise à jour de {0}",
+    "de": "Aktualisiere {0}"
+  },
+  "Installo {0} {1}": {
+    "en": "Installing {0} {1}",
+    "fr": "Installation de {0} {1}",
+    "de": "Installiere {0} {1}"
+  },
+  "Installo {0}": {
+    "en": "Installing {0}",
+    "fr": "Installation de {0}",
+    "de": "Installiere {0}"
+  },
+  "Installo i componenti del kit": {
+    "en": "Installing the kit's components",
+    "fr": "Installation des composants du kit",
+    "de": "Installiere die Komponenten des Kits"
+  },
+  "Aggiorno {0} strumenti": {
+    "en": "Updating {0} tools",
+    "fr": "Mise à jour de {0} outils",
+    "de": "Aktualisiere {0} Werkzeuge"
+  },
+  "Installo {0} strumenti": {
+    "en": "Installing {0} tools",
+    "fr": "Installation de {0} outils",
+    "de": "Installiere {0} Werkzeuge"
+  },
+  "Aggiorno gli strumenti": {
+    "en": "Updating the tools",
+    "fr": "Mise à jour des outils",
+    "de": "Aktualisiere die Werkzeuge"
+  },
+  "Applico la scelta degli strumenti": {
+    "en": "Applying the choice of tools",
+    "fr": "Application du choix des outils",
+    "de": "Wende die Werkzeugauswahl an"
+  },
+  "VM": {
+    "en": "VM",
+    "fr": "VM",
+    "de": "VM"
+  },
+  "in uso: chiudi i programmi del kit e riprova": {
+    "en": "in use: close the kit's programs and try again",
+    "fr": "en cours d'utilisation : fermez les programmes du kit et réessayez",
+    "de": "in Verwendung: Schließe die Programme des Kits und versuche es erneut"
+  },
+  "Preparazione VM · {0}": {
+    "en": "Preparing VM · {0}",
+    "fr": "Préparation de la VM · {0}",
+    "de": "VM wird vorbereitet · {0}"
+  },
+  "Preparazione VM · {0} · {1}": {
+    "en": "Preparing VM · {0} · {1}",
+    "fr": "Préparation de la VM · {0} · {1}",
+    "de": "VM wird vorbereitet · {0} · {1}"
+  },
+  "Scarico l'immagine della VM…": {
+    "en": "Downloading the VM's image…",
+    "fr": "Téléchargement de l'image de la VM…",
+    "de": "Lade das Image der VM herunter…"
+  },
+  "Strumenti per il Linux della VM": {
+    "en": "Tools for the VM's Linux",
+    "fr": "Outils pour le Linux de la VM",
+    "de": "Werkzeuge für das Linux der VM"
+  },
+  "Database del progetto": {
+    "en": "The project's databases",
+    "fr": "Bases de données du projet",
+    "de": "Datenbanken des Projekts"
+  },
+  "Modelli locali": {
+    "en": "Local models",
+    "fr": "Modèles locaux",
+    "de": "Lokale Modelle"
+  },
+  "Informazioni della VM": {
+    "en": "The VM's information",
+    "fr": "Informations de la VM",
+    "de": "Informationen der VM"
+  },
+  "Avvio la VM": {
+    "en": "Starting the VM",
+    "fr": "Démarrage de la VM",
+    "de": "Starte die VM"
   }
 }

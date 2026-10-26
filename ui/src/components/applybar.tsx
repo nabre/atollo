@@ -27,6 +27,8 @@ export function ApplyBar({
   const { plan, apply } = state;
   const running = setup?.running ?? false;
   const changed = plan.install.length > 0 || plan.remove.length > 0;
+  // Asked while an install runs, it waits in the queue (no refusal).
+  const queued = running ? t("In coda dopo l'installazione in corso") : undefined;
   const go = (updateAll: boolean) => {
     setConfirm(false);
     apply(updateAll);
@@ -97,7 +99,7 @@ export function ApplyBar({
           {running && (
             <ActionButton
               icon={codicon("circle-slash")}
-              label={setup?.cancelling ? t("Annullamento…") : t("Annulla")}
+              label={setup?.cancelling ? t("Annullamento…") : t("Annulla tutto")}
               disabled={setup?.cancelling ?? false}
               onClick={() => {
                 setCancelError(null);
@@ -111,12 +113,7 @@ export function ApplyBar({
             <ActionButton
               icon={codicon("refresh")}
               label={t("Aggiorna tutto")}
-              disabled={running}
-              title={
-                running
-                  ? t("Un'installazione è già in corso")
-                  : t("Scarica le versioni nuove di tutto ciò che è installato")
-              }
+              title={queued ?? t("Scarica le versioni nuove di tutto ciò che è installato")}
               onClick={() => {
                 go(true);
               }}
@@ -132,10 +129,11 @@ export function ApplyBar({
             }
             label={firstRun ? t("Installa") : t("Applica")}
             primary
-            disabled={running || (!changed && !firstRun)}
-            title={running ? t("Un'installazione è già in corso") : undefined}
+            disabled={!changed && !firstRun}
+            title={queued}
             onClick={() => {
-              if (firstRun) go(false);
+              // Only a removal asks first: installing undoes nothing.
+              if (firstRun || plan.remove.length === 0) go(false);
               else setConfirm(true);
             }}
           />

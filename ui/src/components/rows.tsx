@@ -3,7 +3,7 @@
 import { setupStart, type ComponentInfo, type RelationLink, type SetupSnapshot, type VersionedTool } from "../ipc";
 import { t } from "../i18n";
 import { Checkbox, Codicon } from "../workbench";
-import { ItemBar, ItemStatus, itemState, type ItemState } from "./setup";
+import { ItemBar, ItemStatus, itemBusy, itemState, type ItemState } from "./setup";
 import { composerOf, splitVersion, ToolInstallLine, ToolVersions, type KitVersions } from "../versions";
 import { ByHandBox } from "./byhand";
 import { LinkProblems, outsideOf } from "./relations";
@@ -159,7 +159,8 @@ export function ComponentRow({
   links: RelationLink[];
   onChange: (on: boolean) => void;
 }) {
-  const running = setup?.running ?? false;
+  // Only this row's install makes it wait (the others queue).
+  const working = itemBusy(setup, c.id);
   const required = c.locked;
   const on = chosen.has(c.id);
   const inputId = `comp-${c.id}`;
@@ -193,7 +194,7 @@ export function ComponentRow({
             id={inputId}
             checked={on}
             disabled={
-              required || running || c.unavailableReason !== null || c.notNeeded !== null || (!c.available && !on)
+              required || working || c.unavailableReason !== null || c.notNeeded !== null || (!c.available && !on)
             }
             onChange={(v) => {
               onChange(v);
@@ -245,7 +246,7 @@ export function ComponentRow({
               id={c.id}
               name={c.name}
               byHand={state.byHand}
-              disabled={running}
+              disabled={working}
               onRetry={() => setupStart([c.id], false)}
             />
           </div>

@@ -1,5 +1,12 @@
 # Novità
 
+## Avanzamento visibile e strumenti più fluidi (26/10/2026)
+
+- **Si vede sempre cosa sta succedendo**: ogni download, installazione, aggiornamento e preparazione della VM compare nella barra di stato finché dura, con il titolo («Installo Node.js», «Preparazione VM · shop»), il passo («2/5 · Database del progetto») e una piccola barra con la percentuale (che scorre quando la dimensione non si sa); con più lavori, «3 lavori in corso». Un clic apre in Attività i passi di quel lavoro con i loro errori, «Annulla» e «Riprova».
+- **La preparazione della VM non sembra più bloccata**: il terminale, l'azione o l'agente che aspetta la VM del progetto mostra «Preparazione della VM…» con gli stessi passi (strumenti per il Linux della VM con il loro download, database, modelli locali, informazioni della VM, avvio) e, la prima volta, «Scarico l'immagine della VM…».
+- **La pill della VM**: nella barra di stato un'icona della VM su una pill colorata dice lo stato a colpo d'occhio: verde «VM» pronta, blu «VM…» con la percentuale mentre si prepara, arancione «Senza VM» quando puoi rimediare (accesso a Docker, hypervisor, sbx mancante), grigia quando questo PC non può averla (sistema vecchio, distribuzione, firmware, disco del kit), rossa «VM ⚠» se una preparazione non è riuscita. Il nome del pulsante e il suggerimento dicono lo stato e cosa fare, non solo il colore; chiaro e scuro.
+- **Strumenti più fluidi**: un'installazione in corso non blocca più tutta la pagina. Ogni riga e ogni riquadro (Strumenti, pannello rapido, Aggiornamenti, pagina dello strumento) mostra la propria installazione: «in coda», il download con la sua barra, «Riprova» se non riesce, «Annulla» per quel solo strumento. Puoi chiederne altri mentre uno si installa: vanno in coda invece di «C'è già un'installazione in corso». Quando uno finisce si rilegge solo la sua riga: la lista non si ricarica, lo scorrimento e le scelte non ancora applicate restano. «Applica» chiede conferma solo se toglie qualcosa.
+
 ## Il pannello rapido con gli strumenti (26/10/2026)
 
 - **Gli strumenti nel «Pannello rapido»**: una griglia con i componenti che si possono installare su questo PC, nei gruppi di «Strumenti» (le parti dell'app e quelle obbligatorie restano fuori), ognuno con logo, nome e stato (versione, «non installato», «non serve», perché non è disponibile). «Installa» e «Aggiorna ora» fanno come in «Strumenti», con l'avanzamento in «Attività»; un clic sul riquadro apre la sua pagina in «Strumenti». Oltre dodici, «Mostra tutti».

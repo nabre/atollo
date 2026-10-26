@@ -13,12 +13,14 @@ import {
   type IsolationBlocker,
   type IsolationFix,
   type IsolationStatus,
+  type Job,
   type VmInfo,
   type VmList,
 } from "../ipc";
 import { formatLargeBytes } from "../shared/format";
 import { useAction, useCopy, useLoad } from "../shared/hooks";
-import { Button, ConfirmDialog } from "../workbench";
+import { Button, Codicon, ConfirmDialog } from "../workbench";
+import { bytesPercent, overallPercent, stepText } from "./jobs";
 import { t } from "../i18n";
 
 /** What a blocker means and what the user does about it: a sentence, the
@@ -418,4 +420,107 @@ export function useIsolation(installing = false) {
     was.current = installing;
   }, [installing, setData]);
   return { status: data, checking, check };
+}
+
+/** The blockers the user can remove on this PC (a sign-in, the
+ * hypervisor, the kit's `sbx`, a group, a profile, another daemon); the
+ * others need another system, its firmware or another disk. */
+const FIXABLE: ReadonlySet<IsolationBlocker["code"]> = new Set([
+  "hypervisor_off",
+  "kvm_denied",
+  "apparmor",
+  "sbx_missing",
+  "sbx_signed_out",
+  "foreign_daemon",
+]);
+
+/** The VM's pill in the status bar (LEVELS.md §8.6): its tone, its text,
+ * the percent of a preparation, what it says in full (tooltip and
+ * accessible name) and what to do. */
+export interface VmPill {
+  tone: "ready" | "busy" | "fixable" | "off" | "error";
+  text: string;
+  percent: number | null;
+  label: string;
+  todo: string;
+}
+
+/** The pill of `status` with the jobs: a VM being prepared is «VM…» with
+ * its percent; the last preparation failed (none after it ended well) is
+ * «VM ⚠»; else «VM» when on, «Senza VM» orange when the user can fix why,
+ * grey when this PC cannot have it, red when `sbx` answers with an error. */
+export function vmPill(status: IsolationStatus, jobs: Job[]): VmPill {
+  const prep = jobs.filter((j) => j.kind === "vm-prepare");
+  const busy = prep.find((j) => j.state === "running");
+  if (busy) {
+    const percent = bytesPercent(busy) ?? overallPercent(busy);
+    return {
+      tone: "busy",
+      text: percent === null ? t("VM…") : `${t("VM…")} ${String(percent)}%`,
+      percent,
+      label: t("VM in preparazione: {0}", `${busy.title} · ${stepText(busy)}`),
+      todo: t("Clic: i dettagli della VM; l'avanzamento è in Attività."),
+    };
+  }
+  const last = prep.filter((j) => j.state === "done" || j.state === "error").at(-1);
+  if (status.level === "vm" && last?.state === "error") {
+    return {
+      tone: "error",
+      text: t("VM ⚠"),
+      percent: null,
+      label: t("La VM non si è preparata: {0}", last.error ?? last.title),
+      todo: t("Clic: i dettagli della VM; riprova dal progetto."),
+    };
+  }
+  if (status.level === "vm") {
+    return {
+      tone: "ready",
+      text: t("VM"),
+      percent: null,
+      label: t("Progetti nella VM"),
+      todo: t("Clic: i dettagli della VM"),
+    };
+  }
+  if (status.blockers.some((b) => b.code === "sbx_failed")) {
+    return {
+      tone: "error",
+      text: t("Senza VM"),
+      percent: null,
+      label: t("Senza VM: Docker Sandboxes ha risposto con un errore"),
+      todo: t("Clic: cosa è successo e come riprovare"),
+    };
+  }
+  const fixable = status.blockers.some((b) => FIXABLE.has(b.code));
+  return {
+    tone: fixable ? "fixable" : "off",
+    text: t("Senza VM"),
+    percent: null,
+    label: fixable
+      ? t("Senza VM, si può attivare: progetti e azioni sul PC senza agenti")
+      : t("Senza VM: questo PC non la può avere; progetti e azioni sul PC senza agenti"),
+    todo: fixable ? t("Clic: cosa serve per attivare la VM") : t("Clic: perché questo PC non può avere la VM"),
+  };
+}
+
+const PILL: Record<VmPill["tone"], string> = {
+  ready: "bg-vsc-pill-ready",
+  busy: "bg-vsc-pill-busy animate-pulse",
+  fixable: "bg-vsc-pill-fixable",
+  off: "bg-vsc-pill-off",
+  error: "bg-vsc-pill-error",
+};
+
+/** The pill itself: the VM's icon and its text on the tone's color, the
+ * text in the editor's background (readable in both themes). The state is
+ * in the text and the accessible name, not in the color alone. */
+export function VmPillBadge({ pill }: { pill: VmPill }) {
+  return (
+    <span
+      data-tone={pill.tone}
+      className={`inline-flex h-[16px] items-center gap-vsc-size20 rounded-vsc-circle px-vsc-size60 font-semibold text-vsc-bg ${PILL[pill.tone]}`}
+    >
+      <Codicon name="vm" size={12} />
+      <span className="tabular-nums">{pill.text}</span>
+    </span>
+  );
 }

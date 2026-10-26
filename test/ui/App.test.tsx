@@ -13,6 +13,7 @@ import {
   SAMPLE_SETUP,
   SAMPLE_TARGETS,
   SAMPLE_UPDATE,
+  type Job,
   type OpenNow,
   type ProjectInfo,
   type RunEvent,
@@ -32,6 +33,7 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
     app_info: SAMPLE_INFO,
     editor_status: SAMPLE_EDITOR,
     setup_state: SAMPLE_SETUP,
+    jobs_list: [],
     projects_list: [],
     components_list: [],
     agents_status: [],
@@ -66,12 +68,14 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
 
 let setupListener: ((e: { payload: SetupSnapshot }) => void) | null = null;
+let jobListener: ((e: { payload: Job }) => void) | null = null;
 let runListener: ((e: { payload: RunEvent }) => void) | null = null;
 let closeListener: ((e: { payload: OpenNow }) => void) | null = null;
 let openProjectListener: ((e: { payload: string }) => void) | null = null;
 vi.mock("@tauri-apps/api/event", () => ({
   listen: (name: string, handler: (e: { payload: unknown }) => void) => {
     if (name === "setup") setupListener = handler;
+    if (name === "job") jobListener = handler;
     if (name === "run") runListener = handler;
     if (name === "close-requested") closeListener = handler;
     if (name === "open-project") openProjectListener = handler;
@@ -115,6 +119,7 @@ afterEach(() => {
   setLang("it");
   invoke.mockReset();
   setupListener = null;
+  jobListener = null;
   runListener = null;
   closeListener = null;
   openProjectListener = null;
@@ -842,6 +847,8 @@ describe("App", () => {
           total: 2,
           error: null,
           queue: [],
+          job: "job-1",
+          pending: [],
           steps: [
             {
               id: "git",
@@ -856,12 +863,37 @@ describe("App", () => {
         },
       });
     });
-    // In the status bar; the details are in the Activity panel
-    expect(screen.getAllByText("Installazione 2/2: PowerShell 7 50%").length).toBe(1);
-    fireEvent.click(screen.getByRole("button", { name: /^Attività/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Installazione" }));
+    act(() => {
+      jobListener?.({
+        payload: {
+          id: "job-1",
+          kind: "install",
+          title: "Installo i componenti del kit",
+          project: null,
+          items: ["git", "pwsh"],
+          step: { index: 2, total: 2, label: "PowerShell 7", state: "running", error: null },
+          steps: [
+            { index: 1, total: 2, label: "Git", state: "done", error: null },
+            { index: 2, total: 2, label: "PowerShell 7", state: "running", error: null },
+          ],
+          bytes: { done: 50, total: 100 },
+          note: "download",
+          state: "running",
+          error: null,
+          created: 1,
+          automatic: true,
+        },
+      });
+    });
+    // In the status bar, with its step and bar; a click opens its details
+    // in the Activity panel (LEVELS.md §8.6).
+    const item = screen.getByRole("button", {
+      name: /^Installo i componenti del kit · 2\/2 · PowerShell 7 · download · 50%/,
+    });
+    expect(within(item).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+    fireEvent.click(item);
+    expect(screen.getByRole("heading", { name: "Installo i componenti del kit" })).toBeTruthy();
     expect(screen.getByText("Installazione dei componenti del kit")).toBeTruthy();
-    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
     expect(screen.getByText("installato 2.56")).toBeTruthy();
   });
 

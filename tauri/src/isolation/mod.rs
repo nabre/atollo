@@ -1583,7 +1583,11 @@ impl Vm {
     /// A read-only folder an existing sandbox lacks (one made before the
     /// kit's tools were mounted, D-170) is mounted with `sbx mount`, its
     /// disk kept ([`Vm::mount_missing`]).
-    pub fn start(&self, env: &KitEnv, lang: &str) -> anyhow::Result<()> {
+    ///
+    /// `making` is called just before the sandbox is made (the first time,
+    /// or again after the kit moved): `sbx` then pulls its image, without a
+    /// progress of its own (LEVELS.md §8.6).
+    pub fn start(&self, env: &KitEnv, lang: &str, making: &dyn Fn()) -> anyhow::Result<()> {
         self.ready(lang)?;
         let (kit_dir, print) = kit::write(&self.kit, &self.name, &self.owner)?;
         let mounts = self.mounts();
@@ -1615,6 +1619,7 @@ impl Vm {
             self.sync_github(env);
             return Ok(());
         }
+        making();
         self.call(
             env,
             &vm::start_args(

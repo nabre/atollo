@@ -12,7 +12,7 @@ import {
 import { t } from "../i18n";
 import { useAction, useLoad } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";
-import { ItemBar, ItemStatus, itemState } from "../components/setup";
+import { ItemBar, ItemStatus, itemBusy, itemState } from "../components/setup";
 import { ByHandBox } from "../components/byhand";
 import { Tag } from "../shared/tags";
 import { isPresent, lineText, offered, splitVersion, useOffers, useReloadOnSteps } from "./model";
@@ -386,7 +386,12 @@ export function ToolVersions({
             }}
           />
           {tool.downloadable && (
-            <AddLine tool={tool} setup={setup} busy={running || busy === `add:${tool.id}`} onAdd={add} />
+            <AddLine
+              tool={tool}
+              setup={setup}
+              busy={itemBusy(setup, tool.id) || busy === `add:${tool.id}`}
+              onAdd={add}
+            />
           )}
         </div>
       </div>
@@ -426,7 +431,6 @@ export function ToolInstallLine({
   setup: SetupSnapshot | null;
 }) {
   const { busy, run, offers, target } = kit;
-  const running = setup?.running ?? false;
   const none = offered(tool).length === 0;
   return (
     <div className="mt-1.5">
@@ -448,7 +452,7 @@ export function ToolInstallLine({
           <AddLine
             tool={tool}
             setup={setup}
-            busy={running || busy === `install:${tool.id}`}
+            busy={itemBusy(setup, tool.id) || busy === `install:${tool.id}`}
             label={t("Installa una versione di {0}", tool.name)}
             onAdd={(line) => {
               run(tool.id, `install:${tool.id}`, () => versionsInstall(tool.id, line, target));

@@ -48,6 +48,34 @@ pub trait Effects {
     /// PC runs there (`isolation::watch_pi_port`); never one of the
     /// databases' (`db_ports`).
     fn watch_local_models(&self, vm: &Vm, env: &KitEnv, project: &str, port: u16, db_ports: &[u16]);
+    /// Where the preparation stands (LEVELS.md §8.6): it begins, each step
+    /// with its label, its end. The app's makes it a job that the status
+    /// bar, the VM's item and the session waiting for the VM show.
+    fn progress(&self, event: PrepareProgress);
+}
+
+/// A step of `prepare` for the interface (LEVELS.md §8.6).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PrepareProgress {
+    /// The preparation of `sandbox` (`project`'s, or its `agent`'s) begins,
+    /// in `total` steps.
+    Begin {
+        project: String,
+        sandbox: String,
+        agent: Option<Agent>,
+        total: usize,
+    },
+    /// Step `index` (from 1) of `total`, its label already in the
+    /// preparation's language.
+    Step {
+        index: usize,
+        total: usize,
+        label: String,
+    },
+    /// The sandbox is ready.
+    Done,
+    /// It stopped with `error`.
+    Failed { error: String },
 }
 
 /// The kit's local models as Pi in a VM reaches them (D-178).
@@ -105,6 +133,71 @@ pub fn prepare(
     needs: &[String],
     lang: &str,
 ) -> Result<Ready> {
+    if !matches!(
+        (&placement, &env),
+        (Placement::Vm { .. }, Environment::Vm { .. })
+    ) {
+        return match (placement, env) {
+            (placement @ Placement::Pc { .. }, Environment::Pc(env)) => {
+                Ok(Ready::on_the_pc(placement, env))
+            }
+            (placement, _) => Err(anyhow!("levels: nothing is prepared for {placement:?}")),
+        };
+    }
+    if let Placement::Vm {
+        project,
+        sandbox,
+        host: access,
+        program,
+        ..
+    } = &placement
+    {
+        fx.progress(PrepareProgress::Begin {
+            project: project.clone(),
+            sandbox: sandbox.name().to_owned(),
+            agent: match program {
+                VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => Some(*agent),
+                _ => None,
+            },
+            total: steps_of(access),
+        });
+    }
+    match in_vm(fx, kit, host, &placement, &env, needs, lang) {
+        Ok((env, vm)) => {
+            fx.progress(PrepareProgress::Done);
+            Ok(Ready {
+                placement,
+                env,
+                vm: Some(vm),
+            })
+        }
+        Err(e) => {
+            fx.progress(PrepareProgress::Failed {
+                error: format!("{e:#}"),
+            });
+            Err(e)
+        }
+    }
+}
+
+/// How many steps the preparation of a sandbox with `access` has: the
+/// tools, the databases when it reaches them, Pi's local models when it
+/// may, `info.json`, the start.
+fn steps_of(access: &super::HostAccess) -> usize {
+    3 + usize::from(access.databases) + usize::from(access.local_models)
+}
+
+/// [`prepare`] of a `Vm` placement, its steps told to `fx`: the
+/// environment of the sandbox and the sandbox started.
+fn in_vm(
+    fx: &dyn Effects,
+    kit: &Kit,
+    host: &Host,
+    placement: &Placement,
+    env: &Environment,
+    needs: &[String],
+    lang: &str,
+) -> Result<(Environment, Vm)> {
     let (
         Placement::Vm {
             level,
@@ -116,17 +209,23 @@ pub fn prepare(
             ..
         },
         Environment::Vm { sbx_env, .. },
-    ) = (&placement, &env)
+    ) = (placement, env)
     else {
-        return match (placement, env) {
-            (placement @ Placement::Pc { .. }, Environment::Pc(env)) => {
-                Ok(Ready::on_the_pc(placement, env))
-            }
-            (placement, _) => Err(anyhow!("levels: nothing is prepared for {placement:?}")),
-        };
+        return Err(anyhow!("levels: nothing is prepared for {placement:?}"));
+    };
+    let total = steps_of(access);
+    let mut index = 0;
+    let mut step = |label: &str| {
+        index += 1;
+        fx.progress(PrepareProgress::Step {
+            index,
+            total,
+            label: t(lang, label, &[]),
+        });
     };
     // 1. The kit's tools for the VM's Linux, at the project's lines (D-170),
     //    installed when missing; the agent's own build for its session.
+    step("Strumenti per il Linux della VM");
     let wanted = wanted_tools(kit, project, program, needs);
     let guest = vm::guest_target(kit.target()).map(|t| kit.for_target(t));
     if let Some(guest) = &guest {
@@ -151,6 +250,7 @@ pub fn prepare(
     // 2. The databases on the PC's servers, their ports, `db.env` (D-171).
     let mut dbs = Vec::new();
     if access.databases {
+        step("Database del progetto");
         dbs = fx.start_databases(project)?;
         let file = isolation::kit::dir(kit, &vm::name(project)).join(DB_ENV);
         tools.env_file = write_db_env(&file, &mounts.workspace_rw, &dbs)?;
@@ -182,6 +282,7 @@ pub fn prepare(
     //    address and key in `pi.env` beside the databases' variables.
     let mut watched = None;
     if access.local_models {
+        step("Modelli locali");
         if let Some(models) = fx.start_local_models(lang) {
             // Not a database's: a watcher of the port waits again, it never
             // closes it while this Pi is being started.
@@ -196,8 +297,10 @@ pub fn prepare(
     }
     let vm = vm.with_tools(tools);
     // 5. What `atollo` in the sandbox tells (§8.4), then the start.
-    let info = SandboxInfo::of(&placement, &wanted, &dbs, vm.host_ports());
+    step("Informazioni della VM");
+    let info = SandboxInfo::of(placement, &wanted, &dbs, vm.host_ports());
     write_info(kit, &vm.name, &info)?;
+    step("Avvio la VM");
     fx.start_sandbox(&vm, sbx_env, lang)?;
     if let Some(port) = watched {
         fx.watch_local_models(&vm, sbx_env, project, port, &db_ports);
@@ -206,11 +309,7 @@ pub fn prepare(
         sbx_env: sbx_env.clone(),
         guest: vm.tools().clone(),
     };
-    Ok(Ready {
-        placement,
-        env,
-        vm: Some(vm),
-    })
+    Ok((env, vm))
 }
 
 /// The kit's tools for `project`'s VM running `program`: those the kit

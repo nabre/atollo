@@ -101,6 +101,15 @@ pub(crate) fn build_app<R: tauri::Runtime>(
             )?;
             // The icon in the notification area / menu bar (D-145).
             tray::create(app.handle());
+            // Every change of a job (an install, a VM's preparation) to the
+            // window: the status bar and the Activity panel follow it.
+            let jobs_to = app.handle().clone();
+            app.state::<AppState>()
+                .setup
+                .jobs()
+                .set_emit(Box::new(move |job| {
+                    let _ = jobs_to.emit_to(MAIN, ipc::events::JOB, job);
+                }));
             // Extensions follow the projects open in the editor; the editor
             // windows offer to restart them (D-71).
             // Databases marked "start with Atollo" (D-73).

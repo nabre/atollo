@@ -1,7 +1,8 @@
 // Progress of the preparation (installing, updating, removing components),
 // shared by the status bar, the Activity panel and the Tools page.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  jobCancel,
   onSetup,
   setupCancel,
   setupState,
@@ -13,7 +14,7 @@ import {
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import { useSubscription } from "../shared/hooks";
-import { Button, Codicon } from "../workbench";
+import { Button, Codicon, codicon, IconButton } from "../workbench";
 
 /** The current preparation, kept up to date by the `setup` events. */
 export function useSetup(): SetupSnapshot | null {
@@ -91,8 +92,11 @@ export type ItemState =
 export function itemState(s: SetupSnapshot | null, id: string, name: string): ItemState | null {
   if (!s) return null;
   const step = [...s.steps].reverse().find((x) => x.id === id && x.name === name);
-  if (!step) {
-    return s.running && s.queue.some((q) => q.id === id && q.name === name) ? { kind: "queued" } : null;
+  // Asked again after it ended (in the queue of the runs): waiting, not
+  // its last outcome.
+  const again = s.running && (s.pending ?? []).some((p) => p.items.includes(id));
+  if (!step || (step.outcome !== null && again)) {
+    return s.running && (s.queue.some((q) => q.id === id && q.name === name) || again) ? { kind: "queued" } : null;
   }
   const o = step.outcome;
   if (o === null) {
@@ -102,6 +106,71 @@ export function itemState(s: SetupSnapshot | null, id: string, name: string): It
   }
   if (!isProblem(o)) return null;
   return { kind: "problem", text: outcomeText(o), byHand: o.kind === "failed" ? o.byHand : null };
+}
+
+/** Component `id` is being worked on: its step runs, or it waits in the
+ * run or in the queue of the runs. Only its own buttons wait: the other
+ * rows can be installed meanwhile (they queue). */
+export function itemBusy(s: SetupSnapshot | null, id: string): boolean {
+  if (!s?.running) return false;
+  const last = s.steps.at(-1);
+  if (last?.id === id && last.outcome === null) return true;
+  return s.queue.some((q) => q.id === id) || (s.pending ?? []).some((p) => p.items.includes(id));
+}
+
+/** The job that would cancel component `id` alone: the queued run that
+ * asks for it, or the run going on while it runs or waits there. */
+export function itemJob(s: SetupSnapshot | null, id: string): string | null {
+  if (!s?.running) return null;
+  const queued = (s.pending ?? []).find((p) => p.items.includes(id));
+  if (queued) return queued.job;
+  const last = s.steps.at(-1);
+  const here = (last?.id === id && last.outcome === null) || s.queue.some((q) => q.id === id);
+  return here ? (s.job ?? null) : null;
+}
+
+/** «Annulla» of one element: its job leaves the queue, or stops. */
+export function ItemCancel({ setup, id, name }: { setup: SetupSnapshot | null; id: string; name: string }) {
+  const job = itemJob(setup, id);
+  const [asked, setAsked] = useState<string | null>(null);
+  if (!job) return null;
+  return (
+    <IconButton
+      icon={codicon("close")}
+      label={t("Annulla {0}", name)}
+      title={t("Annulla l'installazione di {0}", name)}
+      disabled={asked === job || setup?.cancelling === true}
+      onClick={() => {
+        setAsked(job);
+        jobCancel(job).catch(() => {
+          setAsked(null);
+        });
+      }}
+    />
+  );
+}
+
+/** Calls `handler` with the components whose step just ended (each once),
+ * and with `true` when the whole queue of runs ended: what a page reads
+ * again, only those rows, instead of the whole list. */
+export function useStepsDone(s: SetupSnapshot | null, handler: (ids: string[], ended: boolean) => void): void {
+  const seen = useRef<{ steps: number; done: number; running: boolean }>({ steps: 0, done: 0, running: false });
+  const latest = useRef(handler);
+  useEffect(() => {
+    latest.current = handler;
+  });
+  useEffect(() => {
+    if (!s) return;
+    const before = seen.current;
+    // The steps only append, each ending before the next begins: those
+    // ended are the first ones. A new chain of runs starts them again.
+    const from = s.steps.length < before.steps ? 0 : before.done;
+    const finished = s.steps.filter((x) => x.outcome !== null);
+    const ids = finished.slice(from).map((x) => x.id);
+    const ended = before.running && !s.running;
+    seen.current = { steps: s.steps.length, done: finished.length, running: s.running };
+    if (ids.length > 0 || ended) latest.current([...new Set(ids)], ended);
+  }, [s]);
 }
 
 /** The short state of an element, in its row. */
