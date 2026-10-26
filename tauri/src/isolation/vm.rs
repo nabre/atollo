@@ -219,19 +219,49 @@ fn tools_options(tools: &crate::isolation::GuestTools) -> Vec<String> {
 
 /// The kit's terminal in its VM: a login bash in `dir` (the VM's path),
 /// with `tools` ([`tools_options`]): the kit's tools for Linux first on the
-/// `PATH`, the VM's own programs after them.
-pub fn kit_terminal_args(vm: &str, dir: &str, tools: &crate::isolation::GuestTools) -> Vec<String> {
+/// `PATH`, the VM's own programs after them. `banner`: the session's level
+/// line (LEVELS.md §8.3), printed on stderr by the VM's shell before bash
+/// starts; `None` when the PC side prints it (a request's client).
+pub fn kit_terminal_args(
+    vm: &str,
+    dir: &str,
+    tools: &crate::isolation::GuestTools,
+    banner: Option<&str>,
+) -> Vec<String> {
     let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
     args.extend(tools_options(tools));
     args.push(vm.into());
-    args.extend(
-        [
-            "sh",
-            "-c",
-            r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#,
-        ]
-        .map(String::from),
-    );
+    args.push("sh".into());
+    args.push("-c".into());
+    match banner {
+        None => args.push(r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#.into()),
+        Some(banner) => {
+            args.push(
+                r#"printf '%s\n' "$1" >&2; PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#
+                    .into(),
+            );
+            args.push("sh".into());
+            args.push(banner.into());
+        }
+    }
+    args
+}
+
+/// «Verifica strumenti» in the sandbox `vm` (LEVELS.md §8.2): `sbx exec`
+/// with the session's `tools` (their `PATH` and variables, never the file
+/// of the databases' variables: the check needs no password) and the check
+/// `script`, which reads and prints only.
+pub fn check_args(vm: &str, tools: &crate::isolation::GuestTools, script: &str) -> Vec<String> {
+    let tools = crate::isolation::GuestTools {
+        env_file: None,
+        ..tools.clone()
+    };
+    let mut args: Vec<String> = vec!["exec".into()];
+    args.extend(tools_options(&tools));
+    args.push(vm.into());
+    args.push("sh".into());
+    args.push("-c".into());
+    args.push(script.into());
     args
 }
 

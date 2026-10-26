@@ -114,7 +114,8 @@ pub const DB_ENV: &str = "db.env";
 /// The file of Pi's variables (the databases' and the local models'),
 /// beside the project's sandbox's kit (D-178).
 pub const PI_ENV: &str = "pi.env";
-/// What the read-only `atollo` of a sandbox prints (§8.4), beside its kit.
+/// What the read-only `atollo` of a sandbox prints with `--json` (§8.4), in
+/// its `guest` folder.
 pub const INFO: &str = "info.json";
 
 /// For a `Vm` placement: installs the tools (D-170), starts the databases
@@ -246,8 +247,12 @@ fn in_vm(
                 ))
             })?;
     }
-    // Read again after the installs: a tool installed now is on its PATH.
+    // Read again after the installs: a tool installed now is on its PATH,
+    // after the sandbox's read-only `atollo` and the stand-ins of the
+    // agents this session does not run (§8.4, §6.10).
     let mut tools = super::env::guest_tools(kit, *level, project, program, lang, host);
+    let first = guest_path_entries(kit, sandbox.name(), program.agent());
+    tools.path.splice(0..0, first);
     // 2. The databases on the PC's servers, their ports, `db.env` (D-171).
     let mut dbs = Vec::new();
     if access.databases {
@@ -278,7 +283,10 @@ fn in_vm(
         vm.name,
         sandbox.name()
     );
-    let mut vm = vm.with_host_ports(db_ports.clone());
+    // Its own `guest` folder, read-only: `info.json` and `atollo` (§8.4).
+    let mut vm = vm
+        .with_host_ports(db_ports.clone())
+        .with_read_only(isolation::kit::guest_dir(kit, sandbox.name()));
     // 4. Pi's local models (D-178): their port for this sandbox only, their
     //    address and key in `pi.env` beside the databases' variables.
     let mut watched = None;
@@ -310,7 +318,7 @@ fn in_vm(
     // 6. What `atollo` in the sandbox tells (§8.4), then the start.
     step("Informazioni della VM");
     let info = SandboxInfo::of(placement, &wanted, &dbs, vm.host_ports());
-    write_info(kit, &vm.name, &info)?;
+    write_info(kit, &vm.name, &info, lang)?;
     step("Avvio la VM");
     fx.start_sandbox(&vm, sbx_env, lang)?;
     if let Some(port) = watched {
@@ -347,6 +355,73 @@ pub fn wanted_tools(
         wanted.insert(id, Some(line));
     }
     wanted
+}
+
+/// The runs of the setup runner that give the VM's Linux (`guest`, the kit
+/// scoped to its target) the tools `wanted` lacks: those with a build for
+/// it that this PC can install, not those that finish on their own system
+/// (`router::bootstrap`); first the missing ones (at their line), then a
+/// line chosen beside the one installed. Empty when nothing lacks.
+pub fn guest_plans(
+    guest: &Kit,
+    wanted: &BTreeMap<String, Option<String>>,
+) -> Vec<crate::setup::runner::Options> {
+    use crate::setup::runner::Options;
+    let catalog = crate::setup::Catalog::get();
+    let target = guest.target();
+    let tools: Vec<(&crate::setup::Component, Option<&String>)> = wanted
+        .iter()
+        .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
+        .filter(|(c, _)| {
+            c.is_available_on(target)
+                && super::installable(c, target, &super::VmState::On)
+                && crate::install::installer(&c.id)
+                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
+        })
+        .collect();
+    let mut plans = Vec::new();
+    let missing: Vec<_> = tools
+        .iter()
+        .filter(|(c, _)| !c.is_installed(guest))
+        .collect();
+    if !missing.is_empty() {
+        crate::common::log::info(&format!(
+            "tools for the VM ({}): {:?}",
+            target.as_str(),
+            missing.iter().map(|(c, _)| &c.id).collect::<Vec<_>>()
+        ));
+        plans.push(Options {
+            target: Some(target),
+            only: missing.iter().map(|(c, _)| c.id.clone()).collect(),
+            at: missing
+                .iter()
+                .filter_map(|(c, line)| Some((c.id.clone(), (*line)?.clone())))
+                .collect(),
+            vm: Some(super::VmState::On),
+            ..Options::default()
+        });
+    }
+    // A line chosen, beside the one installed.
+    let has_line = |c: &crate::setup::Component, line: &str| {
+        crate::versions::default_line(guest, c).as_deref() == Some(line)
+            || crate::versions::saved(guest, c)
+                .iter()
+                .any(|l| l.line == line)
+    };
+    let lines: Vec<(String, String)> = tools
+        .iter()
+        .filter_map(|(c, line)| Some((*c, (*line)?)))
+        .filter(|(c, line)| c.is_installed(guest) && !has_line(c, line))
+        .map(|(c, line)| (c.id.clone(), line.clone()))
+        .collect();
+    if !lines.is_empty() {
+        plans.push(Options {
+            target: Some(target),
+            lines,
+            ..Options::default()
+        });
+    }
+    plans
 }
 
 /// The file of the variables that point the programs of the VM to the
@@ -489,19 +564,101 @@ impl SandboxInfo {
     }
 }
 
-/// The `info.json` of `sandbox`: beside its kit (`data/app/sandboxes/<it>`),
-/// never in the project's folder.
-pub fn info_file(kit: &Kit, sandbox: &str) -> PathBuf {
-    isolation::kit::dir(kit, sandbox).join(INFO)
+impl SandboxInfo {
+    /// What `atollo` prints in the sandbox (§8.4), in `lang`: the level and
+    /// the sandbox, the project, the folder, the tools with their lines,
+    /// the databases with their address and user, the PC's ports; never a
+    /// password.
+    pub fn text(&self, lang: &str) -> String {
+        let label = super::labels::label_text(
+            if self.level == Level::Agent {
+                super::labels::LevelLabel::AgentVm
+            } else {
+                super::labels::LevelLabel::ProjectVm
+            },
+            self.level,
+            lang,
+        );
+        let mut out = vec![format!("Atollo · {label}")];
+        out.push(t(lang, "Sandbox: {0}", &[&self.sandbox]));
+        out.push(t(lang, "Progetto: {0}", &[&self.project]));
+        if let Some(agent) = self.agent {
+            out.push(t(lang, "Agente: {0}", &[agent.name()]));
+        }
+        out.push(t(lang, "Cartella: {0}", &[&self.workdir]));
+        let newest = t(lang, "la più recente", &[]);
+        let tools: Vec<String> = self
+            .tools
+            .iter()
+            .map(|(id, line)| format!("{id} {}", line.as_deref().unwrap_or(&newest)))
+            .collect();
+        out.push(t(lang, "Strumenti: {0}", &[&tools.join(", ")]));
+        for db in &self.databases {
+            out.push(t(
+                lang,
+                "Database: {0} {1}, utente {2}, su {3}",
+                &[&db.engine, &db.database, &db.user, &db.address],
+            ));
+        }
+        let ports: Vec<String> = self.host_ports.iter().map(u16::to_string).collect();
+        out.push(t(
+            lang,
+            "Porte del PC aperte per questa sandbox: {0}",
+            &[&if ports.is_empty() {
+                "—".to_owned()
+            } else {
+                ports.join(", ")
+            }],
+        ));
+        out.push(t(
+            lang,
+            "Il kit si gestisce dal PC: qui atollo mostra soltanto.",
+            &[],
+        ));
+        out.join("\n") + "\n"
+    }
 }
 
-fn write_info(kit: &Kit, sandbox: &str, info: &SandboxInfo) -> Result<()> {
+/// The `info.json` of `sandbox`: in its `guest` folder beside its kit
+/// (`data/app/sandboxes/<it>/guest`, mounted read-only in the VM), never
+/// in the project's folder.
+pub fn info_file(kit: &Kit, sandbox: &str) -> PathBuf {
+    isolation::kit::guest_dir(kit, sandbox).join(INFO)
+}
+
+/// What `atollo` prints without words, beside [`info_file`].
+pub const INFO_TEXT: &str = "info.txt";
+
+/// The `PATH` entries a session in `sandbox` gets first (§8.4, §6.10), as
+/// the VM sees them: the read-only `atollo` of its `guest` folder, then the
+/// stand-ins of every agent but `own`, the one the session runs (Pi's and
+/// Antigravity's builds, Claude Code's and Codex's own sandboxes).
+pub fn guest_path_entries(kit: &Kit, sandbox: &str, own: Option<Agent>) -> Vec<String> {
+    use crate::setup::kit_files::{GUEST_AGENTS, GUEST_BIN};
+    let guest = isolation::kit::guest_dir(kit, sandbox);
+    let windows = kit.target().is_windows();
+    std::iter::once(guest.join(GUEST_BIN))
+        .chain(
+            Agent::ALL
+                .into_iter()
+                .filter(|a| Some(*a) != own)
+                .map(|a| guest.join(GUEST_AGENTS).join(a.id())),
+        )
+        .filter_map(|dir| vm::guest_path(windows, &dir))
+        .collect()
+}
+
+/// `info.json`, `info.txt` (in `lang`), the read-only `atollo` and the
+/// stand-ins in the `guest` folder of `sandbox` (§8.4, §6.10).
+fn write_info(kit: &Kit, sandbox: &str, info: &SandboxInfo, lang: &str) -> Result<()> {
     let file = info_file(kit, sandbox);
-    if let Some(parent) = file.parent() {
-        std::fs::create_dir_all(parent).with_context(|| parent.display().to_string())?;
-    }
+    let guest = isolation::kit::guest_dir(kit, sandbox);
+    std::fs::create_dir_all(&guest).with_context(|| guest.display().to_string())?;
     let text = serde_json::to_string_pretty(info)?;
-    std::fs::write(&file, text + "\n").with_context(|| file.display().to_string())
+    std::fs::write(&file, text + "\n").with_context(|| file.display().to_string())?;
+    let file = guest.join(INFO_TEXT);
+    std::fs::write(&file, info.text(lang)).with_context(|| file.display().to_string())?;
+    crate::setup::kit_files::write_guest(&guest, lang)
 }
 
 #[cfg(test)]

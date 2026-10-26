@@ -177,7 +177,8 @@ fn e3_the_project_terminal_asks_decide() {
         crate::isolation::vm::kit_terminal_args(
             &vm.name,
             on.guest_dir.as_deref().unwrap(),
-            vm.tools()
+            vm.tools(),
+            None
         )
     );
 

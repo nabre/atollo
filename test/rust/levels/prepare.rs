@@ -197,10 +197,11 @@ fn a_project_vm_gets_tools_databases_and_ports() {
     let vm = vm_of(&ready);
     assert_eq!(vm.name, name);
     assert_eq!(vm.dir, kit.projects().join("shop"));
+    let mut ro = facts::guest_tools(&kit);
+    ro.push(sandbox_kit::guest_dir(&kit, &name));
     assert_eq!(
-        vm.read_only,
-        facts::guest_tools(&kit),
-        "the kit's Linux tools, ro"
+        vm.read_only, ro,
+        "the kit's Linux tools and its own guest folder, ro"
     );
     assert_eq!(
         *fx.started_with.lock().unwrap(),
@@ -505,7 +506,9 @@ fn an_agent_sandbox_mirrors_the_projects() {
         let vm = vm_of(&ready);
         assert_eq!(vm.name, name);
         assert_eq!(vm.dir, kit.projects().join("shop"));
-        assert_eq!(vm.read_only, facts::guest_tools(&kit));
+        let mut ro = facts::guest_tools(&kit);
+        ro.push(sandbox_kit::guest_dir(&kit, &name));
+        assert_eq!(vm.read_only, ro);
         assert_eq!(vm.host_ports(), [3307]);
         let db_env = sandbox_kit::dir(&kit, &vm::name("shop")).join(DB_ENV);
         assert_eq!(vm.tools().env_file.as_deref(), Some(db_env.as_path()));
@@ -684,4 +687,188 @@ fn nothing_is_told_for_the_pc() {
     let fx = Fake::default();
     prepared(&kit, &fx, Origin::ProjectTerminal, false, &[]).unwrap();
     assert!(fx.progress().is_empty(), "{:?}", fx.progress());
+}
+
+/// The `PATH` entries of `dirs` that lie in the `guest` folder of
+/// `sandbox`, as the VM sees them, by what they hold.
+fn guest_entries(kit: &Kit, sandbox: &str, path: &[String]) -> Vec<String> {
+    let guest = vm::guest_path(
+        kit.target().is_windows(),
+        &sandbox_kit::guest_dir(kit, sandbox),
+    )
+    .unwrap();
+    path.iter()
+        .filter_map(|p| p.strip_prefix(&format!("{guest}/")).map(str::to_owned))
+        .collect()
+}
+
+/// §8.4: `info.json` (and `info.txt`) in the sandbox's own `guest` folder,
+/// which is mounted read-only, never its kit folder (`db.env`); the
+/// read-only `atollo` first on the session's `PATH`.
+#[test]
+fn the_vm_info_is_mounted_read_only() {
+    let (_tmp, kit) = kit_with_shop("info-ro");
+    let fx = Fake {
+        dbs: vec![shop_db()],
+        ..Fake::default()
+    };
+    let ready = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let vm = vm_of(&ready);
+    let guest = sandbox_kit::guest_dir(&kit, &vm.name);
+    assert_eq!(info_file(&kit, &vm.name), guest.join(INFO));
+    assert!(guest.join(INFO).is_file());
+    assert!(guest.join(INFO_TEXT).is_file());
+    assert!(vm.read_only.contains(&guest), "{:?}", vm.read_only);
+    assert!(
+        !vm.read_only.contains(&sandbox_kit::dir(&kit, &vm.name)),
+        "never the kit folder with db.env"
+    );
+    // Not inside the mount: the databases' password.
+    assert!(!guest.join(DB_ENV).exists());
+    let text = std::fs::read_to_string(guest.join(INFO_TEXT)).unwrap();
+    assert!(text.contains(&vm.name), "{text}");
+    assert!(text.contains("shop"), "{text}");
+    assert!(!text.contains("s3cret-pw"), "{text}");
+    let atollo = guest.join("bin").join("atollo");
+    assert!(atollo.is_file());
+    assert_eq!(
+        guest_entries(&kit, &vm.name, &vm.tools().path).first(),
+        Some(&"bin".to_owned()),
+        "atollo first: {:?}",
+        vm.tools().path
+    );
+    assert_eq!(
+        vm.tools().path.first().map(|p| p.ends_with("/guest/bin")),
+        Some(true)
+    );
+}
+
+/// §6.10: the agents' stand-ins on the `PATH` of every session in a VM,
+/// but the one of the agent the session runs: Pi's own build in the
+/// project's VM, Claude Code in its own sandbox.
+#[test]
+fn an_agent_typed_in_the_vm_says_where_to_start_it() {
+    let (_tmp, kit) = kit_with_shop("stand-ins");
+    let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    install(&guest, "pi");
+    let all = [
+        "agents/antigravity",
+        "agents/claude",
+        "agents/codex",
+        "agents/pi",
+    ];
+    let sorted = |mut v: Vec<String>| {
+        v.retain(|e| e.starts_with("agents/"));
+        v.sort();
+        v
+    };
+    let fx = Fake::default();
+    let ready = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let vm = vm_of(&ready);
+    assert_eq!(sorted(guest_entries(&kit, &vm.name, &vm.tools().path)), all);
+    let dir = sandbox_kit::guest_dir(&kit, &vm.name);
+    for cmd in ["claude", "codex", "pi", "agy", "antigravity"] {
+        let agent = Agent::from_command(cmd).unwrap();
+        let file = dir.join("agents").join(agent.id()).join(cmd);
+        let text = std::fs::read_to_string(&file).unwrap();
+        assert!(text.starts_with("#!/bin/sh\n"), "{text}");
+        assert!(text.contains("dalla pagina del progetto"), "{text}");
+        assert!(text.contains("exit 1"), "{text}");
+    }
+
+    let fx = Fake::default();
+    let ready = prepared(
+        &kit,
+        &fx,
+        Origin::AgentButton { agent: Agent::Pi },
+        true,
+        &[],
+    )
+    .unwrap();
+    let vm = vm_of(&ready);
+    assert_eq!(
+        sorted(guest_entries(&kit, &vm.name, &vm.tools().path)),
+        ["agents/antigravity", "agents/claude", "agents/codex"],
+        "no stand-in for Pi where Pi runs"
+    );
+
+    let fx = Fake::default();
+    let origin = Origin::AgentButton {
+        agent: Agent::Claude,
+    };
+    let ready = prepared(&kit, &fx, origin, true, &[]).unwrap();
+    let vm = vm_of(&ready);
+    assert_eq!(
+        sorted(guest_entries(&kit, &vm.name, &vm.tools().path)),
+        ["agents/antigravity", "agents/codex", "agents/pi"],
+        "no stand-in for Claude Code in its own sandbox"
+    );
+}
+
+/// A stand-in for real: it says where agents start, on stderr, and exits 1.
+#[cfg(unix)]
+#[test]
+fn a_stand_in_in_the_vm_refuses() {
+    let tmp = TempDir::new("stand-in-run");
+    crate::setup::kit_files::write_guest(&tmp.0, "it").unwrap();
+    let out = std::process::Command::new("/bin/sh")
+        .arg(tmp.0.join("agents").join("claude").join("claude"))
+        .arg("--resume")
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stdout.is_empty());
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.starts_with("claude non parte da qui."), "{err}");
+}
+
+/// §8.5: every sandbox of a project (its own, Claude Code's, Codex's) gets
+/// its own `info.json`, `atollo` and stand-ins, each with its level, its
+/// agent and its name.
+#[test]
+fn every_sandbox_of_a_project_has_its_info() {
+    let (_tmp, kit) = kit_with_shop("every-info");
+    let origins = [
+        (
+            Origin::ProjectTerminal,
+            vm::name("shop"),
+            None,
+            Level::Project,
+        ),
+        (
+            Origin::AgentButton {
+                agent: Agent::Claude,
+            },
+            vm::agent_name("shop", "claude"),
+            Some(Agent::Claude),
+            Level::Agent,
+        ),
+        (
+            Origin::AgentButton {
+                agent: Agent::Codex,
+            },
+            vm::agent_name("shop", "codex"),
+            Some(Agent::Codex),
+            Level::Agent,
+        ),
+    ];
+    for (origin, name, agent, level) in origins {
+        let fx = Fake::default();
+        prepared(&kit, &fx, origin, true, &[]).unwrap();
+        let info: SandboxInfo =
+            serde_json::from_str(&std::fs::read_to_string(info_file(&kit, &name)).unwrap())
+                .unwrap();
+        assert_eq!(info.sandbox, name);
+        assert_eq!(info.agent, agent);
+        assert_eq!(info.level, level);
+        let guest = sandbox_kit::guest_dir(&kit, &name);
+        assert!(guest.join("bin").join("atollo").is_file(), "{name}");
+        let text = std::fs::read_to_string(guest.join(INFO_TEXT)).unwrap();
+        let label = if level == Level::Agent {
+            "Agente · VM"
+        } else {
+            "VM progetto"
+        };
+        assert!(text.starts_with(&format!("Atollo · {label}\n")), "{text}");
+    }
 }

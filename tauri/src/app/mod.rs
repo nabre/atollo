@@ -5,6 +5,7 @@
 
 pub mod cli;
 pub mod tray;
+pub mod vmcli;
 
 use std::path::Path;
 

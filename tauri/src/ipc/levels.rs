@@ -20,7 +20,8 @@ use crate::isolation::Vm;
 use crate::kit::Kit;
 use crate::levels::env::{environment, Environment};
 use crate::levels::prepare::{prepare, Effects, LocalModels, PrepareProgress, Ready};
-use crate::levels::{decide, facts, Facts, Placement, Request};
+use crate::levels::report::{self, ActError, SandboxReport, VmAction, VmEffects, VmReport};
+use crate::levels::{decide, facts, Agent, Facts, Placement, Request};
 use crate::setup::task::SetupTask;
 
 use super::{AppState, CmdError, CmdResult, OrFail};
@@ -439,6 +440,285 @@ impl<R: Runtime> Effects for AppEffects<R> {
     fn progress(&self, event: PrepareProgress) {
         self.job.tell(self.task.jobs(), event, self.lang());
     }
+}
+
+/// The app's sessions running in `sandbox` (LEVELS.md §8.5): its
+/// terminals (the project's, an agent's) and its actions.
+pub(crate) fn sessions_in<R: Runtime>(app: &AppHandle<R>, sandbox: &str) -> Vec<String> {
+    use tauri::Manager;
+    let mut out: Vec<String> = app
+        .try_state::<crate::editor::terminal::Consoles>()
+        .map(|c| c.ptys.list())
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|p| p.running && p.sandbox.as_deref() == Some(sandbox))
+        .map(|p| p.title)
+        .collect();
+    if let Some(runner) = app.try_state::<Arc<crate::projects::run::Runner>>() {
+        out.extend(runner.in_sandbox(sandbox).into_iter().map(|(r, _)| r.label));
+    }
+    out
+}
+
+/// Ends the app's sessions running in `sandbox`: its terminals closed as
+/// «Chiudi» does, its actions stopped.
+fn end_sessions_in<R: Runtime>(app: &AppHandle<R>, sandbox: &str) {
+    use tauri::{Emitter, Manager};
+    if let Some(consoles) = app.try_state::<crate::editor::terminal::Consoles>() {
+        let ids: Vec<u64> = consoles
+            .ptys
+            .list()
+            .into_iter()
+            .filter(|p| p.running && p.sandbox.as_deref() == Some(sandbox))
+            .map(|p| p.id)
+            .collect();
+        for id in ids {
+            if let Err(e) = consoles.ptys.close(id, crate::editor::pty::GRACE) {
+                crate::common::log::warn(&format!("{sandbox}: terminal {id}: {e:#}"));
+            }
+            let _ = app.emit_to(super::MAIN, super::events::PTY_CLOSED, id);
+            if let Some(window) = app.get_webview_window(&crate::editor::terminal::label(id)) {
+                let _ = window.close();
+            }
+        }
+    }
+    if let Some(runner) = app.try_state::<Arc<crate::projects::run::Runner>>() {
+        for (run, _) in runner.in_sandbox(sandbox) {
+            runner.stop(&run.key);
+        }
+    }
+}
+
+/// The app's [`VmEffects`]: its sessions, the kit's `sbx` with the
+/// environment built from `base`, `prepare` with [`AppEffects`].
+pub(crate) struct AppVm<R: Runtime> {
+    pub fx: AppEffects<R>,
+    pub base: KitEnv,
+    pub host: Host,
+    pub lang: &'static str,
+}
+
+impl<R: Runtime> VmEffects for AppVm<R> {
+    fn sessions(&self, sandbox: &str) -> Vec<String> {
+        sessions_in(&self.fx.app, sandbox)
+    }
+
+    fn end_sessions(&self, sandbox: &str) {
+        end_sessions_in(&self.fx.app, sandbox);
+    }
+
+    fn stop_sandbox(&self, sandbox: &str) -> anyhow::Result<()> {
+        let env = crate::isolation::sbx_session_env(&self.base, &self.host);
+        crate::isolation::stop_sandbox(&self.fx.kit, &self.host, &env, sandbox)
+    }
+
+    fn remove_sandbox(&self, sandbox: &str) -> anyhow::Result<()> {
+        let env = crate::isolation::sbx_session_env(&self.base, &self.host);
+        crate::isolation::remove_to_make_again(&self.fx.kit, &self.host, &env, sandbox)
+    }
+
+    fn prepare(&self, req: &Request, facts: &Facts) -> anyhow::Result<()> {
+        ready(
+            &self.fx,
+            &self.fx.kit,
+            &self.base,
+            req,
+            facts,
+            &[],
+            self.lang,
+            &self.host,
+        )
+        .map(drop)
+        .map_err(|e| anyhow::anyhow!("{e}"))
+    }
+}
+
+/// An action's or a check's failure as the command's error: a refusal
+/// with its reason and fix.
+fn act_error(e: ActError, lang: &str) -> CmdError {
+    match e {
+        ActError::Refused { reason, fix } => CmdError::refused(reason, fix, lang),
+        other => CmdError::from(report::act_error_text(&other, lang)),
+    }
+}
+
+/// The agent of a sandbox the interface names (`claude`, `codex`): only
+/// those have one of their own.
+fn sandbox_agent(agent: Option<&str>) -> CmdResult<Option<Agent>> {
+    match agent {
+        None => Ok(None),
+        Some(id) => match Agent::from_id(id) {
+            Some(a) if a.runner() == crate::levels::AgentRunner::SbxAgent => Ok(Some(a)),
+            _ => Err(format!("{id}: no sandbox of its own").into()),
+        },
+    }
+}
+
+/// The report of `project`'s VM now (LEVELS.md §8.1): the VM's status, the
+/// sandboxes as `sbx` has them, the app's sessions and published ports.
+fn report_now<R: Runtime>(app: &AppHandle<R>, state: &AppState, project: &str) -> VmReport {
+    use tauri::Manager;
+    let (kit, host, env, lang) = (&state.kit, &state.host, state.env(), state.lang());
+    let status = crate::isolation::status(kit, host, &env, false);
+    let on = status.level == crate::isolation::Level::Vm;
+    let ls = on
+        .then(|| {
+            crate::isolation::sandboxes_json(
+                kit,
+                host,
+                &crate::isolation::sbx_session_env(&env, host),
+            )
+        })
+        .and_then(Result::ok);
+    let mut published = Vec::new();
+    if let Some(runner) = app.try_state::<Arc<crate::projects::run::Runner>>() {
+        for (name, _) in report::sandboxes_of(project) {
+            for (run, port) in runner.in_sandbox(&name) {
+                if let Some((port, address)) = port {
+                    published.push(report::PublishedPort {
+                        port,
+                        address: address.to_owned(),
+                        action: run.label,
+                    });
+                }
+            }
+        }
+    }
+    let seen = report::Seen {
+        on,
+        reason: (!on).then(|| crate::isolation::why_no_vm(&status, lang)),
+        ls,
+        published,
+        github: crate::projects::settings::load(kit, project).github_in_vm,
+    };
+    report::report(kit, project, seen, &|name| sessions_in(app, name))
+}
+
+/// «Verifica strumenti» in the sandboxes of `report` (all, or `agent`'s
+/// only when `only` is `Some`), as a job (LEVELS.md §8.6): a step per
+/// sandbox; each through `decide`.
+fn check_now(
+    state: &AppState,
+    report: &mut VmReport,
+    only: Option<Option<Agent>>,
+) -> CmdResult<()> {
+    let (kit, host, env, lang) = (&state.kit, &state.host, state.env(), state.lang());
+    let dir = super::project_dir(kit, Some(&report.project), lang)?;
+    let jobs = state.setup.jobs();
+    let picked: Vec<usize> = (0..report.sandboxes.len())
+        .filter(|i| only.is_none_or(|a| report.sandboxes[*i].agent == a))
+        .collect();
+    let id = jobs.add(
+        JobKind::VmCheck,
+        t(lang, "Verifica strumenti · {0}", &[&report.project]),
+        Some(report.project.clone()),
+        Vec::new(),
+        JobState::Running,
+        false,
+    );
+    let total = picked.len();
+    let project = report.project.clone();
+    for (n, i) in picked.into_iter().enumerate() {
+        let s = &mut report.sandboxes[i];
+        jobs.update(&id, |j| j.begin_step(n + 1, total, s.name.clone()));
+        let req = report::sandbox_request(kit, &dir, s.agent);
+        let facts = facts_now(kit, host, &env, &req);
+        if let Err(e) = report::check(kit, host, &env, &req, &facts, &project, s, lang) {
+            let e = act_error(e, lang);
+            jobs.update(&id, |j| j.finish(JobState::Error, Some(e.to_string())));
+            return Err(e);
+        }
+    }
+    jobs.update(&id, |j| j.finish(JobState::Done, None));
+    Ok(())
+}
+
+/// The report of `project`'s VM (LEVELS.md §8.1); with `check`,
+/// «Verifica strumenti» in each of its sandboxes (§8.2).
+#[tauri::command]
+pub async fn project_vm_report<R: Runtime>(
+    app: AppHandle<R>,
+    webview: tauri::Webview<R>,
+    project: String,
+    check: bool,
+) -> CmdResult<VmReport> {
+    use tauri::Manager;
+    super::ensure_main(&webview)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        super::project_dir(&state.kit, Some(&project), state.lang())?;
+        let mut report = report_now(&app, &state, &project);
+        if check && report.vm == report::VmOnOff::On {
+            check_now(&state, &mut report, None)?;
+        }
+        Ok(report)
+    })
+    .await
+    .or_fail("vm")?
+}
+
+/// «Verifica strumenti» in one sandbox of `project`: its own, or `agent`'s
+/// (`claude`, `codex`); the sandbox's report with its tools.
+#[tauri::command]
+pub async fn project_vm_check<R: Runtime>(
+    app: AppHandle<R>,
+    webview: tauri::Webview<R>,
+    project: String,
+    agent: Option<String>,
+) -> CmdResult<SandboxReport> {
+    use tauri::Manager;
+    super::ensure_main(&webview)?;
+    let agent = sandbox_agent(agent.as_deref())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        super::project_dir(&state.kit, Some(&project), state.lang())?;
+        let mut report = report_now(&app, &state, &project);
+        if report.vm == report::VmOnOff::Off {
+            return Err(act_error(ActError::NoVm, state.lang()));
+        }
+        check_now(&state, &mut report, Some(agent))?;
+        report
+            .sandboxes
+            .into_iter()
+            .find(|s| s.agent == agent)
+            .ok_or_else(|| CmdError::from("vm: no such sandbox"))
+    })
+    .await
+    .or_fail("vm")?
+}
+
+/// An action on a sandbox of `project` (LEVELS.md §8.5): its own, or
+/// `agent`'s; «Riavvia» and «Ricrea» stop its sessions first. Through
+/// `decide`, with the sandbox's lock; the preparation is a job. The
+/// sessions that were stopped.
+#[tauri::command]
+pub async fn project_vm_action<R: Runtime>(
+    app: AppHandle<R>,
+    webview: tauri::Webview<R>,
+    project: String,
+    agent: Option<String>,
+    action: VmAction,
+) -> CmdResult<Vec<String>> {
+    use tauri::Manager;
+    super::ensure_main(&webview)?;
+    let agent = sandbox_agent(agent.as_deref())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let (kit, host, lang) = (state.kit.clone(), state.host.clone(), state.lang());
+        let dir = super::project_dir(&kit, Some(&project), lang)?;
+        let base = super::ensure(&app, &state.setup, &kit, lang, &[])?;
+        let req = report::sandbox_request(&kit, &dir, agent);
+        let facts = facts_now(&kit, &host, &base, &req);
+        let fx = AppVm {
+            fx: AppEffects::of(&app, &state, base.clone()),
+            base,
+            host,
+            lang,
+        };
+        report::act(&fx, &req, &facts, action).map_err(|e| act_error(e, lang))
+    })
+    .await
+    .or_fail("vm")?
 }
 
 #[cfg(test)]

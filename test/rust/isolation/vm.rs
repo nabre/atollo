@@ -185,7 +185,20 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
         vars: vec![("JAVA_HOME".into(), "/d/kit/data/apps/linux-x64/java".into())],
         env_file: Some("/kit/data/app/sandboxes/x/db.env".into()),
     };
-    let args = kit_terminal_args("atollo-t-x", "/d/sites/shop", &tools);
+    let args = kit_terminal_args("atollo-t-x", "/d/sites/shop", &tools, None);
+    // With the session's level line, printed by the VM's shell first.
+    let with = kit_terminal_args("atollo-t-x", "/d/sites/shop", &tools, Some("[Atollo] VM"));
+    assert_eq!(with[..11], args[..11]);
+    assert_eq!(
+        with[11..],
+        [
+            "sh",
+            "-c",
+            r#"printf '%s\n' "$1" >&2; PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#,
+            "sh",
+            "[Atollo] VM",
+        ]
+    );
     assert_eq!(
         args,
         [

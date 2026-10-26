@@ -167,7 +167,7 @@ export function jobStateText(j: Job): string {
 export function JobDetails({ job }: { job: Job }) {
   const [error, setError] = useState<string | null>(null);
   const [asked, setAsked] = useState(false);
-  const setup = job.kind !== "vm-prepare";
+  const setup = job.kind === "install" || job.kind === "update";
   const percent = job.state === "running" ? (bytesPercent(job) ?? overallPercent(job)) : null;
   return (
     <section aria-label={job.title} aria-live="polite" className="space-y-2 px-3 py-2">

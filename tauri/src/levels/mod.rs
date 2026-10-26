@@ -25,6 +25,7 @@ pub use agents::{agents_enabled, installable};
 pub mod labels;
 pub mod place;
 pub mod prepare;
+pub mod report;
 pub mod requests;
 pub mod start;
 
@@ -344,6 +345,16 @@ pub enum VmProgram {
     SbxAgent { agent: Agent },
     /// pi / agy, Linux build, `sbx exec -it`.
     AgentBinary { agent: Agent },
+}
+
+impl VmProgram {
+    /// The agent it runs (`SbxAgent`, `AgentBinary`); `None` otherwise.
+    pub fn agent(&self) -> Option<Agent> {
+        match self {
+            VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => Some(*agent),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

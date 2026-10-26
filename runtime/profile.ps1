@@ -111,3 +111,26 @@ if (-not $env:ATOLLO_QUIET) {
     Write-Host "  $title" -ForegroundColor Cyan -NoNewline
     Write-Host ($found -join '  ') -ForegroundColor DarkGray
 }
+
+# The level line (LEVELS.md §8.3), on stderr: where this shell runs, from
+# what Atollo set (ATOLLO_LEVEL, ATOLLO_PROJECT, ATOLLO_TERMINAL). The
+# shell does not know whether the VM is on at every moment: an agent's
+# forwarder says it when used.
+if ($env:ATOLLO_LEVEL -eq 'manual' -or $env:ATOLLO_LEVEL -eq 'project') {
+    $project = $env:ATOLLO_LEVEL -eq 'project'
+    if ($env:ATOLLO_LANG -eq 'it') {
+        $where = if ($project) { 'PC · senza VM' } else { 'PC' }
+        $who = if ($project) { 'terminale del progetto' } else { 'editor' }
+        $what = 'nessun progetto'
+        $agents = 'agenti: inoltrati alla VM del progetto se attiva'
+    } else {
+        $where = if ($project) { 'PC · no VM' } else { 'PC' }
+        $who = if ($project) { "project's terminal" } else { 'editor' }
+        $what = 'no project'
+        $agents = "agents: forwarded to the project's VM when it is on"
+    }
+    if ($env:ATOLLO_TERMINAL) { $who = $env:ATOLLO_TERMINAL }
+    if ($env:ATOLLO_PROJECT) { $what = $env:ATOLLO_PROJECT }
+    [Console]::Error.WriteLine("$where · $who · $what · $agents")
+    Remove-Variable project, where, who, what, agents -ErrorAction Ignore
+}

@@ -145,6 +145,18 @@ pub(super) struct VmRun {
 }
 
 impl VmRun {
+    /// The sandbox it runs in.
+    pub(super) fn sandbox(&self) -> &str {
+        &self.vm.name
+    }
+
+    /// Its port published on the PC and the address (`0.0.0.0` with the
+    /// local network, else `127.0.0.1`).
+    pub(super) fn published(&self) -> Option<(u16, &'static str)> {
+        self.port
+            .map(|p| (p, if self.lan { "0.0.0.0" } else { "127.0.0.1" }))
+    }
+
     /// Stops it in the VM, off the caller's thread (`sbx exec` takes a
     /// moment, up to the five seconds of a process that ignores `TERM`).
     pub(super) fn stop(self) {

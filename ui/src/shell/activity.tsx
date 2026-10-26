@@ -519,9 +519,9 @@ export function ActivityPanel({
                   <JobDetails job={currentJob} />
                   {/* An install's components, each with its outcome and
                       the download to do by hand when one failed. */}
-                  {setup && currentJob.kind !== "vm-prepare" && setup.job === currentJob.id && (
-                    <SetupProgress snapshot={setup} />
-                  )}
+                  {setup &&
+                    (currentJob.kind === "install" || currentJob.kind === "update") &&
+                    setup.job === currentJob.id && <SetupProgress snapshot={setup} />}
                 </div>
               )}
             </div>

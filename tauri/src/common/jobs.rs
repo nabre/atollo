@@ -21,6 +21,8 @@ pub enum JobKind {
     Update,
     /// A project's VM made ready (`levels::prepare`).
     VmPrepare,
+    /// «Verifica strumenti» in a project's sandboxes (LEVELS.md §8.2).
+    VmCheck,
 }
 
 /// Where a job (or one of its steps) stands.

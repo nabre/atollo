@@ -1,0 +1,23 @@
+#!/bin/sh
+# Atollo inside a sandbox (LEVELS.md §8.4), read only: where you are and
+# what you have. It prints what Atollo wrote on the PC at the sandbox's
+# last preparation, in the folder mounted read-only beside this one
+# (info.txt, info.json). It never calls the PC, never writes, and holds
+# no secret: the kit is managed from the PC.
+# Written by Atollo.exe in data/app/sandboxes/<sandbox>/guest/bin.
+here=$(dirname -- "$0")
+file=
+if [ "$#" -eq 0 ]; then
+    file=info.txt
+elif [ "$#" -eq 1 ] && [ "$1" = --json ]; then
+    file=info.json
+fi
+if [ -z "$file" ]; then
+    printf '%s\n' @REFUSAL@ >&2
+    exit 1
+fi
+if [ ! -r "$here/../$file" ]; then
+    printf '%s\n' @MISSING@ >&2
+    exit 1
+fi
+exec cat -- "$here/../$file"

@@ -5,7 +5,7 @@
 import { query, subscribe } from "./core";
 import { JOB } from "./events";
 
-export type JobKind = "install" | "update" | "vm-prepare";
+export type JobKind = "install" | "update" | "vm-prepare" | "vm-check";
 
 export type JobState = "queued" | "running" | "done" | "error" | "cancelled";
 

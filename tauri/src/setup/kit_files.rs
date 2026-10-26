@@ -118,6 +118,85 @@ pub fn forward_sh(cmd: &str, agent: &str) -> String {
     )
 }
 
+/// The read-only `atollo` of every sandbox (LEVELS.md §8.4), with its
+/// texts: it prints `info.txt` or `info.json` beside its folder and
+/// nothing else.
+const VM_ATOLLO: &str = include_str!("../../../runtime/vm/atollo");
+
+/// The folder of a sandbox's `guest` with the read-only `atollo`, first on
+/// the VM's `PATH`.
+pub const GUEST_BIN: &str = "bin";
+/// The folder of a sandbox's `guest` with the agents' stand-ins, one
+/// folder per agent (`agents/<id>`), so that a session leaves out the one
+/// of the agent it runs (LEVELS.md §6.10).
+pub const GUEST_AGENTS: &str = "agents";
+
+/// The read-only `atollo` in `lang` (LEVELS.md §8.4): `atollo` prints
+/// `info.txt`, `atollo --json` `info.json`; any other word says that the
+/// kit is managed from the PC and exits 1. No network, no write, no secret.
+pub fn vm_atollo(lang: &str) -> String {
+    let refusal = crate::common::i18n::t(
+        lang,
+        "Il kit si gestisce dal PC: qui atollo mostra soltanto dove sei e cosa hai (atollo, atollo --json).",
+        &[],
+    );
+    let missing = crate::common::i18n::t(
+        lang,
+        "Le informazioni di questa sandbox non ci sono ancora: le scrive Atollo quando prepara la VM.",
+        &[],
+    );
+    VM_ATOLLO
+        .replace("\r\n", "\n")
+        .replace("@REFUSAL@", &crate::platform::sh_quote(&refusal))
+        .replace("@MISSING@", &crate::platform::sh_quote(&missing))
+}
+
+/// The stand-in `cmd` of an agent inside a VM (LEVELS.md §6.10): a VM
+/// cannot ask the PC to open an agent's sandbox, so it says where agents
+/// start and exits 1.
+pub fn vm_stand_in(cmd: &str, lang: &str) -> String {
+    let text = crate::common::i18n::t(
+        lang,
+        "{0} non parte da qui. Gli agenti si avviano dalla pagina del progetto, dall'editor, o scrivendo il loro nome in un terminale del PC nella cartella del progetto.",
+        &[cmd],
+    );
+    format!(
+        "#!/bin/sh\n\
+         # Atollo: {cmd} does not start inside a VM (D-179, LEVELS.md 6.10).\n\
+         printf '%s\\n' {} >&2\n\
+         exit 1\n",
+        crate::platform::sh_quote(&text)
+    )
+}
+
+/// Writes the read-only `atollo` and the agents' stand-ins in `guest` (a
+/// sandbox's folder the VM sees read-only, `isolation::kit::guest_dir`):
+/// LF, executable, only when they changed.
+pub fn write_guest(guest: &std::path::Path, lang: &str) -> Result<()> {
+    let mut files = vec![(format!("{GUEST_BIN}/atollo"), vm_atollo(lang))];
+    for agent in crate::levels::Agent::ALL {
+        for cmd in agent.commands() {
+            files.push((
+                format!("{GUEST_AGENTS}/{}/{cmd}", agent.id()),
+                vm_stand_in(cmd, lang),
+            ));
+        }
+    }
+    for (name, content) in files {
+        let path = join_rel(guest, &name);
+        if fs::read(&path).ok().as_deref() == Some(content.as_bytes()) {
+            let _ = crate::platform::files::set_executable(&path);
+            continue;
+        }
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).with_context(|| parent.display().to_string())?;
+        }
+        crate::platform::files::write_executable(&path, content.as_bytes())
+            .with_context(|| path.display().to_string())?;
+    }
+    Ok(())
+}
+
 /// The wrapper the Claude Code extension would run through
 /// `claudeCode.claudeProcessWrapper` (LEVELS.md §6.9, Q2): ready for the
 /// spike by hand, not wired. Atollo never sets the setting and the

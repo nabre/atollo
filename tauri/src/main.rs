@@ -309,6 +309,9 @@ fn run() -> i32 {
                 }
             };
         }
+        Cli::Vm(args) => {
+            return app::vmcli::run(&kit, &kit_env, &loaded.settings, &host, lang, &args)
+        }
         Cli::Version => {
             let _ = writeln!(cli::output(), "Atollo {}", env!("CARGO_PKG_VERSION"));
             return 0;

@@ -114,6 +114,38 @@ __atollo_banner() {
 [ -z "$ATOLLO_QUIET" ] && __atollo_banner
 unset -f __atollo_banner
 
+# The level line (LEVELS.md §8.3), on stderr: where this shell runs, from
+# what Atollo set (ATOLLO_LEVEL, ATOLLO_PROJECT, ATOLLO_TERMINAL). The
+# shell does not know whether the VM is on at every moment: an agent's
+# forwarder says it when used.
+__atollo_level() {
+    local where who project agents
+    case "$ATOLLO_LEVEL" in
+        manual | project) ;;
+        *) return 0 ;;
+    esac
+    if [ "$ATOLLO_LANG" = it ]; then
+        where='PC'
+        [ "$ATOLLO_LEVEL" = project ] && where='PC · senza VM'
+        who='editor'
+        [ "$ATOLLO_LEVEL" = project ] && who='terminale del progetto'
+        project='nessun progetto'
+        agents='agenti: inoltrati alla VM del progetto se attiva'
+    else
+        where='PC'
+        [ "$ATOLLO_LEVEL" = project ] && where='PC · no VM'
+        who='editor'
+        [ "$ATOLLO_LEVEL" = project ] && who="project's terminal"
+        project='no project'
+        agents="agents: forwarded to the project's VM when it is on"
+    fi
+    [ -n "$ATOLLO_TERMINAL" ] && who=$ATOLLO_TERMINAL
+    [ -n "$ATOLLO_PROJECT" ] && project=$ATOLLO_PROJECT
+    printf '%s · %s · %s · %s\n' "$where" "$who" "$project" "$agents" >&2
+}
+__atollo_level
+unset -f __atollo_level
+
 if [ -f "$HOME/.bashrc" ]; then
     . "$HOME/.bashrc"
 fi

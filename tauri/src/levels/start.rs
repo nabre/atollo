@@ -49,7 +49,7 @@ pub fn vm_session_args(kit: &Kit, ready: &Ready, extra: &[String]) -> Result<Vec
         bail!("levels: arguments only after an agent's command");
     }
     match program {
-        VmProgram::Shell => Ok(vm::kit_terminal_args(&vm.name, workdir, vm.tools())),
+        VmProgram::Shell => Ok(vm::kit_terminal_args(&vm.name, workdir, vm.tools(), None)),
         VmProgram::Line { command } => Ok(vm::exec_args(
             &vm.name,
             Some(workdir),
@@ -96,8 +96,24 @@ pub fn start_terminal(kit: &Kit, ready: &Ready, lang: &str) -> Result<(Launch, K
                 dir.clone(),
             )
         }
-        (Placement::Vm { program, .. }, Environment::Vm { sbx_env, .. }, Some(vm)) => {
-            let args = vm_session_args(kit, ready, &[])?;
+        (
+            placement @ Placement::Vm {
+                program, workdir, ..
+            },
+            Environment::Vm { sbx_env, .. },
+            Some(vm),
+        ) => {
+            // The project's terminal: its level line printed by the VM's
+            // shell before bash (§8.3); an agent's tab says its label.
+            let args = match program {
+                VmProgram::Shell => vm::kit_terminal_args(
+                    &vm.name,
+                    workdir,
+                    vm.tools(),
+                    super::labels::banner_line(placement, lang).as_deref(),
+                ),
+                _ => vm_session_args(kit, ready, &[])?,
+            };
             let what = match program {
                 VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => agent.id(),
                 _ => "VM",

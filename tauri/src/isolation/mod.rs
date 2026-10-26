@@ -1131,6 +1131,89 @@ pub fn remove_owned(kit: &Kit, host: &Host, env: &KitEnv, names: &[String]) {
     }
 }
 
+/// `sbx ls --json` of the kit's `sbx`: every sandbox with its state, for
+/// the VM report (LEVELS.md §8.1).
+pub fn sandboxes_json(kit: &Kit, host: &Host, env: &KitEnv) -> anyhow::Result<String> {
+    let sbx = Sbx::find(kit, host).ok_or_else(|| anyhow::anyhow!("sbx: not in the kit"))?;
+    let out = run(&sbx, host, env, &["ls", "--json"], ASK_LIMIT).map_err(anyhow::Error::msg)?;
+    anyhow::ensure!(
+        out.status.success(),
+        "sbx ls: {}",
+        String::from_utf8_lossy(&out.stderr).trim()
+    );
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// Runs `sbx` with `args` (an `sbx exec` that only reads: «Verifica
+/// strumenti», LEVELS.md §8.2) and gives its standard output; its error
+/// text when it fails.
+pub fn sbx_output(kit: &Kit, host: &Host, env: &KitEnv, args: &[String]) -> anyhow::Result<String> {
+    let sbx = Sbx::find(kit, host).ok_or_else(|| anyhow::anyhow!("sbx: not in the kit"))?;
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    let out = run(&sbx, host, env, &args, START_LIMIT).map_err(anyhow::Error::msg)?;
+    anyhow::ensure!(
+        out.status.success(),
+        "sbx {}: {}",
+        args.iter().take(2).copied().collect::<Vec<_>>().join(" "),
+        String::from_utf8_lossy(&out.stderr).trim()
+    );
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// True when `sbx`'s error `text` says the sandbox is not there.
+fn not_there(text: &str) -> bool {
+    let text = text.to_lowercase();
+    text.contains("not found") || text.contains("no such")
+}
+
+/// Stops the sandbox `name` («Riavvia», LEVELS.md §8.5), under its lock: a
+/// start of the same sandbox waits. One not there is fine.
+pub fn stop_sandbox(kit: &Kit, host: &Host, env: &KitEnv, name: &str) -> anyhow::Result<()> {
+    anyhow::ensure!(is_atollos(name), "not a sandbox of Atollo: {name}");
+    let sbx = Sbx::find(kit, host).ok_or_else(|| anyhow::anyhow!("sbx: not in the kit"))?;
+    let lock = sandbox_lock(name);
+    let _one = lock
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let out = run(&sbx, host, env, &["stop", name], START_LIMIT).map_err(anyhow::Error::msg)?;
+    let text = String::from_utf8_lossy(&out.stderr);
+    anyhow::ensure!(
+        out.status.success() || not_there(&text),
+        "sbx stop: {}",
+        text.trim()
+    );
+    Ok(())
+}
+
+/// Removes the sandbox `name` to make it again («Ricrea», LEVELS.md §8.5),
+/// under its lock: GitHub and the Gemini key taken back first, `sbx rm -f`
+/// (its disk: the VM's home, the images it pulled), and what `sbx` had of
+/// it forgotten; its kit, `db.env` and `info.json` stay for the start that
+/// makes it again.
+pub fn remove_to_make_again(
+    kit: &Kit,
+    host: &Host,
+    env: &KitEnv,
+    name: &str,
+) -> anyhow::Result<()> {
+    anyhow::ensure!(is_atollos(name), "not a sandbox of Atollo: {name}");
+    let sbx = Sbx::find(kit, host).ok_or_else(|| anyhow::anyhow!("sbx: not in the kit"))?;
+    let lock = sandbox_lock(name);
+    let _one = lock
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    github_for_sandbox(kit, &sbx, host, env, name, false);
+    secret_for_sandbox(kit, &sbx, host, env, name, secrets::Secret::Gemini, false);
+    let out = run(&sbx, host, env, &["rm", "-f", name], START_LIMIT).map_err(anyhow::Error::msg)?;
+    let text = String::from_utf8_lossy(&out.stderr);
+    anyhow::ensure!(
+        out.status.success() || not_there(&text),
+        "sbx rm: {}",
+        text.trim()
+    );
+    kit::forget(kit, name)
+}
+
 /// The microVM of `project` (folder `dir`, its workspace) with the
 /// `read_only` folders (the kit's tools for the VM's Linux, D-170); `None`
 /// without the kit's `sbx`. Built only by `levels::prepare`, from a
@@ -1895,6 +1978,16 @@ impl Vm {
         );
         let image_path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
         Ok(vm::agent_session_args(&self.name, &image_path, &self.tools))
+    }
+
+    /// One more folder of the PC mounted read-only (the sandbox's own
+    /// `guest` folder: its `info.json` and read-only `atollo`, LEVELS.md
+    /// §8.4), once.
+    pub fn with_read_only(mut self, folder: PathBuf) -> Vm {
+        if !self.read_only.contains(&folder) {
+            self.read_only.push(folder);
+        }
+        self
     }
 
     /// The kit's tools its sessions and actions get (D-170).
