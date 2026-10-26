@@ -113,6 +113,11 @@ export interface SetupSnapshot {
   /** The steps not started yet, in order (empty when the run ends). */
   queue: { id: string; name: string }[];
   error: string | null;
+  /** The job of the run (jobs.ts). */
+  job?: string | null;
+  /** The runs asked meanwhile, in order: each starts when the one before
+   * it ends; `items` empty is the whole choice. */
+  pending?: { job: string; title: string; items: string[] }[];
 }
 
 /** `app`: part of Atollo (the editor), shown with the required ones. */
@@ -243,7 +248,13 @@ export function componentsSync(target?: string): Promise<string[]> {
   return query<string[]>("components_sync", [], target ? { target } : undefined);
 }
 
-export function componentsList(target?: string): Promise<ComponentInfo[]> {
+/** The catalog as the Tools page shows it; with `ids`, only those (a row
+ * whose install just ended, read again without the whole list). */
+export function componentsList(target?: string, ids?: string[]): Promise<ComponentInfo[]> {
+  if (ids) {
+    const some = SAMPLE_COMPONENTS.filter((c) => ids.includes(c.id));
+    return query<ComponentInfo[]>("components_list", some, target ? { target, ids } : { ids });
+  }
   return query<ComponentInfo[]>("components_list", SAMPLE_COMPONENTS, target ? { target } : undefined);
 }
 

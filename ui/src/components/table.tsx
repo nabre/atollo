@@ -20,7 +20,7 @@ import {
 import { t } from "../i18n";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { ComponentLogo } from "../shared/logos";
-import { itemState } from "./setup";
+import { ItemBar, ItemCancel, ItemStatus, itemBusy, itemState } from "./setup";
 import { Tag } from "../shared/tags";
 import { AddLine, composerOf, RefreshLines, splitVersion, type KitVersions } from "../versions";
 import { Checkbox, Codicon, codicon, DataTable, IconButton, Link, SearchBox, Select } from "../workbench";
@@ -35,15 +35,18 @@ type Show = "all" | "installed" | "missing" | "pending" | "needed";
 
 /** What a row can do now, without "Apply": install it (at its latest
  * version or at one chosen), add a version next to those on disk, update
- * it. Removing stays a choice applied with "Apply". */
+ * it; while it is installed or waits, cancel it. Removing stays a choice
+ * applied with "Apply". Only this row's buttons wait for its install: the
+ * others can be asked meanwhile, they queue. */
 function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; setup: SetupSnapshot | null }) {
   const { busy, run, offers, target } = kit;
-  const running = setup?.running ?? false;
   const tool = kit.byId.get(c.id);
   const lines = tool?.downloadable ? tool : null;
-  const doing = running || busy !== null;
+  const working = itemBusy(setup, c.id);
+  const doing = working || (busy?.endsWith(`:${c.id}`) ?? false);
   const ready = c.installed || Boolean(c.bootstrapStaged);
   if (c.unavailableReason !== null || c.notNeeded !== null) return null;
+  if (working) return <ItemCancel setup={setup} id={c.id} name={c.name} />;
   if (!ready) {
     if (!c.available) return null;
     return (
@@ -74,7 +77,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
               <RefreshLines
                 tool={lines}
                 checking={offers.checking.has(c.id)}
-                disabled={busy !== null}
+                disabled={doing}
                 onRefresh={() => {
                   offers.refresh([c.id]);
                 }}
@@ -238,7 +241,11 @@ export function ToolsTable({
             label={t("Scegli {0}", c.name)}
             checked={on}
             disabled={
-              c.locked || running || c.unavailableReason !== null || c.notNeeded !== null || (!c.available && !on)
+              c.locked ||
+              itemBusy(setup, c.id) ||
+              c.unavailableReason !== null ||
+              c.notNeeded !== null ||
+              (!c.available && !on)
             }
             onChange={(v) => {
               choose(c.id, v);
@@ -307,7 +314,22 @@ export function ToolsTable({
           {c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", ")}
         </td>
         <td className={cell}>
-          <RowActions c={c} kit={kit} setup={setup} />
+          {/* Its install in its row: waiting, downloading with its bar,
+              failed with «Riprova»; the other rows are not touched. */}
+          <span className="flex items-center gap-2 whitespace-nowrap">
+            {item && <ItemStatus state={item} />}
+            {item && <ItemBar state={item} label={c.name} className="w-16" />}
+            {item?.kind === "problem" && !itemBusy(setup, c.id) && (
+              <Link
+                onClick={() => {
+                  kit.run(c.id, `install:${c.id}`, () => setupStart([c.id], false, kit.target));
+                }}
+              >
+                {t("Riprova")}
+              </Link>
+            )}
+            <RowActions c={c} kit={kit} setup={setup} />
+          </span>
         </td>
       </tr>
     );
@@ -399,7 +421,7 @@ export function ToolsTable({
                 <Checkbox
                   label={t("Scegli tutti quelli mostrati")}
                   checked={allOn}
-                  disabled={running || free.length === 0}
+                  disabled={free.length === 0}
                   className={someOn && !allOn ? "opacity-60" : ""}
                   onChange={(v) => {
                     for (const c of free) choose(c.id, v);
@@ -456,7 +478,6 @@ export function ToolsTable({
                       <Checkbox
                         label={t("Scegli tutti: {0}", g.title)}
                         checked={groupOn}
-                        disabled={running}
                         className={!groupOn && choosable.some((c) => chosen.has(c.id)) ? "opacity-60" : ""}
                         onChange={(v) => {
                           for (const c of choosable) choose(c.id, v);

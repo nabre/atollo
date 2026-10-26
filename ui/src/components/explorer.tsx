@@ -11,7 +11,7 @@ import { ErrorLine } from "../shared/common";
 import { ComponentLogo } from "../shared/logos";
 import { ExtensionsMatrixSection } from "../projects/extensions";
 import { RelationsSection, RuntimeRows, useRelations } from "./relations";
-import { ItemStatus, itemState } from "./setup";
+import { ItemStatus, itemBusy, itemState } from "./setup";
 import { composerOf, splitVersion, useKitVersions } from "../versions";
 import {
   Codicon,
@@ -135,7 +135,7 @@ export function ToolsPage({
             <IconButton
               icon={codicon("close")}
               label={ready ? t("Rimuovi {0}", c.name) : t("Non installare {0}", c.name)}
-              disabled={running}
+              disabled={itemBusy(setup, c.id)}
               onClick={() => {
                 choose(c.id, false);
               }}
@@ -144,7 +144,7 @@ export function ToolsPage({
             <IconButton
               icon={codicon("add")}
               label={t("Installa {0}", c.name)}
-              disabled={running || !c.available}
+              disabled={itemBusy(setup, c.id) || !c.available}
               onClick={() => {
                 choose(c.id, true);
               }}
@@ -275,6 +275,7 @@ export function ToolsPage({
               toggle("updates");
             }}
             running={running}
+            setup={setup}
           />
         </PaneStack>
       )}
