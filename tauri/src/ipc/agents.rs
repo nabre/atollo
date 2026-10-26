@@ -82,6 +82,7 @@ pub async fn agent_launch<R: Runtime>(
             &vm.session_env(&base),
             &dir,
             launch,
+            crate::levels::labels::SessionLabel::vm(crate::levels::Level::Agent, &vm.name),
             Box::new(move || drop(pi)),
         )
         .or_fail_chain("agent")

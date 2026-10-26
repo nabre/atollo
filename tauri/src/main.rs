@@ -186,7 +186,7 @@ fn run() -> i32 {
         Cli::Gui => {}
         Cli::Env { project } => {
             let env = match project {
-                Some(p) => versions::project_env(&kit, &p, kit_env.clone()),
+                Some(p) => cli::project_env(&kit, &kit_env, &p, lang, &host),
                 None => kit_env.clone(),
             };
             return cli::print_env(&env, &mut *cli::output()).map_or(1, |()| 0);

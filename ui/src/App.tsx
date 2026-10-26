@@ -27,6 +27,7 @@ import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";
 import { TitleBar } from "./shell/titlebar";
 import { IsolationDialog, useIsolation } from "./shell/isolation";
+import { OPEN_VM_NOTICE } from "./shared/levels";
 import { useAgents } from "./agents";
 import { AiPage, type AiPane } from "./ai";
 import { setupStatusText, useSetup } from "./components/setup";
@@ -581,6 +582,16 @@ function StatusItem({
 function IsolationItem({ installing }: { installing: boolean }) {
   const { status, checking, check } = useIsolation(installing);
   const [open, setOpen] = useState(false);
+  // A refused command's «Apri l'avviso VM» (D-179, shared/levels.tsx).
+  useEffect(() => {
+    const show = () => {
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_VM_NOTICE, show);
+    return () => {
+      window.removeEventListener(OPEN_VM_NOTICE, show);
+    };
+  }, []);
   if (!status) return null;
   const vm = status.level === "vm";
   const label = vm

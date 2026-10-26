@@ -120,14 +120,16 @@ pub(crate) fn build_app<R: tauri::Runtime>(
             let pools_kit = kit.clone();
             std::thread::spawn(move || {
                 services.autostart(&env);
-                // The pools are the box without the VM (D-175): with the VM
-                // on, the sites run in their projects' VMs.
-                let level = crate::isolation::status(&pools_kit, &host, &env, false).level;
-                if level == crate::isolation::Level::Vm {
-                    log::info("server pools: not started, every site runs in its VM");
-                } else {
-                    servers.autostart(&env, lang);
-                }
+                // The pools are the box without the VM (D-175): `decide`
+                // per pool (R2 refuses them with the VM on: the sites run
+                // in their projects' VMs; R6 seals them without it).
+                servers.autostart(
+                    |id| {
+                        crate::ipc::servers::pool_env(&pools_kit, &host, &env, id, lang)
+                            .map_err(|e| anyhow::anyhow!("{e}"))
+                    },
+                    lang,
+                );
                 llm.autostart(&env);
             });
             let editor = std::sync::Arc::clone(&app.state::<AppState>().editor);

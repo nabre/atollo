@@ -9,7 +9,7 @@
 // collapsible's header has no button role nor aria-expanded, the tabs keep
 // their tablist inside the shadow root and have no close button for the
 // editor's tabs, and the details editor's bar is navigation, not tabs.
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { t } from "../i18n";
 import { ActionBar } from "./buttons";
@@ -604,7 +604,9 @@ export function Panel({
   height,
   children,
 }: {
-  tabs: { id: string; label: string; badge?: ReactNode }[];
+  /** `tag`: a short note after the label, as a terminal's level (D-179);
+   * `hint`: the tab's tooltip. */
+  tabs: { id: string; label: string; badge?: ReactNode; tag?: string; hint?: string | undefined }[];
   active: string;
   onSelect: (id: string) => void;
   actions?: ReactNode;
@@ -613,6 +615,7 @@ export function Panel({
   height?: number | undefined;
   children: ReactNode;
 }) {
+  const uid = useId();
   return (
     <Part
       as="section"
@@ -624,12 +627,16 @@ export function Panel({
         <div role="tablist" className="flex min-w-0 flex-1 items-center self-stretch">
           {tabs.map((x) => {
             const on = x.id === active;
+            // The tag describes the tab: its name stays the label.
+            const tagId = `${uid}-tag-${x.id}`;
             return (
               <button
                 key={x.id}
                 type="button"
                 role="tab"
                 aria-selected={on}
+                title={x.hint}
+                aria-describedby={x.tag ? tagId : undefined}
                 onClick={() => {
                   onSelect(x.id);
                 }}
@@ -640,6 +647,11 @@ export function Panel({
                 }`}
               >
                 {x.label}
+                {x.tag && (
+                  <span id={tagId} aria-hidden="true" className="text-vsc-desc">
+                    {x.tag}
+                  </span>
+                )}
                 {x.badge !== undefined && x.badge !== null && <CountBadge>{x.badge}</CountBadge>}
               </button>
             );

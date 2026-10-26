@@ -49,3 +49,41 @@ fn or_fail_sends_the_short_or_whole_text() {
     );
     assert_eq!(Ok::<u8, String>(1).or_fail("x"), Ok(1));
 }
+
+/// A refusal of the levels reaches the UI as `{ message, refusal, fix }`
+/// (`RefusedError`, LEVELS.md §4.1); its text is the refusal's.
+#[test]
+fn a_refusal_serializes_with_its_reason_and_fix() {
+    use crate::levels::{Fix, Refusal};
+    let e = CmdError::refused(Refusal::PoolsOnlyWithoutVm, Fix::StartFromProject, "it");
+    assert_eq!(
+        e.to_string(),
+        crate::levels::labels::refusal_text(&Refusal::PoolsOnlyWithoutVm, "it")
+    );
+    assert_eq!(
+        e.refusal(),
+        Some((&Refusal::PoolsOnlyWithoutVm, Fix::StartFromProject))
+    );
+    assert_eq!(
+        serde_json::to_value(&e).unwrap(),
+        serde_json::json!({
+            "message": e.to_string(),
+            "refusal": { "code": "pools_only_without_vm" },
+            "fix": "start_from_project",
+        })
+    );
+    let e = CmdError::refused(
+        Refusal::NoPathInVm {
+            dir: r"\\nas\shop".into(),
+        },
+        Fix::UseLocalDisk,
+        "en",
+    );
+    let sent = tauri::ipc::InvokeError::from(e).0;
+    assert_eq!(sent["refusal"]["code"], "no_path_in_vm");
+    assert_eq!(sent["refusal"]["dir"], r"\\nas\shop");
+    assert_eq!(sent["fix"], "use_local_disk");
+    assert!(sent["message"].as_str().unwrap().contains(r"\\nas\shop"));
+    // Any other error: no refusal, the plain string.
+    assert_eq!(CmdError::from("x").refusal(), None);
+}

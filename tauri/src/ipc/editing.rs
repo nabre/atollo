@@ -168,38 +168,65 @@ pub async fn terminal_open<R: Runtime>(
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     let (host, services) = (state.host.clone(), Arc::clone(&state.services));
     tauri::async_runtime::spawn_blocking(move || {
+        use crate::levels::labels::SessionLabel;
         let kit_env = ensure(&app, &task, &kit, lang, &[])?;
-        let env = crate::versions::project_env(&kit, &project, kit_env.clone());
-        // In the project's microVM when every project runs in one (D-167),
-        // with the kit's tools and its databases on the PC (D-170, D-171).
-        if let Some(vm) = crate::isolation::vm_for(&kit, &host, &env, &project, &dir) {
-            // Checked before the sandbox is made: a folder with no path in
-            // the VM (a network share) never gets one.
-            let guest_dir = crate::isolation::vm::guest_path(kit.target().is_windows(), &dir)
-                .ok_or_else(|| {
-                    crate::common::i18n::t(
-                    lang,
-                    "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
-                    &[&dir.display().to_string()],
-                )
-                })?;
-            let vm = super::terminals::project_vm_ready(
-                &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
-            )?;
-            vm.start(&env, lang).or_fail_chain("vm")?;
-            let args = crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, vm.tools());
-            let launch = vm.launch(&kit, args, "VM", lang).or_fail_chain("vm")?;
-            return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
-                .or_fail_chain("terminal");
+        // Level 2 (D-179): in the project's microVM when it is on (R14),
+        // else on the PC, sealed (R5); a network share or a pending restart
+        // of the kit's daemon refused (R9, R10).
+        let req = project_terminal_request(&kit, &dir);
+        match super::levels::place_now(&kit, &kit_env, &req, None, lang, &host)? {
+            super::levels::Placed::Pc {
+                placement,
+                dir,
+                mut env,
+            } => {
+                // The stand-ins say where the agents run (until step 5).
+                crate::isolation::with_agents_notice(&mut env, lang);
+                let at = SessionLabel::pc(placement.level());
+                terminal::open_console(&app, &kit, &env, &dir, at).or_fail_chain("terminal")
+            }
+            // The VM's path as before D-179 (step 4 of LEVELS.md §12.2
+            // moves it to `levels::prepare`): the kit's tools and the
+            // databases on the PC (D-170, D-171).
+            super::levels::Placed::Vm { workdir, .. } => {
+                let env = crate::levels::env::pc_environment(
+                    &kit,
+                    kit_env.clone(),
+                    crate::levels::Level::Project,
+                    Some(&project),
+                    None,
+                );
+                let vm = crate::isolation::vm_for(&kit, &host, &env, &project, &dir)
+                    .ok_or_else(|| no_sbx(lang))?;
+                let vm = super::terminals::project_vm_ready(
+                    &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
+                )?;
+                vm.start(&env, lang).or_fail_chain("vm")?;
+                let args = crate::isolation::vm::kit_terminal_args(&vm.name, &workdir, vm.tools());
+                let launch = vm.launch(&kit, args, "VM", lang).or_fail_chain("vm")?;
+                let at = SessionLabel::vm(crate::levels::Level::Project, &vm.name);
+                terminal::open_launch(&app, &vm.session_env(&env), &dir, launch, at)
+                    .or_fail_chain("terminal")
+            }
         }
-        // Without the VM, on the PC with the sealed environment: no agent's
-        // command, and the terminal says where the agents run (D-178).
-        let mut env = env;
-        crate::isolation::with_agents_notice(&mut env, lang);
-        terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
     .await
     .or_fail("terminal")?
+}
+
+/// The request of the project terminal of the project in `dir` (E3,
+/// `Origin::ProjectTerminal`).
+pub(crate) fn project_terminal_request(kit: &Kit, dir: &std::path::Path) -> crate::levels::Request {
+    crate::levels::Request {
+        origin: crate::levels::Origin::ProjectTerminal,
+        place: crate::levels::place::place_of(kit, dir),
+    }
+}
+
+/// `decide` put it in the VM, but the kit has no `sbx` to run it: never on
+/// the PC instead (I7).
+pub(crate) fn no_sbx(lang: &str) -> CmdError {
+    crate::common::i18n::t(lang, "Docker Sandboxes (sbx) non è nel kit.", &[]).into()
 }
 
 /// The project's editor settings in its .vscode\settings.json (D-78).

@@ -137,3 +137,39 @@ fn a_refusal_says_why_and_what_to_do() {
     let pi = refusal_text(&Refusal::NoLinuxBuild { agent: Agent::Pi }, "en");
     assert!(pi.starts_with("Pi has no build"), "{pi}");
 }
+
+/// A session's label (`PtyInfo`): the placement's level and label, the
+/// sandbox in the VM only, and the text of §8.3.
+#[test]
+fn a_session_label_names_its_sandbox() {
+    let shell = vm(Level::Project, project_sandbox(), VmProgram::Shell);
+    let at = SessionLabel::of(&shell).unwrap();
+    assert_eq!(at, SessionLabel::vm(Level::Project, "atollo-p-shop-x"));
+    assert_eq!(at.label, LevelLabel::ProjectVm);
+    assert_eq!(at.text("it"), "VM progetto");
+    let at = SessionLabel::of(&pc(Level::Project)).unwrap();
+    assert_eq!(at, SessionLabel::pc(Level::Project));
+    assert_eq!(at.sandbox, None);
+    assert_eq!(at.text("en"), "PC · no VM");
+    assert_eq!(SessionLabel::pc(Level::Manual).text("it"), "PC");
+    let claude = vm(
+        Level::Agent,
+        Sandbox::Agent {
+            name: "atollo-a-claude-shop-x".into(),
+            agent: Agent::Claude,
+        },
+        VmProgram::SbxAgent {
+            agent: Agent::Claude,
+        },
+    );
+    assert_eq!(
+        SessionLabel::of(&claude),
+        Some(SessionLabel::vm(Level::Agent, "atollo-a-claude-shop-x"))
+    );
+    let refused = Placement::Refused {
+        level: Level::Agent,
+        reason: Refusal::AgentOutsideProject,
+        fix: Fix::OpenFromProject,
+    };
+    assert_eq!(SessionLabel::of(&refused), None);
+}

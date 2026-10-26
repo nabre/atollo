@@ -33,12 +33,70 @@ pub fn label_of(placement: &Placement) -> Option<LevelLabel> {
 /// The text of the label of `placement` in `lang` (§8.3): «PC» for level 1,
 /// «PC · senza VM» for level 2 on the PC, «VM progetto», «Agente · VM».
 pub fn label(placement: &Placement, lang: &str) -> Option<String> {
-    Some(match (label_of(placement)?, placement.level()) {
-        (LevelLabel::Pc, Level::Manual) => t(lang, "PC", &[]),
-        (LevelLabel::Pc, _) => t(lang, "PC · senza VM", &[]),
+    Some(label_text(label_of(placement)?, placement.level(), lang))
+}
+
+/// The text of `label` for a session of `level` in `lang` (§8.3).
+pub fn label_text(label: LevelLabel, level: Level, lang: &str) -> String {
+    match (label, level) {
+        (LevelLabel::Pc, Level::Project) => t(lang, "PC · senza VM", &[]),
+        (LevelLabel::Pc, _) => t(lang, "PC", &[]),
         (LevelLabel::ProjectVm, _) => t(lang, "VM progetto", &[]),
         (LevelLabel::AgentVm, _) => t(lang, "Agente · VM", &[]),
-    })
+    }
+}
+
+/// Where a terminal session runs, as its `PtyInfo` says it (LEVELS.md
+/// §4.1, §8.3): the level, the label, and the sandbox in the VM.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SessionLabel {
+    pub level: Level,
+    pub label: LevelLabel,
+    /// The sandbox's name (`atollo-p-…`, `atollo-a-…`); `None` on the PC.
+    pub sandbox: Option<String>,
+}
+
+impl SessionLabel {
+    /// The label of a session started for `placement`; `None` for a
+    /// refusal (nothing starts).
+    pub fn of(placement: &Placement) -> Option<SessionLabel> {
+        let sandbox = match placement {
+            Placement::Vm { sandbox, .. } => Some(sandbox.name().to_owned()),
+            _ => None,
+        };
+        Some(SessionLabel {
+            level: placement.level(),
+            label: label_of(placement)?,
+            sandbox,
+        })
+    }
+
+    /// A session on the PC at `level` (Manual, or Project without the VM).
+    pub fn pc(level: Level) -> SessionLabel {
+        SessionLabel {
+            level,
+            label: LevelLabel::Pc,
+            sandbox: None,
+        }
+    }
+
+    /// A session in the sandbox `name` at `level` (Project or Agent).
+    pub fn vm(level: Level, name: &str) -> SessionLabel {
+        SessionLabel {
+            level,
+            label: if level == Level::Agent {
+                LevelLabel::AgentVm
+            } else {
+                LevelLabel::ProjectVm
+            },
+            sandbox: Some(name.to_owned()),
+        }
+    }
+
+    /// The label's text in `lang`.
+    pub fn text(&self, lang: &str) -> String {
+        label_text(self.label, self.level, lang)
+    }
 }
 
 /// The line printed on stderr before a VM session starts (by the PC side,

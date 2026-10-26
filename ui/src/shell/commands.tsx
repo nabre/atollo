@@ -8,6 +8,7 @@ import {
   agentLaunch,
   startsOnProject,
   editorOpen,
+  errorText,
   llmStop,
   projectsList,
   runStart,
@@ -88,7 +89,7 @@ export function CommandPalette({
   const act = useCallback(
     (work: () => Promise<unknown>) => () => {
       work().catch((e: unknown) => {
-        onError(e instanceof Error ? e.message : String(e));
+        onError(e instanceof Error ? e.message : errorText(e));
       });
     },
     [onError],

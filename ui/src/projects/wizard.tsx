@@ -7,11 +7,14 @@
 // projects' pages (explorer.tsx); the instructions are in Settings.
 import { useEffect, useRef, useState } from "react";
 import {
+  errorText,
+  fixOf,
   frameworksCancel,
   frameworksCreate,
   frameworksTargets,
   onFramework,
   type EnvVar,
+  type Fix,
   type FrameworkEvent,
   type FrameworkTarget,
 } from "../ipc";
@@ -157,6 +160,8 @@ export function NewProjectWizard({
   const [progress, setProgress] = useState<{ step: number; total: number }>({ step: 0, total: 0 });
   const [log, setLog] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // A refusal of the levels (D-179): what to do about it.
+  const [fix, setFix] = useState<Fix | null>(null);
   const [created, setCreated] = useState<string | null>(null);
   const logBox = useRef<HTMLDivElement>(null);
 
@@ -196,6 +201,7 @@ export function NewProjectWizard({
     setRunning(true);
     onRunning(true);
     setError(null);
+    setFix(null);
     setCreated(null);
     setLog([]);
     setProgress({ step: 0, total: 0 });
@@ -207,7 +213,8 @@ export function NewProjectWizard({
       },
       (e: unknown) => {
         finish();
-        setError(String(e));
+        setError(errorText(e));
+        setFix(fixOf(e));
       },
     );
   };
@@ -432,7 +439,7 @@ export function NewProjectWizard({
 
         {error && (
           <div className="whitespace-pre-wrap">
-            <ErrorLine error={error} />
+            <ErrorLine error={error} fix={fix} />
           </div>
         )}
         {created && (

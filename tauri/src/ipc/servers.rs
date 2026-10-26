@@ -4,19 +4,33 @@
 use super::*;
 use crate::servers::{WebServerEngine, WebServerProfileInput, WebServersView};
 
-/// With the VM on (D-175) a pool never starts: it would run the projects'
-/// code on the PC, out of their VMs. Each site runs in its project's VM,
-/// started from the project; the pools are the box without the VM.
-fn refused_with_vm(kit: &Kit, host: &crate::env::Host, env: &KitEnv, lang: &str) -> CmdResult<()> {
-    if crate::isolation::status(kit, host, env, false).level == crate::isolation::Level::Vm {
-        return Err(crate::common::i18n::t(
-            lang,
-            "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.",
-            &[],
-        )
-        .into());
+/// The request of the Web Server pool `id` (E6–E8, `Origin::Pool`): its
+/// folder `data/servers/<id>`, no project's.
+pub(crate) fn pool_request(kit: &Kit, id: &str) -> crate::levels::Request {
+    crate::levels::Request {
+        origin: crate::levels::Origin::Pool {
+            pool: id.to_owned(),
+        },
+        place: crate::levels::place::place_of(kit, &kit.data().join("servers").join(id)),
     }
-    Ok(())
+}
+
+/// The environment the pool `id` starts with, from the kit's `base`, once
+/// `decide` places it (D-179): on the PC without the VM, sealed for no
+/// project (R6); refused with the VM on, each site running in its
+/// project's VM (R2).
+pub(crate) fn pool_env(
+    kit: &Kit,
+    host: &crate::env::Host,
+    base: &KitEnv,
+    id: &str,
+    lang: &str,
+) -> CmdResult<KitEnv> {
+    let req = pool_request(kit, id);
+    match super::levels::place_now(kit, base, &req, None, lang, host)? {
+        super::levels::Placed::Pc { env, .. } => Ok(env),
+        super::levels::Placed::Vm { .. } => Err("levels: a pool is never in the VM".into()),
+    }
 }
 
 #[tauri::command]
@@ -84,7 +98,8 @@ pub async fn server_start<R: Runtime>(
     );
     let (host, base) = (state.host.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || {
-        refused_with_vm(&kit, &host, &base, lang)?;
+        // Refused before anything is installed for it.
+        pool_env(&kit, &host, &base, &id, lang)?;
         let view = servers.list(lang, true);
         let Some(pool) = view.pools.iter().find(|p| p.id == id) else {
             return Err(fail("servers", format!("unknown server pool {id}")));
@@ -93,7 +108,13 @@ pub async fn server_start<R: Runtime>(
         if pool.php_line.is_some() {
             wanted.push("php");
         }
-        let env = ensure(&app, &task, &kit, lang, &wanted)?;
+        let env = pool_env(
+            &kit,
+            &host,
+            &ensure(&app, &task, &kit, lang, &wanted)?,
+            &id,
+            lang,
+        )?;
         servers
             .start(&id, &env, lang)
             .map_err(|e| CmdError::from(e.to_string()))
@@ -127,7 +148,7 @@ pub async fn server_reload<R: Runtime>(
     let (servers, env, lang) = (Arc::clone(&state.servers), state.env(), state.lang());
     let (kit, host) = (state.kit.clone(), state.host.clone());
     tauri::async_runtime::spawn_blocking(move || {
-        refused_with_vm(&kit, &host, &env, lang)?;
+        let env = pool_env(&kit, &host, &env, &id, lang)?;
         servers
             .reload(&id, &env, lang)
             .map_err(|e| CmdError::from(e.to_string()))

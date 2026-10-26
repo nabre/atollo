@@ -174,6 +174,52 @@ impl Io for FakeIo {
     }
 }
 
+/// `PtyInfo` says where the session runs (LEVELS.md §4.1, §8.3): its
+/// level, the label of its tab and its sandbox, as the UI reads them.
+#[test]
+fn pty_info_serializes_its_level_label_and_sandbox() {
+    use crate::levels::labels::SessionLabel;
+    use crate::levels::Level;
+    let sessions = Sessions::default();
+    let vm = sessions.insert_at(
+        "shop · VM".into(),
+        Path::new("/p/shop"),
+        SessionLabel::vm(Level::Project, "atollo-p-shop-1a2b"),
+        Box::new(FakeIo::new(1)),
+    );
+    let json = serde_json::to_value(vm.info()).unwrap();
+    assert_eq!(json["level"], "project");
+    assert_eq!(json["label"], "projectVm");
+    assert_eq!(json["sandbox"], "atollo-p-shop-1a2b");
+    let agent = sessions.insert_at(
+        "shop · claude".into(),
+        Path::new("/p/shop"),
+        SessionLabel::vm(Level::Agent, "atollo-a-claude-shop-1a2b"),
+        Box::new(FakeIo::new(2)),
+    );
+    assert_eq!(
+        serde_json::to_value(agent.info()).unwrap()["label"],
+        "agentVm"
+    );
+    let pc = sessions.insert_at(
+        "shop · pwsh".into(),
+        Path::new("/p/shop"),
+        SessionLabel::pc(Level::Project),
+        Box::new(FakeIo::new(3)),
+    );
+    let json = serde_json::to_value(pc.info()).unwrap();
+    assert_eq!(json["level"], "project");
+    assert_eq!(json["label"], "pc");
+    assert!(json["sandbox"].is_null());
+    // The kit's own sessions (`shell`, `command`, `program`): the PC, level 1.
+    let kit = sessions.insert("x".into(), Path::new("/p"), Box::new(FakeIo::new(4)));
+    let json = serde_json::to_value(kit.info()).unwrap();
+    assert_eq!(
+        (json["level"].as_str(), json["label"].as_str()),
+        (Some("manual"), Some("pc"))
+    );
+}
+
 #[test]
 fn sessions_write_resize_and_count() {
     let sessions = Sessions::default();
@@ -408,6 +454,7 @@ mod real {
             shell: PathBuf::from("/bin/sh"),
             title: "test".into(),
             conpty: None,
+            at: crate::levels::labels::SessionLabel::pc(crate::levels::Level::Manual),
         }
     }
 
@@ -524,6 +571,7 @@ mod real {
             shell: PathBuf::from("/bin/bash"),
             title: "test".into(),
             conpty: None,
+            at: crate::levels::labels::SessionLabel::pc(crate::levels::Level::Manual),
         }
     }
 
@@ -659,6 +707,7 @@ mod real {
                     shell: PathBuf::from(BASH),
                     title: "agy".into(),
                     conpty: None,
+                    at: crate::levels::labels::SessionLabel::pc(crate::levels::Level::Manual),
                 },
                 &env(),
                 &tmp.0,

@@ -217,6 +217,22 @@ fn merge_copy(
     Ok(())
 }
 
+/// The request of the creation of a project from the base `base` in the
+/// new project's folder `dir` (E9, `Origin::Scaffold`): `dir` exists (made
+/// empty by the caller), so the place is the new project.
+pub(crate) fn scaffold_request(
+    kit: &Kit,
+    base: &str,
+    dir: &std::path::Path,
+) -> crate::levels::Request {
+    crate::levels::Request {
+        origin: crate::levels::Origin::Scaffold {
+            base: base.to_owned(),
+        },
+        place: crate::levels::place::place_of(kit, dir),
+    }
+}
+
 /// Creates `projects\<name>` from a base and its additions: installs the
 /// kit's tools they need, runs the commands with the kit's PowerShell,
 /// writes the chosen variables in its `.env` (`env`, as the wizard shows
@@ -237,6 +253,7 @@ pub async fn frameworks_create<R: Runtime>(
 ) -> CmdResult<String> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
+    let host = state.host.clone();
     crate::projects::frameworks::check_env(&env).map_err(|p| problem_text(lang, p))?;
     let wanted_env = env;
     // `{password}` of `.env`: one new password for the creation.
@@ -285,18 +302,40 @@ pub async fn frameworks_create<R: Runtime>(
         };
         emit(0, None, None);
         // The creation runs the packages' own scripts (`npm create`,
-        // `composer create-project`): project code (level 2, D-179) on the
-        // PC, sealed like a project's programs (D-167), never with the
-        // kit's MySQL root, the user's SSH keys or an agent's command.
-        // Step 4 of LEVELS.md §12.2 runs it in the new project's VM.
-        let env = crate::levels::env::pc_environment(
-            &kit,
-            ensure(&app, &task, &kit, lang, &plan_needs(&plan))?,
-            crate::levels::Level::Project,
-            None,
-            None,
-        );
+        // `composer create-project`): project code (level 2, D-179),
+        // placed by `decide` in the new project's folder, made empty first
+        // so that it is a project's (LEVELS.md §3.3).
+        let base_env = ensure(&app, &task, &kit, lang, &plan_needs(&plan))?;
         std::fs::create_dir_all(kit.projects()).or_fail("frameworks")?;
+        let made_now = existing == Existing::New;
+        if made_now {
+            std::fs::create_dir(&dir).or_fail("frameworks")?;
+        }
+        let req = scaffold_request(&kit, &base, &dir);
+        let facts = super::levels::facts_now(&kit, &host, &base_env, &req);
+        let placement = super::levels::admitted(&req, &facts, lang).inspect_err(|_| {
+            if made_now {
+                let _ = std::fs::remove_dir(&dir);
+            }
+        })?;
+        let env = match &placement {
+            // Without the VM (R5): on the PC, sealed like a project's
+            // programs (D-167), never with the kit's MySQL root, the user's
+            // SSH keys or an agent's command.
+            crate::levels::Placement::Pc { .. } => {
+                super::levels::pc_env(&kit, &base_env, &placement, None, lang, &host)?
+            }
+            // With the VM (R15) still on the PC as before D-179, sealed for
+            // no project: step 4 of LEVELS.md §12.2 runs it in the new
+            // project's sandbox.
+            _ => crate::levels::env::pc_environment(
+                &kit,
+                base_env,
+                crate::levels::Level::Project,
+                None,
+                None,
+            ),
+        };
         // A project with files: the framework is made aside, in the PC's
         // temporary folder (D-90; removed when `staging` is dropped), then
         // added to it.
@@ -312,8 +351,9 @@ pub async fn frameworks_create<R: Runtime>(
         let make_at = staging
             .as_ref()
             .map_or_else(|| kit.projects(), |s| s.path().to_path_buf());
-        // An empty project: its folder is made again by the creation.
-        if existing == Existing::Empty {
+        // An empty project, or the folder made above for the decision: made
+        // again by the creation.
+        if existing == Existing::Empty || made_now {
             std::fs::remove_dir(&dir).or_fail("frameworks")?;
         }
         let no_folder = || {

@@ -4,6 +4,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import {
+  errorText,
+  fixOf,
   isolationStatus,
   serverReload,
   serverRemove,
@@ -12,6 +14,7 @@ import {
   serverStop,
   serversList,
   urlOpen,
+  type Fix,
   type WebServerEngine,
   type WebServerPool,
   type WebServersView,
@@ -293,6 +296,8 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   const [view, setView] = useState<WebServersView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A refusal of the levels (D-179): what to do about it.
+  const [fix, setFix] = useState<Fix | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -340,13 +345,15 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   const run = (id: string, fn: () => Promise<void>) => {
     setBusy(id);
     setError(null);
+    setFix(null);
     fn()
       .then(() => {
         setBusy(null);
         refresh();
       })
       .catch((e: unknown) => {
-        setError(String(e));
+        setError(errorText(e));
+        setFix(fixOf(e));
         setBusy(null);
         refresh();
       });
@@ -572,7 +579,7 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
             )}
           </Notice>
         )}
-        <ErrorLine error={error ?? loadError} />
+        <ErrorLine error={error ?? loadError} fix={error ? fix : null} />
       </div>
       {activePool ? (
         <PoolDetails

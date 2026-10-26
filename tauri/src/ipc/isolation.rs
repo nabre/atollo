@@ -71,7 +71,9 @@ pub async fn isolation_run<R: Runtime>(
                 crate::common::i18n::t(lang, "Docker Sandboxes (sbx) non è nel kit.", &[]).into(),
             );
         };
-        crate::editor::terminal::open_launch(&app, &env, &dir, launch).or_fail_chain("terminal")
+        // A kit's program (`sbx`) the user runs, on the PC.
+        let at = crate::levels::labels::SessionLabel::pc(crate::levels::Level::Manual);
+        crate::editor::terminal::open_launch(&app, &env, &dir, launch, at).or_fail_chain("terminal")
     })
     .await
     .or_fail("terminal")?

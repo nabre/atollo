@@ -223,6 +223,9 @@ const BASH: PtyInfo = {
   running: true,
   code: null,
   detached: false,
+  level: "manual",
+  label: "pc",
+  sandbox: null,
 };
 
 describe("sequencer", () => {
@@ -385,6 +388,43 @@ describe("TerminalPanel", () => {
     // Its program ends after the tab closed: the tab does not come back.
     fake.exit({ ...BASH, id: 2, title: "app · claude", running: false, code: 0 });
     expect(screen.queryByRole("tab", { name: /app · claude/ })).toBeNull();
+  });
+});
+
+describe("where a terminal runs (D-179, LEVELS.md §8.3)", () => {
+  it("shows the label of its level on every tab, and the sandbox on hover", async () => {
+    const fake = fakeBackend();
+    render(<Harness backend={fake.backend} />);
+    await waitFor(() => {
+      expect(fake.sessions).toHaveBeenCalled();
+    });
+    fake.open(BASH, { seq: 0, data: "" });
+    fake.open({ ...BASH, id: 2, title: "shop · pwsh", level: "project" }, { seq: 0, data: "" });
+    fake.open(
+      { ...BASH, id: 3, title: "shop · VM", level: "project", label: "projectVm", sandbox: "atollo-p-shop-1a2b" },
+      { seq: 0, data: "" },
+    );
+    fake.open(
+      {
+        ...BASH,
+        id: 4,
+        title: "shop · claude",
+        level: "agent",
+        label: "agentVm",
+        sandbox: "atollo-a-claude-shop-1a2b",
+      },
+      { seq: 0, data: "" },
+    );
+    const described = (name: string) => screen.getByRole("tab", { name, description: /./ });
+    // The tab keeps its name; the label describes it.
+    expect(described("app · bash").textContent).toContain("PC");
+    expect(screen.getByRole("tab", { name: "app · bash", description: "PC" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "shop · pwsh", description: "PC · senza VM" })).toBeTruthy();
+    const vm = screen.getByRole("tab", { name: "shop · VM", description: "VM progetto" });
+    expect(vm.getAttribute("title")).toBe("Gira in atollo-p-shop-1a2b");
+    const agent = screen.getByRole("tab", { name: "shop · claude", description: "Agente · VM" });
+    expect(agent.getAttribute("title")).toBe("Gira in atollo-a-claude-shop-1a2b");
+    expect(described("app · bash").getAttribute("title")).toBeNull();
   });
 });
 

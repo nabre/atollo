@@ -3,9 +3,10 @@
 // workbench/.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
-import type { EditorStatus } from "../ipc";
+import type { EditorStatus, Fix } from "../ipc";
 import { t } from "../i18n";
 import { Button, codicon, IconButton, Notice, type MenuTrigger } from "../workbench";
+import { FixAction, hasAction } from "./levels";
 
 /** A button of the pages: a text button (Button), or with `compact` an
  * icon action (IconButton) named by its label. */
@@ -72,9 +73,19 @@ export function ActionButton({
   );
 }
 
-export function ErrorLine({ error }: { error: string | null }) {
+export function ErrorLine({ error, fix = null }: { error: string | null; fix?: Fix | null }) {
   if (!error) return null;
-  return <Notice tone="error">{error}</Notice>;
+  return (
+    <Notice tone="error">
+      {error}
+      {hasAction(fix) && (
+        <>
+          {" "}
+          <FixAction fix={fix} />
+        </>
+      )}
+    </Notice>
+  );
 }
 
 /** A read that failed, with "Riprova" to read again. When `onRetry`

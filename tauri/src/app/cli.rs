@@ -268,6 +268,30 @@ pub fn output() -> Box<dyn Write> {
     crate::platform::console::output()
 }
 
+/// What `atollo env --project <project>` prints (E20, LEVELS.md §4.4): the
+/// environment of the project's code on the PC, `environment(Pc{Project})`
+/// of `levels::env`, with `ATOLLO_LEVEL=project`. It starts nothing, so it
+/// asks no `decide`: it shows the PC's environment whether the VM is on or
+/// not.
+pub fn project_env(kit: &Kit, base: &KitEnv, project: &str, lang: &str, host: &Host) -> KitEnv {
+    let placement = crate::levels::Placement::Pc {
+        level: crate::levels::Level::Project,
+        project: Some(project.to_owned()),
+        dir: kit.projects().join(project),
+    };
+    match crate::levels::env::environment(kit, base, &placement, None, lang, host) {
+        Some(crate::levels::env::Environment::Pc(env)) => env,
+        // Not reached: `environment` gives a `Pc` placement its `Pc` part.
+        _ => crate::levels::env::pc_environment(
+            kit,
+            base.clone(),
+            crate::levels::Level::Project,
+            Some(project),
+            None,
+        ),
+    }
+}
+
 /// `KEY=VALUE` lines, sorted, as `set` prints them. Secrets masked
 /// (`CLAUDE_CODE_OAUTH_TOKEN=***`, a proxy's password; `env::masked`): the
 /// output ends up in terminals, logs and bug reports.
