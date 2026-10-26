@@ -827,10 +827,12 @@ jobs:
           if ($env:GITHUB_REF_NAME -ne "app-v$version") { throw "tag $env:GITHUB_REF_NAME does not match app-v$version" }
       # Windows exes (Atollo-<triple>) and the macOS and Linux bundles
       # (bundle-<target>), the same artifacts release-smoke started.
+      # By its name, into its own folder: a pattern that finds one artifact
+      # extracts it straight into `path`.
       - uses: actions/download-artifact@v7
         with:
-          pattern: Atollo-*
-          path: artifacts
+          name: Atollo-x86_64-pc-windows-msvc
+          path: artifacts/Atollo-x86_64-pc-windows-msvc
       - uses: actions/download-artifact@v7
         with:
           pattern: bundle-*
