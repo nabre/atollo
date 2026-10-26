@@ -29,7 +29,6 @@ use crate::platform::virt::{self, Gap};
 pub mod daemon;
 pub mod kit;
 pub mod secrets;
-pub mod session;
 pub mod vm;
 
 /// How long a status stays good: `sbx` is asked at most once a minute.
@@ -39,25 +38,6 @@ const ASK_LIMIT: Duration = Duration::from_secs(15);
 
 // The sealed environment (`SEALED`, `seal`) and the stripping of the
 // agents (`agent_dirs`, `strip_agents`) are in `levels::env` (D-179).
-
-/// What the PC's shells say about the agents (D-178), in `lang`: shown when
-/// a kit terminal or a project's terminal opens on the PC and by the
-/// stand-ins of the agents' commands (`ATOLLO_AGENTS_NOTICE`).
-pub fn agents_notice(lang: &str) -> String {
-    crate::common::i18n::t(
-        lang,
-        "Atollo: in questo terminale non ci sono gli agenti (Claude Code, Codex, Antigravity, Pi). Gli agenti girano solo nella VM: avviali dalla pagina del progetto o dall'editor.",
-        &[],
-    )
-}
-
-/// `env` of a shell opened on the PC, with [`agents_notice`] for it to show.
-pub fn with_agents_notice(env: &mut KitEnv, lang: &str) {
-    env.set(
-        crate::setup::kit_files::AGENTS_NOTICE_VAR,
-        agents_notice(lang),
-    );
-}
 
 /// What shuts a project's programs in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -1327,10 +1307,43 @@ pub fn pwsh_keys(pwsh: &Path) -> Vec<String> {
     keys
 }
 
-/// The editor's sessions of Pi that still run (D-178), from the markers'
-/// pids (`markers`, [`session::pi_markers`]): only a pid that runs on the
-/// PC (`procs`) as the kit's PowerShell (`pwsh`, [`pwsh_keys`]). A marker
-/// left behind, or its pid now another program's, is none.
+/// How the processes of the PC name the programs a request's client runs
+/// in ([`pwsh_keys`] of each): the kit's PowerShell (`launch.ps1`), and
+/// the shells `launch.sh` may run in: Git's `sh` and `bash` of the kit on
+/// Windows, the system's `/bin/sh` (and what it resolves to) and the
+/// shells macOS's `/bin/sh` hands over to elsewhere (LEVELS.md §4.3).
+pub fn client_keys(kit: &Kit) -> Vec<String> {
+    let mut programs = vec![crate::setup::kit_path(kit, r"pwsh\pwsh.exe")];
+    if kit.target().is_windows() {
+        for rel in [
+            r"git\usr\bin\sh.exe",
+            r"git\usr\bin\bash.exe",
+            r"git\bin\bash.exe",
+            r"git\bin\sh.exe",
+        ] {
+            programs.push(crate::setup::kit_path(kit, rel));
+        }
+    } else {
+        for shell in ["/bin/sh", "/bin/bash", "/bin/dash", "/bin/zsh"] {
+            programs.push(PathBuf::from(shell));
+        }
+    }
+    let mut keys = Vec::new();
+    for program in programs {
+        for key in pwsh_keys(&program) {
+            if !keys.contains(&key) {
+                keys.push(key);
+            }
+        }
+    }
+    keys
+}
+
+/// The clients' sessions of Pi that still run (D-178), from the markers'
+/// pids (`markers`, [`crate::levels::requests::pi_markers`]): only a pid
+/// that runs on the PC (`procs`) as a client's program (`pwsh`,
+/// [`client_keys`]). A marker left behind, or its pid now another
+/// program's, is none.
 pub fn editor_pis_alive(markers: &[u32], procs: &[Proc], pwsh: &[String]) -> Vec<u32> {
     markers
         .iter()
@@ -1369,7 +1382,7 @@ enum PiNow {
 /// [`pi_port_touch`]). With `end`, a port no longer kept leaves the
 /// watched ones in the same step: nothing touches it in between.
 fn pi_now(kit: &Kit, name: &str, project: &str, pwsh: &[String], end: bool) -> PiNow {
-    let markers = session::pi_markers(kit, project);
+    let markers = crate::levels::requests::pi_markers(kit, project);
     let editor = if markers.is_empty() {
         Vec::new()
     } else {
@@ -1408,8 +1421,9 @@ pub fn ports_with(ports: &[u16], pi_port: Option<u16>) -> Vec<u16> {
 /// the project's own code runs in the same VM, and would use the models
 /// too while the port is open. Whether Pi runs is never asked to the VM,
 /// where that code could fake it: the app's terminal sessions of Pi
-/// ([`pi_session`]) and the editor's (`vm.ps1`'s markers with the pid of
-/// the kit's PowerShell, [`editor_pis_alive`]) tell it, on the PC. One
+/// ([`pi_session`]) and the requests' clients' (`launch.ps1`'s and
+/// `launch.sh`'s markers with their pid, [`editor_pis_alive`]) tell it, on
+/// the PC. One
 /// watcher per sandbox, a thread: it waits [`PI_GRACE`], then looks every
 /// [`PI_POLL`]; when no session runs, or [`PI_MAX`] passed since the last
 /// start, it closes every port it opened for Pi (never one of the
@@ -1439,7 +1453,7 @@ pub fn watch_pi_port(vm: Vm, env: KitEnv, project: String, port: u16, db_ports: 
             },
         );
     }
-    let pwsh = pwsh_keys(&crate::setup::kit_path(&vm.kit, r"pwsh\pwsh.exe"));
+    let pwsh = client_keys(&vm.kit);
     std::thread::spawn(move || loop {
         let Some(since) = pi_watched().get(&vm.name).map(|w| w.touched.elapsed()) else {
             return;
@@ -1887,6 +1901,12 @@ impl Vm {
             ));
         }
         Ok(())
+    }
+
+    /// The kit's `sbx` that runs this sandbox's sessions (a request's
+    /// reply, `levels::requests`).
+    pub fn sbx_path(&self) -> &Path {
+        self.sbx.path()
     }
 
     /// The environment of that session ([`Sbx::session_env`]).

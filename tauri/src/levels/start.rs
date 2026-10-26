@@ -23,10 +23,13 @@ use super::{Agent, Placement, VmProgram};
 
 /// The arguments of `sbx` for the terminal-like session of the `Vm`
 /// placement of `ready` (its sandbox started by `prepare`): the project's
-/// terminal (`Shell`), Claude Code or Codex in their sandbox (`SbxAgent`,
-/// which asks the sandbox its image's `PATH`), Pi's Linux build in the
-/// project's (`AgentBinary`). Antigravity waits for step 7 of §12.2.
-pub fn vm_session_args(kit: &Kit, ready: &Ready) -> Result<Vec<String>> {
+/// terminal (`Shell`), an editor's task (`Line`, `sh -lc` in the folder of
+/// the request), Claude Code or Codex in their sandbox (`SbxAgent`, which
+/// asks the sandbox its image's `PATH`), Pi's Linux build in the project's
+/// (`AgentBinary`). Antigravity waits for step 7 of §12.2. `extra`: what
+/// the user typed after the agent's command (a forwarder, §6.8), after `--`
+/// for `sbx run` **[unverified, Q4]**; nothing else takes it.
+pub fn vm_session_args(kit: &Kit, ready: &Ready, extra: &[String]) -> Result<Vec<String>> {
     let (
         Placement::Vm {
             workdir, program, ..
@@ -37,14 +40,41 @@ pub fn vm_session_args(kit: &Kit, ready: &Ready) -> Result<Vec<String>> {
     else {
         bail!("levels: not a session in a VM");
     };
+    let agent = matches!(
+        program,
+        VmProgram::SbxAgent { .. } | VmProgram::AgentBinary { .. }
+    );
+    if !agent && !extra.is_empty() {
+        bail!("levels: arguments only after an agent's command");
+    }
     match program {
         VmProgram::Shell => Ok(vm::kit_terminal_args(&vm.name, workdir, vm.tools())),
-        VmProgram::SbxAgent { .. } => vm.agent_session_args(sbx_env),
+        VmProgram::Line { command } => Ok(vm::exec_args(
+            &vm.name,
+            Some(workdir),
+            command,
+            &[],
+            vm.tools(),
+        )),
+        VmProgram::SbxAgent { .. } => {
+            let mut args = vm.agent_session_args(sbx_env)?;
+            if !extra.is_empty() {
+                args.push("--".into());
+                args.extend(extra.iter().cloned());
+            }
+            Ok(args)
+        }
         VmProgram::AgentBinary { agent: Agent::Pi } => {
             let pi = vm::guest_target(kit.target())
                 .and_then(|t| isolation::pi_in_vm(kit, &kit.for_target(t)))
                 .ok_or_else(|| anyhow!("pi: no build for the VM's Linux"))?;
-            Ok(vm::pi_session_args(&vm.name, workdir, &pi, vm.tools()))
+            Ok(vm::pi_session_args(
+                &vm.name,
+                workdir,
+                &pi,
+                vm.tools(),
+                extra,
+            ))
         }
         // Step 7 of LEVELS.md §12.2 (`vm::agy_session_args`); until then
         // `ipc::agents::refused_on_project` refuses it before `decide`.
@@ -61,14 +91,16 @@ pub fn start_terminal(kit: &Kit, ready: &Ready, lang: &str) -> Result<(Launch, K
     let at = SessionLabel::of(&ready.placement).ok_or_else(|| anyhow!("levels: refused"))?;
     let (mut launch, env, dir) = match (&ready.placement, &ready.env, &ready.vm) {
         (Placement::Pc { dir, .. }, Environment::Pc(env), None) => {
-            let mut env = env.clone();
-            // The stand-ins say where the agents run (until step 5's
-            // forwarders).
-            isolation::with_agents_notice(&mut env, lang);
-            (crate::editor::pty::shell(kit, dir), env, dir.clone())
+            // The agents' commands are the forwarders, first on its PATH
+            // (§6.8): they say why when they cannot forward.
+            (
+                crate::editor::pty::shell(kit, dir),
+                env.clone(),
+                dir.clone(),
+            )
         }
         (Placement::Vm { program, .. }, Environment::Vm { sbx_env, .. }, Some(vm)) => {
-            let args = vm_session_args(kit, ready)?;
+            let args = vm_session_args(kit, ready, &[])?;
             let what = match program {
                 VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => agent.id(),
                 _ => "VM",

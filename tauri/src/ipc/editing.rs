@@ -28,21 +28,17 @@ pub async fn editor_open<R: Runtime>(
     let editor = Arc::clone(&state.editor);
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
     let lang = state.lang();
-    let (host, kit_env) = (state.host.clone(), state.env());
-    let dir_vm = dir.clone();
-    let (port, token, req) = tauri::async_runtime::spawn_blocking(move || {
+    // No VM is prepared for the editor (D-179): its terminals are level 1
+    // on the PC, each task and agent asks the levels when it starts
+    // (`levels::requests`).
+    let (port, token) = tauri::async_runtime::spawn_blocking(move || {
         ensure(&handle, &task, &kit, lang, &[])?;
         let (port, token) = editor.ensure_running().or_fail_chain("editor start")?;
-        // Before the window: a terminal never opens before the box is known.
-        let req = editor_vm_begin(&kit, &host, &kit_env, &dir_vm, lang);
-        Ok::<_, CmdError>((port, token, req))
+        Ok::<_, CmdError>((port, token))
     })
     .await
     .or_fail("editor")??;
     let _ = app.emit_to(MAIN, super::events::EDITOR_STATUS, state.editor.status());
-    if let Some(req) = req {
-        editor_vm_session(&app, &state, &project, &dir, req);
-    }
     let url = editor::url(port, &token, Some(&dir));
     editor::window::open(
         &app,
@@ -54,95 +50,6 @@ pub async fn editor_open<R: Runtime>(
         lang,
     )
     .or_fail_chain("editor window")
-}
-
-/// The box of the editor's terminals, tasks and agents for the project in
-/// `dir` (D-175, `isolation::session`; replaced by `levels::requests` in
-/// step 5 of LEVELS.md §12.2), noted before its window opens. Decided as
-/// the project's terminal (R14): with the VM on, the level and the project
-/// pending, the request to make ready; without the VM the level says so
-/// with why (D-178): nothing of the editor starts on the PC, its window
-/// still opens. A refusal with the VM on (R9, R10): the session says why.
-fn editor_vm_begin(
-    kit: &Kit,
-    host: &crate::env::Host,
-    kit_env: &KitEnv,
-    dir: &std::path::Path,
-    lang: &str,
-) -> Option<crate::levels::Request> {
-    use crate::isolation::session;
-    use crate::levels::{Placement, VmState};
-    let req = project_terminal_request(kit, dir);
-    let crate::levels::Place::Project { name: project, .. } = &req.place else {
-        return None;
-    };
-    let warn = |e: anyhow::Error| {
-        crate::common::log::warn(&format!("editor session {project}: {e:#}"));
-    };
-    let facts = super::levels::facts_now(kit, host, kit_env, &req);
-    if let VmState::Off { blockers } = &facts.vm {
-        let status = crate::isolation::Status::of(blockers.clone(), None);
-        let why = session::no_vm_text(&status, lang);
-        if let Err(e) =
-            session::set_level(kit, false, &why).and_then(|()| session::clear(kit, project))
-        {
-            warn(e);
-        }
-        return None;
-    }
-    if let Err(e) = session::set_level(kit, true, "").and_then(|()| session::pending(kit, project))
-    {
-        warn(e);
-    }
-    match crate::levels::decide(&req, &facts) {
-        Placement::Refused { reason, .. } => {
-            let why = crate::levels::labels::refusal_text(&reason, lang);
-            if let Err(e) = session::failed(kit, project, &why) {
-                warn(e);
-            }
-            None
-        }
-        _ => Some(req),
-    }
-}
-
-/// The project's VM for the editor's terminals, tasks and agents (D-175),
-/// made ready off the window's opening by `levels::prepare` (its tools,
-/// databases and ports): a terminal opened meanwhile waits for it.
-fn editor_vm_session<R: Runtime>(
-    app: &AppHandle<R>,
-    state: &State<'_, AppState>,
-    project: &str,
-    dir: &std::path::Path,
-    req: crate::levels::Request,
-) {
-    use crate::isolation::session;
-    let (kit, lang, host, kit_env) = (
-        state.kit.clone(),
-        state.lang(),
-        state.host.clone(),
-        state.env(),
-    );
-    let fx = super::levels::AppEffects::of(app, state, kit_env.clone());
-    let (project, dir) = (project.to_owned(), dir.to_path_buf());
-    std::thread::spawn(move || {
-        let ready = super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)
-            .map_err(|e| e.to_string())
-            .and_then(|ready| {
-                let (Some(vm), crate::levels::env::Environment::Vm { sbx_env, .. }) =
-                    (&ready.vm, &ready.env)
-                else {
-                    return Err("levels: the editor's session is in the VM".to_owned());
-                };
-                session::write(&kit, &project, &dir, vm, sbx_env).map_err(|e| format!("{e:#}"))
-            });
-        if let Err(why) = ready {
-            crate::common::log::warn(&format!("editor session {project}: {why}"));
-            if let Err(e) = session::failed(&kit, &project, &why) {
-                crate::common::log::warn(&format!("editor session {project}: {e:#}"));
-            }
-        }
-    });
 }
 
 #[tauri::command]

@@ -3,11 +3,14 @@
 //! File: `data\vscodium-server\data\Machine\settings.json`, the server-side
 //! settings that VSCodium applies to every window of the server (the user's
 //! own settings stay in the editor):
-//! - terminal profiles of the kit rewritten each time, PC profiles hidden,
-//!   profiles added by the user kept (DECISIONS.md D-23), those an earlier
-//!   kit left under other names removed (D-126);
+//! - only Atollo's terminal profiles, rewritten at every start (D-179,
+//!   LEVELS.md §13 item 10): the terminals level 1, the kit's shells on the
+//!   PC; the agents (level 3) and the tasks (level 2, `automationProfile`)
+//!   through the request client `launch.ps1`/`launch.sh` (§4.3); the PC's
+//!   profiles hidden, any other profile removed;
 //! - a few defaults set only when missing;
-//! - a file with comments or invalid JSON is left alone and reported.
+//! - a file with comments is read without them; one that is no JSON is
+//!   moved aside and written anew.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -18,17 +21,8 @@ use serde_json::{json, Map, Value};
 use crate::common::fsx::write_atomic;
 use crate::kit::{Kit, Os};
 
-/// Profiles owned by the kit (rewritten) and the PC profiles hidden, on
-/// Windows.
-pub const KIT_PROFILES: &[&str] = &[
-    "Atollo",
-    "Atollo - Git Bash",
-    "Atollo - cmd",
-    "Claude Code",
-    "Codex",
-    "Antigravity",
-    "Pi",
-];
+/// The profiles VSCodium detects on Windows, hidden: only Atollo's are
+/// offered (D-179).
 const HIDDEN: &[&str] = &[
     "PowerShell",
     "Windows PowerShell",
@@ -37,17 +31,6 @@ const HIDDEN: &[&str] = &[
     "JavaScript Debug Terminal",
 ];
 
-/// The same on macOS and Linux: the system's bash (Git of the kit has no
-/// shell there, D-109) and, on macOS, zsh; never cmd.
-pub const KIT_PROFILES_UNIX: &[&str] = &[
-    "Atollo",
-    "Atollo - Bash",
-    "Atollo - zsh",
-    "Claude Code",
-    "Codex",
-    "Antigravity",
-    "Pi",
-];
 /// The shells VSCodium detects on macOS and Linux: those of /etc/shells,
 /// named after their file (macOS lists csh, dash, ksh and tcsh too).
 const HIDDEN_UNIX: &[&str] = &[
@@ -84,14 +67,6 @@ fn os_key(os: Os) -> &'static str {
         Os::Win32 => "windows",
         Os::Darwin => "osx",
         Os::Linux => "linux",
-    }
-}
-
-fn kit_profile_names(os: Os) -> &'static [&'static str] {
-    if os.is_windows() {
-        KIT_PROFILES
-    } else {
-        KIT_PROFILES_UNIX
     }
 }
 
@@ -190,34 +165,70 @@ fn profile(path: &Path, args: &[String], icon: &str) -> Value {
     json!({ "path": path.display().to_string(), "args": args, "icon": icon, "overrideName": true })
 }
 
-/// The kit's PowerShell running `vm.ps1` with `extra` (D-175): every
-/// terminal, task and agent of the editor goes through it, to the
-/// project's VM when the VM is on (`isolation::session`), else to the
-/// kit's own on the PC; `interactive` keeps the shell open after it.
-pub fn vm_args(kit: &Kit, interactive: bool, extra: &[String]) -> Vec<String> {
-    let mut args: Vec<String> = vec!["-NoLogo".into(), "-NoProfile".into()];
-    if interactive {
-        args.push("-NoExit".into());
-    }
-    args.extend([
-        "-ExecutionPolicy".to_owned(),
-        "Bypass".to_owned(),
-        "-File".to_owned(),
-        kit.kit_files().join("vm.ps1").display().to_string(),
-    ]);
-    args.extend(extra.iter().cloned());
-    args
+/// How the editor runs a request's client (LEVELS.md §4.3): the kit's
+/// PowerShell with `launch.ps1`, or a shell with `launch.sh` where the
+/// kit's PowerShell is missing (Git Bash of the kit on Windows, the
+/// system's `/bin/sh` elsewhere).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Client {
+    Pwsh(PathBuf),
+    Sh(PathBuf),
 }
 
-/// `-Shell <kind>` and, for another program than the kit's PowerShell,
-/// `-Exe <its path>`, for [`vm_args`].
-fn shell_extra(kind: &str, exe: Option<&Path>) -> Vec<String> {
-    let mut extra = vec!["-Shell".to_owned(), kind.to_owned()];
-    if let Some(exe) = exe {
-        extra.push("-Exe".into());
-        extra.push(exe.display().to_string());
+/// The client of `kit`; `None` on Windows with neither the kit's PowerShell
+/// nor its Git Bash: then no task and no agent of the editor runs (E18).
+pub fn client(kit: &Kit) -> Option<Client> {
+    let pwsh = crate::setup::kit_path(kit, r"pwsh\pwsh.exe");
+    if pwsh.is_file() {
+        return Some(Client::Pwsh(pwsh));
     }
-    extra
+    if kit.os().is_windows() {
+        let bash = crate::setup::kit_path(kit, r"git\bin\bash.exe");
+        return bash.is_file().then_some(Client::Sh(bash));
+    }
+    Some(Client::Sh(PathBuf::from(SH)))
+}
+
+/// The system's sh that runs `launch.sh` on macOS and Linux.
+pub const SH: &str = "/bin/sh";
+
+impl Client {
+    /// The program of the profile.
+    pub fn program(&self) -> &Path {
+        match self {
+            Client::Pwsh(p) | Client::Sh(p) => p,
+        }
+    }
+
+    /// Its arguments for `origin` (the words of `launch.ps1`, e.g.
+    /// `["-Origin", "editorAgentProfile", "-Agent", "claude"]`, given to
+    /// `launch.sh` without the names: `["editorAgentProfile", "claude"]`).
+    pub fn args(&self, kit: &Kit, origin: &[(&str, &str)]) -> Vec<String> {
+        match self {
+            Client::Pwsh(_) => {
+                let mut args: Vec<String> = [
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                ]
+                .map(String::from)
+                .into();
+                args.push(kit.kit_files().join("launch.ps1").display().to_string());
+                for (name, value) in origin {
+                    args.push(format!("-{name}"));
+                    args.push((*value).to_owned());
+                }
+                args
+            }
+            Client::Sh(_) => {
+                let mut args = vec![kit.kit_files().join("launch.sh").display().to_string()];
+                args.extend(origin.iter().map(|(_, v)| (*v).to_owned()));
+                args
+            }
+        }
+    }
 }
 
 /// The arguments of bash with the kit's `bashrc`.
@@ -226,31 +237,42 @@ pub fn bash_args(kit: &Kit) -> Vec<String> {
     vec!["--rcfile".into(), rc, "-i".into()]
 }
 
-/// The kit profiles for what is installed now, for the kit's system.
+/// The agents' profiles: name, agent id, icon.
+const AGENT_PROFILES: [(&str, &str, &str); 4] = [
+    ("Claude Code", "claude", "sparkle"),
+    ("Codex", "codex", "hubot"),
+    ("Antigravity", "antigravity", "rocket"),
+    ("Pi", "pi", "symbol-constant"),
+];
+
+/// True when the kit has `agent` for the PC or for the VM's Linux: its
+/// profile is offered (gated on the VM by step 6 of LEVELS.md §12.2).
+fn has_agent(kit: &Kit, agent: &str) -> bool {
+    let installed = |k: &Kit| {
+        crate::setup::Catalog::get()
+            .find(agent)
+            .is_some_and(|c| c.is_installed(k))
+    };
+    installed(kit)
+        || crate::isolation::vm::guest_target(kit.target())
+            .is_some_and(|t| installed(&kit.for_target(t)))
+}
+
+/// The kit profiles for what is installed now, for the kit's system
+/// (D-179): the terminals are level 1, the kit's shells on the PC as they
+/// are (the editor server's environment is `environment(Pc{Manual})`, the
+/// kit's profile applies the project's lines of the folder); the agents
+/// are level 3, through the request client ([`client`]) to their VM;
+/// without a client no agent profile.
 pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
     let os = kit.os();
     let app = |rel: &str| crate::setup::kit_path(kit, rel);
     let mut out = Map::new();
     let pwsh = app(r"pwsh\pwsh.exe");
-    // Through `vm.ps1` when the kit's PowerShell is there (D-175): `kind`
-    // of shell, `exe` its program; else the program itself with `args`.
-    let has_pwsh = pwsh.is_file();
-    let shell = |kind: &str, exe: &Path, args: Vec<String>, icon: &str| {
-        if has_pwsh {
-            let extra = shell_extra(kind, Some(exe));
-            profile(&pwsh, &vm_args(kit, false, &extra), icon)
-        } else {
-            profile(exe, &args, icon)
-        }
-    };
-    if has_pwsh {
+    if pwsh.is_file() {
         out.insert(
             "Atollo".into(),
-            profile(
-                &pwsh,
-                &vm_args(kit, true, &shell_extra("pwsh", None)),
-                "terminal-powershell",
-            ),
+            profile(&pwsh, &pwsh_args(kit), "terminal-powershell"),
         );
     }
     if os.is_windows() {
@@ -258,155 +280,124 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
         if bash.is_file() {
             out.insert(
                 "Atollo - Git Bash".into(),
-                shell("bash", &bash, bash_args(kit), "terminal-bash"),
+                profile(&bash, &bash_args(kit), "terminal-bash"),
             );
         }
         let cmd = system_root.join(r"System32\cmd.exe");
         out.insert(
             "Atollo - cmd".into(),
-            shell("cmd", &cmd, vec!["/d".into(), "/k".into()], "terminal-cmd"),
+            profile(&cmd, &["/d".into(), "/k".into()], "terminal-cmd"),
         );
     } else {
         // The system's bash with the kit's bashrc (bash 3.2 on macOS reads
         // it too, D-105); the environment is the kit's, from the server.
         out.insert(
             "Atollo - Bash".into(),
-            shell("bash", Path::new(BASH), bash_args(kit), "terminal-bash"),
+            profile(Path::new(BASH), &bash_args(kit), "terminal-bash"),
         );
         if os.is_macos() {
             // Interactive, not a login shell: path_helper of
             // /etc/zprofile would put the system's folders first.
             out.insert(
                 "Atollo - zsh".into(),
-                shell("zsh", Path::new(ZSH), vec!["-i".into()], "terminal"),
+                profile(Path::new(ZSH), &["-i".into()], "terminal"),
             );
         }
     }
-    for (name, id, rel, icon) in [
-        ("Claude Code", "claude", r"claude\claude.exe", "sparkle"),
-        ("Codex", "codex", r"codex\bin\codex.exe", "hubot"),
-        (
-            "Antigravity",
-            "antigravity",
-            r"antigravity\agy.exe",
-            "rocket",
-        ),
-        ("Pi", "pi", r"pi\pi.exe", "symbol-constant"),
-    ] {
-        let exe = app(rel);
-        if exe.is_file() {
-            // Antigravity through the kit's agy.cmd (agy, sh, on macOS and
-            // Linux): it carries the login and the Gemini key. Claude Code
-            // on macOS through the kit's `claude` (sh): it gives the token
-            // saved in the kit to Claude Code only (SEC-V6-02).
-            let bin = kit.kit_files().join(crate::setup::kit_files::AGENTS_DIR);
-            let path = match name {
-                "Antigravity" => bin.join(crate::router::bins::cmd_name(os, "agy")),
-                "Claude Code" if crate::agents::claude_token::offered(os) => bin.join("claude"),
-                _ => exe,
-            };
-            // In the VM, Claude Code and Codex in `sbx`'s sandboxes, the
-            // others refused; without it, the agent on the PC (D-175).
-            let entry = if has_pwsh {
-                let extra = [
-                    "-Agent".to_owned(),
-                    id.to_owned(),
-                    "-Exe".to_owned(),
-                    path.display().to_string(),
-                ];
-                profile(&pwsh, &vm_args(kit, false, &extra), icon)
-            } else {
-                profile(&path, &[], icon)
-            };
-            out.insert(name.into(), entry);
+    if let Some(client) = client(kit) {
+        for (name, id, icon) in AGENT_PROFILES {
+            if has_agent(kit, id) {
+                let args = client.args(kit, &[("Origin", "editorAgentProfile"), ("Agent", id)]);
+                out.insert(name.into(), profile(client.program(), &args, icon));
+            }
         }
     }
     out
 }
 
+/// The editor's tasks (`automationProfile`, LEVELS.md §6.3): through the
+/// request client, which VSCodium gives `-Command <line>` (PowerShell on
+/// Windows) or `-c <line>`. Without a client (Windows with neither the
+/// kit's PowerShell nor its Git Bash) a task never runs on the PC: Windows
+/// PowerShell says why and fails, the task's line after a `#` (E18).
+fn tasks_profile(kit: &Kit, system_root: &Path) -> Value {
+    match client(kit) {
+        Some(client) => json!({
+            "path": client.program().display().to_string(),
+            "args": client.args(kit, &[("Origin", "editorTask")]),
+        }),
+        None => {
+            let ps = system_root
+                .join("System32")
+                .join("WindowsPowerShell")
+                .join("v1.0")
+                .join("powershell.exe");
+            let say = format!(
+                "[Console]::Error.WriteLine('{}'); exit 1 #",
+                NO_CLIENT.replace('\'', "''")
+            );
+            json!({
+                "path": ps.display().to_string(),
+                "args": ["-NoLogo", "-NoProfile", "-Command", say],
+            })
+        }
+    }
+}
+
+/// What a task says without a request client (its `'` doubled in
+/// PowerShell's quotes).
+pub const NO_CLIENT: &str =
+    "Atollo: senza il PowerShell del kit i task e gli agenti dell'editor non partono: installalo da Strumenti.";
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Outcome {
     Written,
     Unchanged,
-    /// Comments or invalid JSON: not touched.
-    LeftAlone(String),
-}
-
-/// A profile the kit wrote under a name it no longer uses: one of today's
-/// kit profiles under another name, or, with the kit's `overrideName`, a
-/// program in the kit. Kept, it would point at a versioned PowerShell or
-/// Git folder that an update removes, and a default on it would make
-/// VSCodium open the PC's shell.
-fn left_by_the_kit(profile: &Value, kit: &Kit, today: &Map<String, Value>) -> bool {
-    today.values().any(|p| p == profile)
-        || profile["overrideName"] == json!(true)
-            && profile["path"]
-                .as_str()
-                .is_some_and(|p| Path::new(p).starts_with(kit.data()))
+    /// Invalid JSON, even without comments: moved aside to this file, and
+    /// the settings written anew.
+    Replaced(PathBuf),
 }
 
 /// Merges the kit's settings into `existing` (the parsed file). The
 /// terminal settings are those of the kit's system (`.windows`, `.osx`,
 /// `.linux`): the same file serves a kit used on several systems, each
-/// writes its own and leaves the others.
+/// writes its own and leaves the others. Only Atollo's profiles (D-179):
+/// the system's detected ones hidden, any other profile removed; the
+/// default kept only when it is one of Atollo's.
 pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Map<String, Value> {
     let os = kit.os();
     let key = |name: &str| format!("terminal.integrated.{name}.{}", os_key(os));
-    let (owned, hidden) = (kit_profile_names(os), hidden(os));
     let mut out = existing.clone();
     let profiles_key = key("profiles");
     let mut profiles = Map::new();
-    for name in hidden {
+    for name in hidden(os) {
         profiles.insert((*name).into(), Value::Null);
     }
     let kit_profiles = kit_profiles(kit, system_root);
-    if let Some(Value::Object(old)) = existing.get(&profiles_key) {
-        for (name, value) in old {
-            if !owned.contains(&name.as_str())
-                && !hidden.contains(&name.as_str())
-                && !left_by_the_kit(value, kit, &kit_profiles)
-            {
-                profiles.insert(name.clone(), value.clone());
-            }
-        }
-    }
     let names: Vec<String> = kit_profiles.keys().cloned().collect();
     profiles.extend(kit_profiles);
-    out.insert(profiles_key, Value::Object(profiles.clone()));
+    out.insert(profiles_key, Value::Object(profiles));
 
     let default_key = key("defaultProfile");
-    let keep_default = matches!(existing.get(&default_key), Some(Value::String(d)) if profiles.get(d).is_some_and(|p| !p.is_null()));
+    let keep_default =
+        matches!(existing.get(&default_key), Some(Value::String(d)) if names.contains(d));
     // Without the kit's PowerShell, bash on macOS and Linux.
     let default = [DEFAULT_PROFILE]
         .into_iter()
         .chain((!os.is_windows()).then_some(DEFAULT_PROFILE_UNIX))
         .find(|d| names.iter().any(|n| n == d));
-    if let (false, Some(default)) = (keep_default, default) {
-        out.insert(default_key, json!(default));
-    }
-    let pwsh = crate::setup::kit_path(kit, r"pwsh\pwsh.exe");
-    // Tasks and debug consoles through `vm.ps1` too (D-175): in the
-    // project's VM with `sh -lc` when the VM is on; else the kit's shell on
-    // Windows and, on macOS and Linux, the system's bash (tasks written for
-    // sh and bash; never the user's login shell, whose profile could put
-    // other tools first).
-    if os.is_windows() {
-        if pwsh.is_file() {
-            let args = vm_args(kit, false, &shell_extra("pwsh", None));
-            out.insert(
-                key("automationProfile"),
-                json!({ "path": pwsh.display().to_string(), "args": args }),
-            );
+    match (keep_default, default) {
+        (true, _) => {}
+        (false, Some(default)) => {
+            out.insert(default_key, json!(default));
         }
+        (false, None) => {
+            out.remove(&default_key);
+        }
+    }
+    out.insert(key("automationProfile"), tasks_profile(kit, system_root));
+    if os.is_windows() {
         out.insert("terminal.integrated.useWslProfiles".into(), json!(false));
-    } else if pwsh.is_file() {
-        let args = vm_args(kit, false, &shell_extra("bash", Some(Path::new(BASH))));
-        out.insert(
-            key("automationProfile"),
-            json!({ "path": pwsh.display().to_string(), "args": args }),
-        );
-    } else {
-        out.insert(key("automationProfile"), json!({ "path": BASH }));
     }
     // VSCodium drops NODE_OPTIONS from the terminals' environment (one of its
     // "dangerous" variables): without `loopback.js` a dev server started in
@@ -448,25 +439,89 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     out
 }
 
-/// Writes the settings file. `Ok(LeftAlone)` when the user's file cannot be
-/// parsed as plain JSON.
+/// `text` without the comments (`//`, `/* */`) and the trailing commas
+/// VSCodium's settings may have (JSON with comments), strings left as they
+/// are.
+pub fn strip_jsonc(text: &str) -> String {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    let mut in_string = false;
+    while i < chars.len() {
+        let c = chars[i];
+        if in_string {
+            out.push(c);
+            if c == '\\' && i + 1 < chars.len() {
+                out.push(chars[i + 1]);
+                i += 2;
+                continue;
+            }
+            if c == '"' {
+                in_string = false;
+            }
+            i += 1;
+            continue;
+        }
+        match (c, chars.get(i + 1)) {
+            ('"', _) => {
+                in_string = true;
+                out.push(c);
+                i += 1;
+            }
+            ('/', Some('/')) => {
+                while i < chars.len() && chars[i] != '\n' {
+                    i += 1;
+                }
+            }
+            ('/', Some('*')) => {
+                i += 2;
+                while i < chars.len() && !(chars[i] == '*' && chars.get(i + 1) == Some(&'/')) {
+                    i += 1;
+                }
+                i += 2;
+            }
+            (',', _) => {
+                let next = chars[i + 1..].iter().find(|c| !c.is_whitespace());
+                if !matches!(next, Some('}') | Some(']')) {
+                    out.push(c);
+                }
+                i += 1;
+            }
+            _ => {
+                out.push(c);
+                i += 1;
+            }
+        }
+    }
+    out
+}
+
+/// Writes the settings file at every start of the editor, the keys Atollo
+/// owns rewritten (§13 item 10). A file with comments or trailing commas is
+/// read without them; one that is still no JSON object is moved aside to
+/// `settings.json.bak-<seconds>` and the settings are written anew
+/// ([`Outcome::Replaced`]).
 pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
     let path = settings_path(kit);
+    let mut moved = None;
     let existing = match fs::read_to_string(&path) {
         Ok(text) => {
             let text = crate::common::fsx::strip_bom(&text);
             if text.trim().is_empty() {
                 Map::new()
             } else {
-                match serde_json::from_str::<Value>(text) {
+                match serde_json::from_str::<Value>(&strip_jsonc(text)) {
                     Ok(Value::Object(map)) => map,
-                    Ok(_) => {
-                        return Ok(Outcome::LeftAlone(format!(
-                            "{}: not a JSON object",
-                            path.display()
-                        )))
+                    _ => {
+                        let secs = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs())
+                            .unwrap_or_default();
+                        let aside = path.with_file_name(format!("settings.json.bak-{secs}"));
+                        fs::rename(&path, &aside).with_context(|| aside.display().to_string())?;
+                        moved = Some(aside);
+                        Map::new()
                     }
-                    Err(e) => return Ok(Outcome::LeftAlone(format!("{}: {e}", path.display()))),
                 }
             }
         }
@@ -474,7 +529,7 @@ pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
         Err(e) => return Err(e).with_context(|| path.display().to_string()),
     };
     let merged = merge(&existing, kit, system_root);
-    if merged == existing && path.exists() {
+    if moved.is_none() && merged == existing && path.exists() {
         return Ok(Outcome::Unchanged);
     }
     if let Some(dir) = path.parent() {
@@ -482,7 +537,10 @@ pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
     }
     let text = serde_json::to_string_pretty(&Value::Object(merged))?;
     write_atomic(&path, text.as_bytes()).with_context(|| path.display().to_string())?;
-    Ok(Outcome::Written)
+    Ok(match moved {
+        Some(aside) => Outcome::Replaced(aside),
+        None => Outcome::Written,
+    })
 }
 
 #[cfg(test)]

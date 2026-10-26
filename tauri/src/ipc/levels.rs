@@ -134,6 +134,54 @@ pub(crate) fn ready_now(
     ready(fx, kit, base, req, &facts, needs, lang, host)
 }
 
+/// Answers the request files of the processes outside the app while it
+/// runs (LEVELS.md §4.3, E11, E12, §6.8): each through `decide` →
+/// `environment` → `prepare` (`levels::requests::reply_to`, the app's
+/// [`AppEffects`]), the facts read when it comes. The editor server's
+/// environment, which a PC reply's changes start from, is
+/// `environment(Pc{Manual})` of the kit's (`Editor::start_on`).
+/// Antigravity is refused before `decide` until step 7 of §12.2.
+pub(crate) fn serve_requests<R: Runtime>(app: AppHandle<R>) {
+    use crate::levels::requests::{self, Reply};
+    use tauri::Manager;
+    let kit = app.state::<AppState>().kit.clone();
+    requests::serve(kit, move |asked| {
+        let state = app.state::<AppState>();
+        let (kit, host, base, lang) = (
+            state.kit.clone(),
+            state.host.clone(),
+            state.env(),
+            state.lang(),
+        );
+        if let Some(agent) = asked.origin.agent() {
+            if let Some(why) = super::agents::refused_on_project(agent.id(), lang) {
+                return Reply::error(why);
+            }
+        }
+        let req = requests::request_of(&kit, &asked);
+        let facts = facts_now(&kit, &host, &base, &req);
+        let editor_env = crate::levels::env::pc_environment(
+            &kit,
+            base.clone(),
+            crate::levels::Level::Manual,
+            None,
+            None,
+        );
+        let fx = AppEffects::of(&app, &state, base.clone());
+        requests::reply_to(
+            &fx,
+            &kit,
+            &base,
+            &editor_env,
+            &host,
+            &req,
+            &asked.args,
+            &facts,
+            lang,
+        )
+    });
+}
+
 /// The app's [`Effects`]: the setup task installs for the VM's Linux, the
 /// database servers and llama-server start with the kit's environment
 /// (`kit_env`), `sbx` starts the sandbox.
