@@ -7,11 +7,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+// The four systems Docker Sandboxes runs on, the only ones Atollo supports
+// (D-176): Docker builds sbx for no other.
 export const TARGETS = [
   ["win32-x64", "Windows", "x64"],
-  ["win32-arm64", "Windows", "ARM64"],
   ["darwin-arm64", "macOS", "Apple Silicon"],
-  ["darwin-x64", "macOS", "Intel"],
   ["linux-x64", "Linux", "x64"],
   ["linux-arm64", "Linux", "ARM64"],
 ];
@@ -39,12 +39,10 @@ export function loadCatalog(repo) {
 
 // The status of c on target t, without its needs: [kind, reason]. `why`
 // gives the reasons: notBuilt(c), unavailable(the catalog's Italian
-// text), noArm64, emulated, rosetta, native, needs(name).
+// text), rosetta (the x64 build on Apple silicon), native, needs(name).
 export function baseStatus(c, t, why) {
   if (c.targets && !c.targets.includes(t)) return ["no", why.notBuilt(c)];
   if (c.unavailable && t in c.unavailable) return ["no", why.unavailable(c.unavailable[t])];
-  if (t === "win32-arm64" && c.noArm64) return ["no", why.noArm64];
-  if (t === "win32-arm64" && c.x64Only) return ["emu", why.emulated];
   if (t === "darwin-arm64" && c.rosetta) return ["emu", why.rosetta];
   return ["ok", why.native];
 }
@@ -66,16 +64,14 @@ export function matrixHtml({ components, i18n }, lang, s) {
   const why = {
     notBuilt: () => s.mxNotBuilt,
     unavailable: tr,
-    noArm64: s.mxNoArm64,
-    emulated: s.mxEmulated,
-    rosetta: s.mxEmulated,
+    rosetta: s.mxRosetta,
     native: s.mxNative,
     needs: (name) => s.mxNeeds.replace("{0}", name),
   };
   const byId = Object.fromEntries(components.map((c) => [c.id, c]));
   const kindOf = (c) => KIND_OF[c.id] || KIND_OF_GROUP[c.group] || "tools";
 
-  const osHead = [["Windows", 2], ["macOS", 2], ["Linux", 2]].map(([os, n]) => `<th colspan="${n}" class="os-head">${os}</th>`).join("");
+  const osHead = ["Windows", "macOS", "Linux"].map((os) => [os, TARGETS.filter(([, o]) => o === os).length]).map(([os, n]) => `<th colspan="${n}" class="os-head">${os}</th>`).join("");
   // data-target lets assets/download.js mark the visitor's column.
   const archHead = TARGETS.map(([t, , arch]) => `<th class="arch" title="${t}" data-target="${t}">${escape(arch)}<span class="mx-here">${escape(s.mxHere)}</span></th>`).join("");
 

@@ -17,7 +17,7 @@ fn php_catalog_pins_cover_unix() {
         targets.sort_unstable();
         assert_eq!(
             targets,
-            ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+            ["darwin-arm64", "linux-arm64", "linux-x64"],
             "{line}"
         );
         for t in [Target::LINUX_X64, Target::DARWIN_ARM64] {
@@ -35,7 +35,6 @@ fn php_catalog_pins_cover_unix() {
 fn static_php_assets_per_target() {
     let want = [
         (Target::DARWIN_ARM64, "macos-aarch64"),
-        (Target::DARWIN_X64, "macos-x86_64"),
         (Target::LINUX_X64, "linux-x86_64"),
         (Target::LINUX_ARM64, "linux-aarch64"),
     ];
@@ -49,10 +48,8 @@ fn static_php_assets_per_target() {
             "{target}"
         );
     }
-    for target in [Target::WIN32_X64, Target::WIN32_ARM64] {
-        assert!(static_php_assets(target, "8.4.23").is_none(), "{target}");
-        assert!(static_php_os(target).is_none());
-    }
+    assert!(static_php_assets(Target::WIN32_X64, "8.4.23").is_none());
+    assert!(static_php_os(Target::WIN32_X64).is_none());
 }
 
 /// D-112: the lines offered are those with both archives pinned in
@@ -98,20 +95,15 @@ fn static_php_lines_from_the_pins() {
     assert!(static_php_parts(&pins, Target::LINUX_X64, "8.5.8").is_err());
 }
 
-/// The pins of this catalog: 8.4 and 8.5 on the four Unix targets, every
+/// The pins of this catalog: 8.4 and 8.5 on the three Unix targets, every
 /// hash a SHA-256, nothing for Windows.
 #[test]
 fn static_php_pins_in_the_catalog() {
     let catalog: Value =
         serde_json::from_str(include_str!("../../../../tauri/catalog/components.json")).unwrap();
     let pins = static_php_pins(&catalog);
-    assert_eq!(pins.len(), 16);
-    for target in [
-        Target::DARWIN_ARM64,
-        Target::DARWIN_X64,
-        Target::LINUX_X64,
-        Target::LINUX_ARM64,
-    ] {
+    assert_eq!(pins.len(), 12);
+    for target in [Target::DARWIN_ARM64, Target::LINUX_X64, Target::LINUX_ARM64] {
         let lines: Vec<String> = static_php_versions(&pins, target)
             .into_iter()
             .map(|(l, _)| l)
@@ -200,10 +192,6 @@ fn php_kit_builds_pinned() {
     assert!(
         php_build_part(&pins, Target::LINUX_ARM64, "8.4").is_none(),
         "not a SHA-256"
-    );
-    assert!(
-        php_build_part(&pins, Target::DARWIN_X64, "8.4").is_none(),
-        "no pin"
     );
     assert!(
         php_build_part(&pins, Target::LINUX_X64, "8.5").is_none(),

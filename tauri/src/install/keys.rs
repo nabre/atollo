@@ -55,8 +55,8 @@ pub(crate) fn check_key_for(
     Ok(())
 }
 
-/// Effective [`crate::kit::Target`] for downloading `component`, honouring
-/// x64 emulation on `win32-arm64` when `x64_only` is set.
+/// Effective [`crate::kit::Target`] for downloading `component`: its x64
+/// build where it runs with Rosetta 2 (`rosetta` on `darwin-arm64`).
 pub(super) fn target_of(ctx: &Ctx, component: &Component) -> crate::kit::Target {
     let t = ctx.kit.target();
     if component.is_emulated_on(t) {
@@ -66,7 +66,7 @@ pub(super) fn target_of(ctx: &Ctx, component: &Component) -> crate::kit::Target 
     }
 }
 
-/// `x64` or `arm64` as used by most download names, honouring `x64Only` on Windows.
+/// `x64` or `arm64` as used by most download names, honouring `rosetta` on macOS.
 pub(super) fn arch_of(ctx: &Ctx, component: &Component) -> &'static str {
     target_of(ctx, component).arch.as_str()
 }

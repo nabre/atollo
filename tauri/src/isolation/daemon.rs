@@ -119,6 +119,47 @@ pub fn current(kit: &Kit, sbx: &Path) -> Daemon {
     which(kit_pid(kit), &crate::platform::processes::all(), sbx, pipe)
 }
 
+/// The links of the PC's temporary folder (`temp`) that the daemon's
+/// sockets go through (`sboxd-<id>`, a junction on Windows) leading out of
+/// the kit's home (`home`), or to nothing. There is one per user of the
+/// PC, made by the first `sbx` that started a daemon and kept by every
+/// later one wherever it leads (tried with sbx 0.49.2): one left by another
+/// home puts the kit daemon's containerd there (networks, images, the
+/// VMs' disks, out of the kit), and a network left over in that state
+/// fails every `sbx run` ("failed to create network: already exists").
+pub fn foreign_links(temp: &Path, home: &Path) -> Vec<PathBuf> {
+    let Ok(entries) = std::fs::read_dir(temp) else {
+        return Vec::new();
+    };
+    let home = std::fs::canonicalize(home).ok();
+    entries
+        .flatten()
+        .filter(|e| e.file_name().to_string_lossy().starts_with("sboxd-"))
+        .map(|e| e.path())
+        .filter(|p| crate::platform::safe_path::is_link(p))
+        .filter(|p| {
+            let to = std::fs::canonicalize(p).ok();
+            !matches!((&to, &home), (Some(to), Some(home)) if to.starts_with(home))
+        })
+        .collect()
+}
+
+/// Removes the [`foreign_links`] before the kit's `sbx` starts its daemon,
+/// so it makes the link again to the kit's state. Only the link goes (a
+/// junction is removed as a folder, never what it leads to).
+pub fn unlink_foreign(temp: &Path, home: &Path) {
+    for link in foreign_links(temp, home) {
+        let gone = std::fs::remove_file(&link).or_else(|_| std::fs::remove_dir(&link));
+        match gone {
+            Ok(()) => crate::common::log::info(&format!(
+                "sbx: {} led out of the kit, removed",
+                link.display()
+            )),
+            Err(e) => crate::common::log::warn(&format!("sbx: {}: {e}", link.display())),
+        }
+    }
+}
+
 #[cfg(test)]
 #[path = "../../../test/rust/isolation/daemon.rs"]
 mod tests;

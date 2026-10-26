@@ -113,20 +113,13 @@ fn one_php_ini_per_line() {
     );
 }
 
-/// The folder of the php.ini for each of the six targets: Windows keeps
+/// The folder of the php.ini for each of the four targets: Windows keeps
 /// `data/php/<line>`, macOS and Linux get `data/php/<target>/<line>`.
 #[test]
 fn php_ini_dir_per_target() {
     use crate::kit::{Kit, Target};
     let tmp = TempDir::new("php-ini-targets");
-    for target in [
-        Target::WIN32_X64,
-        Target::WIN32_ARM64,
-        Target::DARWIN_ARM64,
-        Target::DARWIN_X64,
-        Target::LINUX_X64,
-        Target::LINUX_ARM64,
-    ] {
+    for target in Target::ALL {
         let kit = Kit::at_target(tmp.0.join("kit"), target);
         let data = kit.data();
         let dir = kit.apps().join("php").join("8.5");

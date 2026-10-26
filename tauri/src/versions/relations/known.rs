@@ -34,13 +34,9 @@ pub(super) struct LinkSpec {
 pub(super) struct RuntimeSpec {
     pub(super) id: String,
     pub(super) name: String,
-    /// Component ids; `@app` = the app itself, `@x64Only` = every
-    /// component without an ARM64 build.
+    /// Component ids; `@app` = the app itself.
     #[serde(rename = "for")]
     pub(super) for_: Vec<String>,
-    /// Only on ARM64 kits.
-    #[serde(default)]
-    pub(super) arm64: bool,
     #[serde(default)]
     pub(super) note: Option<String>,
 }

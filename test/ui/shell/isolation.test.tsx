@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { IsolationBlocker } from "@/ipc";
-import { apparmorCommand, explain, IsolationDialog, systemOf } from "@/shell/isolation";
+import { apparmorCommand, explain, IsolationDialog } from "@/shell/isolation";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
@@ -16,7 +16,6 @@ afterEach(() => {
 
 const ALL: IsolationBlocker[] = [
   { code: "old_windows", build: 19045 },
-  { code: "processor" },
   { code: "old_macos", version: "13.6" },
   { code: "distribution", name: "Fedora 41" },
   { code: "hypervisor_off" },
@@ -31,34 +30,30 @@ const ALL: IsolationBlocker[] = [
 ];
 
 describe("explain", () => {
-  it("says why and what to do for every reason, on every system", () => {
-    for (const system of ["windows", "macos", "linux"] as const) {
-      for (const b of ALL) {
-        const e = explain(b, system);
-        expect(e.why.length, b.code).toBeGreaterThan(10);
-        expect(e.fix.length, b.code).toBeGreaterThan(10);
-      }
+  it("says why and what to do for every reason", () => {
+    for (const b of ALL) {
+      const e = explain(b);
+      expect(e.why.length, b.code).toBeGreaterThan(10);
+      expect(e.fix.length, b.code).toBeGreaterThan(10);
     }
   });
 
   it("installs Docker Sandboxes in the kit, and gives the commands of the PC", () => {
-    for (const system of ["windows", "macos", "linux"] as const) {
-      const e = explain({ code: "sbx_missing" }, system);
-      expect(e.install).toBe(true);
-      expect(e.command).toBeUndefined();
-    }
-    expect(explain({ code: "hypervisor_off" }, "windows").command).toContain("HypervisorPlatform");
-    const profile = explain({ code: "apparmor", shim: "/k/shim" }, "linux").command ?? "";
+    const e = explain({ code: "sbx_missing" });
+    expect(e.install).toBe(true);
+    expect(e.command).toBeUndefined();
+    expect(explain({ code: "hypervisor_off" }).command).toContain("HypervisorPlatform");
+    const profile = explain({ code: "apparmor", shim: "/k/shim" }).command ?? "";
     expect(profile).toContain('"/k/shim" flags=(unconfined)');
     expect(profile).toContain("apparmor_parser -r /etc/apparmor.d/atollo-sbx-shim");
     expect(profile).toContain("  userns,");
-    expect(explain({ code: "sbx_signed_out" }, "linux").command).toBe("sbx login");
+    expect(explain({ code: "sbx_signed_out" }).command).toBe("sbx login");
   });
 
   it("never builds a sudo command from a path that could add rules", () => {
     for (const shim of ['/k/a" { capability, } "/x', "/k/a\nb", "/k/*", "/k/a,b", "relative/shim"]) {
       expect(apparmorCommand(shim), shim).toBeNull();
-      const e = explain({ code: "apparmor", shim }, "linux");
+      const e = explain({ code: "apparmor", shim });
       expect(e.command).toBeUndefined();
       expect(e.fix.length).toBeGreaterThan(10);
     }
@@ -66,22 +61,14 @@ describe("explain", () => {
   });
 
   it("says why the last installation of Docker Sandboxes failed", () => {
-    const e = explain({ code: "sbx_missing", failed: "checksum mismatch" }, "windows");
+    const e = explain({ code: "sbx_missing", failed: "checksum mismatch" });
     expect(e.why).toContain("checksum mismatch");
     expect(e.install).toBe(true);
   });
 
   it("puts the details in the sentence", () => {
-    expect(explain({ code: "old_windows", build: 19045 }, "windows").why).toContain("19045");
-    expect(explain({ code: "sbx_failed", message: "boom" }, "windows").why).toContain("boom");
-  });
-});
-
-describe("systemOf", () => {
-  it("reads the kit's platform", () => {
-    expect(systemOf("win32-x64")).toBe("windows");
-    expect(systemOf("darwin-arm64")).toBe("macos");
-    expect(systemOf("linux-x64")).toBe("linux");
+    expect(explain({ code: "old_windows", build: 19045 }).why).toContain("19045");
+    expect(explain({ code: "sbx_failed", message: "boom" }).why).toContain("boom");
   });
 });
 
@@ -91,7 +78,6 @@ describe("IsolationDialog", () => {
     render(
       <IsolationDialog
         status={{ level: "env", blockers: [{ code: "hypervisor_off" }, { code: "sbx_missing" }], sbx: null }}
-        system="windows"
         checking={false}
         onCheck={onCheck}
         onClose={() => {}}
@@ -111,7 +97,6 @@ describe("IsolationDialog", () => {
     render(
       <IsolationDialog
         status={{ level: "env", blockers: [{ code: "hypervisor_off" }, { code: "sbx_signed_out" }], sbx: "sbx" }}
-        system="windows"
         checking={false}
         onCheck={() => {}}
         onClose={onClose}
@@ -149,7 +134,6 @@ describe("IsolationDialog", () => {
     render(
       <IsolationDialog
         status={{ level: "vm", blockers: [], sbx: "sbx" }}
-        system="windows"
         checking={false}
         onCheck={() => {}}
         onClose={() => {}}
@@ -177,7 +161,6 @@ describe("IsolationDialog", () => {
     render(
       <IsolationDialog
         status={{ level: "vm", blockers: [], sbx: "sbx" }}
-        system="macos"
         checking={false}
         onCheck={() => {}}
         onClose={() => {}}

@@ -144,9 +144,9 @@ fn kept_packages_off_frees_everything() {
 fn free_removes_the_target_folder_only() {
     let tmp = TempDir::new("conda-free");
     let kit = Kit::at_target(tmp.0.clone(), Target::LINUX_X64);
-    let mac = Kit::at_target(tmp.0.clone(), Target::DARWIN_X64);
+    let mac = Kit::at_target(tmp.0.clone(), Target::DARWIN_ARM64);
     kept(&pkgs_dir(&kit), "linux-64", &[("a-1-0.conda", b"12345")]);
-    kept(&pkgs_dir(&mac), "osx-64", &[("a-1-0.conda", b"12345")]);
+    kept(&pkgs_dir(&mac), "osx-arm64", &[("a-1-0.conda", b"12345")]);
     assert_eq!(free(&kit).unwrap(), 5);
     assert!(!root(&kit).exists());
     assert!(root(&mac).exists());

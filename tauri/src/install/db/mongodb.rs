@@ -93,14 +93,11 @@ pub(crate) fn mongodb_archive_for(
 }
 
 /// The mongosh archive for `target`, the download target of MongoDB
-/// (`target_of`): x64 on Windows ARM64, where mongosh has no build and the
-/// x64 one runs emulated (`x64Only`), like the server.
+/// (`target_of`).
 fn mongosh_asset_pattern(target: Target) -> (&'static str, Kind) {
     match (target.os, target.arch) {
-        (Os::Win32, Arch::X64) => (r"^mongosh-[\d.]+-win32-x64\.zip$", Kind::Zip),
-        (Os::Win32, Arch::Arm64) => (r"^mongosh-[\d.]+-win32-arm64\.zip$", Kind::Zip),
-        (Os::Darwin, Arch::Arm64) => (r"^mongosh-[\d.]+-darwin-arm64\.zip$", Kind::Zip),
-        (Os::Darwin, Arch::X64) => (r"^mongosh-[\d.]+-darwin-x64\.zip$", Kind::Zip),
+        (Os::Win32, _) => (r"^mongosh-[\d.]+-win32-x64\.zip$", Kind::Zip),
+        (Os::Darwin, _) => (r"^mongosh-[\d.]+-darwin-arm64\.zip$", Kind::Zip),
         (Os::Linux, Arch::X64) => (r"^mongosh-[\d.]+-linux-x64\.tgz$", Kind::TarGz),
         (Os::Linux, Arch::Arm64) => (r"^mongosh-[\d.]+-linux-arm64\.tgz$", Kind::TarGz),
     }

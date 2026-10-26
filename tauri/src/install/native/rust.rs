@@ -125,30 +125,19 @@ fn restore_rustup_key(before: Option<Vec<(String, Option<String>)>>, owned: &[&P
 
 /// Rust: rustup with the stable toolchain, rustfmt and clippy, all in
 /// `rust/` (`RUSTUP_HOME`, `CARGO_HOME`). Host `x86_64-pc-windows-gnu` by
-/// default on Windows x64 (own linker), `aarch64-pc-windows-gnullvm` on
-/// Windows ARM64 (linked by the clang of llvm-mingw, the `cc` component:
-/// `CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER` in env/unix.rs), `msvc` from
-/// the settings on both, the native Rust target triple on macOS and Linux.
+/// default on Windows (own linker), `msvc` from the settings, the native
+/// Rust target triple on macOS and Linux.
 pub struct Rust;
 
 /// The host toolchain of Rust on `target` with the "Compilatore di Rust"
 /// setting (`toolchain`: `msvc`, `gnu` or none). MSVC needs Visual Studio
 /// on the PC; GNU is all in the kit.
 pub(crate) fn rust_host_for(target: Target, toolchain: Option<&str>) -> &'static str {
-    let msvc = toolchain == Some("msvc");
     match target {
-        Target::WIN32_X64 if msvc => "x86_64-pc-windows-msvc",
+        Target::WIN32_X64 if toolchain == Some("msvc") => "x86_64-pc-windows-msvc",
         Target::WIN32_X64 => "x86_64-pc-windows-gnu",
-        Target::WIN32_ARM64 if msvc => "aarch64-pc-windows-msvc",
-        Target::WIN32_ARM64 => "aarch64-pc-windows-gnullvm",
         _ => target.rust_triple(),
     }
-}
-
-/// The `gnullvm` host links with llvm-mingw (the `cc` component): without
-/// it `cargo build` stops at the link (D-112).
-pub(crate) fn host_needs_cc(host: &str) -> bool {
-    host.ends_with("-gnullvm")
 }
 
 fn rust_host(ctx: &Ctx) -> String {
@@ -229,9 +218,6 @@ impl Installer for Rust {
         };
         let in_place = rust_plan(installed, kit_links, || false).ok() == Some(RustPlan::InPlace);
         let host = rust_host(ctx);
-        if host_needs_cc(&host) && !crate::setup::kit_path(ctx.kit, "cc/bin/clang.exe").is_file() {
-            progress.note("C, C++ is not installed: Rust on Windows ARM64 links with its clang");
-        }
         let owned = [ctx.kit.root()];
         let rustup = rustup_bin(&rust, target);
         let envs_for = |root: &Path| -> [(&'static str, PathBuf); 3] {

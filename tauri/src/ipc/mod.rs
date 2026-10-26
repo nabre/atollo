@@ -56,7 +56,6 @@ use error::{fail, CmdError, CmdResult, OrFail};
 // Helpers shared by more than one group of commands.
 use app::{apply_env, github_token, open_in_browser};
 use services::start_error;
-use setup::emulates_x64;
 
 pub use setup::setup_notify;
 pub use window::{on_main_close, Quitting};
@@ -162,7 +161,6 @@ fn ensure<R: Runtime>(
     let env = || app.state::<AppState>().env();
     let catalog = Catalog::get();
     let target = kit.target();
-    let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
     let needed = with_needs(catalog, wanted, target);
     // With the catalog's reason (Android, SQLite on Linux ARM64) or Rosetta 2
     // missing; the same sentences as before otherwise.
@@ -171,17 +169,6 @@ fn ensure<R: Runtime>(
         .find_map(|c| crate::router::availability::unavailable_message_on_host(c, target, lang))
     {
         return Err(msg.into());
-    }
-    if let Some(c) = needed
-        .iter()
-        .find(|c| win_arm64 && c.x64_only && !emulates_x64())
-    {
-        return Err(crate::common::i18n::t(
-            lang,
-            "{0} gira solo con Windows 11 sui PC ARM64.",
-            &[&c.name],
-        )
-        .into());
     }
     if !wanted.is_empty() {
         // Two actions at once (an agent and a clone) each add theirs:

@@ -917,7 +917,6 @@ describe("App", () => {
         version: null,
         available: true,
         x64Only: false,
-        noArm64: false,
         unavailableReason: null,
         needs: [],
       },
@@ -934,7 +933,6 @@ describe("App", () => {
         version: null,
         available: true,
         x64Only: true,
-        noArm64: false,
         unavailableReason: null,
         needs: [],
       },
@@ -951,7 +949,6 @@ describe("App", () => {
         version: null,
         available: true,
         x64Only: true,
-        noArm64: false,
         unavailableReason: null,
         needs: ["php"],
       },
@@ -968,7 +965,6 @@ describe("App", () => {
         version: null,
         available: true,
         x64Only: false,
-        noArm64: false,
         unavailableReason: null,
         needs: [],
       },
@@ -985,7 +981,6 @@ describe("App", () => {
         version: null,
         available: false,
         x64Only: false,
-        noArm64: true,
         unavailableReason: null,
         needs: [],
       },
@@ -1002,7 +997,6 @@ describe("App", () => {
         version: null,
         available: false,
         x64Only: false,
-        noArm64: false,
         unavailableReason: "non disponibile per linux-x64",
         needs: [],
       },
@@ -1015,9 +1009,9 @@ describe("App", () => {
     // over the default second on a Windows runner.
     expect(await screen.findByText("Benvenuto in Atollo", {}, { timeout: LAZY })).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
+    // Not available and not chosen: it cannot be chosen.
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
-    expect(screen.getByText("non disponibile su PC ARM64")).toBeTruthy();
-    // Not made for this system: the reason from Rust, not "ARM64" (BUG-24c).
+    // Not made for this system: the reason from Rust (BUG-24c).
     expect(screen.getByLabelText<HTMLInputElement>(/^Juliacalcolo/).disabled).toBe(true);
     expect(screen.getByText("non disponibile per linux-x64")).toBeTruthy();
     // Dependencies: Apache shows what it needs, PHP what it is needed by.
@@ -1068,7 +1062,7 @@ describe("App", () => {
     fireEvent.change(screen.getByLabelText("Cerca nella guida"), { target: { value: "sha-256" } });
     fireEvent.click(await screen.findByText("Da dove arrivano gli strumenti"));
     expect(await screen.findByText("Tabella completa delle fonti (40 componenti e 5 parti)")).toBeTruthy();
-    expect(screen.getByText("PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)")).toBeTruthy();
+    expect(screen.getByText("PortableGit-<v>-64-bit.7z.exe (estratto in Rust)")).toBeTruthy();
     expect(screen.getByText(/macOS e Linux: GitHub desktop\/dugite-native/)).toBeTruthy();
 
     // A link inside a topic opens another topic

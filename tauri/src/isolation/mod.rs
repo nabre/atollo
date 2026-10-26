@@ -79,7 +79,6 @@ pub enum Blocker {
     OldWindows {
         build: u32,
     },
-    Processor,
     OldMacos {
         version: String,
     },
@@ -121,7 +120,6 @@ impl From<Gap> for Blocker {
     fn from(gap: Gap) -> Blocker {
         match gap {
             Gap::OldWindows(build) => Blocker::OldWindows { build },
-            Gap::Processor => Blocker::Processor,
             Gap::OldMacos(version) => Blocker::OldMacos { version },
             Gap::Distribution(name) => Blocker::Distribution { name },
             Gap::HypervisorOff => Blocker::HypervisorOff,
@@ -139,10 +137,7 @@ impl Blocker {
     pub fn unsupported(&self) -> bool {
         matches!(
             self,
-            Blocker::OldWindows { .. }
-                | Blocker::Processor
-                | Blocker::OldMacos { .. }
-                | Blocker::Distribution { .. }
+            Blocker::OldWindows { .. } | Blocker::OldMacos { .. } | Blocker::Distribution { .. }
         )
     }
 }
@@ -289,6 +284,9 @@ fn kit_daemon(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blo
             // reader waits for it until its limit.
             // A daemon started now reads the settings as they are: a
             // restart owed to the one before is not owed any more.
+            if let Some(temp) = host.temp() {
+                daemon::unlink_foreign(Path::new(temp), &kit.home());
+            }
             if daemon_call(sbx, host, env, &["daemon", "start"]) {
                 let _ = std::fs::remove_file(kit::root(kit).join(".restart-pending"));
             }

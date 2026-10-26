@@ -1,20 +1,17 @@
-//! What this Mac lacks for Docker Sandboxes (`platform::virt`): Apple
-//! silicon (`hw.optional.arm64`, which an x64 app under Rosetta reads too)
-//! and macOS 14 or later. The Virtualization framework is always there.
+//! What this Mac lacks for Docker Sandboxes (`platform::virt`): macOS 14
+//! or later. The Virtualization framework is always there, and the Mac has
+//! Apple silicon: Atollo stops at start on an Intel Mac (D-176).
 
 use std::process::{Command, Stdio};
 
 use crate::platform::virt::Gap;
 
 pub fn gaps(_shim: Option<&std::path::Path>) -> Vec<Gap> {
-    gaps_of(apple_silicon(), version().as_deref())
+    gaps_of(version().as_deref())
 }
 
-/// The gaps of a Mac with or without Apple silicon on macOS `version`.
-pub(crate) fn gaps_of(apple_silicon: bool, version: Option<&str>) -> Vec<Gap> {
-    if !apple_silicon {
-        return vec![Gap::Processor];
-    }
+/// The gaps of a Mac on macOS `version`.
+pub(crate) fn gaps_of(version: Option<&str>) -> Vec<Gap> {
     match version {
         Some(v) if major(v) < 14 => vec![Gap::OldMacos(v.to_owned())],
         _ => Vec::new(),
@@ -41,10 +38,6 @@ fn output(program: &str, args: &[&str]) -> Option<String> {
     out.status
         .success()
         .then(|| String::from_utf8_lossy(&out.stdout).trim().to_owned())
-}
-
-fn apple_silicon() -> bool {
-    output("/usr/sbin/sysctl", &["-n", "hw.optional.arm64"]).as_deref() == Some("1")
 }
 
 fn version() -> Option<String> {

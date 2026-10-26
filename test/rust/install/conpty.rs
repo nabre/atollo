@@ -6,18 +6,13 @@ fn the_package_is_fixed_by_the_catalog() {
     let c = Catalog::get().find("conpty").unwrap();
     assert_eq!(c.group, Group::App);
     assert!(c.def);
-    assert_eq!(c.targets, ["win32-x64", "win32-arm64"]);
-    assert!(c.is_available_on(Target::WIN32_ARM64));
+    assert_eq!(c.targets, ["win32-x64"]);
+    assert!(c.is_available_on(Target::WIN32_X64));
     assert!(!c.is_available_on(Target::LINUX_X64));
     assert!(!c.is_available_on(Target::DARWIN_ARM64));
     let version = c.version.as_deref().unwrap();
-    let sha = c.sha256_for(Target::WIN32_ARM64).unwrap();
+    let sha = c.sha256_for(Target::WIN32_X64).unwrap();
     assert_eq!(sha.len(), 64);
-    assert_eq!(
-        c.sha256_for(Target::WIN32_X64),
-        Some(sha),
-        "one package for both"
-    );
     let (url, name) = package(version);
     assert_eq!(
         url,
@@ -30,7 +25,7 @@ fn the_package_is_fixed_by_the_catalog() {
 }
 
 #[test]
-fn each_architecture_takes_its_own_files() {
+fn the_x64_files_are_taken() {
     let [dll, host] = files_for(Target::WIN32_X64);
     assert_eq!(
         dll,
@@ -46,9 +41,6 @@ fn each_architecture_takes_its_own_files() {
             "OpenConsole.exe"
         )
     );
-    let [dll, host] = files_for(Target::WIN32_ARM64);
-    assert_eq!(dll.0, "runtimes/win-arm64/native/conpty.dll");
-    assert_eq!(host.0, "build/native/runtimes/arm64/OpenConsole.exe");
-    assert!(ConPty.custom(Target::WIN32_ARM64));
+    assert!(ConPty.custom(Target::WIN32_X64));
     assert!(!ConPty.custom(Target::LINUX_X64));
 }

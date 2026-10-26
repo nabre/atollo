@@ -132,7 +132,7 @@ fn httpd_pinned_releases() {
     let sha = "ab".repeat(32);
     let catalog = json!({ "components": [{ "id": "apache", "sha256ByLine": {
         "2.4": { "version": "2.4.69-1", "sha256ByTarget": {
-            "darwin-arm64": sha, "darwin-x64": sha, "linux-x64": sha, "linux-arm64": "nothex" } },
+            "darwin-arm64": sha, "linux-x64": sha, "linux-arm64": "nothex" } },
         "2.6": { "version": "2.4.69-1", "sha256ByTarget": { "linux-x64": sha } }
     } }] });
     let pins = line_pins_in(&catalog, "apache");
@@ -180,7 +180,7 @@ fn httpd_catalog_pins_cover_unix() {
         targets.sort_unstable();
         assert_eq!(
             targets,
-            ["darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64"],
+            ["darwin-arm64", "linux-arm64", "linux-x64"],
             "{line}"
         );
     }

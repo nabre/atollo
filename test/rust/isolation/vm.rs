@@ -82,8 +82,9 @@ fn the_vm_is_linux_of_the_pcs_processor() {
         Some(Target::LINUX_ARM64)
     );
     assert_eq!(guest_target(Target::LINUX_ARM64), Some(Target::LINUX_ARM64));
-    assert_eq!(guest_target(Target::WIN32_ARM64), None);
-    assert_eq!(guest_target(Target::DARWIN_X64), None);
+    use crate::kit::{Arch, Os};
+    assert_eq!(guest_target(Target::new(Os::Win32, Arch::Arm64)), None);
+    assert_eq!(guest_target(Target::new(Os::Darwin, Arch::X64)), None);
 }
 
 /// The kit's terminal in the VM: a login bash in its folder, the kit's

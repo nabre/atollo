@@ -3,7 +3,7 @@ name: Apache httpd
 # The kit's relocatable Apache httpd for macOS and Linux (DECISIONS.md
 # D-116), built by scripts/build-httpd from the sources pinned in
 # sources.txt. Pull requests that touch the build only build and test it;
-# a tag httpd-v<version>-<build> (httpd-v2.4.69-1) also publishes the four
+# a tag httpd-v<version>-<build> (httpd-v2.4.69-1) also publishes the three
 # tarballs and their .sha256 files as a GitHub release, whose asset digests
 # the catalog pins (sha256ByTarget of components.json).
 on:
@@ -26,7 +26,7 @@ jobs:
   build:
     name: httpd ${{ matrix.target }}
     # Native runners only: build.sh refuses a host of another architecture.
-    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest","darwin-x64":"macos-15-intel"}')[matrix.target] }}
+    runs-on: ${{ fromJSON('{"linux-x64":"ubuntu-24.04","linux-arm64":"ubuntu-24.04-arm","darwin-arm64":"macos-latest"}')[matrix.target] }}
     # Linux in ubuntu:22.04 for its glibc 2.35 floor, as bundle-linux of
     # app.yml; GitHub cannot set a container for some matrix entries only,
     # so the macOS jobs ignore an empty image.
@@ -39,8 +39,8 @@ jobs:
       fail-fast: false
       matrix:
         # Without ARM64 runners (ARM64_RUNNERS=off) linux-arm64 is left out,
-        # as in app.yml. A release needs all four.
-        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64","darwin-x64"]' || '["linux-x64","linux-arm64","darwin-arm64","darwin-x64"]') }}
+        # as in app.yml. A release needs all three (D-176: no Intel macOS).
+        target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64"]' || '["linux-x64","linux-arm64","darwin-arm64"]') }}
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -86,10 +86,10 @@ jobs:
           pattern: httpd-*
           path: artifacts
           merge-multiple: true
-      - name: Four targets
+      - name: Three targets
         run: |
           ls -l artifacts
-          for t in linux-x64 linux-arm64 darwin-arm64 darwin-x64; do
+          for t in linux-x64 linux-arm64 darwin-arm64; do
             ls artifacts/httpd-*-"$t".tar.gz >/dev/null || { echo "no tarball for $t" >&2; exit 1; }
           done
           (cd artifacts && sha256sum -c *.sha256)
@@ -101,4 +101,4 @@ jobs:
           tag=$GITHUB_REF_NAME
           # Never the repository's latest release: that is the app's (app.yml).
           gh release create "$tag" artifacts/* --verify-tag --latest=false --title "Apache httpd ${tag#httpd-v}" \
-            --notes "Relocatable Apache httpd for the kit on macOS (arm64, x64) and Linux (x64, arm64), built by scripts/build-httpd from signed upstream sources (see BUILDINFO.txt in each tarball)."
+            --notes "Relocatable Apache httpd for the kit on macOS (Apple Silicon) and Linux (x64, arm64), built by scripts/build-httpd from signed upstream sources (see BUILDINFO.txt in each tarball)."

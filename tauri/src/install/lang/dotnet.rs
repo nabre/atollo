@@ -42,10 +42,8 @@ pub fn dotnet_lines(index: &Value) -> Vec<String> {
 
 pub(crate) fn dotnet_rid_spec(target: Target) -> (&'static str, &'static str, Kind) {
     match (target.os, target.arch) {
-        (Os::Win32, Arch::X64) => ("win-x64", ".zip", Kind::Zip),
-        (Os::Win32, Arch::Arm64) => ("win-arm64", ".zip", Kind::Zip),
-        (Os::Darwin, Arch::Arm64) => ("osx-arm64", ".tar.gz", Kind::TarGz),
-        (Os::Darwin, Arch::X64) => ("osx-x64", ".tar.gz", Kind::TarGz),
+        (Os::Win32, _) => ("win-x64", ".zip", Kind::Zip),
+        (Os::Darwin, _) => ("osx-arm64", ".tar.gz", Kind::TarGz),
         (Os::Linux, Arch::X64) => ("linux-x64", ".tar.gz", Kind::TarGz),
         (Os::Linux, Arch::Arm64) => ("linux-arm64", ".tar.gz", Kind::TarGz),
     }

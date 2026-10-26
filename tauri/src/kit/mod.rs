@@ -30,7 +30,7 @@ use crate::platform::volume::VolumeInfo;
 pub use names::validate_project_name;
 pub use root::{app_exe, launch_problem, root_from, watcher_unsafe_folder};
 pub(crate) use root::{same_root, strip_verbatim};
-pub use target::{Arch, Os, Target};
+pub use target::{unsupported_host, Arch, Os, Target};
 
 #[derive(Debug, Error)]
 pub enum KitError {

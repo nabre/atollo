@@ -75,36 +75,27 @@ pub(super) fn links(lang: &str, haves: &BTreeMap<String, Have>) -> Vec<Link> {
         .collect()
 }
 
-/// The system runtime `id` exists on `os`: the Visual C++ DLLs, WebView2
-/// and the x64 emulation of Windows 11 are Windows pieces, never missing
-/// on macOS or Linux.
+/// The system runtime `id` exists on `os`: the Visual C++ DLLs and
+/// WebView2 are Windows pieces, never missing on macOS or Linux.
 pub(super) fn runtime_on(id: &str, os: Os) -> bool {
     match id {
-        "vcruntime" | "webview2" | "x64-emulation" => os.is_windows(),
+        "vcruntime" | "webview2" => os.is_windows(),
         _ => true,
     }
 }
 
 pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) -> Vec<RuntimeState> {
     let catalog = Catalog::get();
-    let arm64 = kit.arch() == crate::kit::Arch::Arm64;
     let installed = |id: &str| haves.get(id).is_some_and(|h| h.installed);
     known()
         .runtimes
         .iter()
-        .filter(|s| (!s.arm64 || arm64) && runtime_on(&s.id, kit.os()))
+        .filter(|s| runtime_on(&s.id, kit.os()))
         .map(|s| {
             let mut needed_by: Vec<String> = Vec::new();
             for f in &s.for_ {
                 match f.as_str() {
                     "@app" => needed_by.push("Atollo".into()),
-                    "@x64Only" => needed_by.extend(
-                        catalog
-                            .all()
-                            .iter()
-                            .filter(|c| c.x64_only && installed(&c.id))
-                            .map(|c| c.name.clone()),
-                    ),
                     id if installed(id) => needed_by.push(name_of(catalog, id)),
                     _ => {}
                 }
@@ -124,13 +115,6 @@ pub(super) fn runtimes(kit: &Kit, lang: &str, haves: &BTreeMap<String, Have>) ->
                     }
                     None => (false, None),
                 },
-                "x64-emulation" => {
-                    let build = crate::platform::host::windows_build();
-                    (
-                        build.is_none_or(|b| b >= 22000),
-                        build.map(|b| format!("Windows build {b}")),
-                    )
-                }
                 _ => (false, None),
             };
             RuntimeState {

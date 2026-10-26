@@ -68,7 +68,7 @@ fn catalog_entry() {
     }
     // Pure JavaScript on the kit's Node.js: native everywhere, available
     // wherever MongoDB is.
-    assert!(!c.x64_only);
+    assert!(!c.rosetta);
     for target in crate::kit::Target::ALL {
         assert_eq!(
             c.is_available_on(target),

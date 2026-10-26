@@ -14,8 +14,6 @@ use crate::os::current::virt as imp;
 pub enum Gap {
     /// Windows before 11 (its build).
     OldWindows(u32),
-    /// A processor the sandboxes do not run on: Windows on Arm, an Intel Mac.
-    Processor,
     /// macOS before 14 (its version).
     OldMacos(String),
     /// A Linux other than Ubuntu 24.04 or later (its name).

@@ -369,7 +369,7 @@ fn sbx_signed_out_is_told_apart_from_other_errors() {
 
 #[test]
 fn an_unsupported_system_is_the_only_reason_given() {
-    assert!(Blocker::Processor.unsupported());
+    assert!(Blocker::OldWindows { build: 19045 }.unsupported());
     assert!(!Blocker::HypervisorOff.unsupported());
     assert!(!Blocker::SbxMissing { failed: None }.unsupported());
 }

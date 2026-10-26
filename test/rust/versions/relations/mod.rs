@@ -4,7 +4,7 @@ use crate::test_support::prepared_kit;
 
 #[test]
 fn windows_runtimes_only_on_windows() {
-    for id in ["vcruntime", "webview2", "x64-emulation"] {
+    for id in ["vcruntime", "webview2"] {
         assert!(checks::runtime_on(id, Os::Win32), "{id}");
         assert!(!checks::runtime_on(id, Os::Linux), "{id}");
         assert!(!checks::runtime_on(id, Os::Darwin), "{id}");
@@ -13,7 +13,7 @@ fn windows_runtimes_only_on_windows() {
     // Every runtime of the knowledge file is named there.
     for r in &known().runtimes {
         assert!(
-            ["vcruntime", "webview2", "x64-emulation"].contains(&r.id.as_str()),
+            ["vcruntime", "webview2"].contains(&r.id.as_str()),
             "{}: say on which systems it exists (checks::runtime_on)",
             r.id
         );
@@ -193,6 +193,6 @@ fn matrix_follows_the_target() {
     }
     // The same links everywhere: Android, the only component missing on
     // some system (Linux ARM64), has none; Apache and R had some before
-    // they came to every target (D-116, R emulated on Windows ARM64).
+    // they came to every target (D-116).
     assert!(counts.iter().all(|n| *n == counts[0]), "{counts:?}");
 }

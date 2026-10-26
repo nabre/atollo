@@ -2,19 +2,21 @@ use super::*;
 
 use crate::setup::catalog::{translate_rel, Catalog};
 
-/// The six archives of Caddy 2.11.7 as published on GitHub (checked with
-/// `gh api repos/caddyserver/caddy/releases/latest` on 17/10/2026).
-const ASSETS_2_11_7: [(Target, &str); 6] = [
+/// The archives of Caddy 2.11.7 for the four targets, as published on
+/// GitHub (checked with `gh api repos/caddyserver/caddy/releases/latest`
+/// on 17/10/2026).
+const ASSETS_2_11_7: [(Target, &str); 4] = [
     (Target::WIN32_X64, "caddy_2.11.7_windows_amd64.zip"),
-    (Target::WIN32_ARM64, "caddy_2.11.7_windows_arm64.zip"),
     (Target::DARWIN_ARM64, "caddy_2.11.7_mac_arm64.tar.gz"),
-    (Target::DARWIN_X64, "caddy_2.11.7_mac_amd64.tar.gz"),
     (Target::LINUX_X64, "caddy_2.11.7_linux_amd64.tar.gz"),
     (Target::LINUX_ARM64, "caddy_2.11.7_linux_arm64.tar.gz"),
 ];
 
-/// Other assets of the same release that must never be taken.
-const DECOYS: [&str; 9] = [
+/// Other assets of the same release that must never be taken (the
+/// Windows ARM64 and Intel Mac builds too, D-176).
+const DECOYS: [&str; 11] = [
+    "caddy_2.11.7_windows_arm64.zip",
+    "caddy_2.11.7_mac_amd64.tar.gz",
     "caddy_2.11.7_linux_amd64.deb",
     "caddy_2.11.7_linux_amd64.tar.gz.sig",
     "caddy_2.11.7_linux_amd64.sbom",
@@ -79,7 +81,7 @@ fn asset_for_each_target() {
     }
 }
 
-/// Windows ARM64 has its own build: Caddy is not emulated there.
+/// Every target has its own build: Caddy is never emulated.
 #[test]
 fn native_on_every_target() {
     let caddy = Catalog::get().find("caddy").unwrap();
@@ -87,8 +89,6 @@ fn native_on_every_target() {
         assert!(caddy.is_available_on(target), "{target}");
         assert!(!caddy.is_emulated_on(target), "{target}");
     }
-    let (pat, _) = caddy_asset_for(Target::WIN32_ARM64);
-    assert!(pat.contains("_windows_arm64"), "{pat}");
 }
 
 #[test]
@@ -193,7 +193,7 @@ fn release_without_the_build_of_a_target() {
     rel.assets.retain(|a| !a.name.contains("_mac_arm64"));
     let none = caddy_stable(vec![rel.clone()], Target::DARWIN_ARM64).unwrap();
     assert!(none.is_empty());
-    let some = caddy_stable(vec![rel], Target::DARWIN_X64).unwrap();
+    let some = caddy_stable(vec![rel], Target::LINUX_X64).unwrap();
     assert_eq!(some.len(), 1);
 }
 

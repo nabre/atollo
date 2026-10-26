@@ -7,8 +7,8 @@
 //! `data/app/versions/<target>/<id>.txt`, plain text.
 //!
 //! Availability per target (D-108): a component is installed on a target
-//! only with a build made for it, natively or through the system's x64
-//! emulation; otherwise it is "not available" with the reason, never a
+//! only with a build made for it, natively or with Rosetta 2 on a Mac with
+//! Apple silicon; otherwise it is "not available" with the reason, never a
 //! binary of another architecture that does not start.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -61,8 +61,7 @@ pub struct Component {
     #[serde(default)]
     needs: Vec<String>,
     /// Components it needs on one target only, after `needs`: C and C++
-    /// are `zig cc` on macOS and Linux (`{"linux-x64": ["zig"]}`), Rust
-    /// links with llvm-mingw on Windows ARM64 (D-108).
+    /// are `zig cc` on macOS and Linux (`{"linux-x64": ["zig"]}`).
     #[serde(default)]
     needs_by_target: BTreeMap<String, Vec<String>>,
     /// Italian; translated by the catalogs.
@@ -80,21 +79,13 @@ pub struct Component {
     /// The folder of `data/apps/<target>` the component owns, if any.
     #[serde(default)]
     pub folder: Option<String>,
-    /// No Windows ARM64 build: the x64 one runs there in emulation.
-    #[serde(default)]
-    pub x64_only: bool,
-    /// No Apple Silicon build: the x64 one runs on `darwin-arm64` with
+    /// No Apple silicon build: the x64 one runs on `darwin-arm64` with
     /// Rosetta 2, and is not available on a Mac without it
-    /// (`router::target::rosetta_missing`). Separate from `x64_only`: most
-    /// components without a Windows ARM64 build have a native one for macOS.
+    /// (`router::target::rosetta_missing`).
     #[serde(default)]
     pub rosetta: bool,
-    /// No build runs on ARM64, not even emulated (R): not available there.
-    #[serde(default)]
-    pub no_arm64: bool,
     /// Explicit list of targets where this component is available (e.g.
-    /// `["win32-x64", "win32-arm64"]` for PHP). Empty = all
-    /// targets except `win32-arm64` when `no_arm64` is true.
+    /// `["win32-x64"]` for ConPTY). Empty = all targets.
     #[serde(default)]
     pub targets: Vec<String>,
     /// Targets where no build exists, with the reason the interface shows
@@ -269,7 +260,7 @@ impl Catalog {
 
 /// Translates a catalog relative path (`"node/node.exe"`, `"python/python.exe"`,
 /// `"tinytex/bin/windows/tlmgr.bat"`, `"@data/npm-global/pnpm.cmd"`) to the
-/// layout of `target`. On Windows (`win32-x64`, `win32-arm64`) paths are kept
+/// layout of `target`. On Windows (`win32-x64`) paths are kept
 /// as written; on macOS and Linux they follow the Unix binary layout.
 pub fn translate_rel(target: Target, rel: &str) -> String {
     if target.is_windows() {
@@ -375,35 +366,31 @@ impl Component {
         self.needs_on(target).map(str::to_owned).collect()
     }
 
-    /// True when the catalog has a build for `target` (native, or x64 in
-    /// emulation): listed in `targets` (or no list), not in `unavailable`,
-    /// not `no_arm64` on `win32-arm64`. Whether Rosetta 2 is there is the
+    /// True when the catalog has a build for `target` (native, or x64 with
+    /// Rosetta 2): a supported target (D-176), listed in `targets` (or no
+    /// list), not in `unavailable`. Whether Rosetta 2 is there is the
     /// host's business (`router::target::installable_on`).
     pub fn is_available_on(&self, target: Target) -> bool {
+        if !target.is_supported() {
+            return false;
+        }
         if !self.targets.is_empty() && !self.targets.iter().any(|t| t == target.as_str()) {
             return false;
         }
-        if self.unavailable.contains_key(target.as_str()) {
-            return false;
-        }
-        if target == Target::WIN32_ARM64 && self.no_arm64 {
-            return false;
-        }
-        true
+        !self.unavailable.contains_key(target.as_str())
     }
 
     /// Why it is not available on `target`, as the catalog says it (Italian
     /// source, for `i18n::t`); `None` without a reason of its own (outside
-    /// `targets`, `no_arm64`) or when it is available.
+    /// `targets`) or when it is available.
     pub fn unavailable_reason(&self, target: Target) -> Option<&str> {
         self.unavailable.get(target.as_str()).map(String::as_str)
     }
 
     /// True when `target` uses the x64 build under OS binary translation:
-    /// `x64_only` on `win32-arm64` (WOW64), `rosetta` on `darwin-arm64`.
+    /// `rosetta` on `darwin-arm64`.
     pub fn is_emulated_on(&self, target: Target) -> bool {
-        (target == Target::WIN32_ARM64 && self.x64_only)
-            || (target == Target::DARWIN_ARM64 && self.rosetta)
+        target == Target::DARWIN_ARM64 && self.rosetta
     }
 
     /// What it owns besides its folder on `target`: `remove`, or on macOS
@@ -417,7 +404,7 @@ impl Component {
     }
 
     /// Fixed SHA-256 for `target` (checks `sha256_by_target` first, then `sha256`
-    /// on `win32-x64` / `win32-arm64`).
+    /// on `win32-x64`).
     pub fn sha256_for(&self, target: Target) -> Option<&str> {
         if let Some(s) = self.sha256_by_target.get(target.as_str()) {
             return Some(s.as_str());

@@ -21,16 +21,13 @@ pub struct ComponentInfo {
     pub version: Option<String>,
     /// This version of the app can install it on this kit.
     pub available: bool,
+    /// The x64 build, run with Rosetta 2 on a Mac with Apple silicon (the
+    /// «x64» mark).
     pub x64_only: bool,
-    /// No ARM64 build, this kit is Windows ARM64 and so is this PC: why it
-    /// is not available.
-    pub no_arm64: bool,
     /// Why it is not available on this kit's target, already translated:
     /// the catalog's own reason (`unavailable`, Android on Linux ARM64),
     /// Rosetta 2 missing on this Mac, or not made for this system (Windows
-    /// only, on macOS or Linux; no ARM64 build, for a Windows ARM64 kit
-    /// seen from another PC). `None` for `noArm64` on a Windows ARM64 PC,
-    /// where `no_arm64` says it.
+    /// only, on macOS or Linux).
     pub unavailable_reason: Option<String>,
     /// Components it needs on this kit's target (Apache needs PHP, Kotlin
     /// needs Java; C and C++ need Zig on macOS and Linux only).
@@ -40,9 +37,6 @@ pub struct ComponentInfo {
     /// Only the Mac itself can tell: false for a kit inspected or prepared
     /// from another system.
     pub xcode_missing: bool,
-    /// x64 only, on an ARM64 PC with Windows 10: only Windows 11 runs x64
-    /// programs there (D-81). Not available.
-    pub needs_windows11: bool,
     /// One folder per minor line, side by side (versions/mod.rs); the others
     /// are always at their latest version.
     pub versioned: bool,
@@ -109,13 +103,13 @@ pub async fn components_check<R: Runtime>(
 }
 
 /// The component × target grid of the Tools page («Matrice», D-121): what
-/// each of the six systems can run from this PC, the state of every
+/// each of the four systems can run from this PC, the state of every
 /// component on each of them, and the system chosen last there.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TargetGrid {
     /// In the order of the columns (`Target::ALL`).
-    pub profiles: [crate::router::target::TargetProfile; 6],
+    pub profiles: [crate::router::target::TargetProfile; 4],
     /// The same order, one per system.
     pub targets: Vec<crate::router::probe::TargetSummary>,
     /// `tools_target` of settings.json, when it is a system the app knows.
@@ -125,7 +119,7 @@ pub struct TargetGrid {
     pub vm: Option<String>,
 }
 
-/// The grid: off the window's thread, it reads the disk of the six systems.
+/// The grid: off the window's thread, it reads the disk of the four systems.
 #[tauri::command]
 pub async fn target_profiles<R: Runtime>(
     webview: Webview<R>,
@@ -242,12 +236,6 @@ pub(super) fn save_tools_target(kit: &Kit, target: Option<&str>) -> anyhow::Resu
     .map(drop)
 }
 
-/// The PC runs x64 programs: x64 itself, or Windows 11 on ARM64 (Windows 10
-/// on ARM emulates x86 only). An unknown build counts as yes.
-pub(super) fn emulates_x64() -> bool {
-    crate::platform::host::windows_build().is_none_or(|b| b >= 22000)
-}
-
 /// The Xcode Command Line Tools are missing on this Mac, for a kit of
 /// `target`: only a darwin kit on a Mac, where `xcode-select -p` fails.
 /// The answer is the installer's, kept for a while (`xcode_selected`):
@@ -270,25 +258,13 @@ pub(super) fn xcode_missing(
     target.is_macos() && host.is_macos() && selected().is_none_or(|s| s.trim().is_empty())
 }
 
-/// The catalog as the "Linguaggi e strumenti" page shows it, from this PC.
+/// The catalog as the "Linguaggi e strumenti" page shows it, from this PC:
+/// a component with an `unavailableReason` is not available on this
+/// target (see [`unavailable_reason`]).
 pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
-    component_infos_from(kit, lang, crate::kit::Target::detect())
-}
-
-/// [`component_infos`] seen from `host`. A `noArm64` component is not
-/// available on a Windows ARM64 kit (said "not available on ARM64 PCs"
-/// only on such a PC, `host`; from another one it gets "not available for
-/// win32-arm64" as `unavailableReason`), one with an `unavailableReason`
-/// not on this target (see [`unavailable_reason`]).
-pub(super) fn component_infos_from(
-    kit: &Kit,
-    lang: &str,
-    host: crate::kit::Target,
-) -> Vec<ComponentInfo> {
     let catalog = Catalog::get();
     let choice = Choice::read_or_defaults(kit, catalog);
     let target = kit.target();
-    let win_arm64 = target == crate::kit::Target::WIN32_ARM64;
     let locked = catalog.locked_on(target);
     // Chosen here also when a chosen one needs it on this target only (Zig
     // for C and C++ on Linux): the run installs it, the choice does not
@@ -302,12 +278,7 @@ pub(super) fn component_infos_from(
         .map(|c| {
             let off = !c.is_available_on(target);
             let no_rosetta = !off && crate::router::target::rosetta_missing_on_host(target, c);
-            let unavailable_reason = unavailable_reason(c, target, host, no_rosetta, lang);
-            let no_arm64 = off && win_arm64 && unavailable_reason.is_none();
-            let needs_windows11 = win_arm64
-                && c.x64_only
-                && crate::kit::Os::current().is_windows()
-                && !emulates_x64();
+            let unavailable_reason = unavailable_reason(c, target, no_rosetta, lang);
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -319,17 +290,12 @@ pub(super) fn component_infos_from(
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
-                available: install::installer(&c.id).is_some()
-                    && !off
-                    && !no_rosetta
-                    && !needs_windows11,
+                available: install::installer(&c.id).is_some() && !off && !no_rosetta,
                 // The «x64» mark: only where that build runs emulated.
                 x64_only: c.is_emulated_on(target),
-                no_arm64,
                 unavailable_reason,
                 needs: c.needs_list_on(target),
                 xcode_missing: c.id == "cc" && xcode_missing,
-                needs_windows11,
                 versioned: c.versioned,
                 home: c.home.clone(),
                 bootstrap_staged: crate::router::bootstrap::is_staged(kit, c),
@@ -560,7 +526,7 @@ pub(super) fn vm_tools_target(state: &AppState) -> Option<crate::kit::Target> {
 }
 
 /// `components.txt` for the ids in `chosen`. What this target cannot install
-/// (`noArm64` on `win32-arm64`, `unavailable` or outside `targets`, an x64
+/// (`unavailable` or outside `targets`, an x64
 /// build on a Mac without Rosetta 2) keeps its saved choice: the same kit
 /// on another OS/arch must not lose it. Nor does what a chosen one needs on
 /// this target only (Zig for C and C++ on Linux, ticked with them by the
@@ -583,7 +549,7 @@ pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
                 saved.is_chosen(&c.id)
             } else if here.contains(c.id.as_str()) {
                 // Saved on and still ticked: an untick on the page wins
-                // (C and C++ unticked on Windows ARM64 also untick Rust).
+                // (Zig unticked on Linux stays off).
                 saved.is_chosen(&c.id) && chosen.contains(&c.id)
             } else {
                 chosen.contains(&c.id)

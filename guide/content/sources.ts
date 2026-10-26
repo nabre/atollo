@@ -92,7 +92,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "system",
     home: "https://github.com/PowerShell/PowerShell",
     metaSource: "api.github.com/repos/PowerShell/PowerShell/releases/latest",
-    binarySource: "PowerShell-<v>-win-(x64|arm64).zip",
+    binarySource: "PowerShell-<v>-win-x64.zip",
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
     targetPath: () => `pwsh\\${lLine()}\\pwsh.exe`,
@@ -104,7 +104,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "system",
     home: "https://cli.github.com",
     metaSource: "api.github.com/repos/cli/cli/releases/latest",
-    binarySource: "gh_<v>_windows_(amd64|arm64).zip",
+    binarySource: "gh_<v>_windows_amd64.zip",
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
     targetPath: () => `gh\\${lLine()}\\bin\\gh.exe`,
@@ -257,7 +257,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     name: "Antigravity (Google)",
     group: "agents",
     home: "https://antigravity.google",
-    metaSource: "antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_(amd64|arm64).json",
+    metaSource: "antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/windows_amd64.json",
     unix: () =>
       tr(
         "macOS e Linux: manifests/<os>_<arch>.json, archivio .tar.gz",
@@ -354,10 +354,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
       ),
     binarySource: () =>
       tr(
-        "PortableGit-<v>-(64-bit|arm64).7z.exe (estratto in Rust)",
-        "PortableGit-<v>-(64-bit|arm64).7z.exe (extracted in Rust)",
-        "PortableGit-<v>-(64-bit|arm64).7z.exe (extrait en Rust)",
-        "PortableGit-<v>-(64-bit|arm64).7z.exe (in Rust entpackt)",
+        "PortableGit-<v>-64-bit.7z.exe (estratto in Rust)",
+        "PortableGit-<v>-64-bit.7z.exe (extracted in Rust)",
+        "PortableGit-<v>-64-bit.7z.exe (extrait en Rust)",
+        "PortableGit-<v>-64-bit.7z.exe (in Rust entpackt)",
       ),
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
@@ -604,10 +604,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "static.rust-lang.org/rustup/dist/<triple>/rustup-init.exe",
     unix: () =>
       tr(
-        "Host gnu su Windows x64, gnullvm su Windows ARM64 (con C/C++), msvc dalla pagina di Rust in Strumenti («Dettagli»); macOS e Linux: rustup con l'host nativo",
-        "Host gnu on Windows x64, gnullvm on Windows ARM64 (with C/C++), msvc from Rust's page in Tools (“Details”); macOS and Linux: rustup with the native host",
-        "Hôte gnu sur Windows x64, gnullvm sur Windows ARM64 (avec C/C++), msvc depuis la page de Rust dans Outils (« Détails ») ; macOS et Linux : rustup avec l'hôte natif",
-        "Host gnu auf Windows x64, gnullvm auf Windows ARM64 (mit C/C++), msvc über die Seite von Rust unter Werkzeuge („Details“); macOS und Linux: rustup mit nativem Host",
+        "Host gnu su Windows x64, msvc dalla pagina di Rust in Strumenti («Dettagli»); macOS e Linux: rustup con l'host nativo",
+        "Host gnu on Windows x64, msvc from Rust's page in Tools (“Details”); macOS and Linux: rustup with the native host",
+        "Hôte gnu sur Windows x64, msvc depuis la page de Rust dans Outils (« Détails ») ; macOS et Linux : rustup avec l'hôte natif",
+        "Host gnu auf Windows x64, msvc über die Seite von Rust unter Werkzeuge („Details“); macOS und Linux: rustup mit nativem Host",
       ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
@@ -632,7 +632,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "languages",
     home: "https://go.dev",
     metaSource: "go.dev/dl/?mode=json (&include=all)",
-    binarySource: "go.dev/dl/go<v>.windows-(amd64|arm64).zip",
+    binarySource: "go.dev/dl/go<v>.windows-amd64.zip",
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -766,10 +766,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     metaSource: "builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json",
     binarySource: () =>
       tr(
-        "Archivio .zip per rid=win-x64|win-arm64",
-        ".zip archive for rid=win-x64|win-arm64",
-        "Archive .zip pour rid=win-x64|win-arm64",
-        ".zip-Archiv für rid=win-x64|win-arm64",
+        "Archivio .zip per rid=win-x64",
+        ".zip archive for rid=win-x64",
+        "Archive .zip pour rid=win-x64",
+        ".zip-Archiv für rid=win-x64",
       ),
     verifyKind: "SHA-512",
     verifyDetail: () =>
@@ -814,10 +814,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     metaSource: "ziglang.org/download/index.json",
     binarySource: () =>
       tr(
-        "Campo tarball per (x86_64|aarch64)-windows",
-        "tarball field for (x86_64|aarch64)-windows",
-        "Champ tarball pour (x86_64|aarch64)-windows",
-        "Feld tarball für (x86_64|aarch64)-windows",
+        "Campo tarball per x86_64-windows",
+        "tarball field for x86_64-windows",
+        "Champ tarball pour x86_64-windows",
+        "Feld tarball für x86_64-windows",
       ),
     verifyKind: "SHA-256",
     verifyDetail: () =>
@@ -860,7 +860,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "languages",
     home: "https://bun.sh",
     metaSource: "api.github.com/repos/oven-sh/bun/releases",
-    binarySource: "Asset bun-windows-(x64|aarch64).zip",
+    binarySource: "Asset bun-windows-x64.zip",
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -878,7 +878,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "languages",
     home: "https://deno.com",
     metaSource: "api.github.com/repos/denoland/deno/releases",
-    binarySource: "Asset deno-(x86_64|aarch64)-pc-windows-msvc.zip",
+    binarySource: "Asset deno-x86_64-pc-windows-msvc.zip",
     verifyKind: "SHA-256",
     verifyDetail: () =>
       tr(
@@ -896,7 +896,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "tools",
     home: "https://typst.app",
     metaSource: "api.github.com/repos/typst/typst/releases",
-    binarySource: "Asset typst-(x86_64|aarch64)-pc-windows-msvc.zip",
+    binarySource: "Asset typst-x86_64-pc-windows-msvc.zip",
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
     targetPath: () => `typst\\${lLine()}\\typst.exe`,
@@ -983,10 +983,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
       ),
     binarySource: () =>
       tr(
-        "cmake-*-windows-(x86_64|arm64).zip e ninja-win(arm64).zip",
-        "cmake-*-windows-(x86_64|arm64).zip and ninja-win(arm64).zip",
-        "cmake-*-windows-(x86_64|arm64).zip et ninja-win(arm64).zip",
-        "cmake-*-windows-(x86_64|arm64).zip und ninja-win(arm64).zip",
+        "cmake-*-windows-x86_64.zip e ninja-win.zip",
+        "cmake-*-windows-x86_64.zip and ninja-win.zip",
+        "cmake-*-windows-x86_64.zip et ninja-win.zip",
+        "cmake-*-windows-x86_64.zip und ninja-win.zip",
       ),
     verifyKind: "SHA-256",
     verifyDetail: "GitHub Release asset.digest",
@@ -1005,7 +1005,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "languages",
     home: "https://github.com/mstorsjo/llvm-mingw",
     metaSource: "api.github.com/repos/mstorsjo/llvm-mingw/releases/latest",
-    binarySource: "Asset llvm-mingw-*-ucrt-(x86_64|aarch64).zip",
+    binarySource: "Asset llvm-mingw-*-ucrt-x86_64.zip",
     unix: () =>
       tr(
         "macOS e Linux: shim cc, c++, gcc, g++, clang sullo zig cc del kit (richiede Zig) e GNU make da conda-forge, non rilocabile",
@@ -1024,7 +1024,7 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     group: "languages",
     home: "https://www.ruby-lang.org",
     metaSource: "api.github.com/repos/oneclick/rubyinstaller2/releases?per_page=30",
-    binarySource: "Asset rubyinstaller-<v>-(x64|arm).7z",
+    binarySource: "Asset rubyinstaller-<v>-x64.7z",
     unix: () =>
       tr(
         "macOS e Linux: conda-forge ruby (3.2 e successive) con micromamba, non rilocabile",
@@ -1045,10 +1045,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     metaSource: "api.anaconda.org/package/conda-forge/r-base + mamba-org/micromamba-releases",
     unix: () =>
       tr(
-        "Windows ARM64: i pacchetti win-64 in emulazione x64, da micromamba nativo (--platform win-64). macOS e Linux: gli stessi pacchetti per osx-* e linux-*, lanciatori in kit-bin, non rilocabile",
-        "Windows ARM64: the win-64 packages under x64 emulation, from the native micromamba (--platform win-64). macOS and Linux: the same packages for osx-* and linux-*, launchers in kit-bin, not relocatable",
-        "Windows ARM64 : les paquets win-64 en émulation x64, par le micromamba natif (--platform win-64). macOS et Linux : mêmes paquets pour osx-* et linux-*, lanceurs dans kit-bin, non relocalisable",
-        "Windows ARM64: die win-64-Pakete in x64-Emulation, vom nativen micromamba (--platform win-64). macOS und Linux: dieselben Pakete für osx-* und linux-*, Starter in kit-bin, nicht verschiebbar",
+        "macOS e Linux: gli stessi pacchetti per osx-* e linux-*, lanciatori in kit-bin, non rilocabile",
+        "macOS and Linux: the same packages for osx-* and linux-*, launchers in kit-bin, not relocatable",
+        "macOS et Linux : mêmes paquets pour osx-* et linux-*, lanceurs dans kit-bin, non relocalisable",
+        "macOS und Linux: dieselben Pakete für osx-* und linux-*, Starter in kit-bin, nicht verschiebbar",
       ),
     binarySource: () =>
       tr(
@@ -1189,10 +1189,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     name: "SQLite CLI",
     unix: () =>
       tr(
-        "Linux ARM64: conda-forge sqlite (sqlite.org non pubblica gli strumenti), non rilocabile; Windows ARM64: lo zip x64 se manca quello arm64",
-        "Linux ARM64: conda-forge sqlite (sqlite.org publishes no tools), not relocatable; Windows ARM64: the x64 zip when there is no arm64 one",
-        "Linux ARM64 : sqlite de conda-forge (sqlite.org ne publie pas les outils), non relocalisable ; Windows ARM64 : le zip x64 s'il manque le zip arm64",
-        "Linux ARM64: conda-forge sqlite (sqlite.org veröffentlicht keine Tools), nicht verschiebbar; Windows ARM64: das x64-Zip, wenn das arm64-Zip fehlt",
+        "Linux ARM64: conda-forge sqlite (sqlite.org non pubblica gli strumenti), non rilocabile",
+        "Linux ARM64: conda-forge sqlite (sqlite.org publishes no tools), not relocatable",
+        "Linux ARM64 : sqlite de conda-forge (sqlite.org ne publie pas les outils), non relocalisable",
+        "Linux ARM64: conda-forge sqlite (sqlite.org veröffentlicht keine Tools), nicht verschiebbar",
       ),
     group: "databases",
     home: "https://sqlite.org",
@@ -1205,10 +1205,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
       ),
     binarySource: () =>
       tr(
-        "sqlite.org/<anno>/sqlite-tools-win-(x64|arm64)-<v>.zip",
-        "sqlite.org/<year>/sqlite-tools-win-(x64|arm64)-<v>.zip",
-        "sqlite.org/<année>/sqlite-tools-win-(x64|arm64)-<v>.zip",
-        "sqlite.org/<Jahr>/sqlite-tools-win-(x64|arm64)-<v>.zip",
+        "sqlite.org/<anno>/sqlite-tools-win-x64-<v>.zip",
+        "sqlite.org/<year>/sqlite-tools-win-x64-<v>.zip",
+        "sqlite.org/<année>/sqlite-tools-win-x64-<v>.zip",
+        "sqlite.org/<Jahr>/sqlite-tools-win-x64-<v>.zip",
       ),
     verifyKind: "SHA3-256",
     verifyDetail: () =>

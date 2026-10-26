@@ -10,7 +10,7 @@
 <h1 align="center">Atollo — Universal Portable Dev & AI Workspace</h1>
 
 <p align="center">
-  A portable, zero-install development environment for Windows, macOS and Linux, on x64 and ARM64, that runs every project in its own Docker Sandboxes microVM.<br>
+  A portable, zero-install development environment for Windows x64, Apple Silicon Macs and Linux x64 and ARM64 (the systems Docker Sandboxes runs on), that runs every project in its own Docker Sandboxes microVM.<br>
   Editor, 20+ languages and runtimes, local databases, local AI models and the Claude Code, Codex, Antigravity and Pi AI agents in one folder you can carry on a USB drive.
 </p>
 
@@ -60,7 +60,7 @@ On first start the app downloads the required components by itself: PowerShell 7
 - **GitHub in the VM, per project.** A project's Git section has "GitHub in the VM", off by default: when on, `sbx` asks the kit for the token through a command (`Atollo secret github`) and its proxy adds it to the requests to GitHub; the token is never copied and never enters the VM. Never given to a kit terminal.
 - **Four AI agents, one configuration.** Claude Code, Codex, Antigravity and Pi: install, sign in and start. Write instructions, skills and MCP servers once in `data/agents` and `atollo sync` keeps all four aligned. Ready MCP servers are one click away: GitHub, Playwright and Fetch for the whole kit, the project's files and its MySQL or MongoDB database for a project, with no token or password written in the files. Plan limits and usage for today and the last 7 days. With the VM on, Claude Code and Codex start in `sbx`'s agent sandboxes, with the sign-ins `sbx` manages, the project's kit tools on the `PATH` and its database (the port opened for their sandbox), from the app's page and from the editor alike; the kit's MCP servers do not reach them yet; Antigravity and Pi do not start in the VM, and never on the PC in its place.
 - **Local AI models.** Language models that run on the PC, with no network and no account: GGUF models from Atollo's catalog or from any Hugging Face repository, downloads that resume where they stopped (even after closing Atollo) and are verified by SHA-256. The llama.cpp server (CPU, or GPU with Vulkan or Metal) listens on 127.0.0.1 only, with a key; Pi uses it out of the box, and its chat opens in the browser. One copy in `data/models`, shared by Windows, macOS and Linux.
-- **One folder for six systems.** The same folder, or the same external SSD, moves from Windows to macOS to Linux with projects, databases and agent settings intact: each machine runs the native programs of its system. "Remove drive" closes everything Atollo opened and lets you eject the disk.
+- **One folder for four systems.** The same folder, or the same external SSD, moves from Windows to macOS to Linux with projects, databases and agent settings intact: each machine runs the native programs of its system. "Remove drive" closes everything Atollo opened and lets you eject the disk.
 
 ## Documentation
 
@@ -68,7 +68,7 @@ On first start the app downloads the required components by itself: PowerShell 7
 | --- | --- |
 | [User guide](https://nabre.github.io/atollo/guide/) | every page of the app, step by step, with screenshots, on the website (also inside the app) |
 | [Component catalog](docs/app/CATALOG.md) | the components, where each one is downloaded from, availability per system |
-| [Tools × systems matrix](docs/app/TOOLS-MATRIX.html) | every component on each of the six targets: native, emulated or missing |
+| [Tools × systems matrix](docs/app/TOOLS-MATRIX.html) | every component on each of the four targets: native, with Rosetta 2 or missing |
 | [Architecture](docs/app/ARCHITECTURE.md) | how the code is organized and where a change goes |
 | [Testing](docs/app/TESTING.md) | automated checks and the manual checklist per system |
 | [Decisions](docs/app/DECISIONS.md) and [changelog](docs/app/CHANGELOG.md) | the reasons behind each choice and what changed, in Italian |
@@ -82,11 +82,11 @@ Open work is tracked in the [issues](https://github.com/nabre/atollo/issues).
 3. Sign in to Docker once per PC: with a (free) Docker account, click **No VM** in the status bar and **Run** beside `sbx login`: the command opens in Atollo's terminal with the kit's `sbx`, and the sign-in link appears there (a click opens it in your browser). The other reasons in the same list say what else the PC needs.
 4. Create or clone a project on the **Projects** page. A project's editor, terminal and agents always open in its folder; with the VM on, the terminal, actions and Claude Code and Codex open in the project's microVM.
 
-**The VM** needs, besides the Docker account: Windows 11 x64 with **Windows Hypervisor Platform** on; macOS 14 or later on Apple silicon; Ubuntu 24.04 or later (x64 or ARM64; not its derivatives) with `/dev/kvm` usable by your user (the `kvm` group) and an AppArmor profile for the kit's microVM shim, since Ubuntu restricts user namespaces (again if the kit moves to another folder). Turning these on needs an administrator once: Atollo never asks for elevation, it shows the command (for example `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` in an administrator PowerShell, then a restart) for you to run. Windows on ARM64 and Intel Macs have no Docker Sandboxes: there Atollo works without the VM. The kit must be on a disk with permissions (NTFS, APFS, ext4…): the VMs' disks do not fit on FAT32 or exFAT. Docker Desktop is not needed.
+**The VM** needs, besides the Docker account: Windows 11 x64 with **Windows Hypervisor Platform** on; macOS 14 or later on Apple silicon; Ubuntu 24.04 or later (x64 or ARM64; not its derivatives) with `/dev/kvm` usable by your user (the `kvm` group) and an AppArmor profile for the kit's microVM shim, since Ubuntu restricts user namespaces (again if the kit moves to another folder). Turning these on needs an administrator once: Atollo never asks for elevation, it shows the command (for example `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All` in an administrator PowerShell, then a restart) for you to run. Windows on ARM64 and Intel Macs have no Docker Sandboxes, so Atollo does not run there ([D-176](docs/app/DECISIONS.md)). The kit must be on a disk with permissions (NTFS, APFS, ext4…): the VMs' disks do not fit on FAT32 or exFAT. Docker Desktop is not needed.
 
-From the [releases page](https://github.com/nabre/atollo/releases): `Atollo-<version>-win32-x64.exe` or `Atollo-<version>-win32-arm64.exe` for Windows, `Atollo-<version>-darwin-arm64.app.zip` (Apple Silicon) or `Atollo-<version>-darwin-x64.app.zip` (Intel) for macOS, `Atollo-<version>-linux-x64` or `Atollo-<version>-linux-arm64` (`.AppImage` and `.tar.gz`) for Linux; each file has its `.sha256`. The name tells the version: when the app updates itself, the exe and the AppImage take the new version's name. In the examples below `Atollo.exe` stands for your exe.
+From the [releases page](https://github.com/nabre/atollo/releases): `Atollo-<version>-win32-x64.exe` for Windows, `Atollo-<version>-darwin-arm64.app.zip` for macOS (Apple Silicon), `Atollo-<version>-linux-x64` or `Atollo-<version>-linux-arm64` (`.AppImage` and `.tar.gz`) for Linux; each file has its `.sha256`. The name tells the version: when the app updates itself, the exe and the AppImage take the new version's name. In the examples below `Atollo.exe` stands for your exe.
 
-**macOS** (12 or later). The app only has an ad hoc signature, not notarized by Apple:
+**macOS** (12 or later, Apple Silicon). The app only has an ad hoc signature, not notarized by Apple:
 1. Unzip it and move `Atollo.app` with the Finder into the kit folder (for example `/Volumes/KIT/Atollo/`).
 2. In Terminal, remove the browser's quarantine: `xattr -dr com.apple.quarantine /Volumes/KIT/Atollo/Atollo.app`.
 3. Open `Atollo.app` from that folder: `projects/` and `data/` are created next to it, never inside.
@@ -115,22 +115,22 @@ Atollo's console is a tab of the app's terminal panel on every system, with the 
 
 ## Still to do
 
-Atollo is in alpha (version 0.6.0). Windows x64 is the most tested system, real installs in CI included; macOS, Linux and Windows ARM64 are built and tested in CI only. The full checklist is in [docs/app/TESTING.md](docs/app/TESTING.md).
+Atollo is in alpha (version 0.6.0). Windows x64 is the most tested system, real installs in CI included; macOS and Linux are built and tested in CI only. The full checklist is in [docs/app/TESTING.md](docs/app/TESTING.md).
 
 - **The VM, to be finished** ([D-175](docs/app/DECISIONS.md)). Projects in their microVMs are tried for real only on Windows 11 x64 with Docker Sandboxes 0.49.2; macOS and Ubuntu are untested, and so is "GitHub in the VM" with a real account. Still to do: the kit's MCP servers for the agents in the VM (their commands are programs of the PC), to be brought into `sbx`'s MCP gateway or said missing.
-- **The alpha, to be tried.** [The 0.6.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.6.0) is on GitHub for Windows, macOS and Linux, each on x64 and ARM64. The published files are built and tested in CI: now they need downloading and starting on clean machines.
+- **The alpha, to be tried.** [The 0.6.0 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.6.0) is on GitHub for Windows, macOS and Linux (it also had Windows ARM64 and Intel Mac builds, which the next versions drop: [D-176](docs/app/DECISIONS.md)). The published files are built and tested in CI: now they need downloading and starting on clean machines.
 - **Alpha testing.** We need people using Atollo on real projects and different PCs, and reporting what goes wrong: component installs, projects, databases, agents. Settings › The kit › “Report a problem” opens a GitHub issue with the version and the system already filled in; attach the zip of “Export diagnostics” next to it (secrets masked, made on your PC, never sent by the app).
-- **macOS on real Macs** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). Apple Silicon and Intel are built and started in CI, never on a clean Mac: the zip downloaded with a browser, quarantine and Gatekeeper, App Translocation, a kit on an exFAT stick, the agents' sign-in carried from one Mac to another.
+- **macOS on real Macs** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). The Apple Silicon app is built and started in CI, never on a clean Mac: the zip downloaded with a browser, quarantine and Gatekeeper, App Translocation, a kit on an exFAT stick, the agents' sign-in carried from one Mac to another.
 - **Linux on real machines** ([#5](https://github.com/nabre/atollo/issues/5)). x64 and ARM64 on Ubuntu 24.04, Fedora 42 and Debian 13: AppImage with and without FUSE, the `tar.gz` with WebKitGTK 4.1, exFAT sticks or sticks mounted `noexec`, sign-in with GNOME, KeePassXC or KWallet.
 - **Updates and the kit's builds outside Windows.** Updating the app from one version to the next on macOS and Linux is not tried yet. The kit's Apache (2.4.69, D-116) is in the catalog but tried only in CI; so is the kit's PHP with `pdo_sqlite` (8.4.26 and 8.5.11, D-133), which the app uses from 0.3.0 on.
 - **Code signing.** On macOS only an ad hoc signature, without Apple notarization: `xattr -dr com.apple.quarantine` is needed. On Windows 0.6.0 ships unsigned: the SignPath signature is still to be activated, and until then SmartScreen may warn on first launch.
 
-Have a Mac, a Linux PC or a Windows ARM64 PC? Try Atollo and tell us how it went: [open an issue on GitHub](https://github.com/nabre/atollo/issues).
+Have an Apple Silicon Mac or a Linux PC? Try Atollo and tell us how it went: [open an issue on GitHub](https://github.com/nabre/atollo/issues).
 
 ## Known limits
 
-- On Windows 10 and 11 (`x64`), Windows 11 (`ARM64`), macOS (Apple Silicon and Intel) and Linux (`x64` and `ARM64`). On Windows ARM64 the editor, PHP, Apache, MySQL, MongoDB, Android SDK, Julia, TinyTeX and R run under x64 emulation; on Linux ARM64 Android is missing. The macOS and Linux releases are tried in CI but not yet on clean machines ([#5](https://github.com/nabre/atollo/issues/5)), and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/atollo/issues/6)); components and sources per system in [docs/app/CATALOG.md](docs/app/CATALOG.md), the component × system matrix in [docs/app/TOOLS-MATRIX.html](docs/app/TOOLS-MATRIX.html). Apache on macOS and Linux is the kit's own build (D-116), with PHP through `php-fpm`.
-- The VM (Docker Sandboxes) runs only on Windows 11 x64, macOS 14 or later on Apple silicon and Ubuntu 24.04 or later (x64 and ARM64), with the hypervisor on and a Docker account; elsewhere (Windows 10, Windows ARM64, Intel Macs, other Linux distributions) and on a kit on FAT32 or exFAT, projects run on the PC with the **No VM** warning. Each sandbox's disk can grow up to about 30 GB (sparse files: only what is written takes space). A Docker Sandboxes already running on the PC (installed there, or another kit's) keeps the kit's VM off until you stop it: Atollo never stops it nor uses it.
+- On Windows 10 and 11 (`x64`), macOS on Apple Silicon and Linux (`x64` and `ARM64`): the systems Docker Sandboxes, Atollo's core, runs on ([D-176](docs/app/DECISIONS.md)). On Windows ARM64 and Intel Macs Atollo does not start: it says why and stops. On Linux ARM64 Android is missing. The macOS and Linux releases are tried in CI but not yet on clean machines ([#5](https://github.com/nabre/atollo/issues/5)), and the agents' sign-in still has to be tried on a Mac ([#6](https://github.com/nabre/atollo/issues/6)); components and sources per system in [docs/app/CATALOG.md](docs/app/CATALOG.md), the component × system matrix in [docs/app/TOOLS-MATRIX.html](docs/app/TOOLS-MATRIX.html). Apache on macOS and Linux is the kit's own build (D-116), with PHP through `php-fpm`.
+- The VM (Docker Sandboxes) runs only on Windows 11 x64, macOS 14 or later on Apple silicon and Ubuntu 24.04 or later (x64 and ARM64), with the hypervisor on and a Docker account; elsewhere (Windows 10, other Linux distributions) and on a kit on FAT32 or exFAT, projects run on the PC with the **No VM** warning. Each sandbox's disk can grow up to about 30 GB (sparse files: only what is written takes space). A Docker Sandboxes already running on the PC (installed there, or another kit's) keeps the kit's VM off until you stop it: Atollo never stops it nor uses it.
 - Without the VM there is no boundary between a project and your user: its programs can read your files and use the network; Atollo only filters their environment. Open in Atollo only projects you trust.
 - On Linux MySQL needs two system libraries, `libaio` and `libnuma`: on Ubuntu 24.04 and Debian 13 `sudo apt install libaio1t64 libnuma1` (on older releases `libaio1`), on Fedora and RHEL `sudo dnf install libaio numactl-libs`. If they are missing, Atollo says so with the command to run.
 - On macOS and Linux an Atollo folder on exFAT or FAT (a drive formatted for Windows) works, but those file systems have no links: where a program ships some, Atollo copies the files instead (for instance Git's 142 internal links), taking more space. On a drive used only with a Mac or Linux, APFS or ext4 is better.
@@ -179,8 +179,8 @@ Atollo.exe prepare [options]         installs and updates the chosen components
     --update-all                     also update the installed ones
     --force                          download again
     --line id=x.y                    adds that version next to the others (can be repeated)
-    --target <system>                prepares for another system: win32-x64, win32-arm64,
-                                     darwin-arm64, darwin-x64, linux-x64, linux-arm64
+    --target <system>                prepares for another system: win32-x64, darwin-arm64,
+                                     linux-x64, linux-arm64
 Atollo.exe sync [--project <folder>] [--verbose]
                                      aligns the agents' instructions, skills and MCP servers
 Atollo.exe keyring restore|save      Antigravity's sign-in (used by the kit's agy.cmd)

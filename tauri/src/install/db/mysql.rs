@@ -25,7 +25,7 @@ use crate::setup::Component;
 const MYSQL_CDN: &str = "https://cdn.mysql.com";
 
 /// The version of a line of MySQL and the SHA-256 of its file per download
-/// target (`win32-x64`, `darwin-*`, `linux-*`; Windows ARM64 takes x64's).
+/// target (`win32-x64`, `darwin-arm64`, `linux-*`).
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MysqlPin {
@@ -55,18 +55,13 @@ pub fn mysql_pins() -> &'static std::collections::BTreeMap<String, MysqlPin> {
     })
 }
 
-/// The file of MySQL `version` for the download `target` (`x64Only` on
-/// Windows ARM64: the caller gives x64) and its archive kind: Oracle's
-/// generic builds, glibc 2.28 on Linux (the minimal one on x64, the only
-/// one on ARM64), macOS 15 on both Mac CPUs.
+/// The file of MySQL `version` for the download `target` and its archive
+/// kind: Oracle's generic builds, glibc 2.28 on Linux (the minimal one on
+/// x64, the only one on ARM64), macOS 15 on Apple silicon.
 pub fn mysql_file(target: Target, version: &str) -> (String, Kind) {
     match (target.os, target.arch) {
         (Os::Win32, _) => (format!("mysql-{version}-winx64.zip"), Kind::Zip),
-        (Os::Darwin, Arch::Arm64) => (format!("mysql-{version}-macos15-arm64.tar.gz"), Kind::TarGz),
-        (Os::Darwin, Arch::X64) => (
-            format!("mysql-{version}-macos15-x86_64.tar.gz"),
-            Kind::TarGz,
-        ),
+        (Os::Darwin, _) => (format!("mysql-{version}-macos15-arm64.tar.gz"), Kind::TarGz),
         (Os::Linux, Arch::X64) => (
             format!("mysql-{version}-linux-glibc2.28-x86_64-minimal.tar.xz"),
             Kind::TarXz,

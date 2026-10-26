@@ -22,6 +22,14 @@ fn every_supported_target_has_its_asset() {
     );
     assert_eq!(t(Os::Win32, Arch::Arm64), None);
     assert_eq!(t(Os::Darwin, Arch::X64), None);
+    // The targets Atollo supports are exactly these (D-176).
+    for os in [Os::Win32, Os::Darwin, Os::Linux] {
+        for arch in [Arch::X64, Arch::Arm64] {
+            let target = Target::new(os, arch);
+            assert_eq!(t(os, arch).is_some(), target.is_supported(), "{target}");
+            assert_eq!(Target::ALL.contains(&target), target.is_supported());
+        }
+    }
 }
 
 /// The Linux tarball laid out as its `install.sh` does.

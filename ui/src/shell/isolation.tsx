@@ -21,15 +21,6 @@ import { useAction, useCopy, useLoad } from "../shared/hooks";
 import { Button, ConfirmDialog } from "../workbench";
 import { t } from "../i18n";
 
-/** The PC's system, from the kit's platform (`win32-x64`, `darwin-arm64`). */
-export type System = "windows" | "macos" | "linux";
-
-export function systemOf(platform: string): System {
-  if (platform.startsWith("win32")) return "windows";
-  if (platform.startsWith("darwin")) return "macos";
-  return "linux";
-}
-
 /** What a blocker means and what the user does about it: a sentence, the
  * command to run when there is one (`run` when Atollo launches it in its
  * terminal), and `install` when the kit's Docker Sandboxes is what is
@@ -67,23 +58,13 @@ export function apparmorCommand(shim: string): string | null {
   ].join("\n");
 }
 
-export function explain(b: IsolationBlocker, system: System): Explained {
+export function explain(b: IsolationBlocker): Explained {
   switch (b.code) {
     case "old_windows":
       return {
         why: t("Windows build {0} non è Windows 11: Docker Sandboxes funziona solo su Windows 11.", String(b.build)),
         fix: t("Aggiorna il PC a Windows 11 (64 bit, processore Intel o AMD)."),
       };
-    case "processor":
-      return system === "macos"
-        ? {
-            why: t("Docker Sandboxes richiede un Mac con Apple silicon (M1 o successivo)."),
-            fix: t("Su un Mac Intel la VM non è disponibile: i progetti restano sul PC."),
-          }
-        : {
-            why: t("Docker Sandboxes non funziona su Windows per processori ARM."),
-            fix: t("Su questo PC la VM non è disponibile: i progetti restano sul PC."),
-          };
     case "old_macos":
       return {
         why: t("macOS {0}: Docker Sandboxes richiede macOS 14 Sonoma o successivo.", b.version),
@@ -255,13 +236,11 @@ function InstallButton() {
 /** Why the VM is off and what makes it work. */
 export function IsolationDialog({
   status,
-  system,
   checking,
   onCheck,
   onClose,
 }: {
   status: IsolationStatus;
-  system: System;
   checking: boolean;
   onCheck: () => void;
   onClose: () => void;
@@ -294,7 +273,7 @@ export function IsolationDialog({
           <p className="font-vsc-semibold text-vsc-fg">{t("Perché la VM non è attiva")}</p>
           <ol className="list-decimal space-y-vsc-size80 pl-5">
             {status.blockers.map((b) => {
-              const e = explain(b, system);
+              const e = explain(b);
               return (
                 <li key={b.code}>
                   <p className="text-vsc-fg">{e.why}</p>

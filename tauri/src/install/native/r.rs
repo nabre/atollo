@@ -15,8 +15,7 @@ use crate::setup::Component;
 
 /// R from conda-forge (OpenBLAS), installed by micromamba in the work
 /// folder and moved into the kit; launchers `bin/R(.cmd)`, `bin/Rscript(.cmd)`
-/// put R's libraries on the PATH of R only. conda-forge has no `win-arm64`
-/// R: on Windows ARM64 the `win-64` one runs in emulation (`x64Only`).
+/// put R's libraries on the PATH of R only.
 pub struct R;
 
 /// `Makeconf` with its `LOCAL_SOFT` lines set to `<prefix>/Library`

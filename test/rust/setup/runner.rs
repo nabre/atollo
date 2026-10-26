@@ -244,26 +244,12 @@ fn half_installed_components_are_removed() {
     });
 }
 
-/// R is planned on Windows ARM64 too, its x64 build in emulation (it was
-/// `noArm64`, never planned there); no component of the catalog is
-/// `noArm64` any more.
+/// R is planned on Windows, the x64 build.
 #[test]
-fn r_is_planned_on_arm64() {
+fn r_is_planned_on_windows() {
     let catalog = Catalog::get();
-    assert!(catalog.all().iter().all(|c| !c.no_arm64));
-    assert!(catalog
-        .find("r")
-        .unwrap()
-        .is_emulated_on(crate::kit::Target::WIN32_ARM64));
     let mut choice = Choice::defaults(catalog);
     choice.set(catalog, "r", true);
-    with_arch_ctx("plan-arm64", Arch::Arm64, |ctx| {
-        let p = plan_with(ctx, &choice, &[], &[]).unwrap();
-        assert!(p.handle.contains(&"r".into()), "ARM64: planned");
-        assert!(p.handle.contains(&"git".into()));
-        let p = plan_with(ctx, &choice, &["r"], &[]).unwrap();
-        assert_eq!(p.handle, ["r"]);
-    });
     with_ctx("plan-x64", |ctx| {
         let p = plan_with(ctx, &choice, &[], &[]).unwrap();
         assert!(p.handle.contains(&"r".into()), "x64: planned");
@@ -331,9 +317,9 @@ fn unix_plans_follow_the_unix_catalog() {
 }
 
 /// The needs of the kit's target: `--only cc` brings Zig on macOS and
-/// Linux (first, in the order of the page), `--only rust` brings C and C++
-/// on Windows ARM64; a chosen C and C++ whose Zig is skipped is not planned
-/// there. Windows x64 as before.
+/// Linux (first, in the order of the page), `--only rust` brings nothing
+/// else; a chosen C and C++ whose Zig is skipped is not planned there.
+/// Windows x64 as before.
 #[test]
 fn plans_follow_the_needs_of_the_target() {
     use crate::kit::Target;
@@ -349,12 +335,7 @@ fn plans_follow_the_needs_of_the_target() {
             };
             assert_eq!(p.handle, want, "{target}");
             let p = plan_with(ctx, &choice, &["rust"], &[]).unwrap();
-            let want: &[&str] = if target == Target::WIN32_ARM64 {
-                &["cc", "rust"]
-            } else {
-                &["rust"]
-            };
-            assert_eq!(p.handle, want, "{target}");
+            assert_eq!(p.handle, ["rust"], "{target}");
             // Installed already: not again.
             fake_install(ctx, "zig");
             let p = plan_with(ctx, &choice, &["cc"], &[]).unwrap();
@@ -393,14 +374,10 @@ fn plans_follow_the_needs_of_the_target() {
             assert!(p.handle.contains(&"cc".into()), "{target}");
             assert!(!p.handle.contains(&"zig".into()), "{target}");
             assert_eq!(p.remove.contains(&"zig".into()), !unix, "{target}");
-            // Rust on Windows ARM64 brings C and C++ (and nothing else).
+            // Rust brings no C and C++ anywhere.
             let rust = Choice::parse("rust=1\ncc=0\n", catalog);
             let p = plan_with(ctx, &rust, &[], &[]).unwrap();
-            assert_eq!(
-                p.handle.contains(&"cc".into()),
-                target == Target::WIN32_ARM64,
-                "{target}"
-            );
+            assert!(!p.handle.contains(&"cc".into()), "{target}");
         });
     }
 }

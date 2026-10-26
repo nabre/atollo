@@ -347,12 +347,7 @@ export const INSIDE: TopicTexts = {
                 "Windows 11 64 bits (processeur Intel ou AMD) avec Windows Hypervisor Platform activé : il s'active une fois, en administrateur, puis on redémarre le PC.",
                 "Windows 11 mit 64 Bit (Intel- oder AMD-Prozessor) mit aktivierter Windows Hypervisor Platform: Sie wird einmal als Administrator eingeschaltet, dann wird der PC neu gestartet.",
               ),
-              tr(
-                "Windows 10 e Windows su processori ARM.",
-                "Windows 10 and Windows on ARM processors.",
-                "Windows 10 et Windows sur processeurs ARM.",
-                "Windows 10 und Windows auf ARM-Prozessoren.",
-              ),
+              tr("Windows 10.", "Windows 10.", "Windows 10.", "Windows 10."),
             ],
             [
               "macOS",
@@ -363,10 +358,10 @@ export const INSIDE: TopicTexts = {
                 "Ein Mac mit Apple Silicon (M1 oder neuer) und macOS 14 Sonoma oder neuer.",
               ),
               tr(
-                "I Mac Intel e le versioni di macOS precedenti alla 14.",
-                "Intel Macs and macOS versions before 14.",
-                "Les Mac Intel et les versions de macOS antérieures à la 14.",
-                "Intel-Macs und macOS-Versionen vor 14.",
+                "Le versioni di macOS precedenti alla 14.",
+                "macOS versions before 14.",
+                "Les versions de macOS antérieures à la 14.",
+                "macOS-Versionen vor 14.",
               ),
             ],
             [
@@ -584,10 +579,10 @@ export const INSIDE: TopicTexts = {
           rows={[
             [
               tr(
-                "Sistema non supportato (Windows prima dell'11, Windows su ARM, Mac Intel, macOS prima del 14, Linux diverso da Ubuntu 24.04 o successivo)",
-                "System not supported (Windows before 11, Windows on ARM, Intel Mac, macOS before 14, Linux other than Ubuntu 24.04 or later)",
-                "Système non pris en charge (Windows avant la 11, Windows sur ARM, Mac Intel, macOS avant la 14, Linux autre qu'Ubuntu 24.04 ou ultérieur)",
-                "System nicht unterstützt (Windows vor 11, Windows auf ARM, Intel-Mac, macOS vor 14, Linux außer Ubuntu 24.04 oder neuer)",
+                "Sistema non supportato (Windows prima dell'11, macOS prima del 14, Linux diverso da Ubuntu 24.04 o successivo)",
+                "System not supported (Windows before 11, macOS before 14, Linux other than Ubuntu 24.04 or later)",
+                "Système non pris en charge (Windows avant la 11, macOS avant la 14, Linux autre qu'Ubuntu 24.04 ou ultérieur)",
+                "System nicht unterstützt (Windows vor 11, macOS vor 14, Linux außer Ubuntu 24.04 oder neuer)",
               ),
               tr(
                 "Aggiorna il sistema, se si può; altrimenti i progetti restano sul PC. È l'unico motivo mostrato: gli altri non servirebbero.",
@@ -2405,10 +2400,10 @@ export const INSIDE: TopicTexts = {
             [
               <Code key="f">{`--target ${tr("<sistema>", "<system>", "<système>", "<System>")}`}</Code>,
               tr(
-                "Prepara per un altro sistema: win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64.",
-                "Prepares for another system: win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64.",
-                "Prépare pour un autre système : win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64.",
-                "Bereitet für ein anderes System vor: win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64, linux-arm64.",
+                "Prepara per un altro sistema: win32-x64, darwin-arm64, linux-x64, linux-arm64.",
+                "Prepares for another system: win32-x64, darwin-arm64, linux-x64, linux-arm64.",
+                "Prépare pour un autre système : win32-x64, darwin-arm64, linux-x64, linux-arm64.",
+                "Bereitet für ein anderes System vor: win32-x64, darwin-arm64, linux-x64, linux-arm64.",
               ),
             ],
           ]}

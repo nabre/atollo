@@ -13,6 +13,7 @@
         <p class="zero rise" style="--d:3">{{heroZero}}</p>
         <div class="cta rise" style="--d:4" id="download"
              data-for="{{downloadFor}}" data-generic="{{downloadGeneric}}" data-none="{{noRelease}}"
+             data-unsupported="{{unsupported}}"
              data-version="{{versionLabel}}">
           <a class="btn btn-primary" id="dl-main" href="https://github.com/nabre/atollo/releases/latest">{{downloadGeneric}}</a>
           <a class="btn btn-ghost" href="#platforms">{{otherSystems}}</a>
@@ -38,8 +39,7 @@
 <span class="t-l">└─</span> <span class="t-dir" data-kit="data">data/</span>
    <span class="t-c">{{folderData}}</span></pre>
         <ul class="kit-targets" aria-label="{{navPlatforms}}">
-          <li data-target="win32-x64">win32-x64</li><li data-target="win32-arm64">win32-arm64</li>
-          <li data-target="darwin-arm64">darwin-arm64</li><li data-target="darwin-x64">darwin-x64</li>
+          <li data-target="win32-x64">win32-x64</li><li data-target="darwin-arm64">darwin-arm64</li>
           <li data-target="linux-x64">linux-x64</li><li data-target="linux-arm64">linux-arm64</li>
         </ul>
       </figure>
@@ -48,7 +48,7 @@
 
     <!-- Part of the hero: on screen with the title, on every width. -->
     <div class="wrap stats-row rise" style="--d:6" aria-label="Atollo">
-      <div class="stat"><b data-count="6">6</b><span>{{statTargets}}</span></div>
+      <div class="stat"><b data-count="4">4</b><span>{{statTargets}}</span></div>
       <div class="stat"><b data-count="{{componentCount}}">{{componentCount}}</b><span>{{statComponents}}</span></div>
       <div class="stat"><b data-count="{{agentCount}}">{{agentCount}}</b><span>{{statAgents}}</span></div>
       <div class="stat"><b>0</b><span>{{statZero}}</span></div>
@@ -65,7 +65,7 @@
         <article class="tile tile-c reveal"><span class="tile-n">3</span><h3>{{f3Title}}</h3><p>{{f3Text}}</p></article>
         <article class="tile tile-d reveal"><span class="tile-n">4</span><h3>{{f4Title}}</h3><p>{{f4Text}}</p></article>
         <article class="tile tile-e reveal">
-          <span class="tile-n warm">6/6</span><h3>{{f5Title}}</h3><p>{{f5Text}}</p>
+          <span class="tile-n warm">4/4</span><h3>{{f5Title}}</h3><p>{{f5Text}}</p>
         </article>
       </div>
     </div>
@@ -140,9 +140,7 @@
       <p class="muted reveal">{{platformsLead}}</p>
       <ul class="targets">
         <li class="reveal" data-target="win32-x64"><span class="os">Windows</span><code>win32-x64</code><span class="note">{{pWinX64}}</span><span class="files"><a data-asset="win32-x64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-{{version}}-win32-x64.exe</a></span></li>
-        <li class="reveal" data-target="win32-arm64"><span class="os">Windows</span><code>win32-arm64</code><span class="note">{{pWinArm}}</span><span class="files"><a data-asset="win32-arm64.exe" href="https://github.com/nabre/atollo/releases/latest">Atollo-{{version}}-win32-arm64.exe</a></span></li>
         <li class="reveal" data-target="darwin-arm64"><span class="os">macOS</span><code>darwin-arm64</code><span class="note">{{pMacArm}}</span><span class="files"><a data-asset="darwin-arm64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-{{version}}-darwin-arm64.app.zip</a></span></li>
-        <li class="reveal" data-target="darwin-x64"><span class="os">macOS</span><code>darwin-x64</code><span class="note">{{pMacX64}}</span><span class="files"><a data-asset="darwin-x64.app.zip" href="https://github.com/nabre/atollo/releases/latest">Atollo-{{version}}-darwin-x64.app.zip</a></span></li>
         <li class="reveal" data-target="linux-x64"><span class="os">Linux</span><code>linux-x64</code><span class="note">{{pLinX64}}</span><span class="files"><a data-asset="linux-x64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="linux-x64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
         <li class="reveal" data-target="linux-arm64"><span class="os">Linux</span><code>linux-arm64</code><span class="note">{{pLinArm}}</span><span class="files"><a data-asset="linux-arm64.AppImage" href="https://github.com/nabre/atollo/releases/latest">.AppImage</a><a data-asset="linux-arm64.tar.gz" href="https://github.com/nabre/atollo/releases/latest">.tar.gz</a></span></li>
       </ul>

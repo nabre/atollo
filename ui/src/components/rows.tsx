@@ -169,12 +169,7 @@ export function ComponentRow({
   const versioned = kit.byId.get(c.id);
   const versions = versioned?.installed ? versioned : null;
   const installable =
-    versioned &&
-    !versioned.installed &&
-    versioned.downloadable &&
-    c.available &&
-    !c.noArm64 &&
-    c.unavailableReason === null
+    versioned && !versioned.installed && versioned.downloadable && c.available && c.unavailableReason === null
       ? versioned
       : null;
   // Its step in the preparation: waiting, downloading, failed.
@@ -197,7 +192,7 @@ export function ComponentRow({
           <Checkbox
             id={inputId}
             checked={on}
-            disabled={required || running || c.noArm64 || c.unavailableReason !== null || (!c.available && !on)}
+            disabled={required || running || c.unavailableReason !== null || (!c.available && !on)}
             onChange={(v) => {
               onChange(v);
             }}
@@ -216,7 +211,10 @@ export function ComponentRow({
             <LinkProblems id={c.id} links={links} />
           </label>
           {c.x64Only && (
-            <span className="text-[12px] text-vsc-desc" title={t("Su Windows ARM64 gira in emulazione x64")}>
+            <span
+              className="text-[12px] text-vsc-desc"
+              title={t("Su un Mac con Apple Silicon gira in emulazione x64 con Rosetta 2")}
+            >
               x64
             </span>
           )}
@@ -232,12 +230,8 @@ export function ComponentRow({
                 <Codicon name="check" className="mr-1" size={12} />
                 {shown ?? t("installato")}
               </span>
-            ) : c.noArm64 ? (
-              <span className="text-vsc-desc">{t("non disponibile su PC ARM64")}</span>
             ) : c.unavailableReason !== null ? (
               <span className="text-vsc-desc">{c.unavailableReason}</span>
-            ) : c.needsWindows11 ? (
-              <span className="text-vsc-desc">{t("richiede Windows 11 su ARM64")}</span>
             ) : (
               <span className="text-vsc-desc">{t("non installato")}</span>
             )}

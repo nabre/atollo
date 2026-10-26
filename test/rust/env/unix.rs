@@ -14,12 +14,7 @@ fn cc_variables_on_unix_with_cc_and_zig() {
 
     let tmp = TempDir::new("env-cc");
     let zig = crate::setup::Catalog::get().find("zig").unwrap();
-    for target in [
-        Target::LINUX_X64,
-        Target::LINUX_ARM64,
-        Target::DARWIN_ARM64,
-        Target::DARWIN_X64,
-    ] {
+    for target in [Target::LINUX_X64, Target::LINUX_ARM64, Target::DARWIN_ARM64] {
         let bin_of = |kit: &Kit| crate::common::fsx::join_rel(kit.apps(), "cc/bin");
         let on_path = |env: &KitEnv, kit: &Kit| {
             env.path_entries()
@@ -107,49 +102,6 @@ fn macos_rust_linker_with_command_line_tools() {
             "/usr/bin/cc"
         ))
     );
-    assert_eq!(
-        macos_rust_linker(Target::DARWIN_X64, true).map(|(n, _)| n),
-        Some("CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER".to_owned())
-    );
-}
-
-/// D-112: the linker of Rust's gnullvm host on Windows ARM64 only, the
-/// aarch64 wrapper of llvm-mingw first.
-#[test]
-fn rust_linker_on_windows_arm64() {
-    use crate::kit::Target;
-
-    let bin = Path::new("K").join("cc").join("bin");
-    let all = |_: &Path| true;
-    assert_eq!(
-        arm64_rust_linker(&bin, all),
-        Some(bin.join("aarch64-w64-mingw32-clang.exe"))
-    );
-    let clang_only =
-        |p: &Path| p.ends_with("clang.exe") && !p.ends_with("aarch64-w64-mingw32-clang.exe");
-    assert_eq!(
-        arm64_rust_linker(&bin, clang_only),
-        Some(bin.join("clang.exe"))
-    );
-    assert_eq!(arm64_rust_linker(&bin, |_| false), None);
-
-    let var = "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER";
-    let tmp = TempDir::new("env-rust-arm64");
-    let parts = ["cc/bin/clang.exe", "cc/bin/aarch64-w64-mingw32-clang.exe"];
-    let arm = Kit::at_target(tmp.0.join("arm"), Target::WIN32_ARM64);
-    let env = KitEnv::build(&arm, &Settings::default(), "en", &host());
-    assert_eq!(env.get(var), None, "no cc, no linker");
-    touch(&arm, &parts);
-    let env = KitEnv::build(&arm, &Settings::default(), "en", &host());
-    assert_eq!(
-        env.get(var).map(Path::new),
-        Some(crate::common::fsx::join_rel(arm.apps(), parts[1]).as_path())
-    );
-    // Windows x64 unchanged.
-    let x64 = Kit::at_target(tmp.0.join("x64"), Target::WIN32_X64);
-    touch(&x64, &parts);
-    let env = KitEnv::build(&x64, &Settings::default(), "en", &host());
-    assert_eq!(env.get(var), None);
 }
 
 /// D-112 hook: a Git with `libexec/git-core` (dugite-native) on macOS and
@@ -278,7 +230,7 @@ fn gem_home_follows_the_line_the_kit_uses() {
 
     let tmp = TempDir::new("env-gem-lines");
     let ruby = crate::setup::Catalog::get().find("ruby").unwrap();
-    for target in [Target::LINUX_ARM64, Target::DARWIN_X64] {
+    for target in [Target::LINUX_ARM64, Target::DARWIN_ARM64] {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         touch(&kit, &["ruby/3.3/bin/ruby", "ruby/3.4/bin/ruby"]);
         ruby.save_version(&kit, "3.3.9").unwrap();

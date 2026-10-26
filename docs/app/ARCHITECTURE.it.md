@@ -178,8 +178,8 @@ tauri\src\
                               scambio cartelle), resume (download grandi: <file>.part ripreso con Range, SHA-256
                               mentre arrivano i byte, D-151), lan (l'indirizzo del sito sulla rete locale e il
                               suo QR, D-158)
-  router\                     destinazioni (Windows, macOS, Linux × x64, ARM64): target, bins (programmi e lanciatori
-                              per sistema), probe (cosa c'è su disco, salute), bootstrap (preparazione per un altro
+  router\                     destinazioni (i quattro sistemi di Docker Sandboxes, D-176: win32-x64, darwin-arm64,
+                              linux-x64, linux-arm64): target, bins (programmi e lanciatori per sistema), probe (cosa c'è su disco, salute), bootstrap (preparazione per un altro
                               sistema, D-114), availability (perché un componente non si installa su un target)
   platform\                   lo strato astratto sopra il sistema operativo (sotto)
   os\                         il codice di ciascun sistema (sotto)

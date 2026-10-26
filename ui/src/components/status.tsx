@@ -80,7 +80,6 @@ export function shownStatus(
   if (c.installed) return { state: s?.needsReinstall ? "update" : "installed", detail: null };
   if (s?.missing) return incomplete(s.missing);
   if (c.bootstrapStaged) return { state: "staged", detail: null };
-  if (c.noArm64) return { state: "missing", detail: t("non disponibile su PC ARM64") };
   if (c.unavailableReason !== null) return { state: "missing", detail: c.unavailableReason };
   if (s) return otherStatus(s, target);
   return { state: "missing", detail: null };

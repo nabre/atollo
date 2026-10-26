@@ -629,8 +629,8 @@ pub fn installed_from_output(text: &str) -> BTreeSet<String> {
 }
 
 /// The platform package of CodeLLDB for this kit. Extensions run in the
-/// editor server's process, so the package follows the server: x64 on
-/// Windows ARM64 too while the server is emulated there.
+/// editor server's process, so the package follows the server: x64 where
+/// the server runs emulated (Rosetta 2).
 fn codelldb_asset(kit: &Kit) -> String {
     let target = kit.target();
     let server_emulated = Catalog::get()

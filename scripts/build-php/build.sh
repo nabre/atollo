@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the kit's PHP for one macOS or Linux target (issue #4):
 #   bash build.sh <target> <php-version> <build> <out-dir>
-#   target       linux-x64 | linux-arm64 | darwin-arm64 | darwin-x64 (the host's own)
+#   target       linux-x64 | linux-arm64 | darwin-arm64 (the host's own; D-176: no Intel macOS)
 #   php-version  one of the php lines of sources.txt (8.4.26)
 #   build        the kit's build number of this PHP version (1, 2, ...)
 # Writes <out-dir>/php-<version>-<build>-<target>.tar.gz and its .sha256:
@@ -26,7 +26,6 @@ case "$target" in
   linux-x64) want_arch=x86_64 ;;
   linux-arm64) want_arch=aarch64 ;;
   darwin-arm64) want_arch=arm64 ;;
-  darwin-x64) want_arch=x86_64 ;;
   *) echo "unknown target $target" >&2; exit 2 ;;
 esac
 [ "$(uname -m)" = "$want_arch" ] || { echo "$target is built on a $want_arch host, not $(uname -m)" >&2; exit 2; }

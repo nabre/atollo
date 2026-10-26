@@ -47,9 +47,8 @@ pub fn conda_versions(info: &Value, subdir: &str) -> Vec<String> {
 
 /// The micromamba that creates an environment for a kit of `target` on
 /// this PC: the kit's own where this PC runs it, else this PC's of the same
-/// system. A component in emulation is installed here for a kit this PC
-/// cannot run (R x64 for Windows ARM64, prepared from Windows x64): the
-/// native micromamba of that kit would not start (os error 216).
+/// system: the native micromamba of a kit this PC cannot run would not
+/// start.
 pub fn micromamba_runner(target: Target) -> Target {
     micromamba_runner_on(target, Target::detect(), can_execute_on_host(target))
 }
@@ -90,8 +89,8 @@ pub(in crate::install) fn micromamba_release(ctx: &Ctx, version: &str) -> Result
 /// The arguments of `micromamba create` for an environment at `prefix` with
 /// `specs` (`git=2.51.0`), from conda-forge only and without any `.condarc`.
 /// `platform` is the conda platform of an environment that is not
-/// micromamba's own (`win-64` from the native micromamba of Windows ARM64,
-/// for a component in emulation); `None` for its own.
+/// micromamba's own (`osx-64` from the native micromamba of Apple silicon,
+/// for a component run with Rosetta 2); `None` for its own.
 pub fn micromamba_create_args(
     prefix: &Path,
     specs: &[&str],

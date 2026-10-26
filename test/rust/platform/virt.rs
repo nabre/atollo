@@ -8,7 +8,7 @@ fn the_gaps_of_this_pc_are_read() {
     let unsupported = |g: &Gap| {
         matches!(
             g,
-            Gap::OldWindows(_) | Gap::Processor | Gap::OldMacos(_) | Gap::Distribution(_)
+            Gap::OldWindows(_) | Gap::OldMacos(_) | Gap::Distribution(_)
         )
     };
     if gaps.iter().any(unsupported) {

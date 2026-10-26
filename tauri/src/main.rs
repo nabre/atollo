@@ -73,6 +73,12 @@ fn run() -> i32 {
             return 1;
         }
     };
+    // A system Docker Sandboxes does not run on (Windows on ARM64, an Intel
+    // Mac): nothing of Atollo works there (D-176), every command stops.
+    if let Some(text) = kit::unsupported_host(kit::Target::detect(), early_lang) {
+        fatal(early_lang, &text);
+        return 1;
+    }
     // macOS App Translocation: a read-only copy where a kit would be lost
     // (D-113); `None` elsewhere.
     if let Some(text) = kit::launch_problem(kit::Os::current(), &exe, early_lang) {

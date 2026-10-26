@@ -1,31 +1,30 @@
 use super::*;
 use crate::kit::{tests::TempDir, Arch, Os, Target};
 
-/// Windows x64 and ARM64 kits, whatever system runs the tests: the x64
-/// build in emulation is a Windows ARM64 row. R is there too since its
-/// `win-64` build runs emulated (it was `noArm64`).
+/// Every component of the catalog has a native build on the four targets
+/// (none is `rosetta` today): the «x64» mark is nowhere, R and PHP are
+/// available on Windows.
 #[test]
-fn r_is_emulated_on_arm64() {
+fn nothing_is_emulated_on_the_four_targets() {
     let tmp = TempDir::new("cmd-comps");
-    for (arch, arm64) in [(Arch::X64, false), (Arch::Arm64, true)] {
-        let kit = Kit::at_target(tmp.0.join(arch.as_str()), Target::new(Os::Win32, arch));
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
-        let infos = component_infos_from(&kit, "it", Target::WIN32_ARM64);
-        for id in ["r", "php"] {
-            let c = infos.iter().find(|c| c.id == id).unwrap();
-            assert!(c.available && !c.no_arm64, "{id}");
-            assert_eq!(c.unavailable_reason, None, "{id}");
-            assert_eq!(
-                c.x64_only, arm64,
-                "{id}: the «x64» mark only where it is emulated"
-            );
+        let infos = component_infos(&kit, "it");
+        assert!(infos.iter().all(|c| !c.x64_only), "{target}");
+        if target.is_windows() {
+            for id in ["r", "php"] {
+                let c = infos.iter().find(|c| c.id == id).unwrap();
+                assert!(c.available, "{id}");
+                assert_eq!(c.unavailable_reason, None, "{id}");
+            }
         }
     }
 }
 
-/// Unavailable on another system is not "no ARM64 build": the page gets the
-/// system as the reason (BUG-24c). Apache, the example before D-116, is now
-/// on macOS and Linux too.
+/// Unavailable on another system: the page gets the system as the reason
+/// (BUG-24c). Apache, the example before D-116, is now on macOS and Linux
+/// too.
 #[test]
 fn unavailable_for_the_system_is_not_arm64() {
     let tmp = TempDir::new("cmd-comps-os");
@@ -42,8 +41,6 @@ fn unavailable_for_the_system_is_not_arm64() {
         let php = infos.iter().find(|c| c.id == "php").unwrap();
         assert!(!php.x64_only, "{target:?}");
     }
-    // A `noArm64` component seen from another PC: router::availability
-    // (no component of the catalog is one since R runs emulated).
 }
 
 /// The catalog's own reason, translated, in place of "not available for
@@ -57,7 +54,7 @@ fn catalog_reasons_reach_the_page() {
     let infos = component_infos(&kit, "en");
     let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
     let c = row("android");
-    assert!(!c.available && !c.no_arm64, "android");
+    assert!(!c.available, "android");
     assert_eq!(
         c.unavailable_reason.as_deref(),
         Some("Google does not publish platform-tools and build-tools for Linux ARM64")
@@ -74,7 +71,7 @@ fn catalog_reasons_reach_the_page() {
     );
 
     // Elsewhere both are there, with no reason.
-    for target in [Target::WIN32_X64, Target::WIN32_ARM64, Target::LINUX_X64] {
+    for target in [Target::WIN32_X64, Target::DARWIN_ARM64, Target::LINUX_X64] {
         let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
         kit.prepare().unwrap();
         for c in component_infos(&kit, "en")
@@ -91,7 +88,7 @@ fn catalog_reasons_reach_the_page() {
 }
 
 /// The page gets what each component needs on the kit's target (C and C++
-/// need Zig on macOS and Linux, Rust needs C and C++ on Windows ARM64), and
+/// need Zig on macOS and Linux, Rust nothing anywhere), and
 /// the Xcode notice only for C and C++ of a darwin kit on a Mac without the
 /// Command Line Tools.
 #[test]
@@ -104,12 +101,7 @@ fn needs_and_xcode_follow_the_target() {
         let row = |id: &str| infos.iter().find(|c| c.id == id).unwrap();
         let zig: &[&str] = if target.is_unix() { &["zig"] } else { &[] };
         assert_eq!(row("cc").needs, zig, "{target}");
-        let cc: &[&str] = if target == Target::WIN32_ARM64 {
-            &["cc"]
-        } else {
-            &[]
-        };
-        assert_eq!(row("rust").needs, cc, "{target}");
+        assert!(row("rust").needs.is_empty(), "{target}");
         assert_eq!(row("kotlin").needs, ["java"], "{target}");
         // Only a Mac can tell; never for another component.
         assert!(infos
@@ -133,8 +125,7 @@ fn needs_and_xcode_follow_the_target() {
 }
 
 /// On Linux ARM64 (a Linux kit on every host) the Android SDK, which has
-/// no build there, keeps its choice (R on Windows ARM64 before it ran
-/// emulated).
+/// no build there, keeps its choice.
 #[test]
 fn unavailable_components_keep_their_choice() {
     let tmp = TempDir::new("cmd-choice");
@@ -227,20 +218,6 @@ fn needs_of_one_target_stay_out_of_the_choice() {
         let choice = Choice::parse(&choice_text(&kit, &chosen), catalog);
         assert!(!choice.is_chosen("cc") && choice.is_chosen("zig"), "{t}");
     }
-
-    // Windows ARM64, where Rust needs C and C++: unticking C and C++ (the
-    // page unticks Rust with it) saves both off, though the saved choice
-    // has them on and cc is a need of this target only.
-    let arm = windows.for_target(Target::WIN32_ARM64);
-    Choice::parse("rust=1\ncc=1\n", catalog)
-        .write(&arm, catalog)
-        .unwrap();
-    let chosen: Vec<String> = page(&arm)
-        .into_iter()
-        .filter(|id| id != "cc" && id != "rust")
-        .collect();
-    let choice = Choice::parse(&choice_text(&arm, &chosen), catalog);
-    assert!(!choice.is_chosen("cc") && !choice.is_chosen("rust"));
 }
 
 /// With the VM on (D-174): the grid names the VM's Linux, and on the PC's
@@ -287,7 +264,7 @@ fn tools_target_is_remembered() {
     let grid = target_grid(&kit, "en", None);
     assert_eq!(grid.chosen, None);
     assert_eq!(grid.profiles.map(|p| p.id), Target::ALL.map(Target::as_str));
-    assert_eq!(grid.targets.len(), 6);
+    assert_eq!(grid.targets.len(), 4);
     assert_eq!(grid.profiles.iter().filter(|p| p.is_host).count(), 1);
 
     let mut settings = Settings::load(&kit).settings;
@@ -311,10 +288,18 @@ fn tools_target_is_remembered() {
     save_tools_target(&kit, None).unwrap();
     assert_eq!(Settings::load(&kit).settings.tools_target, None);
 
-    // A value written by hand that the app does not know is not chosen.
-    std::fs::write(kit.settings_file(), r#"{"toolsTarget":"beos-x64"}"#).unwrap();
-    assert_eq!(target_grid(&kit, "en", None).chosen, None);
-    assert!(Settings::load(&kit).settings.validate().is_err());
+    // A value written by hand that the app does not know is not chosen, nor
+    // one of a system removed by D-176: it reads as this PC's, and the
+    // Settings page can still save.
+    for unknown in ["beos-x64", "win32-arm64", "darwin-x64"] {
+        let text = format!(r#"{{"toolsTarget":"{unknown}","lang":"fr"}}"#);
+        std::fs::write(kit.settings_file(), text).unwrap();
+        assert_eq!(target_grid(&kit, "en", None).chosen, None, "{unknown}");
+        let loaded = Settings::load(&kit).settings;
+        assert_eq!(loaded.tools_target, None, "{unknown}");
+        assert_eq!(loaded.lang.as_deref(), Some("fr"));
+        assert!(loaded.validate().is_ok(), "{unknown}");
+    }
 
     std::fs::write(kit.settings_file(), "{ broken").unwrap();
     assert!(save_tools_target(&kit, Some("win32-x64")).is_err());

@@ -188,12 +188,12 @@ fn verbatim_prefix_is_removed() {
 #[test]
 fn apps_folder_per_platform() {
     // `Kit::at` is a kit of the system the tests run on.
-    let kit = Kit::at(PathBuf::from(r"F:\K"), Arch::Arm64);
-    let here = match Os::current() {
-        Os::Win32 => "win32-arm64",
-        Os::Darwin => "darwin-arm64",
-        Os::Linux => "linux-arm64",
+    let (arch, here) = match Os::current() {
+        Os::Win32 => (Arch::X64, "win32-x64"),
+        Os::Darwin => (Arch::Arm64, "darwin-arm64"),
+        Os::Linux => (Arch::Arm64, "linux-arm64"),
     };
+    let kit = Kit::at(PathBuf::from(r"F:\K"), arch);
     assert_eq!(
         kit.apps(),
         PathBuf::from(r"F:\K").join("data").join("apps").join(here)
@@ -208,24 +208,10 @@ fn apps_folder_per_platform() {
             "windows",
         ),
         (
-            Target::WIN32_ARM64,
-            "win32-arm64",
-            "aarch64-pc-windows-msvc",
-            "win-arm64",
-            "windows",
-        ),
-        (
             Target::DARWIN_ARM64,
             "darwin-arm64",
             "aarch64-apple-darwin",
             "osx-arm64",
-            "universal-darwin",
-        ),
-        (
-            Target::DARWIN_X64,
-            "darwin-x64",
-            "x86_64-apple-darwin",
-            "osx-64",
             "universal-darwin",
         ),
         (
@@ -257,6 +243,63 @@ fn apps_folder_per_platform() {
             data.join("app").join("versions").join(slug)
         );
     }
+}
+
+/// D-176: the systems Docker builds Docker Sandboxes for, and only those.
+#[test]
+fn the_four_supported_targets() {
+    assert_eq!(
+        Target::ALL.map(Target::as_str),
+        ["win32-x64", "darwin-arm64", "linux-x64", "linux-arm64"]
+    );
+    for t in Target::ALL {
+        assert!(t.is_supported(), "{t}");
+        assert_eq!(Target::parse(t.as_str()), Some(t));
+    }
+    let windows_arm = Target::new(Os::Win32, Arch::Arm64);
+    let intel_mac = Target::new(Os::Darwin, Arch::X64);
+    for removed in [windows_arm, intel_mac] {
+        assert!(!removed.is_supported(), "{removed}");
+    }
+    // A target an older kit saved reads as no target: the caller takes the host's.
+    for name in ["win32-arm64", "darwin-x64", " win32-arm64 ", "", "linux"] {
+        assert_eq!(Target::parse(name), None, "{name:?}");
+    }
+    assert_eq!(Target::parse(" linux-arm64 "), Some(Target::LINUX_ARM64));
+}
+
+/// Atollo stops at start on Windows on Arm and on an Intel Mac, saying why
+/// and naming the system; it starts on the four.
+#[test]
+fn an_unsupported_host_stops_the_app() {
+    for t in Target::ALL {
+        assert_eq!(unsupported_host(t, "en"), None, "{t}");
+    }
+    for (host, name) in [
+        (Target::new(Os::Win32, Arch::Arm64), "win32-arm64"),
+        (Target::new(Os::Darwin, Arch::X64), "darwin-x64"),
+    ] {
+        let it = unsupported_host(host, "it").unwrap();
+        assert!(it.contains("Docker Sandboxes") && it.contains(name), "{it}");
+        let en = unsupported_host(host, "en").unwrap();
+        assert!(en.starts_with("Atollo needs Docker Sandboxes"), "{en}");
+        assert!(en.contains(&format!("({name})")), "{en}");
+        assert_ne!(it, en);
+    }
+}
+
+/// A settings.json of an older kit with the Tools page on a removed system
+/// reads as this PC's, so the Settings page can still save.
+#[test]
+fn a_removed_tools_target_reads_as_none() {
+    use crate::common::settings::known_tools_target;
+    assert_eq!(known_tools_target(Some("win32-arm64".into())), None);
+    assert_eq!(known_tools_target(Some("darwin-x64".into())), None);
+    assert_eq!(
+        known_tools_target(Some("linux-arm64".into())).as_deref(),
+        Some("linux-arm64")
+    );
+    assert_eq!(known_tools_target(None), None);
 }
 
 #[test]

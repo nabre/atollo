@@ -281,8 +281,8 @@ fn help_on_windows_is_the_old_text_plus_target() {
         splice_target_lines(
             OLD_HELP_IT,
             &[
-                "      --target <id>       per un altro sistema: win32-x64, win32-arm64,",
-                "                          darwin-arm64, darwin-x64, linux-x64, linux-arm64",
+                "      --target <id>       per un altro sistema: win32-x64, darwin-arm64,",
+                "                          linux-x64, linux-arm64",
             ],
             "      --target <id>       prepara per un altro sistema (id come per components)",
         )
@@ -292,8 +292,8 @@ fn help_on_windows_is_the_old_text_plus_target() {
         splice_target_lines(
             OLD_HELP_EN,
             &[
-                "      --target <id>       for another system: win32-x64, win32-arm64,",
-                "                          darwin-arm64, darwin-x64, linux-x64, linux-arm64",
+                "      --target <id>       for another system: win32-x64, darwin-arm64,",
+                "                          linux-x64, linux-arm64",
             ],
             "      --target <id>       prepare for another system (ids as for components)",
         )
@@ -303,8 +303,8 @@ fn help_on_windows_is_the_old_text_plus_target() {
         splice_target_lines(
             OLD_HELP_FR,
             &[
-                "      --target <id>       pour un autre système : win32-x64, win32-arm64,",
-                "                          darwin-arm64, darwin-x64, linux-x64, linux-arm64",
+                "      --target <id>       pour un autre système : win32-x64, darwin-arm64,",
+                "                          linux-x64, linux-arm64",
             ],
             "      --target <id>       prépare pour un autre système (id comme pour components)",
         )
@@ -314,8 +314,8 @@ fn help_on_windows_is_the_old_text_plus_target() {
         splice_target_lines(
             OLD_HELP_DE,
             &[
-                "      --target <id>       für ein anderes System: win32-x64, win32-arm64,",
-                "                          darwin-arm64, darwin-x64, linux-x64, linux-arm64",
+                "      --target <id>       für ein anderes System: win32-x64, darwin-arm64,",
+                "                          linux-x64, linux-arm64",
             ],
             "      --target <id>       bereitet für ein anderes System vor (ids wie bei components)",
         )

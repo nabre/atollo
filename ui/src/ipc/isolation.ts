@@ -6,7 +6,6 @@ import { act, query } from "./core";
  * to do about it, by `code`. */
 export type IsolationBlocker =
   | { code: "old_windows"; build: number }
-  | { code: "processor" }
   | { code: "old_macos"; version: string }
   | { code: "distribution"; name: string }
   | { code: "hypervisor_off" }
