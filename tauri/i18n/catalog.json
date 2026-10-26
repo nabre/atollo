@@ -2314,25 +2314,15 @@
     "fr": "Atollo fonctionne seulement sur les systèmes où tourne Docker Sandboxes : Windows x64, macOS avec Apple silicon, Linux x64 et Linux ARM64. Ce système n'en fait pas partie.",
     "de": "Atollo funktioniert nur auf den Systemen, auf denen Docker Sandboxes läuft: Windows x64, macOS mit Apple silicon, Linux x64 und Linux ARM64. Dieses System gehört nicht dazu."
   },
-  "Antigravity è un editor per il desktop e non può girare in una microVM: su un progetto non si apre. Nella VM usa Claude Code, Codex o Pi.": {
-    "en": "Antigravity is a desktop editor and cannot run in a microVM: it does not open on a project. In the VM use Claude Code, Codex or Pi.",
-    "fr": "Antigravity est un éditeur de bureau et ne peut pas tourner dans une microVM : il ne s'ouvre pas sur un projet. Dans la VM, utilisez Claude Code, Codex ou Pi.",
-    "de": "Antigravity ist ein Desktop-Editor und kann nicht in einer microVM laufen: Auf einem Projekt öffnet es sich nicht. In der VM nutze Claude Code, Codex oder Pi."
-  },
   "Gli agenti partono solo nella VM del progetto, e la VM non è attiva.": {
     "en": "Agents start only in the project's VM, and the VM is not active.",
     "fr": "Les agents ne démarrent que dans la VM du projet, et la VM n'est pas active.",
     "de": "Agenten starten nur in der VM des Projekts, und die VM ist nicht aktiv."
   },
-  "Pi per il Linux della VM non è installato e non si è potuto installare: guarda la barra di stato o la pagina Strumenti.": {
-    "en": "Pi for the VM's Linux is not installed and could not be installed: see the status bar or the Tools page.",
-    "fr": "Pi pour le Linux de la VM n'est pas installé et n'a pas pu l'être : voyez la barre d'état ou la page Outils.",
-    "de": "Pi für das Linux der VM ist nicht installiert und konnte nicht installiert werden: siehe Statusleiste oder die Seite Werkzeuge."
-  },
-  "{0} non parte nella VM: nella VM si usano Claude Code, Codex e Pi.": {
-    "en": "{0} does not start in the VM: the VM runs Claude Code, Codex and Pi.",
-    "fr": "{0} ne démarre pas dans la VM : la VM utilise Claude Code, Codex et Pi.",
-    "de": "{0} startet nicht in der VM: In der VM laufen Claude Code, Codex und Pi."
+  "{0} per il Linux della VM non è installato e non si è potuto installare: guarda la barra di stato o la pagina Strumenti.": {
+    "en": "{0} for the VM's Linux is not installed and could not be installed: see the status bar or the Tools page.",
+    "fr": "{0} pour le Linux de la VM n'est pas installé et n'a pas pu l'être : voyez la barre d'état ou la page Outils.",
+    "de": "{0} für das Linux der VM ist nicht installiert und konnte nicht installiert werden: siehe Statusleiste oder die Seite Werkzeuge."
   },
   "/dev/kvm non c'è: attiva la virtualizzazione (Intel VT-x o AMD-V) nel BIOS/UEFI e riavvia il PC.": {
     "en": "/dev/kvm is missing: turn on virtualization (Intel VT-x or AMD-V) in the BIOS/UEFI and restart the PC.",

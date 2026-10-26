@@ -22,6 +22,7 @@ const GATES: &[&str] = &[
     "scaffold_args(",
     "kit_terminal_args(",
     "pi_session_args(",
+    "agy_session_args(",
     "agent_session_args(",
     "exec_args(",
     "web_line(",

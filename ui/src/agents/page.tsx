@@ -7,7 +7,6 @@
 import { useState } from "react";
 import {
   agentLaunch,
-  startsOnProject,
   agentSignOut,
   agentsStatus,
   folderOpen,
@@ -311,12 +310,12 @@ export function SharedEditor() {
   );
 }
 
-/** One button per installed agent that starts on a project, with its logo:
- * a click opens that agent in the project's VM (D-146, D-178). The project's page, its row in the side bar and
- * its card on the Home. Nothing when no agent is installed. */
+/** One button per installed agent, with its logo: a click opens that agent
+ * in the project's VM (D-146, D-178, D-179: Antigravity too, like Pi). The
+ * project's page, its row in the side bar and its card on the Home.
+ * Nothing when no agent is installed. */
 export function AgentButtons({ agents, project }: { agents: AgentInfo[] | null; project: string }) {
-  // Antigravity never starts on a project (D-178): no button for it.
-  const installed = (agents ?? []).filter((a) => a.installed && startsOnProject(a.id));
+  const installed = (agents ?? []).filter((a) => a.installed);
   const { busy, error, run } = useAction();
   // The agent of the last launch: its button shows the error, if any.
   const [last, setLast] = useState<AgentId | null>(null);

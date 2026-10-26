@@ -226,7 +226,7 @@ fn run() -> i32 {
                 }
             };
         }
-        Cli::SecretGithub(nonce) => {
+        Cli::Secret(secret, nonce) => {
             // Only for the kit's Docker Sandboxes, which runs it on the PC
             // when its proxy needs the value: a command Atollo registered
             // (its nonce noted, in a file readable by its owner only) and
@@ -236,14 +236,21 @@ fn run() -> i32 {
             let above = platform::processes::ancestors(&all, std::process::id(), 3);
             let by_sbx = isolation::kit_sbx(&kit)
                 .is_some_and(|sbx| isolation::secrets::asked_by_sbx(&above, &sbx));
-            if !by_sbx || !isolation::secrets::nonce_known(&kit, &nonce) {
-                eprintln!("secret github: only for the kit's Docker Sandboxes");
+            if !by_sbx || !isolation::secrets::nonce_known(&kit, secret, &nonce) {
+                eprintln!(
+                    "secret {}: only for the kit's Docker Sandboxes",
+                    secret.word()
+                );
                 return 1;
             }
-            // Standard output is the token only; nothing else is written.
-            return match github::token(&kit, &kit_env) {
-                Some(token) => {
-                    println!("{token}");
+            // Standard output is the value only; nothing else is written.
+            let value = match secret {
+                isolation::secrets::Secret::Github => github::token(&kit, &kit_env),
+                isolation::secrets::Secret::Gemini => agents::gemini_key(&kit),
+            };
+            return match value {
+                Some(value) => {
+                    println!("{value}");
                     0
                 }
                 None => 1,

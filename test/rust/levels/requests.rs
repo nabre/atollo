@@ -430,6 +430,89 @@ fn args_are_appended_after_the_agent() {
     assert_eq!(reply.placement, Where::Error);
 }
 
+/// D-179 step 7, §6.8: `agy` (or `antigravity`) typed in a terminal of the
+/// PC in a project folder is forwarded to Antigravity's build in the
+/// project's VM, the words after it kept, no marker (Pi's only), no kit
+/// key in the reply; outside a project it is refused with why and what to
+/// do, never run on the PC.
+#[test]
+fn agy_is_forwarded_to_the_projects_vm() {
+    let (_tmp, kit) = kit_with_shop("requests-agy");
+    let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    install(&guest, "antigravity");
+    let base = base(&kit);
+    let editor = editor(&kit, &base);
+    let web = kit.projects().join("shop").join("web");
+    std::fs::create_dir_all(&web).unwrap();
+    let agent = Agent::from_command("agy").unwrap();
+    assert_eq!(Agent::from_command("antigravity"), Some(agent));
+    let origin = Origin::Forwarded {
+        agent,
+        from: Level::Manual,
+    };
+    let fx = Fake::default();
+    let req = request(&kit, origin.clone(), &web);
+    let facts = facts_of(&kit, &req, true);
+    let typed = ["--resume".to_owned()];
+    let reply = reply_to(
+        &fx,
+        &kit,
+        &base,
+        &editor,
+        &Host::default(),
+        &req,
+        &typed,
+        &facts,
+        "it",
+    );
+    assert_eq!(reply.placement, Where::Vm, "{reply:?}");
+    assert_eq!(reply.level, Some(Level::Agent));
+    let n = reply.argv.len();
+    assert_eq!(reply.argv[n - 1..], typed, "{:?}", reply.argv);
+    assert!(
+        reply.argv[n - 2].ends_with("/antigravity/agy"),
+        "{:?}",
+        reply.argv
+    );
+    assert!(reply.argv.contains(&vm::name("shop")), "the project's VM");
+    assert!(reply
+        .argv
+        .contains(&"AGY_CLI_DISABLE_AUTO_UPDATE=true".to_owned()));
+    let w = reply.argv.iter().position(|a| a == "-w").unwrap();
+    assert!(reply.argv[w + 1].ends_with("/shop/web"), "{:?}", reply.argv);
+    assert!(reply.marker.is_none(), "a marker is Pi's only");
+    for k in reply.env.set.keys() {
+        assert!(!k.contains("GEMINI") && !k.contains("GOOGLE"), "{k}");
+    }
+    assert!(
+        reply
+            .banner
+            .as_deref()
+            .unwrap()
+            .contains("antigravity in atollo-p-"),
+        "{reply:?}"
+    );
+
+    // Outside a project: refused (R8), never on the PC.
+    let elsewhere = kit.root().join("elsewhere");
+    std::fs::create_dir_all(&elsewhere).unwrap();
+    let req = request(&kit, origin, &elsewhere);
+    let facts = facts_of(&kit, &req, true);
+    let reply = reply_to(
+        &fx,
+        &kit,
+        &base,
+        &editor,
+        &Host::default(),
+        &req,
+        &typed,
+        &facts,
+        "it",
+    );
+    assert_eq!(reply.placement, Where::Refused, "{reply:?}");
+    assert!(reply.program.is_none() && reply.argv.is_empty());
+}
+
 /// The reply for `launch.sh`: every field a quoted word, the variables in
 /// `atollo_env` (names sh cannot set left out), the arguments with
 /// `set --`; on Windows the program with `/` and Git Bash told not to

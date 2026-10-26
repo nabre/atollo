@@ -7,7 +7,8 @@ use std::time::{Duration, Instant};
 
 /// D-178, D-179: the agents' launchers live in `agents`, out of `bin`;
 /// what an older Atollo left (the launchers of `bin`, `vm.ps1`, the
-/// stand-ins of `no-agents`) goes; `forward` has a forwarder for each
+/// stand-ins of `no-agents`, Antigravity's launchers with their keyring
+/// round trip, now that `agy` runs in the VM) goes; `forward` has a forwarder for each
 /// agent's command, `.cmd`, `.ps1` and sh, that asks the app through the
 /// request clients (LEVELS.md §6.8).
 #[test]
@@ -17,6 +18,7 @@ fn the_agents_launchers_and_their_forwarders() {
     let dir = kit.kit_files();
     fs::create_dir_all(dir.join("bin")).unwrap();
     fs::create_dir_all(dir.join("no-agents")).unwrap();
+    fs::create_dir_all(dir.join("agents")).unwrap();
     for old in OBSOLETE {
         if old != "no-agents" {
             fs::write(join_rel(&dir, old), "old").unwrap();
@@ -27,13 +29,7 @@ fn the_agents_launchers_and_their_forwarders() {
     for old in OBSOLETE {
         assert!(!join_rel(&dir, old).exists(), "{old}");
     }
-    for name in [
-        "agents/agy",
-        "agents/agy.cmd",
-        "agents/claude",
-        "launch.ps1",
-        "launch.sh",
-    ] {
+    for name in ["agents/claude", "launch.ps1", "launch.sh"] {
         assert!(join_rel(&dir, name).is_file(), "{name}");
     }
     let mut commands = 0;
@@ -570,14 +566,14 @@ fn line_endings_by_kind() {
     assert_eq!(with_line_endings("bashrc", text), "a\nb\nc\n");
     assert_eq!(with_line_endings("bin/gradle", text), "a\nb\nc\n");
     assert_eq!(with_line_endings("profile.ps1", text), text);
-    assert!(is_shell("bashrc") && is_shell("agents/agy") && is_shell("forward/claude"));
+    assert!(is_shell("bashrc") && is_shell("agents/claude") && is_shell("forward/claude"));
     assert!(is_shell("launch.sh") && is_unix_bin("launch.sh"));
     assert!(!is_shell("launch.ps1") && !is_shell("forward/claude.ps1"));
     assert_eq!(
         with_line_endings("forward/claude.cmd", text),
         "a\r\nb\r\nc\r\n"
     );
-    assert!(!is_shell("agents/agy.cmd") && !is_shell("profile.ps1"));
+    assert!(!is_shell("forward/claude.cmd") && !is_shell("profile.ps1"));
     assert!(!is_unix_bin("bashrc") && is_unix_bin("bin/gradle"));
 }
 
@@ -610,7 +606,6 @@ fn shell_files_lf_and_executable() {
         }
     }
     for name in [
-        "agents/agy",
         "agents/claude",
         "bin/gradle",
         "bin/atollo",
@@ -631,11 +626,11 @@ fn shell_files_lf_and_executable() {
             assert_eq!(mode & 0o777, 0o755, "{name}");
         }
         // A wrong mode left by a copy is put back at the next start.
-        let agy = dir.join("agents/agy");
-        fs::set_permissions(&agy, fs::Permissions::from_mode(0o644)).unwrap();
+        let claude = dir.join("agents/claude");
+        fs::set_permissions(&claude, fs::Permissions::from_mode(0o644)).unwrap();
         write_all(&kit).unwrap();
         assert_eq!(
-            fs::metadata(&agy).unwrap().permissions().mode() & 0o777,
+            fs::metadata(&claude).unwrap().permissions().mode() & 0o777,
             0o755
         );
     }

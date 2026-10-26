@@ -15,8 +15,8 @@
 //!   (`host.docker.internal`, [`host_port_allow`]) as the project's user;
 //! - Claude Code and Codex: `sbx`'s own agents, a sandbox each
 //!   (`atollo-a-claude-<project>-<hash>`), whose keys the proxy of `sbx` adds to
-//!   their requests; Pi in the project's VM, its build for Linux from the
-//!   kit (D-178). Antigravity, a desktop editor, never starts on a project.
+//!   their requests; Pi and Antigravity (`agy`) in the project's VM, their
+//!   builds for Linux from the kit (D-178, D-179).
 //!
 //! The words given to `sh -lc` are quoted for the VM's shell (POSIX):
 //! never text of the PC's shell.
@@ -244,11 +244,31 @@ pub fn sbx_agent(agent: &str) -> Option<&'static str> {
     }
 }
 
-/// The agents that start on a project, all in the VM (D-178): Claude Code
-/// and Codex in `sbx`'s sandboxes ([`sbx_agent`]), Pi in the project's own
-/// VM ([`pi_session_args`]). Antigravity, a desktop editor, never does.
-pub fn starts_in_vm(agent: &str) -> bool {
-    sbx_agent(agent).is_some() || agent == "pi"
+/// An agent's own build for Linux (`program`, the VM's path of the kit's,
+/// mounted read-only) started in the project's VM `vm`, in `dir` (the VM's
+/// path), like a command of the project's terminal: `tools`
+/// ([`tools_options`]), then `vars`, then `extra` after the program.
+fn binary_session_args(
+    vm: &str,
+    dir: &str,
+    program: &str,
+    tools: &crate::isolation::GuestTools,
+    vars: &[(&str, &str)],
+    extra: &[String],
+) -> Vec<String> {
+    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
+    args.extend(tools_options(tools));
+    for (k, v) in vars {
+        args.push("-e".into());
+        args.push(format!("{k}={v}"));
+    }
+    args.push(vm.into());
+    args.push("sh".into());
+    args.push("-c".into());
+    args.push(format!(r#"{TOOLS_FIRST}; exec "$0" "$@""#));
+    args.push(program.into());
+    args.extend(extra.iter().cloned());
+    args
 }
 
 /// Pi in the project's VM `vm` (D-178): its build for Linux (`pi`, the
@@ -264,15 +284,26 @@ pub fn pi_session_args(
     tools: &crate::isolation::GuestTools,
     extra: &[String],
 ) -> Vec<String> {
-    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
-    args.extend(tools_options(tools));
-    args.push(vm.into());
-    args.push("sh".into());
-    args.push("-c".into());
-    args.push(format!(r#"{TOOLS_FIRST}; exec "$0" "$@""#));
-    args.push(pi.into());
-    args.extend(extra.iter().cloned());
-    args
+    binary_session_args(vm, dir, pi, tools, &[], extra)
+}
+
+/// What Antigravity's CLI gets in the VM besides the tools: no update of
+/// its own (the kit's build is mounted read-only; the kit updates it).
+pub const AGY_VARS: [(&str, &str); 1] = [("AGY_CLI_DISABLE_AUTO_UPDATE", "true")];
+
+/// Antigravity's CLI in the project's VM `vm` (D-179, LEVELS.md §9): as
+/// [`pi_session_args`] with its build for Linux (`agy`) and [`AGY_VARS`].
+/// No key and no login of the kit: the Gemini key, when the kit holds one,
+/// reaches Google through the proxy of `sbx` (`secret gemini`), never the
+/// VM; without it `agy` signs in inside the VM.
+pub fn agy_session_args(
+    vm: &str,
+    dir: &str,
+    agy: &str,
+    tools: &crate::isolation::GuestTools,
+    extra: &[String],
+) -> Vec<String> {
+    binary_session_args(vm, dir, agy, tools, &AGY_VARS, extra)
 }
 
 /// The session of an agent in its sandbox `vm` (made by `Vm::start`):

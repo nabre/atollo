@@ -7,12 +7,72 @@ use std::path::PathBuf;
 #[test]
 fn the_command_quotes_the_apps_path() {
     assert_eq!(
-        github_command(Path::new(r"D:\My Kit\Atollo.exe"), true, "ab12"),
+        command(
+            Path::new(r"D:\My Kit\Atollo.exe"),
+            true,
+            Secret::Github,
+            "ab12"
+        ),
         r#""D:\My Kit\Atollo.exe" secret github ab12"#
     );
     assert_eq!(
-        github_prefix(Path::new("/media/u/My Kit/Atollo.AppImage"), false),
+        prefix(
+            Path::new("/media/u/My Kit/Atollo.AppImage"),
+            false,
+            Secret::Github
+        ),
         "'/media/u/My Kit/Atollo.AppImage' secret github"
+    );
+    assert_eq!(
+        prefix(Path::new("/Applications/Atollo"), false, Secret::Gemini),
+        "'/Applications/Atollo' secret gemini"
+    );
+}
+
+/// D-179, LEVELS.md §9, §11: the kit's Gemini key goes to the proxy of
+/// `sbx` (its `google` service) for the project's sandbox only
+/// (`--sandbox`), through a command of Atollo: the key itself is never an
+/// argument of `sbx`, never in the VM.
+#[test]
+fn the_gemini_key_is_registered_for_the_sandbox_only() {
+    assert_eq!(Secret::Gemini.service(), "google");
+    assert_eq!(Secret::from_word("gemini"), Some(Secret::Gemini));
+    assert_eq!(Secret::from_word("github"), Some(Secret::Github));
+    assert_eq!(Secret::from_word("google"), None, "the service is no word");
+    let key = "AIzaSy-the-users-key";
+    let nonce = "ab".repeat(32);
+    let sandbox = crate::isolation::vm::name("shop");
+    let cmd = command(
+        Path::new(r"D:\My Kit\Atollo.exe"),
+        true,
+        Secret::Gemini,
+        &nonce,
+    );
+    let args = set_args(Secret::Gemini, &sandbox, &cmd);
+    assert_eq!(
+        args,
+        [
+            "secret",
+            "set",
+            "google",
+            "--sandbox",
+            sandbox.as_str(),
+            "--command",
+            &format!(r#""D:\My Kit\Atollo.exe" secret gemini {nonce}"#),
+        ]
+    );
+    assert!(args.iter().all(|a| !a.contains(key)));
+    assert!(!args.iter().any(|a| a == "--global"), "never global");
+    assert_eq!(
+        rm_args(Secret::Gemini, &sandbox),
+        [
+            "secret",
+            "rm",
+            "google",
+            "--sandbox",
+            sandbox.as_str(),
+            "--force"
+        ]
     );
 }
 
@@ -24,15 +84,34 @@ fn only_a_noted_nonce_opens_the_token() {
     let (_tmp, kit) = crate::test_support::prepared_kit("isolation-nonce");
     let nonce = new_nonce().unwrap();
     assert_eq!(nonce.len(), 64);
-    assert!(!nonce_known(&kit, &nonce), "nothing noted yet");
-    let command = github_command(Path::new(r"D:\kit\Atollo.exe"), true, &nonce);
-    note(&kit, "github", "PC1", "atollo-p-shop", Some(&command)).unwrap();
-    assert!(nonce_known(&kit, &nonce));
-    assert!(!nonce_known(&kit, &new_nonce().unwrap()), "another nonce");
-    assert!(!nonce_known(&kit, ""), "no nonce");
-    assert!(!nonce_known(&kit, &nonce[..10]), "a part of it");
+    let github = Secret::Github;
+    assert!(!nonce_known(&kit, github, &nonce), "nothing noted yet");
+    let cmd = command(Path::new(r"D:\kit\Atollo.exe"), true, github, &nonce);
+    note(&kit, "github", "PC1", "atollo-p-shop", Some(&cmd)).unwrap();
+    assert!(nonce_known(&kit, github, &nonce));
+    assert!(
+        !nonce_known(&kit, Secret::Gemini, &nonce),
+        "GitHub's nonce opens no other secret"
+    );
+    assert!(
+        !nonce_known(&kit, github, &new_nonce().unwrap()),
+        "another nonce"
+    );
+    assert!(!nonce_known(&kit, github, ""), "no nonce");
+    assert!(!nonce_known(&kit, github, &nonce[..10]), "a part of it");
     note(&kit, "github", "PC1", "atollo-p-shop", None).unwrap();
-    assert!(!nonce_known(&kit, &nonce), "taken back");
+    assert!(!nonce_known(&kit, github, &nonce), "taken back");
+    // The Gemini key's own registration, noted under `sbx`'s service.
+    let gemini = command(
+        Path::new(r"D:\kit\Atollo.exe"),
+        true,
+        Secret::Gemini,
+        &nonce,
+    );
+    note(&kit, "google", "PC1", "atollo-p-shop", Some(&gemini)).unwrap();
+    assert!(nonce_known(&kit, Secret::Gemini, &nonce));
+    assert!(!nonce_known(&kit, github, &nonce));
+    note(&kit, "google", "PC1", "atollo-p-shop", None).unwrap();
 
     let path = crate::isolation::kit::root(&kit).join("secrets.json");
     std::fs::write(

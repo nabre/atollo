@@ -91,7 +91,8 @@ pub const INFO: &str = "info.json";
 
 /// For a `Vm` placement: installs the tools (D-170), starts the databases
 /// and writes `db.env` (D-171), adds Pi's local models (D-178), builds the
-/// `isolation::Vm` (the project's or the agent's sandbox), writes its
+/// `isolation::Vm` (the project's or the agent's sandbox; for Antigravity
+/// with the kit's Gemini key through the proxy of `sbx`), writes its
 /// `info.json` (§8.4) and starts it. `needs`: the tools the program needs
 /// besides the project's (a creation's plan). For `Pc`: nothing (the
 /// caller's `ensure` ran before its environment). `Refused` is an error:
@@ -134,15 +135,15 @@ pub fn prepare(
         std::fs::create_dir_all(guest.apps())
             .with_context(|| guest.apps().display().to_string())?;
     }
-    if let VmProgram::AgentBinary { agent: Agent::Pi } = program {
+    if let VmProgram::AgentBinary { agent } = program {
         guest
             .as_ref()
-            .and_then(|guest| isolation::pi_in_vm(kit, guest))
+            .and_then(|guest| isolation::agent_in_vm(kit, guest, agent.id()))
             .ok_or_else(|| {
                 anyhow!(t(
                     lang,
-                    "Pi per il Linux della VM non è installato e non si è potuto installare: guarda la barra di stato o la pagina Strumenti.",
-                    &[],
+                    "{0} per il Linux della VM non è installato e non si è potuto installare: guarda la barra di stato o la pagina Strumenti.",
+                    &[agent.name()],
                 ))
             })?;
     }
@@ -194,8 +195,18 @@ pub fn prepare(
             vm = vm.with_host_port(models.port);
         }
     }
-    let vm = vm.with_tools(tools);
-    // 5. What `atollo` in the sandbox tells (§8.4), then the start.
+    // 5. Antigravity: the kit's Gemini key, when the settings hold one,
+    //    through the proxy of `sbx` for this sandbox only (`secret
+    //    gemini`, §9, §11), never in the VM; without it `agy` signs in
+    //    inside the VM.
+    let antigravity = matches!(
+        program,
+        VmProgram::AgentBinary {
+            agent: Agent::Antigravity
+        }
+    );
+    let vm = vm.with_tools(tools).with_gemini(antigravity);
+    // 6. What `atollo` in the sandbox tells (§8.4), then the start.
     let info = SandboxInfo::of(&placement, &wanted, &dbs, vm.host_ports());
     write_info(kit, &vm.name, &info)?;
     fx.start_sandbox(&vm, sbx_env, lang)?;

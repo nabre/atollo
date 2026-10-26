@@ -88,10 +88,55 @@ fn pi_runs_in_the_projects_vm_with_its_tools() {
     let with = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools, &typed);
     assert_eq!(with[..args.len()], args[..]);
     assert_eq!(with[args.len()..], typed);
-    // Which agents start in the VM: never Antigravity.
-    assert!(starts_in_vm("claude") && starts_in_vm("codex") && starts_in_vm("pi"));
-    assert!(!starts_in_vm("antigravity") && !starts_in_vm("gemini"));
     assert_eq!(sbx_agent("pi"), None, "Pi has no sandbox of `sbx`'s");
+}
+
+/// Antigravity in the project's VM (D-179, LEVELS.md §9): as Pi, its build
+/// for Linux from the kit, its own updates off; no key, no keyring, no
+/// variable of the kit's Antigravity data.
+#[test]
+fn agy_session_args() {
+    let tools = crate::isolation::GuestTools {
+        path: vec!["/d/kit/data/apps/linux-x64/node/24".into()],
+        vars: vec![("JAVA_HOME".into(), "/d/kit/java".into())],
+        env_file: Some(std::path::PathBuf::from("db.env")),
+    };
+    let vm = name("shop");
+    let agy = "/d/kit/data/apps/linux-x64/antigravity/agy";
+    let dir = "/d/kit/projects/shop/web";
+    let args = super::agy_session_args(&vm, dir, agy, &tools, &[]);
+    assert_eq!(args[..4], ["exec", "-it", "-w", dir]);
+    let at = |s: &str| args.iter().position(|a| a == s).unwrap();
+    assert!(vm.starts_with("atollo-p-"), "the project's own VM");
+    assert!(at("--env-file") < at(&vm));
+    assert!(args.contains(&"ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24".to_owned()));
+    let update = at("AGY_CLI_DISABLE_AUTO_UPDATE=true");
+    assert_eq!(args[update - 1], "-e");
+    assert!(update < at(&vm), "an option of sbx exec");
+    assert_eq!(args[at(&vm) + 1..at(&vm) + 3], ["sh", "-c"]);
+    let script = &args[at(&vm) + 3];
+    assert!(script.starts_with(TOOLS_FIRST), "{script}");
+    assert!(script.ends_with(r#"exec "$0" "$@""#), "{script}");
+    assert_eq!(args.last().unwrap(), agy, "agy is the program");
+    for word in &args {
+        for kit_only in ["GEMINI", "GOOGLE_API_KEY", "CP_ANTIGRAVITY", "keyring"] {
+            assert!(!word.contains(kit_only), "{word}");
+        }
+    }
+    // The words typed after `agy` (a forwarder) follow, as they are.
+    let typed = ["--resume".to_owned(), "a b".to_owned()];
+    let with = super::agy_session_args(&vm, dir, agy, &tools, &typed);
+    assert_eq!(with[..args.len()], args[..]);
+    assert_eq!(with[args.len()..], typed);
+    // Pi's are the same but for agy's own variable.
+    let pi = pi_session_args(&vm, dir, agy, &tools, &[]);
+    let without: Vec<&String> = args
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| *i != update && *i != update - 1)
+        .map(|(_, a)| a)
+        .collect();
+    assert_eq!(without, pi.iter().collect::<Vec<_>>());
 }
 
 /// Where the PC's folders are in the VM: `sbx` mounts `D:\a` at `/d/a`

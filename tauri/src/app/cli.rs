@@ -50,11 +50,12 @@ pub enum Cli {
     /// The kit's GitHub MCP server on stdio (`mcp github`, started by the
     /// agents with the app's absolute path): the token stays here.
     McpGithub,
-    /// `secret github <nonce>`: the kit's GitHub token on standard output,
-    /// for the command Docker Sandboxes runs on the PC when its proxy needs
-    /// it (D-172): the token is never copied, never in a VM; the nonce is
-    /// the one of a registration Atollo noted.
-    SecretGithub(String),
+    /// `secret github <nonce>`, `secret gemini <nonce>`: the kit's GitHub
+    /// token, or the Gemini key of the settings, on standard output, for
+    /// the command Docker Sandboxes runs on the PC when its proxy needs it
+    /// (D-172, D-179): the value is never copied, never in a VM; the nonce
+    /// is the one of a registration Atollo noted.
+    Secret(crate::isolation::secrets::Secret, String),
     /// File server of a static site: `serve <folder> <port>` (projects/run/).
     Serve {
         dir: std::path::PathBuf,
@@ -188,8 +189,11 @@ pub fn parse(args: &[OsString]) -> Cli {
             .map(|a| a.to_string_lossy().into_owned())
             .as_deref()
         {
-            Some("github") if args.len() == 3 => {
-                Cli::SecretGithub(args[2].to_string_lossy().into_owned())
+            Some(word) if args.len() == 3 => {
+                match crate::isolation::secrets::Secret::from_word(word) {
+                    Some(secret) => Cli::Secret(secret, args[2].to_string_lossy().into_owned()),
+                    None => Cli::Unknown(format!("secret {word}")),
+                }
             }
             other => Cli::Unknown(format!("secret {}", other.unwrap_or_default())),
         },

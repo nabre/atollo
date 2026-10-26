@@ -375,6 +375,88 @@ fn pi_gets_the_local_models_port() {
     assert_eq!(vm_of(&ready).tools().env_file, None);
 }
 
+/// D-179 step 7 (LEVELS.md §9): Antigravity in the project's VM gets its
+/// build for the VM's Linux (asked of the effects, a sandbox only once it
+/// is there), its own folder last on its `PATH`, never the local models;
+/// its sandbox gets the kit's Gemini key through the proxy of `sbx` at its
+/// start, never in a file of the VM. Pi's and the project's terminal's
+/// sandboxes are not given it.
+#[test]
+fn antigravity_gets_its_build_and_the_gemini_key_by_the_proxy() {
+    let (_tmp, kit) = kit_with_shop("agy");
+    let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    let agy = Origin::AgentButton {
+        agent: Agent::Antigravity,
+    };
+    let fx = Fake {
+        dbs: vec![shop_db()],
+        models: Some(LocalModels {
+            port: 8085,
+            key: "llama-k3y".into(),
+        }),
+        ..Fake::default()
+    };
+    let why = prepared(&kit, &fx, agy.clone(), true, &[])
+        .unwrap_err()
+        .to_string();
+    assert!(
+        why.starts_with("Antigravity per il Linux della VM"),
+        "{why}"
+    );
+    assert!(fx.wanted.lock().unwrap().contains_key("antigravity"));
+    assert!(!fx.calls().iter().any(|c| c.starts_with("start_sandbox")));
+
+    install(&guest, "antigravity");
+    let fx = Fake {
+        dbs: vec![shop_db()],
+        models: fx.models.clone(),
+        ..Fake::default()
+    };
+    let ready = prepared(&kit, &fx, agy, true, &[]).unwrap();
+    let name = vm::name("shop");
+    assert_eq!(
+        fx.calls(),
+        [
+            "ensure_guest_tools".to_owned(),
+            "start_databases shop".to_owned(),
+            format!("start_sandbox {name}"),
+        ],
+        "no local models"
+    );
+    let vm = vm_of(&ready);
+    assert_eq!(vm.name, name, "the project's sandbox");
+    assert!(vm.gemini(), "the Gemini key through the proxy");
+    assert_eq!(vm.host_ports(), [3307]);
+    let own = vm::guest_path(kit.target().is_windows(), &guest.apps().join("antigravity")).unwrap();
+    assert_eq!(vm.tools().path.last(), Some(&own));
+    let db_env = sandbox_kit::dir(&kit, &name).join(DB_ENV);
+    assert_eq!(vm.tools().env_file.as_deref(), Some(db_env.as_path()));
+    for (k, _) in &vm.tools().vars {
+        assert!(!k.contains("GEMINI") && !k.contains("GOOGLE"), "{k}");
+    }
+    let info: SandboxInfo =
+        serde_json::from_str(&std::fs::read_to_string(info_file(&kit, &name)).unwrap()).unwrap();
+    assert_eq!(info.agent, Some(Agent::Antigravity));
+    assert!(info.tools.contains_key("antigravity"));
+
+    // The session runs its build with `vm::agy_session_args`.
+    let args = crate::levels::start::vm_session_args(&kit, &ready, &["--help".into()]).unwrap();
+    let program = isolation::agent_in_vm(&kit, &guest, "antigravity").unwrap();
+    assert!(program.ends_with("/antigravity/agy"), "{program}");
+    assert_eq!(args[args.len() - 2..], [program, "--help".to_owned()]);
+    assert!(args.contains(&"AGY_CLI_DISABLE_AUTO_UPDATE=true".to_owned()));
+
+    // Pi and the project's terminal: no Gemini key for their sandbox.
+    install(&guest, "pi");
+    for origin in [
+        Origin::AgentButton { agent: Agent::Pi },
+        Origin::ProjectTerminal,
+    ] {
+        let ready = prepared(&kit, &Fake::default(), origin, true, &[]).unwrap();
+        assert!(!vm_of(&ready).gemini());
+    }
+}
+
 /// D-175: Claude Code and Codex get a sandbox of their own with the same
 /// workspace, Linux tools, databases and ports as the project's; never the
 /// local models.

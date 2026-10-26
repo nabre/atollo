@@ -8,7 +8,9 @@
 //! github` prints the token the kit's `gh` holds, and only when the kit's
 //! `sbx` asks ([`asked_by_sbx`]). Signed out in the kit, the command fails
 //! and nothing is added. On another PC, or after the kit moved, the
-//! command is registered again.
+//! command is registered again. The Gemini key of the settings goes the
+//! same way to the project's sandbox Antigravity runs in (`secret gemini`,
+//! `sbx`'s `google` service, D-179).
 //!
 //! Never global: a VM runs the project's code, which could act as the
 //! user on GitHub through the proxy. The secret is given to the sandbox of
@@ -79,16 +81,55 @@ pub fn new_nonce() -> anyhow::Result<String> {
     crate::editor::random_token()
 }
 
-/// True when `nonce` is in a command Atollo registered for GitHub (D-172):
-/// `secret github` answers only a command `sbx` has from Atollo.
-pub fn nonce_known(kit: &Kit, nonce: &str) -> bool {
+/// A kit secret the proxy of `sbx` adds to a sandbox's requests, never
+/// given to the sandbox itself (LEVELS.md §11).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Secret {
+    /// The kit's GitHub token, for a project that chose GitHub in its VM
+    /// (D-172): the `github` service of `sbx`.
+    Github,
+    /// The Gemini API key of the settings, for the project's sandbox
+    /// Antigravity runs in (D-179, LEVELS.md §9): the `google` service of
+    /// `sbx` (`GEMINI_API_KEY`, `GOOGLE_API_KEY`).
+    Gemini,
+}
+
+impl Secret {
+    /// The service of `sbx secret`, also the key of its notes.
+    pub fn service(self) -> &'static str {
+        match self {
+            Secret::Github => "github",
+            Secret::Gemini => "google",
+        }
+    }
+
+    /// The word of the app's command `secret <word> <nonce>`.
+    pub fn word(self) -> &'static str {
+        match self {
+            Secret::Github => "github",
+            Secret::Gemini => "gemini",
+        }
+    }
+
+    /// The secret of the app's command `secret <word>`.
+    pub fn from_word(word: &str) -> Option<Secret> {
+        [Secret::Github, Secret::Gemini]
+            .into_iter()
+            .find(|s| s.word() == word)
+    }
+}
+
+/// True when `nonce` is in a command Atollo registered for `secret`
+/// (D-172): `secret <word>` answers only a command `sbx` has from Atollo.
+pub fn nonce_known(kit: &Kit, secret: Secret, nonce: &str) -> bool {
     let well_formed = nonce.len() == 64 && nonce.bytes().all(|b| b.is_ascii_hexdigit());
+    let end = format!(" secret {} {nonce}", secret.word());
     well_formed
         && noted(kit)
-            .get("github")
+            .get(secret.service())
             .into_iter()
             .flatten()
-            .any(|n| n.command.ends_with(&format!(" secret github {nonce}")))
+            .any(|n| n.command.ends_with(&end))
 }
 
 /// What Atollo noted for `service` on `computer` for `sandbox`.
@@ -132,27 +173,59 @@ pub fn note(
     crate::platform::files::replace_private(&path, &(serde_json::to_string_pretty(&all)? + "\n"))
 }
 
-/// The start of the command `sbx` runs for the kit's GitHub token: the app
-/// with `secret github`, its path quoted as `sbx` splits the command (a
-/// path with spaces unquoted fails: tried), for the PC's system.
-pub fn github_prefix(exe: &Path, windows: bool) -> String {
+/// The start of the command `sbx` runs for `secret`: the app with `secret
+/// <word>`, its path quoted as `sbx` splits the command (a path with
+/// spaces unquoted fails: tried), for the PC's system.
+pub fn prefix(exe: &Path, windows: bool, secret: Secret) -> String {
     let path = exe.display().to_string();
     let quoted = if windows {
         format!("\"{path}\"")
     } else {
         crate::platform::sh_quote(&path)
     };
-    format!("{quoted} secret github")
+    format!("{quoted} secret {}", secret.word())
 }
 
-/// The whole command: [`github_prefix`] and the registration's `nonce`.
-pub fn github_command(exe: &Path, windows: bool, nonce: &str) -> String {
-    format!("{} {nonce}", github_prefix(exe, windows))
+/// The whole command: [`prefix`] and the registration's `nonce`.
+pub fn command(exe: &Path, windows: bool, secret: Secret, nonce: &str) -> String {
+    format!("{} {nonce}", prefix(exe, windows, secret))
+}
+
+/// `sbx secret set` of `secret` for the sandbox `sandbox` only, through
+/// `command` (Atollo's, [`command`]): `sbx` runs it on the PC when its
+/// proxy needs the value, which is never an argument here nor in the VM.
+pub fn set_args(secret: Secret, sandbox: &str, command: &str) -> Vec<String> {
+    [
+        "secret",
+        "set",
+        secret.service(),
+        "--sandbox",
+        sandbox,
+        "--command",
+        command,
+    ]
+    .map(String::from)
+    .into()
+}
+
+/// `sbx secret rm` of `secret` for the sandbox `sandbox` (`--force`: no
+/// question on a terminal).
+pub fn rm_args(secret: Secret, sandbox: &str) -> Vec<String> {
+    [
+        "secret",
+        "rm",
+        secret.service(),
+        "--sandbox",
+        sandbox,
+        "--force",
+    ]
+    .map(String::from)
+    .into()
 }
 
 /// What to do with `service`, from whether `sbx` lists it (`listed`) and
 /// what Atollo noted for this PC (`mine`) against the start of the command
-/// now (`prefix`, [`github_prefix`]: the nonce differs at each
+/// now (`prefix`, [`prefix`]: the nonce differs at each
 /// registration).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Step {

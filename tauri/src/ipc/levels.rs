@@ -140,9 +140,8 @@ pub(crate) fn ready_now(
 /// [`AppEffects`]), the facts read when it comes. The editor server's
 /// environment, which a PC reply's changes start from, is
 /// `environment(Pc{Manual})` of the kit's (`Editor::start_on`).
-/// Antigravity is refused before `decide` until step 7 of §12.2.
 pub(crate) fn serve_requests<R: Runtime>(app: AppHandle<R>) {
-    use crate::levels::requests::{self, Reply};
+    use crate::levels::requests;
     use tauri::Manager;
     let kit = app.state::<AppState>().kit.clone();
     requests::serve(kit, move |asked| {
@@ -153,11 +152,6 @@ pub(crate) fn serve_requests<R: Runtime>(app: AppHandle<R>) {
             state.env(),
             state.lang(),
         );
-        if let Some(agent) = asked.origin.agent() {
-            if let Some(why) = super::agents::refused_on_project(agent.id(), lang) {
-                return Reply::error(why);
-            }
-        }
         let req = requests::request_of(&kit, &asked);
         let facts = facts_now(&kit, &host, &base, &req);
         let editor_env = crate::levels::env::pc_environment(

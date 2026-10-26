@@ -469,41 +469,39 @@ fn computer(host: &Host) -> String {
 /// system's own.
 const LEGACY_PC: &str = "pc";
 
-/// What Atollo noted for GitHub on `pc` for `sandbox`, a note under
+/// What Atollo noted for `service` on `pc` for `sandbox`, a note under
 /// [`LEGACY_PC`] moved to `pc` first: left there it would never be found,
 /// and its registration never taken back. Moved only when `listed_here`
 /// (this PC's `sbx` has that secret): a kit carried between PCs without
 /// a name shared that key, and another PC's note stays its own.
-fn mine_github(
+fn mine_noted(
     kit: &Kit,
+    service: &str,
     pc: &str,
     sandbox: &str,
     listed_here: impl FnOnce() -> bool,
 ) -> Option<secrets::Noted> {
-    if let Some(n) = secrets::mine(kit, "github", pc, sandbox) {
+    if let Some(n) = secrets::mine(kit, service, pc, sandbox) {
         return Some(n);
     }
     if pc == LEGACY_PC {
         return None;
     }
-    let old = secrets::mine(kit, "github", LEGACY_PC, sandbox)?;
+    let old = secrets::mine(kit, service, LEGACY_PC, sandbox)?;
     if !listed_here() {
         return None;
     }
-    let moved = secrets::note(kit, "github", pc, sandbox, Some(&old.command))
-        .and_then(|()| secrets::note(kit, "github", LEGACY_PC, sandbox, None));
+    let moved = secrets::note(kit, service, pc, sandbox, Some(&old.command))
+        .and_then(|()| secrets::note(kit, service, LEGACY_PC, sandbox, None));
     if let Err(e) = moved {
         crate::common::log::warn(&format!("secrets.json: {e:#}"));
     }
     Some(old)
 }
 
-/// The kit's GitHub access for the sandbox `sandbox` ([`secrets`], D-172),
-/// that one only (`--sandbox`), never global: given when `wanted` (the
-/// project allowed it) and the kit is signed in to GitHub; taken back when
-/// not wanted any more and Atollo had given it. A secret Atollo did not
-/// register (the user's own) is never touched. Failures only go to the
-/// log: the VM works without it.
+/// The kit's GitHub access for the sandbox `sandbox` (D-172): given when
+/// `wanted` (the project allowed it), taken back when not
+/// ([`secret_for_sandbox`]).
 pub(crate) fn github_for_sandbox(
     kit: &Kit,
     sbx: &Sbx,
@@ -512,47 +510,84 @@ pub(crate) fn github_for_sandbox(
     sandbox: &str,
     wanted: bool,
 ) {
+    secret_for_sandbox(
+        kit,
+        sbx,
+        host,
+        env,
+        sandbox,
+        secrets::Secret::Github,
+        wanted,
+    );
+}
+
+/// True when the kit holds the value of `secret` now: signed in to GitHub
+/// with the kit's `gh`, a Gemini key in the settings.
+fn secret_held(kit: &Kit, env: &KitEnv, secret: secrets::Secret) -> bool {
+    match secret {
+        secrets::Secret::Github => crate::github::token(kit, env).is_some(),
+        secrets::Secret::Gemini => crate::agents::gemini_key(kit).is_some(),
+    }
+}
+
+/// The kit's `secret` for the sandbox `sandbox` ([`secrets`], D-172), that
+/// one only (`--sandbox`), never global: given when `wanted` and the kit
+/// holds its value ([`secret_held`]); taken back when not wanted any more
+/// and Atollo had given it. A secret Atollo did not register (the user's
+/// own) is never touched. Failures only go to the log: the VM works
+/// without it.
+pub(crate) fn secret_for_sandbox(
+    kit: &Kit,
+    sbx: &Sbx,
+    host: &Host,
+    env: &KitEnv,
+    sandbox: &str,
+    secret: secrets::Secret,
+    wanted: bool,
+) {
     let Some(exe) = crate::kit::app_exe() else {
         return;
     };
-    let prefix = secrets::github_prefix(&exe, kit.target().is_windows());
+    let service = secret.service();
+    let prefix = secrets::prefix(&exe, kit.target().is_windows(), secret);
     let pc = computer(host);
     let listed_here = || {
         run(sbx, host, env, &["secret", "ls"], ASK_LIMIT).is_ok_and(|o| {
             o.status.success()
-                && secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", sandbox)
+                && secrets::listed(&String::from_utf8_lossy(&o.stdout), service, sandbox)
         })
     };
-    let mine = mine_github(kit, &pc, sandbox, listed_here);
+    let mine = mine_noted(kit, service, &pc, sandbox, listed_here);
     let warn = |what: &str, out: Result<std::process::Output, String>| match out {
         Ok(o) if o.status.success() => true,
         Ok(o) => {
             crate::common::log::warn(&format!(
-                "sbx secret {what} github {sandbox}: {}",
+                "sbx secret {what} {service} {sandbox}: {}",
                 String::from_utf8_lossy(&o.stderr).trim()
             ));
             false
         }
         Err(e) => {
-            crate::common::log::warn(&format!("sbx secret {what} github {sandbox}: {e}"));
+            crate::common::log::warn(&format!("sbx secret {what} {service} {sandbox}: {e}"));
             false
         }
     };
     let remove = || {
-        let args = ["secret", "rm", "github", "--sandbox", sandbox, "--force"];
+        let args = secrets::rm_args(secret, sandbox);
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
         warn("rm", run(sbx, host, env, &args, ASK_LIMIT))
     };
     if !wanted {
         // A note `sbx` no longer lists (removed by hand, the sandbox gone)
-        // goes too: its nonce must not open `secret github` any more.
+        // goes too: its nonce must not open `secret <word>` any more.
         let gone = || {
             run(sbx, host, env, &["secret", "ls"], ASK_LIMIT).is_ok_and(|o| {
                 o.status.success()
-                    && !secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", sandbox)
+                    && !secrets::listed(&String::from_utf8_lossy(&o.stdout), service, sandbox)
             })
         };
         if mine.is_some() && (gone() || remove()) {
-            if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
+            if let Err(e) = secrets::note(kit, service, &pc, sandbox, None) {
                 crate::common::log::warn(&format!("secrets.json: {e:#}"));
             }
         }
@@ -561,37 +596,30 @@ pub(crate) fn github_for_sandbox(
     let Ok(ls) = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT) else {
         return;
     };
-    let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), "github", sandbox);
+    let listed = secrets::listed(&String::from_utf8_lossy(&ls.stdout), service, sandbox);
     let step = secrets::step(listed, mine.as_ref(), &prefix);
-    if step == secrets::Step::Keep || crate::github::token(kit, env).is_none() {
+    if step == secrets::Step::Keep || !secret_held(kit, env, secret) {
         return;
     }
     if step == secrets::Step::Replace && !remove() {
         return;
     }
-    // A nonce of its own: `secret github` answers only a command that
+    // A nonce of its own: `secret <word>` answers only a command that
     // carries one Atollo noted.
     let Ok(nonce) = secrets::new_nonce() else {
         return;
     };
-    let command = secrets::github_command(&exe, kit.target().is_windows(), &nonce);
+    let command = secrets::command(&exe, kit.target().is_windows(), secret, &nonce);
     // Noted first: `sbx` runs the command already to verify it.
-    if let Err(e) = secrets::note(kit, "github", &pc, sandbox, Some(&command)) {
+    if let Err(e) = secrets::note(kit, service, &pc, sandbox, Some(&command)) {
         crate::common::log::warn(&format!("secrets.json: {e:#}"));
         return;
     }
-    let args = [
-        "secret",
-        "set",
-        "github",
-        "--sandbox",
-        sandbox,
-        "--command",
-        command.as_str(),
-    ];
+    let args = secrets::set_args(secret, sandbox, &command);
+    let args: Vec<&str> = args.iter().map(String::as_str).collect();
     if !warn("set", run(sbx, host, env, &args, ASK_LIMIT)) {
         // Not registered: its nonce opens nothing.
-        if let Err(e) = secrets::note(kit, "github", &pc, sandbox, None) {
+        if let Err(e) = secrets::note(kit, service, &pc, sandbox, None) {
             crate::common::log::warn(&format!("secrets.json: {e:#}"));
         }
     }
@@ -608,7 +636,7 @@ fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
                 && secrets::listed(&String::from_utf8_lossy(&o.stdout), "github", "(global)")
         })
     };
-    if mine_github(kit, &pc, "", listed_here).is_none() {
+    if mine_noted(kit, "github", &pc, "", listed_here).is_none() {
         return;
     }
     let listed = run(sbx, host, env, &["secret", "ls"], ASK_LIMIT)
@@ -955,6 +983,9 @@ pub struct Vm {
     /// What `sbx` runs in it: `shell`, or an agent of `sbx`
     /// ([`Vm::for_agent`]).
     agent: String,
+    /// The kit's Gemini key for this sandbox through the proxy of `sbx`
+    /// ([`Vm::with_gemini`]): Antigravity runs in it.
+    gemini: bool,
 }
 
 /// A sandbox of Atollo, for the list of the VMs (D-169).
@@ -1048,8 +1079,10 @@ pub fn is_atollos(name: &str) -> bool {
 pub fn remove_vm(kit: &Kit, host: &Host, env: &KitEnv, name: &str) -> anyhow::Result<()> {
     anyhow::ensure!(is_atollos(name), "not a sandbox of Atollo: {name}");
     if let Some(sbx) = Sbx::find(kit, host) {
-        // GitHub taken back first, if Atollo had given it (D-172).
+        // GitHub and the Gemini key taken back first, if Atollo had given
+        // them (D-172, D-179).
         github_for_sandbox(kit, &sbx, host, env, name, false);
+        secret_for_sandbox(kit, &sbx, host, env, name, secrets::Secret::Gemini, false);
         let out =
             run(&sbx, host, env, &["rm", "-f", name], START_LIMIT).map_err(anyhow::Error::msg)?;
         let text = String::from_utf8_lossy(&out.stderr).to_lowercase();
@@ -1117,6 +1150,7 @@ pub(crate) fn project_vm(
         tools: GuestTools::default(),
         host_ports: Vec::new(),
         agent: "shell".into(),
+        gemini: false,
     })
 }
 
@@ -1151,14 +1185,15 @@ pub fn db_in_vm(db: &crate::db::auth::ProjectDb, port: u16) -> crate::db::auth::
     }
 }
 
-/// Pi's program for the VM's Linux (`guest`, the kit scoped to its
-/// target), as the VM sees it, when that build is installed (D-178).
-pub fn pi_in_vm(kit: &Kit, guest: &Kit) -> Option<String> {
-    let pi = crate::setup::Catalog::get().find("pi")?;
-    if !pi.is_installed(guest) {
+/// The program of the agent `id` (Pi, Antigravity: their own builds) for
+/// the VM's Linux (`guest`, the kit scoped to its target), as the VM sees
+/// it, when that build is installed (D-178, D-179).
+pub fn agent_in_vm(kit: &Kit, guest: &Kit, id: &str) -> Option<String> {
+    let agent = crate::setup::Catalog::get().find(id)?;
+    if !agent.is_installed(guest) {
         return None;
     }
-    let exe = crate::setup::kit_path(guest, crate::agents::exe_of("pi")?);
+    let exe = crate::setup::kit_path(guest, crate::agents::exe_of(id)?);
     vm::guest_path(kit.target().is_windows(), &exe)
 }
 
@@ -1551,6 +1586,7 @@ impl Vm {
             tools: GuestTools::default(),
             host_ports: Vec::new(),
             agent: "shell".into(),
+            gemini: false,
         }
     }
 
@@ -1613,6 +1649,7 @@ impl Vm {
             self.call(env, &vm::restart_args(&self.name), START_LIMIT)?;
             self.sync_host_ports(env, false)?;
             self.sync_github(env);
+            self.sync_gemini(env);
             return Ok(());
         }
         self.call(
@@ -1630,6 +1667,7 @@ impl Vm {
         kit::mark_applied(&self.kit, &self.name, &print)?;
         self.sync_host_ports(env, true)?;
         self.sync_github(env);
+        self.sync_gemini(env);
         Ok(())
     }
 
@@ -1668,6 +1706,7 @@ impl Vm {
             self.dir.display()
         ));
         github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, false);
+        self.take_back_gemini(env);
         self.call(
             env,
             &["rm".to_owned(), "-f".to_owned(), self.name.clone()],
@@ -1686,6 +1725,53 @@ impl Vm {
             kit::Owner::Terminal { .. } => false,
         };
         github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, wanted);
+    }
+
+    /// The kit's Gemini key for this sandbox through the proxy of `sbx`
+    /// (D-179, LEVELS.md §9), when Antigravity runs in it
+    /// ([`Vm::with_gemini`]): registered while the settings hold a key,
+    /// taken back once they do not. A start without Antigravity leaves it
+    /// as it is: an `agy` of the same sandbox may be running.
+    fn sync_gemini(&self, env: &KitEnv) {
+        if !self.gemini {
+            return;
+        }
+        let held = crate::agents::gemini_key(&self.kit).is_some();
+        secret_for_sandbox(
+            &self.kit,
+            &self.sbx,
+            &self.host,
+            env,
+            &self.name,
+            secrets::Secret::Gemini,
+            held,
+        );
+    }
+
+    /// The Gemini key taken back from this sandbox, if Atollo had given it.
+    fn take_back_gemini(&self, env: &KitEnv) {
+        secret_for_sandbox(
+            &self.kit,
+            &self.sbx,
+            &self.host,
+            env,
+            &self.name,
+            secrets::Secret::Gemini,
+            false,
+        );
+    }
+
+    /// This sandbox gets the kit's Gemini key through the proxy of `sbx`
+    /// at its start ([`Vm::start`]): Antigravity runs in it (D-179).
+    pub fn with_gemini(mut self, gemini: bool) -> Vm {
+        self.gemini = gemini;
+        self
+    }
+
+    /// True when its start gives it the kit's Gemini key ([`Vm::with_gemini`]).
+    #[cfg(test)]
+    pub fn gemini(&self) -> bool {
+        self.gemini
     }
 
     /// Mounts the read-only folders an existing sandbox lacks, after those

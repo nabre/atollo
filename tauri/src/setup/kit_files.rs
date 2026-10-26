@@ -35,12 +35,8 @@ const FILES: &[(&str, &str)] = &[
     ("bashrc", include_str!("../../../runtime/bashrc")),
     // The agents' launchers in a folder of their own (D-178): the kit's
     // environment has it on the PATH, the shells of the PC never
-    // (`levels::env::strip_agents`).
-    (
-        "agents/agy.cmd",
-        include_str!("../../../runtime/agents/agy.cmd"),
-    ),
-    ("agents/agy", include_str!("../../../runtime/agents/agy")),
+    // (`levels::env::strip_agents`). Antigravity has none since it runs
+    // in the project's VM (D-179, LEVELS.md §9).
     (
         "agents/claude",
         include_str!("../../../runtime/agents/claude"),
@@ -61,14 +57,17 @@ const FILES: &[(&str, &str)] = &[
 /// Files and folders an older Atollo wrote and this one no longer does: the
 /// agents' launchers that lived in `bin`, a folder the PC's shells keep on
 /// their PATH (D-178); the editor's VM client `vm.ps1` and the stand-ins
-/// of `no-agents`, replaced by the request clients and the forwarders
-/// (D-179). Removed at every start.
-const OBSOLETE: [&str; 5] = [
+/// of `no-agents`, replaced by the request clients and the forwarders;
+/// Antigravity's launchers with their keyring round trip, since `agy` runs
+/// in the project's VM (D-179). Removed at every start.
+const OBSOLETE: [&str; 7] = [
     "bin/agy.cmd",
     "bin/agy",
     "bin/claude",
     "vm.ps1",
     "no-agents",
+    "agents/agy.cmd",
+    "agents/agy",
 ];
 
 /// The folder of the agents' launchers, in `data/kit`.

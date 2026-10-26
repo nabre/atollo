@@ -596,10 +596,12 @@ fn a_legacy_pc_note_moves_to_the_real_name() {
     let vm = vm::name("shop");
     secrets::note(&kit, "github", LEGACY_PC, &vm, Some("cmd")).unwrap();
     // Not listed by this PC's `sbx`: another PC's, left where it is.
-    assert!(mine_github(&kit, "mac", &vm, || false).is_none());
+    assert!(mine_noted(&kit, "github", "mac", &vm, || false).is_none());
     assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_some());
     assert_eq!(
-        mine_github(&kit, "mac", &vm, || true).unwrap().command,
+        mine_noted(&kit, "github", "mac", &vm, || true)
+            .unwrap()
+            .command,
         "cmd"
     );
     assert!(secrets::mine(&kit, "github", LEGACY_PC, &vm).is_none());
@@ -607,7 +609,7 @@ fn a_legacy_pc_note_moves_to_the_real_name() {
         secrets::mine(&kit, "github", "mac", &vm).unwrap().command,
         "cmd"
     );
-    assert!(mine_github(&kit, LEGACY_PC, "other", || true).is_none());
+    assert!(mine_noted(&kit, "github", LEGACY_PC, "other", || true).is_none());
 }
 
 /// A failed installation of Docker Sandboxes is said in the notice, until

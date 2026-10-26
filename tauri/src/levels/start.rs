@@ -25,8 +25,9 @@ use super::{Agent, Placement, VmProgram};
 /// placement of `ready` (its sandbox started by `prepare`): the project's
 /// terminal (`Shell`), an editor's task (`Line`, `sh -lc` in the folder of
 /// the request), Claude Code or Codex in their sandbox (`SbxAgent`, which
-/// asks the sandbox its image's `PATH`), Pi's Linux build in the project's
-/// (`AgentBinary`). Antigravity waits for step 7 of §12.2. `extra`: what
+/// asks the sandbox its image's `PATH`), Pi's or Antigravity's Linux build
+/// in the project's (`AgentBinary`, `vm::pi_session_args`,
+/// `vm::agy_session_args`). `extra`: what
 /// the user typed after the agent's command (a forwarder, §6.8), after `--`
 /// for `sbx run` **[unverified, Q4]**; nothing else takes it.
 pub fn vm_session_args(kit: &Kit, ready: &Ready, extra: &[String]) -> Result<Vec<String>> {
@@ -64,21 +65,17 @@ pub fn vm_session_args(kit: &Kit, ready: &Ready, extra: &[String]) -> Result<Vec
             }
             Ok(args)
         }
-        VmProgram::AgentBinary { agent: Agent::Pi } => {
-            let pi = vm::guest_target(kit.target())
-                .and_then(|t| isolation::pi_in_vm(kit, &kit.for_target(t)))
-                .ok_or_else(|| anyhow!("pi: no build for the VM's Linux"))?;
-            Ok(vm::pi_session_args(
-                &vm.name,
-                workdir,
-                &pi,
-                vm.tools(),
-                extra,
-            ))
+        VmProgram::AgentBinary { agent } => {
+            let session = match agent {
+                Agent::Pi => vm::pi_session_args,
+                Agent::Antigravity => vm::agy_session_args,
+                Agent::Claude | Agent::Codex => bail!("{}: an agent of sbx", agent.id()),
+            };
+            let program = vm::guest_target(kit.target())
+                .and_then(|t| isolation::agent_in_vm(kit, &kit.for_target(t), agent.id()))
+                .ok_or_else(|| anyhow!("{}: no build for the VM's Linux", agent.id()))?;
+            Ok(session(&vm.name, workdir, &program, vm.tools(), extra))
         }
-        // Step 7 of LEVELS.md §12.2 (`vm::agy_session_args`); until then
-        // `ipc::agents::refused_on_project` refuses it before `decide`.
-        VmProgram::AgentBinary { agent } => bail!("{}: not in the VM yet", agent.id()),
         other => bail!("levels: {other:?} is not a terminal"),
     }
 }
