@@ -4,7 +4,7 @@
 
 Documento normativo della decisione D-179 (DECISIONS.md, 26/10/2026). È l'unica fonte di verità su: quale programma gira dove, con quale `PATH`, con quali agenti, con quale rete e quali montaggi; il codice che lo decide; l'IPC che lo trasporta; e come l'utente lo verifica. Codice, prove, Guida e ARCHITECTURE.md seguono questo file; dove differiscono, vale questo file e la differenza è un errore.
 
-Stato: **progetto, fase 1**; fatto il passo 1 di 12.2 (tipi, `place_of`, `facts`, `decide`, etichette), non ancora chiamato dall'app. Nient'altro di quanto scritto è già fatto, salvo dove il testo dice «oggi». Ogni affermazione non provata su un sistema vero è segnata **[non verificato]**; ogni scelta di questo documento non ancora confermata dall'utente è segnata **[ipotesi]**. I nomi nel codice (tipi, funzioni, file, comandi) sono quelli della versione inglese, [LEVELS.md](LEVELS.md).
+Stato: **progetto, fase 1**; fatto il passo 1 di 12.2 (tipi, `place_of`, `facts`, `decide`, etichette), non ancora chiamato dall'app; fatto il passo 2 (`levels::env`, l'unico costruttore dell'ambiente), usato dai chiamanti di oggi. Nient'altro di quanto scritto è già fatto, salvo dove il testo dice «oggi». Ogni affermazione non provata su un sistema vero è segnata **[non verificato]**; ogni scelta di questo documento non ancora confermata dall'utente è segnata **[ipotesi]**. I nomi nel codice (tipi, funzioni, file, comandi) sono quelli della versione inglese, [LEVELS.md](LEVELS.md).
 
 Indice:
 
@@ -38,7 +38,7 @@ Cosa proteggono i livelli, e cosa no:
 | Minaccia | Livello 1 (PC) | Livello 2 con VM | Livello 2 senza VM | Livello 3 (solo VM) |
 |---|---|---|---|---|
 | Leggere i file dell'utente fuori dal progetto | possibile (è l'utente) | no: sono montati solo la cartella del progetto (rw) e gli strumenti del kit per Linux (ro) | possibile: stesso utente; l'ambiente sigillato toglie solo le strade comode (agente SSH, login root di MySQL, percorso del profilo vero) | no, come il livello 2 con VM |
-| Usare le chiavi SSH, il portachiavi, i segreti del kit | possibile | no | ridotto (`seal`), non impedito | no |
+| Usare le chiavi SSH, il portachiavi, i segreti del kit | chiavi SSH: sì, l'agente SSH dell'utente resta (`SSH_AUTH_SOCK`, Git su SSH; **deciso dall'utente, 26/10/2026**); il resto non dato (`seal`: niente percorso del profilo vero, bus di sessione, root di MySQL), ma raggiungibile come utente | no | ridotto (`seal`, anche l'agente SSH), non impedito | no |
 | Raggiungere i servizi di rete del PC | sì | solo le porte che Atollo apre per quella sandbox (i suoi database, D-171; i modelli locali per Pi, D-178) | sì | come il livello 2 con VM |
 | Cambiare i programmi del kit | possibile | no (strumenti montati in sola lettura; il kit e il profilo non sono mai uno spazio di lavoro, D-168) | possibile | no |
 | Agire su GitHub a nome dell'utente | possibile | solo se il progetto ha acceso «GitHub nella VM» (D-172), attraverso il proxy di `sbx` | possibile | come il livello 2 con VM |
@@ -85,7 +85,7 @@ Invarianti che seguono dalla tabella (normative; ognuna ha la sua prova, sezione
 | `levels/mod.rs` | `Level`, `Agent`, `AgentRunner`, `Origin`, `Place`, `Request`, `VmState`, `Facts`, `Placement`, `Sandbox`, `Mounts`, `VmProgram`, `HostAccess`, `Refusal`, `Fix`, `Rule`; `decide()`, `decided()` | nuovo |
 | `levels/place.rs` | `place_of(kit, dir) -> Place` (a quale progetto appartiene una cartella) | la logica di `runtime/vm.ps1` (`$projects`, `$below`) e `ipc::project_dir` |
 | `levels/facts.rs` | `facts(kit, host, env, request) -> Facts` (l'unica lettura con effetti prima di `decide`) | `isolation::status`, `vm::guest_path`, `isolation::restart_pending`, disponibilità nel catalogo |
-| `levels/env.rs` | `environment()`, `SEALED`, `seal()`, `agent_dirs()`, `strip_agents()`, `FORWARD_DIR`, `LEVEL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (la parte che sigilla), `editor::terminals::env` (la parte degli agenti) |
+| `levels/env.rs` | `Environment`, `environment()`, `pc_environment()` (la sua parte `Pc`, ogni passo una funzione: `project_lines`, `seal`, `strip_agents`, `forward_first`, `mark`), `SEALED`, `SSH_AGENT`, `agent_dirs()`, `forward_dir()`, `FORWARD_DIR`, `LEVEL_VAR`, `PROJECT_VAR`, `TERMINAL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (la parte che sigilla), `editor::terminals::env` (la parte degli agenti) |
 | `levels/prepare.rs` | `prepare()`: strumenti per il Linux della VM, database e loro porte, modelli locali per Pi, `Vm::start` | `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs, ensure_guest_tools}`, `ipc::agents::{agent_vm_ready, pi_local_models}`, `isolation::vm_for` |
 | `levels/start.rs` | `start_terminal()`, `action_command()`, `scaffold_command()`: da `Ready` a un `Launch` della pty o a un `Command` | le code di `terminal_launch`, `terminal_open`, `agent_launch`, `Runner::start_in`, `frameworks::run_line` |
 | `levels/requests.rs` | il protocollo a file per i processi fuori dall'app (editor, inoltri) | sostituisce `isolation/session.rs` |
@@ -407,6 +407,9 @@ Su `Forwarded { from }`: `from` serve solo al log e all'etichetta; non cambia ma
 pub const LEVEL_VAR: &str = "ATOLLO_LEVEL";
 /// Il progetto di un processo sul PC, quando ne ha uno (profile.ps1 e bashrc non lo indovinano più dalla cartella).
 pub const PROJECT_VAR: &str = "ATOLLO_PROJECT";
+/// Il nome di un terminale del kit (`Origin::KitTerminal`): la sua intestazione,
+/// e il profilo del kit non riapplica le linee del progetto.
+pub const TERMINAL_VAR: &str = "ATOLLO_TERMINAL";
 /// `data/kit/forward`: gli inoltri, in testa a ogni `PATH` del PC (sostituisce `data/kit/no-agents`).
 pub const FORWARD_DIR: &str = "forward";
 
@@ -414,44 +417,58 @@ pub const FORWARD_DIR: &str = "forward";
 pub enum Environment {
     /// L'ambiente del processo sul PC.
     Pc(KitEnv),
-    /// L'ambiente di `sbx` sul PC (`Sbx::session_env`: quello del kit, il
-    /// temp del PC, `daemon::ENV`) e ciò che entra nella VM.
+    /// L'ambiente di `sbx` sul PC (`isolation::sbx_session_env`, il corpo di
+    /// `Sbx::session_env`: quello del kit, il temp del PC, `daemon::ENV`) e
+    /// ciò che entra nella VM.
     Vm { sbx_env: KitEnv, guest: GuestTools },
 }
 
 /// L'ambiente di `placement` a partire da `base` del kit (costruito per il
 /// target del PC). `terminal`: la scelta degli strumenti del terminale del kit,
-/// solo per `Origin::KitTerminal`. `None` esattamente per `Placement::Refused`.
+/// solo per `Origin::KitTerminal`. `host`: le variabili del PC, per l'ambiente
+/// del kit per il Linux della VM e la cartella temporanea di `sbx`.
+/// `None` esattamente per `Placement::Refused`.
 pub fn environment(
     kit: &Kit,
     base: &KitEnv,
     placement: &Placement,
     terminal: Option<&crate::editor::terminals::Terminal>,
     lang: &str,
+    host: &Host,
 ) -> Option<Environment>;
+
+/// La parte `Pc` (i passi 1–7 sotto), per i chiamanti che non hanno ancora
+/// un `Placement` (passi 2–4 di 12.2).
+pub fn pc_environment(
+    kit: &Kit,
+    base: KitEnv,
+    level: Level,
+    project: Option<&str>,
+    terminal: Option<&crate::editor::terminals::Terminal>,
+) -> KitEnv;
 ```
 
-`Pc { level, project, .. }`, in quest'ordine (ogni passo è una funzione con un nome, provata da sola):
+`Pc { level, project, .. }`, in quest'ordine (ogni passo è una funzione con un nome, provata da sola); applicato di nuovo al proprio risultato non cambia nulla (`the_environment_is_idempotent`):
 
 1. `base` copiato.
-2. Se `terminal` è un terminale dell'utente: la sua scelta di strumenti (`versions::choice_env` senza la parte che sigilla) e gli strumenti esclusi tolti (`editor::terminals::strip`), come oggi.
-3. Se `project` è `Some`: gli scambi di versione del progetto (`versions::project_swaps`), applicati **dopo** quelli del terminale, così uno strumento scelto dal progetto è alla linea del progetto in qualsiasi terminale aperto nella sua cartella **[ipotesi, domanda Q1]**; gli strumenti che il progetto non ha scelto tengono le linee del terminale.
-4. `seal(kit, project, env)`: fuori le variabili di `SEALED`; dentro il login MySQL del progetto quando `project` è `Some` (D-167). Regole invariate.
-5. `strip_agents(kit, env)`: ogni voce di `agent_dirs(kit)` esce dal `PATH`, con le variabili che vi puntano (`CP_ANTIGRAVITY`); `agent_dirs` = `data/apps/<target-del-PC>/{claude,codex,antigravity,pi}` e `data/kit/agents`.
-6. `data/kit/forward` in testa al `PATH`.
-7. `LEVEL_VAR` = `manual` o `project`; `PROJECT_VAR` = il progetto quando `Some`, tolta altrimenti; `ATOLLO_TERMINAL` = il nome del terminale per `KitTerminal`.
+2. Se `terminal` è un terminale dell'utente: la sua scelta di strumenti e gli strumenti esclusi tolti (`editor::terminals::apply_tools`: `versions::swap_lines` dalle linee del kit, poi `editor::terminals::strip`), come oggi. Restituisce le linee su cui è l'ambiente (quelle del kit, `versions::kit_choice`, con sopra quelle del terminale); il terminale predefinito non cambia nulla.
+3. Se `project` è `Some`: `project_lines`, le linee del progetto (`versions::project_choice`) scambiate **a partire dalle linee del passo 2**, così uno strumento scelto dal progetto è alla linea del progetto in qualsiasi terminale aperto nella sua cartella; gli strumenti che il progetto non ha scelto tengono le linee del terminale (Q1, decisa). Uno strumento escluso dal terminale resta escluso: il progetto sceglie linee, non gli strumenti del terminale.
+4. `seal(kit, level, project, env)`: fuori le variabili di `SEALED`; dentro il login MySQL del progetto quando `project` è `Some` (D-167). Il livello 2 non ne tiene nessuna. Il livello 1 tiene solo l'agente SSH dell'utente (`SSH_AGENT` = `SSH_AUTH_SOCK`), così Git su SSH in un terminale in cui scrive l'utente usa le chiavi che l'utente ha caricato (**deciso dall'utente, 26/10/2026**); a un client SSH non serve altro (`SSH_AGENT_PID` serve solo a `ssh-agent -k` e l'ambiente del kit non lo prende mai dal PC; su Windows l'agente di OpenSSH è una named pipe trovata senza variabile). Il percorso del profilo vero, il bus di sessione e il root di MySQL del kit restano fuori anche dal livello 1: il terminale predefinito del kit, che prima di D-179 li teneva, li perde; i terminali dell'utente, che prima di D-179 perdevano l'agente SSH, lo riavranno.
+5. `strip_agents(kit, env)`: ogni voce di `agent_dirs(kit)` esce dal `PATH`, con le variabili che vi puntano (`CP_ANTIGRAVITY`); `agent_dirs` = `data/apps/<target-del-PC>/{claude,codex,antigravity,pi}` e `data/kit/agents`. Esce anche `forward_dir(kit)`, perché il passo 6 la metta una volta sola.
+6. `forward_first`: `forward_dir(kit)` in testa al `PATH`: `data/kit/forward` dal passo 5 di 12.2; fino ad allora i sostituti di `data/kit/no-agents`.
+7. `mark`: `LEVEL_VAR` = `manual` o `project`; `PROJECT_VAR` = il progetto quando `Some`, tolta altrimenti; `TERMINAL_VAR` = il nome del terminale del kit quando `terminal` è `Some`, tolta altrimenti.
 
 `Vm { project, sandbox, program, .. }`:
 
-1. `guest = kit.for_target(vm::guest_target(kit.target()))`; `base_guest = KitEnv::build(&guest, settings, lang, host)`.
-2. `isolation::project_guest_tools(kit, &guest, project, base_guest)`: l'ambiente del Linux alle linee del progetto, sigillato, agenti tolti (il passo 5 applicato a `guest`), poi `guest_view`: solo le voci del `PATH` e le variabili dentro `data/apps/linux-…`, come le vede la VM. Per `AgentBinary { agent }` la cartella Linux dell'agente stesso torna in `guest.path` (è il programma che si esegue, non un comando offerto ad altri).
+1. `guest = kit.for_target(vm::guest_target(kit.target()))`; `base_guest = KitEnv::build(&guest, settings, lang, host)`, con `settings` letto da `Settings::load(kit)` (come fa oggi `ipc::terminals::project_vm_tools`).
+2. `isolation::project_guest_tools(kit, &guest, project, base_guest)`: `pc_environment` di `guest` al livello 2 (le linee del progetto, sigillato, agenti tolti: il passo 5 applicato a `guest`), poi `guest_view`: solo le voci del `PATH` e le variabili dentro `data/apps/linux-…`, come le vede la VM. Per `AgentBinary { agent }` la cartella Linux dell'agente stesso torna, in fondo, in `guest.path` (è il programma che si esegue, non un comando offerto ad altri).
 3. `-e ATOLLO_LEVEL=project|agent` aggiunto a `guest.vars`.
-4. `sbx_env = Sbx::session_env(base)`.
+4. `sbx_env = isolation::sbx_session_env(base, host)`.
 5. `guest.env_file` lo imposta `prepare` (le variabili del database, D-171), mai `environment`.
 
 `Refused` → `None`.
 
-Le funzioni di oggi diventano chiamate sottili e poi spariscono (12.2): `versions::project_env(kit, p, env)` = `environment(Pc{Project, Some(p)})`; `versions::choice_env` = i passi 2 e 4–7 senza progetto; `editor::terminals::env` = `environment(Pc{Manual, …}, Some(terminal))`.
+Le funzioni di oggi (passo 2 di 12.2): `versions::project_env(kit, p, env)` è un involucro sottile di `pc_environment(kit, env, Project, Some(p), None)` per i suoi molti chiamanti, tolto dai passi 3–4; `versions::choice_env` ed `editor::terminals::env` non ci sono più: `terminal_launch` chiama `pc_environment(kit, base, Manual, il progetto di place_of(dir), Some(terminal))`.
 
 ### 3.6 `prepare` e `start`
 
@@ -713,15 +730,15 @@ Dalla pagina di Docker (letta il 26/10/2026): i segreti dei servizi sono globali
 
 ### 12.1 Cosa si toglie o cambia nome
 
-L'elenco completo, simbolo per simbolo, è in [LEVELS.md, 12.1](LEVELS.md#121-removed-or-renamed). In sintesi: `isolation::Level` → `Availability`; `seal`, `SEALED`, `agent_dirs`, `without_agents` → `levels::env`; tolti `agents_notice`, `with_agents_notice` e i sostituti di `data/kit/no-agents` (aggiunta a `OBSOLETE`), al loro posto `data/kit/forward`; `isolation/session.rs` → `levels/requests.rs`; `vm::starts_in_vm`, `vm::sbx_agent` → `Agent::runner()`; le funzioni di preparazione di `ipc::terminals` e `ipc::agents` → `levels::prepare`; tolte `editor_vm_begin`, `editor_vm_session`, `refused_with_vm`, `agent_token_link`, `claude_token::link`, `codex_logout`, `agents::launch_env`; `runtime/vm.ps1` → `runtime/launch.ps1` e `runtime/launch.sh`; tolti `runtime/agents/{claude, agy, agy.cmd}` (danno segreti del kit agli agenti sul PC) e le voci degli agenti in `env/path.rs`; in `editor/cfg.rs` niente più profili dell'utente né `left_by_the_kit`, e un file con commenti o JSON non valido spostato in `settings.json.bak-<data>` e riscritto **[ipotesi]**; in profile.ps1 e bashrc tolto il salto delle versioni del progetto con `ATOLLO_TERMINAL`; in `ui/src/ipc/agents.ts` tolta `startsOnProject`.
+L'elenco completo, simbolo per simbolo, è in [LEVELS.md, 12.1](LEVELS.md#121-removed-or-renamed). In sintesi: `isolation::Level` → `Availability`; `seal`, `SEALED`, `agent_dirs`, `without_agents` → `levels::env` (fatto nel passo 2, con `versions::choice_env` ed `editor::terminals::env` tolte e `versions::project_env` involucro sottile fino ai passi 3–4); tolti `agents_notice`, `with_agents_notice` e i sostituti di `data/kit/no-agents` (aggiunta a `OBSOLETE`), al loro posto `data/kit/forward`; `isolation/session.rs` → `levels/requests.rs`; `vm::starts_in_vm`, `vm::sbx_agent` → `Agent::runner()`; le funzioni di preparazione di `ipc::terminals` e `ipc::agents` → `levels::prepare`; tolte `editor_vm_begin`, `editor_vm_session`, `refused_with_vm`, `agent_token_link`, `claude_token::link`, `codex_logout`, `agents::launch_env`; `runtime/vm.ps1` → `runtime/launch.ps1` e `runtime/launch.sh`; tolti `runtime/agents/{claude, agy, agy.cmd}` (danno segreti del kit agli agenti sul PC) e le voci degli agenti in `env/path.rs`; in `editor/cfg.rs` niente più profili dell'utente né `left_by_the_kit`, e un file con commenti o JSON non valido spostato in `settings.json.bak-<data>` e riscritto **[ipotesi]**; in profile.ps1 e bashrc tolto il salto delle versioni del progetto con `ATOLLO_TERMINAL`; in `ui/src/ipc/agents.ts` tolta `startsOnProject`.
 
 ### 12.2 Ordine (ogni passo compila e passa `cargo test` e `npm test`)
 
 1. **Tipi e decide.** `levels/mod.rs`, `place.rs`, `facts.rs` (solo letture), `labels.rs`; prove R1–R17 e totalità. Nessun chiamante cambia.
-2. **Ambiente.** `levels/env.rs`: spostati `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` per `Pc` e `Vm`; `versions::{project_env, choice_env}` ed `editor::terminals::env` la chiamano (comportamento invariato salvo: la cartella degli inoltri al posto dei sostituti, le versioni del progetto nei terminali del kit, `ATOLLO_LEVEL`). File degli inoltri scritti (solo rifiuto, fino al passo 5). Ambiente del server dell'editor = `environment(Pc{Manual})`.
+2. **Ambiente.** `levels/env.rs`: spostati `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` per `Pc` e `Vm`; `versions::{project_env, choice_env}` ed `editor::terminals::env` la chiamano (comportamento invariato salvo: le versioni del progetto nei terminali del kit (Q1), ogni terminale del kit sigillato al modo del livello 1, che tiene solo l'agente SSH dell'utente, `ATOLLO_LEVEL`/`ATOLLO_PROJECT`). La cartella in testa al `PATH` resta quella dei sostituti, `data/kit/no-agents` (`forward_dir`), finché il passo 5 non fa gli inoltri. I pool tengono il loro ambiente non sigillato e senza agenti fino al passo 3.
 3. **Punti di avvio sul PC.** E1, E3 (ramo PC), E5, E6, E7, E8, E9 (ramo PC), E20 attraverso `decide` + `environment`; `PtyInfo.level/label/sandbox`; `CmdError.refusal/fix`.
 4. **Preparazione e punti di avvio nella VM.** `levels/prepare.rs` con `Effects`; E3, E4, E10 attraverso di essa; E9 nella VM (nuovo: creazione nella sandbox del progetto nuovo); prova di regola `no_process_outside_levels` accesa.
-5. **Richieste.** `levels/requests.rs`, `runtime/launch.ps1`, `runtime/launch.sh`; profili dell'editor: terminali diretti (E2 livello 1), task e agenti attraverso `launch` (E11, E12); gli inoltri inoltrano (6.8); tolti `session.rs`, `vm.ps1`, `editor_vm_*`; impostazioni dell'editor: solo i profili di Atollo.
+5. **Richieste.** `levels/requests.rs`, `runtime/launch.ps1`, `runtime/launch.sh`; profili dell'editor: terminali diretti (E2 livello 1), task e agenti attraverso `launch` (E11, E12); i file degli inoltri in `data/kit/forward` (`FORWARD_DIR`, al posto di `data/kit/no-agents` in `forward_dir`), che inoltrano (6.8); ambiente del server dell'editor = `environment(Pc{Manual})` (insieme ai suoi profili: fino ad allora i suoi terminali passano ancora da `vm.ps1` con l'ambiente dell'editor); tolti `session.rs`, `vm.ps1`, `editor_vm_*`; impostazioni dell'editor: solo i profili di Atollo.
 6. **Agenti disattivati senza VM.** `levels::agents_enabled`, `levels::installable`, filtro del runner, `AgentInfo.available`, `levels-changed` e `levels::watch`, profili dell'editor condizionati, interfaccia (Strumenti, pagina Agenti, pulsanti, palette). Tolti `agent_token_link`, `codex_logout`, `runtime/agents/*`, le voci degli agenti in `env/path.rs` (E16, E17, E18).
 7. **Antigravity nella VM.** `vm::agy_session_args`, `Agent::Antigravity.runner() = ProjectVm`, `secret gemini`, interfaccia.
 8. **Fiducia.** `levels/report.rs`, `project_vm_report`, `atollo vm`, il pannello del progetto, etichette e intestazioni.
@@ -732,14 +749,14 @@ L'elenco completo, simbolo per simbolo, è in [LEVELS.md, 12.1](LEVELS.md#121-re
 
 I nomi delle prove sono in [LEVELS.md, 12.3](LEVELS.md#123-test-plan) e valgono così come sono (le prove si chiamano in inglese). Riassunto:
 
-- **Unitarie** (`test/rust/levels/`): `decide.rs` (livello dall'origine, totalità esaustiva, una prova per ciascuna regola R1–R17, `an_agent_is_never_on_the_pc`, `a_refusal_always_has_a_reason_and_a_fix`, la serializzazione per l'IPC); `facts.rs` (le parti pure: `guest_dir`, `guest_tools`, `linux_build`); `labels.rs` (etichette, intestazioni, testi dei rifiuti); `env.rs` sui quattro target `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64` (nessuna cartella di agente sul PC, inoltri in testa, versioni del progetto, variabili sigillate, solo strumenti del kit per Linux nella VM, `no_kit_secret_reaches_a_vm_environment`); `place.rs`; `requests.rs`; `report.rs` (il comando di ogni strumento del catalogo, confronto per linea, `notFromKit`, `java -version` sullo standard error); `prepare.rs` con `Effects` finto; `rule.rs` (`no_process_outside_levels`, `no_agent_binary_is_started_by_the_app_on_the_pc`).
+- **Unitarie** (`test/rust/levels/`): `decide.rs` (livello dall'origine, totalità esaustiva, una prova per ciascuna regola R1–R17, `an_agent_is_never_on_the_pc`, `a_refusal_always_has_a_reason_and_a_fix`, la serializzazione per l'IPC); `facts.rs` (le parti pure: `guest_dir`, `guest_tools`, `linux_build`); `labels.rs` (etichette, intestazioni, testi dei rifiuti); `env.rs` sui quattro target `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64` (nessuna cartella di agente sul PC, inoltri in testa, versioni del progetto, variabili sigillate (il livello 1 tiene solo l'agente SSH, il livello 2 nulla), solo strumenti del kit per Linux nella VM, `no_kit_secret_reaches_a_vm_environment`, idempotenza, valori di riferimento dei chiamanti di oggi); `place.rs`; `requests.rs`; `report.rs` (il comando di ogni strumento del catalogo, confronto per linea, `notFromKit`, `java -version` sullo standard error); `prepare.rs` con `Effects` finto; `rule.rs` (`no_process_outside_levels`, `no_agent_binary_is_started_by_the_app_on_the_pc`).
 - **Prove di oggi che cambiano**: `test/rust/isolation/{mod,session,vm}.rs`, `test/rust/ipc/agents.rs`, `test/rust/setup/kit_files.rs`, `test/rust/editor/{cfg,terminals,ext}.rs`, `test/rust/setup/runner.rs`.
 - **Integrazione per punto di avvio** (Rust con finti dove si può; il resto a mano su Windows 11 con sbx e su un Linux, annotato nelle «Prove» di D-179): E1–E12, l'inoltro di 6.8 dentro e fuori un progetto e senza VM, E14, `atollo vm shop --check`.
 - **Interfaccia** (`test/ui/`): `terminal/panel.test.tsx`, `agents/page.test.tsx`, `projects/vm.test.tsx`, `components/table.test.tsx`, `shell/commands.test.tsx`, `servers/page.test.tsx`.
 
 ## 13. Codice di oggi in contrasto con questo documento
 
-1. **I terminali del kit ignorano le versioni del progetto** nella sua cartella: `editor/terminals.rs: env` imposta `ATOLLO_TERMINAL` per ogni terminale del kit, e `profile.ps1`/`bashrc` saltano gli scambi del progetto quando c'è.
+1. ~~**I terminali del kit ignorano le versioni del progetto** nella sua cartella: `editor/terminals.rs: env` imposta `ATOLLO_TERMINAL` per ogni terminale del kit, e `profile.ps1`/`bashrc` saltano gli scambi del progetto quando c'è.~~ Risolto dal passo 2: `terminal_launch` dà a `pc_environment` il progetto della sua cartella (`place_of`); `ATOLLO_TERMINAL` ora evita solo che il profilo le applichi due volte.
 2. **I terminali dell'editor sono solo nella VM** (D-178, `vm.ps1` chiuso per difetto); D-179 li fa di livello 1 sul PC.
 3. **La creazione dei progetti gira sempre sul PC**: `ipc/frameworks.rs: frameworks_create` usa `seal(&kit, None, …)` e `frameworks::run_line` anche con la VM attiva; ARCHITECTURE.md dice già che gira nella VM.
 4. **Il server dell'editor, e quindi ogni estensione, ha gli agenti nel `PATH`**: `env/path.rs` mette `data/kit/agents`, `claude`, `codex/bin`, `codex/codex-path`, `pi` nel `PATH` del kit, ed `editor/mod.rs: Editor::start_on` avvia il server con l'ambiente completo del kit.

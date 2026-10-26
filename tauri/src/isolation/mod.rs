@@ -10,7 +10,7 @@
 //! Docker stays in the system's keyring, a declared trace.
 //!
 //! On every level a project's programs get a sealed environment
-//! ([`seal`]): less of what reaches them by itself. It is no wall (they run
+//! (`levels::env::seal`): less of what reaches them by itself. It is no wall (they run
 //! as the user and can read what the user can): the VM is.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -37,70 +37,8 @@ const FRESH: Duration = Duration::from_secs(60);
 /// How long `sbx` may take to answer.
 const ASK_LIMIT: Duration = Duration::from_secs(15);
 
-/// What a project's programs never get from the kit's environment: the
-/// way to the user's real profile, the user's SSH keys (the agent's
-/// socket), the desktop's session bus (the Secret Service), and the root
-/// login of the kit's MySQL, replaced by the project's own user.
-pub const SEALED: [&str; 4] = [
-    "CP_USER_PROFILE",
-    "SSH_AUTH_SOCK",
-    "DBUS_SESSION_BUS_ADDRESS",
-    "ATOLLO_MYSQL_CNF",
-];
-
-/// Seals `env` for the programs of `project` (terminal, actions,
-/// `Atollo env --project`), or of a kit terminal when `None`: the
-/// [`SEALED`] variables out, then the project's own MySQL login in
-/// (`db::services::project_client_env`), and no agent's command
-/// ([`without_agents`], D-178).
-pub fn seal(kit: &Kit, project: Option<&str>, env: &mut KitEnv) {
-    for name in SEALED {
-        env.remove(name);
-    }
-    if let Some(project) = project {
-        for (name, value) in crate::db::services::project_client_env(kit, project) {
-            env.set(name, value.to_string_lossy());
-        }
-    }
-    without_agents(kit, env);
-}
-
-/// The folders of the agents' programs and launchers in the kit: their
-/// components' folders in `data/apps` (Claude Code, Codex with its
-/// `codex-path`, Antigravity, Pi) and the launchers' `data/kit/agents`.
-pub fn agent_dirs(kit: &Kit) -> Vec<PathBuf> {
-    let mut dirs: Vec<PathBuf> = crate::agents::IDS
-        .iter()
-        .map(|id| kit.apps().join(id))
-        .collect();
-    dirs.push(kit.kit_files().join(crate::setup::kit_files::AGENTS_DIR));
-    dirs
-}
-
-/// `env` with no agent's command (D-178), for the shells and programs that
-/// run on the PC (the kit's terminals, a project's terminal and actions
-/// without the VM, the shared web servers, a framework's creation): the
-/// agents run only in the VM. Their folders ([`agent_dirs`]) leave the
-/// `PATH`, with the variables that point into them (`CP_ANTIGRAVITY`);
-/// then the stand-ins of `data/kit/no-agents` go first, so `claude`,
-/// `codex`, `agy`, `antigravity` and `pi` say where the agents run instead
-/// of starting one the PC installed elsewhere (Homebrew, npm). Applied
-/// again it changes nothing.
-pub fn without_agents(kit: &Kit, env: &mut KitEnv) {
-    let stand_ins = kit.kit_files().join(crate::setup::kit_files::NO_AGENTS_DIR);
-    let mut dirs = agent_dirs(kit);
-    dirs.push(stand_ins.clone());
-    crate::editor::terminals::strip(env, &dirs);
-    let sep = env.path_sep().to_string();
-    let rest = env.get("PATH").unwrap_or_default().to_owned();
-    let first = stand_ins.display().to_string();
-    let path = if rest.is_empty() {
-        first
-    } else {
-        format!("{first}{sep}{rest}")
-    };
-    env.set("PATH", path);
-}
+// The sealed environment (`SEALED`, `seal`) and the stripping of the
+// agents (`agent_dirs`, `strip_agents`) are in `levels::env` (D-179).
 
 /// What the PC's shells say about the agents (D-178), in `lang`: shown when
 /// a kit terminal or a project's terminal opens on the PC and by the
@@ -810,17 +748,24 @@ impl Sbx {
     /// shortens its sockets' paths (D-167), and the kit's (`data\tmp`, deep
     /// in a kit folder) would leave them over the limit of 107 bytes.
     pub fn session_env(&self, env: &KitEnv, host: &Host) -> KitEnv {
-        let mut out = env.clone();
-        if let Some(temp) = host.temp() {
-            for name in ["TEMP", "TMP", "TMPDIR"] {
-                out.set(name, temp);
-            }
-        }
-        for (name, value) in daemon::ENV {
-            out.set(name, value);
-        }
-        out
+        sbx_session_env(env, host)
     }
+}
+
+/// The environment of a run of the kit's `sbx` ([`Sbx::session_env`]),
+/// which needs no `sbx` to be worked out: `env` with the PC's temporary
+/// folder and the daemon's variables (`levels::env::environment`).
+pub fn sbx_session_env(env: &KitEnv, host: &Host) -> KitEnv {
+    let mut out = env.clone();
+    if let Some(temp) = host.temp() {
+        for name in ["TEMP", "TMP", "TMPDIR"] {
+            out.set(name, temp);
+        }
+    }
+    for (name, value) in daemon::ENV {
+        out.set(name, value);
+    }
+    out
 }
 
 /// What the notice's «Lancia» runs in the app's terminal: one of these,
@@ -1527,9 +1472,16 @@ pub fn watch_pi_port(vm: Vm, env: KitEnv, project: String, port: u16, db_ports: 
 }
 
 /// The kit's tools for the VM's Linux in `project`, at the lines it chose
-/// (D-170), as on the PC (`versions::project_env`).
+/// (D-170), sealed and without the agents, as on the PC
+/// (`levels::env::pc_environment` on `guest`), then [`guest_view`].
 pub fn project_guest_tools(kit: &Kit, guest: &Kit, project: &str, base: KitEnv) -> GuestTools {
-    let env = crate::versions::project_env(guest, project, base);
+    let env = crate::levels::env::pc_environment(
+        guest,
+        base,
+        crate::levels::Level::Project,
+        Some(project),
+        None,
+    );
     guest_view(kit, guest, &env)
 }
 

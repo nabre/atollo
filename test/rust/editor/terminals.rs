@@ -26,6 +26,18 @@ fn path_of(entries: &[String]) -> String {
     entries.join(if cfg!(windows) { ";" } else { ":" })
 }
 
+/// The environment of `terminal` from `base` outside a project, as
+/// `terminal_launch` builds it (LEVELS.md §3.5).
+fn env(kit: &Kit, terminal: &Terminal, base: KitEnv) -> KitEnv {
+    crate::levels::env::pc_environment(
+        kit,
+        base,
+        crate::levels::Level::Manual,
+        None,
+        Some(terminal),
+    )
+}
+
 /// A folder of the system, outside the kit.
 const SYSTEM: &str = if cfg!(windows) {
     r"C:\Windows\System32"

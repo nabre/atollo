@@ -4,7 +4,7 @@ English · [Italiano](LEVELS.it.md)
 
 Normative document of decision D-179 (DECISIONS.md, 26/10/2026). It is the single source of truth for: which program runs where, with which `PATH`, with which agents, with which network and mounts; the code that decides it; the IPC that carries it; and how the user can check it. Code, tests, the Guide and ARCHITECTURE.md follow this file; where they differ, this file wins and the difference is a bug.
 
-Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
+Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app; step 2 (`levels::env`, the one environment builder) implemented and used by today's callers. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
 
 Contents:
 
@@ -38,7 +38,7 @@ What the levels protect, and what they do not:
 | Threat | Level 1 (PC) | Level 2 with VM | Level 2 without VM | Level 3 (VM only) |
 |---|---|---|---|---|
 | Reading the user's files outside the project | possible (it is the user) | no: only the project folder (rw) and the kit's Linux tools (ro) are mounted | possible: same user; the sealed environment only removes the easy ways (SSH agent, root MySQL login, real profile path) | no, as level 2 with VM |
-| Using the user's SSH keys, keyring, kit secrets | possible | no | reduced (`seal`), not prevented | no |
+| Using the user's SSH keys, keyring, kit secrets | SSH keys: yes, the user's SSH agent is kept (`SSH_AUTH_SOCK`, Git over SSH; **decided by the user, 26/10/2026**); the rest not given (`seal`: no real profile path, session bus, MySQL root), but reachable as the user | no | reduced (`seal`, the SSH agent too), not prevented | no |
 | Reaching the PC's network services | yes | only the ports Atollo opens for that sandbox (its databases, D-171; Pi's local models, D-178) | yes | same as level 2 with VM |
 | Changing the kit's programs | possible | no (tools mounted read-only; the kit and the profile are never a workspace, D-168) | possible | no |
 | Acting on GitHub as the user | possible | only if the project turned on "GitHub in the VM" (D-172), through the `sbx` proxy | possible | as level 2 with VM |
@@ -85,7 +85,7 @@ Invariants that follow from the table (normative; each has a test, section 12.3)
 | `levels/mod.rs` | `Level`, `Agent`, `AgentRunner`, `Origin`, `Place`, `Request`, `VmState`, `Facts`, `Placement`, `Sandbox`, `Mounts`, `VmProgram`, `HostAccess`, `Refusal`, `Fix`, `Rule`; `decide()`, `decided()` | new |
 | `levels/place.rs` | `place_of(kit, dir) -> Place` (which project a folder belongs to) | the logic of `runtime/vm.ps1` (`$projects`, `$below`) and `ipc::project_dir` |
 | `levels/facts.rs` | `facts(kit, host, env, request) -> Facts` (the only impure read before `decide`) | `isolation::status`, `vm::guest_path`, `isolation::restart_pending`, catalog availability |
-| `levels/env.rs` | `environment()`, `SEALED`, `seal()`, `agent_dirs()`, `strip_agents()`, `FORWARD_DIR`, `LEVEL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (their sealing part), `editor::terminals::env` (its agent part) |
+| `levels/env.rs` | `Environment`, `environment()`, `pc_environment()` (its `Pc` part, each step a function: `project_lines`, `seal`, `strip_agents`, `forward_first`, `mark`), `SEALED`, `SSH_AGENT`, `agent_dirs()`, `forward_dir()`, `FORWARD_DIR`, `LEVEL_VAR`, `PROJECT_VAR`, `TERMINAL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (their sealing part), `editor::terminals::env` (its agent part) |
 | `levels/prepare.rs` | `prepare()`: tools for the VM's Linux, databases and their ports, Pi's local models, `Vm::start` | `ipc::terminals::{project_vm_ready, project_vm_tools, project_vm_dbs, ensure_guest_tools}`, `ipc::agents::{agent_vm_ready, pi_local_models}`, `isolation::vm_for` |
 | `levels/start.rs` | `start_terminal()`, `action_command()`, `scaffold_command()`: from `Ready` to a pty `Launch` or a `Command` | the tails of `terminal_launch`, `terminal_open`, `agent_launch`, `Runner::start_in`, `frameworks::run_line` |
 | `levels/requests.rs` | the file protocol for processes outside the app (editor, forwarders) | replaces `isolation/session.rs` |
@@ -405,6 +405,9 @@ Note on `Forwarded { from }`: `from` is kept for the log and the label only; it 
 pub const LEVEL_VAR: &str = "ATOLLO_LEVEL";
 /// The project of a PC process, when it has one (profile.ps1/bashrc no longer guess it from the folder).
 pub const PROJECT_VAR: &str = "ATOLLO_PROJECT";
+/// A kit terminal's name (`Origin::KitTerminal`): its banner, and the kit's
+/// profile does not apply the project's lines a second time.
+pub const TERMINAL_VAR: &str = "ATOLLO_TERMINAL";
 /// `data/kit/forward`: the forwarders, first on every PC `PATH` (replaces `data/kit/no-agents`).
 pub const FORWARD_DIR: &str = "forward";
 
@@ -412,44 +415,58 @@ pub const FORWARD_DIR: &str = "forward";
 pub enum Environment {
     /// The environment of the PC process.
     Pc(KitEnv),
-    /// The environment of `sbx` on the PC (`Sbx::session_env`: the kit's
-    /// environment, the PC's temp, `daemon::ENV`) and what goes into the VM.
+    /// The environment of `sbx` on the PC (`isolation::sbx_session_env`, the
+    /// body of `Sbx::session_env`: the kit's environment, the PC's temp,
+    /// `daemon::ENV`) and what goes into the VM.
     Vm { sbx_env: KitEnv, guest: GuestTools },
 }
 
 /// Builds the environment of `placement` from the kit's `base` (built for
 /// the PC's target). `terminal`: the kit terminal's tool choice, for
-/// `Origin::KitTerminal` only. `None` exactly for `Placement::Refused`.
+/// `Origin::KitTerminal` only. `host`: the PC's variables, for the kit's
+/// environment of the VM's Linux and `sbx`'s temporary folder.
+/// `None` exactly for `Placement::Refused`.
 pub fn environment(
     kit: &Kit,
     base: &KitEnv,
     placement: &Placement,
     terminal: Option<&crate::editor::terminals::Terminal>,
     lang: &str,
+    host: &Host,
 ) -> Option<Environment>;
+
+/// The `Pc` part (steps 1–7 below), for the callers that have no
+/// `Placement` yet (12.2 steps 2–4).
+pub fn pc_environment(
+    kit: &Kit,
+    base: KitEnv,
+    level: Level,
+    project: Option<&str>,
+    terminal: Option<&crate::editor::terminals::Terminal>,
+) -> KitEnv;
 ```
 
-`Pc { level, project, .. }`, in this order (each step is a named function, tested on its own):
+`Pc { level, project, .. }`, in this order (each step is a named function, tested on its own); applied again to its own result it changes nothing (`the_environment_is_idempotent`):
 
 1. `base` cloned.
-2. If `terminal` is a user terminal: its tool choice (`versions::choice_env` without its sealing) and the left-out tools stripped (`editor::terminals::strip`), as today.
-3. If `project` is `Some`: the project's version swaps (`versions::project_swaps`), applied **after** the terminal's, so a tool the project chose is at the project's line in any terminal opened in its folder **[assumption, open question Q1]**; tools the project did not choose keep the terminal's lines.
-4. `seal(kit, project, env)`: the `SEALED` variables out; the project's own MySQL login in when `project` is `Some` (D-167). Unchanged rules.
-5. `strip_agents(kit, env)`: every `agent_dirs(kit)` entry leaves `PATH`, with the variables pointing into them (`CP_ANTIGRAVITY`); `agent_dirs` = `data/apps/<pc-target>/{claude,codex,antigravity,pi}` and `data/kit/agents`.
-6. `data/kit/forward` first on `PATH`.
-7. `LEVEL_VAR` = `manual` or `project`; `PROJECT_VAR` = the project when `Some`, removed otherwise; `ATOLLO_TERMINAL` = the kit terminal's name for `KitTerminal`.
+2. If `terminal` is a user terminal: its tool choice and the left-out tools stripped (`editor::terminals::apply_tools`: `versions::swap_lines` from the kit's lines, then `editor::terminals::strip`), as today. It returns the lines the environment is on (the kit's, `versions::kit_choice`, with the terminal's on top); the default terminal changes nothing.
+3. If `project` is `Some`: `project_lines`, the project's lines (`versions::project_choice`) swapped **from the lines of step 2**, so a tool the project chose is at the project's line in any terminal opened in its folder; tools the project did not choose keep the terminal's lines (Q1, decided). A tool the terminal left out stays out: the project chooses lines, not the terminal's tools.
+4. `seal(kit, level, project, env)`: the `SEALED` variables out; the project's own MySQL login in when `project` is `Some` (D-167). Level 2 keeps none of them. Level 1 keeps only the user's SSH agent (`SSH_AGENT` = `SSH_AUTH_SOCK`), so Git over SSH in a terminal the user types in uses the keys the user loaded (**decided by the user, 26/10/2026**); an SSH client needs nothing else (`SSH_AGENT_PID` only serves `ssh-agent -k` and the kit's environment never takes it from the PC; on Windows the OpenSSH agent is a named pipe found without a variable). The real profile path, the session bus and the kit's MySQL root stay out of level 1 too: the default kit terminal, which kept them before D-179, loses them; the user terminals, which lost the SSH agent before D-179, get it back.
+5. `strip_agents(kit, env)`: every `agent_dirs(kit)` entry leaves `PATH`, with the variables pointing into them (`CP_ANTIGRAVITY`); `agent_dirs` = `data/apps/<pc-target>/{claude,codex,antigravity,pi}` and `data/kit/agents`. `forward_dir(kit)` leaves too, so that step 6 puts it once.
+6. `forward_first`: `forward_dir(kit)` first on `PATH`: `data/kit/forward` from step 5 of 12.2; until then the stand-ins of `data/kit/no-agents`.
+7. `mark`: `LEVEL_VAR` = `manual` or `project`; `PROJECT_VAR` = the project when `Some`, removed otherwise; `TERMINAL_VAR` = the kit terminal's name when `terminal` is `Some`, removed otherwise.
 
 `Vm { project, sandbox, program, .. }`:
 
-1. `guest = kit.for_target(vm::guest_target(kit.target()))`; `base_guest = KitEnv::build(&guest, settings, lang, host)`.
-2. `isolation::project_guest_tools(kit, &guest, project, base_guest)`: the guest environment at the project's lines, sealed, agents stripped (step 5 above applied to `guest`), then `guest_view`: only `PATH` entries and variables inside `data/apps/linux-…`, as the VM sees them. For `AgentBinary { agent }` the agent's own Linux folder is added back to `guest.path` (it is the program being run, not a command offered to others).
+1. `guest = kit.for_target(vm::guest_target(kit.target()))`; `base_guest = KitEnv::build(&guest, settings, lang, host)`, `settings` read with `Settings::load(kit)` (as `ipc::terminals::project_vm_tools` does today).
+2. `isolation::project_guest_tools(kit, &guest, project, base_guest)`: `pc_environment` of `guest` at level 2 (the project's lines, sealed, agents stripped: step 5 above applied to `guest`), then `guest_view`: only `PATH` entries and variables inside `data/apps/linux-…`, as the VM sees them. For `AgentBinary { agent }` the agent's own Linux folder is added back, last, to `guest.path` (it is the program being run, not a command offered to others).
 3. `-e ATOLLO_LEVEL=project|agent` added to `guest.vars`.
-4. `sbx_env = Sbx::session_env(base)`.
+4. `sbx_env = isolation::sbx_session_env(base, host)`.
 5. `guest.env_file` is set by `prepare` (database variables, D-171), never by `environment`.
 
 `Refused` → `None`.
 
-The old functions become thin calls and then disappear (12.2): `versions::project_env(kit, p, env)` = `environment(Pc{Project, Some(p)})`; `versions::choice_env` = steps 2 and 4–7 without a project; `editor::terminals::env` = `environment(Pc{Manual, …}, Some(terminal))`.
+The old functions (step 2 of 12.2): `versions::project_env(kit, p, env)` is a thin wrapper of `pc_environment(kit, env, Project, Some(p), None)` for its many callers, removed by steps 3–4; `versions::choice_env` and `editor::terminals::env` are gone: `terminal_launch` calls `pc_environment(kit, base, Manual, place_of(dir)'s project, Some(terminal))`.
 
 ### 3.6 `prepare` and `start`
 
@@ -1011,7 +1028,9 @@ Facts from the Docker page (read 26/10/2026): service secrets are global by defa
 | Symbol (file) | Fate |
 |---|---|
 | `isolation::Level` (`isolation/mod.rs`) | renamed `Availability { Vm, NoVm }` |
-| `isolation::{SEALED, seal, agent_dirs, without_agents}` | moved to `levels::env` (`strip_agents`) |
+| `isolation::{SEALED, seal, agent_dirs, without_agents}` | moved to `levels::env` (`without_agents` = `strip_agents` + `forward_first`; `seal` no longer strips the agents itself) — done in step 2 |
+| `versions::choice_env`, `editor::terminals::env` | removed in step 2: `levels::env::pc_environment` (with `versions::swap_lines`, `editor::terminals::apply_tools`) |
+| `versions::project_env` | a thin wrapper of `levels::env::pc_environment` since step 2; removed by steps 3–4 |
 | `isolation::{agents_notice, with_agents_notice}`, `setup::kit_files::{AGENTS_NOTICE_VAR, AGENTS_NOTICE_FALLBACK, NO_AGENTS_DIR, AGENT_COMMANDS, no_agent_cmd, no_agent_sh}` | removed; `FORWARD_DIR` and forwarder generators instead; `data/kit/no-agents` added to `OBSOLETE` (removed at start) |
 | `isolation::vm_for` | private in `levels::prepare` |
 | `isolation/session.rs` (all), `test/rust/isolation/session.rs` | replaced by `levels/requests.rs`, `test/rust/levels/requests.rs` |
@@ -1034,10 +1053,10 @@ Facts from the Docker page (read 26/10/2026): service secrets are global by defa
 ### 12.2 Order (each step compiles and passes `cargo test` and `npm test`)
 
 1. **Types and decide.** `levels/mod.rs`, `place.rs`, `facts.rs` (reading only), `labels.rs`; tests R1–R17 and totality. No caller changes.
-2. **Environment.** `levels/env.rs`: move `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` for `Pc` and `Vm`; `versions::{project_env, choice_env}` and `editor::terminals::env` become calls to it (behaviour unchanged except: forwarders dir instead of stand-ins, project versions in kit terminals, `ATOLLO_LEVEL`). Forwarder files written (refusing only, until step 5). Editor server environment = `environment(Pc{Manual})`.
+2. **Environment.** `levels/env.rs`: move `seal`, `SEALED`, `agent_dirs`, `strip_agents`; `environment()` for `Pc` and `Vm`; `versions::{project_env, choice_env}` and `editor::terminals::env` become calls to it (behaviour unchanged except: project versions in kit terminals (Q1), every kit terminal sealed the level-1 way, keeping only the user's SSH agent, `ATOLLO_LEVEL`/`ATOLLO_PROJECT`). The folder first on `PATH` stays the stand-ins' `data/kit/no-agents` (`forward_dir`) until step 5 makes the forwarders. The pools keep their unsealed environment without agents until step 3.
 3. **PC entry points.** E1, E3 (PC branch), E5, E6, E7, E8, E9 (PC branch), E20 through `decide` + `environment`; `PtyInfo.level/label/sandbox`; `CmdError.refusal/fix`.
 4. **Prepare and VM entry points.** `levels/prepare.rs` with `Effects`; E3, E4, E10 through it; E9 in the VM (new: scaffold in the new project's sandbox); rule test `no_process_outside_levels` on.
-5. **Requests.** `levels/requests.rs`, `runtime/launch.ps1`, `runtime/launch.sh`; editor profiles: terminals direct (E2 level 1), tasks and agents through `launch` (E11, E12); forwarders forward (6.8); remove `session.rs`, `vm.ps1`, `editor_vm_*`; editor settings: only Atollo's profiles.
+5. **Requests.** `levels/requests.rs`, `runtime/launch.ps1`, `runtime/launch.sh`; editor profiles: terminals direct (E2 level 1), tasks and agents through `launch` (E11, E12); forwarder files in `data/kit/forward` (`FORWARD_DIR`, replacing `data/kit/no-agents` in `forward_dir`), forwarding (6.8); editor server environment = `environment(Pc{Manual})` (with its profiles: until then its terminals still go through `vm.ps1` on the editor's environment); remove `session.rs`, `vm.ps1`, `editor_vm_*`; editor settings: only Atollo's profiles.
 6. **Agents disabled without the VM.** `levels::agents_enabled`, `levels::installable`, runner filter, `AgentInfo.available`, `levels-changed` and `levels::watch`, editor profile gating, UI (Tools, Agents page, buttons, palette). Remove `agent_token_link`, `codex_logout`, `runtime/agents/*`, agent entries of `env/path.rs` (E16, E17, E18).
 7. **Antigravity in the VM.** `vm::agy_session_args`, `Agent::Antigravity.runner() = ProjectVm`, `secret gemini`, UI.
 8. **Trust.** `levels/report.rs`, `project_vm_report`, `atollo vm`, the project panel, labels and banners.
@@ -1053,14 +1072,14 @@ Unit (Rust, `test/rust/levels/`):
 | `decide.rs` | `the_level_comes_from_the_origin`; `every_request_has_exactly_one_placement` (all origins × {Project, project subfolder, Folder} × {On, Off} × `restart_pending` × `guest_dir` × `linux_build` × `guest_tools`); one test per row: `r1_agents_need_the_vm`, `r2_pools_only_without_the_vm`, `r3_manual_in_a_project_is_on_the_pc`, `r4_manual_elsewhere_is_on_the_pc`, `r5_project_code_on_the_pc_without_the_vm`, `r6_project_code_outside_a_project_without_the_vm`, `r7_project_code_needs_a_project_with_the_vm`, `r8_an_agent_needs_a_project`, `r9_a_pending_restart_starts_nothing`, `r10_a_network_share_never_gets_a_sandbox`, `r11_no_linux_build_no_agent`, `r12_claude_and_codex_get_their_own_sandbox`, `r13_pi_and_antigravity_run_in_the_project_vm`, `r14_the_project_terminal_in_the_project_vm`, `r15_a_task_or_a_scaffold_in_the_project_vm`, `r16_an_action_in_the_project_vm`, `r17_a_site_in_a_container_of_the_vm`; invariants `an_agent_is_never_on_the_pc` (I3), `a_refusal_always_has_a_reason_and_a_fix` (I7); `placements_serialize_as_the_ipc_says` |
 | `facts.rs` | `the_guest_dir_is_the_projects_folder_in_the_vm`, `the_guest_tools_are_the_kits_linux_ones`, `a_linux_build_is_asked_for_project_vm_agents_only` (the pure parts; `facts()` itself asks `sbx`) |
 | `labels.rs` | `every_placement_has_the_label_of_its_level`, `the_banner_names_the_sandbox`, `a_refusal_says_why_and_what_to_do` |
-| `env.rs` | on each of `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`: `a_pc_environment_has_no_agent_folder` (I4), `the_forwarders_come_first`, `the_project_versions_win_in_a_project_folder`, `a_user_terminal_keeps_its_other_lines`, `sealed_variables_never_reach_levels_1_and_2`, `a_vm_environment_has_only_the_kits_linux_tools`, `no_kit_secret_reaches_a_vm_environment` (I5: Claude token, Gemini key, llama key, root `mysql.cnf`, `GH_TOKEN`, editor token), `pi_and_agy_get_their_own_folder_back_only_for_themselves`, `refused_has_no_environment` |
+| `env.rs` | on each of `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`: `a_pc_environment_has_no_agent_folder` (I4), `the_forwarders_come_first`, `the_project_versions_win_in_a_project_folder`, `a_user_terminal_keeps_its_other_lines`, `level_1_keeps_only_the_users_ssh_agent`, `sealed_variables_never_reach_level_2`, `a_vm_environment_has_only_the_kits_linux_tools`, `no_kit_secret_reaches_a_vm_environment` (I5: Claude token, Gemini key, llama key, root `mysql.cnf`, `GH_TOKEN`, editor token), `pi_and_agy_get_their_own_folder_back_only_for_themselves`, `refused_has_no_environment`, `the_environment_is_idempotent`, `the_old_callers_get_the_same_environment` (golden values of `project_env` and of a kit terminal); `a_project_gets_a_sealed_environment` (`seal` alone) |
 | `place.rs` | `the_project_of_a_subfolder`, `a_link_is_never_a_project`, `projects_itself_is_a_folder`, `case_rules_follow_the_file_system` |
 | `requests.rs` | `a_request_round_trips`, `a_refused_reply_carries_reason_fix_and_text`, `a_pc_reply_carries_only_the_environment_difference`, `a_request_is_taken_once`, `args_are_appended_after_the_agent`, `a_malformed_request_is_ignored_and_removed` |
 | `report.rs` | `the_check_command_of_every_catalog_tool` (the table of 8.2 from `components.json`), `versions_are_compared_by_line`, `a_tool_outside_the_mount_is_not_from_the_kit`, `java_version_on_stderr_is_read` |
 | `prepare.rs` | with a fake `Effects`: `a_project_vm_gets_tools_databases_and_ports`, `pi_gets_the_local_models_port`, `an_agent_sandbox_mirrors_the_projects`, `nothing_is_prepared_for_the_pc_but_ensure` |
 | `rule.rs` | `no_process_outside_levels` (source scan, I1), `no_agent_binary_is_started_by_the_app_on_the_pc` (no `kit_command`/`pty::command` with an `agents::exe_of` path) |
 
-Existing tests that change: `test/rust/isolation/mod.rs` (`the_pcs_shells_have_no_agent_on_any_system` moves to `levels/env.rs`), `test/rust/isolation/session.rs` (removed), `test/rust/isolation/vm.rs` (`agy_session_args`), `test/rust/ipc/agents.rs` (`antigravity_never_starts_on_a_project` replaced by `r13_…`; `no_agent_starts_without_the_vm` stays as an integration of R1), `test/rust/setup/kit_files.rs` (`a_stand_in_says_where_the_agents_run` → `a_forwarder_asks_the_app`), `test/rust/editor/cfg.rs` (`only_atollos_profiles`, `no_agent_profile_without_the_vm`, `terminals_are_level_one`, `tasks_and_agents_go_through_launch`), `test/rust/editor/terminals.rs` (project versions), `test/rust/setup/runner.rs` (`agents_are_never_planned_without_the_vm`, `agents_only_for_the_vms_linux`), `test/rust/editor/ext.rs` (`an_agent_extension_is_never_installed`).
+Existing tests that change: `test/rust/isolation/mod.rs` (`the_pcs_shells_have_no_agent_on_any_system` and `a_project_gets_a_sealed_environment` moved to `levels/env.rs` in step 2, the first merged into `a_pc_environment_has_no_agent_folder`), `test/rust/isolation/session.rs` (removed), `test/rust/isolation/vm.rs` (`agy_session_args`), `test/rust/ipc/agents.rs` (`antigravity_never_starts_on_a_project` replaced by `r13_…`; `no_agent_starts_without_the_vm` stays as an integration of R1), `test/rust/setup/kit_files.rs` (`a_stand_in_says_where_the_agents_run` → `a_forwarder_asks_the_app`), `test/rust/editor/cfg.rs` (`only_atollos_profiles`, `no_agent_profile_without_the_vm`, `terminals_are_level_one`, `tasks_and_agents_go_through_launch`), `test/rust/editor/terminals.rs` (project versions), `test/rust/setup/runner.rs` (`agents_are_never_planned_without_the_vm`, `agents_only_for_the_vms_linux`), `test/rust/editor/ext.rs` (`an_agent_extension_is_never_installed`).
 
 Integration per entry point (Rust with fakes where possible; the rest by hand on Windows 11 + sbx, and on one Linux, recorded in DECISIONS "Prove"): E1 kit terminal in and out of a project (versions, forwarders, banner); E2 editor terminal on the PC; E3 project terminal VM/PC; E4/E5 an action and a site VM/PC; E6–E8 pools refused/started; E9 scaffold in the VM (new); E10 each agent from the page, VM on/off; E11 each agent profile; E12 a task in a subfolder, VM on/off, outside a project; 6.8 `claude --version` typed in a kit terminal in a project, outside, and without VM; E14 Claude Code extension disabled; `atollo vm shop --check`.
 
@@ -1068,7 +1087,7 @@ UI (`test/ui/`): `terminal/panel.test.tsx` (label per level, sandbox name), `age
 
 ## 13. Today's code that contradicts this document
 
-1. **Kit terminals ignore the project's versions** in a project folder: `editor/terminals.rs: env` sets `ATOLLO_TERMINAL` for every kit terminal, and `profile.ps1`/`bashrc` skip the project's swaps when it is set.
+1. ~~**Kit terminals ignore the project's versions** in a project folder: `editor/terminals.rs: env` sets `ATOLLO_TERMINAL` for every kit terminal, and `profile.ps1`/`bashrc` skip the project's swaps when it is set.~~ Fixed by step 2: `terminal_launch` gives `pc_environment` the project of its folder (`place_of`); `ATOLLO_TERMINAL` now only keeps the profile from applying them twice.
 2. **Editor terminals are VM-only** (D-178, `vm.ps1` fail-closed); D-179 makes them level 1 on the PC.
 3. **Project creation always runs on the PC**: `ipc/frameworks.rs: frameworks_create` uses `seal(&kit, None, …)` and `frameworks::run_line` even with the VM on; ARCHITECTURE.md already says it runs in the VM.
 4. **The editor server, hence every extension, has the agents on `PATH`**: `env/path.rs` puts `data/kit/agents`, `claude`, `codex/bin`, `codex/codex-path`, `pi` on the kit's `PATH`, and `editor/mod.rs: Editor::start_on` starts the server with the full kit environment.

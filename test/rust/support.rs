@@ -33,15 +33,11 @@ impl Drop for TempDir {
 }
 
 /// `path` (a `PATH` of a shell or program on the PC) past the stand-ins of
-/// the agents' commands that come first (D-178, `isolation::without_agents`),
+/// the agents' commands that come first (D-178, `levels::env::forward_first`),
 /// which must be there.
 pub fn past_stand_ins(kit: &Kit, path: Option<&str>) -> String {
     let path = path.expect("a PATH");
-    let first = kit
-        .kit_files()
-        .join(crate::setup::kit_files::NO_AGENTS_DIR)
-        .display()
-        .to_string();
+    let first = crate::levels::env::forward_dir(kit).display().to_string();
     let rest = path
         .strip_prefix(&first)
         .unwrap_or_else(|| panic!("the stand-ins first: {path}"));
