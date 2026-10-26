@@ -38,6 +38,7 @@ import { Databases } from "./databases";
 import { Git, GithubInVm } from "./git";
 import { DeleteProjectDialog } from "./delete";
 import { SaveBaseDialog } from "./savebase";
+import { VmPreparing } from "../shell/jobs";
 
 export type ProjectSection = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git";
 type Section = ProjectSection;
@@ -242,6 +243,11 @@ export function ProjectPage({
       />
       <div className="px-5 empty:hidden">
         <ErrorLine error={error} fix={fix} />
+      </div>
+      {/* Its terminal, an action or an agent waiting for the project's VM:
+          the preparation's steps here, not a button that seems stuck. */}
+      <div className="px-5 pb-2 empty:hidden">
+        <VmPreparing project={p.id} />
       </div>
       <NavBar label={t("Sezioni del progetto")} items={items} active={section} onSelect={setSection} />
       <EditorBody fill={section === "run"}>

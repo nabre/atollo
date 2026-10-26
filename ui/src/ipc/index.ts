@@ -8,6 +8,7 @@ export * from "./app";
 export * from "./window";
 export * from "./editing";
 export * from "./setup";
+export * from "./jobs";
 export * from "./versions";
 export * from "./agents";
 export * from "./services";

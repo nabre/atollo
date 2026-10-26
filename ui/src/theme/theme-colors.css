@@ -110,6 +110,13 @@
   --vsc-info: var(--vscode-editorInfo-foreground);
   --vsc-success: var(--vscode-gitDecoration-untrackedResourceForeground);
   --vsc-orange: var(--vscode-charts-orange);
+  /* The status bar's VM pill (LEVELS.md §8.6): ready, preparing, fixable,
+     not possible on this PC, failed; its text in the editor's background. */
+  --vsc-pill-ready: var(--vscode-gitDecoration-untrackedResourceForeground);
+  --vsc-pill-busy: var(--vscode-editorInfo-foreground);
+  --vsc-pill-fixable: var(--vscode-charts-orange);
+  --vsc-pill-off: var(--vscode-descriptionForeground);
+  --vsc-pill-error: var(--vscode-list-errorForeground);
   --vsc-scrollbar: var(--vscode-scrollbarSlider-background);
   --vsc-scrollbar-hover: var(--vscode-scrollbarSlider-hoverBackground);
   --vsc-scrollbar-active: var(--vscode-scrollbarSlider-activeBackground);
@@ -223,6 +230,11 @@
   --color-vsc-info: var(--vsc-info);
   --color-vsc-success: var(--vsc-success);
   --color-vsc-orange: var(--vsc-orange);
+  --color-vsc-pill-ready: var(--vsc-pill-ready);
+  --color-vsc-pill-busy: var(--vsc-pill-busy);
+  --color-vsc-pill-fixable: var(--vsc-pill-fixable);
+  --color-vsc-pill-off: var(--vsc-pill-off);
+  --color-vsc-pill-error: var(--vsc-pill-error);
   --color-vsc-scrollbar: var(--vsc-scrollbar);
   --color-vsc-scrollbar-hover: var(--vsc-scrollbar-hover);
   --color-vsc-scrollbar-active: var(--vsc-scrollbar-active);
