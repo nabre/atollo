@@ -270,9 +270,10 @@ impl Editor {
         let env = self.env();
         let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
         match cfg::write(&self.kit, &system_root)? {
-            cfg::Outcome::LeftAlone(why) => {
-                crate::common::log::warn(&format!("editor settings left alone: {why}"))
-            }
+            cfg::Outcome::Replaced(aside) => crate::common::log::warn(&format!(
+                "editor settings were no JSON: moved to {}, written anew",
+                aside.display()
+            )),
             other => crate::common::log::info(&format!("editor settings: {other:?}")),
         }
         if self.stopped(stops) {
@@ -321,10 +322,17 @@ impl Editor {
         log_path: &Path,
     ) -> Result<Server> {
         let dir = server_dir(&self.kit);
-        let mut cmd = jobs::kit_command(
-            crate::router::bins::editor_node(&self.kit, &dir),
-            &self.env(),
+        // The server and its extension host as level 1 (D-179, LEVELS.md
+        // §6.2, §13 item 4): no agent's folder on its PATH, the forwarders
+        // first, sealed as a terminal of the user; its terminals inherit it.
+        let env = crate::levels::env::pc_environment(
+            &self.kit,
+            self.env(),
+            crate::levels::Level::Manual,
+            None,
+            None,
         );
+        let mut cmd = jobs::kit_command(crate::router::bins::editor_node(&self.kit, &dir), &env);
         cmd.arg(crate::router::bins::editor_server_main(&dir))
             .args(["--host", "127.0.0.1", "--port", &port.to_string()])
             .arg("--connection-token-file")

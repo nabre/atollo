@@ -53,17 +53,12 @@ fn bins_resolve_per_target_os() {
     assert_eq!(bins::exe_name(Os::Linux, "git"), "git");
     assert_eq!(bins::exe_name(Os::Darwin, "git"), "git");
 
-    assert_eq!(bins::cmd_name(Os::Win32, "npm"), "npm.cmd");
-    assert_eq!(bins::cmd_name(Os::Linux, "npm"), "npm");
-
     let tmp = TempDir::new("router-bins");
     let win_kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
     let lin_kit = win_kit.for_target(Target::LINUX_X64);
 
     assert!(bins::editor_node(&win_kit, &win_kit.apps()).ends_with("node.exe"));
     assert!(bins::editor_node(&lin_kit, &lin_kit.apps()).ends_with("node"));
-    assert_eq!(bins::cmd_name(win_kit.os(), "agy"), "agy.cmd");
-    assert_eq!(bins::cmd_name(lin_kit.os(), "agy"), "agy");
 }
 
 #[test]

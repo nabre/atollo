@@ -169,7 +169,9 @@ fn e3_the_project_terminal_asks_decide() {
     let vm = ready.vm.as_ref().expect("in the VM");
     assert_eq!(vm.name, crate::isolation::vm::name("shop"));
     assert!(fx.calls().iter().any(|c| c.starts_with("start_sandbox")));
-    let args = crate::levels::start::vm_session_args(&kit, &ready).unwrap();
+    let args = crate::levels::start::vm_session_args(&kit, &ready, &[]).unwrap();
+    // A shell takes no words after it: only an agent's command does.
+    assert!(crate::levels::start::vm_session_args(&kit, &ready, &["x".into()]).is_err());
     assert_eq!(
         args,
         crate::isolation::vm::kit_terminal_args(

@@ -112,52 +112,6 @@ pub(crate) fn refused_on_project(agent: &str, lang: &str) -> Option<String> {
     })
 }
 
-/// The agents' sandboxes the editor's profiles ask for (`vm.ps1`,
-/// `isolation::session::take_requests`), made ready one by one while the
-/// app runs (E11): decided as the editor's profile of the agent
-/// (`Origin::EditorAgentProfile`), made ready by `levels::prepare`, their
-/// session's arguments noted for the profile. Replaced by
-/// `levels::requests::serve` in step 5 of LEVELS.md §12.2.
-pub(crate) fn watch_agent_requests<R: Runtime>(app: AppHandle<R>) {
-    use crate::isolation::session;
-    use tauri::Manager;
-    std::thread::spawn(move || loop {
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        let state = app.state::<AppState>();
-        for (project, agent) in session::take_requests(&state.kit) {
-            let (kit, host, kit_env, lang) = (
-                state.kit.clone(),
-                state.host.clone(),
-                state.env(),
-                state.lang(),
-            );
-            let fx = super::levels::AppEffects::of(&app, &state, kit_env.clone());
-            std::thread::spawn(move || {
-                let args = (|| -> CmdResult<Vec<String>> {
-                    if let Some(why) = refused_on_project(&agent, lang) {
-                        return Err(why.into());
-                    }
-                    let dir = project_dir(&kit, Some(&project), lang)?;
-                    let mut req = agent_request(&kit, &agent, &dir)?;
-                    if let crate::levels::Origin::AgentButton { agent } = req.origin {
-                        req.origin = crate::levels::Origin::EditorAgentProfile { agent };
-                    }
-                    let ready =
-                        super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)?;
-                    crate::levels::start::vm_session_args(&kit, &ready).or_fail_chain("vm")
-                })();
-                let noted = match args {
-                    Ok(args) => session::write_agent(&kit, &project, &agent, &args),
-                    Err(why) => session::agent_failed(&kit, &project, &agent, &why.to_string()),
-                };
-                if let Err(e) = noted {
-                    crate::common::log::warn(&format!("editor session {project} {agent}: {e:#}"));
-                }
-            });
-        }
-    });
-}
-
 /// The ready MCP servers (N-7, D-156), the kit's and the projects'.
 #[tauri::command]
 pub fn mcp_presets<R: Runtime>(

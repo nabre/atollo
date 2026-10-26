@@ -261,14 +261,18 @@ fn a_pc_environment_has_no_agent_folder() {
     }
 }
 
-/// The folder of the agents' commands (the stand-ins until step 5 of
-/// §12.2, then the forwarders) first on every PC `PATH`, once.
+/// The forwarders of the agents' commands (`data/kit/forward`, §6.8) first
+/// on every PC `PATH`, once.
 #[test]
 fn the_forwarders_come_first() {
     for target in TARGETS {
         let (_tmp, kit) = kit_of(target, "forward");
         let base = base_of(&kit);
         let first = forward_dir(&kit).display().to_string();
+        assert!(
+            first.replace('\\', "/").ends_with("data/kit/forward"),
+            "{first}"
+        );
         for (p, t) in shapes(&kit) {
             if let Placement::Pc { .. } = p {
                 let what = format!("{} {p:?}", target.as_str());

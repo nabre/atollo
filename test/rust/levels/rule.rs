@@ -41,10 +41,6 @@ const GATES_ALLOWED: &[(&str, &str)] = &[
     ("projects/frameworks/runner.rs", "defines line_command"),
     ("ipc/isolation.rs", "isolation_run: the kit's sbx (§5.2)"),
     (
-        "isolation/session.rs",
-        "the editor's sessions (E11, E12): replaced by levels::requests in step 5",
-    ),
-    (
         "agents/claude_token.rs",
         "claude setup-token (E16): removed by step 6",
     ),
@@ -164,15 +160,23 @@ fn no_process_outside_levels() {
         spawns.join("\n")
     );
     // The entry points of step 4 do reach the gates through `levels::start`.
-    let start =
-        std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/levels/start.rs"))
-            .unwrap();
+    let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let start = std::fs::read_to_string(src.join("levels/start.rs")).unwrap();
     for gate in [
         "open_launch_then(",
         ".start_in(",
         "line_command(",
         "scaffold_args(",
+        "exec_args(",
     ] {
         assert!(start.contains(gate), "{gate}");
     }
+    // Step 5: the editor's sessions and the forwarders are answered by
+    // `levels::requests` (decide → prepare → start), and nothing is left of
+    // the editor's own way to the VM.
+    let requests = std::fs::read_to_string(src.join("levels/requests.rs")).unwrap();
+    for step in ["decide(", "environment(", "prepare(", "vm_session_args("] {
+        assert!(requests.contains(step), "{step}");
+    }
+    assert!(!src.join("isolation/session.rs").exists());
 }

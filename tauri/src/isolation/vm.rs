@@ -255,19 +255,23 @@ pub fn starts_in_vm(agent: &str) -> bool {
 /// VM's path of the kit's, mounted read-only) started in `dir` (the VM's
 /// path) like a command of the project's terminal, with `tools`
 /// ([`tools_options`]): the project's tools first on the `PATH`, its
-/// database's variables.
+/// database's variables; `extra`: what the user typed after `pi` (a
+/// forwarder, LEVELS.md §6.8), passed to Pi as they are.
 pub fn pi_session_args(
     vm: &str,
     dir: &str,
     pi: &str,
     tools: &crate::isolation::GuestTools,
+    extra: &[String],
 ) -> Vec<String> {
     let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
     args.extend(tools_options(tools));
     args.push(vm.into());
     args.push("sh".into());
     args.push("-c".into());
-    args.push(format!("{TOOLS_FIRST}; exec {}", shell_quote_posix(pi)));
+    args.push(format!(r#"{TOOLS_FIRST}; exec "$0" "$@""#));
+    args.push(pi.into());
+    args.extend(extra.iter().cloned());
     args
 }
 

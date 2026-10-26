@@ -2349,11 +2349,6 @@
     "fr": "Atollo revérifie de lui-même chaque minute : quand la VM est prête, réessayez.",
     "de": "Atollo prüft jede Minute von selbst erneut: Wenn die VM bereit ist, versuche es noch einmal."
   },
-  "Atollo: in questo terminale non ci sono gli agenti (Claude Code, Codex, Antigravity, Pi). Gli agenti girano solo nella VM: avviali dalla pagina del progetto o dall'editor.": {
-    "en": "Atollo: the agents (Claude Code, Codex, Antigravity, Pi) are not in this terminal. Agents run only in the VM: start them from the project's page or from the editor.",
-    "fr": "Atollo : les agents (Claude Code, Codex, Antigravity, Pi) ne sont pas dans ce terminal. Les agents tournent seulement dans la VM : lancez-les depuis la page du projet ou depuis l'éditeur.",
-    "de": "Atollo: Die Agenten (Claude Code, Codex, Antigravity, Pi) sind nicht in diesem Terminal. Agenten laufen nur in der VM: Starte sie von der Seite des Projekts oder aus dem Editor."
-  },
   "Docker Sandboxes (sbx) non è nel kit: installalo con «Installa nel kit» nell'avviso «Senza VM» di Atollo.": {
     "en": "Docker Sandboxes (sbx) is not in the kit: install it with «Install in the kit» in Atollo's «No VM» notice.",
     "fr": "Docker Sandboxes (sbx) n'est pas dans le kit : installez-le avec « Installer dans le kit » dans l'avis « Sans VM » d'Atollo.",
@@ -2409,10 +2404,10 @@
     "fr": "{0} : Docker Sandboxes ne prend en charge qu'Ubuntu 24.04 ou ultérieur (pas ses dérivées).",
     "de": "{0}: Docker Sandboxes unterstützt nur Ubuntu 24.04 oder neuer (keine Ableger)."
   },
-  "Senza VM: i terminali, i task e gli agenti dell'editor partono solo nella VM del progetto, e sul PC non si apre nulla.": {
-    "en": "No VM: the editor's terminals, tasks and agents start only in the project's VM, and nothing opens on the PC.",
-    "fr": "Sans VM : les terminaux, les tâches et les agents de l'éditeur ne démarrent que dans la VM du projet, et rien ne s'ouvre sur le PC.",
-    "de": "Ohne VM: Die Terminals, Tasks und Agenten des Editors starten nur in der VM des Projekts, und auf dem PC öffnet sich nichts."
+  "Senza il PowerShell del kit i task dell'editor non partono: installalo da Strumenti.": {
+    "en": "Without the kit's PowerShell the editor's tasks do not start: install it from Tools.",
+    "fr": "Sans le PowerShell du kit, les tâches de l'éditeur ne démarrent pas : installez-le depuis Outils.",
+    "de": "Ohne die PowerShell des Kits starten die Tasks des Editors nicht: Installiere sie unter Werkzeuge."
   },
   "PC": {
     "en": "PC",
