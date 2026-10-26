@@ -19,6 +19,9 @@ mod install;
 mod ipc;
 mod isolation;
 mod kit;
+// No caller yet: the entry points go through it from step 3 (LEVELS.md §12.2).
+#[allow(dead_code)]
+mod levels;
 mod llm;
 mod net;
 mod os;

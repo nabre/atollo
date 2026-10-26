@@ -4,7 +4,7 @@ English · [Italiano](LEVELS.it.md)
 
 Normative document of decision D-179 (DECISIONS.md, 26/10/2026). It is the single source of truth for: which program runs where, with which `PATH`, with which agents, with which network and mounts; the code that decides it; the IPC that carries it; and how the user can check it. Code, tests, the Guide and ARCHITECTURE.md follow this file; where they differ, this file wins and the difference is a bug.
 
-Status: **design, phase 1**. Nothing here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
+Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
 
 Contents:
 
@@ -74,7 +74,7 @@ Invariants that follow from the table (normative; each has a test, section 12.3)
 - **I5** A `Vm` placement never carries a kit secret: not in arguments, not in `-e`, not in `--env-file` (section 11 defines "kit secret").
 - **I6** Without the VM, nothing of level 3 can be installed, updated, launched or configured in the editor; the kit's agent data stays on disk untouched.
 - **I7** A refusal always carries a reason and a fix (`Refusal`, `Fix`); nothing silently falls back from the VM to the PC.
-- **I8** `decide()` is pure and total: same inputs, same output; every input combination has exactly one row of 3.4.
+- **I8** `decide()` is pure and total: same inputs, same output; every input combination has a row of 3.4, and the first row that matches gives its one placement.
 
 ## 3. The code model: `tauri/src/levels/`
 
@@ -82,7 +82,7 @@ Invariants that follow from the table (normative; each has a test, section 12.3)
 
 | File | Content | Comes from |
 |---|---|---|
-| `levels/mod.rs` | `Level`, `Agent`, `AgentRunner`, `Origin`, `Place`, `Request`, `VmState`, `Facts`, `Placement`, `Sandbox`, `VmProgram`, `HostAccess`, `Refusal`, `Fix`; `decide()` | new |
+| `levels/mod.rs` | `Level`, `Agent`, `AgentRunner`, `Origin`, `Place`, `Request`, `VmState`, `Facts`, `Placement`, `Sandbox`, `Mounts`, `VmProgram`, `HostAccess`, `Refusal`, `Fix`, `Rule`; `decide()`, `decided()` | new |
 | `levels/place.rs` | `place_of(kit, dir) -> Place` (which project a folder belongs to) | the logic of `runtime/vm.ps1` (`$projects`, `$below`) and `ipc::project_dir` |
 | `levels/facts.rs` | `facts(kit, host, env, request) -> Facts` (the only impure read before `decide`) | `isolation::status`, `vm::guest_path`, `isolation::restart_pending`, catalog availability |
 | `levels/env.rs` | `environment()`, `SEALED`, `seal()`, `agent_dirs()`, `strip_agents()`, `FORWARD_DIR`, `LEVEL_VAR` | `isolation::{SEALED, seal, agent_dirs, without_agents, agents_notice, with_agents_notice}`, `versions::{project_env, choice_env}` (their sealing part), `editor::terminals::env` (its agent part) |
@@ -90,7 +90,7 @@ Invariants that follow from the table (normative; each has a test, section 12.3)
 | `levels/start.rs` | `start_terminal()`, `action_command()`, `scaffold_command()`: from `Ready` to a pty `Launch` or a `Command` | the tails of `terminal_launch`, `terminal_open`, `agent_launch`, `Runner::start_in`, `frameworks::run_line` |
 | `levels/requests.rs` | the file protocol for processes outside the app (editor, forwarders) | replaces `isolation/session.rs` |
 | `levels/report.rs` | `VmReport`, `ToolCheck`, `report()`, `check_tools()` | new |
-| `levels/labels.rs` | `label(level, placement)` texts, `banner_line()` | new |
+| `levels/labels.rs` | `LevelLabel`, `label_of(placement)`, `label(placement, lang)` texts, `banner_line(placement, lang)`, `refusal_text(reason, lang)` | new; the refusal texts of `ipc::agents::no_vm_for_agents` and `ipc::servers::refused_with_vm` |
 
 `isolation/` keeps what is about `sbx` itself: `status`, `Blocker`, `Sbx`, `Vm` (sandbox lifecycle, mounts, ports, publish, stop), `vm.rs` (argument builders), `daemon.rs`, `kit.rs`, `secrets.rs`. It no longer decides who goes where.
 
@@ -124,6 +124,8 @@ impl Agent {
     pub const ALL: [Agent; 4] = [Agent::Claude, Agent::Codex, Agent::Pi, Agent::Antigravity];
     /// The catalog id: "claude", "codex", "pi", "antigravity".
     pub fn id(self) -> &'static str;
+    /// The name the user reads: "Claude Code", "Codex", "Pi", "Antigravity".
+    pub fn name(self) -> &'static str;
     /// The commands a user types for it: ["claude"], ["codex"], ["pi"], ["agy", "antigravity"].
     pub fn commands(self) -> &'static [&'static str];
     /// Where it runs in the VM.
@@ -180,6 +182,12 @@ pub enum Place {
     Folder { dir: PathBuf },
 }
 
+impl Place {
+    /// The folder resolved: the project's folder with `below`, or the folder.
+    pub fn dir(&self) -> PathBuf;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
     pub origin: Origin,
     pub place: Place,
@@ -196,14 +204,20 @@ pub enum VmState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Facts {
     pub vm: VmState,
-    /// The place's folder as the VM sees it (`vm::guest_path`); `None` for a
-    /// path the VM cannot mount (a network share).
+    /// The place's folder as the VM sees it (`vm::guest_path`): for a project
+    /// its own folder, without `below`; `None` for a path the VM cannot mount
+    /// (a network share).
     pub guest_dir: Option<String>,
     /// `isolation::restart_pending`: the kit daemon must restart before any VM opens.
     pub restart_pending: bool,
     /// For `AgentRunner::ProjectVm` agents: the catalog has a build for the VM's
     /// Linux target (`Component::is_available_on(guest)`), installed or installable.
+    /// `false` for every other origin (not read then).
     pub linux_build: bool,
+    /// The kit's tools for the VM's Linux (`kit.for_target(guest).apps()`),
+    /// mounted read-only; empty where the PC has no VM. In `Facts` because
+    /// `decide` has no `Kit`.
+    pub guest_tools: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -260,7 +274,8 @@ pub struct HostAccess {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum VmProgram {
     Shell,                                   // interactive `bash -l`
-    Line { command: String },                // editor task, scaffold step: `sh -lc`
+    Line { command: String },                // editor task: `sh -lc`
+    Scaffold { base: String },               // the base's steps, each `sh -lc` (`start::scaffold_command`)
     Action { action: String },               // `sh -lc`, tracked (vm::tracked)
     Site { action: String },                 // a container of the VM's Docker (vm::web_line)
     SbxAgent { agent: Agent },               // `sbx run --name <atollo-a-…>`
@@ -286,6 +301,14 @@ pub enum Refusal {
     DaemonRestartPending,
 }
 
+impl Refusal {
+    /// The one fix of each reason (I7): AgentsNeedVm → OpenVmNotice;
+    /// AgentOutsideProject, NotAProject → OpenFromProject; NoPathInVm →
+    /// UseLocalDisk; PoolsOnlyWithoutVm → StartFromProject; NoLinuxBuild →
+    /// None; DaemonRestartPending → RestartDaemon.
+    pub fn fix(&self) -> Fix;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Fix {
@@ -309,7 +332,12 @@ pub enum Fix {
 ```rust
 // levels/place.rs
 /// The project `dir` belongs to: the first folder under `kit.projects()`,
-/// read without following links (`safe_path::is_dir`); `Folder` otherwise.
+/// read without following links (`safe_path::is_dir`, and no link from
+/// `projects/` down to `dir`: a folder reached through a link is no
+/// project's); `Folder` otherwise. `dir` is read as text (`\\?\` dropped,
+/// `.`/`..` resolved); names are compared as the PC's file system does,
+/// without regard to case on Windows and macOS, the project's name being
+/// the one on disk.
 pub fn place_of(kit: &Kit, dir: &Path) -> Place;
 
 // levels/facts.rs
@@ -319,6 +347,8 @@ pub fn place_of(kit: &Kit, dir: &Path) -> Place;
 pub fn facts(kit: &Kit, host: &Host, env: &KitEnv, req: &Request) -> Facts;
 ```
 
+A scaffold's caller creates the new project's folder (empty) before `place_of`, so that the scaffold has a `Place::Project` and its sandbox (R15).
+
 The status used is the one at the moment of the request: no level is cached in files any more (today's `.level` of `isolation::session`, written when the editor opened, goes away).
 
 ### 3.4 `decide`: the decision table
@@ -326,6 +356,9 @@ The status used is the one at the moment of the request: no level is cached in f
 ```rust
 /// The one decision (D-179): pure, total, no I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement;
+/// `decide` with the row (`Rule::R1` … `Rule::R17`) that gave the placement:
+/// for the tests and the log.
+pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 ```
 
 `Origin::level()`:
@@ -354,11 +387,11 @@ Rules, evaluated top to bottom; the first that matches gives the placement. "Pro
 | R12 | 3 | agent with `runner() == SbxAgent` | Project | On | — | `Vm { Agent, sandbox: Agent{agent_name(project, id)}, program: SbxAgent, host: {databases: true, local_models: false}, publish: false }` |
 | R13 | 3 | agent with `runner() == ProjectVm` | Project | On | — | `Vm { Agent, sandbox: Project{name(project)}, program: AgentBinary, host: {databases: true, local_models: agent == Pi}, publish: false }` |
 | R14 | 2 | `ProjectTerminal` | Project | On | — | `Vm { Project, Project sandbox, Shell, publish: false }` |
-| R15 | 2 | `EditorTask { command }`, `Scaffold` | Project | On | — | `Vm { Project, Project sandbox, Line { command }, publish: false }` |
+| R15 | 2 | `EditorTask { command }`, `Scaffold { base }` | Project | On | — | `Vm { Project, Project sandbox, Line { command }` (task) or `Scaffold { base }` (scaffold)`, publish: false }` |
 | R16 | 2 | `Action { action, web }` | Project | On | — | `Vm { Project, Project sandbox, Action, publish: web }` |
 | R17 | 2 | `Site { action }` | Project | On | — | `Vm { Project, Project sandbox, Site, publish: true }` |
 
-Totality: level 1 is covered by R3/R4 for every place and VM state; level 2 by R2, R5–R7, R9, R10, R14–R17 (every level-2 origin appears in R14–R17 except `Pool`, which is refused by R2 when On and placed by R5/R6 when Off); level 3 by R1, R8–R13. In every `Vm` placement `mounts` is `{ workspace_rw: project dir, tools_ro: [kit.for_target(guest).apps()] }` and `workdir` is `guest_dir` joined with `below`. The test `every_request_has_exactly_one_placement` enumerates all origins × both places × both VM states × every fact combination and checks that exactly one rule matches (12.3).
+Totality: level 1 is covered by R3/R4 for every place and VM state; level 2 by R2, R5–R7, R9, R10, R14–R17 (every level-2 origin appears in R14–R17 except `Pool`, which is refused by R2 when On and placed by R5/R6 when Off); level 3 by R1, R8–R13. In every `Vm` placement `mounts` is `{ workspace_rw: project dir, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`), `workdir` is `guest_dir` joined with `below`, and level 2 (R14–R17) has `host: { databases: true, local_models: false }`. A `Pc` placement's `dir` is the place's folder (`Place::dir`: the project's folder joined with `below`, or the folder). A refusal's `fix` is always `reason.fix()`. Rows can overlap (R2 and R7 for a pool outside a project, R9 and R10): the first wins. The test `every_request_has_exactly_one_placement` enumerates all origins × {project, project subfolder, folder} × every fact combination (VM on, off with and without blockers, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) and checks that a row matches, that the first row matching (the table written row by row in the test) is the one `decided` reports, and the invariants (12.3).
 
 Note on `Forwarded { from }`: `from` is kept for the log and the label only; it never changes the row. A forwarder only exists on the PC (level 1, or level 2 without the VM); level-2 sessions in the VM have no forwarders, so an agent cannot be started from inside a project VM (section 6.8).
 
@@ -1017,7 +1050,9 @@ Unit (Rust, `test/rust/levels/`):
 
 | File | Tests |
 |---|---|
-| `decide.rs` | `the_level_comes_from_the_origin`; `every_request_has_exactly_one_placement` (all origins × {Project, Folder} × {On, Off} × `restart_pending` × `guest_dir` × `linux_build`); one test per row: `r1_agents_need_the_vm`, `r2_pools_only_without_the_vm`, `r3_r4_manual_is_always_on_the_pc`, `r5_r6_project_code_on_the_pc_without_the_vm`, `r7_project_code_needs_a_project_with_the_vm`, `r8_an_agent_needs_a_project`, `r9_a_pending_restart_starts_nothing`, `r10_a_network_share_never_gets_a_sandbox`, `r11_no_linux_build_no_agent`, `r12_claude_and_codex_get_their_own_sandbox`, `r13_pi_and_antigravity_run_in_the_project_vm`, `r14_r17_project_code_in_the_project_vm`; invariants `an_agent_is_never_on_the_pc` (I3), `a_refusal_always_has_a_reason_and_a_fix` (I7) |
+| `decide.rs` | `the_level_comes_from_the_origin`; `every_request_has_exactly_one_placement` (all origins × {Project, project subfolder, Folder} × {On, Off} × `restart_pending` × `guest_dir` × `linux_build` × `guest_tools`); one test per row: `r1_agents_need_the_vm`, `r2_pools_only_without_the_vm`, `r3_manual_in_a_project_is_on_the_pc`, `r4_manual_elsewhere_is_on_the_pc`, `r5_project_code_on_the_pc_without_the_vm`, `r6_project_code_outside_a_project_without_the_vm`, `r7_project_code_needs_a_project_with_the_vm`, `r8_an_agent_needs_a_project`, `r9_a_pending_restart_starts_nothing`, `r10_a_network_share_never_gets_a_sandbox`, `r11_no_linux_build_no_agent`, `r12_claude_and_codex_get_their_own_sandbox`, `r13_pi_and_antigravity_run_in_the_project_vm`, `r14_the_project_terminal_in_the_project_vm`, `r15_a_task_or_a_scaffold_in_the_project_vm`, `r16_an_action_in_the_project_vm`, `r17_a_site_in_a_container_of_the_vm`; invariants `an_agent_is_never_on_the_pc` (I3), `a_refusal_always_has_a_reason_and_a_fix` (I7); `placements_serialize_as_the_ipc_says` |
+| `facts.rs` | `the_guest_dir_is_the_projects_folder_in_the_vm`, `the_guest_tools_are_the_kits_linux_ones`, `a_linux_build_is_asked_for_project_vm_agents_only` (the pure parts; `facts()` itself asks `sbx`) |
+| `labels.rs` | `every_placement_has_the_label_of_its_level`, `the_banner_names_the_sandbox`, `a_refusal_says_why_and_what_to_do` |
 | `env.rs` | on each of `win32-x64`, `darwin-arm64`, `linux-x64`, `linux-arm64`: `a_pc_environment_has_no_agent_folder` (I4), `the_forwarders_come_first`, `the_project_versions_win_in_a_project_folder`, `a_user_terminal_keeps_its_other_lines`, `sealed_variables_never_reach_levels_1_and_2`, `a_vm_environment_has_only_the_kits_linux_tools`, `no_kit_secret_reaches_a_vm_environment` (I5: Claude token, Gemini key, llama key, root `mysql.cnf`, `GH_TOKEN`, editor token), `pi_and_agy_get_their_own_folder_back_only_for_themselves`, `refused_has_no_environment` |
 | `place.rs` | `the_project_of_a_subfolder`, `a_link_is_never_a_project`, `projects_itself_is_a_folder`, `case_rules_follow_the_file_system` |
 | `requests.rs` | `a_request_round_trips`, `a_refused_reply_carries_reason_fix_and_text`, `a_pc_reply_carries_only_the_environment_difference`, `a_request_is_taken_once`, `args_are_appended_after_the_agent`, `a_malformed_request_is_ignored_and_removed` |
