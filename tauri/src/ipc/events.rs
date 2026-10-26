@@ -23,6 +23,9 @@ pub const CLOSE_REQUESTED: &str = "close-requested";
 pub const LLM_PULL: &str = "llm-pull";
 /// The preparation task (`Snapshot`).
 pub const SETUP: &str = "setup";
+/// A job changed: an install, an update, a VM's preparation
+/// (`common::jobs::Job`, LEVELS.md §8.6).
+pub const JOB: &str = "job";
 /// A terminal session opened: the payload is its `PtyInfo`.
 pub const PTY_OPENED: &str = "pty-opened";
 /// The program of a terminal session ended: the payload is its `PtyInfo`.
@@ -47,6 +50,7 @@ pub const ALL: &[&str] = &[
     CLOSE_REQUESTED,
     LLM_PULL,
     SETUP,
+    JOB,
     PTY_OPENED,
     PTY_EXIT,
     PTY_MOVED,

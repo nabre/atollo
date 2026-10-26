@@ -345,6 +345,8 @@ macro_rules! command_handler {
             $crate::ipc::setup::setup_state,
             $crate::ipc::setup::setup_start,
             $crate::ipc::setup::setup_cancel,
+            $crate::ipc::setup::jobs_list,
+            $crate::ipc::setup::job_cancel,
             $crate::ipc::setup::downloads_add,
             $crate::ipc::setup::downloads_pick,
             $crate::ipc::setup::setup_by_hand_open,

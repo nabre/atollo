@@ -495,3 +495,91 @@ fn e10_an_agent_is_prepared_in_its_sandbox() {
         );
     }
 }
+
+/// LEVELS.md §8.6: the app makes a VM's preparation a job: titled with the
+/// project (and the agent), its steps, the image's download said in the
+/// step that starts the sandbox, a tool's download followed, its end.
+#[test]
+fn a_vms_preparation_is_a_job() {
+    use crate::common::jobs::{JobKind, JobState, Jobs};
+    use crate::levels::prepare::PrepareProgress;
+    let jobs = Jobs::new();
+    let vm = VmJob::default();
+    vm.tell(
+        &jobs,
+        PrepareProgress::Begin {
+            project: "shop".into(),
+            sandbox: "atollo-p-shop".into(),
+            agent: None,
+            total: 3,
+        },
+        "it",
+    );
+    let job = jobs.list().pop().unwrap();
+    assert_eq!(job.kind, JobKind::VmPrepare);
+    assert_eq!(job.title, "Preparazione VM · shop");
+    assert_eq!(job.project.as_deref(), Some("shop"));
+    vm.tell(
+        &jobs,
+        PrepareProgress::Step {
+            index: 1,
+            total: 3,
+            label: "Strumenti per il Linux della VM".into(),
+        },
+        "it",
+    );
+    let mut snapshot = crate::setup::task::Snapshot::default();
+    snapshot.steps.push(crate::setup::task::Step {
+        id: "node".into(),
+        name: "Node.js".into(),
+        done: Some(7),
+        size: Some(10),
+        ..Default::default()
+    });
+    vm.follow(&jobs, &snapshot);
+    let now = jobs.get(&job.id).unwrap();
+    assert_eq!(now.note.as_deref(), Some("Node.js"));
+    assert_eq!(now.bytes.map(|b| (b.done, b.total)), Some((7, Some(10))));
+    vm.tell(
+        &jobs,
+        PrepareProgress::Step {
+            index: 3,
+            total: 3,
+            label: "Avvio la VM".into(),
+        },
+        "it",
+    );
+    vm.relabel(&jobs, "Scarico l'immagine della VM…".into());
+    let now = jobs.get(&job.id).unwrap();
+    let step = now.step.unwrap();
+    assert_eq!(
+        (step.index, step.label.as_str()),
+        (3, "Scarico l'immagine della VM…")
+    );
+    assert_eq!(now.steps.len(), 2, "the same step, said again");
+    vm.tell(&jobs, PrepareProgress::Done, "it");
+    assert_eq!(jobs.get(&job.id).unwrap().state, JobState::Done);
+
+    vm.tell(
+        &jobs,
+        PrepareProgress::Begin {
+            project: "shop".into(),
+            sandbox: "atollo-a-claude-shop".into(),
+            agent: Some(crate::levels::Agent::Claude),
+            total: 3,
+        },
+        "it",
+    );
+    let agent = jobs.list().pop().unwrap();
+    assert_eq!(agent.title, "Preparazione VM · shop · claude");
+    vm.tell(
+        &jobs,
+        PrepareProgress::Failed {
+            error: "sbx: no".into(),
+        },
+        "it",
+    );
+    let agent = jobs.get(&agent.id).unwrap();
+    assert_eq!(agent.state, JobState::Error);
+    assert_eq!(agent.error.as_deref(), Some("sbx: no"));
+}

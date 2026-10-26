@@ -72,15 +72,22 @@ pub fn components_sync<R: Runtime>(
     Ok(off)
 }
 
+/// The catalog as the Tools page shows it; with `ids`, only those (a row
+/// whose install just ended, read again without the whole list).
 #[tauri::command]
 pub fn components_list<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     target: Option<String>,
+    ids: Option<Vec<String>>,
 ) -> CmdResult<Vec<ComponentInfo>> {
     ensure_main(&webview)?;
     let kit = kit_for(&state.kit, target.as_deref())?;
-    Ok(component_infos(&kit, state.lang()))
+    let mut infos = component_infos(&kit, state.lang());
+    if let Some(ids) = ids {
+        infos.retain(|c| ids.contains(&c.id));
+    }
+    Ok(infos)
 }
 
 /// Verifies every installed or bootstrap-staged component on `target` (live
@@ -333,7 +340,8 @@ pub fn setup_state<R: Runtime>(
 }
 
 /// Installs the components chosen (or only `only`); `update_all` also
-/// updates what is installed. Returns at once; progress comes as `setup`.
+/// updates what is installed. Returns at once; progress comes as `setup`
+/// and `job`. While another run runs it waits in the queue.
 #[tauri::command]
 pub fn setup_start<R: Runtime>(
     app: AppHandle<R>,
@@ -355,7 +363,8 @@ pub fn setup_start<R: Runtime>(
         update_all,
         ..Options::default()
     };
-    Ok(state.setup.start(opts, false, setup_notify(app))?)
+    state.setup.start(opts, false, setup_notify(app))?;
+    Ok(())
 }
 
 /// The components with a new version (N-9), from the versions asked last;
@@ -458,7 +467,8 @@ pub fn components_repair<R: Runtime>(
         only,
         ..Options::default()
     };
-    Ok(state.setup.start(opts, false, setup_notify(app))?)
+    state.setup.start(opts, false, setup_notify(app))?;
+    Ok(())
 }
 
 /// Installs `id` now, at its latest version, from the table of the Tools
@@ -493,9 +503,6 @@ pub fn components_apply<R: Runtime>(
     if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
         return Err(format!("unknown component: {bad}").into());
     }
-    if state.setup.snapshot().running {
-        return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
-    }
     {
         let _one = crate::setup::catalog::choice_lock();
         let text = choice_text(&kit, &chosen);
@@ -518,7 +525,8 @@ pub fn components_apply<R: Runtime>(
         then_tools_for: guest,
         ..Options::default()
     };
-    Ok(state.setup.start(opts, false, setup_notify(app))?)
+    state.setup.start(opts, false, setup_notify(app))?;
+    Ok(())
 }
 
 /// The VM's Linux when the VM is on (D-173): where the chosen tools go,
@@ -559,6 +567,32 @@ pub(super) fn choice_text(kit: &Kit, chosen: &[String]) -> String {
             format!("{}={}\n", c.id, u8::from(on))
         })
         .collect()
+}
+
+/// The jobs kept (LEVELS.md §8.6): the installs running and queued, the
+/// VMs being prepared, and the last ones that ended; then `job` events.
+#[tauri::command]
+pub fn jobs_list<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<Vec<crate::common::jobs::Job>> {
+    ensure_main(&webview)?;
+    Ok(state.setup.jobs().list())
+}
+
+/// Cancels job `id` alone: a queued install leaves the queue, the running
+/// one stops (during its download, else at the end of its step); the
+/// others go on. False when it cannot be cancelled (ended, or a VM's
+/// preparation, which finishes its step).
+#[tauri::command]
+pub fn job_cancel<R: Runtime>(
+    app: AppHandle<R>,
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    id: String,
+) -> CmdResult<bool> {
+    ensure_main(&webview)?;
+    Ok(state.setup.cancel_job(&id, &setup_notify(app)))
 }
 
 #[tauri::command]

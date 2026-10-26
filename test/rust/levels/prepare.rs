@@ -26,6 +26,10 @@ pub(crate) struct Fake {
     pub wanted: Mutex<BTreeMap<String, Option<String>>>,
     /// The PC's ports of the sandbox when it was started.
     pub started_with: Mutex<Vec<u16>>,
+    /// What `prepare` told of its progress, in order.
+    pub progress: Mutex<Vec<PrepareProgress>>,
+    /// The effects and the steps together, in order.
+    pub timeline: Mutex<Vec<String>>,
 }
 
 impl Fake {
@@ -34,7 +38,12 @@ impl Fake {
     }
 
     fn note(&self, call: String) {
+        self.timeline.lock().unwrap().push(call.clone());
         self.calls.lock().unwrap().push(call);
+    }
+
+    pub fn progress(&self) -> Vec<PrepareProgress> {
+        self.progress.lock().unwrap().clone()
     }
 }
 
@@ -73,6 +82,16 @@ impl Effects for Fake {
             "watch_local_models {} {project} {port} {db_ports:?}",
             vm.name
         ));
+    }
+
+    fn progress(&self, event: PrepareProgress) {
+        if let PrepareProgress::Step { index, label, .. } = &event {
+            self.timeline
+                .lock()
+                .unwrap()
+                .push(format!("step {index} {label}"));
+        }
+        self.progress.lock().unwrap().push(event);
     }
 }
 
@@ -477,4 +496,110 @@ fn nothing_is_prepared_for_the_pc() {
     )
     .is_err());
     assert!(fx.calls().is_empty());
+}
+
+/// LEVELS.md §8.6: the preparation tells where it stands through its
+/// effects, each step before what it does: it begins with the sandbox and
+/// the number of steps, every step from 1 to that number with its label,
+/// and it ends.
+#[test]
+fn prepare_tells_its_steps_through_the_effects() {
+    let (_tmp, kit) = kit_with_shop("progress");
+    let fx = Fake {
+        dbs: vec![shop_db()],
+        ..Fake::default()
+    };
+    prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let events = fx.progress();
+    let Some(PrepareProgress::Begin {
+        project,
+        sandbox,
+        agent,
+        total,
+    }) = events.first()
+    else {
+        panic!("{events:?}");
+    };
+    assert_eq!(project, "shop");
+    assert_eq!(sandbox, &vm::name("shop"));
+    assert_eq!(*agent, None);
+    assert_eq!(events.last(), Some(&PrepareProgress::Done));
+    let steps: Vec<(usize, usize, String)> = events
+        .iter()
+        .filter_map(|e| match e {
+            PrepareProgress::Step {
+                index,
+                total,
+                label,
+            } => Some((*index, *total, label.clone())),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(steps.len(), *total, "{steps:?}");
+    for (i, (index, of, _)) in steps.iter().enumerate() {
+        assert_eq!((*index, *of), (i + 1, *total));
+    }
+    let labels: Vec<&str> = steps.iter().map(|(_, _, l)| l.as_str()).collect();
+    assert_eq!(labels.first(), Some(&"Strumenti per il Linux della VM"));
+    assert!(labels.contains(&"Database del progetto"), "{labels:?}");
+    assert!(labels.contains(&"Informazioni della VM"), "{labels:?}");
+    assert_eq!(labels.last(), Some(&"Avvio la VM"));
+    // Each step is told before what it does.
+    let timeline = fx.timeline.lock().unwrap().clone();
+    let at = |what: &str| {
+        timeline
+            .iter()
+            .position(|c| c.starts_with(what))
+            .unwrap_or_else(|| panic!("{what}: {timeline:?}"))
+    };
+    assert!(at("step 1 ") < at("ensure_guest_tools"), "{timeline:?}");
+    assert!(at("step 2 ") < at("start_databases"), "{timeline:?}");
+    assert!(
+        at(&format!("step {total} ")) < at("start_sandbox"),
+        "{timeline:?}"
+    );
+}
+
+/// An agent's sandbox says its agent; a preparation that fails ends with
+/// its error, never `Done`.
+#[test]
+fn prepare_tells_the_agent_and_the_error() {
+    let (_tmp, kit) = kit_with_shop("progress-agent");
+    let fx = Fake::default();
+    let origin = Origin::AgentButton {
+        agent: Agent::Claude,
+    };
+    prepared(&kit, &fx, origin, true, &[]).unwrap();
+    assert!(
+        matches!(
+            fx.progress().first(),
+            Some(PrepareProgress::Begin {
+                agent: Some(Agent::Claude),
+                ..
+            })
+        ),
+        "{:?}",
+        fx.progress()
+    );
+
+    let (_tmp, kit) = prepared_kit("progress-no-sbx");
+    std::fs::create_dir_all(kit.projects().join("shop")).unwrap();
+    let fx = Fake::default();
+    prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap_err();
+    match fx.progress().last() {
+        Some(PrepareProgress::Failed { error }) => {
+            assert_eq!(error, "Docker Sandboxes (sbx) non è nel kit.");
+        }
+        other => panic!("{other:?}"),
+    }
+    assert!(!fx.progress().contains(&PrepareProgress::Done));
+}
+
+/// Nothing is told for the PC: there is nothing to wait for.
+#[test]
+fn nothing_is_told_for_the_pc() {
+    let (_tmp, kit) = kit_with_shop("progress-pc");
+    let fx = Fake::default();
+    prepared(&kit, &fx, Origin::ProjectTerminal, false, &[]).unwrap();
+    assert!(fx.progress().is_empty(), "{:?}", fx.progress());
 }
