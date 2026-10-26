@@ -91,30 +91,44 @@ pub fn environment(
             project,
             program,
             ..
-        } => {
-            let settings = crate::common::settings::Settings::load(kit).settings;
-            let mut guest = vm::guest_target(kit.target())
-                .map(|target| {
-                    let guest = kit.for_target(target);
-                    let base_guest = KitEnv::build(&guest, &settings, lang, host);
-                    let mut tools =
-                        isolation::project_guest_tools(kit, &guest, project, base_guest);
-                    if let VmProgram::AgentBinary { agent } = program {
-                        agent_back(kit, &guest, *agent, &mut tools);
-                    }
-                    tools
-                })
-                .unwrap_or_default();
-            guest
-                .vars
-                .push((LEVEL_VAR.to_owned(), level_value(*level).to_owned()));
-            Some(Environment::Vm {
-                sbx_env: isolation::sbx_session_env(base, host),
-                guest,
-            })
-        }
+        } => Some(Environment::Vm {
+            sbx_env: isolation::sbx_session_env(base, host),
+            guest: guest_tools(kit, *level, project, program, lang, host),
+        }),
         Placement::Refused { .. } => None,
     }
+}
+
+/// What goes into the VM of a `Vm` placement of `level` in `project`
+/// running `program` (§3.5, `Vm` steps 1–3): the kit's tools for the VM's
+/// Linux at the project's lines, sealed and without the agents, as the VM
+/// sees them; for `AgentBinary` the agent's own folder back, last; the
+/// level. Read from the disk: `levels::prepare` asks again once it has
+/// installed what was missing (D-170).
+pub fn guest_tools(
+    kit: &Kit,
+    level: Level,
+    project: &str,
+    program: &VmProgram,
+    lang: &str,
+    host: &Host,
+) -> GuestTools {
+    let settings = crate::common::settings::Settings::load(kit).settings;
+    let mut guest = vm::guest_target(kit.target())
+        .map(|target| {
+            let guest = kit.for_target(target);
+            let base_guest = KitEnv::build(&guest, &settings, lang, host);
+            let mut tools = isolation::project_guest_tools(kit, &guest, project, base_guest);
+            if let VmProgram::AgentBinary { agent } = program {
+                agent_back(kit, &guest, *agent, &mut tools);
+            }
+            tools
+        })
+        .unwrap_or_default();
+    guest
+        .vars
+        .push((LEVEL_VAR.to_owned(), level_value(level).to_owned()));
+    guest
 }
 
 /// The environment of a process on the PC at `level` (Manual or Project),

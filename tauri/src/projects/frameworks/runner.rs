@@ -47,26 +47,39 @@ pub fn cancelled() -> bool {
     CANCELLED.load(Ordering::SeqCst)
 }
 
-/// Runs one line with the kit's PowerShell in `dir`, without a window or
-/// input (`CI=1`: the tools do not ask), with `vars` in its environment
-/// (`$env:…`, so a password is not in the line shown). Every line of
-/// output goes to `out`. A failure returns its last line of output.
-pub fn run_line(
-    kit: &Kit,
-    env: &KitEnv,
-    vars: &[(String, String)],
-    dir: &Path,
-    line: &str,
-    out: &(dyn Fn(&str) + Sync),
-) -> Result<(), String> {
+/// What every line of a creation gets: no question asked (`CI=1`), no
+/// colours in its output.
+pub const QUIET: [(&str, &str); 4] = [
+    ("CI", "1"),
+    ("NO_COLOR", "1"),
+    ("FORCE_COLOR", "0"),
+    ("COMPOSER_NO_INTERACTION", "1"),
+];
+
+/// `line` as the kit's PowerShell runs it with `-EncodedCommand` (UTF-16,
+/// base64): errors stop it, its exit code is the line's.
+pub fn encoded_script(line: &str) -> String {
     use base64::Engine;
-    use std::io::Read;
     let script = format!(
         "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \
          [Console]::OutputEncoding = [Text.Encoding]::UTF8\n{line}\n\
          if ($LASTEXITCODE) {{ exit $LASTEXITCODE }}"
     );
     let utf16: Vec<u8> = script.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    base64::engine::general_purpose::STANDARD.encode(utf16)
+}
+
+/// One line with the kit's PowerShell on the PC in `dir`, without a window
+/// or input ([`QUIET`]), with `vars` in its environment (`$env:…`, so a
+/// password is not in the line shown). Built only by
+/// `levels::start::scaffold_command` (D-179); run by [`run_command`].
+pub fn line_command(
+    kit: &Kit,
+    env: &KitEnv,
+    vars: &[(String, String)],
+    dir: &Path,
+    line: &str,
+) -> std::process::Command {
     let mut cmd = jobs::kit_command(crate::setup::kit_path(kit, r"pwsh\pwsh.exe"), env);
     cmd.args([
         "-NoLogo",
@@ -76,16 +89,25 @@ pub fn run_line(
         "Bypass",
         "-EncodedCommand",
     ])
-    .arg(base64::engine::general_purpose::STANDARD.encode(utf16))
+    .arg(encoded_script(line))
     .current_dir(dir)
-    .env("CI", "1")
-    .env("NO_COLOR", "1")
-    .env("FORCE_COLOR", "0")
-    .env("COMPOSER_NO_INTERACTION", "1")
-    .envs(vars.iter().map(|(k, v)| (k, v)))
-    .stdin(Stdio::null())
-    .stdout(Stdio::piped())
-    .stderr(Stdio::piped());
+    .envs(QUIET)
+    .envs(vars.iter().map(|(k, v)| (k, v)));
+    cmd
+}
+
+/// Runs `cmd` (a line of a creation, on the PC or in the new project's
+/// VM: `levels::start::scaffold_command`) in a job of its own, without
+/// input. Every line of output goes to `out`. A failure returns its last
+/// line of output.
+pub fn run_command(
+    mut cmd: std::process::Command,
+    out: &(dyn Fn(&str) + Sync),
+) -> Result<(), String> {
+    use std::io::Read;
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     let job = Job::new().map_err(|e| format!("{e:#}"))?;
     let mut child = jobs::spawn_in(&mut cmd, &job).map_err(|e| format!("{e:#}"))?;
     *current() = Some(job);

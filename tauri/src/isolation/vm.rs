@@ -414,6 +414,46 @@ pub fn exec_args(
     args
 }
 
+/// One line of a creation (a framework's scaffolding, D-179) in the new
+/// project's VM `vm`: the kit's PowerShell for the VM's Linux (`pwsh`, the
+/// VM's path of the kit's, mounted read-only) runs the line `encoded`
+/// (`-EncodedCommand`) in `dir` (the VM's path), with `tools`
+/// ([`tools_options`]: the kit's tools first on the `PATH`, the file of
+/// the variables that are never on a command line) and `quiet` (`CI=1`…).
+/// Not interactive: its output is read through the pipes of `sbx exec`.
+pub fn scaffold_args(
+    vm: &str,
+    dir: &str,
+    pwsh: &str,
+    encoded: &str,
+    quiet: &[(&str, &str)],
+    tools: &crate::isolation::GuestTools,
+) -> Vec<String> {
+    let mut args: Vec<String> = ["exec", "-w", dir].map(String::from).into();
+    args.extend(tools_options(tools));
+    for (k, v) in quiet {
+        args.push("-e".into());
+        args.push(format!("{k}={v}"));
+    }
+    args.push(vm.into());
+    let script = format!(r#"{TOOLS_FIRST}; exec "$0" "$@""#);
+    args.extend(
+        [
+            "sh",
+            "-c",
+            script.as_str(),
+            pwsh,
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-EncodedCommand",
+            encoded,
+        ]
+        .map(String::from),
+    );
+    args
+}
+
 /// The kit's tools first on the `PATH` (`ATOLLO_PATH`, given with `-e`).
 pub const TOOLS_FIRST: &str = r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH"; export PATH"#;
 

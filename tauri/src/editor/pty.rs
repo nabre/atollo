@@ -194,8 +194,8 @@ pub struct Launch {
     /// `OpenConsole.exe`.
     pub conpty: Option<PathBuf>,
     /// Where it runs, for its `PtyInfo`: [`shell`], [`command`] and
-    /// [`program`] say the PC at level 1; `terminal::open_console` and
-    /// `open_launch` set the one of the session's placement.
+    /// [`program`] say the PC at level 1; `levels::start::start_terminal`
+    /// sets the one of the session's placement.
     pub at: SessionLabel,
 }
 

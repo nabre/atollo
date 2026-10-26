@@ -827,9 +827,10 @@ fn the_old_callers_get_the_same_environment() {
         let (bin, node_20, py) = (s(&bin), s(&l.node[1]), s(&l.python[0]));
         let what = target.as_str();
 
-        // `versions::project_env`: the project's lines, sealed, no agent.
+        // A program of the project (the old `versions::project_env`): the
+        // project's lines, sealed, no agent.
         set_project_choice(kit, "app", "node", Some("20.18")).unwrap();
-        let env = crate::versions::project_env(kit, "app", base.clone());
+        let env = pc_environment(kit, base.clone(), Level::Project, Some("app"), None);
         assert_eq!(
             vars(&env),
             expect(

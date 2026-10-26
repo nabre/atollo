@@ -217,16 +217,6 @@ pub fn swap_lines(kit: &Kit, env: &mut KitEnv, lines: &Choice, choice: &Choice) 
     now
 }
 
-/// The kit environment (with the kit's lines) for a program of `project`
-/// on the PC: `levels::env::pc_environment` at level 2 (D-179).
-///
-/// A thin wrapper for its many callers (actions, terminals, agents, the
-/// editor, `Atollo env --project`): removed by steps 3 and 4 of LEVELS.md
-/// §12.2, when they go through `levels::decide` and `levels::env::environment`.
-pub fn project_env(kit: &Kit, project: &str, env: KitEnv) -> KitEnv {
-    crate::levels::env::pc_environment(kit, env, crate::levels::Level::Project, Some(project), None)
-}
-
 pub fn set_project_choice(kit: &Kit, project: &str, id: &str, line: Option<&str>) -> Result<()> {
     check(id, line)?;
     crate::projects::settings::update(kit, project, |s| {

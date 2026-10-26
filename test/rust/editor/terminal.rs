@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Target};
+use crate::kit::{tests::TempDir, Kit, Target};
 
 /// On Windows a batch agent (`agy.cmd`) runs through the kit's PowerShell,
 /// in the app's terminal, never through cmd or a shell of the PC.

@@ -12,7 +12,6 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindowBuild
 
 use super::pty;
 use crate::env::KitEnv;
-use crate::kit::Kit;
 use crate::levels::labels::SessionLabel;
 
 /// The app's terminal sessions.
@@ -101,23 +100,11 @@ pub fn emit_exit<R: Runtime>(app: &AppHandle<R>, info: &pty::PtyInfo) {
     let _ = app.emit_to(label(info.id).as_str(), crate::ipc::events::PTY_EXIT, info);
 }
 
-/// Opens the kit's shell (its PowerShell; on macOS and Linux bash when it
-/// is not installed) in a new session in `dir`, on the PC at the level of
-/// `at` (LEVELS.md §8.3: its tab says it). Inside the job.
-pub fn open_console<R: Runtime>(
-    app: &AppHandle<R>,
-    kit: &Kit,
-    env: &KitEnv,
-    dir: &Path,
-    at: SessionLabel,
-) -> Result<()> {
-    let mut launch = pty::shell(kit, dir);
-    launch.at = at;
-    open(app, env, dir, launch, Box::new(|| {}))
-}
-
-/// Runs `launch` (a project's microVM, D-167) in a new session of the
-/// app's terminal in `dir`, where `at` says. Inside the job.
+/// Runs `launch` (the kit's shell, a project's microVM, D-167) in a new
+/// session of the app's terminal in `dir`, where `at` says (LEVELS.md
+/// §8.3: its tab says it). Inside the job. Called by
+/// `levels::start::open_terminal`, and for the kit's own `sbx`
+/// (`isolation_run`).
 pub fn open_launch<R: Runtime>(
     app: &AppHandle<R>,
     env: &KitEnv,

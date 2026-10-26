@@ -78,18 +78,8 @@ pub async fn terminal_launch<R: Runtime>(
         // The terminal's tools, at the project's lines in a project's
         // folder (Q1), sealed the level-1 way, never an agent's command.
         let placed = super::levels::place_now(&kit, &base, &req, Some(&terminal), lang, &host)?;
-        let super::levels::Placed::Pc {
-            placement,
-            dir,
-            mut env,
-        } = placed
-        else {
-            return Err("levels: a kit terminal is placed on the PC".into());
-        };
-        // The stand-ins say where the agents run (until step 5's forwarders).
-        crate::isolation::with_agents_notice(&mut env, lang);
-        let at = crate::levels::labels::SessionLabel::pc(placement.level());
-        terminal::open_console(&app, &kit, &env, &dir, at).or_fail_chain("terminal")
+        let ready = crate::levels::prepare::Ready::on_the_pc(placed.placement, placed.env);
+        crate::levels::start::open_terminal(&app, &kit, &ready, lang).or_fail_chain("terminal")
     })
     .await
     .or_fail("terminals")?
@@ -116,7 +106,8 @@ pub(crate) fn kit_terminal_request(
 /// progress in the status bar): those with a build for it that this PC can
 /// install, not those that finish on their own system
 /// (`router::bootstrap`). A failure only goes to the log: the session
-/// opens with what is there.
+/// opens with what is there. The app's `levels::prepare::Effects` (D-179),
+/// and «Installa i mancanti» of a project with the VM on.
 pub(crate) fn ensure_guest_tools<R: Runtime>(
     app: &AppHandle<R>,
     task: &Arc<SetupTask>,
@@ -185,106 +176,6 @@ pub(crate) fn ensure_guest_tools<R: Runtime>(
             ..Options::default()
         });
     }
-}
-
-/// The databases of `project` (folder `dir`) for its VM (D-171): their
-/// servers started on the PC (the kit's, never in the VM: their programs,
-/// settings and data are out of its reach), the PC's ports its sandbox may
-/// reach, and the file of the variables that point its programs there as
-/// the project's user: the keys the kit writes in a `.env` like the
-/// project's (`env_wanted`), with the VM's way to the PC, plus the MySQL
-/// client's. A file readable by its owner only (`db.env` beside the
-/// sandbox's kit), given with `--env-file`: the password is never on a
-/// command line. The project's `.env` keeps its own lines: a variable of
-/// the session comes first (Laravel, dotenv, Django).
-pub(crate) fn project_vm_dbs(
-    services: &crate::db::services::Services,
-    kit: &Kit,
-    project: &str,
-    dir: &std::path::Path,
-    env: &KitEnv,
-) -> CmdResult<(Vec<u16>, Option<std::path::PathBuf>)> {
-    let dbs = services.project_dbs(project);
-    let file = crate::isolation::kit::dir(kit, &crate::isolation::vm::name(project)).join("db.env");
-    if dbs.is_empty() {
-        // A database removed takes its password out of the VM's file too.
-        let _ = std::fs::remove_file(&file);
-        return Ok((Vec::new(), None));
-    }
-    let text = crate::platform::safe_path::read_text(dir, &dir.join(".env")).unwrap_or_default();
-    let mut ports = Vec::new();
-    let mut lines = String::new();
-    for db in dbs {
-        let port = services
-            .start_for(project, &db.engine, env)
-            .or_fail_chain("database")?;
-        ports.push(port);
-        let in_vm = crate::isolation::db_in_vm(&db, port);
-        for (k, v) in crate::db::auth::env_wanted(&text, &in_vm) {
-            lines.push_str(&format!("{k}={v}\n"));
-        }
-        if crate::db::DbEngine::from_id(&db.engine) == Some(crate::db::DbEngine::MySql) {
-            lines.push_str(&format!(
-                "MYSQL_HOST={}\nMYSQL_TCP_PORT={port}\n",
-                crate::isolation::vm::HOST
-            ));
-        }
-    }
-    if let Some(parent) = file.parent() {
-        std::fs::create_dir_all(parent).or_fail("database")?;
-    }
-    crate::platform::files::replace_private(&file, &lines).or_fail_chain("database")?;
-    Ok((ports, Some(file)))
-}
-
-/// `vm` of `project` (folder `dir`) ready for a session or an action: the
-/// kit's tools for Linux at the project's lines (D-170), its databases on
-/// the PC's servers and the ports to them (D-171). One way for the
-/// terminal and the actions.
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn project_vm_ready<R: Runtime>(
-    app: &AppHandle<R>,
-    task: &Arc<SetupTask>,
-    services: &crate::db::services::Services,
-    kit: &Kit,
-    host: &crate::env::Host,
-    lang: &str,
-    project: &str,
-    dir: &std::path::Path,
-    env: &KitEnv,
-    vm: crate::isolation::Vm,
-) -> CmdResult<crate::isolation::Vm> {
-    let mut tools = project_vm_tools(app, task, kit, host, lang, project)?;
-    let (ports, file) = project_vm_dbs(services, kit, project, dir, env)?;
-    tools.env_file = file;
-    Ok(vm.with_tools(tools).with_host_ports(ports))
-}
-
-/// The kit's tools for `project` in its VM (D-170): those the kit chose, at
-/// the lines the project chose, installed for the VM's Linux when missing;
-/// nothing where there is no VM's Linux.
-pub(crate) fn project_vm_tools<R: Runtime>(
-    app: &AppHandle<R>,
-    task: &Arc<SetupTask>,
-    kit: &Kit,
-    host: &crate::env::Host,
-    lang: &str,
-    project: &str,
-) -> CmdResult<crate::isolation::GuestTools> {
-    let Some(guest) = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t))
-    else {
-        return Ok(crate::isolation::GuestTools::default());
-    };
-    let mut wanted = terminals::chosen_tools(kit);
-    for (id, line) in crate::versions::project_choice(kit, project) {
-        wanted.insert(id, Some(line));
-    }
-    ensure_guest_tools(app, task, &guest, &wanted);
-    std::fs::create_dir_all(guest.apps()).or_fail("vm")?;
-    let base = KitEnv::build(&guest, &Settings::load(kit).settings, lang, host);
-    Ok(crate::isolation::project_guest_tools(
-        kit, &guest, project, base,
-    ))
 }
 
 /// The system's "Select folder" window, starting in `start`; `None` when it

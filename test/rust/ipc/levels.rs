@@ -10,6 +10,7 @@ use crate::editor::terminals::Terminal;
 use crate::env::{Host, KitEnv};
 use crate::isolation::Blocker;
 use crate::levels::env::{forward_dir, LEVEL_VAR, PROJECT_VAR, SEALED, TERMINAL_VAR};
+use crate::levels::prepare::tests::{install, shop_db, Fake};
 use crate::levels::{Fix, Level, Origin, Place, Refusal, VmState};
 use crate::test_support::{prepared_kit, TempDir};
 
@@ -51,16 +52,28 @@ fn place(kit: &Kit, base: &KitEnv, req: &Request, facts: &Facts) -> CmdResult<Pl
     placed(kit, base, req, facts, None, "it", &Host::default())
 }
 
+/// [`ready`] with the fake effects of `levels::prepare`'s tests.
+fn ready_with(
+    fx: &Fake,
+    kit: &Kit,
+    base: &KitEnv,
+    req: &Request,
+    facts: &Facts,
+    needs: &[String],
+) -> CmdResult<Ready> {
+    ready(fx, kit, base, req, facts, needs, "it", &Host::default())
+}
+
 /// The environment of a `Pc` answer, or the test fails.
 fn on_the_pc(answer: CmdResult<Placed>) -> (Level, KitEnv) {
     match answer {
-        Ok(Placed::Pc { placement, env, .. }) => (placement.level(), env),
+        Ok(Placed { placement, env }) => (placement.level(), env),
         other => panic!("not on the PC: {other:?}"),
     }
 }
 
 /// The refusal of an answer, as the UI receives it.
-fn refusal_of(answer: CmdResult<Placed>) -> (Refusal, Fix, String) {
+fn refusal_of<T: std::fmt::Debug>(answer: CmdResult<T>) -> (Refusal, Fix, String) {
     let e = answer.expect_err("refused");
     let (reason, fix) = e.refusal().expect("a refusal of the levels");
     (reason.clone(), fix, e.to_string())
@@ -106,7 +119,11 @@ fn e1_a_kit_terminal_is_on_the_pc_with_or_without_the_vm() {
             "it",
             &Host::default(),
         );
-        let Ok(Placed::Pc { dir: at, .. }) = &answer else {
+        let Ok(Placed {
+            placement: crate::levels::Placement::Pc { dir: at, .. },
+            ..
+        }) = &answer
+        else {
             panic!("on the PC: {answer:?}");
         };
         assert_eq!(at, &dir);
@@ -141,11 +158,26 @@ fn e3_the_project_terminal_asks_decide() {
         crate::levels::labels::refusal_text(&Refusal::DaemonRestartPending, "it")
     );
 
+    // With the VM on: never placed on the PC, made ready by
+    // `levels::prepare` in the project's sandbox, its session the kit's
+    // terminal in the project's folder in the VM (R14).
     let on = facts_of(&kit, &req, true);
-    match place(&kit, &base, &req, &on) {
-        Ok(Placed::Vm { workdir }) => assert_eq!(Some(workdir), on.guest_dir),
-        other => panic!("in the VM: {other:?}"),
-    }
+    assert!(place(&kit, &base, &req, &on).is_err());
+    install(&kit, crate::isolation::COMPONENT);
+    let fx = Fake::default();
+    let ready = ready_with(&fx, &kit, &base, &req, &on, &[]).unwrap();
+    let vm = ready.vm.as_ref().expect("in the VM");
+    assert_eq!(vm.name, crate::isolation::vm::name("shop"));
+    assert!(fx.calls().iter().any(|c| c.starts_with("start_sandbox")));
+    let args = crate::levels::start::vm_session_args(&kit, &ready).unwrap();
+    assert_eq!(
+        args,
+        crate::isolation::vm::kit_terminal_args(
+            &vm.name,
+            on.guest_dir.as_deref().unwrap(),
+            vm.tools()
+        )
+    );
 
     let (level, env) = on_the_pc(place(&kit, &base, &req, &facts_of(&kit, &req, false)));
     assert_eq!(level, Level::Project);
@@ -301,7 +333,165 @@ fn e20_the_cli_prints_the_projects_pc_environment() {
     }
     assert_eq!(
         env.get("PATH"),
-        crate::versions::project_env(&kit, "shop", base).get("PATH"),
-        "the same as the old wrapper"
+        crate::levels::env::pc_environment(&kit, base, Level::Project, Some("shop"), None)
+            .get("PATH"),
+        "the project's environment on the PC"
     );
+}
+
+/// E4: with the VM on an action or a site is made ready by
+/// `levels::prepare` in the project's sandbox (R16, R17): its tools, its
+/// databases and their ports first, then the sandbox; a web action and a
+/// site publish a port, a command does not.
+#[test]
+fn e4_an_action_in_the_vm_is_prepared() {
+    let (_tmp, kit) = kit_with_shop("e4");
+    install(&kit, crate::isolation::COMPONENT);
+    let base = base_of(&kit);
+    let dir = kit.projects().join("shop");
+    let name = crate::isolation::vm::name("shop");
+    for (a, publish) in [
+        (action("dev", crate::detect::Kind::Web, false), true),
+        (action("site", crate::detect::Kind::Web, true), true),
+        (action("test", crate::detect::Kind::Command, false), false),
+    ] {
+        let req = crate::ipc::runs::action_request(&kit, &dir, &a);
+        let fx = Fake {
+            dbs: vec![shop_db()],
+            ..Fake::default()
+        };
+        let ready = ready_with(&fx, &kit, &base, &req, &facts_of(&kit, &req, true), &[]).unwrap();
+        assert_eq!(
+            fx.calls(),
+            [
+                "ensure_guest_tools".to_owned(),
+                "start_databases shop".to_owned(),
+                format!("start_sandbox {name}"),
+            ],
+            "{}",
+            a.id
+        );
+        match &ready.placement {
+            crate::levels::Placement::Vm {
+                publish: p,
+                level: Level::Project,
+                ..
+            } => assert_eq!(*p, publish, "{}", a.id),
+            other => panic!("{}: {other:?}", a.id),
+        }
+        assert_eq!(ready.vm.as_ref().unwrap().host_ports(), [3307]);
+    }
+}
+
+/// E9 (new with step 4): with the VM on a creation runs in the new
+/// project's sandbox (R15): made ready with the plan's tools and the kit's
+/// PowerShell for the VM's Linux, each line an `sbx exec` of that
+/// PowerShell in the project's folder in the VM, its variables in a file
+/// (never on the command line), gone at the end.
+#[test]
+fn e9_a_scaffold_runs_in_the_new_projects_sandbox() {
+    let (_tmp, kit) = kit_with_shop("e9-vm");
+    install(&kit, crate::isolation::COMPONENT);
+    let base = base_of(&kit);
+    let dir = kit.projects().join("blog");
+    std::fs::create_dir(&dir).unwrap();
+    let req = crate::ipc::frameworks::scaffold_request(&kit, "laravel", &dir);
+    let fx = Fake::default();
+    let facts = facts_of(&kit, &req, true);
+    let ready = ready_with(&fx, &kit, &base, &req, &facts, &["composer".to_owned()]).unwrap();
+    let vm = ready.vm.as_ref().expect("in the VM");
+    assert_eq!(vm.name, crate::isolation::vm::name("blog"));
+    assert_eq!(vm.dir, dir, "the new project's folder, its workspace");
+    {
+        let wanted = fx.wanted.lock().unwrap();
+        assert!(wanted.contains_key("pwsh") && wanted.contains_key("composer"));
+    }
+
+    let at = dir.join(crate::ipc::frameworks::VM_STAGING);
+    std::fs::create_dir(&at).unwrap();
+    let line = "composer create-project laravel/laravel:^13.0 'blog' --prefer-dist";
+    let vars = [("ADMIN_PASSWORD".to_owned(), "s3cret-pw".to_owned())];
+    let cmd = crate::levels::start::scaffold_command(&kit, &ready, line, &at, &vars).unwrap();
+    assert_eq!(
+        Some(cmd.get_program()),
+        crate::isolation::kit_sbx(&kit)
+            .as_deref()
+            .map(|p| p.as_os_str())
+    );
+    let args: Vec<String> = cmd
+        .get_args()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect();
+    let windows = kit.target().is_windows();
+    let guest = kit.for_target(crate::isolation::vm::guest_target(kit.target()).unwrap());
+    let pwsh = crate::isolation::vm::guest_path(
+        windows,
+        &crate::setup::kit_path(&guest, r"pwsh\pwsh.exe"),
+    )
+    .unwrap();
+    let at_guest = crate::isolation::vm::guest_path(windows, &at).unwrap();
+    assert_eq!(args[..3], ["exec", "-w", at_guest.as_str()]);
+    assert!(args.contains(&vm.name));
+    assert!(args.contains(&pwsh), "{args:?}");
+    let encoded = crate::projects::frameworks::encoded_script(line);
+    assert_eq!(args.last(), Some(&encoded));
+    assert!(args.iter().all(|a| !a.contains("s3cret-pw")), "{args:?}");
+    let file = crate::isolation::kit::dir(&kit, &vm.name).join(crate::levels::start::SCAFFOLD_ENV);
+    let i = args.iter().position(|a| a == "--env-file").unwrap();
+    assert_eq!(args[i + 1], file.display().to_string());
+    assert!(std::fs::read_to_string(&file)
+        .unwrap()
+        .contains("ADMIN_PASSWORD=s3cret-pw\n"));
+    crate::levels::start::scaffold_end(&kit, &ready);
+    assert!(!file.exists());
+
+    // Without the VM: the kit's PowerShell on the PC, in the folder given.
+    let off = facts_of(&kit, &req, false);
+    let ready = ready_with(&Fake::default(), &kit, &base, &req, &off, &[]).unwrap();
+    let cmd = crate::levels::start::scaffold_command(&kit, &ready, line, &dir, &vars).unwrap();
+    assert_eq!(
+        cmd.get_program(),
+        crate::setup::kit_path(&kit, r"pwsh\pwsh.exe").as_os_str()
+    );
+    assert_eq!(cmd.get_current_dir(), Some(dir.as_path()));
+}
+
+/// E10: an agent from the project's page is refused without the VM (R1),
+/// with why and what to do; with it Claude Code and Codex are made ready in
+/// a sandbox of their own (R12), Pi in the project's (R13).
+#[test]
+fn e10_an_agent_is_prepared_in_its_sandbox() {
+    let (_tmp, kit) = kit_with_shop("e10");
+    install(&kit, crate::isolation::COMPONENT);
+    install(
+        &kit.for_target(crate::isolation::vm::guest_target(kit.target()).unwrap()),
+        "pi",
+    );
+    let base = base_of(&kit);
+    let dir = kit.projects().join("shop");
+    assert!(crate::ipc::agents::agent_request(&kit, "gemini", &dir).is_err());
+    for (id, sandbox) in [
+        ("claude", crate::isolation::vm::agent_name("shop", "claude")),
+        ("codex", crate::isolation::vm::agent_name("shop", "codex")),
+        ("pi", crate::isolation::vm::name("shop")),
+    ] {
+        let req = crate::ipc::agents::agent_request(&kit, id, &dir).unwrap();
+        assert_eq!(req.origin.level(), Level::Agent);
+        let fx = Fake::default();
+        let off = facts_of(&kit, &req, false);
+        let (reason, fix, _) = refusal_of(ready_with(&fx, &kit, &base, &req, &off, &[]));
+        assert!(matches!(reason, Refusal::AgentsNeedVm { .. }), "{reason:?}");
+        assert_eq!(fix, Fix::OpenVmNotice);
+        assert!(fx.calls().is_empty(), "nothing prepared without the VM");
+
+        let mut on = facts_of(&kit, &req, true);
+        on.linux_build = crate::levels::facts::linux_build(&kit, &req.origin);
+        let ready = ready_with(&fx, &kit, &base, &req, &on, &[]).unwrap();
+        assert_eq!(ready.vm.as_ref().unwrap().name, sandbox, "{id}");
+        assert_eq!(ready.placement.level(), Level::Agent);
+        assert!(
+            fx.calls().contains(&format!("start_sandbox {sandbox}")),
+            "{id}"
+        );
+    }
 }

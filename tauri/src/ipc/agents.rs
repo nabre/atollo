@@ -60,40 +60,41 @@ pub async fn agent_launch<R: Runtime>(
     crate::projects::settings::update(&state.kit, &project, |s| {
         s.agent = Some(agent.clone());
     });
-    let (task, kit) = (Arc::clone(&state.setup), state.kit.clone());
-    let services = Arc::clone(&state.services);
-    let (host, kit_env) = (state.host.clone(), state.env());
+    let (host, kit, kit_env) = (state.host.clone(), state.kit.clone(), state.env());
+    let fx = super::levels::AppEffects::of(&app, &state, kit_env.clone());
     tauri::async_runtime::spawn_blocking(move || {
-        let base = crate::versions::project_env(&kit, &project, kit_env.clone());
-        let Some(vm) = crate::isolation::vm_for(&kit, &host, &base, &project, &dir) else {
-            let status = crate::isolation::status(&kit, &host, &base, false);
-            return Err(no_vm_for_agents(&status, lang).into());
-        };
-        let (vm, args) = agent_vm_ready(
-            &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm, &agent,
-        )?;
-        // Pi's session, on the PC: while it runs, the port of the local
-        // models stays open (D-178); it ends with the session, or now when
-        // the session does not open.
-        let pi = (agent == "pi").then(|| crate::isolation::pi_session(&vm.name));
-        let launch = vm.launch(&kit, args, &agent, lang).or_fail_chain("vm")?;
-        crate::editor::terminal::open_launch_then(
-            &app,
-            &vm.session_env(&base),
-            &dir,
-            launch,
-            crate::levels::labels::SessionLabel::vm(crate::levels::Level::Agent, &vm.name),
-            Box::new(move || drop(pi)),
-        )
-        .or_fail_chain("agent")
+        // Level 3 (D-179): only in a VM (R12, R13), refused without it (R1)
+        // with why and what to do; made ready by `levels::prepare` (Pi's
+        // build for the VM's Linux, the kit's tools, the databases, Pi's
+        // local models); Pi's session keeps the models' port open while it
+        // runs (`levels::start::open_terminal`).
+        let req = agent_request(&kit, &agent, &dir)?;
+        let ready = super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)?;
+        crate::levels::start::open_terminal(&app, &kit, &ready, lang).or_fail_chain("agent")
     })
     .await
     .or_fail("agent")?
 }
 
+/// The request of `agent` (its catalog id) asked from the project's page
+/// for the project in `dir` (E10, `Origin::AgentButton`).
+pub(crate) fn agent_request(
+    kit: &Kit,
+    agent: &str,
+    dir: &std::path::Path,
+) -> CmdResult<crate::levels::Request> {
+    let agent = crate::levels::Agent::from_id(agent)
+        .ok_or_else(|| CmdError::from(format!("unknown agent: {agent}")))?;
+    Ok(crate::levels::Request {
+        origin: crate::levels::Origin::AgentButton { agent },
+        place: crate::levels::place::place_of(kit, dir),
+    })
+}
+
 /// Why `agent` never starts on a project, if it does not (D-178):
 /// Antigravity is a desktop editor, it cannot run in a microVM; an agent
-/// with no way into the VM is refused too, never started on the PC.
+/// with no way into the VM is refused too, never started on the PC. Until
+/// step 7 of LEVELS.md §12.2 (Antigravity in the VM, `vm::agy_session_args`).
 pub(crate) fn refused_on_project(agent: &str, lang: &str) -> Option<String> {
     if agent == "antigravity" {
         return Some(crate::common::i18n::t(
@@ -111,154 +112,12 @@ pub(crate) fn refused_on_project(agent: &str, lang: &str) -> Option<String> {
     })
 }
 
-/// The refusal of an agent without the VM (D-178): the agents start only
-/// in the project's VM, then why it is off and what to do.
-pub(crate) fn no_vm_for_agents(status: &crate::isolation::Status, lang: &str) -> String {
-    format!(
-        "{}\n{}",
-        crate::common::i18n::t(
-            lang,
-            "Gli agenti partono solo nella VM del progetto, e la VM non è attiva.",
-            &[],
-        ),
-        crate::isolation::why_no_vm(status, lang)
-    )
-}
-
-/// The session of `agent` for `project` in the VM (D-175, D-178), with
-/// `vm` the project's: Claude Code and Codex in a sandbox of their own
-/// made ready like the project's VM (the kit's tools for Linux, the
-/// project's databases and the ports to them), started; Pi in the
-/// project's VM itself, its build for Linux installed for the VM when
-/// missing (D-173), started like a command of the project's terminal.
-/// With the arguments of the session. If an editor has a session for the
-/// project, its profile of the agent gets them too.
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn agent_vm_ready<R: Runtime>(
-    app: &AppHandle<R>,
-    task: &Arc<SetupTask>,
-    services: &crate::db::services::Services,
-    kit: &Kit,
-    host: &crate::env::Host,
-    lang: &str,
-    project: &str,
-    dir: &std::path::Path,
-    kit_env: &KitEnv,
-    vm: crate::isolation::Vm,
-    agent: &str,
-) -> CmdResult<(crate::isolation::Vm, Vec<String>)> {
-    if let Some(why) = refused_on_project(agent, lang) {
-        return Err(why.into());
-    }
-    let env = crate::versions::project_env(kit, project, kit_env.clone());
-    if agent == "pi" {
-        let guest_dir = crate::isolation::vm::guest_path(kit.target().is_windows(), dir)
-            .ok_or_else(|| {
-                crate::common::i18n::t(
-                    lang,
-                    "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
-                    &[&dir.display().to_string()],
-                )
-            })?;
-        let vm = super::terminals::project_vm_ready(
-            app, task, services, kit, host, lang, project, dir, kit_env, vm,
-        )?;
-        let pi = crate::isolation::vm::guest_target(kit.target())
-            .map(|t| kit.for_target(t))
-            .and_then(|guest| {
-                let wanted = std::iter::once(("pi".to_owned(), None)).collect();
-                super::terminals::ensure_guest_tools(app, task, &guest, &wanted);
-                crate::isolation::pi_in_vm(kit, &guest)
-            })
-            .ok_or_else(|| {
-                crate::common::i18n::t(
-                    lang,
-                    "Pi per il Linux della VM non è installato e non si è potuto installare: guarda la barra di stato o la pagina Strumenti.",
-                    &[],
-                )
-            })?;
-        let db_ports = vm.host_ports().to_vec();
-        let (vm, port) = pi_local_models(app, kit, lang, vm)?;
-        vm.start(&env, lang).or_fail_chain("vm")?;
-        if let Some(port) = port {
-            crate::isolation::watch_pi_port(
-                vm.clone(),
-                env.clone(),
-                project.to_owned(),
-                port,
-                db_ports,
-            );
-        }
-        let args = crate::isolation::vm::pi_session_args(&vm.name, &guest_dir, &pi, vm.tools());
-        return Ok((vm, args));
-    }
-    let Some(vm) = vm.for_agent(project, agent) else {
-        return Err(format!("unknown agent: {agent}").into());
-    };
-    let vm = super::terminals::project_vm_ready(
-        app, task, services, kit, host, lang, project, dir, kit_env, vm,
-    )?;
-    vm.start(&env, lang).or_fail_chain("vm")?;
-    let args = vm.agent_session_args(&env).or_fail_chain("vm")?;
-    Ok((vm, args))
-}
-
-/// Pi on the kit's local models (D-152), in the project's VM (D-178): the
-/// server started on the PC, its port opened for this sandbox only (like a
-/// database's, D-171) and its address and key in Pi's variables, through
-/// the VM's way to the PC, in a file readable by its owner only
-/// (`pi.env` beside the sandbox's kit, with the database's variables). A
-/// provider of the cloud needs nothing: `vm` as it is. With the port to
-/// close once Pi ends (`isolation::watch_pi_port`), when it is not also a
-/// database's.
-fn pi_local_models<R: Runtime>(
-    app: &AppHandle<R>,
-    kit: &Kit,
-    lang: &str,
-    vm: crate::isolation::Vm,
-) -> CmdResult<(crate::isolation::Vm, Option<u16>)> {
-    use tauri::Manager;
-    if crate::agents::sync::pi::local_model(kit).is_none() {
-        return Ok((vm, None));
-    }
-    let (Some(port), Some(key)) = (
-        crate::llm::settings::load(kit).port,
-        crate::llm::settings::key(kit),
-    ) else {
-        return Ok((vm, None));
-    };
-    // Not a database's: a watcher of the port waits again, it never closes
-    // it while this Pi is being started, and keeps this port from now.
-    let watched = (!vm.host_ports().contains(&port)).then_some(port);
-    if let Some(port) = watched {
-        crate::isolation::pi_port_touch(&vm.name, port);
-    }
-    if let Some(state) = app.try_state::<AppState>() {
-        if let Err(e) = state.llm.start(&state.env(), lang) {
-            crate::common::log::warn(&format!("pi: local models: {e:#}"));
-        }
-    }
-    let mut tools = vm.tools().clone();
-    let mut text = tools
-        .env_file
-        .as_ref()
-        .and_then(|f| std::fs::read_to_string(f).ok())
-        .unwrap_or_default();
-    for (k, v) in crate::isolation::pi_local_models_env(port, &key) {
-        text.push_str(&format!("{k}={v}\n"));
-    }
-    let file = crate::isolation::kit::dir(kit, &vm.name).join("pi.env");
-    if let Some(parent) = file.parent() {
-        std::fs::create_dir_all(parent).or_fail("pi")?;
-    }
-    crate::platform::files::replace_private(&file, &text).or_fail_chain("pi")?;
-    tools.env_file = Some(file);
-    Ok((vm.with_tools(tools).with_host_port(port), watched))
-}
-
 /// The agents' sandboxes the editor's profiles ask for (`vm.ps1`,
 /// `isolation::session::take_requests`), made ready one by one while the
-/// app runs.
+/// app runs (E11): decided as the editor's profile of the agent
+/// (`Origin::EditorAgentProfile`), made ready by `levels::prepare`, their
+/// session's arguments noted for the profile. Replaced by
+/// `levels::requests::serve` in step 5 of LEVELS.md §12.2.
 pub(crate) fn watch_agent_requests<R: Runtime>(app: AppHandle<R>) {
     use crate::isolation::session;
     use tauri::Manager;
@@ -272,27 +131,24 @@ pub(crate) fn watch_agent_requests<R: Runtime>(app: AppHandle<R>) {
                 state.env(),
                 state.lang(),
             );
-            let (task, services) = (Arc::clone(&state.setup), Arc::clone(&state.services));
-            let app = app.clone();
+            let fx = super::levels::AppEffects::of(&app, &state, kit_env.clone());
             std::thread::spawn(move || {
-                let ready = project_dir(&kit, Some(&project), lang)
-                    .map_err(|e| e.to_string())
-                    .and_then(|dir| {
-                        let base = crate::versions::project_env(&kit, &project, kit_env.clone());
-                        let vm = crate::isolation::vm_for(&kit, &host, &base, &project, &dir)
-                            .ok_or_else(|| {
-                                let status = crate::isolation::status(&kit, &host, &base, false);
-                                no_vm_for_agents(&status, lang)
-                            })?;
-                        agent_vm_ready(
-                            &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env,
-                            vm, &agent,
-                        )
-                        .map_err(|e| e.to_string())
-                    });
-                let noted = match ready {
-                    Ok((_, args)) => session::write_agent(&kit, &project, &agent, &args),
-                    Err(why) => session::agent_failed(&kit, &project, &agent, &why),
+                let args = (|| -> CmdResult<Vec<String>> {
+                    if let Some(why) = refused_on_project(&agent, lang) {
+                        return Err(why.into());
+                    }
+                    let dir = project_dir(&kit, Some(&project), lang)?;
+                    let mut req = agent_request(&kit, &agent, &dir)?;
+                    if let crate::levels::Origin::AgentButton { agent } = req.origin {
+                        req.origin = crate::levels::Origin::EditorAgentProfile { agent };
+                    }
+                    let ready =
+                        super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)?;
+                    crate::levels::start::vm_session_args(&kit, &ready).or_fail_chain("vm")
+                })();
+                let noted = match args {
+                    Ok(args) => session::write_agent(&kit, &project, &agent, &args),
+                    Err(why) => session::agent_failed(&kit, &project, &agent, &why.to_string()),
                 };
                 if let Err(e) = noted {
                     crate::common::log::warn(&format!("editor session {project} {agent}: {e:#}"));

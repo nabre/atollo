@@ -19,7 +19,7 @@ mod target;
 mod validate;
 
 pub use plan::{env_raw, env_value, fill, password_of, plan, Plan};
-pub use runner::{begin, cancel, cancelled, run_line};
+pub use runner::{begin, cancel, cancelled, encoded_script, line_command, run_command, QUIET};
 pub use target::{existing, merge_into, targets, Existing, Target};
 pub use validate::{check_env, validate, Problem};
 

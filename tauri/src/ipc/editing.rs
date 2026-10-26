@@ -29,19 +29,19 @@ pub async fn editor_open<R: Runtime>(
     let (handle, task, kit) = (app.clone(), Arc::clone(&state.setup), state.kit.clone());
     let lang = state.lang();
     let (host, kit_env) = (state.host.clone(), state.env());
-    let (for_vm, dir_vm) = (project.clone(), dir.clone());
-    let (port, token, vm) = tauri::async_runtime::spawn_blocking(move || {
+    let dir_vm = dir.clone();
+    let (port, token, req) = tauri::async_runtime::spawn_blocking(move || {
         ensure(&handle, &task, &kit, lang, &[])?;
         let (port, token) = editor.ensure_running().or_fail_chain("editor start")?;
         // Before the window: a terminal never opens before the box is known.
-        let vm = editor_vm_begin(&kit, &host, &kit_env, &for_vm, &dir_vm, lang);
-        Ok::<_, CmdError>((port, token, vm))
+        let req = editor_vm_begin(&kit, &host, &kit_env, &dir_vm, lang);
+        Ok::<_, CmdError>((port, token, req))
     })
     .await
     .or_fail("editor")??;
     let _ = app.emit_to(MAIN, super::events::EDITOR_STATUS, state.editor.status());
-    if let Some(vm) = vm {
-        editor_vm_session(&app, &state, &project, &dir, vm);
+    if let Some(req) = req {
+        editor_vm_session(&app, &state, &project, &dir, req);
     }
     let url = editor::url(port, &token, Some(&dir));
     editor::window::open(
@@ -56,27 +56,32 @@ pub async fn editor_open<R: Runtime>(
     .or_fail_chain("editor window")
 }
 
-/// The box of the editor's terminals, tasks and agents for `project`
-/// (D-175, `isolation::session`), noted before its window opens: the VM's
-/// level and the project pending, its `Vm` to make ready; without the VM
-/// the level says so with why (D-178): nothing of the editor starts on the
-/// PC, its window still opens. The level on, but no `sbx` to run it: the
-/// session says why, nothing runs on the PC instead.
+/// The box of the editor's terminals, tasks and agents for the project in
+/// `dir` (D-175, `isolation::session`; replaced by `levels::requests` in
+/// step 5 of LEVELS.md §12.2), noted before its window opens. Decided as
+/// the project's terminal (R14): with the VM on, the level and the project
+/// pending, the request to make ready; without the VM the level says so
+/// with why (D-178): nothing of the editor starts on the PC, its window
+/// still opens. A refusal with the VM on (R9, R10): the session says why.
 fn editor_vm_begin(
     kit: &Kit,
     host: &crate::env::Host,
     kit_env: &KitEnv,
-    project: &str,
     dir: &std::path::Path,
     lang: &str,
-) -> Option<crate::isolation::Vm> {
-    use crate::isolation::{session, Level};
-    let env = crate::versions::project_env(kit, project, kit_env.clone());
+) -> Option<crate::levels::Request> {
+    use crate::isolation::session;
+    use crate::levels::{Placement, VmState};
+    let req = project_terminal_request(kit, dir);
+    let crate::levels::Place::Project { name: project, .. } = &req.place else {
+        return None;
+    };
     let warn = |e: anyhow::Error| {
         crate::common::log::warn(&format!("editor session {project}: {e:#}"));
     };
-    let status = crate::isolation::status(kit, host, &env, false);
-    if status.level != Level::Vm {
+    let facts = super::levels::facts_now(kit, host, kit_env, &req);
+    if let VmState::Off { blockers } = &facts.vm {
+        let status = crate::isolation::Status::of(blockers.clone(), None);
         let why = session::no_vm_text(&status, lang);
         if let Err(e) =
             session::set_level(kit, false, &why).and_then(|()| session::clear(kit, project))
@@ -89,44 +94,48 @@ fn editor_vm_begin(
     {
         warn(e);
     }
-    let vm = crate::isolation::vm_for(kit, host, &env, project, dir);
-    if vm.is_none() {
-        if let Err(e) = session::failed(kit, project, "Docker Sandboxes of the kit not found") {
-            warn(e);
+    match crate::levels::decide(&req, &facts) {
+        Placement::Refused { reason, .. } => {
+            let why = crate::levels::labels::refusal_text(&reason, lang);
+            if let Err(e) = session::failed(kit, project, &why) {
+                warn(e);
+            }
+            None
         }
+        _ => Some(req),
     }
-    vm
 }
 
 /// The project's VM for the editor's terminals, tasks and agents (D-175),
-/// made ready off the window's opening (its tools, databases and ports): a
-/// terminal opened meanwhile waits for it.
+/// made ready off the window's opening by `levels::prepare` (its tools,
+/// databases and ports): a terminal opened meanwhile waits for it.
 fn editor_vm_session<R: Runtime>(
     app: &AppHandle<R>,
     state: &State<'_, AppState>,
     project: &str,
     dir: &std::path::Path,
-    vm: crate::isolation::Vm,
+    req: crate::levels::Request,
 ) {
     use crate::isolation::session;
-    let (app, task, kit, lang) = (
-        app.clone(),
-        Arc::clone(&state.setup),
+    let (kit, lang, host, kit_env) = (
         state.kit.clone(),
         state.lang(),
+        state.host.clone(),
+        state.env(),
     );
-    let (host, services, kit_env) = (state.host.clone(), Arc::clone(&state.services), state.env());
+    let fx = super::levels::AppEffects::of(app, state, kit_env.clone());
     let (project, dir) = (project.to_owned(), dir.to_path_buf());
     std::thread::spawn(move || {
-        let env = crate::versions::project_env(&kit, &project, kit_env.clone());
-        let ready = super::terminals::project_vm_ready(
-            &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
-        )
-        .map_err(|e| e.to_string())
-        .and_then(|vm| {
-            vm.start(&env, lang).map_err(|e| format!("{e:#}"))?;
-            session::write(&kit, &project, &dir, &vm, &env).map_err(|e| format!("{e:#}"))
-        });
+        let ready = super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)
+            .map_err(|e| e.to_string())
+            .and_then(|ready| {
+                let (Some(vm), crate::levels::env::Environment::Vm { sbx_env, .. }) =
+                    (&ready.vm, &ready.env)
+                else {
+                    return Err("levels: the editor's session is in the VM".to_owned());
+                };
+                session::write(&kit, &project, &dir, vm, sbx_env).map_err(|e| format!("{e:#}"))
+            });
         if let Err(why) = ready {
             crate::common::log::warn(&format!("editor session {project}: {why}"));
             if let Err(e) = session::failed(&kit, &project, &why) {
@@ -166,49 +175,22 @@ pub async fn terminal_open<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     crate::projects::settings::opened(&state.kit, &project);
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
-    let (host, services) = (state.host.clone(), Arc::clone(&state.services));
+    let host = state.host.clone();
+    let fx = super::levels::AppEffects::of(&app, &state, state.env());
     tauri::async_runtime::spawn_blocking(move || {
-        use crate::levels::labels::SessionLabel;
         let kit_env = ensure(&app, &task, &kit, lang, &[])?;
         // Level 2 (D-179): in the project's microVM when it is on (R14),
-        // else on the PC, sealed (R5); a network share or a pending restart
-        // of the kit's daemon refused (R9, R10).
+        // made ready by `levels::prepare` (the kit's tools, the databases
+        // on the PC, D-170, D-171), else on the PC, sealed (R5); a network
+        // share or a pending restart of the kit's daemon refused (R9, R10).
+        // A VM without the kit's `sbx` is an error, never the PC (I7).
         let req = project_terminal_request(&kit, &dir);
-        match super::levels::place_now(&kit, &kit_env, &req, None, lang, &host)? {
-            super::levels::Placed::Pc {
-                placement,
-                dir,
-                mut env,
-            } => {
-                // The stand-ins say where the agents run (until step 5).
-                crate::isolation::with_agents_notice(&mut env, lang);
-                let at = SessionLabel::pc(placement.level());
-                terminal::open_console(&app, &kit, &env, &dir, at).or_fail_chain("terminal")
-            }
-            // The VM's path as before D-179 (step 4 of LEVELS.md §12.2
-            // moves it to `levels::prepare`): the kit's tools and the
-            // databases on the PC (D-170, D-171).
-            super::levels::Placed::Vm { workdir, .. } => {
-                let env = crate::levels::env::pc_environment(
-                    &kit,
-                    kit_env.clone(),
-                    crate::levels::Level::Project,
-                    Some(&project),
-                    None,
-                );
-                let vm = crate::isolation::vm_for(&kit, &host, &env, &project, &dir)
-                    .ok_or_else(|| no_sbx(lang))?;
-                let vm = super::terminals::project_vm_ready(
-                    &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm,
-                )?;
-                vm.start(&env, lang).or_fail_chain("vm")?;
-                let args = crate::isolation::vm::kit_terminal_args(&vm.name, &workdir, vm.tools());
-                let launch = vm.launch(&kit, args, "VM", lang).or_fail_chain("vm")?;
-                let at = SessionLabel::vm(crate::levels::Level::Project, &vm.name);
-                terminal::open_launch(&app, &vm.session_env(&env), &dir, launch, at)
-                    .or_fail_chain("terminal")
-            }
-        }
+        let fx = super::levels::AppEffects {
+            kit_env: kit_env.clone(),
+            ..fx
+        };
+        let ready = super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)?;
+        crate::levels::start::open_terminal(&app, &kit, &ready, lang).or_fail_chain("terminal")
     })
     .await
     .or_fail("terminal")?
@@ -221,12 +203,6 @@ pub(crate) fn project_terminal_request(kit: &Kit, dir: &std::path::Path) -> crat
         origin: crate::levels::Origin::ProjectTerminal,
         place: crate::levels::place::place_of(kit, dir),
     }
-}
-
-/// `decide` put it in the VM, but the kit has no `sbx` to run it: never on
-/// the PC instead (I7).
-pub(crate) fn no_sbx(lang: &str) -> CmdError {
-    crate::common::i18n::t(lang, "Docker Sandboxes (sbx) non è nel kit.", &[]).into()
 }
 
 /// The project's editor settings in its .vscode\settings.json (D-78).

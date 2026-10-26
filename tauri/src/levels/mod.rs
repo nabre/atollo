@@ -21,6 +21,8 @@ pub mod env;
 pub mod facts;
 pub mod labels;
 pub mod place;
+pub mod prepare;
+pub mod start;
 
 /// The three levels (D-179). The number is the user-facing one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -652,3 +654,7 @@ fn guest_joined(guest: &str, below: Option<&str>) -> String {
 #[cfg(test)]
 #[path = "../../../test/rust/levels/decide.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../../../test/rust/levels/rule.rs"]
+mod rule;
