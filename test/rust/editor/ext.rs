@@ -152,21 +152,15 @@ fn pending_follows_projects_programs_offered_and_installed() {
     let has = |p: &[String], id: &str| p.iter().any(|x| x == id);
     let p = pending(&kit, &none);
     assert!(has(&p, "usernamehw.errorlens"), "general: always");
-    assert!(
-        !has(&p, "anthropic.claude-code"),
-        "Claude Code not in the kit"
-    );
+    assert!(!has(&p, "anthropic.claude-code"), "an agent: never");
     assert!(!has(&p, "ms-python.python"), "no Python project");
     assert!(!has(&p, "eamodio.gitlens"), "optional");
 
-    let claude = Catalog::get().find("claude").unwrap().key_path(&kit);
-    fs::create_dir_all(claude.parent().unwrap()).unwrap();
-    fs::write(&claude, b"").unwrap();
     let app = kit.projects().join("app");
     fs::create_dir_all(&app).unwrap();
     fs::write(app.join("main.py"), b"").unwrap();
     let p = pending(&kit, &none);
-    assert!(has(&p, "anthropic.claude-code") && has(&p, "ms-python.python"));
+    assert!(has(&p, "ms-python.python"));
     assert!(!has(&p, "vue.volar"), "not a language of a project");
 
     crate::projects::settings::update(&kit, "app", |s| {
@@ -238,4 +232,154 @@ fn matrix_follows_the_target() {
             .count();
         assert_eq!(shown, general, "{target}");
     }
+}
+
+/// LEVELS.md §10: the extensions known to run an agent carry `"level":
+/// "agent"`, and only those; Claude Code is one of them and no longer a
+/// general extension tied to the `claude` program (§13 item 5).
+#[test]
+fn extensions_that_run_an_agent_are_marked() {
+    let agents = [
+        "anthropic.claude-code",
+        "openai.chatgpt",
+        "google.geminicodeassist",
+        "saoudrizwan.claude-dev",
+        "rooveterinaryinc.roo-cline",
+        "continue.continue",
+        "kilocode.kilo-code",
+    ];
+    for id in agents {
+        let e = matrix().iter().find(|e| e.id == id).expect(id);
+        assert!(e.runs_an_agent() && is_agent(id), "{id}");
+        assert!(!e.general(), "{id}: never general");
+        assert!(e.languages.is_empty() && e.tools.is_empty() && e.programs.is_empty());
+    }
+    let marked: Vec<&str> = matrix()
+        .iter()
+        .filter(|e| e.level.is_some())
+        .map(|e| e.id.as_str())
+        .collect();
+    assert_eq!(marked, agents, "only agents are marked, Agent only");
+    assert!(
+        !is_agent("google.gemini-cli-vscode-ide-companion"),
+        "§10: allowed"
+    );
+    assert!(!is_agent("ms-python.python"));
+    let json = serde_json::to_value(matrix().iter().find(|e| e.id == agents[0]).unwrap()).unwrap();
+    assert_eq!(json["level"], "agent");
+    let plain = serde_json::to_value(&matrix()[agents.len()]).unwrap();
+    assert!(plain.get("level").is_none(), "{plain}");
+}
+
+/// LEVELS.md §10, §13 item 5: an extension that runs an agent is never
+/// installed: not as a general one, not from the user's list, not added by
+/// hand to a project (dropped from its choice, skipped if an older choice
+/// holds it), and not offered in the matrix of «Linguaggi e strumenti».
+#[test]
+fn an_agent_extension_is_never_installed() {
+    let (_tmp, kit) = prepared_kit("ext-agents");
+    let claude = Catalog::get().find("claude").map(|c| c.key_path(&kit));
+    if let Some(claude) = claude {
+        fs::create_dir_all(claude.parent().unwrap()).unwrap();
+        fs::write(&claude, b"").unwrap();
+    }
+    fs::create_dir_all(kit.app_dir()).unwrap();
+    fs::write(
+        kit.app_dir().join("extensions.txt"),
+        "anthropic.claude-code\nsaoudrizwan.claude-dev\nmikestead.dotenv\n",
+    )
+    .unwrap();
+    fs::create_dir_all(kit.projects().join("app")).unwrap();
+    crate::projects::settings::update(&kit, "app", |s| {
+        s.extensions = Extensions {
+            added: vec!["continue.continue".into(), "eamodio.gitlens".into()],
+            removed: Vec::new(),
+        };
+    });
+    let p = pending(&kit, &BTreeSet::new());
+    assert!(p.iter().any(|x| x == "mikestead.dotenv") && p.iter().any(|x| x == "eamodio.gitlens"));
+    for id in [
+        "anthropic.claude-code",
+        "saoudrizwan.claude-dev",
+        "continue.continue",
+    ] {
+        assert!(!p.iter().any(|x| x == id), "{id} pending: {p:?}");
+    }
+    let choice = clean_choice(&["Anthropic.Claude-Code".into(), "a.b".into()], &[]);
+    assert_eq!(choice.added, ["a.b"], "never added to a project");
+    let old = Extensions {
+        added: vec!["openai.chatgpt".into()],
+        removed: Vec::new(),
+    };
+    assert!(of_project(&[], &[], &old, &BTreeSet::new()).is_empty());
+    for target in crate::kit::Target::ALL {
+        let info = matrix_info(&Kit::at_target(std::env::temp_dir(), target));
+        assert!(
+            info.extensions.iter().all(|r| !r.extension.runs_an_agent()),
+            "{target}"
+        );
+    }
+}
+
+/// LEVELS.md §10: every window turns them off in its workspace, even when
+/// the user's list names one (an install from the editor's own view lives
+/// until the next start).
+#[test]
+fn an_agent_extension_is_off_in_every_window() {
+    let user = parse("anthropic.claude-code\n");
+    let h = hidden(&[], &BTreeSet::new(), &user);
+    for id in [
+        "anthropic.claude-code",
+        "kilocode.kilo-code",
+        "openai.chatgpt",
+    ] {
+        assert!(h.iter().any(|x| x == id), "{id}: {h:?}");
+    }
+    assert!(!h.iter().any(|x| x == "usernamehw.errorlens"));
+}
+
+/// LEVELS.md §10, Q10: at every start of the editor the extensions that
+/// run an agent found installed are uninstalled with the server's
+/// `--uninstall-extension` (its `--disable-extension` is ignored by the
+/// server); one the server marked uninstalled (`.obsolete`, removed at its
+/// next start) is no longer installed.
+#[test]
+fn agents_are_uninstalled_at_the_editors_start() {
+    let tmp = TempDir::new("ext-agents-start");
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
+    let dir = extensions_dir(&kit);
+    for folder in [
+        "anthropic.claude-code-2.1.310-win32-x64",
+        "saoudrizwan.claude-dev-3.1.0",
+        "usernamehw.errorlens-3.26.0-universal",
+        "continue.continue-1.0.0-linux-x64",
+    ] {
+        fs::create_dir_all(dir.join(folder)).unwrap();
+    }
+    fs::write(
+        dir.join(".obsolete"),
+        r#"{"continue.continue-1.0.0-linux-x64":true}"#,
+    )
+    .unwrap();
+    let have = installed(&kit);
+    assert!(have.contains("usernamehw.errorlens") && !have.contains("continue.continue"));
+    let found = agents_among(&have);
+    assert_eq!(found, ["anthropic.claude-code", "saoudrizwan.claude-dev"]);
+    assert_eq!(
+        uninstall_args(&found),
+        [
+            "--uninstall-extension",
+            "anthropic.claude-code",
+            "--uninstall-extension",
+            "saoudrizwan.claude-dev"
+        ]
+    );
+    assert!(uninstall_args(&[]).is_empty());
+    let empty = TempDir::new("ext-agents-none");
+    let none = Kit::at(empty.0.clone(), crate::test_support::kit_arch());
+    assert_eq!(
+        remove_agents(&none, &crate::env::KitEnv::default()).unwrap(),
+        Vec::<String>::new(),
+        "nothing installed: nothing runs"
+    );
 }

@@ -149,6 +149,16 @@
     "fr": "Plus tard",
     "de": "Später"
   },
+  "Ho capito": {
+    "en": "Got it",
+    "fr": "Compris",
+    "de": "Verstanden"
+  },
+  "Atollo ha tolto dall'editor {0}: esegue un agente, e in Atollo gli agenti girano solo nella VM. Avvialo dalla pagina del progetto, dal suo profilo nel terminale dell'editor o scrivendo il suo comando (per esempio claude) in un terminale nella cartella del progetto.": {
+    "en": "Atollo removed {0} from the editor: it runs an agent, and in Atollo agents run only in the VM. Start it from the project's page, from its profile in the editor's terminal, or by typing its command (for example claude) in a terminal in the project's folder.",
+    "fr": "Atollo a retiré {0} de l'éditeur : elle exécute un agent, et dans Atollo les agents ne tournent que dans la VM. Lancez-le depuis la page du projet, depuis son profil dans le terminal de l'éditeur ou en tapant sa commande (par exemple claude) dans un terminal dans le dossier du projet.",
+    "de": "Atollo hat {0} aus dem Editor entfernt: Sie führt einen Agenten aus, und in Atollo laufen Agenten nur in der VM. Starte ihn über die Projektseite, über sein Profil im Terminal des Editors oder indem du seinen Befehl (zum Beispiel claude) in einem Terminal im Projektordner eingibst."
+  },
   "Riduci a icona": {
     "en": "Minimize",
     "fr": "Réduire",

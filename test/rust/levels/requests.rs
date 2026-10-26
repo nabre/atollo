@@ -627,3 +627,76 @@ fn a_request_in_the_vm_reports_its_progress() {
         .any(|e| matches!(e, PrepareProgress::Step { index: 1, .. })));
     assert_eq!(events.last(), Some(&PrepareProgress::Done));
 }
+
+/// LEVELS.md §6.9, Q2 (the spike, as far as it goes without a VM): the
+/// Claude Code extension runs its wrapper as `<wrapper> <bundled binary>
+/// <flags…>`; the bundled binary of the PC is dropped and the agent is the
+/// sandbox's own `claude` (R12), the flags kept in their order. Other
+/// origins keep every word; a first word that is a flag is kept too (the
+/// path is passed only "when present").
+#[test]
+fn the_extensions_bundled_binary_is_dropped() {
+    let ext = Origin::EditorExtension {
+        extension: "anthropic.claude-code".into(),
+        agent: Agent::Claude,
+    };
+    let words = |w: &[&str]| w.iter().map(|s| (*s).to_owned()).collect::<Vec<_>>();
+    let bundled = words(&[
+        r"C:\Users\me\.vscode-oss\extensions\anthropic.claude-code-2.1.310-win32-x64\resources\native-binary\claude.exe",
+        "--output-format",
+        "stream-json",
+        "--input-format",
+        "stream-json",
+        "--verbose",
+    ]);
+    assert_eq!(agent_args(&ext, &bundled), bundled[1..]);
+    let unix = words(&["/home/me/.ext/claude", "-p", "it's \"mine\""]);
+    assert_eq!(agent_args(&ext, &unix), ["-p", "it's \"mine\""]);
+    let flags = words(&["--resume", "abc"]);
+    assert_eq!(agent_args(&ext, &flags), flags, "no path: nothing dropped");
+    assert!(agent_args(&ext, &[]).is_empty());
+    let typed = Origin::Forwarded {
+        agent: Agent::Claude,
+        from: Level::Manual,
+    };
+    assert_eq!(
+        agent_args(&typed, &unix),
+        unix,
+        "a forwarder keeps every word"
+    );
+
+    // The whole reply drops it too: the flags after the agent, no PC path.
+    // With Pi's build in the project's VM, which the fake effects run to
+    // the end (Claude's own sandbox asks the real `sbx` for its session).
+    let (_tmp, kit) = kit_with_shop("requests-extension");
+    let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    install(&guest, "pi");
+    let base = base(&kit);
+    let ext = Origin::EditorExtension {
+        extension: "anthropic.claude-code".into(),
+        agent: Agent::Pi,
+    };
+    let req = request(&kit, ext, &kit.projects().join("shop"));
+    let facts = facts_of(&kit, &req, true);
+    let reply = reply_to(
+        &Fake::default(),
+        &kit,
+        &base,
+        &editor(&kit, &base),
+        &Host::default(),
+        &req,
+        &bundled,
+        &facts,
+        "it",
+    );
+    assert_eq!(reply.placement, Where::Vm, "{reply:?}");
+    assert_eq!(reply.level, Some(Level::Agent));
+    let n = reply.argv.len();
+    assert_eq!(reply.argv[n - 5..], bundled[1..], "{:?}", reply.argv);
+    assert!(
+        !reply.argv.iter().any(|a| a.contains("native-binary")),
+        "{:?}",
+        reply.argv
+    );
+    assert!(reply.argv[n - 6].ends_with("/pi/pi"), "{:?}", reply.argv);
+}

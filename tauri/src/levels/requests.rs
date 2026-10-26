@@ -322,6 +322,21 @@ impl Reply {
     }
 }
 
+/// The words for the agent of a request of `origin`: as asked, but for an
+/// editor extension's wrapper (LEVELS.md §6.9, Q2), which the extension
+/// runs as `<wrapper> <its bundled binary> <its flags…>` ("The bundled
+/// binary path is passed as an argument when present"): its first word,
+/// when it is not a flag, is that PC path and is dropped; the agent in the
+/// VM is the sandbox's own `claude`. The flags stay as they are.
+pub fn agent_args(origin: &Origin, args: &[String]) -> Vec<String> {
+    match (origin, args.split_first()) {
+        (Origin::EditorExtension { .. }, Some((first, rest))) if !first.starts_with('-') => {
+            rest.to_vec()
+        }
+        _ => args.to_vec(),
+    }
+}
+
 /// The reply to `req` (with the user's `args`) decided with `facts`
 /// (LEVELS.md §4.3): a refusal with its reason, fix and text; on the PC
 /// (an editor's task without the VM, R5/R6) the kit's shell running the
@@ -341,6 +356,7 @@ pub fn reply_to(
     facts: &Facts,
     lang: &str,
 ) -> Reply {
+    let args = &agent_args(&req.origin, args);
     let placement = super::decide(req, facts);
     if let Placement::Refused { .. } = placement {
         return Reply::refused(&placement, lang);

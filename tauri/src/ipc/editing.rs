@@ -67,6 +67,7 @@ pub async fn editor_restart<R: Runtime>(
     .await
     .or_fail("editor")?
     .or_fail_chain("editor restart")?;
+    editor::window::notify_agents_removed(&app, &state.editor, state.lang());
     let _ = app.emit_to(MAIN, super::events::EDITOR_STATUS, state.editor.status());
     Ok(())
 }

@@ -118,6 +118,37 @@ pub fn forward_sh(cmd: &str, agent: &str) -> String {
     )
 }
 
+/// The wrapper the Claude Code extension would run through
+/// `claudeCode.claudeProcessWrapper` (LEVELS.md §6.9, Q2): ready for the
+/// spike by hand, not wired. Atollo never sets the setting and the
+/// extension is uninstalled at every editor start (§10).
+pub const CLAUDE_EXTENSION: &str = "claude-extension";
+
+/// `forward\claude-extension.cmd`: as a forwarder, with origin
+/// `editorExtension`; every word goes to the app, which drops the
+/// extension's bundled binary (`levels::requests::agent_args`).
+pub fn claude_extension_cmd() -> String {
+    format!(
+        "@echo off\r\n\
+         rem Atollo: the Claude Code extension's agent in the project's VM: D-179, LEVELS.md 6.9, Q2, not wired.\r\n\
+         where pwsh >nul 2>nul\r\n\
+         if errorlevel 1 goto nopwsh\r\n\
+         pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File \"%~dp0..\\launch.ps1\" -Origin editorExtension -Extension anthropic.claude-code -Agent claude -- %*\r\n\
+         exit /b %ERRORLEVEL%\r\n\
+         :nopwsh\r\n\
+         echo {NO_PWSH} 1>&2\r\n\
+         exit /b 1\r\n"
+    )
+}
+
+/// `forward/claude-extension`: the same for sh, through `launch.sh`.
+pub fn claude_extension_sh() -> String {
+    "#!/bin/sh\n\
+     # Atollo: the Claude Code extension's agent in the project's VM (D-179, LEVELS.md 6.9; Q2, not wired).\n\
+     exec /bin/sh \"$(dirname \"$0\")/../launch.sh\" editorExtension anthropic.claude-code claude \"$@\"\n"
+        .to_owned()
+}
+
 /// The MySQL programs the kit's terminal reaches logged in as `root`
 /// (D-110).
 pub const MYSQL_LAUNCHERS: [&str; 3] = ["mysql", "mysqldump", "mysqladmin"];
@@ -176,6 +207,14 @@ fn generated() -> Vec<(String, String)> {
             out.push((format!("{FORWARD_DIR}/{cmd}"), forward_sh(cmd, id)));
         }
     }
+    out.push((
+        format!("{FORWARD_DIR}/{CLAUDE_EXTENSION}.cmd"),
+        claude_extension_cmd(),
+    ));
+    out.push((
+        format!("{FORWARD_DIR}/{CLAUDE_EXTENSION}"),
+        claude_extension_sh(),
+    ));
     out
 }
 
