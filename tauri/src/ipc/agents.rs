@@ -72,9 +72,19 @@ pub async fn agent_launch<R: Runtime>(
         let (vm, args) = agent_vm_ready(
             &app, &task, &services, &kit, &host, lang, &project, &dir, &kit_env, vm, &agent,
         )?;
+        // Pi's session, on the PC: while it runs, the port of the local
+        // models stays open (D-178); it ends with the session, or now when
+        // the session does not open.
+        let pi = (agent == "pi").then(|| crate::isolation::pi_session(&vm.name));
         let launch = vm.launch(&kit, args, &agent, lang).or_fail_chain("vm")?;
-        crate::editor::terminal::open_launch(&app, &vm.session_env(&base), &dir, launch)
-            .or_fail_chain("agent")
+        crate::editor::terminal::open_launch_then(
+            &app,
+            &vm.session_env(&base),
+            &dir,
+            launch,
+            Box::new(move || drop(pi)),
+        )
+        .or_fail_chain("agent")
     })
     .await
     .or_fail("agent")?
@@ -170,7 +180,13 @@ pub(crate) fn agent_vm_ready<R: Runtime>(
         let (vm, port) = pi_local_models(app, kit, lang, vm)?;
         vm.start(&env, lang).or_fail_chain("vm")?;
         if let Some(port) = port {
-            crate::isolation::watch_pi_port(vm.clone(), env.clone(), pi.clone(), port, db_ports);
+            crate::isolation::watch_pi_port(
+                vm.clone(),
+                env.clone(),
+                project.to_owned(),
+                port,
+                db_ports,
+            );
         }
         let args = crate::isolation::vm::pi_session_args(&vm.name, &guest_dir, &pi, vm.tools());
         return Ok((vm, args));
@@ -210,9 +226,12 @@ fn pi_local_models<R: Runtime>(
     ) else {
         return Ok((vm, None));
     };
-    // A watcher of the port waits again: it never closes it while this
-    // Pi is being started.
-    crate::isolation::pi_port_touch(&vm.name);
+    // Not a database's: a watcher of the port waits again, it never closes
+    // it while this Pi is being started, and keeps this port from now.
+    let watched = (!vm.host_ports().contains(&port)).then_some(port);
+    if let Some(port) = watched {
+        crate::isolation::pi_port_touch(&vm.name, port);
+    }
     if let Some(state) = app.try_state::<AppState>() {
         if let Err(e) = state.llm.start(&state.env(), lang) {
             crate::common::log::warn(&format!("pi: local models: {e:#}"));
@@ -233,7 +252,6 @@ fn pi_local_models<R: Runtime>(
     }
     crate::platform::files::replace_private(&file, &text).or_fail_chain("pi")?;
     tools.env_file = Some(file);
-    let watched = (!vm.host_ports().contains(&port)).then_some(port);
     Ok((vm.with_tools(tools).with_host_port(port), watched))
 }
 

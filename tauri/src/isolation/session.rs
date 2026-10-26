@@ -19,7 +19,13 @@
 //!   Codex or Pi asks for its session; the app makes its sandbox ready like
 //!   the project's (tools, database, ports; Pi's is the project's own VM)
 //!   and writes `<project>/<agent>`, the session's arguments, or
-//!   `<project>/<agent>.error`.
+//!   `<project>/<agent>.error`;
+//! - `<project>.pi.<pid>`: `vm.ps1` runs Pi's `sbx exec` for the project,
+//!   `<pid>` its own PowerShell's (`$PID`); written before, removed when
+//!   `sbx exec` returns ([`pi_markers`]). Beside `<project>/`, which the
+//!   next editor's start rewrites: a running Pi keeps its marker. The
+//!   folder is the PC's only, never mounted in a VM: the project's code
+//!   cannot write one (D-178).
 //!
 //! The app clears them all at its start: until an editor opens, no level
 //! is known and a terminal opens nothing.
@@ -157,6 +163,41 @@ pub fn agent_failed(kit: &Kit, project: &str, agent: &str, why: &str) -> Result<
     std::fs::create_dir_all(&out)?;
     std::fs::write(out.join(format!("{agent}.error")), format!("{why}\n"))?;
     Ok(())
+}
+
+/// What follows `<project>` in the name of a marker of an editor's Pi:
+/// `<project>.pi.<pid>` (`vm.ps1`).
+pub const PI_MARKER: &str = ".pi.";
+
+/// The PowerShell pids of the markers of `project` among the file names
+/// `names` (`<project>.pi.<pid>`, the pid digits only): another project's
+/// (`shop.pi.5.pi.7` is `shop.pi.5`'s), a request or anything else is not
+/// one.
+pub fn pi_marker_pids<'a>(names: impl IntoIterator<Item = &'a str>, project: &str) -> Vec<u32> {
+    let prefix = format!("{project}{PI_MARKER}");
+    let mut pids: Vec<u32> = names
+        .into_iter()
+        .filter_map(|name| name.strip_prefix(&prefix))
+        .filter(|pid| !pid.is_empty() && pid.bytes().all(|b| b.is_ascii_digit()))
+        .filter_map(|pid| pid.parse().ok())
+        .collect();
+    pids.sort_unstable();
+    pids.dedup();
+    pids
+}
+
+/// The PowerShell pids of the editor's Pi sessions of `project` that
+/// `vm.ps1` noted ([`pi_marker_pids`]); a stale marker is told apart by
+/// its pid (`isolation::editor_pis_alive`).
+pub fn pi_markers(kit: &Kit, project: &str) -> Vec<u32> {
+    let names: Vec<String> = std::fs::read_dir(root(kit))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_type().is_ok_and(|t| t.is_file()))
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    pi_marker_pids(names.iter().map(String::as_str), project)
 }
 
 /// The VM of `project` could not be made ready: its terminals say why.

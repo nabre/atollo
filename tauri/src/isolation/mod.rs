@@ -13,7 +13,7 @@
 //! ([`seal`]): less of what reaches them by itself. It is no wall (they run
 //! as the user and can read what the user can): the VM is.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::sync::Mutex;
@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::env::{Host, KitEnv};
 use crate::kit::Kit;
+use crate::platform::processes::{path_key, Proc};
 use crate::platform::virt::{self, Gap};
 
 pub mod daemon;
@@ -1247,32 +1248,6 @@ pub fn pi_local_models_env(port: u16, key: &str) -> Vec<(String, String)> {
     ]
 }
 
-/// What the VM answered to [`vm::pi_running_args`].
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PiCheck {
-    /// A Pi runs in the VM: the port of the local models stays open.
-    Running,
-    /// None does any more.
-    Ended,
-    /// No answer (the daemon stopped, the sandbox stopped or gone): its
-    /// next start reconciles the ports anyway.
-    Failed(String),
-}
-
-/// [`PiCheck`] of the answer of `sbx exec`: `Ok((success, stdout,
-/// stderr))`, or why it did not run to its end. Running only when the
-/// check says so: anything unexpected closes the port (D-178).
-pub fn pi_check_of(answer: Result<(bool, &str, &str), &str>) -> PiCheck {
-    match answer {
-        Ok((true, out, _)) if out.trim() == vm::PI_RUNNING => PiCheck::Running,
-        Ok((true, out, _)) if out.trim() == vm::PI_NONE => PiCheck::Ended,
-        Ok((_, out, err)) => {
-            PiCheck::Failed(format!("{} {}", out.trim(), err.trim()).trim().into())
-        }
-        Err(why) => PiCheck::Failed(why.to_owned()),
-    }
-}
-
 /// `ports` without `port`, the others in their order.
 pub fn ports_without(ports: &[u16], port: u16) -> Vec<u16> {
     ports.iter().copied().filter(|p| *p != port).collect()
@@ -1286,34 +1261,185 @@ pub fn pi_port_closes(port: u16, noted: &[u16], db_ports: &[u16]) -> bool {
     noted.contains(&port) && !db_ports.contains(&port)
 }
 
-/// How long after Pi was made ready in a sandbox its port stays open
-/// without asking: Pi is being started.
-const PI_GRACE: Duration = Duration::from_secs(60);
-/// How often the VM is asked whether a Pi still runs in it.
+/// The ports of the local models to close once Pi ended in a sandbox:
+/// every one opened for Pi there while watched (`opened`: the settings may
+/// have moved the server meanwhile) that [`pi_port_closes`], once each.
+pub fn pi_ports_to_close(opened: &[u16], noted: &[u16], db_ports: &[u16]) -> Vec<u16> {
+    let mut out: Vec<u16> = Vec::new();
+    for port in opened {
+        if pi_port_closes(*port, noted, db_ports) && !out.contains(port) {
+            out.push(*port);
+        }
+    }
+    out
+}
+
+/// How long after Pi was made ready in a sandbox its port stays open with
+/// no session of Pi seen: Pi is being started.
+pub const PI_GRACE: Duration = Duration::from_secs(60);
+/// How often the watcher looks at the PC's sessions of Pi.
 const PI_POLL: Duration = Duration::from_secs(20);
+/// The most the port stays open after the last start of Pi from the PC
+/// (the app, or the editor), whatever its sessions look like: a new start
+/// renews it.
+pub const PI_MAX: Duration = Duration::from_secs(12 * 60 * 60);
+
+/// A sandbox whose port of the local models a watcher closes once Pi ends
+/// ([`watch_pi_port`]).
+struct PiWatch {
+    /// The last start of Pi from the PC: the app's, or a new session of the
+    /// editor's ([`pi_port_touch`]).
+    touched: Instant,
+    /// The port Pi gets now, kept by every other start ([`pi_port_of`]).
+    port: u16,
+    /// Every port of the local models opened for Pi in the sandbox while
+    /// watched: those still open close at the end ([`pi_ports_to_close`]).
+    opened: Vec<u16>,
+    /// The ports of the project's databases: never closed.
+    db_ports: Vec<u16>,
+    /// The app's terminal sessions of Pi that still run ([`PiSession`]).
+    sessions: BTreeSet<u64>,
+    /// The PowerShell pids of the editor's sessions of Pi seen running: a
+    /// new one is a new start.
+    seen: Vec<u32>,
+}
 
 /// The sandboxes whose port of the local models a watcher closes once Pi
-/// ends ([`watch_pi_port`]), with when Pi was last made ready in each and
-/// that port.
-fn pi_watched() -> std::sync::MutexGuard<'static, BTreeMap<String, (Instant, u16)>> {
-    static WATCHED: Mutex<BTreeMap<String, (Instant, u16)>> = Mutex::new(BTreeMap::new());
+/// ends.
+fn pi_watched() -> std::sync::MutexGuard<'static, BTreeMap<String, PiWatch>> {
+    static WATCHED: Mutex<BTreeMap<String, PiWatch>> = Mutex::new(BTreeMap::new());
     WATCHED
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
-/// Pi is being made ready in the sandbox `name` (D-178): a watcher of its
-/// port waits [`PI_GRACE`] again before closing it.
-pub fn pi_port_touch(name: &str) {
-    if let Some((at, _)) = pi_watched().get_mut(name) {
-        *at = Instant::now();
+/// Pi is being made ready from the PC in the sandbox `name` on the local
+/// models' `port` (D-178): a watcher of the sandbox waits [`PI_GRACE`]
+/// again, its [`PI_MAX`] starts again, and `port` is the one every start
+/// keeps open from now on (another one of before closes at that start, or
+/// at the end).
+pub fn pi_port_touch(name: &str, port: u16) {
+    if let Some(w) = pi_watched().get_mut(name) {
+        w.touched = Instant::now();
+        w.port = port;
+        if !w.opened.contains(&port) {
+            w.opened.push(port);
+        }
     }
 }
 
 /// The port of the local models a watcher keeps open for the sandbox
 /// `name` while Pi runs there ([`watch_pi_port`]), if any.
 pub fn pi_port_of(name: &str) -> Option<u16> {
-    pi_watched().get(name).map(|(_, port)| *port)
+    pi_watched().get(name).map(|w| w.port)
+}
+
+/// A session of the app's terminal running Pi in a sandbox (D-178): its
+/// watcher keeps the port open while it is held. Dropped when the session
+/// ends, or when it never opened.
+pub struct PiSession {
+    name: String,
+    id: u64,
+}
+
+/// A [`PiSession`] in the sandbox `name`, counted only while a watcher is
+/// there (no watcher: no port to keep).
+pub fn pi_session(name: &str) -> PiSession {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    if let Some(w) = pi_watched().get_mut(name) {
+        w.sessions.insert(id);
+    }
+    PiSession {
+        name: name.to_owned(),
+        id,
+    }
+}
+
+impl Drop for PiSession {
+    fn drop(&mut self) {
+        if let Some(w) = pi_watched().get_mut(&self.name) {
+            w.sessions.remove(&self.id);
+        }
+    }
+}
+
+/// How the processes of the PC name the kit's PowerShell (`pwsh`): its
+/// path as given and as the file system resolves it (a link; Windows'
+/// `\\?\` dropped), each a [`path_key`].
+pub fn pwsh_keys(pwsh: &Path) -> Vec<String> {
+    let mut keys = vec![path_key(&pwsh.display().to_string())];
+    if let Ok(real) = std::fs::canonicalize(pwsh) {
+        let real = real.display().to_string();
+        let key = path_key(real.strip_prefix(r"\\?\").unwrap_or(&real));
+        if !keys.contains(&key) {
+            keys.push(key);
+        }
+    }
+    keys
+}
+
+/// The editor's sessions of Pi that still run (D-178), from the markers'
+/// pids (`markers`, [`session::pi_markers`]): only a pid that runs on the
+/// PC (`procs`) as the kit's PowerShell (`pwsh`, [`pwsh_keys`]). A marker
+/// left behind, or its pid now another program's, is none.
+pub fn editor_pis_alive(markers: &[u32], procs: &[Proc], pwsh: &[String]) -> Vec<u32> {
+    markers
+        .iter()
+        .copied()
+        .filter(|pid| {
+            procs
+                .iter()
+                .any(|p| p.pid == *pid && pwsh.contains(&path_key(&p.path.display().to_string())))
+        })
+        .collect()
+}
+
+/// Whether the port of the local models stays open (D-178), from what the
+/// PC knows only, never from the VM (the project's code runs there and
+/// could fake a Pi): `since` the last start of Pi from the PC within
+/// [`PI_GRACE`] (Pi is being started), or a session of Pi that runs, the
+/// app's (`app`) or the editor's (`editor`, [`editor_pis_alive`]); never
+/// past [`PI_MAX`] since that start.
+pub fn pi_port_kept(since: Duration, app: usize, editor: usize) -> bool {
+    since < PI_MAX && (since < PI_GRACE || app > 0 || editor > 0)
+}
+
+/// What a watcher finds in its sandbox ([`pi_now`]).
+enum PiNow {
+    /// Not watched any more.
+    Gone,
+    /// The port stays open ([`pi_port_kept`]).
+    Kept,
+    /// It closes: the sandbox no longer watched when asked to `end`, with
+    /// what it had.
+    Over(Option<PiWatch>),
+}
+
+/// [`pi_port_kept`] for the watched sandbox `name` of `project` now; a
+/// session of the editor not seen before is a new start of Pi (as
+/// [`pi_port_touch`]). With `end`, a port no longer kept leaves the
+/// watched ones in the same step: nothing touches it in between.
+fn pi_now(kit: &Kit, name: &str, project: &str, pwsh: &[String], end: bool) -> PiNow {
+    let markers = session::pi_markers(kit, project);
+    let editor = if markers.is_empty() {
+        Vec::new()
+    } else {
+        editor_pis_alive(&markers, &crate::platform::processes::all(), pwsh)
+    };
+    let mut all = pi_watched();
+    let Some(w) = all.get_mut(name) else {
+        return PiNow::Gone;
+    };
+    if editor.iter().any(|pid| !w.seen.contains(pid)) {
+        w.touched = Instant::now();
+    }
+    w.seen = editor;
+    if pi_port_kept(w.touched.elapsed(), w.sessions.len(), w.seen.len()) {
+        PiNow::Kept
+    } else {
+        PiNow::Over(end.then(|| all.remove(name)).flatten())
+    }
 }
 
 /// The PC's ports a start of a sandbox opens: `ports` (its databases, or
@@ -1329,58 +1455,72 @@ pub fn ports_with(ports: &[u16], pi_port: Option<u16>) -> Vec<u16> {
     all
 }
 
-/// Closes the port of the local models (`port`) of `vm` once no Pi runs in
-/// it any more (D-178): the project's own code runs in the same VM, and
-/// would use the models too while the port is open. One watcher per
-/// sandbox, a thread: it waits [`PI_GRACE`], then asks the VM every
-/// [`PI_POLL`] whether the program `pi` (the VM's path) runs; when none
-/// does, or the VM does not answer, it closes the port (never one of the
+/// Closes the port of the local models (`port`) of `vm`, the VM of
+/// `project`, once no Pi started from the PC runs there any more (D-178):
+/// the project's own code runs in the same VM, and would use the models
+/// too while the port is open. Whether Pi runs is never asked to the VM,
+/// where that code could fake it: the app's terminal sessions of Pi
+/// ([`pi_session`]) and the editor's (`vm.ps1`'s markers with the pid of
+/// the kit's PowerShell, [`editor_pis_alive`]) tell it, on the PC. One
+/// watcher per sandbox, a thread: it waits [`PI_GRACE`], then looks every
+/// [`PI_POLL`]; when no session runs, or [`PI_MAX`] passed since the last
+/// start, it closes every port it opened for Pi (never one of the
 /// databases', `db_ports`), deletes `pi.env` and ends. Called again while
-/// it watches, it only waits [`PI_GRACE`] again.
-pub fn watch_pi_port(vm: Vm, env: KitEnv, pi: String, port: u16, db_ports: Vec<u16>) {
+/// it watches, it takes the new `port` and waits [`PI_GRACE`] again.
+pub fn watch_pi_port(vm: Vm, env: KitEnv, project: String, port: u16, db_ports: Vec<u16>) {
     {
         let mut all = pi_watched();
-        let new = !all.contains_key(&vm.name);
-        all.insert(vm.name.clone(), (Instant::now(), port));
-        if !new {
+        if let Some(w) = all.get_mut(&vm.name) {
+            w.touched = Instant::now();
+            w.port = port;
+            if !w.opened.contains(&port) {
+                w.opened.push(port);
+            }
+            w.db_ports = db_ports;
             return;
         }
+        all.insert(
+            vm.name.clone(),
+            PiWatch {
+                touched: Instant::now(),
+                port,
+                opened: vec![port],
+                db_ports,
+                sessions: BTreeSet::new(),
+                seen: Vec::new(),
+            },
+        );
     }
+    let pwsh = pwsh_keys(&crate::setup::kit_path(&vm.kit, r"pwsh\pwsh.exe"));
     std::thread::spawn(move || loop {
-        let Some(since) = pi_watched().get(&vm.name).map(|(at, _)| at.elapsed()) else {
+        let Some(since) = pi_watched().get(&vm.name).map(|w| w.touched.elapsed()) else {
             return;
         };
         if since < PI_GRACE {
             std::thread::sleep(PI_GRACE - since);
             continue;
         }
-        let check = vm.pi_check(&env, &pi);
-        if check == PiCheck::Running {
-            std::thread::sleep(PI_POLL);
-            continue;
+        match pi_now(&vm.kit, &vm.name, &project, &pwsh, false) {
+            PiNow::Gone => return,
+            PiNow::Kept => {
+                std::thread::sleep(PI_POLL);
+                continue;
+            }
+            PiNow::Over(_) => {}
         }
         // Under the sandbox's lock: a start of Pi waits, then opens the
-        // port again.
+        // port again. Looked at again: started meanwhile, it stays.
         let lock = sandbox_lock(&vm.name);
         let _one = lock
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        {
-            let mut all = pi_watched();
-            if all
-                .get(&vm.name)
-                .is_some_and(|(at, _)| at.elapsed() < PI_GRACE)
-            {
-                // Made ready again meanwhile: Pi is being started.
-                continue;
-            }
-            all.remove(&vm.name);
-        }
-        if let PiCheck::Failed(why) = &check {
-            crate::common::log::warn(&format!("{}: pi: no answer: {why}", vm.name));
-        }
-        if let Err(e) = vm.close_pi_port(&env, port, &db_ports) {
-            crate::common::log::warn(&format!("{}: port {port}: {e:#}", vm.name));
+        let watch = match pi_now(&vm.kit, &vm.name, &project, &pwsh, true) {
+            PiNow::Gone => return,
+            PiNow::Kept | PiNow::Over(None) => continue,
+            PiNow::Over(Some(watch)) => watch,
+        };
+        if let Err(e) = vm.close_pi_ports(&env, &watch.opened, &watch.db_ports) {
+            crate::common::log::warn(&format!("{}: local models: {e:#}", vm.name));
         }
         return;
     });
@@ -1829,25 +1969,10 @@ impl Vm {
         kit::mark_host_ports(&self.kit, &self.name, &noted)
     }
 
-    /// Whether the program `pi` (the VM's path) runs in this sandbox
-    /// ([`vm::pi_running_args`]).
-    pub fn pi_check(&self, env: &KitEnv, pi: &str) -> PiCheck {
-        let args = vm::pi_running_args(&self.name, pi);
-        let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        match run(&self.sbx, &self.host, env, &args, ASK_LIMIT) {
-            Ok(out) => pi_check_of(Ok((
-                out.status.success(),
-                &String::from_utf8_lossy(&out.stdout),
-                &String::from_utf8_lossy(&out.stderr),
-            ))),
-            Err(why) => pi_check_of(Err(&why)),
-        }
-    }
-
-    /// Pi ended in this sandbox (D-178): its port of the local models
-    /// closed ([`pi_port_closes`]) and its `pi.env` (the models' key)
-    /// deleted.
-    fn close_pi_port(&self, env: &KitEnv, port: u16, db_ports: &[u16]) -> anyhow::Result<()> {
+    /// Pi ended in this sandbox (D-178): its `pi.env` (the models' key)
+    /// deleted and the ports of the local models opened for it (`opened`)
+    /// closed ([`pi_ports_to_close`]), each tried; the first failure told.
+    fn close_pi_ports(&self, env: &KitEnv, opened: &[u16], db_ports: &[u16]) -> anyhow::Result<()> {
         let file = kit::dir(&self.kit, &self.name).join("pi.env");
         match std::fs::remove_file(&file) {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
@@ -1855,10 +1980,14 @@ impl Vm {
             }
             _ => {}
         }
-        if pi_port_closes(port, &kit::host_ports(&self.kit, &self.name), db_ports) {
-            self.close_host_port(env, port)?;
+        let noted = kit::host_ports(&self.kit, &self.name);
+        let mut first = None;
+        for port in pi_ports_to_close(opened, &noted, db_ports) {
+            if let Err(e) = self.close_host_port(env, port) {
+                first.get_or_insert(e.context(format!("port {port}")));
+            }
         }
-        Ok(())
+        first.map_or(Ok(()), Err)
     }
 
     /// Opens the PC's ports of this sandbox, closes those it had and has

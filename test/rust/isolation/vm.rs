@@ -84,57 +84,6 @@ fn pi_runs_in_the_projects_vm_with_its_tools() {
     assert_eq!(sbx_agent("pi"), None, "Pi has no sandbox of `sbx`'s");
 }
 
-/// D-178: whether a Pi still runs in the project's VM is asked with
-/// `sbx exec <vm> sh -c '…'`, never with `-it`, Pi's path quoted for the
-/// VM's shell (a path with a quote stays one word).
-#[test]
-fn whether_pi_runs_is_asked_in_the_vm() {
-    let vm = name("shop");
-    let pi = "/d/My Kit/data/apps/linux-x64/pi/pi";
-    let args = pi_running_args(&vm, pi);
-    assert_eq!(args[..4], ["exec", vm.as_str(), "sh", "-c"]);
-    assert_eq!(args.len(), 5);
-    let script = &args[4];
-    assert!(script.starts_with(&format!("p='{pi}'; ")), "{script}");
-    assert!(script.contains(&format!("echo {PI_RUNNING}")), "{script}");
-    assert!(script.ends_with(&format!("echo {PI_NONE}")), "{script}");
-    assert!(!script.contains("pgrep"), "{script}");
-    let odd = pi_running_args(&vm, "/d/it's/pi");
-    assert!(odd[4].starts_with(r"p='/d/it'\''s/pi'; "), "{}", odd[4]);
-}
-
-/// D-178: the check finds a process by its program's path, the whole
-/// word, and never itself (run where there is a `/proc`: Linux, like the
-/// VM).
-#[cfg(target_os = "linux")]
-#[test]
-fn the_check_of_pi_finds_the_program_running() {
-    let Some(sleep) = ["/bin/sleep", "/usr/bin/sleep"]
-        .into_iter()
-        .find(|p| Path::new(p).exists())
-    else {
-        return;
-    };
-    let ask = |pi: &str| {
-        let args = pi_running_args("vm", pi);
-        let out = std::process::Command::new("sh")
-            .arg("-c")
-            .arg(&args[4])
-            .output()
-            .unwrap();
-        String::from_utf8_lossy(&out.stdout).trim().to_owned()
-    };
-    let missing = "/nowhere/atollo-pi-test";
-    assert_eq!(ask(missing), PI_NONE, "never the check itself");
-    let mut child = std::process::Command::new(sleep).arg("30").spawn().unwrap();
-    let running = ask(sleep);
-    let part = ask(&sleep[..sleep.len() - 1]);
-    let _ = child.kill();
-    let _ = child.wait();
-    assert_eq!(running, PI_RUNNING);
-    assert_eq!(part, PI_NONE, "the whole word only");
-}
-
 /// Where the PC's folders are in the VM: `sbx` mounts `D:\a` at `/d/a`
 /// (seen on Windows 11 with sbx 0.49.2), the same path elsewhere.
 #[test]
