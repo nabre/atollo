@@ -917,6 +917,7 @@ describe("App", () => {
         version: null,
         available: true,
         unavailableReason: null,
+        notNeeded: null,
         needs: [],
       },
       {
@@ -932,6 +933,7 @@ describe("App", () => {
         version: null,
         available: true,
         unavailableReason: null,
+        notNeeded: null,
         needs: [],
       },
       {
@@ -947,6 +949,7 @@ describe("App", () => {
         version: null,
         available: true,
         unavailableReason: null,
+        notNeeded: null,
         needs: ["php"],
       },
       {
@@ -962,6 +965,7 @@ describe("App", () => {
         version: null,
         available: true,
         unavailableReason: null,
+        notNeeded: null,
         needs: [],
       },
       {
@@ -977,6 +981,7 @@ describe("App", () => {
         version: null,
         available: false,
         unavailableReason: null,
+        notNeeded: null,
         needs: [],
       },
       {
@@ -992,6 +997,23 @@ describe("App", () => {
         version: null,
         available: false,
         unavailableReason: "non disponibile per linux-x64",
+        notNeeded: null,
+        needs: [],
+      },
+      {
+        id: "conpty",
+        name: "ConPTY",
+        group: "app",
+        desc: "console",
+        mb: 3,
+        chosen: true,
+        installed: false,
+        present: false,
+        locked: true,
+        version: null,
+        available: false,
+        unavailableReason: null,
+        notNeeded: "il terminale dell'app usa la pty del sistema",
         needs: [],
       },
     ];
@@ -1008,6 +1030,10 @@ describe("App", () => {
     // Not made for this system: the reason from Rust (BUG-24c).
     expect(screen.getByLabelText<HTMLInputElement>(/^Juliacalcolo/).disabled).toBe(true);
     expect(screen.getByText("non disponibile per linux-x64")).toBeTruthy();
+    // Not needed on this system (D-177): said so, with the reason, never
+    // as not available.
+    expect(screen.getByTitle("il terminale dell'app usa la pty del sistema").textContent).toBe("non serve");
+    expect(screen.getByLabelText<HTMLInputElement>(/^ConPTYconsole/).disabled).toBe(true);
     // Dependencies: Apache shows what it needs, PHP what it is needed by.
     expect(screen.getByTitle("Richiede PHP: si installa insieme.")).toBeTruthy();
     expect(screen.getByText("per Apache")).toBeTruthy();

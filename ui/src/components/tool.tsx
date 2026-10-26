@@ -107,6 +107,10 @@ export function ToolPage({
               <Codicon name="check" size={14} />
               {shown ? `${shown} (${t("pre-installato")})` : t("pre-installato")}
             </span>
+          ) : c.notNeeded !== null ? (
+            <span key="state" className="text-vsc-desc">
+              {t("non serve")}: {c.notNeeded}
+            </span>
           ) : c.unavailableReason !== null ? (
             <span key="state" className="text-vsc-desc">
               {c.unavailableReason}

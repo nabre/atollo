@@ -87,6 +87,8 @@ export function SourcesTable({ rows: all, categories, components }: W["SourcesTa
           const live = byId.get(r.id);
           const state: ReactNode = live?.installed ? (
             <Tag tone="focus">{live.version ?? l.installed}</Tag>
+          ) : live && live.notNeeded !== null ? (
+            <Tag title={live.notNeeded}>{l.notNeeded}</Tag>
           ) : live && (!live.available || live.unavailableReason !== null) ? (
             <Tag title={live.unavailableReason ?? undefined}>{l.notHere}</Tag>
           ) : (

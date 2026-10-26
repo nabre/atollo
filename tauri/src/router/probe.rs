@@ -3,7 +3,7 @@
 
 use serde::Serialize;
 
-use super::availability::unavailable_reason;
+use super::availability::{not_needed_reason, unavailable_reason};
 use super::target::{can_execute_on_host, profile};
 use crate::env::KitEnv;
 use crate::kit::{Arch, Kit, Os, Target};
@@ -37,6 +37,10 @@ pub struct TargetToolStatus {
     /// Why it is not available, already translated (see
     /// [`unavailable_reason`]); `None` when available.
     pub unavailable_reason: Option<String>,
+    /// Not needed on this target, with the catalog's reason already
+    /// translated: the system does its job there (ConPTY on macOS and
+    /// Linux, D-177). `available` is false, `unavailable_reason` `None`.
+    pub not_needed: Option<String>,
     /// On the PC's system with the VM on: a tool the VM runs with its build
     /// for Linux, not needed here (D-174).
     pub via_vm: bool,
@@ -94,6 +98,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
         let unavailable_reason = (!available)
             .then(|| unavailable_reason(c, target, lang))
             .flatten();
+        let not_needed = not_needed_reason(c, target, lang);
 
         if available {
             available_count += 1;
@@ -115,6 +120,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             bootstrap_staged,
             first_start,
             unavailable_reason,
+            not_needed,
             via_vm: false,
         });
     }

@@ -425,8 +425,14 @@ pub fn print_components(kit: &Kit, lang: &str, out: &mut dyn Write) -> io::Resul
         } else {
             "[ ]"
         };
-        let unavailable = crate::router::availability::unavailable_message(c, kit.target(), lang);
-        let state = if let Some(why) = unavailable {
+        let target = kit.target();
+        let not_needed = crate::router::availability::not_needed_reason(c, target, lang);
+        let unavailable = crate::router::availability::unavailable_message(c, target, lang);
+        // Not needed here (ConPTY on macOS and Linux, D-177): said with its
+        // reason, never as missing or unavailable.
+        let state = if let Some(why) = not_needed {
+            t(lang, "non serve: {0}", &[&why])
+        } else if let Some(why) = unavailable {
             why
         } else if c.is_installed(kit) {
             c.installed_version(kit)

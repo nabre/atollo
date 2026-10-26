@@ -64,6 +64,7 @@ const byid = Object.fromEntries(cat.map((c) => [c.id, c]));
 const WHY = {
   notBuilt: (c) => SRC[c.id].notOffered ?? "the catalog does not offer it on this system",
   unavailable: en,
+  notNeeded: (it) => `not needed: ${en(it)}`,
   native: "native build",
   needs: (name) => `needs ${name}, not available here`,
 };
@@ -92,6 +93,12 @@ function where(list) {
 // Notes, from the same catalog.
 const notes = [];
 for (const c of cat) {
+  // Not needed (D-177): one note per reason, its systems together.
+  const byWhy = {};
+  for (const [t, why] of Object.entries(c.notNeeded ?? {})) (byWhy[why] ??= []).push(t);
+  for (const [why, ts] of Object.entries(byWhy)) {
+    notes.push(`<b>${esc(c.name)}</b> is not needed on ${where(ts)}: ${esc(en(why))}.`);
+  }
   for (const [t, why] of Object.entries(c.unavailable ?? {})) {
     notes.push(`<b>${esc(c.name)}</b> on ${where([t])}: ${esc(en(why))}.`);
   }
@@ -125,18 +132,18 @@ if (RETIRED.length) {
   );
 }
 notes.push(
-  "Source of the data: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, " +
+  "Source of the data: <code>tauri/catalog/components.json</code> (<code>targets</code>, <code>unavailable</code>, <code>notNeeded</code>, " +
     "<code>needs</code>, <code>needsByTarget</code>, " +
     "<code>mb</code>) with the logic of <code>Component::is_available_on</code>; sources and non-relocatable components from " +
     "<code>scripts/matrix/sources.json</code>, checked against the installers by <code>cargo test</code>.",
 );
 const NOTES = notes.map((n) => `  <li>${n}</li>`).join("\n");
 
-const LABEL = { ok: "Native", no: "Not available", dep: "Blocked" };
-const ICON = { ok: "●", no: "○", dep: "◌" };
+const LABEL = { ok: "Native", no: "Not available", dep: "Blocked", skip: "Not needed" };
+const ICON = { ok: "●", no: "○", dep: "◌", skip: "–" };
 
 const rows = [];
-const counts = Object.fromEntries(TARGETS.map(([t]) => [t, { ok: 0, no: 0, dep: 0 }]));
+const counts = Object.fromEntries(TARGETS.map(([t]) => [t, { ok: 0, no: 0, dep: 0, skip: 0 }]));
 const groupOrder = ["required", "app", "agents", "ai", "languages", "databases"];
 for (const g of groupOrder) {
   const items = cat.filter((c) => c.group === g);
@@ -149,7 +156,7 @@ for (const g of groupOrder) {
       let extra = "";
       const tips = [why];
       const ndeps = c.needsByTarget?.[t];
-      if (ndeps?.length && k !== "no") {
+      if (ndeps?.length && k !== "no" && k !== "skip") {
         tips.push("here it also needs " + names(ndeps));
         extra += '<i class="tag">+dep</i>';
       }
@@ -180,11 +187,12 @@ const summary = TARGETS.map(
   ([t, os, ar]) =>
     `<div class="card"><div class="cos">${os} <em>${ar}</em></div><code>${t}</code>` +
     `<div class="bar">` +
-    ["ok", "dep", "no"]
+    ["ok", "skip", "dep", "no"]
       .filter((k) => counts[t][k])
       .map((k) => `<span class="b-${k}" style="flex:${counts[t][k]}"></span>`)
       .join("") +
     `</div><div class="nums"><span class="c-ok">${counts[t].ok} native</span>` +
+    (counts[t].skip ? `<span class="c-skip">${counts[t].skip} not needed</span>` : "") +
     `<span class="c-no">${counts[t].no + counts[t].dep} missing</span></div></div>`,
 ).join("");
 const page = `<!doctype html>
@@ -193,7 +201,7 @@ const page = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Atollo tools matrix by system</title>
-<meta name="description" content="Every component of Atollo's catalog on the systems of Docker Sandboxes (Windows x64, macOS Apple Silicon, Linux x64 and ARM64): native or not available, with its source.">
+<meta name="description" content="Every component of Atollo's catalog on the systems of Docker Sandboxes (Windows x64, macOS Apple Silicon, Linux x64 and ARM64): native, not needed or not available, with its source.">
 <link rel="canonical" href="https://nabre.github.io/atollo/#tools">
 <style>
 :root {
@@ -219,9 +227,9 @@ code { font:12px ui-monospace,Consolas,monospace; color:var(--mute); }
 .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
 .cos { font-weight:600; } .cos em { font-style:normal; color:var(--mute); font-weight:500; }
 .bar { display:flex; height:8px; border-radius:4px; overflow:hidden; margin:10px 0 6px; gap:2px; }
-.b-ok { background:var(--ok); } .b-no { background:var(--no); opacity:.5; } .b-dep { background:var(--dep); }
+.b-ok { background:var(--ok); } .b-no { background:var(--no); opacity:.5; } .b-dep { background:var(--dep); } .b-skip { background:var(--no); opacity:.25; }
 .nums { display:flex; gap:10px; font-size:12px; flex-wrap:wrap; }
-.c-ok { color:var(--ok); } .c-no { color:var(--mute); }
+.c-ok { color:var(--ok); } .c-no { color:var(--mute); } .c-skip { color:var(--mute); }
 .tools { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
 .tools input { flex:1 1 220px; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); font:inherit; }
 .tools button { padding:7px 12px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); cursor:pointer; font:inherit; }
@@ -242,6 +250,7 @@ td[class^="s-"] { text-align:center; white-space:nowrap; cursor:help; }
 .s-ok .pill { background:var(--ok-bg); color:var(--ok); }
 .s-no .pill { background:var(--no-bg); color:var(--no); }
 .s-dep .pill { background:var(--dep-bg); color:var(--dep); }
+.s-skip .pill { background:transparent; color:var(--no); border:1px dashed var(--line); }
 .tag { display:inline-block; font-style:normal; font-size:10px; margin-left:4px; padding:0 5px; border:1px solid var(--line); border-radius:4px; color:var(--mute); }
 td.dep { color:var(--mute); font-size:12px; }
 td.src { font-size:12px; min-width:230px; } td.src span { color:var(--mute); }
@@ -262,6 +271,7 @@ tr.hide { display:none; }
 <div class="legend">
   <span>● <b style="color:var(--ok)">Native</b>: a build for the architecture</span>
   <span>◌ <b style="color:var(--dep)">Blocked</b>: a dependency is missing on that target</span>
+  <span>– Not needed: the system does its job there (ConPTY on macOS and Linux, the system's PTY)</span>
   <span>○ Not available</span>
   <span><i class="tag">+dep</i> one more dependency on that target</span>
   <span><i class="tag">conda</i> not relocatable, created again from the kept packages (D-92, D-118)</span>
@@ -305,5 +315,5 @@ document.querySelectorAll('.tools button').forEach(b => b.addEventListener('clic
 writeFileSync(out, page);
 for (const [t] of TARGETS) {
   const c = counts[t];
-  console.log(t, `{'ok': ${c.ok}, 'no': ${c.no}, 'dep': ${c.dep}}`);
+  console.log(t, `{'ok': ${c.ok}, 'no': ${c.no}, 'dep': ${c.dep}, 'skip': ${c.skip}}`);
 }

@@ -43,7 +43,7 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
   const lines = tool?.downloadable ? tool : null;
   const doing = running || busy !== null;
   const ready = c.installed || Boolean(c.bootstrapStaged);
-  if (c.unavailableReason !== null) return null;
+  if (c.unavailableReason !== null || c.notNeeded !== null) return null;
   if (!ready) {
     if (!c.available) return null;
     return (
@@ -160,7 +160,8 @@ export function ToolsTable({
         case "installed":
           return ready;
         case "missing":
-          return !ready;
+          // Not needed here (D-177) is not missing.
+          return !ready && c.notNeeded === null;
         case "pending":
           return on !== (c.chosen || c.locked);
         case "needed":
@@ -236,7 +237,9 @@ export function ToolsTable({
           <Checkbox
             label={t("Scegli {0}", c.name)}
             checked={on}
-            disabled={c.locked || running || c.unavailableReason !== null || (!c.available && !on)}
+            disabled={
+              c.locked || running || c.unavailableReason !== null || c.notNeeded !== null || (!c.available && !on)
+            }
             onChange={(v) => {
               choose(c.id, v);
             }}

@@ -28,6 +28,25 @@ fn missing_required_lists_only_installable_ones() {
     assert!(!missing_required(&kit).contains(&"pwsh".to_owned()));
 }
 
+/// D-177: ConPTY not needed on macOS and Linux is never missing there,
+/// on every target whatever the host; on Windows it is required.
+#[test]
+fn conpty_is_missing_on_windows_only() {
+    use crate::kit::Target;
+    let tmp = TempDir::new("task-conpty");
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        let missing = missing_required(&kit);
+        assert_eq!(
+            missing.contains(&"conpty".to_owned()),
+            target.is_windows(),
+            "{target}: {missing:?}"
+        );
+        assert!(missing.contains(&"gh".to_owned()), "{target}");
+    }
+}
+
 /// Docker Sandboxes is required, but the editor and the consoles open
 /// without it (the notice says the VM is off), and a system without its
 /// build never tries to install it (D-167).

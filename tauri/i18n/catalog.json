@@ -794,6 +794,16 @@
     "fr": "Google ne publie pas platform-tools et build-tools pour Linux ARM64",
     "de": "Google veröffentlicht platform-tools und build-tools nicht für Linux ARM64"
   },
+  "il terminale dell'app usa la pty del sistema": {
+    "en": "the app's terminal uses the system's PTY",
+    "fr": "le terminal de l'app utilise le PTY du système",
+    "de": "das Terminal der App nutzt das PTY des Systems"
+  },
+  "non serve: {0}": {
+    "en": "not needed: {0}",
+    "fr": "pas nécessaire : {0}",
+    "de": "nicht nötig: {0}"
+  },
   "Limite": {
     "en": "Limit",
     "fr": "Limite",

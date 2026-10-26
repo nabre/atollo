@@ -154,7 +154,14 @@ fn grid_cells_say_chosen_reason_and_first_start() {
             assert_eq!(tool("zig").chosen, t.is_unix(), "{t}");
         }
         for x in &s.tools {
-            assert_eq!(!x.available, x.unavailable_reason.is_some(), "{} {t}", x.id);
+            // Not available: either why, or not needed (D-177), never both.
+            assert_eq!(
+                !x.available,
+                x.unavailable_reason.is_some() || x.not_needed.is_some(),
+                "{} {t}",
+                x.id
+            );
+            assert!(x.unavailable_reason.is_none() || x.not_needed.is_none());
             assert!(!x.first_start || (x.available && !x.installed && !x.bootstrap_staged));
             // The host's own target runs its installers now.
             if t == host {
@@ -171,6 +178,31 @@ fn grid_cells_say_chosen_reason_and_first_start() {
             assert_eq!(
                 tool("android").unavailable_reason.as_deref(),
                 Some("Google does not publish platform-tools and build-tools for Linux ARM64")
+            );
+        }
+    }
+}
+
+/// D-177: ConPTY is available on Windows only and not needed elsewhere,
+/// with the catalog's reason: never unavailable, chosen or installed there.
+#[test]
+fn the_grid_says_conpty_is_not_needed_off_windows() {
+    let tmp = TempDir::new("router-conpty");
+    let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    kit.prepare().unwrap();
+    for t in Target::ALL {
+        let s = probe::probe_target(&kit, t, "en");
+        let c = s.tools.iter().find(|x| x.id == "conpty").unwrap();
+        if t.is_windows() {
+            assert!(c.available, "{t}");
+            assert_eq!(c.not_needed, None, "{t}");
+        } else {
+            assert!(!c.available && !c.chosen && !c.installed, "{t}");
+            assert_eq!(c.unavailable_reason, None, "{t}");
+            assert_eq!(
+                c.not_needed.as_deref(),
+                Some("the app's terminal uses the system's PTY"),
+                "{t}"
             );
         }
     }

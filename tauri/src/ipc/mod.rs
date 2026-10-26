@@ -161,7 +161,10 @@ fn ensure<R: Runtime>(
     let env = || app.state::<AppState>().env();
     let catalog = Catalog::get();
     let target = kit.target();
-    let needed = with_needs(catalog, wanted, target);
+    let mut needed = with_needs(catalog, wanted, target);
+    // Not needed on this system (ConPTY on macOS and Linux, D-177): the
+    // system does its job, nothing to install.
+    needed.retain(|c| c.not_needed_reason(target).is_none());
     // With the catalog's reason (Android, SQLite on Linux ARM64); the same
     // sentences as before otherwise.
     if let Some(msg) = needed

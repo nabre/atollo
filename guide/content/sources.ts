@@ -157,10 +157,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
       "api.nuget.org/v3-flatcontainer/microsoft.windows.console.conpty/<v>/microsoft.windows.console.conpty.<v>.nupkg",
     unix: () =>
       tr(
-        "Solo Windows: su macOS e Linux il terminale usa il PTY del sistema",
-        "Windows only: on macOS and Linux the terminal uses the system's PTY",
-        "Windows uniquement : sur macOS et Linux le terminal utilise le PTY du système",
-        "Nur Windows: unter macOS und Linux nutzt das Terminal das PTY des Systems",
+        "Non serve su macOS e Linux: il terminale dell'app usa il PTY del sistema (D-177)",
+        "Not needed on macOS and Linux: the app's terminal uses the system's PTY (D-177)",
+        "Pas nécessaire sur macOS et Linux : le terminal de l'app utilise le PTY du système (D-177)",
+        "Unter macOS und Linux nicht nötig: Das Terminal der App nutzt das PTY des Systems (D-177)",
       ),
     verifyKind: "Authenticode + SHA",
     verifyDetail: () =>

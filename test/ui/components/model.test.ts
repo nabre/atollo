@@ -20,6 +20,7 @@ function row(id: string, needs: string[] = [], more: Partial<ComponentInfo> = {}
     version: null,
     available: true,
     unavailableReason: null,
+    notNeeded: null,
     needs,
     versioned: false,
     home: "https://example.org",

@@ -65,6 +65,7 @@ export function guideLabels() {
       website: tr("Sito", "Website", "Site", "Website"),
       installed: tr("installato", "installed", "installé", "installiert"),
       notHere: tr("non disponibile qui", "not available here", "non disponible ici", "hier nicht verfügbar"),
+      notNeeded: tr("non serve qui", "not needed here", "pas nécessaire ici", "hier nicht nötig"),
       notInstalled: tr("non installato", "not installed", "non installé", "nicht installiert"),
       withComponent: tr("con il suo componente", "with its component", "avec son composant", "mit seiner Komponente"),
     },

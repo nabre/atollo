@@ -694,3 +694,60 @@ fn remove_unix_on_macos_and_linux() {
         .owned_paths(&win)
         .contains(&win.apps().join("tools").join("micromamba.exe")));
 }
+
+/// D-177: `notNeeded` names some of the four targets, none of them in
+/// `unavailable` nor outside `targets`, each with a reason translated;
+/// there the component is not available. ConPTY is needed on Windows
+/// only.
+#[test]
+fn not_needed_targets_are_known_and_translated() {
+    use crate::kit::Target;
+
+    let i18n: BTreeMap<String, BTreeMap<String, String>> =
+        serde_json::from_str(include_str!("../../../tauri/i18n/catalog.json")).unwrap();
+    let catalog = Catalog::get();
+    for c in catalog.all() {
+        for (t, reason) in &c.not_needed {
+            let target = Target::parse(t).unwrap_or_else(|| panic!("{}: unknown target {t}", c.id));
+            assert!(
+                Target::ALL.contains(&target),
+                "{}: {t} is not one of the four",
+                c.id
+            );
+            assert!(
+                !c.unavailable.contains_key(t),
+                "{}: {t} unavailable and not needed",
+                c.id
+            );
+            assert!(
+                c.targets.is_empty() || c.targets.contains(t),
+                "{}: {t} outside targets",
+                c.id
+            );
+            assert!(!reason.trim().is_empty(), "{}: empty reason", c.id);
+            for lang in ["en", "fr", "de"] {
+                assert!(
+                    i18n.get(reason).and_then(|tr| tr.get(lang)).is_some(),
+                    "{}: {lang} missing for {reason:?}",
+                    c.id
+                );
+            }
+            assert!(!c.is_available_on(target), "{} on {t}", c.id);
+            assert_eq!(c.not_needed_reason(target), Some(reason.as_str()));
+            assert_eq!(c.unavailable_reason(target), None);
+        }
+    }
+    let conpty = catalog.find("conpty").unwrap();
+    for t in Target::ALL {
+        assert_eq!(conpty.is_available_on(t), t.is_windows(), "{t}");
+        assert_eq!(
+            conpty.not_needed_reason(t).is_some(),
+            !t.is_windows(),
+            "{t}"
+        );
+    }
+    assert_eq!(
+        conpty.not_needed_reason(Target::LINUX_ARM64),
+        Some("il terminale dell'app usa la pty del sistema")
+    );
+}

@@ -1,5 +1,9 @@
 # Novità
 
+## ConPTY nel catalogo (26/10/2026)
+
+- **ConPTY «non serve» su macOS e Linux** (D-177): lì il terminale dell'app usa la pty del sistema. In «Strumenti», nella matrice del sito e in [TOOLS-MATRIX.html](TOOLS-MATRIX.html) ConPTY non risulta più «non disponibile» o mancante fuori da Windows, ma «non serve», con il motivo; su Windows resta una parte dell'app installata con i componenti obbligatori.
+
 ## Rilascio 0.7.2 alpha (26/10/2026)
 
 - **Versione 0.7.2**: la 0.7.1 non è uscita (la CI di rilascio non trovava l'exe di Windows: rimasto il solo exe x64, l'artifact si estraeva fuori dalla sua cartella); la 0.7.2 la sostituisce con tutto ciò che è elencato qui sotto. Il rilascio scarica l'exe per nome, nella cartella che il passo di pubblicazione legge.

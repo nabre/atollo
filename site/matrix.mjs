@@ -27,7 +27,7 @@ export const KIND_OF = {
 };
 export const KIND_OF_GROUP = { required: "system", app: "system", agents: "agents", ai: "ai", languages: "languages", databases: "databases" };
 
-const MARK = { ok: "✓", no: "✕", dep: "✕" };
+const MARK = { ok: "✓", no: "✕", dep: "✕", skip: "–" };
 
 const escape = (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
@@ -38,9 +38,12 @@ export function loadCatalog(repo) {
 }
 
 // The status of c on target t, without its needs: [kind, reason]. `why`
-// gives the reasons: notBuilt(c), unavailable(the catalog's Italian
-// text), native, needs(name).
+// gives the reasons: notBuilt(c), unavailable and notNeeded (the catalog's
+// Italian text), native, needs(name). "skip": not needed there, the system
+// does its job (`notNeeded`, ConPTY on macOS and Linux, D-177): never
+// missing.
 export function baseStatus(c, t, why) {
+  if (c.notNeeded && t in c.notNeeded) return ["skip", why.notNeeded(c.notNeeded[t])];
   if (c.targets && !c.targets.includes(t)) return ["no", why.notBuilt(c)];
   if (c.unavailable && t in c.unavailable) return ["no", why.unavailable(c.unavailable[t])];
   return ["ok", why.native];
@@ -50,7 +53,7 @@ export function baseStatus(c, t, why) {
 // not available there.
 export function status(c, t, byId, why) {
   const base = baseStatus(c, t, why);
-  if (base[0] === "no") return base;
+  if (base[0] !== "ok") return base;
   const needs = [...(c.needs || []), ...((c.needsByTarget || {})[t] || [])];
   for (const n of needs) {
     if (byId[n] && baseStatus(byId[n], t, why)[0] === "no") return ["dep", why.needs(byId[n].name)];
@@ -63,6 +66,7 @@ export function matrixHtml({ components, i18n }, lang, s) {
   const why = {
     notBuilt: () => s.mxNotBuilt,
     unavailable: tr,
+    notNeeded: (it) => s.mxNotNeeded.replace("{0}", tr(it)),
     native: s.mxNative,
     needs: (name) => s.mxNeeds.replace("{0}", name),
   };
@@ -92,5 +96,5 @@ export function matrixHtml({ components, i18n }, lang, s) {
 <thead><tr><th rowspan="2" class="mx-corner">${escape(s.mxComponent)}</th>${osHead}</tr><tr>${archHead}</tr></thead>
 ${body}
 </table></div>
-<p class="mx-legend"><span class="mx-ok">✓</span> ${escape(s.mxLegendOk)} <span class="mx-no">✕</span> ${escape(s.mxLegendNo)}</p>`;
+<p class="mx-legend"><span class="mx-ok">✓</span> ${escape(s.mxLegendOk)} <span class="mx-skip">–</span> ${escape(s.mxLegendSkip)} <span class="mx-no">✕</span> ${escape(s.mxLegendNo)}</p>`;
 }

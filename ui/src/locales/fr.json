@@ -788,6 +788,7 @@
   "Gli archivi sono già nel kit: l'installazione termina al primo avvio su quel sistema.": "Les archives sont déjà dans le kit : l'installation se termine au premier démarrage sur ce système.",
   "Preparato da questo PC, scarica solo gli archivi: l'installazione termina al primo avvio su quel sistema.": "Préparé depuis ce PC, il ne télécharge que les archives : l'installation se termine au premier démarrage sur ce système.",
   "Nessuna build per questo sistema: il motivo è nel dettaglio.": "Aucune build pour ce système : la raison est dans le détail.",
+  "Su questo sistema non serve: ne fa le veci il sistema, il motivo è nel dettaglio.": "Pas nécessaire sur ce système : le système s'en charge, la raison est dans le détail.",
   "installati su disponibili": "installés sur disponibles",
   "{0} su {1}": "{0} sur {1}",
   "Installato": "Installé",
