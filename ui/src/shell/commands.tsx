@@ -6,7 +6,6 @@ import { useCallback } from "react";
 import type { IconType } from "react-icons";
 import {
   agentLaunch,
-  startsOnProject,
   editorOpen,
   errorText,
   llmStop,
@@ -105,7 +104,7 @@ export function CommandPalette({
       run: act(() => stopEverything(running)),
     });
   }
-  const installed = agents.filter((a) => a.installed && startsOnProject(a.id));
+  const installed = agents.filter((a) => a.installed);
   for (const p of byRecent(projects)) {
     const a = mainAction(p);
     if (a) {

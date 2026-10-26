@@ -1,5 +1,5 @@
 //! Claude Code, Codex, Antigravity and Pi: state, usage, launch (always in
-//! the VM, D-178), sign-out.
+//! the VM, D-178, D-179), sign-out.
 
 use super::*;
 
@@ -33,10 +33,11 @@ pub async fn agents_stats<R: Runtime>(
         .or_fail("stats")
 }
 
-/// Opens an agent on the project, always in the VM (D-178): Claude Code and
-/// Codex in their `sbx` sandboxes, Pi in the project's VM; Antigravity, a
-/// desktop editor, never on a project. Without the VM no agent starts: the
-/// error says why the VM is off and what to do. Never on the PC.
+/// Opens an agent on the project, always in the VM (D-178, D-179): Claude
+/// Code and Codex in their `sbx` sandboxes, Pi and Antigravity in the
+/// project's VM with their builds for Linux. Without the VM no agent
+/// starts: the error says why the VM is off and what to do. Never on the
+/// PC.
 #[tauri::command]
 pub async fn agent_launch<R: Runtime>(
     app: AppHandle<R>,
@@ -50,9 +51,6 @@ pub async fn agent_launch<R: Runtime>(
         return Err(format!("unknown agent: {agent}").into());
     }
     let lang = state.lang();
-    if let Some(why) = refused_on_project(&agent, lang) {
-        return Err(why.into());
-    }
     let dir = project_dir(&state.kit, Some(&project), lang)?;
     // Started again after "Rimuovi l'unità": the user goes on, so do the
     // agents' background alignments.
@@ -64,10 +62,11 @@ pub async fn agent_launch<R: Runtime>(
     let fx = super::levels::AppEffects::of(&app, &state, kit_env.clone());
     tauri::async_runtime::spawn_blocking(move || {
         // Level 3 (D-179): only in a VM (R12, R13), refused without it (R1)
-        // with why and what to do; made ready by `levels::prepare` (Pi's
-        // build for the VM's Linux, the kit's tools, the databases, Pi's
-        // local models); Pi's session keeps the models' port open while it
-        // runs (`levels::start::open_terminal`).
+        // with why and what to do; made ready by `levels::prepare` (Pi's or
+        // Antigravity's build for the VM's Linux, the kit's tools, the
+        // databases, Pi's local models, the Gemini key through `sbx`'s
+        // proxy); Pi's session keeps the models' port open while it runs
+        // (`levels::start::open_terminal`).
         let req = agent_request(&kit, &agent, &dir)?;
         let ready = super::levels::ready_now(&fx, &kit, &kit_env, &req, &[], lang, &host)?;
         crate::levels::start::open_terminal(&app, &kit, &ready, lang).or_fail_chain("agent")
@@ -88,27 +87,6 @@ pub(crate) fn agent_request(
     Ok(crate::levels::Request {
         origin: crate::levels::Origin::AgentButton { agent },
         place: crate::levels::place::place_of(kit, dir),
-    })
-}
-
-/// Why `agent` never starts on a project, if it does not (D-178):
-/// Antigravity is a desktop editor, it cannot run in a microVM; an agent
-/// with no way into the VM is refused too, never started on the PC. Until
-/// step 7 of LEVELS.md §12.2 (Antigravity in the VM, `vm::agy_session_args`).
-pub(crate) fn refused_on_project(agent: &str, lang: &str) -> Option<String> {
-    if agent == "antigravity" {
-        return Some(crate::common::i18n::t(
-            lang,
-            "Antigravity è un editor per il desktop e non può girare in una microVM: su un progetto non si apre. Nella VM usa Claude Code, Codex o Pi.",
-            &[],
-        ));
-    }
-    (!crate::isolation::vm::starts_in_vm(agent)).then(|| {
-        crate::common::i18n::t(
-            lang,
-            "{0} non parte nella VM: nella VM si usano Claude Code, Codex e Pi.",
-            &[agent],
-        )
     })
 }
 

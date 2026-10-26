@@ -1,7 +1,7 @@
 // The agents' state polled every few seconds: a poll that fails keeps what
 // the last one read, so the page and the projects' agent buttons stay.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import type { AgentInfo } from "@/ipc";
 import { AgentButtons, useAgents } from "@/agents";
 import { invoke } from "@test/support/tauri";
@@ -35,7 +35,8 @@ describe("useAgents", () => {
 });
 
 describe("AgentButtons", () => {
-  it("never offers Antigravity on a project: it cannot run in the VM (D-178)", () => {
+  it("offers Antigravity on a project, like Pi, in the project's VM (D-179)", () => {
+    invoke.mockResolvedValue(null);
     const agents = [
       CLAUDE,
       { id: "codex", name: "Codex", installed: true },
@@ -43,9 +44,12 @@ describe("AgentButtons", () => {
       { id: "pi", name: "Pi", installed: true },
     ] as AgentInfo[];
     render(<AgentButtons agents={agents} project="shop" />);
-    for (const name of ["Claude Code", "Codex", "Pi"]) {
+    for (const name of ["Claude Code", "Codex", "Antigravity", "Pi"]) {
       expect(screen.getByRole("button", { name: `Apri ${name}` })).toBeTruthy();
     }
-    expect(screen.queryByRole("button", { name: "Apri Antigravity" })).toBeNull();
+    const agy = screen.getByRole("button", { name: "Apri Antigravity" });
+    expect(agy.title).toBe("Apre Antigravity nel progetto shop");
+    fireEvent.click(agy);
+    expect(invoke).toHaveBeenCalledWith("agent_launch", { agent: "antigravity", project: "shop" });
   });
 });
