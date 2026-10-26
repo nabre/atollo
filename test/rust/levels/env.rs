@@ -431,19 +431,26 @@ fn a_user_terminal_keeps_its_other_lines() {
     }
 }
 
-/// Levels 1 and 2 on the PC never get the user's profile, SSH keys,
-/// session bus or the kit's MySQL root (D-167); in a project, the
-/// project's own login instead.
-#[test]
-fn sealed_variables_never_reach_levels_1_and_2() {
+/// Every PC placement of `level` on the four systems: of [`SEALED`] only
+/// `kept` reaches it (with the PC's value), and in a project the
+/// project's own MySQL login instead of the kit's root (D-167).
+fn assert_sealed(level: Level, kept: &[&str]) {
     for target in TARGETS {
-        let (_tmp, kit) = kit_of(target, "sealed");
+        let (_tmp, kit) = kit_of(target, &format!("sealed-{level:?}"));
         crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
         let base = base_of(&kit);
+        let mut seen = 0;
         for (p, t) in shapes(&kit) {
-            let Placement::Pc { project, .. } = &p else {
+            let Placement::Pc {
+                project, level: l, ..
+            } = &p
+            else {
                 continue;
             };
+            if *l != level {
+                continue;
+            }
+            seen += 1;
             let what = format!("{} {p:?}", target.as_str());
             let env = pc_env(build(&kit, &base, &p, t.as_ref()), &what);
             for name in SEALED {
@@ -451,12 +458,31 @@ fn sealed_variables_never_reach_levels_1_and_2() {
                 if name == "ATOLLO_MYSQL_CNF" && project.is_some() {
                     let cnf = std::fs::read_to_string(value.expect("the project's login")).unwrap();
                     assert!(cnf.contains("user=shop\n"), "{what}");
+                } else if kept.contains(&name) {
+                    assert_eq!(value, base.get(name), "{what}: {name}");
                 } else {
                     assert_eq!(value, None, "{what}: {name}");
                 }
             }
         }
+        assert!(seen > 0, "{} {level:?}", target.as_str());
     }
+}
+
+/// Level 1 (the terminals the user types in) never gets the user's real
+/// profile, the session bus or the kit's MySQL root; it keeps the user's
+/// SSH agent (decided by the user, 26/10/2026: Git over SSH).
+#[test]
+fn level_1_keeps_only_the_users_ssh_agent() {
+    assert_eq!(SSH_AGENT, ["SSH_AUTH_SOCK"]);
+    assert_sealed(Level::Manual, &SSH_AGENT);
+}
+
+/// Level 2 (project code) on the PC gets none of the sealed variables,
+/// not even the SSH agent (D-167).
+#[test]
+fn sealed_variables_never_reach_level_2() {
+    assert_sealed(Level::Project, &[]);
 }
 
 /// `seal` alone: the sealed variables out, the project's login in; it
@@ -473,15 +499,22 @@ fn a_project_gets_a_sealed_environment() {
         env
     };
     let mut env = full();
-    seal(&kit, None, &mut env);
+    seal(&kit, Level::Project, None, &mut env);
     for name in SEALED {
         assert_eq!(env.get(name), None, "{name}");
     }
     assert_eq!(env.path_entries(), ["kit"]);
+    // Level 1: the SSH agent stays, nothing else.
+    let mut env = full();
+    seal(&kit, Level::Manual, None, &mut env);
+    for name in SEALED {
+        let kept = SSH_AGENT.contains(&name).then_some("x");
+        assert_eq!(env.get(name), kept, "{name}");
+    }
 
     crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
     let mut env = full();
-    seal(&kit, Some("shop"), &mut env);
+    seal(&kit, Level::Project, Some("shop"), &mut env);
     let cnf = env.get("ATOLLO_MYSQL_CNF").expect("the project's login");
     assert!(std::fs::read_to_string(cnf)
         .unwrap()
@@ -737,8 +770,10 @@ fn the_environment_is_idempotent() {
 }
 
 /// Today's callers get today's environment (golden values), plus
-/// `ATOLLO_LEVEL`/`ATOLLO_PROJECT` (§3.5 step 7); the default kit terminal
-/// is now sealed like the others (§3.5 step 4, D-167).
+/// `ATOLLO_LEVEL`/`ATOLLO_PROJECT` (§3.5 step 7); every kit terminal is
+/// sealed the level-1 way (§3.5 step 4): the default one loses the user's
+/// profile, session bus and MySQL root, a user terminal gets the SSH agent
+/// back (decided by the user, 26/10/2026).
 #[test]
 fn the_old_callers_get_the_same_environment() {
     for target in TARGETS {
@@ -805,7 +840,8 @@ fn the_old_callers_get_the_same_environment() {
         );
 
         // A user terminal (yesterday's `terminals::env`): its lines, the
-        // tools it left out gone, sealed, no agent, its name.
+        // tools it left out gone, sealed but for the SSH agent (it lost it
+        // before D-179), no agent, its name.
         let only_node = Terminal {
             id: "n".into(),
             name: "Node 20".into(),
@@ -822,13 +858,17 @@ fn the_old_callers_get_the_same_environment() {
             vars(&env),
             expect(
                 &[&bin, &node_20, system],
-                &[("ATOLLO_LEVEL", "manual"), ("ATOLLO_TERMINAL", "Node 20")]
+                &[
+                    ("ATOLLO_LEVEL", "manual"),
+                    ("ATOLLO_TERMINAL", "Node 20"),
+                    ("SSH_AUTH_SOCK", "/run/agent")
+                ]
             ),
             "{what}"
         );
 
-        // The default terminal: the kit's lines, no agent, its name; now
-        // sealed too (it kept `SSH_AUTH_SOCK` before D-179).
+        // The default terminal: the kit's lines, no agent, its name, the
+        // SSH agent as before; now sealed for the rest.
         let default = terminals::find(kit, "default", "it").unwrap();
         let env = pc_env(build(kit, &base, &p, Some(&default)), what);
         let node_main = s(&l.node[0]);
@@ -838,7 +878,8 @@ fn the_old_callers_get_the_same_environment() {
                 &[&bin, &node_main, &py, system],
                 &[
                     ("ATOLLO_LEVEL", "manual"),
-                    ("ATOLLO_TERMINAL", default.name.as_str())
+                    ("ATOLLO_TERMINAL", default.name.as_str()),
+                    ("SSH_AUTH_SOCK", "/run/agent")
                 ]
             ),
             "{what}"

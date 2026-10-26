@@ -45,6 +45,14 @@ pub const SEALED: [&str; 4] = [
     "ATOLLO_MYSQL_CNF",
 ];
 
+/// What of [`SEALED`] level 1 keeps (decided by the user, 26/10/2026): the
+/// user's SSH agent, so Git over SSH in a terminal the user types in uses
+/// the keys the user loaded. `SSH_AUTH_SOCK` is all an SSH client needs
+/// (`SSH_AGENT_PID` only serves `ssh-agent -k`, and the kit's environment
+/// never takes it from the PC); on Windows the OpenSSH agent is a named
+/// pipe found without a variable.
+pub const SSH_AGENT: [&str; 1] = ["SSH_AUTH_SOCK"];
+
 /// What a placement runs with.
 #[derive(Debug, Clone)]
 pub enum Environment {
@@ -131,7 +139,7 @@ pub fn pc_environment(
     if let Some(project) = project {
         project_lines(kit, project, &lines, &mut env);
     }
-    seal(kit, project, &mut env);
+    seal(kit, level, project, &mut env);
     strip_agents(kit, &mut env);
     forward_first(kit, &mut env);
     mark(&mut env, level, project, terminal);
@@ -150,12 +158,15 @@ pub fn project_lines(kit: &Kit, project: &str, lines: &Choice, env: &mut KitEnv)
     );
 }
 
-/// Step 4: seals `env` for the programs of `project`, or of no project
-/// when `None`: the [`SEALED`] variables out, then the project's own
-/// MySQL login in (`db::services::project_client_env`, D-167).
-pub fn seal(kit: &Kit, project: Option<&str>, env: &mut KitEnv) {
+/// Step 4: seals `env` for a process of `level` in `project`, or of no
+/// project when `None`: the [`SEALED`] variables out (at level 1 but the
+/// user's [`SSH_AGENT`]), then the project's own MySQL login in
+/// (`db::services::project_client_env`, D-167).
+pub fn seal(kit: &Kit, level: Level, project: Option<&str>, env: &mut KitEnv) {
     for name in SEALED {
-        env.remove(name);
+        if !(level == Level::Manual && SSH_AGENT.contains(&name)) {
+            env.remove(name);
+        }
     }
     if let Some(project) = project {
         for (name, value) in crate::db::services::project_client_env(kit, project) {
