@@ -211,6 +211,8 @@ Atollo.exe version                   mostra la versione
 Atollo.exe help                      mostra l'aiuto
 ```
 
+Nei terminali del kit gli stessi comandi sono `atollo …` (`atollo components`, `atollo check --kit`): un lanciatore in `data/kit/bin` che esegue l'exe con cui gira il kit (`ATOLLO_EXE`).
+
 Da PowerShell aggiungi `| Out-Host` (per esempio `.\Atollo.exe check | Out-Host`): `Atollo.exe` è un programma a finestra, e senza una pipe PowerShell non lo aspetta e non ne legge l'output né il codice di uscita.
 
 ## Compilare

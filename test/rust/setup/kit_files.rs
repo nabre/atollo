@@ -182,7 +182,7 @@ fn shell_files_lf_and_executable() {
             );
         }
     }
-    for name in ["agents/agy", "agents/claude", "bin/gradle"] {
+    for name in ["agents/agy", "agents/claude", "bin/gradle", "bin/atollo"] {
         let text = fs::read_to_string(join_rel(&dir, name)).unwrap();
         assert!(text.starts_with("#!/bin/sh\n"), "{name}");
     }
@@ -205,6 +205,48 @@ fn shell_files_lf_and_executable() {
             0o755
         );
     }
+}
+
+/// `atollo` in the kit's terminals runs the kit's exe (`ATOLLO_EXE`) with
+/// the words given; without the variable it says so and fails.
+#[test]
+fn atollo_runs_the_kits_exe() {
+    let tmp = TempDir::new("kitfiles-atollo");
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
+    write_all(&kit).unwrap();
+    let dir = kit.kit_files();
+    #[cfg(windows)]
+    let (mut with, mut without, exe) = {
+        let launcher = join_rel(&dir, "bin/atollo.cmd");
+        let cmd = |l: &std::path::Path| {
+            let mut c = Command::new("cmd");
+            c.args(["/d", "/c"]).arg(l);
+            c
+        };
+        let exe = std::path::PathBuf::from(std::env::var("SystemRoot").unwrap())
+            .join("System32")
+            .join("cmd.exe");
+        (cmd(&launcher), cmd(&launcher), exe)
+    };
+    #[cfg(unix)]
+    let (mut with, mut without, exe) = {
+        let launcher = join_rel(&dir, "bin/atollo");
+        (
+            Command::new(&launcher),
+            Command::new(&launcher),
+            std::path::PathBuf::from("/bin/echo"),
+        )
+    };
+    #[cfg(windows)]
+    with.args(["/d", "/c", "echo", "components"]);
+    #[cfg(unix)]
+    with.arg("components");
+    let out = with.env("ATOLLO_EXE", &exe).output().unwrap();
+    assert!(out.status.success(), "{out:?}");
+    assert!(String::from_utf8_lossy(&out.stdout).contains("components"));
+    let out = without.env_remove("ATOLLO_EXE").output().unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("ATOLLO_EXE"));
 }
 
 /// The bashrc is also read by the bash 3.2 of macOS: none of the syntax that
