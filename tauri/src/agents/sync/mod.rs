@@ -198,6 +198,9 @@ fn sync_rules(p: &Paths) -> Result<()> {
 /// [`pi`]). Only a
 /// project of the kit (a folder right inside `projects\`); each agent
 /// fails alone, as a warning in the log.
+// No agent starts on the PC since D-178: nothing trusts a project from
+// Atollo now (the tests; the agents in the VM have their own settings).
+#[allow(dead_code)]
 pub fn trust_project(kit: &Kit, dir: &Path) {
     let p = Paths::of(kit);
     if dir.parent() != Some(p.projects.as_path()) {

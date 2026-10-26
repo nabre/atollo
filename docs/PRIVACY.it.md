@@ -83,9 +83,9 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 | Impostazioni, accessi (`auth.json`) e sessioni di Pi, e il `models.json` del kit con indirizzo e chiave del server locale (leggibile solo dal tuo utente) | `data/home/.pi/agent/` |
 | Dati del server dell'editor e il suo token di accesso per sessione | `data/vscodium-server/` |
 | Docker Sandboxes: impostazioni e registri, le immagini e i dischi delle VM (la home di ogni VM, `/tmp` e il suo Docker) | la home del kit: `data/home/AppData/Local/DockerSandboxes/` su Windows, sotto `data/home/` su macOS e Linux |
-| Il kit di ogni sandbox: la sua specifica, di chi è (progetto, o terminale e cartella), i suoi montaggi e le porte aperte; per un progetto con un database, il `db.env` con l'accesso al database del progetto dato alla sua VM (leggibile solo dal tuo utente) | `data/app/sandboxes/<sandbox>/` |
+| Il kit di ogni sandbox: la sua specifica, di chi è (un progetto o un suo agente; di un terminale del kit solo per un Atollo precedente, tolta da sola), i suoi montaggi e le porte aperte; per un progetto con un database, il `db.env` con l'accesso al database del progetto dato alla sua VM (leggibile solo dal tuo utente) | `data/app/sandboxes/<sandbox>/` |
 | Le note dei comandi di «GitHub nella VM» che Atollo ha registrato in Docker Sandboxes, con i loro nonce (leggibili solo dal tuo utente) | `data/app/sandboxes/secrets.json` |
-| Le sessioni dell'editor nella VM: se la VM era attiva quando l'editor si è aperto (`.level`) e, per ogni progetto aperto nell'editor, il percorso di `sbx`, le sue variabili e gli argomenti del suo terminale, dei suoi task e delle sue sandbox di Claude Code e Codex (nessuna password: l'accesso al database resta nel `db.env`); cancellate a ogni avvio dell'app | `data/app/sandboxes/sessions/` |
+| Le sessioni dell'editor nella VM: se la VM era attiva quando l'editor si è aperto (`.level`), e se no perché (`.reason`, mostrato dai suoi terminali) e, per ogni progetto aperto nell'editor, il percorso di `sbx`, le sue variabili e gli argomenti del suo terminale, dei suoi task e delle sue sessioni di Claude Code, Codex e Pi (nessuna password: l'accesso al database resta nel `db.env`); cancellate a ogni avvio dell'app | `data/app/sandboxes/sessions/` |
 | Lo script che avviano i terminali, i task e i profili degli agenti dell'editor (legge le sessioni qui sopra), riscritto a ogni avvio dell'app | `data/kit/vm.ps1` |
 | I tuoi progetti | `projects/` |
 | Una copia del kit che aspetta di essere importata, solo dopo «Importa da…» | `.atollo-import/` |
@@ -95,7 +95,7 @@ Le password dei database (compresi i `db.env` delle sandbox), la chiave API di G
 
 Impostazioni › Il kit › **«Copia del kit»** scrive `projects/` e `data/` (senza programmi, cache, modelli locali e immagini e dischi delle VM) in una cartella o in uno zip **che scegli tu**, anche fuori dalla cartella di Atollo. La copia contiene i segreti del kit **in chiaro** (`data/app/db/secrets.json`, `data/app/secrets/`, gli accessi degli agenti e di GitHub): tienila al sicuro. Atollo non la manda mai da nessuna parte.
 
-Il token di Claude e la chiave API di Gemini vengono passati (come `CLAUDE_CODE_OAUTH_TOKEN` e `GEMINI_API_KEY`) solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. La chiave dei modelli locali va a Pi quando lo avvia Atollo (`LLAMA_API_KEY`) e nel `models.json` di Pi, così `pi` funziona anche dai terminali del kit. Il token di Hugging Face va solo a `huggingface.co`.
+Il token di Claude e la chiave API di Gemini vengono passati (come `CLAUDE_CODE_OAUTH_TOKEN` e `GEMINI_API_KEY`) solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. La chiave dei modelli locali va a Pi quando lo avvia Atollo (`LLAMA_API_KEY`) e nel `models.json` di Pi, che Pi legge dovunque Atollo lo avvii (nella VM del progetto da D-178: i terminali del kit non avviano più agenti). Il token di Hugging Face va solo a `huggingface.co`.
 
 Eccezioni, fuori dalla cartella di Atollo:
 

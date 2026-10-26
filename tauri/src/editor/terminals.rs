@@ -189,10 +189,12 @@ fn lines_of(kit: &Kit, c: &Component) -> (Vec<String>, BTreeMap<String, String>)
     (lines, versions)
 }
 
-/// The tools on disk a terminal can include, in catalog order.
+/// The tools on disk a terminal can include, in catalog order: never an
+/// agent, which runs only in the VM (D-178).
 pub fn tools(kit: &Kit) -> Vec<ToolOption> {
     let target = kit.target();
     selectable()
+        .filter(|c| c.group != Group::Agents)
         .filter(|c| c.is_available_on(target) && c.is_installed(kit))
         .map(|c| {
             let (lines, versions) = lines_of(kit, c);
@@ -242,11 +244,20 @@ pub fn list(kit: &Kit, lang: &str) -> TerminalsView {
         missing: Vec::new(),
         replaced: Vec::new(),
     }];
-    terminals.extend(load(kit).into_iter().map(|t| TerminalInfo {
-        missing: t.tools.keys().filter(|id| !on_disk(id)).cloned().collect(),
-        replaced: replaced(&t),
-        terminal: t,
-        builtin: false,
+    // An agent a terminal chose before D-178 is not missing: it is left out.
+    let agent = |id: &str| crate::agents::IDS.contains(&id);
+    terminals.extend(load(kit).into_iter().map(|t| {
+        TerminalInfo {
+            missing: t
+                .tools
+                .keys()
+                .filter(|id| !on_disk(id) && !agent(id))
+                .cloned()
+                .collect(),
+            replaced: replaced(&t),
+            terminal: t,
+            builtin: false,
+        }
     }));
     TerminalsView {
         terminals,
@@ -491,6 +502,9 @@ pub fn env(kit: &Kit, terminal: &Terminal, base: KitEnv) -> KitEnv {
         strip(&mut env, &left_out);
         env
     };
+    // Every kit terminal runs on the PC, never with an agent's command
+    // (D-178): the agents run only in the VM.
+    crate::isolation::without_agents(kit, &mut env);
     env.set("ATOLLO_TERMINAL", terminal.name.clone());
     env
 }

@@ -2313,5 +2313,105 @@
     "en": "Atollo works only on the systems Docker Sandboxes runs on: Windows x64, macOS with Apple silicon, Linux x64 and Linux ARM64. This system is not one of them.",
     "fr": "Atollo fonctionne seulement sur les systèmes où tourne Docker Sandboxes : Windows x64, macOS avec Apple silicon, Linux x64 et Linux ARM64. Ce système n'en fait pas partie.",
     "de": "Atollo funktioniert nur auf den Systemen, auf denen Docker Sandboxes läuft: Windows x64, macOS mit Apple silicon, Linux x64 und Linux ARM64. Dieses System gehört nicht dazu."
+  },
+  "Antigravity è un editor per il desktop e non può girare in una microVM: su un progetto non si apre. Nella VM usa Claude Code, Codex o Pi.": {
+    "en": "Antigravity is a desktop editor and cannot run in a microVM: it does not open on a project. In the VM use Claude Code, Codex or Pi.",
+    "fr": "Antigravity est un éditeur de bureau et ne peut pas tourner dans une microVM : il ne s'ouvre pas sur un projet. Dans la VM, utilisez Claude Code, Codex ou Pi.",
+    "de": "Antigravity ist ein Desktop-Editor und kann nicht in einer microVM laufen: Auf einem Projekt öffnet es sich nicht. In der VM nutze Claude Code, Codex oder Pi."
+  },
+  "Gli agenti partono solo nella VM del progetto, e la VM non è attiva.": {
+    "en": "Agents start only in the project's VM, and the VM is not active.",
+    "fr": "Les agents ne démarrent que dans la VM du projet, et la VM n'est pas active.",
+    "de": "Agenten starten nur in der VM des Projekts, und die VM ist nicht aktiv."
+  },
+  "Pi per il Linux della VM non è installato e non si è potuto installare: guarda la barra di stato o la pagina Strumenti.": {
+    "en": "Pi for the VM's Linux is not installed and could not be installed: see the status bar or the Tools page.",
+    "fr": "Pi pour le Linux de la VM n'est pas installé et n'a pas pu l'être : voyez la barre d'état ou la page Outils.",
+    "de": "Pi für das Linux der VM ist nicht installiert und konnte nicht installiert werden: siehe Statusleiste oder die Seite Werkzeuge."
+  },
+  "{0} non parte nella VM: nella VM si usano Claude Code, Codex e Pi.": {
+    "en": "{0} does not start in the VM: the VM runs Claude Code, Codex and Pi.",
+    "fr": "{0} ne démarre pas dans la VM : la VM utilise Claude Code, Codex et Pi.",
+    "de": "{0} startet nicht in der VM: In der VM laufen Claude Code, Codex und Pi."
+  },
+  "/dev/kvm non c'è: attiva la virtualizzazione (Intel VT-x o AMD-V) nel BIOS/UEFI e riavvia il PC.": {
+    "en": "/dev/kvm is missing: turn on virtualization (Intel VT-x or AMD-V) in the BIOS/UEFI and restart the PC.",
+    "fr": "/dev/kvm est absent : activez la virtualisation (Intel VT-x ou AMD-V) dans le BIOS/UEFI et redémarrez le PC.",
+    "de": "/dev/kvm fehlt: Aktiviere die Virtualisierung (Intel VT-x oder AMD-V) im BIOS/UEFI und starte den PC neu."
+  },
+  "AppArmor non lascia partire la microVM del kit: il comando del profilo, da copiare, è nell'avviso «Senza VM» di Atollo.": {
+    "en": "AppArmor keeps the kit's microVM from starting: the profile's command, to copy, is in Atollo's «No VM» notice.",
+    "fr": "AppArmor empêche la microVM du kit de démarrer : la commande du profil, à copier, est dans l'avis « Sans VM » d'Atollo.",
+    "de": "AppArmor lässt die microVM des Kits nicht starten: Der Befehl für das Profil, zum Kopieren, steht im Hinweis „Ohne VM“ von Atollo."
+  },
+  "Atollo ricontrolla da solo ogni minuto: quando la VM è pronta, riprova.": {
+    "en": "Atollo checks again by itself every minute: when the VM is ready, try again.",
+    "fr": "Atollo revérifie de lui-même chaque minute : quand la VM est prête, réessayez.",
+    "de": "Atollo prüft jede Minute von selbst erneut: Wenn die VM bereit ist, versuche es noch einmal."
+  },
+  "Atollo: in questo terminale non ci sono gli agenti (Claude Code, Codex, Antigravity, Pi). Gli agenti girano solo nella VM: avviali dalla pagina del progetto o dall'editor.": {
+    "en": "Atollo: the agents (Claude Code, Codex, Antigravity, Pi) are not in this terminal. Agents run only in the VM: start them from the project's page or from the editor.",
+    "fr": "Atollo : les agents (Claude Code, Codex, Antigravity, Pi) ne sont pas dans ce terminal. Les agents tournent seulement dans la VM : lancez-les depuis la page du projet ou depuis l'éditeur.",
+    "de": "Atollo: Die Agenten (Claude Code, Codex, Antigravity, Pi) sind nicht in diesem Terminal. Agenten laufen nur in der VM: Starte sie von der Seite des Projekts oder aus dem Editor."
+  },
+  "Docker Sandboxes (sbx) non è nel kit: installalo con «Installa nel kit» nell'avviso «Senza VM» di Atollo.": {
+    "en": "Docker Sandboxes (sbx) is not in the kit: install it with «Install in the kit» in Atollo's «No VM» notice.",
+    "fr": "Docker Sandboxes (sbx) n'est pas dans le kit : installez-le avec « Installer dans le kit » dans l'avis « Sans VM » d'Atollo.",
+    "de": "Docker Sandboxes (sbx) ist nicht im Kit: Installiere es mit „Im Kit installieren“ im Hinweis „Ohne VM“ von Atollo."
+  },
+  "Il kit è su un disco {0}: spostalo su un disco NTFS (o APFS, ext4 su macOS e Linux).": {
+    "en": "The kit is on a {0} disk: move it to an NTFS disk (or APFS, ext4 on macOS and Linux).",
+    "fr": "Le kit est sur un disque {0} : déplacez-le sur un disque NTFS (ou APFS, ext4 sur macOS et Linux).",
+    "de": "Das Kit liegt auf einem {0}-Datenträger: Verschiebe es auf einen NTFS-Datenträger (oder APFS, ext4 unter macOS und Linux)."
+  },
+  "Il tuo utente non è nel gruppo kvm: in un terminale del PC «{0}», poi esci e rientra nella sessione.": {
+    "en": "Your user is not in the kvm group: in a terminal of the PC «{0}», then log out and back in.",
+    "fr": "Votre utilisateur n'est pas dans le groupe kvm : dans un terminal du PC « {0} », puis fermez la session et rouvrez-la.",
+    "de": "Dein Benutzer ist nicht in der Gruppe kvm: In einem Terminal des PCs „{0}“, dann ab- und wieder anmelden."
+  },
+  "Perché la VM non è attiva:": {
+    "en": "Why the VM is not active:",
+    "fr": "Pourquoi la VM n'est pas active :",
+    "de": "Warum die VM nicht aktiv ist:"
+  },
+  "Sul PC è attivo un altro Docker Sandboxes: fermalo («sbx daemon stop»), poi «Ricontrolla» nell'avviso «Senza VM» di Atollo.": {
+    "en": "Another Docker Sandboxes is running on the PC: stop it («sbx daemon stop»), then «Check again» in Atollo's «No VM» notice.",
+    "fr": "Un autre Docker Sandboxes tourne sur le PC : arrêtez-le (« sbx daemon stop »), puis « Revérifier » dans l'avis « Sans VM » d'Atollo.",
+    "de": "Auf dem PC läuft ein anderes Docker Sandboxes: Beende es („sbx daemon stop“), dann „Erneut prüfen“ im Hinweis „Ohne VM“ von Atollo."
+  },
+  "Windows Hypervisor Platform non è attivo: in PowerShell come amministratore «{0}», poi riavvia il PC.": {
+    "en": "Windows Hypervisor Platform is not active: in PowerShell as administrator «{0}», then restart the PC.",
+    "fr": "Windows Hypervisor Platform n'est pas actif : dans PowerShell en administrateur « {0} », puis redémarrez le PC.",
+    "de": "Windows Hypervisor Platform ist nicht aktiv: In PowerShell als Administrator „{0}“, dann den PC neu starten."
+  },
+  "Windows build {0} non è Windows 11: Docker Sandboxes funziona solo su Windows 11.": {
+    "en": "Windows build {0} is not Windows 11: Docker Sandboxes works only on Windows 11.",
+    "fr": "Windows build {0} n'est pas Windows 11 : Docker Sandboxes ne fonctionne que sur Windows 11.",
+    "de": "Windows-Build {0} ist nicht Windows 11: Docker Sandboxes funktioniert nur unter Windows 11."
+  },
+  "macOS {0}: Docker Sandboxes richiede macOS 14 Sonoma o successivo.": {
+    "en": "macOS {0}: Docker Sandboxes needs macOS 14 Sonoma or later.",
+    "fr": "macOS {0} : Docker Sandboxes nécessite macOS 14 Sonoma ou ultérieur.",
+    "de": "macOS {0}: Docker Sandboxes erfordert macOS 14 Sonoma oder neuer."
+  },
+  "sbx ha risposto con un errore: {0}": {
+    "en": "sbx answered with an error: {0}",
+    "fr": "sbx a répondu par une erreur : {0}",
+    "de": "sbx hat mit einem Fehler geantwortet: {0}"
+  },
+  "sbx non ha accesso a Docker: «Lancia» su «sbx login» nell'avviso «Senza VM» di Atollo.": {
+    "en": "sbx has no access to Docker: «Run» on «sbx login» in Atollo's «No VM» notice.",
+    "fr": "sbx n'a pas accès à Docker : « Lancer » sur « sbx login » dans l'avis « Sans VM » d'Atollo.",
+    "de": "sbx hat keinen Zugang zu Docker: „Starten“ bei „sbx login“ im Hinweis „Ohne VM“ von Atollo."
+  },
+  "{0}: Docker Sandboxes supporta solo Ubuntu 24.04 o successivo (non le derivate).": {
+    "en": "{0}: Docker Sandboxes supports only Ubuntu 24.04 or later (not its derivatives).",
+    "fr": "{0} : Docker Sandboxes ne prend en charge qu'Ubuntu 24.04 ou ultérieur (pas ses dérivées).",
+    "de": "{0}: Docker Sandboxes unterstützt nur Ubuntu 24.04 oder neuer (keine Ableger)."
+  },
+  "Senza VM: i terminali, i task e gli agenti dell'editor partono solo nella VM del progetto, e sul PC non si apre nulla.": {
+    "en": "No VM: the editor's terminals, tasks and agents start only in the project's VM, and nothing opens on the PC.",
+    "fr": "Sans VM : les terminaux, les tâches et les agents de l'éditeur ne démarrent que dans la VM du projet, et rien ne s'ouvre sur le PC.",
+    "de": "Ohne VM: Die Terminals, Tasks und Agenten des Editors starten nur in der VM des Projekts, und auf dem PC öffnet sich nichts."
   }
 }

@@ -170,6 +170,9 @@ pub fn wanted_vars(kit: &[String], project: &[String]) -> Vec<&'static str> {
 /// already set stays. Never the GitHub token: the kit's github server reads
 /// it itself (`agents::github_mcp`), and in the agent's environment the MCP
 /// servers of a cloned repository, which inherit it, would read it too.
+// No agent starts on the PC since D-178 (the tests; the MCP servers of the
+// agents in the VM are still to do, D-175).
+#[allow(dead_code)]
 pub fn launch_vars(
     kit: &Kit,
     env: &KitEnv,

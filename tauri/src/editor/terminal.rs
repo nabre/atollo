@@ -100,25 +100,6 @@ pub fn emit_exit<R: Runtime>(app: &AppHandle<R>, info: &pty::PtyInfo) {
     let _ = app.emit_to(label(info.id).as_str(), crate::ipc::events::PTY_EXIT, info);
 }
 
-/// Runs `command` (an agent, or a `.cmd` wrapper) in a new session of the
-/// app's terminal in `dir`; `on_exit` runs when it ends. Inside the job.
-pub fn open_command<R: Runtime>(
-    app: &AppHandle<R>,
-    kit: &Kit,
-    env: &KitEnv,
-    dir: &Path,
-    command: &Path,
-    on_exit: impl FnOnce() + Send + 'static,
-) -> Result<()> {
-    open(
-        app,
-        env,
-        dir,
-        pty::command(kit, command, dir),
-        Box::new(on_exit),
-    )
-}
-
 /// Opens the kit's shell (its PowerShell; on macOS and Linux bash when it
 /// is not installed) in a new session in `dir`. Inside the job.
 pub fn open_console<R: Runtime>(

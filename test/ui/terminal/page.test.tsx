@@ -30,6 +30,16 @@ afterEach(() => {
 });
 
 describe("TerminalsPage", () => {
+  it("says the agents are not in the terminals: they run only in the VM (D-178)", async () => {
+    invoke.mockImplementation((cmd) => {
+      if (cmd === "terminals_list") return Promise.resolve(VIEW);
+      return Promise.reject(new Error(`unexpected ${cmd}`));
+    });
+    render(<TerminalsPage />);
+    expect(await screen.findByText(/non ci sono nei terminali: girano solo nella VM/)).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Agenti" })).toBeNull();
+  });
+
   it("closes the question to remove a terminal with Esc, and removes it once confirmed", async () => {
     invoke.mockImplementation((cmd) => {
       if (cmd === "terminals_list") return Promise.resolve(VIEW);

@@ -35,7 +35,7 @@ const SAMPLE_ISOLATION: IsolationStatus = {
 };
 
 /** What the notice's «Lancia» runs in the app's terminal: `sbx login`,
- * `sbx ls`. */
+ * `sbx ls`; never a command that asks for an administrator (D-178). */
 export type IsolationFix = "login" | "ls";
 
 /** Opens `fix` with the `sbx` found in a new session of the app's terminal. */
@@ -43,8 +43,9 @@ export function isolationRun(fix: IsolationFix): Promise<void> {
   return act("isolation_run", { fix });
 }
 
-/** Whose sandbox it is, from the kit Atollo wrote for it (D-169). */
-export type VmOwner = { kind: "project"; project: string } | { kind: "terminal"; terminal: string; dir: string };
+/** Whose sandbox it is, from the kit Atollo wrote for it (D-169); the kit's
+ * terminals have none since D-178 (the list never shows theirs). */
+export type VmOwner = { kind: "project"; project: string };
 
 /** One of Atollo's sandboxes. */
 export interface VmInfo {

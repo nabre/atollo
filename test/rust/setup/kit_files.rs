@@ -3,6 +3,70 @@ use crate::kit::tests::TempDir;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
+/// D-178: the agents' launchers live in `agents`, out of `bin` (the
+/// launchers an older Atollo left there go); `no-agents` has a stand-in
+/// for each agent's command, `.cmd` and sh, that starts nothing and says
+/// where the agents run.
+#[test]
+fn the_agents_launchers_and_their_stand_ins() {
+    let tmp = TempDir::new("kitfiles-agents");
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
+    let dir = kit.kit_files();
+    fs::create_dir_all(dir.join("bin")).unwrap();
+    for old in OBSOLETE {
+        fs::write(join_rel(&dir, old), "old").unwrap();
+    }
+    write_all(&kit).unwrap();
+    for old in OBSOLETE {
+        assert!(!join_rel(&dir, old).exists(), "{old}");
+    }
+    for name in ["agents/agy", "agents/agy.cmd", "agents/claude"] {
+        assert!(join_rel(&dir, name).is_file(), "{name}");
+    }
+    for stem in AGENT_COMMANDS {
+        let cmd = fs::read_to_string(dir.join(NO_AGENTS_DIR).join(format!("{stem}.cmd"))).unwrap();
+        assert_eq!(cmd.matches('\n').count(), cmd.matches("\r\n").count());
+        assert!(cmd.contains(&format!("echo %{AGENTS_NOTICE_VAR}% 1>&2\r\n")));
+        // Jumps, never a block: a `)` of the notice would end it.
+        assert!(
+            cmd.contains("exit /b 1\r\n") && !cmd.contains(") else ("),
+            "{stem}"
+        );
+        assert!(cmd.contains("goto plain\r\n"), "{stem}");
+        let sh = fs::read_to_string(dir.join(NO_AGENTS_DIR).join(stem)).unwrap();
+        assert!(
+            sh.starts_with("#!/bin/sh\n") && !sh.contains('\r'),
+            "{stem}"
+        );
+        assert!(sh.ends_with("exit 1\n") && !sh.contains("exec"), "{stem}");
+    }
+}
+
+/// The sh stand-in really starts nothing: it prints the notice of the
+/// shell (or its own) and fails.
+#[cfg(unix)]
+#[test]
+fn a_stand_in_says_where_the_agents_run() {
+    let tmp = TempDir::new("kitfiles-agents-run");
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
+    write_all(&kit).unwrap();
+    let claude = kit.kit_files().join(NO_AGENTS_DIR).join("claude");
+    let out = Command::new(&claude)
+        .arg("--version")
+        .env(AGENTS_NOTICE_VAR, "only in the VM")
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(out.stdout.is_empty());
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "only in the VM\n");
+    let out = Command::new(&claude)
+        .env_remove(AGENTS_NOTICE_VAR)
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("VM"));
+}
+
 #[test]
 fn written_and_restored() {
     let tmp = TempDir::new("kitfiles");
@@ -91,8 +155,8 @@ fn line_endings_by_kind() {
     assert_eq!(with_line_endings("bashrc", text), "a\nb\nc\n");
     assert_eq!(with_line_endings("bin/gradle", text), "a\nb\nc\n");
     assert_eq!(with_line_endings("profile.ps1", text), text);
-    assert!(is_shell("bashrc") && is_shell("bin/agy"));
-    assert!(!is_shell("bin/agy.cmd") && !is_shell("profile.ps1"));
+    assert!(is_shell("bashrc") && is_shell("agents/agy") && is_shell("no-agents/claude"));
+    assert!(!is_shell("agents/agy.cmd") && !is_shell("profile.ps1"));
     assert!(!is_unix_bin("bashrc") && is_unix_bin("bin/gradle"));
 }
 
@@ -118,7 +182,7 @@ fn shell_files_lf_and_executable() {
             );
         }
     }
-    for name in ["bin/agy", "bin/claude", "bin/gradle"] {
+    for name in ["agents/agy", "agents/claude", "bin/gradle"] {
         let text = fs::read_to_string(join_rel(&dir, name)).unwrap();
         assert!(text.starts_with("#!/bin/sh\n"), "{name}");
     }
@@ -133,7 +197,7 @@ fn shell_files_lf_and_executable() {
             assert_eq!(mode & 0o777, 0o755, "{name}");
         }
         // A wrong mode left by a copy is put back at the next start.
-        let agy = dir.join("bin/agy");
+        let agy = dir.join("agents/agy");
         fs::set_permissions(&agy, fs::Permissions::from_mode(0o644)).unwrap();
         write_all(&kit).unwrap();
         assert_eq!(

@@ -330,11 +330,11 @@ fn macos_profiles_pwsh_default_zsh_and_agy() {
     assert!(via_vm(&p["Atollo - zsh"]) && via_vm(&p["Claude Code"]));
     // Antigravity through the kit's agy (sh): it carries the login.
     let agy = exe_of(&p["Antigravity"]);
-    assert!(agy.ends_with("data/kit/bin/agy"), "{agy}");
+    assert!(agy.ends_with("data/kit/agents/agy"), "{agy}");
     // Claude Code through the kit's claude (sh): the token saved in the
     // kit reaches it, not the editor's other terminals (SEC-V6-02).
     let claude = exe_of(&p["Claude Code"]);
-    assert!(claude.ends_with("data/kit/bin/claude"), "{claude}");
+    assert!(claude.ends_with("data/kit/agents/claude"), "{claude}");
     let args = p["Claude Code"]["args"].as_array().unwrap();
     let agent = args.iter().position(|a| a == "-Agent").unwrap();
     assert_eq!(args[agent + 1], "claude");

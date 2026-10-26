@@ -83,9 +83,9 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | Pi's settings, sign-ins (`auth.json`), sessions and the kit's `models.json` with the local server's address and key (readable by your user only) | `data/home/.pi/agent/` |
 | Editor server data and its per-session access token | `data/vscodium-server/` |
 | Docker Sandboxes: its settings and logs, the VMs' images and disks (each VM's home, `/tmp` and its own Docker) | the kit's home: `data/home/AppData/Local/DockerSandboxes/` on Windows, under `data/home/` on macOS and Linux |
-| Each sandbox's kit: its specification, whose it is (project, or terminal and folder), its mounts and opened ports; for a project with a database, the `db.env` with the project's database login given to its VM (readable by your user only) | `data/app/sandboxes/<sandbox>/` |
+| Each sandbox's kit: its specification, whose it is (a project or one of its agents; a kit terminal's only for an earlier Atollo, removed by itself), its mounts and opened ports; for a project with a database, the `db.env` with the project's database login given to its VM (readable by your user only) | `data/app/sandboxes/<sandbox>/` |
 | The notes of the "GitHub in the VM" commands Atollo registered in Docker Sandboxes, with their nonces (readable by your user only) | `data/app/sandboxes/secrets.json` |
-| The editor's sessions in the VM: whether the VM was on when the editor opened (`.level`) and, for each project opened in the editor, the path of `sbx`, its variables and the arguments of its terminal, its tasks and its Claude Code and Codex sandboxes (no password: the database login stays in `db.env`); cleared at every start of the app | `data/app/sandboxes/sessions/` |
+| The editor's sessions in the VM: whether the VM was on when the editor opened (`.level`), and if not why (`.reason`, shown by its terminals) and, for each project opened in the editor, the path of `sbx`, its variables and the arguments of its terminal, its tasks and its Claude Code, Codex and Pi sessions (no password: the database login stays in `db.env`); cleared at every start of the app | `data/app/sandboxes/sessions/` |
 | The script the editor's terminals, tasks and agent profiles start (it reads the sessions above), written again at every start of the app | `data/kit/vm.ps1` |
 | Your projects | `projects/` |
 | A kit copy waiting to be imported, only after “Import from…” | `.atollo-import/` |
@@ -95,7 +95,7 @@ The database passwords (`db.env` of the sandboxes included), the Gemini API key,
 
 Settings › The kit › **“Copy of the kit”** writes `projects/` and `data/` (without programs, caches, local models and the VMs' images and disks) to a folder or a zip **you choose**, possibly outside the Atollo folder. The copy holds the kit's secrets **in clear** (`data/app/db/secrets.json`, `data/app/secrets/`, the agents' and GitHub sign-ins): keep it safe. Atollo never sends it anywhere.
 
-The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The local models' key goes to Pi when Atollo launches it (`LLAMA_API_KEY`) and into Pi's own `models.json`, so that `pi` works from the kit's terminals too. The Hugging Face token is sent only to `huggingface.co`.
+The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The local models' key goes to Pi when Atollo launches it (`LLAMA_API_KEY`) and into Pi's own `models.json`, which Pi reads wherever Atollo starts it (in the project's VM since D-178: the kit's terminals no longer start agents). The Hugging Face token is sent only to `huggingface.co`.
 
 Exceptions, outside the Atollo folder:
 

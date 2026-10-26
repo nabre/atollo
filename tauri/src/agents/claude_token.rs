@@ -9,7 +9,7 @@
 //! file exists Claude Code gets it as `CLAUDE_CODE_OAUTH_TOKEN`, and only
 //! Claude Code (SEC-V6-02): from the Agents page ([`apply_in`] in
 //! `agents::launch_env`), and from the kit's terminals and editor through
-//! the kit's `claude` wrapper (`data/kit/bin/claude`, sh), which reads the
+//! the kit's `claude` wrapper (`data/kit/agents/claude`, sh), which reads the
 //! file when it starts. The kit's environment never holds it: projects'
 //! actions, scripts and the editor do not see it. "Esci" deletes the
 //! file. The token is never logged nor printed by `Atollo env` (masked):

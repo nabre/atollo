@@ -1,6 +1,6 @@
 # Atollo: the editor's terminals, tasks and agents in the project's VM
 # (written by Atollo.exe to data\kit\vm.ps1; edits are replaced at the next
-# start). DECISIONS.md D-175.
+# start). DECISIONS.md D-175, D-178.
 #
 # Started by VSCodium's profiles as:
 #   pwsh -NoLogo -NoProfile [-NoExit] -ExecutionPolicy Bypass -File vm.ps1
@@ -8,9 +8,10 @@
 # and, for a task, with "-Command <line>" added by VSCodium.
 #
 # The app notes in data\app\sandboxes\sessions\ the level and what the
-# project's VM needs (isolation/session.rs). Fail closed: with the level
-# `vm` the terminal opens in the project's VM or not at all; only with the
-# level `env` the kit's own shell or agent runs on the PC.
+# project's VM needs (isolation/session.rs). Fail closed: the terminal opens
+# in the project's VM or not at all. Without the VM (level `env`) nothing
+# opens on the PC (D-178): the reason the app noted is shown, with what to
+# do. -Shell and -Exe are what the profiles pass; nothing of the PC runs.
 
 param(
     [string]$Shell = 'pwsh',
@@ -40,8 +41,8 @@ if ($here.StartsWith($projects + $sep, [StringComparison]::$ignore)) {
     if ($parts.Count -gt 1) { $below = $parts[1] -replace '\\', '/' }
 }
 
-# The level the app noted when the editor opened (fail closed: only `env`
-# lets anything run on the PC; none yet, a moment to write it, then nothing).
+# The level the app noted when the editor opened (none yet: a moment to
+# write it, then nothing).
 $levelFile = Join-Path $sessions '.level'
 $until = (Get-Date).AddSeconds(15)
 while (-not (Test-Path -LiteralPath $levelFile) -and (Get-Date) -lt $until) {
@@ -52,7 +53,31 @@ if ($level -ne 'vm' -and $level -ne 'env') {
     Say "Atollo non ha detto se la VM e' attiva: apri l'editor dalla pagina del progetto in Atollo."
     Leave 1
 }
-$session = if ($project -and $level -eq 'vm') { Join-Path $sessions $project } else { $null }
+
+# Without the VM: nothing of the editor starts on the PC (D-178), only why.
+if ($level -eq 'env') {
+    $reasonFile = Join-Path $sessions '.reason'
+    if (Test-Path -LiteralPath $reasonFile) {
+        foreach ($line in Get-Content -LiteralPath $reasonFile -Encoding utf8) {
+            if ($line.Trim()) { Say $line }
+        }
+    } else {
+        Say "Senza VM: i terminali, i task e gli agenti dell'editor partono solo nella VM del progetto. Il motivo e cosa fare sono nell'avviso 'Senza VM' di Atollo."
+    }
+    Leave 1
+}
+
+# Antigravity is a desktop editor: it cannot run in a microVM (D-178).
+if ($Agent -eq 'antigravity') {
+    Say "Antigravity e' un editor per il desktop e non puo' girare in una microVM: su un progetto non si apre. Nella VM usa Claude Code, Codex o Pi."
+    Leave 1
+}
+if ($Agent -and $Agent -ne 'claude' -and $Agent -ne 'codex' -and $Agent -ne 'pi') {
+    Say "$Agent non parte nella VM: nella VM si usano Claude Code, Codex e Pi."
+    Leave 1
+}
+
+$session = if ($project) { Join-Path $sessions $project } else { $null }
 
 # Being made ready by the app: wait, at most ten minutes.
 if ($session -and (Test-Path -LiteralPath "$session.pending")) {
@@ -75,18 +100,15 @@ if ($session -and (Test-Path -LiteralPath (Join-Path $session 'sbx'))) {
         if ($i -gt 0) { [Environment]::SetEnvironmentVariable($line.Substring(0, $i), $line.Substring($i + 1)) }
     }
     if ($Agent) {
-        if ($Agent -ne 'claude' -and $Agent -ne 'codex') {
-            Say "$Agent non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex."
-            Leave 1
-        }
-        # Its sandbox made ready by the app (tools, database, ports) on a
+        # Its session made ready by the app (Claude Code and Codex in their
+        # sandboxes, Pi in the project's VM: tools, database, ports) on a
         # request: the first time, or again at every start of the editor.
         $file = Join-Path $session $Agent
         $failed = Join-Path $session "$Agent.error"
         if (-not (Test-Path -LiteralPath $file)) {
             Remove-Item -LiteralPath $failed -ErrorAction SilentlyContinue
             Set-Content -LiteralPath "$session.$Agent.request" -Value '1'
-            Say "La sandbox di $Agent si sta preparando..."
+            Say "La sessione di $Agent nella VM si sta preparando..."
             $until = (Get-Date).AddMinutes(10)
             while (-not (Test-Path -LiteralPath $file) -and -not (Test-Path -LiteralPath $failed) -and (Get-Date) -lt $until) {
                 Start-Sleep -Milliseconds 500
@@ -94,10 +116,13 @@ if ($session -and (Test-Path -LiteralPath (Join-Path $session 'sbx'))) {
         }
         if (-not (Test-Path -LiteralPath $file)) {
             $why = if (Test-Path -LiteralPath $failed) { (Get-Content -LiteralPath $failed -Raw).Trim() } else { 'nessuna risposta da Atollo' }
-            Say "La sandbox di $Agent non e' pronta: $why"
+            Say "La sessione di $Agent nella VM non e' pronta: $why"
             Leave 1
         }
         $argv = @(Get-Content -LiteralPath $file)
+        # Pi starts in the folder the terminal is in, like a shell.
+        $w = [Array]::IndexOf($argv, '-w')
+        if ($w -ge 0 -and $below) { $argv[$w + 1] = $argv[$w + 1].TrimEnd('/') + '/' + $below }
     } elseif ($null -ne $Command -and $Command -ne '') {
         $argv = @(Get-Content -LiteralPath (Join-Path $session 'run'))
         $last = $argv.Count - 1
@@ -112,29 +137,9 @@ if ($session -and (Test-Path -LiteralPath (Join-Path $session 'sbx'))) {
     Leave $LASTEXITCODE
 }
 
-if ($level -eq 'vm') {
-    if ($session) {
-        Say "La VM di questo progetto non e' stata preparata: riapri l'editor dalla pagina del progetto in Atollo."
-    } else {
-        Say "Con la VM attiva il terminale dell'editor si apre solo nella cartella di un progetto."
-    }
-    Leave 1
+if ($session) {
+    Say "La VM di questo progetto non e' stata preparata: riapri l'editor dalla pagina del progetto in Atollo."
+} else {
+    Say "Con la VM attiva il terminale dell'editor si apre solo nella cartella di un progetto."
 }
-
-# Without the VM: the kit's own, on the PC.
-if ($Agent) {
-    & $Exe
-    Leave $LASTEXITCODE
-}
-if ($null -ne $Command -and $Command -ne '') {
-    switch ($Shell) {
-        'pwsh' { Invoke-Expression $Command; Leave $LASTEXITCODE }
-        default { & $Exe -c $Command; Leave $LASTEXITCODE }
-    }
-}
-switch ($Shell) {
-    'pwsh' { $ErrorActionPreference = 'Continue'; . (Join-Path $PSScriptRoot 'profile.ps1') }
-    'bash' { & $Exe --rcfile (Join-Path $PSScriptRoot 'bashrc') -i; Leave $LASTEXITCODE }
-    'cmd' { & $Exe /d /k; Leave $LASTEXITCODE }
-    default { & $Exe -i; Leave $LASTEXITCODE }
-}
+Leave 1

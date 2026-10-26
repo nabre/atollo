@@ -1060,10 +1060,7 @@
   "Progetti nella VM": "Projekte in der VM",
   "Lavori senza VM": "Du arbeitest ohne VM",
   "Ricontrolla": "Erneut prüfen",
-  "Ogni progetto gira in una microVM di Docker Sandboxes: terminale, azioni, server e agenti vedono solo la cartella del progetto.": "Jedes Projekt läuft in einer microVM von Docker Sandboxes: Terminal, Aktionen, Server und Agenten sehen nur den Ordner des Projekts.",
-  "I programmi dei progetti (terminale, azioni, server, agenti) girano sul PC con il tuo utente: possono leggere i tuoi file e usare la rete. Il kit ne filtra solo l'ambiente.": "Die Programme der Projekte (Terminal, Aktionen, Server, Agenten) laufen auf dem PC mit deinem Benutzer: Sie können deine Dateien lesen und das Netzwerk nutzen. Das Kit filtert nur ihre Umgebung.",
   "Perché la VM non è attiva": "Warum die VM nicht aktiv ist",
-  "Lavori senza VM: i progetti girano sul PC": "Arbeit ohne VM: Die Projekte laufen auf dem PC",
   "Dettagli e cosa serve per la VM": "Details und was die VM braucht",
   "VM": "VM",
   "Senza VM": "Ohne VM",
@@ -1082,7 +1079,6 @@
   "Il kit è su un disco {0}: i dischi delle VM (fino a 30 GB ciascuna, che su NTFS occupano solo quello che si scrive) non ci stanno o lo riempirebbero.": "Das Kit liegt auf einem {0}-Laufwerk: Die Festplatten der VMs (bis zu 30 GB je VM, die auf NTFS nur belegen, was geschrieben wird) passen nicht darauf oder würden es füllen.",
   "Sposta il kit su un disco NTFS (o APFS, ext4 su macOS e Linux), poi riaprilo da lì.": "Verschiebe das Kit auf ein NTFS-Laufwerk (oder APFS, ext4 auf macOS und Linux) und öffne es dann von dort.",
   "Progetto {0}": "Projekt {0}",
-  "Terminale {0} in {1}": "Terminal {0} in {1}",
   "Sandbox delle VM": "Sandboxes der VMs",
   "Spazio occupato nel kit: {0}": "Belegter Platz im Kit: {0}",
   "Nessuna sandbox.": "Keine Sandboxes.",
@@ -1096,5 +1092,11 @@
   "Con la VM attiva gira nella VM, con la build per Linux: su questo sistema non serve.": "Mit aktiver VM läuft es in der VM, mit dem Build für Linux: Auf diesem System wird es nicht gebraucht.",
   "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": "Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. Die gemeinsamen Server dienen der Arbeit ohne VM.",
   "Docker Sandboxes (sbx) non è nel kit: l'ultima installazione non è riuscita ({0}).": "Docker Sandboxes (sbx) ist nicht im Kit: seine letzte Installation ist fehlgeschlagen ({0}).",
-  "Si cancella il disco della sandbox: la sua home, /tmp e le immagini Docker scaricate. I file e il database del progetto restano.": "Die Festplatte der Sandbox wird gelöscht: ihr Home, /tmp und die geladenen Docker-Images. Die Dateien und die Datenbank des Projekts bleiben."
+  "Si cancella il disco della sandbox: la sua home, /tmp e le immagini Docker scaricate. I file e il database del progetto restano.": "Die Festplatte der Sandbox wird gelöscht: ihr Home, /tmp und die geladenen Docker-Images. Die Dateien und die Datenbank des Projekts bleiben.",
+  "Serve un amministratore: Atollo non lo esegue mai, lo copi e lo esegui tu. Dopo può servire riavviare il PC o rientrare nella sessione; Atollo ricontrolla da solo.": "Dafür braucht es einen Administrator: Atollo führt ihn nie aus, du kopierst ihn und führst ihn aus. Danach kann ein Neustart des PCs oder eine neue Anmeldung nötig sein; Atollo prüft von selbst erneut.",
+  "Ogni progetto gira in una microVM di Docker Sandboxes: terminale, azioni, server, terminali dell'editor e agenti vedono solo la cartella del progetto. I terminali del kit restano sul PC, senza gli agenti.": "Jedes Projekt läuft in einer microVM von Docker Sandboxes: Terminal, Aktionen, Server, die Terminals des Editors und Agenten sehen nur den Ordner des Projekts. Die Terminals des Kits bleiben auf dem PC, ohne die Agenten.",
+  "Senza VM i progetti, il loro terminale e le azioni (npm run dev, i siti, i server condivisi) girano sul PC con il tuo utente, senza gli agenti: possono leggere i tuoi file e usare la rete, il kit ne filtra solo l'ambiente.": "Ohne VM laufen die Projekte, ihr Terminal und die Aktionen (npm run dev, die Websites, die gemeinsamen Server) auf dem PC mit deinem Benutzer, ohne die Agenten: Sie können deine Dateien lesen und das Netzwerk nutzen, das Kit filtert nur ihre Umgebung.",
+  "I terminali, i task e gli agenti dell'editor e gli agenti del progetto partono solo nella VM: senza, non si aprono. Atollo ricontrolla da solo ogni minuto.": "Die Terminals, Tasks und Agenten des Editors und die Agenten des Projekts starten nur in der VM: ohne sie öffnen sie sich nicht. Atollo prüft jede Minute von selbst erneut.",
+  "Senza VM: progetti e azioni sul PC senza agenti; terminali dell'editor e agenti solo nella VM": "Ohne VM: Projekte und Aktionen auf dem PC ohne Agenten; Terminals des Editors und Agenten nur in der VM",
+  "Gli agenti (Claude Code, Codex, Antigravity, Pi) non ci sono nei terminali: girano solo nella VM. Avviali dalla pagina del progetto o dall'editor.": "Die Agenten (Claude Code, Codex, Antigravity, Pi) sind nicht in den Terminals: Sie laufen nur in der VM. Starte sie von der Seite des Projekts oder aus dem Editor."
 }

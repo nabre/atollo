@@ -578,7 +578,9 @@ function IsolationItem({ installing }: { installing: boolean }) {
   const [open, setOpen] = useState(false);
   if (!status) return null;
   const vm = status.level === "vm";
-  const label = vm ? t("Progetti nella VM") : t("Lavori senza VM: i progetti girano sul PC");
+  const label = vm
+    ? t("Progetti nella VM")
+    : t("Senza VM: progetti e azioni sul PC senza agenti; terminali dell'editor e agenti solo nella VM");
   return (
     <>
       <StatusItem

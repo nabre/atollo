@@ -15,7 +15,8 @@
 //!   (`host.docker.internal`, [`host_port_allow`]) as the project's user;
 //! - Claude Code and Codex: `sbx`'s own agents, a sandbox each
 //!   (`atollo-a-claude-<project>-<hash>`), whose keys the proxy of `sbx` adds to
-//!   their requests. The other agents have no sandbox: not started.
+//!   their requests; Pi in the project's VM, its build for Linux from the
+//!   kit (D-178). Antigravity, a desktop editor, never starts on a project.
 //!
 //! The words given to `sh -lc` are quoted for the VM's shell (POSIX):
 //! never text of the PC's shell.
@@ -73,13 +74,10 @@ pub fn agent_name(project: &str, agent: &str) -> String {
     format!("{PREFIX}a-{agent}-{}", tag(project))
 }
 
-/// The sandbox of the kit's terminal `terminal` (its id) in `dir`:
-/// `atollo-t-<terminal>-<hash>`, the hash of both, so each folder has its
-/// own and never a project's (`atollo-p-`).
-pub fn terminal_name(terminal: &str, dir: &Path) -> String {
-    let exact = format!("{terminal}\n{}", dir.display());
-    format!("{PREFIX}t-{}", tag_of(terminal, &exact))
-}
+/// The prefix of the sandboxes an earlier Atollo made for the kit's
+/// terminals (`atollo-t-<terminal>-<hash>`, D-168): the kit's terminals run
+/// on the PC now (D-178), and those left are removed.
+pub const TERMINAL_PREFIX: &str = "atollo-t-";
 
 /// Creates the sandbox: `sbx run -d --name <vm> [--kit <kit>] <agent>
 /// <dir> [<folder>:ro…]` (`shell` for a project's or a terminal's,
@@ -244,6 +242,33 @@ pub fn sbx_agent(agent: &str) -> Option<&'static str> {
         "codex" => Some("codex"),
         _ => None,
     }
+}
+
+/// The agents that start on a project, all in the VM (D-178): Claude Code
+/// and Codex in `sbx`'s sandboxes ([`sbx_agent`]), Pi in the project's own
+/// VM ([`pi_session_args`]). Antigravity, a desktop editor, never does.
+pub fn starts_in_vm(agent: &str) -> bool {
+    sbx_agent(agent).is_some() || agent == "pi"
+}
+
+/// Pi in the project's VM `vm` (D-178): its build for Linux (`pi`, the
+/// VM's path of the kit's, mounted read-only) started in `dir` (the VM's
+/// path) like a command of the project's terminal, with `tools`
+/// ([`tools_options`]): the project's tools first on the `PATH`, its
+/// database's variables.
+pub fn pi_session_args(
+    vm: &str,
+    dir: &str,
+    pi: &str,
+    tools: &crate::isolation::GuestTools,
+) -> Vec<String> {
+    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
+    args.extend(tools_options(tools));
+    args.push(vm.into());
+    args.push("sh".into());
+    args.push("-c".into());
+    args.push(format!("{TOOLS_FIRST}; exec {}", shell_quote_posix(pi)));
+    args
 }
 
 /// The session of an agent in its sandbox `vm` (made by `Vm::start`):

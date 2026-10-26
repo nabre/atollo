@@ -44,7 +44,8 @@ pub async fn terminal_remove<R: Runtime>(
     let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
     tauri::async_runtime::spawn_blocking(move || {
         terminals::remove(&kit, &id).or_fail_chain("terminals")?;
-        // Its sandboxes, one per folder, and their disks go with it (D-169).
+        // The sandboxes an earlier Atollo made for it, one per folder, and
+        // their disks go with it (D-169; none made since D-178).
         let names = crate::isolation::terminal_sandboxes(&kit, &id);
         crate::isolation::remove_owned(&kit, &host, &env, &names);
         Ok(())
@@ -54,7 +55,8 @@ pub async fn terminal_remove<R: Runtime>(
 }
 
 /// Opens the terminal `id` in `dir` (`None`: its own folder), installing
-/// first what every console needs (the kit's PowerShell).
+/// first what every console needs (the kit's PowerShell). Always on the PC,
+/// with or without the VM (D-178): no sandbox for a kit terminal.
 #[tauri::command]
 pub async fn terminal_launch<R: Runtime>(
     app: AppHandle<R>,
@@ -65,58 +67,16 @@ pub async fn terminal_launch<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
-    let host = state.host.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let Some(terminal) = terminals::find(&kit, &id, lang) else {
             return Err(crate::common::i18n::t(lang, "Terminale non trovato: {0}", &[&id]).into());
         };
         let dir = terminals::start_dir(&kit, &terminal, dir.as_deref(), lang)?;
-        let env = terminals::env(&kit, &terminal, ensure(&app, &task, &kit, lang, &[])?);
-        // In a microVM of its own when the VM is on (D-167), with the kit's
-        // tools for its Linux.
-        let guest = crate::isolation::vm::guest_target(kit.target()).map(|t| kit.for_target(t));
-        if let Some(guest) = guest.filter(|_| crate::isolation::vm_on(&kit, &host, &env)) {
-            // Never a folder whose files the PC runs, writable from the VM;
-            // from here on only the folder checked, canonical, is used.
-            let Some(workspace) = crate::isolation::vm_workspace(&kit, &host, &dir) else {
-                return Err(crate::common::i18n::t(
-                    lang,
-                    "La cartella {0} non si apre nella VM: è la radice di un disco, un link, una cartella di sistema, o è nel kit o nel tuo profilo (salvo i progetti del kit). Scegli la cartella di un progetto.",
-                    &[&dir.display().to_string()],
-                )
-                .into());
-            };
-            let windows = kit.target().is_windows();
-            let Some(guest_dir) = crate::isolation::vm::guest_path(windows, &workspace) else {
-                return Err(crate::common::i18n::t(
-                    lang,
-                    "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.",
-                    &[&dir.display().to_string()],
-                )
-                .into());
-            };
-            let apps = guest.apps();
-            if let Some(vm) =
-                crate::isolation::kit_terminal_vm(&kit, &host, &env, &terminal.id, &workspace, &apps)
-            {
-                // The default terminal: the tools the kit chose, for the
-                // VM's Linux; another: its own (D-170).
-                let wanted = if terminal.id == terminals::DEFAULT_ID {
-                    terminals::chosen_tools(&kit)
-                } else {
-                    terminal.tools.clone()
-                };
-                ensure_guest_tools(&app, &task, &guest, &wanted);
-                std::fs::create_dir_all(&apps).or_fail("terminals")?;
-                let base = KitEnv::build(&guest, &Settings::load(&kit).settings, lang, &host);
-                let tools = crate::isolation::guest_tools(&kit, &guest, &terminal, base);
-                vm.start(&env, lang).or_fail_chain("vm")?;
-                let args = crate::isolation::vm::kit_terminal_args(&vm.name, &guest_dir, &tools);
-                let launch = vm.launch(&kit, args, "VM", lang).or_fail_chain("vm")?;
-                return terminal::open_launch(&app, &vm.session_env(&env), &workspace, launch)
-                    .or_fail_chain("terminal");
-            }
-        }
+        // Always on the PC (D-178): the kit's tools, never an agent's
+        // command (`terminals::env`), and the terminal says where the
+        // agents run.
+        let mut env = terminals::env(&kit, &terminal, ensure(&app, &task, &kit, lang, &[])?);
+        crate::isolation::with_agents_notice(&mut env, lang);
         terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
     .await

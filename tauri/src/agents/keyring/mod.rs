@@ -3,7 +3,7 @@
 //!
 //! `agy` stores its login with go-keyring, with no option to use a file:
 //! the Credential Manager on Windows, the Keychain on macOS, the Secret
-//! Service on Linux. Around every `agy` run (`data\kit\bin\agy.cmd`, `agy`
+//! Service on Linux. Around every `agy` run (`data\kit\agents\agy.cmd`, `agy`
 //! on macOS and Linux):
 //! - `restore`: the login saved in `data\antigravity\keyring.json` goes
 //!   into the system's store (on Windows with "logon session" persistence:

@@ -1,5 +1,35 @@
 use super::*;
 
+/// «Lancia» runs only `sbx`'s own commands (D-178, zero admin): no fix of
+/// the PC's, which asks for an administrator or a new sign-in
+/// (hypervisor, `kvm`, AppArmor), can be asked of the app.
+#[test]
+fn no_admin_fix_can_be_launched() {
+    for code in ["login", "ls"] {
+        assert!(serde_json::from_value::<Fix>(serde_json::json!(code)).is_ok());
+    }
+    for code in [
+        "hypervisor_off",
+        "hypervisor",
+        "kvm_denied",
+        "kvm",
+        "apparmor",
+        "daemon_stop",
+        "foreign_daemon",
+    ] {
+        assert!(
+            serde_json::from_value::<Fix>(serde_json::json!(code)).is_err(),
+            "{code}"
+        );
+    }
+    for fix in [Fix::Login, Fix::Ls] {
+        let args = fix.args();
+        assert!(args
+            .iter()
+            .all(|a| !a.contains("sudo") && !a.contains("Enable-")));
+    }
+}
+
 /// The network policy: the kit's `sbx` gets `balanced` (set already is
 /// fine); texts of sbx 0.49.2.
 #[test]
@@ -30,129 +60,6 @@ fn no_vm_starts_without_a_network_policy() {
     ));
 }
 
-/// The kit's terminal in the VM gets the kit's tools for Linux: only what
-/// lies in `data/apps/linux-…`, as the VM sees it; never the kit's home,
-/// temp or agents.
-#[test]
-fn a_kit_terminal_gets_the_kits_tools_for_linux() {
-    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-guest");
-    let guest = kit.for_target(crate::kit::Target::LINUX_X64);
-    let node = crate::setup::Catalog::get().find("node").unwrap();
-    for key in node.key_paths(&guest) {
-        std::fs::create_dir_all(key.parent().unwrap()).unwrap();
-        std::fs::write(&key, b"").unwrap();
-    }
-    let terminal = crate::editor::terminals::find(&kit, "default", "it").unwrap();
-    let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
-    let GuestTools { path, vars, .. } = guest_tools(&kit, &guest, &terminal, base);
-    let windows = kit.target().is_windows();
-    let apps = vm::guest_path(windows, &guest.apps()).unwrap();
-    assert!(!path.is_empty(), "node's folder on the PATH");
-    for entry in &path {
-        assert!(entry.starts_with(&apps), "{entry}");
-        assert!(!entry.contains('\\'), "{entry}");
-    }
-    for (name, value) in &vars {
-        assert!(
-            name == "ATOLLO_TERMINAL" || value.starts_with(&apps),
-            "{name}={value}"
-        );
-        assert!(!["HOME", "TEMP", "TMPDIR", "CLAUDE_CONFIG_DIR"].contains(&name.as_str()));
-    }
-    assert!(vars.iter().any(|(n, _)| n == "ATOLLO_TERMINAL"));
-}
-
-/// A VM never writes where the PC runs files: not a drive's root, not a
-/// folder holding the kit or the profile, not inside the kit's data or the
-/// profile's settings; a project's folder and the projects' folder are fine.
-#[test]
-fn a_vm_never_gets_the_kit_or_the_profile_writable() {
-    // The kit is its whole temporary folder; the PC's other folders are in
-    // another one. Both by their real path: on macOS the temporary folder
-    // is under /var, a link to /private/var, and a folder reached through
-    // a link is never a workspace.
-    let real = |p: &Path| {
-        if cfg!(target_os = "macos") {
-            std::fs::canonicalize(p).unwrap()
-        } else {
-            p.to_path_buf()
-        }
-    };
-    let tmp = crate::kit::tests::TempDir::new("isolation-workspace");
-    let kit = Kit::at(real(&tmp.0), crate::test_support::kit_arch());
-    kit.prepare().unwrap();
-    let pc = crate::kit::tests::TempDir::new("isolation-workspace-pc");
-    let pc_root = real(&pc.0);
-    let profile = pc_root.join("user");
-    let in_profile = profile.join("Documents").join("shop");
-    // A folder elsewhere: on macOS the real temporary folder is under
-    // /private/var, a system folder, so one in the user's real home (this
-    // test's profile is another folder).
-    let elsewhere = if cfg!(target_os = "macos") {
-        Some(crate::kit::tests::TempDir(
-            PathBuf::from(std::env::var_os("HOME").unwrap())
-                .join(format!(".atollo-test-sites-{}", std::process::id())),
-        ))
-    } else {
-        None
-    };
-    let sites = elsewhere
-        .as_ref()
-        .map_or_else(|| pc_root.join("sites"), |d| d.0.clone())
-        .join("shop");
-    let system = pc_root.join("Windows");
-    for d in [
-        &in_profile,
-        &sites,
-        &system,
-        &kit.projects().join("shop"),
-        &kit.data(),
-    ] {
-        std::fs::create_dir_all(d).unwrap();
-    }
-    let host = Host::from_pairs([
-        ("USERPROFILE".into(), profile.clone().into_os_string()),
-        ("SystemRoot".into(), system.clone().into_os_string()),
-        ("HOME".into(), profile.clone().into_os_string()),
-    ]);
-    let allowed = |d: &Path| vm_workspace(&kit, &host, d);
-    // The kit's projects, and a folder elsewhere, as their canonical path.
-    let shop = allowed(&kit.projects().join("shop")).expect("a project of the kit");
-    assert_eq!(
-        shop,
-        plain(&std::fs::canonicalize(kit.projects().join("shop")).unwrap())
-    );
-    assert!(!shop.to_string_lossy().starts_with(r"\\?\"), "{shop:?}");
-    assert_eq!(
-        allowed(&kit.projects()),
-        None,
-        "every project, writable, in one VM"
-    );
-    assert!(allowed(&sites).is_some(), "a folder elsewhere");
-    // Never the kit, the profile, the system, nor what holds them.
-    assert_eq!(allowed(kit.root()), None, "the kit's root");
-    assert_eq!(allowed(&kit.data()), None, "the kit's data");
-    assert_eq!(
-        allowed(pc_root.parent().unwrap()),
-        None,
-        "holding the kit and the profile"
-    );
-    assert_eq!(allowed(&profile), None, "the profile");
-    assert_eq!(allowed(&in_profile), None, "anything in the profile");
-    if kit.target().is_windows() {
-        assert_eq!(allowed(&system), None, "the system's folder");
-    }
-    assert_eq!(allowed(&pc_root.join("missing")), None, "unreadable");
-    assert_eq!(allowed(Path::new("relative")), None);
-    let root = kit.root().ancestors().last().unwrap();
-    assert_eq!(allowed(root), None, "a drive's root");
-    // A link on the way: the folder checked would not be the one mounted.
-    let linked = pc_root.join("linked");
-    crate::platform::safe_path::tests::junction(&linked, &sites);
-    assert_eq!(allowed(&linked), None, "a junction");
-    assert_eq!(allowed(&linked.join("x")), None, "under a junction");
-}
-
 /// The list of the VMs: Atollo's sandboxes only, with their owner from
 /// their kits; the sandboxes a project or a terminal takes with it.
 #[test]
@@ -166,10 +73,17 @@ fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
     let json = format!(
         r#"[{{"name":"{shop}","status":"running","last_used_at":"2026-10-25T17:40:30Z"}},
             {{"name":"claude-mine","status":"stopped"}},
+            {{"name":"atollo-t-default-0123","status":"stopped"}},
             {{"name":"atollo-a-claude-shop-0123","status":"stopped"}}]"#
     );
     let vms = vms_of(&kit, &json);
-    assert_eq!(vms.len(), 2, "the user's own sandbox is not Atollo's");
+    assert_eq!(
+        vms.len(),
+        2,
+        "the user's own sandbox is not Atollo's, a kit terminal's is never listed (D-178)"
+    );
+    assert_eq!(terminal_vms_in(&json), ["atollo-t-default-0123"]);
+    assert!(terminal_vms_in("not json").is_empty());
     assert_eq!(vms[0].name, shop);
     assert_eq!(vms[0].owner, Some(owner));
     assert_eq!(vms[0].status, "running");
@@ -434,7 +348,12 @@ fn a_project_gets_a_sealed_environment() {
     for name in SEALED {
         assert_eq!(env.get(name), None, "{name}");
     }
-    assert_eq!(env.get("PATH"), Some("kit"));
+    let stand_ins = kit
+        .kit_files()
+        .join(crate::setup::kit_files::NO_AGENTS_DIR)
+        .display()
+        .to_string();
+    assert_eq!(env.path_entries(), [stand_ins.as_str(), "kit"]);
 
     crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
     let mut env = full();
@@ -445,6 +364,208 @@ fn a_project_gets_a_sealed_environment() {
         .contains("user=shop\n"));
     assert_eq!(env.get("CP_USER_PROFILE"), None);
     assert_eq!(env.get("SSH_AUTH_SOCK"), None);
+}
+
+/// A kit of `target` with Node.js and the four agents installed (their key
+/// files), prepared in `tmp`.
+fn kit_with_agents(tmp: &Path, target: crate::kit::Target) -> Kit {
+    let kit = Kit::at_target(tmp.to_path_buf(), target);
+    kit.prepare().unwrap();
+    let catalog = crate::setup::Catalog::get();
+    for id in ["node", "claude", "codex", "antigravity", "pi"] {
+        for key in catalog.find(id).unwrap().key_paths(&kit) {
+            std::fs::create_dir_all(key.parent().unwrap()).unwrap();
+            std::fs::write(&key, b"").unwrap();
+        }
+    }
+    kit
+}
+
+/// No PATH entry of `env` is an agent's folder of `kit` or inside one, the
+/// stand-ins come first, and Node.js is still there.
+fn assert_no_agents(kit: &Kit, env: &KitEnv, what: &str) {
+    let key = |p: &str| crate::platform::processes::path_key(&p.replace('/', "\\"));
+    let dirs: Vec<String> = agent_dirs(kit)
+        .iter()
+        .map(|d| key(&d.display().to_string()))
+        .collect();
+    let entries = env.path_entries();
+    for entry in &entries {
+        let e = key(entry);
+        assert!(
+            !dirs
+                .iter()
+                .any(|d| e == *d || e.starts_with(&format!("{d}\\"))),
+            "{what}: {entry} is an agent's"
+        );
+    }
+    let stand_ins = kit
+        .kit_files()
+        .join(crate::setup::kit_files::NO_AGENTS_DIR)
+        .display()
+        .to_string();
+    assert_eq!(entries.first().copied(), Some(stand_ins.as_str()), "{what}");
+    assert_eq!(
+        entries.iter().filter(|e| **e == stand_ins).count(),
+        1,
+        "{what}: once"
+    );
+    assert!(
+        entries.iter().any(|e| key(e).contains("node")),
+        "{what}: the other tools stay"
+    );
+    assert_eq!(env.get("CP_ANTIGRAVITY"), None, "{what}");
+}
+
+/// D-178: the kit's environment has the agents (the editor's and the app's
+/// own), but no shell or program on the PC does: a kit terminal (the
+/// default one and one that chose an agent), a project's terminal and
+/// actions without the VM, on the four systems' layouts (Windows' `.exe`
+/// and `;`, macOS and Linux's folders and `:`).
+#[test]
+fn the_pcs_shells_have_no_agent_on_any_system() {
+    use crate::kit::Target;
+    for target in [
+        Target::WIN32_X64,
+        Target::DARWIN_ARM64,
+        Target::LINUX_X64,
+        Target::LINUX_ARM64,
+    ] {
+        let tmp =
+            crate::kit::tests::TempDir::new(&format!("isolation-noagents-{}", target.as_str()));
+        let kit = kit_with_agents(&tmp.0, target);
+        let base = KitEnv::build(&kit, &Default::default(), "it", &Host::default());
+        let apps = |rel: &str| kit.apps().join(rel).display().to_string();
+        let has = |env: &KitEnv, dir: &str| env.path_entries().contains(&dir);
+        // The kit's own environment: the agents are there (the editor's,
+        // the app's), so the stripping is what takes them away.
+        assert!(has(&base, &apps("claude")), "{}", target.as_str());
+        assert!(base.get("CP_ANTIGRAVITY").is_some(), "{}", target.as_str());
+        let launchers = kit
+            .kit_files()
+            .join(crate::setup::kit_files::AGENTS_DIR)
+            .display()
+            .to_string();
+        assert!(has(&base, &launchers), "{}", target.as_str());
+
+        let default = crate::editor::terminals::find(&kit, "default", "it").unwrap();
+        let env = crate::editor::terminals::env(&kit, &default, base.clone());
+        assert_no_agents(&kit, &env, &format!("{} default terminal", target.as_str()));
+        let mine = crate::editor::terminals::Terminal {
+            id: "mine".into(),
+            name: "Mine".into(),
+            dir: None,
+            tools: [("claude", None), ("pi", None), ("node", None)]
+                .into_iter()
+                .map(|(k, v)| (k.to_owned(), v))
+                .collect(),
+        };
+        let env = crate::editor::terminals::env(&kit, &mine, base.clone());
+        assert_no_agents(&kit, &env, &format!("{} own terminal", target.as_str()));
+        let env = crate::versions::project_env(&kit, "shop", base.clone());
+        assert_no_agents(&kit, &env, &format!("{} project", target.as_str()));
+        // Applied again (a terminal's environment sealed twice): the same.
+        let mut again = env.clone();
+        without_agents(&kit, &mut again);
+        assert_eq!(again.get("PATH"), env.get("PATH"), "{}", target.as_str());
+        // No agent among the tools a kit terminal offers.
+        assert!(crate::editor::terminals::tools(&kit)
+            .iter()
+            .all(|t| !crate::agents::IDS.contains(&t.id.as_str())));
+    }
+}
+
+/// D-178: Pi in the project's VM on the kit's local models: the server's
+/// port of the PC is opened for that sandbox only (once, beside the
+/// database's), and Pi's address points through the VM's way to the PC,
+/// never at the VM's own `127.0.0.1`.
+#[test]
+fn pi_in_the_vm_reaches_the_local_models_on_the_pc() {
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-pi-llm");
+    let dir = kit.projects().join("shop");
+    let vm = Vm::for_tests(&kit, "shop", &dir)
+        .with_host_ports(vec![3307])
+        .with_host_port(8085)
+        .with_host_port(8085);
+    assert_eq!(vm.host_ports, [3307, 8085]);
+    assert_eq!(
+        vm::host_port_allow(&vm.name, 8085),
+        [
+            "policy",
+            "allow",
+            "network",
+            "--sandbox",
+            vm.name.as_str(),
+            "--protocol",
+            "tcp",
+            "localhost:8085"
+        ]
+    );
+    let vars = pi_local_models_env(8085, "k3y");
+    assert_eq!(
+        vars,
+        [
+            (
+                "LLAMA_BASE_URL".to_owned(),
+                "http://host.docker.internal:8085".to_owned()
+            ),
+            ("LLAMA_API_KEY".to_owned(), "k3y".to_owned()),
+        ]
+    );
+}
+
+/// D-178: every reason the VM is off has a line for the editor's terminals
+/// and the agents refused, with the administrator's command named (never
+/// run), in Italian and in the other languages; then that Atollo checks
+/// again by itself.
+#[test]
+fn every_reason_is_told_outside_the_notice() {
+    let all = vec![
+        Blocker::OldWindows { build: 19045 },
+        Blocker::OldMacos {
+            version: "13.6".into(),
+        },
+        Blocker::Distribution {
+            name: "Fedora".into(),
+        },
+        Blocker::HypervisorOff,
+        Blocker::KvmMissing,
+        Blocker::KvmDenied,
+        Blocker::AppArmor {
+            shim: "/k/shim".into(),
+        },
+        Blocker::SbxMissing { failed: None },
+        Blocker::SbxSignedOut,
+        Blocker::SbxFailed {
+            message: "boom".into(),
+        },
+        Blocker::ForeignDaemon,
+        Blocker::KitDisk { fs: "exFAT".into() },
+    ];
+    for b in &all {
+        for lang in ["it", "en", "fr", "de"] {
+            assert!(b.explain(lang).len() > 20, "{b:?} {lang}");
+        }
+    }
+    assert!(Blocker::HypervisorOff
+        .explain("it")
+        .contains(HYPERVISOR_COMMAND));
+    assert!(Blocker::KvmDenied.explain("en").contains(KVM_COMMAND));
+    assert!(Blocker::SbxFailed {
+        message: "boom".into()
+    }
+    .explain("it")
+    .contains("boom"));
+    let status = Status::of(vec![Blocker::HypervisorOff, Blocker::SbxSignedOut], None);
+    let text = why_no_vm(&status, "it");
+    assert_eq!(text.lines().filter(|l| l.starts_with("- ")).count(), 2);
+    assert!(text.starts_with("Perché la VM non è attiva:"), "{text}");
+    assert!(text.contains("ricontrolla da solo"), "{text}");
+    let editor = session::no_vm_text(&status, "it");
+    assert!(editor.contains("sul PC non si apre nulla"), "{editor}");
+    assert!(editor.contains(HYPERVISOR_COMMAND), "{editor}");
+    assert!(agents_notice("it").contains("solo nella VM"));
+    assert_ne!(agents_notice("en"), agents_notice("it"));
 }
 
 /// A note written under the old name of a PC without `HOSTNAME` moves to

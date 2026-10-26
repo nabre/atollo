@@ -17,7 +17,7 @@
 //!   window of the app in the chosen folder (on macOS and Linux a session of
 //!   the app's terminal, `editor/pty.rs`), and they are aligned again when it
 //!   ends (`_agent.cmd` of the kit). Antigravity runs through
-//!   `data\kit\bin\agy.cmd` (`agy`, sh, on macOS and Linux), which carries
+//!   `data\kit\agents\agy.cmd` (`agy`, sh, on macOS and Linux), which carries
 //!   the login in and out of the system's store;
 //! - a watcher thread aligns when an agent of the kit ends anywhere (editor
 //!   terminals, consoles) and saves Antigravity's login left in Windows.
@@ -32,7 +32,7 @@ pub mod sync;
 
 use std::collections::BTreeSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
@@ -91,6 +91,9 @@ pub fn gemini_key(kit: &Kit) -> Option<String> {
 /// (D-115), Antigravity's Gemini key, the address and key of the local
 /// models for Pi (its `/llama` command reads them, D-152). The agent hands
 /// them to what it starts itself (its MCP servers, its commands).
+// No agent starts on the PC since D-178 (the tests; the agents' secrets in
+// the VM are still to do, D-175).
+#[allow(dead_code)]
 pub fn launch_env(kit: &Kit, env: &KitEnv, id: &str) -> KitEnv {
     let mut env = env.clone();
     match id {
@@ -225,72 +228,6 @@ pub fn status(kit: &Kit) -> Vec<AgentInfo> {
             }
         })
         .collect()
-}
-
-/// The command that starts `id` (Antigravity through the kit's `agy(.cmd)`).
-fn command_of(kit: &Kit, id: &str, lang: &str) -> Result<PathBuf> {
-    let Some(rel) = exe_of(id) else {
-        bail!("unknown agent: {id}")
-    };
-    let exe = crate::setup::kit_path(kit, rel);
-    if !exe.is_file() {
-        let name = Catalog::get().find(id).map_or(id, |c| c.name.as_str());
-        bail!(
-            "{}",
-            crate::common::i18n::t(lang, "{0} non è installato.", &[name])
-        );
-    }
-    Ok(if id == "antigravity" {
-        crate::router::bins::agent_launcher(kit, id).unwrap_or(exe)
-    } else {
-        exe
-    })
-}
-
-/// Aligns the agents, then opens `id` in a kit console in `dir` (Windows)
-/// or a session of the app's terminal with the agent as its program (macOS
-/// and Linux, D-109); aligns again when that console or session ends.
-pub fn launch<R: tauri::Runtime>(
-    app: &tauri::AppHandle<R>,
-    kit: &Kit,
-    env: &KitEnv,
-    id: &str,
-    dir: &Path,
-    lang: &str,
-) -> Result<()> {
-    let command = command_of(kit, id, lang)?;
-    // Pi on a local model: its server first, so the first request finds it.
-    if id == "pi" && sync::pi::local_model(kit).is_some() {
-        start_local_models(app, lang);
-    }
-    // Launched by the user from Atollo: the project is trusted (SEC-V6-02).
-    sync::trust_project(kit, dir);
-    let report = sync::run(kit, Some(dir));
-    for w in &report.warnings {
-        crate::common::log::warn(&format!("before {id}: {w}"));
-    }
-    let (after, after_dir) = (kit.clone(), dir.to_path_buf());
-    // Claude Code's token or the Gemini key, in this agent's environment
-    // only (SEC-V6-02).
-    let env = launch_env(kit, env, id);
-    // Not aligned again when the console ends because the drive is being
-    // removed (BUG-V6-15).
-    let closing = closing_of(app);
-    crate::editor::terminal::open_command(app, kit, &env, dir, &command, move || {
-        let _ = closing.run(|| sync::run(&after, Some(&after_dir)));
-    })
-}
-
-/// Starts the server of the local models of the app (not from the command
-/// line); a failure is logged, the agent opens anyway.
-fn start_local_models<R: tauri::Runtime>(app: &tauri::AppHandle<R>, lang: &str) {
-    use tauri::Manager;
-    let Some(state) = app.try_state::<crate::ipc::AppState>() else {
-        return;
-    };
-    if let Err(e) = state.llm.start(&state.env(), lang) {
-        crate::common::log::warn(&format!("pi: local models: {e:#}"));
-    }
 }
 
 /// Signs out in the kit: the saved login is removed (Claude's, Codex's and
@@ -449,14 +386,6 @@ impl Closing {
     pub fn reopen(&self) {
         self.0.lock().closing = false;
     }
-}
-
-/// The `Closing` of the app, if it runs (`None` in the command line).
-fn closing_of<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Closing {
-    use tauri::Manager;
-    app.try_state::<crate::ipc::AppState>()
-        .map(|s| s.closing.clone())
-        .unwrap_or_default()
 }
 
 /// The first wait after a failed save of Antigravity's login (the watcher

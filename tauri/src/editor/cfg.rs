@@ -299,7 +299,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
             // Linux): it carries the login and the Gemini key. Claude Code
             // on macOS through the kit's `claude` (sh): it gives the token
             // saved in the kit to Claude Code only (SEC-V6-02).
-            let bin = kit.kit_files().join("bin");
+            let bin = kit.kit_files().join(crate::setup::kit_files::AGENTS_DIR);
             let path = match name {
                 "Antigravity" => bin.join(crate::router::bins::cmd_name(os, "agy")),
                 "Claude Code" if crate::agents::claude_token::offered(os) => bin.join("claude"),

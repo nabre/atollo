@@ -76,7 +76,7 @@ fn choices_rewrite_the_environment() {
     set_project_choice(&kit, "app", "node", Some("20.18")).unwrap();
     let p = project_env(&kit, "app", env.clone());
     assert_eq!(
-        p.get("PATH").unwrap(),
+        crate::test_support::past_stand_ins(&kit, p.get("PATH")),
         format!(
             "{}{sep}{}{slash}x{sep}{}x{sep}{other}",
             old.display(),
@@ -208,5 +208,8 @@ fn a_ruby_line_brings_its_gem_home() {
     set_project_choice(&kit, "app", "ruby", Some("3.3")).unwrap();
     let p = project_env(&kit, "app", env.clone());
     assert_eq!(p.get("GEM_HOME"), old_gems.to_str());
-    assert_eq!(p.get("PATH"), old_gems.join("bin").to_str());
+    assert_eq!(
+        crate::test_support::past_stand_ins(&kit, p.get("PATH")),
+        old_gems.join("bin").to_str().unwrap()
+    );
 }

@@ -43,7 +43,6 @@ import {
 } from "../workbench";
 
 const GROUPS: { id: TerminalToolGroup; label: () => string }[] = [
-  { id: "agents", label: () => t("Agenti") },
   { id: "ai", label: () => t("Modelli locali") },
   { id: "languages", label: () => t("Linguaggi") },
   { id: "databases", label: () => t("Database") },
@@ -386,6 +385,11 @@ function TerminalEditor({
               "Gli strumenti non scelti restano fuori dal PATH. Sempre presenti: PowerShell 7, GitHub CLI, i comandi del kit e quelli di Windows.",
             )}
           </p>
+          <Notice tone="info">
+            {t(
+              "Gli agenti (Claude Code, Codex, Antigravity, Pi) non ci sono nei terminali: girano solo nella VM. Avviali dalla pagina del progetto o dall'editor.",
+            )}
+          </Notice>
           {saved.missing.length > 0 && (
             <Notice tone="warning">
               {t(

@@ -34,8 +34,15 @@ pub(super) fn path_var(env: &mut KitEnv, cx: &Cx, dirs: LangDirs, tools: OsTools
     let app = |rel: &str| cx.app(rel);
     let has = |rel: &str| cx.has(rel);
     // PATH: kit tools in the order of _env.cmd:187-228, then the system
-    // The kit's own commands first (agy.cmd carries Antigravity's login).
-    let mut path: Vec<PathBuf> = vec![kit.kit_files().join("bin"), app("claude"), app("tools")];
+    // The kit's own commands first, then the agents' launchers (agy.cmd
+    // carries Antigravity's login), in a folder of their own: the shells of
+    // the PC never have it (D-178, `isolation::without_agents`).
+    let mut path: Vec<PathBuf> = vec![
+        kit.kit_files().join("bin"),
+        kit.kit_files().join(crate::setup::kit_files::AGENTS_DIR),
+        app("claude"),
+        app("tools"),
+    ];
     if has(r"gh\bin\gh.exe") {
         path.push(app(r"gh\bin"));
     }
@@ -52,7 +59,7 @@ pub(super) fn path_var(env: &mut KitEnv, cx: &Cx, dirs: LangDirs, tools: OsTools
     if has(r"pi\pi.exe") {
         path.push(app("pi"));
     }
-    // Antigravity is not on the PATH itself: `agy` is data\kit\bin\agy.cmd,
+    // Antigravity is not on the PATH itself: `agy` is data\kit\agents\agy.cmd,
     // which carries its login in and out of Windows (agents/keyring/).
     if has(r"python\python.exe") {
         if is_win {
