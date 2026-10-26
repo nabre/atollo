@@ -423,10 +423,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     title: () => tr("Terminali del kit", "The kit's terminals", "Les terminaux du kit", "Terminals des Kits"),
     subtitle: () =>
       tr(
-        "Console con gli strumenti del kit in qualsiasi cartella del PC, e terminali tuoi con strumenti e versioni scelti.",
-        "Consoles with the kit's tools in any folder on the PC, and terminals of your own with the tools and versions you choose.",
-        "Des consoles avec les outils du kit dans n'importe quel dossier du PC, et vos propres terminaux avec les outils et versions de votre choix.",
-        "Konsolen mit den Werkzeugen des Kits in jedem Ordner des PCs und eigene Terminals mit Werkzeugen und Versionen deiner Wahl.",
+        "Console sul PC con gli strumenti del kit in qualsiasi cartella, senza gli agenti, e terminali tuoi con strumenti e versioni scelti.",
+        "Consoles on the PC with the kit's tools in any folder, without the agents, and terminals of your own with the tools and versions you choose.",
+        "Des consoles sur le PC avec les outils du kit dans n'importe quel dossier, sans les agents, et vos propres terminaux avec les outils et versions de votre choix.",
+        "Konsolen auf dem PC mit den Werkzeugen des Kits in jedem Ordner, ohne die Agenten, und eigene Terminals mit Werkzeugen und Versionen deiner Wahl.",
       ),
     icon: "terminal",
     keywords:
@@ -756,14 +756,14 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Una microVM per progetto e per terminale: che cosa serve su ogni sistema, il primo accesso, che cosa gira dove, l'avviso «Senza VM», GitHub nella VM e le sandbox.",
-        "A microVM per project and per terminal: what each system needs, the first sign-in, what runs where, the “No VM” notice, GitHub in the VM and the sandboxes.",
-        "Une microVM par projet et par terminal : ce qu'il faut sur chaque système, la première connexion, ce qui tourne où, l'avis « Sans VM », GitHub dans la VM et les sandbox.",
-        "Eine microVM pro Projekt und pro Terminal: was jedes System braucht, die erste Anmeldung, was wo läuft, der Hinweis „Ohne VM“, GitHub in der VM und die Sandboxes.",
+        "Una microVM per progetto, con l'editor e gli agenti: che cosa serve su ogni sistema, il primo accesso, che cosa gira dove, l'avviso «Senza VM», GitHub nella VM e le sandbox.",
+        "A microVM per project, with the editor and the agents: what each system needs, the first sign-in, what runs where, the “No VM” notice, GitHub in the VM and the sandboxes.",
+        "Une microVM par projet, avec l'éditeur et les agents : ce qu'il faut sur chaque système, la première connexion, ce qui tourne où, l'avis « Sans VM », GitHub dans la VM et les sandbox.",
+        "Eine microVM pro Projekt, mit dem Editor und den Agenten: was jedes System braucht, die erste Anmeldung, was wo läuft, der Hinweis „Ohne VM“, GitHub in der VM und die Sandboxes.",
       ),
     icon: "vm",
     keywords:
-      "vm microvm docker sandboxes sbx sandbox isolamento senza vm sbx login account docker hypervisor platform kvm apparmor box rimuovi sandbox github nella vm isolation no vm sign in docker account remove sandbox github in the vm isolement sans vm connexion compte docker supprimer sandbox github dans la vm isolierung ohne vm anmeldung docker-konto sandbox entfernen github in der vm",
+      "vm microvm docker sandboxes sbx sandbox isolamento senza vm sbx login account docker hypervisor platform kvm apparmor box rimuovi sandbox github nella vm requisiti virtualizzazione firmware annidata terminali del kit agenti pi antigravity isolation no vm sign in docker account remove sandbox github in the vm requirements virtualization nested kit terminals agents isolement sans vm connexion compte docker supprimer sandbox github dans la vm prérequis virtualisation imbriquée terminaux du kit isolierung ohne vm anmeldung docker-konto sandbox entfernen github in der vm voraussetzungen virtualisierung verschachtelt terminals des kits agenten",
   },
   {
     id: "isolation",

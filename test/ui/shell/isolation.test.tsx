@@ -72,6 +72,52 @@ describe("explain", () => {
   });
 });
 
+describe("admin steps (D-178)", () => {
+  it("never launches a command that asks for an administrator: shown to be copied", () => {
+    for (const b of ALL) {
+      const e = explain(b);
+      if (e.admin) {
+        expect(e.run, b.code).toBeUndefined();
+        expect(e.command, b.code).toBeDefined();
+      }
+      if (e.run) expect(["login", "ls"]).toContain(e.run);
+    }
+    expect(explain({ code: "hypervisor_off" }).admin).toBe(true);
+    expect(explain({ code: "kvm_denied" }).admin).toBe(true);
+    expect(explain({ code: "apparmor", shim: "/k/shim" }).admin).toBe(true);
+    expect(explain({ code: "sbx_signed_out" }).admin).toBeUndefined();
+    expect(explain({ code: "sbx_missing" }).install).toBe(true);
+  });
+
+  it("says in the box that Atollo never runs them and checks again by itself", () => {
+    render(
+      <IsolationDialog
+        status={{ level: "env", blockers: [{ code: "hypervisor_off" }, { code: "kvm_denied" }], sbx: null }}
+        checking={false}
+        onCheck={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Lancia" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Copia" })).toHaveLength(2);
+    expect(screen.getAllByText(/Serve un amministratore: Atollo non lo esegue mai/)).toHaveLength(2);
+  });
+
+  it("says the rule without the VM: projects on the PC without agents, the editor's terminals and the agents only in the VM", () => {
+    render(
+      <IsolationDialog
+        status={{ level: "env", blockers: [{ code: "sbx_signed_out" }], sbx: null }}
+        checking={false}
+        onCheck={() => {}}
+        onClose={() => {}}
+      />,
+    );
+    expect(screen.getByText(/girano sul PC con il tuo utente, senza gli agenti/)).toBeTruthy();
+    expect(screen.getByText(/partono solo nella VM: senza, non si aprono/)).toBeTruthy();
+    expect(screen.queryByText(/Serve un amministratore/)).toBeNull();
+  });
+});
+
 describe("IsolationDialog", () => {
   it("lists every reason with its command, and checks again", () => {
     const onCheck = vi.fn();
@@ -116,12 +162,7 @@ describe("IsolationDialog", () => {
   it("lists Atollo's sandboxes with the room they take, and removes one after a second click", async () => {
     let vms = [
       { name: "atollo-p-shop-1", owner: { kind: "project", project: "shop" }, status: "running", lastUsed: null },
-      {
-        name: "atollo-t-legacy-2",
-        owner: { kind: "terminal", terminal: "legacy", dir: "D:\\Siti\\x" },
-        status: "stopped",
-        lastUsed: null,
-      },
+      { name: "atollo-a-claude-shop-2", owner: null, status: "stopped", lastUsed: null },
     ];
     invoke.mockImplementation((cmd: string) => {
       if (cmd === "vms_list") return Promise.resolve({ vms, disk: 3 * 1024 ** 3 });
@@ -140,7 +181,7 @@ describe("IsolationDialog", () => {
       />,
     );
     expect(await screen.findByText("Progetto shop")).toBeTruthy();
-    expect(screen.getByText("Terminale legacy in D:\\Siti\\x")).toBeTruthy();
+    expect(screen.getByText("atollo-a-claude-shop-2")).toBeTruthy();
     expect(screen.getByText("accesa")).toBeTruthy();
     expect(screen.getByText("Spazio occupato nel kit: 3 GB")).toBeTruthy();
     const [first] = screen.getAllByRole("button", { name: "Rimuovi" });
@@ -167,6 +208,7 @@ describe("IsolationDialog", () => {
       />,
     );
     expect(screen.getByText("Progetti nella VM")).toBeTruthy();
+    expect(screen.getByText(/I terminali del kit restano sul PC, senza gli agenti/)).toBeTruthy();
     expect(screen.queryByText("Perché la VM non è attiva")).toBeNull();
   });
 });

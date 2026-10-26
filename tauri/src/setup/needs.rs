@@ -113,6 +113,9 @@ pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
 /// the programs of the kit's and the project's MCP servers (`npx`, `uvx`,
 /// `python`...). The catalog's own dependencies (Claude Code needs Git) are
 /// added by the installation.
+// No agent starts on the PC since D-178 (the tests; the MCP servers of the
+// agents in the VM are still to do, D-175).
+#[allow(dead_code)]
 pub fn of_agent(kit: &Kit, id: &str, project_dir: Option<&Path>) -> BTreeSet<&'static str> {
     let mut out = BTreeSet::new();
     if let Some(c) = Catalog::get().find(id) {

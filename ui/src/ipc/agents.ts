@@ -197,7 +197,15 @@ export function agentsStats(force: boolean): Promise<StatsReport> {
   return browserPreview ? Promise.resolve(sampleStats()) : invoke<StatsReport>("agents_stats", { force });
 }
 
-/** Opens the agent in a kit console in the project (only there). */
+/** Whether `agent` starts on a project (D-178): Claude Code, Codex and Pi,
+ * in the VM; never Antigravity, a desktop editor that cannot run in a
+ * microVM (it stays in the kit: instructions, skills, MCP). */
+export function startsOnProject(agent: AgentId): boolean {
+  return agent !== "antigravity";
+}
+
+/** Opens the agent on the project, in its VM (D-178): never on the PC;
+ * without the VM the error says why. */
 export function agentLaunch(agent: AgentId, project: string): Promise<void> {
   return act("agent_launch", { agent, project });
 }

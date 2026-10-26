@@ -476,7 +476,7 @@ fn kit_vars(env: &mut KitEnv, cx: &Cx) {
     env.set_path("CP_MYSQL", app("mysql"));
     env.set("CP_ARCH", arch);
     env.set_path("CP_APPS", &apps);
-    // The app itself, for the kit's wrappers (data\kit\bin\agy.cmd):
+    // The app itself, for the kit's wrappers (data\kit\agents\agy.cmd):
     // on Linux the AppImage, not its program inside a temporary mount.
     if let Some(exe) = crate::kit::app_exe() {
         env.set_path("ATOLLO_EXE", exe);

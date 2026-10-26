@@ -195,7 +195,10 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     let all = find(&kit, DEFAULT_ID, "it").unwrap();
     assert_eq!(all.tools.len(), 2);
     let env_all = env(&kit, &all, base.clone());
-    assert_eq!(env_all.get("PATH"), base.get("PATH"));
+    assert_eq!(
+        crate::test_support::past_stand_ins(&kit, env_all.get("PATH")),
+        base.get("PATH").unwrap()
+    );
     assert_eq!(env_all.get("ATOLLO_TERMINAL"), Some(all.name.as_str()));
 
     // Node 20.18 only: Python and its folders leave.
@@ -207,7 +210,7 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     };
     let e = env(&kit, &only_node, base.clone());
     assert_eq!(
-        e.get("PATH").unwrap(),
+        crate::test_support::past_stand_ins(&kit, e.get("PATH")),
         path_of(&[
             node_old.display().to_string(),
             npm.display().to_string(),
@@ -225,7 +228,7 @@ fn a_terminal_keeps_its_tools_at_their_lines() {
     };
     let e = env(&kit, &only_py, base);
     assert_eq!(
-        e.get("PATH").unwrap(),
+        crate::test_support::past_stand_ins(&kit, e.get("PATH")),
         path_of(&[
             py.display().to_string(),
             py.join("Scripts").display().to_string(),

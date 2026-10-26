@@ -41,16 +41,47 @@ fn a_folder_is_mounted_read_only_in_an_existing_sandbox() {
     );
 }
 
-/// A kit's terminal has a sandbox per folder, in its own namespace.
+/// The kit's terminals have no sandbox any more (D-178): the names an
+/// earlier Atollo gave them are apart from every name it gives now.
 #[test]
-fn a_kit_terminal_has_a_sandbox_per_folder() {
-    let a = terminal_name("default", Path::new("/kit/projects"));
-    assert!(a.starts_with("atollo-t-default-"), "{a}");
-    assert_eq!(a.len(), "atollo-t-default-".len() + 24);
-    assert_ne!(a, terminal_name("default", Path::new("/kit/projects/shop")));
-    assert_ne!(a, terminal_name("legacy", Path::new("/kit/projects")));
-    assert_eq!(a, terminal_name("default", Path::new("/kit/projects")));
-    assert!(!a.starts_with("atollo-p-"));
+fn no_name_given_now_is_a_kit_terminals() {
+    for name in [
+        name("shop"),
+        agent_name("shop", "claude"),
+        agent_name("t-x", "codex"),
+        name("t-default"),
+    ] {
+        assert!(!name.starts_with(TERMINAL_PREFIX), "{name}");
+    }
+}
+
+/// Pi in the project's VM (D-178): `sbx exec` in the project's sandbox and
+/// folder, the project's tools first on the `PATH` and its database's file,
+/// then Pi's build for Linux from the kit, quoted for the VM's shell.
+#[test]
+fn pi_runs_in_the_projects_vm_with_its_tools() {
+    let tools = crate::isolation::GuestTools {
+        path: vec!["/d/kit/data/apps/linux-x64/node/24".into()],
+        vars: vec![("JAVA_HOME".into(), "/d/kit/java".into())],
+        env_file: Some(std::path::PathBuf::from("db.env")),
+    };
+    let vm = name("shop");
+    let pi = "/d/kit/data/apps/linux-x64/pi/pi";
+    let args = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools);
+    assert_eq!(args[..4], ["exec", "-it", "-w", "/d/kit/projects/shop"]);
+    let at = |s: &str| args.iter().position(|a| a == s).unwrap();
+    assert!(at("--env-file") < at(&vm));
+    assert!(args.contains(&"ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24".to_owned()));
+    assert!(args.contains(&"JAVA_HOME=/d/kit/java".to_owned()));
+    assert!(vm.starts_with("atollo-p-"), "the project's own VM");
+    assert_eq!(args[at(&vm) + 1..at(&vm) + 3], ["sh", "-c"]);
+    let script = args.last().unwrap();
+    assert!(script.starts_with(TOOLS_FIRST), "{script}");
+    assert!(script.ends_with(&format!("exec '{pi}'")), "{script}");
+    // Which agents start in the VM: never Antigravity.
+    assert!(starts_in_vm("claude") && starts_in_vm("codex") && starts_in_vm("pi"));
+    assert!(!starts_in_vm("antigravity") && !starts_in_vm("gemini"));
+    assert_eq!(sbx_agent("pi"), None, "Pi has no sandbox of `sbx`'s");
 }
 
 /// Where the PC's folders are in the VM: `sbx` mounts `D:\a` at `/d/a`

@@ -23,13 +23,16 @@ import { t } from "../i18n";
 
 /** What a blocker means and what the user does about it: a sentence, the
  * command to run when there is one (`run` when Atollo launches it in its
- * terminal), and `install` when the kit's Docker Sandboxes is what is
+ * terminal: only `sbx`'s own), `admin` when that command asks for an
+ * administrator or a new sign-in (shown to be copied, never launched: zero
+ * admin, D-178), and `install` when the kit's Docker Sandboxes is what is
  * missing (a button installs it). */
 interface Explained {
   why: string;
   fix: string;
   command?: string;
   run?: IsolationFix;
+  admin?: boolean;
   install?: boolean;
 }
 
@@ -80,6 +83,7 @@ export function explain(b: IsolationBlocker): Explained {
         why: t("Windows Hypervisor Platform non è attivo (o il PC non è stato riavviato dopo averlo attivato)."),
         fix: t("In PowerShell come amministratore, una volta sola, poi riavvia il PC:"),
         command: "Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All",
+        admin: true,
       };
     case "kvm_missing":
       return {
@@ -91,6 +95,7 @@ export function explain(b: IsolationBlocker): Explained {
         why: t("Il tuo utente non può usare /dev/kvm: non è nel gruppo kvm."),
         fix: t("In un terminale del PC, poi esci e rientra nella sessione:"),
         command: "sudo usermod -aG kvm $USER",
+        admin: true,
       };
     case "apparmor": {
       const command = apparmorCommand(b.shim);
@@ -99,6 +104,7 @@ export function explain(b: IsolationBlocker): Explained {
             why: t("AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo."),
             fix: t("In un terminale del PC, una volta (di nuovo se il kit cambia cartella):"),
             command,
+            admin: true,
           }
         : {
             why: t("AppArmor non lascia partire la microVM di Docker Sandboxes del kit: le manca il profilo."),
@@ -152,14 +158,17 @@ export function explain(b: IsolationBlocker): Explained {
 
 /** A command with its button: «Lancia» opens it in the app's terminal
  * when it is one of `sbx`'s (`run`), then `onLaunched` (the box closes,
- * the terminal is in front); «Copia» for one of the PC's. */
+ * the terminal is in front); «Copia» for one of the PC's, with a note when
+ * it asks for an administrator (`admin`): never launched by Atollo. */
 function CommandLine({
   command,
   run,
+  admin,
   onLaunched,
 }: {
   command: string;
   run?: IsolationFix | undefined;
+  admin?: boolean | undefined;
   onLaunched: () => void;
 }) {
   const { copied, copy } = useCopy(2000);
@@ -194,6 +203,13 @@ function CommandLine({
           </Button>
         )}
       </div>
+      {admin && (
+        <p className="mt-vsc-size20 text-vsc-desc">
+          {t(
+            "Serve un amministratore: Atollo non lo esegue mai, lo copi e lo esegui tu. Dopo può servire riavviare il PC o rientrare nella sessione; Atollo ricontrolla da solo.",
+          )}
+        </p>
+      )}
       {error && <p className="mt-vsc-size20 text-vsc-error">{error}</p>}
     </div>
   );
@@ -260,14 +276,19 @@ export function IsolationDialog({
       {vm ? (
         <p>
           {t(
-            "Ogni progetto gira in una microVM di Docker Sandboxes: terminale, azioni, server e agenti vedono solo la cartella del progetto.",
+            "Ogni progetto gira in una microVM di Docker Sandboxes: terminale, azioni, server, terminali dell'editor e agenti vedono solo la cartella del progetto. I terminali del kit restano sul PC, senza gli agenti.",
           )}
         </p>
       ) : (
         <>
           <p className="text-vsc-fg">
             {t(
-              "I programmi dei progetti (terminale, azioni, server, agenti) girano sul PC con il tuo utente: possono leggere i tuoi file e usare la rete. Il kit ne filtra solo l'ambiente.",
+              "Senza VM i progetti, il loro terminale e le azioni (npm run dev, i siti, i server condivisi) girano sul PC con il tuo utente, senza gli agenti: possono leggere i tuoi file e usare la rete, il kit ne filtra solo l'ambiente.",
+            )}
+          </p>
+          <p className="text-vsc-fg">
+            {t(
+              "I terminali, i task e gli agenti dell'editor e gli agenti del progetto partono solo nella VM: senza, non si aprono. Atollo ricontrolla da solo ogni minuto.",
             )}
           </p>
           <p className="font-vsc-semibold text-vsc-fg">{t("Perché la VM non è attiva")}</p>
@@ -278,7 +299,7 @@ export function IsolationDialog({
                 <li key={b.code}>
                   <p className="text-vsc-fg">{e.why}</p>
                   <p>{e.fix}</p>
-                  {e.command && <CommandLine command={e.command} run={e.run} onLaunched={onClose} />}
+                  {e.command && <CommandLine command={e.command} run={e.run} admin={e.admin} onLaunched={onClose} />}
                   {e.install && <InstallButton />}
                 </li>
               );
@@ -291,10 +312,10 @@ export function IsolationDialog({
   );
 }
 
-/** Whose sandbox it is, as the list says it. */
+/** Whose sandbox it is, as the list says it (the kit's terminals have none
+ * since D-178: they run on the PC). */
 export function vmLabel(v: VmInfo): string {
   if (v.owner?.kind === "project") return t("Progetto {0}", v.owner.project);
-  if (v.owner?.kind === "terminal") return t("Terminale {0} in {1}", v.owner.terminal, v.owner.dir);
   return v.name;
 }
 

@@ -462,6 +462,9 @@ impl WebServers {
         }
 
         let mut env = base_env.clone();
+        // The projects' sites run here without the VM: never an agent's
+        // command for their code (D-178).
+        crate::isolation::without_agents(&self.kit, &mut env);
         if let Some(php_line) = &pool.php_line {
             let php_dir = component_dir(&self.kit, "php", Some(php_line));
             env.set_php(&self.kit.data(), &php_dir);

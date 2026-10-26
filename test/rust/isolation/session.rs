@@ -15,18 +15,24 @@ fn the_editors_session_goes_from_pending_to_ready_or_failed() {
         std::fs::read_to_string(base.join("shop").join("error")).unwrap(),
         "sbx run: boom\n"
     );
-    set_level(&kit, true).unwrap();
+    set_level(&kit, false, "no hypervisor").unwrap();
+    assert_eq!(
+        std::fs::read_to_string(base.join(".reason")).unwrap(),
+        "no hypervisor\n"
+    );
+    set_level(&kit, true, "").unwrap();
     assert_eq!(
         std::fs::read_to_string(base.join(".level")).unwrap(),
         "vm\n"
     );
+    assert!(!base.join(".reason").exists(), "no reason with the VM");
     clear(&kit, "shop").unwrap();
     assert!(!base.join("shop").exists());
     assert!(
         base.join(".level").is_file(),
         "the level is the kit's, not a project's"
     );
-    set_level(&kit, false).unwrap();
+    set_level(&kit, false, "why").unwrap();
     assert_eq!(
         std::fs::read_to_string(base.join(".level")).unwrap(),
         "env\n"
@@ -66,18 +72,25 @@ fn a_session_holds_the_vms_commands() {
     );
     assert!(!root(&kit).join("shop.pending").exists());
 
-    // An editor's profile asks for an agent's sandbox: taken once, only for
-    // an agent of `sbx` and a project with a session.
+    // An editor's profile asks for an agent's session: taken once, only for
+    // an agent that starts in the VM (Pi too, D-178; never Antigravity) and
+    // a project with a session.
     for request in [
         "shop.claude.request",
         "shop.pi.request",
+        "shop.antigravity.request",
         "blog.codex.request",
     ] {
         std::fs::write(root(&kit).join(request), "1").unwrap();
     }
+    let mut taken = take_requests(&kit);
+    taken.sort();
     assert_eq!(
-        take_requests(&kit),
-        [("shop".to_owned(), "claude".to_owned())]
+        taken,
+        [
+            ("shop".to_owned(), "claude".to_owned()),
+            ("shop".to_owned(), "pi".to_owned())
+        ]
     );
     assert!(take_requests(&kit).is_empty());
     write_agent(&kit, "shop", "claude", &["run".into(), "--name".into()]).unwrap();

@@ -1,9 +1,9 @@
 // The agents' state polled every few seconds: a poll that fails keeps what
 // the last one read, so the page and the projects' agent buttons stay.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
 import type { AgentInfo } from "@/ipc";
-import { useAgents } from "@/agents";
+import { AgentButtons, useAgents } from "@/agents";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
@@ -31,5 +31,21 @@ describe("useAgents", () => {
     });
     expect(invoke).toHaveBeenCalledTimes(2);
     expect(result.current.agents).toEqual([CLAUDE]);
+  });
+});
+
+describe("AgentButtons", () => {
+  it("never offers Antigravity on a project: it cannot run in the VM (D-178)", () => {
+    const agents = [
+      CLAUDE,
+      { id: "codex", name: "Codex", installed: true },
+      { id: "antigravity", name: "Antigravity", installed: true },
+      { id: "pi", name: "Pi", installed: true },
+    ] as AgentInfo[];
+    render(<AgentButtons agents={agents} project="shop" />);
+    for (const name of ["Claude Code", "Codex", "Pi"]) {
+      expect(screen.getByRole("button", { name: `Apri ${name}` })).toBeTruthy();
+    }
+    expect(screen.queryByRole("button", { name: "Apri Antigravity" })).toBeNull();
   });
 });

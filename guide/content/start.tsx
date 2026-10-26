@@ -199,10 +199,10 @@ export const START: TopicTexts = {
             "Es wird nicht installiert und verlangt keine Administratorrechte: Kopiere den Ordner auf einen anderen PC und du findest alles wieder, einschließlich der Projekte.",
           ),
           tr(
-            "Il suo cuore è il configuratore di Docker Sandboxes: ogni progetto gira in una microVM sua, che vede solo la sua cartella, con terminale, azioni, sito e agenti. Senza la VM tutto gira sul PC, e la barra di stato lo dice.",
-            "Its heart is the configurator of Docker Sandboxes: each project runs in a microVM of its own, which sees only its folder, with terminal, actions, website and agents. Without the VM everything runs on the PC, and the status bar says so.",
-            "Son cœur est le configurateur de Docker Sandboxes : chaque projet tourne dans sa propre microVM, qui ne voit que son dossier, avec terminal, actions, site et agents. Sans la VM, tout tourne sur le PC, et la barre d'état le dit.",
-            "Sein Herz ist der Konfigurator von Docker Sandboxes: Jedes Projekt läuft in einer eigenen microVM, die nur seinen Ordner sieht, mit Terminal, Aktionen, Website und Agenten. Ohne die VM läuft alles auf dem PC, und die Statusleiste sagt es.",
+            "Il suo cuore è il configuratore di Docker Sandboxes: ogni progetto gira in una microVM sua, che vede solo la sua cartella, con terminale, azioni, sito e agenti. Senza la VM terminale, azioni e siti girano sul PC, gli agenti non partono, e la barra di stato lo dice.",
+            "Its heart is the configurator of Docker Sandboxes: each project runs in a microVM of its own, which sees only its folder, with terminal, actions, website and agents. Without the VM the terminal, actions and websites run on the PC, the agents do not start, and the status bar says so.",
+            "Son cœur est le configurateur de Docker Sandboxes : chaque projet tourne dans sa propre microVM, qui ne voit que son dossier, avec terminal, actions, site et agents. Sans la VM, terminal, actions et sites tournent sur le PC, les agents ne démarrent pas, et la barre d'état le dit.",
+            "Sein Herz ist der Konfigurator von Docker Sandboxes: Jedes Projekt läuft in einer eigenen microVM, die nur seinen Ordner sieht, mit Terminal, Aktionen, Website und Agenten. Ohne die VM laufen Terminal, Aktionen und Websites auf dem PC, die Agenten starten nicht, und die Statusleiste sagt es.",
           ),
           tr(
             "Dentro trovi linguaggi in più versioni, database, server web, un editor, console, Git e GitHub, quattro agenti IA e i modelli linguistici locali.",
@@ -246,10 +246,10 @@ export const START: TopicTexts = {
         <P>
           {rich(
             tr(
-              "E ogni progetto ha la sua stanza chiusa: una microVM di Docker Sandboxes, dove girano il terminale, le azioni, il sito e gli agenti del progetto con gli strumenti del kit per Linux. Il codice di un progetto non vede i tuoi file né gli altri progetti; i database restano sul PC, raggiungibili solo dalla porta del progetto. La VM chiede Windows 11 x64, un Mac con Apple silicon o Ubuntu 24.04, e un account Docker gratuito: dove manca, Atollo lavora sul PC e lo dice. I dettagli: {0}.",
-              "And each project has its own closed room: a Docker Sandboxes microVM, where the project's terminal, actions, website and agents run with the kit's tools for Linux. A project's code sees neither your files nor the other projects; the databases stay on the PC, reachable only through the project's port. The VM needs Windows 11 x64, a Mac with Apple silicon or Ubuntu 24.04, and a free Docker account: where it is missing, Atollo works on the PC and says so. The details: {0}.",
-              "Et chaque projet a sa propre pièce fermée : une microVM de Docker Sandboxes, où tournent le terminal, les actions, le site et les agents du projet avec les outils du kit pour Linux. Le code d'un projet ne voit ni vos fichiers ni les autres projets ; les bases de données restent sur le PC, joignables seulement par le port du projet. La VM demande Windows 11 x64, un Mac avec Apple silicon ou Ubuntu 24.04, et un compte Docker gratuit : là où elle manque, Atollo travaille sur le PC et le dit. Les détails : {0}.",
-              "Und jedes Projekt hat seinen eigenen geschlossenen Raum: eine microVM von Docker Sandboxes, in der Terminal, Aktionen, Website und Agenten des Projekts mit den Werkzeugen des Kits für Linux laufen. Der Code eines Projekts sieht weder deine Dateien noch die anderen Projekte; die Datenbanken bleiben auf dem PC, nur über den Port des Projekts erreichbar. Die VM braucht Windows 11 x64, einen Mac mit Apple Silicon oder Ubuntu 24.04 und ein kostenloses Docker-Konto: Wo sie fehlt, arbeitet Atollo auf dem PC und sagt es. Die Details: {0}.",
+              "E ogni progetto ha la sua stanza chiusa: una microVM di Docker Sandboxes, dove girano il terminale, le azioni, il sito e gli agenti del progetto con gli strumenti del kit per Linux. Il codice di un progetto non vede i tuoi file né gli altri progetti; i database restano sul PC, raggiungibili solo dalla porta del progetto. La VM chiede Windows 11 x64, un Mac con Apple silicon o Ubuntu 24.04, e un account Docker gratuito: dove manca, terminale, azioni e siti girano sul PC, gli agenti non partono e Atollo lo dice. I terminali del kit girano sempre sul PC, senza gli agenti. I dettagli: {0}.",
+              "And each project has its own closed room: a Docker Sandboxes microVM, where the project's terminal, actions, website and agents run with the kit's tools for Linux. A project's code sees neither your files nor the other projects; the databases stay on the PC, reachable only through the project's port. The VM needs Windows 11 x64, a Mac with Apple silicon or Ubuntu 24.04, and a free Docker account: where it is missing, the terminal, actions and websites run on the PC, the agents do not start and Atollo says so. The kit's terminals always run on the PC, without the agents. The details: {0}.",
+              "Et chaque projet a sa propre pièce fermée : une microVM de Docker Sandboxes, où tournent le terminal, les actions, le site et les agents du projet avec les outils du kit pour Linux. Le code d'un projet ne voit ni vos fichiers ni les autres projets ; les bases de données restent sur le PC, joignables seulement par le port du projet. La VM demande Windows 11 x64, un Mac avec Apple silicon ou Ubuntu 24.04, et un compte Docker gratuit : là où elle manque, terminal, actions et sites tournent sur le PC, les agents ne démarrent pas et Atollo le dit. Les terminaux du kit tournent toujours sur le PC, sans les agents. Les détails : {0}.",
+              "Und jedes Projekt hat seinen eigenen geschlossenen Raum: eine microVM von Docker Sandboxes, in der Terminal, Aktionen, Website und Agenten des Projekts mit den Werkzeugen des Kits für Linux laufen. Der Code eines Projekts sieht weder deine Dateien noch die anderen Projekte; die Datenbanken bleiben auf dem PC, nur über den Port des Projekts erreichbar. Die VM braucht Windows 11 x64, einen Mac mit Apple Silicon oder Ubuntu 24.04 und ein kostenloses Docker-Konto: Wo sie fehlt, laufen Terminal, Aktionen und Websites auf dem PC, die Agenten starten nicht, und Atollo sagt es. Die Terminals des Kits laufen immer auf dem PC, ohne die Agenten. Die Details: {0}.",
             ),
             <See key="v" id="vm" />,
           )}
@@ -297,10 +297,10 @@ export const START: TopicTexts = {
             [
               tr("La VM dei progetti", "The projects' VM", "La VM des projets", "Die VM der Projekte"),
               tr(
-                "Docker Sandboxes: una microVM per ogni progetto e per ogni terminale del kit, che vede solo la sua cartella.",
-                "Docker Sandboxes: a microVM for each project and each kit terminal, which sees only its folder.",
-                "Docker Sandboxes : une microVM pour chaque projet et chaque terminal du kit, qui ne voit que son dossier.",
-                "Docker Sandboxes: eine microVM für jedes Projekt und jedes Terminal des Kits, die nur ihren Ordner sieht.",
+                "Docker Sandboxes: una microVM per ogni progetto, che vede solo la sua cartella, con il terminale del progetto, l'editor e gli agenti.",
+                "Docker Sandboxes: a microVM for each project, which sees only its folder, with the project's terminal, the editor and the agents.",
+                "Docker Sandboxes : une microVM pour chaque projet, qui ne voit que son dossier, avec le terminal du projet, l'éditeur et les agents.",
+                "Docker Sandboxes: eine microVM für jedes Projekt, die nur seinen Ordner sieht, mit dem Terminal des Projekts, dem Editor und den Agenten.",
               ),
               tr(
                 "Barra di stato › «VM» o «Senza VM»",
@@ -352,10 +352,10 @@ export const START: TopicTexts = {
             [
               tr("Console", "Console", "Console", "Konsole"),
               tr(
-                "PowerShell 7 con tutti gli strumenti del kit già pronti; con la VM, bash nella microVM con gli strumenti del kit per Linux.",
-                "PowerShell 7 with all the kit's tools ready to use; with the VM, bash in the microVM with the kit's tools for Linux.",
-                "PowerShell 7 avec tous les outils du kit déjà prêts ; avec la VM, bash dans la microVM avec les outils du kit pour Linux.",
-                "PowerShell 7 mit allen Werkzeugen des Kits, sofort einsatzbereit; mit der VM bash in der microVM mit den Werkzeugen des Kits für Linux.",
+                "PowerShell 7 sul PC con tutti gli strumenti del kit già pronti, senza gli agenti; il terminale di un progetto, con la VM, è bash nella sua microVM.",
+                "PowerShell 7 on the PC with all the kit's tools ready to use, without the agents; a project's terminal, with the VM, is bash in its microVM.",
+                "PowerShell 7 sur le PC avec tous les outils du kit déjà prêts, sans les agents ; le terminal d'un projet, avec la VM, est bash dans sa microVM.",
+                "PowerShell 7 auf dem PC mit allen Werkzeugen des Kits, sofort einsatzbereit, ohne die Agenten; das Terminal eines Projekts ist mit der VM bash in seiner microVM.",
               ),
               tr("Terminali", "Terminals", "Terminaux", "Terminals"),
             ],
@@ -824,6 +824,62 @@ export const START: TopicTexts = {
             ),
             <See key="v" id="vm" />,
           )}
+        </Callout>
+        <Callout
+          tone="info"
+          title={tr(
+            "Requisiti per la VM",
+            "Requirements for the VM",
+            "Prérequis pour la VM",
+            "Voraussetzungen für die VM",
+          )}
+        >
+          <Bullets
+            items={[
+              tr(
+                "Windows 11 (x64) con Windows Hypervisor Platform attivo.",
+                "Windows 11 (x64) with Windows Hypervisor Platform on.",
+                "Windows 11 (x64) avec Windows Hypervisor Platform activé.",
+                "Windows 11 (x64) mit aktivierter Windows Hypervisor Platform.",
+              ),
+              tr(
+                "macOS 14 o successivo su Apple silicon.",
+                "macOS 14 or later on Apple silicon.",
+                "macOS 14 ou ultérieur sur Apple silicon.",
+                "macOS 14 oder neuer auf Apple Silicon.",
+              ),
+              tr(
+                "Ubuntu 24.04 o successivo (x64 o ARM64) con accesso a /dev/kvm (il gruppo kvm) e, sugli Ubuntu recenti, il profilo AppArmor per la microVM del kit.",
+                "Ubuntu 24.04 or later (x64 or ARM64) with access to /dev/kvm (the kvm group) and, on recent Ubuntu, the AppArmor profile for the kit's microVM.",
+                "Ubuntu 24.04 ou ultérieur (x64 ou ARM64) avec accès à /dev/kvm (le groupe kvm) et, sur les Ubuntu récents, le profil AppArmor pour la microVM du kit.",
+                "Ubuntu 24.04 oder neuer (x64 oder ARM64) mit Zugriff auf /dev/kvm (die Gruppe kvm) und auf neueren Ubuntu-Versionen das AppArmor-Profil für die microVM des Kits.",
+              ),
+              tr(
+                "La virtualizzazione accesa nel firmware (BIOS/UEFI); dentro una macchina virtuale, la virtualizzazione annidata.",
+                "Virtualization on in the firmware (BIOS/UEFI); inside a virtual machine, nested virtualization.",
+                "La virtualisation activée dans le firmware (BIOS/UEFI) ; dans une machine virtuelle, la virtualisation imbriquée.",
+                "Die Virtualisierung in der Firmware (BIOS/UEFI) eingeschaltet; in einer virtuellen Maschine die verschachtelte Virtualisierung.",
+              ),
+              tr(
+                "Un account Docker gratuito (sbx login).",
+                "A free Docker account (sbx login).",
+                "Un compte Docker gratuit (sbx login).",
+                "Ein kostenloses Docker-Konto (sbx login).",
+              ),
+              tr(
+                "Il kit su un disco NTFS, APFS o ext4 (non FAT32 o exFAT).",
+                "The kit on an NTFS, APFS or ext4 disk (not FAT32 or exFAT).",
+                "Le kit sur un disque NTFS, APFS ou ext4 (pas FAT32 ou exFAT).",
+                "Das Kit auf einem NTFS-, APFS- oder ext4-Laufwerk (nicht FAT32 oder exFAT).",
+              ),
+              tr(
+                "I passi da amministratore (Hypervisor Platform, gruppo kvm, AppArmor) li fai tu, una volta, con il comando che l'avviso «Senza VM» ti fa copiare: Atollo non li lancia mai. Senza VM terminale, azioni e siti girano sul PC; i terminali dell'editor e gli agenti non partono.",
+                "The administrator steps (Hypervisor Platform, kvm group, AppArmor) are yours to do, once, with the command the “No VM” notice lets you copy: Atollo never runs them. Without the VM the terminal, actions and websites run on the PC; the editor's terminals and the agents do not start.",
+                "Les étapes d'administrateur (Hypervisor Platform, groupe kvm, AppArmor), c'est vous qui les faites, une fois, avec la commande que l'avis « Sans VM » vous fait copier : Atollo ne les lance jamais. Sans VM, terminal, actions et sites tournent sur le PC ; les terminaux de l'éditeur et les agents ne démarrent pas.",
+                "Die Administratorschritte (Hypervisor Platform, Gruppe kvm, AppArmor) machst du selbst, einmal, mit dem Befehl, den dich der Hinweis „Ohne VM“ kopieren lässt: Atollo führt sie nie aus. Ohne VM laufen Terminal, Aktionen und Websites auf dem PC; die Terminals des Editors und die Agenten starten nicht.",
+              ),
+            ]}
+          />
         </Callout>
         <Callout tone="tip">
           {tr(

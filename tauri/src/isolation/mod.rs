@@ -47,10 +47,11 @@ pub const SEALED: [&str; 4] = [
     "ATOLLO_MYSQL_CNF",
 ];
 
-/// Seals `env` for the programs of `project` (terminal, actions, agents,
+/// Seals `env` for the programs of `project` (terminal, actions,
 /// `Atollo env --project`), or of a kit terminal when `None`: the
 /// [`SEALED`] variables out, then the project's own MySQL login in
-/// (`db::services::project_client_env`).
+/// (`db::services::project_client_env`), and no agent's command
+/// ([`without_agents`], D-178).
 pub fn seal(kit: &Kit, project: Option<&str>, env: &mut KitEnv) {
     for name in SEALED {
         env.remove(name);
@@ -60,6 +61,63 @@ pub fn seal(kit: &Kit, project: Option<&str>, env: &mut KitEnv) {
             env.set(name, value.to_string_lossy());
         }
     }
+    without_agents(kit, env);
+}
+
+/// The folders of the agents' programs and launchers in the kit: their
+/// components' folders in `data/apps` (Claude Code, Codex with its
+/// `codex-path`, Antigravity, Pi) and the launchers' `data/kit/agents`.
+pub fn agent_dirs(kit: &Kit) -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = crate::agents::IDS
+        .iter()
+        .map(|id| kit.apps().join(id))
+        .collect();
+    dirs.push(kit.kit_files().join(crate::setup::kit_files::AGENTS_DIR));
+    dirs
+}
+
+/// `env` with no agent's command (D-178), for the shells and programs that
+/// run on the PC (the kit's terminals, a project's terminal and actions
+/// without the VM, the shared web servers, a framework's creation): the
+/// agents run only in the VM. Their folders ([`agent_dirs`]) leave the
+/// `PATH`, with the variables that point into them (`CP_ANTIGRAVITY`);
+/// then the stand-ins of `data/kit/no-agents` go first, so `claude`,
+/// `codex`, `agy`, `antigravity` and `pi` say where the agents run instead
+/// of starting one the PC installed elsewhere (Homebrew, npm). Applied
+/// again it changes nothing.
+pub fn without_agents(kit: &Kit, env: &mut KitEnv) {
+    let stand_ins = kit.kit_files().join(crate::setup::kit_files::NO_AGENTS_DIR);
+    let mut dirs = agent_dirs(kit);
+    dirs.push(stand_ins.clone());
+    crate::editor::terminals::strip(env, &dirs);
+    let sep = env.path_sep().to_string();
+    let rest = env.get("PATH").unwrap_or_default().to_owned();
+    let first = stand_ins.display().to_string();
+    let path = if rest.is_empty() {
+        first
+    } else {
+        format!("{first}{sep}{rest}")
+    };
+    env.set("PATH", path);
+}
+
+/// What the PC's shells say about the agents (D-178), in `lang`: shown when
+/// a kit terminal or a project's terminal opens on the PC and by the
+/// stand-ins of the agents' commands (`ATOLLO_AGENTS_NOTICE`).
+pub fn agents_notice(lang: &str) -> String {
+    crate::common::i18n::t(
+        lang,
+        "Atollo: in questo terminale non ci sono gli agenti (Claude Code, Codex, Antigravity, Pi). Gli agenti girano solo nella VM: avviali dalla pagina del progetto o dall'editor.",
+        &[],
+    )
+}
+
+/// `env` of a shell opened on the PC, with [`agents_notice`] for it to show.
+pub fn with_agents_notice(env: &mut KitEnv, lang: &str) {
+    env.set(
+        crate::setup::kit_files::AGENTS_NOTICE_VAR,
+        agents_notice(lang),
+    );
 }
 
 /// What shuts a project's programs in.
@@ -132,6 +190,12 @@ impl From<Gap> for Blocker {
     }
 }
 
+/// The commands of the PC that ask for an administrator or a new sign-in:
+/// shown to be copied, never run by Atollo (zero admin, D-178).
+pub const HYPERVISOR_COMMAND: &str =
+    "Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All";
+pub const KVM_COMMAND: &str = "sudo usermod -aG kvm $USER";
+
 impl Blocker {
     /// A system Docker does not support: nothing the user installs helps.
     pub fn unsupported(&self) -> bool {
@@ -140,6 +204,92 @@ impl Blocker {
             Blocker::OldWindows { .. } | Blocker::OldMacos { .. } | Blocker::Distribution { .. }
         )
     }
+
+    /// Why the VM is off and what to do, in a line of `lang`, for the
+    /// places outside the notice (the editor's terminals, an agent
+    /// refused): an administrator's command is only named, to be run by
+    /// the user; the notice of the status bar has the others.
+    pub fn explain(&self, lang: &str) -> String {
+        use crate::common::i18n::t;
+        match self {
+            Blocker::OldWindows { build } => t(
+                lang,
+                "Windows build {0} non è Windows 11: Docker Sandboxes funziona solo su Windows 11.",
+                &[&build.to_string()],
+            ),
+            Blocker::OldMacos { version } => t(
+                lang,
+                "macOS {0}: Docker Sandboxes richiede macOS 14 Sonoma o successivo.",
+                &[version],
+            ),
+            Blocker::Distribution { name } => t(
+                lang,
+                "{0}: Docker Sandboxes supporta solo Ubuntu 24.04 o successivo (non le derivate).",
+                &[name],
+            ),
+            Blocker::HypervisorOff => t(
+                lang,
+                "Windows Hypervisor Platform non è attivo: in PowerShell come amministratore «{0}», poi riavvia il PC.",
+                &[HYPERVISOR_COMMAND],
+            ),
+            Blocker::KvmMissing => t(
+                lang,
+                "/dev/kvm non c'è: attiva la virtualizzazione (Intel VT-x o AMD-V) nel BIOS/UEFI e riavvia il PC.",
+                &[],
+            ),
+            Blocker::KvmDenied => t(
+                lang,
+                "Il tuo utente non è nel gruppo kvm: in un terminale del PC «{0}», poi esci e rientra nella sessione.",
+                &[KVM_COMMAND],
+            ),
+            Blocker::AppArmor { .. } => t(
+                lang,
+                "AppArmor non lascia partire la microVM del kit: il comando del profilo, da copiare, è nell'avviso «Senza VM» di Atollo.",
+                &[],
+            ),
+            Blocker::SbxMissing { .. } => t(
+                lang,
+                "Docker Sandboxes (sbx) non è nel kit: installalo con «Installa nel kit» nell'avviso «Senza VM» di Atollo.",
+                &[],
+            ),
+            Blocker::SbxSignedOut => t(
+                lang,
+                "sbx non ha accesso a Docker: «Lancia» su «sbx login» nell'avviso «Senza VM» di Atollo.",
+                &[],
+            ),
+            Blocker::SbxFailed { message } => {
+                t(lang, "sbx ha risposto con un errore: {0}", &[message])
+            }
+            Blocker::ForeignDaemon => t(
+                lang,
+                "Sul PC è attivo un altro Docker Sandboxes: fermalo («sbx daemon stop»), poi «Ricontrolla» nell'avviso «Senza VM» di Atollo.",
+                &[],
+            ),
+            Blocker::KitDisk { fs } => t(
+                lang,
+                "Il kit è su un disco {0}: spostalo su un disco NTFS (o APFS, ext4 su macOS e Linux).",
+                &[fs],
+            ),
+        }
+    }
+}
+
+/// Why the VM is off, one reason per line (`- …`), in `lang`; then that
+/// Atollo checks again by itself.
+pub fn why_no_vm(status: &Status, lang: &str) -> String {
+    use crate::common::i18n::t;
+    let mut out = t(lang, "Perché la VM non è attiva:", &[]);
+    for b in &status.blockers {
+        out.push_str("\n- ");
+        out.push_str(&b.explain(lang));
+    }
+    out.push('\n');
+    out.push_str(&t(
+        lang,
+        "Atollo ricontrolla da solo ogni minuto: quando la VM è pronta, riprova.",
+        &[],
+    ));
+    out
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -259,6 +409,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
             } else {
                 daemon_settings(kit, sbx, host, env);
                 legacy_global_github(kit, sbx, host, env);
+                legacy_terminals(kit, sbx, host, env);
             }
         }
     }
@@ -561,6 +712,49 @@ fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
     }
 }
 
+/// The sandboxes of the kit's terminals `sbx ls --json` lists
+/// (`atollo-t-…`): made by an earlier Atollo, when the kit's terminals ran
+/// in a VM (D-168, ended by D-178).
+pub(crate) fn terminal_vms_in(json: &str) -> Vec<String> {
+    let list: Vec<serde_json::Value> = serde_json::from_str(json).unwrap_or_default();
+    list.iter()
+        .filter_map(|s| s["name"].as_str())
+        .filter(|n| n.starts_with(vm::TERMINAL_PREFIX) && is_atollos(n))
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The kit's terminals run on the PC (D-178): the sandboxes an earlier
+/// Atollo made for them, those `sbx` lists and those with a kit of a
+/// terminal, are removed with their disks, once per run of the app, off
+/// the status's thread; a failure only goes to the log (best effort, like
+/// [`remove_owned`]).
+fn legacy_terminals(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+    static DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    if DONE.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        return;
+    }
+    let mut names: std::collections::BTreeSet<String> = kit::all(kit)
+        .into_iter()
+        .filter(|(_, owner)| matches!(owner, kit::Owner::Terminal { .. }))
+        .map(|(name, _)| name)
+        .collect();
+    if let Ok(out) = run(sbx, host, env, &["ls", "--json"], ASK_LIMIT) {
+        if out.status.success() {
+            names.extend(terminal_vms_in(&String::from_utf8_lossy(&out.stdout)));
+        }
+    }
+    if names.is_empty() {
+        return;
+    }
+    crate::common::log::info(&format!(
+        "kit terminals run on the PC: removing their sandboxes {names:?}"
+    ));
+    let names: Vec<String> = names.into_iter().collect();
+    let (kit, host, env) = (kit.clone(), host.clone(), env.clone());
+    std::thread::spawn(move || remove_owned(&kit, &host, &env, &names));
+}
+
 /// True when `sbx ls --json` lists a running sandbox.
 pub(crate) fn sandboxes_running(json: &str) -> bool {
     serde_json::from_str::<Vec<serde_json::Value>>(json)
@@ -860,17 +1054,20 @@ pub struct VmList {
 }
 
 /// Atollo's sandboxes in `sbx ls --json` (`atollo-…`), with their owner
-/// from their kits.
+/// from their kits; never a kit terminal's (`atollo-t-…`, D-178: removed
+/// by themselves, [`legacy_terminals`]).
 pub(crate) fn vms_of(kit: &Kit, json: &str) -> Vec<VmInfo> {
     let list: Vec<serde_json::Value> = serde_json::from_str(json).unwrap_or_default();
     list.iter()
         .filter_map(|s| {
             let name = s["name"].as_str()?;
-            name.starts_with(vm::PREFIX).then(|| VmInfo {
-                name: name.to_owned(),
-                owner: kit::owner(kit, name),
-                status: s["status"].as_str().unwrap_or_default().to_owned(),
-                last_used: s["last_used_at"].as_str().map(str::to_owned),
+            (name.starts_with(vm::PREFIX) && !name.starts_with(vm::TERMINAL_PREFIX)).then(|| {
+                VmInfo {
+                    name: name.to_owned(),
+                    owner: kit::owner(kit, name),
+                    status: s["status"].as_str().unwrap_or_default().to_owned(),
+                    last_used: s["last_used_at"].as_str().map(str::to_owned),
+                }
             })
         })
         .collect()
@@ -994,125 +1191,9 @@ pub fn vm_for(kit: &Kit, host: &Host, env: &KitEnv, project: &str, dir: &Path) -
     })
 }
 
-/// The microVM of the kit's terminal `terminal` in `dir` when the VM is
-/// on (the level of the last status): `dir` as its workspace and the kit's
-/// tools for Linux (`apps`, `data/apps/linux-…`) read-only; `None` on the
-/// kit's environment.
-pub fn kit_terminal_vm(
-    kit: &Kit,
-    host: &Host,
-    env: &KitEnv,
-    terminal: &str,
-    dir: &Path,
-    apps: &Path,
-) -> Option<Vm> {
-    if status(kit, host, env, false).level != Level::Vm {
-        return None;
-    }
-    Some(Vm {
-        sbx: Sbx::find(kit, host)?,
-        host: host.clone(),
-        name: vm::terminal_name(terminal, dir),
-        dir: dir.to_path_buf(),
-        read_only: vec![apps.to_path_buf()],
-        kit: kit.clone(),
-        owner: kit::Owner::Terminal {
-            terminal: terminal.to_owned(),
-            dir: dir.display().to_string(),
-        },
-        tools: GuestTools::default(),
-        host_ports: Vec::new(),
-        agent: "shell".into(),
-    })
-}
-
 /// True when the VM is on (the level of the last status).
 pub fn vm_on(kit: &Kit, host: &Host, env: &KitEnv) -> bool {
     status(kit, host, env, false).level == Level::Vm
-}
-
-/// `dir` as a VM's writable workspace, when it may be one: its canonical
-/// path, the one to mount, so the folder checked is the folder the VM gets.
-/// What the VM writes there the PC must never run, so it is refused:
-///
-/// - when it or a folder above it is a link or a junction;
-/// - a drive's root;
-/// - anything in the kit or in the user's profile, or holding either (the
-///   kit's programs and launchers, the profile's start files, PowerShell
-///   profiles, `.ssh`, the agents' settings…, and the tools mounted
-///   read-only, reachable again through it), except the kit's `projects`;
-/// - the system's folders (Windows, Program Files, ProgramData; `/etc`,
-///   `/usr`…), or one holding them.
-///
-/// Elsewhere (`D:\Siti\shop`) it may.
-pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
-    if !dir.is_absolute() || dir.ancestors().any(crate::platform::safe_path::is_link) {
-        return None;
-    }
-    let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));
-    let dir = canon(dir)?;
-    dir.parent()?;
-    // A project, or a folder in one; never the folder of every project,
-    // which would put them all, writable, in one VM.
-    if canon(&kit.projects()).is_some_and(|p| dir.starts_with(&p) && dir != p) {
-        return Some(dir);
-    }
-    let profile = host
-        .get("CP_USER_PROFILE")
-        .or(host.get("USERPROFILE"))
-        .or(host.get("HOME"))
-        .map(PathBuf::from);
-    let mut guarded: Vec<PathBuf> = [Some(kit.root().to_path_buf()), profile]
-        .into_iter()
-        .flatten()
-        .collect();
-    if kit.target().is_windows() {
-        guarded.extend(
-            [
-                "SystemRoot",
-                "ProgramFiles",
-                "ProgramFiles(x86)",
-                "ProgramData",
-            ]
-            .iter()
-            .filter_map(|v| host.get(v))
-            .map(PathBuf::from),
-        );
-    } else {
-        guarded.extend(
-            [
-                "/bin",
-                "/boot",
-                "/etc",
-                "/lib",
-                "/lib64",
-                "/opt",
-                "/sbin",
-                "/usr",
-                "/var",
-                "/Applications",
-                "/Library",
-                "/System",
-            ]
-            .iter()
-            .map(PathBuf::from),
-        );
-    }
-    let near = guarded
-        .iter()
-        .filter_map(|p| canon(p))
-        .any(|p| dir.starts_with(&p) || p.starts_with(&dir));
-    (!near).then_some(dir)
-}
-
-/// A canonical Windows path without its `\\?\` (`D:\a`, as `sbx` and the
-/// user write it); a network one (`\\?\UNC\…`) and the others as they are.
-fn plain(path: &Path) -> PathBuf {
-    let text = path.to_string_lossy();
-    match text.strip_prefix(r"\\?\") {
-        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
-        _ => path.to_path_buf(),
-    }
 }
 
 /// What a session or an action in a VM gets: the kit's tools' `PATH`
@@ -1141,20 +1222,29 @@ pub fn db_in_vm(db: &crate::db::auth::ProjectDb, port: u16) -> crate::db::auth::
     }
 }
 
-/// The kit's tools for the VM's Linux in the kit's terminal `terminal`
-/// ([`guest_view`]), with `ATOLLO_TERMINAL`.
-pub fn guest_tools(
-    kit: &Kit,
-    guest: &Kit,
-    terminal: &crate::editor::terminals::Terminal,
-    base: KitEnv,
-) -> GuestTools {
-    let env = crate::editor::terminals::env(guest, terminal, base);
-    let mut tools = guest_view(kit, guest, &env);
-    tools
-        .vars
-        .push(("ATOLLO_TERMINAL".to_owned(), terminal.name.clone()));
-    tools
+/// Pi's program for the VM's Linux (`guest`, the kit scoped to its
+/// target), as the VM sees it, when that build is installed (D-178).
+pub fn pi_in_vm(kit: &Kit, guest: &Kit) -> Option<String> {
+    let pi = crate::setup::Catalog::get().find("pi")?;
+    if !pi.is_installed(guest) {
+        return None;
+    }
+    let exe = crate::setup::kit_path(guest, crate::agents::exe_of("pi")?);
+    vm::guest_path(kit.target().is_windows(), &exe)
+}
+
+/// What Pi in a VM gets to reach the kit's local models (D-178): the
+/// server stays on the PC's `127.0.0.1:<port>` and the VM reaches it
+/// through [`vm::HOST`], like a database (D-171); its key, which goes in a
+/// file of variables, never on a command line. Pi's `/llama` reads them.
+pub fn pi_local_models_env(port: u16, key: &str) -> Vec<(String, String)> {
+    vec![
+        (
+            "LLAMA_BASE_URL".to_owned(),
+            crate::llm::service::url_of(port).replacen("127.0.0.1", vm::HOST, 1),
+        ),
+        ("LLAMA_API_KEY".to_owned(), key.to_owned()),
+    ]
 }
 
 /// The kit's tools for the VM's Linux in `project`, at the lines it chose
@@ -1574,6 +1664,15 @@ impl Vm {
     /// servers, D-171), opened by [`Vm::start`].
     pub fn with_host_ports(mut self, ports: Vec<u16>) -> Vm {
         self.host_ports = ports;
+        self
+    }
+
+    /// One more port of the PC this sandbox may reach (the kit's local
+    /// models for Pi, D-178), opened by [`Vm::start`] like the databases'.
+    pub fn with_host_port(mut self, port: u16) -> Vm {
+        if !self.host_ports.contains(&port) {
+            self.host_ports.push(port);
+        }
         self
     }
 

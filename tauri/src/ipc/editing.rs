@@ -34,7 +34,7 @@ pub async fn editor_open<R: Runtime>(
         ensure(&handle, &task, &kit, lang, &[])?;
         let (port, token) = editor.ensure_running().or_fail_chain("editor start")?;
         // Before the window: a terminal never opens before the box is known.
-        let vm = editor_vm_begin(&kit, &host, &kit_env, &for_vm, &dir_vm);
+        let vm = editor_vm_begin(&kit, &host, &kit_env, &for_vm, &dir_vm, lang);
         Ok::<_, CmdError>((port, token, vm))
     })
     .await
@@ -59,28 +59,34 @@ pub async fn editor_open<R: Runtime>(
 /// The box of the editor's terminals, tasks and agents for `project`
 /// (D-175, `isolation::session`), noted before its window opens: the VM's
 /// level and the project pending, its `Vm` to make ready; without the VM
-/// the level says so and the terminals are the kit's on the PC. The level
-/// on, but no `sbx` to run it: the session says why, nothing runs on the
-/// PC instead.
+/// the level says so with why (D-178): nothing of the editor starts on the
+/// PC, its window still opens. The level on, but no `sbx` to run it: the
+/// session says why, nothing runs on the PC instead.
 fn editor_vm_begin(
     kit: &Kit,
     host: &crate::env::Host,
     kit_env: &KitEnv,
     project: &str,
     dir: &std::path::Path,
+    lang: &str,
 ) -> Option<crate::isolation::Vm> {
     use crate::isolation::{session, Level};
     let env = crate::versions::project_env(kit, project, kit_env.clone());
     let warn = |e: anyhow::Error| {
         crate::common::log::warn(&format!("editor session {project}: {e:#}"));
     };
-    if crate::isolation::status(kit, host, &env, false).level != Level::Vm {
-        if let Err(e) = session::set_level(kit, false).and_then(|()| session::clear(kit, project)) {
+    let status = crate::isolation::status(kit, host, &env, false);
+    if status.level != Level::Vm {
+        let why = session::no_vm_text(&status, lang);
+        if let Err(e) =
+            session::set_level(kit, false, &why).and_then(|()| session::clear(kit, project))
+        {
             warn(e);
         }
         return None;
     }
-    if let Err(e) = session::set_level(kit, true).and_then(|()| session::pending(kit, project)) {
+    if let Err(e) = session::set_level(kit, true, "").and_then(|()| session::pending(kit, project))
+    {
         warn(e);
     }
     let vm = crate::isolation::vm_for(kit, host, &env, project, dir);
@@ -186,6 +192,10 @@ pub async fn terminal_open<R: Runtime>(
             return terminal::open_launch(&app, &vm.session_env(&env), &dir, launch)
                 .or_fail_chain("terminal");
         }
+        // Without the VM, on the PC with the sealed environment: no agent's
+        // command, and the terminal says where the agents run (D-178).
+        let mut env = env;
+        crate::isolation::with_agents_notice(&mut env, lang);
         terminal::open_console(&app, &kit, &env, &dir).or_fail_chain("terminal")
     })
     .await

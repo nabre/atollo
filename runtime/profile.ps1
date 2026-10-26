@@ -79,7 +79,8 @@ function global:prompt {
 if (-not $env:ATOLLO_QUIET) {
     # On the kit's PATH: the languages are in the folder of the version in
     # use (data\apps\<platform>\node\<line>), not at a fixed path.
-    $tools = 'claude', 'codex', 'agy', 'git', 'node', 'python', 'uv', 'gh', 'php', 'cargo', 'go', 'java', 'dotnet'
+    # Never the agents: they run only in the VM (D-178).
+    $tools = 'git', 'node', 'python', 'uv', 'gh', 'php', 'cargo', 'go', 'java', 'dotnet'
     $found = foreach ($name in $tools) {
         if (Get-Command -Name $name -CommandType Application -ErrorAction Ignore) { $name }
     }
@@ -109,4 +110,11 @@ if (-not $env:ATOLLO_QUIET) {
     $title = if ($env:ATOLLO_TERMINAL) { "$env:ATOLLO_TERMINAL  " } else { '' }
     Write-Host "  $title" -ForegroundColor Cyan -NoNewline
     Write-Host ($found -join '  ') -ForegroundColor DarkGray
+}
+
+# The agents are not in this terminal: they run only in the VM (D-178).
+if ($env:ATOLLO_AGENTS_NOTICE) {
+    Write-Host
+    Write-Host "  $env:ATOLLO_AGENTS_NOTICE" -ForegroundColor Yellow
+    Write-Host
 }

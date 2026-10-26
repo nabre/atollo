@@ -62,18 +62,8 @@ fn bins_resolve_per_target_os() {
 
     assert!(bins::editor_node(&win_kit, &win_kit.apps()).ends_with("node.exe"));
     assert!(bins::editor_node(&lin_kit, &lin_kit.apps()).ends_with("node"));
-    assert!(bins::agent_launcher(&win_kit, "claude")
-        .unwrap()
-        .ends_with("claude.exe"));
-    assert!(bins::agent_launcher(&lin_kit, "claude")
-        .unwrap()
-        .ends_with("claude"));
-    assert!(bins::agent_launcher(&win_kit, "antigravity")
-        .unwrap()
-        .ends_with("agy.cmd"));
-    assert!(bins::agent_launcher(&lin_kit, "antigravity")
-        .unwrap()
-        .ends_with("agy"));
+    assert_eq!(bins::cmd_name(win_kit.os(), "agy"), "agy.cmd");
+    assert_eq!(bins::cmd_name(lin_kit.os(), "agy"), "agy");
 }
 
 #[test]

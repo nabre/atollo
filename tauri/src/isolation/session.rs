@@ -4,8 +4,9 @@
 //! app noted here, in `data/app/sandboxes/sessions/`:
 //!
 //! - `.level`: `vm` or `env`, the level of the status when an editor last
-//!   opened, written before its window: fail closed, a terminal runs on
-//!   the PC only when it reads `env`; with `vm` a folder that is no
+//!   opened, written before its window: fail closed, nothing runs on the
+//!   PC (D-178): with `env` a terminal shows `.reason` (why the VM is off,
+//!   what to do) and opens nothing; with `vm` a folder that is no
 //!   project's, or a project not made ready, opens nothing;
 //! - `<project>.pending`: the app is making the project's VM ready (its
 //!   tools, databases and ports): the terminal waits;
@@ -14,10 +15,11 @@
 //!   `shell` (the interactive session, its `-w` folder the project's),
 //!   `run` (a task's line in place of [`LINE`]); `error`: why the VM could
 //!   not be made ready;
-//! - `<project>.<agent>.request`: an editor's profile of Claude Code or
-//!   Codex asks for its sandbox; the app makes it ready like the project's
-//!   (tools, database, ports) and writes `<project>/<agent>`, the session's
-//!   arguments, or `<project>/<agent>.error`.
+//! - `<project>.<agent>.request`: an editor's profile of Claude Code,
+//!   Codex or Pi asks for its session; the app makes its sandbox ready like
+//!   the project's (tools, database, ports; Pi's is the project's own VM)
+//!   and writes `<project>/<agent>`, the session's arguments, or
+//!   `<project>/<agent>.error`.
 //!
 //! The app clears them all at its start: until an editor opens, no level
 //! is known and a terminal opens nothing.
@@ -45,13 +47,37 @@ fn pending_file(kit: &Kit, project: &str) -> PathBuf {
     root(kit).join(format!("{project}.pending"))
 }
 
-/// Notes the level for the editor's terminals: `vm`, or `env` (the only
-/// one that lets them run on the PC).
-pub fn set_level(kit: &Kit, vm: bool) -> Result<()> {
+/// Notes the level for the editor's terminals: `vm`, or `env` with `why`
+/// (D-178: nothing of the editor opens on the PC, `vm.ps1` shows why the VM
+/// is off and what to do). The reason is written first: a terminal that
+/// reads `env` finds it.
+pub fn set_level(kit: &Kit, vm: bool, why: &str) -> Result<()> {
     std::fs::create_dir_all(root(kit))?;
+    let reason = root(kit).join(".reason");
+    if vm {
+        remove_file(&reason)?;
+    } else {
+        std::fs::write(&reason, format!("{why}\n"))
+            .with_context(|| reason.display().to_string())?;
+    }
     let file = root(kit).join(".level");
     let text = if vm { "vm\n" } else { "env\n" };
     std::fs::write(&file, text).with_context(|| file.display().to_string())
+}
+
+/// What `vm.ps1` shows when the VM is off (`.reason`), in `lang`: the
+/// editor's terminals, tasks and agents start only in the project's VM,
+/// then why it is off and what to do ([`super::why_no_vm`]).
+pub fn no_vm_text(status: &super::Status, lang: &str) -> String {
+    format!(
+        "{}\n{}",
+        crate::common::i18n::t(
+            lang,
+            "Senza VM: i terminali, i task e gli agenti dell'editor partono solo nella VM del progetto, e sul PC non si apre nulla.",
+            &[],
+        ),
+        super::why_no_vm(status, lang)
+    )
 }
 
 /// The VM of `project` is being made ready: its terminals wait.
@@ -92,9 +118,10 @@ pub fn write(kit: &Kit, project: &str, dir_on_pc: &Path, vm: &Vm, env: &KitEnv) 
     remove_file(&pending_file(kit, project))
 }
 
-/// The agents' sandboxes the editor's profiles asked for
+/// The agents' sessions the editor's profiles asked for
 /// (`<project>.<agent>.request`, written by `vm.ps1`), each taken once:
-/// only `claude` and `codex`, of a project with a session.
+/// only those that start in the VM (`claude`, `codex`, `pi`), of a project
+/// with a session.
 pub fn take_requests(kit: &Kit) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for entry in std::fs::read_dir(root(kit)).into_iter().flatten().flatten() {
@@ -106,7 +133,7 @@ pub fn take_requests(kit: &Kit) -> Vec<(String, String)> {
         let Some((project, agent)) = stem.rsplit_once('.') else {
             continue;
         };
-        if vm::sbx_agent(agent).is_some() && dir(kit, project).is_dir() {
+        if vm::starts_in_vm(agent) && dir(kit, project).is_dir() {
             out.push((project.to_owned(), agent.to_owned()));
         }
     }

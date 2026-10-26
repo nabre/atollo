@@ -401,33 +401,48 @@ function problems(): { title: string; items: GuideProblem[] }[] {
         },
         {
           q: tr(
-            "«… non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.»",
-            "“… has no Docker Sandboxes sandbox: in the VM use Claude Code or Codex.”",
-            "« … n'a pas de sandbox Docker Sandboxes : dans la VM, utilisez Claude Code ou Codex. »",
-            "„… hat keine Sandbox von Docker Sandboxes: In der VM nutzt du Claude Code oder Codex.“",
+            "Un agente non parte.",
+            "An agent does not start.",
+            "Un agent ne démarre pas.",
+            "Ein Agent startet nicht.",
           ),
           a: tr(
-            "Con la VM attiva partono solo gli agenti che Docker Sandboxes sa chiudere in una sandbox: Claude Code e Codex. Antigravity e Pi non partono, e mai sul PC al loro posto.",
-            "With the VM on, only the agents Docker Sandboxes can shut in a sandbox start: Claude Code and Codex. Antigravity and Pi do not start, and never on the PC in their place.",
-            "Avec la VM active, seuls démarrent les agents que Docker Sandboxes sait enfermer dans une sandbox : Claude Code et Codex. Antigravity et Pi ne démarrent pas, et jamais sur le PC à leur place.",
-            "Mit aktiver VM starten nur die Agenten, die Docker Sandboxes in eine Sandbox sperren kann: Claude Code und Codex. Antigravity und Pi starten nicht, und nie stattdessen auf dem PC.",
+            "Gli agenti girano solo nella VM: Claude Code e Codex nelle loro sandbox, Pi nella VM del progetto. Senza VM nessun agente parte, mai sul PC al suo posto: risolvi prima i motivi di «Senza VM». Antigravity, un editor da desktop, non parte mai su un progetto: resta nel kit per istruzioni, skill e server MCP sincronizzati.",
+            "The agents run only in the VM: Claude Code and Codex in their sandboxes, Pi in the project's VM. Without the VM no agent starts, never on the PC in its place: fix the “No VM” reasons first. Antigravity, a desktop editor, never starts on a project: it stays in the kit for the synced instructions, skills and MCP servers.",
+            "Les agents ne tournent que dans la VM : Claude Code et Codex dans leurs sandbox, Pi dans la VM du projet. Sans VM, aucun agent ne démarre, jamais sur le PC à sa place : résolvez d'abord les motifs de « Sans VM ». Antigravity, un éditeur de bureau, ne démarre jamais sur un projet : il reste dans le kit pour les instructions, skills et serveurs MCP synchronisés.",
+            "Die Agenten laufen nur in der VM: Claude Code und Codex in ihren Sandboxes, Pi in der VM des Projekts. Ohne VM startet kein Agent, nie stattdessen auf dem PC: Behebe zuerst die Gründe für „Ohne VM“. Antigravity, ein Desktop-Editor, startet nie auf einem Projekt: Es bleibt im Kit für die synchronisierten Anweisungen, Skills und MCP-Server.",
           ),
           see: "vm",
         },
         {
           q: tr(
-            "«La cartella … non si apre nella VM: …»",
-            "“The folder … does not open in the VM: …”",
-            "« Le dossier … ne s'ouvre pas dans la VM : … »",
-            "„Der Ordner … lässt sich nicht in der VM öffnen: …“",
+            "Nel terminale del kit claude, codex o pi non si trovano.",
+            "In the kit's terminal claude, codex or pi are not found.",
+            "Dans le terminal du kit, claude, codex ou pi sont introuvables.",
+            "Im Terminal des Kits werden claude, codex oder pi nicht gefunden.",
           ),
           a: tr(
-            "Un terminale nella VM non si apre nella radice di un disco, attraverso un link, in una cartella di sistema o di rete, nel kit o nel tuo profilo (salvo i progetti del kit). Scegli la cartella di un progetto, o un'altra cartella di un disco del PC.",
-            "A terminal in the VM does not open at the root of a disk, through a link, in a system or network folder, in the kit or in your profile (except the kit's projects). Choose a project's folder, or another folder on one of the PC's disks.",
-            "Un terminal dans la VM ne s'ouvre pas à la racine d'un disque, à travers un lien, dans un dossier système ou réseau, dans le kit ou dans votre profil (sauf les projets du kit). Choisissez le dossier d'un projet, ou un autre dossier d'un disque du PC.",
-            "Ein Terminal in der VM öffnet sich nicht im Stammverzeichnis eines Laufwerks, über einen Link, in einem System- oder Netzwerkordner, im Kit oder in deinem Profil (außer den Projekten des Kits). Wähle den Ordner eines Projekts oder einen anderen Ordner auf einem Laufwerk des PCs.",
+            "È voluto: i terminali del kit girano sul PC, con gli strumenti del kit ma senza gli agenti, e l'avviso all'apertura lo ricorda. Apri l'agente dalla pagina del progetto o dall'editor: parte nella VM.",
+            "It is meant to be: the kit's terminals run on the PC, with the kit's tools but without the agents, and the notice on opening says so. Open the agent from the project's page or from the editor: it starts in the VM.",
+            "C'est voulu : les terminaux du kit tournent sur le PC, avec les outils du kit mais sans les agents, et l'avis à l'ouverture le rappelle. Ouvrez l'agent depuis la page du projet ou depuis l'éditeur : il démarre dans la VM.",
+            "Das ist gewollt: Die Terminals des Kits laufen auf dem PC, mit den Werkzeugen des Kits, aber ohne die Agenten, und der Hinweis beim Öffnen sagt es. Öffne den Agenten von der Seite des Projekts oder aus dem Editor: Er startet in der VM.",
           ),
           see: "terminals",
+        },
+        {
+          q: tr(
+            "Il terminale dell'editor non parte.",
+            "The editor's terminal does not start.",
+            "Le terminal de l'éditeur ne démarre pas.",
+            "Das Terminal des Editors startet nicht.",
+          ),
+          a: tr(
+            "I terminali, i task e i profili degli agenti dell'editor girano solo nella VM del progetto. Senza VM non partono: il terminale dice perché e come rimediare (di solito un motivo di «Senza VM»), mentre la finestra dell'editor resta aperta per modificare i file. Riaprilo dalla pagina del progetto quando la barra di stato dice «VM».",
+            "The editor's terminals, tasks and agent profiles run only in the project's VM. Without the VM they do not start: the terminal says why and how to fix it (usually a “No VM” reason), while the editor window stays open to edit the files. Open it again from the project's page when the status bar says “VM”.",
+            "Les terminaux, les tâches et les profils d'agents de l'éditeur ne tournent que dans la VM du projet. Sans VM, ils ne démarrent pas : le terminal dit pourquoi et comment y remédier (en général un motif de « Sans VM »), tandis que la fenêtre de l'éditeur reste ouverte pour modifier les fichiers. Rouvrez-le depuis la page du projet quand la barre d'état indique « VM ».",
+            "Die Terminals, Tasks und Agentenprofile des Editors laufen nur in der VM des Projekts. Ohne VM starten sie nicht: Das Terminal sagt warum und wie man es behebt (meist ein Grund für „Ohne VM“), während das Editorfenster zum Bearbeiten der Dateien offen bleibt. Öffne es erneut von der Seite des Projekts, wenn die Statusleiste „VM“ zeigt.",
+          ),
+          see: "vm",
         },
         {
           q: tr(
@@ -458,21 +473,6 @@ function problems(): { title: string; items: GuideProblem[] }[] {
             "Atollo startet es nur neu, wenn keine Sandbox läuft. Schließe die Terminals und Aktionen in der VM, dann „Erneut prüfen“ im Fenster der VM und versuche es erneut.",
           ),
         },
-        {
-          q: tr(
-            "«Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. …»",
-            "“With the VM on, every site runs in its project's VM: start it from the project's page. …”",
-            "« Avec la VM active, chaque site tourne dans la VM de son projet : démarrez-le depuis la page du projet. … »",
-            "„Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. …“",
-          ),
-          a: tr(
-            "Con la VM attiva i server condivisi della pagina Server Web non partono, perché eseguirebbero il codice dei progetti sul PC. Avvia il sito dalla pagina del suo progetto: gira nella sua VM. Senza VM i pool funzionano come sempre.",
-            "With the VM on, the shared servers of the Web Servers page do not start, because they would run the projects' code on the PC. Start the site from its project's page: it runs in its VM. Without the VM the pools work as always.",
-            "Avec la VM active, les serveurs partagés de la page Serveurs web ne démarrent pas, car ils exécuteraient le code des projets sur le PC. Démarrez le site depuis la page de son projet : il tourne dans sa VM. Sans VM, les pools fonctionnent comme toujours.",
-            "Mit aktiver VM starten die gemeinsamen Server der Seite Webserver nicht, weil sie den Code der Projekte auf dem PC ausführen würden. Starte die Website von der Seite ihres Projekts: Sie läuft in ihrer VM. Ohne VM funktionieren die Pools wie immer.",
-          ),
-          see: "websites",
-        },
       ],
     },
   ];
@@ -501,19 +501,19 @@ function glossary(): [string, string][] {
     [
       tr("MicroVM (VM)", "MicroVM (VM)", "MicroVM (VM)", "MicroVM (VM)"),
       tr(
-        "Un piccolo computer virtuale, con un Linux suo, che parte in pochi secondi. In Atollo ogni progetto e ogni terminale del kit ne ha una, che vede solo la sua cartella e gli strumenti del kit per Linux.",
-        "A small virtual computer, with its own Linux, that starts in a few seconds. In Atollo each project and each kit terminal has one, which sees only its folder and the kit's tools for Linux.",
-        "Un petit ordinateur virtuel, avec son propre Linux, qui démarre en quelques secondes. Dans Atollo, chaque projet et chaque terminal du kit en a une, qui ne voit que son dossier et les outils du kit pour Linux.",
-        "Ein kleiner virtueller Computer mit eigenem Linux, der in wenigen Sekunden startet. In Atollo hat jedes Projekt und jedes Terminal des Kits eine, die nur ihren Ordner und die Werkzeuge des Kits für Linux sieht.",
+        "Un piccolo computer virtuale, con un Linux suo, che parte in pochi secondi. In Atollo ogni progetto ne ha una, che vede solo la sua cartella e gli strumenti del kit per Linux.",
+        "A small virtual computer, with its own Linux, that starts in a few seconds. In Atollo each project has one, which sees only its folder and the kit's tools for Linux.",
+        "Un petit ordinateur virtuel, avec son propre Linux, qui démarre en quelques secondes. Dans Atollo, chaque projet en a une, qui ne voit que son dossier et les outils du kit pour Linux.",
+        "Ein kleiner virtueller Computer mit eigenem Linux, der in wenigen Sekunden startet. In Atollo hat jedes Projekt eine, die nur ihren Ordner und die Werkzeuge des Kits für Linux sieht.",
       ),
     ],
     [
       tr("Sandbox", "Sandbox", "Sandbox", "Sandbox"),
       tr(
-        "La microVM di Docker Sandboxes con il suo disco: una per progetto, una per terminale e cartella, una per agente e progetto. Si vedono e si rimuovono nella finestra della VM, sezione «Sandbox delle VM».",
-        "The Docker Sandboxes microVM with its disk: one per project, one per terminal and folder, one per agent and project. They are listed and removed in the VM's window, section “VM sandboxes”.",
-        "La microVM de Docker Sandboxes avec son disque : une par projet, une par terminal et dossier, une par agent et projet. Elles se voient et se suppriment dans la fenêtre de la VM, section « Sandbox des VM ».",
-        "Die microVM von Docker Sandboxes mit ihrer Festplatte: eine pro Projekt, eine pro Terminal und Ordner, eine pro Agent und Projekt. Sie werden im Fenster der VM angezeigt und entfernt, Abschnitt „Sandboxes der VMs“.",
+        "La microVM di Docker Sandboxes con il suo disco: una per progetto (dove gira anche Pi), una per Claude Code o Codex in ogni progetto. Si vedono e si rimuovono nella finestra della VM, sezione «Sandbox delle VM».",
+        "The Docker Sandboxes microVM with its disk: one per project (where Pi runs too), one for Claude Code or Codex in each project. They are listed and removed in the VM's window, section “VM sandboxes”.",
+        "La microVM de Docker Sandboxes avec son disque : une par projet (où tourne aussi Pi), une pour Claude Code ou Codex dans chaque projet. Elles se voient et se suppriment dans la fenêtre de la VM, section « Sandbox des VM ».",
+        "Die microVM von Docker Sandboxes mit ihrer Festplatte: eine pro Projekt (in der auch Pi läuft), eine für Claude Code oder Codex in jedem Projekt. Sie werden im Fenster der VM angezeigt und entfernt, Abschnitt „Sandboxes der VMs“.",
       ),
     ],
     [
@@ -627,10 +627,10 @@ function glossary(): [string, string][] {
     [
       tr("Console (terminale)", "Console (terminal)", "Console (terminal)", "Konsole (Terminal)"),
       tr(
-        "Una finestra in cui si scrivono comandi. Quella del kit è PowerShell 7 con gli strumenti del kit; su macOS e Linux, se PowerShell non è installato, è bash. Con la VM attiva è bash nella microVM, con gli strumenti del kit per Linux.",
-        "A window where you type commands. The kit's one is PowerShell 7 with the kit's tools; on macOS and Linux, if PowerShell is not installed, it is bash. With the VM on it is bash in the microVM, with the kit's tools for Linux.",
-        "Une fenêtre dans laquelle on tape des commandes. Celle du kit est PowerShell 7 avec les outils du kit ; sur macOS et Linux, si PowerShell n'est pas installé, c'est bash. Avec la VM active, c'est bash dans la microVM, avec les outils du kit pour Linux.",
-        "Ein Fenster, in das man Befehle eingibt. Die des Kits ist PowerShell 7 mit den Werkzeugen des Kits; unter macOS und Linux ist es bash, wenn PowerShell nicht installiert ist. Mit aktiver VM ist es bash in der microVM, mit den Werkzeugen des Kits für Linux.",
+        "Una finestra in cui si scrivono comandi. Quella del kit è PowerShell 7 con gli strumenti del kit; su macOS e Linux, se PowerShell non è installato, è bash; gira sul PC, senza gli agenti. Il terminale di un progetto, con la VM attiva, è bash nella sua microVM, con gli strumenti del kit per Linux.",
+        "A window where you type commands. The kit's one is PowerShell 7 with the kit's tools; on macOS and Linux, if PowerShell is not installed, it is bash; it runs on the PC, without the agents. A project's terminal, with the VM on, is bash in its microVM, with the kit's tools for Linux.",
+        "Une fenêtre dans laquelle on tape des commandes. Celle du kit est PowerShell 7 avec les outils du kit ; sur macOS et Linux, si PowerShell n'est pas installé, c'est bash ; elle tourne sur le PC, sans les agents. Le terminal d'un projet, avec la VM active, est bash dans sa microVM, avec les outils du kit pour Linux.",
+        "Ein Fenster, in das man Befehle eingibt. Die des Kits ist PowerShell 7 mit den Werkzeugen des Kits; unter macOS und Linux ist es bash, wenn PowerShell nicht installiert ist; sie läuft auf dem PC, ohne die Agenten. Das Terminal eines Projekts ist mit aktiver VM bash in seiner microVM, mit den Werkzeugen des Kits für Linux.",
       ),
     ],
     [
@@ -1163,10 +1163,10 @@ export const HELP: TopicTexts = {
           <P>
             {rich(
               tr(
-                "Che i programmi dei progetti (terminale, azioni, server, agenti) girano sul PC con il tuo utente: possono leggere i tuoi file. Il kit ne sigilla l'ambiente (niente chiavi SSH, niente login di amministratore di MySQL: ogni progetto entra con il suo utente), ma non è un muro. Con la VM ogni progetto gira in una microVM sua e vede solo la sua cartella. Un clic sull'avviso dice perché la VM non è attiva e che cosa fare, con «Lancia», «Copia», «Installa nel kit» e «Ricontrolla»: di solito servono Windows 11 con Hypervisor Platform, un Mac con Apple silicon e macOS 14, o Ubuntu 24.04 con KVM, più un account Docker («sbx login» nel terminale di Atollo). Tutto in {0}.",
-                "That the projects' programs (terminal, actions, servers, agents) run on the PC as your user: they can read your files. The kit seals their environment (no SSH keys, no MySQL administrator login: each project signs in as its own user), but that is no wall. With the VM each project runs in a microVM of its own and sees only its folder. A click on the notice tells why the VM is off and what to do, with “Run”, “Copy”, “Install in the kit” and “Check again”: usually Windows 11 with Hypervisor Platform, a Mac with Apple silicon and macOS 14, or Ubuntu 24.04 with KVM, plus a Docker account (“sbx login” in Atollo's terminal). All of it in {0}.",
-                "Que les programmes des projets (terminal, actions, serveurs, agents) tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers. Le kit scelle leur environnement (pas de clés SSH, pas de login administrateur de MySQL : chaque projet se connecte avec son utilisateur), mais ce n'est pas un mur. Avec la VM, chaque projet tourne dans sa propre microVM et ne voit que son dossier. Un clic sur l'avis dit pourquoi la VM n'est pas active et quoi faire, avec « Lancer », « Copier », « Installer dans le kit » et « Vérifier à nouveau » : en général il faut Windows 11 avec Hypervisor Platform, un Mac Apple silicon sous macOS 14, ou Ubuntu 24.04 avec KVM, plus un compte Docker (« sbx login » dans le terminal d'Atollo). Tout est dans {0}.",
-                "Dass die Programme der Projekte (Terminal, Aktionen, Server, Agenten) auf dem PC mit deinem Benutzer laufen: Sie können deine Dateien lesen. Das Kit versiegelt ihre Umgebung (keine SSH-Schlüssel, keine Administrator-Anmeldung von MySQL: Jedes Projekt meldet sich mit seinem Benutzer an), aber das ist keine Mauer. Mit der VM läuft jedes Projekt in einer eigenen microVM und sieht nur seinen Ordner. Ein Klick auf den Hinweis sagt, warum die VM nicht aktiv ist und was zu tun ist, mit „Starten“, „Kopieren“, „Im Kit installieren“ und „Erneut prüfen“: Meist braucht es Windows 11 mit Hypervisor Platform, einen Mac mit Apple Silicon und macOS 14 oder Ubuntu 24.04 mit KVM, dazu ein Docker-Konto („sbx login“ im Terminal von Atollo). Alles in {0}.",
+                "Che i programmi dei progetti (terminale, azioni, server) girano sul PC con il tuo utente: possono leggere i tuoi file; gli agenti e i terminali dell'editor non partono. Il kit ne sigilla l'ambiente (niente chiavi SSH, niente login di amministratore di MySQL: ogni progetto entra con il suo utente), ma non è un muro. Con la VM ogni progetto gira in una microVM sua e vede solo la sua cartella. Un clic sull'avviso dice perché la VM non è attiva e che cosa fare, con «Lancia», «Copia», «Installa nel kit» e «Ricontrolla»: di solito servono Windows 11 con Hypervisor Platform, un Mac con Apple silicon e macOS 14, o Ubuntu 24.04 con KVM, più un account Docker («sbx login» nel terminale di Atollo). Tutto in {0}.",
+                "That the projects' programs (terminal, actions, servers) run on the PC as your user: they can read your files; the agents and the editor's terminals do not start. The kit seals their environment (no SSH keys, no MySQL administrator login: each project signs in as its own user), but that is no wall. With the VM each project runs in a microVM of its own and sees only its folder. A click on the notice tells why the VM is off and what to do, with “Run”, “Copy”, “Install in the kit” and “Check again”: usually Windows 11 with Hypervisor Platform, a Mac with Apple silicon and macOS 14, or Ubuntu 24.04 with KVM, plus a Docker account (“sbx login” in Atollo's terminal). All of it in {0}.",
+                "Que les programmes des projets (terminal, actions, serveurs) tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers ; les agents et les terminaux de l'éditeur ne démarrent pas. Le kit scelle leur environnement (pas de clés SSH, pas de login administrateur de MySQL : chaque projet se connecte avec son utilisateur), mais ce n'est pas un mur. Avec la VM, chaque projet tourne dans sa propre microVM et ne voit que son dossier. Un clic sur l'avis dit pourquoi la VM n'est pas active et quoi faire, avec « Lancer », « Copier », « Installer dans le kit » et « Vérifier à nouveau » : en général il faut Windows 11 avec Hypervisor Platform, un Mac Apple silicon sous macOS 14, ou Ubuntu 24.04 avec KVM, plus un compte Docker (« sbx login » dans le terminal d'Atollo). Tout est dans {0}.",
+                "Dass die Programme der Projekte (Terminal, Aktionen, Server) auf dem PC mit deinem Benutzer laufen: Sie können deine Dateien lesen; die Agenten und die Terminals des Editors starten nicht. Das Kit versiegelt ihre Umgebung (keine SSH-Schlüssel, keine Administrator-Anmeldung von MySQL: Jedes Projekt meldet sich mit seinem Benutzer an), aber das ist keine Mauer. Mit der VM läuft jedes Projekt in einer eigenen microVM und sieht nur seinen Ordner. Ein Klick auf den Hinweis sagt, warum die VM nicht aktiv ist und was zu tun ist, mit „Starten“, „Kopieren“, „Im Kit installieren“ und „Erneut prüfen“: Meist braucht es Windows 11 mit Hypervisor Platform, einen Mac mit Apple Silicon und macOS 14 oder Ubuntu 24.04 mit KVM, dazu ein Docker-Konto („sbx login“ im Terminal von Atollo). Alles in {0}.",
               ),
               <See key="v" id="vm" />,
             )}

@@ -54,10 +54,10 @@ export const TOOLS: TopicTexts = {
             "Jede Zeile zeigt den Status auf dem Datenträger mit einem Symbol: nicht vorhanden, vorinstalliert, installiert, zu aktualisieren, Fehler.",
           ),
           tr(
-            "Con la VM attiva «Installa» prepara sul PC i componenti dell'app e per il Linux della VM gli strumenti scelti: sono quelli che girano nella VM. Uno strumento già sul PC resta, per quando la VM manca.",
-            "With the VM on, “Install” prepares the app's components on the PC and the chosen tools for the VM's Linux: they are the ones that run in the VM. A tool already on the PC stays, for when the VM is missing.",
-            "Avec la VM active, « Installer » prépare sur le PC les composants de l'application et pour le Linux de la VM les outils choisis : ce sont eux qui tournent dans la VM. Un outil déjà sur le PC reste, pour quand la VM manque.",
-            "Mit aktiver VM bereitet „Installieren“ auf dem PC die Komponenten der App vor und für das Linux der VM die gewählten Werkzeuge: Sie sind es, die in der VM laufen. Ein Werkzeug, das schon auf dem PC ist, bleibt, für den Fall, dass die VM fehlt.",
+            "Con la VM attiva «Installa» prepara sul PC i componenti dell'app e per il Linux della VM gli strumenti scelti: sono quelli che girano nella VM. Si scaricano una volta nel kit, con lo SHA-256 verificato, e la VM li monta in sola lettura alle versioni del progetto: niente download dentro la VM, anche senza rete. Uno strumento già sul PC resta, per quando la VM manca.",
+            "With the VM on, “Install” prepares the app's components on the PC and the chosen tools for the VM's Linux: they are the ones that run in the VM. They are downloaded once into the kit, with the SHA-256 verified, and the VM mounts them read-only at the project's versions: no downloads inside the VM, offline too. A tool already on the PC stays, for when the VM is missing.",
+            "Avec la VM active, « Installer » prépare sur le PC les composants de l'application et pour le Linux de la VM les outils choisis : ce sont eux qui tournent dans la VM. Ils se téléchargent une fois dans le kit, avec le SHA-256 vérifié, et la VM les monte en lecture seule aux versions du projet : aucun téléchargement dans la VM, même sans réseau. Un outil déjà sur le PC reste, pour quand la VM manque.",
+            "Mit aktiver VM bereitet „Installieren“ auf dem PC die Komponenten der App vor und für das Linux der VM die gewählten Werkzeuge: Sie sind es, die in der VM laufen. Sie werden einmal ins Kit heruntergeladen, mit geprüfter SHA-256, und die VM bindet sie schreibgeschützt in den Versionen des Projekts ein: keine Downloads in der VM, auch ohne Netzwerk. Ein Werkzeug, das schon auf dem PC ist, bleibt, für den Fall, dass die VM fehlt.",
           ),
         ]}
       />

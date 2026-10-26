@@ -39,14 +39,3 @@ pub fn editor_node(kit: &Kit, server_dir: &Path) -> PathBuf {
 pub fn editor_server_main(server_dir: &Path) -> PathBuf {
     server_dir.join("out").join("server-main.js")
 }
-
-/// Agent CLI launcher for `id` (`claude`, `codex`, `antigravity`) on `kit`'s target.
-pub fn agent_launcher(kit: &Kit, id: &str) -> Option<PathBuf> {
-    let os = kit.os();
-    match id {
-        "claude" => Some(kit.apps().join("claude").join(exe_name(os, "claude"))),
-        "codex" => Some(kit.apps().join("codex").join(exe_name(os, "codex"))),
-        "antigravity" => Some(kit.kit_files().join("bin").join(cmd_name(os, "agy"))),
-        _ => None,
-    }
-}

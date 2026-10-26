@@ -69,10 +69,10 @@ export const AGENTS: TopicTexts = {
             "Die Anmeldung bei deinem Konto erfolgt beim ersten Start des Agenten und bleibt im Kit, auch auf einem anderen PC.",
           ),
           tr(
-            "Con la VM attiva Claude Code e Codex partono in una sandbox di agente di Docker Sandboxes, che vede solo il progetto, con gli accessi gestiti da Docker Sandboxes; Antigravity e Pi lì non partono. L'agente nella VM ha gli strumenti del kit del progetto e il suo database, dalla pagina del progetto come dall'editor; per ora non ha i server MCP del kit e del progetto.",
-            "With the VM on, Claude Code and Codex start in a Docker Sandboxes agent sandbox, which sees only the project, with the sign-ins managed by Docker Sandboxes; Antigravity and Pi do not start there. The agent in the VM has the project's kit tools and its database, from the project's page and from the editor alike; for now it does not have the kit's and the project's MCP servers.",
-            "Avec la VM active, Claude Code et Codex démarrent dans une sandbox d'agent de Docker Sandboxes, qui ne voit que le projet, avec les connexions gérées par Docker Sandboxes ; Antigravity et Pi n'y démarrent pas. L'agent dans la VM a les outils du kit du projet et sa base de données, depuis la page du projet comme depuis l'éditeur ; pour l'instant, il n'a pas les serveurs MCP du kit et du projet.",
-            "Mit aktiver VM starten Claude Code und Codex in einer Agenten-Sandbox von Docker Sandboxes, die nur das Projekt sieht, mit den von Docker Sandboxes verwalteten Anmeldungen; Antigravity und Pi starten dort nicht. Der Agent in der VM hat die Werkzeuge des Kits für das Projekt und seine Datenbank, von der Seite des Projekts wie aus dem Editor; vorerst hat er die MCP-Server des Kits und des Projekts nicht.",
+            "Gli agenti girano solo nella VM: Claude Code e Codex in una sandbox di agente di Docker Sandboxes, che vede solo il progetto, con gli accessi gestiti da Docker Sandboxes; Pi nella VM del progetto, con la sua build per Linux. Antigravity, un editor da desktop, non parte mai su un progetto: resta nel kit per istruzioni, skill e server MCP sincronizzati. Senza VM nessun agente parte. L'agente nella VM ha gli strumenti del kit del progetto e il suo database, dalla pagina del progetto come dall'editor; per ora non ha i server MCP del kit e del progetto.",
+            "The agents run only in the VM: Claude Code and Codex in a Docker Sandboxes agent sandbox, which sees only the project, with the sign-ins managed by Docker Sandboxes; Pi in the project's VM, with its build for Linux. Antigravity, a desktop editor, never starts on a project: it stays in the kit for the synced instructions, skills and MCP servers. Without the VM no agent starts. The agent in the VM has the project's kit tools and its database, from the project's page and from the editor alike; for now it does not have the kit's and the project's MCP servers.",
+            "Les agents ne tournent que dans la VM : Claude Code et Codex dans une sandbox d'agent de Docker Sandboxes, qui ne voit que le projet, avec les connexions gérées par Docker Sandboxes ; Pi dans la VM du projet, avec son build pour Linux. Antigravity, un éditeur de bureau, ne démarre jamais sur un projet : il reste dans le kit pour les instructions, skills et serveurs MCP synchronisés. Sans VM, aucun agent ne démarre. L'agent dans la VM a les outils du kit du projet et sa base de données, depuis la page du projet comme depuis l'éditeur ; pour l'instant, il n'a pas les serveurs MCP du kit et du projet.",
+            "Die Agenten laufen nur in der VM: Claude Code und Codex in einer Agenten-Sandbox von Docker Sandboxes, die nur das Projekt sieht, mit den von Docker Sandboxes verwalteten Anmeldungen; Pi in der VM des Projekts, mit seinem Build für Linux. Antigravity, ein Desktop-Editor, startet nie auf einem Projekt: Es bleibt im Kit für die synchronisierten Anweisungen, Skills und MCP-Server. Ohne VM startet kein Agent. Der Agent in der VM hat die Werkzeuge des Kits für das Projekt und seine Datenbank, von der Seite des Projekts wie aus dem Editor; vorerst hat er die MCP-Server des Kits und des Projekts nicht.",
           ),
         ]}
       />
@@ -199,16 +199,16 @@ export const AGENTS: TopicTexts = {
           steps={[
             tr("Apri il progetto.", "Open the project.", "Ouvrez le projet.", "Öffne das Projekt."),
             tr(
-              "In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Antigravity», «Apri Pi»). Fai clic su quello dell'agente che vuoi usare.",
-              "At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Antigravity”, “Open Pi”). Click the one of the agent you want to use.",
-              "En haut, à côté de « Éditeur » et « Terminal », il y a un bouton pour chaque agent installé, avec son logo (« Ouvrir Claude Code », « Ouvrir Codex », « Ouvrir Antigravity », « Ouvrir Pi »). Cliquez sur celui de l'agent que vous voulez utiliser.",
-              "Oben neben „Editor“ und „Terminal“ gibt es für jeden installierten Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Antigravity öffnen“, „Pi öffnen“). Klicke auf die des Agenten, den du verwenden möchtest.",
+              "In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Pi»). Fai clic su quello dell'agente che vuoi usare: parte nella VM del progetto. Antigravity, un editor per il desktop, non si apre su un progetto.",
+              "At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Pi”). Click the one of the agent you want to use: it starts in the project's VM. Antigravity, a desktop editor, does not open on a project.",
+              "En haut, à côté de « Éditeur » et « Terminal », il y a un bouton pour chaque agent installé, avec son logo (« Ouvrir Claude Code », « Ouvrir Codex », « Ouvrir Pi »). Cliquez sur celui de l'agent que vous voulez utiliser : il démarre dans la VM du projet. Antigravity, un éditeur de bureau, ne s'ouvre pas sur un projet.",
+              "Oben neben „Editor“ und „Terminal“ gibt es für jeden installierten Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Pi öffnen“). Klicke auf die des Agenten, den du verwenden möchtest: Er startet in der VM des Projekts. Antigravity, ein Desktop-Editor, öffnet sich nicht auf einem Projekt.",
             ),
             tr(
-              "L'agente parte subito, nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo (su ogni sistema).",
-              "The agent starts right away, in the project folder, in a tab of the terminal panel inside Atollo (on every system).",
-              "L'agent démarre aussitôt, dans le dossier du projet, dans un onglet du panneau des terminaux dans Atollo (sur tous les systèmes).",
-              "Der Agent startet sofort, im Projektordner, in einer Registerkarte des Terminalbereichs in Atollo (auf jedem System).",
+              "L'agente parte nella VM del progetto, nella sua cartella, in una scheda del pannello dei terminali dentro Atollo (su ogni sistema). Senza VM non parte, e la scheda dice perché.",
+              "The agent starts in the project's VM, in its folder, in a tab of the terminal panel inside Atollo (on every system). Without the VM it does not start, and the tab says why.",
+              "L'agent démarre dans la VM du projet, dans son dossier, dans un onglet du panneau des terminaux dans Atollo (sur tous les systèmes). Sans VM, il ne démarre pas, et l'onglet dit pourquoi.",
+              "Der Agent startet in der VM des Projekts, in seinem Ordner, in einer Registerkarte des Terminalbereichs in Atollo (auf jedem System). Ohne VM startet er nicht, und die Registerkarte sagt warum.",
             ),
           ]}
         />
@@ -236,10 +236,10 @@ export const AGENTS: TopicTexts = {
                 "Vor dem Start installiert das Kit, was fehlt (den Agenten, seine Abhängigkeiten, die Programme der MCP-Server wie Node.js oder uv), wendet die Versionen des Projekts an und gleicht Anweisungen, Skills und MCP-Server ab. Wenn der Agent endet, gleicht es sie erneut ab.",
               ),
               tr(
-                "Antigravity parte attraverso un piccolo programma del kit (agy) che rimette il tuo accesso nel sistema prima dell'avvio e lo riporta nel kit alla fine.",
-                "Antigravity starts through a small kit program (agy) that puts your sign-in back into the system before the start and brings it back into the kit at the end.",
-                "Antigravity démarre via un petit programme du kit (agy) qui remet votre connexion dans le système avant le lancement et la rapporte dans le kit à la fin.",
-                "Antigravity startet über ein kleines Programm des Kits (agy), das deine Anmeldung vor dem Start ins System zurücklegt und sie am Ende wieder ins Kit holt.",
+                "Antigravity, un editor da desktop, non parte su un progetto: resta nel kit per istruzioni, skill e server MCP sincronizzati. Il piccolo programma del kit agy rimette il suo accesso nel sistema quando è aperto e lo riporta nel kit alla fine.",
+                "Antigravity, a desktop editor, does not start on a project: it stays in the kit for the synced instructions, skills and MCP servers. The small kit program agy puts its sign-in back into the system while it is open and brings it back into the kit at the end.",
+                "Antigravity, un éditeur de bureau, ne démarre pas sur un projet : il reste dans le kit pour les instructions, skills et serveurs MCP synchronisés. Le petit programme du kit agy remet sa connexion dans le système quand il est ouvert et la rapporte dans le kit à la fin.",
+                "Antigravity, ein Desktop-Editor, startet nicht auf einem Projekt: Es bleibt im Kit für die synchronisierten Anweisungen, Skills und MCP-Server. Das kleine Programm des Kits agy legt seine Anmeldung ins System zurück, solange es geöffnet ist, und holt sie am Ende wieder ins Kit.",
               ),
             ]}
           />
