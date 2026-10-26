@@ -2,7 +2,6 @@
 //! `os/linux/` under the names of `crate::platform`. These modules may call
 //! `crate::os::current` for what differs between the two.
 
-pub mod agy_store;
 pub mod console;
 pub mod desktop;
 pub mod files;

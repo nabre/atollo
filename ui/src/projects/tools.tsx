@@ -8,14 +8,21 @@
 // own install (waiting, its bar, «Riprova», «Annulla»); asked while another
 // runs, it queues; a tile that ends is read again alone, the grid stays.
 import { useCallback, useState } from "react";
-import { componentsInstall, componentsList, setupStart, type ComponentInfo, type SetupSnapshot } from "../ipc";
+import {
+  componentsInstall,
+  componentsList,
+  onLevelsChanged,
+  setupStart,
+  type ComponentInfo,
+  type SetupSnapshot,
+} from "../ipc";
 import { groups } from "../components/model";
 import { ItemBar, ItemCancel, itemBusy, itemState, useStepsDone, type ItemState } from "../components/setup";
 import { shownStatus, ToolStateIcon, toolStateLabel, type ToolStatus } from "../components/status";
 import { useUpdates } from "../components/updates";
 import { t } from "../i18n";
 import { ErrorLine } from "../shared/common";
-import { useAction, useLoad } from "../shared/hooks";
+import { useAction, useLoad, useSubscription } from "../shared/hooks";
 import { ComponentLogo } from "../shared/logos";
 import { composerOf, splitVersion } from "../versions/model";
 import { Button, EditorSection, Link } from "../workbench";
@@ -33,7 +40,8 @@ type Act = "install" | "update" | null;
 
 function actOf(c: ComponentInfo, st: ToolStatus): Act {
   if (st.state === "update") return "update";
-  if (st.state !== "missing") return null;
+  // An agent (LEVELS.md §7): «fornito dalla VM», «serve la VM».
+  if (st.state !== "missing" || c.agent !== null) return null;
   // As the row of «Tutti gli strumenti»: nothing when not made or not
   // needed here (D-177).
   if (!c.available || c.unavailableReason !== null || c.notNeeded !== null) return null;
@@ -46,9 +54,12 @@ export function HomeTools({ setup, onOpen }: { setup: SetupSnapshot | null; onOp
     data: list,
     setData: setList,
     error: loadError,
+    reload,
   } = useLoad<ComponentInfo[] | null>(componentsList, null, {
     onError: "show",
   });
+  // The agents' tiles follow the VM (LEVELS.md §7).
+  useSubscription(onLevelsChanged, reload);
   const { updates, setUpdates } = useUpdates(running);
   const { busy, error, run } = useAction();
   const [all, setAll] = useState(false);

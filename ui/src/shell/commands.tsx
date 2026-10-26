@@ -146,12 +146,14 @@ export function CommandPalette({
         run: act(() => editorOpen(p.id)),
       });
     }
+    // Without the VM shown disabled with the reason (LEVELS.md §7).
     for (const agent of installed) {
       items.push({
         key: `agent:${agent.id}:${p.id}`,
         icon: icon(codicon("hubot")),
         label: t("{0} in {1}", agent.name, p.name),
-        detail: t("agente"),
+        detail: agent.available ? t("agente") : t("serve la VM"),
+        disabled: agent.available ? undefined : (agent.unavailableReason ?? t("serve la VM")),
         run: act(() => agentLaunch(agent.id, p.id)),
       });
     }

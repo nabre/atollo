@@ -245,26 +245,32 @@ const AGENT_PROFILES: [(&str, &str, &str); 4] = [
     ("Pi", "pi", "symbol-constant"),
 ];
 
-/// True when the kit has `agent` for the PC or for the VM's Linux: its
-/// profile is offered (gated on the VM by step 6 of LEVELS.md §12.2).
+/// True when `agent` can start in the VM (LEVELS.md §7, Q11): Claude Code
+/// and Codex always (the `sbx` images bring them), Pi and Antigravity once
+/// their build for the VM's Linux is in the kit. What the PC's folder has
+/// does not count: no agent runs on the PC.
 fn has_agent(kit: &Kit, agent: &str) -> bool {
-    let installed = |k: &Kit| {
-        crate::setup::Catalog::get()
-            .find(agent)
-            .is_some_and(|c| c.is_installed(k))
+    let Some(agent) = crate::levels::Agent::from_id(agent) else {
+        return false;
     };
-    installed(kit)
-        || crate::isolation::vm::guest_target(kit.target())
-            .is_some_and(|t| installed(&kit.for_target(t)))
+    if agent.runner() == crate::levels::AgentRunner::SbxAgent {
+        return true;
+    }
+    crate::isolation::vm::guest_target(kit.target()).is_some_and(|t| {
+        crate::setup::Catalog::get()
+            .find(agent.id())
+            .is_some_and(|c| c.is_installed(&kit.for_target(t)))
+    })
 }
 
 /// The kit profiles for what is installed now, for the kit's system
 /// (D-179): the terminals are level 1, the kit's shells on the PC as they
 /// are (the editor server's environment is `environment(Pc{Manual})`, the
 /// kit's profile applies the project's lines of the folder); the agents
-/// are level 3, through the request client ([`client`]) to their VM;
-/// without a client no agent profile.
-pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
+/// are level 3, through the request client ([`client`]) to their VM, and
+/// only while `agents` (`levels::agents_enabled`, LEVELS.md §7: absent
+/// without the VM, I6); without a client no agent profile.
+pub fn kit_profiles(kit: &Kit, system_root: &Path, agents: bool) -> Map<String, Value> {
     let os = kit.os();
     let app = |rel: &str| crate::setup::kit_path(kit, rel);
     let mut out = Map::new();
@@ -304,7 +310,7 @@ pub fn kit_profiles(kit: &Kit, system_root: &Path) -> Map<String, Value> {
             );
         }
     }
-    if let Some(client) = client(kit) {
+    if let Some(client) = client(kit).filter(|_| agents) {
         for (name, id, icon) in AGENT_PROFILES {
             if has_agent(kit, id) {
                 let args = client.args(kit, &[("Origin", "editorAgentProfile"), ("Agent", id)]);
@@ -363,8 +369,14 @@ pub enum Outcome {
 /// `.linux`): the same file serves a kit used on several systems, each
 /// writes its own and leaves the others. Only Atollo's profiles (D-179):
 /// the system's detected ones hidden, any other profile removed; the
-/// default kept only when it is one of Atollo's.
-pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Map<String, Value> {
+/// default kept only when it is one of Atollo's (an agent's, without the
+/// VM, falls back to «Atollo»). `agents`: the agents' profiles too.
+pub fn merge(
+    existing: &Map<String, Value>,
+    kit: &Kit,
+    system_root: &Path,
+    agents: bool,
+) -> Map<String, Value> {
     let os = kit.os();
     let key = |name: &str| format!("terminal.integrated.{name}.{}", os_key(os));
     let mut out = existing.clone();
@@ -373,7 +385,7 @@ pub fn merge(existing: &Map<String, Value>, kit: &Kit, system_root: &Path) -> Ma
     for name in hidden(os) {
         profiles.insert((*name).into(), Value::Null);
     }
-    let kit_profiles = kit_profiles(kit, system_root);
+    let kit_profiles = kit_profiles(kit, system_root, agents);
     let names: Vec<String> = kit_profiles.keys().cloned().collect();
     profiles.extend(kit_profiles);
     out.insert(profiles_key, Value::Object(profiles));
@@ -497,11 +509,13 @@ pub fn strip_jsonc(text: &str) -> String {
 }
 
 /// Writes the settings file at every start of the editor, the keys Atollo
-/// owns rewritten (§13 item 10). A file with comments or trailing commas is
-/// read without them; one that is still no JSON object is moved aside to
+/// owns rewritten (§13 item 10); the agents' profiles while `agents` (the
+/// VM on, LEVELS.md §7: a VM that goes on or off changes them at the
+/// editor's next start). A file with comments or trailing commas is read
+/// without them; one that is still no JSON object is moved aside to
 /// `settings.json.bak-<seconds>` and the settings are written anew
 /// ([`Outcome::Replaced`]).
-pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
+pub fn write(kit: &Kit, system_root: &Path, agents: bool) -> Result<Outcome> {
     let path = settings_path(kit);
     let mut moved = None;
     let existing = match fs::read_to_string(&path) {
@@ -528,7 +542,7 @@ pub fn write(kit: &Kit, system_root: &Path) -> Result<Outcome> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Map::new(),
         Err(e) => return Err(e).with_context(|| path.display().to_string()),
     };
-    let merged = merge(&existing, kit, system_root);
+    let merged = merge(&existing, kit, system_root, agents);
     if moved.is_none() && merged == existing && path.exists() {
         return Ok(Outcome::Unchanged);
     }

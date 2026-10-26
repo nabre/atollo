@@ -397,10 +397,8 @@ impl KitEnv {
         powershell_vars(&mut env);
         path_var(&mut env, &cx, dirs, tools);
         settings_vars(&mut env, &cx);
-        // Claude Code's token saved in the kit (D-115) is not here either:
-        // projects' actions, scripts, terminals and the editor never see
-        // it, only the agents do (`agents::launch_env`, the kit's `claude`
-        // and `agy` wrappers).
+        // No agent's secret is here: no agent runs on the PC (D-179), and
+        // none of the kit's reaches a VM (LEVELS.md §11).
         // The versions preferred for the kit instead of the default folders.
         crate::versions::apply_kit_choice(kit, &mut env);
         env
@@ -492,8 +490,9 @@ fn agent_vars(env: &mut KitEnv, cx: &Cx) -> PathBuf {
     let Cx { kit, settings, .. } = *cx;
     let data = cx.data.clone();
     let home = cx.home.clone();
-    let app = |rel: &str| cx.app(rel);
-    // Claude Code, Codex, Antigravity (_env.cmd:55-73)
+    // Claude Code, Codex, Antigravity (_env.cmd:55-73): the kit's own
+    // reading of their data (`agents::sync`, `agents::stats`); stripped from
+    // every process of levels 1–3 (`levels::env::strip_agents`).
     env.set_path("CLAUDE_CONFIG_DIR", home.join(".claude"));
     let temp_for = |claude| {
         program_temp_dir(
@@ -512,11 +511,9 @@ fn agent_vars(env: &mut KitEnv, cx: &Cx) -> PathBuf {
     env.set("DISABLE_UPDATES", "1");
     env.set_path("CODEX_HOME", home.join(".codex"));
     env.set("AGY_CLI_DISABLE_AUTO_UPDATE", "true");
-    // The folder of its line, for the kit's agy.cmd.
-    env.set_path("CP_ANTIGRAVITY", app("antigravity"));
     // Pi (D-152): its folder in the kit's home, no update check, no
     // telemetry. The address and key of the local models are not here:
-    // only Pi's launch has them (`agents::launch_env`).
+    // only Pi's session in the VM has them (`levels::prepare`, `pi.env`).
     env.set_path("PI_CODING_AGENT_DIR", crate::agents::sync::pi::dir(&home));
     env.set("PI_SKIP_VERSION_CHECK", "1");
     env.set("PI_TELEMETRY", "0");
@@ -594,7 +591,7 @@ fn powershell_vars(env: &mut KitEnv) {
 fn settings_vars(env: &mut KitEnv, cx: &Cx) {
     let Cx { kit, settings, .. } = *cx;
     // Settings (replace data\proxy.cmd, _env.cmd:270-273). The Gemini
-    // key is not here: only the agents get it (`agents::launch_env`).
+    // key is not here: only `sbx`'s proxy hands it over (LEVELS.md §9).
     let net = &settings.network;
     let mut from_settings: Vec<&str> = Vec::new();
     for (name, value) in [

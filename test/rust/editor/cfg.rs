@@ -99,14 +99,14 @@ fn only_atollos_profiles() {
     });
     fs::write(&path, old.to_string()).unwrap();
     assert_eq!(
-        write(&kit, Path::new(r"C:\Windows")).unwrap(),
+        write(&kit, Path::new(r"C:\Windows"), false).unwrap(),
         Outcome::Written
     );
     let s = read(&kit);
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.windows"),
         ["Atollo", "Atollo - Git Bash", "Atollo - cmd"],
-        "no agent installed: no agent profile; nobody else's"
+        "without the VM no agent profile; nobody else's"
     );
     let p = &s["terminal.integrated.profiles.windows"];
     for hidden in [
@@ -132,7 +132,7 @@ fn only_atollos_profiles() {
         .unwrap()
         .ends_with("projects"));
     assert_eq!(
-        write(&kit, Path::new(r"C:\Windows")).unwrap(),
+        write(&kit, Path::new(r"C:\Windows"), false).unwrap(),
         Outcome::Unchanged
     );
     // A profile the user adds again is gone at the next start.
@@ -143,7 +143,7 @@ fn only_atollos_profiles() {
         .insert("Mine".into(), json!({"path": "x.exe"}));
     fs::write(&path, Value::Object(again).to_string()).unwrap();
     assert_eq!(
-        write(&kit, Path::new(r"C:\Windows")).unwrap(),
+        write(&kit, Path::new(r"C:\Windows"), false).unwrap(),
         Outcome::Written
     );
     assert!(read(&kit)["terminal.integrated.profiles.windows"]
@@ -156,7 +156,7 @@ fn only_atollos_profiles() {
 #[test]
 fn terminals_are_level_one() {
     let (_t, kit) = windows_kit("cfg-terminals");
-    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), false);
     let p = &s["terminal.integrated.profiles.windows"];
     assert!(slashed(&p["Atollo"]["path"]).ends_with("win32-x64/pwsh/pwsh.exe"));
     assert_eq!(
@@ -192,12 +192,9 @@ fn terminals_are_level_one() {
 #[test]
 fn tasks_and_agents_go_through_launch() {
     use crate::kit::Target;
-    let (_t, kit) = kit_on(
-        "cfg-launch",
-        Target::WIN32_X64,
-        &["pwsh/pwsh.exe", "claude/claude.exe", "pi/pi.exe"],
-    );
-    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    let (_t, kit) = kit_on("cfg-launch", Target::WIN32_X64, &["pwsh/pwsh.exe"]);
+    guest_agent(&kit, "pi");
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     let p = &s["terminal.integrated.profiles.windows"];
     let tasks = &s["terminal.integrated.automationProfile.windows"];
     assert_eq!(client_of(tasks), Some("launch.ps1"));
@@ -214,15 +211,19 @@ fn tasks_and_agents_go_through_launch() {
             "{name}"
         );
     }
-    assert!(p.get("Codex").is_none(), "not installed");
+    assert_eq!(
+        client_of(&p["Codex"]),
+        Some("launch.ps1"),
+        "brought by the VM"
+    );
+    assert!(
+        p.get("Antigravity").is_none(),
+        "no build for the VM's Linux"
+    );
 
     // Without the kit's PowerShell: Git Bash with launch.sh.
-    let (_t, kit) = kit_on(
-        "cfg-launch-sh",
-        Target::WIN32_X64,
-        &["git/bin/bash.exe", "claude/claude.exe"],
-    );
-    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    let (_t, kit) = kit_on("cfg-launch-sh", Target::WIN32_X64, &["git/bin/bash.exe"]);
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     let tasks = &s["terminal.integrated.automationProfile.windows"];
     assert_eq!(client_of(tasks), Some("launch.sh"));
     assert!(slashed(&tasks["path"]).ends_with("git/bin/bash.exe"));
@@ -231,12 +232,8 @@ fn tasks_and_agents_go_through_launch() {
     assert_eq!(args_of(claude)[1..], ["editorAgentProfile", "claude"]);
 
     // macOS with the kit's PowerShell, Linux without.
-    let (_t, mac) = kit_on(
-        "cfg-launch-mac",
-        Target::DARWIN_ARM64,
-        &["pwsh/pwsh", "codex/bin/codex"],
-    );
-    let s = merge(&Map::new(), &mac, Path::new(r"C:\Windows"));
+    let (_t, mac) = kit_on("cfg-launch-mac", Target::DARWIN_ARM64, &["pwsh/pwsh"]);
+    let s = merge(&Map::new(), &mac, Path::new(r"C:\Windows"), true);
     assert_eq!(
         client_of(&s["terminal.integrated.automationProfile.osx"]),
         Some("launch.ps1")
@@ -245,8 +242,8 @@ fn tasks_and_agents_go_through_launch() {
         client_of(&s["terminal.integrated.profiles.osx"]["Codex"]),
         Some("launch.ps1")
     );
-    let (_t, linux) = kit_on("cfg-launch-linux", Target::LINUX_X64, &["claude/claude"]);
-    let s = merge(&Map::new(), &linux, Path::new(r"C:\Windows"));
+    let (_t, linux) = kit_on("cfg-launch-linux", Target::LINUX_X64, &[]);
+    let s = merge(&Map::new(), &linux, Path::new(r"C:\Windows"), true);
     let tasks = &s["terminal.integrated.automationProfile.linux"];
     assert_eq!(tasks["path"], SH);
     assert_eq!(client_of(tasks), Some("launch.sh"));
@@ -264,7 +261,7 @@ fn without_a_client_no_task_or_agent_on_the_pc() {
     use crate::kit::Target;
     let (_t, kit) = kit_on("cfg-no-client", Target::WIN32_X64, &["claude/claude.exe"]);
     assert_eq!(client(&kit), None);
-    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.windows"),
         ["Atollo - cmd"]
@@ -298,7 +295,7 @@ fn user_default_profile_kept_when_atollos() {
         r#"{"terminal.integrated.defaultProfile.windows":"Atollo - Git Bash"}"#,
     )
     .unwrap();
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
     assert_eq!(
         read(&kit)["terminal.integrated.defaultProfile.windows"],
         "Atollo - Git Bash"
@@ -308,7 +305,7 @@ fn user_default_profile_kept_when_atollos() {
         r#"{"terminal.integrated.defaultProfile.windows":"PowerShell"}"#,
     )
     .unwrap();
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
     assert_eq!(
         read(&kit)["terminal.integrated.defaultProfile.windows"],
         "Atollo",
@@ -327,7 +324,7 @@ fn an_unreadable_file_is_rewritten() {
     let text = "{\n  // mine, \"quoted\"\n  \"a\": \"x // not a comment\", /* b */\n  \"terminal.integrated.profiles.windows\": {\"Mine\": {\"path\": \"x.exe\"},},\n}";
     fs::write(&path, text).unwrap();
     assert_eq!(
-        write(&kit, Path::new(r"C:\Windows")).unwrap(),
+        write(&kit, Path::new(r"C:\Windows"), false).unwrap(),
         Outcome::Written
     );
     let s = read(&kit);
@@ -338,7 +335,7 @@ fn an_unreadable_file_is_rewritten() {
     assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
 
     fs::write(&path, "{ not json").unwrap();
-    let Outcome::Replaced(aside) = write(&kit, Path::new(r"C:\Windows")).unwrap() else {
+    let Outcome::Replaced(aside) = write(&kit, Path::new(r"C:\Windows"), false).unwrap() else {
         panic!("not replaced")
     };
     assert_eq!(fs::read_to_string(&aside).unwrap(), "{ not json");
@@ -354,7 +351,7 @@ fn an_unreadable_file_is_rewritten() {
     );
     fs::write(&path, "[1, 2]").unwrap();
     assert!(matches!(
-        write(&kit, Path::new(r"C:\Windows")).unwrap(),
+        write(&kit, Path::new(r"C:\Windows"), false).unwrap(),
         Outcome::Replaced(_)
     ));
     assert_eq!(strip_jsonc(r#"{"a":"\"//",}"#), r#"{"a":"\"//"}"#);
@@ -363,7 +360,7 @@ fn an_unreadable_file_is_rewritten() {
 #[test]
 fn geist_mono_by_default_user_font_kept() {
     let (_t, kit) = kit_with("cfg-fonts", &[]);
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
     let s = read(&kit);
     assert_eq!(s["editor.fontFamily"], EDITOR_FONT);
     assert_eq!(s["terminal.integrated.fontFamily"], EDITOR_FONT);
@@ -377,7 +374,7 @@ fn geist_mono_by_default_user_font_kept() {
         r#"{"editor.fontFamily":"Fira Code","editor.fontLigatures":true}"#,
     )
     .unwrap();
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
     let s = read(&kit);
     assert_eq!(s["editor.fontFamily"], "Fira Code");
     assert_eq!(s["editor.fontLigatures"], true);
@@ -394,7 +391,7 @@ fn codium_themes_become_atollo_user_choice_kept() {
         r##"{"workbench.colorCustomizations":{"editor.background":"#000000","[Default Dark Modern]":{"focusBorder":"#10B981"},"[Default Light Modern]":{}},"workbench.preferredDarkColorTheme":"Dark Modern","workbench.preferredLightColorTheme":"Solarized Light"}"##,
     )
     .unwrap();
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
     let s = read(&kit);
     let colors = s["workbench.colorCustomizations"].as_object().unwrap();
     assert_eq!(colors.len(), 1, "the user's own kept: {colors:?}");
@@ -405,7 +402,7 @@ fn codium_themes_become_atollo_user_choice_kept() {
     assert_eq!(s["workbench.preferredLightColorTheme"], "Solarized Light");
 
     fs::write(&path, r#"{"workbench.preferredLightColorTheme":"Default Light Modern","workbench.colorCustomizations":{"[Default Dark Modern]":{}}}"#).unwrap();
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
     let s = read(&kit);
     assert_eq!(s["workbench.preferredLightColorTheme"], "Atollo Light");
     assert!(s.get("workbench.colorCustomizations").is_none());
@@ -415,17 +412,13 @@ fn codium_themes_become_atollo_user_choice_kept() {
 fn linux_profiles_bash_of_the_system_no_cmd() {
     use crate::kit::Target;
     // Git of the kit has no shell on Linux: its key is git/bin/git.
-    let (_t, kit) = kit_on(
-        "cfg-linux",
-        Target::LINUX_X64,
-        &["git/bin/git", "claude/claude"],
-    );
-    write(&kit, Path::new(r"C:\Windows")).unwrap();
+    let (_t, kit) = kit_on("cfg-linux", Target::LINUX_X64, &["git/bin/git"]);
+    write(&kit, Path::new(r"C:\Windows"), true).unwrap();
     let s = read(&kit);
     assert!(s.get("terminal.integrated.profiles.windows").is_none());
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.linux"),
-        ["Atollo - Bash", "Claude Code"]
+        ["Atollo - Bash", "Claude Code", "Codex"]
     );
     let p = &s["terminal.integrated.profiles.linux"];
     assert_eq!(p["Atollo - Bash"]["path"], "/bin/bash");
@@ -453,17 +446,19 @@ fn linux_profiles_bash_of_the_system_no_cmd() {
 #[test]
 fn macos_profiles_pwsh_default_zsh_and_agents() {
     use crate::kit::Target;
+    // Antigravity for the PC (an earlier Atollo's) has no profile; its
+    // build for the VM's Linux has.
     let (_t, kit) = kit_on(
         "cfg-mac",
         Target::DARWIN_ARM64,
-        &[
-            "pwsh/pwsh",
-            "antigravity/agy",
-            "codex/bin/codex",
-            "claude/claude",
-        ],
+        &["pwsh/pwsh", "antigravity/agy"],
     );
-    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
+    assert!(s["terminal.integrated.profiles.osx"]
+        .get("Antigravity")
+        .is_none());
+    guest_agent(&kit, "antigravity");
+    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.osx"),
         [
@@ -493,34 +488,73 @@ fn macos_profiles_pwsh_default_zsh_and_agents() {
     assert_eq!(s["terminal.integrated.defaultProfile.osx"], "Atollo");
 }
 
-/// An agent installed only for the VM's Linux (D-173) has its profile too.
-#[test]
-fn an_agent_for_the_vm_has_its_profile() {
-    use crate::kit::Target;
-    let (_t, kit) = kit_on("cfg-guest-agent", Target::WIN32_X64, &["pwsh/pwsh.exe"]);
-    let guest = kit.for_target(Target::LINUX_X64);
+/// `id`'s build for the VM's Linux of `kit`'s system, on disk.
+fn guest_agent(kit: &Kit, id: &str) {
+    let guest = kit.for_target(crate::isolation::vm::guest_target(kit.target()).unwrap());
     for path in crate::setup::Catalog::get()
-        .find("pi")
+        .find(id)
         .unwrap()
         .key_paths(&guest)
     {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(&path, b"").unwrap();
     }
-    let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"));
-    assert_eq!(
-        client_of(&s["terminal.integrated.profiles.windows"]["Pi"]),
-        Some("launch.ps1")
+}
+
+/// LEVELS.md §7 (I6): without the VM no agent profile at all, whatever is
+/// installed; with it, Claude Code and Codex (the `sbx` images bring them)
+/// and the agents whose build for the VM's Linux is in the kit, never one
+/// installed for the PC. A default on an agent's profile falls back to
+/// «Atollo»; the profiles come back at the editor's next start.
+#[test]
+fn no_agent_profile_without_the_vm() {
+    use crate::kit::Target;
+    let (_t, kit) = kit_on(
+        "cfg-guest-agent",
+        Target::WIN32_X64,
+        &["pwsh/pwsh.exe", "pi/pi.exe", "claude/claude.exe"],
     );
+    guest_agent(&kit, "antigravity");
+    let agents = ["Antigravity", "Claude Code", "Codex", "Pi"];
+    let off = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), false);
+    let p = &off["terminal.integrated.profiles.windows"];
+    for name in agents {
+        assert!(p.get(name).is_none(), "{name}");
+    }
+    let on = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
+    let p = &on["terminal.integrated.profiles.windows"];
+    for name in ["Antigravity", "Claude Code", "Codex"] {
+        assert_eq!(client_of(&p[name]), Some("launch.ps1"), "{name}");
+    }
+    assert!(p.get("Pi").is_none(), "Pi for the PC only: no profile");
+
+    let path = settings_path(&kit);
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(
+        &path,
+        r#"{"terminal.integrated.defaultProfile.windows":"Claude Code"}"#,
+    )
+    .unwrap();
+    write(&kit, Path::new(r"C:\Windows"), true).unwrap();
+    assert_eq!(
+        read(&kit)["terminal.integrated.defaultProfile.windows"],
+        "Claude Code"
+    );
+    write(&kit, Path::new(r"C:\Windows"), false).unwrap();
+    let s = read(&kit);
+    assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
+    assert!(s["terminal.integrated.profiles.windows"]
+        .get("Claude Code")
+        .is_none());
 }
 
 #[test]
 fn each_system_keeps_the_others_settings() {
     use crate::kit::Target;
     let (_t, win) = kit_on("cfg-shared", Target::WIN32_X64, &["pwsh/pwsh.exe"]);
-    write(&win, Path::new(r"C:\Windows")).unwrap();
+    write(&win, Path::new(r"C:\Windows"), false).unwrap();
     let linux = win.for_target(Target::LINUX_ARM64);
-    write(&linux, Path::new(r"C:\Windows")).unwrap();
+    write(&linux, Path::new(r"C:\Windows"), false).unwrap();
     let s = read(&linux);
     assert_eq!(s["terminal.integrated.defaultProfile.windows"], "Atollo");
     assert!(s["terminal.integrated.profiles.windows"]["Atollo - cmd"].is_object());
@@ -546,7 +580,7 @@ fn each_system_keeps_the_others_settings() {
         "terminal.integrated.profiles.linux".into(),
         Value::Object(mine),
     );
-    let again = merge(&user, &linux, Path::new(r"C:\Windows"));
+    let again = merge(&user, &linux, Path::new(r"C:\Windows"), false);
     assert_eq!(
         again["terminal.integrated.defaultProfile.linux"],
         "Atollo - Bash"

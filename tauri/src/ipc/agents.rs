@@ -1,21 +1,31 @@
-//! Claude Code, Codex, Antigravity and Pi: state, usage, launch (always in
-//! the VM, D-178, D-179), sign-out.
+//! Claude Code, Codex, Antigravity and Pi: state, usage, launch (only in
+//! the VM, D-178, D-179), sign-out of what the kit's data still holds.
 
 use super::*;
 
-/// Async, so off the window's thread: the page asks every few seconds and
-/// the processes and sign-ins take a moment (a sync command would hold the
-/// window's clicks meanwhile).
+/// The agents with the VM as the status says now (LEVELS.md §7): each
+/// available only while it is on, else with the reason. Async, so off the
+/// window's thread: the page asks every few seconds and the status may
+/// ask `sbx` (a sync command would hold the window's clicks meanwhile).
 #[tauri::command]
 pub async fn agents_status<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
 ) -> CmdResult<Vec<crate::agents::AgentInfo>> {
     ensure_main(&webview)?;
-    let kit = state.kit.clone();
-    tauri::async_runtime::spawn_blocking(move || crate::agents::status(&kit))
-        .await
-        .or_fail("agents")
+    let (kit, host, env, lang) = (
+        state.kit.clone(),
+        state.host.clone(),
+        state.env(),
+        state.lang(),
+    );
+    tauri::async_runtime::spawn_blocking(move || {
+        let vm =
+            crate::levels::agents::vm_state(&crate::isolation::status(&kit, &host, &env, false));
+        crate::agents::status(&kit, &vm, lang)
+    })
+    .await
+    .or_fail("agents")
 }
 
 /// Plan limits and usage of the installed agents (`agents/stats/`). `force`:
@@ -132,57 +142,17 @@ pub async fn kit_mcp_set<R: Runtime>(
     .or_fail_chain("kit mcp")
 }
 
-/// "Collega con un token" (Claude Code on macOS, D-115): `claude
-/// setup-token` in a session of the app's terminal, its token saved in the
-/// kit. Async: the session runs until the user finishes in the browser.
-/// The page polls `agents_status`, so it sees the saved token by itself.
+/// «Esci»: the sign-in of the PC an earlier Atollo saved in the kit's
+/// data, removed (files only: no agent's program runs on the PC, LEVELS.md
+/// E17).
 #[tauri::command]
-pub async fn agent_token_link<R: Runtime>(
-    app: AppHandle<R>,
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<()> {
-    ensure_main(&webview)?;
-    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || {
-        // Nothing to rebuild once saved: the token is read when Claude
-        // Code is started (`agents::launch_env`), not kept in the kit's
-        // environment (SEC-V6-02).
-        crate::agents::claude_token::link(&app, &kit, &env, lang, || {})
-            .or_fail_chain("claude setup-token")
-    })
-    .await
-    .or_fail("claude setup-token")?
-}
-
-/// "Salva il token": a token pasted by the user. Neither the token nor an
-/// error about it is logged or echoed (save's errors never contain it).
-#[tauri::command]
-pub fn agent_token_save<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-    token: String,
-) -> CmdResult<()> {
-    ensure_main(&webview)?;
-    crate::agents::claude_token::save(&state.kit, &token).or_fail_chain("claude token")?;
-    Ok(())
-}
-
-/// "Esci". Async, so off the window's thread: `codex logout` and the save
-/// of Antigravity's login take a moment (BUG-V6-29).
-#[tauri::command]
-pub async fn agent_sign_out<R: Runtime>(
+pub fn agent_sign_out<R: Runtime>(
     webview: Webview<R>,
     state: State<'_, AppState>,
     agent: String,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let (kit, env, lang) = (state.kit.clone(), state.env(), state.lang());
-    tauri::async_runtime::spawn_blocking(move || {
-        crate::agents::sign_out(&kit, &env, &agent, lang).or_fail_chain("sign out")
-    })
-    .await
-    .or_fail("sign out")?
+    crate::agents::sign_out(&state.kit, &agent).or_fail_chain("sign out")
 }
 
 #[cfg(test)]

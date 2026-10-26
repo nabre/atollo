@@ -68,13 +68,6 @@ pub fn user_id() -> Option<u32> {
     imp::user_id()
 }
 
-/// The id of this computer, fixed for its life: `kern.uuid` (the
-/// hardware's IOPlatformUUID) on macOS, systemd's machine id (or D-Bus's
-/// copy) on Linux; `None` on Windows and where none can be read.
-pub fn machine_id() -> Option<String> {
-    imp::machine_id()
-}
-
 /// This computer's host name (`gethostname`); empty when it cannot be read
 /// or on Windows.
 pub fn host_name() -> String {

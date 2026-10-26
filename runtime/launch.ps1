@@ -9,6 +9,9 @@
 #                                                     -Command, or -c, and the line)
 #        -Origin editorAgentProfile -Agent <id>      (an agent's profile)
 #        -Origin forwarded -Agent <id> -- <args...>  (claude, codex, pi, agy typed)
+#        -Origin editorExtension -Extension <ext-id> -Agent <id> -- <args...>
+#                                                    (an editor extension's wrapper,
+#                                                     LEVELS.md 6.9; not wired, Q2)
 #
 # It decides nothing: it writes a request in data\app\levels\requests\ with
 # the origin and the current folder, waits for Atollo's reply, and runs what
@@ -28,12 +31,13 @@ $words = @($args)
 $Origin = ''
 $Agent = ''
 $From = ''
+$Extension = ''
 $Command = $null
 $rest = @()
 $i = 0
 while ($i -lt $words.Count) {
     $word = [string]$words[$i]
-    if ($word -eq '--' -or ($Origin -eq 'forwarded' -and $Agent)) {
+    if ($word -eq '--' -or (($Origin -eq 'forwarded' -or $Origin -eq 'editorExtension') -and $Agent)) {
         $at = if ($word -eq '--') { $i + 1 } else { $i }
         if ($at -lt $words.Count) { $rest = @($words[$at..($words.Count - 1)]) }
         break
@@ -43,6 +47,7 @@ while ($i -lt $words.Count) {
         '-Origin' { $Origin = $value }
         '-Agent' { $Agent = $value }
         '-From' { $From = $value }
+        '-Extension' { $Extension = $value }
         { $_ -eq '-Command' -or $_ -eq '-c' } { $Command = $value }
         default {
             Say "launch.ps1: what is $word?"
@@ -71,8 +76,11 @@ switch ($Origin) {
         if ($level -ne 'manual' -and $level -ne 'project') { $level = 'manual' }
         $what = [ordered]@{ kind = 'forwarded'; agent = $Agent; from = $level }
     }
+    'editorExtension' {
+        $what = [ordered]@{ kind = 'editorExtension'; extension = $Extension; agent = $Agent }
+    }
     default {
-        Say 'launch.ps1: -Origin editorTask|editorAgentProfile|forwarded'
+        Say 'launch.ps1: -Origin editorTask|editorAgentProfile|forwarded|editorExtension'
         exit 2
     }
 }

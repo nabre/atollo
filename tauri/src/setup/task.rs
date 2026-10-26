@@ -380,11 +380,14 @@ impl SetupTask {
                 kit: &guest_kit,
                 ..ctx
             };
+            // Asked only with the VM on (`ipc::setup::vm_tools_target`):
+            // Pi's and Antigravity's builds for its Linux too.
             let tools = Options {
                 target: Some(guest),
                 update_all: opts.update_all,
                 force: opts.force,
                 scope: runner::Scope::Tools,
+                vm: Some(crate::levels::VmState::On),
                 ..Options::default()
             };
             runner::run(&guest_ctx, &tools, &mut sink)

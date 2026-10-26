@@ -121,6 +121,22 @@ describe("command palette", () => {
       expect(onError).toHaveBeenCalledWith(expect.stringContaining("non è installato"));
     });
   });
+
+  it("shows the agents disabled with the reason without the VM (LEVELS.md §7)", async () => {
+    answers();
+    const reason = "Gli agenti girano solo nella VM, che non è attiva.";
+    const { onClose } = palette({
+      agents: SAMPLE_AGENTS.map((a) => ({ ...a, available: false, unavailableReason: reason })),
+    });
+    const item = (await screen.findByText("Claude Code in sito-vetrina")).closest("li");
+    expect(item?.getAttribute("aria-disabled")).toBe("true");
+    expect(item?.title).toBe(reason);
+    if (item) fireEvent.click(item);
+    type("claude vetrina");
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Comandi" }), { key: "Enter" });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalledWith("agent_launch", expect.anything());
+  });
 });
 
 describe("filterItems", () => {

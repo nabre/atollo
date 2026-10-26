@@ -5,10 +5,10 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-/// D-178, D-179: the agents' launchers live in `agents`, out of `bin`;
-/// what an older Atollo left (the launchers of `bin`, `vm.ps1`, the
-/// stand-ins of `no-agents`, Antigravity's launchers with their keyring
-/// round trip, now that `agy` runs in the VM) goes; `forward` has a forwarder for each
+/// D-178, D-179: no agent's launcher any more; what an older Atollo left
+/// (the launchers of `bin`, `vm.ps1`, the stand-ins of `no-agents`, the
+/// folder `agents` with Antigravity's and Claude Code's launchers, now that
+/// no agent runs on the PC) goes; `forward` has a forwarder for each
 /// agent's command, `.cmd`, `.ps1` and sh, that asks the app through the
 /// request clients (LEVELS.md §6.8).
 #[test]
@@ -17,21 +17,24 @@ fn the_agents_launchers_and_their_forwarders() {
     let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let dir = kit.kit_files();
     fs::create_dir_all(dir.join("bin")).unwrap();
-    fs::create_dir_all(dir.join("no-agents")).unwrap();
-    fs::create_dir_all(dir.join("agents")).unwrap();
+    let folders = ["no-agents", AGENTS_DIR];
     for old in OBSOLETE {
-        if old != "no-agents" {
+        if folders.contains(&old) {
+            fs::create_dir_all(dir.join(old)).unwrap();
+            fs::write(dir.join(old).join("claude"), "old").unwrap();
+        } else {
             fs::write(join_rel(&dir, old), "old").unwrap();
         }
     }
-    fs::write(dir.join("no-agents").join("claude"), "old").unwrap();
+    fs::write(dir.join(AGENTS_DIR).join("agy.cmd"), "old").unwrap();
     write_all(&kit).unwrap();
     for old in OBSOLETE {
         assert!(!join_rel(&dir, old).exists(), "{old}");
     }
-    for name in ["agents/claude", "launch.ps1", "launch.sh"] {
+    for name in ["launch.ps1", "launch.sh"] {
         assert!(join_rel(&dir, name).is_file(), "{name}");
     }
+    assert!(FILES.iter().all(|(n, _)| !n.starts_with("agents/")));
     let mut commands = 0;
     for agent in crate::levels::Agent::ALL {
         for cmd in agent.commands() {
@@ -90,7 +93,7 @@ fn launch_ps1_writes_waits_and_runs() {
     assert!(!script.contains("param("), "no binding of the user's words");
     for part in [
         "$words = @($args)",
-        "if ($word -eq '--' -or ($Origin -eq 'forwarded' -and $Agent)) {",
+        "if ($word -eq '--' -or (($Origin -eq 'forwarded' -or $Origin -eq 'editorExtension') -and $Agent)) {",
         "{ $_ -eq '-Command' -or $_ -eq '-c' } { $Command = $value }",
         "[IO.Path]::Combine($PSScriptRoot, '..', 'app', 'levels', 'requests')",
         "$id = [guid]::NewGuid().ToString('N')",
@@ -566,7 +569,7 @@ fn line_endings_by_kind() {
     assert_eq!(with_line_endings("bashrc", text), "a\nb\nc\n");
     assert_eq!(with_line_endings("bin/gradle", text), "a\nb\nc\n");
     assert_eq!(with_line_endings("profile.ps1", text), text);
-    assert!(is_shell("bashrc") && is_shell("agents/claude") && is_shell("forward/claude"));
+    assert!(is_shell("bashrc") && is_shell("bin/atollo") && is_shell("forward/claude"));
     assert!(is_shell("launch.sh") && is_unix_bin("launch.sh"));
     assert!(!is_shell("launch.ps1") && !is_shell("forward/claude.ps1"));
     assert_eq!(
@@ -605,13 +608,7 @@ fn shell_files_lf_and_executable() {
             );
         }
     }
-    for name in [
-        "agents/claude",
-        "bin/gradle",
-        "bin/atollo",
-        "launch.sh",
-        "forward/pi",
-    ] {
+    for name in ["bin/gradle", "bin/atollo", "launch.sh", "forward/pi"] {
         let text = fs::read_to_string(join_rel(&dir, name)).unwrap();
         assert!(text.starts_with("#!/bin/sh\n"), "{name}");
     }
@@ -626,7 +623,7 @@ fn shell_files_lf_and_executable() {
             assert_eq!(mode & 0o777, 0o755, "{name}");
         }
         // A wrong mode left by a copy is put back at the next start.
-        let claude = dir.join("agents/claude");
+        let claude = dir.join("forward/claude");
         fs::set_permissions(&claude, fs::Permissions::from_mode(0o644)).unwrap();
         write_all(&kit).unwrap();
         assert_eq!(
@@ -843,6 +840,107 @@ fn bashrc_swaps_project_versions() {
         .arg(kit.kit_files().join("bashrc"))
         .args(["-i", "-c", "echo \"J=$JAVA_HOME\""]));
     assert!(out.contains(&format!("J={from}0")), "{out}");
+}
+
+/// LEVELS.md §6.9, Q2: the wrapper for `claudeCode.claudeProcessWrapper`
+/// (ready, not wired: Atollo never sets the setting) asks the app with
+/// origin `editorExtension` and every word the extension gave, the bundled
+/// binary first; the app drops that one (`requests::agent_args`).
+#[test]
+fn the_claude_extension_wrapper_asks_for_the_vms_claude() {
+    let bat = claude_extension_cmd();
+    assert!(
+        bat.contains(
+            "-File \"%~dp0..\\launch.ps1\" -Origin editorExtension -Extension anthropic.claude-code -Agent claude -- %*\r\n"
+        ),
+        "{bat}"
+    );
+    assert!(!bat.contains('(') && bat.ends_with("exit /b 1\r\n"));
+    assert!(is_unix_bin(&format!("{FORWARD_DIR}/{CLAUDE_EXTENSION}")));
+    let Some(bash) = host_bash() else {
+        eprintln!("no bash on this host: skipped");
+        return;
+    };
+    let (_tmp, kit) = kit_with_shop("kitfiles-extension");
+    let shop = kit.projects().join("shop");
+    let app = responder(&kit, |_| sh_reply("echo \"ran $*\"", &[]));
+    let wrapper = kit.kit_files().join(FORWARD_DIR).join(CLAUDE_EXTENSION);
+    let words = [
+        "/home/me/.ext/anthropic.claude-code/resources/native-binary/claude",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+    ];
+    let out = sh_in(&bash, &wrapper, &shop, &words)
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    let asked = app.join().unwrap().expect("a request");
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(
+        asked.origin,
+        crate::levels::Origin::EditorExtension {
+            extension: "anthropic.claude-code".into(),
+            agent: crate::levels::Agent::Claude,
+        }
+    );
+    assert_eq!(asked.args, words);
+    assert_eq!(requests::agent_args(&asked.origin, &asked.args), words[1..]);
+}
+
+/// The same through `launch.ps1` (`claude-extension.cmd`'s client).
+#[test]
+fn launch_ps1_asks_for_an_extensions_agent() {
+    let Some(pwsh) = host_pwsh() else {
+        eprintln!("no pwsh on this host: skipped");
+        return;
+    };
+    let (_tmp, kit) = kit_with_shop("kitfiles-extension-ps1");
+    let shop = kit.projects().join("shop");
+    let app = responder(&kit, |_| Reply::error("Gli agenti partono solo nella VM."));
+    let out = Command::new(&pwsh)
+        .args([
+            "-NoLogo",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+        ])
+        .arg(kit.kit_files().join("launch.ps1"))
+        .args([
+            "-Origin",
+            "editorExtension",
+            "-Extension",
+            "anthropic.claude-code",
+            "-Agent",
+            "claude",
+            "--",
+            r"C:\ext\claude.exe",
+            "--output-format",
+            "stream-json",
+        ])
+        .current_dir(&shop)
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    let asked = app.join().unwrap().expect("a request");
+    assert_eq!(out.status.code(), Some(1), "the refusal");
+    assert_eq!(
+        asked.origin,
+        crate::levels::Origin::EditorExtension {
+            extension: "anthropic.claude-code".into(),
+            agent: crate::levels::Agent::Claude,
+        }
+    );
+    assert_eq!(
+        asked.args,
+        [r"C:\ext\claude.exe", "--output-format", "stream-json"]
+    );
 }
 
 /// LEVELS.md §8.4: the read-only `atollo` of a sandbox has no network or

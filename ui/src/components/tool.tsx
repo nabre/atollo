@@ -26,6 +26,7 @@ import {
   type NavItem,
 } from "../workbench";
 import { groups, sizeText, xcodeMissing } from "./model";
+import { leftoverText, providedText, toolStateLabel } from "./status";
 import { ComposerRow, Dependencies } from "./rows";
 import { RustToolchain } from "./rust";
 import type { ComponentsState } from "./state";
@@ -94,6 +95,18 @@ export function ToolPage({
           group ? <span key="group">{group.title}</span> : null,
           item ? (
             <ItemStatus key="state" state={item} />
+          ) : c.leftover ? (
+            <span key="state" className="text-vsc-settings-modified">
+              {leftoverText()}
+            </span>
+          ) : c.agent?.kind === "provided" ? (
+            <span key="state" className="text-vsc-link">
+              {toolStateLabel("provided")}: {providedText(c.name)}
+            </span>
+          ) : c.agent?.kind === "needsVm" ? (
+            <span key="state" className="text-vsc-desc">
+              {toolStateLabel("needsVm")}: {c.agent.reason}
+            </span>
           ) : c.installed ? (
             <span key="state" className="flex items-center gap-1 text-vsc-success">
               <Codicon name="check" size={14} />
@@ -137,6 +150,10 @@ export function ToolPage({
             {c.locked ? (
               <Button disabled title={t("Sempre installato")}>
                 {t("Obbligatorio")}
+              </Button>
+            ) : c.agent !== null ? (
+              <Button disabled title={c.agent.kind === "needsVm" ? c.agent.reason : providedText(c.name)}>
+                {c.agent.kind === "needsVm" ? toolStateLabel("needsVm") : toolStateLabel("provided")}
               </Button>
             ) : on ? (
               <Button

@@ -211,21 +211,6 @@ fn run() -> i32 {
             }
             return 0;
         }
-        Cli::Keyring(action) => {
-            let result = if action == "restore" {
-                agents::keyring::restore(&kit)
-            } else {
-                agents::keyring::save_after_run(&kit)
-            };
-            return match result {
-                Ok(()) => 0,
-                Err(e) => {
-                    log::warn(&format!("keyring {action}: {e:#}"));
-                    let _ = writeln!(cli::output(), "  [!] Antigravity: {e:#}");
-                    1
-                }
-            };
-        }
         Cli::Secret(secret, nonce) => {
             // Only for the kit's Docker Sandboxes, which runs it on the PC
             // when its proxy needs the value: a command Atollo registered

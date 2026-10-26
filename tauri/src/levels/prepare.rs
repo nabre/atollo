@@ -374,6 +374,7 @@ pub fn guest_plans(
         .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
         .filter(|(c, _)| {
             c.is_available_on(target)
+                && super::installable(c, target, &super::VmState::On)
                 && crate::install::installer(&c.id)
                     .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
         })
@@ -396,6 +397,7 @@ pub fn guest_plans(
                 .iter()
                 .filter_map(|(c, line)| Some((c.id.clone(), (*line)?.clone())))
                 .collect(),
+            vm: Some(super::VmState::On),
             ..Options::default()
         });
     }

@@ -20,7 +20,14 @@
 //!   that downloads at run time), checked with GitHub's SHA-256;
 //! - installed in the background after the editor starts and when a project
 //!   is opened or changes its extensions (D-36), with the server's own
-//!   command line, into `data\vscodium-server\extensions`.
+//!   command line, into `data\vscodium-server\extensions`;
+//! - an extension that runs an agent (`"level": "agent"`, LEVELS.md §10) is
+//!   level 3: never installed, never kept in a project's choice, turned off
+//!   in every window, and uninstalled at every start of the editor server
+//!   ([`remove_agents`]) before it starts: the server has no
+//!   `--disable-extension` ("Ignoring option 'disable-extension': not
+//!   supported for server", VSCodium 1.135 server, 26/10/2026). The editor
+//!   then says why ([`agents_notice`]).
 
 use std::collections::BTreeSet;
 use std::fs;
@@ -34,6 +41,7 @@ use serde::{Deserialize, Serialize};
 use crate::common::fsx::{read_text, write_atomic};
 use crate::env::KitEnv;
 use crate::kit::Kit;
+use crate::levels::Level;
 use crate::net::verify::Expect;
 use crate::net::{github_digest, Net};
 use crate::platform::jobs;
@@ -58,12 +66,20 @@ pub struct Extension {
     pub programs: Vec<String>,
     #[serde(default)]
     pub optional: bool,
+    /// `Some(Agent)`: it runs an agent (LEVELS.md §10), level 3.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level: Option<Level>,
 }
 
 impl Extension {
-    /// For every project: no language nor tool.
+    /// It runs an agent: level 3, never in Atollo's editor on the PC.
+    pub fn runs_an_agent(&self) -> bool {
+        self.level == Some(Level::Agent)
+    }
+
+    /// For every project: no language nor tool, and no agent.
     pub fn general(&self) -> bool {
-        self.languages.is_empty() && self.tools.is_empty()
+        !self.runs_an_agent() && self.languages.is_empty() && self.tools.is_empty()
     }
 
     /// A default of a project with these languages and tools.
@@ -85,6 +101,72 @@ pub fn matrix() -> &'static [Extension] {
         // A broken matrix fails the tests; at run time it means no extensions.
         serde_json::from_str::<File>(MATRIX).map_or_else(|_| Vec::new(), |f| f.extensions)
     })
+}
+
+/// `id` (lower case) is an extension of the matrix that runs an agent.
+pub fn is_agent(id: &str) -> bool {
+    matrix().iter().any(|e| e.id == id && e.runs_an_agent())
+}
+
+/// Of `installed`, the extensions that run an agent, in the matrix's order.
+pub fn agents_among(installed: &BTreeSet<String>) -> Vec<String> {
+    matrix()
+        .iter()
+        .filter(|e| e.runs_an_agent() && installed.contains(&e.id))
+        .map(|e| e.id.clone())
+        .collect()
+}
+
+/// The server's command line that uninstalls `ids` (LEVELS.md §10: its
+/// `--disable-extension` is ignored by the server, Q10).
+pub fn uninstall_args(ids: &[String]) -> Vec<String> {
+    ids.iter()
+        .flat_map(|id| ["--uninstall-extension".to_owned(), id.clone()])
+        .collect()
+}
+
+/// Uninstalls the extensions that run an agent found in the server's
+/// extensions folder (LEVELS.md §10), before the server starts: the ids
+/// gone afterwards. Nothing runs when none is there.
+pub fn remove_agents(kit: &Kit, env: &KitEnv) -> Result<Vec<String>> {
+    let found = agents_among(&installed(kit));
+    if found.is_empty() {
+        return Ok(found);
+    }
+    crate::common::log::info(&format!(
+        "editor extensions: uninstalling the agents' {} (LEVELS.md §10)",
+        found.join(", ")
+    ));
+    let mut cmd = server_cli(kit, env);
+    cmd.args(uninstall_args(&found))
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    let out = jobs::spawn(&mut cmd)
+        .context("server --uninstall-extension")?
+        .wait_with_output()
+        .context("server --uninstall-extension")?;
+    let left = installed(kit);
+    let (gone, kept): (Vec<String>, Vec<String>) =
+        found.into_iter().partition(|id| !left.contains(id));
+    if !kept.is_empty() {
+        crate::common::log::warn(&format!(
+            "editor extensions: not uninstalled: {} ({})",
+            kept.join(", "),
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    Ok(gone)
+}
+
+/// What the editor says of the extensions that run an agent it removed
+/// (`names`, the matrix's), translated (LEVELS.md §10).
+pub fn agents_notice(lang: &str, names: &[String]) -> String {
+    crate::common::i18n::t(
+        lang,
+        "Atollo ha tolto dall'editor {0}: esegue un agente, e in Atollo gli agenti girano solo nella VM. Avvialo dalla pagina del progetto, dal suo profilo nel terminale dell'editor o scrivendo il suo comando (per esempio claude) in un terminale nella cartella del progetto.",
+        &[&names.join(", ")],
+    )
 }
 
 /// `publisher.name`: letters, digits, `-` and `_` on both sides of the dot.
@@ -161,13 +243,27 @@ fn mark_offered(kit: &Kit, ids: &[String]) -> Result<()> {
     Ok(())
 }
 
-/// Ids of the extensions already in the server's extensions folder.
+/// The folders the server marked uninstalled in `.obsolete` (a JSON object
+/// `{ "<folder>": true }`), removed by its next start: lower case.
+fn obsolete(dir: &Path) -> BTreeSet<String> {
+    read_text(&dir.join(".obsolete"))
+        .ok()
+        .and_then(|t| serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&t).ok())
+        .map(|m| m.keys().map(|k| k.to_ascii_lowercase()).collect())
+        .unwrap_or_default()
+}
+
+/// Ids of the extensions already in the server's extensions folder (not
+/// those it marked uninstalled).
 pub fn installed(kit: &Kit) -> BTreeSet<String> {
-    fs::read_dir(extensions_dir(kit))
+    let dir = extensions_dir(kit);
+    let gone = obsolete(&dir);
+    fs::read_dir(&dir)
         .into_iter()
         .flatten()
         .flatten()
         .filter(|e| e.file_type().is_ok_and(|t| t.is_dir()))
+        .filter(|e| !gone.contains(&e.file_name().to_string_lossy().to_ascii_lowercase()))
         .filter_map(|e| {
             let name = e.file_name().to_string_lossy().to_ascii_lowercase();
             // `<publisher>.<name>-<version>[-<platform>]`
@@ -216,7 +312,7 @@ pub fn of_project(
         })
         .collect();
     for id in &choice.added {
-        if out.iter().any(|e| &e.id == id) {
+        if out.iter().any(|e| &e.id == id) || is_agent(id) {
             continue;
         }
         let name = matrix()
@@ -236,15 +332,17 @@ pub fn of_project(
 
 /// The extensions a project's editor window turns off, in its workspace
 /// only: the kit's for languages and tools, the optional ones and those
-/// added by hand to other projects, that this project does not want. The
-/// general ones, the user's list and any other extension stay on.
+/// added by hand to other projects, that this project does not want, and
+/// always those that run an agent (LEVELS.md §10). The general ones, the
+/// user's list and any other extension stay on.
 pub fn hidden(
     project: &[ProjectExtension],
     others_added: &BTreeSet<String>,
     user: &[Entry],
 ) -> Vec<String> {
     let on = |id: &str| project.iter().any(|e| e.on && e.id == id);
-    let kept = |id: &str| on(id) || user.iter().any(|e| e.id == id);
+    // One that runs an agent is off in every window, whatever is asked.
+    let kept = |id: &str| !is_agent(id) && (on(id) || user.iter().any(|e| e.id == id));
     let mut ids: BTreeSet<String> = matrix()
         .iter()
         .filter(|e| !e.general() || e.optional)
@@ -290,7 +388,7 @@ pub fn hidden_of(kit: &Kit, dir: &Path) -> Vec<String> {
 }
 
 /// The project's choice cleaned up: valid lower case ids, sorted, an added
-/// one never removed.
+/// one never removed, one that runs an agent never added (LEVELS.md §10).
 pub fn clean_choice(added: &[String], removed: &[String]) -> Extensions {
     let ids = |list: &[String]| -> BTreeSet<String> {
         list.iter()
@@ -298,7 +396,8 @@ pub fn clean_choice(added: &[String], removed: &[String]) -> Extensions {
             .filter(|i| valid_id(i))
             .collect()
     };
-    let added = ids(added);
+    let mut added = ids(added);
+    added.retain(|id| !is_agent(id));
     let removed = ids(removed).difference(&added).cloned().collect();
     Extensions {
         added: added.into_iter().collect(),
@@ -351,7 +450,9 @@ fn wanted(kit: &Kit) -> Wanted {
 }
 
 /// What to install now: wanted, not installed, not in `skip` (failed in
-/// this run of the editor); offered ones only the first time.
+/// this run of the editor); offered ones only the first time; never one
+/// that runs an agent, from the user's list or a project's choice either
+/// (LEVELS.md §10).
 pub fn pending(kit: &Kit, skip: &BTreeSet<String>) -> Vec<String> {
     let w = wanted(kit);
     let offered = read_set(&offered_path(kit));
@@ -363,7 +464,7 @@ pub fn pending(kit: &Kit, skip: &BTreeSet<String>) -> Vec<String> {
         .collect();
     ids.extend(w.force);
     ids.into_iter()
-        .filter(|id| !have.contains(id) && !skip.contains(id))
+        .filter(|id| !have.contains(id) && !skip.contains(id) && !is_agent(id))
         .collect()
 }
 
@@ -388,7 +489,8 @@ pub struct MatrixRow {
 
 /// The matrix for the kit's target (D-121): without the tools that target
 /// cannot have, and without the extensions only for those tools or only
-/// for programs it cannot have (`programs`).
+/// for programs it cannot have (`programs`), nor those that run an agent
+/// (never installed, LEVELS.md §10).
 pub fn matrix_info(kit: &Kit) -> MatrixInfo {
     let target = kit.target();
     let here = |id: &String| {
@@ -398,6 +500,7 @@ pub fn matrix_info(kit: &Kit) -> MatrixInfo {
     };
     let rows: Vec<&Extension> = matrix()
         .iter()
+        .filter(|e| !e.runs_an_agent())
         .filter(|e| e.tools.is_empty() || e.tools.iter().any(here))
         .filter(|e| e.programs.is_empty() || e.programs.iter().any(here))
         .collect();

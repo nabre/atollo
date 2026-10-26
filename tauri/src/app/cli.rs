@@ -1,5 +1,5 @@
 //! Command line of the same exe (DECISIONS.md D-21): `env`, `components`,
-//! `versions`, `check`, `prepare`, `sync`, `keyring`, `mcp`, `serve`, `models`,
+//! `versions`, `check`, `prepare`, `sync`, `mcp`, `serve`, `models`,
 //! `llm`, `diagnostics`, `version`, `help`. The exe is a GUI program, so output goes
 //! to the redirected handle when there is one, otherwise to the parent
 //! console. Step lines use the markers `── N. Name ──`, `√`, `x`, `!` and
@@ -45,8 +45,6 @@ pub enum Cli {
         project: Option<std::path::PathBuf>,
         verbose: bool,
     },
-    /// Antigravity's login: `restore` before agy, `save` after.
-    Keyring(String),
     /// The kit's GitHub MCP server on stdio (`mcp github`, started by the
     /// agents with the app's absolute path): the token stays here.
     McpGithub,
@@ -254,14 +252,6 @@ pub fn parse(args: &[OsString]) -> Cli {
             }
             Cli::Sync { project, verbose }
         }
-        "keyring" => match args
-            .get(1)
-            .map(|a| a.to_string_lossy().into_owned())
-            .as_deref()
-        {
-            Some(a @ ("restore" | "save")) => Cli::Keyring(a.to_owned()),
-            other => Cli::Unknown(format!("keyring {}", other.unwrap_or_default())),
-        },
         "secret" => match args
             .get(1)
             .map(|a| a.to_string_lossy().into_owned())
@@ -770,7 +760,7 @@ pub(crate) fn run_plan(
 /// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
 /// kit's Antigravity command ([`help_text`]); the target ids
 /// are those of `Target::ALL`.
-pub(crate) const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  keyring restore|save    accesso di Antigravity (lo usa {1} del kit)\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  vm <progetto>           la VM del progetto: sandbox, cartelle, porte\n      --agent <id>        la sandbox di un agente (claude, codex)\n      --check             verifica gli strumenti nella VM\n      --restart           riavvia la sandbox (con Atollo chiuso)\n      --recreate [--yes]  la rifà: chiede conferma senza --yes\n      --refresh           aggiorna gli strumenti per il Linux della VM\n      --json              il resoconto in JSON\n  diagnostics            crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+pub(crate) const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  vm <progetto>           la VM del progetto: sandbox, cartelle, porte\n      --agent <id>        la sandbox di un agente (claude, codex)\n      --check             verifica gli strumenti nella VM\n      --restart           riavvia la sandbox (con Atollo chiuso)\n      --recreate [--yes]  la rifà: chiede conferma senza --yes\n      --refresh           aggiorna gli strumenti per il Linux della VM\n      --json              il resoconto in JSON\n  diagnostics            crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
 /// The program's name in the help: the file it was started from
 /// (`Atollo-0.2.0-win32-x64.exe`, `Atollo.AppImage`, `Atollo`, ...); on
@@ -791,11 +781,9 @@ pub(crate) fn program_name(os: kit::Os, exe: Option<&Path>) -> String {
     name.unwrap_or_else(|| "Atollo".to_owned())
 }
 
-/// The help for `os`; `{1}` is the kit's Antigravity command (`agy.cmd`
-/// on Windows, as always; `agy` elsewhere).
+/// The help for `os`, with the app's program name.
 pub(crate) fn help_text(lang: &str, os: kit::Os, exe: Option<&Path>) -> String {
-    let agy = if os.is_windows() { "agy.cmd" } else { "agy" };
-    i18n::t(lang, HELP, &[&program_name(os, exe), agy])
+    i18n::t(lang, HELP, &[&program_name(os, exe)])
 }
 
 /// `models`: the local models, a download, a removal (D-151).

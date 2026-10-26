@@ -17,8 +17,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::isolation::vm;
 
+pub mod agents;
 pub mod env;
 pub mod facts;
+
+pub use agents::{agents_enabled, installable};
 pub mod labels;
 pub mod place;
 pub mod prepare;

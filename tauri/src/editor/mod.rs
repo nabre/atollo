@@ -98,6 +98,9 @@ pub struct Editor {
     extensions_job: ext::JobSlot,
     /// Told what was installed, to offer a restart in the editor windows.
     on_installed: Mutex<Option<ext::OnInstalled>>,
+    /// The names of the extensions that run an agent the last start
+    /// uninstalled (LEVELS.md §10), until an editor window says why.
+    agents_removed: Mutex<Vec<String>>,
 }
 
 /// Where the server program is.
@@ -124,6 +127,31 @@ impl Editor {
             extensions: std::sync::Arc::default(),
             extensions_job: ext::JobSlot::default(),
             on_installed: Mutex::new(None),
+            agents_removed: Mutex::new(Vec::new()),
+        }
+    }
+
+    /// The names of the extensions that run an agent a start uninstalled,
+    /// not yet told: each told once, by the next editor window.
+    pub fn take_agents_removed(&self) -> Vec<String> {
+        std::mem::take(
+            &mut *self
+                .agents_removed
+                .lock()
+                .unwrap_or_else(|e| e.into_inner()),
+        )
+    }
+
+    /// Gives back names [`Self::take_agents_removed`] took and no window told.
+    pub fn keep_agents_removed(&self, names: Vec<String>) {
+        let mut kept = self
+            .agents_removed
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        for name in names {
+            if !kept.contains(&name) {
+                kept.push(name);
+            }
         }
     }
 
@@ -269,7 +297,10 @@ impl Editor {
         }
         let env = self.env();
         let system_root = PathBuf::from(env.get("SystemRoot").unwrap_or(r"C:\Windows"));
-        match cfg::write(&self.kit, &system_root)? {
+        // The agents' profiles only with the VM as last seen (LEVELS.md §7):
+        // a VM that goes on or off later changes them at the next start.
+        let agents = crate::levels::agents_enabled(&crate::levels::agents::known_vm());
+        match cfg::write(&self.kit, &system_root, agents)? {
             cfg::Outcome::Replaced(aside) => crate::common::log::warn(&format!(
                 "editor settings were no JSON: moved to {}, written anew",
                 aside.display()
@@ -281,6 +312,15 @@ impl Editor {
         }
         if let Err(e) = theme::ensure(&self.kit, &env) {
             crate::common::log::warn(&format!("editor theme: {e:#}"));
+        }
+        // The extensions that run an agent, before the server loads them
+        // (LEVELS.md §10, §13 item 5): uninstalled, the editor says why.
+        match ext::remove_agents(&self.kit, &env) {
+            Ok(gone) if !gone.is_empty() => {
+                self.keep_agents_removed(gone.iter().map(|id| ext::name_of(id)).collect())
+            }
+            Ok(_) => {}
+            Err(e) => crate::common::log::warn(&format!("editor agents' extensions: {e:#}")),
         }
         if self.stopped(stops) {
             bail!("the editor was stopped while it started");

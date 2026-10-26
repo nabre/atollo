@@ -1,11 +1,84 @@
 use super::*;
-use crate::test_support::prepared_kit;
+use crate::isolation::Blocker;
+use crate::kit::Target;
+use crate::test_support::TempDir;
 
+/// A kit of a Windows PC, whose VM runs `linux-x64`.
+fn win_kit(name: &str) -> (TempDir, Kit) {
+    let tmp = TempDir::new(name);
+    let kit = Kit::at_target(tmp.0.clone(), Target::WIN32_X64);
+    kit.prepare().unwrap();
+    (tmp, kit)
+}
+
+fn off() -> VmState {
+    VmState::Off {
+        blockers: vec![Blocker::HypervisorOff],
+    }
+}
+
+fn info<'a>(all: &'a [AgentInfo], id: &str) -> &'a AgentInfo {
+    all.iter().find(|a| a.id == id).unwrap()
+}
+
+/// `id` installed in `kit` at `version` (its key files, its version).
+fn installed(kit: &Kit, id: &str, version: &str) {
+    let c = crate::setup::Catalog::get().find(id).unwrap();
+    c.save_version(kit, version).unwrap();
+    for p in c.key_paths(kit) {
+        fs::create_dir_all(p.parent().unwrap()).unwrap();
+        fs::write(&p, "x").unwrap();
+    }
+    assert!(c.is_installed(kit), "{id}");
+}
+
+/// The agents as the app shows them (LEVELS.md §7): available only with
+/// the VM on, else with the VM's reason; Claude Code and Codex brought by
+/// the VM, Pi and Antigravity once their build for the VM's Linux is in
+/// the kit (Q11), never what the PC's folder has.
 #[test]
-fn sign_in_detection() {
-    let (_tmp, kit) = prepared_kit("agents");
-    let env = KitEnv::default();
-    assert!(status(&kit).iter().all(|a| !a.signed_in && !a.installed));
+fn agents_status_follows_the_vm() {
+    let (_tmp, kit) = win_kit("agents-status");
+    let s = status(&kit, &off(), "it");
+    assert_eq!(s.len(), 4);
+    for a in &s {
+        assert!(!a.available, "{}", a.id);
+        let why = a.unavailable_reason.as_deref().unwrap();
+        assert!(why.contains("Windows Hypervisor Platform"), "{why}");
+    }
+    for id in ["claude", "codex"] {
+        let a = info(&s, id);
+        assert!(a.installed && a.provided, "{id}");
+        assert_eq!(a.version, None);
+        assert_eq!(a.runs_in, RunsIn::SbxSandbox);
+    }
+    for id in ["pi", "antigravity"] {
+        let a = info(&s, id);
+        assert!(!a.installed && !a.provided, "{id}");
+        assert_eq!(a.runs_in, RunsIn::ProjectVm);
+    }
+    // Pi for the PC (an earlier Atollo's) is no agent of the VM.
+    installed(&kit, "pi", "0.70.1");
+    assert!(!info(&status(&kit, &off(), "it"), "pi").installed);
+    installed(&kit.for_target(Target::LINUX_X64), "pi", "0.70.2");
+    let on = status(&kit, &VmState::On, "it");
+    let pi = info(&on, "pi");
+    assert!(pi.installed && pi.available);
+    assert_eq!(pi.version.as_deref(), Some("0.70.2"));
+    assert_eq!(pi.unavailable_reason, None);
+    assert!(on.iter().all(|a| a.available));
+}
+
+/// The sign-in shown is the VM's (LEVELS.md §13 item 12): the Gemini key
+/// through `sbx`'s proxy, Pi's local model; a sign-in of the PC saved in
+/// the kit is only told as kit data, and «Esci» removes it as files,
+/// starting nothing (E17).
+#[test]
+fn the_sign_in_shown_is_the_vms() {
+    let (_tmp, kit) = win_kit("agents-sign-in");
+    assert!(status(&kit, &VmState::On, "en")
+        .iter()
+        .all(|a| !a.signed_in && !a.kit_login));
     fs::create_dir_all(kit.home().join(".claude")).unwrap();
     fs::write(
         kit.home().join(".claude").join(".credentials.json"),
@@ -18,60 +91,42 @@ fn sign_in_detection() {
         r#"{"OPENAI_API_KEY":"k"}"#,
     )
     .unwrap();
-    let s = status(&kit);
-    assert_eq!(s[0].sign_in_kind.as_deref(), Some("account"));
-    assert_eq!(s[1].sign_in_kind.as_deref(), Some("api key"));
-    assert!(!s[2].signed_in);
-    sign_out(&kit, &env, "claude", "en").unwrap();
-    assert!(!status(&kit)[0].signed_in);
-}
+    let s = status(&kit, &VmState::On, "en");
+    for id in ["claude", "codex"] {
+        let a = info(&s, id);
+        assert!(!a.signed_in && a.kit_login, "{id}");
+    }
+    assert_eq!(sign_in(&kit, "codex"), Some("api key"));
 
-/// Claude Code with the token of `claude setup-token` (macOS): signed in
-/// with a token; "Esci" deletes it.
-#[test]
-fn claude_token_sign_in() {
-    let (_tmp, kit) = prepared_kit("agents-token");
-    let env = KitEnv::default();
-    assert_eq!(sign_in(&kit, "claude"), None);
-    let token = format!("sk-ant-oat01-{}", "a".repeat(90));
-    claude_token::save(&kit, &token).unwrap();
-    assert_eq!(sign_in(&kit, "claude"), Some("token"));
-    let info = status(&kit);
-    let claude = info.iter().find(|a| a.id == "claude").unwrap();
-    assert_eq!(
-        claude.token_link,
-        cfg!(target_os = "macos"),
-        "offered on macOS only"
-    );
-    assert!(info.iter().all(|a| a.id == "claude" || !a.token_link));
-    sign_out(&kit, &env, "claude", "en").unwrap();
-    assert_eq!(sign_in(&kit, "claude"), None);
-    assert!(!claude_token::path(&kit).exists());
-}
-
-/// The Gemini key of the settings: Antigravity signed in with it, and the
-/// key in Antigravity's environment only, never in the kit's nor in the
-/// other agents' (SEC-V6-02).
-#[test]
-fn gemini_key_for_antigravity_only() {
-    let (_tmp, kit) = prepared_kit("agents-gemini");
-    let env = KitEnv::default();
-    assert_eq!(sign_in(&kit, "antigravity"), None);
-    assert_eq!(launch_env(&kit, &env, "antigravity").get(GEMINI_VAR), None);
     let settings = crate::common::settings::Settings {
         gemini_api_key: Some("AIza-key".into()),
         ..Default::default()
     };
     settings.save(&kit).unwrap();
-    assert_eq!(sign_in(&kit, "antigravity"), Some("api key"));
-    assert_eq!(
-        launch_env(&kit, &env, "antigravity").get(GEMINI_VAR),
-        Some("AIza-key")
-    );
-    for other in ["claude", "codex"] {
-        assert_eq!(launch_env(&kit, &env, other).get(GEMINI_VAR), None);
-    }
-    let kit_env = KitEnv::build(
+    let agy = info(&status(&kit, &VmState::On, "en"), "antigravity").clone();
+    assert!(agy.signed_in && !agy.kit_login);
+    assert_eq!(agy.sign_in_kind.as_deref(), Some("api key"));
+
+    sign_out(&kit, "claude").unwrap();
+    sign_out(&kit, "codex").unwrap();
+    assert!(!kit.home().join(".codex").join("auth.json").exists());
+    let s = status(&kit, &VmState::On, "en");
+    assert!(!info(&s, "claude").kit_login && !info(&s, "codex").kit_login);
+    assert!(sign_out(&kit, "nobody").is_err());
+}
+
+/// The Gemini key of the settings never enters the kit's environment
+/// (SEC-V6-02): only `sbx`'s proxy hands it over, for a sandbox (§9).
+#[test]
+fn the_gemini_key_is_never_in_the_kits_environment() {
+    let (_tmp, kit) = win_kit("agents-gemini");
+    let settings = crate::common::settings::Settings {
+        gemini_api_key: Some("AIza-key".into()),
+        ..Default::default()
+    };
+    settings.save(&kit).unwrap();
+    assert_eq!(gemini_key(&kit).as_deref(), Some("AIza-key"));
+    let kit_env = crate::env::KitEnv::build(
         &kit,
         &crate::common::settings::Settings::load(&kit).settings,
         "en",
@@ -115,40 +170,4 @@ fn closing_skips_and_waits_for_background_work() {
 
     closing.reopen();
     assert_eq!(closing.run(|| 3), Some(3));
-}
-
-/// The watcher's saves of the login (BUG-V6-17): after a failure the next
-/// try waits 6 s, 12 s, 24 s… (at most 10 min); after 8 failures of the
-/// same pending run, no more tries; a new run starts again from zero.
-#[test]
-fn login_save_retries_back_off_and_stop() {
-    let t0 = Instant::now();
-    let run = Some(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(1));
-    let mut retry = SaveRetry::default();
-    assert!(!retry.due(None, t0), "nothing pending");
-    assert!(retry.due(run, t0));
-    let mut at = t0;
-    let mut waits = Vec::new();
-    for n in 1..=SAVE_MAX_FAILURES {
-        let last = retry.failed(at);
-        assert_eq!(last, n == SAVE_MAX_FAILURES);
-        let next = retry.next.unwrap();
-        waits.push((next - at).as_secs());
-        if !last {
-            assert!(!retry.due(run, next - Duration::from_millis(1)), "too soon");
-            assert!(retry.due(run, next));
-        }
-        at = next;
-    }
-    assert_eq!(waits, [6, 12, 24, 48, 96, 192, 384, 600]);
-    assert!(
-        !retry.due(run, at + Duration::from_secs(3600)),
-        "given up for this run"
-    );
-    // agy ran again: another pending run, tried at once.
-    let again = Some(std::time::SystemTime::UNIX_EPOCH + Duration::from_secs(2));
-    assert!(retry.due(again, at));
-    retry.failed(at);
-    retry.succeeded();
-    assert!(retry.due(again, at), "a success clears the wait");
 }

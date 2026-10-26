@@ -4,17 +4,24 @@ use super::*;
 
 /// Async: `sbx` may take a few seconds to answer. `force`: the notice's
 /// "Ricontrolla", which asks again within the minute.
+/// A status that flips the agents' availability is told at once as
+/// `levels-changed` (LEVELS.md §4.2), not at the next minute's look.
 #[tauri::command]
 pub async fn isolation_status<R: Runtime>(
+    app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     force: bool,
 ) -> CmdResult<crate::isolation::Status> {
     ensure_main(&webview)?;
     let (kit, host, env) = (state.kit.clone(), state.host.clone(), state.env());
-    tauri::async_runtime::spawn_blocking(move || crate::isolation::status(&kit, &host, &env, force))
-        .await
-        .or_fail("isolation")
+    tauri::async_runtime::spawn_blocking(move || {
+        let status = crate::isolation::status(&kit, &host, &env, force);
+        super::levels::observed(&app, &status);
+        status
+    })
+    .await
+    .or_fail("isolation")
 }
 
 /// Atollo's sandboxes and the room their state takes (D-169).

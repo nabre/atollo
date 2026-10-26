@@ -86,7 +86,11 @@ fn title_bar_buttons() {
     assert_eq!(at("/?folder=/e:/p"), None);
     let other = u("http://127.0.0.1:7004/__atollo/window/close");
     assert_eq!(control(&other, 7003), None);
-    let js = controls_script("en", 7003, "my app", &["a.b".into()]);
+    let js = controls_script("en", 7003, "my app", &["a.b".into()], &[]);
+    assert!(
+        js.contains(r#"window.__atolloAgents("");"#),
+        "nothing to tell"
+    );
     assert!(js.contains(r#"close: "Close""#), "{js}");
     assert!(js.contains(r#"restart: "Restart extensions""#), "{js}");
     assert!(js.contains("window.__atolloExtensions = "), "{js}");
@@ -143,5 +147,25 @@ fn origin_and_links() {
         "ms-settings:display",
     ] {
         assert_eq!(classify_external(&u(bad)), Leave::Block, "{bad}");
+    }
+}
+
+/// LEVELS.md §10: a window opened after a start that uninstalled an
+/// extension running an agent says why, once, in the user's language, and
+/// where the agents run instead.
+#[test]
+fn the_editor_says_why_an_agent_extension_is_gone() {
+    let js = controls_script("en", 7003, "shop", &[], &["Claude Code".into()]);
+    assert!(
+        js.contains(
+            r#"window.__atolloAgents("Atollo removed Claude Code from the editor: it runs an agent, and in Atollo agents run only in the VM."#
+        ),
+        "{js}"
+    );
+    assert!(js.contains(r#"ok.textContent = "Got it";"#), "{js}");
+    let it = crate::editor::ext::agents_notice("it", &["Cline".into(), "Codex".into()]);
+    assert!(it.starts_with("Atollo ha tolto dall'editor Cline, Codex: esegue un agente"));
+    for place in ["pagina del progetto", "terminale dell'editor", "claude"] {
+        assert!(it.contains(place), "{place}: {it}");
     }
 }

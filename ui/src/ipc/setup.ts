@@ -156,7 +156,17 @@ export interface ComponentInfo {
   bootstrapStaged?: boolean;
   /** C and C++ on a Mac without Xcode Command Line Tools (Rust `xcode_missing`). */
   xcodeMissing?: boolean;
+  /** An agent's row (LEVELS.md §7, Q11): «fornito dalla VM» (Claude Code,
+   * Codex), «serve la VM» with the reason (Pi, Antigravity without the VM);
+   * null for every other component. With one, nothing to install. */
+  agent: AgentRow | null;
+  /** An agent's folder an earlier Atollo installed for the PC: removed by
+   * the next «Applica». */
+  leftover: boolean;
 }
+
+/** What an agent's row says instead of an install (Rust `AgentRow`). */
+export type AgentRow = { kind: "provided" } | { kind: "needsVm"; reason: string };
 
 /** The browser preview's answer (core.ts): nothing being installed. */
 export const SAMPLE_SETUP: SetupSnapshot = {
@@ -205,6 +215,8 @@ function sampleComponent(
     versioned: ["python", "node", "php", "go", "java"].includes(id),
     home: "https://example.org",
     bootstrapStaged: false,
+    agent: null,
+    leftover: false,
     ...extra,
   };
 }
@@ -224,11 +236,14 @@ const SAMPLE_COMPONENTS: ComponentInfo[] = [
     version: "2.83.0",
   }),
   sampleComponent("claude", "Claude Code", "agents", "agente di Anthropic", 220, {
-    ...ON,
-    version: "2.1.299",
-    needs: ["git"],
+    chosen: true,
+    available: false,
+    agent: { kind: "provided" },
   }),
-  sampleComponent("codex", "Codex", "agents", "agente di OpenAI", 120),
+  sampleComponent("codex", "Codex", "agents", "agente di OpenAI", 120, {
+    available: false,
+    agent: { kind: "provided" },
+  }),
   sampleComponent("node", "Node.js", "languages", "JavaScript e TypeScript", 90, { ...ON, version: "24.11.0" }),
   sampleComponent("python", "Python", "languages", "con uv", 120),
   sampleComponent("php", "PHP", "languages", "linguaggio per il web", 60, { ...ON, version: "8.4.12" }),
