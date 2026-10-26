@@ -774,11 +774,6 @@
     "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Outils.",
     "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuche es erneut unter Werkzeuge."
   },
-  "{0} non è disponibile sui PC ARM64.": {
-    "en": "{0} is not available on ARM64 PCs.",
-    "fr": "{0} n'est pas disponible sur les PC ARM64.",
-    "de": "{0} ist auf ARM64-PCs nicht verfügbar."
-  },
   "{0} non è disponibile per {1}.": {
     "en": "{0} is not available for {1}.",
     "fr": "{0} n'est pas disponible pour {1}.",
@@ -1014,11 +1009,6 @@
     "fr": "la fenêtre d'Atollo",
     "de": "das Fenster von Atollo"
   },
-  "su PC ARM64 i programmi solo x64 e Git Bash girano emulati, solo con Windows 11": {
-    "en": "on ARM64 PCs, x64-only programs and Git Bash run emulated, only on Windows 11",
-    "fr": "sur PC ARM64, les programmes x64 seulement et Git Bash tournent émulés, uniquement sous Windows 11",
-    "de": "auf ARM64-PCs laufen reine x64-Programme und Git Bash emuliert, nur unter Windows 11"
-  },
   "gestori di pacchetti, alla versione chiesta da ogni progetto": {
     "en": "package managers, at the version each project asks for",
     "fr": "gestionnaires de paquets, à la version demandée par chaque projet",
@@ -1033,11 +1023,6 @@
     "en": "Gradle 9 starts on the kit's latest JDK (17 to 27); the project compiles with its own",
     "fr": "Gradle 9 démarre sur le JDK le plus récent du kit (17 à 27) ; le projet compile avec le sien",
     "de": "Gradle 9 startet auf dem neuesten JDK des Kits (17 bis 27); das Projekt kompiliert mit seinem eigenen"
-  },
-  "{0} gira solo con Windows 11 sui PC ARM64.": {
-    "en": "{0} runs only on Windows 11 on ARM64 PCs.",
-    "fr": "{0} ne fonctionne qu'avec Windows 11 sur les PC ARM64.",
-    "de": "{0} läuft auf ARM64-PCs nur mit Windows 11."
   },
   "Framework PHP per applicazioni web": {
     "en": "PHP framework for web applications",
