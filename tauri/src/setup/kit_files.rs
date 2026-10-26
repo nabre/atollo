@@ -47,6 +47,12 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../../runtime/bin/gradle.cmd"),
     ),
     ("bin/gradle", include_str!("../../../runtime/bin/gradle")),
+    // The app's command line as `atollo` in the kit's terminals.
+    (
+        "bin/atollo.cmd",
+        include_str!("../../../runtime/bin/atollo.cmd"),
+    ),
+    ("bin/atollo", include_str!("../../../runtime/bin/atollo")),
 ];
 
 /// Files an older Atollo wrote and this one no longer does: the agents'
