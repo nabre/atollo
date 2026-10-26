@@ -68,13 +68,39 @@ fn a_kit_terminal_gets_the_kits_tools_for_linux() {
 #[test]
 fn a_vm_never_gets_the_kit_or_the_profile_writable() {
     // The kit is its whole temporary folder; the PC's other folders are in
-    // another one.
-    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-workspace");
+    // another one. Both by their real path: on macOS the temporary folder
+    // is under /var, a link to /private/var, and a folder reached through
+    // a link is never a workspace.
+    let real = |p: &Path| {
+        if cfg!(target_os = "macos") {
+            std::fs::canonicalize(p).unwrap()
+        } else {
+            p.to_path_buf()
+        }
+    };
+    let tmp = crate::kit::tests::TempDir::new("isolation-workspace");
+    let kit = Kit::at(real(&tmp.0), crate::test_support::kit_arch());
+    kit.prepare().unwrap();
     let pc = crate::kit::tests::TempDir::new("isolation-workspace-pc");
-    let profile = pc.0.join("user");
+    let pc_root = real(&pc.0);
+    let profile = pc_root.join("user");
     let in_profile = profile.join("Documents").join("shop");
-    let sites = pc.0.join("sites").join("shop");
-    let system = pc.0.join("Windows");
+    // A folder elsewhere: on macOS the real temporary folder is under
+    // /private/var, a system folder, so one in the user's real home (this
+    // test's profile is another folder).
+    let elsewhere = if cfg!(target_os = "macos") {
+        Some(crate::kit::tests::TempDir(
+            PathBuf::from(std::env::var_os("HOME").unwrap())
+                .join(format!(".atollo-test-sites-{}", std::process::id())),
+        ))
+    } else {
+        None
+    };
+    let sites = elsewhere
+        .as_ref()
+        .map_or_else(|| pc_root.join("sites"), |d| d.0.clone())
+        .join("shop");
+    let system = pc_root.join("Windows");
     for d in [
         &in_profile,
         &sites,
@@ -107,7 +133,7 @@ fn a_vm_never_gets_the_kit_or_the_profile_writable() {
     assert_eq!(allowed(kit.root()), None, "the kit's root");
     assert_eq!(allowed(&kit.data()), None, "the kit's data");
     assert_eq!(
-        allowed(pc.0.parent().unwrap()),
+        allowed(pc_root.parent().unwrap()),
         None,
         "holding the kit and the profile"
     );
@@ -116,12 +142,12 @@ fn a_vm_never_gets_the_kit_or_the_profile_writable() {
     if kit.target().is_windows() {
         assert_eq!(allowed(&system), None, "the system's folder");
     }
-    assert_eq!(allowed(&pc.0.join("missing")), None, "unreadable");
+    assert_eq!(allowed(&pc_root.join("missing")), None, "unreadable");
     assert_eq!(allowed(Path::new("relative")), None);
     let root = kit.root().ancestors().last().unwrap();
     assert_eq!(allowed(root), None, "a drive's root");
     // A link on the way: the folder checked would not be the one mounted.
-    let linked = pc.0.join("linked");
+    let linked = pc_root.join("linked");
     crate::platform::safe_path::tests::junction(&linked, &sites);
     assert_eq!(allowed(&linked), None, "a junction");
     assert_eq!(allowed(&linked.join("x")), None, "under a junction");

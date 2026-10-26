@@ -122,6 +122,16 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
     assert_eq!(POLICY_ARGS, ["policy", "init", "balanced"]);
 }
 
+/// An existing sandbox starts again by its name only: `sbx` refuses any
+/// folder after the first, even those it was made with (sbx 0.49.2).
+#[test]
+fn an_existing_sandbox_starts_again_by_its_name() {
+    assert_eq!(
+        restart_args("atollo-p-shop"),
+        ["run", "-d", "--name", "atollo-p-shop"]
+    );
+}
+
 #[test]
 fn the_sandbox_starts_with_the_project_as_its_workspace() {
     let dir = Path::new("/kit/projects/shop");

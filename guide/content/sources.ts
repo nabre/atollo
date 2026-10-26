@@ -125,10 +125,10 @@ export const TOOL_SOURCES: ToolSourceRow[] = [
     binarySource: "github.com/VSCodium/vscodium/releases/download/<v>/vscodium-reh-web-win32-x64-<v>.tar.gz",
     unix: () =>
       tr(
-        "macOS e Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 fissato per target (nativo anche su ARM64)",
-        "macOS and Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 pinned per target (native on ARM64 too)",
-        "macOS et Linux : vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 fixé par cible (natif aussi sur ARM64)",
-        "macOS und Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 pro Ziel festgelegt (auch auf ARM64 nativ)",
+        "macOS e Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 fissato per target",
+        "macOS and Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 pinned per target",
+        "macOS et Linux : vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 fixé par cible",
+        "macOS und Linux: vscodium-reh-web-<target>-<v>.tar.gz, SHA-256 pro Ziel festgelegt",
       ),
     verifyKind: "SHA-256",
     verifyDetail: () =>

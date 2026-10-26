@@ -21,13 +21,9 @@ pub struct ComponentInfo {
     pub version: Option<String>,
     /// This version of the app can install it on this kit.
     pub available: bool,
-    /// The x64 build, run with Rosetta 2 on a Mac with Apple silicon (the
-    /// «x64» mark).
-    pub x64_only: bool,
     /// Why it is not available on this kit's target, already translated:
-    /// the catalog's own reason (`unavailable`, Android on Linux ARM64),
-    /// Rosetta 2 missing on this Mac, or not made for this system (Windows
-    /// only, on macOS or Linux).
+    /// the catalog's own reason (`unavailable`, Android on Linux ARM64), or
+    /// not made for this system (Windows only, on macOS or Linux).
     pub unavailable_reason: Option<String>,
     /// Components it needs on this kit's target (Apache needs PHP, Kotlin
     /// needs Java; C and C++ need Zig on macOS and Linux only).
@@ -277,8 +273,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
         .into_iter()
         .map(|c| {
             let off = !c.is_available_on(target);
-            let no_rosetta = !off && crate::router::target::rosetta_missing_on_host(target, c);
-            let unavailable_reason = unavailable_reason(c, target, no_rosetta, lang);
+            let unavailable_reason = unavailable_reason(c, target, lang);
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -290,9 +285,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 present: c.is_present(kit),
                 locked: locked.contains(c.id.as_str()),
                 version: c.installed_version(kit),
-                available: install::installer(&c.id).is_some() && !off && !no_rosetta,
-                // The «x64» mark: only where that build runs emulated.
-                x64_only: c.is_emulated_on(target),
+                available: install::installer(&c.id).is_some() && !off,
                 unavailable_reason,
                 needs: c.needs_list_on(target),
                 xcode_missing: c.id == "cc" && xcode_missing,
@@ -526,8 +519,7 @@ pub(super) fn vm_tools_target(state: &AppState) -> Option<crate::kit::Target> {
 }
 
 /// `components.txt` for the ids in `chosen`. What this target cannot install
-/// (`unavailable` or outside `targets`, an x64
-/// build on a Mac without Rosetta 2) keeps its saved choice: the same kit
+/// (`unavailable` or outside `targets`) keeps its saved choice: the same kit
 /// on another OS/arch must not lose it. Nor does what a chosen one needs on
 /// this target only (Zig for C and C++ on Linux, ticked with them by the
 /// page): the run on this target installs it anyway, and saving it would

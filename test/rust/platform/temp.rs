@@ -1,12 +1,12 @@
 use super::*;
 use crate::common::fsx::join_rel;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use std::time::SystemTime;
 
 #[test]
 fn in_host_temp_or_data_tmp() {
     let tmp = TempDir::new("temp-work");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     let work = TempWork::new(&kit, "setup/x").unwrap();
     assert_eq!(work.path(), join_rel(&tmp.0, "kit/data/tmp/setup/x"));
     assert!(work.path().join(".lock").is_file());
@@ -14,7 +14,8 @@ fn in_host_temp_or_data_tmp() {
     drop(work);
     assert!(!dir.exists());
 
-    let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
+    let host = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch())
+        .with_host(Some(&tmp.0.join("host")));
     let work = TempWork::new(&host, "setup/x").unwrap();
     assert!(work.path().starts_with(tmp.0.join("host").join("Atollo")));
     // a second user of the same folder starts from empty
@@ -36,7 +37,8 @@ fn age(dir: &Path, hours: u64) {
 #[test]
 fn sweep_keeps_live_and_new_removes_old() {
     let tmp = TempDir::new("temp-sweep");
-    let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
+    let host = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch())
+        .with_host(Some(&tmp.0.join("host")));
     let base = host.system_temp().unwrap().to_path_buf();
 
     // old and held by a live TempWork: kept
@@ -75,7 +77,8 @@ fn sweep_keeps_live_and_new_removes_old() {
 #[test]
 fn cleanup_at_exit_removes_programs_temp_only() {
     let tmp = TempDir::new("temp-exit");
-    let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
+    let host = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch())
+        .with_host(Some(&tmp.0.join("host")));
     let base = host.system_temp().unwrap().to_path_buf();
     let work = TempWork::new(&host, "setup/x").unwrap();
     fs::create_dir_all(base.join("system").join("a")).unwrap();
@@ -110,7 +113,8 @@ fn only_a_private_host_temp_holds_the_kits_folder() {
 #[test]
 fn falls_back_to_data_tmp_without_space() {
     let tmp = TempDir::new("temp-space");
-    let host = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
+    let host = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch())
+        .with_host(Some(&tmp.0.join("host")));
     let work = TempWork::new_with_space(&host, "setup/big", u64::MAX).unwrap();
     assert_eq!(
         work.path(),

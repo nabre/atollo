@@ -3,9 +3,9 @@ use crate::db::services::{
     bin_at, line_port, line_ports, lines_in_use, load_settings, log_path, project_client_env,
     project_db_port, project_line, server_lines, Setting,
 };
-use crate::test_support::{fake_server, prepared_kit};
 #[cfg(unix)]
-use crate::{kit::Arch, test_support::TempDir};
+use crate::test_support::TempDir;
+use crate::test_support::{fake_server, prepared_kit};
 
 /// The MySQL programs of a line folder of an older version, as the
 /// kit's target names them.
@@ -478,7 +478,7 @@ fn ports_stay_when_the_server_changes_version() {
 #[test]
 fn long_socket_folder_is_private() {
     let tmp = TempDir::new("db-socket-dir");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let dir = private_socket_dir(&kit, 3306).unwrap();
     assert!(caddy::is_private_dir(&dir));
     assert!(mysql::fallback_socket(&dir, 3306).is_some());

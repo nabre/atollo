@@ -1,7 +1,7 @@
 // The component × system matrix of the site, from the app's own catalog:
 // tauri/catalog/components.json for what exists where, tauri/i18n/catalog.json
 // for the descriptions and reasons in en/fr/de. Availability follows
-// Component::is_available_on and is_emulated_on (tauri/src/setup/catalog.rs):
+// Component::is_available_on (tauri/src/setup/catalog.rs):
 // `status` is written once here, and scripts/matrix/gen_matrix.mjs uses it
 // too for docs/app/TOOLS-MATRIX.html.
 import { readFileSync } from "node:fs";
@@ -27,7 +27,7 @@ export const KIND_OF = {
 };
 export const KIND_OF_GROUP = { required: "system", app: "system", agents: "agents", ai: "ai", languages: "languages", databases: "databases" };
 
-const MARK = { ok: "✓", emu: "≈", no: "✕", dep: "✕" };
+const MARK = { ok: "✓", no: "✕", dep: "✕" };
 
 const escape = (s) => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
@@ -39,11 +39,10 @@ export function loadCatalog(repo) {
 
 // The status of c on target t, without its needs: [kind, reason]. `why`
 // gives the reasons: notBuilt(c), unavailable(the catalog's Italian
-// text), rosetta (the x64 build on Apple silicon), native, needs(name).
+// text), native, needs(name).
 export function baseStatus(c, t, why) {
   if (c.targets && !c.targets.includes(t)) return ["no", why.notBuilt(c)];
   if (c.unavailable && t in c.unavailable) return ["no", why.unavailable(c.unavailable[t])];
-  if (t === "darwin-arm64" && c.rosetta) return ["emu", why.rosetta];
   return ["ok", why.native];
 }
 
@@ -64,7 +63,6 @@ export function matrixHtml({ components, i18n }, lang, s) {
   const why = {
     notBuilt: () => s.mxNotBuilt,
     unavailable: tr,
-    rosetta: s.mxRosetta,
     native: s.mxNative,
     needs: (name) => s.mxNeeds.replace("{0}", name),
   };
@@ -94,5 +92,5 @@ export function matrixHtml({ components, i18n }, lang, s) {
 <thead><tr><th rowspan="2" class="mx-corner">${escape(s.mxComponent)}</th>${osHead}</tr><tr>${archHead}</tr></thead>
 ${body}
 </table></div>
-<p class="mx-legend"><span class="mx-ok">✓</span> ${escape(s.mxLegendOk)} <span class="mx-emu">≈</span> ${escape(s.mxLegendEmu)} <span class="mx-no">✕</span> ${escape(s.mxLegendNo)}</p>`;
+<p class="mx-legend"><span class="mx-ok">✓</span> ${escape(s.mxLegendOk)} <span class="mx-no">✕</span> ${escape(s.mxLegendNo)}</p>`;
 }

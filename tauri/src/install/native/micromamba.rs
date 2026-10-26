@@ -89,8 +89,8 @@ pub(in crate::install) fn micromamba_release(ctx: &Ctx, version: &str) -> Result
 /// The arguments of `micromamba create` for an environment at `prefix` with
 /// `specs` (`git=2.51.0`), from conda-forge only and without any `.condarc`.
 /// `platform` is the conda platform of an environment that is not
-/// micromamba's own (`osx-64` from the native micromamba of Apple silicon,
-/// for a component run with Rosetta 2); `None` for its own.
+/// micromamba's own (`linux-aarch64` from this PC's micromamba of Linux
+/// x64, for a kit of Linux ARM64); `None` for its own.
 pub fn micromamba_create_args(
     prefix: &Path,
     specs: &[&str],

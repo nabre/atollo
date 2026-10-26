@@ -104,7 +104,7 @@ Gli script delle schermate leggono l'anteprima nel browser: prima `npm -w ui run
 
 Ogni job di test scrive nel riepilogo della run le prove passate, fallite e ignorate, con i nomi di quelle fallite. Su macOS gira tutto `cargo test`: con tauri 2.12.1 il feature `test` (il runtime finto di `test\rust\main.rs`) compila anche lì, quindi non serve un feature a parte (con 2.12.0 mancava `transparent`). In un repository senza runner ARM64 (privato) la variabile del repository `ARM64_RUNNERS=off` toglie i job `linux-arm64`, che altrimenti resterebbero in coda: `linux-arm64` esce dalla lista dei target della matrice (il runner si ricava dal target, senza `include`, che GitHub applica dopo `exclude` e rimetterebbe il target tolto).
 
-La CI costruisce e prova solo i quattro sistemi su cui gira Docker Sandboxes (D-176): `win32-x64`, `darwin-arm64`, `linux-x64` e `linux-arm64`. Non c'è nessun job, build o file di rilascio per Windows ARM64 o macOS Intel.
+La CI costruisce e prova solo i quattro sistemi su cui gira Docker Sandboxes (D-176): `win32-x64`, `darwin-arm64`, `linux-x64` e `linux-arm64`, senza job, build o file di rilascio per nessun altro sistema.
 
 Una prova che vale solo su Windows (percorsi con `\`, `cmd.exe`, `ping.exe`, junction con `mklink /J`, layout `.exe` del kit) porta `#[cfg_attr(not(windows), ignore = "<motivo>")]`: su Windows gira, altrove conta fra le ignorate con il motivo. Una prova nuova usa invece, quando può, funzioni pure con il target come parametro (`Kit::at_target`, `fsx::join_rel` con `/`), così vale per tutti e quattro i target.
 
@@ -186,7 +186,7 @@ Da eseguire prima di ogni release, con l'exe di release (`npm run build`), su un
 - [ ] **Proxy autenticato e ispezione SSL.** Impostazioni › Rete con proxy e file PEM: installazione, estensioni dell'editor e agenti funzionano.
 - [ ] **Senza rete.** L'app e l'editor partono, gli errori di download si leggono, il controllo degli aggiornamenti fallisce senza bloccare nulla.
 - [ ] **Chiusura forzata dal Task Manager.** Non resta nessun `node.exe`, server dell'editor, terminale del kit (`OpenConsole.exe`, `pwsh.exe`) o server di progetto.
-- [ ] **Sistema non supportato** (D-176). Su Windows ARM64 (e su un Mac Intel) Atollo non parte: un messaggio dice che lì Docker Sandboxes non gira, e l'app si chiude.
+- [ ] **Sistema non supportato** (D-176). Su un sistema che non è uno dei quattro Atollo non parte: un messaggio dice che lì Docker Sandboxes non gira, e l'app si chiude.
 - [ ] **R spostato** (D-104). Kit con R su `D:`, poi su `E:`: dopo l'avvio `lib\R\etc\x64\Makeconf` ha `LOCAL_SOFT` sulla cartella nuova e `install.packages(..., type="source")` compila.
 - [ ] **macOS e Linux**: la sezione «macOS e Linux» qui sotto.
 
@@ -286,7 +286,7 @@ Accessi e pacchetto:
 Kit preparato su Windows per un altro sistema (a ogni rilascio):
 - [ ] Su Windows `Atollo.exe prepare --target linux-x64` (poi `darwin-arm64`, `linux-arm64`) su una chiavetta exFAT, con l'app per quel sistema copiata accanto.
 - [ ] Il selettore «Piattaforma» mostra per quel target cosa è pre-scaricato, cosa si completa al primo avvio e cosa non è disponibile.
-- [ ] «Strumenti» › Panoramica › «Matrice» (D-121, D-176): le quattro colonne con i nomi leggibili e «questo PC», «in emulazione» (solo Rosetta 2) o «non eseguibile qui»; sulla chiavetta preparata le caselle del target dicono «pre-scaricato» o «si completa al primo avvio», quelle non disponibili il motivo; un clic apre il dettaglio e «Mostra questo sistema» cambia «Piattaforma». Chiusa e riaperta l'app, «Piattaforma» è ancora quel sistema; scelto quello di questo PC, sull'altro sistema la pagina si apre sul suo.
+- [ ] «Strumenti» › Panoramica › «Matrice» (D-121, D-176): le quattro colonne con i nomi leggibili e «questo PC» o «non eseguibile qui»; sulla chiavetta preparata le caselle del target dicono «pre-scaricato» o «si completa al primo avvio», quelle non disponibili il motivo; un clic apre il dettaglio e «Mostra questo sistema» cambia «Piattaforma». Chiusa e riaperta l'app, «Piattaforma» è ancora quel sistema; scelto quello di questo PC, sull'altro sistema la pagina si apre sul suo.
 - [ ] Sull'altro sistema: primo avvio dalla chiavetta, installazioni da `.bootstrap` completate (Rust, Git di dugite-native, R e i componenti conda, Android, pnpm), nessun nuovo download per ciò che era già scaricato.
 - [ ] Di nuovo su Windows: il kit si apre come prima; `data/apps/win32-x64` e le impostazioni di Windows sono intatti, la scelta dei componenti non è cambiata.
 - [ ] Stesso progetto aperto sui due sistemi: impostazioni, porte e database del progetto condivisi (`data/projects/<p>`).

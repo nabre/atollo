@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Target};
+use crate::kit::{tests::TempDir, Target};
 
 pub(crate) fn host() -> Host {
     Host::from_pairs(
@@ -23,7 +23,10 @@ pub(crate) fn host() -> Host {
 
 pub(crate) fn fake_kit(name: &str, installed: &[&str]) -> (TempDir, Kit) {
     let tmp = TempDir::new(name);
-    let kit = Kit::at(tmp.0.join("My Kit (1) & co"), Arch::X64);
+    let kit = Kit::at(
+        tmp.0.join("My Kit (1) & co"),
+        crate::test_support::kit_arch(),
+    );
     for rel in installed {
         // The layout of the kit's system: `node/node.exe` is `node/bin/node`
         // on macOS and Linux.

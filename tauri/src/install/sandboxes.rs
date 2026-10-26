@@ -9,7 +9,7 @@
 //! - Linux x64 and ARM64: the static tarball, laid out as its
 //!   `install.sh` does (`bin/sbx`, `libexec/`, `libexec/lib/`).
 //!
-//! No other target: Docker builds none (Windows on Arm, Intel Macs).
+//! No other target: Docker builds none.
 //! `sbx` keeps its sandboxes and settings in `%LOCALAPPDATA%` (Windows) or
 //! the home: the kit's, so they travel with it.
 

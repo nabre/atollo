@@ -14,7 +14,7 @@ use crate::setup::Catalog;
 #[ignore]
 fn live_lines() {
     let tmp = TempDir::new("live-lines");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let token = std::env::var("GITHUB_TOKEN").ok();
     let net = crate::net::Net::new(&crate::common::settings::Settings::default(), token).unwrap();
@@ -287,7 +287,7 @@ fn download_names_stay_in_the_work_folder() {
     }
 
     let tmp = TempDir::new("fetch-name");
-    let kit = Kit::at(tmp.0.join("kit"), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let net = crate::net::Net::new(&crate::common::settings::Settings::default(), None).unwrap();
     let env = KitEnv::default();
@@ -318,7 +318,7 @@ fn download_names_stay_in_the_work_folder() {
 #[test]
 fn taken_files_go_only_when_the_installation_succeeds() {
     let tmp = TempDir::new("taken");
-    let kit = Kit::at(tmp.0.join("kit"), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let downloads = crate::setup::downloads::dir(&kit);
     fs::create_dir_all(&downloads).unwrap();

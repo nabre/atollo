@@ -154,7 +154,7 @@ fn noexec_flag_blocks_without_the_mount() {
 #[test]
 fn no_startup_problem_on_windows() {
     let tmp = crate::kit::tests::TempDir::new("volume-win");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64).with_host(None);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch()).with_host(None);
     assert_eq!(disk_notice(&kit, "it"), None);
     assert!(!kit_noexec(&kit));
     assert!(!kit.volume().unwrap().noexec);

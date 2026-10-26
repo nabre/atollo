@@ -89,8 +89,8 @@ fn shims_translate_target_triples() {
         ["cc", "-target", "aarch64-linux-musl"]
     );
     assert_eq!(
-        run("gcc", &["--target=x86_64-apple-darwin"]),
-        ["cc", "-target", "x86_64-macos"]
+        run("gcc", &["--target=aarch64-apple-darwin"]),
+        ["cc", "-target", "aarch64-macos"]
     );
     assert_eq!(run("ar", &["rcs", "lib.a"]), ["ar", "rcs", "lib.a"]);
     // No Zig: a clear error, not a "not found" of the shell.

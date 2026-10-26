@@ -19,7 +19,6 @@ function row(id: string, needs: string[] = [], more: Partial<ComponentInfo> = {}
     locked: false,
     version: null,
     available: true,
-    x64Only: false,
     unavailableReason: null,
     needs,
     versioned: false,

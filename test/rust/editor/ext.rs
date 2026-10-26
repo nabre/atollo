@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use crate::test_support::prepared_kit;
 
 #[test]
@@ -60,7 +60,10 @@ fn matrix_is_valid() {
             "no extension for {l}"
         );
     }
-    let info = matrix_info(&Kit::at(std::env::temp_dir(), Arch::X64));
+    let info = matrix_info(&Kit::at(
+        std::env::temp_dir(),
+        crate::test_support::kit_arch(),
+    ));
     assert_eq!(info.languages.len(), languages.len());
     assert_eq!(
         info.tools
@@ -195,8 +198,6 @@ fn codelldb_follows_the_server() {
     use crate::kit::Target;
     let tmp = TempDir::new("codelldb");
     let on = |target| codelldb_asset(&Kit::at_target(tmp.0.clone(), target));
-    // Native servers everywhere (no `rosetta` on the editor's server).
-    assert!(!Catalog::get().find("vscodium-server").unwrap().rosetta);
     assert_eq!(on(Target::WIN32_X64), "codelldb-win32-x64.vsix");
     assert_eq!(on(Target::LINUX_X64), "codelldb-linux-x64.vsix");
     assert_eq!(on(Target::LINUX_ARM64), "codelldb-linux-arm64.vsix");

@@ -1,12 +1,13 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch, Target};
+use crate::kit::{tests::TempDir, Target};
 
 /// On Windows a batch agent (`agy.cmd`) runs through the kit's PowerShell,
 /// in the app's terminal, never through cmd or a shell of the PC.
 #[test]
 fn batch_runs_through_the_kit_powershell() {
     let tmp = TempDir::new("term");
-    let kit = Kit::at(tmp.0.join("k & (1)"), Arch::X64).for_target(Target::WIN32_X64);
+    let kit = Kit::at(tmp.0.join("k & (1)"), crate::test_support::kit_arch())
+        .for_target(Target::WIN32_X64);
     kit.prepare().unwrap();
     let script = kit.root().join("it's").join("agy.cmd");
     let dir = kit.projects().join("app");

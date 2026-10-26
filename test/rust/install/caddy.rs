@@ -12,11 +12,9 @@ const ASSETS_2_11_7: [(Target, &str); 4] = [
     (Target::LINUX_ARM64, "caddy_2.11.7_linux_arm64.tar.gz"),
 ];
 
-/// Other assets of the same release that must never be taken (the
-/// Windows ARM64 and Intel Mac builds too, D-176).
-const DECOYS: [&str; 11] = [
-    "caddy_2.11.7_windows_arm64.zip",
-    "caddy_2.11.7_mac_amd64.tar.gz",
+/// Other assets of the same release that must never be taken (packages,
+/// signatures, other systems).
+const DECOYS: [&str; 9] = [
     "caddy_2.11.7_linux_amd64.deb",
     "caddy_2.11.7_linux_amd64.tar.gz.sig",
     "caddy_2.11.7_linux_amd64.sbom",
@@ -81,13 +79,12 @@ fn asset_for_each_target() {
     }
 }
 
-/// Every target has its own build: Caddy is never emulated.
+/// Every target has its own build.
 #[test]
 fn native_on_every_target() {
     let caddy = Catalog::get().find("caddy").unwrap();
     for target in Target::ALL {
         assert!(caddy.is_available_on(target), "{target}");
-        assert!(!caddy.is_emulated_on(target), "{target}");
     }
 }
 
@@ -136,7 +133,7 @@ fn hash_from_the_checksum_file() {
     );
     // Not listed, or only a prefix of a listed name.
     assert_eq!(
-        caddy_hash_in(CHECKSUMS_2_10_2, "caddy_2.10.2_mac_amd64.tar.gz"),
+        caddy_hash_in(CHECKSUMS_2_10_2, "caddy_2.10.2_plan9_amd64.tar.gz"),
         None
     );
     assert_eq!(

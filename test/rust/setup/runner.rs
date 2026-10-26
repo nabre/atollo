@@ -515,7 +515,7 @@ fn prepare_lock_child() {
         return;
     };
     let root = std::path::PathBuf::from(root);
-    let kit = Kit::at(root.clone(), Arch::X64);
+    let kit = Kit::at(root.clone(), crate::test_support::kit_arch());
     let result = lock(&kit);
     match std::env::var("ATOLLO_TEST_PREPARE_LOCK_EXPECT").as_deref() {
         Ok("busy") => assert!(result.unwrap_err().is::<Busy>()),

@@ -210,14 +210,6 @@ export function ComponentRow({
             <Dependencies c={c} list={list} chosen={chosen} />
             <LinkProblems id={c.id} links={links} />
           </label>
-          {c.x64Only && (
-            <span
-              className="text-[12px] text-vsc-desc"
-              title={t("Su un Mac con Apple Silicon gira in emulazione x64 con Rosetta 2")}
-            >
-              x64
-            </span>
-          )}
           <span className="w-16 shrink-0 text-right text-[12px] text-vsc-desc">{sizeText(c.mb)}</span>
           <span
             className="w-40 shrink-0 truncate text-right text-[12px]"

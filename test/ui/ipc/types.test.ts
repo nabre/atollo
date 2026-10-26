@@ -11,7 +11,6 @@ describe("api types", () => {
       installed: true,
       running: true,
       port: 7000,
-      emulated: false,
       extensions: { running: true, total: 3, done: 1, failed: ["ms-python.python"] },
     };
     expect(fromRust.extensions.failed).toEqual(["ms-python.python"]);

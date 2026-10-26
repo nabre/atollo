@@ -92,10 +92,8 @@ impl Arch {
 
 /// Combined OS + CPU target. Atollo supports exactly the systems Docker
 /// builds Docker Sandboxes for (D-176): `win32-x64`, `darwin-arm64`,
-/// `linux-x64`, `linux-arm64` ([`Target::ALL`]). The other two pairs are
-/// only a host to refuse ([`unsupported_host`]) and, on a Mac with Apple
-/// silicon, the x64 build of a component run with Rosetta 2
-/// (`router::target::effective_target`).
+/// `linux-x64`, `linux-arm64` ([`Target::ALL`]). Any other pair is only a
+/// detected host to refuse ([`unsupported_host`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Target {
     pub os: Os,
@@ -129,8 +127,7 @@ impl Target {
         Self::LINUX_ARM64,
     ];
 
-    /// One of [`Target::ALL`]: a system Docker Sandboxes runs on. Windows
-    /// on ARM64 and Intel Macs are not (D-176).
+    /// One of [`Target::ALL`]: a system Docker Sandboxes runs on (D-176).
     pub const fn is_supported(self) -> bool {
         matches!(
             (self.os, self.arch),
@@ -146,27 +143,21 @@ impl Target {
         Target::new(Os::current(), Arch::detect())
     }
 
-    pub const fn with_arch(self, arch: Arch) -> Target {
-        Target { os: self.os, arch }
-    }
-
-    /// Canonical folder and matrix identifier (`win32-x64`, `darwin-arm64`, ...).
-    /// The two unsupported pairs keep their names for the message that
-    /// refuses them; [`Target::parse`] never gives them.
+    /// Canonical folder and matrix identifier (`win32-x64`, `darwin-arm64`, ...);
+    /// `unsupported` for a pair outside [`Target::ALL`], which
+    /// [`Target::parse`] never gives.
     pub const fn as_str(self) -> &'static str {
         match (self.os, self.arch) {
             (Os::Win32, Arch::X64) => "win32-x64",
-            (Os::Win32, Arch::Arm64) => "win32-arm64",
             (Os::Darwin, Arch::Arm64) => "darwin-arm64",
-            (Os::Darwin, Arch::X64) => "darwin-x64",
             (Os::Linux, Arch::X64) => "linux-x64",
             (Os::Linux, Arch::Arm64) => "linux-arm64",
+            _ => "unsupported",
         }
     }
 
-    /// A supported target by its name; `None` for anything else, the
-    /// removed `win32-arm64` and `darwin-x64` too (an older kit's setting
-    /// or folder: the caller falls back to the host).
+    /// A supported target by its name; `None` for anything else (an older
+    /// kit's setting or folder: the caller falls back to the host).
     pub fn parse(s: &str) -> Option<Target> {
         let s = s.trim();
         Self::ALL.into_iter().find(|t| t.as_str() == s)
@@ -193,13 +184,11 @@ impl Target {
     }
 
     /// Rust / LLVM target triple (`x86_64-pc-windows-msvc`, `aarch64-apple-darwin`, ...).
-    /// Windows is x64 only; `x86_64-apple-darwin` names the x64 builds run
-    /// with Rosetta 2 on Apple silicon.
+    /// Windows is x64 only, macOS ARM64 only.
     pub const fn rust_triple(self) -> &'static str {
         match (self.os, self.arch) {
             (Os::Win32, _) => "x86_64-pc-windows-msvc",
-            (Os::Darwin, Arch::Arm64) => "aarch64-apple-darwin",
-            (Os::Darwin, Arch::X64) => "x86_64-apple-darwin",
+            (Os::Darwin, _) => "aarch64-apple-darwin",
             (Os::Linux, Arch::X64) => "x86_64-unknown-linux-gnu",
             (Os::Linux, Arch::Arm64) => "aarch64-unknown-linux-gnu",
         }
@@ -260,8 +249,7 @@ impl Target {
     pub const fn conda_subdir(self) -> &'static str {
         match (self.os, self.arch) {
             (Os::Win32, _) => "win-64",
-            (Os::Darwin, Arch::Arm64) => "osx-arm64",
-            (Os::Darwin, Arch::X64) => "osx-64",
+            (Os::Darwin, _) => "osx-arm64",
             (Os::Linux, Arch::X64) => "linux-64",
             (Os::Linux, Arch::Arm64) => "linux-aarch64",
         }
@@ -272,8 +260,7 @@ impl Target {
     pub const fn micromamba_asset(self) -> &'static str {
         match (self.os, self.arch) {
             (Os::Win32, _) => "micromamba-win-64",
-            (Os::Darwin, Arch::Arm64) => "micromamba-osx-arm64",
-            (Os::Darwin, Arch::X64) => "micromamba-osx-64",
+            (Os::Darwin, _) => "micromamba-osx-arm64",
             (Os::Linux, Arch::X64) => "micromamba-linux-64",
             (Os::Linux, Arch::Arm64) => "micromamba-linux-aarch64",
         }
@@ -292,15 +279,14 @@ impl Target {
 
 /// Why Atollo stops at start on `host` (D-176): its core is Docker
 /// Sandboxes, which Docker builds only for the four [`Target::ALL`].
-/// `None` on those. A Windows ARM64 PC is caught even when the x64
-/// Atollo.exe runs there emulated: `platform::host::arch` reads the
-/// WOW64 host.
+/// `None` on those. `platform::host::arch` reads the PC's processor, also
+/// when this exe runs translated.
 pub fn unsupported_host(host: Target, lang: &str) -> Option<String> {
     (!host.is_supported()).then(|| {
         crate::common::i18n::t(
             lang,
-            "Atollo ha bisogno di Docker Sandboxes, che Docker pubblica solo per Windows x64, macOS con Apple silicon, Linux x64 e Linux ARM64: su questo sistema ({0}) non può funzionare.",
-            &[host.as_str()],
+            "Atollo funziona solo sui sistemi dove gira Docker Sandboxes: Windows x64, macOS con Apple silicon, Linux x64 e Linux ARM64. Questo sistema non è tra questi.",
+            &[],
         )
     })
 }

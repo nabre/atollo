@@ -1,7 +1,7 @@
 # 06 — Verifica Matrice Download Multi-OS e Piano Correttivo Residuo (`v2`)
 
 > **Stato di Implementazione del Piano v1**: Nel commit `fa8a34d`, **l'85% del piano architetturale e di download progettato nel documento `06` della `v1` è stato effettivamente implementato nel codice**.
-> Questo documento `v2` aggiorna la matrice da *"progetto su carta"* a **Matrice di Verifica Implementativa sui 26 componenti × 6 target**, evidenziando cosa è già operativo (`✅ Implementato in v2`) e fornendo le patch esatte per i **4 componenti Unix residui** (`Git`, `Nginx`, `Php`, `Apache`) e per i 2 fix infrastrutturali (`extract_tar_xz` e `Python::finish`).
+> Questo documento `v2` aggiorna la matrice da *"progetto su carta"* a **Matrice di Verifica Implementativa sui 26 componenti × 4 target**, evidenziando cosa è già operativo (`✅ Implementato in v2`) e fornendo le patch esatte per i **4 componenti Unix residui** (`Git`, `Nginx`, `Php`, `Apache`) e per i 2 fix infrastrutturali (`extract_tar_xz` e `Python::finish`).
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Componente Infrastrutturale | File Implementato | Stato in `v2` | Note di Verifica |
 | :--- | :--- | :-: | :--- |
-| **1.1 Enum `Os`, `Arch`, `Target` (6 target)** | [`tauri/src/kit.rs:17-129`](../../../tauri/src/kit.rs#L17-L129) | ✅ **Fatto** | `Target::current()`, `slug()`, `from_slug()`, `Target::ALL` (6 target) |
+| **1.1 Enum `Os`, `Arch`, `Target` (4 target)** | [`tauri/src/kit.rs:17-129`](../../../tauri/src/kit.rs#L17-L129) | ✅ **Fatto** | `Target::current()`, `slug()`, `from_slug()`, `Target::ALL` (4 target) |
 | **1.2 Isolamento `data/apps/<target>` + Migrazione** | [`tauri/src/kit.rs:138-234`](../../../tauri/src/kit.rs#L138-L234) | ✅ **Fatto** | Migrazione automatica legacy `data/apps/<slot> -> data/apps/win32-<arch>` |
 | **1.3 Pointer `root-<os>.txt` per-OS** | [`tauri/src/kit.rs:236-260`](../../../tauri/src/kit.rs#L236-L260) | ✅ **Fatto** | Fallback di lettura a `root.txt` legacy preservato |
 | **1.4 Traduzione `translate_rel(slot, rel, os)`** | [`tauri/src/setup/catalog.rs:747-855`](../../../tauri/src/setup/catalog.rs#L747-L855) | ✅ **Fatto** | Copre tutti i 26 componenti senza duplicare le struct `ComponentMeta` |
@@ -19,43 +19,42 @@
 
 ---
 
-## 2. Matrice di Verifica dei 26 Componenti × 6 Target in `v2`
+## 2. Matrice di Verifica dei 26 Componenti × 4 Target in `v2`
 
 Legenda:
 - ✅ **Pronto in `v2`**: URL resolver, estrattore, layout binario e hook `finish()` verificati nel codice `fa8a34d`.
-- 🔄 **Emulato (x64)**: Funzionante tramite emulazione trasparente (Prism su Windows ARM64 / Rosetta 2 su macOS ARM64).
 - ❌ **Rotto su Unix (`BUG-23` / `BUG-24`)**: Il codice è presente ma fallisce in fase di download o estrazione (vedi Sezione 3 per la fix).
 - ➖ **Non Applicabile**: Componente esclusivo Windows (`Terminal`).
 
-| # | Componente | File Installer | `win32-x64` | `win32-arm64` | `darwin-x64` | `darwin-arm64` | `linux-x64` | `linux-arm64` | Dettaglio Implementazione `v2` |
-| :-: | :--- | :--- | :-: | :-: | :-: | :-: | :-: | :-: | :--- |
-| 1 | **`git`** | [`core.rs:23`](../../../tauri/src/install/core.rs#L23-L108) | ✅ MinGit | ✅ MinGit | ❌ `BUG-23` | ❌ `BUG-23` | ❌ `BUG-23` | ❌ `BUG-23` | Scarica `.tar.bz2`/`.conda` da conda-forge ma passa `Kind::Zip` |
-| 2 | **`python`** | [`core.rs:180`](../../../tauri/src/install/core.rs#L180-L386) | ✅ Embed | ✅ Embed | ✅ Standalone | ✅ Standalone | ✅ Standalone | ✅ Standalone | `python-build-standalone` (`install_only_stripped`); lieve bug in `finish()` se linea != 3.13 (`BUG-24`) |
-| 3 | **`nodejs`** | [`core.rs:392`](../../../tauri/src/install/core.rs#L392-L545) | ✅ `.zip` | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.xz` | ✅ `.tar.xz` | Wrapper `npm`/`npx` e `.npmrc` multi-OS |
-| 4 | **`vscode`** | [`core.rs:551`](../../../tauri/src/install/core.rs#L551-L652) | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | Appiattisce `Visual Studio Code.app` in `data/apps/<target>/vscode/` |
-| 5 | **`terminal`** | [`core.rs:658`](../../../tauri/src/install/core.rs#L658-L717) | ✅ `.zip` | ✅ `.zip` | ➖ N/A | ➖ N/A | ➖ N/A | ➖ N/A | Correttamente escluso su macOS/Linux tramite `is_available_on` |
-| 6 | **`jdk`** | [`jvm.rs:19`](../../../tauri/src/install/jvm.rs#L19-L148) | ✅ Adoptium | ✅ Adoptium | ✅ Adoptium | ✅ Adoptium | ✅ Adoptium | ✅ Adoptium | Appiattisce `Contents/Home/` su macOS (`flatten_macos_contents_home`) |
-| 7 | **`maven`** | [`jvm.rs:154`](../../../tauri/src/install/jvm.rs#L154-L237) | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | Imposta `0o755` su `bin/mvn` e `bin/mvnDebug` su Unix |
-| 8 | **`clang`** | [`systems.rs:21`](../../../tauri/src/install/systems.rs#L21-L152) | ✅ `.tar.xz` | ✅ `.tar.xz` | ✅ `.tar.xz` | ✅ `.tar.xz` | ✅ `.tar.xz` | ✅ `.tar.xz` | Fallback x64 automatico su `darwin-x64` per LLVM >= 16 |
-| 9 | **`rust`** | [`systems.rs:158`](../../../tauri/src/install/systems.rs#L158-L273) | ✅ `rustup` | ✅ `rustup` | ✅ `rustup` | ✅ `rustup` | ✅ `rustup` | ✅ `rustup` | Esegue `rustup-init` con triple nativo (`aarch64-apple-darwin`, ecc.) |
-| 10 | **`go`** | [`systems.rs:279`](../../../tauri/src/install/systems.rs#L279-L363) | ✅ `.zip` | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | `go.dev/dl/` multi-OS completo |
-| 11 | **`cmake`** | [`systems.rs:369`](../../../tauri/src/install/systems.rs#L369-L461) | ✅ `.zip` | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | Appiattisce `CMake.app/Contents/` su macOS (`flatten_macos_app_contents`) |
-| 12 | **`dotnet`** | [`systems.rs:467`](../../../tauri/src/install/systems.rs#L467-L566) | ✅ `.zip` | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | Symlink Unix in [`side_by_side.rs:228`](../../../tauri/src/versions/side_by_side.rs#L228-L243) |
-| 13 | **`gnu_make`** | [`systems.rs:572`](../../../tauri/src/install/systems.rs#L572-L654) | ✅ GnuWin32 | 🔄 Emul. | ✅ Wrapper | ✅ Wrapper | ✅ Wrapper | ✅ Wrapper | Su Unix crea `bin/make` che delega a `/usr/bin/make` |
-| 14 | **`gdb`** | [`systems.rs:660`](../../../tauri/src/install/systems.rs#L660-L761) | ✅ w64devkit | 🔄 Emul. | ✅ Wrapper | ✅ Wrapper | ✅ Wrapper | ✅ Wrapper | Su macOS crea wrapper `bin/gdb` → `lldb`; su Linux → `/usr/bin/gdb` |
-| 15 | **`r`** | [`scientific.rs:24`](../../../tauri/src/install/scientific.rs#L24-L162) | ✅ CRAN | ❌ Non disp. | ✅ Conda | ✅ Conda | ✅ Conda | ✅ Conda | Usa `conda-forge/r-base` con `extract_conda_package` su Unix |
-| 16 | **`julia`** | [`scientific.rs:168`](../../../tauri/src/install/scientific.rs#L168-L253) | ✅ `.tar.gz` | ❌ Non disp. | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | Sbloccato su `darwin-arm64` e `linux-arm64` |
-| 17 | **`octave`** | [`scientific.rs:259`](../../../tauri/src/install/scientific.rs#L259-L361) | ✅ `.zip` | 🔄 Emul. | ✅ Conda | ✅ Conda | ✅ Conda | ✅ Conda | Usa `conda-forge/octave` su macOS e Linux |
-| 18 | **`texlive`** | [`scientific.rs:367`](../../../tauri/src/install/scientific.rs#L367-L459) | ✅ TinyTeX | ❌ Non disp. | ✅ TinyTeX | ✅ TinyTeX | ✅ TinyTeX | ✅ TinyTeX | `TinyTeX-1-v*.tgz` (macOS universal) e `.tar.gz` (`linux-x86_64`/`arm64`) |
-| 19 | **`jupyter`** | [`scientific.rs:465`](../../../tauri/src/install/scientific.rs#L465-L512) | ✅ `pip` | ✅ `pip` | ✅ `pip` | ✅ `pip` | ✅ `pip` | ✅ `pip` | Usa `python_exe` tradotto (`bin/python3` su Unix) |
-| 20 | **`sqlite`** | [`scientific.rs:518`](../../../tauri/src/install/scientific.rs#L518-L610) | ✅ `.zip` | 🔄 Emul. | ✅ `.zip` | 🔄 Emul. | ✅ Conda | ✅ Conda | `sqlite-tools-osx-x64` su macOS; `conda-forge/sqlite` su Linux |
-| 21 | **`duckdb`** | [`scientific.rs:697`](../../../tauri/src/install/scientific.rs#L697-L766) | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.gz` | ✅ `.gz` | `duckdb_cli-osx-universal.zip` su macOS |
-| 22 | **`mysql`** | [`db.rs`](../../../tauri/src/install/db.rs) | ✅ `.zip` | 🔄 Emul. | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.xz` | ✅ `.tar.xz` | Archivi Oracle da `cdn.mysql.com`: `macos15-*` su macOS, `linux-glibc2.28-*` su Linux |
-| 23 | **`php`** | [`web.rs:404`](../../../tauri/src/install/web.rs#L404-L558) | ✅ `.zip` | ❌ Non disp. | ❌ `BUG-24` | ❌ `BUG-24` | ❌ `BUG-24` | ❌ `BUG-24` | Chiama ancora `windows.php.net` (zip di `.exe`/`.dll` Windows) |
-| 24 | **`composer`** | [`web.rs:564`](../../../tauri/src/install/web.rs#L564-L607) | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | Crea sia `composer.bat` (Windows) sia `bin/composer` `0o755` (Unix) |
-| 25 | **`wp_cli`** | [`web.rs:613`](../../../tauri/src/install/web.rs#L613-L656) | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | Crea sia `wp.bat` (Windows) sia `bin/wp` `0o755` (Unix) |
-| 26 | **`apache`** | [`web.rs:662`](../../../tauri/src/install/web.rs#L662-L702) | ✅ Lounge | 🔄 Emul. | ❌ `BUG-24` | ❌ `BUG-24` | ❌ `BUG-24` | ❌ `BUG-24` | Chiama ancora `apachelounge.com/download/VS18/` (Windows-only) |
-| 27* | **`nginx`** | [`web.rs:708`](../../../tauri/src/install/web.rs#L708-L780) | ✅ `.zip` | 🔄 Emul. | ❌ `BUG-23` | ❌ `BUG-23` | ❌ `BUG-23` | ❌ `BUG-23` | Su Unix scarica il tarball C sorgente da `nginx/nginx` invece di un binario |
+| # | Componente | File Installer | `win32-x64` | `darwin-arm64` | `linux-x64` | `linux-arm64` | Dettaglio Implementazione `v2` |
+| :-: | :--- | :--- | :-: | :-: | :-: | :-: | :--- |
+| 1 | **`git`** | [`core.rs:23`](../../../tauri/src/install/core.rs#L23-L108) | ✅ MinGit | ❌ `BUG-23` | ❌ `BUG-23` | ❌ `BUG-23` | Scarica `.tar.bz2`/`.conda` da conda-forge ma passa `Kind::Zip` |
+| 2 | **`python`** | [`core.rs:180`](../../../tauri/src/install/core.rs#L180-L386) | ✅ Embed | ✅ Standalone | ✅ Standalone | ✅ Standalone | `python-build-standalone` (`install_only_stripped`); lieve bug in `finish()` se linea != 3.13 (`BUG-24`) |
+| 3 | **`nodejs`** | [`core.rs:392`](../../../tauri/src/install/core.rs#L392-L545) | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.xz` | ✅ `.tar.xz` | Wrapper `npm`/`npx` e `.npmrc` multi-OS |
+| 4 | **`vscode`** | [`core.rs:551`](../../../tauri/src/install/core.rs#L551-L652) | ✅ `.zip` | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | Appiattisce `Visual Studio Code.app` in `data/apps/<target>/vscode/` |
+| 5 | **`terminal`** | [`core.rs:658`](../../../tauri/src/install/core.rs#L658-L717) | ✅ `.zip` | ➖ N/A | ➖ N/A | ➖ N/A | Correttamente escluso su macOS/Linux tramite `is_available_on` |
+| 6 | **`jdk`** | [`jvm.rs:19`](../../../tauri/src/install/jvm.rs#L19-L148) | ✅ Adoptium | ✅ Adoptium | ✅ Adoptium | ✅ Adoptium | Appiattisce `Contents/Home/` su macOS (`flatten_macos_contents_home`) |
+| 7 | **`maven`** | [`jvm.rs:154`](../../../tauri/src/install/jvm.rs#L154-L237) | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | ✅ `.zip` | Imposta `0o755` su `bin/mvn` e `bin/mvnDebug` su Unix |
+| 8 | **`clang`** | [`systems.rs:21`](../../../tauri/src/install/systems.rs#L21-L152) | ✅ `.tar.xz` | ✅ `.tar.xz` | ✅ `.tar.xz` | ✅ `.tar.xz` | Archivi LLVM ufficiali per ogni target |
+| 9 | **`rust`** | [`systems.rs:158`](../../../tauri/src/install/systems.rs#L158-L273) | ✅ `rustup` | ✅ `rustup` | ✅ `rustup` | ✅ `rustup` | Esegue `rustup-init` con triple nativo (`aarch64-apple-darwin`, ecc.) |
+| 10 | **`go`** | [`systems.rs:279`](../../../tauri/src/install/systems.rs#L279-L363) | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | `go.dev/dl/` multi-OS completo |
+| 11 | **`cmake`** | [`systems.rs:369`](../../../tauri/src/install/systems.rs#L369-L461) | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | Appiattisce `CMake.app/Contents/` su macOS (`flatten_macos_app_contents`) |
+| 12 | **`dotnet`** | [`systems.rs:467`](../../../tauri/src/install/systems.rs#L467-L566) | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | Symlink Unix in [`side_by_side.rs:228`](../../../tauri/src/versions/side_by_side.rs#L228-L243) |
+| 13 | **`gnu_make`** | [`systems.rs:572`](../../../tauri/src/install/systems.rs#L572-L654) | ✅ GnuWin32 | ✅ Wrapper | ✅ Wrapper | ✅ Wrapper | Su Unix crea `bin/make` che delega a `/usr/bin/make` |
+| 14 | **`gdb`** | [`systems.rs:660`](../../../tauri/src/install/systems.rs#L660-L761) | ✅ w64devkit | ✅ Wrapper | ✅ Wrapper | ✅ Wrapper | Su macOS crea wrapper `bin/gdb` → `lldb`; su Linux → `/usr/bin/gdb` |
+| 15 | **`r`** | [`scientific.rs:24`](../../../tauri/src/install/scientific.rs#L24-L162) | ✅ CRAN | ✅ Conda | ✅ Conda | ✅ Conda | Usa `conda-forge/r-base` con `extract_conda_package` su Unix |
+| 16 | **`julia`** | [`scientific.rs:168`](../../../tauri/src/install/scientific.rs#L168-L253) | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | ✅ `.tar.gz` | Sbloccato su `darwin-arm64` e `linux-arm64` |
+| 17 | **`octave`** | [`scientific.rs:259`](../../../tauri/src/install/scientific.rs#L259-L361) | ✅ `.zip` | ✅ Conda | ✅ Conda | ✅ Conda | Usa `conda-forge/octave` su macOS e Linux |
+| 18 | **`texlive`** | [`scientific.rs:367`](../../../tauri/src/install/scientific.rs#L367-L459) | ✅ TinyTeX | ✅ TinyTeX | ✅ TinyTeX | ✅ TinyTeX | `TinyTeX-1-v*.tgz` (macOS universal) e `.tar.gz` (`linux-x86_64`/`arm64`) |
+| 19 | **`jupyter`** | [`scientific.rs:465`](../../../tauri/src/install/scientific.rs#L465-L512) | ✅ `pip` | ✅ `pip` | ✅ `pip` | ✅ `pip` | Usa `python_exe` tradotto (`bin/python3` su Unix) |
+| 20 | **`sqlite`** | [`scientific.rs:518`](../../../tauri/src/install/scientific.rs#L518-L610) | ✅ `.zip` | ✅ `.zip` (universale) | ✅ Conda | ✅ Conda | `sqlite-tools-osx` su macOS; `conda-forge/sqlite` su Linux |
+| 21 | **`duckdb`** | [`scientific.rs:697`](../../../tauri/src/install/scientific.rs#L697-L766) | ✅ `.zip` | ✅ `.zip` | ✅ `.gz` | ✅ `.gz` | `duckdb_cli-osx-universal.zip` su macOS |
+| 22 | **`mysql`** | [`db.rs`](../../../tauri/src/install/db.rs) | ✅ `.zip` | ✅ `.tar.gz` | ✅ `.tar.xz` | ✅ `.tar.xz` | Archivi Oracle da `cdn.mysql.com`: `macos15-*` su macOS, `linux-glibc2.28-*` su Linux |
+| 23 | **`php`** | [`web.rs:404`](../../../tauri/src/install/web.rs#L404-L558) | ✅ `.zip` | ❌ `BUG-24` | ❌ `BUG-24` | ❌ `BUG-24` | Chiama ancora `windows.php.net` (zip di `.exe`/`.dll` Windows) |
+| 24 | **`composer`** | [`web.rs:564`](../../../tauri/src/install/web.rs#L564-L607) | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | Crea sia `composer.bat` (Windows) sia `bin/composer` `0o755` (Unix) |
+| 25 | **`wp_cli`** | [`web.rs:613`](../../../tauri/src/install/web.rs#L613-L656) | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | ✅ `.phar` | Crea sia `wp.bat` (Windows) sia `bin/wp` `0o755` (Unix) |
+| 26 | **`apache`** | [`web.rs:662`](../../../tauri/src/install/web.rs#L662-L702) | ✅ Lounge | ❌ `BUG-24` | ❌ `BUG-24` | ❌ `BUG-24` | Chiama ancora `apachelounge.com/download/VS18/` (Windows-only) |
+| 27* | **`nginx`** | [`web.rs:708`](../../../tauri/src/install/web.rs#L708-L780) | ✅ `.zip` | ❌ `BUG-23` | ❌ `BUG-23` | ❌ `BUG-23` | Su Unix scarica il tarball C sorgente da `nginx/nginx` invece di un binario |
 
 *(Nota: i componenti nel catalogo sono 26 perché `composer` e `wp_cli` fanno parte dei 26 slot insieme a `apache` e `nginx`).*
 
@@ -71,7 +70,7 @@ Legenda:
 
 ### 3.2 Fix `Nginx`, `Php` e `Apache` su macOS e Linux ([`tauri/src/install/web.rs`](../../../tauri/src/install/web.rs))
 - **`Nginx`** ([`web.rs:708-780`](../../../tauri/src/install/web.rs#L708-L780)): su `!ctx.target().os.is_windows()`, usare `resolve_conda_forge(ctx, "nginx", target)` + `extract_conda_package`, che fornisce direttamente `sbin/nginx` (o `bin/nginx`, creando un symlink `sbin/nginx -> ../bin/nginx` se necessario) e `conf/nginx.conf`.
-- **`Php`** ([`web.rs:404-558`](../../../tauri/src/install/web.rs#L404-L558)): su `!ctx.target().os.is_windows()`, risolvere da `conda-forge/php` (disponibile per `osx-64`, `osx-arm64`, `linux-64`, `linux-aarch64`) ed estrarre con `extract_conda_package`, generando `bin/php.ini` in `Php::finish`.
+- **`Php`** ([`web.rs:404-558`](../../../tauri/src/install/web.rs#L404-L558)): su `!ctx.target().os.is_windows()`, risolvere da `conda-forge/php` (disponibile per `osx-arm64`, `linux-64`, `linux-aarch64`) ed estrarre con `extract_conda_package`, generando `bin/php.ini` in `Php::finish`.
 - **`Apache`** ([`web.rs:662-702`](../../../tauri/src/install/web.rs#L662-L702)): su Unix, usare `conda-forge` (`apache-httpd` se disponibile o delegare a wrapper verso `apachectl`/`httpd` di sistema analogamente a quanto già fatto per `GnuMake` e `Gdb` in [`systems.rs:615-760`](../../../tauri/src/install/systems.rs#L615-L760)).
 
 ### 3.3 Fix Sicurezza `extract_tar_xz` ([`tauri/src/net/archive.rs:175-190`](../../../tauri/src/net/archive.rs#L175-L190))

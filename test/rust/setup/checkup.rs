@@ -81,7 +81,7 @@ fn check_program_at_the_kit_root() {
         }
     }
     // The batch file runs through cmd.exe with this environment only, as
-    // in the app's: Windows on ARM64 starts no process without SystemRoot.
+    // in the app's: Windows may start no process without SystemRoot.
     let mut env = KitEnv::default();
     if let Some(root) = std::env::var_os("SystemRoot") {
         env.set("SystemRoot", root.to_string_lossy());

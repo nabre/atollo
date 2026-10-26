@@ -432,7 +432,7 @@ def brand_board_svg():
 
     <rect x="426" y="302" width="28" height="28" rx="6" fill="#D1F0E0"/>
     <polygon points="440,307 449,316 440,325 431,316" fill="#0F3D2E"/>
-    <text x="462" y="321">6 OS/Arch Targets</text>
+    <text x="462" y="321">4 OS/Arch Targets</text>
   </g>
 
   <!-- 2. HERO BANNER (Top Center) -->
@@ -558,7 +558,7 @@ def brand_board_svg():
   <text x="42" y="968" font-family="{font}" font-size="12" fill="#64748B">H2</text>
   <text x="96" y="972" font-family="{font}" font-size="22" font-weight="600" fill="#0F172A">Code. Configure. Unplug.</text>
   <text x="42" y="1008" font-family="{font}" font-size="12" fill="#64748B">H3</text>
-  <text x="96" y="1012" font-family="{font}" font-size="18" font-weight="500" fill="#1E293B">Six architectures in one folder.</text>
+  <text x="96" y="1012" font-family="{font}" font-size="18" font-weight="500" fill="#1E293B">Four systems in one folder.</text>
   <text x="42" y="1050" font-family="{font}" font-size="12" fill="#64748B">Body</text>
   <text x="96" y="1050" font-family="{font}" font-size="14" fill="#475569">Atollo unifies VSCodium, 20+ on-demand toolchains, local</text>
   <text x="96" y="1070" font-family="{font}" font-size="14" fill="#475569">databases, and synchronized AI agents with zero host footprint.</text>
@@ -584,7 +584,7 @@ def brand_board_svg():
   <text x="618" y="959" font-family="{font}" font-size="12.5" font-weight="600" fill="#D1F0E0">Progetti (3)</text>
   <text x="618" y="988" font-family="{font}" font-size="12.5" fill="#CCCCCC">Agenti AI (Sync)</text>
   <text x="618" y="1014" font-family="{font}" font-size="12.5" fill="#CCCCCC">Database &amp; Server</text>
-  <text x="618" y="1040" font-family="{font}" font-size="12.5" fill="#CCCCCC">Strumenti (6/6)</text>
+  <text x="618" y="1040" font-family="{font}" font-size="12.5" fill="#CCCCCC">Strumenti (4/4)</text>
   <text x="618" y="1066" font-family="{font}" font-size="12.5" fill="#CCCCCC">Guida &amp; Impostazioni</text>
 
   <!-- Editor & Terminal Center -->
@@ -606,7 +606,7 @@ def brand_board_svg():
   <text x="1310" y="989" font-family="{font}" font-size="12" font-weight="600" fill="#34D399">Claude Code · Codex · Antigravity</text>
   <text x="1310" y="1005" font-family="{font}" font-size="11" fill="#9D9D9D">Unified AGENTS.md, skills &amp; MCP</text>
   <rect x="1296" y="1022" width="250" height="44" rx="6" fill="#202020" stroke="#2B2B2B"/>
-  <text x="1310" y="1041" font-family="{font}" font-size="12" font-weight="600" fill="#FBBF24">Multi-OS Router (6/6)</text>
+  <text x="1310" y="1041" font-family="{font}" font-size="12" font-weight="600" fill="#FBBF24">Multi-OS Router (4/4)</text>
   <text x="1310" y="1057" font-family="{font}" font-size="11" fill="#9D9D9D">Native binaries per host target</text>
 
   <!-- Emerald Status Bar -->

@@ -488,9 +488,13 @@ fn addable_follows_the_platform() {
     assert!(!addable(&on(Target::LINUX_ARM64), android, false));
     // For the VM's Linux from this PC (D-173): what only finishes on its
     // own system is not offered there.
+    // Rust finishes on Linux x64 itself: a PC with that system is one.
     let rust = catalog.find("rust").unwrap();
     assert!(addable(&on(Target::LINUX_X64), node, true));
-    assert!(!addable(&on(Target::LINUX_X64), rust, true));
+    assert_eq!(
+        addable(&on(Target::LINUX_X64), rust, true),
+        Target::detect() == Target::LINUX_X64
+    );
     assert!(
         addable(&on(Target::LINUX_X64), rust, false),
         "on Linux itself"

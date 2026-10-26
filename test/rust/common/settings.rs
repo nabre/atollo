@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use crate::test_support::prepared_kit;
 use std::fs;
 
@@ -146,7 +146,7 @@ fn gemini_key_lives_in_its_own_file() {
 #[test]
 fn unreadable_gemini_key_is_not_absent() {
     let tmp = TempDir::new("settings-gemini-unreadable");
-    let kit = Kit::at(tmp.0.join("O’Brien {kit}"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("O’Brien {kit}"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let file = gemini_file(&kit);
     assert!(read_secret(&file).unwrap().is_none(), "absent");

@@ -1,12 +1,12 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 #[test]
 fn written_and_restored() {
     let tmp = TempDir::new("kitfiles");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     write_all(&kit).unwrap();
     let path = kit.kit_files().join("loopback.js");
     assert!(fs::read_to_string(&path)
@@ -27,7 +27,7 @@ fn written_and_restored() {
 #[test]
 fn mysql_launchers_written() {
     let tmp = TempDir::new("kitfiles-mysql");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     write_all(&kit).unwrap();
     let dir = kit.kit_files();
     for stem in MYSQL_LAUNCHERS {
@@ -54,7 +54,7 @@ fn mysql_launchers_written() {
 fn mysql_launcher_runs_the_right_program() {
     use std::os::unix::fs::PermissionsExt;
     let tmp = TempDir::new("kitfiles-mysql-run");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     write_all(&kit).unwrap();
     let fake = |dir: &Path, name: &str| {
         fs::create_dir_all(dir.join("bin")).unwrap();
@@ -101,7 +101,7 @@ fn line_endings_by_kind() {
 #[test]
 fn shell_files_lf_and_executable() {
     let tmp = TempDir::new("kitfiles-sh");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     write_all(&kit).unwrap();
     let dir = kit.kit_files();
     for (name, _) in FILES {
@@ -229,7 +229,7 @@ fn bash_parses_written_files() {
         return;
     };
     let tmp = TempDir::new("kitfiles-bash");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     write_all(&kit).unwrap();
     let dir = kit.kit_files();
     for name in FILES.iter().map(|(n, _)| *n).filter(|n| is_shell(n)) {
@@ -253,7 +253,7 @@ fn bashrc_swaps_project_versions() {
         return;
     };
     let tmp = TempDir::new("kitfiles-versions");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     write_all(&kit).unwrap();
     let root = tmp.0.join("root");
     let data = tmp.0.join("data");

@@ -238,7 +238,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.ui == 'true'
     # The runner comes from the target, so `target` is the only matrix key.
-    # Only the systems Docker Sandboxes runs on (D-176): no Intel macOS.
+    # Only the systems Docker Sandboxes runs on (D-176).
     # Linux pinned to 24.04 (the WSL2 Ubuntu of scripts/test-linux.sh), not
     # ubuntu-latest: the package names of Tauri's system libraries below are
     # those of 24.04, and ubuntu-latest moves to a newer release by itself.
@@ -324,8 +324,8 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # Atollo.app for macOS (D-113: ad hoc, no Developer ID), Apple Silicon
-  # only (D-176: Docker Sandboxes has no Intel macOS build), ad hoc signed
+  # Atollo.app for macOS on Apple Silicon (D-113: ad hoc, no Developer ID;
+  # D-176: the systems of Docker Sandboxes), ad hoc signed
   # under the hardened runtime with tauri/entitlements.plist, zipped as the self-updater reads it
   # (Atollo-<version>-<target>.app.zip, setup/self_update.rs). The artifact
   # bundle-<target> is what the release job publishes, after release-smoke
@@ -642,7 +642,7 @@ jobs:
     needs: [changes, check]
     if: needs.changes.outputs.kit == 'true'
     runs-on: windows-latest
-    # x64 only: Docker Sandboxes has no Windows on Arm build (D-176).
+    # Windows x64, the Windows system of Docker Sandboxes (D-176).
     strategy:
       fail-fast: false
       matrix:

@@ -46,7 +46,7 @@ fn the_kit_conpty_needs_both_files() {
 fn env() -> KitEnv {
     let mut env = KitEnv::default();
     env.set("ATOLLO_PROBE", "kit-env");
-    // Windows on ARM64 starts no process without SystemRoot.
+    // Windows may start no process without SystemRoot.
     if let Some(root) = std::env::var_os("SystemRoot") {
         env.set("SystemRoot", root.to_string_lossy());
     }

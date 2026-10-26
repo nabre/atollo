@@ -38,7 +38,6 @@ fn conda_versions_per_subdir() {
         conda_versions(&info, Target::LINUX_ARM64.conda_subdir()),
         ["2.51.0"]
     );
-    assert!(conda_versions(&info, "osx-64").is_empty());
     assert!(conda_versions(&serde_json::json!({}), "linux-64").is_empty());
 }
 
@@ -71,23 +70,18 @@ fn micromamba_create_args_git() {
     assert!(!r.iter().any(|a| a == "--platform"));
 }
 
-/// A component run with Rosetta 2 on Apple silicon: the native micromamba
-/// makes an `osx-64` environment (`--platform` before the specs); its own
-/// platform needs no flag.
+/// A kit of Linux ARM64 prepared from Linux x64: this PC's micromamba
+/// makes a `linux-aarch64` environment (`--platform` before the specs); its
+/// own platform needs no flag.
 #[test]
 fn micromamba_create_args_for_another_platform() {
-    let prefix = Path::new("/kit/data/apps/darwin-arm64/r/4.6");
+    let prefix = Path::new("/kit/data/apps/linux-arm64/r/4.6");
     let specs = ["r-base=4.6.1", "libblas=*=*openblas"];
-    let args = micromamba_create_args(prefix, &specs, Some("osx-64"));
+    let platform = Target::LINUX_ARM64.conda_subdir();
+    let args = micromamba_create_args(prefix, &specs, Some(platform));
     let p = args.iter().position(|a| a == "--platform").unwrap();
-    assert_eq!(args[p + 1], "osx-64");
+    assert_eq!(args[p + 1], "linux-aarch64");
     assert_eq!(&args[p + 2..], specs);
-    assert_eq!(
-        Target::DARWIN_ARM64
-            .with_arch(crate::kit::Arch::X64)
-            .conda_subdir(),
-        "osx-64"
-    );
 }
 
 /// A kit this PC cannot run, of the same system (Linux ARM64 prepared from

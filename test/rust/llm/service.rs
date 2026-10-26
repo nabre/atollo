@@ -1,7 +1,6 @@
 use super::*;
 
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
 use crate::test_support::prepared_kit;
 
 #[test]
@@ -38,7 +37,7 @@ fn loaded_models_of_the_router() {
 #[test]
 fn the_server_listens_on_this_pc_only() {
     let tmp = TempDir::new("llm-args");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let a = args(&kit, 9931);
     let after = |flag: &str| a[a.iter().position(|x| x == flag).unwrap() + 1].clone();
     assert_eq!(after("--host"), "127.0.0.1");

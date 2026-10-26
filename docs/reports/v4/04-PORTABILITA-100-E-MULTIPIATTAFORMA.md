@@ -19,9 +19,9 @@ La transizione da `v3` (`67/100`) a `v4` (`81/100`, `+14` punti) segna il passag
    - [`os/volume.rs`](../../../tauri/src/os/volume.rs): `libc::statvfs` per spazio libero/totale e `FsKind::Posix` per la classificazione del filesystem.
    - [`os/processes.rs`](../../../tauri/src/os/processes.rs): scansione dei processi in esecuzione sotto `<kit_root>` tramite `/proc/<pid>/exe` + `/proc/<pid>/cwd` su Linux e `libproc` (`PROC_PIDPATHINFO_MAXSIZE` / `PROC_PIDVNODEPATHINFO`) su macOS.
 3. **Catalogo Esteso su 35 Componenti (`D-95`, `D-105`)**:
-   - `MySQL` (linee 8.4 e 9.7 LTS) usa le build Oracle per tutti i 6 target (`win32-arm64` in emulazione x64), con SHA-256 fissati per linea in `sha256ByLine` dopo la verifica della firma GPG di Oracle ([`tauri/src/install/db.rs`](../../../tauri/src/install/db.rs)).
-   - `vscodium-server` (`1.135.06055`) ha gli SHA-256 verificati in [`tauri/catalog/components.json`](../../../tauri/catalog/components.json) per tutti i 5 target (`win32-x64`, `win32-arm64`, `darwin-x64`, `darwin-arm64`, `linux-x64`).
-   - `Cc` interroga fino a 100 release GitHub di `llvm/llvm-project` ([`tauri/src/install/sys.rs:180-210`](../../../tauri/src/install/sys.rs#L180-L210)), trovando `20.1.7` per `darwin-x64`.
+   - `MySQL` (linee 8.4 e 9.7 LTS) usa le build Oracle per tutti i target, con SHA-256 fissati per linea in `sha256ByLine` dopo la verifica della firma GPG di Oracle ([`tauri/src/install/db.rs`](../../../tauri/src/install/db.rs)).
+   - `vscodium-server` (`1.135.06055`) ha gli SHA-256 verificati in [`tauri/catalog/components.json`](../../../tauri/catalog/components.json) per tutti i 5 target (`win32-x64`, `darwin-arm64`, `linux-x64`).
+   - `Cc` interroga fino a 100 release GitHub di `llvm/llvm-project` ([`tauri/src/install/sys.rs:180-210`](../../../tauri/src/install/sys.rs#L180-L210)) per trovare l'archivio di ogni sistema.
    - `R` su Windows riscrive `LOCAL_SOFT` in `etc/x64/Makeconf` ad ogni avvio del kit ([`tauri/src/install/lang/r.rs:115-160`](../../../tauri/src/install/lang/r.rs#L115-L160) e [`tauri/src/kit.rs:510-520`](../../../tauri/src/kit.rs#L510-L520)).
 
 ---
@@ -106,9 +106,8 @@ Nonostante la compilazione pulita su Unix, l'audit del flusso di esecuzione runt
 
 ---
 
-### `PORT-V4-07` [MEDIA] — `Julia` e `Bun` su `win32-arm64`, `RunLock` multiprocesso su Unix, `vcruntime` in `relations` e pin `tauri 2.12.0`
+### `PORT-V4-07` [MEDIA] — `RunLock` multiprocesso su Unix, `vcruntime` in `relations` e pin `tauri 2.12.0`
 - **File e Righe**:
-  - [`tauri/catalog/components.json:23-24`](../../../tauri/catalog/components.json#L23-L24), [`tauri/src/install/lang/julia.rs:18-37`](../../../tauri/src/install/lang/julia.rs#L18-L37), [`tauri/src/install/lang/js.rs:16-27`](../../../tauri/src/install/lang/js.rs#L16-L27): né Julia né Bun pubblicano build ufficiali `win32-arm64`; i rispettivi installatori cercano `aarch64` / `windows-aarch64` e restituiscono errore su Windows ARM64. Aggiungendo `"x64Only": true` in `components.json` (e mappando `win32-arm64` → `x64` nei due installatori), funzionano immediatamente tramite l'emulatore Prism di Windows 11 ARM64, portando `win32-arm64` a **35/35 componenti (100%)**.
   - [`tauri/src/setup/runner.rs:138-185`](../../../tauri/src/setup/runner.rs#L138-L185): `RunLock` su Unix usa solo un `AtomicBool` in-process anziché `flock` su `setup.lock`.
   - [`tauri/src/versions/relations/checks.rs:75-130`](../../../tauri/src/versions/relations/checks.rs#L75-L130): `check_vcruntime` restituisce `false` su Unix (cercando `vcruntime140.dll`), segnalando un falso problema di prerequisito C++ per PHP/Apache/MySQL/Python su macOS e Linux.
   - [`tauri/Cargo.toml:26`](../../../tauri/Cargo.toml#L26): `tauri = "=2.12.0"` entra in conflitto con `tauri-runtime 2.12.1` nel `Cargo.lock` quando si esegue `cargo check --all-targets` su macOS (perché un esempio interno di `tauri` richiede `objc2`).
@@ -119,4 +118,4 @@ Nonostante la compilazione pulita su Unix, l'audit del flusso di esecuzione runt
 - **File e Righe**: [`tauri/src/install/cli.rs:180-235`](../../../tauri/src/install/cli.rs#L180-L235), [`tauri/src/install/lang/r.rs:65-110`](../../../tauri/src/install/lang/r.rs#L65-L110), [`tauri/catalog/components.json`](../../../tauri/catalog/components.json).
 - **Soluzione**:
   1. Per `git` e `r` su Unix (installati da pacchetti `conda-forge`), salvare il manifesto `conda-meta/*.json` (`prefix_placeholder` e lista file text/binary) durante l'installazione e rieseguire la riscrittura del prefisso in [`agents/relocate.rs`](../../../tauri/src/agents/relocate.rs) quando il kit viene spostato, eliminando il marker `.reinstall` (`D-92`) e garantendo la **portabilità offline al 100%** anche su macOS e Linux.
-  2. Abilitare `php`, `apache`, `nginx`, `adminer` su `linux-x64`, `darwin-arm64`, `darwin-x64` attingendo alle build rilocabili `conda-forge` (`httpd`, `nginx`) e `static-php-cli` (`php-cli` + `php-cgi` + `php-fpm`).
+  2. Abilitare `php`, `apache`, `nginx`, `adminer` su `linux-x64`, `darwin-arm64` attingendo alle build rilocabili `conda-forge` (`httpd`, `nginx`) e `static-php-cli` (`php-cli` + `php-cgi` + `php-fpm`).

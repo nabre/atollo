@@ -774,11 +774,6 @@
     "fr": "Composants du kit non installés : {0}{1}. Réessayez depuis Outils.",
     "de": "Nicht installierte Komponenten des Kits: {0}{1}. Versuche es erneut unter Werkzeuge."
   },
-  "{0} non è disponibile sui PC ARM64.": {
-    "en": "{0} is not available on ARM64 PCs.",
-    "fr": "{0} n'est pas disponible sur les PC ARM64.",
-    "de": "{0} ist auf ARM64-PCs nicht verfügbar."
-  },
   "{0} non è disponibile per {1}.": {
     "en": "{0} is not available for {1}.",
     "fr": "{0} n'est pas disponible pour {1}.",
@@ -798,11 +793,6 @@
     "en": "Google does not publish platform-tools and build-tools for Linux ARM64",
     "fr": "Google ne publie pas platform-tools et build-tools pour Linux ARM64",
     "de": "Google veröffentlicht platform-tools und build-tools nicht für Linux ARM64"
-  },
-  "richiede Rosetta 2: installala con softwareupdate --install-rosetta (serve un amministratore)": {
-    "en": "needs Rosetta 2: install it with softwareupdate --install-rosetta (an administrator is needed)",
-    "fr": "nécessite Rosetta 2 : installez-le avec softwareupdate --install-rosetta (un administrateur est nécessaire)",
-    "de": "benötigt Rosetta 2: installiere es mit softwareupdate --install-rosetta (ein Administrator ist nötig)"
   },
   "Limite": {
     "en": "Limit",
@@ -1014,11 +1004,6 @@
     "fr": "la fenêtre d'Atollo",
     "de": "das Fenster von Atollo"
   },
-  "su PC ARM64 i programmi solo x64 e Git Bash girano emulati, solo con Windows 11": {
-    "en": "on ARM64 PCs, x64-only programs and Git Bash run emulated, only on Windows 11",
-    "fr": "sur PC ARM64, les programmes x64 seulement et Git Bash tournent émulés, uniquement sous Windows 11",
-    "de": "auf ARM64-PCs laufen reine x64-Programme und Git Bash emuliert, nur unter Windows 11"
-  },
   "gestori di pacchetti, alla versione chiesta da ogni progetto": {
     "en": "package managers, at the version each project asks for",
     "fr": "gestionnaires de paquets, à la version demandée par chaque projet",
@@ -1033,11 +1018,6 @@
     "en": "Gradle 9 starts on the kit's latest JDK (17 to 27); the project compiles with its own",
     "fr": "Gradle 9 démarre sur le JDK le plus récent du kit (17 à 27) ; le projet compile avec le sien",
     "de": "Gradle 9 startet auf dem neuesten JDK des Kits (17 bis 27); das Projekt kompiliert mit seinem eigenen"
-  },
-  "{0} gira solo con Windows 11 sui PC ARM64.": {
-    "en": "{0} runs only on Windows 11 on ARM64 PCs.",
-    "fr": "{0} ne fonctionne qu'avec Windows 11 sur les PC ARM64.",
-    "de": "{0} läuft auf ARM64-PCs nur mit Windows 11."
   },
   "Framework PHP per applicazioni web": {
     "en": "PHP framework for web applications",
@@ -2319,9 +2299,9 @@
     "fr": "Avec la VM active, chaque site tourne dans la VM de son projet : démarrez-le depuis la page du projet. Les serveurs partagés servent quand on travaille sans VM.",
     "de": "Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. Die gemeinsamen Server dienen der Arbeit ohne VM."
   },
-  "Atollo ha bisogno di Docker Sandboxes, che Docker pubblica solo per Windows x64, macOS con Apple silicon, Linux x64 e Linux ARM64: su questo sistema ({0}) non può funzionare.": {
-    "en": "Atollo needs Docker Sandboxes, which Docker publishes only for Windows x64, macOS with Apple silicon, Linux x64 and Linux ARM64: it cannot work on this system ({0}).",
-    "fr": "Atollo a besoin de Docker Sandboxes, que Docker publie seulement pour Windows x64, macOS avec Apple silicon, Linux x64 et Linux ARM64 : il ne peut pas fonctionner sur ce système ({0}).",
-    "de": "Atollo braucht Docker Sandboxes, das Docker nur für Windows x64, macOS mit Apple silicon, Linux x64 und Linux ARM64 veröffentlicht: Auf diesem System ({0}) kann es nicht laufen."
+  "Atollo funziona solo sui sistemi dove gira Docker Sandboxes: Windows x64, macOS con Apple silicon, Linux x64 e Linux ARM64. Questo sistema non è tra questi.": {
+    "en": "Atollo works only on the systems Docker Sandboxes runs on: Windows x64, macOS with Apple silicon, Linux x64 and Linux ARM64. This system is not one of them.",
+    "fr": "Atollo fonctionne seulement sur les systèmes où tourne Docker Sandboxes : Windows x64, macOS avec Apple silicon, Linux x64 et Linux ARM64. Ce système n'en fait pas partie.",
+    "de": "Atollo funktioniert nur auf den Systemen, auf denen Docker Sandboxes läuft: Windows x64, macOS mit Apple silicon, Linux x64 und Linux ARM64. Dieses System gehört nicht dazu."
   }
 }

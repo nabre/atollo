@@ -81,11 +81,10 @@ pub fn terminal_name(terminal: &str, dir: &Path) -> String {
     format!("{PREFIX}t-{}", tag_of(terminal, &exact))
 }
 
-/// Creates the sandbox the first time, starts it again when stopped:
-/// `sbx run -d --name <vm> [--kit <kit>] <agent> <dir> [<folder>:ro…]`
-/// (`shell` for a project's or a terminal's, `claude` or `codex` for an
-/// agent's), its own kit when it is made (`kit`, D-169), the `read_only`
-/// folders mounted too, where the VM cannot change them.
+/// Creates the sandbox: `sbx run -d --name <vm> [--kit <kit>] <agent>
+/// <dir> [<folder>:ro…]` (`shell` for a project's or a terminal's,
+/// `claude` or `codex` for an agent's), its own kit (`kit`, D-169), the
+/// `read_only` folders mounted too, where the VM cannot change them.
 pub fn start_args(
     vm: &str,
     dir: &Path,
@@ -102,6 +101,15 @@ pub fn start_args(
     args.push(dir.display().to_string());
     args.extend(read_only.iter().map(|p| format!("{}:ro", p.display())));
     args
+}
+
+/// Starts an existing sandbox again, when stopped: `sbx run -d --name
+/// <vm>`, its name only. `sbx` refuses any folder after the first for a
+/// sandbox it has, even the very ones it was made with ("already exists
+/// and can't be given new workspaces", tried with sbx 0.49.2); a missing
+/// one goes in with `sbx mount`.
+pub fn restart_args(vm: &str) -> Vec<String> {
+    ["run", "-d", "--name", vm].map(String::from).into()
 }
 
 /// The PC as the VM reaches it: through the proxy of `sbx`, only on the

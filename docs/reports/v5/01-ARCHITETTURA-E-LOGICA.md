@@ -77,9 +77,9 @@ Conteggio per cartella con `find … -name '*.rs' | wc -l` e `wc -l` su `a8aad6c
 
 ### 2.1 Router e target (`D-108`, `D-114`, `D-121`)
 
-- **Codice**: [`tauri/src/router/`](../../../tauri/src/router/mod.rs) — `target` (capacità dei 6 target), `bins` (binari e lanciatori per OS), `probe` (disco e salute multi-target), `fs` (file privati ed eseguibili: `write_private`, `write_executable`), `bootstrap` (`.bootstrap` / `.reinstall`), `availability`.
-- **Decisione**: un kit preparato su Windows con `prepare --target` contiene già i componenti di un Mac o di un PC Linux (D-114). Il catalogo dichiara per componente `targets`, `unavailable`, `x64Only`, `rosetta`, `noArm64`, `sha256ByTarget` (D-108).
-- **Esito**: catalogo 35/35 su win32-x64, win32-arm64, darwin-arm64, darwin-x64, linux-x64; 34/35 su linux-arm64 (manca solo `android`, [`components.json:19`](../../../tauri/catalog/components.json#L19)). Nel `v4`: win32-arm64 33/35, linux-x64 31/35, macOS 31/35.
+- **Codice**: [`tauri/src/router/`](../../../tauri/src/router/mod.rs) — `target` (capacità dei 4 target), `bins` (binari e lanciatori per OS), `probe` (disco e salute multi-target), `fs` (file privati ed eseguibili: `write_private`, `write_executable`), `bootstrap` (`.bootstrap` / `.reinstall`), `availability`.
+- **Decisione**: un kit preparato su Windows con `prepare --target` contiene già i componenti di un Mac o di un PC Linux (D-114). Il catalogo dichiara per componente `targets`, `unavailable`, `sha256ByTarget` (D-108).
+- **Esito**: catalogo 35/35 su win32-x64, darwin-arm64, linux-x64; 34/35 su linux-arm64 (manca solo `android`, [`components.json:19`](../../../tauri/catalog/components.json#L19)). Nel `v4`: linux-x64 31/35, macOS 31/35.
 - **UI**: griglia componente × sistema in «Strumenti» ([`ui/src/components/matrix.tsx`](../../../ui/src/components/matrix.tsx), D-121), sistema mostrato salvato in `Settings::tools_target`, che solo `tools_target_set` scrive.
 
 ### 2.2 Terminale PTY nell'app su macOS e Linux (`D-109`)
@@ -204,7 +204,7 @@ sequenceDiagram
 ### 2.12 CI per percorsi (`D-134`)
 
 - [`.github/workflows/app.yml:37-140`](../../../.github/workflows/app.yml#L37-L140): job `changes` con `dorny/paths-filter@v3`, che produce i livelli `bundle`, `kit`, `rust`, `ui`; ogni job successivo parte solo per il suo livello. Una modifica di soli documenti non avvia i bundle.
-- Job di `app.yml`: `changes`, `check`, `test-unix` (4 target, [`app.yml:210-300`](../../../.github/workflows/app.yml#L210-L300)), `test-windows-arm64`, `bundle-macos` (`:356`), `bundle-linux` (`:459`), `release-smoke` (`:563`), `build` (`:664`), `release` (`:834`). Il job `release` verifica gli asset `Atollo-<ver>-<target>.<ext>` e i `.sha256` contro gli artefatti dei bundle (D-119, D-129).
+- Job di `app.yml`: `changes`, `check`, `test-unix` ([`app.yml:210-300`](../../../.github/workflows/app.yml#L210-L300)), `bundle-macos` (`:356`), `bundle-linux` (`:459`), `release-smoke` (`:563`), `build` (`:664`), `release` (`:834`). Il job `release` verifica gli asset `Atollo-<ver>-<target>.<ext>` e i `.sha256` contro gli artefatti dei bundle (D-119, D-129).
 
 ---
 

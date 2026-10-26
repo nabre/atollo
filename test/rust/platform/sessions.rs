@@ -1,7 +1,7 @@
 use super::*;
 use crate::test_support::prepared_kit;
 #[cfg(unix)]
-use crate::{kit::Arch, test_support::TempDir};
+use crate::test_support::TempDir;
 use std::process::Command;
 use std::time::Duration;
 
@@ -16,7 +16,7 @@ fn a_kit_through_a_link_lists_its_programs() {
     std::fs::create_dir_all(&real).unwrap();
     let link = tmp.0.join("link");
     std::os::unix::fs::symlink(&real, &link).unwrap();
-    let kit = Kit::at(link, Arch::X64);
+    let kit = Kit::at(link, crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let exe = kit.apps().join("tools").join("sleep-link");
     std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
@@ -84,7 +84,7 @@ fn other_kit_roots_on_every_system() {
             "/media/u/kit/data/apps/linux-x64/php/bin/php",
             "/media/u/kit",
         ),
-        (r"E:\Kit\DATA\Apps\Win32-arm64\git\git.exe", r"E:\Kit"),
+        (r"E:\Kit\DATA\Apps\Win32-X64\git\git.exe", r"E:\Kit"),
     ] {
         assert_eq!(
             kit_root_of(Path::new(path), "x", no),

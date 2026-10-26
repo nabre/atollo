@@ -185,7 +185,7 @@ fn operations_on_a_server_take_turns() {
 #[test]
 fn login_files_differ_per_run() {
     let tmp = TempDir::new("services-login-files");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let a = tools::login_file(&kit, "mysql.exe", "cnf");
     let b = tools::login_file(&kit, "mysql.exe", "cnf");
     assert_ne!(a, b);

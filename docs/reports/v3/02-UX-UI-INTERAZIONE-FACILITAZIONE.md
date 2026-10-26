@@ -26,9 +26,9 @@ Lo Sciame (commit `fd1e6dc`, `b3d4a96`, `b83e9eb` in PR #1) ha risolto le princi
 Per portare le dimensioni **D4 (UX/UI)** da `91` a `96/100` e **D5 (Facilitazione)** da `90` a `95/100` in un contesto **100% Portable & Multiplatform**, promuoviamo **4 miglioramenti concreti**:
 
 ### 2.1 Banner e Badge di Diagnostica Distribuzione OS e Portabilità (`StatusPage` & `ToolsPage`)
-Su Linux e su Windows ARM64, l'usabilità di alcuni strumenti dipende dalle caratteristiche della distribuzione ospite (es. presenza dell'emulatore x64 Prism su Windows 11 ARM64 vs assenza su Windows 10 ARM64; versione di `glibc` vs `musl` su Linux; presenza del loader FHS `/lib64/ld-linux` su NixOS; presenza di Xcode Command Line Tools su macOS per compilare crate Rust/C nativi).
+Su Linux e su macOS, l'usabilità di alcuni strumenti dipende dalle caratteristiche della distribuzione ospite (es. versione di `glibc` vs `musl` su Linux; presenza del loader FHS `/lib64/ld-linux` su NixOS; presenza di Xcode Command Line Tools su macOS per compilare crate Rust/C nativi).
 - **Problema attuale**: L'interfaccia mostra solo `target` (`win32-x64`, `linux-x64`, `darwin-arm64`), senza indicare:
-  1. La distribuzione OS rilevata (`Ubuntu 24.04 · glibc 2.39`, `Alpine 3.21 · musl`, `NixOS`, `Windows 11 24H2 ARM64 · Prism x64 attivo`, `macOS 15.2 · CLT presenti`).
+  1. La distribuzione OS rilevata (`Ubuntu 24.04 · glibc 2.39`, `Alpine 3.21 · musl`, `NixOS`, `Windows 11 24H2 x64`, `macOS 15.2 · CLT presenti`).
   2. La modalità di portabilità attiva (`100% Kit-Contained` vs `Temp su Host D-90`).
   3. Eventuali componenti in stato `.reinstall` dopo uno spostamento (finché non viene applicata la rilocazione offline del [`Documento 04 §2`](../../../reports/v3/04-PORTABILITA-100-E-MULTIPIATTAFORMA.md)).
 - **Soluzione Concreta Promossa**:
@@ -42,8 +42,6 @@ pub struct HostDistroInfo {
     pub distro_name: String,
     /// E.g. "UCRT", "glibc 2.39", "musl 1.2.5", "libSystem (Darwin)"
     pub libc_kind: String,
-    /// True if x86_64 binaries can run on an ARM64 host (Win11 Prism, macOS Rosetta 2, Linux binfmt_misc).
-    pub can_emulate_x64: bool,
     /// True if FHS dynamic loader (/lib64/ld-linux* or /lib/ld-linux*) or kit sysroot is present.
     pub fhs_loader_ok: bool,
     /// True if 100% of installed components are relocatable offline without re-download.
@@ -51,7 +49,7 @@ pub struct HostDistroInfo {
 }
 ```
 
-Nella pagina [`StatusPage.tsx`](../../../src/pages/StatusPage.tsx), mostrare una pillola informativa **"Salute Portabilità & OS"** con semaforo verde (`100% Portatile · 36/36 compatibili`) o avviso contestuale azionabile (es. su macOS senza Rosetta 2: *"Installa Rosetta 2 (`softwareupdate --install-rosetta`) per usare TinyTeX x86_64"*).
+Nella pagina [`StatusPage.tsx`](../../../src/pages/StatusPage.tsx), mostrare una pillola informativa **"Salute Portabilità & OS"** con semaforo verde (`100% Portatile · 36/36 compatibili`) o avviso contestuale azionabile (es. su macOS senza Xcode CLT: *"Installa C/C++ del kit per compilare crate Rust nativi"*).
 
 ### 2.2 Azione Rapida «Ripara / Riloca Ambienti Offline» senza Re-download
 - **Problema attuale**: Se un componente ha un file `<id>.reinstall` (generato da `kit.rs:relocate_non_relocatable()`), la UI lo mostra semplicemente come "Non installato", costringendo l'utente a riscaricarlo da zero e lasciando i file nella cartella su disco finché non parte il download.

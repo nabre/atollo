@@ -71,7 +71,6 @@
   --button2-hover: light-dark(#cccccc, #3c3c3c);
   --hover: light-dark(#f2f2f2, #2a2d2e);
   --ok: light-dark(#007100, #73c991);
-  --emu: light-dark(#855f00, #cca700);
   --no: light-dark(#a0a0a0, #6b6b6b);
   --glass: light-dark(rgb(255 255 255 / 0.78), rgb(24 24 24 / 0.72));
   --shadow: 0 30px 76px light-dark(rgb(15 61 46 / 0.16), rgb(0 0 0 / 0.55));
@@ -421,7 +420,6 @@ section { padding: 96px 0; position: relative; }
 .mx-kind span { color: var(--desc); margin-left: 6px; }
 .mx td { text-align: center; font-weight: 700; width: 9%; cursor: default; }
 .mx-ok { color: var(--ok); }
-.mx-emu { color: var(--emu); }
 .mx-no, .mx-dep { color: var(--no); }
 .mx tbody tr:hover > * { background: var(--hover); }
 /* The visitor's system (assets/download.js adds .here) */

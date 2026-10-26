@@ -61,11 +61,7 @@ fn the_editor_is_pinned_on_every_target() {
 
     let server = Catalog::get().find("vscodium-server").unwrap();
     for target in Target::ALL {
-        let download = if server.is_emulated_on(target) {
-            target.with_arch(crate::kit::Arch::X64)
-        } else {
-            target
-        };
+        let download = target;
         let sha = server
             .sha256_for(download)
             .unwrap_or_else(|| panic!("no SHA-256 for {download}"));

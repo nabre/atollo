@@ -7,9 +7,9 @@
 //! `data/app/versions/<target>/<id>.txt`, plain text.
 //!
 //! Availability per target (D-108): a component is installed on a target
-//! only with a build made for it, natively or with Rosetta 2 on a Mac with
-//! Apple silicon; otherwise it is "not available" with the reason, never a
-//! binary of another architecture that does not start.
+//! only with a native build made for it; otherwise it is "not available"
+//! with the reason, never a binary of another architecture that does not
+//! start.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -79,11 +79,6 @@ pub struct Component {
     /// The folder of `data/apps/<target>` the component owns, if any.
     #[serde(default)]
     pub folder: Option<String>,
-    /// No Apple silicon build: the x64 one runs on `darwin-arm64` with
-    /// Rosetta 2, and is not available on a Mac without it
-    /// (`router::target::rosetta_missing`).
-    #[serde(default)]
-    pub rosetta: bool,
     /// Explicit list of targets where this component is available (e.g.
     /// `["win32-x64"]` for ConPTY). Empty = all targets.
     #[serde(default)]
@@ -366,10 +361,8 @@ impl Component {
         self.needs_on(target).map(str::to_owned).collect()
     }
 
-    /// True when the catalog has a build for `target` (native, or x64 with
-    /// Rosetta 2): a supported target (D-176), listed in `targets` (or no
-    /// list), not in `unavailable`. Whether Rosetta 2 is there is the
-    /// host's business (`router::target::installable_on`).
+    /// True when the catalog has a build for `target`: a supported target
+    /// (D-176), listed in `targets` (or no list), not in `unavailable`.
     pub fn is_available_on(&self, target: Target) -> bool {
         if !target.is_supported() {
             return false;
@@ -385,12 +378,6 @@ impl Component {
     /// `targets`) or when it is available.
     pub fn unavailable_reason(&self, target: Target) -> Option<&str> {
         self.unavailable.get(target.as_str()).map(String::as_str)
-    }
-
-    /// True when `target` uses the x64 build under OS binary translation:
-    /// `rosetta` on `darwin-arm64`.
-    pub fn is_emulated_on(&self, target: Target) -> bool {
-        target == Target::DARWIN_ARM64 && self.rosetta
     }
 
     /// What it owns besides its folder on `target`: `remove`, or on macOS

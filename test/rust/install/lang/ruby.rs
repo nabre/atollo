@@ -44,9 +44,9 @@ fn ruby_from_conda_off_windows() {
         assert_eq!(Ruby.custom(t), !t.is_windows(), "{t}");
         assert_eq!(Ruby.relocatable(t), t.is_windows(), "{t}");
     }
-    // The conda-forge subdirs of the four Unix targets (checked on
-    // api.anaconda.org: ruby 4.0.x and 3.4.x on all four).
-    let verified = ["osx-arm64", "osx-64", "linux-64", "linux-aarch64"];
+    // The conda-forge subdirs of the three Unix targets (checked on
+    // api.anaconda.org: ruby 4.0.x and 3.4.x on all three).
+    let verified = ["osx-arm64", "linux-64", "linux-aarch64"];
     for t in Target::ALL.into_iter().filter(|t| !t.is_windows()) {
         assert!(verified.contains(&t.conda_subdir()), "{t}");
     }

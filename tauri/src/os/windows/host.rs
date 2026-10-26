@@ -10,8 +10,9 @@ use crate::kit::Arch;
 /// Every 127.x.x.x answers.
 pub const LOOPBACK_RANGE: bool = true;
 
-/// Same rule as `_env.cmd`: ARM64 when the process or its WOW64 host
-/// reports ARM64, otherwise x64.
+/// The PC's processor, also when this exe runs translated: same rule as
+/// `_env.cmd`, ARM64 when `PROCESSOR_ARCHITECTURE` or
+/// `PROCESSOR_ARCHITEW6432` says so, otherwise x64.
 pub fn arch() -> Arch {
     arch_from_env(
         std::env::var("PROCESSOR_ARCHITECTURE").ok().as_deref(),
@@ -19,9 +20,9 @@ pub fn arch() -> Arch {
     )
 }
 
-pub(crate) fn arch_from_env(arch: Option<&str>, wow64: Option<&str>) -> Arch {
+pub(crate) fn arch_from_env(arch: Option<&str>, native: Option<&str>) -> Arch {
     let is_arm = |v: Option<&str>| v.is_some_and(|v| v.eq_ignore_ascii_case("ARM64"));
-    if is_arm(arch) || is_arm(wow64) {
+    if is_arm(arch) || is_arm(native) {
         Arch::Arm64
     } else {
         Arch::X64
@@ -72,10 +73,6 @@ pub fn os_release() -> Option<String> {
 /// No Xcode here.
 pub fn xcode_tools() -> Option<String> {
     None
-}
-
-pub fn rosetta_present() -> bool {
-    false
 }
 
 pub fn running_appimage(_exe: &Path) -> Option<PathBuf> {

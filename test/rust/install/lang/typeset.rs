@@ -141,7 +141,7 @@ fn tlmgr_in_the_binary_folder_of_each_system() {
 fn tinytex_is_staged_where_its_target_cannot_run() {
     for host in Target::ALL {
         for target in Target::ALL {
-            let runs = crate::router::target::can_execute_between(host, target, false);
+            let runs = crate::router::target::can_execute_between(host, target);
             let staged = tinytex_staged(target, runs);
             if target.is_windows() || host == target {
                 assert!(!staged, "{host} -> {target}");

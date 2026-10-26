@@ -1,7 +1,7 @@
 # 04 — Promozione per l'Impiego dell'Applicazione Multipiattaforma (Windows, macOS, Linux)
 
 > [!IMPORTANT]
-> Questo documento risponde in dettaglio alla **Dimensione 8**: *Promozione per l'impiego dell'applicazione multipiattaforma — cosa è già pronto, cosa va ristrutturato e cosa manca* per distribuire Atollo su **Windows (`x64`/`arm64`)**, **macOS (`darwin-arm64`/`darwin-x64`)** e **Linux (`linux-x64`/`linux-arm64`)**.
+> Questo documento risponde in dettaglio alla **Dimensione 8**: *Promozione per l'impiego dell'applicazione multipiattaforma — cosa è già pronto, cosa va ristrutturato e cosa manca* per distribuire Atollo su **Windows (`x64`)**, **macOS (`darwin-arm64`)** e **Linux (`linux-x64`/`linux-arm64`)**.
 
 ![Analisi Readiness Multipiattaforma](assets/multipiattaforma-readiness.svg)
 
@@ -100,14 +100,14 @@ flowchart LR
 ## 4. Cosa Manca per Distributori & Catalogo Multipiattaforma
 
 ### 4.1 Estensione di [`tauri/src/kit.rs`](../../../tauri/src/kit.rs) e [`tauri/src/env.rs`](../../../tauri/src/env.rs)
-- In [`kit.rs:23-38`](../../../tauri/src/kit.rs#L23-L38), `Arch::platform()` restituisce solo `"win32-x64"` o `"win32-arm64"`. Va esteso per restituire `"darwin-arm64"`, `"darwin-x64"`, `"linux-x64"`, `"linux-arm64"`, in modo che una stessa chiavetta USB possa contenere `data/apps/win32-x64/`, `data/apps/darwin-arm64/` e `data/apps/linux-x64/` fianco a fianco condividendo la stessa cartella `projects/`!
+- In [`kit.rs:23-38`](../../../tauri/src/kit.rs#L23-L38), `Arch::platform()` restituisce solo `"win32-x64"`. Va esteso per restituire `"darwin-arm64"`, `"linux-x64"`, `"linux-arm64"`, in modo che una stessa chiavetta USB possa contenere `data/apps/win32-x64/`, `data/apps/darwin-arm64/` e `data/apps/linux-x64/` fianco a fianco condividendo la stessa cartella `projects/`!
 - In [`env.rs`](../../../tauri/src/env.rs), usare `std::env::join_paths` (che usa `:` su Unix e `;` su Windows) e mappare i layout standard delle tarball Unix (dove i binari di Node, Python, PHP, Go, Java, MySQL risiedono in `<tool>/bin/<name>` invece che nella radice `<tool>/<name>.exe`).
 
 ### 4.2 Matrice di Portabilità dei 26 Componenti del Catalogo (`tauri/src/install/**`)
 
 | Gruppo | Componenti | Stato su macOS / Linux | Intervento Richiesto in `install/` e `catalog/components.json` |
 | :--- | :--- | :---: | :--- |
-| **Pronti con solo cambio URL/Path** | Node.js, Python (`python-build-standalone`), Go, Rust (`rustup-init`), Java (Temurin), Maven, Gradle, Dart, Flutter, Android SDK, Composer, Quarto, GitHub CLI (`gh`), OpenTofu, Ollama, MongoDB, VSCodium (`reh-web`), Claude, Codex, Gemini CLI | Alto (85%) | Aggiungere in `catalog/components.json` le URL per `darwin-arm64`/`darwin-x64`/`linux-x64` e usare una funzione helper `exe_name("node")` (`"node.exe"` su Win, `"node"` su Unix) e `bin_dir` (`""` su Win per Node/Python, `"bin"` su Unix). |
+| **Pronti con solo cambio URL/Path** | Node.js, Python (`python-build-standalone`), Go, Rust (`rustup-init`), Java (Temurin), Maven, Gradle, Dart, Flutter, Android SDK, Composer, Quarto, GitHub CLI (`gh`), OpenTofu, Ollama, MongoDB, VSCodium (`reh-web`), Claude, Codex, Gemini CLI | Alto (85%) | Aggiungere in `catalog/components.json` le URL per `darwin-arm64`/`linux-x64`/`linux-arm64` e usare una funzione helper `exe_name("node")` (`"node.exe"` su Win, `"node"` su Unix) e `bin_dir` (`""` su Win per Node/Python, `"bin"` su Unix). |
 | **Specifici Windows (Da Disabilitare o Sostituire su Unix)** | `vcredist` (`vc_redist.x64.exe`), `terminal` (Windows Terminal), `git` (PortableGit `.7z.exe`), `pwsh`, `apache` (Apache Lounge Win64), `php` (`windows.php.net`), `ruby` (RubyInstaller2) | Specifici OS | • `vcredist` e `terminal`: nascondere su macOS/Linux (`platforms: ["win32"]`).<br>• `git`: su macOS/Linux usare il `git` di sistema (Xcode CLT / distro) o build statica MinGit/conda-forge.<br>• `php` e `apache`: su macOS/Linux usare binari statici portabili (`static-php-cli` / `indygreg` / Homebrew bottles rilocabili) o PHP-FPM integrato con Nginx/Caddy. |
 
 ---

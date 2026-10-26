@@ -41,7 +41,7 @@ jobs:
       fail-fast: false
       matrix:
         # Without ARM64 runners (ARM64_RUNNERS=off) linux-arm64 is left out,
-        # as in app.yml. A release needs all three (D-176: no Intel macOS).
+        # as in app.yml. A release needs all three (D-176).
         target: ${{ fromJSON(vars.ARM64_RUNNERS == 'off' && '["linux-x64","darwin-arm64"]' || '["linux-x64","linux-arm64","darwin-arm64"]') }}
     steps:
       - name: System packages (Linux)

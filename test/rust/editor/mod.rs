@@ -220,7 +220,7 @@ fn a_stop_ends_a_start_in_progress() {
 #[test]
 fn stop_and_wait_waits_for_the_start_status_does_not() {
     let tmp = crate::kit::tests::TempDir::new("editor-wait");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let editor = std::sync::Arc::new(Editor::new(kit, KitEnv::default()));
     // The catalog read once, outside the time measured.
     editor.status();

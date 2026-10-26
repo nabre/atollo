@@ -154,7 +154,7 @@ fn folders_of_an_older_kit_move() {
 #[test]
 fn apache_folders_take_their_line() {
     let tmp = TempDir::new("versions-patch");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let apache = Catalog::get().find("apache").unwrap();
     let store = apache.folder_path(&kit).unwrap();
     // One folder per patch, from the kit of before: the installed one and
@@ -180,7 +180,7 @@ fn apache_folders_take_their_line() {
 #[test]
 fn tools_keep_only_their_new_line() {
     let tmp = TempDir::new("versions-minor");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let git = Catalog::get().find("git").unwrap();
     let store = git.folder_path(&kit).unwrap();
     // An older kit's `git\`, without lines: into `git\2.56`.
@@ -212,7 +212,7 @@ fn tools_keep_only_their_new_line() {
 #[test]
 fn github_cli_and_uv_leave_tools() {
     let tmp = TempDir::new("versions-tools");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let tools = kit.apps().join("tools");
     fs::create_dir_all(&tools).unwrap();
     // The programs as the kit's target names them (`gh.exe`, `gh`).

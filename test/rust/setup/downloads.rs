@@ -1,5 +1,5 @@
 use super::*;
-use crate::kit::{tests::TempDir, Arch};
+use crate::kit::tests::TempDir;
 use sha2::{Digest, Sha256};
 
 fn sha256(bytes: &[u8]) -> Expect {
@@ -14,7 +14,7 @@ fn sha256(bytes: &[u8]) -> Expect {
 #[test]
 fn added_files_are_used_by_checksum() {
     let tmp = TempDir::new("downloads");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let outside = tmp.0.join("Downloads");
     fs::create_dir_all(&outside).unwrap();
@@ -57,7 +57,7 @@ fn added_files_are_used_by_checksum() {
 #[test]
 fn an_old_file_added_is_not_pruned_at_once() {
     let tmp = TempDir::new("downloads-old");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64);
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch());
     kit.prepare().unwrap();
     let outside = tmp.0.join("Downloads");
     fs::create_dir_all(&outside).unwrap();
@@ -80,7 +80,8 @@ fn an_old_file_added_is_not_pruned_at_once() {
 #[test]
 fn kept_in_the_host_temp_folder() {
     let tmp = TempDir::new("downloads-host");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&tmp.0.join("host")));
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch())
+        .with_host(Some(&tmp.0.join("host")));
     kit.prepare().unwrap();
     let old = kit.data().join("downloads");
     fs::create_dir_all(&old).unwrap();
@@ -141,7 +142,7 @@ fn moved_across_disks_by_copy() {
 fn files_added_for_a_component_go_with_it() {
     let tmp = TempDir::new("downloads-forget");
     let host = tmp.0.join("host");
-    let kit = Kit::at(tmp.0.join("kit"), Arch::X64).with_host(Some(&host));
+    let kit = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch()).with_host(Some(&host));
     kit.prepare().unwrap();
     // Another system than the kit's own, which is the host's: on Linux
     // runners linux-x64 is the kit itself.

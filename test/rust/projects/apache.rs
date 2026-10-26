@@ -79,7 +79,7 @@ fn document_root_that_breaks_quotes_is_refused() {
 #[test]
 fn missing_server_in_the_users_language() {
     let tmp = crate::kit::tests::TempDir::new("apache-missing");
-    let kit = Kit::at(tmp.0.clone(), crate::kit::Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     let root = tmp.0.join("projects").join("shop");
     let env = KitEnv::default();
     let none = BTreeMap::new();

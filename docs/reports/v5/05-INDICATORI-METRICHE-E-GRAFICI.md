@@ -81,7 +81,7 @@ Eseguiti il 20/10/2026 su Windows 11 x64:
 | `#[test]` / `#[tokio::test]` in [`test/rust/`](../../../test/rust) | 433 | **822** | `+389` |
 | `it(` / `test(` in [`test/ui/`](../../../test/ui) | 102 | **168** | `+66` |
 
-> *Nota metodologica*: gli 822 attributi Rust producono 787 test eseguiti o ignorati su Windows; la differenza sono test condizionati a `cfg(unix)` o ad altre piattaforme, eseguiti dal job `test-unix` su 4 target ([`.github/workflows/app.yml:211-300`](../../../.github/workflows/app.yml#L211-L300)). I 178 test Vitest superano le 168 definizioni per via di `it.each`.
+> *Nota metodologica*: gli 822 attributi Rust producono 787 test eseguiti o ignorati su Windows; la differenza sono test condizionati a `cfg(unix)` o ad altre piattaforme, eseguiti dal job `test-unix` sui target Unix ([`.github/workflows/app.yml:211-300`](../../../.github/workflows/app.yml#L211-L300)). I 178 test Vitest superano le 168 definizioni per via di `it.each`.
 
 ### 3.1 Densità dei test
 
@@ -99,7 +99,7 @@ Il codice di test è cresciuto più del codice di prodotto: le righe di test Rus
 
 | Workflow | Job | Scopo |
 |---|---|---|
-| [`app.yml`](../../../.github/workflows/app.yml) | `changes`, `check`, `test-unix`, `test-windows-arm64`, `bundle-macos`, `bundle-linux`, `release-smoke`, `build`, `release` | Filtri per percorso con `dorny/paths-filter` (`app.yml:39-140`, `D-134`), test Unix su 4 target (`app.yml:211-300`), Windows ARM64 (`app.yml:305`), bundle e smoke dei rilasci con `.sha256` (`app.yml:356-580`, `D-119`). |
+| [`app.yml`](../../../.github/workflows/app.yml) | `changes`, `check`, `test-unix`, `bundle-macos`, `bundle-linux`, `release-smoke`, `build`, `release` | Filtri per percorso con `dorny/paths-filter` (`app.yml:39-140`, `D-134`), test Unix (`app.yml:211-300`), bundle e smoke dei rilasci con `.sha256` (`app.yml:356-580`, `D-119`). |
 | [`httpd.yml`](../../../.github/workflows/httpd.yml) | 2 | Apache per macOS e Linux da sorgenti con firma GPG (`scripts/build-httpd/`, `D-116`). |
 | [`php.yml`](../../../.github/workflows/php.yml) | 2 | PHP 8.4.26-1 / 8.5.11-1 per macOS e Linux (`scripts/build-php/`, `D-133`). |
 | [`site.yml`](../../../.github/workflows/site.yml) | 2 | Sito GitHub Pages da `site/` con `pages: write` (`D-126`). |
@@ -108,14 +108,12 @@ Il codice di test è cresciuto più del codice di prodotto: le righe di test Rus
 
 ## 5. Disponibilità del Catalogo per Target
 
-Calcolata dai campi `targets`, `unavailable` e `noArm64` di [`components.json`](../../../tauri/catalog/components.json) (`D-108`):
+Calcolata dai campi `targets` e `unavailable` di [`components.json`](../../../tauri/catalog/components.json) (`D-108`):
 
 | Target | `v4` | **`v5`** | Note |
 |---|:---:|:---:|---|
 | `win32-x64` | 35/35 | **35/35** | — |
-| `win32-arm64` | 33/35 | **35/35** | Julia e R in emulazione x64 (`x64Only`, `D-132`); nessun componente è più `noArm64`. |
 | `darwin-arm64` | 31/35 | **35/35** | — |
-| `darwin-x64` | 31/35 | **35/35** | — |
 | `linux-x64` | 31/35 | **35/35** | — |
 | `linux-arm64` | — | **34/35** | Manca solo `android`: Google non pubblica platform-tools e build-tools per Linux ARM64 ([`components.json:19`](../../../tauri/catalog/components.json#L19)). |
 
@@ -152,9 +150,8 @@ xychart-beta
 |---|:---:|:---:|:---:|:---:|
 | **Indice Globale Ponderato (9 Dimensioni)** | 88,3 / 100 | 92,8 / 100 | **95,8 / 100** | **98,6 / 100** |
 | **Test automatici superati** | 443 | 536 | **958** (780 Rust + 178 Vitest) | in crescita, 0 falliti |
-| **Target Unix con test in CI** | 0 | `cargo check` su Linux e macOS | **`test-unix` su 4 target** + Windows ARM64 | idem + prove su macchina reale (#5, #6) |
+| **Target Unix con test in CI** | 0 | `cargo check` su Linux e macOS | **`test-unix` sui target Unix** | idem + prove su macchina reale (#5, #6) |
 | **Sistemi con pacchetto di rilascio** | — | — | **6**, con `.sha256` e smoke in CI (`D-119`) | 6 |
-| **Componenti disponibili su `win32-arm64`** | 33/36 | 33/35 | **35/35** | 35/35 |
 | **Componenti disponibili su macOS (`darwin-*`)** | 29/36 | 31/35 | **35/35** | 35/35 |
 | **Componenti disponibili su Linux** | 30/36 (`x64`) | 31/35 (`x64`) | **35/35 `x64`, 34/35 `arm64`** | invariato (`android` assente per scelta di Google) |
 | **Rilievi critici aperti** | — | 4 (`PORT-V4-01..04`) | **0** | 0 |

@@ -1,7 +1,6 @@
 use super::*;
 
 use crate::kit::tests::TempDir;
-use crate::kit::Arch;
 use crate::test_support::prepared_kit;
 
 fn plan(sizes: &[u64]) -> Plan {
@@ -76,7 +75,7 @@ fn plans_of_the_catalog_and_of_a_repository() {
     let p = plan(&[1]);
     assert_eq!(p.local_files()[0].name, "m-0.gguf");
     let tmp = TempDir::new("llm-plan");
-    let kit = Kit::at(tmp.0.clone(), Arch::X64);
+    let kit = Kit::at(tmp.0.clone(), crate::test_support::kit_arch());
     assert!(p.dir(&kit).ends_with("o--r"));
     let m = crate::llm::catalog::find("gpt-oss-20b").unwrap();
     let p = Plan::from_catalog(m);

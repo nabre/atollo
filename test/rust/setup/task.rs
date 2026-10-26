@@ -9,11 +9,12 @@ use std::time::Duration;
 fn missing_required_lists_only_installable_ones() {
     let (_tmp, kit) = prepared_kit("task-missing");
     let missing = missing_required(&kit);
-    assert_eq!(
-        missing,
-        ["gh", "pwsh", "vscodium-server", "conpty", "sandboxes"],
-        "git only when needed (D-81)"
-    );
+    // ConPTY is the console of Windows only.
+    let mut want = vec!["gh", "pwsh", "vscodium-server", "conpty", "sandboxes"];
+    if !kit.target().is_windows() {
+        want.retain(|id| *id != "conpty");
+    }
+    assert_eq!(missing, want, "git only when needed (D-81)");
     for id in ["node", "uv", "python"] {
         assert!(
             !missing.contains(&id.to_owned()),

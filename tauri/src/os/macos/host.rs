@@ -46,21 +46,6 @@ pub fn os_release() -> Option<String> {
     None
 }
 
-/// Rosetta 2 runs x64 programs: `/usr/bin/arch -x86_64 /usr/bin/true`
-/// exits with 0. Asked once per start.
-pub fn rosetta_present() -> bool {
-    static PRESENT: OnceLock<bool> = OnceLock::new();
-    *PRESENT.get_or_init(|| {
-        std::process::Command::new("/usr/bin/arch")
-            .args(["-x86_64", "/usr/bin/true"])
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-            .is_ok_and(|s| s.success())
-    })
-}
-
 /// No AppImage on macOS.
 pub fn running_appimage(_exe: &Path) -> Option<PathBuf> {
     None
