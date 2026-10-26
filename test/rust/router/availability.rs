@@ -65,3 +65,32 @@ fn messages_without_a_catalog_reason() {
     );
     assert_eq!(unavailable_message(python, Target::WIN32_X64, "en"), None);
 }
+
+/// D-177: ConPTY on macOS and Linux is not needed, with the catalog's
+/// reason in every language; never "not available", nor a sentence that
+/// stops an action. On Windows it is available.
+#[test]
+fn conpty_is_not_needed_off_windows() {
+    let conpty = Catalog::get().find("conpty").unwrap();
+    for target in Target::ALL {
+        assert_eq!(unavailable_reason(conpty, target, "en"), None, "{target}");
+        assert_eq!(unavailable_message(conpty, target, "en"), None, "{target}");
+        let reason = not_needed_reason(conpty, target, "en");
+        if target.is_windows() {
+            assert_eq!(reason, None);
+        } else {
+            assert_eq!(
+                reason.as_deref(),
+                Some("the app's terminal uses the system's PTY"),
+                "{target}"
+            );
+            for lang in ["it", "fr", "de"] {
+                let r = not_needed_reason(conpty, target, lang).unwrap();
+                assert!(
+                    !r.is_empty() && r != "the app's terminal uses the system's PTY",
+                    "{lang}"
+                );
+            }
+        }
+    }
+}

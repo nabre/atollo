@@ -2,7 +2,7 @@
 //! by hand (D-82).
 
 use super::*;
-use crate::router::availability::unavailable_reason;
+use crate::router::availability::{not_needed_reason, unavailable_reason};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,6 +25,10 @@ pub struct ComponentInfo {
     /// the catalog's own reason (`unavailable`, Android on Linux ARM64), or
     /// not made for this system (Windows only, on macOS or Linux).
     pub unavailable_reason: Option<String>,
+    /// Not needed on this kit's target, with the catalog's reason already
+    /// translated (ConPTY on macOS and Linux, whose terminal uses the
+    /// system's PTY, D-177): `available` false, no `unavailable_reason`.
+    pub not_needed: Option<String>,
     /// Components it needs on this kit's target (Apache needs PHP, Kotlin
     /// needs Java; C and C++ need Zig on macOS and Linux only).
     pub needs: Vec<String>,
@@ -167,7 +171,11 @@ pub(super) fn mark_via_vm(
         };
         let staged = crate::install::installer(&c.id)
             .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, guest));
-        tool.via_vm = !locked.contains(tool.id.as_str()) && c.is_available_on(guest) && !staged;
+        // Not needed on the PC (D-177): nothing the VM stands in for.
+        tool.via_vm = !locked.contains(tool.id.as_str())
+            && tool.not_needed.is_none()
+            && c.is_available_on(guest)
+            && !staged;
     }
 }
 
@@ -274,6 +282,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
         .map(|c| {
             let off = !c.is_available_on(target);
             let unavailable_reason = unavailable_reason(c, target, lang);
+            let not_needed = not_needed_reason(c, target, lang);
             ComponentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
@@ -287,6 +296,7 @@ pub(super) fn component_infos(kit: &Kit, lang: &str) -> Vec<ComponentInfo> {
                 version: c.installed_version(kit),
                 available: install::installer(&c.id).is_some() && !off,
                 unavailable_reason,
+                not_needed,
                 needs: c.needs_list_on(target),
                 xcode_missing: c.id == "cc" && xcode_missing,
                 versioned: c.versioned,

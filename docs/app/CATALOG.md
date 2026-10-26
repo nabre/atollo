@@ -15,7 +15,7 @@ Real tests: the CI (x64 job) installs `pwsh`, `node`, `git` and the editor; all 
 | | `pwsh` | PowerShell 7 | always | 110 | | **new**; the kit's terminal |
 | | `sandboxes` | Docker Sandboxes (sbx) | always | 470 | — | **new**; Atollo's core: one microVM per project and per kit terminal (DECISIONS.md (in Italian) D-167…D-175): terminal, actions, sites and agents isolated from the PC; Windows x64, Apple silicon, Linux x64 and ARM64, the systems Docker publishes `sbx` for and so the only ones Atollo runs on (D-176); needs a Docker account (`sbx login`). Only this `sbx`, the kit's, is ever used: one installed on the PC never is (D-175). `minVersion` 0.49.2: an older or unknown version is installed again at the start. The editor and the consoles do not wait for it: without it, the "No VM" notice says so, with "Install in the kit" |
 | app (`app`) | `vscodium-server` | Editor (VSCodium web server) | always | 250 | `pwsh` | **new**; part of the app, version pinned at each release (DECISIONS.md (in Italian) D-58); in Tools it appears with the required ones, checked and not editable; SHA-256 pinned per target |
-| app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | always, Windows only | 3 | — | **new**; part of the app, the console of the in-app terminal on Windows (DECISIONS.md (in Italian) D-148); version and SHA-256 of the NuGet package pinned; native x64; not offered on macOS and Linux (their PTY) |
+| app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | always on Windows; not needed on macOS and Linux (system PTY) | 3 | — | **new**; part of the app, the console of the in-app terminal on Windows (DECISIONS.md (in Italian) D-148); version and SHA-256 of the NuGet package pinned; native x64; not needed on macOS and Linux (`notNeeded`: the app's terminal uses the system's PTY; D-177) |
 | agents (`agents`) | `claude` | Claude Code | yes | 250 | `git` | |
 | | `codex` | Codex | yes | 440 | | |
 | | `antigravity` | Antigravity | yes | 190 | | sign-in saved in the kit (`agents/keyring.rs`) |
@@ -66,8 +66,9 @@ Catalog fields beyond those of Atollo: `keys` (the other parts of a component: M
 
 | Field | What it says | Example |
 | --- | --- | --- |
-| `targets` | the only targets where the component exists; empty = all | ConPTY: `["win32-x64"]` (D-148; Apache too until D-116) |
+| `targets` | the only targets where the component exists; empty = all | none today (ConPTY until D-177, Apache until D-116) |
 | `unavailable` | target → reason (in Italian, translated by the catalogs), shown instead of "not available for `<target>`" | Android: `linux-arm64` |
+| `notNeeded` | target → reason (in Italian, translated by the catalogs) where the system does the component's job: not installed there, but never missing nor required; shown as "not needed" with the reason (Tools, grid, `Atollo components`, site matrix). Keys among the four targets, none in `unavailable` (D-177) | ConPTY: `darwin-arm64`, `linux-x64`, `linux-arm64` (the app's terminal uses the system's PTY) |
 | `needsByTarget` | extra needs on a target, beyond `needs`; `components.txt` saves only those valid everywhere | `cc`: `zig` on macOS and Linux |
 | `removeUnix` | the owned files on macOS and Linux, instead of `remove` | pnpm: `@data/npm-global/bin/pnpm`, `@data/npm-global/lib/node_modules/corepack` |
 | `sha256ByTarget` | SHA-256 per target, with `version`, where the vendor does not publish a hash or the release is rolling | editor, llama.cpp |

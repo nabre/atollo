@@ -18,6 +18,9 @@ export interface GuideComponentState {
   version: string | null;
   available: boolean;
   unavailableReason: string | null;
+  /** Not needed on this system, with the reason (ConPTY on macOS and
+   * Linux, D-177). */
+  notNeeded: string | null;
 }
 
 /** The kinds of the Tools page (components/model.ts, D-139), plus the parts. */

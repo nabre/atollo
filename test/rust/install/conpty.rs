@@ -6,7 +6,12 @@ fn the_package_is_fixed_by_the_catalog() {
     let c = Catalog::get().find("conpty").unwrap();
     assert_eq!(c.group, Group::App);
     assert!(c.def);
-    assert_eq!(c.targets, ["win32-x64"]);
+    // Every system has it in mind: needed on Windows, not needed on
+    // macOS and Linux (D-177).
+    assert!(c.targets.is_empty());
+    for t in [Target::DARWIN_ARM64, Target::LINUX_X64, Target::LINUX_ARM64] {
+        assert!(c.not_needed_reason(t).is_some(), "{t}");
+    }
     assert!(c.is_available_on(Target::WIN32_X64));
     assert!(!c.is_available_on(Target::LINUX_X64));
     assert!(!c.is_available_on(Target::DARWIN_ARM64));

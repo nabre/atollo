@@ -80,13 +80,20 @@ pub struct Component {
     #[serde(default)]
     pub folder: Option<String>,
     /// Explicit list of targets where this component is available (e.g.
-    /// `["win32-x64"]` for ConPTY). Empty = all targets.
+    /// `["win32-x64"]`). Empty = all targets.
     #[serde(default)]
     pub targets: Vec<String>,
     /// Targets where no build exists, with the reason the interface shows
     /// (Italian, translated by the catalogs): `{"linux-arm64": "…"}`.
     #[serde(default)]
     pub unavailable: BTreeMap<String, String>,
+    /// Targets where it is not needed, with the reason the interface shows
+    /// (Italian, translated by the catalogs): the system does its job
+    /// there (ConPTY on macOS and Linux, whose terminal uses the system's
+    /// PTY, D-177). Not available there, but never missing nor required;
+    /// keys among the four targets, none of them in `unavailable`.
+    #[serde(default)]
+    pub not_needed: BTreeMap<String, String>,
     /// Other files or folders it owns (relative to `data/apps/<target>`,
     /// `@` = the kit root), removed with it unless another installed
     /// component lists them too. Names of Windows; on macOS and Linux
@@ -362,7 +369,8 @@ impl Component {
     }
 
     /// True when the catalog has a build for `target`: a supported target
-    /// (D-176), listed in `targets` (or no list), not in `unavailable`.
+    /// (D-176), listed in `targets` (or no list), not in `unavailable` nor
+    /// in `notNeeded`.
     pub fn is_available_on(&self, target: Target) -> bool {
         if !target.is_supported() {
             return false;
@@ -371,6 +379,14 @@ impl Component {
             return false;
         }
         !self.unavailable.contains_key(target.as_str())
+            && !self.not_needed.contains_key(target.as_str())
+    }
+
+    /// Why it is not needed on `target`, as the catalog says it (Italian
+    /// source, for `i18n::t`): the system does its job there (D-177).
+    /// `None` where it is needed.
+    pub fn not_needed_reason(&self, target: Target) -> Option<&str> {
+        self.not_needed.get(target.as_str()).map(String::as_str)
     }
 
     /// Why it is not available on `target`, as the catalog says it (Italian

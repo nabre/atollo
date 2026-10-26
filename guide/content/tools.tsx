@@ -291,6 +291,16 @@ export const TOOLS: TopicTexts = {
               ),
             ],
             [
+              tr("non serve", "not needed", "pas nécessaire", "nicht nötig"),
+              tr("trattino", "dash", "tiret", "Strich"),
+              tr(
+                "Su quel sistema non serve: ne fa le veci il sistema (ConPTY su macOS e Linux, dove il terminale usa il PTY del sistema). Il suggerimento dice perché.",
+                "It is not needed on that system: the system does its job (ConPTY on macOS and Linux, where the terminal uses the system's PTY). The tooltip says why.",
+                "Il n'est pas nécessaire sur ce système : le système s'en charge (ConPTY sur macOS et Linux, où le terminal utilise le PTY du système). L'infobulle dit pourquoi.",
+                "Auf diesem System nicht nötig: Das System übernimmt es (ConPTY unter macOS und Linux, wo das Terminal das PTY des Systems nutzt). Der Tooltip sagt, warum.",
+              ),
+            ],
+            [
               tr("pre-installato", "pre-installed", "pré-installé", "vorinstalliert"),
               tr("pacchetto verde", "green package", "paquet vert", "grünes Paket"),
               tr(
@@ -982,10 +992,10 @@ export const TOOLS: TopicTexts = {
       <Section title={tr("Matrice", "Matrix", "Matrice", "Matrix")}>
         <P>
           {tr(
-            "Una tabella con un componente per riga, divisa negli stessi otto tipi della tabella «Tutti gli strumenti», e i quattro sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ↓ pre-installato, ◷ si completa al primo avvio, ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
-            "A table with one component per row, split into the same eight kinds as the “All tools” table, and the four systems as columns. Each cell says whether the component can be on that system: ✓ available, ↓ pre-installed, ◷ completes at the first start, ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
-            "Un tableau avec un composant par ligne, réparti dans les mêmes huit types que le tableau « Tous les outils », et les quatre systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ↓ pré-installé, ◷ se termine au premier démarrage, ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
-            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben acht Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den vier Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
+            "Una tabella con un componente per riga, divisa negli stessi otto tipi della tabella «Tutti gli strumenti», e i quattro sistemi in colonna. Ogni casella dice se il componente può stare su quel sistema: ✓ disponibile, ↓ pre-installato, ◷ si completa al primo avvio, – non serve (ne fa le veci il sistema: ConPTY su macOS e Linux), ✕ non disponibile; un punto verde vuol dire installato. Un clic su una casella mostra il motivo, la versione e il pulsante «Mostra questo sistema».",
+            "A table with one component per row, split into the same eight kinds as the “All tools” table, and the four systems as columns. Each cell says whether the component can be on that system: ✓ available, ↓ pre-installed, ◷ completes at the first start, – not needed (the system does its job: ConPTY on macOS and Linux), ✕ not available; a green dot means installed. A click on a cell shows the reason, the version and the “Show this system” button.",
+            "Un tableau avec un composant par ligne, réparti dans les mêmes huit types que le tableau « Tous les outils », et les quatre systèmes en colonnes. Chaque case dit si le composant peut se trouver sur ce système : ✓ disponible, ↓ pré-installé, ◷ se termine au premier démarrage, – pas nécessaire (le système s'en charge : ConPTY sur macOS et Linux), ✕ non disponible ; un point vert signifie installé. Un clic sur une case montre la raison, la version et le bouton « Afficher ce système ».",
+            "Eine Tabelle mit einer Komponente pro Zeile, in dieselben acht Arten aufgeteilt wie die Tabelle „Alle Werkzeuge“, und den vier Systemen als Spalten. Jede Zelle sagt, ob die Komponente auf diesem System sein kann: ✓ verfügbar, ↓ vorinstalliert, ◷ wird beim ersten Start abgeschlossen, – nicht nötig (das System übernimmt es: ConPTY unter macOS und Linux), ✕ nicht verfügbar; ein grüner Punkt bedeutet installiert. Ein Klick auf eine Zelle zeigt den Grund, die Version und die Schaltfläche „Dieses System anzeigen“.",
           )}
         </P>
         <Callout tone="info">

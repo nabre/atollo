@@ -81,6 +81,43 @@ fn catalog_reasons_reach_the_page() {
     }
 }
 
+/// D-177: on macOS and Linux the page says ConPTY is not needed, with the
+/// catalog's reason translated, never "not available"; on Windows it is
+/// there as before.
+#[test]
+fn conpty_is_not_needed_on_macos_and_linux() {
+    let tmp = TempDir::new("cmd-conpty");
+    for target in Target::ALL {
+        let kit = Kit::at_target(tmp.0.join(target.as_str()), target);
+        kit.prepare().unwrap();
+        for (lang, reason) in [
+            ("en", "the app's terminal uses the system's PTY"),
+            ("it", "il terminale dell'app usa la pty del sistema"),
+        ] {
+            let infos = component_infos(&kit, lang);
+            let c = infos.iter().find(|c| c.id == "conpty").unwrap();
+            assert_eq!(c.unavailable_reason, None, "{target}");
+            if target.is_windows() {
+                assert!(c.available, "{target}");
+                assert_eq!(c.not_needed, None, "{target}");
+            } else {
+                assert!(!c.available, "{target}");
+                assert_eq!(c.not_needed.as_deref(), Some(reason), "{target}");
+            }
+        }
+    }
+    // Serialized in camelCase for the page.
+    let kit = Kit::at_target(tmp.0.join("json"), Target::LINUX_X64);
+    kit.prepare().unwrap();
+    let infos = component_infos(&kit, "en");
+    let json = serde_json::to_value(infos.iter().find(|c| c.id == "conpty").unwrap()).unwrap();
+    assert_eq!(
+        json["notNeeded"],
+        "the app's terminal uses the system's PTY"
+    );
+    assert_eq!(json["available"], false);
+}
+
 /// The page gets what each component needs on the kit's target (C and C++
 /// need Zig on macOS and Linux, Rust nothing anywhere), and
 /// the Xcode notice only for C and C++ of a darwin kit on a Mac without the
@@ -248,6 +285,18 @@ fn the_grid_marks_the_vm() {
     // tests on Linux) the VM's Linux is that system.
     assert_eq!(via("rust"), Target::detect() == Target::LINUX_X64);
     assert!(column(Target::LINUX_X64).tools.iter().all(|x| !x.via_vm));
+    // Not needed on a column (D-177) is never "via the VM": ConPTY on a
+    // Mac with the VM on.
+    let mac = Kit::at_target(tmp.0.join("mac"), Target::DARWIN_ARM64);
+    mac.prepare().unwrap();
+    let grid = target_grid(&mac, "en", Some(Target::LINUX_ARM64));
+    let column = grid
+        .targets
+        .iter()
+        .find(|s| s.target == Target::DARWIN_ARM64.as_str())
+        .unwrap();
+    let conpty = column.tools.iter().find(|x| x.id == "conpty").unwrap();
+    assert!(conpty.not_needed.is_some() && !conpty.via_vm);
 }
 
 /// «Piattaforma» is remembered in settings.json (D-121): the grid gives it

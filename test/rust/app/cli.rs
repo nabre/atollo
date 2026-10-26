@@ -166,6 +166,12 @@ fn components_say_why_not_on_linux_arm64() {
     for id in ["node", "sqlite"] {
         assert!(!line(id).contains("not available"), "{}", line(id));
     }
+    // ConPTY is not needed there, with its reason (D-177).
+    assert!(
+        line("conpty").ends_with("not needed: the app's terminal uses the system's PTY"),
+        "{}",
+        line("conpty")
+    );
     let _ = std::fs::remove_dir_all(tmp);
 }
 

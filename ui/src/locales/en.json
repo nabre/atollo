@@ -788,6 +788,7 @@
   "Gli archivi sono già nel kit: l'installazione termina al primo avvio su quel sistema.": "The archives are already in the kit: the installation completes on the first start on that system.",
   "Preparato da questo PC, scarica solo gli archivi: l'installazione termina al primo avvio su quel sistema.": "Prepared from this PC, it only downloads the archives: the installation completes on the first start on that system.",
   "Nessuna build per questo sistema: il motivo è nel dettaglio.": "No build for this system: the reason is in the details.",
+  "Su questo sistema non serve: ne fa le veci il sistema, il motivo è nel dettaglio.": "Not needed on this system: the system does its job, the reason is in the details.",
   "installati su disponibili": "installed of available",
   "{0} su {1}": "{0} on {1}",
   "Installato": "Installed",

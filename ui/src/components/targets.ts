@@ -37,15 +37,16 @@ export function targetLabel(id: string, profiles: TargetProfile[]): string {
 }
 
 /** The states of a cell of the grid, in the order of the legend. */
-export const CELL_STATES = ["available", "vm", "staged", "firstStart", "unavailable"] as const;
+export const CELL_STATES = ["available", "vm", "staged", "firstStart", "notNeeded", "unavailable"] as const;
 
 export type CellState = (typeof CELL_STATES)[number];
 
-/** The state of a component on a system: not available (with the reason),
- * pre-downloaded, completing on the first start there, run in the VM with
- * its build for Linux (the PC's system with the VM on, D-174), or
- * available. */
+/** The state of a component on a system: not needed there (the system
+ * does its job, D-177), not available (with the reason), pre-downloaded,
+ * completing on the first start there, run in the VM with its build for
+ * Linux (the PC's system with the VM on, D-174), or available. */
 export function cellState(s: TargetToolStatus): CellState {
+  if (s.notNeeded !== null) return "notNeeded";
   if (s.viaVm) return "vm";
   if (!s.available) return "unavailable";
   if (s.bootstrapStaged) return "staged";
@@ -59,6 +60,7 @@ export function cellLabel(state: CellState): string {
     vm: t("nella VM"),
     staged: t("pre-installato"),
     firstStart: t("si completa al primo avvio"),
+    notNeeded: t("non serve"),
     unavailable: t("non disponibile"),
   }[state];
 }
@@ -72,12 +74,14 @@ export function cellHint(state: CellState): string {
     firstStart: t(
       "Preparato da questo PC, scarica solo gli archivi: l'installazione termina al primo avvio su quel sistema.",
     ),
+    notNeeded: t("Su questo sistema non serve: ne fa le veci il sistema, il motivo è nel dettaglio."),
     unavailable: t("Nessuna build per questo sistema: il motivo è nel dettaglio."),
   }[state];
 }
 
-/** Why a component is not available there, already translated. */
+/** Why a component is not available or not needed there, already
+ * translated. */
 export function cellReason(s: TargetToolStatus): string | null {
   if (s.available) return null;
-  return s.unavailableReason;
+  return s.notNeeded ?? s.unavailableReason;
 }

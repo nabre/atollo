@@ -2,7 +2,9 @@
 // in «Tutti gli strumenti» (./table.tsx). What is on disk takes five states
 // only: missing, staged, installed, to update and error; why a tool is
 // missing (not available there, chosen but not downloaded) goes in the
-// tooltip, not in a state of its own. On the system shown it adds what the page knows only there: the preparation under way
+// tooltip, not in a state of its own. A tool not needed on a system (the
+// system does its job, ConPTY on macOS and Linux, D-177) is never missing:
+// it has a state of its own, with the reason in the tooltip. On the system shown it adds what the page knows only there: the preparation under way
 // (queued, download) and the choice waiting for "Apply".
 import type { IconType } from "react-icons";
 import type { ComponentInfo, TargetToolStatus } from "../ipc";
@@ -22,6 +24,7 @@ export const TOOL_STATES = [
   "installed",
   "staged",
   "missing",
+  "notNeeded",
 ] as const;
 
 export type ToolState = (typeof TOOL_STATES)[number];
@@ -36,6 +39,7 @@ const LOOK: Record<ToolState, { icon: IconType; tone: string; spin?: boolean }> 
   installed: { icon: codicon("pass-filled"), tone: "text-vsc-success" },
   staged: { icon: codicon("package"), tone: "text-vsc-success" },
   missing: { icon: codicon("circle-large"), tone: "text-vsc-desc" },
+  notNeeded: { icon: codicon("dash"), tone: "text-vsc-desc" },
 };
 
 export function toolStateLabel(state: ToolState): string {
@@ -49,6 +53,7 @@ export function toolStateLabel(state: ToolState): string {
     installed: t("installato"),
     staged: t("pre-installato"),
     missing: t("non esiste"),
+    notNeeded: t("non serve"),
   }[state];
 }
 
@@ -79,6 +84,7 @@ export function shownStatus(
   if (c.installed) return { state: s?.needsReinstall ? "update" : "installed", detail: null };
   if (s?.missing) return incomplete(s.missing);
   if (c.bootstrapStaged) return { state: "staged", detail: null };
+  if (c.notNeeded !== null) return { state: "notNeeded", detail: c.notNeeded };
   if (c.unavailableReason !== null) return { state: "missing", detail: c.unavailableReason };
   if (s) return otherStatus(s, target);
   return { state: "missing", detail: null };
@@ -94,6 +100,7 @@ function incomplete(missing: string): ToolStatus {
  * A tool that completes at its first start there is staged too: its files
  * are in the kit, waiting for that system. */
 export function otherStatus(s: TargetToolStatus, target: string): ToolStatus {
+  if (s.notNeeded !== null) return { state: "notNeeded", detail: s.notNeeded };
   if (!s.available) return { state: "missing", detail: cellReason(s) };
   if (s.installed) return { state: s.needsReinstall ? "update" : "installed", detail: null };
   if (s.missing) return incomplete(s.missing);

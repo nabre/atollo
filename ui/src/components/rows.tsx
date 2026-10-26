@@ -192,7 +192,9 @@ export function ComponentRow({
           <Checkbox
             id={inputId}
             checked={on}
-            disabled={required || running || c.unavailableReason !== null || (!c.available && !on)}
+            disabled={
+              required || running || c.unavailableReason !== null || c.notNeeded !== null || (!c.available && !on)
+            }
             onChange={(v) => {
               onChange(v);
             }}
@@ -221,6 +223,10 @@ export function ComponentRow({
               <span className="text-vsc-success">
                 <Codicon name="check" className="mr-1" size={12} />
                 {shown ?? t("installato")}
+              </span>
+            ) : c.notNeeded !== null ? (
+              <span className="text-vsc-desc" title={c.notNeeded}>
+                {t("non serve")}
               </span>
             ) : c.unavailableReason !== null ? (
               <span className="text-vsc-desc">{c.unavailableReason}</span>

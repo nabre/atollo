@@ -421,6 +421,7 @@ section { padding: 96px 0; position: relative; }
 .mx td { text-align: center; font-weight: 700; width: 9%; cursor: default; }
 .mx-ok { color: var(--ok); }
 .mx-no, .mx-dep { color: var(--no); }
+.mx-skip { color: var(--no); }
 .mx tbody tr:hover > * { background: var(--hover); }
 /* The visitor's system (assets/download.js adds .here) */
 .mx .here { background: color-mix(in srgb, var(--accent) 12%, transparent); }

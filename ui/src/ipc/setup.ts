@@ -69,6 +69,11 @@ export interface TargetToolStatus {
   firstStart: boolean;
   /** Why it is not available, already translated. */
   unavailableReason: string | null;
+  /** Not needed on this system, with the catalog's reason already
+   * translated: the system does its job (ConPTY on macOS and Linux, whose
+   * terminal uses the system's PTY, D-177). `available` is false and
+   * `unavailableReason` null. */
+  notNeeded: string | null;
   /** On the PC's system with the VM on: the VM runs it with its build for
    * Linux, not needed here (D-174). */
   viaVm: boolean;
@@ -131,6 +136,10 @@ export interface ComponentInfo {
   /** Not made for this kit's system (Windows only, on macOS or Linux; no
    * build for Linux ARM64): why it is not available, already translated. */
   unavailableReason: string | null;
+  /** Not needed on this kit's system, with the catalog's reason already
+   * translated (ConPTY on macOS and Linux, D-177): `available` false, no
+   * `unavailableReason`. */
+  notNeeded: string | null;
   needs: string[];
   /** One folder per minor version, side by side; the others are always at
    * their latest version. */
@@ -186,6 +195,7 @@ function sampleComponent(
     version: null,
     available: true,
     unavailableReason: null,
+    notNeeded: null,
     needs: [],
     versioned: ["python", "node", "php", "go", "java"].includes(id),
     home: "https://example.org",
@@ -375,6 +385,7 @@ function sampleGrid(): TargetGrid {
         bootstrapStaged: false,
         firstStart: !p.executableOnHost && ["git", "python"].includes(c.id),
         unavailableReason: null,
+        notNeeded: null,
         viaVm: false,
       };
     });

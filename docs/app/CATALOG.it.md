@@ -15,7 +15,7 @@ Prove reali: la CI (job x64) installa `pwsh`, `node`, `git` e l'editor; tutti i 
 | | `pwsh` | PowerShell 7 | sempre | 110 | | **nuovo**; terminale del kit |
 | | `sandboxes` | Docker Sandboxes (sbx) | sempre | 470 | — | **nuovo**; il nucleo di Atollo: una microVM per progetto e per terminale del kit (DECISIONS.md D-167…D-175): terminale, azioni, siti e agenti isolati dal PC; Windows x64, Apple silicon, Linux x64 e ARM64, i sistemi per cui Docker pubblica `sbx` e quindi i soli su cui gira Atollo (D-176); serve un account Docker (`sbx login`). Si usa solo questo `sbx`, quello del kit: uno installato sul PC mai (D-175). `minVersion` 0.49.2: una versione più vecchia o sconosciuta si installa di nuovo all'avvio. Editor e console non lo aspettano: senza, l'avviso «Senza VM» lo dice, con «Installa nel kit» |
 | app (`app`) | `vscodium-server` | Editor (server web di VSCodium) | sempre | 250 | `pwsh` | **nuovo**; parte dell'app, versione fissata a ogni rilascio (DECISIONS.md D-58); in Strumenti compare con gli obbligatori, spuntato e non modificabile; SHA-256 fissato per target |
-| app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | sempre, solo Windows | 3 | — | **nuovo**; parte dell'app, la console del terminale nell'app su Windows (DECISIONS.md D-148); versione e SHA-256 del pacchetto NuGet fissati; x64 nativo; non offerto su macOS e Linux (il loro PTY) |
+| app (`app`) | `conpty` | ConPTY (conpty.dll + OpenConsole.exe) | sempre su Windows; non serve su macOS e Linux (PTY del sistema) | 3 | — | **nuovo**; parte dell'app, la console del terminale nell'app su Windows (DECISIONS.md D-148); versione e SHA-256 del pacchetto NuGet fissati; x64 nativo; non serve su macOS e Linux (`notNeeded`: il terminale dell'app usa la pty del sistema; D-177) |
 | agenti (`agents`) | `claude` | Claude Code | sì | 250 | `git` | |
 | | `codex` | Codex | sì | 440 | | |
 | | `antigravity` | Antigravity | sì | 190 | | accesso salvato nel kit (`agents/keyring.rs`) |
@@ -66,8 +66,9 @@ Campi del catalogo oltre a quelli di Atollo: `keys` (le altre parti di un compon
 
 | Campo | Cosa dice | Esempio |
 | --- | --- | --- |
-| `targets` | i soli target dove il componente c'è; vuoto = tutti | ConPTY: `["win32-x64"]` (D-148; anche Apache fino a D-116) |
+| `targets` | i soli target dove il componente c'è; vuoto = tutti | nessuno oggi (ConPTY fino a D-177, Apache fino a D-116) |
 | `unavailable` | target → motivo (in italiano, tradotto dai cataloghi), mostrato al posto di «non disponibile per `<target>`» | Android: `linux-arm64` |
+| `notNeeded` | target → motivo (in italiano, tradotto dai cataloghi) dove il sistema fa il lavoro del componente: lì non si installa, ma non manca mai e non è mai obbligatorio; si mostra «non serve» con il motivo (Strumenti, Matrice, `Atollo components`, matrice del sito). Chiavi fra i quattro target, nessuna in `unavailable` (D-177) | ConPTY: `darwin-arm64`, `linux-x64`, `linux-arm64` (il terminale dell'app usa la pty del sistema) |
 | `needsByTarget` | bisogni in più su un target, oltre a `needs`; `components.txt` salva solo quelli validi ovunque | `cc`: `zig` su macOS e Linux |
 | `removeUnix` | i file posseduti su macOS e Linux, al posto di `remove` | pnpm: `@data/npm-global/bin/pnpm`, `@data/npm-global/lib/node_modules/corepack` |
 | `sha256ByTarget` | SHA-256 per target, con `version`, dove il fornitore non pubblica un hash o le release sono rolling | editor, llama.cpp |

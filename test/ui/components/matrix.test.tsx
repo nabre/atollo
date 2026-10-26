@@ -30,6 +30,7 @@ const component = (id: string, name: string, group: ComponentInfo["group"]): Com
   version: null,
   available: true,
   unavailableReason: null,
+  notNeeded: null,
   needs: [],
   versioned: false,
   home: "https://example.org",
@@ -39,6 +40,7 @@ const LIST = [
   component("git", "Git", "required"),
   component("r", "R", "languages"),
   component("android", "Android SDK", "languages"),
+  component("conpty", "ConPTY", "app"),
 ];
 
 const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolStatus => ({
@@ -54,9 +56,15 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
   bootstrapStaged: false,
   firstStart: false,
   unavailableReason: null,
+  notNeeded: null,
   viaVm: false,
   ...extra,
 });
+
+/** Not needed on that system: the system does its job (ConPTY on macOS
+ * and Linux, D-177). */
+const notNeeded = (id: string): TargetToolStatus =>
+  status(id, { available: false, notNeeded: "il terminale dell'app usa la pty del sistema" });
 
 /** This PC a Mac with Apple Silicon, the others not run here. The cells say
  *  what the catalog says: Android SDK missing on Linux ARM64. */
@@ -72,10 +80,16 @@ function grid(chosen: TargetGrid["chosen"] = null, vm: TargetGrid["vm"] = null):
     };
   });
   const cells: Record<string, TargetToolStatus[]> = {
-    "win32-x64": [status("git", { installed: true, version: "2.56.0", chosen: true }), status("r"), status("android")],
-    "darwin-arm64": [status("git", { installed: true }), status("r"), status("android")],
-    "linux-x64": [status("git", { bootstrapStaged: true }), status("r"), status("android")],
+    "win32-x64": [
+      status("git", { installed: true, version: "2.56.0", chosen: true }),
+      status("r"),
+      status("android"),
+      status("conpty", { installed: true }),
+    ],
+    "darwin-arm64": [status("git", { installed: true }), status("r"), status("android"), notNeeded("conpty")],
+    "linux-x64": [status("git", { bootstrapStaged: true }), status("r"), status("android"), notNeeded("conpty")],
     "linux-arm64": [
+      notNeeded("conpty"),
       status("git", { firstStart: true }),
       status("r"),
       status("android", {
@@ -124,6 +138,9 @@ describe("target names and cells", () => {
     expect(cellState(status("x"))).toBe("available");
     expect(cellState(status("x", { bootstrapStaged: true, firstStart: true }))).toBe("staged");
     expect(cellState(status("x", { available: false, bootstrapStaged: true }))).toBe("unavailable");
+    // Not needed (D-177) before everything, the VM too: nothing to run.
+    expect(cellState(notNeeded("x"))).toBe("notNeeded");
+    expect(cellState({ ...notNeeded("x"), viaVm: true })).toBe("notNeeded");
   });
 });
 
@@ -159,6 +176,24 @@ describe("TargetMatrix", () => {
         name: "Android SDK, Linux ARM64: non disponibile (Google non pubblica platform-tools e build-tools per Linux ARM64)",
       }),
     ).toBeTruthy();
+  });
+
+  it("says a tool is not needed off Windows, with the reason, in the legend too (D-177)", () => {
+    render(<TargetMatrix state={fakeState()} onOpen={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "ConPTY, Windows x64: disponibile" })).toBeTruthy();
+    for (const system of ["macOS Apple Silicon", "Linux x64", "Linux ARM64"]) {
+      expect(
+        screen.getByRole("button", {
+          name: `ConPTY, ${system}: non serve (il terminale dell'app usa la pty del sistema)`,
+        }),
+      ).toBeTruthy();
+    }
+    const legend = screen.getByRole("list", { name: "Legenda" });
+    expect(within(legend).getByText("non serve")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^ConPTY, Linux x64/ }));
+    const detail = screen.getByRole("region", { name: "ConPTY su Linux x64" });
+    expect(detail.textContent).toContain("il terminale dell'app usa la pty del sistema");
+    expect(detail.textContent).toContain("Su questo sistema non serve");
   });
 
   it("opens the details of a cell, and shows its system or the component from there", () => {
