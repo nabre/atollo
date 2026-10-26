@@ -126,12 +126,7 @@ pub(super) fn install_now<R: Runtime>(
     // An agent only for the VM's Linux, while it is on (LEVELS.md §7).
     let vm = crate::levels::agents::known_vm();
     if !crate::levels::installable(component, kit.target(), &vm) {
-        return Err(crate::levels::agents::refused_install(
-            component,
-            &vm,
-            state.lang(),
-        )
-        .into());
+        return Err(crate::levels::agents::refused_install(component, &vm, state.lang()).into());
     }
     {
         let _one = crate::setup::catalog::choice_lock();

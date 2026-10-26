@@ -267,8 +267,7 @@ pub fn remove_elsewhere(
         let other = kit.for_target(target);
         let kept = catalog.needs_only_on(&chosen, target);
         for c in catalog.in_page_order() {
-            let unwanted =
-                !choice.is_chosen(&c.id) || crate::levels::agents::obsolete(c, target);
+            let unwanted = !choice.is_chosen(&c.id) || crate::levels::agents::obsolete(c, target);
             if unwanted && !kept.contains(c.id.as_str()) && has_trace(&other, c) {
                 out.push((target, c.id.clone()));
             }

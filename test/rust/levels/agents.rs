@@ -81,7 +81,10 @@ fn the_rows_of_the_agents() {
     else {
         panic!("not a row of the VM")
     };
-    assert!(reason.starts_with("Gli agenti girano solo nella VM"), "{reason}");
+    assert!(
+        reason.starts_with("Gli agenti girano solo nella VM"),
+        "{reason}"
+    );
     assert!(reason.contains("Windows Hypervisor Platform"), "{reason}");
     assert!(reason.contains("sbx login"), "{reason}");
     let en = off_reason(&off(), "en").unwrap();

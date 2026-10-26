@@ -54,7 +54,12 @@ pub fn vm_state(status: &isolation::Status) -> VmState {
 /// reason before the first status, which [`watch`] asks at the app's start
 /// and then tells.
 pub fn known_vm() -> VmState {
-    isolation::last_status().map_or(VmState::Off { blockers: Vec::new() }, |s| vm_state(&s))
+    isolation::last_status().map_or(
+        VmState::Off {
+            blockers: Vec::new(),
+        },
+        |s| vm_state(&s),
+    )
 }
 
 /// The agent `c` is, if it is one (the catalog's `agents` group).

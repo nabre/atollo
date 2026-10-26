@@ -20,7 +20,8 @@ pub async fn agents_status<R: Runtime>(
         state.lang(),
     );
     tauri::async_runtime::spawn_blocking(move || {
-        let vm = crate::levels::agents::vm_state(&crate::isolation::status(&kit, &host, &env, false));
+        let vm =
+            crate::levels::agents::vm_state(&crate::isolation::status(&kit, &host, &env, false));
         crate::agents::status(&kit, &vm, lang)
     })
     .await

@@ -792,13 +792,9 @@ fn an_agent_for_the_pc_is_removed() {
             .remove
             .is_empty());
     });
-    with_target_ctx(
-        "plan-agents-linux",
-        crate::kit::Target::LINUX_X64,
-        |ctx| {
-            fake_install(ctx, "pi");
-            let p = plan(ctx, Catalog::get(), &all_agents(), &vm(None)).unwrap();
-            assert!(!p.remove.contains(&"pi".into()), "the VM's build stays");
-        },
-    );
+    with_target_ctx("plan-agents-linux", crate::kit::Target::LINUX_X64, |ctx| {
+        fake_install(ctx, "pi");
+        let p = plan(ctx, Catalog::get(), &all_agents(), &vm(None)).unwrap();
+        assert!(!p.remove.contains(&"pi".into()), "the VM's build stays");
+    });
 }

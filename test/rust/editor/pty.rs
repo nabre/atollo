@@ -83,7 +83,6 @@ fn shell_is_the_kit_pwsh_when_installed() {
     assert!(l.title.ends_with(" · pwsh"));
 }
 
-
 /// What a fake PTY was asked to do.
 #[derive(Default)]
 struct Calls {

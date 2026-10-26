@@ -211,8 +211,15 @@ fn tasks_and_agents_go_through_launch() {
             "{name}"
         );
     }
-    assert_eq!(client_of(&p["Codex"]), Some("launch.ps1"), "brought by the VM");
-    assert!(p.get("Antigravity").is_none(), "no build for the VM's Linux");
+    assert_eq!(
+        client_of(&p["Codex"]),
+        Some("launch.ps1"),
+        "brought by the VM"
+    );
+    assert!(
+        p.get("Antigravity").is_none(),
+        "no build for the VM's Linux"
+    );
 
     // Without the kit's PowerShell: Git Bash with launch.sh.
     let (_t, kit) = kit_on("cfg-launch-sh", Target::WIN32_X64, &["git/bin/bash.exe"]);

@@ -56,10 +56,7 @@ const SPAWNS: &[&str] = &[
 /// `levels::start` or a decided entry point starts.
 const SPAWNS_ALLOWED: &[(&str, &str)] = &[
     ("platform/", "the system's layer"),
-    (
-        "os/",
-        "the system's layer",
-    ),
+    ("os/", "the system's layer"),
     (
         "db/",
         "database servers, clients, phpMyAdmin, mongo-express (§5.2)",
@@ -207,13 +204,12 @@ fn no_agent_binary_is_started_by_the_app_on_the_pc() {
         if code.iter().any(|l| l.contains("exe_of(")) && rel != "agents/mod.rs" {
             exe_of.push(rel.clone());
         }
-        let spawns = code.iter().any(|l| {
-            SPAWNS.iter().chain(GATES).any(|p| l.contains(p))
-        });
-        let names = code.iter().any(|l| {
-            binaries.iter().any(|b| l.contains(b))
-                || l.contains("setup-token")
-        });
+        let spawns = code
+            .iter()
+            .any(|l| SPAWNS.iter().chain(GATES).any(|p| l.contains(p)));
+        let names = code
+            .iter()
+            .any(|l| binaries.iter().any(|b| l.contains(b)) || l.contains("setup-token"));
         if spawns && names {
             found.push(rel);
         }

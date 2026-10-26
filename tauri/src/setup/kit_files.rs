@@ -53,7 +53,14 @@ const FILES: &[(&str, &str)] = &[
 /// folder of the agents' launchers ([`AGENTS_DIR`]: Antigravity's with
 /// their keyring round trip, Claude Code's with its token), since no agent
 /// runs on the PC (D-179, LEVELS.md §7). Removed at every start.
-const OBSOLETE: [&str; 6] = ["bin/agy.cmd", "bin/agy", "bin/claude", "vm.ps1", "no-agents", AGENTS_DIR];
+const OBSOLETE: [&str; 6] = [
+    "bin/agy.cmd",
+    "bin/agy",
+    "bin/claude",
+    "vm.ps1",
+    "no-agents",
+    AGENTS_DIR,
+];
 
 /// The folder of the agents' launchers an earlier Atollo wrote in
 /// `data/kit`: removed at start ([`OBSOLETE`]), and kept off every `PATH`
