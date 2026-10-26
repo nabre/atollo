@@ -257,7 +257,7 @@ fn the_four_supported_targets() {
         assert_eq!(Target::parse(t.as_str()), Some(t));
     }
     let windows_arm = Target::new(Os::Win32, Arch::Arm64);
-    let intel_mac = Target::new(Os::Darwin, crate::test_support::kit_arch());
+    let intel_mac = Target::new(Os::Darwin, Arch::X64);
     for removed in [windows_arm, intel_mac] {
         assert!(!removed.is_supported(), "{removed}");
     }
