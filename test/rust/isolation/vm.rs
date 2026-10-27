@@ -194,7 +194,10 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
         [
             "sh",
             "-c",
-            r#"printf '%s\n' "$1" >&2; PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#,
+            &format!(
+                r#"printf '%s\n' "$1" >&2; {}; exec bash -l"#,
+                session_start()
+            ),
             "sh",
             "[Atollo] VM",
         ]
@@ -215,7 +218,7 @@ fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
             "atollo-t-x",
             "sh",
             "-c",
-            r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#,
+            &format!("{}; exec bash -l", session_start()),
         ]
     );
     assert_eq!(POLICY_ARGS, ["policy", "init", "balanced"]);
@@ -426,8 +429,31 @@ fn a_command_line_runs_in_the_vm() {
     );
     assert_eq!(
         args.last().unwrap(),
-        r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH"; export PATH; cd 'web' && npm start"#
+        &format!("{}; cd 'web' && npm start", session_start())
     );
+}
+
+/// The kit's tools first, then what the user installs in the VM's home
+/// (D-181): the kit's folders are read-only there.
+#[test]
+fn the_users_own_installations_go_to_the_vms_home() {
+    assert!(TOOLS_FIRST.starts_with(r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$HOME/.cargo/bin:"#));
+    for (name, dir) in [
+        ("GEM_HOME", "$HOME/.gem"),
+        ("NPM_CONFIG_PREFIX", "$HOME/.npm-global"),
+        ("R_LIBS_USER", "$HOME/R/library"),
+    ] {
+        assert!(
+            TOOLS_FIRST.contains(&format!("{name}=\"${{{name}:-{dir}}}\"")),
+            "{name}"
+        );
+        assert!(VM_HOMES.contains(&name), "{name}");
+    }
+    assert!(VM_HOMES.contains(&"CARGO_HOME"));
+    // Only variables: «Verifica strumenti» reads only; a session makes R's
+    // library.
+    assert!(!TOOLS_FIRST.contains("mkdir") && !TOOLS_FIRST.contains('>'));
+    assert_eq!(session_start(), format!("{TOOLS_FIRST}; {MAKE_HOMES}"));
 }
 
 #[test]

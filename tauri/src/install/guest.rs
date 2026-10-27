@@ -195,6 +195,17 @@ pub fn mounts(guest: &Kit) -> Vec<PathBuf> {
     vec![guest.apps(), guest.data().join("npm-global")]
 }
 
+/// The folders of `guest` a project's VM mounts read-only: [`mounts`], then
+/// the `php.ini` of each line of PHP for that Linux
+/// (`data/php/<linux>`, `PHPRC`; D-181), whose paths go through
+/// `${CP_PHP}`, which the VM has. The tools sandbox does not need it: the
+/// PC writes it.
+pub fn vm_mounts(guest: &Kit) -> Vec<PathBuf> {
+    let mut all = mounts(guest);
+    all.push(guest.data().join("php").join(guest.target().as_str()));
+    all
+}
+
 /// `word` as the VM sees it when it is a path under one of `roots` (as
 /// `vm::guest_path` puts them); `None` otherwise.
 pub fn guest_word(windows: bool, roots: &[PathBuf], word: &str) -> Option<String> {

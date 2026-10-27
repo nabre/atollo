@@ -233,7 +233,7 @@ fn in_vm(
     if let Some(guest) = &guest {
         fx.ensure_guest_tools(guest, &wanted);
         // Every folder mounted is there: `sbx` mounts none that is not.
-        for dir in crate::install::guest::mounts(guest) {
+        for dir in crate::install::guest::vm_mounts(guest) {
             std::fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
         }
     }
