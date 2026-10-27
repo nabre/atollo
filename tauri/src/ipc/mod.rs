@@ -126,6 +126,31 @@ async fn off_main<R: Runtime, T: Send + 'static>(
         .or_fail(context)?
 }
 
+/// The commands that must apply in the order they were asked: a `fn`
+/// command ran them one after the other on the window's thread, an
+/// `async` one runs on any thread. A queue is fair (first come, first
+/// served), taken at the command's start, before its work leaves for
+/// another thread, and held until the work ends.
+pub(crate) type Queue = tauri::async_runtime::Mutex<()>;
+
+/// The saves of the settings ([`app::settings_set`], [`app::gemini_key_set`]):
+/// an older one never overwrites a newer one.
+pub(crate) static SETTINGS: Queue = Queue::const_new(());
+
+/// The choices and installs of the Tools page ([`setup::components_sync`],
+/// [`setup::components_apply`], [`setup::components_install`], the
+/// [`versions`] commands that install, remove or choose a line): they
+/// write `components.txt` or a project's lines and queue preparations, in
+/// the order clicked.
+pub(crate) static INSTALLS: Queue = Queue::const_new(());
+
+/// `work` after the ones asked before it on `queue`, and before the ones
+/// asked after it.
+pub(crate) async fn in_order<T>(queue: &Queue, work: impl std::future::Future<Output = T>) -> T {
+    let _turn = queue.lock().await;
+    work.await
+}
+
 /// Returns `kit` scoped to `target` (`win32-x64`, `linux-x64`, `darwin-arm64`…)
 /// when given, or `kit.clone()` when omitted.
 pub(super) fn kit_for(kit: &Kit, target: Option<&str>) -> CmdResult<Kit> {
@@ -473,6 +498,7 @@ macro_rules! command_handler {
             $crate::ipc::setup::rust_toolchain_set,
             $crate::ipc::app::settings_get,
             $crate::ipc::app::settings_set,
+            $crate::ipc::app::gemini_key_set,
             $crate::ipc::app::update_status,
             $crate::ipc::app::update_check,
             $crate::ipc::window::eject_list,

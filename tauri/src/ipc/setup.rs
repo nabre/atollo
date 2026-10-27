@@ -60,14 +60,15 @@ pub struct ComponentInfo {
 /// folder is no longer chosen (versions::sync_with_disk); the names of
 /// those. Not while an installation runs (its folders come and go), nor when
 /// inspecting a non-host target. Off the window's thread: it reads every
-/// component's folders, and rebuilds the kit's environment.
+/// component's folders, and rebuilds the kit's environment. It writes
+/// `components.txt`: in order with the page's clicks ([`INSTALLS`]).
 #[tauri::command]
 pub async fn components_sync<R: Runtime>(
     webview: Webview<R>,
     target: Option<String>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
-    off_main(&webview, "components", move |_, state| {
+    let work = off_main(&webview, "components", move |_, state| {
         if state.setup.snapshot().running {
             return Ok(Vec::new());
         }
@@ -80,8 +81,8 @@ pub async fn components_sync<R: Runtime>(
             apply_env(state);
         }
         Ok(off)
-    })
-    .await
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The catalog as the Tools page shows it; with `ids`, only those (a row
@@ -528,7 +529,8 @@ pub fn components_repair<R: Runtime>(
 
 /// Installs `id` now, at its latest version, from the table of the Tools
 /// page: it becomes chosen, the other changes of the page stay pending.
-/// Off the window's thread: where it goes asks `sbx` ([`vm_tools_target`]).
+/// Off the window's thread: where it goes asks `sbx` ([`vm_tools_target`]);
+/// in the order clicked ([`INSTALLS`]).
 #[tauri::command]
 pub async fn components_install<R: Runtime>(
     webview: Webview<R>,
@@ -536,16 +538,20 @@ pub async fn components_install<R: Runtime>(
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    off_main(&webview, "components", move |app, state| {
-        super::versions::install_now(app.clone(), state, id, None, target)
-    })
+    in_order(
+        &INSTALLS,
+        off_main(&webview, "components", move |app, state| {
+            super::versions::install_now(app.clone(), state, id, None, target)
+        }),
+    )
     .await
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
 /// keep installed (required ones always are, dependencies follow). Saved in
 /// `components.txt`, then installed and removed in the background. Off the
-/// window's thread: where the tools go asks `sbx` ([`vm_tools_target`]).
+/// window's thread: where the tools go asks `sbx` ([`vm_tools_target`]);
+/// in the order clicked ([`INSTALLS`]): the last choice is the one saved.
 #[tauri::command]
 pub async fn components_apply<R: Runtime>(
     webview: Webview<R>,
@@ -554,7 +560,7 @@ pub async fn components_apply<R: Runtime>(
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    off_main(&webview, "components", move |app, state| {
+    let work = off_main(&webview, "components", move |app, state| {
         let kit = kit_for(&state.kit, target.as_deref())?;
         let catalog = Catalog::get();
         if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
@@ -584,8 +590,8 @@ pub async fn components_apply<R: Runtime>(
         };
         state.setup.start(opts, false, setup_notify(app.clone()))?;
         Ok(())
-    })
-    .await
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The VM's Linux when the VM is on (D-173): where the chosen tools go,

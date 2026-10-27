@@ -386,10 +386,12 @@ pub fn settings_get<R: Runtime>(
 ///
 /// Off the window's thread: applying them builds the kit's environment
 /// again (the certificates, every project's files, the launchers of the
-/// versions), seconds on a slow disk. One save at a time, whole: a save
-/// asked while another applies waits for it, so neither puts back the
-/// other's values half way (the page sends the next save only after the
-/// one before answered, `ui/src/settings/autosave.ts`).
+/// versions), seconds on a slow disk. One save at a time, whole, in the
+/// order asked ([`super::SETTINGS`]): a save asked while another applies
+/// waits for it, so neither puts back the other's values half way, and an
+/// older one never applies after a newer one (the page sends the next
+/// save only after the one before answered, `ui/src/settings/autosave.ts`;
+/// the Gemini key's save comes from another page).
 #[tauri::command]
 pub async fn settings_set<R: Runtime>(
     webview: Webview<R>,
@@ -399,13 +401,35 @@ pub async fn settings_set<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     let updater = Arc::clone(&updater);
-    off_main(&webview, "settings", move |app, state| {
-        static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
-        let _one = ONE
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        save_settings(app, state, &updater, settings, gemini)
-    })
+    super::in_order(
+        &super::SETTINGS,
+        off_main(&webview, "settings", move |app, state| {
+            save_settings(app, state, &updater, settings, gemini)
+        }),
+    )
+    .await
+}
+
+/// Saves the Gemini API key alone (`""` removes it), from the agent's page
+/// of the AI page (D-165): the settings as they are on disk, read under
+/// the same queue as [`settings_set`], so a save of the Settings page
+/// asked meanwhile is neither lost nor put back. The same as
+/// `settings_set(settings_get().settings, key)`, in one step.
+#[tauri::command]
+pub async fn gemini_key_set<R: Runtime>(
+    webview: Webview<R>,
+    updater: State<'_, Arc<Updater>>,
+    key: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let updater = Arc::clone(&updater);
+    super::in_order(
+        &super::SETTINGS,
+        off_main(&webview, "settings", move |app, state| {
+            let current = Settings::load(&state.kit).settings;
+            save_settings(app, state, &updater, current, Some(key))
+        }),
+    )
     .await
 }
 
@@ -417,48 +441,8 @@ fn save_settings<R: Runtime>(
     settings: Settings,
     gemini: Option<String>,
 ) -> CmdResult<()> {
-    let mut settings = settings;
-    for v in [
-        &mut settings.lang,
-        &mut settings.network.https_proxy,
-        &mut settings.network.http_proxy,
-        &mut settings.network.no_proxy,
-        &mut settings.network.extra_ca_certs,
-        &mut settings.rust_toolchain,
-    ] {
-        *v = v
-            .take()
-            .map(|s| s.trim().to_owned())
-            .filter(|s| !s.is_empty());
-    }
-    // A PEM file written relative to the kit's folder.
-    if let Some(ca) = &mut settings.network.extra_ca_certs {
-        if std::path::Path::new(ca.as_str()).is_relative() {
-            *ca = crate::common::fsx::join_rel(state.kit.root(), ca)
-                .display()
-                .to_string();
-        }
-    }
     // Automatic updates turned on: the check runs now, not at the next start.
-    let mut update_now = false;
-    Settings::update(&state.kit, |saved, _problem| {
-        update_now = settings.auto_update && !saved.auto_update;
-        // A key that could not be read stays on disk unless removed on purpose.
-        settings.gemini_unreadable = gemini.is_none() && saved.gemini_unreadable;
-        settings.gemini_api_key = match gemini {
-            None => saved.gemini_api_key.take(),
-            Some(k) if k.trim().is_empty() => None,
-            Some(k) => Some(k.trim().to_owned()),
-        };
-        settings.tools_target = saved.tools_target.take();
-        settings.other = std::mem::take(&mut saved.other);
-        settings.network.other = std::mem::take(&mut saved.network.other);
-        if let Err((source, arg)) = settings.validate() {
-            return Err(CmdError::from(tr(state, source, &[&arg])));
-        }
-        *saved = settings;
-        Ok(())
-    })?;
+    let update_now = write_settings(&state.kit, state.lang(), settings, gemini)?;
     if update_now && state.host.get("ATOLLO_NO_UPDATE").is_none() {
         let (kit, token, updater) = (
             state.kit.clone(),
@@ -479,6 +463,64 @@ fn save_settings<R: Runtime>(
     crate::app::tray::refresh(app);
     crate::common::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
+}
+
+/// Writes `settings` into settings.json, with the Gemini key as
+/// [`settings_set`] says; the Tools page's «Piattaforma» and the keys of a
+/// newer version stay as they are on disk. True when automatic updates
+/// were just turned on.
+pub(super) fn write_settings(
+    kit: &Kit,
+    lang: &str,
+    settings: Settings,
+    gemini: Option<String>,
+) -> CmdResult<bool> {
+    let mut settings = settings;
+    for v in [
+        &mut settings.lang,
+        &mut settings.network.https_proxy,
+        &mut settings.network.http_proxy,
+        &mut settings.network.no_proxy,
+        &mut settings.network.extra_ca_certs,
+        &mut settings.rust_toolchain,
+    ] {
+        *v = v
+            .take()
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty());
+    }
+    // A PEM file written relative to the kit's folder.
+    if let Some(ca) = &mut settings.network.extra_ca_certs {
+        if std::path::Path::new(ca.as_str()).is_relative() {
+            *ca = crate::common::fsx::join_rel(kit.root(), ca)
+                .display()
+                .to_string();
+        }
+    }
+    let mut update_now = false;
+    Settings::update(kit, |saved, _problem| {
+        update_now = settings.auto_update && !saved.auto_update;
+        // A key that could not be read stays on disk unless removed on purpose.
+        settings.gemini_unreadable = gemini.is_none() && saved.gemini_unreadable;
+        settings.gemini_api_key = match gemini {
+            None => saved.gemini_api_key.take(),
+            Some(k) if k.trim().is_empty() => None,
+            Some(k) => Some(k.trim().to_owned()),
+        };
+        settings.tools_target = saved.tools_target.take();
+        settings.other = std::mem::take(&mut saved.other);
+        settings.network.other = std::mem::take(&mut saved.network.other);
+        if let Err((source, arg)) = settings.validate() {
+            return Err(CmdError::from(crate::common::i18n::t(
+                lang,
+                source,
+                &[&arg],
+            )));
+        }
+        *saved = settings;
+        Ok(())
+    })?;
+    Ok(update_now)
 }
 
 #[tauri::command]
