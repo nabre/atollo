@@ -423,7 +423,7 @@ describe("App", () => {
       within(nav)
         .getAllByRole("button")
         .map((b) => b.textContent),
-    ).toEqual(["Avvio", "Sito web", "Componenti", "Database", "Estensioni", "Editor", "Git"]);
+    ).toEqual(["Avvio", "Sito web", "Componenti", "Database", "Estensioni", "Editor", "Git", "VM"]);
     expect(await screen.findByText("main")).toBeTruthy();
     fireEvent.click(within(nav).getByRole("button", { name: /Componenti/ }));
     expect(screen.getByText("da installare")).toBeTruthy();

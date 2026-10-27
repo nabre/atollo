@@ -240,7 +240,7 @@ fn files_line(lang: &str) -> &'static str {
     }
 }
 
-/// The lines of `models`, `llm` and `diagnostics` in `lang`.
+/// The lines of `models`, `llm`, `vm` and `diagnostics` in `lang`.
 fn models_lines(lang: &str) -> &'static [&'static str] {
     match lang {
         "it" => &[
@@ -249,6 +249,13 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (proprietario/nome:quantizzazione), riprende se interrotto",
             "  models rm <id>          cancella un modello scaricato",
             "  llm start|stop|status   il server dei modelli locali (chat e agenti)",
+            "  vm <progetto>           la VM del progetto: sandbox, cartelle, porte",
+            "      --agent <id>        la sandbox di un agente (claude, codex)",
+            "      --check             verifica gli strumenti nella VM",
+            "      --restart           riavvia la sandbox (con Atollo chiuso)",
+            "      --recreate [--yes]  la rifà: chiede conferma senza --yes",
+            "      --refresh           aggiorna gli strumenti per il Linux della VM",
+            "      --json              il resoconto in JSON",
             "  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)",
         ],
         "en" => &[
@@ -257,6 +264,13 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (owner/name:quantization), resumed if interrupted",
             "  models rm <id>          delete a downloaded model",
             "  llm start|stop|status   the server of the local models (chat and agents)",
+            "  vm <project>            the project's VM: sandboxes, folders, ports",
+            "      --agent <id>        an agent's sandbox (claude, codex)",
+            "      --check             check the tools in the VM",
+            "      --restart           restart the sandbox (with Atollo closed)",
+            "      --recreate [--yes]  make it again: asks without --yes",
+            "      --refresh           update the tools for the VM's Linux",
+            "      --json              the report in JSON",
             "  diagnostics             make the zip to attach to a problem report (secrets masked)",
         ],
         "fr" => &[
@@ -265,6 +279,13 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (propriétaire/nom:quantification), reprend s'il est interrompu",
             "  models rm <id>          supprime un modèle téléchargé",
             "  llm start|stop|status   le serveur des modèles locaux (chat et agents)",
+            "  vm <projet>             la VM du projet : sandbox, dossiers, ports",
+            "      --agent <id>        la sandbox d'un agent (claude, codex)",
+            "      --check             vérifie les outils dans la VM",
+            "      --restart           redémarre la sandbox (Atollo fermé)",
+            "      --recreate [--yes]  la recrée : demande sans --yes",
+            "      --refresh           met à jour les outils pour le Linux de la VM",
+            "      --json              le rapport en JSON",
             "  diagnostics             crée le zip à joindre à un signalement (secrets masqués)",
         ],
         _ => &[
@@ -273,6 +294,13 @@ fn models_lines(lang: &str) -> &'static [&'static str] {
             "                          (Besitzer/Name:Quantisierung), setzt nach Abbruch fort",
             "  models rm <id>          löscht ein heruntergeladenes Modell",
             "  llm start|stop|status   der Server der lokalen Modelle (Chat und Agenten)",
+            "  vm <Projekt>            die VM des Projekts: Sandboxes, Ordner, Ports",
+            "      --agent <id>        die Sandbox eines Agenten (claude, codex)",
+            "      --check             prüft die Werkzeuge in der VM",
+            "      --restart           startet die Sandbox neu (Atollo geschlossen)",
+            "      --recreate [--yes]  erstellt sie neu: fragt ohne --yes",
+            "      --refresh           aktualisiert die Werkzeuge für das Linux der VM",
+            "      --json              der Bericht als JSON",
             "  diagnostics             erstellt das Zip für eine Problemmeldung (Geheimnisse maskiert)",
         ],
     }

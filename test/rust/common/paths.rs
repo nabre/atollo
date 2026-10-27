@@ -14,6 +14,11 @@ use regex::Regex;
 /// `os/windows/`, built for Windows only, are not looked at.
 const ALLOWED: &[(&str, &str, &str)] = &[
     (
+        "isolation/vm.rs",
+        r##"r#"printf '%s\n' ""##,
+        "a shell's line feed for printf in the VM, no path",
+    ),
+    (
         "editor/cfg.rs",
         r#"r"System32\cmd.exe""#,
         "a program of Windows under %SystemRoot%, inside `if os.is_windows()`: \

@@ -286,6 +286,18 @@ fn a_fix_runs_with_the_environment_of_its_sbx() {
     }
 }
 
+/// A daemon older than the kit's `sbx` asks to restart (sbx 0.50.0 over a
+/// 0.49.2 daemon): Atollo restarts it, never another error.
+#[test]
+fn an_outdated_daemon_is_seen() {
+    assert!(daemon_outdated(
+        "warning: Docker Sandboxes has been updated and needs to restart; all running sandboxes will be stopped\n\
+         error: ensure daemon: cannot prompt for restart: stdin is not a terminal; run the command in an interactive terminal to confirm the restart\n  \
+         try: sbx daemon restart\n"
+    ));
+    assert!(!daemon_outdated("Error: daemon not running\n"));
+}
+
 #[test]
 fn sbx_signed_out_is_told_apart_from_other_errors() {
     assert_eq!(answer(true, ""), Ok(()));

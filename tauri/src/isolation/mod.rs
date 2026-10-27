@@ -931,10 +931,31 @@ fn run(
 /// `sbx ls --json`: answers only when the daemon runs and the user is
 /// signed in.
 fn ask(sbx: &Sbx, host: &Host, env: &KitEnv) -> Result<(), Blocker> {
-    match run(sbx, host, env, &["ls", "--json"], ASK_LIMIT) {
+    let ls = || run(sbx, host, env, &["ls", "--json"], ASK_LIMIT);
+    match ls() {
+        // A daemon older than the kit's `sbx` (updated by the kit) asks
+        // to restart on a terminal only ("cannot prompt for restart: stdin
+        // is not a terminal", sbx 0.50.0 over a 0.49.2 daemon): restarted
+        // here, its sandboxes stopped, then asked again.
+        Ok(out)
+            if !out.status.success() && daemon_outdated(&String::from_utf8_lossy(&out.stderr)) =>
+        {
+            crate::common::log::info("sbx: the daemon is older than sbx, restarted");
+            daemon_call(sbx, host, env, &["daemon", "restart"]);
+            match ls() {
+                Ok(out) => answer(out.status.success(), &String::from_utf8_lossy(&out.stderr)),
+                Err(message) => Err(Blocker::SbxFailed { message }),
+            }
+        }
         Ok(out) => answer(out.status.success(), &String::from_utf8_lossy(&out.stderr)),
         Err(message) => Err(Blocker::SbxFailed { message }),
     }
+}
+
+/// `sbx` says its daemon must restart for its new version.
+pub(crate) fn daemon_outdated(stderr: &str) -> bool {
+    let text = stderr.to_lowercase();
+    text.contains("needs to restart") || text.contains("cannot prompt for restart")
 }
 
 /// The global network policy no VM starts without: the kit's `sbx` gets
