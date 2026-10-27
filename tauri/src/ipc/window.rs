@@ -170,13 +170,16 @@ pub fn app_quit<R: Runtime>(
     Ok(())
 }
 
-/// Set once the user confirmed closing: the window closes without asking.
+/// Set once the user confirmed closing: the window no longer asks.
 #[derive(Default)]
 pub struct Quitting(pub std::sync::atomic::AtomicBool);
 
 /// The app window is closing: with the editor, consoles, projects'
 /// servers or an installation open, the interface asks first
-/// (`close-requested` event); otherwise it closes.
+/// (`close-requested` event); otherwise it closes. Once `app_quit` runs,
+/// the window only hides: closing it would end the app before its stops
+/// (actions, web servers, models, databases) are done, and leave their
+/// programs running; the app exits after the last stop.
 pub fn on_main_close<R: Runtime>(window: &tauri::Window<R>, api: &tauri::CloseRequestApi) {
     use tauri::Manager;
     let app = window.app_handle();
@@ -184,6 +187,8 @@ pub fn on_main_close<R: Runtime>(window: &tauri::Window<R>, api: &tauri::CloseRe
         .try_state::<Quitting>()
         .is_some_and(|q| q.0.load(std::sync::atomic::Ordering::SeqCst))
     {
+        api.prevent_close();
+        let _ = window.hide();
         return;
     }
     let open = open_now(app);

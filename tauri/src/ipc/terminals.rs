@@ -188,17 +188,23 @@ pub fn pty_sessions<R: Runtime>(
 }
 
 /// The output kept by session `id`, up to the chunk number it carries.
+/// Off the window's thread: up to 256 KB copied, then sent as JSON, where
+/// a terminal's escape bytes grow sixfold.
 #[tauri::command]
-pub fn pty_backlog<R: Runtime>(
+pub async fn pty_backlog<R: Runtime>(
     app: AppHandle<R>,
     webview: Webview<R>,
     id: u64,
 ) -> CmdResult<crate::editor::pty::Chunk> {
     ensure_pty(&webview, id)?;
-    app.state::<terminal::Consoles>()
-        .ptys
-        .backlog(id)
-        .or_fail_chain("terminal")
+    tauri::async_runtime::spawn_blocking(move || {
+        app.state::<terminal::Consoles>()
+            .ptys
+            .backlog(id)
+            .or_fail_chain("terminal")
+    })
+    .await
+    .or_fail("terminal")?
 }
 
 /// What was typed in session `id`; queued, never blocking the window.
