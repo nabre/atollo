@@ -92,6 +92,11 @@ pub struct SetupTask {
     settings: Mutex<Settings>,
     github_token: Option<String>,
     state: Mutex<Snapshot>,
+    /// Taken before the snapshot's lock is let go, held while the snapshot
+    /// is told ([`SetupTask::tell`]): the changes reach the window in the
+    /// order they were made, and nobody reading the snapshot waits for the
+    /// telling.
+    order: Mutex<()>,
     cancel: AtomicBool,
     pending: Mutex<VecDeque<Pending>>,
     jobs: Arc<Jobs>,
@@ -168,6 +173,7 @@ impl SetupTask {
                 target,
                 ..Snapshot::default()
             }),
+            order: Mutex::new(()),
             cancel: AtomicBool::new(false),
             pending: Mutex::new(VecDeque::new()),
             jobs: Arc::new(Jobs::new()),
@@ -211,6 +217,19 @@ impl SetupTask {
         self.lock().clone()
     }
 
+    /// Tells `notify` the snapshot `state` holds, after letting `state` go:
+    /// a notify is the window's event and, at the end of a run, the kit's
+    /// environment built again (`ipc::setup::setup_notify`), and the
+    /// commands that read the snapshot (`setup_state`, `setup_start`…) must
+    /// not wait for it. The order lock, taken before `state` is let go,
+    /// keeps the snapshots told in the order of their changes.
+    fn tell(&self, state: MutexGuard<'_, Snapshot>, notify: &Notify) {
+        let _order = self.order.lock().unwrap_or_else(PoisonError::into_inner);
+        let snapshot = state.clone();
+        drop(state);
+        notify(&snapshot);
+    }
+
     /// Starts a run in the background, or, while another one runs, puts it
     /// in the queue (it starts when the ones before it end); its job's id.
     pub fn start(
@@ -237,7 +256,12 @@ impl SetupTask {
                 title,
                 items,
             });
+            // Told with the snapshot still held: the run must reach the
+            // queue before the run going on can end without it, and
+            // `notify` moves there. A running snapshot is only an event.
+            let order = self.order.lock().unwrap_or_else(PoisonError::into_inner);
             notify(&state);
+            drop(order);
             self.queue().push_back(Pending {
                 job: job.clone(),
                 opts,
@@ -256,9 +280,8 @@ impl SetupTask {
             job: Some(job.clone()),
             ..Snapshot::default()
         };
-        notify(&state);
-        drop(state);
         self.cancel.store(false, Ordering::Relaxed);
+        self.tell(state, &notify);
         crate::common::log::info(&format!(
             "setup from the window: {opts:?} automatic={automatic}"
         ));
@@ -308,13 +331,12 @@ impl SetupTask {
             self.jobs.update(&current.job, |j| j.finish(end, why));
             state.error = error.err();
             let next = self.queue().pop_front();
-            let Some(next) = next else {
-                state.running = false;
-                state.cancelling = false;
-                state.queue.clear();
-                state.pending.clear();
-                (current.notify)(&state);
-                return;
+            let (mut state, next) = match next {
+                Some(next) => (state, next),
+                None => match self.end(state, &current.notify) {
+                    Some(more) => more,
+                    None => return,
+                },
             };
             // The next run of the queue: the same snapshot, its steps
             // appended to the ones before (the rows keep their outcome).
@@ -337,10 +359,50 @@ impl SetupTask {
                 "setup from the queue ({}): {:?}",
                 next.job, next.opts
             ));
-            (next.notify)(&state);
-            drop(state);
+            self.tell(state, &next.notify);
             current = next;
         }
+    }
+
+    /// The queue is empty: the end told to `notify` (the window's event,
+    /// and the kit's environment built again, `ipc::setup::setup_notify`)
+    /// before the snapshot says it. Until then `running` stays: `ensure`
+    /// and the others that wait for the end read the new environment
+    /// right after it, and the snapshot's lock is not held while the
+    /// environment is built (seconds on a slow disk), so `setup_state`
+    /// and the commands that start or cancel do not wait for it. Not under
+    /// the order lock for the same reason. A run asked meanwhile is
+    /// returned to go on with; a cancel asked meanwhile, which told a
+    /// running snapshot, is followed by the end told once more.
+    fn end<'a>(
+        &'a self,
+        state: MutexGuard<'a, Snapshot>,
+        notify: &Notify,
+    ) -> Option<(MutexGuard<'a, Snapshot>, Pending)> {
+        let ended = |state: &mut Snapshot| {
+            state.running = false;
+            state.cancelling = false;
+            state.queue.clear();
+            state.pending.clear();
+        };
+        let mut told = state.clone();
+        ended(&mut told);
+        drop(state);
+        // A panic there must not leave `running` for good.
+        let tell = std::panic::AssertUnwindSafe(|| notify(&told));
+        if let Err(p) = std::panic::catch_unwind(tell) {
+            panic_text(&*p);
+        }
+        let mut state = self.lock();
+        if let Some(next) = self.queue().pop_front() {
+            return Some((state, next));
+        }
+        let again = state.cancelling;
+        ended(&mut state);
+        if again {
+            self.tell(state, notify);
+        }
+        None
     }
 
     fn run(&self, opts: &Options, job: &str, notify: &Notify) -> Result<(), String> {
@@ -435,7 +497,7 @@ impl SetupTask {
         if state.running {
             self.cancel.store(true, Ordering::Relaxed);
             state.cancelling = true;
-            notify(&state);
+            self.tell(state, notify);
         }
     }
 
@@ -453,13 +515,13 @@ impl SetupTask {
             state.pending.retain(|p| p.job != id);
             self.jobs
                 .update(id, |j| j.finish(JobState::Cancelled, None));
-            notify(&state);
+            self.tell(state, notify);
             return true;
         }
         if state.running && state.job.as_deref() == Some(id) {
             self.cancel.store(true, Ordering::Relaxed);
             state.cancelling = true;
-            notify(&state);
+            self.tell(state, notify);
             return true;
         }
         false
@@ -633,7 +695,7 @@ impl Sink for TaskSink<'_> {
                 }
             }
         }
-        (self.notify)(&state);
+        self.task.tell(state, self.notify);
     }
 }
 

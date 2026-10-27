@@ -306,6 +306,52 @@ fn runs_asked_meanwhile_wait_in_the_queue() {
     assert!(task.is_over(&b));
 }
 
+/// The end of a run is told (in the app: the kit's environment built
+/// again, `ipc::setup::setup_notify`) without the snapshot's lock: the
+/// snapshot answers meanwhile and says `running` until the telling
+/// returns, so who waits for the end reads the new environment; a run
+/// asked meanwhile is queued and runs after.
+#[test]
+fn the_end_is_told_without_holding_the_snapshot() {
+    let (_tmp, kit, opts) = idle_kit("task-end");
+    let task = Arc::new(SetupTask::new(
+        kit,
+        KitEnv::default(),
+        Settings::default(),
+        None,
+    ));
+    let (ending_tx, ending_rx) = mpsc::channel();
+    let (go_tx, go_rx) = mpsc::channel::<()>();
+    let notify: Notify = Box::new(move |s| {
+        if !s.running {
+            let _ = ending_tx.send(());
+            let _ = go_rx.recv_timeout(Duration::from_secs(10));
+        }
+    });
+    task.start(opts.clone(), false, notify).unwrap();
+    ending_rx.recv_timeout(Duration::from_secs(30)).unwrap();
+
+    let (tx, rx) = mpsc::channel();
+    let reader = Arc::clone(&task);
+    std::thread::spawn(move || {
+        let _ = tx.send(reader.snapshot().running);
+    });
+    let running = rx
+        .recv_timeout(Duration::from_secs(5))
+        .expect("the snapshot is not held while the end is told");
+    assert!(running, "running until the end is told");
+    let next = task.start(opts, false, quiet()).unwrap();
+    assert_eq!(task.jobs().get(&next).unwrap().state, JobState::Queued);
+
+    go_tx.send(()).unwrap();
+    let deadline = std::time::Instant::now() + Duration::from_secs(30);
+    while task.snapshot().running {
+        assert!(std::time::Instant::now() < deadline, "still running");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(task.jobs().get(&next).unwrap().state, JobState::Done);
+}
+
 /// Cancelling the job that runs stops that run only (the flag the
 /// downloads read), never a job of another task.
 #[test]

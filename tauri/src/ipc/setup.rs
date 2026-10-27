@@ -357,6 +357,9 @@ fn agent_kit(kit: &Kit, c: &crate::setup::Component) -> Kit {
 /// At the end of a run the kit environment is built again: its PATH lists
 /// only the programs present (Git, Node.js...), so one just installed is
 /// seen by the editor, the consoles and the projects without a restart.
+/// Called without the snapshot's lock, on the run's thread, before the
+/// snapshot says the run ended (`SetupTask::end`): `setup_state` does not
+/// wait for the rebuild, and `ensure` reads the new environment.
 pub fn setup_notify<R: Runtime>(app: AppHandle<R>) -> Notify {
     Box::new(move |snapshot: &Snapshot| {
         if !snapshot.running && !snapshot.steps.is_empty() {
