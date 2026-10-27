@@ -8,7 +8,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, EventTarget, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
 
 use super::pty;
 use crate::env::KitEnv;
@@ -90,14 +90,31 @@ fn open<R: Runtime>(
 /// goes through here, since any of them can be detached (D-149).
 pub fn emit_output<R: Runtime>(app: &AppHandle<R>, id: u64, chunk: &pty::Chunk) {
     let event = crate::ipc::events::pty_output(id);
-    let _ = app.emit_to(crate::ipc::MAIN, &event, chunk);
-    let _ = app.emit_to(label(id).as_str(), &event, chunk);
+    let _ = app.emit_filter(&event, chunk, |t| for_views(t, id));
 }
 
 /// A session's end, to the panel and to the session's own window.
 pub fn emit_exit<R: Runtime>(app: &AppHandle<R>, info: &pty::PtyInfo) {
-    let _ = app.emit_to(crate::ipc::MAIN, crate::ipc::events::PTY_EXIT, info);
-    let _ = app.emit_to(label(info.id).as_str(), crate::ipc::events::PTY_EXIT, info);
+    let id = info.id;
+    let _ = app.emit_filter(crate::ipc::events::PTY_EXIT, info, |t| for_views(t, id));
+}
+
+/// Whether a listener on `target` is one of the views of session `id`: the
+/// main window's panel or the session's own window. One emit for both:
+/// the views listen on any target, which every emit reaches whatever its
+/// own, so one emit to each would bring them every event twice, and
+/// would serialize it twice.
+fn for_views(target: &EventTarget, id: u64) -> bool {
+    match target {
+        EventTarget::Any => true,
+        EventTarget::AnyLabel { label: l }
+        | EventTarget::Window { label: l }
+        | EventTarget::Webview { label: l }
+        | EventTarget::WebviewWindow { label: l } => {
+            l == crate::ipc::MAIN || session_of(l) == Some(id)
+        }
+        _ => false,
+    }
 }
 
 /// Runs `launch` (the kit's shell, a project's microVM, D-167) in a new
