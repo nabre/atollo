@@ -4,7 +4,9 @@
 import { describe, expect, it } from "vitest";
 import { siteGuide } from "../../../site/guide.mjs";
 
-describe("guide languages in one process", () => {
+// Drawing the whole Guide takes seconds, more under load (the whole suite
+// in parallel): not vitest's 5 s.
+describe("guide languages in one process", { timeout: 60_000 }, () => {
   it("draws English after Italian as English alone", () => {
     const fresh = siteGuide();
     const ids = fresh.guide.core.model.GUIDE_TOPICS.map((t) => t.id);

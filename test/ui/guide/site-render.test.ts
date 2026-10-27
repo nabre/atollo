@@ -10,7 +10,9 @@ const LANGS = ["en", "it", "fr", "de"];
 const site = siteGuide();
 const ids = site.guide.core.model.GUIDE_TOPICS.map((t) => t.id);
 
-describe("guide on the site", () => {
+// Drawing every topic of a language takes seconds, more under load (the
+// whole suite in parallel): not vitest's 5 s.
+describe("guide on the site", { timeout: 60_000 }, () => {
   it("has a site widget for every name of the contract, and no other", () => {
     expect(Object.keys(site.widgets).sort()).toEqual([...site.guide.core.widgets.WIDGET_NAMES].sort());
   });
