@@ -1,6 +1,6 @@
 # Novità
 
-## Non ancora rilasciato: i tre livelli (27/10/2026)
+## Rilascio 0.7.3 alpha (27/10/2026): i tre livelli
 
 - **Tre livelli, espliciti** (D-179, [LEVELS.md](LEVELS.md)): ogni programma ha un livello, che dipende da chi lo avvia e decide dove gira. **1 Manuale**: i comandi che scrivi tu, nei terminali del kit e nel terminale integrato dell'editor, sempre sul PC, con gli strumenti del kit alle versioni del progetto nella sua cartella e il tuo agente SSH per Git. **2 Codice del progetto**: terminale del progetto, azioni, siti, task dell'editor, creazione dei progetti, nella VM del progetto; senza VM sul PC, sigillati. **3 Agenti**: Claude Code e Codex ciascuno nella sua sandbox, Pi e Antigravity nella VM del progetto; mai sul PC.
 - **`claude`, `codex`, `pi`, `agy` in un terminale del PC**: scritti nella cartella di un progetto aprono l'agente nella VM del progetto, nello stesso terminale; fuori da un progetto, o senza VM, dicono perché e cosa fare.
