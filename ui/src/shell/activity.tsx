@@ -5,7 +5,7 @@
 // output, its steps or its error.
 // The status bar's Activity item opens and closes it. `useRunning` is what
 // the status bar, the Projects badge and the panel count (UX-V5-01).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   llmStop,
   serverStop,
@@ -20,7 +20,7 @@ import {
   type WebServerPool,
 } from "../ipc";
 import { t } from "../i18n";
-import { alive, stateText } from "../projects";
+import { alive, RunOutputView, stateText, type RunLogs } from "../projects";
 import { SetupProgress } from "../components/setup";
 import { isActive, JobDetails, jobStateText, stepText } from "./jobs";
 import {
@@ -157,7 +157,7 @@ export function ActivityPanel({
   height: number;
   runs: Record<string, RunInfo>;
   running: Running;
-  logs: Record<string, string[]>;
+  logs: RunLogs;
   loadLog: (key: string) => void;
   onStop: (key: string) => Promise<void>;
   onForget: (key: string) => void;
@@ -180,7 +180,6 @@ export function ActivityPanel({
   // The stops, with why one failed: a process in use or a port held.
   const { busy, error, run } = useAction();
   const { liveRuns, lines: liveServices, pools, llm, setServices, reloadServices, reloadPools, reloadLlm } = running;
-  const logRef = useRef<HTMLPreElement>(null);
 
   const list = Object.values(runs).sort((a, b) => b.start - a.start);
   // The jobs going on, then the last five that ended (the newest first).
@@ -210,15 +209,10 @@ export function ActivityPanel({
   const currentRun = current?.kind === "run" ? runs[current.key] : undefined;
   const currentService = current?.kind === "service" ? liveServices.find((s) => s.key === current.key) : undefined;
   const currentPool = current?.kind === "pool" ? pools.find((p) => p.id === current.id) : undefined;
-  const lines = currentRun ? (logs[currentRun.key] ?? []) : [];
 
   useEffect(() => {
     if (currentRun) loadLog(currentRun.key);
   }, [currentRun?.key, loadLog]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const el = logRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [lines.length]);
 
   const currentJob = current?.kind === "job" ? jobs.find((j) => j.id === current.id) : undefined;
   const nothing =
@@ -418,14 +412,14 @@ export function ActivityPanel({
                       )}
                     </ActionBar>
                   </div>
-                  <pre
-                    ref={logRef}
-                    tabIndex={0}
-                    aria-label={t("Output di {0}", `${currentRun.project}: ${currentRun.label}`)}
+                  {/* Its own subscription: a line renders this view only,
+                      and it follows the last line while the user is there. */}
+                  <RunOutputView
+                    logs={logs}
+                    runKey={currentRun.key}
+                    label={t("Output di {0}", `${currentRun.project}: ${currentRun.label}`)}
                     className="m-0 min-h-0 flex-1 overflow-auto px-3 pb-2 font-mono text-[12px] leading-[18px] whitespace-pre-wrap select-text"
-                  >
-                    {lines.join("\n")}
-                  </pre>
+                  />
                 </>
               )}
               {currentService && (

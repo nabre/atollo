@@ -49,7 +49,7 @@ import {
 import { mainAction, ProjectsHome, type HomeHandlers } from "./home";
 import { ProjectPage, type ProjectSection } from "./page";
 import { QuickOpen } from "./quickopen";
-import { alive } from "./runs";
+import { alive, type RunLogs } from "./runs";
 import { KIND_ICON, ProjectState } from "./kind";
 import { EmptyProjectEditor, GitProjectEditor, NewProjectTree, wayLabel, WIZARD_TAB, type NewWay } from "./new";
 import { Orphans } from "./orphans";
@@ -86,7 +86,7 @@ export function ProjectsPage({
   onChanged: () => void;
   /** The actions started in this session (useRuns, kept by the app). */
   runs: Record<string, RunInfo>;
-  logs: Record<string, string[]>;
+  logs: RunLogs;
   loadLog: (key: string) => void;
   forget: (key: string) => void;
   /** The projects open in the editor (kept by the app across pages). */

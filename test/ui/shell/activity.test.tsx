@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { RunInfo, ServiceInfo, WebServerPool } from "@/ipc";
 import { ActivityPanel, liveLines, useRunning } from "@/shell/activity";
+import { createRunLogs } from "@/projects/runs";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));
@@ -79,7 +80,7 @@ function Harness({ runs, onStop }: { runs: Record<string, RunInfo>; onStop: (key
         height={240}
         runs={runs}
         running={running}
-        logs={{}}
+        logs={createRunLogs()}
         loadLog={() => undefined}
         onStop={onStop}
         onForget={() => undefined}
