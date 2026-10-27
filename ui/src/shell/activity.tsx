@@ -7,11 +7,8 @@
 // the status bar, the Projects badge and the panel count (UX-V5-01).
 import { useEffect, useRef, useState } from "react";
 import {
-  llmStatus,
   llmStop,
-  serversList,
   serverStop,
-  servicesList,
   serviceStop,
   urlOpen,
   type LlmInfo,
@@ -39,7 +36,9 @@ import {
   Panel,
 } from "../workbench";
 import { ActionButton, ErrorLine } from "../shared/common";
-import { useAction, useLoad } from "../shared/hooks";
+import { useAction } from "../shared/hooks";
+import { usePoll } from "../shared/poll";
+import { llmPoll, serversPoll, servicesPoll } from "../shared/polls";
 
 /** A version of a database server that is not stopped: the one it runs, or
  * another one on its own port (`line` set, D-102). */
@@ -87,28 +86,23 @@ export function liveLines(services: ServiceInfo[]): LiveLine[] {
   });
 }
 
-const readPools = () => serversList().then((v) => v.pools);
-
-const readLlm = () => llmStatus().then((i): LlmInfo | null => (i.state === "stopped" ? null : i));
+const NO_POOLS: WebServerPool[] = [];
 
 /** What runs in the kit, read every few seconds: the projects' live
  * actions, the database versions not stopped (each line, D-102), the
  * server of the local models (D-151) and the web server pools on; `count`
- * is how many, for the status bar and the Projects badge. */
+ * is how many, for the status bar and the Projects badge. The reads are
+ * the polls the pages of the same things share (shared/polls). */
 export function useRunning(runs: Record<string, RunInfo>) {
   const {
     data: services,
     setData: setServices,
     reload: reloadServices,
-  } = useLoad<ServiceInfo[]>(servicesList, [], { onError: "keep", every: 4000 });
-  const { data: allPools, reload: reloadPools } = useLoad<WebServerPool[]>(readPools, [], {
-    onError: "keep",
-    every: 4000,
-  });
-  const { data: llm, reload: reloadLlm } = useLoad<LlmInfo | null>(readLlm, null, {
-    onError: "keep",
-    every: 4000,
-  });
+  } = usePoll<ServiceInfo[]>(servicesPoll, [], { onError: "keep", every: 4000 });
+  const { data: servers, reload: reloadPools } = usePoll(serversPoll, null, { onError: "keep", every: 4000 });
+  const { data: info, reload: reloadLlm } = usePoll(llmPoll, null, { onError: "keep", every: 4000 });
+  const allPools = servers?.pools ?? NO_POOLS;
+  const llm: LlmInfo | null = info && info.state !== "stopped" ? info : null;
   const liveRuns = Object.values(runs).filter((r) => alive(r.state));
   const lines = liveLines(services);
   const pools = allPools.filter((p) => p.running);

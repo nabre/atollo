@@ -10,7 +10,6 @@ import { useState } from "react";
 import {
   agentLaunch,
   agentSignOut,
-  agentsStatus,
   folderOpen,
   onLevelsChanged,
   type AgentId,
@@ -24,7 +23,9 @@ import { ComponentLogo, componentIcon } from "../shared/logos";
 import { AgentUsage, type useStats } from "./stats";
 import { GeminiKey } from "./gemini";
 import { KitMcpBox } from "../projects/mcp";
-import { useAction, useLoad, useSubscription } from "../shared/hooks";
+import { useAction, useSubscription } from "../shared/hooks";
+import { usePoll } from "../shared/poll";
+import { agentsPoll } from "../shared/polls";
 import {
   Button,
   Codicon,
@@ -45,9 +46,10 @@ import {
 
 /** The agents' state, refreshed every few seconds and at once when the VM
  * goes on or off (`levels-changed`). A poll that fails keeps what the last one read: an empty list would show
- * the welcome page and hide the project's agents until the next poll. */
+ * the welcome page and hide the project's agents until the next poll. The
+ * app and the AI page share one poll (shared/polls). */
 export function useAgents(): { agents: AgentInfo[] | null; reload: () => void } {
-  const { data: agents, reload } = useLoad<AgentInfo[] | null>(agentsStatus, null, {
+  const { data: agents, reload } = usePoll<AgentInfo[], AgentInfo[] | null>(agentsPoll, null, {
     onError: "keep",
     every: 5000,
   });

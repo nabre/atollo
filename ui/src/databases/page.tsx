@@ -13,7 +13,6 @@ import {
   serviceSet,
   serviceStart,
   serviceStop,
-  servicesList,
   type LineInfo,
   type ServiceInfo,
   type ServiceState,
@@ -21,7 +20,9 @@ import {
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import { ActionButton, ErrorLine, portRangeText, usePortField } from "../shared/common";
-import { useAction, useCopy, useLoad } from "../shared/hooks";
+import { useAction, useCopy } from "../shared/hooks";
+import { usePoll } from "../shared/poll";
+import { servicesPoll } from "../shared/polls";
 import {
   Button,
   CheckboxLabel,
@@ -451,13 +452,14 @@ export function DatabasesPage({ onGuide }: { onGuide?: (topic: "databases") => v
   // The list is read now and every 3 s; an action answers with the new list.
   // The read's error and the action's are kept apart: a read that works
   // clears the first, not the second. After an action the list is read
-  // again, which also drops a read still running from before it.
+  // again, which also drops a read still running from before it. The poll
+  // is the one the Activity counts read too (shared/polls).
   const {
     data: list,
     error: loadError,
     reload: refresh,
     setData: setList,
-  } = useLoad<ServiceInfo[] | null>(servicesList, null, { onError: "show", every: 3000 });
+  } = usePoll<ServiceInfo[], ServiceInfo[] | null>(servicesPoll, null, { onError: "show", every: 3000 });
   const { busy, error, run } = useAction();
   const [chosen, setChosen] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(true);
