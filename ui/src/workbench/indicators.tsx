@@ -3,7 +3,6 @@
 // and the state dots are drawn with the workbench's colors.
 import type { ReactNode } from "react";
 import { t } from "../i18n";
-import { useHost } from "./elements";
 import { codicon } from "./codicon";
 
 /** The round count of a view or a filter (vscode-badge, counter). */
@@ -67,12 +66,6 @@ export function Meter({
       <span className={`block h-full rounded-vsc-circle ${METER[tone]}`} style={{ width: `${String(width)}%` }} />
     </span>
   );
-}
-
-/** A line between groups (vscode-divider). */
-export function Divider({ className = "" }: { className?: string }) {
-  const [ref] = useHost("separator");
-  return <vscode-divider ref={ref} className={className} />;
 }
 
 /** A Codicon by name in its own component (vscode-icon), for a spinning

@@ -58,14 +58,6 @@ function isProblem(o: Outcome | null): boolean {
   return o !== null && (o.kind === "failed" || o.kind === "inUse" || o.kind === "unsupported");
 }
 
-/** Running, or finished with an error or a component not installed: an
- * installation that went well is not shown again. */
-export function setupToShow(s: SetupSnapshot | null): s is SetupSnapshot {
-  if (!s) return false;
-  if (s.running) return true;
-  return s.error !== null || s.steps.some((step) => isProblem(step.outcome));
-}
-
 function percent(step: SetupStep): number | null {
   if (step.done === null || !step.size) return null;
   return Math.min(100, Math.round((step.done / step.size) * 100));

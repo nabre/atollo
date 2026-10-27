@@ -3,7 +3,7 @@
 // workbench/.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { IconType } from "react-icons";
-import type { EditorStatus, Fix } from "../ipc";
+import type { Fix } from "../ipc";
 import { t } from "../i18n";
 import { Button, codicon, IconButton, Notice, type MenuTrigger } from "../workbench";
 import { FixAction, hasAction } from "./levels";
@@ -148,12 +148,6 @@ export function useRetryFocus<E extends HTMLElement>(retry: () => Promise<boolea
     [retry],
   );
   return { target, onRetry };
-}
-
-export function editorHint(status: EditorStatus | null): string | undefined {
-  if (!status) return undefined;
-  if (!status.installed) return t("L'editor non è installato: installalo da Strumenti.");
-  return undefined;
 }
 
 /** The ports a page lets the user choose: above the system's own, up to the last. */

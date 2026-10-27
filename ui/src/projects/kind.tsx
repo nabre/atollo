@@ -18,20 +18,6 @@ export const KIND_ICON: Record<ProjectInfo["type"], IconType> = {
   command: codicon("terminal"),
 };
 
-/** How the project starts (site, app with a window, command) and what it
- * was recognised as (Laravel, FastAPI, static site...). */
-export function ProjectKind({ p }: { p: ProjectInfo }) {
-  const Icon = KIND_ICON[p.type];
-  return (
-    <span className="flex min-w-0 items-center gap-1.5" title={`${kindText(p.type)} · ${p.reason}`}>
-      <Mark label={kindText(p.type)}>
-        <Icon size={14} aria-hidden="true" />
-      </Mark>
-      <span>{p.platform}</span>
-    </span>
-  );
-}
-
 /** Every language as its logo, in alphabetical order. */
 export function LanguageIcons({ names }: { names: string[] }) {
   return (
