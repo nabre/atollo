@@ -541,14 +541,17 @@ pub async fn frameworks_create<R: Runtime>(
     .or_fail("frameworks")?
 }
 
-/// The projects' folders and what is in them, for the wizard's name.
+/// The projects' folders and what is in them, for the wizard's name. Off
+/// the window's thread: it reads every project's folder.
 #[tauri::command]
-pub fn frameworks_targets<R: Runtime>(
+pub async fn frameworks_targets<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
 ) -> CmdResult<Vec<crate::projects::frameworks::Target>> {
     ensure_main(&webview)?;
-    Ok(crate::projects::frameworks::targets(&state.kit))
+    off_main(&webview, "frameworks", |_, state| {
+        Ok(crate::projects::frameworks::targets(&state.kit))
+    })
+    .await
 }
 
 /// Stops the creation running now.

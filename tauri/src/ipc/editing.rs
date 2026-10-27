@@ -139,16 +139,19 @@ pub fn project_editor_settings_set<R: Runtime>(
 
 /// The kit's matrix of editor extensions by language ("Linguaggi e
 /// strumenti"), for `target`: the system chosen on the Tools page (D-121),
-/// this PC's when omitted.
+/// this PC's when omitted. Off the window's thread: it reads the editor's
+/// installed extensions.
 #[tauri::command]
-pub fn extensions_matrix<R: Runtime>(
+pub async fn extensions_matrix<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     target: Option<String>,
 ) -> CmdResult<crate::editor::ext::MatrixInfo> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    Ok(crate::editor::ext::matrix_info(&kit))
+    off_main(&webview, "extensions", move |_, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        Ok(crate::editor::ext::matrix_info(&kit))
+    })
+    .await
 }
 
 /// The editor extensions added to or removed from those of the project's

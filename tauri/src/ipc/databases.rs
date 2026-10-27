@@ -69,21 +69,25 @@ fn db_versions(kit: &Kit, project: &str) -> std::collections::BTreeMap<String, D
         .collect()
 }
 
+/// The project's databases. Off the window's thread: what its code needs
+/// is a walk of its files (`detect::requires`).
 #[tauri::command]
-pub fn project_databases<R: Runtime>(
+pub async fn project_databases<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     project: String,
 ) -> CmdResult<ProjectDatabases> {
     ensure_main(&webview)?;
-    let dir = project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(ProjectDatabases {
-        dbs: state.services.project_dbs(&project),
-        detected: detected_as(crate::detect::requires(&dir)),
-        env_exists: dir.join(".env").is_file(),
-        env_ignored: crate::db::auth::env_ignored(&dir),
-        versions: db_versions(&state.kit, &project),
+    off_main(&webview, "databases", move |_, state| {
+        let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+        Ok(ProjectDatabases {
+            dbs: state.services.project_dbs(&project),
+            detected: detected_as(crate::detect::requires(&dir)),
+            env_exists: dir.join(".env").is_file(),
+            env_ignored: crate::db::auth::env_ignored(&dir),
+            versions: db_versions(&state.kit, &project),
+        })
     })
+    .await
 }
 
 /// The version of a server for the project's database (null: the one the

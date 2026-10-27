@@ -59,45 +59,51 @@ pub struct ComponentInfo {
 /// When the Tools page opens: what was deleted by hand from the kit's
 /// folder is no longer chosen (versions::sync_with_disk); the names of
 /// those. Not while an installation runs (its folders come and go), nor when
-/// inspecting a non-host target.
+/// inspecting a non-host target. Off the window's thread: it reads every
+/// component's folders, and rebuilds the kit's environment.
 #[tauri::command]
-pub fn components_sync<R: Runtime>(
+pub async fn components_sync<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     target: Option<String>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
-    if state.setup.snapshot().running {
-        return Ok(Vec::new());
-    }
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    if kit.target() != state.kit.target() {
-        return Ok(Vec::new());
-    }
-    let off = crate::versions::sync_with_disk(&kit).or_fail_chain("components")?;
-    if !off.is_empty() {
-        apply_env(&state);
-    }
-    Ok(off)
+    off_main(&webview, "components", move |_, state| {
+        if state.setup.snapshot().running {
+            return Ok(Vec::new());
+        }
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        if kit.target() != state.kit.target() {
+            return Ok(Vec::new());
+        }
+        let off = crate::versions::sync_with_disk(&kit).or_fail_chain("components")?;
+        if !off.is_empty() {
+            apply_env(state);
+        }
+        Ok(off)
+    })
+    .await
 }
 
 /// The catalog as the Tools page shows it; with `ids`, only those (a row
-/// whose install just ended, read again without the whole list).
+/// whose install just ended, read again without the whole list). Off the
+/// window's thread: it reads every component's folders.
 #[tauri::command]
-pub fn components_list<R: Runtime>(
+pub async fn components_list<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     target: Option<String>,
     ids: Option<Vec<String>>,
 ) -> CmdResult<Vec<ComponentInfo>> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    let vm = crate::levels::agents::known_vm();
-    let mut infos = component_infos(&kit, state.lang(), &vm);
-    if let Some(ids) = ids {
-        infos.retain(|c| ids.contains(&c.id));
-    }
-    Ok(infos)
+    off_main(&webview, "components", move |_, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        let vm = crate::levels::agents::known_vm();
+        let mut infos = component_infos(&kit, state.lang(), &vm);
+        if let Some(ids) = ids {
+            infos.retain(|c| ids.contains(&c.id));
+        }
+        Ok(infos)
+    })
+    .await
 }
 
 /// Verifies every installed or bootstrap-staged component on `target` (live
@@ -136,18 +142,16 @@ pub struct TargetGrid {
     pub vm: Option<String>,
 }
 
-/// The grid: off the window's thread, it reads the disk of the four systems.
+/// The grid: off the window's thread, it reads the disk of the four systems
+/// (and may wait for `sbx`'s answer on the VM, [`vm_tools_target`]).
 #[tauri::command]
-pub async fn target_profiles<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<TargetGrid> {
+pub async fn target_profiles<R: Runtime>(webview: Webview<R>) -> CmdResult<TargetGrid> {
     ensure_main(&webview)?;
-    let (kit, lang) = (state.kit.clone(), state.lang());
-    let vm = vm_tools_target(&state);
-    tauri::async_runtime::spawn_blocking(move || target_grid(&kit, lang, vm))
-        .await
-        .or_fail("targets")
+    off_main(&webview, "targets", |_, state| {
+        let vm = vm_tools_target(state);
+        Ok(target_grid(&state.kit, state.lang(), vm))
+    })
+    .await
 }
 
 pub(super) fn target_grid(kit: &Kit, lang: &str, vm: Option<crate::kit::Target>) -> TargetGrid {
@@ -410,17 +414,20 @@ pub fn setup_start<R: Runtime>(
 }
 
 /// The components with a new version (N-9), from the versions asked last;
-/// nothing is asked here.
+/// nothing is asked here. Off the window's thread: it reads the installed
+/// version of every component.
 #[tauri::command]
-pub fn updates_list<R: Runtime>(
+pub async fn updates_list<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
 ) -> CmdResult<crate::setup::updates::Updates> {
     ensure_main(&webview)?;
-    Ok(crate::setup::updates::pending(
-        &state.kit,
-        &crate::levels::agents::known_vm(),
-    ))
+    off_main(&webview, "updates", |_, state| {
+        Ok(crate::setup::updates::pending(
+            &state.kit,
+            &crate::levels::agents::known_vm(),
+        ))
+    })
+    .await
 }
 
 /// «Controlla ora»: each installed component's source asked now.
@@ -521,64 +528,77 @@ pub fn components_repair<R: Runtime>(
 
 /// Installs `id` now, at its latest version, from the table of the Tools
 /// page: it becomes chosen, the other changes of the page stay pending.
+/// Off the window's thread: where it goes asks `sbx` ([`vm_tools_target`]).
 #[tauri::command]
-pub fn components_install<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn components_install<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     id: String,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    super::versions::install_now(app, &state, id, None, target)
+    off_main(&webview, "components", move |app, state| {
+        super::versions::install_now(app.clone(), state, id, None, target)
+    })
+    .await
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
 /// keep installed (required ones always are, dependencies follow). Saved in
-/// `components.txt`, then installed and removed in the background.
+/// `components.txt`, then installed and removed in the background. Off the
+/// window's thread: where the tools go asks `sbx` ([`vm_tools_target`]).
 #[tauri::command]
-pub fn components_apply<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn components_apply<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     chosen: Vec<String>,
     update_all: bool,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    let catalog = Catalog::get();
-    if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
-        return Err(format!("unknown component: {bad}").into());
-    }
-    {
-        let _one = crate::setup::catalog::choice_lock();
-        let text = choice_text(&kit, &chosen);
-        let choice = Choice::parse(&text, catalog);
-        choice.write(&kit, catalog).or_fail_chain("components")?;
-    }
-    // With the VM on (D-173): the PC gets the system components only, the
-    // chosen tools go to the VM's Linux.
-    let guest = (kit.target() == state.kit.target())
-        .then(|| vm_tools_target(&state))
-        .flatten();
-    let opts = Options {
-        target: Some(kit.target()),
-        update_all,
-        scope: if guest.is_some() {
-            crate::setup::runner::Scope::System
-        } else {
-            crate::setup::runner::Scope::All
-        },
-        then_tools_for: guest,
-        ..Options::default()
-    };
-    state.setup.start(opts, false, setup_notify(app))?;
-    Ok(())
+    off_main(&webview, "components", move |app, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        let catalog = Catalog::get();
+        if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
+            return Err(format!("unknown component: {bad}").into());
+        }
+        {
+            let _one = crate::setup::catalog::choice_lock();
+            let text = choice_text(&kit, &chosen);
+            let choice = Choice::parse(&text, catalog);
+            choice.write(&kit, catalog).or_fail_chain("components")?;
+        }
+        // With the VM on (D-173): the PC gets the system components only, the
+        // chosen tools go to the VM's Linux.
+        let guest = (kit.target() == state.kit.target())
+            .then(|| vm_tools_target(state))
+            .flatten();
+        let opts = Options {
+            target: Some(kit.target()),
+            update_all,
+            scope: if guest.is_some() {
+                crate::setup::runner::Scope::System
+            } else {
+                crate::setup::runner::Scope::All
+            },
+            then_tools_for: guest,
+            ..Options::default()
+        };
+        state.setup.start(opts, false, setup_notify(app.clone()))?;
+        Ok(())
+    })
+    .await
 }
 
 /// The VM's Linux when the VM is on (D-173): where the chosen tools go,
 /// the PC keeping the system components only; `None` without it.
+///
+/// It asks the VM's status ([`crate::isolation::status`]): `sbx`'s answer
+/// of the last minute, or a new one, which takes seconds (minutes when its
+/// daemon starts). Never on the window's thread: its callers are `async`
+/// commands that call it off it. The last known status
+/// ([`crate::levels::agents::known_vm`]) is not enough here: before the
+/// first answer it says the VM is off, and the tools would be installed on
+/// the PC instead of the VM's Linux (and a project's missing tools counted
+/// there).
 pub(super) fn vm_tools_target(state: &AppState) -> Option<crate::kit::Target> {
     let guest = crate::isolation::vm::guest_target(state.kit.target())?;
     crate::isolation::vm_on(&state.kit, &state.host, &state.env()).then_some(guest)
@@ -723,14 +743,17 @@ pub fn setup_by_hand_open<R: Runtime>(
 }
 
 /// The packages kept to reinstall the conda environments without the
-/// network after a move (D-118), for the Settings page.
+/// network after a move (D-118), for the Settings page. Off the window's
+/// thread: their size is the walk of the whole package cache.
 #[tauri::command]
-pub fn conda_kept<R: Runtime>(
+pub async fn conda_kept<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
 ) -> CmdResult<crate::install::conda::Status> {
     ensure_main(&webview)?;
-    Ok(crate::install::conda::status(&state.kit))
+    off_main(&webview, "conda", |_, state| {
+        Ok(crate::install::conda::status(&state.kit))
+    })
+    .await
 }
 
 /// «Libera»: removes the kept packages of this target (D-118); not while a

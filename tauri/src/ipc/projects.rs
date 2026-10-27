@@ -12,11 +12,12 @@ pub async fn projects_list<R: Runtime>(
 ) -> CmdResult<Vec<crate::projects::ProjectInfo>> {
     ensure_main(&webview)?;
     let (kit, lang) = (state.kit.clone(), state.lang());
-    // With the VM on, what a project misses is counted on its Linux (D-173).
-    let tools =
-        super::setup::vm_tools_target(&state).map_or_else(|| kit.clone(), |t| kit.for_target(t));
     let app = tauri::Manager::app_handle(&webview).clone();
     tauri::async_runtime::spawn_blocking(move || {
+        // With the VM on, what a project misses is counted on its Linux
+        // (D-173); here too, since it may wait for `sbx`.
+        let tools = super::setup::vm_tools_target(&tauri::Manager::state::<AppState>(&app))
+            .map_or_else(|| kit.clone(), |t| kit.for_target(t));
         let list = crate::projects::list_in(&kit, &tools, lang);
         // The interface reads the list after every change of a project:
         // the tray menu follows (D-145).
@@ -47,19 +48,22 @@ pub fn project_create<R: Runtime>(
 }
 
 /// What deleting a project takes away: its folder, its databases on the
-/// kit's servers, the copies of them (D-89).
+/// kit's servers, the copies of them (D-89). Off the window's thread: it
+/// reads the project's folder, its databases and its copies.
 #[tauri::command]
-pub fn project_delete_plan<R: Runtime>(
+pub async fn project_delete_plan<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     project: String,
 ) -> CmdResult<crate::projects::DeletePlan> {
     ensure_main(&webview)?;
-    Ok(crate::projects::delete_plan(
-        &state.kit,
-        &project,
-        state.lang(),
-    )?)
+    off_main(&webview, "project", move |_, state| {
+        Ok(crate::projects::delete_plan(
+            &state.kit,
+            &project,
+            state.lang(),
+        )?)
+    })
+    .await
 }
 
 /// Deletes a project whose folder is empty, with its databases and users on
@@ -337,9 +341,11 @@ pub async fn project_install_missing<R: Runtime>(
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
-    let guest = super::setup::vm_tools_target(&state).map(|t| kit.for_target(t));
     tauri::async_runtime::spawn_blocking(move || {
-        // With the VM on, for its Linux (D-173).
+        // With the VM on, for its Linux (D-173); asked here, since it may
+        // wait for `sbx`.
+        let guest = super::setup::vm_tools_target(&tauri::Manager::state::<AppState>(&app))
+            .map(|t| kit.for_target(t));
         if let Some(guest) = guest {
             let missing = crate::projects::info_in(&kit, &guest, &dir, lang).missing;
             let wanted = missing.into_iter().map(|id| (id, None)).collect();
