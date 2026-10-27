@@ -82,7 +82,8 @@ pub(crate) fn refresh_stale_lines(kit: &Kit, env: &KitEnv, token: Option<String>
 
 /// Downloads `line` of `id` next to the default folder, with the app's
 /// preparation task (progress as `setup`). Off the window's thread: where
-/// it goes asks `sbx` ([`tools_kit`]).
+/// it goes asks `sbx` ([`tools_kit`]); in the order clicked
+/// ([`INSTALLS`]).
 #[tauri::command]
 pub async fn versions_add<R: Runtime>(
     webview: Webview<R>,
@@ -92,15 +93,18 @@ pub async fn versions_add<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
-    off_main(&webview, "versions", move |app, state| {
-        download_line(app.clone(), state, id, line, target)
-    })
+    in_order(
+        &INSTALLS,
+        off_main(&webview, "versions", move |app, state| {
+            download_line(app.clone(), state, id, line, target)
+        }),
+    )
     .await
 }
 
 /// Installs `id`, not installed yet, at `line` instead of the latest: it
 /// becomes chosen (with what it needs) and its first version is `line`.
-/// Off the window's thread, as [`versions_add`].
+/// Off the window's thread and in order, as [`versions_add`].
 #[tauri::command]
 pub async fn versions_install<R: Runtime>(
     webview: Webview<R>,
@@ -110,9 +114,12 @@ pub async fn versions_install<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
-    off_main(&webview, "versions", move |app, state| {
-        install_now(app.clone(), state, id, Some(line), target)
-    })
+    in_order(
+        &INSTALLS,
+        off_main(&webview, "versions", move |app, state| {
+            install_now(app.clone(), state, id, Some(line), target)
+        }),
+    )
     .await
 }
 
@@ -213,7 +220,8 @@ pub(super) fn download_chosen<R: Runtime>(
 
 /// Removes a saved line (the default folder goes with the component). Off
 /// the window's thread: it deletes the line's folder and rebuilds the
-/// kit's environment.
+/// kit's environment. In the order clicked, with the installs
+/// ([`INSTALLS`]).
 #[tauri::command]
 pub async fn versions_remove<R: Runtime>(
     webview: Webview<R>,
@@ -222,7 +230,7 @@ pub async fn versions_remove<R: Runtime>(
     target: Option<String>,
 ) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
-    off_main(&webview, "versions", move |_, state| {
+    let work = off_main(&webview, "versions", move |_, state| {
         if state.setup.snapshot().running {
             return Err(tr(state, "C'è già un'installazione in corso.", &[]).into());
         }
@@ -243,8 +251,8 @@ pub async fn versions_remove<R: Runtime>(
             apply_env(state);
         }
         Ok(crate::versions::tools(&kit))
-    })
-    .await
+    });
+    in_order(&INSTALLS, work).await
 }
 
 #[derive(Debug, Serialize)]
@@ -277,7 +285,8 @@ pub async fn project_versions<R: Runtime>(
 }
 
 /// The line of `id` for the project (`None`: the kit's), downloaded when it
-/// is not on disk. Off the window's thread, as [`versions_list`].
+/// is not on disk. Off the window's thread, as [`versions_list`]; in the
+/// order chosen ([`INSTALLS`]): the last line chosen is the one saved.
 #[tauri::command]
 pub async fn project_versions_set<R: Runtime>(
     webview: Webview<R>,
@@ -286,14 +295,14 @@ pub async fn project_versions_set<R: Runtime>(
     line: Option<String>,
 ) -> CmdResult<ProjectVersions> {
     ensure_main(&webview)?;
-    off_main(&webview, "versions", move |app, state| {
+    let work = off_main(&webview, "versions", move |app, state| {
         project_dir(&state.kit, Some(&project), state.lang())?;
         download_chosen(app.clone(), state, &id, line.as_deref())?;
         crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
             .or_fail_chain("versions")?;
         Ok(project_versions_of(&state.kit, &project))
-    })
-    .await
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The relations matrix (versions/relations/, D-81): the saved one while nothing

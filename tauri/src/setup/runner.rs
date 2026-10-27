@@ -374,10 +374,17 @@ fn chosen_without_skipped<'a>(
     }
 }
 
+/// At most this often a step's bytes reach the window: each event carries
+/// the whole snapshot (every step of the run, a few KB) and a `job`, and
+/// a fast download crosses a percent many times a second.
+const BYTES_EVERY: std::time::Duration = std::time::Duration::from_millis(100);
+
 struct StepProgress<'a> {
     id: &'a str,
     sink: &'a mut dyn Sink,
     last_percent: Option<u64>,
+    /// When the last bytes were told ([`BYTES_EVERY`]).
+    last_sent: Option<std::time::Instant>,
 }
 
 impl Progress for StepProgress<'_> {
@@ -388,13 +395,18 @@ impl Progress for StepProgress<'_> {
         });
     }
     fn bytes(&mut self, done: u64, total: Option<u64>) {
-        // Throttled: one event per percent (or per 4 MB without a size).
+        // Throttled: one event per percent (or per 4 MB without a size),
+        // at most one per BYTES_EVERY; the first and the last (all the
+        // bytes) always go.
         let mark = match total {
             Some(t) if t > 0 => done * 100 / t,
             _ => done / (4 * 1024 * 1024),
         };
-        if self.last_percent != Some(mark) {
+        let complete = total.is_some_and(|t| done >= t);
+        let due = complete || self.last_sent.is_none_or(|at| at.elapsed() >= BYTES_EVERY);
+        if self.last_percent != Some(mark) && due {
             self.last_percent = Some(mark);
+            self.last_sent = Some(std::time::Instant::now());
             self.sink.emit(Event::Bytes {
                 id: self.id.to_owned(),
                 done,
@@ -579,8 +591,19 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
 
 /// `f` while no preparation runs on the kit, under the same lock
 /// (`Busy` otherwise): the start's sweep of the kept conda packages and
-/// «Libera» of the Settings page (D-118).
+/// «Libera» of the Settings page (D-118). The work
+/// [`while_idle_in_background`] runs in this process ends first, as for
+/// [`run`]: right after the start the sweep holds the lock, and «Libera»
+/// would find the kit busy.
 pub fn while_idle<T>(kit: &Kit, f: impl FnOnce() -> T) -> Result<T> {
+    wait_for_background();
+    idle(kit, f)
+}
+
+/// `f` under the kit's lock, `Busy` while a preparation holds it. The work
+/// in the background calls it, not [`while_idle`]: that one would wait for
+/// itself.
+fn idle<T>(kit: &Kit, f: impl FnOnce() -> T) -> Result<T> {
     let _lock = lock(kit)?;
     Ok(f())
 }
@@ -612,7 +635,7 @@ pub fn while_idle_in_background(kit: &Kit, f: impl FnOnce() + Send + 'static) {
     let kit = kit.clone();
     std::thread::spawn(move || {
         let _ended = ended;
-        if let Err(e) = while_idle(&kit, f) {
+        if let Err(e) = idle(&kit, f) {
             crate::common::log::info(&format!("in the background: {e:#}"));
         }
     });
@@ -717,6 +740,7 @@ fn line_step(
                 id: &c.id,
                 sink: &mut *sink,
                 last_percent: None,
+                last_sent: None,
             };
             if let Some(version) = install::conda::reinstall(ctx, c, Some(line), &mut progress) {
                 return Ok(Outcome::Installed { version });
@@ -732,6 +756,7 @@ fn line_step(
             id: &c.id,
             sink: &mut *sink,
             last_percent: None,
+            last_sent: None,
         };
         install::install_line(ctx, c, &release, &mut progress)?;
         Ok(Outcome::Installed {
@@ -846,6 +871,7 @@ fn step(
             id: &c.id,
             sink: &mut *sink,
             last_percent: None,
+            last_sent: None,
         };
         if let Some(version) = install::conda::reinstall(ctx, c, None, &mut progress) {
             return Outcome::Installed { version };
@@ -866,6 +892,7 @@ fn step(
             id: &c.id,
             sink: &mut *sink,
             last_percent: None,
+            last_sent: None,
         };
         install::install(ctx, c, &release, &mut progress)?;
         Ok(Outcome::Installed {

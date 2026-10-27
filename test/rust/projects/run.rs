@@ -630,6 +630,31 @@ fn a_stream_is_logged_in_batches() {
     assert_eq!(read.seq, next - 1);
 }
 
+/// A log keeps its last [`MAX_LINES`] lines in order, also when one event
+/// alone brings more than that; the numbers go on counting every line.
+#[test]
+fn a_log_keeps_its_last_lines() {
+    let (_tmp, kit) = prepared_kit("run-log-trim");
+    let r = Runner::new(kit, Arc::new(|_| {}));
+    let a = site_action(false, Some("legacy"));
+    let key = r
+        .attach_pool("shop", &a, "legacy", 8095, "http://s:8095", "it")
+        .key;
+    let before = r.log(&key).seq;
+    let mut all = Vec::new();
+    for i in 0..MAX_LINES + 10 {
+        all.push(format!("riga {i}"));
+        r.append(&key, vec![format!("riga {i}")], false);
+    }
+    let big: Vec<String> = (0..MAX_LINES + 5).map(|i| format!("blocco {i}")).collect();
+    all.extend(big.iter().cloned());
+    r.append(&key, big, false);
+    let read = r.log(&key);
+    assert_eq!(read.lines.len(), MAX_LINES);
+    assert_eq!(read.lines[..], all[all.len() - MAX_LINES..]);
+    assert_eq!(read.seq, before + all.len() as u64);
+}
+
 /// I2: a run served by a pool stopped from the "Server Web" page (or dead)
 /// is marked stopped, and can then be cleared; one whose pool runs is not.
 #[test]

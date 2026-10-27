@@ -145,6 +145,7 @@ const COMMANDS: &[&str] = &[
     "rust_toolchain_set",
     "settings_get",
     "settings_set",
+    "gemini_key_set",
     "update_status",
     "update_check",
     "eject_list",
