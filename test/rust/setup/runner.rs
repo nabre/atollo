@@ -478,12 +478,23 @@ fn a_run_waits_for_the_work_in_the_background() {
         wait_for_background();
         let _ = done_tx.send(());
     });
+    // «Libera» of the Settings page waits too, instead of `Busy`.
+    let (freed_tx, freed_rx) = mpsc::channel();
+    let free_kit = kit.clone();
+    std::thread::spawn(move || {
+        let _ = freed_tx.send(while_idle(&free_kit, || 7).map_err(|e| e.to_string()));
+    });
     assert!(
         done_rx.recv_timeout(Duration::from_millis(200)).is_err(),
         "a run waits"
     );
+    assert!(freed_rx.try_recv().is_err(), "«Libera» waits");
     go_tx.send(()).unwrap();
     done_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+    assert_eq!(
+        freed_rx.recv_timeout(Duration::from_secs(10)).unwrap(),
+        Ok(7)
+    );
     assert!(lock(&kit).is_ok(), "the lock let go");
 
     while_idle_in_background(&kit, || panic!("sweep bug"));

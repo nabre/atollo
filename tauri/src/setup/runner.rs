@@ -579,8 +579,19 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
 
 /// `f` while no preparation runs on the kit, under the same lock
 /// (`Busy` otherwise): the start's sweep of the kept conda packages and
-/// «Libera» of the Settings page (D-118).
+/// «Libera» of the Settings page (D-118). The work
+/// [`while_idle_in_background`] runs in this process ends first, as for
+/// [`run`]: right after the start the sweep holds the lock, and «Libera»
+/// would find the kit busy.
 pub fn while_idle<T>(kit: &Kit, f: impl FnOnce() -> T) -> Result<T> {
+    wait_for_background();
+    idle(kit, f)
+}
+
+/// `f` under the kit's lock, `Busy` while a preparation holds it. The work
+/// in the background calls it, not [`while_idle`]: that one would wait for
+/// itself.
+fn idle<T>(kit: &Kit, f: impl FnOnce() -> T) -> Result<T> {
     let _lock = lock(kit)?;
     Ok(f())
 }
@@ -612,7 +623,7 @@ pub fn while_idle_in_background(kit: &Kit, f: impl FnOnce() + Send + 'static) {
     let kit = kit.clone();
     std::thread::spawn(move || {
         let _ended = ended;
-        if let Err(e) = while_idle(&kit, f) {
+        if let Err(e) = idle(&kit, f) {
             crate::common::log::info(&format!("in the background: {e:#}"));
         }
     });
