@@ -3,6 +3,7 @@
 //! open a project's page, quit. Quitting goes through the window's own
 //! close, so the interface asks first when something is open (D-55).
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, PoisonError};
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -84,6 +85,10 @@ struct Shown<R: Runtime> {
     show: MenuItem<R>,
     projects: Submenu<R>,
     quit: MenuItem<R>,
+    /// A [`refresh`] reading the projects now, off the main thread.
+    reading: AtomicBool,
+    /// A [`refresh`] asked while one reads: that one reads once more.
+    again: AtomicBool,
 }
 
 impl<R: Runtime> Shown<R> {
@@ -99,6 +104,8 @@ impl<R: Runtime> Shown<R> {
             show,
             projects,
             quit,
+            reading: AtomicBool::new(false),
+            again: AtomicBool::new(false),
         };
         Ok((shown, menu))
     }
@@ -180,23 +187,65 @@ pub fn create<R: Runtime>(app: &AppHandle<R>) {
 /// cloning, renaming or deleting one), after saving the settings, when the
 /// pointer reaches the icon and when the right button is pressed on it
 /// (Windows, macOS).
+///
+/// The projects (a folder's listing and one settings file each) are read
+/// off the main thread, only the menu is changed on it: the window does
+/// not wait for the disk. One reading at a time; the refreshes asked
+/// meanwhile make one more, never one each.
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
-    if app.try_state::<Shown<R>>().is_none() {
-        return;
-    }
-    // One change at a time, on the thread that owns the menu.
-    let handle = app.clone();
-    if let Err(e) = app.run_on_main_thread(move || refresh_here(&handle)) {
-        crate::common::log::warn(&format!("tray: menu: {e}"));
-    }
-}
-
-/// [`refresh`] on the main thread.
-fn refresh_here<R: Runtime>(app: &AppHandle<R>) {
     let Some(shown) = app.try_state::<Shown<R>>() else {
         return;
     };
-    let next = current(app);
+    if !start_reading(&shown.reading, &shown.again) {
+        return;
+    }
+    let handle = app.clone();
+    std::thread::spawn(move || loop {
+        let Some(shown) = handle.try_state::<Shown<R>>() else {
+            return;
+        };
+        shown.again.store(false, Ordering::SeqCst);
+        let next = current(&handle);
+        // One change at a time, on the thread that owns the menu.
+        let menu = handle.clone();
+        if let Err(e) = handle.run_on_main_thread(move || apply(&menu, next)) {
+            crate::common::log::warn(&format!("tray: menu: {e}"));
+        }
+        if !read_again(&shown.reading, &shown.again) {
+            return;
+        }
+    });
+}
+
+/// A refresh may read now (`reading` taken), or one reads already and
+/// will read again for it (`again` set).
+fn start_reading(reading: &AtomicBool, again: &AtomicBool) -> bool {
+    if reading.swap(true, Ordering::SeqCst) {
+        again.store(true, Ordering::SeqCst);
+        return false;
+    }
+    true
+}
+
+/// A reading ended: true when it reads once more for a refresh asked
+/// meanwhile (`reading` kept). A refresh asked right after `reading` is
+/// let go starts its own reading instead.
+fn read_again(reading: &AtomicBool, again: &AtomicBool) -> bool {
+    reading.store(false, Ordering::SeqCst);
+    again.load(Ordering::SeqCst) && !reading.swap(true, Ordering::SeqCst)
+}
+
+/// [`refresh`] on the main thread, read there too: the right button
+/// pressed brings the menu up to date before it opens.
+fn refresh_here<R: Runtime>(app: &AppHandle<R>) {
+    apply(app, current(app));
+}
+
+/// The menu changed to `next` (on the main thread).
+fn apply<R: Runtime>(app: &AppHandle<R>, next: Spec) {
+    let Some(shown) = app.try_state::<Shown<R>>() else {
+        return;
+    };
     let mut spec = shown.spec.lock().unwrap_or_else(PoisonError::into_inner);
     if *spec == next {
         return;
@@ -255,7 +304,9 @@ fn on_icon<R: Runtime>(app: &AppHandle<R>, event: &TrayIconEvent) {
             button_state: MouseButtonState::Down,
             ..
         } => refresh_here(app),
-        TrayIconEvent::Enter { .. } => refresh_here(app),
+        // The pointer passing over the icon: read off the main thread,
+        // usually done before the button is pressed.
+        TrayIconEvent::Enter { .. } => refresh(app),
         _ => {}
     }
 }
