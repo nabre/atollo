@@ -86,7 +86,7 @@ fn mac_tools_by_processor() {
 fn android_waits_for_a_system_whose_java_cannot_run_here() {
     let android = Catalog::get().find("android").unwrap();
     for target in Target::ALL {
-        let staged = crate::router::bootstrap::stages_for(&Android, android, target);
+        let staged = crate::router::bootstrap::stages_for(&Android, android, target, false);
         if !crate::router::target::can_execute_on_host(target) {
             assert!(staged, "{target}");
         }

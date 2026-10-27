@@ -99,12 +99,13 @@ pub fn take(kit: &Kit, file_name: &str, expect: &Expect, dest: &Path) -> Result<
     Ok(Some(candidate))
 }
 
-/// The installation that took the staged `file` ([`take`]) succeeded: on a
-/// host that can execute `kit.target()` it is consumed, with its folder
-/// and `.bootstrap` once empty. Elsewhere (staging for another system) it
-/// stays for the first start there.
-pub fn used(kit: &Kit, file: &Path) {
-    if !can_execute_on_host(kit.target()) {
+/// The installation that took the staged `file` ([`take`]) succeeded: when
+/// it ran the programs of `kit.target()` (`ran`: on this host, or in the
+/// tools sandbox, D-180) it is consumed, with its folder and `.bootstrap`
+/// once empty. Otherwise (staging for another system) it stays for the
+/// first start there.
+pub fn used(kit: &Kit, file: &Path, ran: bool) {
+    if !ran {
         return;
     }
     let top = boot_dir(kit);
@@ -150,19 +151,26 @@ pub fn remove_line(kit: &Kit, id: &str, line: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// Returns `true` when `component` uses a process-based custom installer that
-/// cannot run for `ctx.kit.target()` on the current host and should therefore
-/// have its bootstrap pre-downloaded and staged on disk.
+/// Returns `true` when `component` uses a process-based custom installer (or
+/// an archive of symbolic links) that cannot run for `ctx.kit.target()` on
+/// the current host nor in the tools sandbox (`ctx.guest`, D-180), and
+/// should therefore have its bootstrap pre-downloaded and staged on disk.
 pub fn should_stage(ctx: &Ctx, inst: &dyn Installer, component: &Component) -> bool {
-    stages_for(inst, component, ctx.kit.target())
+    stages_for(inst, component, ctx.kit.target(), ctx.guest.is_some())
 }
 
 /// [`should_stage`] for a kit of `target`: preparing `component` there
 /// from this host pre-downloads its bootstrap, and the installation
 /// finishes on the first start on that system (the grid's "completes on
-/// first start").
-pub fn stages_for(inst: &dyn Installer, component: &Component, target: Target) -> bool {
-    if !inst.custom(target) {
+/// first start"). Never with the tools sandbox (`guest`, D-180), which
+/// runs the programs of the VM's Linux.
+pub fn stages_for(
+    inst: &dyn Installer,
+    component: &Component,
+    target: Target,
+    guest: bool,
+) -> bool {
+    if guest || !(inst.custom(target) || inst.links(target)) {
         return false;
     }
     // Android's sdkmanager runs with the kit's own Java, built for `target`:

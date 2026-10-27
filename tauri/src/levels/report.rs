@@ -290,21 +290,6 @@ pub fn report(
     }
 }
 
-/// Tools that never run in the VM (§8.2, `notInVm`): the sites' servers
-/// run in the VM's containers, the rest on the PC or bootstrapped.
-pub const NOT_IN_VM: [&str; 7] = ["apache", "caddy", "rust", "android", "pnpm", "r", "llama"];
-
-/// Components of the kit on the PC: never checked in a VM.
-pub const NOT_CHECKED: [&str; 7] = [
-    "gh",
-    "pwsh",
-    "sandboxes",
-    "vscodium-server",
-    "conpty",
-    "phpmyadmin",
-    "mongo-express",
-];
-
 /// What «Verifica strumenti» runs for one tool.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckSpec {
@@ -336,14 +321,16 @@ impl CheckSpec {
 
 /// The check of the tool `id` (its catalog's `check`, the program reduced
 /// to its file name for the VM's Linux, `guest`); `chosen` its line.
-/// `None` for a component of the kit on the PC.
+/// `None` for a component of the kit on the PC (a system component, one
+/// without a program to ask, phpMyAdmin's and mongo-express's pages); no
+/// program (`notInVm`) for a tool that does not run in the VM
+/// (`Component::in_vm`, D-180: llama.cpp, the sites' servers).
 pub fn check_spec(kit: &Kit, guest: &Kit, id: &str, chosen: Option<String>) -> Option<CheckSpec> {
     let c = crate::setup::Catalog::get().find(id)?;
-    if NOT_CHECKED.contains(&id) || c.check.is_empty() || c.check.iter().any(|a| a.starts_with('<'))
-    {
+    if c.group.always() || c.check.is_empty() || c.check.iter().any(|a| a.starts_with('<')) {
         return None;
     }
-    let program = (!NOT_IN_VM.contains(&id)).then(|| {
+    let program = c.in_vm().then(|| {
         let rel = crate::setup::catalog::translate_rel(guest.target(), &c.check[0]);
         rel.rsplit('/').next().unwrap_or(&rel).to_owned()
     });

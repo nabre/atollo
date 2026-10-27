@@ -215,12 +215,34 @@ fn the_check_command_of_every_catalog_tool() {
         let spec = check_spec(&kit, &guest, id, None).unwrap_or_else(|| panic!("{id}"));
         assert_eq!(spec.command(), command, "{id}");
     }
-    for id in NOT_IN_VM {
+    // In the VM now (D-180): built for its Linux in the tools sandbox.
+    let built = [
+        ("rust", "rustc --version"),
+        ("android", "adb version"),
+        ("pnpm", "pnpm --version"),
+        ("r", "Rscript --version"),
+    ];
+    for (id, command) in built {
+        let spec = check_spec(&kit, &guest, id, None).unwrap_or_else(|| panic!("{id}"));
+        assert_eq!(spec.command(), command, "{id}");
+    }
+    // Not in the VM (`withVm` of the catalog): on the PC, or the VM's
+    // containers stand in for them.
+    for id in ["apache", "caddy", "llama"] {
         let spec = check_spec(&kit, &guest, id, None).unwrap_or_else(|| panic!("{id}"));
         assert_eq!(spec.program, None, "{id}");
         assert_eq!(spec.command(), "");
     }
-    for id in NOT_CHECKED {
+    let not_checked = [
+        "gh",
+        "pwsh",
+        "sandboxes",
+        "vscodium-server",
+        "conpty",
+        "phpmyadmin",
+        "mongo-express",
+    ];
+    for id in not_checked {
         assert_eq!(check_spec(&kit, &guest, id, None), None, "{id}");
     }
     // Pi's and Antigravity's own folder on `PATH` for their check only.

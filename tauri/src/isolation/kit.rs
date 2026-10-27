@@ -31,6 +31,9 @@ pub enum Owner {
     Project { project: String },
     /// A kit terminal (its id) in a folder.
     Terminal { terminal: String, dir: String },
+    /// The kit's tools sandbox, where the installers for the VM's Linux
+    /// run (D-180, `install::guest`).
+    Tools,
 }
 
 impl Owner {
@@ -38,14 +41,17 @@ impl Owner {
         match self {
             Owner::Project { .. } => "project",
             Owner::Terminal { .. } => "terminal",
+            Owner::Tools => "tools",
         }
     }
 
-    /// The name shown: the project, or the terminal and its folder.
+    /// The name shown: the project, the terminal and its folder, or the
+    /// kit's tools.
     pub fn label(&self) -> String {
         match self {
             Owner::Project { project } => project.clone(),
             Owner::Terminal { terminal, dir } => format!("{terminal} · {dir}"),
+            Owner::Tools => "tools".to_owned(),
         }
     }
 }

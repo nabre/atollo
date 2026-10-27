@@ -235,7 +235,7 @@ fn an_existing_sandbox_starts_again_by_its_name() {
 fn the_sandbox_starts_with_the_project_as_its_workspace() {
     let dir = Path::new("/kit/projects/shop");
     assert_eq!(
-        start_args("atollo-shop", dir, &[], None, "shell"),
+        start_args("atollo-shop", dir, &[], &[], None, "shell"),
         [
             "run",
             "-d",
@@ -249,6 +249,7 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         start_args(
             "atollo-t",
             dir,
+            &[],
             &["/kit/data/apps/linux-x64".into()],
             None,
             "shell"
@@ -263,6 +264,7 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
         start_args(
             "atollo-shop",
             dir,
+            &[],
             &[],
             Some(Path::new("/kit/data/app/sandboxes/atollo-shop")),
             "shell"
@@ -340,7 +342,7 @@ fn only_sbx_agents_have_a_sandbox() {
     let dir = Path::new("/p");
     let claude = agent_name("shop", "claude");
     assert_eq!(
-        start_args(&claude, dir, &[], None, "claude")[4..],
+        start_args(&claude, dir, &[], &[], None, "claude")[4..],
         ["claude", "/p"]
     );
 }
@@ -519,4 +521,38 @@ fn a_sandbox_reaches_only_its_databases_port_on_the_pc() {
         ]
     );
     assert_eq!(HOST, "host.docker.internal");
+}
+
+/// The tools sandbox (D-180): its other writable folders after the
+/// workspace, before any read-only one; its hosts a rule of its own.
+#[test]
+fn the_tools_sandbox_mounts_writable_folders_and_reaches_its_hosts() {
+    let args = start_args(
+        "atollo-k-tools",
+        Path::new("/kit/data/apps/linux-x64"),
+        &["/kit/data/npm-global".into()],
+        &["/kit/ro".into()],
+        None,
+        "shell",
+    );
+    assert_eq!(
+        args[4..],
+        [
+            "shell",
+            "/kit/data/apps/linux-x64",
+            "/kit/data/npm-global",
+            "/kit/ro:ro"
+        ]
+    );
+    assert_eq!(
+        hosts_allow("atollo-k-tools", &["conda.anaconda.org", "dl.google.com"]),
+        [
+            "policy",
+            "allow",
+            "network",
+            "--sandbox",
+            "atollo-k-tools",
+            "conda.anaconda.org,dl.google.com"
+        ]
+    );
 }

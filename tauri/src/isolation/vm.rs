@@ -80,12 +80,15 @@ pub fn agent_name(project: &str, agent: &str) -> String {
 pub const TERMINAL_PREFIX: &str = "atollo-t-";
 
 /// Creates the sandbox: `sbx run -d --name <vm> [--kit <kit>] <agent>
-/// <dir> [<folder>:ro…]` (`shell` for a project's or a terminal's,
-/// `claude` or `codex` for an agent's), its own kit (`kit`, D-169), the
-/// `read_only` folders mounted too, where the VM cannot change them.
+/// <dir> [<folder>…] [<folder>:ro…]` (`shell` for a project's, a
+/// terminal's or the tools sandbox's, `claude` or `codex` for an agent's),
+/// its own kit (`kit`, D-169), the `writable` folders mounted too (the
+/// tools sandbox's, D-180), then the `read_only` ones, where the VM cannot
+/// change them.
 pub fn start_args(
     vm: &str,
     dir: &Path,
+    writable: &[std::path::PathBuf],
     read_only: &[std::path::PathBuf],
     kit: Option<&Path>,
     agent: &str,
@@ -97,8 +100,25 @@ pub fn start_args(
     }
     args.push(agent.into());
     args.push(dir.display().to_string());
+    args.extend(writable.iter().map(|p| p.display().to_string()));
     args.extend(read_only.iter().map(|p| format!("{}:ro", p.display())));
     args
+}
+
+/// Lets the sandbox `vm`, and it only, reach `hosts` over TCP (the tools
+/// sandbox's installers, D-180): `sbx policy allow network --sandbox <vm>
+/// <host,host…>`, a rule of the sandbox's own policy, gone with it.
+pub fn hosts_allow(vm: &str, hosts: &[&str]) -> Vec<String> {
+    [
+        "policy",
+        "allow",
+        "network",
+        "--sandbox",
+        vm,
+        &hosts.join(","),
+    ]
+    .map(String::from)
+    .into()
 }
 
 /// Starts an existing sandbox again, when stopped: `sbx run -d --name

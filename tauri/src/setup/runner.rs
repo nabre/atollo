@@ -192,20 +192,32 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     } else {
         only_with_needs(catalog, &opts.only, &installed, target)?
     };
-    // The scope (D-173): the PC's side keeps the system components, the
-    // VM's Linux the tools; a chosen tool on the PC is neither installed
-    // nor removed.
+    // The scope (D-173, D-180): the PC's side keeps the system components
+    // and what runs on the PC also with the VM (`Component::on_pc_with_vm`,
+    // with what that needs there), the VM's Linux the tools that run in it
+    // (`Component::in_vm`); any other chosen tool on the PC is neither
+    // installed nor removed.
     let locked = catalog.locked_on(target);
     let tool = |id: &str| {
         catalog.find(id).is_some_and(|c| {
             !locked.contains(id)
-                && install::installer(id)
-                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
+                && c.in_vm()
+                && install::installer(id).is_some_and(|i| {
+                    !crate::router::bootstrap::stages_for(i, c, target, ctx.guest.is_some())
+                })
         })
     };
     match opts.scope {
         Scope::All => {}
-        Scope::System => wanted.retain(|id| locked.contains(id)),
+        Scope::System => {
+            let pc: Vec<&str> = wanted
+                .iter()
+                .copied()
+                .filter(|id| catalog.find(id).is_some_and(Component::on_pc_with_vm))
+                .collect();
+            let keep = catalog.with_needs_on(&pc, target);
+            wanted.retain(|id| locked.contains(id) || keep.contains(id));
+        }
         Scope::Tools => wanted.retain(|id| tool(id)),
     }
     // The agents (LEVELS.md §7, Q11): only for the VM's Linux, only while

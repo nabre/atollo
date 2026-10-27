@@ -119,18 +119,22 @@ fn sdkmanager(
     let script = join_rel(sdk, &rel_script);
     let quoted: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
     let quoted: Vec<&str> = quoted.iter().map(String::as_str).collect();
-    let mut cmd = if ctx.kit.os().is_windows() {
-        crate::platform::jobs::batch_command(&script, &quoted, ctx.env)
-    } else {
-        let mut c = crate::platform::jobs::kit_command(&script, ctx.env);
-        c.args(args);
-        c
-    };
     // `java_home` already asks for 17 or newer; the script's own test
     // misreads a version without a minor (see [`OLD_JAVA`]).
-    cmd.env("JAVA_HOME", java)
-        .env("SKIP_JDK_VERSION_CHECK", "1")
-        .stdin(Stdio::piped())
+    let envs = [
+        ("JAVA_HOME".to_owned(), java.display().to_string()),
+        ("SKIP_JDK_VERSION_CHECK".to_owned(), "1".to_owned()),
+    ];
+    let mut cmd = if ctx.kit.os().is_windows() {
+        let mut c = crate::platform::jobs::batch_command(&script, &quoted, ctx.env);
+        c.envs(envs.iter().map(|(k, v)| (k, v)));
+        c
+    } else {
+        // On this PC, or in the tools sandbox for the VM's Linux (D-180).
+        let args: Vec<String> = args.iter().map(|a| (*a).to_owned()).collect();
+        ctx.command(&script, &args, &envs, None, true)?
+    };
+    cmd.stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     let mut child = cmd.spawn().context("sdkmanager")?;

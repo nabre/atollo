@@ -30,6 +30,7 @@ mod core;
 mod db;
 mod editor;
 mod flow;
+pub mod guest;
 mod keys;
 mod lang;
 mod llama;
@@ -68,6 +69,44 @@ pub struct Ctx<'a> {
     pub net: &'a Net,
     pub env: &'a KitEnv,
     pub cancel: &'a AtomicBool,
+    /// The tools sandbox that runs the programs of `kit`'s target when this
+    /// PC cannot (the VM's Linux, D-180); `None`: they run here, or not at
+    /// all (staged, `router::bootstrap`).
+    pub guest: Option<&'a guest::Guest>,
+}
+
+impl Ctx<'_> {
+    /// True when the programs of the kit's target can run for an
+    /// installation: on this PC, or in the tools sandbox.
+    pub fn runs_target(&self) -> bool {
+        self.guest.is_some() || crate::router::target::can_execute_on_host(self.kit.target())
+    }
+
+    /// `program` of the kit with `args`, `envs` and in `dir` when given:
+    /// on this PC with the kit's environment, or in the tools sandbox
+    /// ([`guest::Guest::command`]; `input`: the caller writes to its
+    /// standard input). The caller sets the standard streams.
+    pub fn command(
+        &self,
+        program: &Path,
+        args: &[String],
+        envs: &[(String, String)],
+        dir: Option<&Path>,
+        input: bool,
+    ) -> Result<std::process::Command> {
+        if let Some(guest) = self.guest {
+            return guest.command(program, args, envs, dir, input);
+        }
+        let mut cmd = crate::platform::jobs::kit_command(program, self.env);
+        cmd.args(args);
+        for (k, v) in envs {
+            cmd.env(k, v);
+        }
+        if let Some(dir) = dir {
+            cmd.current_dir(dir);
+        }
+        Ok(cmd)
+    }
 }
 
 /// Where a part goes.
@@ -171,6 +210,13 @@ pub trait Installer: Sync {
     /// Installers made of processes instead of archives on `target`: install
     /// `release` themselves. Default: the shared path.
     fn custom(&self, _target: crate::kit::Target) -> bool {
+        false
+    }
+    /// Its archive for `target` is made of symbolic links that only a
+    /// system of `target` unpacks as they are (Git and TinyTeX off Windows):
+    /// staged on a host that runs neither it nor the tools sandbox, unpacked
+    /// by `tar` in the tools sandbox (D-180). Default: none.
+    fn links(&self, _target: crate::kit::Target) -> bool {
         false
     }
     /// Its folder keeps working when the kit moves (another drive letter

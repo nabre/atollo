@@ -142,7 +142,7 @@ fn tinytex_is_staged_where_its_target_cannot_run() {
     for host in Target::ALL {
         for target in Target::ALL {
             let runs = crate::router::target::can_execute_between(host, target);
-            let staged = tinytex_staged(target, runs);
+            let staged = TinyTex.links(target) && !runs;
             if target.is_windows() || host == target {
                 assert!(!staged, "{host} -> {target}");
             } else if host.is_windows() {
@@ -150,11 +150,17 @@ fn tinytex_is_staged_where_its_target_cannot_run() {
             }
         }
     }
+    let tinytex = crate::setup::Catalog::get().find("tinytex").unwrap();
     for t in Target::ALL {
+        assert!(!TinyTex.custom(t), "tinytex on {t}");
         assert_eq!(
-            TinyTex.custom(t),
+            crate::router::bootstrap::stages_for(&TinyTex, tinytex, t, false),
             !t.is_windows() && !crate::router::target::can_execute_on_host(t),
             "tinytex on {t}"
         );
+        // With the tools sandbox (D-180) its `tar` unpacks it.
+        assert!(!crate::router::bootstrap::stages_for(
+            &TinyTex, tinytex, t, true
+        ));
     }
 }

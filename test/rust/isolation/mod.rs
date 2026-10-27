@@ -140,19 +140,24 @@ fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
     crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
     let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
     let tools = project_guest_tools(&kit, &guest, "shop", base);
-    let apps = vm::guest_path(kit.target().is_windows(), &guest.apps()).unwrap();
+    // The folders the VM mounts read-only: the kit's Linux tools and the
+    // global packages of npm (pnpm, yarn, D-180).
+    let mounted: Vec<String> = crate::install::guest::mounts(&guest)
+        .iter()
+        .map(|m| vm::guest_path(kit.target().is_windows(), m).unwrap())
+        .collect();
+    let in_mount = |p: &str| mounted.iter().any(|m| p.starts_with(m.as_str()));
     assert!(!tools.path.is_empty());
+    assert!(tools.path.iter().all(|p| in_mount(p)), "{:?}", tools.path);
     assert!(
-        tools.path.iter().all(|p| p.starts_with(&apps)),
-        "{:?}",
-        tools.path
-    );
-    assert!(
-        tools.vars.iter().all(|(_, v)| v.starts_with(&apps)),
+        tools.vars.iter().all(|(_, v)| in_mount(v)),
         "{:?}",
         tools.vars
     );
     assert!(!tools.vars.iter().any(|(n, _)| n == "ATOLLO_MYSQL_CNF"));
+    // Where Cargo writes is the VM's own home: the mount is read-only.
+    assert!(!tools.vars.iter().any(|(n, _)| n == "CARGO_HOME"));
+    assert!(tools.vars.iter().any(|(n, _)| n == "RUSTUP_HOME"));
 
     let mut choice =
         crate::setup::catalog::Choice::read_or_defaults(&kit, crate::setup::Catalog::get());

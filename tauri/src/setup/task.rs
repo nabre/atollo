@@ -86,6 +86,8 @@ struct Pending {
 
 pub struct SetupTask {
     kit: Kit,
+    /// The PC's variables, for the kit's `sbx` (the tools sandbox, D-180).
+    host: crate::env::Host,
     env: Mutex<KitEnv>,
     settings: Mutex<Settings>,
     github_token: Option<String>,
@@ -158,6 +160,7 @@ impl SetupTask {
         let target = kit.target().as_str().to_owned();
         SetupTask {
             kit,
+            host: crate::env::Host::default(),
             env: Mutex::new(env),
             settings: Mutex::new(settings),
             github_token,
@@ -169,6 +172,13 @@ impl SetupTask {
             pending: Mutex::new(VecDeque::new()),
             jobs: Arc::new(Jobs::new()),
         }
+    }
+
+    /// The PC's variables `sbx` runs with: the tools sandbox (D-180) needs
+    /// them; without, the components that run Linux programs are staged.
+    pub fn with_host(mut self, host: crate::env::Host) -> SetupTask {
+        self.host = host;
+        self
     }
 
     /// The app's jobs: this task's runs, and the VMs' preparations the
@@ -357,11 +367,18 @@ impl SetupTask {
         let net = Net::new(&settings, token)
             .map_err(|e| format!("{e:#}"))?
             .with_github_cache(self.kit.data().join("cache").join("github"));
+        // The tools sandbox when this run prepares the VM's Linux from a PC
+        // that cannot run it (D-180), made only then.
+        let guest_for = |target: crate::kit::Target| {
+            crate::install::guest::Guest::for_target(&self.kit, &self.host, &env, target)
+        };
+        let own_guest = opts.target.and_then(guest_for);
         let ctx = Ctx {
             kit: &kit,
             net: &net,
             env: &env,
             cancel: &self.cancel,
+            guest: own_guest.as_ref(),
         };
         let mut sink = TaskSink {
             task: self,
@@ -376,8 +393,10 @@ impl SetupTask {
                 return Ok(first);
             };
             let guest_kit = self.kit.for_target(guest);
+            let tools_sandbox = guest_for(guest);
             let guest_ctx = Ctx {
                 kit: &guest_kit,
+                guest: tools_sandbox.as_ref(),
                 ..ctx
             };
             // Asked only with the VM on (`ipc::setup::vm_tools_target`):

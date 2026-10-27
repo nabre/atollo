@@ -213,7 +213,7 @@ fn bootstrap_take_verifies_and_consumes_on_host_target() {
         .unwrap();
     assert_eq!(fs::read(&dest).unwrap(), payload);
     if !target::can_execute_on_host(foreign_kit.target()) {
-        bootstrap::used(&foreign_kit, &staged);
+        bootstrap::used(&foreign_kit, &staged, false);
         assert!(boot_file.exists(), "kept for the first start there");
     }
 
@@ -229,7 +229,7 @@ fn bootstrap_take_verifies_and_consumes_on_host_target() {
         .unwrap()
         .unwrap();
     assert!(host_boot.exists(), "copied, not moved");
-    bootstrap::used(&host_kit, &staged);
+    bootstrap::used(&host_kit, &staged, true);
     assert!(!host_boot.exists());
 }
 

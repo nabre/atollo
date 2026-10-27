@@ -545,7 +545,8 @@ fn guest_apps(kit: &Kit) -> (Kit, Option<String>) {
 }
 
 /// A VM placement gets only the kit's Linux tools (`PATH` entries and
-/// variables in `data/apps/linux-…`, as the VM sees them) and the level;
+/// variables in `data/apps/linux-…` and `data/npm-global`, as the VM sees
+/// them) and the level;
 /// none of the PC's, no agent's but its own; `sbx` runs with the daemon's
 /// variables.
 #[test]
@@ -569,8 +570,18 @@ fn a_vm_environment_has_only_the_kits_linux_tools() {
             let apps = apps
                 .as_deref()
                 .expect("a VM only where the kit has a path in it");
+            // In the kit's Linux tools, or in the global packages of npm
+            // (pnpm, yarn), both mounted read-only (D-180).
+            let npm = crate::isolation::vm::guest_path(
+                kit.target().is_windows(),
+                &guest_kit.data().join("npm-global"),
+            )
+            .unwrap();
             assert!(
-                guest.path.iter().all(|e| Path::new(e).starts_with(apps)),
+                guest
+                    .path
+                    .iter()
+                    .all(|e| Path::new(e).starts_with(apps) || Path::new(e).starts_with(&npm)),
                 "{what}: {:?}",
                 guest.path
             );
@@ -605,7 +616,9 @@ fn a_vm_environment_has_only_the_kits_linux_tools() {
                 "{what}"
             );
             assert!(
-                others.iter().all(|(_, v)| Path::new(v).starts_with(apps)),
+                others
+                    .iter()
+                    .all(|(_, v)| Path::new(v).starts_with(apps) || Path::new(v).starts_with(&npm)),
                 "{what}: {others:?}"
             );
             assert_eq!(guest.env_file, None, "{what}: set by prepare");

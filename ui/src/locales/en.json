@@ -1066,6 +1066,7 @@
   "Il kit è su un disco {0}: i dischi delle VM (fino a 30 GB ciascuna, che su NTFS occupano solo quello che si scrive) non ci stanno o lo riempirebbero.": "The kit is on a {0} disk: the VMs' disks (up to 30 GB each, which on NTFS take only what is written) do not fit or would fill it.",
   "Sposta il kit su un disco NTFS (o APFS, ext4 su macOS e Linux), poi riaprilo da lì.": "Move the kit to an NTFS disk (or APFS, ext4 on macOS and Linux), then open it from there.",
   "Progetto {0}": "Project {0}",
+  "Strumenti del kit per il Linux della VM": "The kit's tools for the VM's Linux",
   "Sandbox delle VM": "VM sandboxes",
   "Spazio occupato nel kit: {0}": "Space taken in the kit: {0}",
   "Nessuna sandbox.": "No sandboxes.",

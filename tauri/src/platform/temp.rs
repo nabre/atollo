@@ -53,7 +53,9 @@ impl TempWork {
         TempWork::at(&kit.data().join("tmp").join(rel))
     }
 
-    fn at(dir: &Path) -> io::Result<TempWork> {
+    /// `dir` itself, emptied: a work folder the tools sandbox sees
+    /// (D-180, `install::guest::Guest::work_root`).
+    pub fn at(dir: &Path) -> io::Result<TempWork> {
         let _ = fs::remove_dir_all(dir);
         fs::create_dir_all(dir)?;
         let lock = open_lock(&dir.join(".lock"))?;

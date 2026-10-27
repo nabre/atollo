@@ -393,12 +393,15 @@ fn run() -> i32 {
         moved_from
     ));
 
-    let setup = std::sync::Arc::new(setup::task::SetupTask::new(
-        kit.clone(),
-        kit_env.clone(),
-        loaded.settings.clone(),
-        github_token(&host),
-    ));
+    let setup = std::sync::Arc::new(
+        setup::task::SetupTask::new(
+            kit.clone(),
+            kit_env.clone(),
+            loaded.settings.clone(),
+            github_token(&host),
+        )
+        .with_host(host.clone()),
+    );
     let state = AppState {
         setup,
         kit: kit.clone(),

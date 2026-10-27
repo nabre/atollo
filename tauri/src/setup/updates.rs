@@ -78,6 +78,7 @@ pub fn check(kit: &Kit, env: &KitEnv, token: Option<String>) -> Result<Latest> {
         net: &net,
         env,
         cancel: &cancel,
+        guest: None,
     };
     let mut latest = load(kit);
     for c in watched(kit) {

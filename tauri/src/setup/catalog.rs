@@ -46,6 +46,25 @@ impl Group {
     }
 }
 
+/// Where a tool runs while the VM is on (D-180, the boxes of D-175): the
+/// one place that says which build the kit installs, for the PC, for the
+/// VM's Linux, or both. The system components and the parts of the app
+/// are the PC's whatever it says.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WithVm {
+    /// In the VM only, its build for Linux (languages, their tools).
+    #[default]
+    Vm,
+    /// On the PC only (llama.cpp's server, the databases' web tools).
+    Pc,
+    /// Both: the server on the PC, its client in the VM (MySQL, MongoDB).
+    Both,
+    /// Neither: with the VM the VM's containers stand in for it (the sites'
+    /// servers, Apache and Caddy); without it, on the PC.
+    Neither,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Component {
@@ -134,6 +153,10 @@ pub struct Component {
     /// the old one (`versions/mod.rs`).
     #[serde(default)]
     pub minor_folder: bool,
+    /// Where it runs while the VM is on ([`WithVm`]); a tool in the VM
+    /// when not given.
+    #[serde(default)]
+    pub with_vm: WithVm,
 }
 
 #[derive(Debug, Deserialize)]
@@ -324,6 +347,20 @@ fn exists(path: &Path) -> bool {
 }
 
 impl Component {
+    /// Its build for the VM's Linux runs in the VM while it is on
+    /// ([`WithVm::Vm`] or [`WithVm::Both`]): installed for that Linux and
+    /// checked there. Never a system component or a part of the app.
+    pub fn in_vm(&self) -> bool {
+        !self.group.always() && matches!(self.with_vm, WithVm::Vm | WithVm::Both)
+    }
+
+    /// It runs on the PC also while the VM is on: the system components
+    /// and the parts of the app, and [`WithVm::Pc`] or [`WithVm::Both`]
+    /// (llama.cpp's server, the databases' servers and web tools).
+    pub fn on_pc_with_vm(&self) -> bool {
+        self.group.always() || matches!(self.with_vm, WithVm::Pc | WithVm::Both)
+    }
+
     /// Its section of the Tools page: required (and the editor), agents,
     /// local models, languages (several versions), tools (one, the
     /// latest), databases.

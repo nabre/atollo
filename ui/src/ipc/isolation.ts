@@ -45,7 +45,7 @@ export function isolationRun(fix: IsolationFix): Promise<void> {
 
 /** Whose sandbox it is, from the kit Atollo wrote for it (D-169); the kit's
  * terminals have none since D-178 (the list never shows theirs). */
-export type VmOwner = { kind: "project"; project: string };
+export type VmOwner = { kind: "project"; project: string } | { kind: "tools" };
 
 /** One of Atollo's sandboxes. */
 export interface VmInfo {

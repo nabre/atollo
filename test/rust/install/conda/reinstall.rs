@@ -133,6 +133,7 @@ fn real_offline_reinstall_after_a_move() {
             net: &net,
             env: &env,
             cancel: &cancel,
+            guest: None,
         };
         let started = std::time::Instant::now();
         let opts = crate::setup::runner::Options {

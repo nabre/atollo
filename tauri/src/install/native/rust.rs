@@ -204,6 +204,9 @@ impl Installer for Rust {
         release: &Release,
         progress: &mut dyn Progress,
     ) -> Result<()> {
+        if ctx.guest.is_some() {
+            return install_in_guest(ctx, component, release, progress);
+        }
         if ctx.kit.target() != Target::detect() {
             bail!("Rust must be prepared on a machine of the kit's target (rustup runs the toolchain)");
         }
@@ -296,6 +299,53 @@ impl Installer for Rust {
         restore_rustup_key(before, &owned);
         result
     }
+}
+
+/// Rust for the VM's Linux, in the tools sandbox (D-180): rustup-init, or
+/// `rustup update` once installed, right in `rust/` of the mounted kit.
+/// The mount has no hard links; rustup makes its proxies symbolic links
+/// there (tried with sbx 0.50.0), so no copy through a temporary folder.
+fn install_in_guest(
+    ctx: &Ctx,
+    component: &Component,
+    release: &Release,
+    progress: &mut dyn Progress,
+) -> Result<()> {
+    let target = ctx.kit.target();
+    let rust = ctx.kit.apps().join("rust");
+    let rustup = rustup_bin(&rust, target);
+    let envs = [
+        ("RUSTUP_HOME", rust.join("rustup")),
+        ("CARGO_HOME", rust.join("cargo")),
+        ("RUSTUP_INIT_SKIP_PATH_CHECK", PathBuf::from("yes")),
+    ];
+    let envs: Vec<(&str, &Path)> = envs.iter().map(|(k, v)| (*k, v.as_path())).collect();
+    if rustup_installed(&rust, target) {
+        progress.note("rustup update");
+        run(ctx, &rustup, &["update", "stable"], &envs, progress)?;
+    } else {
+        let guard = work_dir(ctx, component)?;
+        let part = &release.parts[0];
+        let init = fetch(
+            ctx,
+            &part.url,
+            &part.file_name,
+            &part.expect,
+            guard.path(),
+            progress,
+        )?;
+        let _ = crate::platform::files::add_executable(&init);
+        let host = target.rust_triple();
+        progress.note(&format!("rustup-init: stable {host}"));
+        run(ctx, &init, &rustup_init_args(host), &envs, progress)?;
+    }
+    run(
+        ctx,
+        &rustup,
+        &["set", "auto-self-update", "disable"],
+        &envs,
+        progress,
+    )
 }
 
 #[cfg(test)]

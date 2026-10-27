@@ -16,7 +16,6 @@ use std::process::Stdio;
 use anyhow::{bail, Context, Result};
 
 use crate::install::{Ctx, Progress};
-use crate::platform::jobs;
 
 pub use micromamba::conda_versions;
 /// For the tests of Ruby (`lang/ruby.rs`).
@@ -29,6 +28,22 @@ pub use pnpm::Pnpm;
 pub use r::R;
 pub use rust::Rust;
 
+/// A kit program with `args` and `envs` ([`Ctx::command`]: on this PC or
+/// in the tools sandbox).
+fn command(
+    ctx: &Ctx,
+    program: &Path,
+    args: &[&str],
+    envs: &[(&str, &Path)],
+) -> Result<std::process::Command> {
+    let args: Vec<String> = args.iter().map(|a| (*a).to_owned()).collect();
+    let envs: Vec<(String, String)> = envs
+        .iter()
+        .map(|(k, v)| ((*k).to_owned(), v.display().to_string()))
+        .collect();
+    ctx.command(program, &args, &envs, None, false)
+}
+
 /// Runs a kit program, sending its output lines to the progress notes.
 pub(super) fn run(
     ctx: &Ctx,
@@ -37,14 +52,10 @@ pub(super) fn run(
     envs: &[(&str, &Path)],
     progress: &mut dyn Progress,
 ) -> Result<()> {
-    let mut cmd = jobs::kit_command(program, ctx.env);
-    cmd.args(args)
-        .stdin(Stdio::null())
+    let mut cmd = command(ctx, program, args, envs)?;
+    cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    for (k, v) in envs {
-        cmd.env(k, v);
-    }
     let out = cmd
         .output()
         .with_context(|| program.display().to_string())?;
@@ -74,14 +85,10 @@ pub(super) fn run_output(
     args: &[&str],
     envs: &[(&str, &Path)],
 ) -> Result<String> {
-    let mut cmd = jobs::kit_command(program, ctx.env);
-    cmd.args(args)
-        .stdin(Stdio::null())
+    let mut cmd = command(ctx, program, args, envs)?;
+    cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    for (k, v) in envs {
-        cmd.env(k, v);
-    }
     let out = cmd
         .output()
         .with_context(|| program.display().to_string())?;

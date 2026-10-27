@@ -94,7 +94,7 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             && !installed
             && !bootstrap_staged
             && crate::install::installer(&c.id)
-                .is_some_and(|i| super::bootstrap::stages_for(i, c, target));
+                .is_some_and(|i| super::bootstrap::stages_for(i, c, target, false));
         let unavailable_reason = (!available)
             .then(|| unavailable_reason(c, target, lang))
             .flatten();

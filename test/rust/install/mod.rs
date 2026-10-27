@@ -25,6 +25,7 @@ fn live_lines() {
         net: &net,
         env: &env,
         cancel: &cancel,
+        guest: None,
     };
     let only = std::env::var("LIVE_ONLY").ok();
     for c in crate::versions::versioned() {
@@ -236,6 +237,7 @@ fn a_failed_later_part_leaves_the_installed_php_as_it_was() {
         net: &net,
         env: &env,
         cancel: &cancel,
+        guest: None,
     };
     assert!(install(&ctx, php, &release, &mut Quiet).is_err());
     // The file added by hand is still there for the next attempt
@@ -297,6 +299,7 @@ fn download_names_stay_in_the_work_folder() {
         net: &net,
         env: &env,
         cancel: &cancel,
+        guest: None,
     };
     let work = tmp.0.join("work").join("setup");
     fs::create_dir_all(&work).unwrap();
