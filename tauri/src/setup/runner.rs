@@ -10,6 +10,7 @@
 
 use std::collections::HashSet;
 use std::sync::atomic::Ordering;
+use std::sync::{Condvar, Mutex, PoisonError};
 
 use anyhow::{bail, Result};
 use serde::Serialize;
@@ -404,7 +405,9 @@ impl Progress for StepProgress<'_> {
 }
 
 /// Runs a preparation; returns the outcome of every component touched.
+/// The work [`while_idle_in_background`] runs in this process ends first.
 pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String, Outcome)>> {
+    wait_for_background();
     let _lock = lock(ctx.kit)?;
     let catalog = Catalog::get();
     if !opts.lines.is_empty() {
@@ -580,6 +583,49 @@ pub fn run(ctx: &Ctx, opts: &Options, sink: &mut dyn Sink) -> Result<Vec<(String
 pub fn while_idle<T>(kit: &Kit, f: impl FnOnce() -> T) -> Result<T> {
     let _lock = lock(kit)?;
     Ok(f())
+}
+
+/// The works of [`while_idle_in_background`] not ended yet.
+static BACKGROUND: Mutex<usize> = Mutex::new(0);
+/// Told when one of them ends.
+static BACKGROUND_ENDED: Condvar = Condvar::new();
+
+/// [`while_idle`] on a thread of its own: the app's start does not wait
+/// for it (the sweep of the kept conda packages, which may free the whole
+/// package cache, D-118). A run of this process asked meanwhile waits for
+/// it ([`run`]) instead of finding the kit busy: the automatic
+/// preparation at start comes right after. Skipped, as at start before,
+/// when another process prepares the kit.
+pub fn while_idle_in_background(kit: &Kit, f: impl FnOnce() + Send + 'static) {
+    /// The work counted until it ends, even by a panic: a run never waits
+    /// for good.
+    struct Ended;
+    impl Drop for Ended {
+        fn drop(&mut self) {
+            let mut left = BACKGROUND.lock().unwrap_or_else(PoisonError::into_inner);
+            *left = left.saturating_sub(1);
+            BACKGROUND_ENDED.notify_all();
+        }
+    }
+    *BACKGROUND.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+    let ended = Ended;
+    let kit = kit.clone();
+    std::thread::spawn(move || {
+        let _ended = ended;
+        if let Err(e) = while_idle(&kit, f) {
+            crate::common::log::info(&format!("in the background: {e:#}"));
+        }
+    });
+}
+
+/// Until the works of [`while_idle_in_background`] end.
+fn wait_for_background() {
+    let mut left = BACKGROUND.lock().unwrap_or_else(PoisonError::into_inner);
+    while *left > 0 {
+        left = BACKGROUND_ENDED
+            .wait(left)
+            .unwrap_or_else(PoisonError::into_inner);
+    }
 }
 
 /// Downloads saved lines of versioned components, one step each.

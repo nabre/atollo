@@ -357,10 +357,19 @@ fn run() -> i32 {
     servers::migrate::run(&kit);
     // Leftovers of files in transit (D-90): only here, as the one app of the
     // kit (D-08); a command line run would race the open app's programs.
-    platform::temp::sweep(&kit);
+    // Set aside now, before any program starts; deleted in the background,
+    // the window does not wait for a big download left behind.
+    let leftovers = platform::temp::sweep(&kit);
+    if !leftovers.is_empty() {
+        std::thread::spawn(move || platform::temp::remove(leftovers));
+    }
     // The kept conda packages no list names any more (D-118); left for the
-    // end of a preparation that runs now.
-    let _ = setup::runner::while_idle(&kit, || install::conda::sweep(&kit));
+    // end of a preparation that runs now. In the background (it may free
+    // the whole package cache): a preparation of this app waits for it.
+    let sweep_kit = kit.clone();
+    setup::runner::while_idle_in_background(&kit, move || {
+        install::conda::sweep(&sweep_kit);
+    });
 
     // WebView2 lookup sets a variable for the fixed runtime: still single-threaded here.
     let runtime = platform::webview::locate(&kit);
