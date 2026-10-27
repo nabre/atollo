@@ -37,9 +37,15 @@ pub struct AppInfo {
     pub system_temp: Option<String>,
 }
 
+/// Off the window's thread: the other kits are a walk of the PC's
+/// processes, the disk's facts ask the system.
 #[tauri::command]
-pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> CmdResult<AppInfo> {
+pub async fn app_info<R: Runtime>(webview: Webview<R>) -> CmdResult<AppInfo> {
     ensure_main(&webview)?;
+    off_main(&webview, "app", |_, state| Ok(info(state))).await
+}
+
+fn info(state: &AppState) -> AppInfo {
     let kit = &state.kit;
     let env = state.env();
     let system_temp = kit
@@ -49,7 +55,7 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
                 .is_some_and(|t| std::path::Path::new(t).starts_with(host))
         })
         .map(|host| host.display().to_string());
-    Ok(AppInfo {
+    AppInfo {
         version: env!("CARGO_PKG_VERSION"),
         root: kit.root().display().to_string(),
         data: kit.data().display().to_string(),
@@ -71,7 +77,7 @@ pub fn app_info<R: Runtime>(webview: Webview<R>, state: State<'_, AppState>) -> 
             .then(|| crate::platform::volume::kit_noexec(kit)),
         disk_note: crate::platform::volume::disk_notice(kit, state.lang()).map(|n| n.text),
         system_temp,
-    })
+    }
 }
 
 /// The kit environment from the saved settings and what is installed now,
@@ -275,14 +281,16 @@ pub fn kit_import_pending<R: Runtime>(
     Ok(crate::kit::backup::pending(state.kit.root()))
 }
 
-/// The copy waiting is given up: the next start is as before.
+/// The copy waiting is given up: the next start is as before. Off the
+/// window's thread: the copy is a whole kit's `projects\` and `data\` to
+/// delete.
 #[tauri::command]
-pub fn kit_import_cancel<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<()> {
+pub async fn kit_import_cancel<R: Runtime>(webview: Webview<R>) -> CmdResult<()> {
     ensure_main(&webview)?;
-    crate::kit::backup::cancel(state.kit.root()).or_fail_chain("import")
+    off_main(&webview, "import", |_, state| {
+        crate::kit::backup::cancel(state.kit.root()).or_fail_chain("import")
+    })
+    .await
 }
 
 /// A project's site from the phone (N-6): its address with this PC's IP on
@@ -375,15 +383,40 @@ pub fn settings_get<R: Runtime>(
 /// The page calls it for each change (D-137). `gemini`: `None` keeps the
 /// saved key, `Some("")` removes it. The Tools page's «Piattaforma» and the
 /// keys of a newer version stay as they are on disk.
+///
+/// Off the window's thread: applying them builds the kit's environment
+/// again (the certificates, every project's files, the launchers of the
+/// versions), seconds on a slow disk. One save at a time, whole: a save
+/// asked while another applies waits for it, so neither puts back the
+/// other's values half way (the page sends the next save only after the
+/// one before answered, `ui/src/settings/autosave.ts`).
 #[tauri::command]
-pub fn settings_set<R: Runtime>(
+pub async fn settings_set<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     updater: State<'_, Arc<Updater>>,
     settings: Settings,
     gemini: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
+    let updater = Arc::clone(&updater);
+    off_main(&webview, "settings", move |app, state| {
+        static ONE: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _one = ONE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        save_settings(app, state, &updater, settings, gemini)
+    })
+    .await
+}
+
+/// [`settings_set`]'s work, on its thread.
+fn save_settings<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+    updater: &Arc<Updater>,
+    settings: Settings,
+    gemini: Option<String>,
+) -> CmdResult<()> {
     let mut settings = settings;
     for v in [
         &mut settings.lang,
@@ -421,7 +454,7 @@ pub fn settings_set<R: Runtime>(
         settings.other = std::mem::take(&mut saved.other);
         settings.network.other = std::mem::take(&mut saved.network.other);
         if let Err((source, arg)) = settings.validate() {
-            return Err(CmdError::from(tr(&state, source, &[&arg])));
+            return Err(CmdError::from(tr(state, source, &[&arg])));
         }
         *saved = settings;
         Ok(())
@@ -430,7 +463,7 @@ pub fn settings_set<R: Runtime>(
         let (kit, token, updater) = (
             state.kit.clone(),
             github_token(&state.host),
-            Arc::clone(&updater),
+            Arc::clone(updater),
         );
         std::thread::spawn(move || {
             if let Ok(net) = crate::net::Net::new(&Settings::load(&kit).settings, token) {
@@ -438,12 +471,12 @@ pub fn settings_set<R: Runtime>(
             }
         });
     }
-    let lang = apply_env(&state);
-    // Every window, the editor's too, light or dark at once.
-    tauri::Manager::app_handle(&webview)
-        .set_theme(Settings::load(&state.kit).settings.theme.window());
+    let lang = apply_env(state);
+    // Every window, the editor's too, light or dark at once (sent to the
+    // window's thread by Tauri).
+    app.set_theme(Settings::load(&state.kit).settings.theme.window());
     // The tray menu in the new language (D-145).
-    crate::app::tray::refresh(tauri::Manager::app_handle(&webview));
+    crate::app::tray::refresh(app);
     crate::common::log::info(&format!("settings saved, lang={lang}"));
     Ok(())
 }

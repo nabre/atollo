@@ -69,3 +69,20 @@ fn ampersands_are_doubled() {
     assert_eq!(label("R&D && more"), "R&&D &&&& more");
     assert_eq!(label("plain_name"), "plain_name");
 }
+
+/// One reading of the projects at a time: a refresh asked while one reads
+/// makes it read once more (however many were asked), none is lost, and
+/// one asked after the reading ended starts its own.
+#[test]
+fn refreshes_asked_meanwhile_make_one_more_reading() {
+    let (reading, again) = (AtomicBool::new(false), AtomicBool::new(false));
+    assert!(start_reading(&reading, &again), "the first reads");
+    assert!(!start_reading(&reading, &again), "meanwhile: folded");
+    assert!(!start_reading(&reading, &again), "meanwhile: folded");
+    assert!(read_again(&reading, &again), "one more for those");
+    // That reading starts by clearing `again`; nothing asked meanwhile.
+    again.store(false, Ordering::SeqCst);
+    assert!(!read_again(&reading, &again), "nothing asked: done");
+    assert!(!reading.load(Ordering::SeqCst));
+    assert!(start_reading(&reading, &again), "a new one reads");
+}

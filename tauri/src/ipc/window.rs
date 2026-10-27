@@ -50,10 +50,12 @@ pub fn open_now<R: Runtime>(app: &AppHandle<R>) -> OpenNow {
     }
 }
 
+/// Off the window's thread: the kit's programs are a walk of the PC's
+/// processes.
 #[tauri::command]
-pub fn eject_list<R: Runtime>(app: AppHandle<R>, webview: Webview<R>) -> CmdResult<OpenNow> {
+pub async fn eject_list<R: Runtime>(webview: Webview<R>) -> CmdResult<OpenNow> {
     ensure_main(&webview)?;
-    Ok(open_now(&app))
+    off_main(&webview, "eject", |app, _| Ok(open_now(app))).await
 }
 
 /// "Rimuovi l'unità": stops the installation, the projects' actions, the
@@ -136,7 +138,12 @@ pub async fn eject_run<R: Runtime>(
     .or_fail("eject")?
 }
 
-/// Closes the app after the user confirmed (close question, eject).
+/// Closes the app after the user confirmed (close question, eject). The
+/// window may close from now on (`Quitting`); the stops run off the
+/// window's thread, in the same order as before, and the app exits after
+/// the last of them: the projects' actions, the web servers and the local
+/// models first (each waits for its processes), then the downloads, the
+/// databases (shut down cleanly, D-73) and the projects' microVMs.
 #[tauri::command]
 pub fn app_quit<R: Runtime>(
     app: AppHandle<R>,
@@ -145,25 +152,19 @@ pub fn app_quit<R: Runtime>(
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     quit.0.store(true, std::sync::atomic::Ordering::SeqCst);
-    use tauri::Manager;
-    if let Some(r) = app.try_state::<Arc<Runner>>() {
-        r.stop_all();
-    }
-    app.state::<AppState>().servers.stop_all();
-    app.state::<AppState>().llm.stop_all();
-    // The databases shut down cleanly first (D-73), off this thread.
-    let services = Arc::clone(&app.state::<AppState>().services);
-    let (kit, host, env) = (
-        app.state::<AppState>().kit.clone(),
-        app.state::<AppState>().host.clone(),
-        app.state::<AppState>().env(),
-    );
     let handle = app.clone();
     std::thread::spawn(move || {
+        use tauri::Manager;
+        if let Some(r) = handle.try_state::<Arc<Runner>>() {
+            r.stop_all();
+        }
+        let state = handle.state::<AppState>();
+        state.servers.stop_all();
+        state.llm.stop_all();
         crate::llm::pull::cancel_all(std::time::Duration::from_secs(10));
-        services.stop_all();
+        state.services.stop_all();
         // The projects' microVMs shut down too (D-167).
-        crate::isolation::stop_daemon(&kit, &host, &env);
+        crate::isolation::stop_daemon(&state.kit, &state.host, &state.env());
         handle.exit(0);
     });
     Ok(())

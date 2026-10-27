@@ -454,6 +454,47 @@ fn one_run_at_a_time() {
     assert!(lock(&kit).is_ok());
 }
 
+/// The start's sweep in the background holds the kit's lock while it
+/// runs: a run of the app waits for its end instead of finding the kit
+/// busy, also when the work panics.
+#[test]
+fn a_run_waits_for_the_work_in_the_background() {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    let (_tmp, kit) = prepared_kit("runner-background");
+    let (go_tx, go_rx) = mpsc::channel::<()>();
+    let (held_tx, held_rx) = mpsc::channel();
+    let probe = kit.clone();
+    while_idle_in_background(&kit, move || {
+        let _ = held_tx.send(lock(&probe).is_err());
+        let _ = go_rx.recv_timeout(Duration::from_secs(10));
+    });
+    assert!(
+        held_rx.recv_timeout(Duration::from_secs(10)).unwrap(),
+        "under the kit's lock"
+    );
+    let (done_tx, done_rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        wait_for_background();
+        let _ = done_tx.send(());
+    });
+    assert!(
+        done_rx.recv_timeout(Duration::from_millis(200)).is_err(),
+        "a run waits"
+    );
+    go_tx.send(()).unwrap();
+    done_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+    assert!(lock(&kit).is_ok(), "the lock let go");
+
+    while_idle_in_background(&kit, || panic!("sweep bug"));
+    let (done_tx, done_rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        wait_for_background();
+        let _ = done_tx.send(());
+    });
+    done_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+}
+
 /// macOS and Linux: another process holding `data/app/prepare.lock` makes
 /// this one busy (D-105); its id is not left in the set.
 #[cfg(unix)]

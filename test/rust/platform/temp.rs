@@ -65,12 +65,40 @@ fn sweep_keeps_live_and_new_removes_old() {
     fs::write(downloads.join(".lock"), "").unwrap();
     age(&downloads, 48);
 
-    sweep(&host);
+    remove(sweep(&host));
     assert!(live.path().join(".lock").is_file(), "live work kept");
     assert!(!dead.exists(), "old unlocked removed");
     assert!(!old_data.exists());
     assert!(fresh.is_dir(), "new kept");
     assert!(downloads.is_dir(), "downloads kept");
+    drop(live);
+}
+
+/// At start the leftovers are only set aside (renamed, quick): their names
+/// are free at once, their files deleted afterwards (`remove`, in the
+/// background); a live one is neither.
+#[test]
+fn sweep_frees_the_names_then_remove_deletes() {
+    let tmp = TempDir::new("temp-aside");
+    let host = Kit::at(tmp.0.join("kit"), crate::test_support::kit_arch())
+        .with_host(Some(&tmp.0.join("host")));
+    let base = host.system_temp().unwrap().to_path_buf();
+    let live = TempWork::new(&host, "setup/live").unwrap();
+    age(live.path(), 48);
+    let dead = base.join("setup").join("dead");
+    fs::create_dir_all(&dead).unwrap();
+    fs::write(dead.join(".lock"), "").unwrap();
+    fs::write(dead.join("file"), "x").unwrap();
+    age(&dead, 48);
+
+    let aside = sweep(&host);
+    assert_eq!(aside.len(), 1, "{aside:?}");
+    assert!(!dead.exists(), "its name is free");
+    assert_eq!(aside[0].parent(), dead.parent(), "next to it");
+    assert!(aside[0].join("file").is_file(), "not deleted yet");
+    assert!(live.path().join(".lock").is_file(), "live work kept");
+    remove(aside.clone());
+    assert!(!aside[0].exists());
     drop(live);
 }
 
