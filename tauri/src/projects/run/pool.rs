@@ -88,7 +88,7 @@ impl Runner {
                 key.clone(),
                 Entry {
                     info: info.clone(),
-                    lines: Vec::new(),
+                    lines: std::collections::VecDeque::new(),
                     job: None,
                     stopped: false,
                     actual_port: None,
