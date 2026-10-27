@@ -1,7 +1,7 @@
 // The components with a new version (report v6/04, N-9, D-161): the badge
 // on Tools and the pane «Aggiornamenti», each with what changes (its release
 // notes) and «Aggiorna», instead of «Aggiorna tutto» blindly.
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import {
   componentLinkOpen,
   onUpdates,
@@ -11,24 +11,20 @@ import {
   type SetupSnapshot,
   type Updates,
 } from "../ipc";
-import { ItemBar, ItemCancel, ItemStatus, itemBusy, itemState } from "./setup";
+import { ItemBar, ItemCancel, ItemStatus, itemBusy, itemState, useSetupEnded } from "./setup";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { useAction, useLoad, useSubscription } from "../shared/hooks";
 import { t } from "../i18n";
 import { codicon, IconButton, Link, ViewPane } from "../workbench";
 
-/** The list, read again when the daily check ends and after a
+/** The list, read again when the daily check ends and after each
  * preparation (an update makes an item go). */
-export function useUpdates(running: boolean) {
+export function useUpdates() {
   const { data, setData, reload } = useLoad<Updates | null>(updatesList, null, { onError: "keep" });
   useSubscription(onUpdates, () => {
     reload();
   });
-  const wasRunning = useRef(running);
-  useEffect(() => {
-    if (wasRunning.current && !running) reload();
-    wasRunning.current = running;
-  }, [running, reload]);
+  useSetupEnded(reload);
   return { updates: data, setUpdates: setData };
 }
 
@@ -39,18 +35,15 @@ function when(seconds: number): string {
 export function UpdatesPane({
   expanded,
   onToggle,
-  running,
   setup = null,
 }: {
   expanded: boolean;
   onToggle: () => void;
-  /** A preparation runs: the list is read again when it ends. */
-  running: boolean;
   /** The preparation: each row shows its own update (waiting, its bar,
    * «Annulla»); the others can be updated meanwhile, they queue. */
   setup?: SetupSnapshot | null;
 }) {
-  const { updates, setUpdates } = useUpdates(running);
+  const { updates, setUpdates } = useUpdates();
   const { busy, error, run } = useAction();
   const check = useCallback(() => {
     run("check", async () => {

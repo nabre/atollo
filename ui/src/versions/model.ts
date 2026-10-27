@@ -1,6 +1,6 @@
 // The lines of a tool as the lists show them, and the hooks that keep them
 // current: the sources asked once a day, a reload after every download.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { versionsAvailable, type SetupSnapshot, type VersionedTool } from "../ipc";
 
 /** A list older than this (seconds) is asked again. */
@@ -99,7 +99,9 @@ export function useOffers(tools: VersionedTool[] | null, reload: () => void, tar
       .map((x) => x.id);
     if (stale.length > 0) refresh(stale);
   }, [tools, refresh]);
-  return { checking, failed, refresh };
+  // The same object while nothing changes: the rows of the Tools table
+  // that get it render only then.
+  return useMemo(() => ({ checking, failed, refresh }), [checking, failed, refresh]);
 }
 
 /** Reloads after every step the preparation task finishes. */

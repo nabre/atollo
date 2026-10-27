@@ -16,15 +16,35 @@ import { ComponentLogo } from "../shared/logos";
 import { createFeed, useFeed } from "../shared/feed";
 import { Button, Codicon, codicon, IconButton } from "../workbench";
 
+/** The preparation as the window keeps it: the last snapshot, and how many
+ * chains of runs started (`starts`) and ended (`ends`). The snapshots of a
+ * frame become one, so a run that starts and ends within a frame never
+ * shows `running`: the counts, made event by event, still tell it. */
+interface SetupFeed {
+  snapshot: SetupSnapshot | null;
+  starts: number;
+  ends: number;
+}
+
+/** `snapshot` after `feed`, counting a start and an end of the runs. */
+export function foldSetup(feed: SetupFeed, snapshot: SetupSnapshot): SetupFeed {
+  const was = feed.snapshot?.running ?? false;
+  return {
+    snapshot,
+    starts: feed.starts + Number(!was && snapshot.running),
+    ends: feed.ends + Number(was && !snapshot.running),
+  };
+}
+
 /** The current preparation for the whole window, read once and kept up to
  * date by the `setup` events (each a whole snapshot: the last of a frame
  * wins). */
-const setupFeed = createFeed<SetupSnapshot | null, SetupSnapshot>({
-  initial: null,
+const setupFeed = createFeed<SetupFeed, SetupSnapshot>({
+  initial: { snapshot: null, starts: 0, ends: 0 },
   listen: onSetup,
-  apply: (_, snapshot) => snapshot,
+  apply: foldSetup,
   // A snapshot arrived meanwhile is newer than the one read.
-  read: () => setupState().then((s) => (current) => current ?? s),
+  read: () => setupState().then((s) => (current) => (current.snapshot ? current : { ...current, snapshot: s })),
 });
 
 /** The current preparation, or the part of it `select` chooses (a plain
@@ -33,7 +53,23 @@ const setupFeed = createFeed<SetupSnapshot | null, SetupSnapshot>({
 export function useSetup(): SetupSnapshot | null;
 export function useSetup<S>(select: (snapshot: SetupSnapshot | null) => S): S;
 export function useSetup<S>(select?: (snapshot: SetupSnapshot | null) => S) {
-  return useFeed<SetupSnapshot | null, S | SetupSnapshot | null>(setupFeed, select ?? ((s) => s));
+  return useFeed(setupFeed, (f) => (select ? select(f.snapshot) : f.snapshot));
+}
+
+/** Calls `handler` after each end of the runs, even of one that started
+ * and ended within a frame (never seen running). */
+export function useSetupEnded(handler: () => void): void {
+  const ends = useFeed(setupFeed, (f) => f.ends);
+  const seen = useRef(ends);
+  const latest = useRef(handler);
+  useEffect(() => {
+    latest.current = handler;
+  });
+  useEffect(() => {
+    if (ends === seen.current) return;
+    seen.current = ends;
+    latest.current();
+  }, [ends]);
 }
 
 export function outcomeText(o: Outcome): string {
@@ -147,7 +183,11 @@ export function ItemCancel({ setup, id, name }: { setup: SetupSnapshot | null; i
  * and with `true` when the whole queue of runs ended: what a page reads
  * again, only those rows, instead of the whole list. */
 export function useStepsDone(s: SetupSnapshot | null, handler: (ids: string[], ended: boolean) => void): void {
-  const seen = useRef<{ steps: number; done: number; running: boolean }>({ steps: 0, done: 0, running: false });
+  // The window's counts of the runs: a chain that ended, or one that began
+  // again, between two snapshots seen here (within a frame) is not missed.
+  const starts = useFeed(setupFeed, (f) => f.starts);
+  const ends = useFeed(setupFeed, (f) => f.ends);
+  const seen = useRef({ steps: 0, done: 0, running: false, starts, ends });
   const latest = useRef(handler);
   useEffect(() => {
     latest.current = handler;
@@ -157,13 +197,14 @@ export function useStepsDone(s: SetupSnapshot | null, handler: (ids: string[], e
     const before = seen.current;
     // The steps only append, each ending before the next begins: those
     // ended are the first ones. A new chain of runs starts them again.
-    const from = s.steps.length < before.steps ? 0 : before.done;
+    const again = s.steps.length < before.steps || starts !== before.starts;
+    const from = again ? 0 : before.done;
     const finished = s.steps.filter((x) => x.outcome !== null);
     const ids = finished.slice(from).map((x) => x.id);
-    const ended = before.running && !s.running;
-    seen.current = { steps: s.steps.length, done: finished.length, running: s.running };
+    const ended = (before.running && !s.running) || ends !== before.ends;
+    seen.current = { steps: s.steps.length, done: finished.length, running: s.running, starts, ends };
     if (ids.length > 0 || ended) latest.current([...new Set(ids)], ended);
-  }, [s]);
+  }, [s, starts, ends]);
 }
 
 /** The short state of an element, in its row. */

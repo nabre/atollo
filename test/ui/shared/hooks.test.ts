@@ -265,7 +265,8 @@ describe("useBatched", () => {
     const { result, unmount } = renderHook(() => useBatched<number>(flush));
     result.current(1);
     unmount();
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // The frame a flush would have come at.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     expect(flush).not.toHaveBeenCalled();
   });
 });

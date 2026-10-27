@@ -3,6 +3,7 @@
 // as vscode-toolbar-button, so their role, name and state are in the page.
 import { useEffect, useRef, type ReactNode } from "react";
 import type { IconType } from "react-icons";
+import { Codicon } from "./codicon";
 import { useHost } from "./elements";
 
 /** VSCodium 1.135's .monaco-text-button on the component's base: 4px 8px
@@ -81,9 +82,20 @@ export function Button({
             e.stopPropagation();
           }
         }}
-        className={["shrink-0", small ? SMALL_BUTTON : TEXT_BUTTON, className].join(" ")}
+        // Busy, it keeps its full color (the component fades a disabled
+        // button): the spinner says it works, not that it is off.
+        className={["shrink-0", small ? SMALL_BUTTON : TEXT_BUTTON, busy ? "opacity-100" : "", className].join(" ")}
       >
-        {busy ? <span className="animate-pulse">{children}</span> : children}
+        {busy ? (
+          // VSCodium's spinning codicon-loading in place of the text, which
+          // keeps its width (no shift) and stays the button's name.
+          <span className="relative inline-flex items-center justify-center">
+            <span className="opacity-0">{children}</span>
+            <Codicon name="loading" size={small ? 12 : 16} className="absolute animate-spin" />
+          </span>
+        ) : (
+          children
+        )}
       </vscode-button>
       {/* The form's default button, a native one: it submits the clicks
           above, and Enter in the form's native fields, as the browser
@@ -142,7 +154,9 @@ export function IconButton({
       disabled={disabled || busy}
       onClick={onClick}
       className={[
-        "flex size-[22px] shrink-0 items-center justify-center rounded-[5px] text-vsc-icon disabled:opacity-40",
+        // Busy, the spinner keeps its full color.
+        "flex size-[22px] shrink-0 items-center justify-center rounded-[5px] text-vsc-icon",
+        busy ? "" : "disabled:opacity-40",
         "enabled:hover:bg-(--vscode-toolbar-hoverBackground) enabled:active:bg-(--vscode-toolbar-activeBackground)",
         checked
           ? "bg-(--vscode-inputOption-activeBackground) text-(--vscode-inputOption-activeForeground) outline-1 -outline-offset-1 outline-(--vscode-inputOption-activeBorder)"
@@ -150,7 +164,12 @@ export function IconButton({
         className,
       ].join(" ")}
     >
-      <Icon size={16} aria-hidden="true" className={busy ? "animate-pulse" : undefined} />
+      {busy ? (
+        // In place of the icon, the same size: VSCodium's busy action.
+        <Codicon name="loading" size={16} className="animate-spin" />
+      ) : (
+        <Icon size={16} aria-hidden="true" />
+      )}
     </button>
   );
 }

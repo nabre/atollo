@@ -31,7 +31,7 @@ import { useJobs, VmPreparing } from "./shell/jobs";
 import { JobsItem, StatusItem, VmItem } from "./shell/statusbar";
 import { useAgents } from "./agents";
 import type { AiPane } from "./ai";
-import { setupStatusText, useSetup } from "./components/setup";
+import { useSetup } from "./components/setup";
 import { CloseDialog, EjectPage } from "./shell/eject";
 import { setLang, t, type Lang } from "./i18n";
 import { tauriPty, useTerminals, type Terminals } from "./terminal";
@@ -132,8 +132,7 @@ export function App() {
   // The installs and the VMs' preparations (LEVELS.md §8.6) are read by the
   // parts that show them (useSetup, useJobs; WithSetup, LiveActivityPanel,
   // StatusBar), not here: their progress renders those parts, not the
-  // window. Here only whether an install runs.
-  const installing = useSetup((s) => s?.running ?? false);
+  // window.
   const { agents } = useAgents();
   // The actions' state; their output is in `logs`, outside the app's state.
   const { runs, logs, loadLog, forget } = useRuns();
@@ -141,7 +140,7 @@ export function App() {
   const running = useRunning(runs);
   const live = running.count;
   // The components with a new version (N-9), on Tools.
-  const newVersions = useUpdates(installing).updates?.items.length ?? 0;
+  const newVersions = useUpdates().updates?.items.length ?? 0;
 
   const {
     data: editor,
@@ -675,7 +674,6 @@ function StatusBar({
   // The installs and the VMs' preparations, read here: their progress
   // renders the bar, not the window.
   const jobs = useJobs();
-  const installing = useSetup((s) => setupStatusText(s) !== null);
   const live = running.count;
   const errors = Object.values(runs).filter((r) => r.state === "error").length;
   return (
@@ -710,7 +708,7 @@ function StatusBar({
         <Codicon name="error" size={14} className="ml-1" />
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
-      {info && <VmItem installing={installing} jobs={jobs} />}
+      {info && <VmItem jobs={jobs} />}
       <JobsItem jobs={jobs} onJob={onJob} />
       <span className="flex-1" />
       {sessions > 0 && (

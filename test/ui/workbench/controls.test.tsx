@@ -99,6 +99,34 @@ describe("workbench controls", () => {
     expect(onClick).toHaveBeenCalledTimes(2);
   });
 
+  it("shows a busy action with a spinner, keeping its name and its full color", () => {
+    const { rerender } = render(
+      <>
+        <Button busy>Salva</Button>
+        <IconButton icon={codicon("sync")} label="Aggiorna" busy onClick={() => undefined} />
+      </>,
+    );
+    const text = screen.getByRole("button", { name: "Salva" });
+    const icon = screen.getByRole("button", { name: "Aggiorna" });
+    for (const b of [text, icon]) {
+      expect(b.getAttribute("aria-busy")).toBe("true");
+      expect(b.querySelector(".codicon-loading.animate-spin")).not.toBeNull();
+    }
+    // The text stays, under the spinner, for the button's width.
+    expect(text.textContent).toBe("Salva");
+    expect(text.className).toContain("opacity-100");
+    expect(icon.className).not.toContain("disabled:opacity-40");
+    expect(icon.querySelector(".codicon-sync")).toBeNull();
+    rerender(
+      <>
+        <Button>Salva</Button>
+        <IconButton icon={codicon("sync")} label="Aggiorna" onClick={() => undefined} />
+      </>,
+    );
+    expect(document.querySelector(".codicon-loading")).toBeNull();
+    expect(screen.getByRole("button", { name: "Aggiorna" }).querySelector(".codicon-sync")).not.toBeNull();
+  });
+
   it("submits its form by click and by Enter in a TextField", async () => {
     const onSubmit = vi.fn();
     submitForm(false, onSubmit);
