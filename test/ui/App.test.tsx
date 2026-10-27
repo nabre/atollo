@@ -654,6 +654,29 @@ describe("App", () => {
     expect(await screen.findByText(/Progetto app creato/)).toBeTruthy();
   });
 
+  it("turns a project's star at once, and back when Rust refuses", async () => {
+    let refuse: (e: Error) => void = () => undefined;
+    invoke.mockImplementation((cmd) =>
+      cmd === "project_pin"
+        ? new Promise((_, reject) => {
+            refuse = reject;
+          })
+        : answers({ projects_list: [project("negozio")] })(cmd),
+    );
+    render(<App />);
+    const recent = within(await screen.findByRole("region", { name: "Recenti" }));
+    fireEvent.click(recent.getByRole("button", { name: "Aggiungi negozio ai preferiti" }));
+    // Before Rust answers.
+    expect(await screen.findByRole("region", { name: "Preferiti" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Togli negozio dai preferiti" })).toBeTruthy();
+    act(() => {
+      refuse(new Error("disco pieno"));
+    });
+    expect(await screen.findByText(/disco pieno/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Aggiungi negozio ai preferiti" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Preferiti" })).toBeNull();
+  });
+
   it("starts, pins and finds the projects from the home", async () => {
     invoke.mockImplementation(
       answers({
