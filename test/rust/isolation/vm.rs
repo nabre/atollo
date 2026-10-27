@@ -18,7 +18,15 @@ fn the_sandbox_is_named_after_the_project() {
     assert!(agent_name("shop", "claude").starts_with("atollo-a-claude-shop-"));
     // A name of symbols only is its hash; a long one is cut, its hash kept.
     assert_eq!(name("___").len(), "atollo-p-".len() + 24);
-    assert!(name(&"a".repeat(100)).len() <= "atollo-p-".len() + 40 + 1 + 24);
+    assert_eq!(name(&"a".repeat(100)).len(), NAME_MAX);
+    assert_ne!(name(&"a".repeat(100)), name(&"a".repeat(101)));
+    // `sbx kit add`'s swap container (`<name>-swap-<8 hex>`) stays within
+    // Docker's 63 characters, for an agent's sandbox too.
+    let claude = agent_name("progetto-prova", "claude");
+    assert!(claude.len() <= NAME_MAX, "{claude}");
+    assert!(claude.starts_with("atollo-a-claude-progetto-"), "{claude}");
+    assert_eq!(agent_name(&"x".repeat(100), "codex").len(), NAME_MAX);
+    assert_eq!(NAME_MAX + "-swap-".len() + 8, 63);
     // The same project, the same sandbox at every start.
     assert_eq!(name("shop"), shop);
 }

@@ -30,17 +30,23 @@ use crate::platform::sh_quote as shell_quote_posix;
 /// The prefix of everything Atollo names in the VMs.
 pub const PREFIX: &str = "atollo-";
 
-/// `project` readable in a name `sbx` takes (`[a-z0-9.-]`, at most 40
-/// characters), then the first 24 hex digits of the SHA-256 of its exact
-/// name: two projects never share a sandboxes' name, and so never a
-/// workspace (`My Shop` and `my-shop` look the same, their hashes not).
-fn tag(project: &str) -> String {
-    tag_of(project, project)
-}
+/// The longest name of a sandbox: `sbx kit add` makes its swap container
+/// `<name>-swap-<8 hex>`, and Docker takes at most 63 characters ("name:
+/// must be at most 63 characters", tried with sbx 0.50.0).
+pub const NAME_MAX: usize = 63 - "-swap-".len() - 8;
 
-/// [`tag`] with the readable part from `readable` and the hash of `exact`.
-fn tag_of(readable: &str, exact: &str) -> String {
-    let slug: String = readable
+/// `head` then `project` readable in a name `sbx` takes (`[a-z0-9.-]`, cut
+/// to stay within [`NAME_MAX`]), then the first 24 hex digits of the
+/// SHA-256 of its exact name: two projects never share a sandboxes' name,
+/// and so never a workspace (`My Shop` and `my-shop` look the same, their
+/// hashes not).
+fn tagged(head: &str, project: &str) -> String {
+    let hash = Sha256::digest(project.as_bytes());
+    // 96 bits: no name chosen on purpose (a cloned repository's) reaches
+    // another project's sandbox by brute force.
+    let hex = crate::common::hex(&hash[..12]);
+    let room = NAME_MAX.saturating_sub(head.len() + hex.len() + 1);
+    let slug: String = project
         .chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '.' || c == '-' {
@@ -49,29 +55,25 @@ fn tag_of(readable: &str, exact: &str) -> String {
                 '-'
             }
         })
-        .take(40)
+        .take(room)
         .collect();
-    let hash = Sha256::digest(exact.as_bytes());
-    // 96 bits: no name chosen on purpose (a cloned repository's) reaches
-    // another project's sandbox by brute force.
-    let hex = crate::common::hex(&hash[..12]);
     let slug = slug.trim_matches(['-', '.']);
     if slug.is_empty() {
-        hex
+        format!("{head}{hex}")
     } else {
-        format!("{slug}-{hex}")
+        format!("{head}{slug}-{hex}")
     }
 }
 
 /// The sandbox of `project`: `atollo-p-<project>-<hash>`.
 pub fn name(project: &str) -> String {
-    format!("{PREFIX}p-{}", tag(project))
+    tagged(&format!("{PREFIX}p-"), project)
 }
 
 /// The sandbox of `agent` for `project`, in a namespace of its own:
 /// `atollo-a-<agent>-<project>-<hash>`, never a project's.
 pub fn agent_name(project: &str, agent: &str) -> String {
-    format!("{PREFIX}a-{agent}-{}", tag(project))
+    tagged(&format!("{PREFIX}a-{agent}-"), project)
 }
 
 /// The prefix of the sandboxes an earlier Atollo made for the kit's
