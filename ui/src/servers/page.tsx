@@ -2,11 +2,10 @@
 // (automatic by engine + PHP version or manual profiles), with .localhost
 // VirtualHosts and portable relative path aliases.
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   errorText,
   fixOf,
-  isolationStatus,
   serverReload,
   serverRemove,
   serverSave,
@@ -20,7 +19,8 @@ import {
   type WebServersView,
 } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
-import { useEvery, useLoad } from "../shared/hooks";
+import { usePoll } from "../shared/poll";
+import { isolationPoll, serversPoll } from "../shared/polls";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import {
@@ -293,7 +293,6 @@ function PoolDetails({
 }
 
 export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void } = {}) {
-  const [view, setView] = useState<WebServersView | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // A refusal of the levels (D-179): what to do about it.
@@ -310,36 +309,21 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   const [newKeepAlive, setNewKeepAlive] = useState(true);
   const [newAutostart, setNewAutostart] = useState(false);
 
-  // The error of the last read, apart from the actions' own: a read that
-  // works clears it.
-  const [loadError, setLoadError] = useState<string | null>(null);
-  // Counts the reads: an older one answering last (a poll after a rescan or
-  // an action's refresh) would bring back the pools as they were.
-  const reads = useRef(0);
-  const load = useCallback((fresh: boolean) => {
-    const id = ++reads.current;
-    serversList(fresh).then(
-      (v) => {
-        if (id !== reads.current) return;
-        setView(v);
-        setLoadError(null);
-      },
-      (e: unknown) => {
-        if (id !== reads.current) return;
-        setLoadError(String(e));
-      },
-    );
-  }, []);
-  const refresh = useCallback(() => {
-    load(false);
-  }, [load]);
+  // The pools, read every 3 s with the Activity counts (one poll, shared/
+  // polls); the error of the last read is apart from the actions' own: a
+  // read that works clears it. A read asked after a rescan or an action
+  // drops the one on its way, which would bring back the pools as they were.
+  const {
+    data: view,
+    error: loadError,
+    reload: refresh,
+  } = usePoll<WebServersView, WebServersView | null>(serversPoll, null, { onError: "show", every: 3000 });
   const refreshFresh = useCallback(() => {
-    load(true);
-  }, [load]);
-  useEvery(refresh, 3000);
+    void serversPoll.refresh(() => serversList(true));
+  }, []);
   // With the VM on, every site runs in its project's VM and the pools never
   // start (D-175): they are the box without the VM.
-  const { data: isolation } = useLoad(isolationStatus, null, { onError: "keep", every: 30000 });
+  const { data: isolation } = usePoll(isolationPoll, null, { onError: "keep", every: 30000 });
   const vmOn = isolation?.level === "vm";
 
   const run = (id: string, fn: () => Promise<void>) => {

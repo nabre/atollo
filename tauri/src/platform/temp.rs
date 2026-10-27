@@ -106,29 +106,49 @@ fn free_near(path: &Path) -> Option<u64> {
 /// Folders older than this and not in use are leftovers.
 const STALE: Duration = Duration::from_secs(24 * 3600);
 
-/// At start: removes the folders in transit that no `TempWork` holds and
-/// that are older than 24 h (an app killed in the middle of a download),
-/// under the host's temporary folder and `data\tmp\{setup,frameworks}`.
-/// A folder in use keeps its `.lock` open without delete sharing, so the
-/// lock cannot be removed: that is how a live one is told from a dead one.
-/// Never fails; problems are logged.
-pub fn sweep(kit: &Kit) {
+/// At start, the sweep's first half: the folders in transit that no
+/// `TempWork` holds and that are older than 24 h (an app killed in the
+/// middle of a download), under the host's temporary folder and
+/// `data\tmp\{setup,frameworks}`. A folder in use keeps its `.lock` open
+/// without delete sharing, so the lock cannot be removed: that is how a
+/// live one is told from a dead one. Never fails; problems are logged.
+///
+/// Quick: each leftover is renamed out of the way (`.swept-…`, next to
+/// it), so nothing started from now on finds it or writes into it; the
+/// folders to delete are returned. The app's start does this before
+/// anything runs and leaves [`remove`] to a thread of its own: a download
+/// left behind can take seconds to delete. One a later sweep finds set
+/// aside (the app ended meanwhile) is old: it goes then.
+pub fn sweep(kit: &Kit) -> Vec<PathBuf> {
+    let mut found = Vec::new();
     if let Some(base) = kit.system_temp() {
         // `setup` and `frameworks` hold one folder per task; the others
         // (`system`, `claude`: the programs' temp) are one unit.
         for entry in children(base) {
             let name = entry.file_name().map(|n| n.to_ascii_lowercase());
             match name.as_deref().and_then(|n| n.to_str()) {
-                Some("setup" | "frameworks") => children(&entry).for_each(|c| sweep_one(&c)),
+                Some("setup" | "frameworks") => {
+                    children(&entry).for_each(|c| found.extend(sweep_one(&c)))
+                }
                 // Files added by hand: kept 30 days by `setup/downloads.rs` (D-82).
                 Some("downloads") => {}
-                _ => sweep_one(&entry),
+                _ => found.extend(sweep_one(&entry)),
             }
         }
     }
     let tmp = kit.data().join("tmp");
     for sub in ["setup", "frameworks"] {
-        children(&tmp.join(sub)).for_each(|c| sweep_one(&c));
+        children(&tmp.join(sub)).for_each(|c| found.extend(sweep_one(&c)));
+    }
+    found
+}
+
+/// The sweep's second half: the folders [`sweep`] gave, deleted.
+pub fn remove(dirs: Vec<PathBuf>) {
+    for dir in dirs {
+        if let Err(e) = fs::remove_dir_all(&dir) {
+            crate::common::log::warn(&format!("{}: {e}", dir.display()));
+        }
     }
 }
 
@@ -141,24 +161,34 @@ fn children(dir: &Path) -> impl Iterator<Item = PathBuf> {
         .map(|e| e.path())
 }
 
-fn sweep_one(dir: &Path) {
+/// `dir` if it is a leftover, renamed out of the way when it can be (one
+/// in use somewhere is deleted as it is, as far as it can be).
+fn sweep_one(dir: &Path) -> Option<PathBuf> {
     let lock = dir.join(".lock");
     let stamp = fs::metadata(&lock)
         .or_else(|_| fs::metadata(dir))
         .and_then(|m| m.modified());
     let old = stamp.is_ok_and(|t| t.elapsed().is_ok_and(|age| age > STALE));
     if !old || held(&lock) {
-        return;
+        return None;
     }
     match fs::remove_file(&lock) {
         Ok(()) => {}
         Err(e) if e.kind() == io::ErrorKind::NotFound => {}
         // Held open by a running TempWork (sharing violation / access denied).
-        Err(_) => return,
+        Err(_) => return None,
     }
-    if let Err(e) = fs::remove_dir_all(dir) {
-        crate::common::log::warn(&format!("{}: {e}", dir.display()));
-    }
+    static SEQ: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let name = dir.file_name()?.to_string_lossy();
+    let aside = dir.with_file_name(format!(
+        ".swept-{}-{}-{name}",
+        std::process::id(),
+        SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    Some(match fs::rename(dir, &aside) {
+        Ok(()) => aside,
+        Err(_) => dir.to_path_buf(),
+    })
 }
 
 /// At exit, once the job has closed the programs: removes the programs' temp

@@ -1,10 +1,21 @@
 // The sizes dragged with a sash: clamped at once, written to the browser's
-// storage once the drag pauses, not at every pointer move. The panel's and
+// storage once the drag pauses, not at every pointer move; a live drag
+// resizes the element and sets the state once, at the end. The panel's and
 // the editor's tabs and a details editor's header and bar, measured as in
 // VSCodium 1.135's modern UI with the size tokens.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react";
-import { EditorHeader, EditorTabs, NavBar, Panel, PaneStack, Sash, useStoredSize, ViewPane } from "@/workbench/layout";
+import {
+  EditorHeader,
+  EditorTabs,
+  NavBar,
+  Panel,
+  PaneStack,
+  Sash,
+  SizedBox,
+  useStoredSize,
+  ViewPane,
+} from "@/workbench/layout";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -84,6 +95,64 @@ describe("useStoredSize", () => {
       });
     }).not.toThrow();
     expect(result.current[0]).toBe(350);
+  });
+});
+
+/** A part resized by its sash, the size dragged live (SizeDrag). */
+function Resized({ onRender }: { onRender: () => void }) {
+  const [height, setHeight, drag] = useStoredSize("panel", 240, 120, 600, "height");
+  onRender();
+  return (
+    <>
+      <Sash
+        vertical={false}
+        label="Panel"
+        size={height}
+        min={120}
+        max={600}
+        onDrag={(d) => {
+          drag.move((h) => h - d);
+        }}
+        onDragEnd={drag.end}
+        onReset={() => {
+          setHeight(240);
+        }}
+      />
+      <SizedBox drag={drag} height={height}>
+        <span>part</span>
+      </SizedBox>
+    </>
+  );
+}
+
+describe("a drag with SizeDrag", () => {
+  it("resizes the element at each move and sets the size once, when the pointer lets go", () => {
+    const onRender = vi.fn();
+    render(<Resized onRender={onRender} />);
+    const sash = screen.getByRole("separator", { name: "Panel" });
+    const part = screen.getByText("part").parentElement as HTMLElement;
+    sash.setPointerCapture = vi.fn();
+    const renders = onRender.mock.calls.length;
+    fireEvent.pointerDown(sash, { clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(sash, { clientY: 90 });
+    fireEvent.pointerMove(sash, { clientY: 70 });
+    expect(part.style.height).toBe("270px");
+    expect(onRender.mock.calls.length).toBe(renders);
+    expect(sash.getAttribute("aria-valuenow")).toBe("240");
+    fireEvent.pointerMove(sash, { clientY: -1000 });
+    expect(part.style.height).toBe("600px");
+    fireEvent.pointerUp(sash);
+    expect(onRender.mock.calls.length).toBe(renders + 1);
+    expect(sash.getAttribute("aria-valuenow")).toBe("600");
+    expect(part.style.height).toBe("600px");
+  });
+
+  it("sets the size at once with the arrow keys", () => {
+    render(<Resized onRender={() => undefined} />);
+    const sash = screen.getByRole("separator", { name: "Panel" });
+    fireEvent.keyDown(sash, { key: "ArrowUp" });
+    expect(sash.getAttribute("aria-valuenow")).toBe("250");
+    expect((screen.getByText("part").parentElement as HTMLElement).style.height).toBe("250px");
   });
 });
 

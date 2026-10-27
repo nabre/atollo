@@ -1,8 +1,10 @@
 //! What every part of the engine uses and that belongs to none of them: the
 //! kit's files on disk (`fsx`), the log, the clock, the texts in four
 //! languages (`i18n`), the user's settings, who has each port and the
-//! long work the interface follows (`jobs`).
+//! long work the interface follows (`jobs`), the output of a program sent
+//! to the window in batches (`batch`).
 
+pub mod batch;
 pub mod fsx;
 pub mod i18n;
 pub mod jobs;

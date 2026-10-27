@@ -109,6 +109,23 @@ fn ensure_main<R: Runtime>(webview: &Webview<R>) -> CmdResult<()> {
     }
 }
 
+/// Runs `work` with the app and its state off the window's thread (a
+/// `fn` command runs on it: while it works the window and every other
+/// command wait), for a command whose work reads folders, starts
+/// programs or asks `sbx`. The command becomes `async` with the same
+/// name, arguments and answer: the interface does not see the difference.
+async fn off_main<R: Runtime, T: Send + 'static>(
+    webview: &Webview<R>,
+    context: &'static str,
+    work: impl FnOnce(&AppHandle<R>, &AppState) -> CmdResult<T> + Send + 'static,
+) -> CmdResult<T> {
+    use tauri::Manager;
+    let app = webview.app_handle().clone();
+    tauri::async_runtime::spawn_blocking(move || work(&app, &app.state::<AppState>()))
+        .await
+        .or_fail(context)?
+}
+
 /// Returns `kit` scoped to `target` (`win32-x64`, `linux-x64`, `darwin-arm64`…)
 /// when given, or `kit.clone()` when omitted.
 pub(super) fn kit_for(kit: &Kit, target: Option<&str>) -> CmdResult<Kit> {

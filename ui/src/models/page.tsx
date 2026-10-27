@@ -17,7 +17,6 @@ import {
   llmRemove,
   llmSet,
   llmStart,
-  llmStatus,
   llmStop,
   onLlmPull,
   urlOpen,
@@ -33,7 +32,9 @@ import { locale, t } from "../i18n";
 import { gb } from "../shared/format";
 import { ComponentLogo } from "../shared/logos";
 import { ActionButton, ErrorLine } from "../shared/common";
-import { useAction, useCopy, useLoad, useSubscription } from "../shared/hooks";
+import { useAction, useBatched, useCopy, useLoad, useSubscription } from "../shared/hooks";
+import { usePoll } from "../shared/poll";
+import { llmPoll } from "../shared/polls";
 import {
   Button,
   CheckboxLabel,
@@ -140,7 +141,7 @@ export function useModels() {
     error: infoError,
     reload: reloadInfo,
     setData: setInfo,
-  } = useLoad<LlmInfo | null>(llmStatus, null, { onError: "show", every: 3000 });
+  } = usePoll<LlmInfo, LlmInfo | null>(llmPoll, null, { onError: "show", every: 3000 });
   const {
     data: view,
     error: viewError,
@@ -150,8 +151,17 @@ export function useModels() {
   const { busy, error, run } = useAction();
   const [events, setEvents] = useState<Record<string, PullEvent>>({});
 
+  // A download sends its progress many times a second: the map changes
+  // once a frame, with each download's last event.
+  const pushEvent = useBatched<PullEvent>((list) => {
+    setEvents((all) => {
+      const next = { ...all };
+      for (const e of list) next[e.key] = e;
+      return next;
+    });
+  });
   useSubscription(onLlmPull, (e) => {
-    setEvents((all) => ({ ...all, [e.key]: e }));
+    pushEvent(e);
     if (e.state !== "running") reloadView();
   });
 

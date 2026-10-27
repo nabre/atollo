@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 import { Terminal, type ITheme } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
+import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import type { PtyBackend, PtyChunk, PtyInfo } from "../ipc/pty";
 import { FONT_SIZE, monoFamily, monoLoaded, monoReady, remeasured, whenMonoLoads } from "./font";
@@ -107,6 +108,23 @@ export function clipboardKey(
   return false;
 }
 
+/** Draws the terminal with WebGL, on the GPU: much faster than the DOM
+ * renderer on long or fast output. Without WebGL2, or when it fails or
+ * loses its context (a driver reset, too many contexts), the terminal
+ * keeps xterm.js's DOM renderer. */
+function loadWebgl(x: Terminal) {
+  if (typeof WebGL2RenderingContext === "undefined") return;
+  try {
+    const webgl = new WebglAddon();
+    webgl.onContextLoss(() => {
+      webgl.dispose();
+    });
+    x.loadAddon(webgl);
+  } catch {
+    // The DOM renderer stays.
+  }
+}
+
 export function TerminalView({
   session,
   backend,
@@ -169,6 +187,8 @@ export function TerminalView({
       const fit = new FitAddon();
       x.loadAddon(fit);
       x.open(el);
+      // After open(): the renderer needs the view's element.
+      loadWebgl(x);
       // Web links open in the PC's browser on a click (the page of
       // `sbx login`, D-169).
       x.registerLinkProvider({

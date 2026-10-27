@@ -28,7 +28,7 @@ import { EditorSettingsBox } from "./editorsettings";
 import { ProjectMcpBox } from "./mcp";
 import { ProjectVersions } from "../versions";
 import { ActionBar, EditorBody, EditorHeader, EditorSection, NavBar, type NavItem } from "../workbench";
-import { alive } from "./runs";
+import { alive, type RunLogs } from "./runs";
 import { KIND_ICON, kindText, LanguageIcons } from "./kind";
 import { ActionDetail, ActionsList } from "./run";
 import { ActionForm } from "./actionform";
@@ -64,7 +64,7 @@ export function ProjectPage({
   agents: AgentInfo[] | null;
   editor: EditorStatus | null;
   runs: Record<string, RunInfo>;
-  logs: Record<string, string[]>;
+  logs: RunLogs;
   ports: Ports;
   busy: string | null;
   onStart: (a: ProjectAction) => void;

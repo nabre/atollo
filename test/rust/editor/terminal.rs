@@ -89,3 +89,74 @@ fn window_labels_name_their_session() {
         assert_eq!(session_of(other), None, "{other}");
     }
 }
+
+/// A session's output and exit reach a listener of its views once: one
+/// emit for the panel and the session's own window, not one each.
+#[test]
+fn output_and_exit_reach_a_view_once() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use tauri::Listener;
+
+    let app = tauri::test::mock_app();
+    let handle = app.handle();
+    let (outputs, exits) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)));
+    let (o, e) = (Arc::clone(&outputs), Arc::clone(&exits));
+    handle.listen_any(crate::ipc::events::pty_output(1), move |_| {
+        o.fetch_add(1, Ordering::SeqCst);
+    });
+    handle.listen_any(crate::ipc::events::PTY_EXIT, move |_| {
+        e.fetch_add(1, Ordering::SeqCst);
+    });
+    let chunk = pty::Chunk {
+        seq: 1,
+        data: "ok".into(),
+    };
+    emit_output(handle, 1, &chunk);
+    let sessions = pty::Sessions::default();
+    let s = sessions.insert("t".into(), Path::new("/p"), Box::new(NoIo));
+    emit_exit(handle, &s.info());
+    assert_eq!(outputs.load(Ordering::SeqCst), 1);
+    assert_eq!(exits.load(Ordering::SeqCst), 1);
+}
+
+/// The views' filter: the main window and the session's own window only.
+#[test]
+fn only_the_views_of_the_session_match() {
+    let l = |label: &str| EventTarget::AnyLabel {
+        label: label.into(),
+    };
+    assert!(for_views(&EventTarget::Any, 3));
+    assert!(for_views(&l(crate::ipc::MAIN), 3));
+    assert!(for_views(&l("terminal-3"), 3));
+    assert!(for_views(
+        &EventTarget::WebviewWindow {
+            label: "terminal-3".into()
+        },
+        3
+    ));
+    assert!(!for_views(&l("terminal-4"), 3));
+    assert!(!for_views(&l("editor-1"), 3));
+    assert!(!for_views(&EventTarget::App, 3));
+}
+
+/// A PTY that does nothing.
+struct NoIo;
+
+impl crate::platform::pty::Io for NoIo {
+    fn write(&self, _data: &[u8]) -> anyhow::Result<()> {
+        Ok(())
+    }
+    fn resize(&self, _cols: u16, _rows: u16) -> anyhow::Result<()> {
+        Ok(())
+    }
+    fn pid(&self) -> Option<u32> {
+        None
+    }
+    fn hang_up(&self) {}
+    fn left(&self, _leader_running: bool) -> Vec<u32> {
+        Vec::new()
+    }
+    fn kill(&self, _pids: &[u32]) {}
+    fn release(&self) {}
+}

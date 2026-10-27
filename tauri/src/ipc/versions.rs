@@ -3,16 +3,19 @@
 use super::*;
 
 /// The versioned languages and tools: default folder, saved lines, the
-/// kit's preferred line (`versions/mod.rs`).
+/// kit's preferred line (`versions/mod.rs`). Off the window's thread: it
+/// reads the folders of every line and the settings of every project.
 #[tauri::command]
-pub fn versions_list<R: Runtime>(
+pub async fn versions_list<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     target: Option<String>,
 ) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    Ok(crate::versions::tools(&kit))
+    off_main(&webview, "versions", move |_, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        Ok(crate::versions::tools(&kit))
+    })
+    .await
 }
 
 /// The lines of `id` that can be downloaded (asks its source); kept for the
@@ -78,35 +81,39 @@ pub(crate) fn refresh_stale_lines(kit: &Kit, env: &KitEnv, token: Option<String>
 }
 
 /// Downloads `line` of `id` next to the default folder, with the app's
-/// preparation task (progress as `setup`).
+/// preparation task (progress as `setup`). Off the window's thread: where
+/// it goes asks `sbx` ([`tools_kit`]).
 #[tauri::command]
-pub fn versions_add<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn versions_add<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     id: String,
     line: String,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
-    download_line(app, &state, id, line, target)
+    off_main(&webview, "versions", move |app, state| {
+        download_line(app.clone(), state, id, line, target)
+    })
+    .await
 }
 
 /// Installs `id`, not installed yet, at `line` instead of the latest: it
 /// becomes chosen (with what it needs) and its first version is `line`.
+/// Off the window's thread, as [`versions_add`].
 #[tauri::command]
-pub fn versions_install<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn versions_install<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     id: String,
     line: String,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
     crate::versions::check(&id, Some(&line)).map_err(|e| e.to_string())?;
-    install_now(app, &state, id, Some(line), target)
+    off_main(&webview, "versions", move |app, state| {
+        install_now(app.clone(), state, id, Some(line), target)
+    })
+    .await
 }
 
 /// `id` becomes chosen (with what it needs) and is installed now, at
@@ -169,7 +176,8 @@ pub(super) fn download_line<R: Runtime>(
 /// (`Component::in_vm` without `on_pc_with_vm`, D-180) goes to the VM's
 /// Linux, if it has a build there; a system component, one that runs on
 /// the PC also with the VM (a database's server, llama.cpp), or another
-/// system asked for, stays as asked.
+/// system asked for, stays as asked. It may ask `sbx` for the VM's status
+/// ([`super::setup::vm_tools_target`]): never on the window's thread.
 fn tools_kit(state: &AppState, kit: Kit, id: &str) -> Kit {
     let catalog = Catalog::get();
     let Some(component) = catalog.find(id) else {
@@ -203,36 +211,40 @@ pub(super) fn download_chosen<R: Runtime>(
     Ok(())
 }
 
-/// Removes a saved line (the default folder goes with the component).
+/// Removes a saved line (the default folder goes with the component). Off
+/// the window's thread: it deletes the line's folder and rebuilds the
+/// kit's environment.
 #[tauri::command]
-pub fn versions_remove<R: Runtime>(
+pub async fn versions_remove<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     id: String,
     line: String,
     target: Option<String>,
 ) -> CmdResult<Vec<crate::versions::Tool>> {
     ensure_main(&webview)?;
-    if state.setup.snapshot().running {
-        return Err(tr(&state, "C'è già un'installazione in corso.", &[]).into());
-    }
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    crate::versions::remove(&kit, &id, &line).map_err(|e| {
-        if e.is::<crate::net::archive::InUse>() {
-            tr(
-                &state,
-                "La versione {0} è in uso: chiudi i programmi che la usano e riprova.",
-                &[&line],
-            )
-            .into()
-        } else {
-            fail("versions", format!("{e:#}"))
+    off_main(&webview, "versions", move |_, state| {
+        if state.setup.snapshot().running {
+            return Err(tr(state, "C'è già un'installazione in corso.", &[]).into());
         }
-    })?;
-    if kit.target() == state.kit.target() {
-        apply_env(&state);
-    }
-    Ok(crate::versions::tools(&kit))
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        crate::versions::remove(&kit, &id, &line).map_err(|e| {
+            if e.is::<crate::net::archive::InUse>() {
+                tr(
+                    state,
+                    "La versione {0} è in uso: chiudi i programmi che la usano e riprova.",
+                    &[&line],
+                )
+                .into()
+            } else {
+                fail("versions", format!("{e:#}"))
+            }
+        })?;
+        if kit.target() == state.kit.target() {
+            apply_env(state);
+        }
+        Ok(crate::versions::tools(&kit))
+    })
+    .await
 }
 
 #[derive(Debug, Serialize)]
@@ -250,34 +262,38 @@ pub(super) fn project_versions_of(kit: &Kit, project: &str) -> ProjectVersions {
     }
 }
 
+/// The project's lines. Off the window's thread, as [`versions_list`].
 #[tauri::command]
-pub fn project_versions<R: Runtime>(
+pub async fn project_versions<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     project: String,
 ) -> CmdResult<ProjectVersions> {
     ensure_main(&webview)?;
-    project_dir(&state.kit, Some(&project), state.lang())?;
-    Ok(project_versions_of(&state.kit, &project))
+    off_main(&webview, "versions", move |_, state| {
+        project_dir(&state.kit, Some(&project), state.lang())?;
+        Ok(project_versions_of(&state.kit, &project))
+    })
+    .await
 }
 
 /// The line of `id` for the project (`None`: the kit's), downloaded when it
-/// is not on disk.
+/// is not on disk. Off the window's thread, as [`versions_list`].
 #[tauri::command]
-pub fn project_versions_set<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn project_versions_set<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     project: String,
     id: String,
     line: Option<String>,
 ) -> CmdResult<ProjectVersions> {
     ensure_main(&webview)?;
-    project_dir(&state.kit, Some(&project), state.lang())?;
-    download_chosen(app, &state, &id, line.as_deref())?;
-    crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
-        .or_fail_chain("versions")?;
-    Ok(project_versions_of(&state.kit, &project))
+    off_main(&webview, "versions", move |app, state| {
+        project_dir(&state.kit, Some(&project), state.lang())?;
+        download_chosen(app.clone(), state, &id, line.as_deref())?;
+        crate::versions::set_project_choice(&state.kit, &project, &id, line.as_deref())
+            .or_fail_chain("versions")?;
+        Ok(project_versions_of(&state.kit, &project))
+    })
+    .await
 }
 
 /// The relations matrix (versions/relations/, D-81): the saved one while nothing

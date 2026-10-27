@@ -6,7 +6,7 @@
 // (home.tsx): what runs, favorites and recent projects, what needs a hand.
 // Ctrl+P finds a project by name (quickopen.tsx). Web actions get their own
 // port and open in the browser.
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
 import {
   editorOpen,
   folderOpen,
@@ -22,7 +22,6 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
-  type SetupSnapshot,
 } from "../ipc";
 import { AgentButtons } from "../agents";
 import { groupOf, useFrameworks } from "../frameworks";
@@ -49,7 +48,7 @@ import {
 import { mainAction, ProjectsHome, type HomeHandlers } from "./home";
 import { ProjectPage, type ProjectSection } from "./page";
 import { QuickOpen } from "./quickopen";
-import { alive } from "./runs";
+import { alive, type RunLogs } from "./runs";
 import { KIND_ICON, ProjectState } from "./kind";
 import { EmptyProjectEditor, GitProjectEditor, NewProjectTree, wayLabel, WIZARD_TAB, type NewWay } from "./new";
 import { Orphans } from "./orphans";
@@ -65,7 +64,12 @@ const HOME_TAB = "\u0000home";
 /** Stable while the list is loading (Orphans reads again when it changes). */
 const NO_PROJECTS: ProjectInfo[] = [];
 
-export function ProjectsPage({
+/** The page, rendered again only when its props change: the app renders
+ * when a database, a pool or the local models start or stop (the Activity
+ * counts), which neither the list nor a project's page shows. */
+export const ProjectsPage = memo(Projects);
+
+function Projects({
   status,
   agents,
   onChanged,
@@ -78,7 +82,6 @@ export function ProjectsPage({
   onSettings,
   quickOpen = false,
   onQuickOpen,
-  setup = null,
   onTool,
 }: {
   status: EditorStatus | null;
@@ -86,7 +89,7 @@ export function ProjectsPage({
   onChanged: () => void;
   /** The actions started in this session (useRuns, kept by the app). */
   runs: Record<string, RunInfo>;
-  logs: Record<string, string[]>;
+  logs: RunLogs;
   loadLog: (key: string) => void;
   forget: (key: string) => void;
   /** The projects open in the editor (kept by the app across pages). */
@@ -97,8 +100,6 @@ export function ProjectsPage({
   /** The Quick Open box is open (Ctrl+P, kept by the app). */
   quickOpen?: boolean;
   onQuickOpen?: ((open: boolean) => void) | undefined;
-  /** The preparation under way (useSetup, kept by the app): the home's tools. */
-  setup?: SetupSnapshot | null;
   /** Opens a tool's page on Tools (the home's tools). */
   onTool?: ((id: string) => void) | undefined;
 }) {
@@ -479,7 +480,6 @@ export function ProjectsPage({
           agents={agents}
           fw={fw}
           handlers={home}
-          setup={setup}
         />
       )}
       {quickOpen && (

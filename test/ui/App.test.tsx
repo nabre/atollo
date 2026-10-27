@@ -119,11 +119,13 @@ const running: RunInfo = {
 };
 
 const { App } = await import("@/App");
-const { setLang } = await import("@/i18n");
+const { loadCatalog, setLang } = await import("@/i18n");
+// The English catalog read once here: a test in English waits for no chunk.
+await loadCatalog("en");
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
-  setLang("it");
+  await setLang("it");
   invoke.mockReset();
   setupListener = null;
   jobListener = null;
@@ -154,11 +156,11 @@ describe("App", () => {
     expect(await screen.findByText(/La cartella «2026»/)).toBeTruthy();
   });
 
-  it("switches pages from the activity bar", () => {
+  it("switches pages from the activity bar", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "AI" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("AI");
+    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("AI");
     expect(screen.getByRole("button", { name: "AI" }).getAttribute("aria-current")).toBe("page");
   });
 
@@ -893,8 +895,9 @@ describe("App", () => {
       });
     });
     // In the status bar, with its step and bar; a click opens its details
-    // in the Activity panel (LEVELS.md §8.6).
-    const item = screen.getByRole("button", {
+    // in the Activity panel (LEVELS.md §8.6). The progress renders at the
+    // next frame.
+    const item = await screen.findByRole("button", {
       name: /^Installo i componenti del kit · 2\/2 · PowerShell 7 · download · 50%/,
     });
     expect(within(item).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");

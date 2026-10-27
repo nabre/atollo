@@ -10,8 +10,8 @@ import { siteGuide } from "../../../site/guide.mjs";
 const QUERIES = ["porta", "port", "mysql password", "agent", "1.3", "git", "zzz-nothing"];
 
 describe("guide search, app and site", () => {
-  it.each(["it", "en", "fr", "de"] as Lang[])("finds the same topics in %s", (lang) => {
-    setLang(lang);
+  it.each(["it", "en", "fr", "de"] as Lang[])("finds the same topics in %s", async (lang) => {
+    await setLang(lang);
     const site = siteGuide();
     site.setLang(lang);
     const index = site.guide.core.model.GUIDE_TOPICS.map((t) => ({
@@ -24,6 +24,6 @@ describe("guide search, app and site", () => {
       const web = index.filter((t) => site.guide.core.search.matches(words, t.hay)).map((t) => t.id);
       expect(web, `${lang}: ${q}`).toEqual(app);
     }
-    setLang("it");
+    await setLang("it");
   });
 });

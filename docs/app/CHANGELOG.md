@@ -1,5 +1,14 @@
 # Novità
 
+## Un'app più reattiva (27/10/2026)
+
+- **La finestra non si blocca più** mentre Atollo legge le cartelle, controlla i processi o chiede lo stato della VM: «Applica» negli Strumenti, le installazioni, le impostazioni, le versioni dei progetti, «Libera spazio» e gli altri comandi pesanti lavorano in background (D-182). Anche la fine di un'installazione non ferma più la finestra.
+- **Meno lavoro a vuoto**: l'interfaccia non si ridisegna più quando gli stati che rilegge non sono cambiati, rilegge ogni stato una volta sola anche se più pagine lo mostrano, e si ferma quando la finestra è nascosta.
+- **Terminale e output delle azioni fluidi** anche con build e `npm install` molto loquaci: l'output arriva a gruppi, una volta per fotogramma, senza ritardare l'eco dei tasti; il terminale usa WebGL.
+- **Avvio più rapido**: la finestra si disegna subito, si carica solo la lingua in uso e le pagine AI, Database, Server web e Terminali quando le apri.
+- **Divisori fluidi**: trascinare l'altezza del terminale o di Attività non ridisegna più tutta l'app.
+- **VM degli agenti con nomi lunghi**: una sandbox di un progetto dal nome lungo non fallisce più all'aggiornamento del kit («name: must be at most 63 characters»); il nome si accorcia, e la sandbox con il nome vecchio va rimossa a mano (`sbx rm`).
+
 ## Rilascio 0.7.3 alpha (27/10/2026): i tre livelli
 
 - **Tre livelli, espliciti** (D-179, [LEVELS.md](LEVELS.md)): ogni programma ha un livello, che dipende da chi lo avvia e decide dove gira. **1 Manuale**: i comandi che scrivi tu, nei terminali del kit e nel terminale integrato dell'editor, sempre sul PC, con gli strumenti del kit alle versioni del progetto nella sua cartella e il tuo agente SSH per Git. **2 Codice del progetto**: terminale del progetto, azioni, siti, task dell'editor, creazione dei progetti, nella VM del progetto; senza VM sul PC, sigillati. **3 Agenti**: Claude Code e Codex ciascuno nella sua sandbox, Pi e Antigravity nella VM del progetto; mai sul PC.

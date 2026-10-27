@@ -6,18 +6,19 @@
 use super::*;
 use crate::projects::state::{self as project_state, Holdings};
 
-/// The orphans, with what each one holds (no password).
+/// The orphans, with what each one holds (no password). Off the window's
+/// thread: it reads the data folder of every project.
 #[tauri::command]
-pub fn projects_orphans<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-) -> CmdResult<Vec<Holdings>> {
+pub async fn projects_orphans<R: Runtime>(webview: Webview<R>) -> CmdResult<Vec<Holdings>> {
     ensure_main(&webview)?;
-    let kit = &state.kit;
-    Ok(project_state::orphans(kit)
-        .iter()
-        .filter_map(|p| project_state::holdings(kit, p))
-        .collect())
+    off_main(&webview, "orphans", |_, state| {
+        let kit = &state.kit;
+        Ok(project_state::orphans(kit)
+            .iter()
+            .filter_map(|p| project_state::holdings(kit, p))
+            .collect())
+    })
+    .await
 }
 
 /// Gives the files of `orphan` to `project` (renamed outside the app);

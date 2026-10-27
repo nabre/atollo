@@ -2,7 +2,7 @@
 // download with its progress and Pause, FAT32 refusing a file over 4 GB,
 // Pi's model, the server's state after «Avvia».
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { SAMPLE_LLM, SAMPLE_MODELS, type LlmInfo, type ModelsView, type PullEvent } from "@/ipc/llm";
 import { AiPage } from "@/ai";
 import { fitOf } from "@/models";
@@ -75,7 +75,10 @@ describe("AiPage, local models", () => {
     act(() => {
       handlers.get("llm-pull")?.({ payload: event });
     });
-    expect(r.getByRole("meter").getAttribute("aria-valuenow")).toBe("50");
+    // The progress renders at the next frame.
+    await waitFor(() => {
+      expect(r.getByRole("meter").getAttribute("aria-valuenow")).toBe("50");
+    });
     fireEvent.click(r.getByText("Sospendi"));
     expect(invoke).toHaveBeenCalledWith("llm_pull_cancel", { key: event.key });
   });

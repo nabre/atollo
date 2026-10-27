@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, renderHook } from "@testing-library/react";
-import { useAction, useCopy, useLoad, type LoadOptions } from "@/shared/hooks";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { useAction, useBatched, useCopy, useLoad, type LoadOptions } from "@/shared/hooks";
 
 /** A promise settled by the test. */
 function deferred<T>() {
@@ -15,9 +15,18 @@ function deferred<T>() {
 
 const settle = () => act(async () => {});
 
+/** The window minimized (true) or shown again, as the WebView tells it. */
+function setHidden(hidden: boolean) {
+  Object.defineProperty(document, "hidden", { configurable: true, get: () => hidden });
+  act(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+}
+
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  setHidden(false);
 });
 
 describe("useLoad", () => {
@@ -146,6 +155,44 @@ describe("useLoad", () => {
     expect(load).toHaveBeenCalledTimes(3);
   });
 
+  it("keeps the value, and renders nothing, when a read brings the same data", async () => {
+    const load = vi.fn(() => Promise.resolve({ list: [1, 2], name: "a" }));
+    let renders = 0;
+    const { result } = renderHook(() => {
+      renders++;
+      return useLoad(load, null, { onError: "keep" });
+    });
+    await settle();
+    const first = result.current.data;
+    const before = renders;
+    act(() => {
+      result.current.reload();
+    });
+    await settle();
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(result.current.data).toBe(first);
+    expect(renders).toBe(before);
+  });
+
+  it("reads nothing while the window is hidden, and reads at once when it shows", () => {
+    vi.useFakeTimers();
+    const load = vi.fn(() => Promise.resolve(1));
+    const { unmount } = renderHook(() => useLoad(load, 0, { onError: "keep", every: 1000 }));
+    expect(load).toHaveBeenCalledTimes(1);
+    setHidden(true);
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(load).toHaveBeenCalledTimes(1);
+    setHidden(false);
+    expect(load).toHaveBeenCalledTimes(2);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(load).toHaveBeenCalledTimes(3);
+    unmount();
+  });
+
   it("setData changes the value between reads", async () => {
     const { result } = renderHook(() => useLoad(() => Promise.resolve(1), 0, { onError: "keep" }));
     await settle();
@@ -191,6 +238,35 @@ describe("useLoad", () => {
     first.resolve(1);
     await settle();
     expect(result.current.data).toBe(2);
+  });
+});
+
+describe("useBatched", () => {
+  it("hands what came before a frame to one flush", async () => {
+    const flush = vi.fn();
+    const { result } = renderHook(() => useBatched<number>(flush));
+    result.current(1);
+    result.current(2);
+    result.current(3);
+    expect(flush).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(flush).toHaveBeenCalledTimes(1);
+    });
+    expect(flush).toHaveBeenCalledWith([1, 2, 3]);
+    result.current(4);
+    await waitFor(() => {
+      expect(flush).toHaveBeenCalledTimes(2);
+    });
+    expect(flush).toHaveBeenLastCalledWith([4]);
+  });
+
+  it("calls nothing once unmounted", async () => {
+    const flush = vi.fn();
+    const { result, unmount } = renderHook(() => useBatched<number>(flush));
+    result.current(1);
+    unmount();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(flush).not.toHaveBeenCalled();
   });
 });
 

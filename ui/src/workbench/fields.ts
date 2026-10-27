@@ -45,6 +45,12 @@ export function useControlled(value: string, onChange: (v: string) => void) {
   return (e: Event) => {
     const el = e.currentTarget as TextElement;
     if (el.value === latest.current) return;
+    // flushSync renders now what a keystroke would render a microtask
+    // later (an input event is discrete: React renders it at once anyway),
+    // so it costs no render of its own; it lets the kept value be read
+    // below, before the browser paints the rejected text or moves the
+    // caret, which a later check could not. What a keystroke renders is
+    // kept small elsewhere (the state outside App).
     flushSync(() => {
       onChange(el.value);
     });

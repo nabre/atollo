@@ -238,8 +238,33 @@ describe("useJobs", () => {
       events.get("job")?.({ payload: job("a", { title: "A", state: "done" }) });
       events.get("job")?.({ payload: job("b", { title: "B", created: 5 }) });
     });
-    expect(screen.getByText("A: done")).toBeTruthy();
+    // The events of a frame render together, at the next one.
+    expect(screen.queryByText("A: done")).toBeNull();
+    expect(await screen.findByText("A: done")).toBeTruthy();
     expect(screen.getByText("B: running")).toBeTruthy();
     expect(invoke).toHaveBeenCalledWith("jobs_list", undefined);
+  });
+
+  it("is one subscription for every component, forgotten with the last one", async () => {
+    invoke.mockResolvedValue([job("a", { title: "A" })]);
+    const first = render(<Titles />);
+    const second = render(<Titles />);
+    await waitFor(() => {
+      expect(screen.getAllByText("A: running")).toHaveLength(2);
+    });
+    expect(invoke).toHaveBeenCalledTimes(1);
+    first.unmount();
+    expect(events.has("job")).toBe(true);
+    second.unmount();
+    await waitFor(() => {
+      expect(events.has("job")).toBe(false);
+    });
+    // Shown again: read again, nothing kept from before.
+    invoke.mockResolvedValue([]);
+    render(<Titles />);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.queryByText("A: running")).toBeNull();
   });
 });

@@ -13,26 +13,27 @@ import {
 } from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
-import { useSubscription } from "../shared/hooks";
+import { createFeed, useFeed } from "../shared/feed";
 import { Button, Codicon, codicon, IconButton } from "../workbench";
 
-/** The current preparation, kept up to date by the `setup` events. */
-export function useSetup(): SetupSnapshot | null {
-  const [snapshot, setSnapshot] = useState<SetupSnapshot | null>(null);
-  useSubscription(onSetup, setSnapshot);
-  useEffect(() => {
-    let alive = true;
-    setupState().then(
-      (s) => {
-        if (alive) setSnapshot((current) => current ?? s);
-      },
-      () => undefined,
-    );
-    return () => {
-      alive = false;
-    };
-  }, []);
-  return snapshot;
+/** The current preparation for the whole window, read once and kept up to
+ * date by the `setup` events (each a whole snapshot: the last of a frame
+ * wins). */
+const setupFeed = createFeed<SetupSnapshot | null, SetupSnapshot>({
+  initial: null,
+  listen: onSetup,
+  apply: (_, snapshot) => snapshot,
+  // A snapshot arrived meanwhile is newer than the one read.
+  read: () => setupState().then((s) => (current) => current ?? s),
+});
+
+/** The current preparation, or the part of it `select` chooses (a plain
+ * value: «is it running»): the component renders when that changes, at
+ * most once a frame. */
+export function useSetup(): SetupSnapshot | null;
+export function useSetup<S>(select: (snapshot: SetupSnapshot | null) => S): S;
+export function useSetup<S>(select?: (snapshot: SetupSnapshot | null) => S) {
+  return useFeed<SetupSnapshot | null, S | SetupSnapshot | null>(setupFeed, select ?? ((s) => s));
 }
 
 export function outcomeText(o: Outcome): string {
