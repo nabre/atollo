@@ -49,7 +49,6 @@ function actOf(c: ComponentInfo, st: ToolStatus): Act {
 }
 
 export function HomeTools({ setup, onOpen }: { setup: SetupSnapshot | null; onOpen: (id: string) => void }) {
-  const running = setup?.running ?? false;
   const {
     data: list,
     setData: setList,
@@ -60,7 +59,7 @@ export function HomeTools({ setup, onOpen }: { setup: SetupSnapshot | null; onOp
   });
   // The agents' tiles follow the VM (LEVELS.md §7).
   useSubscription(onLevelsChanged, reload);
-  const { updates, setUpdates } = useUpdates(running);
+  const { updates, setUpdates } = useUpdates();
   const { busy, error, run } = useAction();
   const [all, setAll] = useState(false);
   // As each component of a preparation ends: its tile alone read again (the

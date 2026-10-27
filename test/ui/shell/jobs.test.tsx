@@ -4,7 +4,8 @@
 // the card of a session waiting for its VM, and the jobs kept by the events.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { IsolationStatus, Job } from "@/ipc";
+import { SAMPLE_SETUP, type IsolationStatus, type Job } from "@/ipc";
+import { same } from "@/shared/poll";
 import { vmPill, VmPillBadge } from "@/shell/isolation";
 import { JobDetails, overallPercent, useJobs, VmPreparing } from "@/shell/jobs";
 import { JobsItem, VmItem } from "@/shell/statusbar";
@@ -147,13 +148,39 @@ describe("the VM's pill", () => {
             : [],
       ),
     );
-    render(<VmItem installing={false} jobs={[]} />);
+    render(<VmItem jobs={[]} />);
     const button = await screen.findByRole("button", {
       name: "Senza VM, si può attivare: progetti e azioni sul PC senza agenti. Clic: cosa serve per attivare la VM",
     });
     expect(within(button).getByText("Senza VM")).toBeTruthy();
     fireEvent.click(button);
     expect(await screen.findByText("Lavori senza VM")).toBeTruthy();
+  });
+
+  it("asks sbx again when an install ends, even one that started and ended within a frame", async () => {
+    invoke.mockImplementation((c) =>
+      Promise.resolve(
+        c === "isolation_status"
+          ? { level: "env", blockers: [{ code: "sbx_missing" }], sbx: null }
+          : c === "setup_state"
+            ? SAMPLE_SETUP
+            : [],
+      ),
+    );
+    render(<VmItem jobs={[]} />);
+    await screen.findByRole("button", { name: /^Senza VM/ });
+    await waitFor(() => {
+      expect(events.has("setup")).toBe(true);
+    });
+    const forced = () => invoke.mock.calls.filter(([c, a]) => c === "isolation_status" && same(a, { force: true }));
+    expect(forced()).toHaveLength(0);
+    act(() => {
+      events.get("setup")?.({ payload: { ...SAMPLE_SETUP, running: true } });
+      events.get("setup")?.({ payload: { ...SAMPLE_SETUP, running: false } });
+    });
+    await waitFor(() => {
+      expect(forced()).toHaveLength(1);
+    });
   });
 });
 

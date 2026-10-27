@@ -2,7 +2,7 @@
 // a warning while the projects run without the VM, and the box that says
 // why the VM is off and what makes it work, one step per reason, with
 // Atollo's sandboxes and the room they take (D-169).
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import {
   componentsInstall,
@@ -19,6 +19,7 @@ import {
 } from "../ipc";
 import { formatLargeBytes } from "../shared/format";
 import { useAction, useCopy, useLoad } from "../shared/hooks";
+import { useSetupEnded } from "../components/setup";
 import { usePoll } from "../shared/poll";
 import { isolationPoll } from "../shared/polls";
 import { Button, Codicon, ConfirmDialog } from "../workbench";
@@ -397,10 +398,10 @@ export function VmSection() {
 
 /** The status, read at start and every minute (`sbx` is asked at most once
  * a minute), and asked again on "Ricontrolla" and when an installation
- * ends (`installing` turns false: Docker Sandboxes may have arrived). The
+ * ends (Docker Sandboxes may have arrived). The
  * poll is the one of the Web Servers page too (shared/polls), which reads
  * it more often while open. */
-export function useIsolation(installing = false) {
+export function useIsolation() {
   const { data, setData } = usePoll<IsolationStatus, IsolationStatus | null>(isolationPoll, null, {
     onError: "keep",
     every: 60_000,
@@ -418,13 +419,9 @@ export function useIsolation(installing = false) {
       },
     );
   };
-  const was = useRef(installing);
-  useEffect(() => {
-    if (was.current && !installing) {
-      isolationStatus(true).then(setData, () => {});
-    }
-    was.current = installing;
-  }, [installing, setData]);
+  useSetupEnded(() => {
+    isolationStatus(true).then(setData, () => {});
+  });
   return { status: data, checking, check };
 }
 

@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { SAMPLE_SETUP, type SetupSnapshot, type SetupStep } from "@/ipc";
-import { itemBusy, itemJob, itemState, SetupProgress, useStepsDone } from "@/components/setup";
+import { foldSetup, itemBusy, itemJob, itemState, SetupProgress, useStepsDone } from "@/components/setup";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: () => Promise.resolve(null),
@@ -88,5 +88,16 @@ describe("one item of the preparation (fluid installs, §8.6)", () => {
       [["node"], false],
       [[], true],
     ]);
+  });
+});
+
+describe("the preparation's snapshots folded in a frame", () => {
+  it("counts each start and end of the runs, even those never seen running", () => {
+    const on = { ...SAMPLE_SETUP, running: true };
+    const off = { ...SAMPLE_SETUP, running: false };
+    const fold = (...all: SetupSnapshot[]) => all.reduce(foldSetup, { snapshot: null, starts: 0, ends: 0 });
+    expect(fold(off, on, off)).toMatchObject({ snapshot: off, starts: 1, ends: 1 });
+    expect(fold(on, off, on, on)).toMatchObject({ snapshot: on, starts: 2, ends: 1 });
+    expect(fold(off, off)).toMatchObject({ starts: 0, ends: 0 });
   });
 });

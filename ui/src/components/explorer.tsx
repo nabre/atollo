@@ -88,7 +88,6 @@ export function ToolsPage({
   const [search, setSearch] = useState("");
   const all = groups();
   const [closed, setClosed] = useState<Set<string>>(new Set());
-  const running = setup?.running ?? false;
 
   const toggle = (id: string) => {
     setClosed((current) => {
@@ -274,7 +273,6 @@ export function ToolsPage({
             onToggle={() => {
               toggle("updates");
             }}
-            running={running}
             setup={setup}
           />
         </PaneStack>

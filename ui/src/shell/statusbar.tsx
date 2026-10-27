@@ -106,8 +106,8 @@ ${t("Dettagli in Attività")}`}
  * while a VM is prepared, orange «Senza VM» when it can be fixed, grey when
  * this PC cannot have it, red on an error; always in sight, its state said
  * in its name and tooltip. A click opens why and what to do. */
-export function VmItem({ installing, jobs }: { installing: boolean; jobs: Job[] }) {
-  const { status, checking, check } = useIsolation(installing);
+export function VmItem({ jobs }: { jobs: Job[] }) {
+  const { status, checking, check } = useIsolation();
   const [open, setOpen] = useState(false);
   // A refused command's «Apri l'avviso VM» (D-179, shared/levels.tsx).
   useEffect(() => {
