@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-gemini-key-set"
+description = "Enables the gemini_key_set command without any pre-configured scope."
+commands.allow = ["gemini_key_set"]
+
+[[permission]]
+identifier = "deny-gemini-key-set"
+description = "Denies the gemini_key_set command without any pre-configured scope."
+commands.deny = ["gemini_key_set"]
