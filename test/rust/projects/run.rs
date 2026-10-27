@@ -570,6 +570,66 @@ fn log_lines_are_numbered() {
     assert_eq!(after.seq, 5);
 }
 
+/// A stream of lines read one by one reaches the window in few "log"
+/// events, numbered one after the other, every line once and in order, the
+/// last one without its new line too, before `read_stream` returns.
+#[test]
+fn a_stream_is_logged_in_batches() {
+    let (_tmp, kit) = prepared_kit("run-log-batch");
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&events);
+    let r = Runner::new(
+        kit,
+        Arc::new(move |e| {
+            if let Event::Log { lines, seq, .. } = e {
+                seen.lock().unwrap().push((lines, seq));
+            }
+        }),
+    );
+    let a = site_action(false, Some("legacy"));
+    let key = r
+        .attach_pool("shop", &a, "legacy", 8095, "http://s:8095", "it")
+        .key;
+    let run = r.entries().get(&key).unwrap().run;
+    let before = r.log(&key);
+    events.lock().unwrap().clear();
+
+    let mut expected = Vec::new();
+    let mut reads: Vec<Vec<u8>> = Vec::new();
+    for i in 0..2000 {
+        expected.push(format!("riga {i} ✓"));
+        reads.push(format!("riga {i} ✓\r\n").into_bytes());
+    }
+    // A character split between two reads, and a last line without "\n".
+    reads.push("già".as_bytes()[..3].to_vec());
+    reads.push("già".as_bytes()[3..].to_vec());
+    expected.push("già".into());
+    struct Reads(std::vec::IntoIter<Vec<u8>>);
+    impl std::io::Read for Reads {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let Some(part) = self.0.next() else {
+                return Ok(0);
+            };
+            buf[..part.len()].copy_from_slice(&part);
+            Ok(part.len())
+        }
+    }
+    r.read_stream(&key, run, Box::new(Reads(reads.into_iter())));
+
+    let events = events.lock().unwrap();
+    assert!(events.len() < 200, "{} events", events.len());
+    let mut next = before.seq + 1;
+    for (lines, seq) in events.iter() {
+        assert_eq!(*seq, next + lines.len() as u64 - 1);
+        next = seq + 1;
+    }
+    let logged: Vec<String> = events.iter().flat_map(|(l, _)| l.clone()).collect();
+    assert_eq!(logged, expected);
+    let read = r.log(&key);
+    assert_eq!(read.lines[before.lines.len()..], expected[..]);
+    assert_eq!(read.seq, next - 1);
+}
+
 /// I2: a run served by a pool stopped from the "Server Web" page (or dead)
 /// is marked stopped, and can then be cleared; one whose pool runs is not.
 #[test]
