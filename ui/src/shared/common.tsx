@@ -68,7 +68,15 @@ export function ActionButton({
       title={title}
       autoFocus={autoFocus}
     >
-      {busy ? `${label}…` : label}
+      {busy ? (
+        <>
+          {/* «…» in its name, not in its width: the button does not move. */}
+          {label}
+          <span className="absolute">…</span>
+        </>
+      ) : (
+        label
+      )}
     </Button>
   );
 }
