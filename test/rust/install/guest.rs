@@ -10,9 +10,9 @@ fn the_tools_sandbox_prepares_only_the_vms_linux_from_another_system() {
     assert!(!needed_for(Target::WIN32_X64, Target::LINUX_ARM64));
     assert!(!needed_for(Target::WIN32_X64, Target::WIN32_X64));
     assert!(!needed_for(Target::WIN32_X64, Target::DARWIN_ARM64));
-    if crate::router::target::can_execute_on_host(Target::LINUX_X64) {
-        assert!(!needed_for(Target::LINUX_X64, Target::LINUX_X64));
-    }
+    // The same answers on every runner: a Linux one does not change them.
+    assert!(!needed_for(Target::LINUX_X64, Target::LINUX_X64));
+    assert!(!needed_for(Target::LINUX_ARM64, Target::LINUX_ARM64));
 }
 
 /// It mounts the kit's Linux tools and the global packages of npm, the

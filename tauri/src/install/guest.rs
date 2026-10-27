@@ -180,11 +180,13 @@ impl Drop for Guest {
 }
 
 /// True when preparing `target` from a PC of `host` needs the tools
-/// sandbox: `target` is the VM's Linux there, and the PC cannot run it.
+/// sandbox: `target` is the VM's Linux there, and a PC of `host` cannot
+/// run it. The rule between `host` and `target`, not the machine this runs
+/// on: on a Linux x64 runner, a Windows PC still needs it.
 pub fn needed_for(host: Target, target: Target) -> bool {
     vm::guest_target(host) == Some(target)
         && host != target
-        && !crate::router::target::can_execute_on_host(target)
+        && !crate::router::target::can_execute_between(host, target)
 }
 
 /// The folders of `guest` (the kit scoped to the VM's Linux) the tools
