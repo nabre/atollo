@@ -93,8 +93,6 @@ vi.mock("@tauri-apps/api/event", () => ({
 const [SITE] = SAMPLE_PROJECTS as [ProjectInfo, ...ProjectInfo[]];
 const [MYSQL] = SAMPLE_SERVICES as [ServiceInfo, ...ServiceInfo[]];
 const [POOL] = SAMPLE_SERVERS.pools as [WebServerPool, ...WebServerPool[]];
-/** How long a lazily loaded page may take to appear the first time. */
-const LAZY = 5000;
 
 /** The preview's static site under another name, never opened. */
 function project(name: string): ProjectInfo {
@@ -122,6 +120,20 @@ const { App } = await import("@/App");
 const { loadCatalog, setLang } = await import("@/i18n");
 // The English catalog read once here: a test in English waits for no chunk.
 await loadCatalog("en");
+// Likewise every page read lazily (App's PRELOAD, the terminal's panel, the
+// new project's wizard): a test opening one finds it at the next render,
+// not after an import that, with every worker busy, can outlast a findBy.
+await Promise.all([
+  import("@/guide"),
+  import("@/settings/page"),
+  import("@/components"),
+  import("@/ai"),
+  import("@/databases/page"),
+  import("@/servers"),
+  import("@/terminal/page"),
+  import("@/terminal/panel"),
+  import("@/projects/wizard"),
+]);
 
 afterEach(async () => {
   cleanup();
@@ -1066,9 +1078,7 @@ describe("App", () => {
       answers({ app_info: { ...SAMPLE_INFO, firstRun: true }, components_list: comps, components_apply: null }),
     );
     render(<App />);
-    // The first start is a lazily loaded page: its first import can take
-    // over the default second on a Windows runner.
-    expect(await screen.findByText("Benvenuto in Atollo", {}, { timeout: LAZY })).toBeTruthy();
+    expect(await screen.findByText("Benvenuto in Atollo")).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     // Not available and not chosen: it cannot be chosen.
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
@@ -1143,7 +1153,7 @@ describe("App", () => {
     const [guideBtn] = screen.getAllByRole("button", { name: "Guida" });
     if (guideBtn) fireEvent.click(guideBtn);
     // It opens on the welcome topic, with a card per chapter
-    expect(await screen.findByText("Che cos'è, in parole semplici", {}, { timeout: LAZY })).toBeTruthy();
+    expect(await screen.findByText("Che cos'è, in parole semplici")).toBeTruthy();
     expect(screen.getByText("Come funziona dentro")).toBeTruthy();
 
     // The search narrows the topics; the sources table counts its rows
