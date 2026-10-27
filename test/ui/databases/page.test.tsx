@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { SAMPLE_SERVICES, type ServiceInfo } from "@/ipc";
-import { DatabasesPage } from "@/databases";
+import { DatabasesPage } from "@/databases/page";
 import { invoke } from "@test/support/tauri";
 
 vi.mock("@tauri-apps/api/core", () => import("@test/support/tauri-core"));

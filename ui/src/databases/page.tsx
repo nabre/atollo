@@ -19,8 +19,9 @@ import {
 } from "../ipc";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
+import { SecretField } from "./secret";
 import { ActionButton, ErrorLine, portRangeText, usePortField } from "../shared/common";
-import { useAction, useCopy } from "../shared/hooks";
+import { useAction } from "../shared/hooks";
 import { usePoll } from "../shared/poll";
 import { servicesPoll } from "../shared/polls";
 import {
@@ -78,35 +79,6 @@ function StateText({ s }: { s: ServiceInfo }) {
     <span className="flex items-center gap-1.5">
       <Dot tone={stateTone(s.state)} />
       {stateLabel(s.state)}
-    </span>
-  );
-}
-
-/** A password: hidden until shown, copied without showing it. */
-export function SecretField({ value, label }: { value: string; label: string }) {
-  const [shown, setShown] = useState(false);
-  const { copied, copy } = useCopy(1500);
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      <code className="truncate font-mono text-vsc-fg">{shown ? value : "••••••••••••"}</code>
-      <IconButton
-        icon={shown ? codicon("eye-closed") : codicon("eye")}
-        label={shown ? t("Nascondi {0}", label) : t("Mostra {0}", label)}
-        title={shown ? t("Nascondi") : t("Mostra")}
-        checked={shown}
-        onClick={() => {
-          setShown(!shown);
-        }}
-      />
-      <IconButton
-        icon={codicon("copy")}
-        label={t("Copia {0}", label)}
-        title={t("Copia")}
-        onClick={() => {
-          copy(value);
-        }}
-      />
-      {copied && <span className="text-vsc-desc">{t("Copiata")}</span>}
     </span>
   );
 }
