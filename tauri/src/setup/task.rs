@@ -8,7 +8,7 @@
 //! (event `setup`), so a page opened mid-run shows the same progress.
 
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use serde::Serialize;
@@ -97,6 +97,10 @@ pub struct SetupTask {
     /// order they were made, and nobody reading the snapshot waits for the
     /// telling.
     order: Mutex<()>,
+    /// The snapshots told so far, counted under the snapshot's lock: the
+    /// end of a run tells itself again if another was told meanwhile
+    /// ([`SetupTask::end`]).
+    told: AtomicU64,
     cancel: AtomicBool,
     pending: Mutex<VecDeque<Pending>>,
     jobs: Arc<Jobs>,
@@ -174,6 +178,7 @@ impl SetupTask {
                 ..Snapshot::default()
             }),
             order: Mutex::new(()),
+            told: AtomicU64::new(0),
             cancel: AtomicBool::new(false),
             pending: Mutex::new(VecDeque::new()),
             jobs: Arc::new(Jobs::new()),
@@ -225,6 +230,7 @@ impl SetupTask {
     /// keeps the snapshots told in the order of their changes.
     fn tell(&self, state: MutexGuard<'_, Snapshot>, notify: &Notify) {
         let _order = self.order.lock().unwrap_or_else(PoisonError::into_inner);
+        self.told.fetch_add(1, Ordering::Relaxed);
         let snapshot = state.clone();
         drop(state);
         notify(&snapshot);
@@ -260,6 +266,7 @@ impl SetupTask {
             // queue before the run going on can end without it, and
             // `notify` moves there. A running snapshot is only an event.
             let order = self.order.lock().unwrap_or_else(PoisonError::into_inner);
+            self.told.fetch_add(1, Ordering::Relaxed);
             notify(&state);
             drop(order);
             self.queue().push_back(Pending {
@@ -372,8 +379,9 @@ impl SetupTask {
     /// environment is built (seconds on a slow disk), so `setup_state`
     /// and the commands that start or cancel do not wait for it. Not under
     /// the order lock for the same reason. A run asked meanwhile is
-    /// returned to go on with; a cancel asked meanwhile, which told a
-    /// running snapshot, is followed by the end told once more.
+    /// returned to go on with; a snapshot told meanwhile (a cancel, a run
+    /// queued then cancelled), which may reach the window after the end
+    /// and says `running`, is followed by the end told once more.
     fn end<'a>(
         &'a self,
         state: MutexGuard<'a, Snapshot>,
@@ -387,6 +395,7 @@ impl SetupTask {
         };
         let mut told = state.clone();
         ended(&mut told);
+        let seen = self.told.load(Ordering::Relaxed);
         drop(state);
         // A panic there must not leave `running` for good.
         let tell = std::panic::AssertUnwindSafe(|| notify(&told));
@@ -397,7 +406,7 @@ impl SetupTask {
         if let Some(next) = self.queue().pop_front() {
             return Some((state, next));
         }
-        let again = state.cancelling;
+        let again = self.told.load(Ordering::Relaxed) != seen;
         ended(&mut state);
         if again {
             self.tell(state, notify);
@@ -518,7 +527,9 @@ impl SetupTask {
             self.tell(state, notify);
             return true;
         }
-        if state.running && state.job.as_deref() == Some(id) {
+        // Not one ended whose end is being told (`SetupTask::end`).
+        let ended = self.jobs.get(id).is_some_and(|j| j.state.is_over());
+        if state.running && state.job.as_deref() == Some(id) && !ended {
             self.cancel.store(true, Ordering::Relaxed);
             state.cancelling = true;
             self.tell(state, notify);
