@@ -137,28 +137,6 @@ pub(crate) fn ready_now(
     ready(fx, kit, base, req, &facts, needs, lang, host)
 }
 
-/// The levels now (LEVELS.md §4.1): the VM on or off, why, and whether the
-/// agents are enabled. Async: the status may ask `sbx`.
-#[tauri::command]
-pub async fn levels_state<R: Runtime>(
-    webview: tauri::Webview<R>,
-    state: tauri::State<'_, AppState>,
-) -> CmdResult<crate::levels::agents::LevelsState> {
-    super::ensure_main(&webview)?;
-    let (kit, host, env, lang) = (
-        state.kit.clone(),
-        state.host.clone(),
-        state.env(),
-        state.lang(),
-    );
-    tauri::async_runtime::spawn_blocking(move || {
-        let status = crate::isolation::status(&kit, &host, &env, false);
-        crate::levels::agents::LevelsState::of(&crate::levels::agents::vm_state(&status), lang)
-    })
-    .await
-    .or_fail("levels")
-}
-
 /// `levels-changed` to the window when the agents' availability flipped
 /// with `status` (a status read by [`watch_levels`], or the notice's
 /// forced check, `isolation_status`).

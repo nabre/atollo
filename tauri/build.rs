@@ -9,7 +9,6 @@ const COMMANDS: &[&str] = &[
     "app_info",
     "isolation_status",
     "isolation_run",
-    "levels_state",
     "vms_list",
     "vm_remove",
     "editor_status",

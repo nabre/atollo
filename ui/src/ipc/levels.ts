@@ -49,18 +49,14 @@ export function fixOf(e: unknown): Fix | null {
   return isRefused(e) ? e.fix : null;
 }
 
-/** The levels now (LEVELS.md §4.1): the VM on or off, why, and whether the
- * agents are enabled (I6). */
+/** The levels as `levels-changed` tells them (LEVELS.md §4.1): the VM on
+ * or off, why, and whether the agents are enabled (I6). */
 export interface LevelsState {
   vm: "on" | "off";
   /** Why the VM is off and what to do, null when on. */
   reason: string | null;
   /** False exactly when vm is "off". */
   agentsEnabled: boolean;
-}
-
-export function levelsState(): Promise<LevelsState> {
-  return query<LevelsState>("levels_state", { vm: "on", reason: null, agentsEnabled: true });
 }
 
 /** Every flip of the agents' availability (`levels-changed`, §4.2): what

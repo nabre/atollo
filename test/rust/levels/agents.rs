@@ -110,7 +110,7 @@ fn a_refused_install_says_why() {
     assert!(pi.contains("Linux"), "{pi}");
 }
 
-/// `levels_state` and `levels-changed` (LEVELS.md §4.1, §4.2).
+/// `levels-changed` (LEVELS.md §4.1, §4.2).
 #[test]
 fn the_levels_state_as_the_interface_reads_it() {
     let on = LevelsState::of(&VmState::On, "it");

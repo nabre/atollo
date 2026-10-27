@@ -296,7 +296,6 @@ macro_rules! command_handler {
         tauri::generate_handler![
             $crate::ipc::app::app_info,
             $crate::ipc::isolation::isolation_status,
-            $crate::ipc::levels::levels_state,
             $crate::ipc::isolation::isolation_run,
             $crate::ipc::isolation::vms_list,
             $crate::ipc::isolation::vm_remove,

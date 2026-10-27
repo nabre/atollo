@@ -158,8 +158,8 @@ pub fn agent_row(c: &Component, vm: &VmState, lang: &str) -> Option<AgentRow> {
     }
 }
 
-/// The levels as the interface reads them (LEVELS.md §4.1, `levels_state`,
-/// the payload of `levels-changed`).
+/// The levels as the interface reads them (LEVELS.md §4.1): the payload
+/// of `levels-changed`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LevelsState {
