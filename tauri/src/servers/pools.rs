@@ -329,6 +329,28 @@ impl WebServers {
             WebServerEngine::Apache => apache_lines.first().cloned(),
             WebServerEngine::Caddy => caddy_lines.first().cloned(),
         };
+        // The projects with a web site, read before `store_lock` is taken:
+        // a detection of every project takes a while, and the commands that
+        // save or remove a profile, start, stop or reload a pool wait for
+        // that lock.
+        let projects: Vec<_> = crate::projects::folders(&self.kit)
+            .into_iter()
+            .filter_map(|proj_dir| {
+                let proj_id = proj_dir.file_name()?.to_string_lossy().into_owned();
+                let detected = detect::detect(&proj_dir, lang);
+                if !detected
+                    .actions
+                    .iter()
+                    .any(|a| a.web_server_dir().is_some())
+                {
+                    return None;
+                }
+                let choice = crate::versions::project_choice(&self.kit, &proj_id);
+                let needs_php =
+                    detected.requires.iter().any(|r| r == "php") || choice.contains_key("php");
+                Some((proj_id, detected.actions, choice, needs_php))
+            })
+            .collect();
 
         let store_guard = self
             .store_lock
@@ -378,26 +400,9 @@ impl WebServers {
             );
         }
 
-        for proj_dir in crate::projects::folders(&self.kit) {
-            let Some(proj_id) = proj_dir
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-            else {
-                continue;
-            };
-            let detected = detect::detect(&proj_dir, lang);
-            if !detected
-                .actions
-                .iter()
-                .any(|a| a.web_server_dir().is_some())
-            {
-                continue;
-            }
-            let choice = crate::versions::project_choice(&self.kit, &proj_id);
-            let needs_php =
-                detected.requires.iter().any(|r| r == "php") || choice.contains_key("php");
-
-            for action in pooled_actions(&detected.actions) {
+        for (proj_id, actions, choice, needs_php) in &projects {
+            let needs_php = *needs_php;
+            for action in pooled_actions(actions) {
                 let Some((engine, folder)) = WebServerEngine::of_action(action) else {
                     continue;
                 };
