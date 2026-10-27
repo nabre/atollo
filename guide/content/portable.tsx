@@ -94,10 +94,10 @@ export const PORTABLE: TopicTexts = {
               "Klicke auf „Alles schließen und Entfernen vorbereiten“.",
             ),
             tr(
-              "Quando compare «Programmi del kit chiusi e accesso di Antigravity salvato nel kit.», premi «Chiudi Atollo». Se qualcosa è rimasto aperto, è elencato sotto «Ancora aperti (chiudili a mano)».",
-              "When “Kit programs closed and Antigravity sign-in saved in the kit.” appears, press “Close Atollo”. If something is still open, it is listed under “Still open (close them manually)”.",
-              "Quand « Programmes du kit fermés et connexion d'Antigravity enregistrée dans le kit. » apparaît, appuyez sur « Fermer Atollo ». Si quelque chose est resté ouvert, c'est listé sous « Encore ouverts (fermez-les manuellement) ».",
-              "Wenn „Programme des Kits geschlossen und Antigravity-Anmeldung im Kit gespeichert.“ erscheint, klicke auf „Atollo schließen“. Wenn etwas geöffnet geblieben ist, steht es unter „Noch geöffnet (schließe sie manuell)“.",
+              "Quando compare «Programmi del kit chiusi.», premi «Chiudi Atollo». Se qualcosa è rimasto aperto, è elencato sotto «Ancora aperti (chiudili a mano)».",
+              "When “Kit programs closed.” appears, press “Close Atollo”. If something is still open, it is listed under “Still open (close them manually)”.",
+              "Quand « Programmes du kit fermés. » apparaît, appuyez sur « Fermer Atollo ». Si quelque chose est resté ouvert, c'est listé sous « Encore ouverts (fermez-les manuellement) ».",
+              "Wenn „Programme des Kits geschlossen.“ erscheint, klicke auf „Atollo schließen“. Wenn etwas geöffnet geblieben ist, steht es unter „Noch geöffnet (schließe sie manuell)“.",
             ),
             tr(
               "Rimuovi l'unità dal sistema: su Windows con l'icona «Rimozione sicura dell'hardware»; su macOS espellendola dal Finder.",

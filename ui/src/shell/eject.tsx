@@ -63,7 +63,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = 
     return (
       <SingleEditor title={title} icon={icon}>
         <EditorBody>
-          <Notice tone="success">{t("Programmi del kit chiusi e accesso di Antigravity salvato nel kit.")}</Notice>
+          <Notice tone="success">{t("Programmi del kit chiusi.")}</Notice>
           {open && !nothingOpen(open) && (
             <>
               <p className="text-vsc-warning">{t("Ancora aperti (chiudili a mano):")}</p>
@@ -90,7 +90,7 @@ export function EjectPage({ onGuide }: { onGuide?: (topic: "eject") => void } = 
       <EditorBody>
         <p>
           {t(
-            "Prima di togliere la chiavetta o il disco del kit: chiude i programmi del kit ancora aperti e salva nel kit l'accesso di Antigravity, così non resta nulla in questo PC.",
+            "Prima di togliere la chiavetta o il disco del kit: chiude i programmi del kit ancora aperti, così nessuno tiene aperto un suo file.",
           )}
         </p>
         <ErrorLine error={loadError} />
