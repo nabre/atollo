@@ -4,9 +4,6 @@
 // {0}, {1}… replaced; a text missing from a catalog stays Italian (the test
 // i18n.test.ts fails before that can ship).
 import { createElement, Fragment, type ReactNode } from "react";
-import en from "./locales/en.json";
-import fr from "./locales/fr.json";
-import de from "./locales/de.json";
 
 // One list of languages: the Guide's (a type, nothing loaded at start).
 import type { Lang } from "@guide/core/lang";
@@ -19,13 +16,49 @@ export const LANGS: { id: Lang; name: string }[] = [
   { id: "de", name: "Deutsch" },
 ];
 
-export const CATALOGS: Record<Exclude<Lang, "it">, Record<string, string>> = { en, fr, de };
+type Catalog = Record<string, string>;
+
+// Each catalog a chunk of its own, read when its language is chosen: a
+// window reads only the one it shows.
+const LOADERS: Record<Exclude<Lang, "it">, () => Promise<{ default: Catalog }>> = {
+  en: () => import("./locales/en.json"),
+  fr: () => import("./locales/fr.json"),
+  de: () => import("./locales/de.json"),
+};
+const catalogs: Partial<Record<Exclude<Lang, "it">, Catalog>> = {};
+
+/** A language's catalog, read once (Italian has none: the sources). */
+export async function loadCatalog(lang: Exclude<Lang, "it">): Promise<Catalog> {
+  return (catalogs[lang] ??= (await LOADERS[lang]()).default);
+}
+
+// The language last shown, remembered in the window's storage: main.tsx
+// reads its catalog before the first render, before app_info answers.
+const STORED = "lang";
+
+/** The language last chosen in this window's storage, if any. */
+export function storedLang(): Lang | undefined {
+  try {
+    const id = localStorage.getItem(STORED);
+    return LANGS.find((l) => l.id === id)?.id;
+  } catch {
+    return undefined;
+  }
+}
 
 let current: Lang = "it";
 
-export function setLang(lang: Lang) {
+/** Chooses the language: lang() at once, t() in it once the promise
+ * resolves (its catalog read); render the texts after that. */
+export async function setLang(lang: Lang): Promise<void> {
   current = lang;
   document.documentElement.lang = lang;
+  try {
+    localStorage.setItem(STORED, lang);
+  } catch {
+    // No storage: the next start reads the catalog after app_info.
+  }
+  if (lang !== "it") await loadCatalog(lang);
 }
 
 export function lang(): Lang {
@@ -38,7 +71,7 @@ export function locale(): string {
 }
 
 export function t(source: string, ...args: (string | number)[]): string {
-  const text = current === "it" ? source : (CATALOGS[current][source] ?? source);
+  const text = current === "it" ? source : (catalogs[current]?.[source] ?? source);
   return args.reduce<string>((out, arg, i) => out.split(`{${String(i)}}`).join(String(arg)), text);
 }
 

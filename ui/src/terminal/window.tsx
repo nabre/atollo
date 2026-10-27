@@ -29,12 +29,16 @@ function DetachedTerminal() {
 }
 
 const lang = LANGS.find((l) => l.id === window.__ATOLLO_LANG__)?.id;
-if (lang) setLang(lang satisfies Lang);
 const root = document.getElementById("root");
 if (root) {
   // The tab's labels in Geist, the terminal's cells in Geist Mono (the
-  // view waits for it too).
-  void Promise.allSettled([document.fonts.load('13px "Geist Variable"'), monoReady(monoFamily())]).then(() => {
+  // view waits for it too), the texts in the window's language (its
+  // catalog a chunk of its own).
+  void Promise.allSettled([
+    document.fonts.load('13px "Geist Variable"'),
+    monoReady(monoFamily()),
+    lang ? setLang(lang satisfies Lang) : null,
+  ]).then(() => {
     createRoot(root).render(
       <StrictMode>
         <DetachedTerminal />

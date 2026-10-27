@@ -30,13 +30,11 @@ import { TitleBar } from "./shell/titlebar";
 import { JobsProvider, useJobs, VmPreparing } from "./shell/jobs";
 import { JobsItem, StatusItem, VmItem } from "./shell/statusbar";
 import { useAgents } from "./agents";
-import { AiPage, type AiPane } from "./ai";
+import type { AiPane } from "./ai";
 import { setupStatusText, useSetup } from "./components/setup";
 import { CloseDialog, EjectPage } from "./shell/eject";
 import { setLang, t, type Lang } from "./i18n";
-import { DatabasesPage } from "./databases";
-import { ServersPage } from "./servers";
-import { tauriPty, TerminalsPage, useTerminals, type Terminals } from "./terminal";
+import { tauriPty, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
 import { Codicon, codicon, Icon, IconButton, Notice, Sash, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./shared/hooks";
@@ -44,21 +42,34 @@ import { ErrorLine, LoadError } from "./shared/common";
 import { CommandPalette } from "./shell/commands";
 import { useUpdates } from "./components/updates";
 
-// The pages seldom open (the Guide, large; Settings; Tools, with the
-// first-start page that shares its rows): each its own chunk, read the
-// first time the page is shown, or as soon as the pointer or the focus
-// reaches its item in the activity bar (PRELOAD).
+// Every page but Projects, the one shown at start (the Guide, large; AI;
+// Databases; Web Servers; Terminals; Settings; Tools, with the first-start
+// page that shares its rows): each its own chunk, read the first time the
+// page is shown, or as soon as the pointer or the focus reaches its item in
+// the activity bar (PRELOAD).
 const loadGuide = () => import("./guide");
 const loadSettings = () => import("./settings/page");
 const loadTools = () => import("./components");
+const loadAi = () => import("./ai");
+const loadDatabases = () => import("./databases/page");
+const loadServers = () => import("./servers");
+const loadTerminals = () => import("./terminal/page");
 const GuidePage = lazy(() => loadGuide().then((m) => ({ default: m.GuidePage })));
 const SettingsPage = lazy(() => loadSettings().then((m) => ({ default: m.SettingsPage })));
 const ToolsPage = lazy(() => loadTools().then((m) => ({ default: m.ToolsPage })));
 const ComponentsPage = lazy(() => loadTools().then((m) => ({ default: m.ComponentsPage })));
+const AiPage = lazy(() => loadAi().then((m) => ({ default: m.AiPage })));
+const DatabasesPage = lazy(() => loadDatabases().then((m) => ({ default: m.DatabasesPage })));
+const ServersPage = lazy(() => loadServers().then((m) => ({ default: m.ServersPage })));
+const TerminalsPage = lazy(() => loadTerminals().then((m) => ({ default: m.TerminalsPage })));
 const PRELOAD: Partial<Record<PageId, () => Promise<unknown>>> = {
   guide: loadGuide,
   settings: loadSettings,
   components: loadTools,
+  ai: loadAi,
+  databases: loadDatabases,
+  servers: loadServers,
+  terminals: loadTerminals,
 };
 // The terminal panel brings xterm.js: read when a session first opens, on
 // every system (D-148, the kit's ConPTY on Windows).
@@ -128,8 +139,8 @@ export function App() {
   // The texts take the language before the page renders with it.
   const readInfo = useCallback(
     () =>
-      appInfo().then((i) => {
-        setLang(i.lang);
+      appInfo().then(async (i) => {
+        await setLang(i.lang);
         return i;
       }),
     [],

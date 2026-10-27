@@ -3,7 +3,14 @@
 // still used. The sources are read through Vite's import.meta.glob (raw), so
 // the test needs no Node types.
 import { describe, expect, it } from "vitest";
-import { CATALOGS } from "@/i18n";
+import { LANGS, loadCatalog } from "@/i18n";
+
+// The catalogs as the app reads them, one per language but Italian.
+const CATALOGS = Object.fromEntries(
+  await Promise.all(
+    LANGS.flatMap((l) => (l.id === "it" ? [] : [l.id])).map(async (id) => [id, await loadCatalog(id)] as const),
+  ),
+);
 
 const files = import.meta.glob<string>(["../../ui/src/**/*.ts", "../../ui/src/**/*.tsx", "!../../ui/src/i18n.ts"], {
   query: "?raw",
@@ -31,6 +38,7 @@ describe("i18n catalogs", () => {
     expect(Object.keys(files)).toContain("../../ui/src/App.tsx");
     expect(sources('t(\n  "A \\"b\\" {0}",\n x)')).toEqual(['A "b" {0}']);
     expect(used.size).toBeGreaterThan(100);
+    expect(Object.keys(CATALOGS)).toEqual(["en", "fr", "de"]);
   });
 
   for (const [lang, catalog] of Object.entries(CATALOGS)) {
