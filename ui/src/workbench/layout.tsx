@@ -9,7 +9,7 @@
 // collapsible's header has no button role nor aria-expanded, the tabs keep
 // their tablist inside the shadow root and have no close button for the
 // editor's tabs, and the details editor's bar is navigation, not tabs.
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { IconType } from "react-icons";
 import { t } from "../i18n";
 import { ActionBar } from "./buttons";
@@ -19,6 +19,7 @@ import { Codicon } from "./codicon";
 /** A floating part: rounded, its own border, its own background. */
 export function Part({
   as: Tag = "div",
+  ref,
   id,
   label,
   className = "",
@@ -26,6 +27,8 @@ export function Part({
   children,
 }: {
   as?: "div" | "aside" | "main" | "section";
+  /** The element, for a size dragged with a sash (SizeDrag). */
+  ref?: ((el: HTMLElement | null) => void) | undefined;
   id?: string;
   label?: string | undefined;
   className?: string;
@@ -34,6 +37,7 @@ export function Part({
 }) {
   return (
     <Tag
+      ref={ref}
       id={id}
       tabIndex={id ? -1 : undefined}
       aria-label={label}
@@ -65,18 +69,67 @@ function writeSize(key: string, size: number) {
 /** How long a size stays still before it is written. */
 const STORE_DELAY_MS = 150;
 
+/** The live drag of a size (`useStoredSize`): `attach` as the ref of the
+ * element that has the size, `move` at each pointer move, `end` when the
+ * pointer lets go. */
+export interface SizeDrag {
+  attach: (el: HTMLElement | null) => void;
+  move: (v: (prev: number) => number) => void;
+  end: () => void;
+}
+
 /** A size the user drags with a sash, remembered in this browser. The
- * updater only clamps (it can run twice, and runs on every pointer move);
- * the size is written once the drag pauses, not at every pixel, and when
- * the part goes away before that. */
-export function useStoredSize(key: string, fallback: number, min: number, max: number) {
+ * updater only clamps (it can run twice); the size is written once the
+ * drag pauses, not at every pixel, and when the part goes away before
+ * that. During a drag (`drag`, with a Sash's onDragEnd) the size goes to
+ * the element's style at each pointer move, `dimension` its width or its
+ * height, and to the state once, when the pointer lets go: the page under
+ * it renders once, not at every pixel. */
+export function useStoredSize(
+  key: string,
+  fallback: number,
+  min: number,
+  max: number,
+  dimension: "width" | "height" = "width",
+) {
   const [size, setSize] = useState(() => Math.min(max, Math.max(min, readSize(key, fallback))));
+  const clamp = useCallback((v: number) => Math.round(Math.min(max, Math.max(min, v))), [min, max]);
   const set = useCallback(
     (v: number | ((prev: number) => number)) => {
-      setSize((prev) => Math.round(Math.min(max, Math.max(min, typeof v === "function" ? v(prev) : v))));
+      setSize((prev) => clamp(typeof v === "function" ? v(prev) : v));
     },
-    [min, max],
+    [clamp],
   );
+  // The element that has the size; without one, a drag sets the state.
+  const node = useRef<HTMLElement | null>(null);
+  const attach = useCallback((el: HTMLElement | null) => {
+    node.current = el;
+  }, []);
+  // The size being dragged, not in the state yet; null between drags.
+  const draft = useRef<number | null>(null);
+  const committed = useRef(size);
+  useEffect(() => {
+    committed.current = size;
+  }, [size]);
+  const move = useCallback(
+    (v: (prev: number) => number) => {
+      const el = node.current;
+      if (!el) {
+        set(v);
+        return;
+      }
+      const next = clamp(v(draft.current ?? committed.current));
+      draft.current = next;
+      el.style[dimension] = `${String(next)}px`;
+    },
+    [clamp, set, dimension],
+  );
+  const end = useCallback(() => {
+    const last = draft.current;
+    draft.current = null;
+    if (last !== null) set(last);
+  }, [set]);
+  const drag = useMemo<SizeDrag>(() => ({ attach, move, end }), [attach, move, end]);
   // The size not written yet; null when there is none (as at the start).
   const pending = useRef<{ key: string; size: number } | null>(null);
   const first = useRef(true);
@@ -101,7 +154,26 @@ export function useStoredSize(key: string, fallback: number, min: number, max: n
     },
     [],
   );
-  return [size, set] as const;
+  return [size, set, drag] as const;
+}
+
+/** A box `height` pixels high, its content filling it, that the drag of a
+ * sash resizes live (`useStoredSize` with "height"): the content renders
+ * once, when the drag ends. */
+export function SizedBox({
+  drag: { attach },
+  height,
+  children,
+}: {
+  drag: SizeDrag;
+  height: number;
+  children: ReactNode;
+}) {
+  return (
+    <div ref={attach} style={{ height }} className="flex shrink-0 flex-col">
+      {children}
+    </div>
+  );
 }
 
 /** The sash between two parts: drag to resize, double click to reset;
@@ -114,6 +186,7 @@ export function Sash({
   min,
   max,
   onDrag,
+  onDragEnd,
   onReset,
 }: {
   /** Between parts side by side (drags left-right). */
@@ -123,13 +196,18 @@ export function Sash({
   min: number;
   max: number;
   onDrag: (delta: number) => void;
+  /** The drag is over (the pointer let go, or a key moved it): what
+   * `onDrag` only showed is kept (SizeDrag's `end`). */
+  onDragEnd?: () => void;
   onReset: () => void;
 }) {
   const start = useRef<number | null>(null);
   // A drag that ends without a pointerup (the window loses the focus, a
   // touch cancelled) ends here too: else the next hover would resize.
   const end = () => {
+    if (start.current === null) return;
     start.current = null;
+    onDragEnd?.();
   };
   return (
     <div
@@ -161,6 +239,7 @@ export function Sash({
         if (d !== undefined) {
           e.preventDefault();
           onDrag(d);
+          onDragEnd?.();
         }
       }}
       className={[
@@ -178,12 +257,12 @@ export function Sash({
 
 /** A page: the side bar (if any) and the editor, with the sash between. */
 export function ViewContainer({ side, id, children }: { side?: ReactNode; id: string; children: ReactNode }) {
-  const [width, setWidth] = useStoredSize(`side:${id}`, 300, 170, 640);
+  const [width, setWidth, { attach, move, end }] = useStoredSize(`side:${id}`, 300, 170, 640);
   return (
     <div className="flex min-h-0 min-w-0 flex-1 gap-1">
       {side && (
         <>
-          <Part as="aside" className="shrink-0 bg-vsc-sidebar text-vsc-sidebar-fg" style={{ width }}>
+          <Part ref={attach} as="aside" className="shrink-0 bg-vsc-sidebar text-vsc-sidebar-fg" style={{ width }}>
             {side}
           </Part>
           <Sash
@@ -193,8 +272,9 @@ export function ViewContainer({ side, id, children }: { side?: ReactNode; id: st
             min={170}
             max={640}
             onDrag={(d) => {
-              setWidth((w) => w + d);
+              move((w) => w + d);
             }}
+            onDragEnd={end}
             onReset={() => {
               setWidth(300);
             }}

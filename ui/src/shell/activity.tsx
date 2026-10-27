@@ -154,7 +154,9 @@ export function ActivityPanel({
   focus = null,
   onClose,
 }: {
-  height: number;
+  /** Its height in pixels; none: it fills the box it is in (the app's,
+   * which a sash resizes). */
+  height?: number | undefined;
   runs: Record<string, RunInfo>;
   running: Running;
   logs: RunLogs;

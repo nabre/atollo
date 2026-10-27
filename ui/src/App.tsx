@@ -5,16 +5,8 @@
 // kit's pages.
 // Texts go through t() (i18n.ts) in the language of the settings or of
 // Windows, sent by app_info.
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useState,
-  type ComponentProps,
-  type KeyboardEvent,
-  type ReactNode,
-} from "react";
+import { lazy, Suspense, useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   appInfo,
@@ -46,7 +38,7 @@ import { DatabasesPage } from "./databases";
 import { ServersPage } from "./servers";
 import { tauriPty, TerminalsPage, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
-import { Codicon, codicon, Icon, IconButton, Notice, Sash, useStoredSize, useTabs } from "./workbench";
+import { Codicon, codicon, Icon, IconButton, Notice, Sash, SizedBox, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./shared/hooks";
 import { ErrorLine, LoadError } from "./shared/common";
 import { CommandPalette } from "./shell/commands";
@@ -195,11 +187,14 @@ export function App() {
     setActivityJob({ id });
     setPanelOpen(true);
   }, []);
-  const [panelHeight, setPanelHeight] = useStoredSize("panel", 240, 120, 600);
+  const closePanel = useCallback(() => {
+    setPanelOpen(false);
+  }, []);
+  const [panelHeight, setPanelHeight, panelDrag] = useStoredSize("panel", 240, 120, 600, "height");
   // The app's terminal on every system (D-109, D-148): read once the app
   // answered.
   const terminals = useTerminals(tauriPty, info !== null);
-  const [terminalHeight, setTerminalHeight] = useStoredSize("terminal", 280, 120, 800);
+  const [terminalHeight, setTerminalHeight, terminalDrag] = useStoredSize("terminal", 280, 120, 800, "height");
 
   return (
     // The key re-renders every text when the language changes.
@@ -316,15 +311,20 @@ export function App() {
                 min={120}
                 max={800}
                 onDrag={(d) => {
-                  setTerminalHeight((h) => h - d);
+                  terminalDrag.move((h) => h - d);
                 }}
+                onDragEnd={terminalDrag.end}
                 onReset={() => {
                   setTerminalHeight(280);
                 }}
               />
-              <Suspense fallback={<div style={{ height: terminalHeight }} className="shrink-0 bg-vsc-panel" />}>
-                <TerminalPanel terminals={terminals} backend={tauriPty} height={terminalHeight} />
-              </Suspense>
+              {/* The height on a box of its own, which a drag resizes
+                without rendering the panel (useStoredSize). */}
+              <SizedBox drag={terminalDrag} height={terminalHeight}>
+                <Suspense fallback={<div className="flex-1 bg-vsc-panel" />}>
+                  <TerminalPanel terminals={terminals} backend={tauriPty} />
+                </Suspense>
+              </SizedBox>
             </>
           )}
           {/* A session waiting for its VM (a terminal, an action, an
@@ -340,25 +340,25 @@ export function App() {
                 min={120}
                 max={600}
                 onDrag={(d) => {
-                  setPanelHeight((h) => h - d);
+                  panelDrag.move((h) => h - d);
                 }}
+                onDragEnd={panelDrag.end}
                 onReset={() => {
                   setPanelHeight(240);
                 }}
               />
-              <LiveActivityPanel
-                height={panelHeight}
-                runs={runs}
-                running={running}
-                logs={logs}
-                loadLog={loadLog}
-                onStop={runStop}
-                onForget={forget}
-                focus={activityJob}
-                onClose={() => {
-                  setPanelOpen(false);
-                }}
-              />
+              <SizedBox drag={panelDrag} height={panelHeight}>
+                <LiveActivityPanel
+                  runs={runs}
+                  running={running}
+                  logs={logs}
+                  loadLog={loadLog}
+                  onStop={runStop}
+                  onForget={forget}
+                  focus={activityJob}
+                  onClose={closePanel}
+                />
+              </SizedBox>
             </>
           )}
         </div>
