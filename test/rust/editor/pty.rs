@@ -301,6 +301,49 @@ fn pump_numbers_chunks_and_fills_the_backlog() {
     );
 }
 
+/// A build's stream of small reads reaches the view in few chunks,
+/// numbered one after the other, every byte once and in order, a
+/// character split between reads (and between batches) whole.
+#[test]
+fn pump_batches_a_stream_of_small_reads() {
+    let sessions = Sessions::default();
+    let s = sessions.insert("t".into(), Path::new("/p"), Box::new(FakeIo::new(1)));
+    let mut all = String::new();
+    for i in 0..3000 {
+        all.push_str(&format!("riga {i} ✓\n"));
+    }
+    // One byte a read: the worst a program can do.
+    struct Bytes(std::vec::IntoIter<u8>);
+    impl Read for Bytes {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            match self.0.next() {
+                Some(b) => {
+                    buf[0] = b;
+                    Ok(1)
+                }
+                None => Ok(0),
+            }
+        }
+    }
+    let reader = Bytes(all.clone().into_bytes().into_iter());
+    let sent = Mutex::new(Vec::new());
+    pump(&s, reader, |c| sent.lock().unwrap().push(c.clone()));
+    let sent = sent.into_inner().unwrap();
+    assert!(sent.len() < all.len() / 10, "{} chunks", sent.len());
+    let seqs: Vec<u64> = sent.iter().map(|c| c.seq).collect();
+    assert_eq!(seqs, (1..=sent.len() as u64).collect::<Vec<_>>());
+    let text: String = sent.iter().map(|c| c.data.as_str()).collect();
+    assert_eq!(text, all);
+    assert!(sent.iter().all(|c| c.data.len() <= PACE.cap + 8192));
+    assert_eq!(
+        sessions.backlog(1).unwrap(),
+        Chunk {
+            seq: sent.len() as u64,
+            data: all
+        }
+    );
+}
+
 #[test]
 fn close_hangs_up_then_kills_what_did_not_end() {
     let sessions = Sessions::default();
