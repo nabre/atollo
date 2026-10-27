@@ -83,8 +83,7 @@ fn rule_and_trust() {
         .join("rules")
         .join("atollo.md")
         .is_file());
-    // SEC-V6-02: a sync trusts nothing; launching an agent in a project
-    // trusts that one.
+    // SEC-V6-02: a sync trusts nothing.
     let read = || -> Value {
         serde_json::from_str(&fs::read_to_string(p.claude_json()).unwrap()).unwrap()
     };
@@ -94,30 +93,12 @@ fn rule_and_trust() {
         .display()
         .to_string()
         .replace('\\', "/");
-    let lower = format!("{}{}", app[..1].to_ascii_lowercase(), &app[1..]);
     let cfg = read();
-    assert!(cfg["projects"].get(&app).is_none(), "not before a launch");
+    assert!(cfg["projects"].get(&app).is_none(), "trusted by nothing");
     assert_eq!(cfg["numStartups"], 3, "the rest kept");
     assert_eq!(cfg["projects"]["x"]["history"][0], 1);
     let codex = fs::read_to_string(p.codex.join("config.toml")).unwrap();
     assert!(!codex.contains("[projects."), "{codex}");
-
-    trust_project(&kit, &p.projects.join("app"));
-    let cfg = read();
-    assert_eq!(cfg["projects"][&app]["hasTrustDialogAccepted"], true);
-    assert_eq!(cfg["projects"][&lower]["hasTrustDialogAccepted"], true);
-    let hidden = p
-        .projects
-        .join(".hidden")
-        .display()
-        .to_string()
-        .replace('\\', "/");
-    assert!(cfg["projects"].get(&hidden).is_none());
-    // Kept by the next syncs.
-    run(&kit, None);
-    assert_eq!(read()["projects"][&app]["hasTrustDialogAccepted"], true);
-    let codex = fs::read_to_string(p.codex.join("config.toml")).unwrap();
-    assert_eq!(codex.matches("[projects.").count(), 1, "{codex}");
 }
 
 #[test]

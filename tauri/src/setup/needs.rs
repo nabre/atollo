@@ -4,11 +4,8 @@
 //! a clone or a project action needs them.
 
 use std::collections::BTreeSet;
-use std::path::Path;
 
-use super::catalog::Catalog;
 use crate::detect::Action;
-use crate::kit::Kit;
 
 /// The component of a program, by its name (`npm`, `python.exe`,
 /// `.venv\Scripts\python.exe`...). Both separators on every system: a
@@ -107,38 +104,6 @@ pub fn of_action(action: &Action) -> BTreeSet<&'static str> {
         return BTreeSet::from(["caddy", "php"]);
     }
     of_command(&action.command)
-}
-
-/// What the agent `id` needs to start in `project_dir`: the agent itself and
-/// the programs of the kit's and the project's MCP servers (`npx`, `uvx`,
-/// `python`...). The catalog's own dependencies (Claude Code needs Git) are
-/// added by the installation.
-// No agent starts on the PC since D-178 (the tests; the MCP servers of the
-// agents in the VM are still to do, D-175).
-#[allow(dead_code)]
-pub fn of_agent(kit: &Kit, id: &str, project_dir: Option<&Path>) -> BTreeSet<&'static str> {
-    let mut out = BTreeSet::new();
-    if let Some(c) = Catalog::get().find(id) {
-        out.insert(c.id.as_str());
-    }
-    let mut servers: Vec<Option<String>> =
-        crate::agents::sync::mcp::load(&crate::agents::sync::Paths::of(kit))
-            .unwrap_or_default()
-            .values()
-            .map(|s| s.get("command").and_then(|c| c.as_str()).map(str::to_owned))
-            .collect();
-    if let Some(dir) = project_dir {
-        servers.extend(
-            crate::projects::mcp::get(dir)
-                .servers
-                .into_iter()
-                .map(|s| s.command),
-        );
-    }
-    for program in servers.iter().flatten() {
-        out.extend(component_of(program));
-    }
-    out
 }
 
 #[cfg(test)]

@@ -200,24 +200,3 @@ fn mcp_servers_in_pis_format() {
     assert!(cfg["mcpServers"].get("fs").is_none());
     assert_eq!(cfg["mcpServers"]["own"]["command"], "x");
 }
-
-/// A project opened from Atollo is trusted; the user's own decision for it
-/// stays.
-#[test]
-fn a_project_is_trusted_once() {
-    let (_tmp, kit) = kit();
-    let p = Paths::of(&kit);
-    let project = kit.projects().join("shop");
-    fs::create_dir_all(&project).unwrap();
-    trust(&p, &project).unwrap();
-    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("trust.json")).unwrap();
-    let key = trust_key(&project);
-    assert_eq!(cfg[&key], true);
-    assert!(!key.starts_with(r"\\?\"));
-    let mut cfg = cfg;
-    cfg[&key] = json!(false);
-    write_json(&p.pi.join("trust.json"), &cfg).unwrap();
-    trust(&p, &project).unwrap();
-    let cfg: Value = crate::common::fsx::read_json(&p.pi.join("trust.json")).unwrap();
-    assert_eq!(cfg[&key], false);
-}
