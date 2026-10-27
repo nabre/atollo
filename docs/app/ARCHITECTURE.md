@@ -319,7 +319,7 @@ Everything that crosses between the interface and Rust is in two folders with th
 | `app.rs` | information, settings, updates, opening addresses and folders |
 | `window.rs` | what is open, "Remove drive", shutdown and confirmation |
 | `editing.rs` | editor, console, editor settings and extensions of a project |
-| `levels.rs` | the levels at the app's commands (LEVELS.md §4): `ready` (`decide` → `environment` → `prepare` with `AppEffects`), `serve_requests` (the editor's and the forwarders' requests), `watch_levels` and `levels_state` (`levels-changed`), the VM report and its actions (`project_vm_report`, `project_vm_check`, `project_vm_action`) |
+| `levels.rs` | the levels at the app's commands (LEVELS.md §4): `ready` (`decide` → `environment` → `prepare` with `AppEffects`), `serve_requests` (the editor's and the forwarders' requests), `watch_levels` (`levels-changed`), the VM report and its actions (`project_vm_report`, `project_vm_check`, `project_vm_action`) |
 | `setup.rs` | choice of components, installation in progress, downloads by hand |
 | `versions.rs` | saved versions, project versions, relations matrix |
 | `agents.rs` | status, consumption and launch of the agents (only in the VM, through `decide`; refused with the reason without it), sign-out of what the kit's data still holds, the kit's MCP servers |

@@ -324,7 +324,7 @@ Tutto ciò che passa fra l'interfaccia e Rust sta in due cartelle con lo stesso 
 | `app.rs` | informazioni, impostazioni, aggiornamenti, apertura di indirizzi e cartelle |
 | `window.rs` | cosa è aperto, «Rimuovi l'unità», chiusura e conferma |
 | `editing.rs` | editor, console, impostazioni dell'editor ed estensioni di un progetto |
-| `levels.rs` | i livelli ai comandi dell'app (LEVELS.it.md §4): `ready` (`decide` → `environment` → `prepare` con `AppEffects`), `serve_requests` (le richieste dell'editor e degli inoltri), `watch_levels` e `levels_state` (`levels-changed`), il rapporto della VM e le sue azioni (`project_vm_report`, `project_vm_check`, `project_vm_action`) |
+| `levels.rs` | i livelli ai comandi dell'app (LEVELS.it.md §4): `ready` (`decide` → `environment` → `prepare` con `AppEffects`), `serve_requests` (le richieste dell'editor e degli inoltri), `watch_levels` (`levels-changed`), il rapporto della VM e le sue azioni (`project_vm_report`, `project_vm_check`, `project_vm_action`) |
 | `setup.rs` | scelta dei componenti, installazione in corso, download a mano |
 | `versions.rs` | versioni salvate, versioni dei progetti, matrice delle relazioni |
 | `agents.rs` | stato, consumi e avvio degli agenti (solo nella VM, attraverso `decide`; senza, rifiutati con il motivo), uscita da ciò che i dati del kit ancora tengono, i server MCP del kit |
