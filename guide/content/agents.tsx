@@ -69,10 +69,10 @@ export const AGENTS: TopicTexts = {
             "Die Anmeldung bei deinem Konto erfolgt beim ersten Start des Agenten und bleibt im Kit, auch auf einem anderen PC.",
           ),
           tr(
-            "Gli agenti girano solo nella VM: Claude Code e Codex in una sandbox di agente di Docker Sandboxes, che vede solo il progetto, con gli accessi gestiti da Docker Sandboxes; Pi nella VM del progetto, con la sua build per Linux. Antigravity, un editor da desktop, non parte mai su un progetto: resta nel kit per istruzioni, skill e server MCP sincronizzati. Senza VM nessun agente parte. L'agente nella VM ha gli strumenti del kit del progetto e il suo database, dalla pagina del progetto come dall'editor; per ora non ha i server MCP del kit e del progetto.",
-            "The agents run only in the VM: Claude Code and Codex in a Docker Sandboxes agent sandbox, which sees only the project, with the sign-ins managed by Docker Sandboxes; Pi in the project's VM, with its build for Linux. Antigravity, a desktop editor, never starts on a project: it stays in the kit for the synced instructions, skills and MCP servers. Without the VM no agent starts. The agent in the VM has the project's kit tools and its database, from the project's page and from the editor alike; for now it does not have the kit's and the project's MCP servers.",
-            "Les agents ne tournent que dans la VM : Claude Code et Codex dans une sandbox d'agent de Docker Sandboxes, qui ne voit que le projet, avec les connexions gérées par Docker Sandboxes ; Pi dans la VM du projet, avec son build pour Linux. Antigravity, un éditeur de bureau, ne démarre jamais sur un projet : il reste dans le kit pour les instructions, skills et serveurs MCP synchronisés. Sans VM, aucun agent ne démarre. L'agent dans la VM a les outils du kit du projet et sa base de données, depuis la page du projet comme depuis l'éditeur ; pour l'instant, il n'a pas les serveurs MCP du kit et du projet.",
-            "Die Agenten laufen nur in der VM: Claude Code und Codex in einer Agenten-Sandbox von Docker Sandboxes, die nur das Projekt sieht, mit den von Docker Sandboxes verwalteten Anmeldungen; Pi in der VM des Projekts, mit seinem Build für Linux. Antigravity, ein Desktop-Editor, startet nie auf einem Projekt: Es bleibt im Kit für die synchronisierten Anweisungen, Skills und MCP-Server. Ohne VM startet kein Agent. Der Agent in der VM hat die Werkzeuge des Kits für das Projekt und seine Datenbank, von der Seite des Projekts wie aus dem Editor; vorerst hat er die MCP-Server des Kits und des Projekts nicht.",
+            "Gli agenti girano solo nella VM (livello 3): Claude Code e Codex ciascuno in una sandbox di agente di Docker Sandboxes, che vede solo il progetto; Pi e Antigravity (agy) nella VM del progetto, con la loro build per Linux. Si aprono dalla pagina del progetto, dal profilo dell'editor o scrivendo claude, codex, pi o agy in un terminale del PC nella cartella del progetto. Senza VM nessun agente parte: pulsanti e comandi sono disattivati con il motivo. L'agente nella VM ha gli strumenti del kit del progetto e il suo database; per ora non ha i server MCP del kit e del progetto.",
+            "The agents run only in the VM (level 3): Claude Code and Codex each in a Docker Sandboxes agent sandbox, which sees only the project; Pi and Antigravity (agy) in the project's VM, with their build for Linux. They open from the project's page, from the editor's profile, or by typing claude, codex, pi or agy in a PC terminal in the project's folder. Without the VM no agent starts: buttons and commands are disabled with the reason. The agent in the VM has the project's kit tools and its database; for now it does not have the kit's and the project's MCP servers.",
+            "Les agents ne tournent que dans la VM (niveau 3) : Claude Code et Codex chacun dans une sandbox d'agent de Docker Sandboxes, qui ne voit que le projet ; Pi et Antigravity (agy) dans la VM du projet, avec leur build pour Linux. Ils s'ouvrent depuis la page du projet, depuis le profil de l'éditeur ou en tapant claude, codex, pi ou agy dans un terminal du PC dans le dossier du projet. Sans VM, aucun agent ne démarre : boutons et commandes sont désactivés avec le motif. L'agent dans la VM a les outils du kit du projet et sa base de données ; pour l'instant, il n'a pas les serveurs MCP du kit et du projet.",
+            "Die Agenten laufen nur in der VM (Ebene 3): Claude Code und Codex jeweils in einer Agenten-Sandbox von Docker Sandboxes, die nur das Projekt sieht; Pi und Antigravity (agy) in der VM des Projekts, mit ihrem Build für Linux. Sie öffnen sich über die Seite des Projekts, über das Profil des Editors oder indem du claude, codex, pi oder agy in einem Terminal des PCs im Ordner des Projekts tippst. Ohne VM startet kein Agent: Schaltflächen und Befehle sind mit dem Grund deaktiviert. Der Agent in der VM hat die Werkzeuge des Kits für das Projekt und seine Datenbank; vorerst hat er die MCP-Server des Kits und des Projekts nicht.",
           ),
         ]}
       />
@@ -115,30 +115,30 @@ export const AGENTS: TopicTexts = {
               tr("Claude Code", "Claude Code", "Claude Code", "Claude Code"),
               tr("Anthropic", "Anthropic", "Anthropic", "Anthropic"),
               tr(
-                "Account Claude (abbonamento); su macOS anche un token di claude setup-token.",
-                "Claude account (subscription); on macOS also a token from claude setup-token.",
-                "Compte Claude (abonnement) ; sur macOS aussi un jeton de claude setup-token.",
-                "Claude-Konto (Abonnement); unter macOS auch ein Token von claude setup-token.",
+                "Account Claude (abbonamento), con /login nella sua sandbox.",
+                "Claude account (subscription), with /login in its sandbox.",
+                "Compte Claude (abonnement), avec /login dans sa sandbox.",
+                "Claude-Konto (Abonnement), mit /login in seiner Sandbox.",
               ),
             ],
             [
               tr("Codex", "Codex", "Codex", "Codex"),
               tr("OpenAI", "OpenAI", "OpenAI", "OpenAI"),
               tr(
-                "Account ChatGPT oppure chiave API salvata da Codex con codex login --with-api-key.",
-                "ChatGPT account or an API key saved by Codex with codex login --with-api-key.",
-                "Compte ChatGPT ou clé API enregistrée par Codex avec codex login --with-api-key.",
-                "ChatGPT-Konto oder ein API-Schlüssel, den Codex mit codex login --with-api-key speichert.",
+                "Account ChatGPT oppure chiave API, con l'accesso di Codex nella sua sandbox.",
+                "ChatGPT account or an API key, with Codex's sign-in in its sandbox.",
+                "Compte ChatGPT ou clé API, avec la connexion de Codex dans sa sandbox.",
+                "ChatGPT-Konto oder API-Schlüssel, mit der Anmeldung von Codex in seiner Sandbox.",
               ),
             ],
             [
               tr("Antigravity", "Antigravity", "Antigravity", "Antigravity"),
               tr("Google", "Google", "Google", "Google"),
               tr(
-                "Account Google oppure chiave API di Gemini, da scrivere nella pagina AI, Antigravity › Accesso.",
-                "Google account or a Gemini API key, to enter on the AI page, Antigravity › Sign-in.",
-                "Compte Google ou clé API de Gemini, à saisir dans la page IA, Antigravity › Connexion.",
-                "Google-Konto oder API-Schlüssel von Gemini, einzutragen auf der Seite KI, Antigravity › Anmeldung.",
+                "Account Google, con l'accesso di agy nella VM, oppure chiave API di Gemini, da scrivere nella pagina AI, Antigravity › Accesso.",
+                "Google account, with agy's sign-in in the VM, or a Gemini API key, to enter on the AI page, Antigravity › Sign-in.",
+                "Compte Google, avec la connexion d'agy dans la VM, ou clé API de Gemini, à saisir dans la page IA, Antigravity › Connexion.",
+                "Google-Konto, mit der Anmeldung von agy in der VM, oder API-Schlüssel von Gemini, einzutragen auf der Seite KI, Antigravity › Anmeldung.",
               ),
             ],
             [
@@ -160,19 +160,19 @@ export const AGENTS: TopicTexts = {
         />
         <P>
           {tr(
-            "Gli agenti si installano dalla pagina Strumenti, tipo «Agenti AI» (il primo avvio propone già Claude Code, Codex e Antigravity; Pi non è tra quelli proposti, si spunta a mano). Seguono sempre l'ultima versione e portano con sé ciò che serve: Claude Code e Pi usano Git, che il kit installa con loro.",
-            "Agents are installed from the Tools page, “AI agents” kind (the first start already suggests Claude Code, Codex and Antigravity; Pi is not among the suggested ones, you tick it by hand). They always follow the latest version and bring along what they need: Claude Code and Pi use Git, which the kit installs with them.",
-            "Les agents s'installent depuis la page Outils, type « Agents IA » (le premier démarrage propose déjà Claude Code, Codex et Antigravity ; Pi ne fait pas partie des agents proposés, il se coche à la main). Ils suivent toujours la dernière version et apportent ce dont ils ont besoin : Claude Code et Pi utilisent Git, que le kit installe avec eux.",
-            "Die Agenten werden auf der Seite Werkzeuge in der Art „KI-Agenten“ installiert (der erste Start schlägt Claude Code, Codex und Antigravity bereits vor; Pi gehört nicht dazu, du kreuzt ihn von Hand an). Sie folgen immer der neuesten Version und bringen mit, was sie brauchen: Claude Code und Pi verwenden Git, das das Kit mit ihnen installiert.",
+            "Gli agenti stanno nella pagina Strumenti, tipo «Agenti AI», e il kit li tiene solo per la VM: Claude Code e Codex sono «fornito dalla VM» (arrivano con la loro sandbox di Docker Sandboxes, niente da installare); Pi e Antigravity si installano nella loro build per il Linux della VM e seguono l'ultima versione. Senza VM le righe dicono «serve la VM» e nessun agente si installa né si aggiorna. Un agente installato per il PC da una versione precedente di Atollo è segnato «da rimuovere» e se ne va al prossimo «Applica».",
+            "The agents are on the Tools page, “AI agents” kind, and the kit keeps them for the VM only: Claude Code and Codex are “provided by the VM” (they come with their Docker Sandboxes sandbox, nothing to install); Pi and Antigravity are installed in their build for the VM's Linux and follow the latest version. Without the VM the rows say “needs the VM” and no agent is installed or updated. An agent installed for the PC by an earlier version of Atollo is marked to be removed and goes at the next “Apply”.",
+            "Les agents se trouvent dans la page Outils, type « Agents IA », et le kit ne les garde que pour la VM : Claude Code et Codex sont « fourni par la VM » (ils arrivent avec leur sandbox Docker Sandboxes, rien à installer) ; Pi et Antigravity s'installent dans leur build pour le Linux de la VM et suivent la dernière version. Sans VM, les lignes indiquent « nécessite la VM » et aucun agent ne s'installe ni ne se met à jour. Un agent installé pour le PC par une version précédente d'Atollo est marqué à retirer et s'en va au prochain « Appliquer ».",
+            "Die Agenten stehen auf der Seite Werkzeuge in der Art „KI-Agenten“, und das Kit hält sie nur für die VM: Claude Code und Codex sind „von der VM bereitgestellt“ (sie kommen mit ihrer Sandbox von Docker Sandboxes, nichts zu installieren); Pi und Antigravity werden in ihrem Build für das Linux der VM installiert und folgen der neuesten Version. Ohne VM sagen die Zeilen „braucht die VM“, und kein Agent wird installiert oder aktualisiert. Ein Agent, den eine frühere Version von Atollo für den PC installiert hat, ist zum Entfernen markiert und geht beim nächsten „Anwenden“.",
           )}
         </P>
         <Callout tone="info" title={tr("Pi", "Pi", "Pi", "Pi")}>
           {rich(
             tr(
-              "Pi è un agente da terminale che lavora con molti fornitori. Nel kit parte da solo su un modello locale: quello scelto nella pagina AI, riquadro «Modelli locali», altrimenti il primo del kit che sa usare gli strumenti, e prima di aprirlo il kit avvia il server dei modelli. Se in Pi scegli un provider in cloud con /login, resta su quello; i modelli locali restano nel suo elenco (/model). Su Windows Pi usa il Git Bash del kit come shell. Vedi {0}.",
-              "Pi is a terminal agent that works with many providers. In the kit it starts by itself on a local model: the one chosen on the AI page, “Local models” pane, otherwise the kit's first one that can use tools, and before opening it the kit starts the models server. If you choose a cloud provider in Pi with /login, it stays on that one; the local models remain in its list (/model). On Windows Pi uses the kit's Git Bash as its shell. See {0}.",
-              "Pi est un agent de terminal qui fonctionne avec de nombreux fournisseurs. Dans le kit, il démarre tout seul sur un modèle local : celui choisi dans la page IA, volet « Modèles locaux », sinon le premier du kit qui sait utiliser les outils, et avant de l'ouvrir le kit démarre le serveur des modèles. Si vous choisissez dans Pi un fournisseur dans le cloud avec /login, il reste sur celui-ci ; les modèles locaux restent dans sa liste (/model). Sur Windows, Pi utilise le Git Bash du kit comme shell. Voir {0}.",
-              "Pi ist ein Terminal-Agent, der mit vielen Anbietern arbeitet. Im Kit startet er von selbst mit einem lokalen Modell: dem auf der Seite KI im Bereich „Lokale Modelle“ gewählten, sonst dem ersten des Kits, das Werkzeuge nutzen kann, und bevor er geöffnet wird, startet das Kit den Server der Modelle. Wählst du in Pi mit /login einen Cloud-Anbieter, bleibt er bei diesem; die lokalen Modelle bleiben in seiner Liste (/model). Unter Windows verwendet Pi die Git Bash des Kits als Shell. Siehe {0}.",
+              "Pi è un agente da terminale che lavora con molti fornitori. Nel kit parte da solo su un modello locale: quello scelto nella pagina AI, riquadro «Modelli locali», altrimenti il primo del kit che sa usare gli strumenti, e prima di aprirlo il kit avvia il server dei modelli. Se in Pi scegli un provider in cloud con /login, resta su quello; i modelli locali restano nel suo elenco (/model). Pi gira nella VM del progetto e raggiunge il server dei modelli sul PC. Vedi {0}.",
+              "Pi is a terminal agent that works with many providers. In the kit it starts by itself on a local model: the one chosen on the AI page, “Local models” pane, otherwise the kit's first one that can use tools, and before opening it the kit starts the models server. If you choose a cloud provider in Pi with /login, it stays on that one; the local models remain in its list (/model). Pi runs in the project's VM and reaches the models server on the PC. See {0}.",
+              "Pi est un agent de terminal qui fonctionne avec de nombreux fournisseurs. Dans le kit, il démarre tout seul sur un modèle local : celui choisi dans la page IA, volet « Modèles locaux », sinon le premier du kit qui sait utiliser les outils, et avant de l'ouvrir le kit démarre le serveur des modèles. Si vous choisissez dans Pi un fournisseur dans le cloud avec /login, il reste sur celui-ci ; les modèles locaux restent dans sa liste (/model). Pi tourne dans la VM du projet et atteint le serveur des modèles sur le PC. Voir {0}.",
+              "Pi ist ein Terminal-Agent, der mit vielen Anbietern arbeitet. Im Kit startet er von selbst mit einem lokalen Modell: dem auf der Seite KI im Bereich „Lokale Modelle“ gewählten, sonst dem ersten des Kits, das Werkzeuge nutzen kann, und bevor er geöffnet wird, startet das Kit den Server der Modelle. Wählst du in Pi mit /login einen Cloud-Anbieter, bleibt er bei diesem; die lokalen Modelle bleiben in seiner Liste (/model). Pi läuft in der VM des Projekts und erreicht den Server der Modelle auf dem PC. Siehe {0}.",
             ),
             <See key="m" id="models" />,
           )}
@@ -199,16 +199,16 @@ export const AGENTS: TopicTexts = {
           steps={[
             tr("Apri il progetto.", "Open the project.", "Ouvrez le projet.", "Öffne das Projekt."),
             tr(
-              "In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente installato, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Pi»). Fai clic su quello dell'agente che vuoi usare: parte nella VM del progetto. Antigravity, un editor per il desktop, non si apre su un progetto.",
-              "At the top, next to “Editor” and “Terminal”, there is a button for each installed agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Pi”). Click the one of the agent you want to use: it starts in the project's VM. Antigravity, a desktop editor, does not open on a project.",
-              "En haut, à côté de « Éditeur » et « Terminal », il y a un bouton pour chaque agent installé, avec son logo (« Ouvrir Claude Code », « Ouvrir Codex », « Ouvrir Pi »). Cliquez sur celui de l'agent que vous voulez utiliser : il démarre dans la VM du projet. Antigravity, un éditeur de bureau, ne s'ouvre pas sur un projet.",
-              "Oben neben „Editor“ und „Terminal“ gibt es für jeden installierten Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Pi öffnen“). Klicke auf die des Agenten, den du verwenden möchtest: Er startet in der VM des Projekts. Antigravity, ein Desktop-Editor, öffnet sich nicht auf einem Projekt.",
+              "In alto, accanto a «Editor» e «Terminale», c'è un pulsante per ogni agente disponibile, con il suo logo («Apri Claude Code», «Apri Codex», «Apri Pi», «Apri Antigravity»). Fai clic su quello dell'agente che vuoi usare. Senza VM i pulsanti sono disattivati e il loro suggerimento dice perché.",
+              "At the top, next to “Editor” and “Terminal”, there is a button for each available agent, with its logo (“Open Claude Code”, “Open Codex”, “Open Pi”, “Open Antigravity”). Click the one of the agent you want to use. Without the VM the buttons are disabled and their tooltip says why.",
+              "En haut, à côté de « Éditeur » et « Terminal », il y a un bouton pour chaque agent disponible, avec son logo (« Ouvrir Claude Code », « Ouvrir Codex », « Ouvrir Pi », « Ouvrir Antigravity »). Cliquez sur celui de l'agent que vous voulez utiliser. Sans VM, les boutons sont désactivés et leur infobulle dit pourquoi.",
+              "Oben neben „Editor“ und „Terminal“ gibt es für jeden verfügbaren Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Pi öffnen“, „Antigravity öffnen“). Klicke auf die des Agenten, den du verwenden möchtest. Ohne VM sind die Schaltflächen deaktiviert, und ihr Tooltip sagt warum.",
             ),
             tr(
-              "L'agente parte nella VM del progetto, nella sua cartella, in una scheda del pannello dei terminali dentro Atollo (su ogni sistema). Senza VM non parte, e la scheda dice perché.",
-              "The agent starts in the project's VM, in its folder, in a tab of the terminal panel inside Atollo (on every system). Without the VM it does not start, and the tab says why.",
-              "L'agent démarre dans la VM du projet, dans son dossier, dans un onglet du panneau des terminaux dans Atollo (sur tous les systèmes). Sans VM, il ne démarre pas, et l'onglet dit pourquoi.",
-              "Der Agent startet in der VM des Projekts, in seinem Ordner, in einer Registerkarte des Terminalbereichs in Atollo (auf jedem System). Ohne VM startet er nicht, und die Registerkarte sagt warum.",
+              "L'agente parte nella sua sandbox (Claude Code, Codex) o nella VM del progetto (Pi, Antigravity), nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo con l'etichetta «Agente · VM»; mentre la VM si prepara, la pagina mostra l'avanzamento.",
+              "The agent starts in its sandbox (Claude Code, Codex) or in the project's VM (Pi, Antigravity), in the project's folder, in a tab of the terminal panel inside Atollo labelled “Agent · VM”; while the VM is being prepared, the page shows the progress.",
+              "L'agent démarre dans sa sandbox (Claude Code, Codex) ou dans la VM du projet (Pi, Antigravity), dans le dossier du projet, dans un onglet du panneau des terminaux dans Atollo avec l'étiquette « Agent · VM » ; pendant que la VM se prépare, la page affiche la progression.",
+              "Der Agent startet in seiner Sandbox (Claude Code, Codex) oder in der VM des Projekts (Pi, Antigravity), im Ordner des Projekts, in einer Registerkarte des Terminalbereichs in Atollo mit der Beschriftung „Agent · VM“; während die VM vorbereitet wird, zeigt die Seite den Fortschritt.",
             ),
           ]}
         />
@@ -230,16 +230,22 @@ export const AGENTS: TopicTexts = {
                 "Der zuletzt geöffnete Agent wird in der Datei dev-settings.json des Projekts vermerkt.",
               ),
               tr(
-                "Prima dell'avvio il kit installa ciò che manca (l'agente, le sue dipendenze, i programmi dei server MCP come Node.js o uv), applica le versioni del progetto e allinea istruzioni, skill e server MCP. Quando l'agente termina, li allinea di nuovo.",
-                "Before the start, the kit installs what is missing (the agent, its dependencies, the programs of the MCP servers such as Node.js or uv), applies the project's versions and syncs instructions, skills and MCP servers. When the agent ends, it syncs them again.",
-                "Avant le lancement, le kit installe ce qui manque (l'agent, ses dépendances, les programmes des serveurs MCP comme Node.js ou uv), applique les versions du projet et synchronise instructions, skills et serveurs MCP. Quand l'agent se termine, il les synchronise à nouveau.",
-                "Vor dem Start installiert das Kit, was fehlt (den Agenten, seine Abhängigkeiten, die Programme der MCP-Server wie Node.js oder uv), wendet die Versionen des Projekts an und gleicht Anweisungen, Skills und MCP-Server ab. Wenn der Agent endet, gleicht es sie erneut ab.",
+                "Prima dell'avvio Atollo prepara la VM: gli strumenti del kit per il suo Linux alle versioni del progetto, il database del progetto e, per Pi e Antigravity, la loro build per Linux; l'avanzamento è nella barra di stato.",
+                "Before the start, Atollo prepares the VM: the kit's tools for its Linux at the project's versions, the project's database and, for Pi and Antigravity, their build for Linux; the progress is in the status bar.",
+                "Avant le lancement, Atollo prépare la VM : les outils du kit pour son Linux aux versions du projet, la base de données du projet et, pour Pi et Antigravity, leur build pour Linux ; la progression est dans la barre d'état.",
+                "Vor dem Start bereitet Atollo die VM vor: die Werkzeuge des Kits für ihr Linux in den Versionen des Projekts, die Datenbank des Projekts und, für Pi und Antigravity, ihren Build für Linux; der Fortschritt steht in der Statusleiste.",
               ),
               tr(
-                "Antigravity, un editor da desktop, non parte su un progetto: resta nel kit per istruzioni, skill e server MCP sincronizzati. Il piccolo programma del kit agy rimette il suo accesso nel sistema quando è aperto e lo riporta nel kit alla fine.",
-                "Antigravity, a desktop editor, does not start on a project: it stays in the kit for the synced instructions, skills and MCP servers. The small kit program agy puts its sign-in back into the system while it is open and brings it back into the kit at the end.",
-                "Antigravity, un éditeur de bureau, ne démarre pas sur un projet : il reste dans le kit pour les instructions, skills et serveurs MCP synchronisés. Le petit programme du kit agy remet sa connexion dans le système quand il est ouvert et la rapporte dans le kit à la fin.",
-                "Antigravity, ein Desktop-Editor, startet nicht auf einem Projekt: Es bleibt im Kit für die synchronisierten Anweisungen, Skills und MCP-Server. Das kleine Programm des Kits agy legt seine Anmeldung ins System zurück, solange es geöffnet ist, und holt sie am Ende wieder ins Kit.",
+                "Antigravity (agy) è un agente da terminale come Claude Code e Codex: gira nella VM del progetto con la sua build per Linux, come Pi, e accede lì con il tuo account Google o con la chiave API di Gemini (vedi sotto).",
+                "Antigravity (agy) is a terminal agent like Claude Code and Codex: it runs in the project's VM with its build for Linux, like Pi, and signs in there with your Google account or with the Gemini API key (see below).",
+                "Antigravity (agy) est un agent de terminal comme Claude Code et Codex : il tourne dans la VM du projet avec son build pour Linux, comme Pi, et s'y connecte avec votre compte Google ou avec la clé API Gemini (voir plus bas).",
+                "Antigravity (agy) ist ein Terminal-Agent wie Claude Code und Codex: Es läuft in der VM des Projekts mit seinem Build für Linux, wie Pi, und meldet sich dort mit deinem Google-Konto oder mit dem Gemini-API-Schlüssel an (siehe unten).",
+              ),
+              tr(
+                "Scrivere claude, codex, pi o agy in un terminale del kit o dell'editor, nella cartella di un progetto, apre l'agente nella VM di quel progetto, nello stesso terminale. Fuori da un progetto, o senza VM, il comando dice perché ed esce: un agente non gira mai sul PC.",
+                "Typing claude, codex, pi or agy in a kit or editor terminal, in a project's folder, opens the agent in that project's VM, in the same terminal. Outside a project, or without the VM, the command says why and exits: an agent never runs on the PC.",
+                "Taper claude, codex, pi ou agy dans un terminal du kit ou de l'éditeur, dans le dossier d'un projet, ouvre l'agent dans la VM de ce projet, dans le même terminal. Hors d'un projet, ou sans VM, la commande dit pourquoi et s'arrête : un agent ne tourne jamais sur le PC.",
+                "Tippst du claude, codex, pi oder agy in einem Terminal des Kits oder des Editors im Ordner eines Projekts, öffnet sich der Agent in der VM dieses Projekts, im selben Terminal. Außerhalb eines Projekts oder ohne VM sagt der Befehl warum und beendet sich: Ein Agent läuft nie auf dem PC.",
               ),
             ]}
           />
@@ -267,10 +273,10 @@ export const AGENTS: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Il riquadro «Agenti» (il numero accanto conta quelli installati) elenca gli agenti con la versione, lo stato dell'accesso, «in esecuzione» quando sono aperti e il limite più alto raggiunto (per esempio «5 ore 42%»). L'ultima riga è «Condiviso fra gli agenti» (istruzioni, skill e server MCP). A destra, per l'agente scelto, due parti:",
-            "The “Agents” pane (the number beside it counts the installed ones) lists the agents with their version, sign-in status, “running” when they are open and the highest limit reached (for example “5 hours 42%”). The last row is “Shared by the agents” (instructions, skills and MCP servers). On the right, for the chosen agent, two parts:",
-            "Le volet « Agents » (le nombre à côté compte ceux qui sont installés) liste les agents avec la version, l'état de la connexion, « en cours d'exécution » quand ils sont ouverts et la limite la plus haute atteinte (par exemple « 5 heures 42% »). La dernière ligne est « Partagé entre les agents » (instructions, skills et serveurs MCP). À droite, pour l'agent choisi, deux parties :",
-            "Der Bereich „Agenten“ (die Zahl daneben zählt die installierten) listet die Agenten mit Version, Anmeldestatus, „läuft“, wenn sie geöffnet sind, und dem höchsten erreichten Limit auf (zum Beispiel „5 Stunden 42%“). Die letzte Zeile ist „Von den Agenten geteilt“ (Anweisungen, Skills und MCP-Server). Rechts, für den gewählten Agenten, zwei Teile:",
+            "Il riquadro «Agenti» (il numero accanto conta quelli installati) elenca gli agenti con la versione, lo stato dell'accesso e il limite più alto raggiunto (per esempio «5 ore 42%»). L'ultima riga è «Condiviso fra gli agenti» (istruzioni, skill e server MCP). A destra, per l'agente scelto, due parti:",
+            "The “Agents” pane (the number beside it counts the installed ones) lists the agents with their version, sign-in status and the highest limit reached (for example “5 hours 42%”). The last row is “Shared by the agents” (instructions, skills and MCP servers). On the right, for the chosen agent, two parts:",
+            "Le volet « Agents » (le nombre à côté compte ceux qui sont installés) liste les agents avec la version, l'état de la connexion et la limite la plus haute atteinte (par exemple « 5 heures 42% »). La dernière ligne est « Partagé entre les agents » (instructions, skills et serveurs MCP). À droite, pour l'agent choisi, deux parties :",
+            "Der Bereich „Agenten“ (die Zahl daneben zählt die installierten) listet die Agenten mit Version, Anmeldestatus und dem höchsten erreichten Limit auf (zum Beispiel „5 Stunden 42%“). Die letzte Zeile ist „Von den Agenten geteilt“ (Anweisungen, Skills und MCP-Server). Rechts, für den gewählten Agenten, zwei Teile:",
           )}
         </P>
         <Table
@@ -286,10 +292,10 @@ export const AGENTS: TopicTexts = {
             [
               tr("Accesso", "Sign-in", "Connexion", "Anmeldung"),
               tr(
-                "Lo stato dell'accesso, «Esci», su macOS per Claude Code «Collega con un token» e, per Antigravity, la chiave API di Gemini.",
-                "The sign-in status, “Sign out”, on macOS for Claude Code “Connect with a token” and, for Antigravity, the Gemini API key.",
-                "L'état de la connexion, « Se déconnecter », sur macOS pour Claude Code « Connecter avec un jeton » et, pour Antigravity, la clé API de Gemini.",
-                "Der Anmeldestatus, „Abmelden“, unter macOS für Claude Code „Mit einem Token verbinden“ und für Antigravity der API-Schlüssel von Gemini.",
+                "Lo stato dell'accesso che usa l'agente nella VM, per Antigravity la chiave API di Gemini e, se una versione precedente di Atollo aveva salvato nel kit un accesso fatto sul PC, «Esci» per toglierlo.",
+                "The status of the sign-in the agent uses in the VM, for Antigravity the Gemini API key and, if an earlier version of Atollo saved in the kit a sign-in made on the PC, “Sign out” to remove it.",
+                "L'état de la connexion qu'utilise l'agent dans la VM, pour Antigravity la clé API de Gemini et, si une version précédente d'Atollo a enregistré dans le kit une connexion faite sur le PC, « Se déconnecter » pour la retirer.",
+                "Der Status der Anmeldung, die der Agent in der VM verwendet, für Antigravity der API-Schlüssel von Gemini und, wenn eine frühere Version von Atollo eine auf dem PC gemachte Anmeldung im Kit gespeichert hat, „Abmelden“, um sie zu entfernen.",
               ),
             ],
           ]}
@@ -331,58 +337,43 @@ export const AGENTS: TopicTexts = {
           "Die Anmeldung bei deinem Konto",
         )}
       >
+        <P>
+          {tr(
+            "Gli agenti accedono dentro la VM, non sul PC: il /login di Claude Code e l'accesso di Codex avvengono nella loro sandbox e restano lì; Pi e Antigravity accedono nella VM del progetto. La pagina AI dice quello che il PC può sapere di quell'accesso:",
+            "The agents sign in inside the VM, not on the PC: Claude Code's /login and Codex's sign-in happen in their sandbox and stay there; Pi and Antigravity sign in in the project's VM. The AI page tells what the PC can know of that sign-in:",
+            "Les agents se connectent dans la VM, pas sur le PC : le /login de Claude Code et la connexion de Codex se font dans leur sandbox et y restent ; Pi et Antigravity se connectent dans la VM du projet. La page IA dit ce que le PC peut savoir de cette connexion :",
+            "Die Agenten melden sich in der VM an, nicht auf dem PC: das /login von Claude Code und die Anmeldung von Codex erfolgen in ihrer Sandbox und bleiben dort; Pi und Antigravity melden sich in der VM des Projekts an. Die Seite KI sagt, was der PC über diese Anmeldung wissen kann:",
+          )}
+        </P>
         <Table
           columns={[tr("Testo", "Text", "Texte", "Text"), tr("Significato", "Meaning", "Signification", "Bedeutung")]}
           rows={[
             [
               tr(
-                "accesso non fatto: si fa al primo avvio dell'agente",
-                "not signed in: you sign in the first time the agent starts",
-                "non connecté : la connexion se fait au premier lancement de l'agent",
-                "nicht angemeldet: Die Anmeldung erfolgt beim ersten Start des Agenten",
+                "l'accesso si fa nella VM, al primo avvio dell'agente",
+                "the sign-in happens in the VM, at the agent's first start",
+                "la connexion se fait dans la VM, au premier démarrage de l'agent",
+                "die Anmeldung erfolgt in der VM, beim ersten Start des Agenten",
               ),
               tr(
-                "Apri l'agente in un progetto e segui le sue istruzioni (di solito una pagina nel browser).",
-                "Open the agent in a project and follow its instructions (usually a page in the browser).",
-                "Ouvrez l'agent dans un projet et suivez ses instructions (en général une page dans le navigateur).",
-                "Öffne den Agenten in einem Projekt und folge seinen Anweisungen (meist eine Seite im Browser).",
-              ),
-            ],
-            [
-              tr("accesso fatto", "signed in", "connecté", "angemeldet"),
-              tr(
-                "L'agente ha un accesso con il tuo account, salvato nel kit.",
-                "The agent is signed in with your account, saved in the kit.",
-                "L'agent est connecté avec votre compte, enregistré dans le kit.",
-                "Der Agent ist mit deinem Konto angemeldet, gespeichert im Kit.",
+                "Apri l'agente in un progetto e segui le sue istruzioni nel terminale (un link o un codice da aprire nel browser del PC).",
+                "Open the agent in a project and follow its instructions in the terminal (a link or a code to open in the PC's browser).",
+                "Ouvrez l'agent dans un projet et suivez ses instructions dans le terminal (un lien ou un code à ouvrir dans le navigateur du PC).",
+                "Öffne den Agenten in einem Projekt und folge seinen Anweisungen im Terminal (ein Link oder ein Code zum Öffnen im Browser des PCs).",
               ),
             ],
             [
               tr(
-                "accesso con chiave API",
-                "signed in with an API key",
-                "connecté avec une clé API",
-                "mit API-Schlüssel angemeldet",
+                "chiave API, tramite il proxy di Docker Sandboxes",
+                "API key, through the Docker Sandboxes proxy",
+                "clé API, via le proxy de Docker Sandboxes",
+                "API-Schlüssel, über den Proxy von Docker Sandboxes",
               ),
               tr(
-                "Codex con la chiave salvata da codex login --with-api-key, Antigravity con la chiave di Gemini scritta nel suo «Accesso» (vedi sotto), o Pi con una chiave API salvata nel suo auth.json: niente limiti di piano, paghi a consumo.",
-                "Codex with the key saved by codex login --with-api-key, Antigravity with the Gemini key entered in its “Sign-in” (see below), or Pi with an API key saved in its auth.json: no plan limits, you pay for what you use.",
-                "Codex avec la clé enregistrée par codex login --with-api-key, Antigravity avec la clé Gemini saisie dans sa « Connexion » (voir plus bas), ou Pi avec une clé API enregistrée dans son auth.json : pas de limites d'abonnement, vous payez à la consommation.",
-                "Codex mit dem von codex login --with-api-key gespeicherten Schlüssel, Antigravity mit dem in seiner „Anmeldung“ eingetragenen Gemini-Schlüssel (siehe unten) oder Pi mit einem in seiner auth.json gespeicherten API-Schlüssel: keine Tariflimits, du zahlst nach Verbrauch.",
-              ),
-            ],
-            [
-              tr(
-                "accesso con un token",
-                "signed in with a token",
-                "connecté avec un jeton",
-                "mit einem Token angemeldet",
-              ),
-              tr(
-                "Solo Claude Code su macOS, collegato con un token (vedi sotto).",
-                "Only Claude Code on macOS, connected with a token (see below).",
-                "Uniquement Claude Code sur macOS, connecté avec un jeton (voir plus bas).",
-                "Nur Claude Code unter macOS, mit einem Token verbunden (siehe unten).",
+                "Antigravity con la chiave di Gemini scritta nel suo «Accesso» (vedi sotto): niente limiti di piano, paghi a consumo.",
+                "Antigravity with the Gemini key entered in its “Sign-in” (see below): no plan limits, you pay for what you use.",
+                "Antigravity avec la clé Gemini saisie dans sa « Connexion » (voir plus bas) : pas de limites d'abonnement, vous payez à la consommation.",
+                "Antigravity mit dem in seiner „Anmeldung“ eingetragenen Gemini-Schlüssel (siehe unten): keine Tariflimits, du zahlst nach Verbrauch.",
               ),
             ],
             [
@@ -393,20 +384,29 @@ export const AGENTS: TopicTexts = {
                 "lokale Modelle des Kits, ohne Anmeldung",
               ),
               tr(
-                "Solo Pi: nessun provider in cloud, usa un modello scaricato nella pagina AI, riquadro «Modelli locali». Non c'è niente da cui uscire.",
-                "Only Pi: no cloud provider, it uses a model downloaded on the AI page, “Local models” pane. There is nothing to sign out of.",
-                "Uniquement Pi : aucun fournisseur dans le cloud, il utilise un modèle téléchargé dans la page IA, volet « Modèles locaux ». Il n'y a rien dont se déconnecter.",
-                "Nur Pi: kein Cloud-Anbieter, er verwendet ein auf der Seite KI im Bereich „Lokale Modelle“ heruntergeladenes Modell. Es gibt nichts, wovon man sich abmelden müsste.",
+                "Solo Pi: nessun provider in cloud, usa un modello scaricato nella pagina AI, riquadro «Modelli locali».",
+                "Only Pi: no cloud provider, it uses a model downloaded on the AI page, “Local models” pane.",
+                "Uniquement Pi : aucun fournisseur dans le cloud, il utilise un modèle téléchargé dans la page IA, volet « Modèles locaux ».",
+                "Nur Pi: kein Cloud-Anbieter, er verwendet ein auf der Seite KI im Bereich „Lokale Modelle“ heruntergeladenes Modell.",
+              ),
+            ],
+            [
+              tr("serve la VM", "needs the VM", "nécessite la VM", "braucht die VM"),
+              tr(
+                "Senza VM nessun agente parte: la pagina mostra il motivo, e il pulsante «Senza VM» della barra di stato dice come rimediare.",
+                "Without the VM no agent starts: the page shows the reason, and the status bar's “No VM” button tells how to fix it.",
+                "Sans VM, aucun agent ne démarre : la page affiche le motif, et le bouton « Sans VM » de la barre d'état dit comment y remédier.",
+                "Ohne VM startet kein Agent: Die Seite zeigt den Grund, und die Schaltfläche „Ohne VM“ der Statusleiste sagt, wie man es behebt.",
               ),
             ],
           ]}
         />
         <P>
           {tr(
-            "L'accesso resta nella cartella del kit: portando il kit su un altro PC non devi rifarlo. «Esci» toglie l'accesso salvato nel kit dopo una domanda («Togliere l'accesso salvato nel kit?», Esc annulla), con l'agente chiuso: mentre è aperto il pulsante dice «Chiudi prima l'agente». Con una chiave API «Esci» non c'è.",
-            "The sign-in stays in the kit folder: when you take the kit to another PC you do not have to sign in again. “Sign out” removes the sign-in saved in the kit after a question (“Remove the sign-in saved in the kit?”, Esc cancels), with the agent closed: while it is open the button says “Close the agent first”. With an API key there is no “Sign out”.",
-            "La connexion reste dans le dossier du kit : en emportant le kit sur un autre PC, vous n'avez pas à la refaire. « Se déconnecter » retire la connexion enregistrée dans le kit après une question (« Supprimer la connexion enregistrée dans le kit ? », Échap annule), avec l'agent fermé : tant qu'il est ouvert, le bouton indique « Fermez d'abord l'agent ». Avec une clé API, il n'y a pas de « Se déconnecter ».",
-            "Die Anmeldung bleibt im Ordner des Kits: Wenn du das Kit auf einen anderen PC mitnimmst, musst du dich nicht erneut anmelden. „Abmelden“ entfernt die im Kit gespeicherte Anmeldung nach einer Frage („Die im Kit gespeicherte Anmeldung entfernen?“, Esc bricht ab), bei geschlossenem Agenten: Solange er geöffnet ist, zeigt die Schaltfläche „Schließe zuerst den Agenten“. Mit einem API-Schlüssel gibt es kein „Abmelden“.",
+            "Un accesso dentro una sandbox resta sul suo disco, nel kit: portando il kit su un altro PC non devi rifarlo; ricreando la sandbox («Ricrea» nel pannello «VM del progetto») si perde e lo rifai al primo avvio. Un accesso fatto sul PC con una versione precedente di Atollo resta salvato nel kit e gli agenti nella VM non lo usano: la pagina lo dice, e «Esci» lo toglie dopo una domanda («Togliere l'accesso salvato nel kit?», Esc annulla).",
+            "A sign-in inside a sandbox stays on its disk, in the kit: when you take the kit to another PC you do not have to sign in again; making the sandbox again (“Make again” in the “Project VM” panel) loses it, and you sign in again at the first start. A sign-in made on the PC with an earlier version of Atollo stays saved in the kit and the agents in the VM do not use it: the page says so, and “Sign out” removes it after a question (“Remove the sign-in saved in the kit?”, Esc cancels).",
+            "Une connexion dans une sandbox reste sur son disque, dans le kit : en emportant le kit sur un autre PC, vous n'avez pas à la refaire ; recréer la sandbox (« Recréer » dans le panneau « VM du projet ») la perd, et vous la refaites au premier démarrage. Une connexion faite sur le PC avec une version précédente d'Atollo reste enregistrée dans le kit et les agents dans la VM ne l'utilisent pas : la page le dit, et « Se déconnecter » la retire après une question (« Supprimer la connexion enregistrée dans le kit ? », Échap annule).",
+            "Eine Anmeldung in einer Sandbox bleibt auf deren Datenträger, im Kit: Wenn du das Kit auf einen anderen PC mitnimmst, musst du dich nicht erneut anmelden; wird die Sandbox neu erstellt („Neu erstellen“ im Bereich „VM des Projekts“), geht sie verloren, und du meldest dich beim ersten Start erneut an. Eine Anmeldung, die mit einer früheren Version von Atollo auf dem PC gemacht wurde, bleibt im Kit gespeichert, und die Agenten in der VM verwenden sie nicht: Die Seite sagt es, und „Abmelden“ entfernt sie nach einer Frage („Die im Kit gespeicherte Anmeldung entfernen?“, Esc bricht ab).",
           )}
         </P>
         <Callout
@@ -419,21 +419,10 @@ export const AGENTS: TopicTexts = {
           )}
         >
           {tr(
-            "Gli accessi degli agenti e di GitHub sono salvati nel kit, in chiaro. «Esci» non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account di Anthropic, OpenAI, Google e GitHub (e del provider che usi con Pi).",
-            "The sign-ins of the agents and of GitHub are saved in the kit, unencrypted. “Sign out” does not revoke the sessions on the provider's site: if you lose the USB stick, revoke them from your account settings at Anthropic, OpenAI, Google and GitHub (and at the provider you use with Pi).",
-            "Les connexions des agents et de GitHub sont enregistrées dans le kit, en clair. « Se déconnecter » ne révoque pas les sessions sur le site du fournisseur : si vous perdez la clé USB, révoquez-les depuis les paramètres de votre compte chez Anthropic, OpenAI, Google et GitHub (et chez le fournisseur que vous utilisez avec Pi).",
-            "Die Anmeldungen der Agenten und von GitHub sind im Kit gespeichert, unverschlüsselt. „Abmelden“ widerruft die Sitzungen auf der Website des Anbieters nicht: Wenn du den USB-Stick verlierst, widerrufe sie in den Einstellungen deines Kontos bei Anthropic, OpenAI, Google und GitHub (und bei dem Anbieter, den du mit Pi verwendest).",
-          )}
-        </Callout>
-        <Callout
-          tone="info"
-          title={tr("Claude Code su macOS", "Claude Code on macOS", "Claude Code sur macOS", "Claude Code unter macOS")}
-        >
-          {tr(
-            "Su macOS Claude Code salverebbe l'accesso nel Portachiavi, che resta su quel Mac. «Collega con un token» apre claude setup-token nel terminale dell'app: completi l'accesso nel browser e il token (valido un anno) viene salvato nel kit, così funziona su ogni Mac. Se non viene riconosciuto, incollalo nel campo «Token di Claude Code» e premi «Salva il token». Il token arriva, come CLAUDE_CODE_OAUTH_TOKEN, solo a Claude Code avviato da Atollo: non alle azioni dei progetti, agli script, ai terminali né all'editor.",
-            "On macOS Claude Code would save the sign-in in the Keychain, which stays on that Mac. “Connect with a token” opens claude setup-token in the app's terminal: you complete the sign-in in the browser and the token (valid for one year) is saved in the kit, so it works on every Mac. If it is not recognized, paste it into the “Claude Code token” field and press “Save the token”. The token reaches, as CLAUDE_CODE_OAUTH_TOKEN, only the Claude Code that Atollo launches: not project actions, scripts, terminals or the editor.",
-            "Sur macOS, Claude Code enregistrerait la connexion dans le Trousseau, qui reste sur ce Mac. « Connecter avec un jeton » ouvre claude setup-token dans le terminal de l'application : vous terminez la connexion dans le navigateur et le jeton (valable un an) est enregistré dans le kit, il fonctionne ainsi sur chaque Mac. S'il n'est pas reconnu, collez-le dans le champ « Jeton de Claude Code » et appuyez sur « Enregistrer le jeton ». Le jeton n'arrive, comme CLAUDE_CODE_OAUTH_TOKEN, qu'au Claude Code lancé par Atollo : ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur.",
-            "Unter macOS würde Claude Code die Anmeldung im Schlüsselbund speichern, der auf diesem Mac bleibt. „Mit einem Token verbinden“ öffnet claude setup-token im Terminal der App: Du schließt die Anmeldung im Browser ab, und das Token (ein Jahr gültig) wird im Kit gespeichert, sodass es auf jedem Mac funktioniert. Wird es nicht erkannt, füge es in das Feld „Token von Claude Code“ ein und drück „Token speichern“. Das Token erhält, als CLAUDE_CODE_OAUTH_TOKEN, nur das von Atollo gestartete Claude Code: nicht die Aktionen der Projekte, Skripte, Terminals oder der Editor.",
+            "Gli accessi degli agenti (nei dischi delle sandbox) e di GitHub sono salvati nel kit, in chiaro. Uscire da un agente non revoca le sessioni sul sito del fornitore: se perdi la chiavetta, revocale dalle impostazioni del tuo account di Anthropic, OpenAI, Google e GitHub (e del provider che usi con Pi).",
+            "The sign-ins of the agents (in the sandboxes' disks) and of GitHub are saved in the kit, unencrypted. Signing out of an agent does not revoke the sessions on the provider's site: if you lose the USB stick, revoke them from your account settings at Anthropic, OpenAI, Google and GitHub (and at the provider you use with Pi).",
+            "Les connexions des agents (dans les disques des sandbox) et de GitHub sont enregistrées dans le kit, en clair. Se déconnecter d'un agent ne révoque pas les sessions sur le site du fournisseur : si vous perdez la clé USB, révoquez-les depuis les paramètres de votre compte chez Anthropic, OpenAI, Google et GitHub (et chez le fournisseur que vous utilisez avec Pi).",
+            "Die Anmeldungen der Agenten (auf den Datenträgern der Sandboxes) und von GitHub sind im Kit gespeichert, unverschlüsselt. Das Abmelden von einem Agenten widerruft die Sitzungen auf der Website des Anbieters nicht: Wenn du den USB-Stick verlierst, widerrufe sie in den Einstellungen deines Kontos bei Anthropic, OpenAI, Google und GitHub (und bei dem Anbieter, den du mit Pi verwendest).",
           )}
         </Callout>
         <Callout
@@ -446,22 +435,22 @@ export const AGENTS: TopicTexts = {
           )}
         >
           {tr(
-            "Senza account Google, Antigravity usa una chiave API di Gemini. Nella pagina AI scegli Antigravity: in «Accesso» c'è il campo «Chiave API di Gemini (Antigravity senza account Google)». Incolla la chiave e passa ad altro (un clic fuori dal campo o Tab): si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata: scrivi per sostituirla», e la chiave non viene più mostrata. «Togli la chiave» la cancella subito. Antigravity mostrerà «accesso con chiave API». La chiave è salvata a parte, in data\\app\\secrets\\gemini-api-key, leggibile solo dal tuo utente dove il disco ha i permessi, e passata come GEMINI_API_KEY solo ad Antigravity avviato da Atollo: non alle azioni dei progetti, agli script, ai terminali né all'editor. Prima stava in Impostazioni › Agenti, che non c'è più.",
-            "Without a Google account, Antigravity uses a Gemini API key. On the AI page choose Antigravity: in “Sign-in” there is the “Gemini API key (Antigravity without a Google account)” field. Paste the key and move on (a click outside the field, or Tab): it is saved when the field loses focus, then the field empties and shows “saved: type to replace it”, and the key is no longer shown. “Remove the key” deletes it at once. Antigravity will show “signed in with an API key”. The key is saved on its own, in data\\app\\secrets\\gemini-api-key, readable by your user only where the disk has permissions, and passed as GEMINI_API_KEY only to the Antigravity that Atollo launches: not to project actions, scripts, terminals or the editor. It used to be in Settings › Agents, which no longer exists.",
-            "Sans compte Google, Antigravity utilise une clé API Gemini. Dans la page IA, choisissez Antigravity : dans « Connexion » se trouve le champ « Clé API Gemini (Antigravity sans compte Google) ». Collez la clé et passez à autre chose (un clic hors du champ, ou Tab) : elle est enregistrée quand le champ perd le focus, puis le champ se vide et affiche « enregistrée : saisissez-en une autre pour la remplacer », et la clé n'est plus affichée. « Supprimer la clé » l'efface tout de suite. Antigravity affichera « connecté avec une clé API ». La clé est enregistrée à part, dans data\\app\\secrets\\gemini-api-key, lisible par votre seul utilisateur là où le disque gère les permissions, et transmise comme GEMINI_API_KEY au seul Antigravity lancé par Atollo : ni aux actions des projets, ni aux scripts, ni aux terminaux, ni à l'éditeur. Elle se trouvait avant dans Paramètres › Agents, qui n'existe plus.",
-            "Ohne Google-Konto verwendet Antigravity einen Gemini-API-Schlüssel. Wähle auf der Seite KI Antigravity: Unter „Anmeldung“ gibt es das Feld „Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“. Füge den Schlüssel ein und mach woanders weiter (ein Klick außerhalb des Felds oder Tab): Er wird gespeichert, wenn das Feld den Fokus verliert; dann leert sich das Feld und zeigt „gespeichert: zum Ersetzen neu eingeben“, und der Schlüssel wird nicht mehr angezeigt. „Schlüssel entfernen“ löscht ihn sofort. Antigravity zeigt dann „mit API-Schlüssel angemeldet“. Der Schlüssel wird getrennt in data\\app\\secrets\\gemini-api-key gespeichert, nur für deinen Benutzer lesbar, wo das Laufwerk Berechtigungen kennt, und als GEMINI_API_KEY nur dem von Atollo gestarteten Antigravity übergeben: nicht den Aktionen der Projekte, Skripten, Terminals oder dem Editor. Früher stand er unter Einstellungen › Agenten, die es nicht mehr gibt.",
+            "Senza account Google, Antigravity usa una chiave API di Gemini. Nella pagina AI scegli Antigravity: in «Accesso» c'è il campo «Chiave API di Gemini (Antigravity senza account Google)». Incolla la chiave e passa ad altro (un clic fuori dal campo o Tab): si salva quando il campo perde il fuoco, poi il campo si svuota e mostra «salvata: scrivi per sostituirla», e la chiave non viene più mostrata. «Togli la chiave» la cancella subito. La chiave è salvata a parte, in data\\app\\secrets\\gemini-api-key, leggibile solo dal tuo utente dove il disco ha i permessi, e non entra mai nella VM: quando Antigravity parte, Atollo la registra nel proxy di Docker Sandboxes solo per la sandbox del progetto, e il proxy la aggiunge alle richieste di Antigravity verso Google.",
+            "Without a Google account, Antigravity uses a Gemini API key. On the AI page choose Antigravity: in “Sign-in” there is the “Gemini API key (Antigravity without a Google account)” field. Paste the key and move on (a click outside the field, or Tab): it is saved when the field loses focus, then the field empties and shows “saved: type to replace it”, and the key is no longer shown. “Remove the key” deletes it at once. The key is saved on its own, in data\\app\\secrets\\gemini-api-key, readable by your user only where the disk has permissions, and never enters the VM: when Antigravity starts, Atollo registers it in the Docker Sandboxes proxy for the project's sandbox only, and the proxy adds it to Antigravity's requests to Google.",
+            "Sans compte Google, Antigravity utilise une clé API Gemini. Dans la page IA, choisissez Antigravity : dans « Connexion » se trouve le champ « Clé API Gemini (Antigravity sans compte Google) ». Collez la clé et passez à autre chose (un clic hors du champ, ou Tab) : elle est enregistrée quand le champ perd le focus, puis le champ se vide et affiche « enregistrée : saisissez-en une autre pour la remplacer », et la clé n'est plus affichée. « Supprimer la clé » l'efface tout de suite. La clé est enregistrée à part, dans data\\app\\secrets\\gemini-api-key, lisible par votre seul utilisateur là où le disque gère les permissions, et n'entre jamais dans la VM : quand Antigravity démarre, Atollo l'enregistre dans le proxy de Docker Sandboxes pour la seule sandbox du projet, et le proxy l'ajoute aux requêtes d'Antigravity vers Google.",
+            "Ohne Google-Konto verwendet Antigravity einen Gemini-API-Schlüssel. Wähle auf der Seite KI Antigravity: Unter „Anmeldung“ gibt es das Feld „Gemini-API-Schlüssel (Antigravity ohne Google-Konto)“. Füge den Schlüssel ein und mach woanders weiter (ein Klick außerhalb des Felds oder Tab): Er wird gespeichert, wenn das Feld den Fokus verliert; dann leert sich das Feld und zeigt „gespeichert: zum Ersetzen neu eingeben“, und der Schlüssel wird nicht mehr angezeigt. „Schlüssel entfernen“ löscht ihn sofort. Der Schlüssel wird getrennt in data\\app\\secrets\\gemini-api-key gespeichert, nur für deinen Benutzer lesbar, wo das Laufwerk Berechtigungen kennt, und kommt nie in die VM: Wenn Antigravity startet, registriert Atollo ihn im Proxy von Docker Sandboxes nur für die Sandbox des Projekts, und der Proxy fügt ihn den Anfragen von Antigravity an Google hinzu.",
           )}
         </Callout>
         <Under>
           <Table
             columns={[
-              tr("Agente", "Agent", "Agent", "Agent"),
               tr(
-                "Dove sta l'accesso",
-                "Where the sign-in is stored",
-                "Où se trouve la connexion",
-                "Wo die Anmeldung liegt",
+                "Accesso di una versione precedente",
+                "Sign-in of an earlier version",
+                "Connexion d'une version précédente",
+                "Anmeldung einer früheren Version",
               ),
+              tr("Dove sta", "Where it is", "Où elle se trouve", "Wo sie liegt"),
             ]}
             rows={[
               [
@@ -472,15 +461,6 @@ export const AGENTS: TopicTexts = {
               [
                 tr("Antigravity", "Antigravity", "Antigravity", "Antigravity"),
                 <Code key="a">data\antigravity\keyring.json</Code>,
-              ],
-              [
-                tr(
-                  "Pi (provider in cloud; «Esci» lo toglie)",
-                  "Pi (cloud provider; “Sign out” removes it)",
-                  "Pi (fournisseur dans le cloud ; « Se déconnecter » le retire)",
-                  "Pi (Cloud-Anbieter; „Abmelden“ entfernt ihn)",
-                ),
-                <Code key="p">data\home\.pi\agent\auth.json</Code>,
               ],
               [
                 tr(
@@ -495,10 +475,10 @@ export const AGENTS: TopicTexts = {
           />
           <P>
             {tr(
-              "Antigravity salva il suo accesso solo nel portachiavi del sistema (Gestione credenziali su Windows, Portachiavi su macOS, Secret Service su Linux). Il kit ce lo mette prima dell'avvio e lo riporta in keyring.json alla fine, rimettendo a posto le eventuali credenziali di Antigravity del PC (conservate, cifrate, in keyring-before.json). Su Windows l'accesso nel sistema vive solo per la sessione di Windows.",
-              "Antigravity saves its sign-in only in the system keychain (Credential Manager on Windows, Keychain on macOS, Secret Service on Linux). The kit puts it there before the start and brings it back into keyring.json at the end, restoring any Antigravity credentials of the PC (kept, encrypted, in keyring-before.json). On Windows the sign-in in the system lasts only for the Windows session.",
-              "Antigravity enregistre sa connexion uniquement dans le trousseau du système (Gestionnaire d'identification sur Windows, Trousseau sur macOS, Secret Service sur Linux). Le kit l'y place avant le lancement et la rapporte dans keyring.json à la fin, en remettant en place les éventuels identifiants Antigravity du PC (conservés, chiffrés, dans keyring-before.json). Sur Windows, la connexion dans le système ne dure que le temps de la session Windows.",
-              "Antigravity speichert seine Anmeldung nur im Schlüsselbund des Systems (Anmeldeinformationsverwaltung unter Windows, Schlüsselbund unter macOS, Secret Service unter Linux). Das Kit legt sie vor dem Start dort ab und holt sie am Ende zurück in keyring.json, wobei es eventuelle Antigravity-Anmeldedaten des PCs wiederherstellt (verschlüsselt aufbewahrt in keyring-before.json). Unter Windows gilt die Anmeldung im System nur für die Windows-Sitzung.",
+              "Sono file del kit, mai montati in una VM né passati a un programma: Atollo li legge solo per i consumi e per dirti che ci sono. «Esci» li toglie.",
+              "They are kit files, never mounted in a VM nor given to a program: Atollo reads them only for the usage and to tell you they are there. “Sign out” removes them.",
+              "Ce sont des fichiers du kit, jamais montés dans une VM ni donnés à un programme : Atollo les lit seulement pour la consommation et pour vous dire qu'ils sont là. « Se déconnecter » les retire.",
+              "Es sind Dateien des Kits, nie in eine VM eingebunden oder einem Programm übergeben: Atollo liest sie nur für den Verbrauch und um dir zu sagen, dass sie da sind. „Abmelden“ entfernt sie.",
             )}
           </P>
         </Under>

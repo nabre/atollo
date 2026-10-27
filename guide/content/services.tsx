@@ -1251,10 +1251,10 @@ export const SERVICES: TopicTexts = {
             "Das Terminal „Alle Werkzeuge“ ist immer bereit; du kannst eigene mit ausgewählten Werkzeugen und Versionen erstellen.",
           ),
           tr(
-            "I terminali del kit girano sempre sul PC, con o senza VM, senza gli agenti: gli agenti girano solo nella VM, dalla pagina del progetto o dall'editor.",
-            "The kit's terminals always run on the PC, with or without the VM, without the agents: the agents run only in the VM, from the project's page or the editor.",
-            "Les terminaux du kit tournent toujours sur le PC, avec ou sans VM, sans les agents : les agents ne tournent que dans la VM, depuis la page du projet ou l'éditeur.",
-            "Die Terminals des Kits laufen immer auf dem PC, mit oder ohne VM, ohne die Agenten: Die Agenten laufen nur in der VM, von der Seite des Projekts oder aus dem Editor.",
+            "I terminali del kit girano sempre sul PC (livello 1, etichetta «PC»), con o senza VM. Scrivendo claude, codex, pi o agy nella cartella di un progetto, l'agente si apre nella VM del progetto: gli agenti non girano mai sul PC.",
+            "The kit's terminals always run on the PC (level 1, label “PC”), with or without the VM. Typing claude, codex, pi or agy in a project's folder opens the agent in the project's VM: the agents never run on the PC.",
+            "Les terminaux du kit tournent toujours sur le PC (niveau 1, étiquette « PC »), avec ou sans VM. En tapant claude, codex, pi ou agy dans le dossier d'un projet, l'agent s'ouvre dans la VM du projet : les agents ne tournent jamais sur le PC.",
+            "Die Terminals des Kits laufen immer auf dem PC (Ebene 1, Beschriftung „PC“), mit oder ohne VM. Tippst du claude, codex, pi oder agy im Ordner eines Projekts, öffnet sich der Agent in der VM des Projekts: Die Agenten laufen nie auf dem PC.",
           ),
         ]}
       />
@@ -1321,25 +1321,25 @@ export const SERVICES: TopicTexts = {
       >
         <P>
           {tr(
-            "I terminali del kit («Tutti gli strumenti» e i tuoi, in qualsiasi cartella) girano sempre sul PC, con la VM attiva o no, con gli strumenti del kit e le loro versioni. Non hanno i programmi a riga di comando degli agenti (claude, codex, antigravity, pi): all'apertura un avviso ricorda che gli agenti girano solo nella VM.",
-            "The kit's terminals (“All tools” and your own, in any folder) always run on the PC, with the VM on or not, with the kit's tools and their versions. They do not have the agents' command lines (claude, codex, antigravity, pi): on opening, a notice recalls that the agents run only in the VM.",
-            "Les terminaux du kit (« Tous les outils » et les vôtres, dans n'importe quel dossier) tournent toujours sur le PC, avec la VM active ou non, avec les outils du kit et leurs versions. Ils n'ont pas les lignes de commande des agents (claude, codex, antigravity, pi) : à l'ouverture, un avis rappelle que les agents ne tournent que dans la VM.",
-            "Die Terminals des Kits („Alle Werkzeuge“ und deine eigenen, in jedem Ordner) laufen immer auf dem PC, mit aktiver VM oder ohne, mit den Werkzeugen des Kits und ihren Versionen. Sie haben die Befehlszeilen der Agenten nicht (claude, codex, antigravity, pi): Beim Öffnen erinnert ein Hinweis daran, dass die Agenten nur in der VM laufen.",
+            "I terminali del kit («Tutti gli strumenti» e i tuoi, in qualsiasi cartella) girano sempre sul PC, con la VM attiva o no, con gli strumenti del kit e le loro versioni (nella cartella di un progetto, quelle del progetto). La scheda ha l'etichetta «PC» e all'apertura una riga dice dove sei: «PC · <terminale> · <progetto> · agenti: inoltrati alla VM del progetto se attiva». L'ambiente è sigillato, tranne il tuo agente SSH, che resta per Git.",
+            "The kit's terminals (“All tools” and your own, in any folder) always run on the PC, with the VM on or not, with the kit's tools and their versions (in a project's folder, the project's ones). The tab is labelled “PC” and on opening a line says where you are: “PC · <terminal> · <project> · agents: forwarded to the project's VM when it is on”. The environment is sealed, except your SSH agent, which stays for Git.",
+            "Les terminaux du kit (« Tous les outils » et les vôtres, dans n'importe quel dossier) tournent toujours sur le PC, avec la VM active ou non, avec les outils du kit et leurs versions (dans le dossier d'un projet, celles du projet). L'onglet porte l'étiquette « PC » et, à l'ouverture, une ligne en anglais dit où vous êtes : « PC · <terminal> · <projet> · agents: forwarded to the project's VM when it is on ». L'environnement est scellé, sauf votre agent SSH, qui reste pour Git.",
+            "Die Terminals des Kits („Alle Werkzeuge“ und deine eigenen, in jedem Ordner) laufen immer auf dem PC, mit aktiver VM oder ohne, mit den Werkzeugen des Kits und ihren Versionen (im Ordner eines Projekts denen des Projekts). Die Registerkarte trägt die Beschriftung „PC“, und beim Öffnen sagt eine Zeile auf Englisch, wo du bist: „PC · <Terminal> · <Projekt> · agents: forwarded to the project's VM when it is on“. Die Umgebung ist versiegelt, außer deinem SSH-Agenten, der für Git bleibt.",
           )}
         </P>
         <Bullets
           items={[
             tr(
-              "Per un agente apri il progetto: il pulsante dell'agente nella pagina del progetto, o il suo profilo nell'editor, lo avvia nella VM del progetto.",
-              "For an agent open the project: the agent's button on the project's page, or its profile in the editor, starts it in the project's VM.",
-              "Pour un agent, ouvrez le projet : le bouton de l'agent sur la page du projet, ou son profil dans l'éditeur, le démarre dans la VM du projet.",
-              "Für einen Agenten öffne das Projekt: Die Schaltfläche des Agenten auf der Seite des Projekts oder sein Profil im Editor startet ihn in der VM des Projekts.",
+              "claude, codex, pi e agy scritti qui, nella cartella di un progetto, aprono l'agente nella VM di quel progetto, nello stesso terminale. Fuori da un progetto, o senza VM, dicono perché ed escono. Lo stesso fanno il pulsante dell'agente nella pagina del progetto e il suo profilo nell'editor.",
+              "claude, codex, pi and agy typed here, in a project's folder, open the agent in that project's VM, in the same terminal. Outside a project, or without the VM, they say why and exit. The agent's button on the project's page and its profile in the editor do the same.",
+              "claude, codex, pi et agy tapés ici, dans le dossier d'un projet, ouvrent l'agent dans la VM de ce projet, dans le même terminal. Hors d'un projet, ou sans VM, ils disent pourquoi et s'arrêtent. Le bouton de l'agent sur la page du projet et son profil dans l'éditeur font de même.",
+              "claude, codex, pi und agy, hier im Ordner eines Projekts getippt, öffnen den Agenten in der VM dieses Projekts, im selben Terminal. Außerhalb eines Projekts oder ohne VM sagen sie warum und beenden sich. Dasselbe tun die Schaltfläche des Agenten auf der Seite des Projekts und sein Profil im Editor.",
             ),
             tr(
-              "Il terminale di un progetto («Terminale» nella sua pagina) è un'altra cosa: con la VM attiva è bash nella VM del progetto, con le versioni del progetto.",
-              "A project's terminal (“Terminal” on its page) is a different thing: with the VM on it is bash in the project's VM, with the project's versions.",
-              "Le terminal d'un projet (« Terminal » sur sa page) est autre chose : avec la VM active, c'est bash dans la VM du projet, avec les versions du projet.",
-              "Das Terminal eines Projekts („Terminal“ auf seiner Seite) ist etwas anderes: Mit aktiver VM ist es bash in der VM des Projekts, mit den Versionen des Projekts.",
+              "Il terminale di un progetto («Terminale» nella sua pagina) è un'altra cosa: con la VM attiva è bash nella VM del progetto, con le versioni del progetto (etichetta «VM progetto»); lì atollo mostra in sola lettura dove sei e che cosa hai.",
+              "A project's terminal (“Terminal” on its page) is a different thing: with the VM on it is bash in the project's VM, with the project's versions (label “Project VM”); there atollo shows, read-only, where you are and what you have.",
+              "Le terminal d'un projet (« Terminal » sur sa page) est autre chose : avec la VM active, c'est bash dans la VM du projet, avec les versions du projet (étiquette « VM du projet ») ; là, atollo montre en lecture seule où vous êtes et ce que vous avez.",
+              "Das Terminal eines Projekts („Terminal“ auf seiner Seite) ist etwas anderes: Mit aktiver VM ist es bash in der VM des Projekts, mit den Versionen des Projekts (Beschriftung „Projekt-VM“); dort zeigt atollo schreibgeschützt, wo du bist und was du hast.",
             ),
           ]}
         />
@@ -1441,10 +1441,10 @@ export const SERVICES: TopicTexts = {
       >
         <P>
           {tr(
-            "Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.",
-            "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
-            "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · pwsh », « app · claude »…) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
-            "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · pwsh“, „app · claude“…); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
+            "Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…), con accanto l'etichetta del suo livello: «PC», «PC · senza VM», «VM progetto» o «Agente · VM» (passandoci sopra, il nome della sandbox); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.",
+            "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…), with the label of its level beside it: “PC”, “PC · no VM”, “Project VM” or “Agent · VM” (hovering over it, the sandbox's name); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
+            "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · pwsh », « app · claude »…), avec à côté l'étiquette de son niveau : « PC », « PC · sans VM », « VM du projet » ou « Agent · VM » (au survol, le nom de la sandbox) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
+            "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · pwsh“, „app · claude“…), daneben die Beschriftung ihrer Ebene: „PC“, „PC · ohne VM“, „Projekt-VM“ oder „Agent · VM“ (beim Darüberfahren der Name der Sandbox); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
           )}
         </P>
         <P>
@@ -1481,10 +1481,10 @@ export const SERVICES: TopicTexts = {
               "Die Konsole startet mit pwsh -NoProfile und dem Profil des Kits (data\\kit\\profile.ps1): Deine PowerShell-Profile und -Module auf dem PC werden nicht geladen.",
             ),
             tr(
-              "In un terminale della pagina Terminali la variabile ATOLLO_TERMINAL dice il suo nome: entrando nella cartella di un progetto non cambia versioni, tiene quelle scelte per il terminale. Il «Terminale» di un progetto invece usa le versioni del progetto.",
-              "In a terminal from the Terminals page, the ATOLLO_TERMINAL variable holds its name: when you enter a project's folder it does not switch versions, it keeps the ones chosen for the terminal. A project's “Terminal”, on the other hand, uses the project's versions.",
-              "Dans un terminal de la page Terminaux, la variable ATOLLO_TERMINAL indique son nom : en entrant dans le dossier d'un projet, il ne change pas de versions, il garde celles choisies pour le terminal. Le « Terminal » d'un projet, en revanche, utilise les versions du projet.",
-              "In einem Terminal der Seite Terminals enthält die Variable ATOLLO_TERMINAL seinen Namen: Beim Wechsel in den Ordner eines Projekts ändert es die Versionen nicht, es behält die für das Terminal gewählten. Das „Terminal“ eines Projekts verwendet dagegen die Versionen des Projekts.",
+              "In un terminale della pagina Terminali la variabile ATOLLO_TERMINAL dice il suo nome. Aperto nella cartella di un progetto, usa le versioni scelte dal progetto per gli strumenti che il progetto ha scelto, e quelle del terminale per gli altri.",
+              "In a terminal from the Terminals page, the ATOLLO_TERMINAL variable holds its name. Opened in a project's folder, it uses the project's versions for the tools the project chose, and the terminal's for the others.",
+              "Dans un terminal de la page Terminaux, la variable ATOLLO_TERMINAL indique son nom. Ouvert dans le dossier d'un projet, il utilise les versions du projet pour les outils que le projet a choisis, et celles du terminal pour les autres.",
+              "In einem Terminal der Seite Terminals enthält die Variable ATOLLO_TERMINAL seinen Namen. Im Ordner eines Projekts geöffnet, verwendet es die Versionen des Projekts für die Werkzeuge, die das Projekt gewählt hat, und die des Terminals für die anderen.",
             ),
             tr(
               "All'apertura non si scarica niente (salvo la PowerShell del kit se manca): conta ciò che è già su disco.",
