@@ -577,6 +577,15 @@ fn a_vm_environment_has_only_the_kits_linux_tools() {
                 &guest_kit.data().join("npm-global"),
             )
             .unwrap();
+            // And the `php.ini` of its PHP (D-181).
+            let php = crate::isolation::vm::guest_path(
+                kit.target().is_windows(),
+                &guest_kit
+                    .data()
+                    .join("php")
+                    .join(guest_kit.target().as_str()),
+            )
+            .unwrap();
             assert!(
                 guest
                     .path
@@ -618,7 +627,9 @@ fn a_vm_environment_has_only_the_kits_linux_tools() {
             assert!(
                 others
                     .iter()
-                    .all(|(_, v)| Path::new(v).starts_with(apps) || Path::new(v).starts_with(&npm)),
+                    .all(|(_, v)| [apps, npm.as_str(), php.as_str()]
+                        .iter()
+                        .any(|m| Path::new(v).starts_with(m))),
                 "{what}: {others:?}"
             );
             assert_eq!(guest.env_file, None, "{what}: set by prepare");

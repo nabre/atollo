@@ -49,7 +49,11 @@ fn the_guest_tools_are_the_kits_linux_ones() {
         let linux = k.for_target(guest);
         assert_eq!(
             guest_tools(&k),
-            vec![linux.apps(), linux.data().join("npm-global")],
+            vec![
+                linux.apps(),
+                linux.data().join("npm-global"),
+                linux.data().join("php").join(guest.as_str())
+            ],
             "{host:?}"
         );
     }

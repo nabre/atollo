@@ -253,13 +253,11 @@ pub fn kit_terminal_args(
     args.push(vm.into());
     args.push("sh".into());
     args.push("-c".into());
+    let start = session_start();
     match banner {
-        None => args.push(r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#.into()),
+        None => args.push(format!("{start}; exec bash -l")),
         Some(banner) => {
-            args.push(
-                r#"printf '%s\n' "$1" >&2; PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH" exec bash -l"#
-                    .into(),
-            );
+            args.push(format!(r#"printf '%s\n' "$1" >&2; {start}; exec bash -l"#));
             args.push("sh".into());
             args.push(banner.into());
         }
@@ -315,7 +313,8 @@ fn binary_session_args(
     args.push(vm.into());
     args.push("sh".into());
     args.push("-c".into());
-    args.push(format!(r#"{TOOLS_FIRST}; exec "$0" "$@""#));
+    let start = session_start();
+    args.push(format!(r#"{start}; exec "$0" "$@""#));
     args.push(program.into());
     args.extend(extra.iter().cloned());
     args
@@ -494,7 +493,7 @@ pub fn exec_args(
     args.push(if path.is_empty() {
         line
     } else {
-        format!("{TOOLS_FIRST}; {line}")
+        format!("{}; {line}", session_start())
     });
     args
 }
@@ -521,7 +520,7 @@ pub fn scaffold_args(
         args.push(format!("{k}={v}"));
     }
     args.push(vm.into());
-    let script = format!(r#"{TOOLS_FIRST}; exec "$0" "$@""#);
+    let script = format!(r#"{}; exec "$0" "$@""#, session_start());
     args.extend(
         [
             "sh",
@@ -539,8 +538,34 @@ pub fn scaffold_args(
     args
 }
 
-/// The kit's tools first on the `PATH` (`ATOLLO_PATH`, given with `-e`).
-pub const TOOLS_FIRST: &str = r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$PATH"; export PATH"#;
+/// The kit's tools first on the `PATH` (`ATOLLO_PATH`, given with `-e`),
+/// then what the user installs in the VM's home ([`VM_HOMES`]), then the
+/// VM's own programs. Only variables: «Verifica strumenti» starts with it
+/// and writes nothing; a session adds [`MAKE_HOMES`] ([`session_start`]).
+pub const TOOLS_FIRST: &str = concat!(
+    r#"PATH="$ATOLLO_PATH${ATOLLO_PATH:+:}$HOME/.cargo/bin:$HOME/.gem/bin:$HOME/.npm-global/bin:$PATH"; "#,
+    r#"GEM_HOME="${GEM_HOME:-$HOME/.gem}"; NPM_CONFIG_PREFIX="${NPM_CONFIG_PREFIX:-$HOME/.npm-global}"; "#,
+    r#"R_LIBS_USER="${R_LIBS_USER:-$HOME/R/library}"; "#,
+    "export PATH GEM_HOME NPM_CONFIG_PREFIX R_LIBS_USER"
+);
+
+/// R's library made in the VM's home: R ignores an `R_LIBS_USER` that is
+/// not there, and `Rscript` cannot ask to make it.
+pub const MAKE_HOMES: &str = r#"mkdir -p "$R_LIBS_USER" 2>/dev/null"#;
+
+/// The start of a session's shell line in the VM: [`TOOLS_FIRST`], then
+/// [`MAKE_HOMES`].
+pub fn session_start() -> String {
+    format!("{TOOLS_FIRST}; {MAKE_HOMES}")
+}
+
+/// Where the user's own installations go in the VM (D-181): the kit's
+/// folders are read-only there, so `cargo install`, `gem install`,
+/// `npm install -g` and R's `install.packages` write in the VM's home
+/// (`~/.cargo`, `~/.gem`, `~/.npm-global`, `~/R/library`), set by
+/// [`TOOLS_FIRST`] unless the session gives them. The kit's own values for
+/// them never reach the VM (`isolation::guest_view`).
+pub const VM_HOMES: [&str; 4] = ["CARGO_HOME", "GEM_HOME", "NPM_CONFIG_PREFIX", "R_LIBS_USER"];
 
 /// What serves a web action in the VM.
 #[derive(Debug, Clone, PartialEq, Eq)]

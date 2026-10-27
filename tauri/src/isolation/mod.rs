@@ -1674,19 +1674,20 @@ pub fn project_guest_tools(kit: &Kit, guest: &Kit, project: &str, base: KitEnv) 
 
 /// The `PATH` entries and the variables of `env` (an environment of
 /// `guest`, the kit scoped to the VM's target, [`vm::guest_target`]) that
-/// lie in the folders the VM mounts read-only (its `data/apps` and
-/// `data/npm-global`, `install::guest::mounts`), as the VM sees them; never
-/// one of [`VM_HOMES`]. The rest of the kit's environment (its home, temp,
-/// agents) is the PC's business: the VM has its own.
+/// lie in the folders the VM mounts read-only (`install::guest::vm_mounts`:
+/// its `data/apps`, `data/npm-global`, the `php.ini` of its PHP), as the VM
+/// sees them; never one of `vm::VM_HOMES`, which the VM keeps in its own
+/// home. The rest of the kit's environment (its home, temp, agents) is the
+/// PC's business: the VM has its own.
 pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
     let windows = kit.target().is_windows();
-    let roots = crate::install::guest::mounts(guest);
+    let roots = crate::install::guest::vm_mounts(guest);
     let in_vm = |value: &str| crate::install::guest::guest_word(windows, &roots, value);
     let path = env.path_entries().into_iter().filter_map(&in_vm).collect();
     let vars = env
         .iter()
         .filter(|(name, _)| !name.eq_ignore_ascii_case("PATH"))
-        .filter(|(name, _)| !VM_HOMES.iter().any(|h| name.eq_ignore_ascii_case(h)))
+        .filter(|(name, _)| !vm::VM_HOMES.iter().any(|h| name.eq_ignore_ascii_case(h)))
         .filter_map(|(name, value)| Some((name.to_owned(), in_vm(value)?)))
         .collect();
     GuestTools {
@@ -1695,12 +1696,6 @@ pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
         env_file: None,
     }
 }
-
-/// Variables of the kit's tools that name where they write (Cargo's
-/// registry and `cargo install`): in the VM they are left to its own home
-/// (`~/.cargo`), since the kit's folders are read-only there (D-180; a
-/// `cargo build` with one in the mount fails, tried with sbx 0.50.0).
-pub const VM_HOMES: [&str; 1] = ["CARGO_HOME"];
 
 impl Vm {
     /// The VM of `project` in `dir` with an `sbx` named `sbx` (the tests).

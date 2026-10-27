@@ -53,11 +53,11 @@ pub fn linux_build(kit: &Kit, origin: &Origin) -> bool {
 
 /// The kit's tools for the VM's Linux, mounted read-only (D-170): its
 /// `data/apps/<linux>` and `data/npm-global` (pnpm and yarn, D-180), the
-/// folders the tools sandbox writes (`install::guest::mounts`); none where
-/// the PC has no VM.
+/// folders the tools sandbox writes, and the `php.ini` of its PHP
+/// (`install::guest::vm_mounts`, D-181); none where the PC has no VM.
 pub fn guest_tools(kit: &Kit) -> Vec<PathBuf> {
     vm::guest_target(kit.target())
-        .map(|t| crate::install::guest::mounts(&kit.for_target(t)))
+        .map(|t| crate::install::guest::vm_mounts(&kit.for_target(t)))
         .unwrap_or_default()
 }
 

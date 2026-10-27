@@ -142,7 +142,7 @@ fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
     let tools = project_guest_tools(&kit, &guest, "shop", base);
     // The folders the VM mounts read-only: the kit's Linux tools and the
     // global packages of npm (pnpm, yarn, D-180).
-    let mounted: Vec<String> = crate::install::guest::mounts(&guest)
+    let mounted: Vec<String> = crate::install::guest::vm_mounts(&guest)
         .iter()
         .map(|m| vm::guest_path(kit.target().is_windows(), m).unwrap())
         .collect();
@@ -156,7 +156,9 @@ fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
     );
     assert!(!tools.vars.iter().any(|(n, _)| n == "ATOLLO_MYSQL_CNF"));
     // Where Cargo writes is the VM's own home: the mount is read-only.
-    assert!(!tools.vars.iter().any(|(n, _)| n == "CARGO_HOME"));
+    for home in vm::VM_HOMES {
+        assert!(!tools.vars.iter().any(|(n, _)| n == home), "{home}");
+    }
     assert!(tools.vars.iter().any(|(n, _)| n == "RUSTUP_HOME"));
 
     let mut choice =
