@@ -1,4 +1,4 @@
-// VSCodium's indicators: badges, the progress bar, dividers and spinning
+// VSCodium's indicators: badges, the progress bar and spinning
 // icons are vscode-elements components; the meter, the notices, the links
 // and the state dots are drawn with the workbench's colors.
 import type { ReactNode } from "react";

@@ -9,7 +9,6 @@
 import { useCallback, useRef, type DetailedHTMLProps, type HTMLAttributes } from "react";
 import "@vscode-elements/elements/dist/vscode-badge/index.js";
 import "@vscode-elements/elements/dist/vscode-button/index.js";
-import "@vscode-elements/elements/dist/vscode-divider/index.js";
 import "@vscode-elements/elements/dist/vscode-form-group/index.js";
 import "@vscode-elements/elements/dist/vscode-form-helper/index.js";
 import "@vscode-elements/elements/dist/vscode-icon/index.js";
