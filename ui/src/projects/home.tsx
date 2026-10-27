@@ -12,9 +12,9 @@ import {
   type ProjectAction,
   type ProjectInfo,
   type RunInfo,
-  type SetupSnapshot,
 } from "../ipc";
 import { AgentButtons } from "../agents";
+import { useSetup } from "../components/setup";
 import { basesByGroup, PieceLogo, textOf, type BaseGroup, type Frameworks } from "../frameworks";
 import { t } from "../i18n";
 import { ActionBar, Button, Codicon, codicon, Dot, EditorBody, EditorSection, IconButton, Link } from "../workbench";
@@ -54,6 +54,13 @@ export interface HomeHandlers {
   onTool: (id: string) => void;
 }
 
+/** The home's tools with the preparation under way read here: an
+ * install's progress renders this part of the home, not the page. */
+function LiveHomeTools({ onOpen }: { onOpen: (id: string) => void }) {
+  const setup = useSetup();
+  return <HomeTools setup={setup} onOpen={onOpen} />;
+}
+
 export function ProjectsHome({
   projects,
   runs,
@@ -62,7 +69,6 @@ export function ProjectsHome({
   agents,
   fw,
   handlers,
-  setup = null,
 }: {
   projects: ProjectInfo[];
   runs: Record<string, RunInfo>;
@@ -71,8 +77,6 @@ export function ProjectsHome({
   agents: AgentInfo[] | null;
   fw: Frameworks;
   handlers: HomeHandlers;
-  /** The preparation under way: the tools' progress and buttons. */
-  setup?: SetupSnapshot | null;
 }) {
   const byId = new Map(projects.map((p) => [p.id, p]));
   const live = Object.values(runs)
@@ -215,7 +219,7 @@ export function ProjectsHome({
           </ul>
         </EditorSection>
 
-        <HomeTools setup={setup} onOpen={handlers.onTool} />
+        <LiveHomeTools onOpen={handlers.onTool} />
 
         <p className="text-[12px] text-vsc-desc">
           {t(
