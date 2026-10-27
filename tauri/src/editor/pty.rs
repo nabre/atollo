@@ -25,7 +25,7 @@
 //! `os/unix/pty.rs`, `os/windows/conpty.rs`); the sessions, the output and
 //! the choice of the program are plain code, tested on every system.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -134,7 +134,10 @@ impl Utf8 {
 /// the last chunk in it.
 #[derive(Debug)]
 pub struct Backlog {
-    text: String,
+    /// UTF-8, starting at a character: a queue, so the bytes that leave the
+    /// front do not move the rest (a full backlog would otherwise shift
+    /// its whole `cap` at every chunk).
+    text: VecDeque<u8>,
     seq: u64,
     cap: usize,
 }
@@ -148,7 +151,7 @@ impl Default for Backlog {
 impl Backlog {
     pub fn with_cap(cap: usize) -> Backlog {
         Backlog {
-            text: String::new(),
+            text: VecDeque::new(),
             seq: 0,
             cap,
         }
@@ -157,15 +160,21 @@ impl Backlog {
     /// Adds a chunk; returns its number.
     pub fn push(&mut self, data: &str) -> u64 {
         self.seq += 1;
-        self.text.push_str(data);
-        if self.text.len() > self.cap {
-            let mut cut = self.text.len() - self.cap;
-            // Always at a character boundary, and at a line start when one
-            // is near, so the view does not begin inside an escape sequence.
-            while !self.text.is_char_boundary(cut) {
+        self.text.extend(data.as_bytes());
+        let len = self.text.len();
+        if len > self.cap {
+            let mut cut = len - self.cap;
+            // Always at a character boundary (not a UTF-8 continuation
+            // byte), and at a line start when one is near, so the view does
+            // not begin inside an escape sequence.
+            while cut < len && (self.text[cut] as i8) < -0x40 {
                 cut += 1;
             }
-            if let Some(nl) = self.text[cut..].find('\n').filter(|&n| n < 4096) {
+            if let Some(nl) = self
+                .text
+                .range(cut..len.min(cut + 4096))
+                .position(|&b| b == b'\n')
+            {
                 cut += nl + 1;
             }
             self.text.drain(..cut);
@@ -174,9 +183,15 @@ impl Backlog {
     }
 
     pub fn snapshot(&self) -> Chunk {
+        let (front, back) = self.text.as_slices();
+        let mut bytes = Vec::with_capacity(self.text.len());
+        bytes.extend_from_slice(front);
+        bytes.extend_from_slice(back);
         Chunk {
             seq: self.seq,
-            data: self.text.clone(),
+            // Whole characters only (`push` cuts at their start): never lossy.
+            data: String::from_utf8(bytes)
+                .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned()),
         }
     }
 }

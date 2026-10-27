@@ -44,6 +44,55 @@ fn backlog_keeps_the_tail_at_a_line_start() {
     assert!(b.snapshot().data.ends_with('à'));
 }
 
+/// The backlog as it was kept before, in a `String` shifted at every
+/// chunk once full: the queue must keep exactly the same text.
+fn backlog_as_before(text: &mut String, cap: usize, data: &str) {
+    text.push_str(data);
+    if text.len() > cap {
+        let mut cut = text.len() - cap;
+        while !text.is_char_boundary(cut) {
+            cut += 1;
+        }
+        if let Some(nl) = text[cut..].find('\n').filter(|&n| n < 4096) {
+            cut += nl + 1;
+        }
+        text.drain(..cut);
+    }
+}
+
+#[test]
+fn backlog_keeps_the_same_text_as_before() {
+    let parts = [
+        "abc\n",
+        "àèì€😀",
+        "\x1b[31mrosso\x1b[0m\r\n",
+        "senza fine riga ",
+        "\n\n",
+        "x",
+        "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€",
+    ];
+    for cap in [1, 3, 7, 16, 100, 5000] {
+        let mut b = Backlog::with_cap(cap);
+        let mut before = String::new();
+        // A fixed walk over the parts, long lines included (the cut looks
+        // for a new line in the next 4096 bytes only).
+        let mut k: usize = 7;
+        for i in 0..3000u64 {
+            k = (k * 31 + 11) % 997;
+            let part = if k % 50 == 0 {
+                "y".repeat(5000 + k)
+            } else {
+                parts[k % parts.len()].to_owned()
+            };
+            assert_eq!(b.push(&part), i + 1);
+            backlog_as_before(&mut before, cap, &part);
+            let s = b.snapshot();
+            assert_eq!(s.data, before, "cap {cap}, chunk {}", i + 1);
+            assert_eq!(s.seq, i + 1);
+        }
+    }
+}
+
 fn kit_on(name: &str, target: Target, installed: &[&str]) -> (TempDir, Kit) {
     let tmp = TempDir::new(name);
     let kit = Kit::at(tmp.0.join("k (1) & co"), crate::test_support::kit_arch()).for_target(target);
