@@ -25,7 +25,7 @@ mod pool;
 mod ports;
 mod start;
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -105,7 +105,9 @@ pub type Notify = Arc<dyn Fn(Event) + Send + Sync>;
 
 struct Entry {
     info: RunInfo,
-    lines: Vec<String>,
+    /// The last [`MAX_LINES`](output::MAX_LINES): the oldest leave from the
+    /// front without moving the others.
+    lines: VecDeque<String>,
     /// Dropped to stop: ends every process of the action.
     job: Option<Job>,
     stopped: bool,
@@ -204,7 +206,7 @@ impl Runner {
         RunLog {
             lines: entries
                 .get(key)
-                .map(|e| e.lines.clone())
+                .map(|e| e.lines.iter().cloned().collect())
                 .unwrap_or_default(),
             seq: self.seq.load(Ordering::Relaxed),
         }

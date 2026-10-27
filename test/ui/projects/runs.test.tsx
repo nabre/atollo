@@ -93,7 +93,8 @@ describe("useRuns", () => {
     });
     expect(result.current.logs.get("blog|dev").lines).toEqual(["start", "", "", "ready"]);
     // The lines that waited for the frame were in the read: not added again.
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // The frame they would have come at, not a guess of how long it takes.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     expect(result.current.logs.get("blog|dev").lines).toEqual(["start", "", "", "ready"]);
   });
 

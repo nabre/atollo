@@ -93,8 +93,6 @@ vi.mock("@tauri-apps/api/event", () => ({
 const [SITE] = SAMPLE_PROJECTS as [ProjectInfo, ...ProjectInfo[]];
 const [MYSQL] = SAMPLE_SERVICES as [ServiceInfo, ...ServiceInfo[]];
 const [POOL] = SAMPLE_SERVERS.pools as [WebServerPool, ...WebServerPool[]];
-/** How long a lazily loaded page may take to appear the first time. */
-const LAZY = 5000;
 
 /** The preview's static site under another name, never opened. */
 function project(name: string): ProjectInfo {
@@ -122,6 +120,20 @@ const { App } = await import("@/App");
 const { loadCatalog, setLang } = await import("@/i18n");
 // The English catalog read once here: a test in English waits for no chunk.
 await loadCatalog("en");
+// Likewise every page read lazily (App's PRELOAD, the terminal's panel, the
+// new project's wizard): a test opening one finds it at the next render,
+// not after an import that, with every worker busy, can outlast a findBy.
+await Promise.all([
+  import("@/guide"),
+  import("@/settings/page"),
+  import("@/components"),
+  import("@/ai"),
+  import("@/databases/page"),
+  import("@/servers"),
+  import("@/terminal/page"),
+  import("@/terminal/panel"),
+  import("@/projects/wizard"),
+]);
 
 afterEach(async () => {
   cleanup();
@@ -527,11 +539,14 @@ describe("App", () => {
     fireEvent.click(await panes.findByText("Antigravity"));
     const key = await screen.findByLabelText("Chiave API di Gemini (Antigravity senza account Google)");
     fireEvent.change(key, { target: { value: "AIza-key" } });
-    expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
+    expect(invoke).not.toHaveBeenCalledWith("gemini_key_set", expect.anything());
     fireEvent.blur(key);
+    // Saved alone, by Rust at once: never the settings read here and sent
+    // back, which would undo a change of the Settings page saved meanwhile.
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("settings_set", expect.objectContaining({ gemini: "AIza-key" }));
+      expect(invoke).toHaveBeenCalledWith("gemini_key_set", { key: "AIza-key" });
     });
+    expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
   });
 
   it("changes the theme at once, with no Save", async () => {
@@ -637,6 +652,29 @@ describe("App", () => {
       });
     });
     expect(await screen.findByText(/Progetto app creato/)).toBeTruthy();
+  });
+
+  it("turns a project's star at once, and back when Rust refuses", async () => {
+    let refuse: (e: Error) => void = () => undefined;
+    invoke.mockImplementation((cmd) =>
+      cmd === "project_pin"
+        ? new Promise((_, reject) => {
+            refuse = reject;
+          })
+        : answers({ projects_list: [project("negozio")] })(cmd),
+    );
+    render(<App />);
+    const recent = within(await screen.findByRole("region", { name: "Recenti" }));
+    fireEvent.click(recent.getByRole("button", { name: "Aggiungi negozio ai preferiti" }));
+    // Before Rust answers.
+    expect(await screen.findByRole("region", { name: "Preferiti" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Togli negozio dai preferiti" })).toBeTruthy();
+    act(() => {
+      refuse(new Error("disco pieno"));
+    });
+    expect(await screen.findByText(/disco pieno/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Aggiungi negozio ai preferiti" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Preferiti" })).toBeNull();
   });
 
   it("starts, pins and finds the projects from the home", async () => {
@@ -1063,9 +1101,7 @@ describe("App", () => {
       answers({ app_info: { ...SAMPLE_INFO, firstRun: true }, components_list: comps, components_apply: null }),
     );
     render(<App />);
-    // The first start is a lazily loaded page: its first import can take
-    // over the default second on a Windows runner.
-    expect(await screen.findByText("Benvenuto in Atollo", {}, { timeout: LAZY })).toBeTruthy();
+    expect(await screen.findByText("Benvenuto in Atollo")).toBeTruthy();
     expect(screen.getByLabelText<HTMLInputElement>(/^Git(?!Hub)/).disabled).toBe(true);
     // Not available and not chosen: it cannot be chosen.
     expect(screen.getByLabelText<HTMLInputElement>(/^Rstatistica/).disabled).toBe(true);
@@ -1140,7 +1176,7 @@ describe("App", () => {
     const [guideBtn] = screen.getAllByRole("button", { name: "Guida" });
     if (guideBtn) fireEvent.click(guideBtn);
     // It opens on the welcome topic, with a card per chapter
-    expect(await screen.findByText("Che cos'è, in parole semplici", {}, { timeout: LAZY })).toBeTruthy();
+    expect(await screen.findByText("Che cos'è, in parole semplici")).toBeTruthy();
     expect(screen.getByText("Come funziona dentro")).toBeTruthy();
 
     // The search narrows the topics; the sources table counts its rows

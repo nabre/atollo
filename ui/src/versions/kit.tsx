@@ -346,7 +346,12 @@ export function useKitVersions(setup: SetupSnapshot | null, enabled: boolean, ta
     [runAction],
   );
   const byId = useMemo(() => new Map((tools ?? []).map((x) => [x.id, x])), [tools]);
-  return { byId, setTools, busy, error, last, run, offers, target };
+  // The same object while nothing changes: the rows of the Tools table
+  // that get it render only then.
+  return useMemo(
+    () => ({ byId, setTools, busy, error, last, run, offers, target }),
+    [byId, setTools, busy, error, last, run, offers, target],
+  );
 }
 
 export type KitVersions = ReturnType<typeof useKitVersions>;

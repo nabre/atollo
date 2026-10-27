@@ -60,14 +60,15 @@ pub struct ComponentInfo {
 /// folder is no longer chosen (versions::sync_with_disk); the names of
 /// those. Not while an installation runs (its folders come and go), nor when
 /// inspecting a non-host target. Off the window's thread: it reads every
-/// component's folders, and rebuilds the kit's environment.
+/// component's folders, and rebuilds the kit's environment. It writes
+/// `components.txt`: in order with the page's clicks ([`INSTALLS`]).
 #[tauri::command]
 pub async fn components_sync<R: Runtime>(
     webview: Webview<R>,
     target: Option<String>,
 ) -> CmdResult<Vec<String>> {
     ensure_main(&webview)?;
-    off_main(&webview, "components", move |_, state| {
+    let work = off_main(&webview, "components", move |_, state| {
         if state.setup.snapshot().running {
             return Ok(Vec::new());
         }
@@ -80,8 +81,8 @@ pub async fn components_sync<R: Runtime>(
             apply_env(state);
         }
         Ok(off)
-    })
-    .await
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The catalog as the Tools page shows it; with `ids`, only those (a row
@@ -387,30 +388,33 @@ pub fn setup_state<R: Runtime>(
 
 /// Installs the components chosen (or only `only`); `update_all` also
 /// updates what is installed. Returns at once; progress comes as `setup`
-/// and `job`. While another run runs it waits in the queue.
+/// and `job`. While another run runs it waits in the queue. In the order
+/// clicked with the page's other installs ([`INSTALLS`]): as a `fn` it
+/// waited on the window's thread for the one clicked before.
 #[tauri::command]
-pub fn setup_start<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn setup_start<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     only: Option<Vec<String>>,
     update_all: bool,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    let only = only.unwrap_or_default();
-    if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
-        return Err(format!("unknown component: {bad}").into());
-    }
-    let opts = Options {
-        target: Some(kit.target()),
-        only,
-        update_all,
-        ..Options::default()
-    };
-    state.setup.start(opts, false, setup_notify(app))?;
-    Ok(())
+    let work = off_main(&webview, "setup", move |app, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        let only = only.unwrap_or_default();
+        if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
+            return Err(format!("unknown component: {bad}").into());
+        }
+        let opts = Options {
+            target: Some(kit.target()),
+            only,
+            update_all,
+            ..Options::default()
+        };
+        state.setup.start(opts, false, setup_notify(app.clone()))?;
+        Ok(())
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The components with a new version (N-9), from the versions asked last;
@@ -504,31 +508,36 @@ pub struct Repair {
 }
 
 /// «Reinstalla» of a damaged component: marked to be installed again at
-/// its version (D-92), then prepared now.
+/// its version (D-92), then prepared now. Off the window's thread, in the
+/// order clicked, as [`setup_start`].
 #[tauri::command]
-pub fn components_repair<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn components_repair<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     items: Vec<Repair>,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    let items: Vec<(String, Option<String>)> = items.into_iter().map(|r| (r.id, r.line)).collect();
-    let only = crate::setup::integrity::mark_for_repair(&kit, &items).or_fail_chain("repair")?;
-    let opts = Options {
-        target: Some(kit.target()),
-        only,
-        ..Options::default()
-    };
-    state.setup.start(opts, false, setup_notify(app))?;
-    Ok(())
+    let work = off_main(&webview, "repair", move |app, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        let items: Vec<(String, Option<String>)> =
+            items.into_iter().map(|r| (r.id, r.line)).collect();
+        let only =
+            crate::setup::integrity::mark_for_repair(&kit, &items).or_fail_chain("repair")?;
+        let opts = Options {
+            target: Some(kit.target()),
+            only,
+            ..Options::default()
+        };
+        state.setup.start(opts, false, setup_notify(app.clone()))?;
+        Ok(())
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// Installs `id` now, at its latest version, from the table of the Tools
 /// page: it becomes chosen, the other changes of the page stay pending.
-/// Off the window's thread: where it goes asks `sbx` ([`vm_tools_target`]).
+/// Off the window's thread: where it goes asks `sbx` ([`vm_tools_target`]);
+/// in the order clicked ([`INSTALLS`]).
 #[tauri::command]
 pub async fn components_install<R: Runtime>(
     webview: Webview<R>,
@@ -536,16 +545,20 @@ pub async fn components_install<R: Runtime>(
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    off_main(&webview, "components", move |app, state| {
-        super::versions::install_now(app.clone(), state, id, None, target)
-    })
+    in_order(
+        &INSTALLS,
+        off_main(&webview, "components", move |app, state| {
+            super::versions::install_now(app.clone(), state, id, None, target)
+        }),
+    )
     .await
 }
 
 /// The choice of the "Linguaggi e strumenti" page: `chosen` are the ids to
 /// keep installed (required ones always are, dependencies follow). Saved in
 /// `components.txt`, then installed and removed in the background. Off the
-/// window's thread: where the tools go asks `sbx` ([`vm_tools_target`]).
+/// window's thread: where the tools go asks `sbx` ([`vm_tools_target`]);
+/// in the order clicked ([`INSTALLS`]): the last choice is the one saved.
 #[tauri::command]
 pub async fn components_apply<R: Runtime>(
     webview: Webview<R>,
@@ -554,7 +567,7 @@ pub async fn components_apply<R: Runtime>(
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    off_main(&webview, "components", move |app, state| {
+    let work = off_main(&webview, "components", move |app, state| {
         let kit = kit_for(&state.kit, target.as_deref())?;
         let catalog = Catalog::get();
         if let Some(bad) = chosen.iter().find(|id| catalog.find(id).is_none()) {
@@ -584,8 +597,8 @@ pub async fn components_apply<R: Runtime>(
         };
         state.setup.start(opts, false, setup_notify(app.clone()))?;
         Ok(())
-    })
-    .await
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The VM's Linux when the VM is on (D-173): where the chosen tools go,

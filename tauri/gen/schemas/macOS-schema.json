@@ -375,6 +375,12 @@
           "markdownDescription": "Enables the frameworks_targets command without any pre-configured scope."
         },
         {
+          "description": "Enables the gemini_key_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-gemini-key-set",
+          "markdownDescription": "Enables the gemini_key_set command without any pre-configured scope."
+        },
+        {
           "description": "Enables the git_identity_get command without any pre-configured scope.",
           "type": "string",
           "const": "allow-git-identity-get",
@@ -1249,6 +1255,12 @@
           "type": "string",
           "const": "deny-frameworks-targets",
           "markdownDescription": "Denies the frameworks_targets command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the gemini_key_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-gemini-key-set",
+          "markdownDescription": "Denies the gemini_key_set command without any pre-configured scope."
         },
         {
           "description": "Denies the git_identity_get command without any pre-configured scope.",

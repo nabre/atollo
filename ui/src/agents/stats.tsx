@@ -12,6 +12,7 @@ import {
   type Usage,
 } from "../ipc";
 import { locale, t } from "../i18n";
+import { whileShown } from "../shared/poll";
 import { Badge } from "../shared/tags";
 import { Codicon, Meter } from "../workbench";
 
@@ -46,12 +47,13 @@ export function useStats(): {
   useEffect(() => {
     alive.current = true;
     load(false);
-    const timer = window.setInterval(() => {
+    // Not while the window is hidden: at once when it shows again.
+    const stop = whileShown(() => {
       load(false);
     }, EVERY);
     return () => {
       alive.current = false;
-      window.clearInterval(timer);
+      stop();
     };
   }, [load]);
   return {

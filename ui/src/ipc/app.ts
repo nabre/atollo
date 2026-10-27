@@ -207,8 +207,8 @@ export interface Settings {
     extraCaCerts: string | null;
     allowLan: boolean;
   };
-  /** Never sent to the interface (Rust skips it): see `geminiKeySet`;
-   * the key goes to `settingsSet` on its own. */
+  /** Never sent to the interface (Rust skips it): see `SettingsView.geminiKeySet`;
+   * the key is saved on its own, by the function `geminiKeySet`. */
   geminiApiKey?: string | null;
   autoUpdate: boolean;
   rustToolchain: "gnu" | "msvc" | null;
@@ -255,6 +255,13 @@ export function settingsGet(): Promise<SettingsView> {
  * `gemini`: null keeps the saved key, "" removes it. */
 export function settingsSet(settings: Settings, gemini: string | null): Promise<void> {
   return act("settings_set", { settings, gemini });
+}
+
+/** Saves the Gemini API key alone, "" removes it: Rust reads and writes the
+ * settings at once, so a change of the Settings page saved meanwhile is
+ * kept. */
+export function geminiKeySet(key: string): Promise<void> {
+  return act("gemini_key_set", { key });
 }
 
 export interface UpdateStatus {

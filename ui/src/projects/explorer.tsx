@@ -131,6 +131,7 @@ function Projects({
   );
   const {
     data: projects,
+    setData: setProjects,
     error: loadError,
     reload: reloadProjects,
   } = useLoad<ProjectInfo[] | null>(readProjects, null, { onError: "show" });
@@ -206,8 +207,20 @@ function Projects({
       run(`terminal:${p.id}`, () => terminalOpen(p.id));
     },
     onPin: (p, pinned) => {
+      // The star turns at once; back as it was if Rust refuses.
+      const mark = (on: boolean) => {
+        setProjects(
+          (list) => list?.map((x) => (x.id === p.id ? { ...x, settings: { ...x.settings, pinned: on } } : x)) ?? list,
+        );
+      };
+      mark(pinned);
       run(`pin:${p.id}`, async () => {
-        await projectPin(p.id, pinned);
+        try {
+          await projectPin(p.id, pinned);
+        } catch (e: unknown) {
+          mark(p.settings.pinned === true);
+          throw e;
+        }
         reloadProjects();
       });
     },

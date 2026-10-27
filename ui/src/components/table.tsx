@@ -6,7 +6,7 @@
 // choice of each row applied with "Apply" as on the tool's own page, and
 // the actions done at once: install (at a chosen version), add a version,
 // update.
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   TARGETS,
   componentsInstall,
@@ -114,6 +114,164 @@ function RowActions({ c, kit, setup }: { c: ComponentInfo; kit: KitVersions; set
   );
 }
 
+/** The preparation as one row sees it: itself when it touches component
+ * `id` (a step, the queue, a run asked), else null. An install's progress
+ * then renders the rows it touches, not the forty of the table. */
+export function setupOf(s: SetupSnapshot | null, id: string): SetupSnapshot | null {
+  if (!s) return null;
+  const touches =
+    s.steps.some((x) => x.id === id) ||
+    s.queue.some((q) => q.id === id) ||
+    (s.pending ?? []).some((p) => p.items.includes(id));
+  return touches ? s : null;
+}
+
+type Check = ComponentsState["checks"] extends Map<string, infer C> ? C : never;
+
+const NONE: string[] = [];
+
+/** A tool's row: rendered again only when what it shows changes (its
+ * choice, its part of the preparation, the versions, the checks), not at
+ * every percent of another tool's download. */
+const ToolRow = memo(function ToolRow({
+  c,
+  on,
+  setup,
+  needed,
+  check,
+  columns,
+  activeTarget,
+  grid,
+  list,
+  kit,
+  choose,
+  onOpen,
+}: {
+  c: ComponentInfo;
+  on: boolean;
+  /** Only when it touches this row (`setupOf`). */
+  setup: SetupSnapshot | null;
+  needed: string[];
+  check: Check | undefined;
+  columns: TargetId[];
+  activeTarget: TargetId;
+  grid: ComponentsState["grid"];
+  list: ComponentInfo[];
+  kit: KitVersions;
+  choose: (id: string, on: boolean) => void;
+  onOpen: (id: string) => void;
+}) {
+  const pending = on !== (c.chosen || c.locked);
+  const item = itemState(setup, c.id, c.name);
+  const lines = linesOf(kit.byId.get(c.id));
+  const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
+  const cell = "h-[26px] border-b border-vsc-border px-2";
+  return (
+    <tr className={`hover:bg-vsc-list-hover ${pending ? "bg-vsc-settings-modified/5" : ""}`}>
+      <td className={cell}>
+        <Checkbox
+          label={t("Scegli {0}", c.name)}
+          checked={on}
+          disabled={
+            c.locked ||
+            itemBusy(setup, c.id) ||
+            c.unavailableReason !== null ||
+            c.notNeeded !== null ||
+            (!c.available && !on)
+          }
+          onChange={(v) => {
+            choose(c.id, v);
+          }}
+        />
+      </td>
+      <td className={cell}>
+        <span className="flex items-center gap-2 whitespace-nowrap">
+          <ComponentLogo id={c.id} size={16} />
+          <Link
+            onClick={() => {
+              onOpen(c.id);
+            }}
+          >
+            {c.name}
+          </Link>
+          {c.locked && <Tag>{t("obbligatorio")}</Tag>}
+        </span>
+      </td>
+      <td className={`${cell} font-mono whitespace-nowrap select-text`}>{version ?? "—"}</td>
+      <td className={`${cell} font-mono whitespace-nowrap`}>
+        {lines.length > 0 ? (
+          lines.join(", ")
+        ) : c.versioned ? (
+          "—"
+        ) : (
+          <span className="font-sans text-vsc-desc">{t("sempre l'ultima")}</span>
+        )}
+      </td>
+      <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>{sizeText(c.mb)}</td>
+      {columns.map((id) => {
+        const here = id === activeTarget;
+        const s = statusOf(grid, c.id, id);
+        const st = here ? shownStatus(c, s, on, item, id) : s ? otherStatus(s, id) : null;
+        if (!st) return <td key={id} className={cell} />;
+        const parts = [toolStateLabel(st.state), st.detail];
+        if (here && check) parts.push(`${t("Verifica")}: ${check.answer}`);
+        const label = `${c.name}, ${targetName(id)}: ${parts.filter(Boolean).join(" — ")}`;
+        return (
+          <td key={id} className={`${cell} text-center whitespace-nowrap ${here ? "bg-vsc-focus/10" : ""}`}>
+            <span role="img" aria-label={label} title={label} className="inline-flex items-center gap-1">
+              <ToolStateIcon state={st.state} />
+              {here &&
+                check &&
+                (check.ok ? (
+                  <Codicon name="check" size={12} className="text-vsc-focus" />
+                ) : (
+                  <Codicon name="warning" size={12} className="text-vsc-warning" />
+                ))}
+            </span>
+          </td>
+        );
+      })}
+      <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
+        {needed.length > 0 && !on && (
+          <Codicon
+            name="warning"
+            size={12}
+            className="mr-1 text-vsc-warning"
+            label={t("Serve a progetti e non è scelto")}
+          />
+        )}
+        {needed.join(", ")}
+      </td>
+      <td className={`${cell} whitespace-nowrap text-vsc-desc`}>
+        {c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", ")}
+      </td>
+      <td className={cell}>
+        {/* Its install in its row: waiting, downloading with its bar,
+            failed with «Riprova»; the other rows are not touched. */}
+        <span className="flex items-center gap-2 whitespace-nowrap">
+          {item && <ItemStatus state={item} />}
+          {item && <ItemBar state={item} label={c.name} className="w-16" />}
+          {item?.kind === "problem" && !itemBusy(setup, c.id) && (
+            <Link
+              onClick={() => {
+                kit.run(c.id, `install:${c.id}`, () => setupStart([c.id], false, kit.target));
+              }}
+            >
+              {t("Riprova")}
+            </Link>
+          )}
+          <RowActions c={c} kit={kit} setup={setup} />
+        </span>
+      </td>
+    </tr>
+  );
+});
+
+/** Tool `id` on system `of`, in the grid of the systems. */
+function statusOf(grid: ComponentsState["grid"], id: string, of: TargetId) {
+  return grid?.targets.find((s) => s.target === of)?.tools.find((x) => x.id === id);
+}
+
 export function ToolsTable({
   state,
   kit,
@@ -134,15 +292,28 @@ export function ToolsTable({
   // system shown, and with "Expand" each of the others.
   const [expanded, setExpanded] = useState(false);
   const allProfiles = grid?.profiles ?? [];
-  const columns: TargetId[] = expanded && allProfiles.length > 0 ? allProfiles.map((p) => p.id) : [activeTarget];
-  const status = (id: string, of: TargetId) =>
-    grid?.targets.find((s) => s.target === of)?.tools.find((x) => x.id === id);
+  // Kept between renders, as the rows' other props: a row renders again
+  // only when one of them changes.
+  const profiles = grid?.profiles;
+  const columns: TargetId[] = useMemo(
+    () => (expanded && profiles && profiles.length > 0 ? profiles.map((p) => p.id) : [activeTarget]),
+    [expanded, profiles, activeTarget],
+  );
+  const opener = useRef(onOpen);
+  useEffect(() => {
+    opener.current = onOpen;
+  });
+  const openTool = useCallback((id: string) => {
+    opener.current(id);
+  }, []);
   const all = groups();
   const [search, setSearch] = useState("");
   const [group, setGroup] = useState("all");
   const [show, setShow] = useState<Show>("all");
   const [sort, setSort] = useState<{ by: Sort; up: boolean }>({ by: "name", up: true });
   const [folded, setFolded] = useState<Set<string>>(new Set());
+  // The order by state follows the preparation; the others do not.
+  const sortSetup = sort.by === "state" ? setup : null;
 
   const groupOf = (c: ComponentInfo) => all.findIndex((g) => g.has(c));
   const fold = (id: string) => {
@@ -183,8 +354,13 @@ export function ToolsTable({
           return c.mb;
         case "state":
           return TOOL_STATES.indexOf(
-            shownStatus(c, status(c.id, activeTarget), chosen.has(c.id), itemState(setup, c.id, c.name), activeTarget)
-              .state,
+            shownStatus(
+              c,
+              statusOf(grid, c.id, activeTarget),
+              chosen.has(c.id),
+              itemState(sortSetup, c.id, c.name),
+              activeTarget,
+            ).state,
           );
       }
     };
@@ -196,7 +372,7 @@ export function ToolsTable({
     });
     // groupOf and all only read the catalog's groups, fixed for the page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list, chosen, search, group, show, sort, neededBy, grid, activeTarget, setup]);
+  }, [list, chosen, search, group, show, sort, neededBy, grid, activeTarget, sortSetup]);
 
   /** The rows a box can choose: not required, installable or chosen. */
   const freeOf = (of: ComponentInfo[]) => of.filter((c) => !c.locked && (c.available || chosen.has(c.id)));
@@ -224,116 +400,6 @@ export function ToolsTable({
       </button>
     </th>
   );
-
-  const row = (c: ComponentInfo) => {
-    const on = chosen.has(c.id);
-    const pending = on !== (c.chosen || c.locked);
-    const item = itemState(setup, c.id, c.name);
-    const needed = neededBy.get(c.id) ?? [];
-    const lines = linesOf(kit.byId.get(c.id));
-    const version = composerOf(c.version) ? splitVersion(c.version).main : c.version;
-    const check = checks.get(c.id);
-    const cell = "h-[26px] border-b border-vsc-border px-2";
-    return (
-      <tr key={c.id} className={`hover:bg-vsc-list-hover ${pending ? "bg-vsc-settings-modified/5" : ""}`}>
-        <td className={cell}>
-          <Checkbox
-            label={t("Scegli {0}", c.name)}
-            checked={on}
-            disabled={
-              c.locked ||
-              itemBusy(setup, c.id) ||
-              c.unavailableReason !== null ||
-              c.notNeeded !== null ||
-              (!c.available && !on)
-            }
-            onChange={(v) => {
-              choose(c.id, v);
-            }}
-          />
-        </td>
-        <td className={cell}>
-          <span className="flex items-center gap-2 whitespace-nowrap">
-            <ComponentLogo id={c.id} size={16} />
-            <Link
-              onClick={() => {
-                onOpen(c.id);
-              }}
-            >
-              {c.name}
-            </Link>
-            {c.locked && <Tag>{t("obbligatorio")}</Tag>}
-          </span>
-        </td>
-        <td className={`${cell} font-mono whitespace-nowrap select-text`}>{version ?? "—"}</td>
-        <td className={`${cell} font-mono whitespace-nowrap`}>
-          {lines.length > 0 ? (
-            lines.join(", ")
-          ) : c.versioned ? (
-            "—"
-          ) : (
-            <span className="font-sans text-vsc-desc">{t("sempre l'ultima")}</span>
-          )}
-        </td>
-        <td className={`${cell} text-right whitespace-nowrap tabular-nums`}>{sizeText(c.mb)}</td>
-        {columns.map((id) => {
-          const here = id === activeTarget;
-          const s = status(c.id, id);
-          const st = here ? shownStatus(c, s, on, item, id) : s ? otherStatus(s, id) : null;
-          if (!st) return <td key={id} className={cell} />;
-          const parts = [toolStateLabel(st.state), st.detail];
-          if (here && check) parts.push(`${t("Verifica")}: ${check.answer}`);
-          const label = `${c.name}, ${targetName(id)}: ${parts.filter(Boolean).join(" — ")}`;
-          return (
-            <td key={id} className={`${cell} text-center whitespace-nowrap ${here ? "bg-vsc-focus/10" : ""}`}>
-              <span role="img" aria-label={label} title={label} className="inline-flex items-center gap-1">
-                <ToolStateIcon state={st.state} />
-                {here &&
-                  check &&
-                  (check.ok ? (
-                    <Codicon name="check" size={12} className="text-vsc-focus" />
-                  ) : (
-                    <Codicon name="warning" size={12} className="text-vsc-warning" />
-                  ))}
-              </span>
-            </td>
-          );
-        })}
-        <td className={`${cell} max-w-[16rem] truncate`} title={needed.join(", ") || undefined}>
-          {needed.length > 0 && !on && (
-            <Codicon
-              name="warning"
-              size={12}
-              className="mr-1 text-vsc-warning"
-              label={t("Serve a progetti e non è scelto")}
-            />
-          )}
-          {needed.join(", ")}
-        </td>
-        <td className={`${cell} whitespace-nowrap text-vsc-desc`}>
-          {c.needs.map((n) => list.find((x) => x.id === n)?.name ?? n).join(", ")}
-        </td>
-        <td className={cell}>
-          {/* Its install in its row: waiting, downloading with its bar,
-              failed with «Riprova»; the other rows are not touched. */}
-          <span className="flex items-center gap-2 whitespace-nowrap">
-            {item && <ItemStatus state={item} />}
-            {item && <ItemBar state={item} label={c.name} className="w-16" />}
-            {item?.kind === "problem" && !itemBusy(setup, c.id) && (
-              <Link
-                onClick={() => {
-                  kit.run(c.id, `install:${c.id}`, () => setupStart([c.id], false, kit.target));
-                }}
-              >
-                {t("Riprova")}
-              </Link>
-            )}
-            <RowActions c={c} kit={kit} setup={setup} />
-          </span>
-        </td>
-      </tr>
-    );
-  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -507,7 +573,24 @@ export function ToolsTable({
                     {open && <p className="mt-0.5 max-w-[60rem] pl-[22px] text-[12px] text-vsc-desc">{g.hint}</p>}
                   </th>
                 </tr>
-                {open && items.map(row)}
+                {open &&
+                  items.map((c) => (
+                    <ToolRow
+                      key={c.id}
+                      c={c}
+                      on={chosen.has(c.id)}
+                      setup={setupOf(setup, c.id)}
+                      needed={neededBy.get(c.id) ?? NONE}
+                      check={checks.get(c.id)}
+                      columns={columns}
+                      activeTarget={activeTarget}
+                      grid={grid}
+                      list={list}
+                      kit={kit}
+                      choose={choose}
+                      onOpen={openTool}
+                    />
+                  ))}
               </tbody>
             );
           })}

@@ -58,6 +58,53 @@ impl Sink for Collect {
     }
 }
 
+/// A fast download tells its bytes at most every [`BYTES_EVERY`] (each
+/// event is the whole snapshot), the first and the last always; a slow
+/// one still once per percent.
+#[test]
+fn bytes_are_told_at_most_ten_times_a_second() {
+    let bytes = |events: &[Event]| -> Vec<u64> {
+        events
+            .iter()
+            .filter_map(|e| match e {
+                Event::Bytes { done, .. } => Some(*done),
+                _ => None,
+            })
+            .collect()
+    };
+    let mut sink = Collect::default();
+    let mut progress = StepProgress {
+        id: "node",
+        sink: &mut sink,
+        last_percent: None,
+        last_sent: None,
+    };
+    let started = std::time::Instant::now();
+    for done in (0..=1000).step_by(5) {
+        progress.bytes(done, Some(1000));
+    }
+    let told = bytes(&sink.0);
+    assert_eq!((told.first(), told.last()), (Some(&0), Some(&1000)));
+    // A pause of the test's thread may let one more go.
+    let slots = (started.elapsed().as_millis() / BYTES_EVERY.as_millis()) as usize;
+    assert!(told.len() <= 2 + slots, "{told:?}");
+
+    let mut sink = Collect::default();
+    let mut progress = StepProgress {
+        id: "node",
+        sink: &mut sink,
+        last_percent: None,
+        last_sent: None,
+    };
+    for done in [0, 10, 20, 25] {
+        progress.bytes(done, Some(100));
+        std::thread::sleep(BYTES_EVERY);
+    }
+    // The same percent again: nothing new to tell.
+    progress.bytes(25, Some(100));
+    assert_eq!(bytes(&sink.0), [0, 10, 20, 25]);
+}
+
 #[test]
 fn plan_follows_choice_skip_and_only() {
     with_ctx("plan", |ctx| {
@@ -478,12 +525,23 @@ fn a_run_waits_for_the_work_in_the_background() {
         wait_for_background();
         let _ = done_tx.send(());
     });
+    // «Libera» of the Settings page waits too, instead of `Busy`.
+    let (freed_tx, freed_rx) = mpsc::channel();
+    let free_kit = kit.clone();
+    std::thread::spawn(move || {
+        let _ = freed_tx.send(while_idle(&free_kit, || 7).map_err(|e| e.to_string()));
+    });
     assert!(
         done_rx.recv_timeout(Duration::from_millis(200)).is_err(),
         "a run waits"
     );
+    assert!(freed_rx.try_recv().is_err(), "«Libera» waits");
     go_tx.send(()).unwrap();
     done_rx.recv_timeout(Duration::from_secs(10)).unwrap();
+    assert_eq!(
+        freed_rx.recv_timeout(Duration::from_secs(10)).unwrap(),
+        Ok(7)
+    );
     assert!(lock(&kit).is_ok(), "the lock let go");
 
     while_idle_in_background(&kit, || panic!("sweep bug"));

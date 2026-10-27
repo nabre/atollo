@@ -155,6 +155,7 @@
     "allow-rust-toolchain-set",
     "allow-settings-get",
     "allow-settings-set",
+    "allow-gemini-key-set",
     "allow-update-status",
     "allow-update-check",
     "allow-eject-list",

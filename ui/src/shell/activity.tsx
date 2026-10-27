@@ -88,6 +88,21 @@ export function liveLines(services: ServiceInfo[]): LiveLine[] {
 
 const NO_POOLS: WebServerPool[] = [];
 
+/** `action`, then `read` at once whether it worked or not: what it stopped,
+ * or not, shows now, not at the next poll (which may be on its way with
+ * the state from before). */
+function thenRead(action: Promise<unknown>, read: () => void): Promise<void> {
+  return action.then(
+    () => {
+      read();
+    },
+    (e: unknown) => {
+      read();
+      throw e;
+    },
+  );
+}
+
 /** What runs in the kit, read every few seconds: the projects' live
  * actions, the database versions not stopped (each line, D-102), the
  * server of the local models (D-151) and the web server pools on; `count`
@@ -469,7 +484,7 @@ export function ActivityPanel({
                       label={t("Ferma")}
                       busy={busy === "llm"}
                       onClick={() => {
-                        run("llm", () => llmStop().then(reloadLlm));
+                        run("llm", () => thenRead(llmStop(), reloadLlm));
                       }}
                     />
                   </div>
@@ -492,7 +507,7 @@ export function ActivityPanel({
                       label={t("Ferma")}
                       busy={busy === `pool:${currentPool.id}`}
                       onClick={() => {
-                        run(`pool:${currentPool.id}`, () => serverStop(currentPool.id).then(reloadPools));
+                        run(`pool:${currentPool.id}`, () => thenRead(serverStop(currentPool.id), reloadPools));
                       }}
                     />
                   </div>
