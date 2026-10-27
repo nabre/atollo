@@ -171,19 +171,19 @@ export const TOOLS: TopicTexts = {
             [
               tr("Sistema ed editor", "System and editor", "Système et éditeur", "System und Editor"),
               tr(
-                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (la VM dei progetti): sempre installati. Git: si sceglie, e arriva con Claude Code e Pi.",
-                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (the projects' VM): always installed. Git: your choice, and it comes with Claude Code and Pi.",
-                "Éditeur, PowerShell 7, GitHub CLI, Docker Sandboxes (la VM des projets) : toujours installés. Git : à choisir, et il arrive avec Claude Code et Pi.",
-                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (die VM der Projekte): immer installiert. Git: frei wählbar, und es kommt mit Claude Code und Pi.",
+                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (la VM dei progetti): sempre installati. Git: si sceglie.",
+                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (the projects' VM): always installed. Git: your choice.",
+                "Éditeur, PowerShell 7, GitHub CLI, Docker Sandboxes (la VM des projets) : toujours installés. Git : à choisir.",
+                "Editor, PowerShell 7, GitHub CLI, Docker Sandboxes (die VM der Projekte): immer installiert. Git: frei wählbar.",
               ),
             ],
             [
               tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
-                "Claude Code, Codex, Antigravity, Pi: facoltativi, sempre all'ultima versione.",
-                "Claude Code, Codex, Antigravity, Pi: optional, always at the latest version.",
-                "Claude Code, Codex, Antigravity, Pi : facultatifs, toujours à la dernière version.",
-                "Claude Code, Codex, Antigravity, Pi: optional, immer in der neuesten Version.",
+                "Claude Code, Codex, Antigravity, Pi, solo per la VM: Claude Code e Codex «fornito dalla VM» (arrivano con la loro sandbox), Pi e Antigravity installati per il Linux della VM, sempre all'ultima versione. Senza VM: «serve la VM».",
+                "Claude Code, Codex, Antigravity, Pi, for the VM only: Claude Code and Codex “provided by the VM” (they come with their sandbox), Pi and Antigravity installed for the VM's Linux, always at the latest version. Without the VM: “needs the VM”.",
+                "Claude Code, Codex, Antigravity, Pi, seulement pour la VM : Claude Code et Codex « fourni par la VM » (ils arrivent avec leur sandbox), Pi et Antigravity installés pour le Linux de la VM, toujours à la dernière version. Sans VM : « nécessite la VM ».",
+                "Claude Code, Codex, Antigravity, Pi, nur für die VM: Claude Code und Codex „von der VM bereitgestellt“ (sie kommen mit ihrer Sandbox), Pi und Antigravity für das Linux der VM installiert, immer in der neuesten Version. Ohne VM: „braucht die VM“.",
               ),
             ],
             [

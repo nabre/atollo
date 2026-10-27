@@ -225,15 +225,6 @@ export const PORTABLE: TopicTexts = {
                 "Konsolen und jeder Prozess, dessen Programm im Kit liegt.",
               ),
             },
-            {
-              title: tr("Antigravity", "Antigravity", "Antigravity", "Antigravity"),
-              text: tr(
-                "L'accesso torna nel kit, il sistema torna com'era.",
-                "The sign-in goes back into the kit, the system goes back to how it was.",
-                "La connexion revient dans le kit, le système redevient comme avant.",
-                "Die Anmeldung kehrt ins Kit zurück, das System wird wieder wie vorher.",
-              ),
-            },
           ]}
         />
         <P>
@@ -566,10 +557,10 @@ export const PORTABLE: TopicTexts = {
         />
         <P>
           {tr(
-            "Su un altro PC o in un'altra cartella il kit si sistema come quando lo sposti: i programmi già scaricati restano, quelli che mancano si riscaricano da soli. L'accesso di Antigravity va rifatto su un altro PC o account, e i dati dei database vogliono le stesse versioni dei server, che si riscaricano per versione.",
-            "On another PC or in another folder the kit adjusts as when you move it: the programs already downloaded stay, the missing ones are downloaded again on their own. Antigravity's sign-in has to be done again on another PC or account, and the database data needs the same server versions, which are downloaded again by version.",
-            "Sur un autre PC ou dans un autre dossier, le kit s'adapte comme quand vous le déplacez : les programmes déjà téléchargés restent, ceux qui manquent se retéléchargent tout seuls. La connexion d'Antigravity est à refaire sur un autre PC ou compte, et les données des bases de données demandent les mêmes versions des serveurs, qui se retéléchargent par version.",
-            "Auf einem anderen PC oder in einem anderen Ordner passt sich das Kit an wie beim Verschieben: Die bereits heruntergeladenen Programme bleiben, die fehlenden werden von selbst erneut heruntergeladen. Die Anmeldung bei Antigravity musst du auf einem anderen PC oder Konto wiederholen, und die Daten der Datenbanken brauchen dieselben Serverversionen, die nach Version erneut heruntergeladen werden.",
+            "Su un altro PC o in un'altra cartella il kit si sistema come quando lo sposti: i programmi già scaricati restano, quelli che mancano si riscaricano da soli. I dati dei database vogliono le stesse versioni dei server, che si riscaricano per versione.",
+            "On another PC or in another folder the kit adjusts as when you move it: the programs already downloaded stay, the missing ones are downloaded again on their own. The database data needs the same server versions, which are downloaded again by version.",
+            "Sur un autre PC ou dans un autre dossier, le kit s'adapte comme quand vous le déplacez : les programmes déjà téléchargés restent, ceux qui manquent se retéléchargent tout seuls. Les données des bases de données demandent les mêmes versions des serveurs, qui se retéléchargent par version.",
+            "Auf einem anderen PC oder in einem anderen Ordner passt sich das Kit an wie beim Verschieben: Die bereits heruntergeladenen Programme bleiben, die fehlenden werden von selbst erneut heruntergeladen. Die Daten der Datenbanken brauchen dieselben Serverversionen, die nach Version erneut heruntergeladen werden.",
           )}
         </P>
         <P>

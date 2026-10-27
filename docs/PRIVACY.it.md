@@ -2,7 +2,7 @@
 
 [English](PRIVACY.md) · Italiano · [Français](PRIVACY.fr.md) · [Deutsch](PRIVACY.de.md)
 
-In vigore dal: 25 ottobre 2026
+In vigore dal: 27 ottobre 2026
 
 Questa pagina spiega che cosa fanno con i tuoi dati l'app desktop Atollo (`Atollo.exe`, la `.app` di macOS e l'AppImage di Linux) e il suo sito. Atollo è open source: tutto quello che è scritto qui si può verificare nel codice di questo repository.
 
@@ -14,6 +14,7 @@ Questa pagina spiega che cosa fanno con i tuoi dati l'app desktop Atollo (`Atoll
 - Gli strumenti e gli agenti AI che avvii dentro Atollo (Claude Code, Codex, Antigravity, Pi, Git, npm…) sono programmi di terzi con le proprie informative sulla privacy.
 - I **modelli AI locali** girano sul tuo computer: con un modello locale i tuoi prompt e i tuoi file non lo lasciano mai.
 - I progetti girano nelle microVM di **Docker Sandboxes** (`sbx`, di Docker), installato nel kit. Serve un **account Docker**, con l'accesso fatto con `sbx login` su ogni computer; Atollo avvia `sbx` con la telemetria e l'invio della diagnostica di Docker spenti. Ciò che Docker Sandboxes tiene fuori dalla cartella di Atollo è elencato nella sezione 4.
+- **Gli agenti AI girano solo in quelle microVM** (Claude Code e Codex ciascuno in una sandbox sua, Pi e Antigravity nella VM del progetto); senza VM Atollo non avvia nessun agente. **Nessun segreto che il kit tiene viene messo in una VM**: il tuo token di GitHub (solo con «GitHub nella VM» acceso per un progetto) e la chiave API di Gemini (per Antigravity) arrivano solo al proxy di Docker Sandboxes, che li aggiunge alle richieste che escono da quella VM; l'unica eccezione ancora aperta è la chiave dei modelli locali data a Pi (sezione 4). Le regole sono in [docs/app/LEVELS.it.md](app/LEVELS.it.md).
 
 ## 2. Che cosa Atollo non raccoglie
 
@@ -49,7 +50,7 @@ Ogni richiesta che l'app fa da sé porta uno `User-Agent` della forma `Atollo/<v
 **Non** sono connessioni fatte da Atollo:
 
 - i programmi che avvii nell'editor, nelle console o con le azioni (`git`, `npm`, `pip`, `cargo`, gli agenti AI…) si collegano dove sono progettati per farlo;
-- **Docker Sandboxes** (`sbx`, sezione 5), che Atollo avvia per le microVM, parla da sé con Docker: l'accesso del tuo account Docker (`sbx login`, il cui link si apre nel tuo browser quando lo clicchi nel terminale di Atollo) e le immagini che servono alle VM (la sandbox `shell`, `php:<versione>-apache` o `httpd:2.4` per un sito in una VM). I programmi dentro una VM raggiungono la rete solo attraverso il proxy di `sbx`, con la politica di rete `balanced` di Docker, che Atollo imposta sull'`sbx` del kit; verso il tuo computer, la VM di un progetto raggiunge solo la porta del suo database. Con «GitHub nella VM» acceso per un progetto (spento di serie), il proxy aggiunge il tuo token di GitHub alle richieste di quella VM verso GitHub: `sbx` ottiene il token eseguendo `Atollo secret github`, che risponde solo all'`sbx` del kit con un nonce registrato da Atollo, e il token non entra mai nella VM;
+- **Docker Sandboxes** (`sbx`, sezione 5), che Atollo avvia per le microVM, parla da sé con Docker: l'accesso del tuo account Docker (`sbx login`, il cui link si apre nel tuo browser quando lo clicchi nel terminale di Atollo) e le immagini che servono alle VM (la sandbox `shell`, `php:<versione>-apache` o `httpd:2.4` per un sito in una VM). I programmi dentro una VM raggiungono la rete solo attraverso il proxy di `sbx`, con la politica di rete `balanced` di Docker, che Atollo imposta sull'`sbx` del kit; verso il tuo computer, la VM di un progetto raggiunge solo la porta del suo database (e, mentre Pi vi usa un modello locale, il server dei modelli locali). Con «GitHub nella VM» acceso per un progetto (spento di serie), il proxy aggiunge il tuo token di GitHub alle richieste di quella VM verso GitHub: `sbx` ottiene il token eseguendo `Atollo secret github`, che risponde solo all'`sbx` del kit con un nonce registrato da Atollo, e il token non entra mai nella VM. Allo stesso modo, quando Antigravity gira nella VM di un progetto e le Impostazioni hanno una chiave API di Gemini, il proxy aggiunge la chiave alle richieste di quella VM verso i servizi Gemini di Google (`Atollo secret gemini`), e la chiave non entra mai nella VM;
 - i link che clicchi si aprono nel tuo browser, e così «Segnala un problema» (sezione 4).
 
 Server locali: l'editor e i server dei progetti ascoltano solo su questo computer (`127.0.0.1`/`localhost`), a meno che tu non attivi **Rete locale** nelle Impostazioni per i server dei progetti. Con la rete locale accesa, il QR dell'indirizzo di un sito per il telefono lo crea Atollo su questo computer: nessun servizio su internet vede l'indirizzo, e trovare l'IP di questo PC sulla rete locale non manda alcun pacchetto. Il server dei modelli locali (llama.cpp) ascolta sempre e solo su `127.0.0.1`, su una porta sua (9931 e seguenti), e risponde solo alle richieste con la sua chiave casuale; `llm status` non manda quella chiave a chi ascolta sulla porta. I modelli girano su questo computer: con un modello locale niente va in rete. Un sito che gira nella microVM di un progetto ha la sua porta pubblicata su `127.0.0.1` di questo computer, o sulla sua rete locale quando **Rete locale** è attiva; spegnendola, quella pubblicazione si ritira al successivo avvio del sito (se non si può, il sito non parte). Fermare il sito ne ritira la porta.
@@ -72,9 +73,9 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 | Memoria dell'interfaccia (disposizione della finestra) e cache della web view | `data/webview2/` (Windows e Linux) |
 | Account GitHub (token di GitHub CLI, salvato come file perché viaggi con il kit) | `data/gh/` |
 | Credenziali Git per altri host (Git Credential Manager, cifrate con DPAPI di Windows per il tuo utente) | `data/home/.gcm/` (Windows) |
-| Accessi e sessioni degli agenti AI, scritti dagli agenti stessi | `data/home/.claude/`, `data/home/.codex/`, `data/home/.gemini/` |
-| L'accesso Google di Antigravity, tolto dall'archivio credenziali del sistema dopo ogni esecuzione | `data/antigravity/keyring.json` |
-| Il token di lunga durata di Claude Code, se usi "Collega con un token" (macOS) | `data/agents/claude/oauth-token` |
+| Accessi e sessioni degli agenti AI dentro le VM, scritti dagli agenti stessi | i dischi delle VM (riga «Docker Sandboxes» più sotto) |
+| Accessi e sessioni che gli agenti di un Atollo precedente hanno scritto su questo computer (solo letti; "Esci" li toglie) | `data/home/.claude/`, `data/home/.codex/`, `data/home/.gemini/` |
+| L'accesso Google di Antigravity e il token di lunga durata di Claude Code tenuti da un Atollo precedente, se ci sono: solo letti, mai spostati né dati a un programma; "Esci" li toglie | `data/antigravity/keyring.json`, `data/agents/claude/oauth-token` |
 | Password dei database (casuali, generate da Atollo) | `data/app/db/secrets.json`, `data/app/db/mysql.cnf`, `data/projects/<progetto>/private/db.json` |
 | Modelli locali (file GGUF) e cosa ne ha scaricato Atollo | `data/models/gguf/<proprietario>--<repository>/` (con `atollo.json`) |
 | Impostazioni dei modelli locali (porta, avvio automatico, il modello di Pi) e i preset del server | `data/app/llm.json`, `data/app/llm/presets.ini` |
@@ -83,10 +84,10 @@ Atollo è portabile: tiene i suoi dati accanto all'eseguibile, nella cartella `d
 | Impostazioni, accessi (`auth.json`) e sessioni di Pi, e il `models.json` del kit con indirizzo e chiave del server locale (leggibile solo dal tuo utente) | `data/home/.pi/agent/` |
 | Dati del server dell'editor e il suo token di accesso per sessione | `data/vscodium-server/` |
 | Docker Sandboxes: impostazioni e registri, le immagini e i dischi delle VM (la home di ogni VM, `/tmp` e il suo Docker) | la home del kit: `data/home/AppData/Local/DockerSandboxes/` su Windows, sotto `data/home/` su macOS e Linux |
-| Il kit di ogni sandbox: la sua specifica, di chi è (un progetto o un suo agente; di un terminale del kit solo per un Atollo precedente, tolta da sola), i suoi montaggi e le porte aperte; per un progetto con un database, il `db.env` con l'accesso al database del progetto dato alla sua VM (leggibile solo dal tuo utente) | `data/app/sandboxes/<sandbox>/` |
-| Le note dei comandi di «GitHub nella VM» che Atollo ha registrato in Docker Sandboxes, con i loro nonce (leggibili solo dal tuo utente) | `data/app/sandboxes/secrets.json` |
-| Le sessioni dell'editor nella VM: se la VM era attiva quando l'editor si è aperto (`.level`), e se no perché (`.reason`, mostrato dai suoi terminali) e, per ogni progetto aperto nell'editor, il percorso di `sbx`, le sue variabili e gli argomenti del suo terminale, dei suoi task e delle sue sessioni di Claude Code, Codex e Pi (nessuna password: l'accesso al database resta nel `db.env`); cancellate a ogni avvio dell'app | `data/app/sandboxes/sessions/` |
-| Lo script che avviano i terminali, i task e i profili degli agenti dell'editor (legge le sessioni qui sopra), riscritto a ogni avvio dell'app | `data/kit/vm.ps1` |
+| Il kit di ogni sandbox: la sua specifica, di chi è (un progetto o un suo agente; di un terminale del kit solo per un Atollo precedente, tolta da sola), i suoi montaggi e le porte aperte; per un progetto con un database, il `db.env` con l'accesso al database del progetto dato alla sua VM (leggibile solo dal tuo utente); la cartella `guest` che la VM vede in sola lettura: ciò che `atollo` mostra nella VM (il livello, il progetto, gli strumenti, indirizzi e utenti dei database, mai una password) | `data/app/sandboxes/<sandbox>/` |
+| Le note dei comandi di «GitHub nella VM» e della chiave di Gemini che Atollo ha registrato in Docker Sandboxes, con i loro nonce (leggibili solo dal tuo utente) | `data/app/sandboxes/secrets.json` |
+| Le richieste dei task e dei profili degli agenti dell'editor e dei comandi degli agenti scritti in un terminale (l'origine, la cartella, le parole scritte; nessun segreto), ciascuna tolta una volta risposta; cancellate a ogni avvio dell'app, mai viste da una VM | `data/app/levels/requests/` |
+| Gli script che quelle richieste avviano, e i comandi degli agenti dei terminali del computer che inoltrano alla VM, riscritti a ogni avvio dell'app | `data/kit/launch.ps1`, `data/kit/launch.sh`, `data/kit/forward/` |
 | I tuoi progetti | `projects/` |
 | Una copia del kit che aspetta di essere importata, solo dopo «Importa da…» | `.atollo-import/` |
 | Quello che una copia importata ha sostituito, finché non lo cancelli | `.atollo-before-import-<data-ora>/` |
@@ -95,13 +96,12 @@ Le password dei database (compresi i `db.env` delle sandbox), la chiave API di G
 
 Impostazioni › Il kit › **«Copia del kit»** scrive `projects/` e `data/` (senza programmi, cache, modelli locali e immagini e dischi delle VM) in una cartella o in uno zip **che scegli tu**, anche fuori dalla cartella di Atollo. La copia contiene i segreti del kit **in chiaro** (`data/app/db/secrets.json`, `data/app/secrets/`, gli accessi degli agenti e di GitHub): tienila al sicuro. Atollo non la manda mai da nessuna parte.
 
-Il token di Claude e la chiave API di Gemini vengono passati (come `CLAUDE_CODE_OAUTH_TOKEN` e `GEMINI_API_KEY`) solo agli agenti avviati da Atollo, non alle azioni dei progetti, agli script, ai terminali né all'editor. La chiave dei modelli locali va a Pi quando lo avvia Atollo (`LLAMA_API_KEY`) e nel `models.json` di Pi, che Pi legge dovunque Atollo lo avvii (nella VM del progetto da D-178: i terminali del kit non avviano più agenti). Il token di Hugging Face va solo a `huggingface.co`.
+Gli agenti AI girano solo nelle microVM, mai sul tuo computer: nessun segreto del kit viene messo in una VM, nelle sue variabili o nei suoi file. La chiave API di Gemini arriva solo al proxy di Docker Sandboxes, registrata per la sandbox del progetto quando Antigravity vi parte, che la aggiunge alle richieste di Antigravity verso Google; il token di GitHub allo stesso modo, solo con «GitHub nella VM» acceso. Il file del token di Claude salvato da un Atollo precedente non viene dato a nulla. L'unica eccezione ancora aperta: quando Pi usa un modello locale, la chiave dei modelli locali va alla sessione di Pi nella VM del progetto (`LLAMA_API_KEY`) e nel `models.json` di Pi, perché Pi raggiunga il server sul tuo computer; è prevista una chiave solo per quella sandbox. Il token di Hugging Face va solo a `huggingface.co`.
 
 Eccezioni, fuori dalla cartella di Atollo:
 
 - **File temporanei**: i file in transito vanno in `<temp del sistema>/Atollo/`; secondo Impostazioni › Generale › **Temporanei dei programmi**, anche i programmi possono usare la cartella temporanea del sistema (per impostazione predefinita quando il kit è su una chiavetta, su un disco di rete o su FAT32/exFAT).
-- **Accesso di Antigravity**: mentre Antigravity è in esecuzione, il suo accesso sta nell'archivio credenziali del sistema (su Windows solo per la sessione di accesso), poi torna nel kit e viene rimosso. Le credenziali già presenti sul computer vengono rimesse com'erano; una nota sigillata (`keyring-before.json`, leggibile solo su quel computer) resta nel kit fino al salvataggio successivo.
-- **Claude Code su macOS** tiene il proprio accesso nel Portachiavi, a meno che tu non usi "Collega con un token".
+- **Accesso di Antigravity di un Atollo precedente**: un Atollo precedente metteva l'accesso di Antigravity nell'archivio credenziali del sistema mentre Antigravity girava sul computer (su Windows solo per la sessione di accesso); un accesso che una sua esecuzione ha lasciato lì senza finire in modo pulito resta lì. Atollo non lo sposta più: Antigravity accede dentro la VM del progetto.
 - **Web view di macOS**: su macOS la web view del sistema tiene i suoi dati dove decide macOS (nella Libreria del tuo utente).
 - **rustup** scrive una voce nel registro di Windows a ogni installazione; Atollo la rimuove.
 - **Docker Sandboxes**, perché `sbx` o il sistema non lasciano altro posto (tutto il resto sta in `data/`):
@@ -120,7 +120,7 @@ Impostazioni › Il kit › «Segnalare un problema» ha due pulsanti; niente pa
 
 ## 5. Strumenti e agenti AI di terzi
 
-Atollo installa e avvia programmi fatti da altri. Quando li usi, parlano direttamente con i propri servizi e **valgono le loro informative sulla privacy e le loro condizioni**. Atollo non fa da proxy a quel traffico, non lo legge e non lo salva, a parte le sessioni e gli accessi che quei programmi scrivono da sé nella cartella del kit (sezione 4).
+Atollo installa e avvia programmi fatti da altri. Quando li usi, parlano direttamente con i propri servizi e **valgono le loro informative sulla privacy e le loro condizioni**. Gli agenti AI girano solo dentro le microVM di Docker Sandboxes: Claude Code e Codex dalle immagini di agente di Docker, Pi e Antigravity come loro build per Linux dal kit. Atollo non fa da proxy a quel traffico, non lo legge e non lo salva, a parte le sessioni e gli accessi che quei programmi scrivono da sé nella cartella del kit (sezione 4).
 
 - **Claude Code** (Anthropic): [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
 - **Codex** (OpenAI): [openai.com/policies/privacy-policy](https://openai.com/policies/privacy-policy/)

@@ -42,8 +42,9 @@ ui\src\                       interfaccia React + TypeScript (sotto)
 guide\                        il testo della Guida, neutro: core\ (contratto, modello, lingua), content\ (i
                               capitoli), render\load.cjs (il caricatore del sito); lo disegnano l'app e il sito (sotto)
 test\rust\  test\ui\          prove, con la stessa struttura di tauri\src e ui\src (il codice di un sistema: test\rust\os\<sistema>)
-runtime\                      file scritti in data\kit\ (profile.ps1, bashrc, vm.ps1, loopback.js, php-router.php,
-                              fcgi-guard.php, phpmyadmin.php, bin\…)
+runtime\                      file scritti in data\kit\ (profile.ps1, bashrc, launch.ps1, launch.sh, loopback.js,
+                              php-router.php, fcgi-guard.php, phpmyadmin.php, bin\…); vm\atollo, l'`atollo` in
+                              sola lettura di ogni sandbox (LEVELS.it.md §8.4)
 scripts\                      dev-ui.mjs (npm run dev), guide-shots\, guide-chunks.mjs, vscodium-css\, matrix\,
                               test-linux.sh, cross-check\, build-httpd\, build-php\, build-mongo-express\;
                               lib\shots.mjs (browser, anteprima, lingue ed etichette comuni agli script delle
@@ -132,7 +133,9 @@ tauri\src\
                               site, container, overrides (panel.json)
   editor\                     editor e console
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
-    cfg  ext  theme           impostazioni e profili del terminale (attraverso vm.ps1, D-175); estensioni (D-71); tema Atollo
+    cfg  ext  theme           impostazioni e profili del terminale (i terminali sul PC, task e agenti attraverso
+                              launch.ps1/launch.sh, LEVELS.it.md §4.3); estensioni (D-71; una che esegue un agente
+                              viene disinstallata a ogni avvio, LEVELS.it.md §10); tema Atollo
     terminal                  console del kit: una sessione del terminale nell'app su ogni sistema (D-148), in una finestra sua se staccata (D-149)
     pty                       terminale nell'app: le sessioni per xterm.js, il loro output e il backlog (D-109,
                               D-148); lo pseudo terminale stesso è `platform::pty`
@@ -144,14 +147,15 @@ tauri\src\
                               data\servers\<pool>\ (con il conf.d del progetto); avvio, arresto, ricarica, siti
                               collegati dai progetti
     migrate                   pool e siti Nginx diventano di Caddy, all'avvio (D-120)
-  agents\                     agenti: stato, avvio, uscita, sorvegliante
+  agents\                     agenti: stato (l'accesso che usano gli agenti della VM, per quanto il PC può dirlo),
+                              uscita da ciò che i dati del kit ancora tengono; girano solo in una VM (LEVELS.it.md §7)
     sync\                     istruzioni, skill, MCP, regole, cartelle attendibili; pi (settings.json di Pi, models.json
                               con i modelli locali, mcp.json, APPEND_SYSTEM.md, trust.json: D-152)
     stats\                    limiti d'uso e consumi (D-61): claude, codex, antigravity, pi (i JSONL delle sessioni)
-    keyring  relocate         accesso di Antigravity (D-115): il trait Store, gli spostamenti, i file del kit, lock,
-                              portable (le parti provate su ogni sistema; lo store di ogni sistema sta in os\);
-                              percorsi riscritti dopo uno spostamento
-    claude_token              token di Claude Code su macOS (D-115)
+    keyring  claude_token     leggono soltanto gli accessi che un Atollo precedente ha salvato nel kit (l'accesso di
+                              Antigravity, il token di Claude Code, D-115): dal D-179 nulla li sposta o li passa;
+                              «Esci» li toglie
+    relocate                  percorsi riscritti dopo uno spostamento
     presets  github_mcp       server MCP pronti (D-156); `Atollo mcp github`, il ponte stdio verso il server di GitHub
                               che tiene il token fuori dall'ambiente dell'agente (SEC-V7-01)
   db\                         database
@@ -166,10 +170,15 @@ tauri\src\
     web_admin                 ciò che i due condividono: un indirizzo di loopback e una porta propri, un token (D-141)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
+  levels\                     i tre livelli (D-179, LEVELS.it.md): mod (`Origin`, `Placement`, `decide`), place,
+                              facts, env (l'unico costruttore dell'ambiente), prepare e start (una VM preparata, la
+                              sua sessione), requests (i file di richiesta dell'editor e degli inoltri), agents
+                              (agenti solo con la VM), report (il rapporto della VM, «Verifica strumenti», le azioni
+                              su una sandbox), labels (etichette, intestazioni, rifiuti)
   isolation\                  Docker Sandboxes, il nucleo di Atollo (D-167…D-178; sotto, «Isolamento»): mod (stato,
-                              `Level`, `Blocker`, lo `Sbx` del kit, `Vm`, `seal`), vm (gli argomenti di `sbx` e i
-                              percorsi nella VM), daemon (di chi è il daemon, `SETTINGS`), kit (il kit di ogni
-                              sandbox in data\app\sandboxes), secrets (`Atollo secret github`)
+                              `Level`, `Blocker`, lo `Sbx` del kit, `Vm`), vm (gli argomenti di `sbx` e i percorsi
+                              nella VM), daemon (di chi è il daemon, `SETTINGS`), kit (il kit di ogni sandbox in
+                              data\app\sandboxes), secrets (`Atollo secret github|gemini`)
   llm\                        modelli locali (D-151): catalog (catalog\models.json), hf (qualunque repository di
                               Hugging Face, i GGUF raggruppati per quantizzazione), local (data\models\gguf e
                               atollo.json), pull (download, FAT32 e spazio libero controllati prima), presets
@@ -193,40 +202,41 @@ tauri\src\
 
 Il motore guarda per quale sistema è compilato solo in `os\` (D-166): altrove nessun `#[cfg(windows)]`, `#[cfg(unix)]`, `#[cfg(target_os = …)]` o `cfg!(…)`, nessun crate di un solo sistema (`libc`, `windows`, `webview2_com`, `junction`, `portable_pty`, `rfd`, `dbus_secret_service`) e nessun `std::os::<sistema>`. Lo controlla `test\rust\os\rule.rs`, senza commenti e stringhe.
 
-- **`platform\`** è l'API che il motore chiama, la stessa su ogni sistema, con la logica che è uguale ovunque: `jobs` (i programmi che il kit avvia, nessuno sopravvive all'app: D-07, D-105; la shell del sistema e le sue virgolette), `processes`, `sessions` (i programmi del kit aperti, gli altri kit, «Rimuovi l'unità»), `instance` (un'app per kit, D-08), `lock` (i lock del kit fra i suoi processi: la preparazione, `db.json`, l'accesso di Antigravity), `volume` (il disco di una cartella, D-90, D-105), `temp` (`TempWork`, le cartelle di passaggio, D-90), `safe_path` (lettura dentro un progetto senza seguire collegamenti, D-77), `files` (file e cartelle del solo proprietario, il bit di esecuzione, scritture private), `links` (junction su Windows, collegamenti simbolici altrove), `host` (ciò che l'app sa della macchina: processore, lingua, build di Windows, os-release, Xcode, ICU, l'AppImage, l'id della macchina), `desktop` (le finestre «Seleziona cartella» e «Apri», la finestra d'errore, l'icona nell'area di notifica), `console` (l'output della riga di comando), `pty` (un programma su uno pseudo terminale, per il terminale dell'app), `proxy` (il proxy del sistema e gli host raggiunti senza), `signature` (Authenticode, Windows), `sockets` (se un server risponde su un socket Unix), `webview` (D-05), `virt` (ciò che manca al PC per le microVM di Docker Sandboxes: Windows 11 e Hypervisor Platform, Apple silicon e macOS 14, Ubuntu 24.04 e KVM; D-167), `memory`, `random`, `registry` (il registro dell'utente, Windows), `local_time`, e in `mod.rs` `OS`, `PATH_SEPARATOR`, `sh_quote`. Lì nulla guarda di che sistema si tratta: ogni funzione passa al modulo con lo stesso nome di `crate::os::current`, e la build di ogni sistema ne controlla la firma.
-- **`os\windows\`** ha Win32, WebView2, il ConPTY (`conpty.rs`), il Gestore credenziali e DPAPI (`agy_store.rs`), il registro, il Job Object; **`os\unix\`** ciò che macOS e Linux condividono (gruppi di processi e il guardiano, `guard.rs`, D-105; `flock`; permessi e proprietari; il socket dell'istanza e il ripiego TCP; portable-pty; l'arresto gentile; la chiave che sigilla l'accesso di Antigravity); **`os\macos\`** e **`os\linux\`** ciò che ha uno solo dei due (libproc e `/proc`, `statfs` e `mountinfo`, `scutil` e `gsettings`, il Portachiavi e il Secret Service in `agy_keyring.rs`, AppleLanguages, l'AppImage, `PR_SET_PDEATHSIG`). `virt.rs` sta in `windows\`, `macos\` e `linux\`, ciascuno con il suo modo di leggere, senza amministratore, ciò che serve a Docker Sandboxes (Windows 11 e Hypervisor Platform con `WHvGetCapability`; macOS 14 su Apple silicon; Ubuntu 24.04, `/dev/kvm` e il profilo AppArmor dello shim del kit). `macos\` e `linux\` riesportano i moduli di `unix\` che condividono, così ogni sistema offre gli stessi nomi; `os\mod.rs` è l'unico punto che sceglie il sistema (`current`), e una build per un altro sistema si ferma con un `compile_error!`. `test\rust\os\rule.rs` controlla anche che ogni modulo che `platform\` chiede a `os::current` ci sia in `windows\`, `macos\` e `linux\`.
+- **`platform\`** è l'API che il motore chiama, la stessa su ogni sistema, con la logica che è uguale ovunque: `jobs` (i programmi che il kit avvia, nessuno sopravvive all'app: D-07, D-105; la shell del sistema e le sue virgolette), `processes`, `sessions` (i programmi del kit aperti, gli altri kit, «Rimuovi l'unità»), `instance` (un'app per kit, D-08), `lock` (i lock del kit fra i suoi processi: la preparazione, `db.json`), `volume` (il disco di una cartella, D-90, D-105), `temp` (`TempWork`, le cartelle di passaggio, D-90), `safe_path` (lettura dentro un progetto senza seguire collegamenti, D-77), `files` (file e cartelle del solo proprietario, il bit di esecuzione, scritture private), `links` (junction su Windows, collegamenti simbolici altrove), `host` (ciò che l'app sa della macchina: processore, lingua, build di Windows, os-release, Xcode, ICU, l'AppImage), `desktop` (le finestre «Seleziona cartella» e «Apri», la finestra d'errore, l'icona nell'area di notifica), `console` (l'output della riga di comando), `pty` (un programma su uno pseudo terminale, per il terminale dell'app), `proxy` (il proxy del sistema e gli host raggiunti senza), `signature` (Authenticode, Windows), `sockets` (se un server risponde su un socket Unix), `webview` (D-05), `virt` (ciò che manca al PC per le microVM di Docker Sandboxes: Windows 11 e Hypervisor Platform, Apple silicon e macOS 14, Ubuntu 24.04 e KVM; D-167), `memory`, `random`, `registry` (il registro dell'utente, Windows), `local_time`, e in `mod.rs` `OS`, `PATH_SEPARATOR`, `sh_quote`. Lì nulla guarda di che sistema si tratta: ogni funzione passa al modulo con lo stesso nome di `crate::os::current`, e la build di ogni sistema ne controlla la firma.
+- **`os\windows\`** ha Win32, WebView2, il ConPTY (`conpty.rs`), il registro, il Job Object; **`os\unix\`** ciò che macOS e Linux condividono (gruppi di processi e il guardiano, `guard.rs`, D-105; `flock`; permessi e proprietari; il socket dell'istanza e il ripiego TCP; portable-pty; l'arresto gentile); **`os\macos\`** e **`os\linux\`** ciò che ha uno solo dei due (libproc e `/proc`, `statfs` e `mountinfo`, `scutil` e `gsettings`, AppleLanguages, l'AppImage, `PR_SET_PDEATHSIG`). `virt.rs` sta in `windows\`, `macos\` e `linux\`, ciascuno con il suo modo di leggere, senza amministratore, ciò che serve a Docker Sandboxes (Windows 11 e Hypervisor Platform con `WHvGetCapability`; macOS 14 su Apple silicon; Ubuntu 24.04, `/dev/kvm` e il profilo AppArmor dello shim del kit). `macos\` e `linux\` riesportano i moduli di `unix\` che condividono, così ogni sistema offre gli stessi nomi; `os\mod.rs` è l'unico punto che sceglie il sistema (`current`), e una build per un altro sistema si ferma con un `compile_error!`. `test\rust\os\rule.rs` controlla anche che ogni modulo che `platform\` chiede a `os::current` ci sia in `windows\`, `macos\` e `linux\`.
 
 Per aggiungere qualcosa che cambia fra i sistemi: la funzione, con la sua documentazione, nel modulo di `platform\` a cui appartiene (un modulo nuovo se nessuno va bene, elencato in `platform\mod.rs`), che passa a `imp::<nome>`; la stessa funzione in `os\windows\<modulo>.rs` e in `os\unix\<modulo>.rs` (o in `os\macos\` e `os\linux\` quando cambiano); il modulo nominato in ogni `mod.rs` di `os\`. Un parser puro del testo di un sistema (`/proc`, `mountinfo`, `scutil`) va nella cartella di quel sistema, con le prove in `test\rust\os\<sistema>\`; ciò che il motore confronta su ogni sistema (un kit per un'altra destinazione) resta nella sua area, dove decide la destinazione del kit (`kit.os()`), non il sistema su cui gira l'app. Un controllo del sistema su cui gira l'app, a run time, legge `platform::OS`.
 
-### Isolamento (`isolation\`): Docker Sandboxes e i tre box
+### Isolamento (`isolation\`) e i tre livelli (`levels\`)
 
-Il nucleo di Atollo è il configuratore portabile di Docker Sandboxes (`sbx`, D-167…D-178): ogni progetto ha una microVM la cui forma Atollo scrive e tiene nel kit; i terminali del kit girano sul PC, senza gli agenti (D-178). Si usa solo l'`sbx` del kit (il componente `sandboxes`, `data\apps\<target>\sandboxes\bin\sbx`, `isolation::kit_sbx`; `Sbx` è una struct intorno al suo percorso): uno installato sul PC non si usa mai, e il daemon di un altro `sbx` non viene mai fermato (il motivo `foreign_daemon`, D-175). Il livello non è un'impostazione: lo ricava `isolation::status` (al più una volta al minuto, o con «Ricontrolla») e la barra di stato mostra «VM» o «Senza VM».
+Il nucleo di Atollo è il configuratore portabile di Docker Sandboxes (`sbx`, D-167…D-178): ogni progetto ha una microVM la cui forma Atollo scrive e tiene nel kit. Si usa solo l'`sbx` del kit (il componente `sandboxes`, `data\apps\<target>\sandboxes\bin\sbx`, `isolation::kit_sbx`; `Sbx` è una struct intorno al suo percorso): uno installato sul PC non si usa mai, e il daemon di un altro `sbx` non viene mai fermato (il motivo `foreign_daemon`, D-175). Se la VM c'è non è un'impostazione: lo ricava `isolation::status` (al più una volta al minuto, o con «Ricontrolla») e la pill della barra di stato mostra «VM» o «Senza VM».
 
-Tre box, uno solo alla volta per i programmi di un progetto (D-175, D-178):
+**Dove gira ogni programma si decide in un punto solo, `levels\` (D-179).** La descrizione normativa è [LEVELS.it.md](LEVELS.it.md): la tabella dei vincoli, le regole di `decide`, l'IPC, i punti di avvio, i flussi, le prove. In breve:
 
-| Box | Cosa ci gira | Dove nel codice |
-| --- | --- | --- |
-| **VM** (`Level::Vm`) | tutto ciò che esegue codice di un progetto: il terminale del progetto (`sbx exec`, D-170), le azioni (`npm run dev`…), la creazione di un progetto da un terminale o da un framework, il sito di un'azione e i siti dei pool di Server Web (un container del Docker della VM: `php:<linea>-apache`, `httpd:2.4`, con montati gli alias del progetto stesso; la sua porta pubblicata su `127.0.0.1` del PC, o su `0.0.0.0` con «Rete locale»), Claude Code e Codex (le sandbox di agente di `sbx`, `atollo-a-`, con gli strumenti del kit del progetto nel `PATH` e il suo database, dalla pagina del progetto e dall'editor), Pi nella VM del progetto (la sua build per Linux, `pi_in_vm`, `vm::pi_session_args`), i terminali dell'editor (ogni profilo del kit), i suoi task e i suoi profili degli agenti (attraverso `data\kit\vm.ps1`), con le versioni degli strumenti del progetto. Antigravity, un editor desktop, non parte mai su un progetto (`vm::starts_in_vm`). Dentro: la cartella del progetto in scrittura, gli strumenti del kit per Linux (`data\apps\linux-x64` o `linux-arm64`) in sola lettura. Verso il PC solo le porte dei suoi database (D-171) e GitHub quando il progetto lo sceglie (D-172) | `isolation\vm.rs`, `isolation\mod.rs` (`Vm`, `vm_for`, `for_agent`, `pi_in_vm`), `isolation\session.rs`, `ipc\terminals.rs` (`project_vm_ready`, `ensure_guest_tools`), `ipc\agents.rs` (`agent_vm_ready`, `watch_agent_requests`), `ipc\editing.rs` (`editor_vm_begin`, `editor_vm_session`), `editor\cfg.rs` (`vm_args`), `runtime\vm.ps1`, `projects\run\start.rs` |
-| **Kit sul PC** | i programmi del kit, mai codice di un progetto: i terminali del kit («Tutti gli strumenti» e quelli dell'utente, in qualunque cartella, con o senza VM: gli strumenti del kit, alle linee del progetto nella sua cartella, sigillati e senza i comandi degli agenti, `levels::env::pc_environment`, e un avviso che gli agenti girano solo nella VM, `with_agents_notice`), server di database e i loro strumenti (phpMyAdmin, mongo-express, copie), llama.cpp, la finestra dell'editor, Git per clonare, `sbx` stesso, Antigravity (per istruzioni, skill e server MCP sincronizzati), l'app. Un limite dichiarato: gli adattatori del debugger dell'editor avviano da sé i programmi sul PC | `levels::env` (`docs/app/LEVELS.it.md` §3.5), `setup\kit_files.rs` (`data\kit\agents`, i sostituti di `data\kit\no-agents`), `ipc\terminals.rs` (`terminal_launch`), le altre aree |
-| **Senza VM** (`Level::Env`) | quando la VM non c'è: terminale, azioni, siti, pool di Server Web (D-101) e creazione dei progetti sul PC con l'ambiente sigillato (`levels::env::seal`, in `levels::env::pc_environment`), senza i comandi degli agenti, e l'avviso «Senza VM». I terminali, i task e i profili degli agenti dell'editor non partono: `vm.ps1` dice perché e cosa fare (`session::no_vm_text`), la finestra dell'editor si apre lo stesso. Nessun agente parte | `levels\env.rs`, `versions\choice.rs` |
+| Livello | Cosa | Con la VM | Senza VM |
+| --- | --- | --- | --- |
+| **1 Manuale** | i terminali del kit e il terminale integrato dell'editor | sul PC, sigillati tranne l'agente SSH dell'utente (`SSH_AUTH_SOCK`); `claude`, `codex`, `pi`, `agy` sono inoltri (`data\kit\forward`) che chiedono all'app di avviare l'agente nella VM del progetto | sul PC; gli inoltri dicono perché ed escono con 1 |
+| **2 Codice del progetto** | il terminale del progetto, le azioni, i siti, i pool di Server Web, i task dell'editor, la creazione dei progetti | nella VM del progetto `atollo-p-…` (pool rifiutati: ogni sito gira nella VM del suo progetto) | sul PC, sigillati (`levels::env::seal`), «Senza VM» nella barra di stato; nessun agente nel `PATH` |
+| **3 Agenti** | Claude Code, Codex (ciascuno nella sua sandbox `atollo-a-<agente>-<progetto>-…`), Pi e Antigravity (la loro build per Linux nella VM del progetto) | solo lì | rifiutati: tutto ciò che avvierebbe, installerebbe od offrirebbe un agente è disattivato con il motivo; le estensioni dell'editor che eseguono un agente vengono disinstallate a ogni avvio dell'editor |
 
-I file:
-- `mod.rs`: `status` (il `Level` e i `Blocker`, in quest'ordine: il sistema, l'hypervisor e AppArmor da `platform::virt` (un sistema non supportato è l'unico motivo detto), l'`sbx` del kit (`sbx_missing`, con `failed`: il motivo dell'ultima installazione, annotato da `note_install` e letto da `install_failure`), il disco del kit (`kit_disk`), il daemon (`foreign_daemon`), `sbx ls --json` (`sbx_signed_out`, `sbx_failed`), la politica di rete `sbx policy init balanced`), `Blocker::explain` e `why_no_vm` (i motivi in una riga, per i terminali dell'editor e un agente rifiutato; il comando di un amministratore, `HYPERVISOR_COMMAND`, `KVM_COMMAND`, solo mostrato da copiare), `Sbx` (`find`, `command`, `session_env`: l'ambiente del kit con il temp del PC e `daemon::ENV`), `Fix` e `fix_launch` («Lancia» per `sbx login` e `sbx ls` nel terminale dell'app; mai un testo dell'interfaccia), `seal`, `without_agents` e `agent_dirs` (le cartelle degli agenti fuori dal `PATH`, i sostituti di `data\kit\no-agents` in testa), `agents_notice` e `with_agents_notice`, la `Vm` di un progetto (avvio con il suo kit, rifatta nella cartella del progetto quando il kit si è spostato: `moved`, `make_again`; montaggi, porte dei database, `publish`, dove una porta già pubblicata va bene e l'altro indirizzo si toglie prima; `stop_run`; `launch`), `vm_workspace` (le cartelle rifiutate come spazio di lavoro), `guest_view` (solo gli strumenti del kit per Linux e le loro variabili), `pi_in_vm`, `db_in_vm`, elenco e rimozione delle sandbox (`vm_list`, `remove_vm`, `remove_owned`), `legacy_terminals` (le sandbox `atollo-t-` di un Atollo precedente, tolte una volta per esecuzione, D-178), `stop_daemon`, `restart_pending`;
-- `vm.rs`: costruttori puri degli argomenti e dei nomi di `sbx`: `name`, `agent_name` (`atollo-p-`, `atollo-a-` e 96 bit di SHA-256; `TERMINAL_PREFIX`, `atollo-t-`, solo per togliere le sandbox dei terminali di un Atollo precedente), `start_args` (`sbx run -d --name … --kit …`), `exec_args`, `kit_terminal_args` (la sessione interattiva nella VM del progetto), `agent_args`, `starts_in_vm`, `pi_session_args`, `agent_session_args` (`sbx run --name <sandbox> --env-file db.env -e PATH=<strumenti>:<PATH dell'immagine>`), `publish_args` e `unpublish_args` (`127.0.0.1`, o `0.0.0.0` con la rete locale), `published_already`, `run_tag`, `tracked` e `stop_args` (il gruppo di processi di un'azione annotato nella VM; `TERM`, `KILL` dopo cinque secondi, poi il suo container web), `mount_args`, `host_port_allow` e `host_port_close`, `POLICY_ARGS`, `guest_target`, `guest_path` (`D:\a\b` → `/d/a/b`), `web_line` (il container del sito, gli alias del progetto in `/srv/alias/<n>`);
-- `daemon.rs`: di chi è il daemon (`Daemon::None`, `Kit`, `Other`, da `sandboxd.pid` del kit e dalla pipe), il suo stato nella home del kit (`state_dir`), `ENV` (`LLMMAN_RUNTIME=path`, `SBX_NO_TELEMETRY=1`), `SETTINGS` (`ssh.agentForwardingEnabled=false`, `browser.enabled=false`, `diagnostics.autoUpload=no`, applicate con un riavvio solo quando nessuna sandbox è accesa);
-- `kit.rs`: il kit di ogni sandbox in `data\app\sandboxes\<sandbox>\` (`spec.yaml`, `atollo.json`, `.applied`, `.mounts`, `.ports`), il suo proprietario, l'elenco e la rimozione;
-- `session.rs`: le sessioni dell'editor in `data\app\sandboxes\sessions\`, lette da `data\kit\vm.ps1` (lo script che ogni profilo dell'editor avvia, `editor::cfg::vm_args`): `.level` (`vm` o `env`, scritto prima della finestra dell'editor) e `.reason` (con `env`: perché la VM manca e cosa fare, D-178); chiuso per difetto: nulla dell'editor gira sul PC, con `env` il terminale mostra `.reason` e non apre nulla, senza livello dopo 15 secondi non si apre nulla; `<progetto>.pending` mentre l'app prepara la VM, `<progetto>\` (`sbx`, `env`, `shell`, `run`, o `error`), le richieste degli agenti (Claude Code, Codex e Pi: `<progetto>.<agente>.request`, `take_requests`, a cui risponde `ipc::agents::watch_agent_requests` con `<progetto>\<agente>` o `<agente>.error`); `clear_all` all'avvio dell'app;
-- `secrets.rs`: `Atollo.exe secret github` registrato per sandbox con `sbx secret set github --sandbox <vm> --command …`, che risponde solo all'`sbx` del kit (`asked_by_sbx`) con un nonce noto (`secrets.json`);
-- intorno: `platform\virt.rs` e `os\*\virt.rs` (`Gap`: ciò che manca al PC), `install\sandboxes.rs` (il componente), `ipc\isolation.rs` (`isolation_status`, `vms_list`, `vm_remove`, `isolation_run`), `ui\src\shell\isolation.tsx` e `ui\src\ipc\isolation.ts` (la voce della barra di stato e la sua finestra), lo `Scope` del runner con `ipc::setup::vm_tools_target` (D-173) e `ipc::setup::mark_via_vm` per la matrice (D-174), `projects\run\start.rs` (`VmRun`: l'arresto di un'azione nella sua VM, fuori dal filo di chi chiama), `ipc\servers.rs` (`refused_with_vm`), `kit\backup.rs` (`left_out`: lo stato del daemon, `…/state/sandboxd`, resta fuori dalla «Copia del kit»).
+Il codice: ogni punto di avvio costruisce una `levels::Request` (la sua `Origin` e il `Place` da `place_of`), legge `levels::facts`, e `levels::decide` (pura, regole R1–R17) restituisce un `Placement`: `Pc` (avviato con `levels::env::environment`), `Vm` (preparato da `levels::prepare`: gli strumenti Linux del kit montati in sola lettura, i database e le porte del progetto, `info.json`, la sandbox avviata; poi `levels::start`), oppure `Refused` con motivo e rimedio. I processi fuori dall'app (i profili dell'editor, gli inoltri) chiedono con file di richiesta in `data\app\levels\requests\` tramite i client `launch.ps1`/`launch.sh` (`levels::requests`, serviti da `ipc::levels::serve_requests`). `levels::agents` lega alla VM tutto ciò che riguarda gli agenti; `levels::report` dà il pannello «VM del progetto» (`ui\src\projects\vm.tsx`) e `atollo vm <progetto>` (`app\vmcli.rs`): stato, montaggi, porte e sessioni di ogni sandbox, «Verifica strumenti», e le azioni «Riavvia», «Ricrea», «Aggiorna strumenti». In ogni sandbox una cartella in sola lettura (`data\app\sandboxes\<sandbox>\guest\`) dà un `atollo` in sola lettura (dove sei, cosa hai) e i sostituti degli agenti. Nessun segreto del kit entra in una VM: GitHub (D-172) e la chiave di Gemini (Antigravity) solo attraverso i segreti del proxy di `sbx` per quella sandbox (LEVELS.it.md §11).
+
+`isolation\` tiene ciò che riguarda `sbx` stesso:
+- `mod.rs`: `status` (la disponibilità, `isolation::Level { Vm, Env }`, e i `Blocker`, in quest'ordine: il sistema, l'hypervisor e AppArmor da `platform::virt`, l'`sbx` del kit (`sbx_missing`, con il motivo dell'ultima installazione fallita), il disco del kit (`kit_disk`), il daemon (`foreign_daemon`), `sbx ls --json` (`sbx_signed_out`, `sbx_failed`; un daemon del kit più vecchio dell'`sbx` del kit viene riavviato, poi richiesto), la politica di rete `sbx policy init balanced`), `Blocker::explain` e `why_no_vm`, `Sbx` (`find`, `command`, `session_env`), `Fix` e `fix_launch` («Lancia» per `sbx login` e `sbx ls` nel terminale dell'app), la `Vm` di una sandbox (avvio con il suo kit, rifatta quando il kit si è spostato, montaggi in sola lettura aggiunti con `sbx mount` a una sandbox fatta prima, porte dei database, `publish`, `stop_run`, il segreto di Gemini), `agent_in_vm`, `db_in_vm`, elenco, arresto e rimozione delle sandbox, `legacy_terminals` (le sandbox `atollo-t-` di un Atollo precedente), `stop_daemon`, `restart_pending`;
+- `vm.rs`: costruttori puri degli argomenti e dei nomi di `sbx` (`name`, `agent_name`: `atollo-p-`, `atollo-a-` e 96 bit di SHA-256; `start_args`, `exec_args`, `kit_terminal_args`, `pi_session_args`, `agy_session_args`, `agent_session_args`, `check_args`, `scaffold_args`, `publish_args`, `tracked` e `stop_args`, `mount_args`, `host_port_allow`/`host_port_close`, `guest_target`, `guest_path`, `web_line`);
+- `daemon.rs`: di chi è il daemon, il suo stato nella home del kit, `ENV`, `SETTINGS` (`ssh.agentForwardingEnabled=false`, `browser.enabled=false`, `diagnostics.autoUpload=no`);
+- `kit.rs`: il kit di ogni sandbox in `data\app\sandboxes\<sandbox>\` (`spec.yaml`, `atollo.json`, `.applied`, `.mounts`, `.ports`, `guest\`), il suo proprietario, l'elenco e la rimozione;
+- `secrets.rs`: `Atollo.exe secret github|gemini` registrato per sandbox con `sbx secret set … --sandbox <vm> --command …`, che risponde solo all'`sbx` del kit con un nonce noto (`secrets.json`);
+- intorno: `platform\virt.rs` e `os\*\virt.rs` (`Gap`: ciò che manca al PC), `install\sandboxes.rs` (il componente), `ipc\isolation.rs` (`isolation_status`, `vms_list`, `vm_remove`, `isolation_run`), `ui\src\shell\isolation.tsx` (la pill, la finestra «Senza VM»), lo `Scope` del runner con `ipc::setup::vm_tools_target` (D-173), `projects\run\start.rs` (`VmRun`), `kit\backup.rs` (`left_out`: lo stato del daemon resta fuori dalla «Copia del kit»).
 
 Dove va una modifica:
-- un comando o un argomento nuovo di `sbx` → un costruttore puro in `isolation\vm.rs`, con la sua prova in `test\rust\isolation\vm.rs`, eseguito con `Sbx::command` o `Vm::command` (mai un `Command::new` per conto suo);
-- un motivo nuovo per cui la VM è spenta → un `Blocker` in `isolation\mod.rs` (mandato con il suo `code`), il testo e l'azione in `ui\src\shell\isolation.tsx` e nelle quattro lingue; qualcosa che manca al PC → un `Gap` in `platform\virt.rs` e gli `os\*\virt.rs` che lo leggono;
-- ciò che una sandbox ha dalla creazione → `isolation\kit.rs` (`spec_yaml`); ciò che cambia a ogni sessione (`PATH`, le linee degli strumenti) → `sbx exec -e`, in `vm.rs`;
-- un'impostazione del daemon → `daemon::SETTINGS`; un segreto per le VM → `isolation\secrets.rs`, come comando, mai una copia;
-- un programma di un progetto → attraverso `ipc::terminals::project_vm_ready` mentre la VM è attiva, mai sul PC al suo posto; sul PC (senza VM, o un terminale del kit) sempre con `levels::env::strip_agents` (in `pc_environment`); uno che avvia l'editor → un profilo attraverso `editor::cfg::vm_args` (`vm.ps1`), la sua sessione in `isolation\session.rs`.
+- un programma, un terminale o un punto di avvio nuovo → una `levels::Origin` e le sue righe in LEVELS.it.md (§2, §3.4, §5), attraverso `decide`; mai un `Command::new` per conto suo (la prova di regola `no_process_outside_levels`);
+- un comando o un argomento nuovo di `sbx` → un costruttore puro in `isolation\vm.rs`, con la sua prova in `test\rust\isolation\vm.rs`, eseguito con `Sbx::command` o `Vm::command`;
+- un motivo nuovo per cui la VM è spenta → un `Blocker` in `isolation\mod.rs`, il testo e l'azione in `ui\src\shell\isolation.tsx` e nelle quattro lingue; qualcosa che manca al PC → un `Gap` in `platform\virt.rs` e gli `os\*\virt.rs` che lo leggono;
+- ciò che una sandbox ha dalla creazione → `isolation\kit.rs` (`spec_yaml`); ciò che cambia a ogni sessione (`PATH`, le linee degli strumenti) → `sbx exec -e`, costruito da `levels::env` e `vm.rs`;
+- un'impostazione del daemon → `daemon::SETTINGS`; un segreto per le VM → `isolation\secrets.rs`, come comando, mai una copia.
 
-Ancora da fare (D-175, D-178): i server MCP del kit per gli agenti nella VM (`data\agents\mcp.json`, il `.mcp.json` del progetto; i loro comandi sono programmi del PC), da portare nel gateway MCP di `sbx` o da dire assenti.
+Ancora da fare (D-175, D-178): i server MCP del kit per gli agenti nella VM (`data\agents\mcp.json`, il `.mcp.json` del progetto; i loro comandi sono programmi del PC), da portare nel gateway MCP di `sbx` o da dire assenti. I punti aperti che chiedono una VM vera sono in LEVELS.it.md §14.
 
 ### Dati del kit (`data\`)
 
@@ -239,10 +249,12 @@ data\
                               updates.json (le versioni nuove dei componenti, D-161)
     sandboxes\<sandbox>\      il kit di ogni sandbox di Docker Sandboxes (D-169): spec.yaml, atollo.json (di chi
                               è), .applied, .mounts, .ports (le porte dei database aperte alla sandbox, D-171),
-                              db.env (l'accesso al database del progetto per la VM, solo del proprietario);
-                              accanto secrets.json (i comandi dei segreti registrati per PC e sandbox, D-172),
-                              .restart-pending e sessions\ (le sessioni dell'editor per vm.ps1, cancellate
-                              all'avvio dell'app, D-175)
+                              db.env (l'accesso al database del progetto per la VM, solo del proprietario, mai
+                              montato), guest\ (montata in sola lettura nella sandbox: info.json, info.txt,
+                              bin\atollo, i sostituti degli agenti, LEVELS.it.md §8.4); accanto secrets.json (i
+                              comandi dei segreti registrati per PC e sandbox, D-172) e .restart-pending
+    levels\requests\          i file di richiesta dei profili dell'editor e degli inoltri (LEVELS.it.md §4.3),
+                              mai montati in una VM, cancellati all'avvio dell'app
     secrets\                  gemini-api-key, llama-key (il server dei modelli locali), hf-token (Hugging Face),
                               leggibili solo dal proprietario (D-137, D-151)
     llm.json                  le impostazioni dei modelli locali: porta, avvio automatico, modello di Pi (D-151)
@@ -254,7 +266,8 @@ data\
     pre-v2\                   copia di ports.json e secrets.json prima della migrazione (D-89)
     pre-caddy\                copia di servers.json e dei panel.json prima del passaggio da Nginx a Caddy (D-120)
   agents\                     ciò che i quattro agenti condividono: AGENTS.md, skills\, mcp.json, lo stato dell'allineamento in .sync\
-  antigravity\                l'accesso di Antigravity tenuto nel kit (keyring.json)
+  antigravity\                l'accesso di Antigravity che un Atollo precedente ha tenuto nel kit (keyring.json):
+                              solo letto, mai spostato né passato a una VM (D-179)
   apache\                     kit.conf e htdocs\ del sito dell'Apache del kit
   cache\                      cache dei gestori di pacchetti (npm, pip, uv, Composer, Go, NuGet…) e delle
                               risposte di GitHub; si può cancellare
@@ -266,9 +279,11 @@ data\
                               stessa home): impostazioni e registri di sbx (l'accesso a Docker sta nel
                               portachiavi del sistema) e lo stato del daemon del kit (immagini, i dischi sparsi
                               delle sandbox, D-169)
-  kit\                        file scritti da runtime\ a ogni avvio (vm.ps1: i profili dell'editor, D-175;
-                              agents\: i lanciatori degli agenti, mai nel PATH delle shell del PC; no-agents\:
-                              lì i sostituti di claude, codex, agy, antigravity e pi, D-178)
+  kit\                        file scritti da runtime\ a ogni avvio: launch.ps1 e launch.sh (i client di richiesta
+                              dei task e dei profili degli agenti dell'editor); forward\: gli inoltri di claude,
+                              codex, pi, agy e antigravity, in testa al PATH delle shell del PC, che chiedono
+                              all'app di avviare l'agente nella VM del progetto (LEVELS.it.md §6.8); le cartelle
+                              agents\, no-agents\ e vm.ps1 di un Atollo precedente si tolgono all'avvio
   models\gguf\<proprietario>--<nome>\
                               modelli locali, una copia per tutti i target (D-151): i file GGUF, atollo.json
                               (cosa ha scaricato il kit), <file>.part mentre un download è sospeso
@@ -308,10 +323,11 @@ Tutto ciò che passa fra l'interfaccia e Rust sta in due cartelle con lo stesso 
 | `events.rs` | i nomi degli eventi mandati all'interfaccia (`run`, `setup`, `job`, `pty-*`…) |
 | `app.rs` | informazioni, impostazioni, aggiornamenti, apertura di indirizzi e cartelle |
 | `window.rs` | cosa è aperto, «Rimuovi l'unità», chiusura e conferma |
-| `editing.rs` | editor, console, impostazioni dell'editor ed estensioni di un progetto; la sessione dell'editor nella VM del progetto (`editor_vm_begin`, `editor_vm_session`, D-175) |
+| `editing.rs` | editor, console, impostazioni dell'editor ed estensioni di un progetto |
+| `levels.rs` | i livelli ai comandi dell'app (LEVELS.it.md §4): `ready` (`decide` → `environment` → `prepare` con `AppEffects`), `serve_requests` (le richieste dell'editor e degli inoltri), `watch_levels` e `levels_state` (`levels-changed`), il rapporto della VM e le sue azioni (`project_vm_report`, `project_vm_check`, `project_vm_action`) |
 | `setup.rs` | scelta dei componenti, installazione in corso, download a mano |
 | `versions.rs` | versioni salvate, versioni dei progetti, matrice delle relazioni |
-| `agents.rs` | stato, consumi, avvio e uscita degli agenti; la loro sandbox nella VM con gli strumenti e il database del progetto (`agent_vm_ready`), anche per i profili dell'editor (`watch_agent_requests`) |
+| `agents.rs` | stato, consumi e avvio degli agenti (solo nella VM, attraverso `decide`; senza, rifiutati con il motivo), uscita da ciò che i dati del kit ancora tengono, i server MCP del kit |
 | `llm.rs` | modelli locali: stato del server, avvio e arresto, impostazioni, catalogo e modelli su disco, Hugging Face, download e il loro annullamento, cancellazione, il token e la chiave; un permesso scritto a mano, `allow-local-models` (`permissions\llm.toml`), invece di uno per comando |
 | `projects.rs` | elenco, creazione, clone, eliminazione, azioni, sito, stato, MCP |
 | `orphans.rs` | dati senza progetto: elenco e «Collega a…» (D-89) |
@@ -319,8 +335,8 @@ Tutto ciò che passa fra l'interfaccia e Rust sta in due cartelle con lo stesso 
 | `github.rs` | account e repository GitHub |
 | `databases.rs` | database dei progetti, copie, `.env`, contenuto, phpMyAdmin, mongo-express |
 | `services.rs` | server di database del kit |
-| `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato; avvio e ricaricamento rifiutati con la VM attiva (`refused_with_vm`) |
-| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella; le sessioni del terminale nell'app; `project_vm_ready` e `ensure_guest_tools`, l'unica strada del terminale e delle azioni di un progetto verso la sua VM (D-170, D-171) |
+| `servers.rs` | pool di server web: elenco, profili, avvio, arresto, ricarica, progetto collegato; avvio e ricaricamento rifiutati con la VM attiva (`decide`, regola R2) |
+| `terminals.rs` | pagina Terminali: elenco, salvataggio, rimozione, apertura, scelta della cartella; le sessioni del terminale nell'app (ognuna con l'etichetta del suo livello, `PtyInfo.level/label/sandbox`); `ensure_guest_tools` (gli strumenti del kit per il Linux della VM, D-173) |
 | `runs.rs` | azioni avviate: avvio, arresto, output, porte |
 | `isolation.rs` | lo stato della VM (`isolation_status`), elenco e rimozione delle sandbox (`vms_list`, `vm_remove`), «Lancia» dell'avviso (`isolation_run`, solo `sbx login` e `sbx ls`) |
 
@@ -410,10 +426,10 @@ Le cartelle delle pagine:
 
 | Cartella | File |
 | --- | --- |
-| `projects\` | `explorer.tsx` (pagina Progetti), `home.tsx` (ciò che gira, preferiti e recenti), `quickopen.tsx` (Ctrl+P), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `wizard.tsx` (nuovo progetto da un framework), `site.tsx`, `lan.tsx` (indirizzo e QR del sito per il telefono, D-158), `savebase.tsx` («Salva come base», D-162), `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx` (con `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx`, `extensions.tsx` (estensioni dell'editor per linguaggio: la matrice del kit e quelle di un progetto) |
+| `projects\` | `explorer.tsx` (pagina Progetti), `home.tsx` (ciò che gira, preferiti e recenti), `quickopen.tsx` (Ctrl+P), `page.tsx` (pagina del progetto), `runs.ts` (`useRuns` e stato delle azioni), `kind.tsx` (tipo e linguaggi), `new.tsx` (nuovo e clone), `wizard.tsx` (nuovo progetto da un framework), `site.tsx`, `lan.tsx` (indirizzo e QR del sito per il telefono, D-158), `savebase.tsx` («Salva come base», D-162), `delete.tsx`, `orphans.tsx`; le schede della pagina in `run.tsx` (con `actionform.tsx`), `needs.tsx`, `databases.tsx`, `git.tsx`, `mcp.tsx` (server MCP del progetto), `editorsettings.tsx`, `extensions.tsx` (estensioni dell'editor per linguaggio: la matrice del kit e quelle di un progetto), `vm.tsx` (il pannello «VM del progetto»: stato, montaggi, porte e sessioni di ogni sandbox, «Verifica strumenti» e le sue azioni, LEVELS.it.md §8) |
 | `databases\` | `page.tsx` (pagina Database, `SecretField`), `backups.tsx` (copie dei database di un progetto), `engines.ts` (i nomi dei motori, `ENGINE_NAMES`) |
 | `ai\` | `page.tsx` (pagina AI, D-165: il riquadro Agenti e il riquadro Modelli locali in una sola barra laterale, l'editor mostra la riga scelta) |
-| `agents\` | `page.tsx` (`AgentsPane` con la riga «Condiviso fra gli agenti», `AgentEditor`, `SharedEditor` con i server MCP del kit, `AgentButtons`, `useAgents`), `stats.tsx` (limiti e consumi), `token.tsx` (il token di Claude Code su macOS), `gemini.tsx` (la chiave di Gemini di Antigravity) |
+| `agents\` | `page.tsx` (`AgentsPane` con la riga «Condiviso fra gli agenti», `AgentEditor`, `SharedEditor` con i server MCP del kit, `AgentButtons`, `useAgents`), `stats.tsx` (limiti e consumi), `gemini.tsx` (la chiave di Gemini di Antigravity) |
 | `models\` | `page.tsx` (`ModelsPane` e `ModelsEditor`: server, modello di Pi, catalogo di Atollo, Hugging Face, questo PC; D-151) |
 | `frameworks\` | `model.ts` (dati e hook), `fields.tsx` (campi delle istruzioni), `tags.tsx`, `editor.tsx`, `tree.tsx`, `plan.tsx` |
 | `versions\` | `model.ts`, `kit.tsx` (versioni del kit), `project.tsx` (versioni di un progetto), `lines.tsx` (scelta della riga) |

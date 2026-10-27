@@ -2,7 +2,7 @@
 
 English · [Italiano](PRIVACY.it.md) · [Français](PRIVACY.fr.md) · [Deutsch](PRIVACY.de.md)
 
-Effective date: 25 October 2026
+Effective date: 27 October 2026
 
 This page explains what the Atollo desktop app (`Atollo.exe`, the macOS `.app` and the Linux AppImage) and its website do with your data. Atollo is open source: everything written here can be checked in the code of this repository.
 
@@ -14,6 +14,7 @@ This page explains what the Atollo desktop app (`Atollo.exe`, the macOS `.app` a
 - The tools and AI agents you run inside Atollo (Claude Code, Codex, Antigravity, Pi, Git, npm…) are third-party programs with their own privacy policies.
 - **Local AI models** run on your computer: with a local model, your prompts and files never leave it.
 - Projects run in microVMs of **Docker Sandboxes** (`sbx`, by Docker), installed in the kit. They need a **Docker account**, signed in with `sbx login` on each computer; Atollo runs `sbx` with Docker's telemetry and diagnostics upload off. What Docker Sandboxes keeps outside the Atollo folder is listed in section 4.
+- **AI agents run only in those microVMs** (Claude Code and Codex each in a sandbox of its own, Pi and Antigravity in the project's VM); without the VM Atollo starts no agent. **No secret the kit keeps is put in a VM**: your GitHub token (only with "GitHub in the VM" on for a project) and the Gemini API key (for Antigravity) reach only Docker Sandboxes' proxy, which adds them to the requests leaving that VM; the one exception still open is the local models' key given to Pi (section 4). The rules are in [docs/app/LEVELS.md](app/LEVELS.md).
 
 ## 2. What Atollo does not collect
 
@@ -49,7 +50,7 @@ Every request the app makes itself carries a `User-Agent` of the form `Atollo/<v
 Things that are **not** connections made by Atollo itself:
 
 - programs you run in the editor, in the consoles or through actions (`git`, `npm`, `pip`, `cargo`, the AI agents…) connect wherever they are designed to;
-- **Docker Sandboxes** (`sbx`, section 5), which Atollo starts for the microVMs, talks to Docker itself: the sign-in of your Docker account (`sbx login`, whose link opens in your browser when you click it in Atollo's terminal), and the images the VMs need (the `shell` sandbox, `php:<version>-apache` or `httpd:2.4` for a site in a VM). The programs inside a VM reach the network only through `sbx`'s proxy, under Docker's `balanced` network policy, which Atollo sets on the kit's `sbx`; towards your computer, a project's VM reaches only the port of its own database. With "GitHub in the VM" on for a project (off by default), the proxy adds your GitHub token to that VM's requests to GitHub: `sbx` gets the token by running `Atollo secret github`, which answers only the kit's `sbx` with a nonce Atollo registered, and the token never enters the VM;
+- **Docker Sandboxes** (`sbx`, section 5), which Atollo starts for the microVMs, talks to Docker itself: the sign-in of your Docker account (`sbx login`, whose link opens in your browser when you click it in Atollo's terminal), and the images the VMs need (the `shell` sandbox, `php:<version>-apache` or `httpd:2.4` for a site in a VM). The programs inside a VM reach the network only through `sbx`'s proxy, under Docker's `balanced` network policy, which Atollo sets on the kit's `sbx`; towards your computer, a project's VM reaches only the port of its own database (and, while Pi uses a local model there, the local models' server). With "GitHub in the VM" on for a project (off by default), the proxy adds your GitHub token to that VM's requests to GitHub: `sbx` gets the token by running `Atollo secret github`, which answers only the kit's `sbx` with a nonce Atollo registered, and the token never enters the VM. In the same way, when Antigravity runs in a project's VM and Settings hold a Gemini API key, the proxy adds the key to that VM's requests to Google's Gemini services (`Atollo secret gemini`), and the key never enters the VM;
 - links you click open in your own browser, and so does “Report a problem” (section 4).
 
 Local servers: the editor and the projects' servers listen on this computer only (`127.0.0.1`/`localhost`), unless you turn on **Local network** in Settings for the projects' servers. With it on, the QR code of a site's address for the phone is made by Atollo on this computer: no service on the internet sees the address, and finding this PC's IP on the local network sends no packet. The local models' server (llama.cpp) always listens on `127.0.0.1` only, on a port of its own (9931 and following), and answers only requests that carry its random key; `llm status` does not send that key to whatever listens on the port. The models run on this computer: with a local model nothing goes to the network. A site that runs in a project's microVM has its port published on this computer's `127.0.0.1`, or on its local network when **Local network** is on; turning it off takes that publication back at the site's next start (if it cannot, the site does not start). Stopping the site takes its port back.
@@ -72,9 +73,9 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | The interface's own storage (window layout) and web view cache | `data/webview2/` (Windows and Linux) |
 | GitHub account (GitHub CLI token, stored as a file so it travels with the kit) | `data/gh/` |
 | Git credentials for other hosts (Git Credential Manager, encrypted with Windows DPAPI for your Windows user) | `data/home/.gcm/` (Windows) |
-| AI agents' logins and sessions, written by the agents themselves | `data/home/.claude/`, `data/home/.codex/`, `data/home/.gemini/` |
-| Antigravity's Google sign-in, moved out of the system's credential store after each run | `data/antigravity/keyring.json` |
-| Claude Code's long-lived token, if you use "Connect with a token" (macOS) | `data/agents/claude/oauth-token` |
+| AI agents' logins and sessions inside the VMs, written by the agents themselves | the VMs' disks (row "Docker Sandboxes" below) |
+| AI agents' logins and sessions an earlier Atollo's agents wrote on this computer (only read; "Sign out" removes them) | `data/home/.claude/`, `data/home/.codex/`, `data/home/.gemini/` |
+| Antigravity's Google sign-in and Claude Code's long-lived token an earlier Atollo kept, if any: only read, never moved nor given to a program; "Sign out" removes them | `data/antigravity/keyring.json`, `data/agents/claude/oauth-token` |
 | Database passwords (random, generated by Atollo) | `data/app/db/secrets.json`, `data/app/db/mysql.cnf`, `data/projects/<project>/private/db.json` |
 | Local models (GGUF files) and what Atollo downloaded of them | `data/models/gguf/<owner>--<repo>/` (with `atollo.json`) |
 | Local models' settings (port, automatic start, the model Pi uses) and the server's presets | `data/app/llm.json`, `data/app/llm/presets.ini` |
@@ -83,10 +84,10 @@ Atollo is portable: it keeps its data next to the executable, in the `data/` fol
 | Pi's settings, sign-ins (`auth.json`), sessions and the kit's `models.json` with the local server's address and key (readable by your user only) | `data/home/.pi/agent/` |
 | Editor server data and its per-session access token | `data/vscodium-server/` |
 | Docker Sandboxes: its settings and logs, the VMs' images and disks (each VM's home, `/tmp` and its own Docker) | the kit's home: `data/home/AppData/Local/DockerSandboxes/` on Windows, under `data/home/` on macOS and Linux |
-| Each sandbox's kit: its specification, whose it is (a project or one of its agents; a kit terminal's only for an earlier Atollo, removed by itself), its mounts and opened ports; for a project with a database, the `db.env` with the project's database login given to its VM (readable by your user only) | `data/app/sandboxes/<sandbox>/` |
-| The notes of the "GitHub in the VM" commands Atollo registered in Docker Sandboxes, with their nonces (readable by your user only) | `data/app/sandboxes/secrets.json` |
-| The editor's sessions in the VM: whether the VM was on when the editor opened (`.level`), and if not why (`.reason`, shown by its terminals) and, for each project opened in the editor, the path of `sbx`, its variables and the arguments of its terminal, its tasks and its Claude Code, Codex and Pi sessions (no password: the database login stays in `db.env`); cleared at every start of the app | `data/app/sandboxes/sessions/` |
-| The script the editor's terminals, tasks and agent profiles start (it reads the sessions above), written again at every start of the app | `data/kit/vm.ps1` |
+| Each sandbox's kit: its specification, whose it is (a project or one of its agents; a kit terminal's only for an earlier Atollo, removed by itself), its mounts and opened ports; for a project with a database, the `db.env` with the project's database login given to its VM (readable by your user only); the `guest` folder the VM sees read-only: what `atollo` shows inside the VM (the level, the project, the tools, the databases' addresses and users, never a password) | `data/app/sandboxes/<sandbox>/` |
+| The notes of the "GitHub in the VM" and Gemini key commands Atollo registered in Docker Sandboxes, with their nonces (readable by your user only) | `data/app/sandboxes/secrets.json` |
+| The requests of the editor's tasks and agent profiles and of the agents' commands typed in a terminal (the origin, the folder, the words typed; no secret), each removed once answered; cleared at every start of the app, never seen by a VM | `data/app/levels/requests/` |
+| The scripts those requests start, and the agents' commands of the computer's terminals that forward to the VM, written again at every start of the app | `data/kit/launch.ps1`, `data/kit/launch.sh`, `data/kit/forward/` |
 | Your projects | `projects/` |
 | A kit copy waiting to be imported, only after “Import from…” | `.atollo-import/` |
 | What an imported copy replaced, kept until you delete it | `.atollo-before-import-<date-time>/` |
@@ -95,13 +96,12 @@ The database passwords (`db.env` of the sandboxes included), the Gemini API key,
 
 Settings › The kit › **“Copy of the kit”** writes `projects/` and `data/` (without programs, caches, local models and the VMs' images and disks) to a folder or a zip **you choose**, possibly outside the Atollo folder. The copy holds the kit's secrets **in clear** (`data/app/db/secrets.json`, `data/app/secrets/`, the agents' and GitHub sign-ins): keep it safe. Atollo never sends it anywhere.
 
-The Claude token and the Gemini API key are given (as `CLAUDE_CODE_OAUTH_TOKEN` and `GEMINI_API_KEY`) only to the agents Atollo launches, not to project actions, scripts, terminals or the editor. The local models' key goes to Pi when Atollo launches it (`LLAMA_API_KEY`) and into Pi's own `models.json`, which Pi reads wherever Atollo starts it (in the project's VM since D-178: the kit's terminals no longer start agents). The Hugging Face token is sent only to `huggingface.co`.
+The AI agents run only in the microVMs, never on your computer: no secret of the kit is put in a VM, in its variables or in its files. The Gemini API key reaches only Docker Sandboxes' proxy, registered for the project's sandbox when Antigravity starts there, which adds it to Antigravity's requests to Google; the GitHub token likewise, only with "GitHub in the VM" on. The Claude token file an earlier Atollo saved is given to nothing. The one exception still open: when Pi uses a local model, the local models' key goes to Pi's session in the project's VM (`LLAMA_API_KEY`) and into Pi's own `models.json`, so that Pi reaches the server on your computer; a key for that sandbox only is planned. The Hugging Face token is sent only to `huggingface.co`.
 
 Exceptions, outside the Atollo folder:
 
 - **Temporary files**: files in transit go to `<system temp>/Atollo/`; depending on Settings › General › **Temporary files of programs**, programs may also use the system's temporary folder (by default when the kit is on a USB stick, a network drive or FAT32/exFAT).
-- **Antigravity sign-in**: while Antigravity runs, its login is placed in the system's credential store (on Windows for the logon session only), then moved back into the kit and removed. Credentials that were already on the computer are put back as they were; a sealed note of them (`keyring-before.json`, readable only on that computer) stays in the kit until the next save.
-- **Claude Code on macOS** keeps its own login in the Keychain, unless you use "Connect with a token".
+- **Antigravity sign-in of an earlier Atollo**: an earlier Atollo placed Antigravity's login in the system's credential store while Antigravity ran on the computer (on Windows for the logon session only); a login a run of it left there without ending cleanly stays there. Atollo no longer moves it: Antigravity signs in inside the project's VM.
 - **macOS web view**: on macOS the system web view keeps its data where macOS decides (in your user Library).
 - **rustup** writes a Windows registry entry at each install; Atollo removes it.
 - **Docker Sandboxes**, because `sbx` or the system leave no other place (everything else of it stays in `data/`):
@@ -120,7 +120,7 @@ Settings › The kit › “Reporting a problem” has two buttons; nothing in t
 
 ## 5. Third-party tools and AI agents
 
-Atollo installs and starts programs made by others. When you use them, they talk directly to their own services and **their own privacy policies and terms apply**. Atollo does not proxy, read or store that traffic, except the sessions and logins those programs themselves write to the kit's folder (section 4).
+Atollo installs and starts programs made by others. When you use them, they talk directly to their own services and **their own privacy policies and terms apply**. The AI agents run only inside Docker Sandboxes' microVMs: Claude Code and Codex from Docker's agent images, Pi and Antigravity as their Linux builds from the kit. Atollo does not proxy, read or store that traffic, except the sessions and logins those programs themselves write to the kit's folder (section 4).
 
 - **Claude Code** (Anthropic): [anthropic.com/legal/privacy](https://www.anthropic.com/legal/privacy)
 - **Codex** (OpenAI): [openai.com/policies/privacy-policy](https://openai.com/policies/privacy-policy/)
