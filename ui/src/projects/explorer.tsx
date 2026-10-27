@@ -6,7 +6,7 @@
 // (home.tsx): what runs, favorites and recent projects, what needs a hand.
 // Ctrl+P finds a project by name (quickopen.tsx). Web actions get their own
 // port and open in the browser.
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
 import {
   editorOpen,
   folderOpen,
@@ -64,7 +64,12 @@ const HOME_TAB = "\u0000home";
 /** Stable while the list is loading (Orphans reads again when it changes). */
 const NO_PROJECTS: ProjectInfo[] = [];
 
-export function ProjectsPage({
+/** The page, rendered again only when its props change: the app renders
+ * when a database, a pool or the local models start or stop (the Activity
+ * counts), which neither the list nor a project's page shows. */
+export const ProjectsPage = memo(Projects);
+
+function Projects({
   status,
   agents,
   onChanged,

@@ -779,5 +779,7 @@ export function useTabs(initial: string[] = []) {
     setOpen((o) => o.filter((x) => ids.includes(x)));
     setActive((a) => (a !== null && ids.includes(a) ? a : null));
   }, []);
-  return { open, active, show, close, keep, setActive };
+  // The same object while nothing changes: a memo page given it renders
+  // only when its tabs do.
+  return useMemo(() => ({ open, active, show, close, keep, setActive }), [open, active, show, close, keep]);
 }

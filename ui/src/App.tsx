@@ -104,6 +104,19 @@ export function App() {
   const projectTabs = useTabs();
   /** The tools open in the editor of the Tools page, kept the same way. */
   const toolTabs = useTabs();
+  // Projects' links to Settings and to a tool, stable: the page is memo
+  // (it renders again only when what it shows changes).
+  const openSettings = useCallback(() => {
+    setPage("settings");
+  }, []);
+  const showTool = toolTabs.show;
+  const openTool = useCallback(
+    (id: string) => {
+      showTool(id);
+      setPage("components");
+    },
+    [showTool],
+  );
   const [closing, setClosing] = useState<OpenNow | null>(null);
   // The installs and the VMs' preparations (LEVELS.md §8.6) are read by the
   // parts that show them (useSetup, useJobs; WithSetup, LiveActivityPanel,
@@ -253,15 +266,10 @@ export function App() {
                 loadLog={loadLog}
                 forget={forget}
                 onGuide={openGuide}
-                onSettings={() => {
-                  setPage("settings");
-                }}
+                onSettings={openSettings}
                 quickOpen={quickOpen}
                 onQuickOpen={setQuickOpen}
-                onTool={(id) => {
-                  toolTabs.show(id);
-                  setPage("components");
-                }}
+                onTool={openTool}
               />
             ) : page === "ai" ? (
               <AiPage key={aiFocus} focus={aiFocus} onGuide={openGuide} />
