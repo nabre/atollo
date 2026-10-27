@@ -527,11 +527,14 @@ describe("App", () => {
     fireEvent.click(await panes.findByText("Antigravity"));
     const key = await screen.findByLabelText("Chiave API di Gemini (Antigravity senza account Google)");
     fireEvent.change(key, { target: { value: "AIza-key" } });
-    expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
+    expect(invoke).not.toHaveBeenCalledWith("gemini_key_set", expect.anything());
     fireEvent.blur(key);
+    // Saved alone, by Rust at once: never the settings read here and sent
+    // back, which would undo a change of the Settings page saved meanwhile.
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("settings_set", expect.objectContaining({ gemini: "AIza-key" }));
+      expect(invoke).toHaveBeenCalledWith("gemini_key_set", { key: "AIza-key" });
     });
+    expect(invoke).not.toHaveBeenCalledWith("settings_set", expect.anything());
   });
 
   it("changes the theme at once, with no Save", async () => {
