@@ -7,6 +7,10 @@
 - **Terminale e output delle azioni fluidi** anche con build e `npm install` molto loquaci: l'output arriva a gruppi, una volta per fotogramma, senza ritardare l'eco dei tasti; il terminale usa WebGL.
 - **Avvio più rapido**: la finestra si disegna subito, si carica solo la lingua in uso e le pagine AI, Database, Server web e Terminali quando le apri.
 - **Divisori fluidi**: trascinare l'altezza del terminale o di Attività non ridisegna più tutta l'app.
+- **Strumenti più leggeri durante i download**: l'avanzamento ridisegna solo la riga dello strumento che si installa.
+- **Si vede cosa sta lavorando**: un pulsante in attesa mostra la rotella al posto del testo sbiadito; «Fissa» un progetto è immediato.
+- **Nell'ordine in cui clicchi**: impostazioni, installazioni e «Applica» chiesti di fila partono nello stesso ordine; salvare la chiave di Gemini non può più annullare un'impostazione appena salvata.
+- **Niente «occupato» all'avvio**: «Libera spazio» aspetta la pulizia che Atollo fa all'avvio invece di rifiutare.
 - **VM degli agenti con nomi lunghi**: una sandbox di un progetto dal nome lungo non fallisce più all'aggiornamento del kit («name: must be at most 63 characters»); il nome si accorcia, e la sandbox con il nome vecchio va rimossa a mano (`sbx rm`).
 
 ## Rilascio 0.7.3 alpha (27/10/2026): i tre livelli
