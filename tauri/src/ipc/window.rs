@@ -1,6 +1,8 @@
 //! The main window's end: what is open now, «Remove the drive» (eject),
 //! quitting and the confirmation on close.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use super::*;
 
 /// What is still open in this kit: "Rimuovi l'unità" and the close question.
@@ -174,26 +176,59 @@ pub fn app_quit<R: Runtime>(
 #[derive(Default)]
 pub struct Quitting(pub std::sync::atomic::AtomicBool);
 
+/// The close [`on_main_close`] asked itself, nothing being open: it
+/// passes without asking again.
+static CLOSE_CHECKED: AtomicBool = AtomicBool::new(false);
+/// What is open is being looked at: another click on X adds nothing.
+static CLOSE_CHECKING: AtomicBool = AtomicBool::new(false);
+
 /// The app window is closing: with the editor, consoles, projects'
 /// servers or an installation open, the interface asks first
-/// (`close-requested` event); otherwise it closes. Once `app_quit` runs,
-/// the window only hides: closing it would end the app before its stops
-/// (actions, web servers, models, databases) are done, and leave their
-/// programs running; the app exits after the last stop.
+/// (`close-requested` event); otherwise it closes. What is open is a walk
+/// of the PC's processes ([`open_now`]): the close waits, and the walk
+/// runs off the window's thread; with nothing open the window then closes
+/// itself, on its thread, and that close passes ([`CLOSE_CHECKED`]). Once
+/// `app_quit` runs, the window only hides: closing it would end the app
+/// before its stops (actions, web servers, models, databases) are done,
+/// and leave their programs running; the app exits after the last stop.
 pub fn on_main_close<R: Runtime>(window: &tauri::Window<R>, api: &tauri::CloseRequestApi) {
     use tauri::Manager;
     let app = window.app_handle();
     if app
         .try_state::<Quitting>()
-        .is_some_and(|q| q.0.load(std::sync::atomic::Ordering::SeqCst))
+        .is_some_and(|q| q.0.load(Ordering::SeqCst))
     {
+        // Not even a close asked before the user confirmed: the app exits
+        // after its stops.
+        CLOSE_CHECKED.store(false, Ordering::SeqCst);
         api.prevent_close();
         let _ = window.hide();
         return;
     }
-    let open = open_now(app);
-    if open.any() {
-        api.prevent_close();
-        let _ = app.emit_to(MAIN, super::events::CLOSE_REQUESTED, open);
+    if CLOSE_CHECKED.swap(false, Ordering::SeqCst) {
+        return;
     }
+    api.prevent_close();
+    if CLOSE_CHECKING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let (app, window) = (app.clone(), window.clone());
+    std::thread::spawn(move || {
+        let open = open_now(&app);
+        CLOSE_CHECKING.store(false, Ordering::SeqCst);
+        if open.any() {
+            let _ = app.emit_to(MAIN, super::events::CLOSE_REQUESTED, open);
+            return;
+        }
+        let closing = app.run_on_main_thread(move || {
+            CLOSE_CHECKED.store(true, Ordering::SeqCst);
+            if let Err(e) = window.close() {
+                CLOSE_CHECKED.store(false, Ordering::SeqCst);
+                crate::common::log::warn(&format!("close: {e}"));
+            }
+        });
+        if let Err(e) = closing {
+            crate::common::log::warn(&format!("close: {e}"));
+        }
+    });
 }
