@@ -63,7 +63,10 @@ impl Batch {
         if self.bytes.is_empty() {
             return None;
         }
-        Some(self.last.map_or_else(Instant::now, |last| last + self.pace.every))
+        Some(
+            self.last
+                .map_or_else(Instant::now, |last| last + self.pace.every),
+        )
     }
 
     /// Hands the bytes waiting to `flush`, if any, as gone at `now`.
