@@ -79,7 +79,7 @@ fn backlog_keeps_the_same_text_as_before() {
         let mut k: usize = 7;
         for i in 0..3000u64 {
             k = (k * 31 + 11) % 997;
-            let part = if k % 50 == 0 {
+            let part = if k.is_multiple_of(50) {
                 "y".repeat(5000 + k)
             } else {
                 parts[k % parts.len()].to_owned()
