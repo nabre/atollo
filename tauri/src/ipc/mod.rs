@@ -138,7 +138,8 @@ pub(crate) type Queue = tauri::async_runtime::Mutex<()>;
 pub(crate) static SETTINGS: Queue = Queue::const_new(());
 
 /// The choices and installs of the Tools page ([`setup::components_sync`],
-/// [`setup::components_apply`], [`setup::components_install`], the
+/// [`setup::components_apply`], [`setup::components_install`],
+/// [`setup::setup_start`], [`setup::components_repair`], the
 /// [`versions`] commands that install, remove or choose a line): they
 /// write `components.txt` or a project's lines and queue preparations, in
 /// the order clicked.

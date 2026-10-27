@@ -388,30 +388,33 @@ pub fn setup_state<R: Runtime>(
 
 /// Installs the components chosen (or only `only`); `update_all` also
 /// updates what is installed. Returns at once; progress comes as `setup`
-/// and `job`. While another run runs it waits in the queue.
+/// and `job`. While another run runs it waits in the queue. In the order
+/// clicked with the page's other installs ([`INSTALLS`]): as a `fn` it
+/// waited on the window's thread for the one clicked before.
 #[tauri::command]
-pub fn setup_start<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn setup_start<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     only: Option<Vec<String>>,
     update_all: bool,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    let only = only.unwrap_or_default();
-    if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
-        return Err(format!("unknown component: {bad}").into());
-    }
-    let opts = Options {
-        target: Some(kit.target()),
-        only,
-        update_all,
-        ..Options::default()
-    };
-    state.setup.start(opts, false, setup_notify(app))?;
-    Ok(())
+    let work = off_main(&webview, "setup", move |app, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        let only = only.unwrap_or_default();
+        if let Some(bad) = only.iter().find(|id| Catalog::get().find(id).is_none()) {
+            return Err(format!("unknown component: {bad}").into());
+        }
+        let opts = Options {
+            target: Some(kit.target()),
+            only,
+            update_all,
+            ..Options::default()
+        };
+        state.setup.start(opts, false, setup_notify(app.clone()))?;
+        Ok(())
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// The components with a new version (N-9), from the versions asked last;
@@ -505,26 +508,30 @@ pub struct Repair {
 }
 
 /// «Reinstalla» of a damaged component: marked to be installed again at
-/// its version (D-92), then prepared now.
+/// its version (D-92), then prepared now. Off the window's thread, in the
+/// order clicked, as [`setup_start`].
 #[tauri::command]
-pub fn components_repair<R: Runtime>(
-    app: AppHandle<R>,
+pub async fn components_repair<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     items: Vec<Repair>,
     target: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let kit = kit_for(&state.kit, target.as_deref())?;
-    let items: Vec<(String, Option<String>)> = items.into_iter().map(|r| (r.id, r.line)).collect();
-    let only = crate::setup::integrity::mark_for_repair(&kit, &items).or_fail_chain("repair")?;
-    let opts = Options {
-        target: Some(kit.target()),
-        only,
-        ..Options::default()
-    };
-    state.setup.start(opts, false, setup_notify(app))?;
-    Ok(())
+    let work = off_main(&webview, "repair", move |app, state| {
+        let kit = kit_for(&state.kit, target.as_deref())?;
+        let items: Vec<(String, Option<String>)> =
+            items.into_iter().map(|r| (r.id, r.line)).collect();
+        let only =
+            crate::setup::integrity::mark_for_repair(&kit, &items).or_fail_chain("repair")?;
+        let opts = Options {
+            target: Some(kit.target()),
+            only,
+            ..Options::default()
+        };
+        state.setup.start(opts, false, setup_notify(app.clone()))?;
+        Ok(())
+    });
+    in_order(&INSTALLS, work).await
 }
 
 /// Installs `id` now, at its latest version, from the table of the Tools
