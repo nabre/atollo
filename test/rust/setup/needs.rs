@@ -1,5 +1,5 @@
 use super::*;
-use crate::test_support::prepared_kit;
+use crate::setup::catalog::Catalog;
 
 #[test]
 fn commands() {
@@ -82,42 +82,4 @@ fn every_id_is_in_the_catalog() {
         let id = component_of(program).unwrap();
         assert!(Catalog::get().find(id).is_some(), "{program} -> {id}");
     }
-}
-
-#[test]
-fn agents_need_their_mcp_programs() {
-    let (tmp, kit) = prepared_kit("needs-agent");
-    assert_eq!(
-        of_agent(&kit, "codex", None)
-            .into_iter()
-            .collect::<Vec<_>>(),
-        ["codex"]
-    );
-    // A project's own servers count too.
-    let project = tmp.0.join("projects").join("p");
-    std::fs::create_dir_all(&project).unwrap();
-    std::fs::write(
-        project.join(".mcp.json"),
-        r#"{"mcpServers": {"db": {"command": "npx", "args": ["-y", "@bytebase/dbhub"]}}}"#,
-    )
-    .unwrap();
-    assert_eq!(
-        of_agent(&kit, "codex", Some(&project))
-            .into_iter()
-            .collect::<Vec<_>>(),
-        ["codex", "node"]
-    );
-    let file = crate::agents::sync::Paths::of(&kit).mcp_file();
-    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
-    std::fs::write(
-        &file,
-        r#"{"mcpServers": {"a": {"command": "npx", "args": ["x"]}, "b": {"command": "uvx"}, "c": {"url": "https://x"}}}"#,
-    )
-    .unwrap();
-    assert_eq!(
-        of_agent(&kit, "claude", None)
-            .into_iter()
-            .collect::<Vec<_>>(),
-        ["claude", "node", "uv"]
-    );
 }

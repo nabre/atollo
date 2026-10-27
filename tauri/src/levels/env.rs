@@ -61,7 +61,13 @@ pub enum Environment {
     /// the kit's environment, the PC's temp, `daemon::ENV`) and what goes
     /// into the VM. `guest.env_file` is set by `prepare` (the databases'
     /// variables, D-171), never here.
-    Vm { sbx_env: KitEnv, guest: GuestTools },
+    Vm {
+        sbx_env: KitEnv,
+        // What the model says goes into the VM; `prepare` gives the sandbox
+        // its own (`Vm::tools`), so only the tests read it.
+        #[cfg_attr(not(test), allow(dead_code))]
+        guest: GuestTools,
+    },
 }
 
 /// The environment of `placement`, from the kit's `base` (built for the

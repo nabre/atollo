@@ -301,28 +301,6 @@ pub fn sync_mcp(p: &Paths, servers: &Servers, report: &mut Report) -> Result<()>
     write_json(&state_file, &Value::Object(now))
 }
 
-/// The key of `dir` in `trust.json`: the folder as the system names it
-/// (Pi resolves it with `realpath`).
-fn trust_key(dir: &Path) -> String {
-    let real = fs::canonicalize(dir).unwrap_or_else(|_| dir.to_path_buf());
-    let text = real.display().to_string();
-    text.strip_prefix(r"\\?\")
-        .map_or(text.clone(), str::to_owned)
-}
-
-/// `dir` trusted in `trust.json`, unless the user decided for it already.
-pub(super) fn trust(p: &Paths, dir: &Path) -> Result<()> {
-    let file = p.pi.join("trust.json");
-    let mut cfg = read_json(&file)?.unwrap_or_else(|| json!({}));
-    let obj = cfg.as_object_mut().context("trust.json is not an object")?;
-    let key = trust_key(dir);
-    if obj.get(&key).is_some_and(|v| !v.is_null()) {
-        return Ok(());
-    }
-    obj.insert(key, Value::Bool(true));
-    write_json(&file, &cfg)
-}
-
 #[cfg(test)]
 #[path = "../../../../test/rust/agents/sync/pi.rs"]
 mod tests;

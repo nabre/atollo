@@ -83,7 +83,7 @@ impl Installer for Server {
     }
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 fn pinned(component: &Component) -> Result<Release> {
     let Some(sha) = component.sha256_for(Target::WIN32_X64) else {
         bail!("{}: no version fixed in the catalog", component.id);

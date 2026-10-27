@@ -257,7 +257,7 @@ impl Services {
     /// stopped, and stopped again after. Database and user may be missing.
     /// Their name is the project's ([`auth::project_db_name`]); refused when
     /// another project of the kit uses it too.
-    #[allow(dead_code)] // the tests; `projects::delete` resolves the names first
+    #[cfg(test)] // `projects::delete` resolves the names first
     pub fn project_db_drop(&self, project: &str, engine: &str, env: &KitEnv) -> Result<()> {
         let engine = DbEngine::parse(engine)?.id();
         let name = auth::project_db_name(&self.kit, project, engine)?;

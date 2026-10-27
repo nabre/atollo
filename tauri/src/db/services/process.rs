@@ -269,7 +269,7 @@ impl Services {
     }
 
     /// Asks the server to shut down, then ends whatever is left.
-    #[allow(dead_code)] // the tests; the commands name the version
+    #[cfg(test)] // the commands name the version
     pub fn stop(&self, id: &str) {
         self.stop_line(id, None);
     }

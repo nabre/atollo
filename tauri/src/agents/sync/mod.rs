@@ -19,9 +19,8 @@
 //! sides changed the newer wins and the other is saved in
 //! `.sync\conflicts`. Also: the kit rule for the agents, the project skills
 //! (`.agents\skills` <-> `.claude\skills`) with `project`, and Pi's own
-//! files (the local models, its settings: `pi`). A project is trusted for
-//! Claude, Codex and Pi only when an agent is launched in it from Atollo
-//! ([`trust_project`]).
+//! files (the local models, its settings: `pi`). No project is trusted
+//! from Atollo (SEC-V6-02, D-178).
 //!
 //! Run at start, before and after every agent, and when an agent ends.
 //! Never blocks the agents: each step fails alone, as a warning.
@@ -42,7 +41,7 @@ use anyhow::{bail, Result};
 use serde_json::Value;
 
 use crate::common::fsx::{join_rel, write_atomic};
-use crate::kit::{Kit, Os};
+use crate::kit::Kit;
 
 /// Folders of the kit and of the agents.
 #[derive(Debug, Clone)]
@@ -57,8 +56,6 @@ pub struct Paths {
     /// Pi's folder, `.pi\agent` (`PI_CODING_AGENT_DIR`).
     pub pi: PathBuf,
     pub projects: PathBuf,
-    /// The kit's system: its paths ignore case only on Windows.
-    pub os: Os,
 }
 
 impl Paths {
@@ -74,7 +71,6 @@ impl Paths {
             gemini: home.join(".gemini"),
             pi: pi::dir(&home),
             projects: kit.projects(),
-            os: kit.os(),
         }
     }
 
@@ -191,41 +187,6 @@ fn sync_rules(p: &Paths) -> Result<()> {
         }
     }
     Ok(())
-}
-
-/// The user launches an agent in `dir` from Atollo: the project becomes
-/// trusted for Claude Code, Codex and Pi (SEC-V6-02, see [`trust`] and
-/// [`pi`]). Only a
-/// project of the kit (a folder right inside `projects\`); each agent
-/// fails alone, as a warning in the log.
-// No agent starts on the PC since D-178: nothing trusts a project from
-// Atollo now (the tests; the agents in the VM have their own settings).
-#[allow(dead_code)]
-pub fn trust_project(kit: &Kit, dir: &Path) {
-    let p = Paths::of(kit);
-    if dir.parent() != Some(p.projects.as_path()) {
-        crate::common::log::warn(&format!(
-            "agents trust: {} is not a project of the kit: not trusted",
-            dir.display()
-        ));
-        return;
-    }
-    let _lock = match Lock::take(&p.state) {
-        Ok(l) => l,
-        Err(e) => {
-            crate::common::log::warn(&format!("agents trust: {e:#}"));
-            return;
-        }
-    };
-    for (who, done) in [
-        ("Claude", trust::claude(&p, dir)),
-        ("Codex", trust::codex(&p, dir)),
-        ("Pi", pi::trust(&p, dir)),
-    ] {
-        if let Err(e) = done {
-            crate::common::log::warn(&format!("agents trust: {who}: {e:#}"));
-        }
-    }
 }
 
 /// How often the holder of the lock shows it is still at work.

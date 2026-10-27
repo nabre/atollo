@@ -189,18 +189,6 @@
           "markdownDescription": "Enables the agent_sign_out command without any pre-configured scope."
         },
         {
-          "description": "Enables the agent_token_link command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-agent-token-link",
-          "markdownDescription": "Enables the agent_token_link command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the agent_token_save command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-agent-token-save",
-          "markdownDescription": "Enables the agent_token_save command without any pre-configured scope."
-        },
-        {
           "description": "Enables the agents_stats command without any pre-configured scope.",
           "type": "string",
           "const": "allow-agents-stats",
@@ -529,12 +517,6 @@
           "type": "string",
           "const": "allow-lan-link",
           "markdownDescription": "Enables the lan_link command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the levels_state command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-levels-state",
-          "markdownDescription": "Enables the levels_state command without any pre-configured scope."
         },
         {
           "description": "Enables the commands of the local models: the server, the catalog and the models on disk, downloads, the Hugging Face token and the server's key.",
@@ -1083,18 +1065,6 @@
           "markdownDescription": "Denies the agent_sign_out command without any pre-configured scope."
         },
         {
-          "description": "Denies the agent_token_link command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-agent-token-link",
-          "markdownDescription": "Denies the agent_token_link command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the agent_token_save command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-agent-token-save",
-          "markdownDescription": "Denies the agent_token_save command without any pre-configured scope."
-        },
-        {
           "description": "Denies the agents_stats command without any pre-configured scope.",
           "type": "string",
           "const": "deny-agents-stats",
@@ -1423,12 +1393,6 @@
           "type": "string",
           "const": "deny-lan-link",
           "markdownDescription": "Denies the lan_link command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the levels_state command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-levels-state",
-          "markdownDescription": "Denies the levels_state command without any pre-configured scope."
         },
         {
           "description": "Denies the mcp_presets command without any pre-configured scope.",

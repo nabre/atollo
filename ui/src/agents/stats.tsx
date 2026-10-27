@@ -12,9 +12,8 @@ import {
   type Usage,
 } from "../ipc";
 import { locale, t } from "../i18n";
-import { ActionButton } from "../shared/common";
 import { Badge } from "../shared/tags";
-import { Codicon, codicon, Meter } from "../workbench";
+import { Codicon, Meter } from "../workbench";
 
 /** Read again every 2 minutes, as often as the app asks the servers. */
 const EVERY = 2 * 60 * 1000;
@@ -238,17 +237,5 @@ export function AgentUsage({ stats: s }: { stats: AgentStats }) {
       </div>
       <UsageView u={s.usage} />
     </div>
-  );
-}
-
-export function StatsRefresh({ loading, onRefresh }: { loading: boolean; onRefresh: () => void }) {
-  return (
-    <ActionButton
-      icon={codicon("refresh")}
-      label={t("Aggiorna i consumi")}
-      busy={loading}
-      title={t("Legge di nuovo limiti e consumi degli agenti")}
-      onClick={onRefresh}
-    />
   );
 }

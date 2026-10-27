@@ -670,8 +670,6 @@ fn a_recreation_says_what_is_lost_and_what_stays() {
     for word in ["progetto", "database", "strumenti", "accessi"] {
         assert!(kept.contains(word), "{word}: {kept}");
     }
-    assert_eq!(VmAction::from_word("recreate"), Some(VmAction::Recreate));
-    assert_eq!(VmAction::from_word("x"), None);
     assert!(!VmAction::Refresh.stops_sessions());
 }
 

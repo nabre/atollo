@@ -10,49 +10,18 @@ pub mod probe;
 pub mod target;
 
 use crate::env::KitEnv;
-use crate::kit::{Kit, Target};
+use crate::kit::Kit;
 use crate::setup::checkup::Check;
 
-/// Multi-target router bound to a [`Kit`] root and active [`Target`].
+/// Router bound to a [`Kit`] root and its active target.
 #[derive(Debug, Clone)]
 pub struct Router {
     kit: Kit,
 }
 
-#[allow(dead_code)]
 impl Router {
     pub fn new(kit: Kit) -> Router {
         Router { kit }
-    }
-
-    pub fn kit(&self) -> &Kit {
-        &self.kit
-    }
-
-    pub fn target(&self) -> Target {
-        self.kit.target()
-    }
-
-    /// Returns a [`Router`] scoped to `target` on the same kit root.
-    pub fn for_target(&self, target: Target) -> Router {
-        Router {
-            kit: self.kit.for_target(target),
-        }
-    }
-
-    /// True when binaries of this router's target can run on the current host.
-    pub fn can_execute_on_host(&self) -> bool {
-        target::can_execute_on_host(self.kit.target())
-    }
-
-    /// Static disk probe of this router's target, reasons in `lang`.
-    pub fn probe_target(&self, lang: &str) -> probe::TargetSummary {
-        probe::probe_target(&self.kit, self.kit.target(), lang)
-    }
-
-    /// Static disk probe of the 4 supported targets (`Target::ALL`).
-    pub fn probe_all_targets(&self, lang: &str) -> Vec<probe::TargetSummary> {
-        probe::probe_all_targets(&self.kit, lang)
     }
 
     /// Health check of installed tools on this router's target (live version

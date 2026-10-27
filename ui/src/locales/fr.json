@@ -144,7 +144,6 @@
   "Installazione {0}/{1}: {2}": "Installation {0}/{1} : {2}",
   "L'accesso del kit non ha il permesso di eliminare i repository. Accedi di nuovo concedendolo, poi premi ancora «Elimina da GitHub».": "La connexion du kit n'a pas l'autorisation de supprimer des dépôts. Reconnectez-vous en l'accordant, puis appuyez de nouveau sur « Supprimer de GitHub ».",
   "L'editor": "L'éditeur",
-  "L'editor non è installato: installalo da Strumenti.": "L'éditeur n'est pas installé : installez-le depuis Outils.",
   "La avvia il pulsante Avvia del progetto": "Le bouton Démarrer du projet la démarre",
   "La cartella «{0}» nel percorso del kit impedisce all'editor di accorgersi dei file cambiati fuori dall'editor (per esempio dagli agenti): rinominala in modo che non inizi con una cifra, «x» o «u», oppure sposta il kit.": "Le dossier « {0} » dans le chemin du kit empêche l'éditeur de remarquer les fichiers modifiés en dehors de lui (par exemple par les agents) : renommez-le pour qu'il ne commence pas par un chiffre, « x » ou « u », ou déplacez le kit.",
   "La cartella non è un repository Git.": "Le dossier n'est pas un dépôt Git.",

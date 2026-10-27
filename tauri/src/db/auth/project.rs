@@ -189,12 +189,12 @@ pub fn project_passwords(kit: &Kit, project: &str) -> BTreeMap<String, String> {
 
 /// The password of the project's user on `engine`, once created (lenient,
 /// for showing it; anything that writes uses [`try_project_password`]).
-#[allow(dead_code)] // the tests and callers on other branches
+#[cfg(test)]
 pub fn project_password(kit: &Kit, project: &str, engine: &str) -> Option<String> {
     project_passwords(kit, project).remove(engine)
 }
 
-/// [`project_password`] that fails when `db.json` cannot be read.
+/// `project_password` that fails when `db.json` cannot be read.
 pub fn try_project_password(kit: &Kit, project: &str, engine: &str) -> Result<Option<String>> {
     Ok(try_project_passwords(kit, project)?.remove(engine))
 }
@@ -229,7 +229,7 @@ pub fn ensure_project_db(kit: &Kit, project: &str, engine: &str) -> Result<(Stri
 
 /// Stores the password of the project's user on `engine` (no name: as a
 /// `db.json` of before the names; creations use [`ensure_project_db`]).
-#[allow(dead_code)] // the tests
+#[cfg(test)]
 pub fn set_project_password(kit: &Kit, project: &str, engine: &str, password: &str) -> Result<()> {
     let _one = db_json_lock(kit)?;
     let path = project_file(kit, project)?;

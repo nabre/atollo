@@ -81,6 +81,7 @@ impl SessionLabel {
     }
 
     /// A session in the sandbox `name` at `level` (Project or Agent).
+    #[cfg(test)]
     pub fn vm(level: Level, name: &str) -> SessionLabel {
         SessionLabel {
             level,
@@ -94,6 +95,7 @@ impl SessionLabel {
     }
 
     /// The label's text in `lang`.
+    #[cfg(test)]
     pub fn text(&self, lang: &str) -> String {
         label_text(self.label, self.level, lang)
     }

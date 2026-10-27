@@ -144,7 +144,6 @@
   "Installazione {0}/{1}: {2}": "Installing {0}/{1}: {2}",
   "L'accesso del kit non ha il permesso di eliminare i repository. Accedi di nuovo concedendolo, poi premi ancora «Elimina da GitHub».": "The kit's sign-in has no permission to delete repositories. Sign in again granting it, then press “Delete from GitHub” again.",
   "L'editor": "The editor",
-  "L'editor non è installato: installalo da Strumenti.": "The editor is not installed: install it from Tools.",
   "La avvia il pulsante Avvia del progetto": "The project's Start button starts it",
   "La cartella «{0}» nel percorso del kit impedisce all'editor di accorgersi dei file cambiati fuori dall'editor (per esempio dagli agenti): rinominala in modo che non inizi con una cifra, «x» o «u», oppure sposta il kit.": "The folder “{0}” in the kit path keeps the editor from noticing files changed outside it (for example by the agents): rename it so that it does not start with a digit, “x” or “u”, or move the kit.",
   "La cartella non è un repository Git.": "The folder is not a Git repository.",

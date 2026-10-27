@@ -86,8 +86,7 @@ fn probe_all_targets_and_static_health_work_without_spawning() {
     rust.mark_reinstall(&mac_kit, "bootstrap:darwin-arm64")
         .unwrap();
 
-    let router = Router::new(kit.clone());
-    let all = router.probe_all_targets("en");
+    let all = probe::probe_all_targets(&kit, "en");
     assert_eq!(all.len(), 4);
 
     let linux_summary = all.iter().find(|s| s.target == "linux-arm64").unwrap();
@@ -126,7 +125,7 @@ fn grid_cells_say_chosen_reason_and_first_start() {
     choice.set(catalog, "zig", false);
     choice.write(&kit, catalog).unwrap();
 
-    let all = Router::new(kit.clone()).probe_all_targets("en");
+    let all = probe::probe_all_targets(&kit, "en");
     assert_eq!(
         all.iter().map(|s| s.target.as_str()).collect::<Vec<_>>(),
         target::all_profiles().map(|p| p.id)

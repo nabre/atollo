@@ -749,16 +749,6 @@
     "fr": "Une autre installation est en cours dans ce kit (une autre fenêtre d'Atollo ou le menu du kit).",
     "de": "In diesem Kit läuft eine andere Installation (ein anderes Atollo-Fenster oder das Menü des Kits)."
   },
-  "La cartella {0} non si apre nella VM: scegli una cartella di un disco del PC.": {
-    "en": "The folder {0} does not open in the VM: choose a folder on one of the PC's disks.",
-    "fr": "Le dossier {0} ne s'ouvre pas dans la VM : choisis un dossier sur un disque du PC.",
-    "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Wähle einen Ordner auf einem Laufwerk des PCs."
-  },
-  "La cartella {0} non si apre nella VM: è la radice di un disco, un link, una cartella di sistema, o è nel kit o nel tuo profilo (salvo i progetti del kit). Scegli la cartella di un progetto.": {
-    "en": "The folder {0} does not open in the VM: it is a drive's root, a link, a system folder, or it is in the kit or in your profile (except the kit's projects). Choose a project's folder.",
-    "fr": "Le dossier {0} ne s'ouvre pas dans la VM : c'est la racine d'un disque, un lien, un dossier système, ou il est dans le kit ou dans ton profil (sauf les projets du kit). Choisis le dossier d'un projet.",
-    "de": "Der Ordner {0} lässt sich nicht in der VM öffnen: Er ist das Stammverzeichnis eines Laufwerks, ein Link, ein Systemordner oder liegt im Kit oder in deinem Profil (außer den Projekten des Kits). Wähle den Ordner eines Projekts."
-  },
   "La sandbox {0} lavora in un'altra cartella: rimuovila in «Sandbox delle VM» (si cancella il suo disco, non i file del progetto) e riapri.": {
     "en": "The sandbox {0} works in another folder: remove it in «VM sandboxes» (its disk is deleted, not the project's files) and open again.",
     "fr": "La sandbox {0} travaille dans un autre dossier : supprime-la dans «Sandbox des VM» (son disque est supprimé, pas les fichiers du projet) et rouvre.",
@@ -793,11 +783,6 @@
     "en": "The kit's ConPTY is not installed: this terminal uses Windows' own, and some programs (Claude Code) may not receive the keys.",
     "fr": "Le ConPTY du kit n'est pas installé : ce terminal utilise celui de Windows, et certains programmes (Claude Code) peuvent ne pas recevoir les touches.",
     "de": "Das ConPTY des Kits ist nicht installiert: Dieses Terminal verwendet das von Windows, und manche Programme (Claude Code) erhalten die Tasten womöglich nicht."
-  },
-  "Chiudi Antigravity prima di uscire: è ancora aperto nel kit.": {
-    "en": "Close Antigravity before signing out: it is still open in the kit.",
-    "fr": "Fermez Antigravity avant de vous déconnecter : il est encore ouvert dans le kit.",
-    "de": "Schließe Antigravity, bevor du dich abmeldest: Es ist im Kit noch geöffnet."
   },
   "Componenti del kit non installati: {0}{1}. Riprova da Strumenti.": {
     "en": "Kit components not installed: {0}{1}. Try again from Tools.",
@@ -2318,11 +2303,6 @@
     "en": "one microVM per project: terminal, commands, servers and agents isolated from the PC; needs a Docker account",
     "fr": "une microVM par projet : terminal, commandes, serveurs et agents isolés du PC ; nécessite un compte Docker",
     "de": "eine microVM pro Projekt: Terminal, Befehle, Server und Agenten vom PC isoliert; braucht ein Docker-Konto"
-  },
-  "{0} non ha una sandbox di Docker Sandboxes: nella VM si usano Claude Code e Codex.": {
-    "en": "{0} has no Docker Sandboxes sandbox: in the VM use Claude Code or Codex.",
-    "fr": "{0} n'a pas de sandbox Docker Sandboxes : dans la VM, utilisez Claude Code ou Codex.",
-    "de": "{0} hat keine Sandbox von Docker Sandboxes: In der VM nutzt du Claude Code oder Codex."
   },
   "l'alias {0} punta a un altro progetto, che non è nella VM di questo: non servito": {
     "en": "alias {0} points to another project, which is not in this one's VM: not served",

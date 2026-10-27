@@ -605,15 +605,6 @@ pub enum VmAction {
 }
 
 impl VmAction {
-    pub fn from_word(word: &str) -> Option<VmAction> {
-        match word {
-            "restart" => Some(VmAction::Restart),
-            "recreate" => Some(VmAction::Recreate),
-            "refresh" => Some(VmAction::Refresh),
-            _ => None,
-        }
-    }
-
     /// True for the actions that stop the sessions running in the sandbox.
     pub fn stops_sessions(self) -> bool {
         matches!(self, VmAction::Restart | VmAction::Recreate)

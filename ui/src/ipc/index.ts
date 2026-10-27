@@ -28,7 +28,6 @@ export {
   errorText,
   fixOf,
   isRefused,
-  levelsState,
   onLevelsChanged,
   type Fix,
   type LevelLabel,

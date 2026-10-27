@@ -4,24 +4,21 @@
 //!
 //! - no secret in the files (`.mcp.json` is in the repository): a server
 //!   reads the project's database from a variable, `KEY: ${KEY}` (Codex
-//!   passes it on as `env_vars`, Claude Code expands it), that the app sets
-//!   when it starts the agent ([`launch_vars`]);
+//!   passes it on as `env_vars`, Claude Code expands it);
 //! - the GitHub token is in no file and in no environment of the agent
 //!   (SEC-V7-01): the github server is the app itself by its absolute
 //!   path, `<app> mcp github` (`agents::github_mcp`), which reads the token
 //!   itself and sends it to GitHub only. In the agent's environment the MCP
 //!   servers of a cloned project, which inherit it, would read it;
-//! - their programs (`npx` → Node, `uvx` → uv) are installed when the agent
-//!   starts, as for any server (`setup::needs::of_agent`).
+//! - their programs (`npx` → Node, `uvx` → uv) are not installed by the
+//!   app: no agent starts on the PC since D-178 (the agents in the VM:
+//!   D-175).
 
 use std::collections::BTreeMap;
 use std::path::Path;
 
 use serde::Serialize;
 
-use crate::db::auth::ProjectDb;
-use crate::env::KitEnv;
-use crate::kit::Kit;
 use crate::projects::mcp::McpServer;
 
 /// The project's MySQL database, for DBHub.
@@ -137,72 +134,6 @@ pub fn all_for(exe: Option<&Path>) -> Vec<Preset> {
             ),
         ),
     ]);
-    out
-}
-
-/// Which of the variables of the ready servers `texts` (the MCP files the
-/// agent reads) use as `${NAME}`.
-pub fn used_vars(texts: &[String]) -> Vec<&'static str> {
-    [MYSQL_VAR, MONGODB_VAR]
-        .into_iter()
-        .filter(|v| {
-            let var = format!("${{{v}}}");
-            texts.iter().any(|t| t.contains(&var))
-        })
-        .collect()
-}
-
-/// The variables to give the agent: those the kit's servers and the
-/// project's use. Only the project's own databases: the GitHub token is
-/// never one (SEC-V7-01), whoever asks for it.
-pub fn wanted_vars(kit: &[String], project: &[String]) -> Vec<&'static str> {
-    let mut wanted = used_vars(kit);
-    for v in used_vars(project) {
-        if !wanted.contains(&v) {
-            wanted.push(v);
-        }
-    }
-    wanted
-}
-
-/// The values of the variables the agent's servers use, to set when the
-/// agent starts in `dir`: the project's databases (when created). One
-/// already set stays. Never the GitHub token: the kit's github server reads
-/// it itself (`agents::github_mcp`), and in the agent's environment the MCP
-/// servers of a cloned repository, which inherit it, would read it too.
-// No agent starts on the PC since D-178 (the tests; the MCP servers of the
-// agents in the VM are still to do, D-175).
-#[allow(dead_code)]
-pub fn launch_vars(
-    kit: &Kit,
-    env: &KitEnv,
-    dir: &Path,
-    dbs: impl FnOnce() -> Vec<ProjectDb>,
-) -> Vec<(&'static str, String)> {
-    let read = |f: &Path| {
-        std::fs::read_to_string(f)
-            .ok()
-            .into_iter()
-            .collect::<Vec<_>>()
-    };
-    let mut wanted = wanted_vars(
-        &read(&crate::agents::sync::Paths::of(kit).mcp_file()),
-        &read(&dir.join(".mcp.json")),
-    );
-    wanted.retain(|v| env.get(v).is_none());
-    let mut out = Vec::new();
-    if wanted.contains(&MYSQL_VAR) || wanted.contains(&MONGODB_VAR) {
-        for db in dbs() {
-            let var = match db.engine.as_str() {
-                "mysql" => MYSQL_VAR,
-                "mongodb" => MONGODB_VAR,
-                _ => continue,
-            };
-            if wanted.contains(&var) {
-                out.push((var, db.url));
-            }
-        }
-    }
     out
 }
 

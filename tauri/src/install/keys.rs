@@ -12,7 +12,7 @@ use super::Ctx;
 
 /// The key file, and the other parts in the component's own folder, must be
 /// in the new tree before anything is replaced.
-#[cfg_attr(not(test), allow(dead_code))]
+#[cfg(test)]
 pub(super) fn check_key(component: &Component, inside: &[&str], tree: &Path) -> Result<()> {
     check_key_for(
         crate::versions::target_from_path(tree),
