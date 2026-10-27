@@ -1,6 +1,6 @@
 # Novità
 
-## Un'app più reattiva (27/10/2026)
+## Rilascio 0.7.4 alpha (27/10/2026): un'app più reattiva
 
 - **La finestra non si blocca più** mentre Atollo legge le cartelle, controlla i processi o chiede lo stato della VM: «Applica» negli Strumenti, le installazioni, le impostazioni, le versioni dei progetti, «Libera spazio» e gli altri comandi pesanti lavorano in background (D-182). Anche la fine di un'installazione non ferma più la finestra.
 - **Meno lavoro a vuoto**: l'interfaccia non si ridisegna più quando gli stati che rilegge non sono cambiati, rilegge ogni stato una volta sola anche se più pagine lo mostrano, e si ferma quando la finestra è nascosta.
