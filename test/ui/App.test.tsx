@@ -119,7 +119,9 @@ const running: RunInfo = {
 };
 
 const { App } = await import("@/App");
-const { setLang } = await import("@/i18n");
+const { loadCatalog, setLang } = await import("@/i18n");
+// The English catalog read once here: a test in English waits for no chunk.
+await loadCatalog("en");
 
 afterEach(async () => {
   cleanup();
@@ -154,11 +156,11 @@ describe("App", () => {
     expect(await screen.findByText(/La cartella «2026»/)).toBeTruthy();
   });
 
-  it("switches pages from the activity bar", () => {
+  it("switches pages from the activity bar", async () => {
     invoke.mockImplementation(answers());
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "AI" }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("AI");
+    expect((await screen.findByRole("heading", { level: 1 })).textContent).toBe("AI");
     expect(screen.getByRole("button", { name: "AI" }).getAttribute("aria-current")).toBe("page");
   });
 
