@@ -13,7 +13,8 @@
 //!   then ends what is left of its tree, its group and its session (the
 //!   jobs of an interactive shell, in groups of their own);
 //! - the output goes to the window as text (UTF-8 decoded across reads) in
-//!   numbered chunks, event `pty://<id>`; the last [`BACKLOG`] bytes stay in
+//!   numbered chunks, event `pty://<id>`, batched while it streams
+//!   ([`PACE`]); the last [`BACKLOG`] bytes stay in
 //!   the session for a view that attaches later (the panel opens after the
 //!   first prompt was written), and the numbers tell it which events it
 //!   already has;
@@ -406,22 +407,24 @@ impl Session {
     }
 }
 
-/// Reads the PTY until its end, sending every chunk to `emit`.
-pub fn pump(session: &Session, mut reader: impl Read, emit: impl Fn(&Chunk)) {
-    let mut buf = [0u8; 8192];
-    loop {
-        match reader.read(&mut buf) {
-            Ok(0) => break,
-            Ok(n) => {
-                if let Some(chunk) = session.output(&buf[..n]) {
-                    emit(&chunk);
-                }
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
-            // EIO on Linux once the program and its children closed the PTY.
-            Err(_) => break,
+/// How the output of a session goes to its view (`common::batch`): one
+/// frame of the screen at most between two chunks while a build streams,
+/// since xterm.js draws once a frame anyway; the echo of a key typed, the
+/// first output after a quiet moment, goes at once.
+pub const PACE: crate::common::batch::Pace = crate::common::batch::Pace {
+    every: Duration::from_millis(16),
+    cap: 64 * 1024,
+};
+
+/// Reads the PTY until its end, sending every chunk to `emit` in batches
+/// paced by [`PACE`]; the last one is sent before it returns, so the
+/// session's exit comes after it.
+pub fn pump(session: &Session, reader: impl Read + Send + 'static, emit: impl Fn(&Chunk)) {
+    crate::common::batch::pump(reader, 8192, PACE, |bytes| {
+        if let Some(chunk) = session.output(bytes) {
+            emit(&chunk);
         }
-    }
+    });
     if let Some(chunk) = session.flush() {
         emit(&chunk);
     }

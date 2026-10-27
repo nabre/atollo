@@ -207,23 +207,30 @@ pub(super) fn env_on_network(key: &str, value: String, lan: bool) -> String {
     }
 }
 
+/// How the output of a run goes to the window (`common::batch`): every
+/// "log" event copies the whole log shown (up to [`MAX_LINES`]) in the
+/// page, and nobody types into it, so up to 30 a second while a build
+/// streams; a line after a quiet moment still goes at once.
+pub(super) const LOG_PACE: crate::common::batch::Pace = crate::common::batch::Pace {
+    every: std::time::Duration::from_millis(33),
+    cap: 64 * 1024,
+};
+
 impl Runner {
-    pub(super) fn read_stream(&self, key: &str, run: u64, mut stream: Box<dyn Read + Send>) {
-        let mut buf = vec![0u8; 16 * 1024];
+    /// Reads a pipe of the run `run` into the log of `key`, in batches
+    /// ([`LOG_PACE`]); returns once its last line is in the log, so the
+    /// end of the run is written after it.
+    pub(super) fn read_stream(&self, key: &str, run: u64, stream: Box<dyn Read + Send>) {
         let mut pending: Vec<u8> = Vec::new();
         let mut rest = String::new();
-        loop {
-            let n = match stream.read(&mut buf) {
-                Ok(0) | Err(_) => break,
-                Ok(n) => n,
-            };
-            pending.extend_from_slice(&buf[..n]);
+        crate::common::batch::pump(stream, 16 * 1024, LOG_PACE, |bytes| {
+            pending.extend_from_slice(bytes);
             let text = take_utf8(&mut pending);
             let lines = split_lines(&mut rest, &text);
             if !lines.is_empty() {
                 self.append_to(key, Some(run), lines, true);
             }
-        }
+        });
         let tail = String::from_utf8_lossy(&pending).into_owned() + &rest;
         let tail = tail.trim_end_matches(['\r', '\n']).to_owned();
         if !tail.is_empty() {
