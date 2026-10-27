@@ -86,7 +86,7 @@ Le travail ouvert est suivi dans les [issues](https://github.com/nabre/atollo/is
 
 ## Utilisation
 
-1. Copiez l'exe d'Atollo (par exemple `Atollo-0.7.3-win32-x64.exe`) dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
+1. Copiez l'exe d'Atollo (par exemple `Atollo-0.7.4-win32-x64.exe`) dans un dossier vide : une clé USB, un disque externe ou un dossier de votre profil (espaces, parenthèses ou `&` dans le nom sont acceptés).
 2. Double-cliquez : l'application crée `projects\` et `data\`. Au premier démarrage, choisissez agents, langages et outils : l'application les télécharge et les vérifie (somme de contrôle ou signature), Docker Sandboxes compris.
 3. Connectez-vous à Docker une fois par PC : avec un compte Docker (gratuit), cliquez sur **Sans VM** dans la barre d'état puis sur **Lancer** à côté de `sbx login` : la commande s'ouvre dans le terminal d'Atollo avec le `sbx` du kit, et le lien de connexion y apparaît (un clic l'ouvre dans votre navigateur). Les autres raisons de la même liste disent ce dont le PC a encore besoin.
 4. Créez ou clonez un projet dans la page **Projets**. L'éditeur, le terminal et les agents d'un projet s'ouvrent toujours dans son dossier ; avec la VM active, le terminal, les actions, les terminaux de l'éditeur et les agents s'ouvrent dans la microVM du projet.
@@ -133,15 +133,15 @@ La console d'Atollo est un onglet du panneau des terminaux de l'application sur 
 
 ## Reste à faire
 
-Atollo est en alpha (version 0.7.3). Windows x64 est le système le plus testé, installations réelles en CI comprises ; macOS et Linux ne sont construits et testés qu'en CI. La liste complète est dans [docs/app/TESTING.md](app/TESTING.md) (en anglais).
+Atollo est en alpha (version 0.7.4). Windows x64 est le système le plus testé, installations réelles en CI comprises ; macOS et Linux ne sont construits et testés qu'en CI. La liste complète est dans [docs/app/TESTING.md](app/TESTING.md) (en anglais).
 
 - **La VM, à terminer** ([D-175](app/DECISIONS.md), [D-178](app/DECISIONS.md)). Les projets dans leurs microVM ne sont essayés en conditions réelles que sur Windows 11 x64 avec Docker Sandboxes 0.49.2 ; macOS et Ubuntu ne sont pas essayés, pas plus que « GitHub dans la VM » avec un vrai compte. Reste à faire : les serveurs MCP du kit pour les agents dans la VM (leurs commandes sont des programmes du PC), à porter dans la passerelle MCP de `sbx` ou à signaler absents.
-- **L'alpha, à essayer.** [La 0.7.3 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.7.3) est sur GitHub pour Windows x64, macOS sur Apple silicon et Linux x64 et ARM64, les quatre systèmes où tourne Docker Sandboxes ([D-176](app/DECISIONS.md)). Les fichiers publiés sont construits et testés en CI : il reste à les télécharger et à les lancer sur des machines vierges.
+- **L'alpha, à essayer.** [La 0.7.4 alpha](https://github.com/nabre/atollo/releases/tag/app-v0.7.4) est sur GitHub pour Windows x64, macOS sur Apple silicon et Linux x64 et ARM64, les quatre systèmes où tourne Docker Sandboxes ([D-176](app/DECISIONS.md)). Les fichiers publiés sont construits et testés en CI : il reste à les télécharger et à les lancer sur des machines vierges.
 - **Tests alpha.** Il faut des personnes qui utilisent Atollo sur de vrais projets et des PC différents, et qui signalent ce qui ne va pas : installation des composants, projets, bases de données, agents. Paramètres › Le kit › « Signaler un problème » ouvre une issue GitHub avec la version et le système déjà remplis ; joignez-y le zip de « Exporter le diagnostic » (secrets masqués, créé sur votre PC, jamais envoyé par l'application).
 - **macOS sur de vrais Mac** ([#5](https://github.com/nabre/atollo/issues/5), [#6](https://github.com/nabre/atollo/issues/6)). L'app pour Apple Silicon est construite et lancée en CI, jamais sur un Mac vierge : le zip téléchargé avec un navigateur, la quarantaine et Gatekeeper, App Translocation, un kit sur une clé exFAT, les connexions des agents emportées d'un Mac à l'autre.
 - **Linux sur de vraies machines** ([#5](https://github.com/nabre/atollo/issues/5)). x64 et ARM64 sur Ubuntu 24.04, Fedora 42 et Debian 13 : AppImage avec et sans FUSE, le `tar.gz` avec WebKitGTK 4.1, clés exFAT ou montées `noexec`, connexions avec GNOME, KeePassXC ou KWallet.
 - **Mises à jour et builds du kit hors de Windows.** La mise à jour de l'application d'une version à l'autre sur macOS et Linux n'est pas encore essayée. L'Apache du kit (2.4.69, D-116) est dans le catalogue mais essayé seulement en CI ; de même pour le PHP du kit avec `pdo_sqlite` (8.4.26 et 8.5.11, D-133), que l'application utilise à partir de la 0.3.0.
-- **Signature du code.** Sous macOS, seulement une signature ad hoc, sans notarisation Apple : il faut `xattr -dr com.apple.quarantine`. Sous Windows, la 0.7.3 sort sans signature : la signature SignPath reste à activer, et d'ici là SmartScreen peut avertir au premier lancement.
+- **Signature du code.** Sous macOS, seulement une signature ad hoc, sans notarisation Apple : il faut `xattr -dr com.apple.quarantine`. Sous Windows, la 0.7.4 sort sans signature : la signature SignPath reste à activer, et d'ici là SmartScreen peut avertir au premier lancement.
 
 Vous avez un Mac Apple Silicon ou un PC Linux ? Essayez Atollo et racontez-nous comment ça s'est passé : [ouvrez une issue sur GitHub](https://github.com/nabre/atollo/issues).
 
