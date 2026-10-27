@@ -42,8 +42,8 @@ function placeholders(text: string): string {
 }
 
 describe("guide text", () => {
-  afterAll(() => {
-    setLang("it");
+  afterAll(async () => {
+    await setLang("it");
   });
 
   it("has a text for every topic and a topic for every text, every chapter with topics", () => {
@@ -87,8 +87,8 @@ describe("guide text", () => {
     }
   });
 
-  it.each(["it", "en", "fr", "de"] as Lang[])("renders every topic in %s", (lang) => {
-    setLang(lang);
+  it.each(["it", "en", "fr", "de"] as Lang[])("renders every topic in %s", async (lang) => {
+    await setLang(lang);
     for (const topic of GUIDE_TOPICS) {
       const { container, unmount } = render(
         <>{GuideTopicContent({ topicId: topic.id, info: null, components: null })}</>,

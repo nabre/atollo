@@ -128,8 +128,8 @@ export function App() {
   // The texts take the language before the page renders with it.
   const readInfo = useCallback(
     () =>
-      appInfo().then((i) => {
-        setLang(i.lang);
+      appInfo().then(async (i) => {
+        await setLang(i.lang);
         return i;
       }),
     [],

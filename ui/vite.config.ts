@@ -35,7 +35,8 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     // What every window reads at start in chunks of its own, each under the
     // 500 kB warning and cached apart from the app's code: React, the
-    // brands' logos (react-icons), the translation catalogs. The Guide's
+    // brands' logos (react-icons). The translation catalogs are a chunk
+    // each (i18n.ts), the window reading only its language's. The Guide's
     // chapters likewise, one chunk each, read together when it opens.
     rolldownOptions: {
       // The app window, and the window of a detached terminal (D-149),
@@ -46,7 +47,6 @@ export default defineConfig(({ mode }) => ({
           groups: [
             { name: "react", test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             { name: "icons", test: /[\\/]node_modules[\\/]react-icons[\\/]/ },
-            { name: "locales", test: /[\\/]src[\\/]locales[\\/]/ },
             {
               // Only the Guide's own modules: what they import from the app
               // stays where the app has it (never read at start through

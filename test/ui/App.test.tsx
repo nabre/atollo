@@ -121,9 +121,9 @@ const running: RunInfo = {
 const { App } = await import("@/App");
 const { setLang } = await import("@/i18n");
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
-  setLang("it");
+  await setLang("it");
   invoke.mockReset();
   setupListener = null;
   jobListener = null;
