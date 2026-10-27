@@ -189,18 +189,6 @@
           "markdownDescription": "Enables the agent_sign_out command without any pre-configured scope."
         },
         {
-          "description": "Enables the agent_token_link command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-agent-token-link",
-          "markdownDescription": "Enables the agent_token_link command without any pre-configured scope."
-        },
-        {
-          "description": "Enables the agent_token_save command without any pre-configured scope.",
-          "type": "string",
-          "const": "allow-agent-token-save",
-          "markdownDescription": "Enables the agent_token_save command without any pre-configured scope."
-        },
-        {
           "description": "Enables the agents_stats command without any pre-configured scope.",
           "type": "string",
           "const": "allow-agents-stats",
@@ -741,6 +729,24 @@
           "markdownDescription": "Enables the project_versions_set command without any pre-configured scope."
         },
         {
+          "description": "Enables the project_vm_action command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-vm-action",
+          "markdownDescription": "Enables the project_vm_action command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_vm_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-vm-check",
+          "markdownDescription": "Enables the project_vm_check command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_vm_report command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-vm-report",
+          "markdownDescription": "Enables the project_vm_report command without any pre-configured scope."
+        },
+        {
           "description": "Enables the projects_list command without any pre-configured scope.",
           "type": "string",
           "const": "allow-projects-list",
@@ -1057,18 +1063,6 @@
           "type": "string",
           "const": "deny-agent-sign-out",
           "markdownDescription": "Denies the agent_sign_out command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the agent_token_link command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-agent-token-link",
-          "markdownDescription": "Denies the agent_token_link command without any pre-configured scope."
-        },
-        {
-          "description": "Denies the agent_token_save command without any pre-configured scope.",
-          "type": "string",
-          "const": "deny-agent-token-save",
-          "markdownDescription": "Denies the agent_token_save command without any pre-configured scope."
         },
         {
           "description": "Denies the agents_stats command without any pre-configured scope.",
@@ -1603,6 +1597,24 @@
           "type": "string",
           "const": "deny-project-versions-set",
           "markdownDescription": "Denies the project_versions_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_vm_action command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-vm-action",
+          "markdownDescription": "Denies the project_vm_action command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_vm_check command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-vm-check",
+          "markdownDescription": "Denies the project_vm_check command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_vm_report command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-vm-report",
+          "markdownDescription": "Denies the project_vm_report command without any pre-configured scope."
         },
         {
           "description": "Denies the projects_list command without any pre-configured scope.",
