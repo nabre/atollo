@@ -58,6 +58,7 @@ pub(crate) fn fetch_lines(
         net: &net,
         env,
         cancel: &cancel,
+        guest: None,
     };
     let lines = installer.lines(&ctx, c)?;
     if let Err(e) = crate::versions::save_offered(kit, id, &lines) {
@@ -164,9 +165,11 @@ pub(super) fn download_line<R: Runtime>(
 }
 
 /// Where component `id` asked for `kit` is installed (D-173): with the VM
-/// on, a tool asked for the PC goes to the VM's Linux, if it has a build
-/// there this PC can install; a system component, or another system
-/// asked for, stays as asked.
+/// on, a tool asked for the PC that runs only in the VM
+/// (`Component::in_vm` without `on_pc_with_vm`, D-180) goes to the VM's
+/// Linux, if it has a build there; a system component, one that runs on
+/// the PC also with the VM (a database's server, llama.cpp), or another
+/// system asked for, stays as asked.
 fn tools_kit(state: &AppState, kit: Kit, id: &str) -> Kit {
     let catalog = Catalog::get();
     let Some(component) = catalog.find(id) else {
@@ -178,9 +181,7 @@ fn tools_kit(state: &AppState, kit: Kit, id: &str) -> Kit {
     let Some(guest) = super::setup::vm_tools_target(state) else {
         return kit;
     };
-    let staged = crate::install::installer(id)
-        .is_some_and(|i| crate::router::bootstrap::stages_for(i, component, guest));
-    if component.is_available_on(guest) && !staged {
+    if component.in_vm() && !component.on_pc_with_vm() && component.is_available_on(guest) {
         state.kit.for_target(guest)
     } else {
         kit

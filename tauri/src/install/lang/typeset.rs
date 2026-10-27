@@ -135,15 +135,17 @@ fn tlmgr_path(ctx: &Ctx, root: &Path) -> std::path::PathBuf {
 
 /// The packages a TinyTeX has (`tlmgr info --list --only-installed`).
 fn tlmgr_packages(ctx: &Ctx, root: &Path) -> Option<Vec<String>> {
-    if !crate::router::target::can_execute_on_host(ctx.kit.target()) {
+    if !ctx.runs_target() {
         return None;
     }
     let tlmgr = tlmgr_path(ctx, root);
     if !tlmgr.is_file() {
         return None;
     }
-    let out = crate::platform::jobs::kit_command(&tlmgr, ctx.env)
-        .args(["info", "--list", "--only-installed", "--data", "name"])
+    let args = ["info", "--list", "--only-installed", "--data", "name"].map(String::from);
+    let out = ctx
+        .command(&tlmgr, &args, &[], None, false)
+        .ok()?
         .stdin(std::process::Stdio::null())
         .output()
         .ok()
@@ -166,34 +168,16 @@ fn tinytex_list(ctx: &Ctx) -> std::path::PathBuf {
     join_rel(ctx.kit.data(), "texlive/packages.txt")
 }
 
-/// TinyTeX for `target` is staged when prepared on a host that cannot run
-/// it (`runs_here` false, `can_execute_on_host`), off Windows. Nearly every
-/// program of its tarball is a symbolic link (`tlmgr ->
-/// ../../texmf-dist/scripts/texlive/tlmgr.pl`, `pdflatex -> pdftex`), and
-/// `tlmgr.pl` finds TeX Live from its own path: copies made on a Windows
-/// host do not work. So the archive is only downloaded and verified, and
-/// the first start on the target unpacks it with its links, as Git.
-pub const fn tinytex_staged(target: Target, runs_here: bool) -> bool {
-    !target.is_windows() && !runs_here
-}
-
 impl Installer for TinyTex {
-    /// Staged where [`tinytex_staged`]; `install_custom` is never reached,
-    /// since `should_stage` is true exactly when this is.
-    fn custom(&self, target: Target) -> bool {
-        tinytex_staged(target, crate::router::target::can_execute_on_host(target))
-    }
-
-    fn install_custom(
-        &self,
-        _ctx: &Ctx,
-        _component: &Component,
-        _release: &Release,
-        _progress: &mut dyn crate::install::Progress,
-    ) -> Result<()> {
-        anyhow::bail!(
-            "tinytex: the archive is staged for its target, never unpacked on this system"
-        )
+    /// Off Windows nearly every program of its tarball is a symbolic link
+    /// (`tlmgr -> ../../texmf-dist/scripts/texlive/tlmgr.pl`, `pdflatex ->
+    /// pdftex`), and `tlmgr.pl` finds TeX Live from its own path: copies
+    /// made on a Windows host do not work. So on a host that cannot run it
+    /// the archive is staged, and the first start on the target unpacks it
+    /// with its links, as Git; with the tools sandbox (D-180) its `tar`
+    /// does.
+    fn links(&self, target: Target) -> bool {
+        !target.is_windows()
     }
 
     fn latest(&self, ctx: &Ctx, component: &Component) -> Result<Release> {
@@ -229,7 +213,7 @@ impl Installer for TinyTex {
     /// The packages of the old TinyTeX it does not have, installed again; a
     /// failure (offline) only goes to the log: the list stays for next time.
     fn finish(&self, ctx: &Ctx, _component: &Component, dest: &Path) -> Result<()> {
-        if !crate::router::target::can_execute_on_host(ctx.kit.target()) {
+        if !ctx.runs_target() {
             return Ok(());
         }
         let Ok(text) = fs::read_to_string(tinytex_list(ctx)) else {
@@ -244,12 +228,15 @@ impl Installer for TinyTex {
         if missing.is_empty() {
             return Ok(());
         }
-        let ok = crate::platform::jobs::kit_command(tlmgr_path(ctx, dest), ctx.env)
-            .arg("install")
-            .args(&missing)
-            .stdin(std::process::Stdio::null())
-            .output()
-            .is_ok_and(|o| o.status.success());
+        let mut args = vec!["install".to_owned()];
+        args.extend(missing.iter().map(|p| (*p).to_owned()));
+        let ok = ctx
+            .command(&tlmgr_path(ctx, dest), &args, &[], None, false)
+            .is_ok_and(|mut c| {
+                c.stdin(std::process::Stdio::null())
+                    .output()
+                    .is_ok_and(|o| o.status.success())
+            });
         if ok {
             crate::common::log::info(&format!("TinyTeX: {} packages back", missing.len()));
         } else {

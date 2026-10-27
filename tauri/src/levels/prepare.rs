@@ -232,8 +232,10 @@ fn in_vm(
     let guest = vm::guest_target(kit.target()).map(|t| kit.for_target(t));
     if let Some(guest) = &guest {
         fx.ensure_guest_tools(guest, &wanted);
-        std::fs::create_dir_all(guest.apps())
-            .with_context(|| guest.apps().display().to_string())?;
+        // Every folder mounted is there: `sbx` mounts none that is not.
+        for dir in crate::install::guest::mounts(guest) {
+            std::fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
+        }
     }
     if let VmProgram::AgentBinary { agent } = program {
         guest
@@ -358,10 +360,12 @@ pub fn wanted_tools(
 }
 
 /// The runs of the setup runner that give the VM's Linux (`guest`, the kit
-/// scoped to its target) the tools `wanted` lacks: those with a build for
-/// it that this PC can install, not those that finish on their own system
-/// (`router::bootstrap`); first the missing ones (at their line), then a
-/// line chosen beside the one installed. Empty when nothing lacks.
+/// scoped to its target) the tools `wanted` lacks: those that run in the VM
+/// (`Component::in_vm`, D-180; a system component only when asked, the
+/// kit's PowerShell for a creation) with a build for it, also those that
+/// run its programs, in the tools sandbox; first the missing ones (at their
+/// line), then a line chosen beside the one installed. Empty when nothing
+/// lacks.
 pub fn guest_plans(
     guest: &Kit,
     wanted: &BTreeMap<String, Option<String>>,
@@ -373,10 +377,11 @@ pub fn guest_plans(
         .iter()
         .filter_map(|(id, line)| Some((catalog.find(id)?, line.as_ref())))
         .filter(|(c, _)| {
-            c.is_available_on(target)
+            (c.group.always() || c.in_vm())
+                && c.is_available_on(target)
                 && super::installable(c, target, &super::VmState::On)
                 && crate::install::installer(&c.id)
-                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target))
+                    .is_some_and(|i| !crate::router::bootstrap::stages_for(i, c, target, true))
         })
         .collect();
     let mut plans = Vec::new();

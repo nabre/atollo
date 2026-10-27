@@ -84,13 +84,10 @@ pub fn folders(kit: &Kit) -> Vec<PathBuf> {
 /// What can be added from "Linguaggi e strumenti" for the tools' kit
 /// `tools` (the kit, or with the VM on the kit of its Linux, D-173): not
 /// installed, available there (no Android on Linux ARM64), and for the VM's
-/// Linux one this PC can install (not what only finishes on its own
-/// system).
+/// Linux (`cross`) one that runs in the VM (`Component::in_vm`, D-180; what
+/// runs its programs to install is built in the tools sandbox).
 fn addable(tools: &Kit, c: &crate::setup::Component, cross: bool) -> bool {
-    let staged = cross
-        && crate::install::installer(&c.id)
-            .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, tools.target()));
-    !c.is_installed(tools) && c.is_available_on(tools.target()) && !staged
+    !c.is_installed(tools) && c.is_available_on(tools.target()) && (!cross || c.in_vm())
 }
 
 pub fn info(kit: &Kit, dir: &Path, lang: &str) -> ProjectInfo {

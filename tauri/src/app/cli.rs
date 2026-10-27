@@ -687,6 +687,11 @@ pub(crate) fn run_plan(
     lang: &str,
     opts: &Options,
 ) -> i32 {
+    // The tools sandbox when the run prepares the VM's Linux from a PC
+    // that cannot run it (D-180).
+    let guest = opts
+        .target
+        .and_then(|t| install::guest::Guest::for_target(kit, host, kit_env, t));
     let kit_scoped;
     let kit = match opts.target {
         Some(t) => {
@@ -712,6 +717,7 @@ pub(crate) fn run_plan(
         net: &net,
         env: kit_env,
         cancel: &cancel,
+        guest: guest.as_ref(),
     };
     let mut printer = Printer::new(&mut *out, lang).with_downloads_dir(setup::downloads::dir(kit));
     let results = match setup::runner::run(&ctx, opts, &mut printer) {
@@ -828,6 +834,7 @@ pub(crate) fn version_lines(
             net: &net,
             env: kit_env,
             cancel: &cancel,
+            guest: None,
         };
         let lines = installer.lines(&ctx, c)?;
         let _ = versions::save_offered(kit, id, &lines);

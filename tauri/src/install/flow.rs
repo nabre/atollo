@@ -23,24 +23,33 @@ pub(super) const SETUP_ROOM: u64 = 4 << 30;
 /// The work folder of a component, `setup\<id>` in the PC's temporary folder
 /// (D-90; `data\tmp\setup\<id>` without one or with less than `SETUP_ROOM`
 /// free there), emptied. It lives as long as the guard: keep it for the
-/// whole installation.
+/// whole installation. With the tools sandbox (D-180) it is in the
+/// workspace of the sandbox, which runs the programs on its files.
 pub fn work_dir(ctx: &Ctx, component: &Component) -> Result<TempWork> {
     let rel = format!("setup/{}", component.id);
-    TempWork::new_with_space(ctx.kit, &rel, SETUP_ROOM)
-        .with_context(|| format!("work folder {rel}"))
+    match ctx.guest {
+        Some(guest) => {
+            let dir = crate::common::fsx::join_rel(guest.work_root(), &rel);
+            TempWork::at(&dir).with_context(|| format!("work folder {}", dir.display()))
+        }
+        None => TempWork::new_with_space(ctx.kit, &rel, SETUP_ROOM)
+            .with_context(|| format!("work folder {rel}")),
+    }
 }
 
 /// A file [`fetch`] copied in place of a download: pre-downloaded for this
 /// system (`router/bootstrap.rs`) or added by hand (`setup/downloads.rs`).
 pub(super) enum Taken {
-    Staged(PathBuf),
+    /// Pre-downloaded; `true` when the installation ran the programs of its
+    /// system (here or in the tools sandbox): used up once it succeeds.
+    Staged(PathBuf, bool),
     ByHand(PathBuf, Expect),
 }
 
 impl Taken {
     fn used(self, kit: &Kit) {
         match self {
-            Taken::Staged(file) => crate::router::bootstrap::used(kit, &file),
+            Taken::Staged(file, ran) => crate::router::bootstrap::used(kit, &file, ran),
             Taken::ByHand(file, expect) => crate::setup::downloads::used(kit, &file, &expect),
         }
     }
@@ -126,7 +135,7 @@ pub fn fetch(
     let file = work.join(file_name);
     if let Some(staged) = crate::router::bootstrap::take(ctx.kit, file_name, expect, &file)? {
         progress.note("bootstrap pre-downloaded, checksum ok");
-        taken(ctx.kit, Taken::Staged(staged));
+        taken(ctx.kit, Taken::Staged(staged, ctx.runs_target()));
         return Ok(file);
     }
     if let Some(added) = crate::setup::downloads::take(ctx.kit, file_name, expect, &file)? {

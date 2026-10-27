@@ -35,7 +35,8 @@ fn the_guest_dir_is_the_projects_folder_in_the_vm() {
     );
 }
 
-/// The kit's tools for the VM's Linux, by the PC's processor.
+/// The kit's tools for the VM's Linux, by the PC's processor, and the
+/// global packages of npm (pnpm, yarn, D-180).
 #[test]
 fn the_guest_tools_are_the_kits_linux_ones() {
     for (host, guest) in [
@@ -45,9 +46,10 @@ fn the_guest_tools_are_the_kits_linux_ones() {
         (Target::LINUX_ARM64, Target::LINUX_ARM64),
     ] {
         let k = kit(host);
+        let linux = k.for_target(guest);
         assert_eq!(
             guest_tools(&k),
-            vec![k.for_target(guest).apps()],
+            vec![linux.apps(), linux.data().join("npm-global")],
             "{host:?}"
         );
     }

@@ -457,6 +457,7 @@ fn unavailable_on_linux_names_the_system() {
         net: &net,
         env: &env,
         cancel: &cancel,
+        guest: None,
     };
     let catalog = Catalog::get();
     let opts = Options {

@@ -169,9 +169,10 @@ pub(super) fn target_grid(kit: &Kit, lang: &str, vm: Option<crate::kit::Target>)
 }
 
 /// With the VM on (D-174): on the PC's column (`host`), the tools the VM
-/// runs with its build for `guest` (not the system components or the
-/// parts of the app, nor what only finishes on its own system) are not
-/// needed on the PC.
+/// runs with its build for `guest` and only there (`Component::in_vm`
+/// without `on_pc_with_vm`, D-180: not the system components or the parts
+/// of the app, not the databases' servers, not llama.cpp) are not needed
+/// on the PC.
 pub(super) fn mark_via_vm(
     targets: &mut [crate::router::probe::TargetSummary],
     host: crate::kit::Target,
@@ -187,9 +188,11 @@ pub(super) fn mark_via_vm(
             continue;
         };
         let staged = crate::install::installer(&c.id)
-            .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, guest));
+            .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, guest, true));
         // Not needed on the PC (D-177): nothing the VM stands in for.
         tool.via_vm = !locked.contains(tool.id.as_str())
+            && c.in_vm()
+            && !c.on_pc_with_vm()
             && tool.not_needed.is_none()
             && c.is_available_on(guest)
             && !staged;

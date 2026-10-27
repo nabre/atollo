@@ -59,18 +59,21 @@ impl Installer for Pnpm {
         if !node.is_file() || !npm_cli.is_file() {
             bail!("the kit's Node.js is needed for pnpm and yarn");
         }
+        // Given, not only in the kit's environment: the tools sandbox
+        // (D-180) gets none of it.
+        let prefix = ctx.kit.data().join("npm-global");
+        let envs = [("NPM_CONFIG_PREFIX", prefix.as_path())];
         let npm = |args: &[&str], progress: &mut dyn Progress| -> Result<()> {
             let cli = npm_cli.display().to_string();
             let mut all = vec![cli.as_str(), "--global", "--no-fund", "--no-audit"];
             all.extend_from_slice(args);
-            run(ctx, &node, &all, &[], progress)
+            run(ctx, &node, &all, &envs, progress)
         };
         let _ = npm(&["uninstall", "yarn", "corepack"], progress);
         npm(
             &["install", "--ignore-scripts", "corepack@latest"],
             progress,
         )?;
-        let prefix = ctx.kit.data().join("npm-global");
         let corepack = if ctx.kit.os().is_windows() {
             join_rel(&prefix, "node_modules/corepack/dist/corepack.js")
         } else {

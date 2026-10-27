@@ -118,13 +118,10 @@ fn node_pick_is_the_newest_lts() {
 fn custom_by_target() {
     for t in Target::ALL {
         // Git: an archive everywhere (PortableGit, dugite-native), and it
-        // follows the kit everywhere (D-112); off Windows it is staged
-        // where its target cannot run (`git_staged`).
-        assert_eq!(
-            Git.custom(t),
-            !t.is_windows() && !crate::router::target::can_execute_on_host(t),
-            "git on {t}"
-        );
+        // follows the kit everywhere (D-112); off Windows an archive of
+        // symbolic links (`links`), staged where its target cannot run.
+        assert!(!Git.custom(t), "git on {t}");
+        assert_eq!(Git.links(t), !t.is_windows(), "git on {t}");
         assert!(Git.relocatable(t), "git on {t}");
         // Archives everywhere.
         assert!(!Python.custom(t), "python on {t}");
@@ -205,10 +202,7 @@ fn unix_gitconfig_gets_the_credential_helper_once() {
 #[test]
 fn git_is_staged_where_its_target_cannot_run() {
     let between = |host: Target, target: Target| {
-        git_staged(
-            target,
-            crate::router::target::can_execute_between(host, target),
-        )
+        Git.links(target) && !crate::router::target::can_execute_between(host, target)
     };
     for host in Target::ALL {
         for target in Target::ALL {
@@ -242,12 +236,17 @@ fn git_is_staged_where_its_target_cannot_run() {
             net: &net,
             env: &env,
             cancel: &cancel,
+            guest: None,
         };
         assert_eq!(
             crate::router::bootstrap::should_stage(&ctx, &Git, git),
-            Git.custom(target),
+            Git.links(target) && !crate::router::target::can_execute_on_host(target),
             "{target}"
         );
+        // With the tools sandbox (D-180) its `tar` unpacks it: never staged.
+        assert!(!crate::router::bootstrap::stages_for(
+            &Git, git, target, true
+        ));
         if cfg!(windows) && !target.is_windows() {
             assert!(
                 crate::router::bootstrap::should_stage(&ctx, &Git, git),

@@ -315,9 +315,11 @@ export function IsolationDialog({
 }
 
 /** Whose sandbox it is, as the list says it (the kit's terminals have none
- * since D-178: they run on the PC). */
+ * since D-178: they run on the PC; the tools sandbox builds the kit's tools
+ * for the VM's Linux, D-180). */
 export function vmLabel(v: VmInfo): string {
   if (v.owner?.kind === "project") return t("Progetto {0}", v.owner.project);
+  if (v.owner?.kind === "tools") return t("Strumenti del kit per il Linux della VM");
   return v.name;
 }
 

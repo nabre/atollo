@@ -51,11 +51,13 @@ pub fn linux_build(kit: &Kit, origin: &Origin) -> bool {
         .is_some_and(|c| c.is_available_on(guest))
 }
 
-/// The kit's tools for the VM's Linux, mounted read-only (D-170); none where
+/// The kit's tools for the VM's Linux, mounted read-only (D-170): its
+/// `data/apps/<linux>` and `data/npm-global` (pnpm and yarn, D-180), the
+/// folders the tools sandbox writes (`install::guest::mounts`); none where
 /// the PC has no VM.
 pub fn guest_tools(kit: &Kit) -> Vec<PathBuf> {
     vm::guest_target(kit.target())
-        .map(|t| vec![kit.for_target(t).apps()])
+        .map(|t| crate::install::guest::mounts(&kit.for_target(t)))
         .unwrap_or_default()
 }
 

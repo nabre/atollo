@@ -36,6 +36,7 @@ fn with_target_ctx(name: &str, target: crate::kit::Target, f: impl FnOnce(&Ctx))
         net: &net,
         env: &env,
         cancel: &cancel,
+        guest: None,
     });
 }
 

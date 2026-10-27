@@ -999,6 +999,9 @@ pub struct Vm {
     /// Folders of the PC mounted where the VM cannot change them (the
     /// kit's tools for Linux, for the kit's terminals).
     pub read_only: Vec<PathBuf>,
+    /// More folders of the PC it may change, besides its workspace (the
+    /// tools sandbox's `data/npm-global`, D-180).
+    writable: Vec<PathBuf>,
     /// The kit the sandbox's own kit is written in (`data\app\sandboxes`).
     kit: Kit,
     /// Whose sandbox it is, written in its kit.
@@ -1253,10 +1256,32 @@ pub(crate) fn project_vm(
         name: vm::name(project),
         dir: dir.to_path_buf(),
         read_only,
+        writable: Vec::new(),
         kit: kit.clone(),
         owner: kit::Owner::Project {
             project: project.to_owned(),
         },
+        tools: GuestTools::default(),
+        host_ports: Vec::new(),
+        agent: "shell".into(),
+        gemini: false,
+    })
+}
+
+/// The kit's tools sandbox (D-180, `install::guest`): `dir` (the kit's
+/// `data/apps/<linux>`) its workspace, `writable` more folders it may
+/// change (`data/npm-global`); `None` without the kit's `sbx`. It runs the
+/// kit's installers only: no database port, no GitHub, no agent.
+pub(crate) fn tools_vm(kit: &Kit, host: &Host, dir: &Path, writable: Vec<PathBuf>) -> Option<Vm> {
+    Some(Vm {
+        sbx: Sbx::find(kit, host)?,
+        host: host.clone(),
+        name: crate::install::guest::NAME.to_owned(),
+        dir: dir.to_path_buf(),
+        read_only: Vec::new(),
+        writable,
+        kit: kit.clone(),
+        owner: kit::Owner::Tools,
         tools: GuestTools::default(),
         host_ports: Vec::new(),
         agent: "shell".into(),
@@ -1649,27 +1674,19 @@ pub fn project_guest_tools(kit: &Kit, guest: &Kit, project: &str, base: KitEnv) 
 
 /// The `PATH` entries and the variables of `env` (an environment of
 /// `guest`, the kit scoped to the VM's target, [`vm::guest_target`]) that
-/// lie in its `data/apps`, as the VM sees them. The rest of the kit's
-/// environment (its home, temp, agents) is the PC's business: the VM has
-/// its own.
+/// lie in the folders the VM mounts read-only (its `data/apps` and
+/// `data/npm-global`, `install::guest::mounts`), as the VM sees them; never
+/// one of [`VM_HOMES`]. The rest of the kit's environment (its home, temp,
+/// agents) is the PC's business: the VM has its own.
 pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
     let windows = kit.target().is_windows();
-    let apps = guest.apps();
-    let in_vm = |value: &str| -> Option<String> {
-        let value = if windows {
-            value.replace('/', "\\")
-        } else {
-            value.to_owned()
-        };
-        let path = PathBuf::from(value);
-        path.starts_with(&apps)
-            .then(|| vm::guest_path(windows, &path))
-            .flatten()
-    };
-    let path = env.path_entries().into_iter().filter_map(in_vm).collect();
+    let roots = crate::install::guest::mounts(guest);
+    let in_vm = |value: &str| crate::install::guest::guest_word(windows, &roots, value);
+    let path = env.path_entries().into_iter().filter_map(&in_vm).collect();
     let vars = env
         .iter()
         .filter(|(name, _)| !name.eq_ignore_ascii_case("PATH"))
+        .filter(|(name, _)| !VM_HOMES.iter().any(|h| name.eq_ignore_ascii_case(h)))
         .filter_map(|(name, value)| Some((name.to_owned(), in_vm(value)?)))
         .collect();
     GuestTools {
@@ -1678,6 +1695,12 @@ pub fn guest_view(kit: &Kit, guest: &Kit, env: &KitEnv) -> GuestTools {
         env_file: None,
     }
 }
+
+/// Variables of the kit's tools that name where they write (Cargo's
+/// registry and `cargo install`): in the VM they are left to its own home
+/// (`~/.cargo`), since the kit's folders are read-only there (D-180; a
+/// `cargo build` with one in the mount fails, tried with sbx 0.50.0).
+pub const VM_HOMES: [&str; 1] = ["CARGO_HOME"];
 
 impl Vm {
     /// The VM of `project` in `dir` with an `sbx` named `sbx` (the tests).
@@ -1689,6 +1712,7 @@ impl Vm {
             name: vm::name(project),
             dir: dir.to_path_buf(),
             read_only: Vec::new(),
+            writable: Vec::new(),
             kit: kit.clone(),
             owner: kit::Owner::Project {
                 project: project.to_owned(),
@@ -1698,6 +1722,16 @@ impl Vm {
             agent: "shell".into(),
             gemini: false,
         }
+    }
+
+    /// Lets this sandbox, and it only, reach `hosts` (HTTPS and every TCP
+    /// port), beyond the kit's policy: the tools sandbox's (D-180). Adding
+    /// a rule again is fine (`Already covered`).
+    pub fn allow_hosts(&self, env: &KitEnv, hosts: &[&str]) -> anyhow::Result<()> {
+        if hosts.is_empty() {
+            return Ok(());
+        }
+        self.call(env, &vm::hosts_allow(&self.name, hosts), ASK_LIMIT)
     }
 
     /// A command of `sbx` with `args`, with its environment.
@@ -1774,6 +1808,7 @@ impl Vm {
             &vm::start_args(
                 &self.name,
                 &self.dir,
+                &self.writable,
                 &self.read_only,
                 Some(&kit_dir),
                 &self.agent,
@@ -1833,13 +1868,14 @@ impl Vm {
     }
 
     /// GitHub for this sandbox as its project chose (`github_in_vm`, off
-    /// unless turned on; never for a kit terminal), D-172.
+    /// unless turned on; never for a kit terminal or the tools sandbox),
+    /// D-172.
     fn sync_github(&self, env: &KitEnv) {
         let wanted = match &self.owner {
             kit::Owner::Project { project } => {
                 crate::projects::settings::load(&self.kit, project).github_in_vm
             }
-            kit::Owner::Terminal { .. } => false,
+            kit::Owner::Terminal { .. } | kit::Owner::Tools => false,
         };
         github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, wanted);
     }

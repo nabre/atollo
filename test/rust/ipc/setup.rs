@@ -253,8 +253,8 @@ fn needs_of_one_target_stay_out_of_the_choice() {
 
 /// With the VM on (D-174): the grid names the VM's Linux, and on the PC's
 /// column the tools the VM runs are not needed there; the system
-/// components, the parts of the app and what only finishes on its own
-/// system stay as they are.
+/// components, the parts of the app and what runs on the PC also with the
+/// VM (D-180) stay as they are.
 #[test]
 fn the_grid_marks_the_vm() {
     let tmp = TempDir::new("cmd-grid-vm");
@@ -281,9 +281,16 @@ fn the_grid_marks_the_vm() {
     for kept in ["pwsh", "gh", "sandboxes", "vscodium-server"] {
         assert!(!via(kept), "{kept}");
     }
-    // Rust finishes on its own system only: from a PC with Linux x64 (the
-    // tests on Linux) the VM's Linux is that system.
-    assert_eq!(via("rust"), Target::detect() == Target::LINUX_X64);
+    // Run on the PC also with the VM (`withVm`, D-180): the databases'
+    // servers, llama.cpp, the databases' web tools; the sites' servers are
+    // the VM's containers.
+    for kept in ["mysql", "mongodb", "llama", "phpmyadmin", "apache", "caddy"] {
+        assert!(!via(kept), "{kept}");
+    }
+    // What runs Linux programs to install is built in the tools sandbox.
+    for id in ["rust", "git", "cc", "ruby", "r", "pnpm", "tinytex"] {
+        assert!(via(id), "{id}");
+    }
     assert!(column(Target::LINUX_X64).tools.iter().all(|x| !x.via_vm));
     // Not needed on a column (D-177) is never "via the VM": ConPTY on a
     // Mac with the VM on.

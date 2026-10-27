@@ -28,9 +28,11 @@ pub(crate) fn install_parts(
     work: &Path,
     progress: &mut dyn Progress,
 ) -> Result<()> {
+    let links = inst.links(ctx.kit.target());
     let mut trees = Vec::with_capacity(parts.len());
     for (i, part) in parts.iter().enumerate() {
-        trees.push(fetch_part(ctx, part, &work.join(i.to_string()), progress)?);
+        let work = work.join(i.to_string());
+        trees.push(fetch_part(ctx, part, &work, links, progress)?);
     }
     for (part, tree) in parts.iter().zip(&trees) {
         place_part(ctx, inst, component, part, tree, own)?;
@@ -50,16 +52,20 @@ pub(crate) fn install_part(
     work: &Path,
     progress: &mut dyn Progress,
 ) -> Result<()> {
-    let tree = fetch_part(ctx, part, work, progress)?;
+    let links = inst.links(ctx.kit.target());
+    let tree = fetch_part(ctx, part, work, links, progress)?;
     place_part(ctx, inst, component, part, &tree, own)
 }
 
 /// Downloads and verifies `part` into `work` and extracts it: the tree it
-/// brings (its signature checked on Windows), nothing in place yet.
+/// brings (its signature checked on Windows), nothing in place yet. An
+/// archive of symbolic links (`links`, [`Installer::links`]) is unpacked by
+/// `tar` in the tools sandbox when there is one (D-180).
 pub(super) fn fetch_part(
     ctx: &Ctx,
     part: &Part,
     work: &Path,
+    links: bool,
     progress: &mut dyn Progress,
 ) -> Result<PathBuf> {
     fs::create_dir_all(work)?;
@@ -72,7 +78,12 @@ pub(super) fn fetch_part(
         progress,
     )?;
     let extracted = work.join("x");
-    archive::extract(&file, part.kind, &extracted)?;
+    match ctx.guest {
+        Some(_) if links && matches!(part.kind, Kind::TarGz | Kind::TarXz) => {
+            untar_in_guest(ctx, &file, &extracted, progress)?;
+        }
+        _ => archive::extract(&file, part.kind, &extracted)?,
+    }
     if part.kind != Kind::File {
         let _ = fs::remove_file(&file);
     }
@@ -95,6 +106,35 @@ pub(super) fn fetch_part(
     }
     Ok(tree)
 }
+
+/// `tar -xf <file> -C <into>` in the tools sandbox: the symbolic links of
+/// the archive made as they are (D-180), which this PC cannot make.
+fn untar_in_guest(ctx: &Ctx, file: &Path, into: &Path, progress: &mut dyn Progress) -> Result<()> {
+    fs::create_dir_all(into)?;
+    progress.note("tar (tools sandbox)");
+    let args = [
+        "-xf".to_owned(),
+        file.display().to_string(),
+        "-C".to_owned(),
+        into.display().to_string(),
+    ];
+    let out = ctx
+        .command(Path::new(UNTAR), &args, &[], None, false)?
+        .stdin(std::process::Stdio::null())
+        .output()
+        .context("tar")?;
+    if !out.status.success() {
+        bail!(
+            "tar failed ({}): {}",
+            out.status,
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    Ok(())
+}
+
+/// The VM's own `tar` (the image's).
+const UNTAR: &str = "/usr/bin/tar";
 
 /// Puts the tree [`fetch_part`] extracted where `part` goes.
 pub(super) fn place_part(
