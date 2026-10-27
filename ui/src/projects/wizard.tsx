@@ -31,7 +31,7 @@ import {
 } from "../frameworks";
 import { ErrorLine } from "../shared/common";
 import type { GuideTopicId } from "../guide";
-import { useLoad, useSubscription } from "../shared/hooks";
+import { useBatched, useLoad, useSubscription } from "../shared/hooks";
 import { t } from "../i18n";
 import {
   Button,
@@ -169,11 +169,19 @@ export function NewProjectWizard({
     onError: "keep",
   });
 
-  useSubscription(onFramework, (e: FrameworkEvent) => {
-    if (e.command !== null || e.line === null) setProgress({ step: e.step, total: e.total });
-    const text = e.command !== null ? `> ${e.command}` : e.line;
-    if (text !== null) setLog((l) => [...l, text].slice(-MAX_LOG));
+  // A command prints many lines a second: the step and the log change once
+  // a frame, with every event of it.
+  const pushEvent = useBatched<FrameworkEvent>((events) => {
+    const steps = events.filter((e) => e.command !== null || e.line === null);
+    const last = steps.at(-1);
+    if (last) setProgress({ step: last.step, total: last.total });
+    const lines = events.flatMap((e) => {
+      const text = e.command !== null ? `> ${e.command}` : e.line;
+      return text === null ? [] : [text];
+    });
+    if (lines.length > 0) setLog((l) => [...l, ...lines].slice(-MAX_LOG));
   });
+  useSubscription(onFramework, pushEvent);
   useEffect(() => {
     const box = logBox.current;
     if (box) box.scrollTop = box.scrollHeight;

@@ -19,6 +19,8 @@ import {
 } from "../ipc";
 import { formatLargeBytes } from "../shared/format";
 import { useAction, useCopy, useLoad } from "../shared/hooks";
+import { usePoll } from "../shared/poll";
+import { isolationPoll } from "../shared/polls";
 import { Button, Codicon, ConfirmDialog } from "../workbench";
 import { bytesPercent, overallPercent, stepText } from "./jobs";
 import { t } from "../i18n";
@@ -395,9 +397,11 @@ export function VmSection() {
 
 /** The status, read at start and every minute (`sbx` is asked at most once
  * a minute), and asked again on "Ricontrolla" and when an installation
- * ends (`installing` turns false: Docker Sandboxes may have arrived). */
+ * ends (`installing` turns false: Docker Sandboxes may have arrived). The
+ * poll is the one of the Web Servers page too (shared/polls), which reads
+ * it more often while open. */
 export function useIsolation(installing = false) {
-  const { data, setData } = useLoad<IsolationStatus | null>(isolationStatus, null, {
+  const { data, setData } = usePoll<IsolationStatus, IsolationStatus | null>(isolationPoll, null, {
     onError: "keep",
     every: 60_000,
   });

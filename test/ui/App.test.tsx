@@ -895,8 +895,9 @@ describe("App", () => {
       });
     });
     // In the status bar, with its step and bar; a click opens its details
-    // in the Activity panel (LEVELS.md §8.6).
-    const item = screen.getByRole("button", {
+    // in the Activity panel (LEVELS.md §8.6). The progress renders at the
+    // next frame.
+    const item = await screen.findByRole("button", {
       name: /^Installo i componenti del kit · 2\/2 · PowerShell 7 · download · 50%/,
     });
     expect(within(item).getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");

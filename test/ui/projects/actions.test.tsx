@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ProjectAction, ProjectInfo } from "@/ipc";
 import { ProjectPage } from "@/projects/page";
+import { createRunLogs } from "@/projects/runs";
 import { actionId } from "@/projects/actionform";
 import { invoke } from "@test/support/tauri";
 
@@ -71,7 +72,7 @@ function page(save: () => Promise<unknown> = () => Promise.resolve(null)) {
       agents={null}
       editor={null}
       runs={{}}
-      logs={{}}
+      logs={createRunLogs()}
       ports={{ ports: {}, locked: [] }}
       busy={null}
       onStart={vi.fn()}

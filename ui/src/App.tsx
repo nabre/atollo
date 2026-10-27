@@ -6,6 +6,7 @@
 // Texts go through t() (i18n.ts) in the language of the settings or of
 // Windows, sent by app_info.
 import { lazy, Suspense, useCallback, useEffect, useState, type KeyboardEvent } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
   appInfo,
@@ -18,7 +19,6 @@ import {
   type AppInfo,
   type EditorStatus,
   type OpenNow,
-  type Job,
   type RunInfo,
   type SetupSnapshot,
   type UpdateStatus,
@@ -27,7 +27,7 @@ import { updateFound, updateText } from "./shell/update";
 import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";
 import { TitleBar } from "./shell/titlebar";
-import { JobsProvider, useJobs, VmPreparing } from "./shell/jobs";
+import { useJobs, VmPreparing } from "./shell/jobs";
 import { JobsItem, StatusItem, VmItem } from "./shell/statusbar";
 import { useAgents } from "./agents";
 import type { AiPane } from "./ai";
@@ -36,7 +36,7 @@ import { CloseDialog, EjectPage } from "./shell/eject";
 import { setLang, t, type Lang } from "./i18n";
 import { tauriPty, useTerminals, type Terminals } from "./terminal";
 import type { GuideTopicId } from "./guide";
-import { Codicon, codicon, Icon, IconButton, Notice, Sash, useStoredSize, useTabs } from "./workbench";
+import { Codicon, codicon, Icon, IconButton, Notice, Sash, SizedBox, useStoredSize, useTabs } from "./workbench";
 import { useLoad, useSubscription } from "./shared/hooks";
 import { ErrorLine, LoadError } from "./shared/common";
 import { CommandPalette } from "./shell/commands";
@@ -115,18 +115,33 @@ export function App() {
   const projectTabs = useTabs();
   /** The tools open in the editor of the Tools page, kept the same way. */
   const toolTabs = useTabs();
+  // Projects' links to Settings and to a tool, stable: the page is memo
+  // (it renders again only when what it shows changes).
+  const openSettings = useCallback(() => {
+    setPage("settings");
+  }, []);
+  const showTool = toolTabs.show;
+  const openTool = useCallback(
+    (id: string) => {
+      showTool(id);
+      setPage("components");
+    },
+    [showTool],
+  );
   const [closing, setClosing] = useState<OpenNow | null>(null);
-  const setup = useSetup();
-  // The installs and the VMs' preparations (LEVELS.md §8.6), for the whole
-  // window.
-  const jobs = useJobs();
+  // The installs and the VMs' preparations (LEVELS.md §8.6) are read by the
+  // parts that show them (useSetup, useJobs; WithSetup, LiveActivityPanel,
+  // StatusBar), not here: their progress renders those parts, not the
+  // window. Here only whether an install runs.
+  const installing = useSetup((s) => s?.running ?? false);
   const { agents } = useAgents();
+  // The actions' state; their output is in `logs`, outside the app's state.
   const { runs, logs, loadLog, forget } = useRuns();
   // Actions, database versions and web server pools (UX-V5-01).
   const running = useRunning(runs);
   const live = running.count;
   // The components with a new version (N-9), on Tools.
-  const newVersions = useUpdates(setup?.running ?? false).updates?.items.length ?? 0;
+  const newVersions = useUpdates(installing).updates?.items.length ?? 0;
 
   const {
     data: editor,
@@ -196,219 +211,234 @@ export function App() {
     setActivityJob({ id });
     setPanelOpen(true);
   }, []);
-  const [panelHeight, setPanelHeight] = useStoredSize("panel", 240, 120, 600);
+  const closePanel = useCallback(() => {
+    setPanelOpen(false);
+  }, []);
+  const [panelHeight, setPanelHeight, panelDrag] = useStoredSize("panel", 240, 120, 600, "height");
   // The app's terminal on every system (D-109, D-148): read once the app
   // answered.
   const terminals = useTerminals(tauriPty, info !== null);
-  const [terminalHeight, setTerminalHeight] = useStoredSize("terminal", 280, 120, 800);
+  const [terminalHeight, setTerminalHeight, terminalDrag] = useStoredSize("terminal", 280, 120, 800, "height");
 
   return (
     // The key re-renders every text when the language changes.
-    <JobsProvider jobs={jobs}>
-      <div key={lang} className="flex h-full flex-col bg-vsc-activitybar">
-        <a
-          href="#content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-1 focus:left-14 focus:z-50 focus:bg-vsc-button focus:px-2 focus:text-vsc-button-fg"
-        >
-          {t("Vai al contenuto")}
-        </a>
-        <TitleBar title={current?.label} />
-        <Banner info={info} error={error} onRetry={retryInfo} />
-        {commandError && (
-          <div className="flex items-start gap-2 px-3 py-1">
-            <div className="min-w-0 flex-1">
-              <ErrorLine error={commandError} />
-            </div>
-            <IconButton
-              icon={codicon("close")}
-              label={t("Chiudi")}
-              onClick={() => {
-                setCommandError(null);
-              }}
-            />
+    <div key={lang} className="flex h-full flex-col bg-vsc-activitybar">
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-1 focus:left-14 focus:z-50 focus:bg-vsc-button focus:px-2 focus:text-vsc-button-fg"
+      >
+        {t("Vai al contenuto")}
+      </a>
+      <TitleBar title={current?.label} />
+      <Banner info={info} error={error} onRetry={retryInfo} />
+      {commandError && (
+        <div className="flex items-start gap-2 px-3 py-1">
+          <div className="min-w-0 flex-1">
+            <ErrorLine error={commandError} />
           </div>
-        )}
-        {/* VSCodium's floating parts: 4px apart on the workbench color, the
-          activity bar on the window's edge. */}
-        <div className="flex min-h-0 flex-1 gap-vsc-size40 pr-vsc-size40 pb-vsc-size40">
-          <ActivityBar
-            pages={all}
-            page={page}
-            onSelect={showPage}
-            badges={{
-              projects: { count: live, label: t("In esecuzione: {0}", String(live)) },
-              components: { count: newVersions, label: t("Versioni nuove: {0}", String(newVersions)) },
+          <IconButton
+            icon={codicon("close")}
+            label={t("Chiudi")}
+            onClick={() => {
+              setCommandError(null);
             }}
           />
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            {/* The lazy pages' fallback: the Guide's, as before. */}
-            <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
-              {info?.firstRun ? (
-                <ComponentsPage setup={setup} onDone={loadInfo} platform={info.platform} onSettings={loadInfo} />
-              ) : page === "projects" ? (
-                <ProjectsPage
-                  tabs={projectTabs}
-                  status={editor}
-                  agents={agents}
-                  onChanged={refreshEditor}
-                  runs={runs}
-                  logs={logs}
-                  loadLog={loadLog}
-                  forget={forget}
-                  onGuide={openGuide}
-                  onSettings={() => {
-                    setPage("settings");
-                  }}
-                  quickOpen={quickOpen}
-                  onQuickOpen={setQuickOpen}
-                  setup={setup}
-                  onTool={(id) => {
-                    toolTabs.show(id);
-                    setPage("components");
-                  }}
-                />
-              ) : page === "ai" ? (
-                <AiPage key={aiFocus} focus={aiFocus} onGuide={openGuide} />
-              ) : page === "components" ? (
-                <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />
-              ) : page === "databases" ? (
-                <DatabasesPage onGuide={openGuide} />
-              ) : page === "servers" ? (
-                <ServersPage onGuide={openGuide} />
-              ) : page === "terminals" ? (
-                <TerminalsPage
-                  onTools={() => {
-                    setPage("components");
-                  }}
-                  onGuide={openGuide}
-                />
-              ) : page === "guide" ? (
-                <GuidePage
-                  key={guideTopic}
-                  info={info}
-                  initialTopic={guideTopic}
-                  onNavigate={(target) => {
-                    // The wizard is a tab of Projects.
-                    if (target === "new") projectTabs.show(WIZARD_TAB);
-                    // Agents and local models are the two panes of AI.
-                    if (target === "agents" || target === "models") setAiFocus(target);
-                    setPage(target === "new" ? "projects" : target === "agents" || target === "models" ? "ai" : target);
-                  }}
-                />
-              ) : page === "settings" ? (
-                <SettingsPage
-                  onSaved={loadInfo}
-                  editorRunning={editor?.running ?? false}
-                  info={info}
-                  onGuide={openGuide}
-                />
-              ) : (
-                <EjectPage onGuide={openGuide} />
-              )}
-            </Suspense>
-            {terminals.shown && (
-              <>
-                <Sash
-                  vertical={false}
-                  label={t("Ridimensiona i terminali")}
-                  size={terminalHeight}
-                  min={120}
-                  max={800}
-                  onDrag={(d) => {
-                    setTerminalHeight((h) => h - d);
-                  }}
-                  onReset={() => {
-                    setTerminalHeight(280);
-                  }}
-                />
-                <Suspense fallback={<div style={{ height: terminalHeight }} className="shrink-0 bg-vsc-panel" />}>
-                  <TerminalPanel terminals={terminals} backend={tauriPty} height={terminalHeight} />
-                </Suspense>
-              </>
+        </div>
+      )}
+      {/* VSCodium's floating parts: 4px apart on the workbench color, the
+          activity bar on the window's edge. */}
+      <div className="flex min-h-0 flex-1 gap-vsc-size40 pr-vsc-size40 pb-vsc-size40">
+        <ActivityBar
+          pages={all}
+          page={page}
+          onSelect={showPage}
+          badges={{
+            projects: { count: live, label: t("In esecuzione: {0}", String(live)) },
+            components: { count: newVersions, label: t("Versioni nuove: {0}", String(newVersions)) },
+          }}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          {/* The lazy pages' fallback: the Guide's, as before. */}
+          <Suspense fallback={<div className="flex-1 p-5 text-vsc-desc">{t("Caricamento…")}</div>}>
+            {info?.firstRun ? (
+              <WithSetup>
+                {(setup) => (
+                  <ComponentsPage setup={setup} onDone={loadInfo} platform={info.platform} onSettings={loadInfo} />
+                )}
+              </WithSetup>
+            ) : page === "projects" ? (
+              <ProjectsPage
+                tabs={projectTabs}
+                status={editor}
+                agents={agents}
+                onChanged={refreshEditor}
+                runs={runs}
+                logs={logs}
+                loadLog={loadLog}
+                forget={forget}
+                onGuide={openGuide}
+                onSettings={openSettings}
+                quickOpen={quickOpen}
+                onQuickOpen={setQuickOpen}
+                onTool={openTool}
+              />
+            ) : page === "ai" ? (
+              <AiPage key={aiFocus} focus={aiFocus} onGuide={openGuide} />
+            ) : page === "components" ? (
+              <WithSetup>{(setup) => <ToolsPage setup={setup} tabs={toolTabs} onGuide={openGuide} />}</WithSetup>
+            ) : page === "databases" ? (
+              <DatabasesPage onGuide={openGuide} />
+            ) : page === "servers" ? (
+              <ServersPage onGuide={openGuide} />
+            ) : page === "terminals" ? (
+              <TerminalsPage
+                onTools={() => {
+                  setPage("components");
+                }}
+                onGuide={openGuide}
+              />
+            ) : page === "guide" ? (
+              <GuidePage
+                key={guideTopic}
+                info={info}
+                initialTopic={guideTopic}
+                onNavigate={(target) => {
+                  // The wizard is a tab of Projects.
+                  if (target === "new") projectTabs.show(WIZARD_TAB);
+                  // Agents and local models are the two panes of AI.
+                  if (target === "agents" || target === "models") setAiFocus(target);
+                  setPage(target === "new" ? "projects" : target === "agents" || target === "models" ? "ai" : target);
+                }}
+              />
+            ) : page === "settings" ? (
+              <SettingsPage
+                onSaved={loadInfo}
+                editorRunning={editor?.running ?? false}
+                info={info}
+                onGuide={openGuide}
+              />
+            ) : (
+              <EjectPage onGuide={openGuide} />
             )}
-            {/* A session waiting for its VM (a terminal, an action, an
+          </Suspense>
+          {terminals.shown && (
+            <>
+              <Sash
+                vertical={false}
+                label={t("Ridimensiona i terminali")}
+                size={terminalHeight}
+                min={120}
+                max={800}
+                onDrag={(d) => {
+                  terminalDrag.move((h) => h - d);
+                }}
+                onDragEnd={terminalDrag.end}
+                onReset={() => {
+                  setTerminalHeight(280);
+                }}
+              />
+              {/* The height on a box of its own, which a drag resizes
+                without rendering the panel (useStoredSize). */}
+              <SizedBox drag={terminalDrag} height={terminalHeight}>
+                <Suspense fallback={<div className="flex-1 bg-vsc-panel" />}>
+                  <TerminalPanel terminals={terminals} backend={tauriPty} />
+                </Suspense>
+              </SizedBox>
+            </>
+          )}
+          {/* A session waiting for its VM (a terminal, an action, an
               agent): the preparation's progress, not a frozen pane; the
               project's page shows it under its buttons. */}
-            {page !== "projects" && <VmWaiting onDetails={openJob} />}
-            {panelOpen && (
-              <>
-                <Sash
-                  vertical={false}
-                  label={t("Ridimensiona il pannello")}
-                  size={panelHeight}
-                  min={120}
-                  max={600}
-                  onDrag={(d) => {
-                    setPanelHeight((h) => h - d);
-                  }}
-                  onReset={() => {
-                    setPanelHeight(240);
-                  }}
-                />
-                <ActivityPanel
-                  height={panelHeight}
+          {page !== "projects" && <VmWaiting onDetails={openJob} />}
+          {panelOpen && (
+            <>
+              <Sash
+                vertical={false}
+                label={t("Ridimensiona il pannello")}
+                size={panelHeight}
+                min={120}
+                max={600}
+                onDrag={(d) => {
+                  panelDrag.move((h) => h - d);
+                }}
+                onDragEnd={panelDrag.end}
+                onReset={() => {
+                  setPanelHeight(240);
+                }}
+              />
+              <SizedBox drag={panelDrag} height={panelHeight}>
+                <LiveActivityPanel
                   runs={runs}
                   running={running}
                   logs={logs}
                   loadLog={loadLog}
                   onStop={runStop}
                   onForget={forget}
-                  setup={setup}
-                  jobs={jobs}
                   focus={activityJob}
-                  onClose={() => {
-                    setPanelOpen(false);
-                  }}
+                  onClose={closePanel}
                 />
-              </>
-            )}
-          </div>
+              </SizedBox>
+            </>
+          )}
         </div>
-        <StatusBar
-          info={info}
+      </div>
+      <StatusBar
+        info={info}
+        editor={editor}
+        onJob={openJob}
+        runs={runs}
+        running={running}
+        panelOpen={panelOpen}
+        onPanel={() => {
+          setPanelOpen(!panelOpen);
+        }}
+        terminals={terminals}
+      />
+      {palette && (
+        <CommandPalette
+          pages={all.filter((p) => p.id !== page)}
+          agents={agents ?? []}
           editor={editor}
-          setup={setup}
-          jobs={jobs}
-          onJob={openJob}
           runs={runs}
           running={running}
-          panelOpen={panelOpen}
-          onPanel={() => {
-            setPanelOpen(!panelOpen);
+          onPage={(id) => {
+            showPage(id as PageId);
           }}
-          terminals={terminals}
+          onOpenProject={(id) => {
+            setPage("projects");
+            projectTabs.show(id);
+          }}
+          onError={setCommandError}
+          onClose={() => {
+            setPalette(false);
+          }}
         />
-        {palette && (
-          <CommandPalette
-            pages={all.filter((p) => p.id !== page)}
-            agents={agents ?? []}
-            editor={editor}
-            runs={runs}
-            running={running}
-            onPage={(id) => {
-              showPage(id as PageId);
-            }}
-            onOpenProject={(id) => {
-              setPage("projects");
-              projectTabs.show(id);
-            }}
-            onError={setCommandError}
-            onClose={() => {
-              setPalette(false);
-            }}
-          />
-        )}
-        {closing && (
-          <CloseDialog
-            open={closing}
-            onCancel={() => {
-              setClosing(null);
-            }}
-          />
-        )}
-      </div>
-    </JobsProvider>
+      )}
+      {closing && (
+        <CloseDialog
+          open={closing}
+          onCancel={() => {
+            setClosing(null);
+          }}
+        />
+      )}
+    </div>
   );
+}
+
+/** `children` with the preparation under way, read here: an install's
+ * progress renders the page inside (Tools, its rows), not the window. */
+function WithSetup({ children }: { children: (setup: SetupSnapshot | null) => ReactNode }) {
+  const setup = useSetup();
+  return children(setup);
+}
+
+/** The Activity panel with the jobs and the preparation read here: their
+ * progress renders the panel, not the window. */
+function LiveActivityPanel(props: Omit<ComponentProps<typeof ActivityPanel>, "jobs" | "setup">) {
+  const jobs = useJobs();
+  const setup = useSetup();
+  return <ActivityPanel {...props} jobs={jobs} setup={setup} />;
 }
 
 /** The VMs being prepared, above the status bar while a terminal, an
@@ -619,8 +649,6 @@ function VersionItem({ version }: { version: string }) {
 function StatusBar({
   info,
   editor,
-  setup,
-  jobs,
   onJob,
   runs,
   running,
@@ -630,9 +658,6 @@ function StatusBar({
 }: {
   info: AppInfo | null;
   editor: EditorStatus | null;
-  setup: SetupSnapshot | null;
-  /** The installs and the VMs' preparations. */
-  jobs: Job[];
   /** Opens a job's details in the Activity panel. */
   onJob: (id: string) => void;
   runs: Record<string, RunInfo>;
@@ -647,7 +672,10 @@ function StatusBar({
   // only those the toggle would show and hide nothing.
   const sessions = terminals.docked.length;
   const terminalsLabel = terminals.shown ? t("Nascondi i terminali") : t("Mostra i terminali");
-  const installing = setupStatusText(setup);
+  // The installs and the VMs' preparations, read here: their progress
+  // renders the bar, not the window.
+  const jobs = useJobs();
+  const installing = useSetup((s) => setupStatusText(s) !== null);
   const live = running.count;
   const errors = Object.values(runs).filter((r) => r.state === "error").length;
   return (
@@ -682,7 +710,7 @@ function StatusBar({
         <Codicon name="error" size={14} className="ml-1" />
         <span aria-label={t("Errori: {0}", String(errors))}>{errors}</span>
       </StatusItem>
-      {info && <VmItem installing={installing !== null} jobs={jobs} />}
+      {info && <VmItem installing={installing} jobs={jobs} />}
       <JobsItem jobs={jobs} onJob={onJob} />
       <span className="flex-1" />
       {sessions > 0 && (

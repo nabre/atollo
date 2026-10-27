@@ -1,6 +1,6 @@
 // The Avvio section of a project's page: its actions, the chosen one with
 // its port and its output.
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { runSetPort, type Ports, type ProjectAction, type ProjectInfo, type RunInfo } from "../ipc";
 import { useAction } from "../shared/hooks";
 import { ErrorLine, PORT_MAX, PORT_MIN, validPort } from "../shared/common";
@@ -22,7 +22,8 @@ import { projectActionDefault, projectActionRemove, urlOpen } from "../ipc";
 import { ActionButton } from "../shared/common";
 import { ActionBar, EditorSection, Properties } from "../workbench";
 import { ActionForm } from "./actionform";
-import { alive, stateText } from "./runs";
+import { alive, stateText, type RunLogs } from "./runs";
+import { RunOutputView } from "./output";
 import { KIND_ICON, kindText } from "./kind";
 import { LanAddress, useLanLink } from "./lan";
 
@@ -123,7 +124,7 @@ export function ActionDetail({
   p: ProjectInfo;
   action: ProjectAction;
   runs: Record<string, RunInfo>;
-  logs: Record<string, string[]>;
+  logs: RunLogs;
   ports: Ports;
   onPorts: (p: Ports) => void;
   onForget: (key: string) => void;
@@ -302,7 +303,7 @@ export function ActionDetail({
           )}
         </Notice>
       ))}
-      {r && <LogView title={a.label} lines={logs[key] ?? []} />}
+      {r && <LogView title={a.label} logs={logs} runKey={key} />}
     </EditorSection>
   );
 }
@@ -364,13 +365,8 @@ function PortField({ actionKey, ports, onPorts }: { actionKey: string; ports: Po
 }
 
 /** The output of an action, as the editor's Output view. */
-function LogView({ title, lines }: { title: string; lines: string[] }) {
-  const ref = useRef<HTMLPreElement>(null);
+function LogView({ title, logs, runKey }: { title: string; logs: RunLogs; runKey: string }) {
   const [follow, setFollow] = useState(true);
-  useEffect(() => {
-    const el = ref.current;
-    if (el && follow) el.scrollTop = el.scrollHeight;
-  }, [lines, follow]);
   return (
     <div className="overflow-hidden rounded border border-vsc-border">
       <div className="flex h-[26px] items-center gap-2 border-b border-vsc-border px-3 text-[11px] text-vsc-desc uppercase">
@@ -381,14 +377,13 @@ function LogView({ title, lines }: { title: string; lines: string[] }) {
           </CheckboxLabel>
         </span>
       </div>
-      <pre
-        ref={ref}
-        tabIndex={0}
-        aria-label={t("Output di {0}", title)}
+      <RunOutputView
+        logs={logs}
+        runKey={runKey}
+        label={t("Output di {0}", title)}
+        follow={follow}
         className="m-0 h-64 overflow-auto px-3 py-2 font-mono text-[12px] leading-[18px] whitespace-pre-wrap select-text"
-      >
-        {lines.join("\n")}
-      </pre>
+      />
     </div>
   );
 }

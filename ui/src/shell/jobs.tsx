@@ -3,15 +3,11 @@
 // events, shared by the status bar, the VM's pill, the Activity panel and
 // the session waiting for its VM; the bar of a job, its details with their
 // steps and errors, the card «Preparazione della VM…».
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useState } from "react";
 import { jobCancel, jobsList, onJob, setupStart, type Job, type JobStep } from "../ipc";
 import { t } from "../i18n";
-import { useSubscription } from "../shared/hooks";
+import { createFeed, useFeed } from "../shared/feed";
 import { Button, Codicon } from "../workbench";
-
-const JobsContext = createContext<Job[] | null>(null);
-
-const none = () => Promise.resolve(() => undefined);
 
 /** `job` in `list`, in place of the one with its id or added; the list in
  * the order the jobs were asked. */
@@ -23,44 +19,26 @@ export function upsertJob(list: Job[], job: Job): Job[] {
   return next;
 }
 
-/** The jobs read once, then kept by the events; nothing when not `enabled`
- * (a provider above already does it). */
-function useJobsSource(enabled: boolean): Job[] {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  useSubscription(enabled ? onJob : none, (job) => {
-    setJobs((list) => upsertJob(list, job));
-  });
-  useEffect(() => {
-    if (!enabled) return;
-    let alive = true;
+/** The jobs of the window, read once, then kept by the events (once a
+ * frame: a download sends its bytes many times a second); one subscription
+ * for every component that shows them. */
+const jobsFeed = createFeed<Job[], Job>({
+  initial: [],
+  listen: onJob,
+  apply: upsertJob,
+  // An event arrived meanwhile is newer than the list.
+  read: () =>
     jobsList().then(
-      (list) => {
-        // An event arrived meanwhile is newer than the list.
-        if (alive)
-          setJobs((current) =>
-            list.reduce((acc, j) => (acc.some((x) => x.id === j.id) ? acc : upsertJob(acc, j)), current),
-          );
-      },
-      () => undefined,
-    );
-    return () => {
-      alive = false;
-    };
-  }, [enabled]);
-  return jobs;
-}
+      (list) => (current) =>
+        list.reduce((acc, j) => (acc.some((x) => x.id === j.id) ? acc : upsertJob(acc, j)), current),
+    ),
+});
 
-/** `jobs` (the app's, read by App.tsx with `useJobs`) for everything
- * below: one subscription for the window. */
-export function JobsProvider({ jobs, children }: { jobs: Job[]; children: ReactNode }) {
-  return <JobsContext.Provider value={jobs}>{children}</JobsContext.Provider>;
-}
-
-/** The jobs: the provider's, or read here when there is none. */
+/** The jobs, rendering the component when they change (at most once a
+ * frame): each part that shows them asks here, so their progress renders
+ * those parts, not the window. */
 export function useJobs(): Job[] {
-  const shared = useContext(JobsContext);
-  const own = useJobsSource(shared === null);
-  return shared ?? own;
+  return useFeed(jobsFeed);
 }
 
 /** Queued or running. */
