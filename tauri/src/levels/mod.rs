@@ -96,6 +96,7 @@ impl Agent {
         Agent::ALL.into_iter().find(|a| a.id() == id)
     }
 
+    #[cfg(test)]
     pub fn from_command(cmd: &str) -> Option<Agent> {
         Agent::ALL.into_iter().find(|a| a.commands().contains(&cmd))
     }

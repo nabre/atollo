@@ -10,7 +10,6 @@ pub enum Os {
     Linux,
 }
 
-#[allow(dead_code)]
 impl Os {
     /// Operating system of the running binary.
     pub const fn current() -> Os {
@@ -44,13 +43,6 @@ impl Os {
     pub const fn exe_suffix(self) -> &'static str {
         match self {
             Os::Win32 => ".exe",
-            Os::Darwin | Os::Linux => "",
-        }
-    }
-
-    pub const fn cmd_suffix(self) -> &'static str {
-        match self {
-            Os::Win32 => ".cmd",
             Os::Darwin | Os::Linux => "",
         }
     }
@@ -100,7 +92,6 @@ pub struct Target {
     pub arch: Arch,
 }
 
-#[allow(dead_code)]
 impl Target {
     pub const WIN32_X64: Target = Target {
         os: Os::Win32,

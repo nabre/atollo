@@ -158,9 +158,6 @@ fn database_of_before<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<S
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct File {
-    #[serde(default, skip_serializing)]
-    #[allow(dead_code)]
-    about: String,
     pieces: Vec<Piece>,
 }
 
@@ -285,11 +282,7 @@ pub fn save(kit: &Kit, mut pieces: Vec<Piece>) -> Result<(), Problem> {
             _ => Ok(()),
         }
     } else {
-        let json = serde_json::to_string_pretty(&File {
-            about: String::new(),
-            pieces: own,
-        })
-        .unwrap_or_default();
+        let json = serde_json::to_string_pretty(&File { pieces: own }).unwrap_or_default();
         fs::create_dir_all(kit.app_dir()).and_then(|()| write_atomic(&path, json.as_bytes()))
     };
     result.map_err(|e| ("Salvataggio non riuscito: {0}", vec![e.to_string()]))

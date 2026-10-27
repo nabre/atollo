@@ -39,7 +39,7 @@ pub use env::{
     EnvChange, ProjectDb,
 };
 pub(crate) use lock::db_json_lock;
-#[allow(unused_imports)] // the tests, here and elsewhere
+#[cfg(test)]
 pub use names::db_name;
 pub(crate) use names::{add_legacy_names, keep_legacy_names};
 pub use names::{check_name_free, is_reserved, is_valid_name, project_db_name};
@@ -47,7 +47,7 @@ pub use project::{
     add_project_used_line, drop_project, ensure_project_db, project_line, project_passwords,
     project_used_lines, set_project_line, try_project_password, try_project_passwords,
 };
-#[allow(unused_imports)] // the tests and callers on other branches
+#[cfg(test)]
 pub use project::{project_password, set_project_password};
 pub use scripts::{
     mysql_root_sql, project_drop_sql, project_sql, MONGO_ADMIN_JS, MONGO_DROP_JS, MONGO_FCV_JS,
