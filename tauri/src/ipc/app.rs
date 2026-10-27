@@ -118,32 +118,35 @@ pub(super) fn apply_env(state: &AppState) -> &'static str {
 /// Opens a folder of the kit in File Explorer: `agents` (shared
 /// instructions, skills, MCP), `models` (the local models, D-151),
 /// `diagnostics` (the zips of «Esporta diagnostica»), `projects` or one
-/// project.
+/// project. Off the window's thread: it creates the folder and starts
+/// File Explorer.
 #[tauri::command]
-pub fn folder_open<R: Runtime>(
+pub async fn folder_open<R: Runtime>(
     webview: Webview<R>,
-    state: State<'_, AppState>,
     which: String,
     project: Option<String>,
 ) -> CmdResult<()> {
     ensure_main(&webview)?;
-    let dir = match which.as_str() {
-        "agents" => state.kit.data().join("agents"),
-        "db" => state.kit.data().join("db"),
-        "models" => crate::llm::models_dir(&state.kit),
-        "diagnostics" => crate::diagnostics::dir(&state.kit),
-        // The kit's own folder (a copy imported, N-12).
-        "kit" => state.kit.root().to_path_buf(),
-        "backup" => {
-            let name = project.as_deref().ok_or("no project")?;
-            project_dir(&state.kit, Some(name), state.lang())?;
-            state.services.backup_dir(name).or_fail_chain("folder")?
-        }
-        "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
-        _ => return Err(format!("unknown folder: {which}").into()),
-    };
-    std::fs::create_dir_all(&dir).or_fail("folder")?;
-    crate::platform::jobs::open_with_explorer(&dir).or_fail_chain("explorer")
+    off_main(&webview, "folder", move |_, state| {
+        let dir = match which.as_str() {
+            "agents" => state.kit.data().join("agents"),
+            "db" => state.kit.data().join("db"),
+            "models" => crate::llm::models_dir(&state.kit),
+            "diagnostics" => crate::diagnostics::dir(&state.kit),
+            // The kit's own folder (a copy imported, N-12).
+            "kit" => state.kit.root().to_path_buf(),
+            "backup" => {
+                let name = project.as_deref().ok_or("no project")?;
+                project_dir(&state.kit, Some(name), state.lang())?;
+                state.services.backup_dir(name).or_fail_chain("folder")?
+            }
+            "projects" => project_dir(&state.kit, project.as_deref(), state.lang())?,
+            _ => return Err(format!("unknown folder: {which}").into()),
+        };
+        std::fs::create_dir_all(&dir).or_fail("folder")?;
+        crate::platform::jobs::open_with_explorer(&dir).or_fail_chain("explorer")
+    })
+    .await
 }
 
 /// «Esporta diagnostica»: the zip for a report of a problem, secrets

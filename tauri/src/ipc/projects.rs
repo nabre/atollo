@@ -28,23 +28,23 @@ pub async fn projects_list<R: Runtime>(
     .or_fail("projects")
 }
 
-/// A new empty project in `projects\`.
+/// A new empty project in `projects\`. Off the window's thread: it writes
+/// the project's files and reads the versions on disk of every language.
 #[tauri::command]
-pub fn project_create<R: Runtime>(
-    webview: Webview<R>,
-    state: State<'_, AppState>,
-    name: String,
-) -> CmdResult<String> {
+pub async fn project_create<R: Runtime>(webview: Webview<R>, name: String) -> CmdResult<String> {
     ensure_main(&webview)?;
-    let project = crate::projects::create(&state.kit, &name, state.lang()).map(|d| {
-        d.file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default()
-    })?;
-    // It keeps the newest version of each language: its code is written
-    // for those, newer ones installed later do not change it.
-    crate::versions::pin_newest(&state.kit, &project);
-    Ok(project)
+    off_main(&webview, "project", move |_, state| {
+        let project = crate::projects::create(&state.kit, &name, state.lang()).map(|d| {
+            d.file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default()
+        })?;
+        // It keeps the newest version of each language: its code is written
+        // for those, newer ones installed later do not change it.
+        crate::versions::pin_newest(&state.kit, &project);
+        Ok(project)
+    })
+    .await
 }
 
 /// What deleting a project takes away: its folder, its databases on the
