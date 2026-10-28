@@ -2,6 +2,7 @@
 
 ## Prossimo rilascio
 
+- **Creazione dei progetti Laravel**: gli script di Composer non hanno più il limite di 300 secondi; i kit di avvio di Laravel (React, Vue, Livewire) eseguono `npm install` e la build dentro `artisan install:features` e su un disco lento o in una cartella sincronizzata superavano il limite («exceeded the timeout of 300 seconds»).
 - **Account degli agenti per progetto** (D-185): ogni progetto sceglie, per Claude Code, Codex e Pi, l'account da usare nella sua sandbox («VM» → «Account degli agenti»). L'accesso si fa una volta nella sandbox e resta nel kit: lo usano tutti i progetti che scelgono lo stesso account, e non si perde con «Ricrea».
 - **Strumenti da tutti i file del progetto** (D-186): componenti e versioni si leggono a ogni profondità della cartella del progetto (non più solo nella radice e nei primi livelli), anche da `rust-toolchain.toml`, `.tool-versions` e `packageManager`; aprendo un progetto i file cambiati si applicano in background; nella creazione guidata si applicano le versioni dichiarate dai file del framework.
 
