@@ -31,7 +31,10 @@ fn databases_a_project_uses() {
             ("composer.json", "{}"),
         ],
     );
-    assert_eq!(databases(&laravel.0), BTreeSet::from(["mysql"]));
+    assert_eq!(
+        databases(&laravel.0, &walk::walk(&laravel.0)),
+        BTreeSet::from(["mysql"])
+    );
     let node = project(
         "db-node",
         &[(
@@ -39,13 +42,19 @@ fn databases_a_project_uses() {
             r#"{"dependencies":{"mongoose":"^8","better-sqlite3":"^11"}}"#,
         )],
     );
-    assert_eq!(databases(&node.0), BTreeSet::from(["mongodb", "sqlite"]));
+    assert_eq!(
+        databases(&node.0, &walk::walk(&node.0)),
+        BTreeSet::from(["mongodb", "sqlite"])
+    );
     // The npm driver of MariaDB: the kit's MySQL.
     let maria = project(
         "db-node-maria",
         &[("package.json", r#"{"dependencies":{"mariadb":"^3"}}"#)],
     );
-    assert_eq!(databases(&maria.0), BTreeSet::from(["mysql"]));
+    assert_eq!(
+        databases(&maria.0, &walk::walk(&maria.0)),
+        BTreeSet::from(["mysql"])
+    );
     let py = project(
         "db-py",
         &[
@@ -53,7 +62,10 @@ fn databases_a_project_uses() {
             ("data/app.sqlite3", ""),
         ],
     );
-    assert_eq!(databases(&py.0), BTreeSet::from(["mongodb", "sqlite"]));
+    assert_eq!(
+        databases(&py.0, &walk::walk(&py.0)),
+        BTreeSet::from(["mongodb", "sqlite"])
+    );
     // Words inside other names are not drivers.
     let none = project(
         "db-none",
@@ -62,7 +74,7 @@ fn databases_a_project_uses() {
             r#"{"dependencies":{"mysqlish-ui":"1","notmongodb":"1"}}"#,
         )],
     );
-    assert!(databases(&none.0).is_empty());
+    assert!(databases(&none.0, &walk::walk(&none.0)).is_empty());
     assert!(requires(&laravel.0).contains(&"mysql".to_owned()));
 }
 
@@ -188,4 +200,83 @@ fn quoting() {
     if cfg!(not(windows)) {
         assert_eq!(quote("it's"), r"'it'\''s'");
     }
+}
+
+/// D-186: the tools of every file count, at any depth, not only those of
+/// the root and its first folders.
+#[test]
+fn tools_are_found_at_any_depth() {
+    let p = project(
+        "deep",
+        &[
+            ("a/b/c/d/go.mod", "module x\n"),
+            ("a/b/c/d/e/Cargo.toml", "[package]\nname='x'\n"),
+            ("one/two/three/four/five/app.rb", "puts 1\n"),
+            ("svc/api/package.json", r#"{"packageManager":"pnpm@9.1.0"}"#),
+            (
+                "tools/.tool-versions",
+                "python 3.12.4\ngolang 1.22\nunknown 1\n",
+            ),
+            (
+                "x/y/rust-toolchain.toml",
+                "[toolchain]\nchannel = \"1.80\"\n",
+            ),
+        ],
+    );
+    let found = requires(&p.0);
+    for id in ["go", "rust", "ruby", "node", "pnpm", "python"] {
+        assert!(found.contains(&id.to_owned()), "{id}: {found:?}");
+    }
+    assert!(languages(&p.0).contains(&"Ruby".to_owned()));
+}
+
+/// What holds no sources is not read: dependencies, builds, the VM's and
+/// the editor's folders (every folder whose name starts with `.`).
+#[test]
+fn ignored_folders_are_not_read() {
+    let p = project(
+        "ignored",
+        &[
+            ("node_modules/pkg/Cargo.toml", ""),
+            ("vendor/bundle/ruby/x.rb", ""),
+            ("target/linux/debug/x.go", ""),
+            (".venv-linux/lib/x.py", ""),
+            (".git/hooks/x.php", ""),
+            ("src/.hidden/x.java", ""),
+        ],
+    );
+    assert!(requires(&p.0).is_empty(), "{:?}", requires(&p.0));
+}
+
+/// A link to a folder is never entered (D-77), at any depth.
+#[test]
+fn a_linked_folder_is_not_walked() {
+    use crate::platform::safe_path::tests::{junction, remove_junction};
+    let outside = project("link-target", &[("Cargo.toml", "")]);
+    let p = project("linked", &[("web/index.html", "")]);
+    let link = p.0.join("web").join("lib");
+    junction(&link, &outside.0);
+    let walk = walk::walk(&p.0);
+    assert_eq!(walk.files, ["web/index.html"]);
+    assert!(!requires(&p.0).contains(&"rust".to_owned()));
+    remove_junction(&link);
+}
+
+/// The budget stops a walk where it is, and the project says so; the
+/// files near the root are read first.
+#[test]
+fn a_walk_stops_at_its_budget() {
+    let mut files: Vec<(String, &str)> = (0..30).map(|i| (format!("deep/f{i}.txt"), "")).collect();
+    files.push(("go.mod".into(), "module x\n"));
+    let files: Vec<(&str, &str)> = files.iter().map(|(p, t)| (p.as_str(), *t)).collect();
+    let p = project("budget", &files);
+    let cut = walk::walk_with(&p.0, 10, walk::MAX_TIME);
+    assert!(cut.cut);
+    assert!(cut.files.contains(&"go.mod".to_owned()), "{:?}", cut.files);
+    let whole = walk::walk_with(&p.0, 1000, walk::MAX_TIME);
+    assert!(!whole.cut);
+    assert_eq!(whole.files.len(), 31);
+    assert_eq!(walk::depth("a/b/c"), 2);
+    assert_eq!(walk::name_of("a/b/c.txt"), "c.txt");
+    assert!(!detect(&p.0, "it").partial);
 }
