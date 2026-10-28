@@ -300,6 +300,7 @@ fn a_forwarder_outside_a_project_says_why() {
             restart_pending: false,
             linux_build: true,
             guest_tools: Vec::new(),
+            workspace: None,
         };
         Reply::refused(&crate::levels::decide(&req, &facts), "it")
     });

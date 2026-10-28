@@ -175,6 +175,7 @@ fn shapes(kit: &Kit) -> Vec<(Placement, Option<Terminal>)> {
                     restart_pending: false,
                     linux_build: true,
                     guest_tools: facts::guest_tools(kit),
+                    workspace: None,
                 };
                 out.push((decide(&req, &facts), terminal.clone()));
             }
@@ -689,7 +690,7 @@ fn pi_and_agy_get_their_own_folder_back_only_for_themselves() {
         let shop = kit.projects().join("shop");
         let placement = |program: VmProgram, level: Level| Placement::Vm {
             level,
-            project: "shop".into(),
+            project: Some("shop".into()),
             sandbox: crate::levels::Sandbox::Project {
                 name: crate::isolation::vm::name("shop"),
             },

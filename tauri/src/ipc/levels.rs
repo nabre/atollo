@@ -252,22 +252,23 @@ impl VmJob {
         match event {
             PrepareProgress::Begin {
                 project,
+                sandbox,
                 agent,
                 total,
-                ..
             } => {
+                let shown = project.clone().unwrap_or_else(|| sandbox.clone());
                 let title = match agent {
                     Some(agent) => t(
                         lang,
                         "Preparazione VM · {0} · {1}",
-                        &[project.as_str(), agent.id()],
+                        &[shown.as_str(), agent.id()],
                     ),
-                    None => t(lang, "Preparazione VM · {0}", &[&project]),
+                    None => t(lang, "Preparazione VM · {0}", &[&shown]),
                 };
                 *id = Some(jobs.add(
                     JobKind::VmPrepare,
                     title,
-                    Some(project),
+                    project,
                     Vec::new(),
                     JobState::Running,
                     true,

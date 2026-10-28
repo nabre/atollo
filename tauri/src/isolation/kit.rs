@@ -29,8 +29,11 @@ use crate::kit::Kit;
 pub enum Owner {
     /// A project of the kit.
     Project { project: String },
-    /// A kit terminal (its id) in a folder.
+    /// A kit terminal (its id) in a folder: an earlier Atollo's (D-168,
+    /// ended by D-178), removed.
     Terminal { terminal: String, dir: String },
+    /// A folder that is not a project, for its agents (D-187).
+    Folder { dir: String },
     /// The kit's tools sandbox, where the installers for the VM's Linux
     /// run (D-180, `install::guest`).
     Tools,
@@ -41,16 +44,18 @@ impl Owner {
         match self {
             Owner::Project { .. } => "project",
             Owner::Terminal { .. } => "terminal",
+            Owner::Folder { .. } => "folder",
             Owner::Tools => "tools",
         }
     }
 
-    /// The name shown: the project, the terminal and its folder, or the
-    /// kit's tools.
+    /// The name shown: the project, the terminal and its folder, the
+    /// folder, or the kit's tools.
     pub fn label(&self) -> String {
         match self {
             Owner::Project { project } => project.clone(),
             Owner::Terminal { terminal, dir } => format!("{terminal} · {dir}"),
+            Owner::Folder { dir } => dir.clone(),
             Owner::Tools => "tools".to_owned(),
         }
     }

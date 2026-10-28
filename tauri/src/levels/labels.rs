@@ -125,10 +125,10 @@ pub fn refusal_text(reason: &Refusal, lang: &str) -> String {
                 lang
             )
         ),
-        Refusal::AgentOutsideProject => t(
+        Refusal::FolderNotAllowed { dir } => t(
             lang,
-            "Gli agenti partono solo nella cartella di un progetto: apri il terminale nella cartella del progetto, o avvia l'agente dalla pagina del progetto.",
-            &[],
+            "La cartella {0} non può essere lo spazio di lavoro di una sandbox: è il kit, il profilo, una cartella di sistema, la radice di un disco, la cartella dei progetti o un collegamento. Avvia l'agente nella cartella di un progetto o in un'altra cartella.",
+            &[dir],
         ),
         Refusal::NoPathInVm { dir } => t(
             lang,

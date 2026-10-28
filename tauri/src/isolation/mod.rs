@@ -1266,6 +1266,108 @@ pub(crate) fn project_vm(
     })
 }
 
+/// The sandbox of the folder `dir` that is not a project (D-187), its
+/// canonical path as [`vm_workspace`] gave it: its workspace, `read_only`
+/// the kit's tools for Linux; `None` without the kit's `sbx`.
+pub(crate) fn folder_vm(kit: &Kit, host: &Host, dir: &Path, read_only: Vec<PathBuf>) -> Option<Vm> {
+    Some(Vm {
+        sbx: Sbx::find(kit, host)?,
+        host: host.clone(),
+        name: vm::folder_name(dir),
+        dir: dir.to_path_buf(),
+        read_only,
+        writable: Vec::new(),
+        kit: kit.clone(),
+        owner: kit::Owner::Folder {
+            dir: dir.display().to_string(),
+        },
+        tools: GuestTools::default(),
+        host_ports: Vec::new(),
+        gemini: false,
+    })
+}
+
+/// `dir` as the writable workspace of a folder's sandbox (D-187), when it
+/// may be one: its canonical path, the one to mount, so the folder checked
+/// is the folder the VM gets (D-168). What the VM writes there the PC must
+/// never run, so it is refused:
+///
+/// - when it or a folder above it is a link or a junction;
+/// - a drive's root;
+/// - anything in the kit or in the user's profile, or holding either (the
+///   kit's programs and launchers, the profile's start files, PowerShell
+///   profiles, `.ssh`, the agents' settings…, and the tools mounted
+///   read-only, reachable again through it): a project is a project's
+///   sandbox, never a folder's; `projects/` itself never;
+/// - the system's folders (Windows, Program Files, ProgramData; `/etc`,
+///   `/usr`…), or one holding them.
+///
+/// Elsewhere (`D:\Siti\shop`) it may.
+pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
+    if !dir.is_absolute() || dir.ancestors().any(crate::platform::safe_path::is_link) {
+        return None;
+    }
+    let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));
+    let dir = canon(dir)?;
+    dir.parent()?;
+    let profile = host
+        .get("CP_USER_PROFILE")
+        .or(host.get("USERPROFILE"))
+        .or(host.get("HOME"))
+        .map(PathBuf::from);
+    let mut guarded: Vec<PathBuf> = [Some(kit.root().to_path_buf()), profile]
+        .into_iter()
+        .flatten()
+        .collect();
+    if kit.target().is_windows() {
+        guarded.extend(
+            [
+                "SystemRoot",
+                "ProgramFiles",
+                "ProgramFiles(x86)",
+                "ProgramData",
+            ]
+            .iter()
+            .filter_map(|v| host.get(v))
+            .map(PathBuf::from),
+        );
+    } else {
+        guarded.extend(
+            [
+                "/bin",
+                "/boot",
+                "/etc",
+                "/lib",
+                "/lib64",
+                "/opt",
+                "/sbin",
+                "/usr",
+                "/var",
+                "/Applications",
+                "/Library",
+                "/System",
+            ]
+            .iter()
+            .map(PathBuf::from),
+        );
+    }
+    let near = guarded
+        .iter()
+        .filter_map(|p| canon(p))
+        .any(|p| dir.starts_with(&p) || p.starts_with(&dir));
+    (!near).then_some(dir)
+}
+
+/// A canonical Windows path without its `\\?\` (`D:\a`, as `sbx` and the
+/// user write it); a network one (`\\?\UNC\…`) and the others as they are.
+fn plain(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    match text.strip_prefix(r"\\?\") {
+        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => PathBuf::from(rest),
+        _ => path.to_path_buf(),
+    }
+}
+
 /// The kit's tools sandbox (D-180, `install::guest`): `dir` (the kit's
 /// `data/apps/<linux>`) its workspace, `writable` more folders it may
 /// change (`data/npm-global`); `None` without the kit's `sbx`. It runs the
@@ -1658,12 +1760,17 @@ pub fn watch_pi_port(vm: Vm, env: KitEnv, project: String, port: u16, db_ports: 
 /// The kit's tools for the VM's Linux in `project`, at the lines it chose
 /// (D-170), sealed and without the agents, as on the PC
 /// (`levels::env::pc_environment` on `guest`), then [`guest_view`].
-pub fn project_guest_tools(kit: &Kit, guest: &Kit, project: &str, base: KitEnv) -> GuestTools {
+pub fn project_guest_tools(
+    kit: &Kit,
+    guest: &Kit,
+    project: Option<&str>,
+    base: KitEnv,
+) -> GuestTools {
     let env = crate::levels::env::pc_environment(
         guest,
         base,
         crate::levels::Level::Project,
-        Some(project),
+        project,
         None,
     );
     guest_view(kit, guest, &env)
@@ -1865,7 +1972,7 @@ impl Vm {
             kit::Owner::Project { project } => {
                 crate::projects::settings::load(&self.kit, project).github_in_vm
             }
-            kit::Owner::Terminal { .. } | kit::Owner::Tools => false,
+            kit::Owner::Terminal { .. } | kit::Owner::Folder { .. } | kit::Owner::Tools => false,
         };
         github_for_sandbox(&self.kit, &self.sbx, &self.host, env, &self.name, wanted);
     }

@@ -45,6 +45,7 @@ fn facts_of(kit: &Kit, req: &Request, on: bool) -> Facts {
         restart_pending: false,
         linux_build: false,
         guest_tools: crate::levels::facts::guest_tools(kit),
+        workspace: None,
     }
 }
 
@@ -400,7 +401,7 @@ fn a_vms_preparation_is_a_job() {
     vm.tell(
         &jobs,
         PrepareProgress::Begin {
-            project: "shop".into(),
+            project: Some("shop".into()),
             sandbox: "atollo-p-shop".into(),
             agent: None,
             total: 3,
@@ -455,7 +456,7 @@ fn a_vms_preparation_is_a_job() {
     vm.tell(
         &jobs,
         PrepareProgress::Begin {
-            project: "shop".into(),
+            project: Some("shop".into()),
             sandbox: "atollo-a-claude-shop".into(),
             agent: Some(crate::levels::Agent::Claude),
             total: 3,

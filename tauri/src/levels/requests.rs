@@ -405,7 +405,10 @@ fn vm_reply(kit: &Kit, ready: &Ready, args: &[String], lang: &str) -> Result<Rep
         Some(vm),
         Environment::Vm { sbx_env, .. },
         Placement::Vm {
-            project, program, ..
+            project,
+            sandbox,
+            program,
+            ..
         },
     ) = (&ready.vm, &ready.env, &ready.placement)
     else {
@@ -429,7 +432,9 @@ fn vm_reply(kit: &Kit, ready: &Ready, args: &[String], lang: &str) -> Result<Rep
         env,
     );
     if let VmProgram::Agent { agent: Agent::Pi } = program {
-        reply.marker = Some(format!("{project}.pi"));
+        // A folder's sandbox has no project: its sandbox names it (D-187).
+        let owner = project.as_deref().unwrap_or(sandbox.name());
+        reply.marker = Some(format!("{owner}.pi"));
     }
     Ok(reply)
 }

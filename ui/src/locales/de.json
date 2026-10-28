@@ -1162,5 +1162,6 @@
   "lavoro": "Arbeit",
   "Nuovo account…": "Neues Konto…",
   "Nessun account separato: usa l'accesso fatto nella sandbox del progetto.": "Keine getrennten Konten: Es nutzt die Anmeldung in der Sandbox des Projekts.",
-  "Un cambio vale dalla prossima sessione dell'agente. L'account usato prima resta montato nella sandbox fino a «Ricrea».": "Eine Änderung gilt ab der nächsten Sitzung des Agenten. Das vorher genutzte Konto bleibt bis „Neu erstellen“ in der Sandbox eingehängt."
+  "Un cambio vale dalla prossima sessione dell'agente. L'account usato prima resta montato nella sandbox fino a «Ricrea».": "Eine Änderung gilt ab der nächsten Sitzung des Agenten. Das vorher genutzte Konto bleibt bis „Neu erstellen“ in der Sandbox eingehängt.",
+  "Cartella {0}": "Ordner {0}"
 }

@@ -1251,10 +1251,10 @@ export const SERVICES: TopicTexts = {
             "Das Terminal „Alle Werkzeuge“ ist immer bereit; du kannst eigene mit ausgewählten Werkzeugen und Versionen erstellen.",
           ),
           tr(
-            "I terminali del kit girano sempre sul PC (livello 1, etichetta «PC»), con o senza VM. Scrivendo claude, codex, pi o agy nella cartella di un progetto, l'agente si apre nella VM del progetto: gli agenti non girano mai sul PC.",
-            "The kit's terminals always run on the PC (level 1, label “PC”), with or without the VM. Typing claude, codex, pi or agy in a project's folder opens the agent in the project's VM: the agents never run on the PC.",
-            "Les terminaux du kit tournent toujours sur le PC (niveau 1, étiquette « PC »), avec ou sans VM. En tapant claude, codex, pi ou agy dans le dossier d'un projet, l'agent s'ouvre dans la VM du projet : les agents ne tournent jamais sur le PC.",
-            "Die Terminals des Kits laufen immer auf dem PC (Ebene 1, Beschriftung „PC“), mit oder ohne VM. Tippst du claude, codex, pi oder agy im Ordner eines Projekts, öffnet sich der Agent in der VM des Projekts: Die Agenten laufen nie auf dem PC.",
+            "I terminali del kit girano sempre sul PC (livello 1, etichetta «PC»), con o senza VM. Scrivendo claude, codex, pi o agy l'agente si apre nella VM: nella sandbox del progetto, o in un'altra cartella nella sandbox di quella cartella. Gli agenti non girano mai sul PC.",
+            "The kit's terminals always run on the PC (level 1, label “PC”), with or without the VM. Typing claude, codex, pi or agy opens the agent in the VM: in the project's sandbox, or in another folder in that folder's sandbox. The agents never run on the PC.",
+            "Les terminaux du kit tournent toujours sur le PC (niveau 1, étiquette « PC »), avec ou sans VM. En tapant claude, codex, pi ou agy, l'agent s'ouvre dans la VM : dans la sandbox du projet, ou dans un autre dossier dans la sandbox de ce dossier. Les agents ne tournent jamais sur le PC.",
+            "Die Terminals des Kits laufen immer auf dem PC (Ebene 1, Beschriftung „PC“), mit oder ohne VM. Tippst du claude, codex, pi oder agy, öffnet sich der Agent in der VM: in der Sandbox des Projekts oder, in einem anderen Ordner, in der Sandbox dieses Ordners. Die Agenten laufen nie auf dem PC.",
           ),
         ]}
       />
@@ -1330,10 +1330,10 @@ export const SERVICES: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "claude, codex, pi e agy scritti qui, nella cartella di un progetto, aprono l'agente nella VM di quel progetto, nello stesso terminale. Fuori da un progetto, o senza VM, dicono perché ed escono. Lo stesso fanno il pulsante dell'agente nella pagina del progetto e il suo profilo nell'editor.",
-              "claude, codex, pi and agy typed here, in a project's folder, open the agent in that project's VM, in the same terminal. Outside a project, or without the VM, they say why and exit. The agent's button on the project's page and its profile in the editor do the same.",
-              "claude, codex, pi et agy tapés ici, dans le dossier d'un projet, ouvrent l'agent dans la VM de ce projet, dans le même terminal. Hors d'un projet, ou sans VM, ils disent pourquoi et s'arrêtent. Le bouton de l'agent sur la page du projet et son profil dans l'éditeur font de même.",
-              "claude, codex, pi und agy, hier im Ordner eines Projekts getippt, öffnen den Agenten in der VM dieses Projekts, im selben Terminal. Außerhalb eines Projekts oder ohne VM sagen sie warum und beenden sich. Dasselbe tun die Schaltfläche des Agenten auf der Seite des Projekts und sein Profil im Editor.",
+              "claude, codex, pi e agy scritti qui aprono l'agente nella VM, nello stesso terminale: nella cartella di un progetto nella sandbox del progetto, in un'altra cartella nella sandbox di quella cartella. Senza VM, o nel kit, nel profilo, in una cartella di sistema o nella radice di un disco, dicono perché ed escono. Lo stesso fanno il pulsante dell'agente nella pagina del progetto e il suo profilo nell'editor.",
+              "claude, codex, pi and agy typed here open the agent in the VM, in the same terminal: in a project's folder in the project's sandbox, in another folder in that folder's sandbox. Without the VM, or in the kit, the profile, a system folder or a drive's root, they say why and exit. The agent's button on the project's page and its profile in the editor do the same.",
+              "claude, codex, pi et agy tapés ici ouvrent l'agent dans la VM, dans le même terminal : dans le dossier d'un projet, dans la sandbox du projet ; dans un autre dossier, dans la sandbox de ce dossier. Sans VM, ou dans le kit, le profil, un dossier système ou la racine d'un disque, ils disent pourquoi et s'arrêtent. Le bouton de l'agent sur la page du projet et son profil dans l'éditeur font de même.",
+              "claude, codex, pi und agy, hier getippt, öffnen den Agenten in der VM, im selben Terminal: im Ordner eines Projekts in der Sandbox des Projekts, in einem anderen Ordner in der Sandbox dieses Ordners. Ohne VM oder im Kit, im Profil, in einem Systemordner oder im Stammverzeichnis eines Laufwerks sagen sie warum und beenden sich. Dasselbe tun die Schaltfläche des Agenten auf der Seite des Projekts und sein Profil im Editor.",
             ),
             tr(
               "Anche il terminale di un progetto («Terminale» nella sua pagina) gira sul PC, con o senza la VM, con le versioni del progetto e l'ambiente sigillato del kit; nella VM vanno solo gli agenti.",

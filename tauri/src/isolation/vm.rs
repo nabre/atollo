@@ -31,12 +31,18 @@ pub const NAME_MAX: usize = 63 - "-swap-".len() - 8;
 /// and so never a workspace (`My Shop` and `my-shop` look the same, their
 /// hashes not).
 fn tagged(head: &str, project: &str) -> String {
-    let hash = Sha256::digest(project.as_bytes());
+    tagged_as(head, project, project)
+}
+
+/// [`tagged`] with the readable part from `shown` and the hash of `exact`
+/// (a folder: its name, and its whole path).
+fn tagged_as(head: &str, shown: &str, exact: &str) -> String {
+    let hash = Sha256::digest(exact.as_bytes());
     // 96 bits: no name chosen on purpose (a cloned repository's) reaches
     // another project's sandbox by brute force.
     let hex = crate::common::hex(&hash[..12]);
     let room = NAME_MAX.saturating_sub(head.len() + hex.len() + 1);
-    let slug: String = project
+    let slug: String = shown
         .chars()
         .map(|c| {
             if c.is_ascii_alphanumeric() || c == '.' || c == '-' {
@@ -58,6 +64,20 @@ fn tagged(head: &str, project: &str) -> String {
 /// The sandbox of `project`: `atollo-p-<project>-<hash>`.
 pub fn name(project: &str) -> String {
     tagged(&format!("{PREFIX}p-"), project)
+}
+
+/// The prefix of the sandboxes of folders that are not projects (D-187).
+pub const FOLDER_PREFIX: &str = "atollo-f-";
+
+/// The sandbox of the folder `dir` (its canonical path, checked by
+/// `isolation::vm_workspace`): `atollo-f-<folder's name>-<hash of the
+/// path>`, so two folders of the same name never share one (D-187).
+pub fn folder_name(dir: &std::path::Path) -> String {
+    let shown = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    tagged_as(FOLDER_PREFIX, &shown, &dir.to_string_lossy())
 }
 
 /// The prefix of the sandboxes an earlier Atollo made for the kit's

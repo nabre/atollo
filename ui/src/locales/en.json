@@ -1162,5 +1162,6 @@
   "lavoro": "work",
   "Nuovo account…": "New account…",
   "Nessun account separato: usa l'accesso fatto nella sandbox del progetto.": "No separate accounts: it uses the sign-in made in the project's sandbox.",
-  "Un cambio vale dalla prossima sessione dell'agente. L'account usato prima resta montato nella sandbox fino a «Ricrea».": "A change applies from the agent's next session. The account used before stays mounted in the sandbox until “Recreate”."
+  "Un cambio vale dalla prossima sessione dell'agente. L'account usato prima resta montato nella sandbox fino a «Ricrea».": "A change applies from the agent's next session. The account used before stays mounted in the sandbox until “Recreate”.",
+  "Cartella {0}": "Folder {0}"
 }

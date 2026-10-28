@@ -58,10 +58,10 @@ pub trait Effects {
 /// A step of `prepare` for the interface (LEVELS.md §8.6).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PrepareProgress {
-    /// The preparation of `sandbox` (`project`'s, or its `agent`'s) begins,
-    /// in `total` steps.
+    /// The preparation of `sandbox` (`project`'s, or a folder's: `None`)
+    /// begins, in `total` steps.
     Begin {
-        project: String,
+        project: Option<String>,
         sandbox: String,
         agent: Option<Agent>,
         total: usize,
@@ -295,7 +295,7 @@ fn in_vm(
     // 1. The kit's tools for the VM's Linux, at the project's lines (D-170),
     //    installed when missing; the agent's own build for its session.
     step("Strumenti per il Linux della VM");
-    let wanted = wanted_tools(kit, project, Some(program), needs);
+    let wanted = wanted_tools(kit, project.as_deref(), Some(program), needs);
     let guest = vm::guest_target(kit.target()).map(|t| kit.for_target(t));
     if let Some(guest) = &guest {
         fx.ensure_guest_tools(guest, &wanted);
@@ -319,26 +319,30 @@ fn in_vm(
     // Read again after the installs: a tool installed now is on its PATH,
     // after the sandbox's read-only `atollo` and the stand-ins of the
     // agents this session does not run (§8.4, §6.10).
-    let mut tools = super::env::guest_tools(kit, *level, project, program, lang, host);
+    let mut tools = super::env::guest_tools(kit, *level, project.as_deref(), program, lang, host);
     let first = guest_path_entries(kit, sandbox.name(), program.agent());
     tools.path.splice(0..0, first);
     // 2. The databases on the PC's servers, their ports, `db.env` (D-171).
     let mut dbs = Vec::new();
-    if access.databases {
+    if let (true, Some(project)) = (access.databases, project.as_deref()) {
         step("Database del progetto");
         dbs = fx.start_databases(project)?;
         let file = isolation::kit::dir(kit, &vm::name(project)).join(DB_ENV);
         tools.env_file = write_db_env(&file, &mounts.workspace_rw, &dbs)?;
     }
     let db_ports: Vec<u16> = dbs.iter().map(|(_, port)| *port).collect();
-    // 3. The sandbox of the placement.
-    let vm = isolation::project_vm(
-        kit,
-        host,
-        project,
-        &mounts.workspace_rw,
-        mounts.tools_ro.clone(),
-    )
+    // 3. The sandbox of the placement: the project's, or the folder's
+    //    (D-187).
+    let vm = match project {
+        Some(project) => isolation::project_vm(
+            kit,
+            host,
+            project,
+            &mounts.workspace_rw,
+            mounts.tools_ro.clone(),
+        ),
+        None => isolation::folder_vm(kit, host, &mounts.workspace_rw, mounts.tools_ro.clone()),
+    }
     .ok_or_else(|| anyhow!(t(lang, "Docker Sandboxes (sbx) non è nel kit.", &[])))?;
     anyhow::ensure!(
         vm.name == sandbox.name(),
@@ -377,10 +381,13 @@ fn in_vm(
             agent: Agent::Antigravity
         }
     );
-    // 6. The agent's account the project chose (D-185): its folder in the
-    //    kit, read-write in this sandbox, and the agent pointed at it.
+    // 6. The agent's account the project chose (D-185), a folder's the
+    //    default one (D-187): its folder in the kit, read-write in this
+    //    sandbox, and the agent pointed at it.
     if let VmProgram::Agent { agent } = program {
-        if let Some((dir, var)) = crate::agents::accounts::for_session(kit, project, *agent)? {
+        if let Some((dir, var)) =
+            crate::agents::accounts::for_session(kit, project.as_deref(), *agent)?
+        {
             let guest = vm::guest_path(kit.target().is_windows(), &dir)
                 .ok_or_else(|| anyhow!("{}: no path in the VM", dir.display()))?;
             tools.vars.push((var.to_owned(), guest));
@@ -395,7 +402,10 @@ fn in_vm(
     step("Avvio la VM");
     fx.start_sandbox(&vm, sbx_env, lang)?;
     if let Some(port) = watched {
-        fx.watch_local_models(&vm, sbx_env, project, port, &db_ports);
+        let owner = project
+            .clone()
+            .unwrap_or_else(|| mounts.workspace_rw.display().to_string());
+        fx.watch_local_models(&vm, sbx_env, &owner, port, &db_ports);
     }
     let env = Environment::Vm {
         sbx_env: sbx_env.clone(),
@@ -407,11 +417,12 @@ fn in_vm(
 /// The kit's tools for `project`'s VM running `program`: those the kit
 /// chose (`editor::terminals::chosen_tools`), what the program needs
 /// (`needs`; the agent's own build for an agent's session), at the lines the
-/// project chose (`versions::project_choice`). `program`: `None` for the
-/// sandbox's tools alone («Verifica strumenti» before a session).
+/// project chose (`versions::project_choice`; a folder's sandbox, `None`,
+/// the kit's lines, D-187). `program`: `None` for the sandbox's tools alone
+/// («Verifica strumenti» before a session).
 pub fn wanted_tools(
     kit: &Kit,
-    project: &str,
+    project: Option<&str>,
     program: Option<&VmProgram>,
     needs: &[String],
 ) -> BTreeMap<String, Option<String>> {
@@ -423,7 +434,10 @@ pub fn wanted_tools(
     for id in needs.iter().map(String::as_str).chain(own) {
         wanted.entry(id.to_owned()).or_insert(None);
     }
-    for (id, line) in crate::versions::project_choice(kit, project) {
+    for (id, line) in project
+        .map(|p| crate::versions::project_choice(kit, p))
+        .unwrap_or_default()
+    {
         wanted.insert(id, Some(line));
     }
     wanted
@@ -565,7 +579,8 @@ pub struct SandboxInfo {
     pub v: u32,
     pub level: Level,
     pub sandbox: String,
-    pub project: String,
+    /// The project, `None` for a folder's sandbox (D-187).
+    pub project: Option<String>,
     /// The agent of an agent's placement.
     pub agent: Option<Agent>,
     /// The working folder in the VM.
@@ -643,7 +658,9 @@ impl SandboxInfo {
         let label = super::labels::label_text(super::labels::LevelLabel::AgentVm, lang);
         let mut out = vec![format!("Atollo · {label}")];
         out.push(t(lang, "Sandbox: {0}", &[&self.sandbox]));
-        out.push(t(lang, "Progetto: {0}", &[&self.project]));
+        if let Some(project) = &self.project {
+            out.push(t(lang, "Progetto: {0}", &[project]));
+        }
         if let Some(agent) = self.agent {
             out.push(t(lang, "Agente: {0}", &[agent.name()]));
         }
