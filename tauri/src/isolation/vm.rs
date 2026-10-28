@@ -354,10 +354,22 @@ pub const TOOLS_FIRST: &str = concat!(
 /// not there, and `Rscript` cannot ask to make it.
 pub const MAKE_HOMES: &str = r#"mkdir -p "$R_LIBS_USER" 2>/dev/null"#;
 
+/// The project's Python environment for the VM's Linux (D-188): when the
+/// session names it (`ATOLLO_VENV`, `projects::envs::vm_vars`), made empty
+/// with the kit's `uv` if it is not there yet, then first on the `PATH`
+/// with `VIRTUAL_ENV`. Nothing of the project runs; a failure leaves the
+/// session as it is.
+pub const LOCAL_ENV: &str = concat!(
+    r#"if [ -n "$ATOLLO_VENV" ]; then "#,
+    r#"[ -d "$ATOLLO_VENV" ] || { command -v uv >/dev/null 2>&1 && uv venv -q "$ATOLLO_VENV" >/dev/null 2>&1; }; "#,
+    r#"[ -f "$ATOLLO_VENV/pyvenv.cfg" ] && { VIRTUAL_ENV="$ATOLLO_VENV"; PATH="$ATOLLO_VENV/bin:$PATH"; export VIRTUAL_ENV PATH; }; "#,
+    "fi"
+);
+
 /// The start of a session's shell line in the VM: [`TOOLS_FIRST`], then
-/// [`MAKE_HOMES`].
+/// [`MAKE_HOMES`], then [`LOCAL_ENV`].
 pub fn session_start() -> String {
-    format!("{TOOLS_FIRST}; {MAKE_HOMES}")
+    format!("{TOOLS_FIRST}; {MAKE_HOMES}; {LOCAL_ENV}")
 }
 
 /// Where the user's own installations go in the VM (D-181): the kit's

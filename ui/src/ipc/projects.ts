@@ -64,7 +64,13 @@ export interface ProjectInfo {
   };
   /** Editor extensions of its languages, then those added by hand. */
   extensions: ProjectExtension[];
+  /** Its Python environment (`.venv`, D-188); null when it is not a Python
+   * project. */
+  localEnv?: LocalEnv | null;
 }
+
+/** Where a project's `.venv` is (tauri/src/projects/envs.rs). */
+export type LocalEnv = { state: "ready" } | { state: "missing" } | { state: "failed"; reason: string };
 
 /** An editor extension of a project (tauri/src/editor/ext.rs). */
 export interface ProjectExtension {

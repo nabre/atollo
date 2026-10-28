@@ -264,7 +264,21 @@ fn the_users_own_installations_go_to_the_vms_home() {
     // Only variables: «Verifica strumenti» reads only; a session makes R's
     // library.
     assert!(!TOOLS_FIRST.contains("mkdir") && !TOOLS_FIRST.contains('>'));
-    assert_eq!(session_start(), format!("{TOOLS_FIRST}; {MAKE_HOMES}"));
+    assert_eq!(
+        session_start(),
+        format!("{TOOLS_FIRST}; {MAKE_HOMES}; {LOCAL_ENV}")
+    );
+}
+
+/// A session makes the project's Linux venv only when it names one, with
+/// the kit's uv, quietly, and uses it only once it is there (D-188).
+#[test]
+fn a_session_makes_and_uses_the_linux_venv() {
+    assert!(LOCAL_ENV.starts_with(r#"if [ -n "$ATOLLO_VENV" ]; then"#));
+    assert!(LOCAL_ENV.contains(r#"uv venv -q "$ATOLLO_VENV""#));
+    assert!(LOCAL_ENV.contains(r#"[ -f "$ATOLLO_VENV/pyvenv.cfg" ]"#));
+    assert!(LOCAL_ENV.contains(r#"PATH="$ATOLLO_VENV/bin:$PATH""#));
+    assert!(!LOCAL_ENV.contains("sync") && !LOCAL_ENV.contains("pip"));
 }
 
 /// The project's database stays on the PC (D-171): its sandbox, and it

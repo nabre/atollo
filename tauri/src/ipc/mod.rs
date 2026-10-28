@@ -308,6 +308,23 @@ fn settle_project<R: Runtime>(
         }
     }
     crate::versions::pin_newest(kit, project);
+    local_env(app, kit, project, dir);
+}
+
+/// The project's Python environment (D-188), made empty when it is a
+/// Python project without one, with its own sealed environment on the PC
+/// at its lines. Called off the window's thread; a failure only goes to
+/// the log and to the project's page (`ProjectInfo.local_env`).
+fn local_env<R: Runtime>(app: &AppHandle<R>, kit: &Kit, project: &str, dir: &std::path::Path) {
+    let base = tauri::Manager::state::<AppState>(app).env();
+    let env = crate::levels::env::pc_environment(
+        kit,
+        base,
+        crate::levels::Level::Project,
+        Some(project),
+        None,
+    );
+    crate::projects::envs::ensure_pc_now(kit, dir, &env);
 }
 
 /// A project opened (its page asks its status): when what its files need or
@@ -363,6 +380,8 @@ pub(super) fn settle_when_changed<R: Runtime>(
         };
         if changed {
             settle_project(&app, &task, &kit, lang, &project, &dir);
+        } else {
+            local_env(&app, &kit, &project, &dir);
         }
         BUSY.lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

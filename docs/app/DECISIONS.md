@@ -1979,3 +1979,27 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
   - Le sandbox delle cartelle compaiono nell'elenco delle VM («Cartella …») e si rimuovono da lì.
 - **Non coperto.** Nessuna scelta d'account per cartella (sempre `default`), nessun rapporto «VM» né `atollo vm` per una cartella (vogliono un progetto), nessun pulsante dell'agente nella pagina Terminali: si scrive il comando nel terminale.
 - **Prove.** `test/rust/levels/decide.rs` (`r4_an_agent_needs_a_folder_that_may_be_a_workspace`, `r8_an_agent_in_a_folder_gets_the_folders_sandbox`, ogni richiesta una sola regola anche con `workspace`), `test/rust/isolation/vm.rs` (`a_folders_sandbox_is_named_after_it`), `test/rust/isolation/mod.rs` (`a_folder_may_be_a_workspace_away_from_the_kit_and_the_profile`, l'elenco con una sandbox di cartella), `test/rust/levels/prepare.rs` (`a_folders_sandbox_has_no_project`), `test/rust/agents/accounts.rs` (l'account `default` di una cartella), `test/rust/levels/requests.rs` (una cartella del kit rifiutata).
+
+## D-188 Ambienti locali dei progetti: `.venv` e simili nella cartella del progetto
+
+- **Richiesta dell'utente** (28/10/2026): «analizza tutti gli strumenti e dove è possibile crea un ambiente locale; per esempio .venv per python»; «quando scarichi e installi gli strumenti, devono sempre essere pensati anche per la VM quando necessario».
+- **Prima.** Atollo rilevava un `.venv` (`detect/python.rs`) e proponeva le azioni per crearlo, ma non lo creava né lo metteva sul `PATH`; nessuna variabile per Ruby, Rust nella VM o Julia; nella VM `isolation::guest_view` passava solo i percorsi del kit montati.
+- **Scelta** (`projects/envs.rs`). Una ricetta per strumento, letta dai file della cartella del progetto (l'ambiente è quello della radice), con una cartella per sistema dove il contenuto è nativo:
+
+  | Strumento | Sul PC | Nella sandbox degli agenti |
+  | --- | --- | --- |
+  | Python | `.venv`, creato vuoto da Atollo | `.venv-linux`, creato vuoto dalla sessione |
+  | Ruby | `BUNDLE_PATH=vendor/bundle` | `BUNDLE_PATH=vendor/bundle-linux` |
+  | Rust | `target/` di Cargo | `CARGO_TARGET_DIR=target/linux` |
+  | Julia | `JULIA_PROJECT=@.` | `JULIA_PROJECT=@.` |
+  | R | renv, cache nel kit (`RENV_PATHS_CACHE`) | renv, cache nella home della VM |
+  | Node.js | `node_modules` unico | lo stesso: un modulo nativo compilato sul PC va ricompilato nella sandbox (`npm rebuild`) prima che un agente lo usi |
+  | PHP | `vendor/` | lo stesso (non è nativo) |
+  | Go, Java, Kotlin, .NET, Dart, Deno, Bun, Zig, Typst | cache condivise del kit (`env::langs`) | quelle della home della VM |
+  | Android, TinyTeX, server, agenti | non si applica | non si applica |
+
+  - **PC.** `levels::env::pc_environment` aggiunge il passo 3b dopo le linee del progetto (`envs::apply_pc`): `.venv\Scripts` (o `.venv/bin`) primo sul `PATH` e `VIRTUAL_ENV`, solo se il `.venv` esiste; le variabili di Ruby, Julia, R. Vale per i livelli 1 e 2 (terminali, azioni, task).
+  - **Creazione.** In background, mai sul thread della finestra: dopo la clonazione e la creazione dal wizard (`ipc::settle_project`) e all'apertura della pagina del progetto (`settle_when_changed`, anche senza cambiamenti). Con l'ambiente sigillato del progetto alle sue linee: `uv venv .venv`, o `python -m venv .venv` senza uv. **Vuoto**: installare le dipendenze (`uv sync`, `pip install`, `bundle install`) esegue il codice dei pacchetti, e aprire un progetto clonato non lo fa mai; resta un'azione dell'utente. Un errore va nel log e nella pagina (`ProjectInfo.localEnv`: `ready`, `missing`, `failed` con il motivo). In un repository Git `/.venv/` e `/.venv-linux/` vanno nel `.gitignore`.
+  - **VM.** `isolation::project_guest_tools` aggiunge `envs::vm_vars`: solo percorsi sotto la cartella del progetto, quella che la sandbox monta in scrittura, mai un altro percorso del PC. Ogni sessione nella VM (`vm::LOCAL_ENV` in `session_start`) crea `.venv-linux` vuoto con l'`uv` del kit se manca e lo mette primo sul `PATH` con `VIRTUAL_ENV`; se uv deve scaricare un Python, la rete è quella della sandbox; un errore lascia la sessione com'è.
+  - Il rilevamento (D-186) non entra in `.venv-linux`, `vendor/bundle-linux` e `target/linux`: cartelle nascoste o dentro `vendor` e `target`, già escluse.
+- **Prove.** `test/rust/projects/envs.rs` (strumenti dai file, `.venv` sul PC solo se esiste e idempotente, variabili di Ruby, Julia, R, nella VM solo percorsi del progetto, `uv venv` o `python -m venv` e mai `uv sync`, creazione una volta, errore nella pagina, `.gitignore`); `test/rust/levels/rule.rs` (`projects/envs.rs` nominato fra i programmi del kit).

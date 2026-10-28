@@ -7,7 +7,8 @@
 //!
 //! Each step of the PC's environment is a function of its own, in the
 //! order of §3.5: [`crate::editor::terminals::apply_tools`] (a user
-//! terminal's lines and tools), [`project_lines`], [`seal`],
+//! terminal's lines and tools), [`project_lines`], the project's local
+//! environments ([`crate::projects::envs::apply_pc`], D-188), [`seal`],
 //! [`strip_agents`], [`forward_first`], [`mark`].
 
 use std::path::PathBuf;
@@ -157,6 +158,9 @@ pub fn pc_environment(
     //    chose, the terminal's for the others).
     if let Some(project) = project {
         project_lines(kit, project, &lines, &mut env);
+        // 3b. Its local environments (D-188): `.venv` first, Ruby's and
+        //     Julia's variables.
+        crate::projects::envs::apply_pc(kit, &kit.projects().join(project), &mut env);
     }
     seal(kit, level, project, &mut env);
     strip_agents(kit, &mut env);

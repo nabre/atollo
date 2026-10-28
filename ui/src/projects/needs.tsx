@@ -92,6 +92,15 @@ export function Needs({ p, onChanged }: { p: ProjectInfo; onChanged: () => void 
             })}
           </List>
         )}
+        {p.localEnv && (
+          <p className="text-vsc-desc">
+            {p.localEnv.state === "ready"
+              ? t("Ambiente Python: .venv pronto.")
+              : p.localEnv.state === "missing"
+                ? t("Ambiente Python: .venv in preparazione.")
+                : t("Ambiente Python: .venv non creato: {0}", p.localEnv.reason)}
+          </p>
+        )}
         <ErrorLine error={error} />
       </EditorSection>
       <EditorSection id="need-why" title={t("Come è stato riconosciuto")}>
