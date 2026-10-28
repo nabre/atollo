@@ -42,6 +42,10 @@ pub struct ProjectSettings {
     /// the user there. Off unless the user turns it on for this project.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub github_in_vm: bool,
+    /// The account of each agent (its id) the project uses in its sandbox
+    /// (`agents::accounts`, D-185); missing = the default one.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub agent_accounts: BTreeMap<String, String>,
     #[serde(flatten)]
     pub other: serde_json::Map<String, serde_json::Value>,
 }

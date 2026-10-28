@@ -10,6 +10,8 @@ Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide
 
 > **D-184 (28/10/2026): one sandbox per project.** Every agent (Claude Code, Codex, Pi, Antigravity) runs in the project's sandbox `atollo-p-…` with the kit's build for the VM's Linux (`VmProgram::Agent`, `vm::agent_session_args`); `sbx`'s own agent sandboxes `atollo-a-…` are gone (those of an earlier Atollo are removed at the first status). `Origin::Sandbox` (`VmProgram::Tools`) is the sandbox itself for «Verifica strumenti», «Riavvia», «Ricrea», «Aggiorna». `decide` has eight rules (§3.4); the labels are «PC» and «Agente · VM» (§8.3).
 
+> **D-185 (28/10/2026): per-project agent accounts.** Each agent's sign-in is a named account in the kit (`data/accounts/<agent>/<name>/`); the project picks one per agent, and its sandbox mounts only that folder, read-write, for that agent's session (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_CODING_AGENT_DIR`). It is the one exception to I5 (§11): the agent's own credentials, only those the project chose, only in its sandbox. Antigravity has no accounts.
+
 Contents:
 
 1. [Purpose and threat model](#1-purpose-and-threat-model)
@@ -1126,6 +1128,8 @@ How each agent signs in, with the VM:
 | Pi, local models (D-178) | —                                                                                                                  | none: the llama-server key is not a `sbx` service. Today it goes into `pi.env` in the VM (**contradiction**, 13). Proposal: a key for that sandbox only (llama-server accepting several keys through `--api-key-file` **[unverified]**), revoked when the last Pi session ends; or `sbx secret set-custom --sandbox` with a placeholder replaced in the `Authorization` header ("Replacement applies only to HTTP request headers") toward `host.docker.internal` **[unverified that custom secrets apply to that host]** | same; Q7                                                   |
 
 Facts from the Docker page (read 26/10/2026): service secrets are global by default and "Sandbox-scoped secrets take precedence over global secrets"; "Adding, updating, or removing a service secret takes effect in existing local sandboxes without a restart"; custom secrets are experimental. Atollo registers only sandbox-scoped secrets (D-172 rule). A key registered for the project's sandbox is usable (not readable) by the project's own code in that VM, as GitHub in D-172 and the local models in D-178, and the Gemini key once Antigravity has run there (§9; Antigravity shares the project's sandbox): declared.
+
+Exception (D-185): the **agents' accounts** (`data/accounts/<agent>/<name>/`) are the agents' own sign-ins, not kit secrets in the sense above. A project's sandbox mounts, read-write, only the account the project chose for the agent that starts; no other project's sandbox sees it unless that project picks the same account.
 
 ## 12. Migration
 

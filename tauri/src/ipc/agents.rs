@@ -154,6 +154,150 @@ pub fn agent_sign_out<R: Runtime>(
     crate::agents::sign_out(&state.kit, &agent).or_fail_chain("sign out")
 }
 
+/// `id` as an agent Atollo knows.
+fn agent_of(id: &str) -> CmdResult<crate::levels::Agent> {
+    crate::levels::Agent::from_id(id).ok_or_else(|| format!("unknown agent: {id}").into())
+}
+
+/// `name` checked as an account's name, with the reason in the user's
+/// language.
+fn account_name(state: &AppState, name: &str) -> CmdResult<String> {
+    let name = name.trim();
+    if !crate::agents::accounts::valid_name(name) {
+        return Err(tr(
+            state,
+            "Nome dell'account non valido: usa lettere, cifre, trattini e spazi, senza un punto all'inizio o alla fine.",
+            &[],
+        )
+        .into());
+    }
+    Ok(name.to_owned())
+}
+
+/// The agents' accounts (D-185), each with the projects that use it. Off
+/// the window's thread: it reads every project's settings.
+#[tauri::command]
+pub async fn agent_accounts<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+) -> CmdResult<Vec<crate::agents::accounts::AgentAccounts>> {
+    ensure_main(&webview)?;
+    let kit = state.kit.clone();
+    tauri::async_runtime::spawn_blocking(move || crate::agents::accounts::list(&kit))
+        .await
+        .or_fail("accounts")
+}
+
+/// A new account for `agent`.
+#[tauri::command]
+pub fn agent_account_create<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    agent: String,
+    name: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let name = account_name(&state, &name)?;
+    crate::agents::accounts::create(&state.kit, agent_of(&agent)?, &name)
+        .map(|_| ())
+        .or_fail_chain("account")
+}
+
+/// `agent`'s account `from` renamed `to`; the projects that used it follow.
+#[tauri::command]
+pub fn agent_account_rename<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    agent: String,
+    from: String,
+    to: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let to = account_name(&state, &to)?;
+    crate::agents::accounts::rename(&state.kit, agent_of(&agent)?, &from, &to)
+        .or_fail_chain("account")
+}
+
+/// `agent`'s account `name` deleted with its sign-in; refused for the
+/// default one and while a project uses it.
+#[tauri::command]
+pub fn agent_account_delete<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    agent: String,
+    name: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    let agent = agent_of(&agent)?;
+    match crate::agents::accounts::delete_refused(&state.kit, agent, &name) {
+        Some(users) if users.is_empty() => {
+            return Err(tr(&state, "L'account predefinito non si elimina.", &[]).into())
+        }
+        Some(users) => {
+            return Err(tr(
+                &state,
+                "L'account {0} è usato da: {1}. Scegli un altro account in quei progetti, poi eliminalo.",
+                &[&name, &users.join(", ")],
+            )
+            .into())
+        }
+        None => {}
+    }
+    crate::agents::accounts::delete(&state.kit, agent, &name).or_fail_chain("account")
+}
+
+/// «Esci» for `agent`'s account `name`: its credentials removed.
+#[tauri::command]
+pub fn agent_account_sign_out<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    agent: String,
+    name: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    crate::agents::accounts::sign_out(&state.kit, agent_of(&agent)?, &name)
+        .or_fail_chain("sign out")
+}
+
+/// The account `project` uses for each agent (its id → the account).
+#[tauri::command]
+pub fn project_agent_accounts<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+) -> CmdResult<std::collections::BTreeMap<String, String>> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    Ok(crate::levels::Agent::ALL
+        .into_iter()
+        .filter(|a| crate::agents::accounts::env_var(*a).is_some())
+        .map(|a| {
+            (
+                a.id().to_owned(),
+                crate::agents::accounts::chosen(&state.kit, &project, a),
+            )
+        })
+        .collect())
+}
+
+/// `project` uses `agent`'s account `name` (made if new) from the agent's
+/// next session in its sandbox.
+#[tauri::command]
+pub fn project_agent_account_set<R: Runtime>(
+    webview: Webview<R>,
+    state: State<'_, AppState>,
+    project: String,
+    agent: String,
+    name: String,
+) -> CmdResult<()> {
+    ensure_main(&webview)?;
+    project_dir(&state.kit, Some(&project), state.lang())?;
+    let (agent, name) = (agent_of(&agent)?, account_name(&state, &name)?);
+    crate::agents::accounts::create(&state.kit, agent, &name).or_fail_chain("account")?;
+    crate::agents::accounts::set(&state.kit, &project, agent, &name);
+    Ok(())
+}
+
 #[cfg(test)]
 #[path = "../../../test/rust/ipc/agents.rs"]
 mod tests;
