@@ -177,6 +177,36 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the agent_account_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-account-create",
+          "markdownDescription": "Enables the agent_account_create command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agent_account_delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-account-delete",
+          "markdownDescription": "Enables the agent_account_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agent_account_rename command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-account-rename",
+          "markdownDescription": "Enables the agent_account_rename command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agent_account_sign_out command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-account-sign-out",
+          "markdownDescription": "Enables the agent_account_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the agent_accounts command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-agent-accounts",
+          "markdownDescription": "Enables the agent_accounts command without any pre-configured scope."
+        },
+        {
           "description": "Enables the agent_launch command without any pre-configured scope.",
           "type": "string",
           "const": "allow-agent-launch",
@@ -559,6 +589,18 @@
           "type": "string",
           "const": "allow-project-action-save",
           "markdownDescription": "Enables the project_action_save command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_agent_account_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-agent-account-set",
+          "markdownDescription": "Enables the project_agent_account_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the project_agent_accounts command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-project-agent-accounts",
+          "markdownDescription": "Enables the project_agent_accounts command without any pre-configured scope."
         },
         {
           "description": "Enables the project_backups command without any pre-configured scope.",
@@ -1059,6 +1101,36 @@
           "markdownDescription": "Enables the vms_list command without any pre-configured scope."
         },
         {
+          "description": "Denies the agent_account_create command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-account-create",
+          "markdownDescription": "Denies the agent_account_create command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_account_delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-account-delete",
+          "markdownDescription": "Denies the agent_account_delete command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_account_rename command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-account-rename",
+          "markdownDescription": "Denies the agent_account_rename command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_account_sign_out command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-account-sign-out",
+          "markdownDescription": "Denies the agent_account_sign_out command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the agent_accounts command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-agent-accounts",
+          "markdownDescription": "Denies the agent_accounts command without any pre-configured scope."
+        },
+        {
           "description": "Denies the agent_launch command without any pre-configured scope.",
           "type": "string",
           "const": "deny-agent-launch",
@@ -1435,6 +1507,18 @@
           "type": "string",
           "const": "deny-project-action-save",
           "markdownDescription": "Denies the project_action_save command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_agent_account_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-agent-account-set",
+          "markdownDescription": "Denies the project_agent_account_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the project_agent_accounts command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-project-agent-accounts",
+          "markdownDescription": "Denies the project_agent_accounts command without any pre-configured scope."
         },
         {
           "description": "Denies the project_backups command without any pre-configured scope.",

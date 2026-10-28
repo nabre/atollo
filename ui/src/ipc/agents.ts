@@ -275,3 +275,61 @@ export function kitMcpSet(servers: McpServer[]): Promise<void> {
 export function agentSignOut(agent: AgentId): Promise<void> {
   return act("agent_sign_out", { agent });
 }
+
+/** An agent's account (D-185): a sign-in kept in the kit, used by the
+ * projects that pick it. */
+export interface AgentAccount {
+  name: string;
+  /** Signed in once, in some project's sandbox. */
+  signedIn: boolean;
+  /** The projects that use it. */
+  usedBy: string[];
+}
+
+export interface AgentAccounts {
+  agent: AgentId;
+  /** False when the agent's folder cannot be moved (Antigravity). */
+  supported: boolean;
+  accounts: AgentAccount[];
+}
+
+/** The account every project uses until it picks another. */
+export const DEFAULT_ACCOUNT = "default";
+
+const PREVIEW_ACCOUNTS: AgentAccounts[] = (["claude", "codex", "pi", "antigravity"] as const).map((agent) => ({
+  agent,
+  supported: agent !== "antigravity",
+  accounts: [{ name: DEFAULT_ACCOUNT, signedIn: agent === "claude", usedBy: ["shop"] }],
+}));
+
+export function agentAccounts(): Promise<AgentAccounts[]> {
+  return query<AgentAccounts[]>("agent_accounts", PREVIEW_ACCOUNTS);
+}
+
+export function agentAccountCreate(agent: AgentId, name: string): Promise<void> {
+  return act("agent_account_create", { agent, name });
+}
+
+export function agentAccountRename(agent: AgentId, from: string, to: string): Promise<void> {
+  return act("agent_account_rename", { agent, from, to });
+}
+
+export function agentAccountDelete(agent: AgentId, name: string): Promise<void> {
+  return act("agent_account_delete", { agent, name });
+}
+
+/** «Esci» for one account: its credentials removed from the kit. */
+export function agentAccountSignOut(agent: AgentId, name: string): Promise<void> {
+  return act("agent_account_sign_out", { agent, name });
+}
+
+/** The account the project uses for each agent that has accounts. */
+export function projectAgentAccounts(project: string): Promise<Partial<Record<AgentId, string>>> {
+  return query<Partial<Record<AgentId, string>>>("project_agent_accounts", { claude: DEFAULT_ACCOUNT }, { project });
+}
+
+/** The project uses `name` for `agent` (made if new), from the agent's
+ * next session in its sandbox. */
+export function projectAgentAccountSet(project: string, agent: AgentId, name: string): Promise<void> {
+  return act("project_agent_account_set", { project, agent, name });
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-project-agent-account-set"
+description = "Enables the project_agent_account_set command without any pre-configured scope."
+commands.allow = ["project_agent_account_set"]
+
+[[permission]]
+identifier = "deny-project-agent-account-set"
+description = "Denies the project_agent_account_set command without any pre-configured scope."
+commands.deny = ["project_agent_account_set"]

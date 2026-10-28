@@ -40,6 +40,7 @@ import { DeleteProjectDialog } from "./delete";
 import { SaveBaseDialog } from "./savebase";
 import { VmPreparing } from "../shell/jobs";
 import { ProjectVm } from "./vm";
+import { AgentAccountsSection } from "./accounts";
 
 export type ProjectSection = "run" | "site" | "components" | "databases" | "extensions" | "editor" | "git" | "vm";
 type Section = ProjectSection;
@@ -357,7 +358,12 @@ export function ProjectPage({
             <GithubInVm project={p.id} />
           </>
         )}
-        {section === "vm" && <ProjectVm project={p.id} />}
+        {section === "vm" && (
+          <>
+            <ProjectVm project={p.id} />
+            <AgentAccountsSection project={p.id} />
+          </>
+        )}
       </EditorBody>
     </div>
   );

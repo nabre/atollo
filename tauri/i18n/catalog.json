@@ -2718,5 +2718,20 @@
     "en": "The path {0} contains {1}: on Windows the commands of npm and of the other tools started through cmd cannot handle it. Move the kit to a folder with only letters, digits, dashes and spaces.",
     "fr": "Le chemin {0} contient {1} : sous Windows, les commandes de npm et des autres outils lancés par cmd ne le gèrent pas. Déplacez le kit dans un dossier avec seulement des lettres, des chiffres, des tirets et des espaces.",
     "de": "Der Pfad {0} enthält {1}: Unter Windows kommen die Befehle von npm und der anderen über cmd gestarteten Werkzeuge damit nicht zurecht. Verschiebe das Kit in einen Ordner mit nur Buchstaben, Ziffern, Bindestrichen und Leerzeichen."
+  },
+  "Nome dell'account non valido: usa lettere, cifre, trattini e spazi, senza un punto all'inizio o alla fine.": {
+    "en": "Invalid account name: use letters, digits, dashes and spaces, without a dot at the start or the end.",
+    "fr": "Nom de compte non valide : utilisez des lettres, des chiffres, des tirets et des espaces, sans point au début ni à la fin.",
+    "de": "Ungültiger Kontoname: Verwende Buchstaben, Ziffern, Bindestriche und Leerzeichen, ohne Punkt am Anfang oder Ende."
+  },
+  "L'account predefinito non si elimina.": {
+    "en": "The default account cannot be deleted.",
+    "fr": "Le compte par défaut ne peut pas être supprimé.",
+    "de": "Das Standardkonto lässt sich nicht löschen."
+  },
+  "L'account {0} è usato da: {1}. Scegli un altro account in quei progetti, poi eliminalo.": {
+    "en": "The account {0} is used by: {1}. Choose another account in those projects, then delete it.",
+    "fr": "Le compte {0} est utilisé par : {1}. Choisissez un autre compte dans ces projets, puis supprimez-le.",
+    "de": "Das Konto {0} wird verwendet von: {1}. Wähle in diesen Projekten ein anderes Konto und lösche es dann."
   }
 }

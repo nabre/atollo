@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-agent-account-create"
+description = "Enables the agent_account_create command without any pre-configured scope."
+commands.allow = ["agent_account_create"]
+
+[[permission]]
+identifier = "deny-agent-account-create"
+description = "Denies the agent_account_create command without any pre-configured scope."
+commands.deny = ["agent_account_create"]

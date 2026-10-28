@@ -1,5 +1,9 @@
 # Novità
 
+## Prossimo rilascio
+
+- **Account degli agenti per progetto** (D-185): ogni progetto sceglie, per Claude Code, Codex e Pi, l'account da usare nella sua sandbox («VM» → «Account degli agenti»). L'accesso si fa una volta nella sandbox e resta nel kit: lo usano tutti i progetti che scelgono lo stesso account, e non si perde con «Ricrea».
+
 ## Rilascio 0.8.0 alpha (28/10/2026): due posti, una sandbox
 
 - **Due posti, più semplici** (D-183): terminali, azioni (`npm run dev`), siti, task dell'editor, creazione dei progetti e server web girano sempre sul PC, anche con la VM accesa; la VM serve solo agli agenti. Niente più porte pubblicate dalla VM, siti in container o pool disattivati con la VM.

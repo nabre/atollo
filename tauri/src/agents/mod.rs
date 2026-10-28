@@ -14,6 +14,7 @@
 //! data stays there untouched until «Esci» removes it ([`sign_out`]): the
 //! agents in the VM never get it (I5).
 
+pub mod accounts;
 pub mod claude_token;
 pub mod github_mcp;
 pub mod keyring;

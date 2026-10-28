@@ -10,6 +10,8 @@ Stato: **progetto, fase 1**; fatto il passo 1 di 12.2 (tipi, `place_of`, `facts`
 
 > **D-184 (28/10/2026): una sandbox per progetto.** Ogni agente (Claude Code, Codex, Pi, Antigravity) gira nella sandbox del progetto `atollo-p-…` con la build del kit per il Linux della VM (`VmProgram::Agent`, `vm::agent_session_args`); le sandbox di agente di `sbx` `atollo-a-…` non ci sono più (quelle di un Atollo precedente si tolgono al primo stato). `Origin::Sandbox` (`VmProgram::Tools`) è la sandbox stessa per «Verifica strumenti», «Riavvia», «Ricrea», «Aggiorna». `decide` ha otto regole (§3.4); le etichette sono «PC» e «Agente · VM» (§8.3).
 
+> **D-185 (28/10/2026): account degli agenti per progetto.** L'accesso di ogni agente è un account con nome nel kit (`data/accounts/<agente>/<nome>/`); il progetto ne sceglie uno per agente, e la sua sandbox monta solo quella cartella, in scrittura, per la sessione di quell'agente (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `PI_CODING_AGENT_DIR`). È l'unica eccezione a I5 (§11): l'accesso dell'agente stesso, solo quello scelto dal progetto, solo nella sua sandbox. Antigravity non ha account.
+
 Indice:
 
 1. [Scopo e modello delle minacce](#1-scopo-e-modello-delle-minacce)
@@ -793,6 +795,8 @@ Come accede ogni agente, con la VM:
 | Pi, modelli locali (D-178) | —                                                                                                                        | nessuno: la chiave di llama-server non è un servizio di `sbx`. Oggi va in `pi.env` nella VM (**contrasto**, 13). Proposta: una chiave solo per quella sandbox (llama-server che accetta più chiavi con `--api-key-file` **[non verificato]**), ritirata alla fine dell'ultima sessione di Pi; oppure `sbx secret set-custom --sandbox` con un segnaposto sostituito nell'intestazione `Authorization` («Replacement applies only to HTTP request headers») verso `host.docker.internal` **[non verificato che i segreti personalizzati valgano per quell'host]** | idem; Q7                                                   |
 
 Dalla pagina di Docker (letta il 26/10/2026): i segreti dei servizi sono globali di serie e «Sandbox-scoped secrets take precedence over global secrets»; «Adding, updating, or removing a service secret takes effect in existing local sandboxes without a restart»; i segreti personalizzati sono sperimentali. Atollo registra solo segreti per sandbox (regola di D-172). Una chiave registrata per la sandbox del progetto è usabile (non leggibile) anche dal codice del progetto in quella VM, come GitHub in D-172 e i modelli locali in D-178, e la chiave Gemini una volta che Antigravity ci ha girato (§9; Antigravity condivide la sandbox del progetto): dichiarato.
+
+Eccezione (D-185): gli **account degli agenti** (`data/accounts/<agente>/<nome>/`) sono gli accessi degli agenti stessi, non segreti del kit nel senso detto sopra. La sandbox di un progetto monta, in scrittura, solo l'account che il progetto ha scelto per l'agente che parte; la sandbox di un altro progetto non lo vede, a meno che quel progetto scelga lo stesso account.
 
 ## 12. Migrazione
 

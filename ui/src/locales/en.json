@@ -1152,5 +1152,15 @@
   "non c'è": "not there",
   "non gira nella VM": "does not run in the VM",
   "✗ manca": "✗ missing",
-  "✗ non è del kit: {0}": "✗ not the kit's: {0}"
+  "✗ non è del kit: {0}": "✗ not the kit's: {0}",
+  "Account degli agenti": "Agents' accounts",
+  "Ogni agente usa nella sandbox del progetto l'account scelto qui. L'accesso si fa nella sandbox alla prima sessione e resta nel kit: vale per tutti i progetti che scelgono lo stesso account.": "Each agent uses the account chosen here in the project's sandbox. You sign in inside the sandbox at the first session and the sign-in stays in the kit: it counts for every project that picks the same account.",
+  "Account di {0}": "Account of {0}",
+  "connesso": "signed in",
+  "non ancora connesso": "not signed in yet",
+  "Nome del nuovo account": "Name of the new account",
+  "lavoro": "work",
+  "Nuovo account…": "New account…",
+  "Nessun account separato: usa l'accesso fatto nella sandbox del progetto.": "No separate accounts: it uses the sign-in made in the project's sandbox.",
+  "Un cambio vale dalla prossima sessione dell'agente. L'account usato prima resta montato nella sandbox fino a «Ricrea».": "A change applies from the agent's next session. The account used before stays mounted in the sandbox until “Recreate”."
 }

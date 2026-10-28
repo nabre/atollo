@@ -532,6 +532,57 @@ fn claude_and_codex_run_in_the_projects_sandbox() {
     }
 }
 
+/// The account the project chose for the agent (D-185): its folder in the
+/// kit read-write in the sandbox and the agent pointed at it; nothing for
+/// Pi's account in Claude's session, nothing for Antigravity.
+#[test]
+fn the_projects_account_goes_to_its_agent() {
+    let (_tmp, kit) = kit_with_shop("account");
+    crate::agents::accounts::set(&kit, "shop", Agent::Claude, "lavoro");
+    let fx = Fake {
+        dbs: vec![shop_db()],
+        ..Fake::default()
+    };
+    let ready = prepared(
+        &kit,
+        &fx,
+        Origin::AgentButton {
+            agent: Agent::Claude,
+        },
+        true,
+        &[],
+    )
+    .unwrap();
+    let vm = vm_of(&ready);
+    let account = crate::agents::accounts::dir(&kit, Agent::Claude, "lavoro");
+    assert!(account.is_dir());
+    assert_eq!(vm.writable(), std::slice::from_ref(&account));
+    let guest = vm::guest_path(kit.target().is_windows(), &account).unwrap();
+    assert!(vm
+        .tools()
+        .vars
+        .contains(&("CLAUDE_CONFIG_DIR".to_owned(), guest)));
+    assert!(!vm
+        .tools()
+        .vars
+        .iter()
+        .any(|(k, _)| k == "CODEX_HOME" || k == "PI_CODING_AGENT_DIR"));
+    let guest_kit = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    install(&guest_kit, "antigravity");
+    let fx = Fake::default();
+    let ready = prepared(
+        &kit,
+        &fx,
+        Origin::AgentButton {
+            agent: Agent::Antigravity,
+        },
+        true,
+        &[],
+    )
+    .unwrap();
+    assert!(vm_of(&ready).writable().is_empty());
+}
+
 /// A `Vm` placement without the kit's `sbx` is an error, never a start on
 /// the PC (I7).
 #[test]

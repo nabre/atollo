@@ -1943,14 +1943,23 @@ impl Vm {
         }
         let windows = self.kit.target().is_windows();
         let mut changed = noted.is_empty();
-        for folder in &self.read_only {
+        let folders = self
+            .writable
+            .iter()
+            .map(|f| (f, false))
+            .chain(self.read_only.iter().map(|f| (f, true)));
+        for (folder, read_only) in folders {
             let shown = folder.display().to_string();
             if lines.iter().skip(1).any(|l| *l == shown) {
                 continue;
             }
             let guest = vm::guest_path(windows, folder)
                 .ok_or_else(|| anyhow::anyhow!("{shown}: no path in the VM"))?;
-            let args = vm::mount_args(&self.name, folder, &guest);
+            let args = if read_only {
+                vm::mount_args(&self.name, folder, &guest)
+            } else {
+                vm::mount_rw_args(&self.name, folder, &guest)
+            };
             let args: Vec<&str> = args.iter().map(String::as_str).collect();
             let out =
                 run(&self.sbx, &self.host, env, &args, START_LIMIT).map_err(anyhow::Error::msg)?;
@@ -1988,9 +1997,25 @@ impl Vm {
     /// the read-only ones.
     fn mounts(&self) -> String {
         std::iter::once(&self.dir)
+            .chain(&self.writable)
             .chain(&self.read_only)
             .map(|p| format!("{}\n", p.display()))
             .collect()
+    }
+
+    /// The folders of the PC it may change besides its workspace.
+    #[cfg(test)]
+    pub fn writable(&self) -> &[PathBuf] {
+        &self.writable
+    }
+
+    /// One more folder of the PC it may change (an agent's account,
+    /// D-185), once: in a sandbox that exists, mounted at its next start.
+    pub fn with_writable(mut self, folder: PathBuf) -> Vm {
+        if !self.writable.contains(&folder) {
+            self.writable.push(folder);
+        }
+        self
     }
 
     /// One more folder of the PC mounted read-only (the sandbox's own

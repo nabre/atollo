@@ -377,6 +377,16 @@ fn in_vm(
             agent: Agent::Antigravity
         }
     );
+    // 6. The agent's account the project chose (D-185): its folder in the
+    //    kit, read-write in this sandbox, and the agent pointed at it.
+    if let VmProgram::Agent { agent } = program {
+        if let Some((dir, var)) = crate::agents::accounts::for_session(kit, project, *agent)? {
+            let guest = vm::guest_path(kit.target().is_windows(), &dir)
+                .ok_or_else(|| anyhow!("{}: no path in the VM", dir.display()))?;
+            tools.vars.push((var.to_owned(), guest));
+            vm = vm.with_writable(dir);
+        }
+    }
     let vm = vm.with_tools(tools).with_gemini(antigravity);
     // 6. What `atollo` in the sandbox tells (§8.4), then the start.
     step("Informazioni della VM");

@@ -42,6 +42,24 @@ fn a_folder_is_mounted_read_only_in_an_existing_sandbox() {
     );
 }
 
+/// An agent's account (D-185) mounted read-write: the same form without
+/// `:ro`.
+#[test]
+fn an_account_is_mounted_read_write() {
+    assert_eq!(
+        mount_rw_args(
+            "atollo-p-shop",
+            Path::new(r"D:\kit\data\accounts\claude\default"),
+            "/d/kit/data/accounts/claude/default"
+        ),
+        [
+            "mount",
+            "atollo-p-shop",
+            r"D:\kit\data\accounts\claude\default:/d/kit/data/accounts/claude/default"
+        ]
+    );
+}
+
 /// The kit's terminals (D-178) and Claude Code and Codex (D-184) have no
 /// sandbox of their own any more: the names an earlier Atollo gave them
 /// are apart from every name it gives now.

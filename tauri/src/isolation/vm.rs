@@ -171,6 +171,18 @@ pub fn mount_args(vm: &str, host: &Path, guest: &str) -> Vec<String> {
     ]
 }
 
+/// Mounts `host` read-write in the existing sandbox `vm`, at `guest`:
+/// `sbx mount <vm> <host>:<guest>`, kept across restarts (an agent's
+/// account, D-185) [unverified: the read-write form on a sandbox that
+/// exists].
+pub fn mount_rw_args(vm: &str, host: &Path, guest: &str) -> Vec<String> {
+    vec![
+        "mount".into(),
+        vm.into(),
+        format!("{}:{guest}", host.display()),
+    ]
+}
+
 /// The global network policy Atollo gives the kit's `sbx` before its first
 /// VM (scelta dell'utente, D-167): Docker's recommended one, the usual
 /// traffic of development (AI services, package registries) and nothing
