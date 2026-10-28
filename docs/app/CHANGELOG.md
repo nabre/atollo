@@ -1,6 +1,6 @@
 # Novità
 
-## Prossimo rilascio
+## Rilascio 0.8.0 alpha (28/10/2026): due posti, una sandbox
 
 - **Due posti, più semplici** (D-183): terminali, azioni (`npm run dev`), siti, task dell'editor, creazione dei progetti e server web girano sempre sul PC, anche con la VM accesa; la VM serve solo agli agenti. Niente più porte pubblicate dalla VM, siti in container o pool disattivati con la VM.
 - **Una sandbox per progetto, tutti gli agenti dentro** (D-184): Claude Code, Codex, Pi e Antigravity girano nella sandbox del progetto con la loro versione per Linux del kit, che li installa e li aggiorna; ogni agente accede lì una volta, fino a «Ricrea». Le sandbox di agente di prima si tolgono da sole; le etichette dei terminali sono «PC» e «Agente · VM».
