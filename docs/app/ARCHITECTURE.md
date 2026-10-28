@@ -128,6 +128,8 @@ tauri\src\
     fastcgi                   php-cgi and php-fpm
     frameworks\               "New project" (D-83): mod (catalog and edits), validate, plan, target, runner,
                               mine (the bases saved from a project, "Le mie basi", D-162)
+    envs                      project-local environments (D-188): `.venv` on the PC, `.venv-linux` and the
+                              Linux names in the agents' sandbox, Ruby's, Rust's, Julia's and R's variables
   detect\                     type, languages and actions of a project: mod, node, php, python, rust, go,
                               site, container, overrides (panel.json), walk (one walk of the whole
                               project, any depth, with a budget: the tools needed, D-186)

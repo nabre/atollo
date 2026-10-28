@@ -58,6 +58,10 @@ const SPAWNS_ALLOWED: &[(&str, &str)] = &[
     ("llm/service.rs", "llama-server (§5.2)"),
     ("github/", "Git and gh (§5.2)"),
     ("projects/mod.rs", "Git (§5.2)"),
+    (
+        "projects/envs.rs",
+        "an empty .venv (uv venv, python -m venv): nothing of the project runs, with its sealed PC environment (D-188)",
+    ),
     ("projects/frameworks/mine.rs", "Git (§5.2)"),
     ("install/", "installers (§5.2)"),
     ("setup/checkup.rs", "installers (§5.2)"),

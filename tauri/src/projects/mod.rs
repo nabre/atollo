@@ -12,6 +12,7 @@
 pub mod alias;
 pub mod apache;
 pub mod caddy;
+pub mod envs;
 pub mod fastcgi;
 pub mod frameworks;
 pub mod mcp;
@@ -50,6 +51,9 @@ pub struct ProjectInfo {
     pub settings: settings::ProjectSettings,
     /// Editor extensions of its languages and added by hand (`editor/ext.rs`).
     pub extensions: Vec<crate::editor::ext::ProjectExtension>,
+    /// Its Python environment (`.venv`, D-188); `None` for a project that
+    /// is not Python's.
+    pub local_env: Option<envs::LocalEnv>,
     #[serde(flatten)]
     pub project: Project,
 }
@@ -122,6 +126,7 @@ pub fn info_in(kit: &Kit, tools: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     ProjectInfo {
         settings,
         extensions,
+        local_env: envs::status(dir),
         id,
         modified: modified(dir),
         empty,
