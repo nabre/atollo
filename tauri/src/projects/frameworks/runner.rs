@@ -48,12 +48,16 @@ pub fn cancelled() -> bool {
 }
 
 /// What every line of a creation gets: no question asked (`CI=1`), no
-/// colours in its output.
-const QUIET: [(&str, &str); 4] = [
+/// colours in its output, and no time limit on Composer's scripts: a
+/// starter kit's `post-create-project-cmd` runs `npm install` and a build
+/// (Laravel's `install:features`), well over Composer's 300 s on a slow
+/// disk or a synced folder. «Annulla» still stops the creation.
+const QUIET: [(&str, &str); 5] = [
     ("CI", "1"),
     ("NO_COLOR", "1"),
     ("FORCE_COLOR", "0"),
     ("COMPOSER_NO_INTERACTION", "1"),
+    ("COMPOSER_PROCESS_TIMEOUT", "0"),
 ];
 
 /// `line` as the kit's PowerShell runs it with `-EncodedCommand` (UTF-16,
