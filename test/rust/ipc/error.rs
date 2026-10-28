@@ -55,20 +55,18 @@ fn or_fail_sends_the_short_or_whole_text() {
 #[test]
 fn a_refusal_serializes_with_its_reason_and_fix() {
     use crate::levels::{Fix, Refusal};
-    let e = CmdError::refused(Refusal::AgentOutsideProject, Fix::OpenFromProject, "it");
+    let folder = Refusal::FolderNotAllowed { dir: "/".into() };
+    let e = CmdError::refused(folder.clone(), Fix::OpenFromProject, "it");
     assert_eq!(
         e.to_string(),
-        crate::levels::labels::refusal_text(&Refusal::AgentOutsideProject, "it")
+        crate::levels::labels::refusal_text(&folder, "it")
     );
-    assert_eq!(
-        e.refusal(),
-        Some((&Refusal::AgentOutsideProject, Fix::OpenFromProject))
-    );
+    assert_eq!(e.refusal(), Some((&folder, Fix::OpenFromProject)));
     assert_eq!(
         serde_json::to_value(&e).unwrap(),
         serde_json::json!({
             "message": e.to_string(),
-            "refusal": { "code": "agent_outside_project" },
+            "refusal": { "code": "folder_not_allowed", "dir": "/" },
             "fix": "open_from_project",
         })
     );

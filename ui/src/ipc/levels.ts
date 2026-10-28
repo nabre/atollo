@@ -13,7 +13,7 @@ export type LevelLabel = "pc" | "agentVm";
 
 export type Refusal =
   | { code: "agents_need_vm"; blockers: IsolationBlocker[] }
-  | { code: "agent_outside_project" }
+  | { code: "folder_not_allowed"; dir: string }
   | { code: "no_path_in_vm"; dir: string }
   | { code: "no_linux_build"; agent: AgentId }
   | { code: "daemon_restart_pending" };

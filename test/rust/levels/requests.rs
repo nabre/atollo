@@ -187,7 +187,7 @@ fn a_malformed_request_is_ignored_and_removed() {
 }
 
 /// A refusal says its reason, its fix and the text in the user's language
-/// (I7): an agent without the VM (R1), an agent outside a project (R4).
+/// (I7): an agent without the VM (R1), an agent in a folder of the kit (R4).
 #[test]
 fn a_refused_reply_carries_reason_fix_and_text() {
     let (_tmp, kit) = kit_with_shop("requests-refused");
@@ -235,8 +235,16 @@ fn a_refused_reply_carries_reason_fix_and_text() {
     assert_eq!(value["refusal"]["code"], "agents_need_vm");
     assert_eq!(value["fix"], "open_vm_notice");
 
-    let outside = reply_of(claude, &kit.root().join("elsewhere"), true);
-    assert_eq!(outside.refusal, Some(Refusal::AgentOutsideProject));
+    // A folder of the kit itself may never be a sandbox's workspace
+    // (D-168, D-187).
+    let elsewhere = kit.root().join("elsewhere");
+    let outside = reply_of(claude, &elsewhere, true);
+    assert_eq!(
+        outside.refusal,
+        Some(Refusal::FolderNotAllowed {
+            dir: elsewhere.display().to_string()
+        })
+    );
     assert_eq!(outside.fix, Some(Fix::OpenFromProject));
     assert!(outside
         .text

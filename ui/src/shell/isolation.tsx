@@ -322,6 +322,7 @@ export function IsolationDialog({
  * for the VM's Linux, D-180). */
 export function vmLabel(v: VmInfo): string {
   if (v.owner?.kind === "project") return t("Progetto {0}", v.owner.project);
+  if (v.owner?.kind === "folder") return t("Cartella {0}", v.owner.dir);
   if (v.owner?.kind === "tools") return t("Strumenti del kit per il Linux della VM");
   return v.name;
 }

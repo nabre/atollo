@@ -232,6 +232,11 @@ pub struct Facts {
     /// The kit's tools for the VM's Linux (`kit.for_target(guest).apps()`),
     /// mounted read-only in every sandbox; empty where the PC has no VM.
     pub guest_tools: Vec<PathBuf>,
+    /// For a `Place::Folder`: its canonical path when it may be a folder
+    /// sandbox's workspace (`isolation::vm_workspace`, D-168, D-187), `None`
+    /// when it may not (the kit, the profile, a system folder, a drive's
+    /// root, `projects/`, a link) and for a project.
+    pub workspace: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -248,11 +253,14 @@ pub enum Placement {
     Vm {
         /// Agent, always.
         level: Level,
-        project: String,
+        /// The project, `None` for a folder's sandbox (D-187).
+        project: Option<String>,
         sandbox: Sandbox,
-        /// The working folder in the VM (project folder + `below`).
+        /// The working folder in the VM (project folder + `below`, or the
+        /// folder).
         workdir: String,
-        /// Folders mounted: the project rw, the kit's Linux tools ro.
+        /// Folders mounted: the project or the folder rw, the kit's Linux
+        /// tools ro.
         mounts: Mounts,
         /// Which PC ports the sandbox may reach (numbers resolved by `prepare`).
         host: HostAccess,
@@ -282,12 +290,15 @@ pub enum Sandbox {
     /// `atollo-p-<project>-<hash>` (`vm::name`): the project's one sandbox,
     /// every agent in it (D-184).
     Project { name: String },
+    /// `atollo-f-<folder>-<hash>` (`vm::folder_name`): a folder that is not
+    /// a project, its agents in it (D-187).
+    Folder { name: String },
 }
 
 impl Sandbox {
     pub fn name(&self) -> &str {
         match self {
-            Sandbox::Project { name } => name,
+            Sandbox::Project { name } | Sandbox::Folder { name } => name,
         }
     }
 }
@@ -335,8 +346,10 @@ pub enum Refusal {
     AgentsNeedVm {
         blockers: Vec<crate::isolation::Blocker>,
     },
-    /// An agent outside a project folder.
-    AgentOutsideProject,
+    /// An agent in a folder that may not be a sandbox's workspace: the
+    /// kit, the profile, a system folder, a drive's root, `projects/`, a
+    /// link (D-168, D-187).
+    FolderNotAllowed { dir: String },
     /// The folder has no path in the VM (network share).
     NoPathInVm { dir: String },
     /// The agent has no build for the VM's Linux.
@@ -351,7 +364,7 @@ impl Refusal {
     pub fn fix(&self) -> Fix {
         match self {
             Refusal::AgentsNeedVm { .. } => Fix::OpenVmNotice,
-            Refusal::AgentOutsideProject => Fix::OpenFromProject,
+            Refusal::FolderNotAllowed { .. } => Fix::OpenFromProject,
             Refusal::NoPathInVm { .. } => Fix::UseLocalDisk,
             Refusal::NoLinuxBuild { .. } => Fix::None,
             Refusal::DaemonRestartPending => Fix::RestartDaemon,
@@ -364,7 +377,8 @@ impl Refusal {
 pub enum Fix {
     /// Open the "No VM" notice (its reasons and their fixes).
     OpenVmNotice,
-    /// Open the agent from a project folder or the project's page.
+    /// Open the agent from a project, or from a folder that may be a
+    /// sandbox's workspace.
     OpenFromProject,
     /// Move the project to a local disk.
     UseLocalDisk,
@@ -428,8 +442,21 @@ pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement) {
             }),
         );
     }
-    let Place::Project { name, dir, below } = &req.place else {
-        return (Rule::R4, refused(Refusal::AgentOutsideProject));
+    // The workspace: the project's folder, or the folder itself when it may
+    // be one (D-187).
+    let (name, dir, below) = match &req.place {
+        Place::Project { name, dir, below } => (Some(name), dir, below.as_deref()),
+        Place::Folder { dir } => match &facts.workspace {
+            Some(workspace) => (None, workspace, None),
+            None => {
+                return (
+                    Rule::R4,
+                    refused(Refusal::FolderNotAllowed {
+                        dir: dir.display().to_string(),
+                    }),
+                )
+            }
+        },
     };
     if facts.restart_pending {
         return (Rule::R5, refused(Refusal::DaemonRestartPending));
@@ -444,21 +471,27 @@ pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement) {
     };
     let placed = |sandbox: Sandbox, program: VmProgram, local_models: bool| Placement::Vm {
         level,
-        project: name.clone(),
+        project: name.cloned(),
         sandbox,
-        workdir: guest_joined(guest_dir, below.as_deref()),
+        workdir: guest_joined(guest_dir, below),
         mounts: Mounts {
             workspace_rw: dir.clone(),
             tools_ro: facts.guest_tools.clone(),
         },
         host: HostAccess {
-            databases: true,
+            // A folder has no project's databases (D-187).
+            databases: name.is_some(),
             local_models,
         },
         program,
     };
-    let sandbox = Sandbox::Project {
-        name: vm::name(name),
+    let sandbox = match name {
+        Some(name) => Sandbox::Project {
+            name: vm::name(name),
+        },
+        None => Sandbox::Folder {
+            name: vm::folder_name(dir),
+        },
     };
     let Some(agent) = req.origin.agent() else {
         return (Rule::R8, placed(sandbox, VmProgram::Tools, false));

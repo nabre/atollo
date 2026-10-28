@@ -24,6 +24,21 @@ fn the_sandbox_is_named_after_the_project() {
     assert_eq!(name("shop"), shop);
 }
 
+/// D-187: a folder's sandbox is named after the folder, with a hash of its
+/// whole path: two folders of the same name never share one.
+#[test]
+fn a_folders_sandbox_is_named_after_it() {
+    let a = folder_name(std::path::Path::new("/home/me/Sites/shop"));
+    let b = folder_name(std::path::Path::new("/srv/shop"));
+    assert!(a.starts_with("atollo-f-shop-"), "{a}");
+    assert!(b.starts_with("atollo-f-shop-"), "{b}");
+    assert_ne!(a, b);
+    assert_ne!(a, name("shop"), "never a project's");
+    let long = folder_name(&std::path::Path::new("/x").join("a".repeat(100)));
+    assert_eq!(long.len(), NAME_MAX);
+    assert_eq!(folder_name(std::path::Path::new("/srv/shop")), b);
+}
+
 /// A folder added read-only to an existing sandbox: the full form (the
 /// short `<host>:ro` names `ro` as the target), the drive's `:` kept.
 #[test]

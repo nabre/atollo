@@ -13,7 +13,7 @@ fn pc(level: Level) -> Placement {
 fn vm(level: Level, sandbox: Sandbox, program: VmProgram) -> Placement {
     Placement::Vm {
         level,
-        project: "shop".into(),
+        project: Some("shop".into()),
         sandbox,
         workdir: "/d/kit/projects/shop/web".into(),
         mounts: Mounts {
@@ -45,7 +45,7 @@ fn every_placement_has_the_label_of_its_level() {
     );
     let refused = Placement::Refused {
         level: Level::Agent,
-        reason: Refusal::AgentOutsideProject,
+        reason: Refusal::FolderNotAllowed { dir: "/".into() },
         fix: Fix::OpenFromProject,
     };
     let cases = [
@@ -151,7 +151,7 @@ fn a_session_label_names_its_sandbox() {
     );
     let refused = Placement::Refused {
         level: Level::Agent,
-        reason: Refusal::AgentOutsideProject,
+        reason: Refusal::FolderNotAllowed { dir: "/".into() },
         fix: Fix::OpenFromProject,
     };
     assert_eq!(SessionLabel::of(&refused), None);

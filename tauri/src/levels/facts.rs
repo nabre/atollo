@@ -16,12 +16,19 @@ use super::{Facts, Origin, Place, Request};
 /// availability on `vm::guest_target`.
 pub fn facts(kit: &Kit, host: &Host, env: &KitEnv, req: &Request) -> Facts {
     let status = isolation::status(kit, host, env, false);
+    let workspace = workspace(kit, host, &req.place);
+    // A folder's sandbox mounts its canonical path (D-187).
+    let guest_dir = match &workspace {
+        Some(dir) => vm::guest_path(kit.os().is_windows(), dir),
+        None => guest_dir(kit, &req.place),
+    };
     Facts {
         vm: super::agents::vm_state(&status),
-        guest_dir: guest_dir(kit, &req.place),
+        guest_dir,
         restart_pending: isolation::restart_pending(kit),
         linux_build: linux_build(kit, &req.origin),
         guest_tools: guest_tools(kit),
+        workspace,
     }
 }
 
@@ -32,6 +39,16 @@ pub fn guest_dir(kit: &Kit, place: &Place) -> Option<String> {
         Place::Project { dir, .. } | Place::Folder { dir } => dir,
     };
     vm::guest_path(kit.os().is_windows(), dir)
+}
+
+/// For a folder that is not a project: its canonical path when it may be a
+/// sandbox's workspace (`isolation::vm_workspace`, D-187); `None` for a
+/// project and for a folder that may not.
+pub fn workspace(kit: &Kit, host: &Host, place: &Place) -> Option<PathBuf> {
+    match place {
+        Place::Folder { dir } => isolation::vm_workspace(kit, host, dir),
+        Place::Project { .. } => None,
+    }
 }
 
 /// True when `origin` asks for an agent and the catalog has its build for

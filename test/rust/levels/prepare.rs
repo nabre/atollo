@@ -148,6 +148,7 @@ pub(crate) fn facts_of(kit: &Kit, req: &Request, on: bool) -> Facts {
         restart_pending: false,
         linux_build: true,
         guest_tools: facts::guest_tools(kit),
+        workspace: None,
     }
 }
 
@@ -245,6 +246,57 @@ fn a_project_vm_gets_tools_databases_and_ports() {
     assert!(vm_of(&ready).host_ports().is_empty());
 }
 
+/// D-187: an agent in a folder that is not a project gets the folder's
+/// own sandbox: the folder rw, the kit's Linux tools ro, the kit's lines
+/// (never a project's), no databases, its kit owned by the folder.
+#[test]
+fn a_folders_sandbox_has_no_project() {
+    let (_tmp, kit) = kit_with_shop("prepare-folder");
+    crate::versions::set_project_choice(&kit, "shop", "node", Some("20.18")).unwrap();
+    let sites = crate::kit::tests::TempDir::new("prepare-folder-sites");
+    let dir = sites.0.join("notes");
+    std::fs::create_dir_all(&dir).unwrap();
+    let origin = in_project_vm(&kit);
+    let place = crate::levels::place::place_of(&kit, &dir);
+    assert!(
+        matches!(place, crate::levels::Place::Folder { .. }),
+        "{place:?}"
+    );
+    let req = Request { origin, place };
+    let workspace = facts::workspace(&kit, &Host::default(), &req.place).expect("a workspace");
+    let facts = Facts {
+        guest_dir: vm::guest_path(kit.target().is_windows(), &workspace),
+        workspace: Some(workspace.clone()),
+        ..facts_of(&kit, &req, true)
+    };
+    let placement = decide(&req, &facts);
+    let base = KitEnv::build(&kit, &Default::default(), "it", &Host::default());
+    let env = environment(&kit, &base, &placement, None, "it", &Host::default()).unwrap();
+    let fx = Fake {
+        dbs: vec![shop_db()],
+        ..Fake::default()
+    };
+    let ready = prepare(&fx, &kit, &Host::default(), placement, env, &[], "it").unwrap();
+    let name = vm::folder_name(&workspace);
+    assert_eq!(
+        fx.calls(),
+        [
+            "ensure_guest_tools".to_owned(),
+            format!("start_sandbox {name}")
+        ],
+        "no databases"
+    );
+    assert_eq!(
+        fx.wanted.lock().unwrap().get("node"),
+        None,
+        "never the project's line"
+    );
+    let vm = vm_of(&ready);
+    assert_eq!(vm.name, name);
+    assert_eq!(vm.dir, workspace);
+    assert!(vm.host_ports().is_empty());
+}
+
 /// §8.4: `info.json` beside the sandbox's kit (never in the project) says
 /// where the sandbox is and what it has, the databases with their address
 /// in the VM and their user, never a password or a key.
@@ -289,7 +341,7 @@ fn the_vm_info_holds_no_secret() {
     let info: SandboxInfo = serde_json::from_str(&text).unwrap();
     assert_eq!(info.level, Level::Agent);
     assert_eq!(info.sandbox, vm.name);
-    assert_eq!(info.project, "shop");
+    assert_eq!(info.project.as_deref(), Some("shop"));
     assert_eq!(info.agent, Some(Agent::Pi));
     assert_eq!(
         info.databases,
@@ -653,7 +705,7 @@ fn prepare_tells_its_steps_through_the_effects() {
     else {
         panic!("{events:?}");
     };
-    assert_eq!(project, "shop");
+    assert_eq!(project.as_deref(), Some("shop"));
     assert_eq!(sandbox, &vm::name("shop"));
     assert_eq!(*agent, Some(Agent::Antigravity));
     assert_eq!(events.last(), Some(&PrepareProgress::Done));
