@@ -206,7 +206,6 @@ fn report_of(kit: &Kit, kit_env: &KitEnv, host: &Host, lang: &str, project: &str
         on,
         reason: (!on).then(|| isolation::why_no_vm(&status, lang)),
         ls,
-        published: Vec::new(),
         github: crate::projects::settings::load(kit, project).github_in_vm,
     };
     report::report(kit, project, seen, &|_| Vec::new())
@@ -307,17 +306,6 @@ pub fn print_report(
         .filter(|s| agent.is_none() || s.agent == agent)
     {
         print_sandbox(s, lang, out)?;
-    }
-    for p in &report.published {
-        writeln!(
-            out,
-            "  · {}",
-            t(
-                lang,
-                "Porta pubblicata: {0}:{1} ({2})",
-                &[&p.address, &p.port.to_string(), &p.action]
-            )
-        )?;
     }
     writeln!(
         out,
@@ -435,7 +423,7 @@ impl VmEffects for CliVm<'_> {
         else {
             return Ok(());
         };
-        let wanted = crate::levels::prepare::wanted_tools(self.kit, &project, &program, &[]);
+        let wanted = crate::levels::prepare::wanted_tools(self.kit, &project, Some(&program), &[]);
         for opts in crate::levels::prepare::guest_plans(&guest, &wanted) {
             let code = super::cli::run_plan(
                 self.kit,

@@ -18,160 +18,6 @@ use crate::platform::jobs::{self, Job};
 use super::output::{env_on_network, on_network};
 use super::{key_of, Entry, Event, RunInfo, Runner, State, PORT_FROM};
 
-impl Runner {
-    /// The `sbx exec` of `action` in `vm`, the line shown in its log, what
-    /// stops it there ([`VmRun`]) and the lines its log starts with (what
-    /// the VM serves differently).
-    #[allow(clippy::too_many_arguments)]
-    fn in_vm(
-        &self,
-        vm: &crate::isolation::Vm,
-        id: &str,
-        dir: &Path,
-        cwd: &Path,
-        action: &Action,
-        env: &KitEnv,
-        port: Option<u16>,
-        lan: bool,
-        fill: &dyn Fn(&str) -> String,
-        lang: &str,
-    ) -> Result<(std::process::Command, String, VmRun, Vec<String>)> {
-        use crate::isolation::vm::{exec_args, guest_path, run_tag, tracked, web_line, Web};
-        // Started by `levels::prepare` (D-179): its tools, databases and
-        // ports ready; here only the action's port.
-        if let Some(p) = port {
-            vm.publish(env, p, lan)?;
-        }
-        let mut notes = Vec::new();
-        let rel = cwd
-            .strip_prefix(dir)
-            .ok()
-            .map(|r| r.to_string_lossy().replace('\\', "/"))
-            .filter(|r| !r.is_empty());
-        let mut vars: Vec<(String, String)> = vec![
-            ("BROWSER".into(), "none".into()),
-            ("PYTHONUNBUFFERED".into(), "1".into()),
-            ("HOST".into(), "0.0.0.0".into()),
-        ];
-        if let Some(p) = port {
-            vars.push(("PORT".into(), p.to_string()));
-            vars.push(("ROCKET_PORT".into(), p.to_string()));
-        }
-        // The database's way (`DB_HOST`, `DB_PORT`…) is in the tools' file
-        // (D-171); the kit's tools' variables come before the action's.
-        for (k, v) in &action.env {
-            vars.push((k.clone(), fill(v)));
-        }
-        let php_line = crate::isolation::php_line(&self.kit, id);
-        let served = action
-            .static_dir
-            .as_ref()
-            .or(action.apache_dir.as_ref())
-            .or(action.caddy_dir.as_ref());
-        // The site's path aliases of the project itself, as the VM sees
-        // them; another project's folder is outside this VM (D-175).
-        let mut aliases = Vec::new();
-        if served.is_some() {
-            let windows = self.kit.target().is_windows();
-            for a in crate::projects::alias::resolve(dir, &self.kit.projects(), &action.aliases) {
-                match a
-                    .in_project()
-                    .zip(guest_path(windows, dir))
-                    .map(|(rel, root)| format!("{root}/{rel}"))
-                {
-                    Some(inside) => aliases.push((a.url.clone(), inside)),
-                    None => notes.push(tr(
-                        lang,
-                        "l'alias {0} punta a un altro progetto, che non è nella VM di questo: non servito",
-                        &[&a.url],
-                    )),
-                }
-            }
-        }
-        if action.caddy_dir.is_some() {
-            notes.push(tr(
-                lang,
-                "nella VM il sito usa Apache con PHP {0} al posto di Caddy: le regole proprie di Caddy non valgono",
-                &[&php_line],
-            ));
-        }
-        let web = |folder: &str, web: Web| {
-            web_line(
-                &action.id,
-                &web,
-                folder,
-                port.unwrap_or(PORT_FROM),
-                &aliases,
-            )
-        };
-        let line = if let Some(folder) = &action.static_dir {
-            web(folder, Web::Static)
-        } else if let Some(folder) = action.apache_dir.as_ref().or(action.caddy_dir.as_ref()) {
-            web(folder, Web::Php { line: php_line })
-        } else {
-            fill(&action.command)
-        };
-        let tag = run_tag(&action.id);
-        let args = exec_args(
-            &vm.name,
-            rel.as_deref(),
-            &tracked(&tag, &line),
-            &vars,
-            vm.tools(),
-        );
-        let shown = format!("sbx exec {} {line}", vm.name);
-        let run = VmRun {
-            vm: vm.clone(),
-            env: env.clone(),
-            tag,
-            container: served.map(|_| crate::isolation::vm::web_container(&action.id)),
-            port,
-            lan,
-        };
-        Ok((vm.command(env, &args), shown, run, notes))
-    }
-}
-
-/// What stops an action in its VM: ending its `sbx exec` on the PC leaves
-/// it running there (tried with sbx 0.49.2), so the stop goes into the VM
-/// and the port goes back.
-pub(super) struct VmRun {
-    vm: crate::isolation::Vm,
-    env: KitEnv,
-    tag: String,
-    container: Option<String>,
-    port: Option<u16>,
-    lan: bool,
-}
-
-impl VmRun {
-    /// The sandbox it runs in.
-    pub(super) fn sandbox(&self) -> &str {
-        &self.vm.name
-    }
-
-    /// Its port published on the PC and the address (`0.0.0.0` with the
-    /// local network, else `127.0.0.1`).
-    pub(super) fn published(&self) -> Option<(u16, &'static str)> {
-        self.port
-            .map(|p| (p, if self.lan { "0.0.0.0" } else { "127.0.0.1" }))
-    }
-
-    /// Stops it in the VM, off the caller's thread (`sbx exec` takes a
-    /// moment, up to the five seconds of a process that ignores `TERM`).
-    pub(super) fn stop(self) {
-        std::thread::spawn(move || {
-            self.vm.stop_run(
-                &self.env,
-                &self.tag,
-                self.container.as_deref(),
-                self.port,
-                self.lan,
-            );
-        });
-    }
-}
-
 /// The value of `key` in the `.env` of `dir` (`KEY=value`, `export KEY=`,
 /// quotes taken off), when set there.
 pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
@@ -192,12 +38,9 @@ pub(crate) fn dotenv_value(dir: &Path, key: &str) -> Option<String> {
 }
 
 impl Runner {
-    /// Starts `action` of `project` (folder `dir`), on the PC with `env`,
-    /// or in the project's microVM when `vm` (D-167, started by
-    /// `levels::prepare`; `env` then `sbx`'s): the command line, or the
-    /// container of its web server, through `sbx exec`, its port published
-    /// on the PC's `127.0.0.1`. Already running: the same process, not a
-    /// second one. Called only by `levels::start::start_action` (D-179).
+    /// Starts `action` of `project` (folder `dir`) on the PC with `env`.
+    /// Already running: the same process, not a second one. Called only by
+    /// `levels::start::start_action` (D-179).
     pub fn start_in(
         self: &Arc<Self>,
         id: &str,
@@ -205,7 +48,6 @@ impl Runner {
         action: &Action,
         env: &KitEnv,
         lang: &str,
-        vm: Option<&crate::isolation::Vm>,
     ) -> Result<RunInfo> {
         let key = key_of(id, &action.id);
         // A second start of the action (a double click during
@@ -240,15 +82,7 @@ impl Runner {
         // The FastCGI server of a project's Caddy, kept until the action
         // ends: php-fpm's private socket folder goes with its last copy.
         let mut fcgi_kept: Option<crate::projects::fastcgi::FastCgi> = None;
-        let mut vm_run = None;
-        let mut vm_notes = Vec::new();
-        let (mut cmd, shown) = if let Some(vm) = vm {
-            let (cmd, shown, run, notes) =
-                self.in_vm(vm, id, dir, &cwd, action, env, port, lan, &fill, lang)?;
-            vm_run = Some(run);
-            vm_notes = notes;
-            (cmd, shown)
-        } else if let Some(folder) = &action.static_dir {
+        let (mut cmd, shown) = if let Some(folder) = &action.static_dir {
             let root = detect::inside_dir(&cwd, folder)?;
             // The AppImage, not its inner program: `kit_command` clears
             // APPIMAGE, and the image's mount is not this program's to keep.
@@ -414,7 +248,6 @@ impl Runner {
                 tr(lang, "cartella: {0}", &[&cwd.display().to_string()])
             ),
         });
-        header.extend(vm_notes.iter().map(|n| format!("[Atollo] {n}")));
         header.push(String::new());
 
         let run = self.next_run();
@@ -440,7 +273,6 @@ impl Runner {
                             actual_port: None,
                             detected_url: None,
                             pool: None,
-                            vm_run: None,
                             run,
                         },
                     );
@@ -466,7 +298,6 @@ impl Runner {
                 actual_port: None,
                 detected_url: None,
                 pool: None,
-                vm_run,
                 run,
             },
         );
@@ -579,10 +410,6 @@ impl Runner {
                 return;
             };
             e.job = None;
-            // Ended on the PC: what it ran in the VM too, and its port back.
-            if let Some(vm_run) = e.vm_run.take() {
-                vm_run.stop();
-            }
             e.info.code = code;
             e.info.end = Some(now_ms());
             e.info.state = if e.stopped {

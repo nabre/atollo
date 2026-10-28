@@ -137,7 +137,7 @@ pub(super) fn install_now<R: Runtime>(
     let Some(component) = catalog.find(&id) else {
         return Err(format!("unknown component: {id}").into());
     };
-    let kit = tools_kit(state, kit_for(&state.kit, target.as_deref())?, &id);
+    let kit = agents_kit(state, kit_for(&state.kit, target.as_deref())?, component);
     // An agent only for the VM's Linux, while it is on (LEVELS.md §7).
     let vm = crate::levels::agents::known_vm();
     if !crate::levels::installable(component, kit.target(), &vm) {
@@ -168,7 +168,11 @@ pub(super) fn download_line<R: Runtime>(
     line: String,
     target: Option<String>,
 ) -> CmdResult<()> {
-    let kit = tools_kit(state, kit_for(&state.kit, target.as_deref())?, &id);
+    let kit = kit_for(&state.kit, target.as_deref())?;
+    let kit = match Catalog::get().find(&id) {
+        Some(c) => agents_kit(state, kit, c),
+        None => kit,
+    };
     let opts = Options {
         target: Some(kit.target()),
         lines: vec![(id, line)],
@@ -178,28 +182,19 @@ pub(super) fn download_line<R: Runtime>(
     Ok(())
 }
 
-/// Where component `id` asked for `kit` is installed (D-173): with the VM
-/// on, a tool asked for the PC that runs only in the VM
-/// (`Component::in_vm` without `on_pc_with_vm`, D-180) goes to the VM's
-/// Linux, if it has a build there; a system component, one that runs on
-/// the PC also with the VM (a database's server, llama.cpp), or another
-/// system asked for, stays as asked. It may ask `sbx` for the VM's status
-/// ([`super::setup::vm_tools_target`]): never on the window's thread.
-fn tools_kit(state: &AppState, kit: Kit, id: &str) -> Kit {
-    let catalog = Catalog::get();
-    let Some(component) = catalog.find(id) else {
-        return kit;
-    };
-    if kit.target() != state.kit.target() || catalog.locked_on(kit.target()).contains(id) {
-        return kit;
-    }
-    let Some(guest) = super::setup::vm_tools_target(state) else {
-        return kit;
-    };
-    if component.in_vm() && !component.on_pc_with_vm() && component.is_available_on(guest) {
-        state.kit.for_target(guest)
-    } else {
-        kit
+/// Where `component` asked for `kit` is installed (D-183): an agent runs
+/// only in the agents' sandbox, so it goes to the VM's Linux when the PC's
+/// kit is asked; everything else stays as asked.
+fn agents_kit(state: &AppState, kit: Kit, component: &crate::setup::Component) -> Kit {
+    let guest = crate::isolation::vm::guest_target(state.kit.target());
+    match guest {
+        Some(guest)
+            if kit.target() == state.kit.target()
+                && crate::levels::agents::agent_of(component).is_some() =>
+        {
+            state.kit.for_target(guest)
+        }
+        _ => kit,
     }
 }
 

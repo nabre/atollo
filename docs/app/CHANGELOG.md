@@ -1,5 +1,10 @@
 # Novità
 
+## Prossimo rilascio
+
+- **Due posti, più semplici** (D-183): terminali, azioni (`npm run dev`), siti, task dell'editor, creazione dei progetti e server web girano sempre sul PC, anche con la VM accesa; la VM serve solo agli agenti. Niente più porte pubblicate dalla VM, siti in container o pool disattivati con la VM.
+- **Strumenti sempre anche sul PC**: con la VM accesa gli strumenti scelti si installano sul PC e, per quelli che servono agli agenti, anche per il Linux della VM; i progetti contano ciò che manca sul PC.
+
 ## Rilascio 0.7.5 alpha (28/10/2026): una VM per clic
 
 - **Una preparazione della VM alla volta**: cliccare di nuovo «Terminale» o un agente mentre la VM del progetto si prepara non avvia più un'altra preparazione (con il suo lavoro, le sue installazioni e, con `sbx` occupato, «cannot create sandbox»): il clic ripetuto dice che la VM è già in preparazione e che la sessione si apre appena è pronta. Sessioni diverse della stessa sandbox (il terminale e un'azione) aspettano il loro turno invece di sovrapporsi.

@@ -74,9 +74,6 @@ export interface TargetToolStatus {
    * terminal uses the system's PTY, D-177). `available` is false and
    * `unavailableReason` null. */
   notNeeded: string | null;
-  /** On the PC's system with the VM on: the VM runs it with its build for
-   * Linux, not needed here (D-174). */
-  viaVm: boolean;
 }
 
 export interface TargetSummary extends Omit<TargetProfile, "id"> {
@@ -412,7 +409,6 @@ function sampleGrid(): TargetGrid {
         firstStart: !p.executableOnHost && ["git", "python"].includes(c.id),
         unavailableReason: null,
         notNeeded: null,
-        viaVm: false,
       };
     });
     return {

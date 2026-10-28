@@ -168,7 +168,7 @@ fn plan_follows_choice_skip_and_only() {
 /// prepares the chosen tools only, never the system components nor what
 /// only finishes on its own system, and removes nothing.
 #[test]
-fn the_vm_splits_the_system_and_the_tools() {
+fn the_vm_adds_its_linux_tools_to_the_pcs() {
     let catalog = Catalog::get();
     let mut choice = Choice::defaults(catalog);
     choice.set(catalog, "go", true);
@@ -181,14 +181,11 @@ fn the_vm_splits_the_system_and_the_tools() {
     with_ctx("plan-system", |ctx| {
         fake_install(ctx, "php");
         fake_install(ctx, "node");
-        let p = plan(ctx, catalog, &choice, &scoped(Scope::System)).unwrap();
+        // The PC keeps every chosen component (D-183).
+        let p = plan(ctx, catalog, &choice, &scoped(Scope::All)).unwrap();
         assert!(p.handle.contains(&"pwsh".into()) && p.handle.contains(&"gh".into()));
         assert!(p.handle.contains(&"sandboxes".into()));
-        assert!(!p.handle.contains(&"go".into()), "a tool goes to the VM");
-        assert!(
-            !p.handle.contains(&"node".into()),
-            "a tool on the PC is left"
-        );
+        assert!(p.handle.contains(&"go".into()), "a tool on the PC too");
         assert_eq!(p.remove, ["php"], "not chosen any more: removed");
     });
     with_target_ctx("plan-tools", crate::kit::Target::LINUX_X64, |ctx| {
@@ -877,11 +874,13 @@ fn an_agent_for_the_pc_is_removed() {
         fake_install(ctx, "pi");
         let p = plan(ctx, catalog, &all_agents(), &vm(None)).unwrap();
         assert!(p.remove.contains(&"claude".into()) && p.remove.contains(&"pi".into()));
-        let system = Options {
-            scope: Scope::System,
-            ..vm(Some(crate::levels::VmState::On))
-        };
-        let p = plan(ctx, catalog, &all_agents(), &system).unwrap();
+        let p = plan(
+            ctx,
+            catalog,
+            &all_agents(),
+            &vm(Some(crate::levels::VmState::On)),
+        )
+        .unwrap();
         assert!(p.remove.contains(&"pi".into()), "with the VM on too");
         let only = Options {
             only: vec!["git".into()],

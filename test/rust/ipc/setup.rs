@@ -251,10 +251,8 @@ fn needs_of_one_target_stay_out_of_the_choice() {
     }
 }
 
-/// With the VM on (D-174): the grid names the VM's Linux, and on the PC's
-/// column the tools the VM runs are not needed there; the system
-/// components, the parts of the app and what runs on the PC also with the
-/// VM (D-180) stay as they are.
+/// With the VM on (D-174): the grid names the VM's Linux; the PC's column
+/// keeps every tool, the project's code runs on the PC (D-183).
 #[test]
 fn the_grid_marks_the_vm() {
     let tmp = TempDir::new("cmd-grid-vm");
@@ -263,47 +261,6 @@ fn the_grid_marks_the_vm() {
     assert_eq!(target_grid(&kit, "en", None).vm, None);
     let grid = target_grid(&kit, "en", Some(Target::LINUX_X64));
     assert_eq!(grid.vm.as_deref(), Some("linux-x64"));
-    let column = |t: Target| {
-        grid.targets
-            .iter()
-            .find(|s| s.target == t.as_str())
-            .unwrap()
-    };
-    let via = |id: &str| {
-        column(Target::WIN32_X64)
-            .tools
-            .iter()
-            .find(|x| x.id == id)
-            .unwrap()
-            .via_vm
-    };
-    assert!(via("node") && via("python") && via("go"));
-    for kept in ["pwsh", "gh", "sandboxes", "vscodium-server"] {
-        assert!(!via(kept), "{kept}");
-    }
-    // Run on the PC also with the VM (`withVm`, D-180): the databases'
-    // servers, llama.cpp, the databases' web tools; the sites' servers are
-    // the VM's containers.
-    for kept in ["mysql", "mongodb", "llama", "phpmyadmin", "apache", "caddy"] {
-        assert!(!via(kept), "{kept}");
-    }
-    // What runs Linux programs to install is built in the tools sandbox.
-    for id in ["rust", "git", "cc", "ruby", "r", "pnpm", "tinytex"] {
-        assert!(via(id), "{id}");
-    }
-    assert!(column(Target::LINUX_X64).tools.iter().all(|x| !x.via_vm));
-    // Not needed on a column (D-177) is never "via the VM": ConPTY on a
-    // Mac with the VM on.
-    let mac = Kit::at_target(tmp.0.join("mac"), Target::DARWIN_ARM64);
-    mac.prepare().unwrap();
-    let grid = target_grid(&mac, "en", Some(Target::LINUX_ARM64));
-    let column = grid
-        .targets
-        .iter()
-        .find(|s| s.target == Target::DARWIN_ARM64.as_str())
-        .unwrap();
-    let conpty = column.tools.iter().find(|x| x.id == "conpty").unwrap();
-    assert!(conpty.not_needed.is_some() && !conpty.via_vm);
 }
 
 /// «Piattaforma» is remembered in settings.json (D-121): the grid gives it

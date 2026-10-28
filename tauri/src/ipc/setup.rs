@@ -138,8 +138,7 @@ pub struct TargetGrid {
     pub targets: Vec<crate::router::probe::TargetSummary>,
     /// `tools_target` of settings.json, when it is a system the app knows.
     pub chosen: Option<String>,
-    /// The VM's Linux when the VM is on (D-174): its column is the VM's,
-    /// and the tools on the PC's column are not needed there.
+    /// The VM's Linux when the VM is on (D-174): its column is the VM's.
     pub vm: Option<String>,
 }
 
@@ -161,46 +160,12 @@ pub(super) fn target_grid(kit: &Kit, lang: &str, vm: Option<crate::kit::Target>)
         .tools_target
         .and_then(|t| crate::kit::Target::parse(&t))
         .map(|t| t.as_str().to_owned());
-    let mut targets = crate::router::probe::probe_all_targets(kit, lang);
-    if let Some(guest) = vm {
-        mark_via_vm(&mut targets, kit.target(), guest);
-    }
+    let targets = crate::router::probe::probe_all_targets(kit, lang);
     TargetGrid {
         profiles: crate::router::target::all_profiles(),
         targets,
         chosen,
         vm: vm.map(|t| t.as_str().to_owned()),
-    }
-}
-
-/// With the VM on (D-174): on the PC's column (`host`), the tools the VM
-/// runs with its build for `guest` and only there (`Component::in_vm`
-/// without `on_pc_with_vm`, D-180: not the system components or the parts
-/// of the app, not the databases' servers, not llama.cpp) are not needed
-/// on the PC.
-pub(super) fn mark_via_vm(
-    targets: &mut [crate::router::probe::TargetSummary],
-    host: crate::kit::Target,
-    guest: crate::kit::Target,
-) {
-    let catalog = Catalog::get();
-    let locked = catalog.locked_on(host);
-    let Some(column) = targets.iter_mut().find(|t| t.target == host.as_str()) else {
-        return;
-    };
-    for tool in &mut column.tools {
-        let Some(c) = catalog.find(&tool.id) else {
-            continue;
-        };
-        let staged = crate::install::installer(&c.id)
-            .is_some_and(|i| crate::router::bootstrap::stages_for(i, c, guest, true));
-        // Not needed on the PC (D-177): nothing the VM stands in for.
-        tool.via_vm = !locked.contains(tool.id.as_str())
-            && c.in_vm()
-            && !c.on_pc_with_vm()
-            && tool.not_needed.is_none()
-            && c.is_available_on(guest)
-            && !staged;
     }
 }
 
@@ -579,19 +544,14 @@ pub async fn components_apply<R: Runtime>(
             let choice = Choice::parse(&text, catalog);
             choice.write(&kit, catalog).or_fail_chain("components")?;
         }
-        // With the VM on (D-173): the PC gets the system components only, the
-        // chosen tools go to the VM's Linux.
+        // With the VM on (D-183): every chosen component on the PC, then the
+        // agents' tools for the VM's Linux.
         let guest = (kit.target() == state.kit.target())
             .then(|| vm_tools_target(state))
             .flatten();
         let opts = Options {
             target: Some(kit.target()),
             update_all,
-            scope: if guest.is_some() {
-                crate::setup::runner::Scope::System
-            } else {
-                crate::setup::runner::Scope::All
-            },
             then_tools_for: guest,
             ..Options::default()
         };

@@ -49,7 +49,7 @@ pub fn cancelled() -> bool {
 
 /// What every line of a creation gets: no question asked (`CI=1`), no
 /// colours in its output.
-pub const QUIET: [(&str, &str); 4] = [
+const QUIET: [(&str, &str); 4] = [
     ("CI", "1"),
     ("NO_COLOR", "1"),
     ("FORCE_COLOR", "0"),
@@ -58,7 +58,7 @@ pub const QUIET: [(&str, &str); 4] = [
 
 /// `line` as the kit's PowerShell runs it with `-EncodedCommand` (UTF-16,
 /// base64): errors stop it, its exit code is the line's.
-pub fn encoded_script(line: &str) -> String {
+fn encoded_script(line: &str) -> String {
     use base64::Engine;
     let script = format!(
         "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; \

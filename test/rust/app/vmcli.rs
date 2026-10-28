@@ -203,7 +203,6 @@ fn vm_report(vm: VmOnOff, sandboxes: Vec<SandboxReport>) -> VmReport {
         vm,
         reason: (vm == VmOnOff::Off).then(|| "Hyper-V è spento.".to_owned()),
         sandboxes,
-        published: Vec::new(),
         github: false,
     }
 }

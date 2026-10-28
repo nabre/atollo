@@ -167,7 +167,19 @@ fn vm_of(ready: &Ready) -> &Vm {
     ready.vm.as_ref().expect("a sandbox")
 }
 
-/// The project's terminal in its VM: the kit's tools for the VM's Linux at
+/// An agent of the project's own sandbox (the project's code runs on the
+/// PC, D-183): Antigravity, its build for the VM's Linux installed.
+fn in_project_vm(kit: &Kit) -> Origin {
+    install(
+        &kit.for_target(vm::guest_target(kit.target()).unwrap()),
+        "antigravity",
+    );
+    Origin::AgentButton {
+        agent: Agent::Antigravity,
+    }
+}
+
+/// An agent in the project's VM: the kit's tools for the VM's Linux at
 /// the project's lines asked first, then the databases, then the sandbox,
 /// started with their ports; `db.env` beside the project's sandbox's kit,
 /// with the VM's way to the PC, given to every session.
@@ -179,7 +191,7 @@ fn a_project_vm_gets_tools_databases_and_ports() {
         dbs: vec![shop_db()],
         ..Fake::default()
     };
-    let ready = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let ready = prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap();
     let name = vm::name("shop");
     assert_eq!(
         fx.calls(),
@@ -222,7 +234,7 @@ fn a_project_vm_gets_tools_databases_and_ports() {
 
     // No database any more: its password leaves the VM's file.
     let fx = Fake::default();
-    let ready = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let ready = prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap();
     assert!(!file.exists());
     assert_eq!(vm_of(&ready).tools().env_file, None);
     assert!(vm_of(&ready).host_ports().is_empty());
@@ -466,15 +478,11 @@ fn antigravity_gets_its_build_and_the_gemini_key_by_the_proxy() {
     assert_eq!(args[args.len() - 2..], [program, "--help".to_owned()]);
     assert!(args.contains(&"AGY_CLI_DISABLE_AUTO_UPDATE=true".to_owned()));
 
-    // Pi and the project's terminal: no Gemini key for their sandbox.
+    // Pi: no Gemini key for its session's sandbox.
     install(&guest, "pi");
-    for origin in [
-        Origin::AgentButton { agent: Agent::Pi },
-        Origin::ProjectTerminal,
-    ] {
-        let ready = prepared(&kit, &Fake::default(), origin, true, &[]).unwrap();
-        assert!(!vm_of(&ready).gemini());
-    }
+    let pi = Origin::AgentButton { agent: Agent::Pi };
+    let ready = prepared(&kit, &Fake::default(), pi, true, &[]).unwrap();
+    assert!(!vm_of(&ready).gemini());
 }
 
 /// D-175: Claude Code and Codex get a sandbox of their own with the same
@@ -520,21 +528,6 @@ fn an_agent_sandbox_mirrors_the_projects() {
     }
 }
 
-/// A creation in the new project's VM gets the kit's PowerShell for the
-/// VM's Linux (its lines are PowerShell's) and the plan's tools.
-#[test]
-fn a_scaffold_gets_the_kits_powershell_and_the_plans_tools() {
-    let (_tmp, kit) = kit_with_shop("scaffold");
-    let fx = Fake::default();
-    let origin = Origin::Scaffold {
-        base: "laravel".into(),
-    };
-    prepared(&kit, &fx, origin, true, &["composer".to_owned()]).unwrap();
-    let wanted = fx.wanted.lock().unwrap();
-    assert!(wanted.contains_key("pwsh"), "{wanted:?}");
-    assert!(wanted.contains_key("composer"), "{wanted:?}");
-}
-
 /// A `Vm` placement without the kit's `sbx` is an error, never a start on
 /// the PC (I7).
 #[test]
@@ -542,7 +535,7 @@ fn no_sandbox_without_the_kits_sbx() {
     let (_tmp, kit) = prepared_kit("prepare-no-sbx");
     std::fs::create_dir_all(kit.projects().join("shop")).unwrap();
     let fx = Fake::default();
-    let why = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[])
+    let why = prepared(&kit, &fx, in_project_vm(&kit), true, &[])
         .unwrap_err()
         .to_string();
     assert_eq!(why, "Docker Sandboxes (sbx) non è nel kit.");
@@ -594,7 +587,7 @@ fn prepare_tells_its_steps_through_the_effects() {
         dbs: vec![shop_db()],
         ..Fake::default()
     };
-    prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap();
     let events = fx.progress();
     let Some(PrepareProgress::Begin {
         project,
@@ -607,7 +600,7 @@ fn prepare_tells_its_steps_through_the_effects() {
     };
     assert_eq!(project, "shop");
     assert_eq!(sandbox, &vm::name("shop"));
-    assert_eq!(*agent, None);
+    assert_eq!(*agent, Some(Agent::Antigravity));
     assert_eq!(events.last(), Some(&PrepareProgress::Done));
     let steps: Vec<(usize, usize, String)> = events
         .iter()
@@ -670,7 +663,7 @@ fn prepare_tells_the_agent_and_the_error() {
     let (_tmp, kit) = prepared_kit("progress-no-sbx");
     std::fs::create_dir_all(kit.projects().join("shop")).unwrap();
     let fx = Fake::default();
-    prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap_err();
+    prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap_err();
     match fx.progress().last() {
         Some(PrepareProgress::Failed { error }) => {
             assert_eq!(error, "Docker Sandboxes (sbx) non è nel kit.");
@@ -687,9 +680,12 @@ fn prepare_tells_the_agent_and_the_error() {
 fn a_preparation_running_refuses_the_same_again() {
     let (_tmp, kit) = kit_with_shop("claimed");
     let key = format!("{}|{}", kit.root().display(), vm::name("shop"));
-    let held = Claim::take(format!("{key}|{:?}", VmProgram::Shell)).unwrap();
+    let program = VmProgram::AgentBinary {
+        agent: Agent::Antigravity,
+    };
+    let held = Claim::take(format!("{key}|{program:?}")).unwrap();
     let fx = Fake::default();
-    let e = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap_err();
+    let e = prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap_err();
     assert_eq!(
         e.to_string(),
         "La VM è già in preparazione: la sessione si apre appena è pronta."
@@ -697,13 +693,14 @@ fn a_preparation_running_refuses_the_same_again() {
     assert!(fx.progress().is_empty(), "{:?}", fx.progress());
     assert!(fx.calls().is_empty(), "{:?}", fx.calls());
     let other = Fake::default();
-    let action = Origin::Action {
-        action: "dev".into(),
-        web: false,
-    };
-    prepared(&kit, &other, action, true, &[]).unwrap();
+    install(
+        &kit.for_target(vm::guest_target(kit.target()).unwrap()),
+        "pi",
+    );
+    let pi = Origin::AgentButton { agent: Agent::Pi };
+    prepared(&kit, &other, pi, true, &[]).unwrap();
     drop(held);
-    prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap();
 }
 
 /// One preparation of a sandbox at a time: the next waits for its turn.
@@ -761,7 +758,7 @@ fn the_vm_info_is_mounted_read_only() {
         dbs: vec![shop_db()],
         ..Fake::default()
     };
-    let ready = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let ready = prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap();
     let vm = vm_of(&ready);
     let guest = sandbox_kit::guest_dir(&kit, &vm.name);
     assert_eq!(info_file(&kit, &vm.name), guest.join(INFO));
@@ -793,28 +790,26 @@ fn the_vm_info_is_mounted_read_only() {
 }
 
 /// §6.10: the agents' stand-ins on the `PATH` of every session in a VM,
-/// but the one of the agent the session runs: Pi's own build in the
-/// project's VM, Claude Code in its own sandbox.
+/// but the one of the agent the session runs: Antigravity's and Pi's own
+/// builds in the project's VM, Claude Code in its own sandbox.
 #[test]
 fn an_agent_typed_in_the_vm_says_where_to_start_it() {
     let (_tmp, kit) = kit_with_shop("stand-ins");
     let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
     install(&guest, "pi");
-    let all = [
-        "agents/antigravity",
-        "agents/claude",
-        "agents/codex",
-        "agents/pi",
-    ];
     let sorted = |mut v: Vec<String>| {
         v.retain(|e| e.starts_with("agents/"));
         v.sort();
         v
     };
     let fx = Fake::default();
-    let ready = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+    let ready = prepared(&kit, &fx, in_project_vm(&kit), true, &[]).unwrap();
     let vm = vm_of(&ready);
-    assert_eq!(sorted(guest_entries(&kit, &vm.name, &vm.tools().path)), all);
+    assert_eq!(
+        sorted(guest_entries(&kit, &vm.name, &vm.tools().path)),
+        ["agents/claude", "agents/codex", "agents/pi"],
+        "no stand-in for Antigravity where it runs"
+    );
     let dir = sandbox_kit::guest_dir(&kit, &vm.name);
     for cmd in ["claude", "codex", "pi", "agy", "antigravity"] {
         let agent = Agent::from_command(cmd).unwrap();
@@ -879,10 +874,10 @@ fn every_sandbox_of_a_project_has_its_info() {
     let (_tmp, kit) = kit_with_shop("every-info");
     let origins = [
         (
-            Origin::ProjectTerminal,
+            in_project_vm(&kit),
             vm::name("shop"),
-            None,
-            Level::Project,
+            Some(Agent::Antigravity),
+            Level::Agent,
         ),
         (
             Origin::AgentButton {
@@ -913,11 +908,7 @@ fn every_sandbox_of_a_project_has_its_info() {
         let guest = sandbox_kit::guest_dir(&kit, &name);
         assert!(guest.join("bin").join("atollo").is_file(), "{name}");
         let text = std::fs::read_to_string(guest.join(INFO_TEXT)).unwrap();
-        let label = if level == Level::Agent {
-            "Agente · VM"
-        } else {
-            "VM progetto"
-        };
-        assert!(text.starts_with(&format!("Atollo · {label}\n")), "{text}");
+        assert_eq!(level, Level::Agent);
+        assert!(text.starts_with("Atollo · Agente · VM\n"), "{text}");
     }
 }

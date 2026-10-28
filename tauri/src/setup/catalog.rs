@@ -53,16 +53,13 @@ impl Group {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum WithVm {
-    /// In the VM only, its build for Linux (languages, their tools).
+    /// On the PC, and its build for Linux in the agents' sandboxes too
+    /// (languages, their tools, the databases' clients).
     #[default]
     Vm,
-    /// On the PC only (llama.cpp's server, the databases' web tools).
+    /// On the PC only (llama.cpp's server, the web servers, the databases'
+    /// web tools): no agent runs it in a sandbox.
     Pc,
-    /// Both: the server on the PC, its client in the VM (MySQL, MongoDB).
-    Both,
-    /// Neither: with the VM the VM's containers stand in for it (the sites'
-    /// servers, Apache and Caddy); without it, on the PC.
-    Neither,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -347,18 +344,11 @@ fn exists(path: &Path) -> bool {
 }
 
 impl Component {
-    /// Its build for the VM's Linux runs in the VM while it is on
-    /// ([`WithVm::Vm`] or [`WithVm::Both`]): installed for that Linux and
-    /// checked there. Never a system component or a part of the app.
+    /// Its build for the VM's Linux goes in the agents' sandboxes too
+    /// ([`WithVm::Vm`]): installed for that Linux and checked there, besides
+    /// the PC's. Never a system component or a part of the app.
     pub fn in_vm(&self) -> bool {
-        !self.group.always() && matches!(self.with_vm, WithVm::Vm | WithVm::Both)
-    }
-
-    /// It runs on the PC also while the VM is on: the system components
-    /// and the parts of the app, and [`WithVm::Pc`] or [`WithVm::Both`]
-    /// (llama.cpp's server, the databases' servers and web tools).
-    pub fn on_pc_with_vm(&self) -> bool {
-        self.group.always() || matches!(self.with_vm, WithVm::Pc | WithVm::Both)
+        !self.group.always() && self.with_vm == WithVm::Vm
     }
 
     /// Its section of the Tools page: required (and the editor), agents,

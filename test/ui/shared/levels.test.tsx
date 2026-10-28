@@ -46,7 +46,7 @@ describe("a refused command's error", () => {
   });
 
   it("says the other fixes in its text only", () => {
-    for (const fix of ["open_from_project", "use_local_disk", "start_from_project", "none"] as const) {
+    for (const fix of ["open_from_project", "use_local_disk", "none"] as const) {
       const { unmount } = render(<ErrorLine error="rifiutato" fix={fix} />);
       expect(screen.getByRole("alert").textContent).toBe("rifiutato");
       expect(screen.queryByRole("button")).toBeNull();

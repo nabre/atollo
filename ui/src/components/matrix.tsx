@@ -25,7 +25,6 @@ import {
 
 const GLYPH: Record<CellState, { glyph: string; tone: string }> = {
   available: { glyph: "✓", tone: "text-vsc-success" },
-  vm: { glyph: "▣", tone: "text-vsc-link" },
   staged: { glyph: "↓", tone: "text-vsc-success" },
   firstStart: { glyph: "◷", tone: "text-vsc-warning" },
   notNeeded: { glyph: "–", tone: "text-vsc-desc" },

@@ -22,7 +22,7 @@ use crate::isolation::{self, vm};
 use crate::kit::Kit;
 
 use super::prepare::{info_file, SandboxInfo};
-use super::{decide, Agent, Facts, Fix, Placement, Refusal, Request, VmProgram};
+use super::{decide, Agent, Facts, Fix, Placement, Refusal, Request};
 
 /// The report of a project's VM (§8.1).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -35,9 +35,6 @@ pub struct VmReport {
     pub reason: Option<String>,
     /// The project's sandbox, then each agent's with a sandbox of its own.
     pub sandboxes: Vec<SandboxReport>,
-    /// The project's actions running in its VM with a port published on
-    /// the PC.
-    pub published: Vec<PublishedPort>,
     /// «GitHub nella VM» of the project (D-172).
     pub github: bool,
 }
@@ -107,15 +104,6 @@ pub struct HostPortInfo {
     pub port: u16,
     /// What listens there: a database (`mysql shop`) or `llama-server`.
     pub what: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PublishedPort {
-    pub port: u16,
-    /// `127.0.0.1`, or `0.0.0.0` with «Rete locale».
-    pub address: String,
-    pub action: String,
 }
 
 /// A tool as «Verifica strumenti» found it in a sandbox (§8.2).
@@ -246,8 +234,6 @@ pub struct Seen {
     pub reason: Option<String>,
     /// `sbx ls --json`, when `sbx` answered.
     pub ls: Option<String>,
-    /// The project's actions with a port published from its VM.
-    pub published: Vec<PublishedPort>,
     /// «GitHub nella VM».
     pub github: bool,
 }
@@ -285,7 +271,6 @@ pub fn report(
         vm: if seen.on { VmOnOff::On } else { VmOnOff::Off },
         reason: seen.reason,
         sandboxes,
-        published: seen.published,
         github: seen.github,
     }
 }
@@ -363,7 +348,7 @@ pub fn check_specs(
         return Vec::new();
     };
     let tools = read_info(kit, sandbox).map_or_else(
-        || super::prepare::wanted_tools(kit, project, &VmProgram::Shell, &[]),
+        || super::prepare::wanted_tools(kit, project, None, &[]),
         |i| i.tools,
     );
     let kit_lines = crate::versions::kit_choice(&guest);
@@ -536,9 +521,7 @@ pub fn check(
     s: &mut SandboxReport,
     lang: &str,
 ) -> Result<(), ActError> {
-    let (level, program) = match decide(req, facts) {
-        Placement::Refused { reason, fix, .. } => return Err(ActError::Refused { reason, fix }),
-        Placement::Pc { .. } => return Err(ActError::NoVm),
+    let (level, program) = match in_sandbox(req, facts)? {
         Placement::Vm {
             level,
             program,
@@ -554,6 +537,7 @@ pub fn check(
             }
             (level, program)
         }
+        _ => return Err(ActError::NoVm),
     };
     let specs = check_specs(kit, project, &s.name, s.agent);
     if s.state != SandboxRun::Running {
@@ -643,11 +627,10 @@ pub fn act(
     facts: &Facts,
     action: VmAction,
 ) -> Result<Vec<String>, ActError> {
-    let name = match decide(req, facts) {
-        Placement::Refused { reason, fix, .. } => return Err(ActError::Refused { reason, fix }),
-        Placement::Pc { .. } => return Err(ActError::NoVm),
-        Placement::Vm { sandbox, .. } => sandbox.name().to_owned(),
+    let Placement::Vm { sandbox, .. } = in_sandbox(req, facts)? else {
+        return Err(ActError::NoVm);
     };
+    let name = sandbox.name().to_owned();
     let lock = action_lock(&name);
     let _one = lock.lock().unwrap_or_else(PoisonError::into_inner);
     let sessions = fx.sessions(&name);
@@ -663,14 +646,29 @@ pub fn act(
     Ok(sessions)
 }
 
+/// `req` placed in a sandbox, or why not: the sandbox itself with the VM
+/// off has nothing to act on ([`ActError::NoVm`]); another refusal says its
+/// reason and fix.
+fn in_sandbox(req: &Request, facts: &Facts) -> Result<Placement, ActError> {
+    match decide(req, facts) {
+        Placement::Refused {
+            reason: Refusal::AgentsNeedVm { .. },
+            ..
+        } if req.origin == super::Origin::Sandbox => Err(ActError::NoVm),
+        Placement::Refused { reason, fix, .. } => Err(ActError::Refused { reason, fix }),
+        Placement::Pc { .. } => Err(ActError::NoVm),
+        vm @ Placement::Vm { .. } => Ok(vm),
+    }
+}
+
 /// The request of an action or a check on `project`'s sandbox (`dir` its
-/// folder): the project terminal's (the project's sandbox), or the agent's
-/// own button for Claude Code's and Codex's sandboxes (R12).
+/// folder): the sandbox's own ([`super::Origin::Sandbox`], R9), or the
+/// agent's button for Claude Code's and Codex's sandboxes (R8).
 pub fn sandbox_request(kit: &Kit, dir: &Path, agent: Option<Agent>) -> Request {
     Request {
         origin: match agent {
             Some(agent) => super::Origin::AgentButton { agent },
-            None => super::Origin::ProjectTerminal,
+            None => super::Origin::Sandbox,
         },
         place: super::place::place_of(kit, dir),
     }

@@ -82,6 +82,7 @@ fn origins() -> Vec<Origin> {
         Origin::Scaffold {
             base: "laravel".into(),
         },
+        Origin::Sandbox,
     ];
     for agent in Agent::ALL {
         all.push(Origin::AgentButton { agent });
@@ -109,6 +110,7 @@ fn level_in_the_table(origin: &Origin) -> Level {
         Origin::Site { .. } => Level::Project,
         Origin::Pool { .. } => Level::Project,
         Origin::Scaffold { .. } => Level::Project,
+        Origin::Sandbox => Level::Agent,
         Origin::AgentButton { .. } => Level::Agent,
         Origin::EditorAgentProfile { .. } => Level::Agent,
         Origin::Forwarded { .. } => Level::Agent,
@@ -119,63 +121,34 @@ fn level_in_the_table(origin: &Origin) -> Level {
 /// The rows of §3.4 written one by one, as the document has them: the
 /// first that matches.
 fn first_row(req: &Request, facts: &Facts) -> Option<Rule> {
-    let level = req.origin.level();
+    let agent = req.origin.level() == Level::Agent;
+    let tools = matches!(req.origin, Origin::Sandbox);
     let project = matches!(req.place, Place::Project { .. });
     let folder = !project;
     let on = facts.vm == VmState::On;
     let off = !on;
-    let pool = matches!(req.origin, Origin::Pool { .. });
     let runner = req.origin.agent().map(Agent::runner);
-    let l2_l3 = matches!(level, Level::Project | Level::Agent);
     let rows = [
-        (Rule::R1, level == Level::Agent && off),
-        (Rule::R2, level == Level::Project && pool && on),
-        (Rule::R3, level == Level::Manual && project),
-        (Rule::R4, level == Level::Manual && folder),
-        (Rule::R5, level == Level::Project && project && off),
-        (Rule::R6, level == Level::Project && folder && off),
-        (Rule::R7, level == Level::Project && folder && on),
-        (Rule::R8, level == Level::Agent && folder && on),
-        (Rule::R9, l2_l3 && project && on && facts.restart_pending),
+        (Rule::R1, agent && off),
+        (Rule::R2, !agent && project),
+        (Rule::R3, !agent && folder),
+        (Rule::R4, agent && folder && on),
+        (Rule::R5, agent && project && on && facts.restart_pending),
         (
-            Rule::R10,
-            l2_l3 && project && on && facts.guest_dir.is_none(),
+            Rule::R6,
+            agent && project && on && facts.guest_dir.is_none(),
         ),
         (
-            Rule::R11,
-            level == Level::Agent
-                && runner == Some(AgentRunner::ProjectVm)
-                && project
-                && on
-                && !facts.linux_build,
+            Rule::R7,
+            runner == Some(AgentRunner::ProjectVm) && project && on && !facts.linux_build,
         ),
         (
-            Rule::R12,
-            level == Level::Agent && runner == Some(AgentRunner::SbxAgent) && project && on,
+            Rule::R8,
+            runner == Some(AgentRunner::SbxAgent) && project && on,
         ),
         (
-            Rule::R13,
-            level == Level::Agent && runner == Some(AgentRunner::ProjectVm) && project && on,
-        ),
-        (
-            Rule::R14,
-            matches!(req.origin, Origin::ProjectTerminal) && project && on,
-        ),
-        (
-            Rule::R15,
-            matches!(
-                req.origin,
-                Origin::EditorTask { .. } | Origin::Scaffold { .. }
-            ) && project
-                && on,
-        ),
-        (
-            Rule::R16,
-            matches!(req.origin, Origin::Action { .. }) && project && on,
-        ),
-        (
-            Rule::R17,
-            matches!(req.origin, Origin::Site { .. }) && project && on,
+            Rule::R9,
+            (tools || runner == Some(AgentRunner::ProjectVm)) && project && on,
         ),
     ];
     rows.into_iter().find(|(_, m)| *m).map(|(r, _)| r)
@@ -239,7 +212,7 @@ fn check_invariants(req: &Request, facts: &Facts, rule: Rule, p: &Placement) {
             program,
             ..
         } => {
-            assert_ne!(*level, Level::Manual, "{at}");
+            assert_eq!(*level, Level::Agent, "D-183: {at}");
             let Place::Project { name, dir, .. } = &req.place else {
                 panic!("a VM outside a project: {at}");
             };
@@ -263,11 +236,12 @@ fn check_invariants(req: &Request, facts: &Facts, rule: Rule, p: &Placement) {
                     assert_eq!(sandbox, &crate::isolation::vm::name(name), "{at}")
                 }
             }
-            let agent_program = matches!(
-                program,
-                VmProgram::SbxAgent { .. } | VmProgram::AgentBinary { .. }
+            assert_eq!(program.agent(), req.origin.agent(), "{at}");
+            assert_eq!(
+                matches!(program, VmProgram::Tools),
+                req.origin == Origin::Sandbox,
+                "{at}"
             );
-            assert_eq!(agent_program, *level == Level::Agent, "{at}");
         }
         Placement::Refused { reason, fix, .. } => {
             assert_eq!(*fix, reason.fix(), "I7: {at}");
@@ -287,7 +261,7 @@ fn the_level_comes_from_the_origin() {
         assert_eq!(origin.level(), level_in_the_table(&origin), "{origin:?}");
         assert_eq!(
             origin.agent().is_some(),
-            origin.level() == Level::Agent,
+            origin.level() == Level::Agent && origin != Origin::Sandbox,
             "{origin:?}"
         );
     }
@@ -330,7 +304,7 @@ fn every_request_has_exactly_one_placement() {
             }
         }
     }
-    assert_eq!(seen.len(), 17, "every row is reachable: {seen:?}");
+    assert_eq!(seen.len(), 9, "every row is reachable: {seen:?}");
     assert!(count > 3000, "{count}");
 }
 
@@ -357,56 +331,68 @@ fn r1_agents_need_the_vm() {
 }
 
 #[test]
-fn r2_pools_only_without_the_vm() {
-    let pool = Origin::Pool {
-        pool: "apache-2.4".into(),
-    };
-    for place in [in_shop(None), elsewhere()] {
-        assert_eq!(
-            decided(&req(pool.clone(), place), &on()),
-            (
-                Rule::R2,
-                Placement::Refused {
-                    level: Level::Project,
-                    reason: Refusal::PoolsOnlyWithoutVm,
-                    fix: Fix::StartFromProject,
-                }
-            )
-        );
-    }
-}
-
-#[test]
-fn r3_manual_in_a_project_is_on_the_pc() {
-    for origin in [
-        Origin::KitTerminal {
-            terminal: "all".into(),
-        },
-        Origin::EditorTerminal,
-    ] {
+fn r2_everything_but_an_agent_in_a_project_is_on_the_pc() {
+    let origins = [
+        (
+            Origin::KitTerminal {
+                terminal: "all".into(),
+            },
+            Level::Manual,
+        ),
+        (Origin::EditorTerminal, Level::Manual),
+        (Origin::ProjectTerminal, Level::Project),
+        (
+            Origin::EditorTask {
+                command: "npm test".into(),
+            },
+            Level::Project,
+        ),
+        (
+            Origin::Action {
+                action: "dev".into(),
+                web: true,
+            },
+            Level::Project,
+        ),
+        (
+            Origin::Site {
+                action: "site".into(),
+            },
+            Level::Project,
+        ),
+        (
+            Origin::Scaffold {
+                base: "laravel".into(),
+            },
+            Level::Project,
+        ),
+    ];
+    for (origin, level) in origins {
+        // Whatever the VM says (D-183): it runs the agents only.
         for facts in [on(), off()] {
             assert_eq!(
                 decided(&req(origin.clone(), in_shop(Some("web/src"))), &facts),
                 (
-                    Rule::R3,
+                    Rule::R2,
                     Placement::Pc {
-                        level: Level::Manual,
+                        level,
                         project: Some("shop".into()),
                         dir: shop_dir().join("web").join("src"),
                     }
-                )
+                ),
+                "{origin:?}"
             );
         }
     }
 }
 
 #[test]
-fn r4_manual_elsewhere_is_on_the_pc() {
+fn r3_everything_but_an_agent_elsewhere_is_on_the_pc() {
     for facts in [on(), off()] {
         assert_eq!(
             decided(&req(Origin::EditorTerminal, elsewhere()), &facts),
             (
-                Rule::R4,
+                Rule::R3,
                 Placement::Pc {
                     level: Level::Manual,
                     project: None,
@@ -414,86 +400,31 @@ fn r4_manual_elsewhere_is_on_the_pc() {
                 }
             )
         );
+        // A pool, in its own folder, also with the VM on: sealed for no
+        // project.
+        let dir = root().join("data").join("servers").join("apache-2.4");
+        let pool = Request {
+            origin: Origin::Pool {
+                pool: "apache-2.4".into(),
+            },
+            place: Place::Folder { dir: dir.clone() },
+        };
+        assert_eq!(
+            decided(&pool, &facts),
+            (
+                Rule::R3,
+                Placement::Pc {
+                    level: Level::Project,
+                    project: None,
+                    dir,
+                }
+            )
+        );
     }
 }
 
 #[test]
-fn r5_project_code_on_the_pc_without_the_vm() {
-    let r = req(Origin::ProjectTerminal, in_shop(Some("web")));
-    assert_eq!(
-        decided(&r, &off()),
-        (
-            Rule::R5,
-            Placement::Pc {
-                level: Level::Project,
-                project: Some("shop".into()),
-                dir: shop_dir().join("web"),
-            }
-        )
-    );
-    // Whatever the other facts: they speak of the VM only.
-    let odd = Facts {
-        restart_pending: true,
-        guest_dir: None,
-        ..off()
-    };
-    assert_eq!(decided(&r, &odd).0, Rule::R5);
-}
-
-#[test]
-fn r6_project_code_outside_a_project_without_the_vm() {
-    // A pool, in its own folder: on the PC, sealed for no project.
-    let pool = Request {
-        origin: Origin::Pool {
-            pool: "apache-2.4".into(),
-        },
-        place: Place::Folder {
-            dir: root().join("data").join("servers").join("apache-2.4"),
-        },
-    };
-    assert_eq!(
-        decided(&pool, &off()),
-        (
-            Rule::R6,
-            Placement::Pc {
-                level: Level::Project,
-                project: None,
-                dir: root().join("data").join("servers").join("apache-2.4"),
-            }
-        )
-    );
-    let task = req(
-        Origin::EditorTask {
-            command: "make".into(),
-        },
-        elsewhere(),
-    );
-    assert_eq!(decided(&task, &off()).0, Rule::R6);
-}
-
-#[test]
-fn r7_project_code_needs_a_project_with_the_vm() {
-    let r = req(
-        Origin::EditorTask {
-            command: "npm test".into(),
-        },
-        elsewhere(),
-    );
-    assert_eq!(
-        decided(&r, &on()),
-        (
-            Rule::R7,
-            Placement::Refused {
-                level: Level::Project,
-                reason: Refusal::NotAProject,
-                fix: Fix::OpenFromProject,
-            }
-        )
-    );
-}
-
-#[test]
-fn r8_an_agent_needs_a_project() {
+fn r4_an_agent_needs_a_project() {
     for agent in Agent::ALL {
         let r = req(
             Origin::Forwarded {
@@ -505,7 +436,7 @@ fn r8_an_agent_needs_a_project() {
         assert_eq!(
             decided(&r, &on()),
             (
-                Rule::R8,
+                Rule::R4,
                 Placement::Refused {
                     level: Level::Agent,
                     reason: Refusal::AgentOutsideProject,
@@ -517,65 +448,65 @@ fn r8_an_agent_needs_a_project() {
 }
 
 #[test]
-fn r9_a_pending_restart_starts_nothing() {
+fn r5_a_pending_restart_starts_no_agent() {
     let facts = Facts {
         restart_pending: true,
         guest_dir: None,
         ..on()
     };
-    for origin in [
-        Origin::ProjectTerminal,
+    let r = req(
         Origin::AgentButton {
             agent: Agent::Claude,
         },
-    ] {
-        let level = origin.level();
-        assert_eq!(
-            decided(&req(origin, in_shop(None)), &facts),
-            (
-                Rule::R9,
-                Placement::Refused {
-                    level,
-                    reason: Refusal::DaemonRestartPending,
-                    fix: Fix::RestartDaemon,
-                }
-            )
-        );
-    }
+        in_shop(None),
+    );
+    assert_eq!(
+        decided(&r, &facts),
+        (
+            Rule::R5,
+            Placement::Refused {
+                level: Level::Agent,
+                reason: Refusal::DaemonRestartPending,
+                fix: Fix::RestartDaemon,
+            }
+        )
+    );
+    // The project's own terminal does not wait for the VM.
+    assert_eq!(
+        decided(&req(Origin::ProjectTerminal, in_shop(None)), &facts).0,
+        Rule::R2
+    );
 }
 
 #[test]
-fn r10_a_network_share_never_gets_a_sandbox() {
+fn r6_a_network_share_never_gets_a_sandbox() {
     let facts = Facts {
         guest_dir: None,
         ..on()
     };
-    for origin in [
-        Origin::Action {
-            action: "dev".into(),
-            web: true,
-        },
-        Origin::AgentButton { agent: Agent::Pi },
-    ] {
-        let level = origin.level();
-        assert_eq!(
-            decided(&req(origin, in_shop(Some("web"))), &facts),
-            (
-                Rule::R10,
-                Placement::Refused {
-                    level,
-                    reason: Refusal::NoPathInVm {
-                        dir: shop_dir().join("web").display().to_string(),
-                    },
-                    fix: Fix::UseLocalDisk,
-                }
-            )
-        );
-    }
+    assert_eq!(
+        decided(
+            &req(
+                Origin::AgentButton { agent: Agent::Pi },
+                in_shop(Some("web"))
+            ),
+            &facts
+        ),
+        (
+            Rule::R6,
+            Placement::Refused {
+                level: Level::Agent,
+                reason: Refusal::NoPathInVm {
+                    dir: shop_dir().join("web").display().to_string(),
+                },
+                fix: Fix::UseLocalDisk,
+            }
+        )
+    );
 }
 
 #[test]
-fn r11_no_linux_build_no_agent() {
+fn r7_no_linux_build_no_agent() {
     let facts = Facts {
         linux_build: false,
         ..on()
@@ -584,7 +515,7 @@ fn r11_no_linux_build_no_agent() {
         assert_eq!(
             decided(&req(Origin::AgentButton { agent }, in_shop(None)), &facts),
             (
-                Rule::R11,
+                Rule::R7,
                 Placement::Refused {
                     level: Level::Agent,
                     reason: Refusal::NoLinuxBuild { agent },
@@ -600,17 +531,17 @@ fn r11_no_linux_build_no_agent() {
         },
         in_shop(None),
     );
-    assert_eq!(decided(&claude, &facts).0, Rule::R12);
+    assert_eq!(decided(&claude, &facts).0, Rule::R8);
 }
 
 #[test]
-fn r12_claude_and_codex_get_their_own_sandbox() {
+fn r8_claude_and_codex_get_their_own_sandbox() {
     for agent in [Agent::Claude, Agent::Codex] {
         let r = req(Origin::EditorAgentProfile { agent }, in_shop(Some("web")));
         assert_eq!(
             decided(&r, &on()),
             (
-                Rule::R12,
+                Rule::R8,
                 Placement::Vm {
                     level: Level::Agent,
                     project: "shop".into(),
@@ -627,7 +558,6 @@ fn r12_claude_and_codex_get_their_own_sandbox() {
                         databases: true,
                         local_models: false,
                     },
-                    publish: false,
                     program: VmProgram::SbxAgent { agent },
                 }
             )
@@ -636,7 +566,7 @@ fn r12_claude_and_codex_get_their_own_sandbox() {
 }
 
 #[test]
-fn r13_pi_and_antigravity_run_in_the_project_vm() {
+fn r9_pi_and_antigravity_run_in_the_project_vm() {
     for agent in [Agent::Pi, Agent::Antigravity] {
         let r = req(
             Origin::EditorExtension {
@@ -648,7 +578,7 @@ fn r13_pi_and_antigravity_run_in_the_project_vm() {
         assert_eq!(
             decided(&r, &on()),
             (
-                Rule::R13,
+                Rule::R9,
                 Placement::Vm {
                     level: Level::Agent,
                     project: "shop".into(),
@@ -664,7 +594,6 @@ fn r13_pi_and_antigravity_run_in_the_project_vm() {
                         databases: true,
                         local_models: agent == Agent::Pi,
                     },
-                    publish: false,
                     program: VmProgram::AgentBinary { agent },
                 }
             )
@@ -672,124 +601,39 @@ fn r13_pi_and_antigravity_run_in_the_project_vm() {
     }
 }
 
-/// A level-2 placement in the project's sandbox, `program` in `below`.
-fn in_project_vm(below: &str, program: VmProgram, publish: bool) -> Placement {
-    Placement::Vm {
-        level: Level::Project,
-        project: "shop".into(),
-        sandbox: Sandbox::Project {
-            name: crate::isolation::vm::name("shop"),
-        },
-        workdir: format!("/k/projects/shop{below}"),
-        mounts: Mounts {
-            workspace_rw: shop_dir(),
-            tools_ro: tools(),
-        },
-        host: HostAccess {
-            databases: true,
-            local_models: false,
-        },
-        publish,
-        program,
-    }
-}
-
 #[test]
-fn r14_the_project_terminal_in_the_project_vm() {
+fn r9_the_sandbox_itself_is_the_projects() {
     assert_eq!(
-        decided(&req(Origin::ProjectTerminal, in_shop(None)), &on()),
-        (Rule::R14, in_project_vm("", VmProgram::Shell, false))
-    );
-}
-
-#[test]
-fn r15_a_task_or_a_scaffold_in_the_project_vm() {
-    let task = req(
-        Origin::EditorTask {
-            command: "npm test".into(),
-        },
-        in_shop(Some("web/src")),
-    );
-    assert_eq!(
-        decided(&task, &on()),
+        decided(&req(Origin::Sandbox, in_shop(None)), &on()),
         (
-            Rule::R15,
-            in_project_vm(
-                "/web/src",
-                VmProgram::Line {
-                    command: "npm test".into()
+            Rule::R9,
+            Placement::Vm {
+                level: Level::Agent,
+                project: "shop".into(),
+                sandbox: Sandbox::Project {
+                    name: crate::isolation::vm::name("shop"),
                 },
-                false
-            )
+                workdir: "/k/projects/shop".into(),
+                mounts: Mounts {
+                    workspace_rw: shop_dir(),
+                    tools_ro: tools(),
+                },
+                host: HostAccess {
+                    databases: true,
+                    local_models: false,
+                },
+                program: VmProgram::Tools,
+            }
         )
     );
-    let scaffold = req(
-        Origin::Scaffold {
-            base: "laravel".into(),
-        },
-        in_shop(None),
-    );
+    // No build of an agent is asked for the tools alone.
+    let facts = Facts {
+        linux_build: false,
+        ..on()
+    };
     assert_eq!(
-        decided(&scaffold, &on()),
-        (
-            Rule::R15,
-            in_project_vm(
-                "",
-                VmProgram::Scaffold {
-                    base: "laravel".into()
-                },
-                false
-            )
-        )
-    );
-}
-
-#[test]
-fn r16_an_action_in_the_project_vm() {
-    for web in [true, false] {
-        let r = req(
-            Origin::Action {
-                action: "dev".into(),
-                web,
-            },
-            in_shop(None),
-        );
-        assert_eq!(
-            decided(&r, &on()),
-            (
-                Rule::R16,
-                in_project_vm(
-                    "",
-                    VmProgram::Action {
-                        action: "dev".into()
-                    },
-                    web
-                )
-            )
-        );
-    }
-}
-
-#[test]
-fn r17_a_site_in_a_container_of_the_vm() {
-    let r = req(
-        Origin::Site {
-            action: "site".into(),
-        },
-        in_shop(None),
-    );
-    assert_eq!(
-        decided(&r, &on()),
-        (
-            Rule::R17,
-            in_project_vm(
-                "",
-                VmProgram::Site {
-                    action: "site".into()
-                },
-                true
-            )
-        )
+        decided(&req(Origin::Sandbox, in_shop(None)), &facts).0,
+        Rule::R9
     );
 }
 
@@ -815,11 +659,9 @@ fn a_refusal_always_has_a_reason_and_a_fix() {
             blockers: vec![Blocker::KvmMissing],
         },
         Refusal::AgentOutsideProject,
-        Refusal::NotAProject,
         Refusal::NoPathInVm {
             dir: r"\\server\share\shop".into(),
         },
-        Refusal::PoolsOnlyWithoutVm,
         Refusal::NoLinuxBuild { agent: Agent::Pi },
         Refusal::DaemonRestartPending,
     ];
@@ -829,9 +671,7 @@ fn a_refusal_always_has_a_reason_and_a_fix() {
         [
             Fix::OpenVmNotice,
             Fix::OpenFromProject,
-            Fix::OpenFromProject,
             Fix::UseLocalDisk,
-            Fix::StartFromProject,
             Fix::None,
             Fix::RestartDaemon,
         ]
@@ -861,12 +701,19 @@ fn placements_serialize_as_the_ipc_says() {
     assert_eq!(json["level"], "agent");
     assert_eq!(json["reason"]["code"], "agents_need_vm");
     assert_eq!(json["fix"], "open_vm_notice");
-    let vm = decide(&req(Origin::ProjectTerminal, in_shop(None)), &on());
+    let vm = decide(
+        &req(Origin::AgentButton { agent: Agent::Pi }, in_shop(None)),
+        &on(),
+    );
     let json = serde_json::to_value(&vm).unwrap();
     assert_eq!(json["where"], "vm");
-    assert_eq!(json["level"], "project");
+    assert_eq!(json["level"], "agent");
     assert_eq!(json["sandbox"]["kind"], "project");
-    assert_eq!(json["program"]["kind"], "shell");
+    assert_eq!(json["program"]["kind"], "agentBinary");
+    let pc = decide(&req(Origin::ProjectTerminal, in_shop(None)), &on());
+    let json = serde_json::to_value(&pc).unwrap();
+    assert_eq!(json["where"], "pc");
+    assert_eq!(json["level"], "project");
     let origin: Origin =
         serde_json::from_str(r#"{"kind":"forwarded","agent":"claude","from":"manual"}"#).unwrap();
     assert_eq!(

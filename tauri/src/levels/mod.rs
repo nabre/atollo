@@ -1,11 +1,10 @@
-//! The three levels (D-179, `docs/app/LEVELS.md`): where every program of
-//! Atollo runs. Level 1 (Manual: the kit's and the editor's terminals)
-//! always on the PC; level 2 (Project code: actions, sites, tasks,
-//! scaffolds, the project's terminal) in the project's VM when it is on,
-//! sealed on the PC without it; level 3 (Agent) only in a VM, refused
-//! without it.
+//! Where every program of Atollo runs (D-179, D-183, `docs/app/LEVELS.md`):
+//! two places. On the PC level 1 (Manual: the kit's and the editor's
+//! terminals) and level 2 (Project code: actions, sites, tasks, scaffolds,
+//! the project's terminal, sealed); in the VM level 3 (Agent) only,
+//! refused without it.
 //!
-//! [`decide`] is the one decision: pure and total, the rules R1–R17 of
+//! [`decide`] is the one decision: pure and total, the rules R1–R9 of
 //! LEVELS.md §3.4 in order. The level comes from the origin
 //! ([`Origin::level`]), never from the caller (I2); the place from a real
 //! folder ([`place::place_of`]); the rest from [`facts::facts`], the only
@@ -156,6 +155,9 @@ pub enum Origin {
         extension: String,
         agent: Agent,
     },
+    /// The project's sandbox itself, for its tools: «Verifica strumenti»,
+    /// «Riavvia», «Ricrea», «Aggiorna» (LEVELS.md §8.5). No session.
+    Sandbox,
 }
 
 impl Origin {
@@ -172,11 +174,13 @@ impl Origin {
             Origin::AgentButton { .. }
             | Origin::EditorAgentProfile { .. }
             | Origin::Forwarded { .. }
-            | Origin::EditorExtension { .. } => Level::Agent,
+            | Origin::EditorExtension { .. }
+            | Origin::Sandbox => Level::Agent,
         }
     }
 
-    /// The agent asked for: `Some` for the four level-3 origins only.
+    /// The agent asked for: `Some` for the four level-3 origins that start
+    /// one, `None` for the others (and [`Origin::Sandbox`]).
     pub fn agent(&self) -> Option<Agent> {
         match self {
             Origin::AgentButton { agent }
@@ -263,7 +267,7 @@ pub enum Placement {
         dir: PathBuf,
     },
     Vm {
-        /// Project or Agent.
+        /// Agent, always.
         level: Level,
         project: String,
         sandbox: Sandbox,
@@ -273,8 +277,6 @@ pub enum Placement {
         mounts: Mounts,
         /// Which PC ports the sandbox may reach (numbers resolved by `prepare`).
         host: HostAccess,
-        /// Whether a port of the VM is published on the PC (web actions).
-        publish: bool,
         program: VmProgram,
     },
     Refused {
@@ -331,29 +333,20 @@ pub struct HostAccess {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum VmProgram {
-    /// Interactive `bash -l`.
-    Shell,
-    /// An editor task: `sh -lc`.
-    Line { command: String },
-    /// The steps of a base (framework scaffolding, "Le mie basi"), each a
-    /// `sh -lc` line (`start::scaffold_command`), in the new project's sandbox.
-    Scaffold { base: String },
-    /// `sh -lc`, tracked (`vm::tracked`).
-    Action { action: String },
-    /// A container of the VM's Docker (`vm::web_line`).
-    Site { action: String },
     /// `sbx run --name <atollo-a-…>`.
     SbxAgent { agent: Agent },
     /// pi / agy, Linux build, `sbx exec -it`.
     AgentBinary { agent: Agent },
+    /// The sandbox made ready for its tools, no session ([`Origin::Sandbox`]).
+    Tools,
 }
 
 impl VmProgram {
-    /// The agent it runs (`SbxAgent`, `AgentBinary`); `None` otherwise.
+    /// The agent it runs; `None` for [`VmProgram::Tools`].
     pub fn agent(&self) -> Option<Agent> {
         match self {
             VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => Some(*agent),
-            _ => None,
+            VmProgram::Tools => None,
         }
     }
 }
@@ -361,19 +354,14 @@ impl VmProgram {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "code", rename_all = "snake_case")]
 pub enum Refusal {
-    /// Level 3 with the VM off: the agents run only in the VM.
+    /// An agent with the VM off: the agents run only in the VM.
     AgentsNeedVm {
         blockers: Vec<crate::isolation::Blocker>,
     },
-    /// Level 3 outside a project folder.
+    /// An agent outside a project folder.
     AgentOutsideProject,
-    /// Level 2 outside a project folder with the VM on (an editor task out
-    /// of `projects/`).
-    NotAProject,
     /// The folder has no path in the VM (network share).
     NoPathInVm { dir: String },
-    /// A Web Server pool with the VM on.
-    PoolsOnlyWithoutVm,
     /// Pi or Antigravity has no build for the VM's Linux.
     NoLinuxBuild { agent: Agent },
     /// The kit's daemon must restart for a security setting
@@ -386,9 +374,8 @@ impl Refusal {
     pub fn fix(&self) -> Fix {
         match self {
             Refusal::AgentsNeedVm { .. } => Fix::OpenVmNotice,
-            Refusal::AgentOutsideProject | Refusal::NotAProject => Fix::OpenFromProject,
+            Refusal::AgentOutsideProject => Fix::OpenFromProject,
             Refusal::NoPathInVm { .. } => Fix::UseLocalDisk,
-            Refusal::PoolsOnlyWithoutVm => Fix::StartFromProject,
             Refusal::NoLinuxBuild { .. } => Fix::None,
             Refusal::DaemonRestartPending => Fix::RestartDaemon,
         }
@@ -404,8 +391,6 @@ pub enum Fix {
     OpenFromProject,
     /// Move the project to a local disk.
     UseLocalDisk,
-    /// Start the site from the project's page (it runs in the project's VM).
-    StartFromProject,
     /// Close the VM sessions, then "Check again" in the VM window.
     RestartDaemon,
     /// Nothing the user can do in Atollo (no Linux build published).
@@ -424,222 +409,105 @@ pub enum Rule {
     R7,
     R8,
     R9,
-    R10,
-    R11,
-    R12,
-    R13,
-    R14,
-    R15,
-    R16,
-    R17,
 }
 
-/// The one decision (D-179): pure, total, no I/O.
+/// The one decision (D-179, D-183): pure, total, no I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement {
     decided(req, facts).1
 }
 
-/// What an origin asks for, as the rules tell origins apart: written once
-/// with an exhaustive match, so that every origin has exactly one kind.
-enum Kind<'a> {
-    /// Level 1.
-    Manual,
-    /// Level 2, a Web Server pool.
-    Pool,
-    /// Level 2 or 3: what runs in a VM when it is on.
-    Vm(InVm<'a>),
-}
-
-enum InVm<'a> {
-    Shell,
-    Line(&'a str),
-    Scaffold(&'a str),
-    Action(&'a str, bool),
-    Site(&'a str),
-    Agent(Agent),
-}
-
-impl<'a> Kind<'a> {
-    fn of(origin: &'a Origin) -> Kind<'a> {
-        match origin {
-            Origin::KitTerminal { .. } | Origin::EditorTerminal => Kind::Manual,
-            Origin::Pool { .. } => Kind::Pool,
-            Origin::ProjectTerminal => Kind::Vm(InVm::Shell),
-            Origin::EditorTask { command } => Kind::Vm(InVm::Line(command)),
-            Origin::Scaffold { base } => Kind::Vm(InVm::Scaffold(base)),
-            Origin::Action { action, web } => Kind::Vm(InVm::Action(action, *web)),
-            Origin::Site { action } => Kind::Vm(InVm::Site(action)),
-            Origin::AgentButton { agent }
-            | Origin::EditorAgentProfile { agent }
-            | Origin::Forwarded { agent, .. }
-            | Origin::EditorExtension { agent, .. } => Kind::Vm(InVm::Agent(*agent)),
-        }
-    }
-}
-
-/// [`decide`] with the row of §3.4 that gave the placement. The rows are
-/// read top to bottom; grouped here by what they look at, which gives the
-/// same first row (the test `every_request_has_exactly_one_placement`
-/// checks it against the table written row by row).
+/// [`decide`] with the row of §3.4 that gave the placement: everything but
+/// an agent on the PC (R2, R3); an agent refused with the VM off (R1), in
+/// the VM otherwise (R4–R9).
 pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement) {
     let level = req.origin.level();
+    let project = match &req.place {
+        Place::Project { name, .. } => Some(name),
+        Place::Folder { .. } => None,
+    };
+    if level != Level::Agent {
+        return (
+            if project.is_some() {
+                Rule::R2
+            } else {
+                Rule::R3
+            },
+            Placement::Pc {
+                level,
+                project: project.cloned(),
+                dir: req.place.dir(),
+            },
+        );
+    };
     let refused = |reason: Refusal| Placement::Refused {
         level,
         fix: reason.fix(),
         reason,
     };
-    let on_the_pc = |project: Option<&String>| Placement::Pc {
-        level,
-        project: project.cloned(),
-        dir: req.place.dir(),
-    };
-    let project = match &req.place {
-        Place::Project { name, .. } => Some(name),
-        Place::Folder { .. } => None,
-    };
-    let in_folder = project.is_none();
-    match (Kind::of(&req.origin), &facts.vm) {
-        (Kind::Vm(InVm::Agent(_)), VmState::Off { blockers }) => (
+    if let VmState::Off { blockers } = &facts.vm {
+        return (
             Rule::R1,
             refused(Refusal::AgentsNeedVm {
                 blockers: blockers.clone(),
             }),
-        ),
-        (Kind::Pool, VmState::On) => (Rule::R2, refused(Refusal::PoolsOnlyWithoutVm)),
-        (Kind::Manual, _) => (
-            if in_folder { Rule::R4 } else { Rule::R3 },
-            on_the_pc(project),
-        ),
-        (Kind::Pool | Kind::Vm(_), VmState::Off { .. }) => (
-            if in_folder { Rule::R6 } else { Rule::R5 },
-            on_the_pc(project),
-        ),
-        (Kind::Vm(what), VmState::On) => in_vm(req, facts, what, refused),
+        );
     }
-}
-
-/// Rows R7–R17: level 2 (not a pool) or 3 with the VM on.
-fn in_vm(
-    req: &Request,
-    facts: &Facts,
-    what: InVm<'_>,
-    refused: impl Fn(Refusal) -> Placement,
-) -> (Rule, Placement) {
-    let level = req.origin.level();
     let Place::Project { name, dir, below } = &req.place else {
-        return match what {
-            InVm::Agent(_) => (Rule::R8, refused(Refusal::AgentOutsideProject)),
-            _ => (Rule::R7, refused(Refusal::NotAProject)),
-        };
+        return (Rule::R4, refused(Refusal::AgentOutsideProject));
     };
     if facts.restart_pending {
-        return (Rule::R9, refused(Refusal::DaemonRestartPending));
+        return (Rule::R5, refused(Refusal::DaemonRestartPending));
     }
     let Some(guest_dir) = &facts.guest_dir else {
         return (
-            Rule::R10,
+            Rule::R6,
             refused(Refusal::NoPathInVm {
                 dir: req.place.dir().display().to_string(),
             }),
         );
     };
+    let placed = |sandbox: Sandbox, program: VmProgram, local_models: bool| Placement::Vm {
+        level,
+        project: name.clone(),
+        sandbox,
+        workdir: guest_joined(guest_dir, below.as_deref()),
+        mounts: Mounts {
+            workspace_rw: dir.clone(),
+            tools_ro: facts.guest_tools.clone(),
+        },
+        host: HostAccess {
+            databases: true,
+            local_models,
+        },
+        program,
+    };
     let project_sandbox = || Sandbox::Project {
         name: vm::name(name),
     };
-    let databases_only = HostAccess {
-        databases: true,
-        local_models: false,
+    let Some(agent) = req.origin.agent() else {
+        return (Rule::R9, placed(project_sandbox(), VmProgram::Tools, false));
     };
-    let placed =
-        |sandbox: Sandbox, program: VmProgram, host: HostAccess, publish: bool| Placement::Vm {
-            level,
-            project: name.clone(),
-            sandbox,
-            workdir: guest_joined(guest_dir, below.as_deref()),
-            mounts: Mounts {
-                workspace_rw: dir.clone(),
-                tools_ro: facts.guest_tools.clone(),
-            },
-            host,
-            publish,
-            program,
-        };
-    match what {
-        InVm::Agent(agent) => match agent.runner() {
-            AgentRunner::ProjectVm if !facts.linux_build => {
-                (Rule::R11, refused(Refusal::NoLinuxBuild { agent }))
-            }
-            AgentRunner::SbxAgent => (
-                Rule::R12,
-                placed(
-                    Sandbox::Agent {
-                        name: vm::agent_name(name, agent.id()),
-                        agent,
-                    },
-                    VmProgram::SbxAgent { agent },
-                    databases_only,
-                    false,
-                ),
-            ),
-            AgentRunner::ProjectVm => (
-                Rule::R13,
-                placed(
-                    project_sandbox(),
-                    VmProgram::AgentBinary { agent },
-                    HostAccess {
-                        databases: true,
-                        local_models: agent == Agent::Pi,
-                    },
-                    false,
-                ),
-            ),
-        },
-        InVm::Shell => (
-            Rule::R14,
-            placed(project_sandbox(), VmProgram::Shell, databases_only, false),
-        ),
-        InVm::Line(command) => (
-            Rule::R15,
+    match agent.runner() {
+        AgentRunner::ProjectVm if !facts.linux_build => {
+            (Rule::R7, refused(Refusal::NoLinuxBuild { agent }))
+        }
+        AgentRunner::SbxAgent => (
+            Rule::R8,
             placed(
-                project_sandbox(),
-                VmProgram::Line {
-                    command: command.to_owned(),
+                Sandbox::Agent {
+                    name: vm::agent_name(name, agent.id()),
+                    agent,
                 },
-                databases_only,
+                VmProgram::SbxAgent { agent },
                 false,
             ),
         ),
-        InVm::Scaffold(base) => (
-            Rule::R15,
+        AgentRunner::ProjectVm => (
+            Rule::R9,
             placed(
                 project_sandbox(),
-                VmProgram::Scaffold {
-                    base: base.to_owned(),
-                },
-                databases_only,
-                false,
-            ),
-        ),
-        InVm::Action(action, web) => (
-            Rule::R16,
-            placed(
-                project_sandbox(),
-                VmProgram::Action {
-                    action: action.to_owned(),
-                },
-                databases_only,
-                web,
-            ),
-        ),
-        InVm::Site(action) => (
-            Rule::R17,
-            placed(
-                project_sandbox(),
-                VmProgram::Site {
-                    action: action.to_owned(),
-                },
-                databases_only,
-                true,
+                VmProgram::AgentBinary { agent },
+                agent == Agent::Pi,
             ),
         ),
     }

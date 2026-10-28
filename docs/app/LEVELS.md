@@ -6,6 +6,8 @@ Normative document of decision D-179 (DECISIONS.md, 26/10/2026). It is the singl
 
 Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide`, labels) implemented, not yet called by the app; step 2 (`levels::env`, the one environment builder) implemented and used by today's callers; step 3 (the PC's entry points E1, E3, E5–E9, E20 through `decide` and `environment`, `PtyInfo.level/label/sandbox`, `CmdError.refusal/fix`, the pools sealed) implemented; step 4 (`levels::prepare` with `Effects`, `levels::start`, the VM's entry points E3, E4, E9, E10 through `decide` → `prepare` → `start`, the editor's E11/E12 sessions prepared the same way until step 5, the rule test `no_process_outside_levels`) implemented; step 5 (`levels::requests`, the clients `launch.ps1`/`launch.sh`, the editor's profiles: terminals level 1 on the PC, tasks and agents through the clients, only Atollo's profiles; the editor server at level 1; the forwarders of `data/kit/forward`) implemented; step 6 (`levels::agents`: `agents_enabled`, `installable`, the runner's filter, `AgentInfo.available`, `levels_state`, `levels-changed` and `levels::agents::watch`, the editor's agent profiles gated, the interface; agents installed only for the VM, Q11; the PC's agent code removed) implemented; step 7 (Antigravity in the project's VM) implemented; step 9 (the editor's extensions that run an agent: `level: agent`, never installed, uninstalled at every editor start, the editor's message; the Q2 wrapper ready, not wired) implemented; step 8 (`levels::report`: the VM report, «Verifica strumenti» and the actions on a sandbox; `project_vm_report`, `project_vm_check`, `project_vm_action`; `atollo vm`; the panel «VM del progetto»; the read-only `atollo` and the agents' stand-ins in every sandbox; the shells' level line) implemented; step 10 (the documentation: ARCHITECTURE, TESTING, PRIVACY, the Guide, DECISIONS D-179 «Prove», CHANGELOG) done, without the rename of `isolation::Level`, as 12.2 says. Nothing else here is implemented yet unless the text says "today". Every statement that was not verified on a real system is marked **[unverified]**; every choice made by this document that the user has not confirmed is marked **[assumption]**.
 
+> **D-183 (28/10/2026) supersedes this document where they differ: two places.** Everything but an agent runs on the PC, with or without the VM: the kit's and the editor's terminals (level 1), the project's code (level 2: its terminal, actions, sites, editor tasks, project creation, sealed as D-167 says) and the Web Server pools. The VM runs the agents (level 3) only. `decide` has nine rules (§3.4). The VM rows of level 2 below (R14–R17 of the old table, §6.3–6.5 in the VM, sites in containers, published ports, scaffolding in the VM) are removed from the code; the rest of this document still holds for the agents.
+
 Contents:
 
 1. [Purpose and threat model](#1-purpose-and-threat-model)
@@ -357,7 +359,7 @@ The status used is the one at the moment of the request: no level is cached in f
 ```rust
 /// The one decision (D-179): pure, total, no I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement;
-/// `decide` with the row (`Rule::R1` … `Rule::R17`) that gave the placement:
+/// `decide` with the row (`Rule::R1` … `Rule::R9`) that gave the placement:
 /// for the tests and the log.
 pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 ```
@@ -370,29 +372,21 @@ pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 | `ProjectTerminal`, `EditorTask`, `Action`, `Site`, `Pool`, `Scaffold` | 2 Project |
 | `AgentButton`, `EditorAgentProfile`, `Forwarded`, `EditorExtension`   | 3 Agent   |
 
-Rules, evaluated top to bottom; the first that matches gives the placement. "Project" in the Place column means `Place::Project`, "Folder" means `Place::Folder`, "any" means either.
+Rules (D-183), evaluated top to bottom; the first that matches gives the placement. "Project" in the Place column means `Place::Project`, "Folder" means `Place::Folder`, "any" means either.
 
-| #   | Level | Origin                                        | Place   | `vm` | Other facts         | Placement                                                                                                                                 |
-| --- | ----- | --------------------------------------------- | ------- | ---- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | 3     | any                                           | any     | Off  | —                   | `Refused { AgentsNeedVm { blockers }, OpenVmNotice }`                                                                                     |
-| R2  | 2     | `Pool`                                        | any     | On   | —                   | `Refused { PoolsOnlyWithoutVm, StartFromProject }`                                                                                        |
-| R3  | 1     | any                                           | Project | any  | —                   | `Pc { Manual, Some(name), dir+below }`                                                                                                    |
-| R4  | 1     | any                                           | Folder  | any  | —                   | `Pc { Manual, None, dir }`                                                                                                                |
-| R5  | 2     | any                                           | Project | Off  | —                   | `Pc { Project, Some(name), dir+below }`                                                                                                   |
-| R6  | 2     | any                                           | Folder  | Off  | —                   | `Pc { Project, None, dir }` (sealed for no project: a pool, a task outside a project)                                                     |
-| R7  | 2     | any                                           | Folder  | On   | —                   | `Refused { NotAProject, OpenFromProject }`                                                                                                |
-| R8  | 3     | any                                           | Folder  | On   | —                   | `Refused { AgentOutsideProject, OpenFromProject }`                                                                                        |
-| R9  | 2, 3  | any                                           | Project | On   | `restart_pending`   | `Refused { DaemonRestartPending, RestartDaemon }`                                                                                         |
-| R10 | 2, 3  | any                                           | Project | On   | `guest_dir == None` | `Refused { NoPathInVm { dir }, UseLocalDisk }`                                                                                            |
-| R11 | 3     | agent with `runner() == ProjectVm`            | Project | On   | `!linux_build`      | `Refused { NoLinuxBuild { agent }, None }`                                                                                                |
-| R12 | 3     | agent with `runner() == SbxAgent`             | Project | On   | —                   | `Vm { Agent, sandbox: Agent{agent_name(project, id)}, program: SbxAgent, host: {databases: true, local_models: false}, publish: false }`  |
-| R13 | 3     | agent with `runner() == ProjectVm`            | Project | On   | —                   | `Vm { Agent, sandbox: Project{name(project)}, program: AgentBinary, host: {databases: true, local_models: agent == Pi}, publish: false }` |
-| R14 | 2     | `ProjectTerminal`                             | Project | On   | —                   | `Vm { Project, Project sandbox, Shell, publish: false }`                                                                                  |
-| R15 | 2     | `EditorTask { command }`, `Scaffold { base }` | Project | On   | —                   | `Vm { Project, Project sandbox, Line { command }` (task) or `Scaffold { base }` (scaffold)`, publish: false }`                            |
-| R16 | 2     | `Action { action, web }`                      | Project | On   | —                   | `Vm { Project, Project sandbox, Action, publish: web }`                                                                                   |
-| R17 | 2     | `Site { action }`                             | Project | On   | —                   | `Vm { Project, Project sandbox, Site, publish: true }`                                                                                    |
+| #   | Level | Origin                             | Place   | `vm` | Other facts         | Placement                                                                                                                  |
+| --- | ----- | ---------------------------------- | ------- | ---- | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| R1  | 3     | any                                | any     | Off  | —                   | `Refused { AgentsNeedVm { blockers }, OpenVmNotice }`                                                                      |
+| R2  | 1, 2  | any                                | Project | any  | —                   | `Pc { level, Some(name), dir+below }`                                                                                      |
+| R3  | 1, 2  | any                                | Folder  | any  | —                   | `Pc { level, None, dir }` (sealed for no project at level 2: a pool, a task outside a project)                             |
+| R4  | 3     | any                                | Folder  | On   | —                   | `Refused { AgentOutsideProject, OpenFromProject }`                                                                         |
+| R5  | 3     | any                                | Project | On   | `restart_pending`   | `Refused { DaemonRestartPending, RestartDaemon }`                                                                          |
+| R6  | 3     | any                                | Project | On   | `guest_dir == None` | `Refused { NoPathInVm { dir }, UseLocalDisk }`                                                                             |
+| R7  | 3     | agent with `runner() == ProjectVm` | Project | On   | `!linux_build`      | `Refused { NoLinuxBuild { agent }, None }`                                                                                 |
+| R8  | 3     | agent with `runner() == SbxAgent`  | Project | On   | —                   | `Vm { Agent, sandbox: Agent{agent_name(project, id)}, program: SbxAgent, host: {databases: true, local_models: false} }`  |
+| R9  | 3     | agent with `runner() == ProjectVm` | Project | On   | —                   | `Vm { Agent, sandbox: Project{name(project)}, program: AgentBinary, host: {databases: true, local_models: agent == Pi} }` |
 
-Totality: level 1 is covered by R3/R4 for every place and VM state; level 2 by R2, R5–R7, R9, R10, R14–R17 (every level-2 origin appears in R14–R17 except `Pool`, which is refused by R2 when On and placed by R5/R6 when Off); level 3 by R1, R8–R13. In every `Vm` placement `mounts` is `{ workspace_rw: project dir, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`), `workdir` is `guest_dir` joined with `below`, and level 2 (R14–R17) has `host: { databases: true, local_models: false }`. A `Pc` placement's `dir` is the place's folder (`Place::dir`: the project's folder joined with `below`, or the folder). A refusal's `fix` is always `reason.fix()`. Rows can overlap (R2 and R7 for a pool outside a project, R9 and R10): the first wins. The test `every_request_has_exactly_one_placement` enumerates all origins × {project, project subfolder, folder} × every fact combination (VM on, off with and without blockers, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) and checks that a row matches, that the first row matching (the table written row by row in the test) is the one `decided` reports, and the invariants (12.3).
+Totality: levels 1 and 2 are covered by R2/R3 for every place and VM state; level 3 by R1, R4–R9. In every `Vm` placement `mounts` is `{ workspace_rw: project dir, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`) and `workdir` is `guest_dir` joined with `below`. A `Pc` placement's `dir` is the place's folder (`Place::dir`: the project's folder joined with `below`, or the folder). A refusal's `fix` is always `reason.fix()`. Rows can overlap (R5 and R6): the first wins. The test `every_request_has_exactly_one_placement` enumerates all origins × {project, project subfolder, folder} × every fact combination (VM on, off with and without blockers, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) and checks that a row matches, that the first row matching (the table written row by row in the test) is the one `decided` reports, and the invariants (12.3).
 
 Note on `Forwarded { from }`: `from` is kept for the log and the label only; it never changes the row. A forwarder only exists on the PC (level 1, or level 2 without the VM); level-2 sessions in the VM have no forwarders, so an agent cannot be started from inside a project VM (section 6.8).
 
@@ -805,11 +799,7 @@ ED user opens a terminal (profile "Atollo")
 ```
 ED runs task "npm test" with automationProfile = pwsh -File data/kit/launch.ps1 -Origin editorTask -Command "npm test"
 C writes requests/<id>.json {origin:{kind:editorTask,command}, cwd}
-L requests::serve: place_of(cwd) ─ facts ─ decide
-   VM on,  Project ─▶ Vm{Project, Line{command}} (R15) ─ environment ─ prepare (tools, dbs, Vm::start)
-                      reply {placement:vm, program:sbx, argv: exec_args(vm, below, command, [], tools)}   (step 5)
-   VM off, Project ─▶ Pc{Project} (R5)         reply {placement:pc, program: kit shell, env diff}
-   VM on,  Folder  ─▶ Refused{NotAProject}     reply {placement:refused, text}
+L requests::serve: place_of(cwd) ─ facts ─ decide ─▶ Pc{Project} (R2, R3)   reply {placement:pc, program: kit shell, env diff}
 C prints banner, runs program argv (stdio inherited), exits with its code
 ```
 
@@ -818,21 +808,16 @@ C prints banner, runs program argv (stdio inherited), exits with its code
 ```
 UI projects/explorer.tsx ──run_start{project,action}──▶ IPC ipc/runs.rs
   detect action a; origin = a.static_dir|apache_dir|caddy_dir ? Site{a} : Action{a, web: a.kind == Web}
-  p = decide({origin, Project{project}}, facts)
-   ├ Vm (R16/R17) ─ environment ─ prepare (tools, db.env, ports, info.json, Vm::start)
-   │     ─ start::start_action ─ Runner::start_in(…, Some(vm)) ─ vm.command(exec_args | web_line) ; publish port
-   ├ Pc (R5) ─ site? pool_of → servers.attach (pool) | own server ; else command
-   │     ─ environment(Pc{Project}) ─ Runner::start_in(…)
-   └ Refused (R9/R10) ─ CmdError{refusal, fix}
+  p = decide({origin, Project{project}}, facts) = Pc (R2)
+     ─ site? pool_of → servers.attach (pool) | own server ; else command
+     ─ environment(Pc{Project}) ─ start::start_action ─ Runner::start_in(…)
 ```
 
 ### 6.5 Site through a pool (level 2)
 
 ```
 UI servers/page.tsx ──server_start{id}──▶ IPC ipc/servers.rs
-  p = decide({Pool{id}, Folder{data/servers/<id>}}, facts)
-   ├ VM on  ─▶ Refused{PoolsOnlyWithoutVm, StartFromProject}   (R2)
-   └ VM off ─▶ Pc{Project, None} (R6) ─ environment ─ servers.start
+  p = decide({Pool{id}, Folder{data/servers/<id>}}, facts) = Pc{Project, None} (R3) ─ environment ─ servers.start
 ```
 
 ### 6.6 Agent from the project page (level 3)

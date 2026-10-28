@@ -756,10 +756,10 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       ),
     subtitle: () =>
       tr(
-        "Una microVM per progetto, con l'editor e gli agenti: che cosa serve su ogni sistema, il primo accesso, che cosa gira dove, l'avviso «Senza VM», GitHub nella VM e le sandbox.",
-        "A microVM per project, with the editor and the agents: what each system needs, the first sign-in, what runs where, the “No VM” notice, GitHub in the VM and the sandboxes.",
-        "Une microVM par projet, avec l'éditeur et les agents : ce qu'il faut sur chaque système, la première connexion, ce qui tourne où, l'avis « Sans VM », GitHub dans la VM et les sandbox.",
-        "Eine microVM pro Projekt, mit dem Editor und den Agenten: was jedes System braucht, die erste Anmeldung, was wo läuft, der Hinweis „Ohne VM“, GitHub in der VM und die Sandboxes.",
+        "La microVM dove girano gli agenti, mentre il resto gira sul PC: che cosa serve su ogni sistema, il primo accesso, che cosa gira dove, l'avviso «Senza VM», GitHub nella VM e le sandbox.",
+        "The microVM where the agents run, while the rest runs on the PC: what each system needs, the first sign-in, what runs where, the “No VM” notice, GitHub in the VM and the sandboxes.",
+        "La microVM où tournent les agents, tandis que le reste tourne sur le PC : ce qu'il faut sur chaque système, la première connexion, ce qui tourne où, l'avis « Sans VM », GitHub dans la VM et les sandbox.",
+        "Die microVM, in der die Agenten laufen, während der Rest auf dem PC läuft: was jedes System braucht, die erste Anmeldung, was wo läuft, der Hinweis „Ohne VM“, GitHub in der VM und die Sandboxes.",
       ),
     icon: "vm",
     keywords:

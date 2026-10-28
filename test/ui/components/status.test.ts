@@ -43,7 +43,6 @@ const status = (extra: Partial<TargetToolStatus> = {}): TargetToolStatus => ({
   firstStart: false,
   unavailableReason: null,
   notNeeded: REASON,
-  viaVm: false,
   ...extra,
 });
 

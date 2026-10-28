@@ -421,21 +421,16 @@ impl<R: Runtime> Effects for AppEffects<R> {
 }
 
 /// The app's sessions running in `sandbox` (LEVELS.md §8.5): its
-/// terminals (the project's, an agent's) and its actions.
+/// agents' terminals.
 pub(crate) fn sessions_in<R: Runtime>(app: &AppHandle<R>, sandbox: &str) -> Vec<String> {
     use tauri::Manager;
-    let mut out: Vec<String> = app
-        .try_state::<crate::editor::terminal::Consoles>()
+    app.try_state::<crate::editor::terminal::Consoles>()
         .map(|c| c.ptys.list())
         .unwrap_or_default()
         .into_iter()
         .filter(|p| p.running && p.sandbox.as_deref() == Some(sandbox))
         .map(|p| p.title)
-        .collect();
-    if let Some(runner) = app.try_state::<Arc<crate::projects::run::Runner>>() {
-        out.extend(runner.in_sandbox(sandbox).into_iter().map(|(r, _)| r.label));
-    }
-    out
+        .collect()
 }
 
 /// Ends the app's sessions running in `sandbox`: its terminals closed as
@@ -458,11 +453,6 @@ fn end_sessions_in<R: Runtime>(app: &AppHandle<R>, sandbox: &str) {
             if let Some(window) = app.get_webview_window(&crate::editor::terminal::label(id)) {
                 let _ = window.close();
             }
-        }
-    }
-    if let Some(runner) = app.try_state::<Arc<crate::projects::run::Runner>>() {
-        for (run, _) in runner.in_sandbox(sandbox) {
-            runner.stop(&run.key);
         }
     }
 }
@@ -533,9 +523,8 @@ fn sandbox_agent(agent: Option<&str>) -> CmdResult<Option<Agent>> {
 }
 
 /// The report of `project`'s VM now (LEVELS.md §8.1): the VM's status, the
-/// sandboxes as `sbx` has them, the app's sessions and published ports.
+/// sandboxes as `sbx` has them, the app's sessions.
 fn report_now<R: Runtime>(app: &AppHandle<R>, state: &AppState, project: &str) -> VmReport {
-    use tauri::Manager;
     let (kit, host, env, lang) = (&state.kit, &state.host, state.env(), state.lang());
     let status = crate::isolation::status(kit, host, &env, false);
     let on = status.level == crate::isolation::Level::Vm;
@@ -548,25 +537,10 @@ fn report_now<R: Runtime>(app: &AppHandle<R>, state: &AppState, project: &str) -
             )
         })
         .and_then(Result::ok);
-    let mut published = Vec::new();
-    if let Some(runner) = app.try_state::<Arc<crate::projects::run::Runner>>() {
-        for (name, _) in report::sandboxes_of(project) {
-            for (run, port) in runner.in_sandbox(&name) {
-                if let Some((port, address)) = port {
-                    published.push(report::PublishedPort {
-                        port,
-                        address: address.to_owned(),
-                        action: run.label,
-                    });
-                }
-            }
-        }
-    }
     let seen = report::Seen {
         on,
         reason: (!on).then(|| crate::isolation::why_no_vm(&status, lang)),
         ls,
-        published,
         github: crate::projects::settings::load(kit, project).github_in_vm,
     };
     report::report(kit, project, seen, &|name| sessions_in(app, name))

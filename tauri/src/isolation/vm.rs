@@ -2,14 +2,8 @@
 //! project, `atollo-p-<project>-<hash>`, with the project's folder as its workspace
 //! (the folder the commands start in). What runs there:
 //!
-//! - the terminal: `sbx exec -it -w <folder> <vm> … bash -l`, the kit's
-//!   tools for Linux first on the `PATH` (D-170, [`kit_terminal_args`]);
-//! - an action's command line: `sbx exec -e … <vm> sh -lc '<line>'`, its
-//!   process group noted in the VM ([`tracked`]) so that a stop ends it
-//!   there ([`stop_args`]), its port published on the PC's `127.0.0.1`, or
-//!   on the local network when Settings allow it (`sbx ports`);
-//! - the web servers: containers of the VM's own Docker on the versions
-//!   the project chose (`php:<line>-apache`, `httpd:2.4`);
+//! - the agents only (D-183): the project's code, its terminal and its web
+//!   servers run on the PC;
 //! - its databases stay on the PC, the kit's servers (D-171): the VM never
 //!   sees their programs, settings or data, and reaches only their ports
 //!   (`host.docker.internal`, [`host_port_allow`]) as the project's user;
@@ -24,8 +18,6 @@
 use std::path::Path;
 
 use sha2::{Digest, Sha256};
-
-use crate::platform::sh_quote as shell_quote_posix;
 
 /// The prefix of everything Atollo names in the VMs.
 pub const PREFIX: &str = "atollo-";
@@ -239,34 +231,6 @@ fn tools_options(tools: &crate::isolation::GuestTools) -> Vec<String> {
     args
 }
 
-/// The kit's terminal in its VM: a login bash in `dir` (the VM's path),
-/// with `tools` ([`tools_options`]): the kit's tools for Linux first on the
-/// `PATH`, the VM's own programs after them. `banner`: the session's level
-/// line (LEVELS.md §8.3), printed on stderr by the VM's shell before bash
-/// starts; `None` when the PC side prints it (a request's client).
-pub fn kit_terminal_args(
-    vm: &str,
-    dir: &str,
-    tools: &crate::isolation::GuestTools,
-    banner: Option<&str>,
-) -> Vec<String> {
-    let mut args: Vec<String> = ["exec", "-it", "-w", dir].map(String::from).into();
-    args.extend(tools_options(tools));
-    args.push(vm.into());
-    args.push("sh".into());
-    args.push("-c".into());
-    let start = session_start();
-    match banner {
-        None => args.push(format!("{start}; exec bash -l")),
-        Some(banner) => {
-            args.push(format!(r#"printf '%s\n' "$1" >&2; {start}; exec bash -l"#));
-            args.push("sh".into());
-            args.push(banner.into());
-        }
-    }
-    args
-}
-
 /// «Verifica strumenti» in the sandbox `vm` (LEVELS.md §8.2): `sbx exec`
 /// with the session's `tools` (their `PATH` and variables, never the file
 /// of the databases' variables: the check needs no password) and the check
@@ -384,162 +348,6 @@ pub fn agent_session_args(
     args
 }
 
-/// The PC's address a port of the VM is published on: `127.0.0.1`, or
-/// every card of the PC (`0.0.0.0`) when Settings let the projects'
-/// servers be reached from the local network (`lan`, tried with sbx
-/// 0.49.2).
-fn host_ip(lan: bool) -> &'static str {
-    if lan {
-        "0.0.0.0"
-    } else {
-        "127.0.0.1"
-    }
-}
-
-/// Publishes `port` of the VM on the PC's [`host_ip`]`:<port>`.
-pub fn publish_args(vm: &str, port: u16, lan: bool) -> Vec<String> {
-    vec![
-        "ports".into(),
-        vm.into(),
-        "--publish".into(),
-        format!("{}:{port}:{port}", host_ip(lan)),
-    ]
-}
-
-/// True when `sbx ports --publish`'s error `text` says `port` is published
-/// already on the very address asked ([`host_ip`]), never another one.
-pub fn published_already(text: &str, port: u16, lan: bool) -> bool {
-    text.contains(&format!(" {}:{port}/", host_ip(lan))) && text.contains("already published")
-}
-
-/// Takes `port` back from the PC (idempotent: nothing published is fine).
-pub fn unpublish_args(vm: &str, port: u16, lan: bool) -> Vec<String> {
-    vec![
-        "ports".into(),
-        vm.into(),
-        "--unpublish".into(),
-        format!("{}:{port}:{port}", host_ip(lan)),
-    ]
-}
-
-/// Where the actions running in a VM note their process group.
-pub const RUNS: &str = "/tmp/atollo-runs";
-
-/// The name of an action's note in [`RUNS`]: its id readable, then 12 hex
-/// digits of its SHA-256 (two ids never share a note).
-pub fn run_tag(action: &str) -> String {
-    let readable: String = action
-        .to_lowercase()
-        .chars()
-        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
-        .take(40)
-        .collect();
-    let hash = Sha256::digest(action.as_bytes());
-    format!("{readable}-{}", crate::common::hex(&hash[..6]))
-}
-
-/// `line` noting its process group first: the `sh -lc` of `sbx exec` leads
-/// a group of its own, which ending `sbx exec` on the PC does **not** stop
-/// (tried with sbx 0.49.2); [`stop_args`] stops it from inside the VM.
-pub fn tracked(tag: &str, line: &str) -> String {
-    format!("mkdir -p {RUNS} && echo $$ > {RUNS}/{tag} && {line}")
-}
-
-/// Stops the action noted as `tag` inside `vm`: its whole process group,
-/// `TERM` then `KILL` after five seconds, then its web container if it had
-/// one (`container`). A note that is not a number above 1 is left alone:
-/// the project's code can write it, and `kill -1` would reach every process
-/// of the VM.
-pub fn stop_args(vm: &str, tag: &str, container: Option<&str>) -> Vec<String> {
-    let note = shell_quote_posix(&format!("{RUNS}/{tag}"));
-    let mut script = format!(
-        r#"f={note}; g=$(cat "$f" 2>/dev/null); rm -f "$f"; case "$g" in ''|*[!0-9]*|0|1) ;; *) kill -TERM -$g 2>/dev/null; i=0; while kill -0 -$g 2>/dev/null && [ $i -lt 5 ]; do sleep 1; i=$((i+1)); done; kill -KILL -$g 2>/dev/null ;; esac"#
-    );
-    if let Some(c) = container {
-        script.push_str(&format!(
-            "; docker rm -f {} >/dev/null 2>&1",
-            shell_quote_posix(c)
-        ));
-    }
-    script.push_str("; true");
-    vec!["exec".into(), vm.into(), "sh".into(), "-c".into(), script]
-}
-
-/// A command line run in the VM: `sbx exec -e K=V … <vm> sh -lc '<line>'`,
-/// in `folder` of the workspace when given (relative, `/`), with `tools`
-/// ([`tools_options`]) then the action's variables (`env`), the kit's
-/// tools first on the `PATH`, set before the `cd`: a folder that is not
-/// there stops the line. A server in the VM listens on every card of the
-/// VM (`HOST=0.0.0.0`): only the published port reaches the PC.
-pub fn exec_args(
-    vm: &str,
-    folder: Option<&str>,
-    line: &str,
-    env: &[(String, String)],
-    tools: &crate::isolation::GuestTools,
-) -> Vec<String> {
-    let path = &tools.path;
-    let mut args: Vec<String> = vec!["exec".into()];
-    args.extend(tools_options(tools));
-    for (k, v) in env {
-        args.push("-e".into());
-        args.push(format!("{k}={v}"));
-    }
-    args.push(vm.into());
-    args.push("sh".into());
-    args.push("-lc".into());
-    let line = match folder {
-        Some(f) => format!("cd {} && {line}", shell_quote_posix(f)),
-        None => line.to_owned(),
-    };
-    args.push(if path.is_empty() {
-        line
-    } else {
-        format!("{}; {line}", session_start())
-    });
-    args
-}
-
-/// One line of a creation (a framework's scaffolding, D-179) in the new
-/// project's VM `vm`: the kit's PowerShell for the VM's Linux (`pwsh`, the
-/// VM's path of the kit's, mounted read-only) runs the line `encoded`
-/// (`-EncodedCommand`) in `dir` (the VM's path), with `tools`
-/// ([`tools_options`]: the kit's tools first on the `PATH`, the file of
-/// the variables that are never on a command line) and `quiet` (`CI=1`…).
-/// Not interactive: its output is read through the pipes of `sbx exec`.
-pub fn scaffold_args(
-    vm: &str,
-    dir: &str,
-    pwsh: &str,
-    encoded: &str,
-    quiet: &[(&str, &str)],
-    tools: &crate::isolation::GuestTools,
-) -> Vec<String> {
-    let mut args: Vec<String> = ["exec", "-w", dir].map(String::from).into();
-    args.extend(tools_options(tools));
-    for (k, v) in quiet {
-        args.push("-e".into());
-        args.push(format!("{k}={v}"));
-    }
-    args.push(vm.into());
-    let script = format!(r#"{}; exec "$0" "$@""#, session_start());
-    args.extend(
-        [
-            "sh",
-            "-c",
-            script.as_str(),
-            pwsh,
-            "-NoLogo",
-            "-NoProfile",
-            "-NonInteractive",
-            "-EncodedCommand",
-            encoded,
-        ]
-        .map(String::from),
-    );
-    args
-}
-
 /// The kit's tools first on the `PATH` (`ATOLLO_PATH`, given with `-e`),
 /// then what the user installs in the VM's home ([`VM_HOMES`]), then the
 /// VM's own programs. Only variables: «Verifica strumenti» starts with it
@@ -568,90 +376,6 @@ pub fn session_start() -> String {
 /// [`TOOLS_FIRST`] unless the session gives them. The kit's own values for
 /// them never reach the VM (`isolation::guest_view`).
 pub const VM_HOMES: [&str; 4] = ["CARGO_HOME", "GEM_HOME", "NPM_CONFIG_PREFIX", "R_LIBS_USER"];
-
-/// What serves a web action in the VM.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Web {
-    /// Apache with PHP of `line` (`php:<line>-apache`).
-    Php { line: String },
-    /// Files only (`httpd:2.4`).
-    Static,
-}
-
-/// The name of the web container of `action` in its VM.
-pub fn web_container(action: &str) -> String {
-    format!("{PREFIX}web-{action}")
-}
-
-/// The container of a web action, in the foreground of `sh -lc` (it ends
-/// with the action): `folder` of the workspace (relative, `/`; `.` the
-/// whole) as Apache's document root, on `port` of the VM's network, a
-/// container of the same name left by an earlier start removed first.
-///
-/// `aliases`: the URL and the folder in the VM of each path alias of the
-/// site (`/media` → `/d/kit/projects/shop/storage/uploads`), checked by
-/// `projects::alias` and only of the project itself (another project is
-/// not in its VM): each mounted at `/srv/alias/<n>` with an `Alias` of
-/// Apache. The `.localhost` domains need nothing: Apache answers every
-/// name, and a browser takes `*.localhost` to the PC, where the port is
-/// published.
-pub fn web_line(
-    action: &str,
-    web: &Web,
-    folder: &str,
-    port: u16,
-    aliases: &[(String, String)],
-) -> String {
-    let container = shell_quote_posix(&web_container(action));
-    let root = format!("\"$PWD\"/{}", shell_quote_posix(folder));
-    let (image, docroot, conf) = match web {
-        Web::Php { line } => (
-            format!("php:{line}-apache"),
-            "/var/www/html",
-            "/etc/apache2/conf-enabled/atollo-aliases.conf",
-        ),
-        Web::Static => (
-            "httpd:2.4".to_owned(),
-            "/usr/local/apache2/htdocs",
-            "/usr/local/apache2/conf/httpd.conf",
-        ),
-    };
-    let mut mounts = String::new();
-    let mut alias_conf = String::new();
-    for (n, (url, dir)) in aliases.iter().enumerate() {
-        let inside = format!("/srv/alias/{n}");
-        mounts.push_str(" -v ");
-        mounts.push_str(&shell_quote_posix(&format!("{dir}:{inside}")));
-        alias_conf.push_str(&format!(
-            "Alias \"{url}\" \"{inside}\"\n<Directory \"{inside}\">\n    Require all granted\n</Directory>\n"
-        ));
-    }
-    let aliases_in = if alias_conf.is_empty() {
-        String::new()
-    } else {
-        format!(
-            "printf '%s' {} >> {conf} && ",
-            shell_quote_posix(&alias_conf)
-        )
-    };
-    let listen = match web {
-        Web::Php { .. } => format!(
-            "{aliases_in}sed -i 's/^Listen 80$/Listen {port}/' /etc/apache2/ports.conf && \
-             sed -i 's/:80>/:{port}>/' /etc/apache2/sites-enabled/000-default.conf && \
-             exec apache2-foreground"
-        ),
-        Web::Static => format!(
-            "{aliases_in}sed -i 's/^Listen 80$/Listen {port}/' /usr/local/apache2/conf/httpd.conf && \
-             exec httpd-foreground"
-        ),
-    };
-    format!(
-        "docker rm -f {container} >/dev/null 2>&1; \
-         exec docker run --rm --init --name {container} --network host \
-         -v {root}:{docroot}{mounts} {image} sh -c {}",
-        shell_quote_posix(&listen)
-    )
-}
 
 #[cfg(test)]
 #[path = "../../../test/rust/isolation/vm.rs"]

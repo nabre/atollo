@@ -59,7 +59,6 @@ const status = (id: string, extra: Partial<TargetToolStatus> = {}): TargetToolSt
   firstStart: false,
   unavailableReason: null,
   notNeeded: null,
-  viaVm: false,
   ...extra,
 });
 
@@ -142,7 +141,6 @@ describe("target names and cells", () => {
     expect(cellState(status("x", { available: false, bootstrapStaged: true }))).toBe("unavailable");
     // Not needed (D-177) before everything, the VM too: nothing to run.
     expect(cellState(notNeeded("x"))).toBe("notNeeded");
-    expect(cellState({ ...notNeeded("x"), viaVm: true })).toBe("notNeeded");
   });
 });
 
@@ -216,19 +214,16 @@ describe("TargetMatrix", () => {
     expect(within(own).queryByRole("button", { name: "Mostra questo sistema" })).toBeNull();
   });
 
-  it("marks the VM's column, and a tool of the PC's system the VM runs (D-174)", () => {
+  it("marks the VM's column (D-174)", () => {
     const g = grid(null, "linux-arm64");
-    const pc = g.targets.find((s) => s.target === "darwin-arm64");
-    if (!pc) throw new Error("no column");
-    pc.tools = pc.tools.map((x) => (x.id === "git" ? { ...x, viaVm: true } : x));
     render(<TargetMatrix state={fakeState({ grid: g })} onOpen={vi.fn()} />);
     const heads = within(screen.getByRole("table", { name: "Matrice componente-sistema" })).getAllByRole(
       "columnheader",
     );
     expect(heads.find((h) => h.textContent.includes("linux-arm64"))?.textContent).toContain("VM");
     expect(heads.find((h) => h.textContent.includes("linux-x64"))?.textContent).not.toContain("VM");
-    expect(screen.getByRole("button", { name: "Git, macOS Apple Silicon: nella VM" })).toBeTruthy();
-    expect(cellState(status("x", { viaVm: true, available: false }))).toBe("vm");
+    // The PC's column keeps every tool: the project's code runs there (D-183).
+    expect(screen.getByRole("button", { name: /^Git, macOS Apple Silicon: (?!nella VM)/ })).toBeTruthy();
   });
 
   it("says when the grid cannot be read", () => {
