@@ -680,6 +680,55 @@ fn prepare_tells_the_agent_and_the_error() {
     assert!(!fx.progress().contains(&PrepareProgress::Done));
 }
 
+/// A click again while the sandbox is prepared for the same program is
+/// refused, without a job of its own; once that preparation ended, it is
+/// prepared again. Another program of the same sandbox is not refused.
+#[test]
+fn a_preparation_running_refuses_the_same_again() {
+    let (_tmp, kit) = kit_with_shop("claimed");
+    let key = format!("{}|{}", kit.root().display(), vm::name("shop"));
+    let held = Claim::take(format!("{key}|{:?}", VmProgram::Shell)).unwrap();
+    let fx = Fake::default();
+    let e = prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap_err();
+    assert_eq!(
+        e.to_string(),
+        "La VM è già in preparazione: la sessione si apre appena è pronta."
+    );
+    assert!(fx.progress().is_empty(), "{:?}", fx.progress());
+    assert!(fx.calls().is_empty(), "{:?}", fx.calls());
+    let other = Fake::default();
+    let action = Origin::Action {
+        action: "dev".into(),
+        web: false,
+    };
+    prepared(&kit, &other, action, true, &[]).unwrap();
+    drop(held);
+    prepared(&kit, &fx, Origin::ProjectTerminal, true, &[]).unwrap();
+}
+
+/// One preparation of a sandbox at a time: the next waits for its turn.
+#[test]
+fn a_sandbox_is_prepared_once_at_a_time() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+    let first = Turn::wait("turns|atollo-p-x");
+    let entered = Arc::new(AtomicBool::new(false));
+    let next = {
+        let entered = Arc::clone(&entered);
+        std::thread::spawn(move || {
+            let _turn = Turn::wait("turns|atollo-p-x");
+            entered.store(true, Ordering::SeqCst);
+        })
+    };
+    // Another sandbox is not held up.
+    drop(Turn::wait("turns|atollo-p-y"));
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    assert!(!entered.load(Ordering::SeqCst));
+    drop(first);
+    next.join().unwrap();
+    assert!(entered.load(Ordering::SeqCst));
+}
+
 /// Nothing is told for the PC: there is nothing to wait for.
 #[test]
 fn nothing_is_told_for_the_pc() {
