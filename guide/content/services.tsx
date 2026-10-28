@@ -751,10 +751,10 @@ export const SERVICES: TopicTexts = {
             "Die Websites antworten nur diesem PC, es sei denn, du aktivierst das lokale Netzwerk in den Einstellungen.",
           ),
           tr(
-            "Con la VM attiva il sito gira come container nella VM del progetto (Apache con il suo PHP, o Apache per i soli file; un sito Caddy diventa Apache), con rete locale, domini .localhost e alias del progetto; anche i siti dei pool della pagina Server Web girano ciascuno nella VM del suo progetto. Senza VM i siti girano sul PC.",
-            "With the VM on, the site runs as a container in the project's VM (Apache with its PHP, or Apache for plain files; a Caddy site becomes Apache), with local network, .localhost domains and the project's aliases; the sites of the Web Servers page's pools too run each in its project's VM. Without the VM the sites run on the PC.",
-            "Avec la VM active, le site tourne comme conteneur dans la VM du projet (Apache avec son PHP, ou Apache pour les simples fichiers ; un site Caddy devient Apache), avec réseau local, domaines .localhost et alias du projet ; les sites des pools de la page Serveurs web tournent eux aussi chacun dans la VM de son projet. Sans VM, les sites tournent sur le PC.",
-            "Mit aktiver VM läuft die Website als Container in der VM des Projekts (Apache mit seinem PHP oder Apache für reine Dateien; eine Caddy-Website wird zu Apache), mit lokalem Netzwerk, .localhost-Domains und den Aliassen des Projekts; auch die Websites der Pools der Seite Webserver laufen jeweils in der VM ihres Projekts. Ohne VM laufen die Websites auf dem PC.",
+            "I siti girano sempre sul PC, con o senza la VM: con un server tutto suo o in un pool della pagina Server Web. La VM serve solo agli agenti.",
+            "The sites always run on the PC, with or without the VM: with their own server or in a pool of the Web Servers page. The VM is only for the agents.",
+            "Les sites tournent toujours sur le PC, avec ou sans la VM : avec leur propre serveur ou dans un pool de la page Serveurs web. La VM ne sert qu'aux agents.",
+            "Die Websites laufen immer auf dem PC, mit oder ohne VM: mit einem eigenen Server oder in einem Pool der Seite Webserver. Die VM ist nur für die Agenten da.",
           ),
         ]}
       />
@@ -1336,10 +1336,10 @@ export const SERVICES: TopicTexts = {
               "claude, codex, pi und agy, hier im Ordner eines Projekts getippt, öffnen den Agenten in der VM dieses Projekts, im selben Terminal. Außerhalb eines Projekts oder ohne VM sagen sie warum und beenden sich. Dasselbe tun die Schaltfläche des Agenten auf der Seite des Projekts und sein Profil im Editor.",
             ),
             tr(
-              "Il terminale di un progetto («Terminale» nella sua pagina) è un'altra cosa: con la VM attiva è bash nella VM del progetto, con le versioni del progetto (etichetta «VM progetto»); lì atollo mostra in sola lettura dove sei e che cosa hai.",
-              "A project's terminal (“Terminal” on its page) is a different thing: with the VM on it is bash in the project's VM, with the project's versions (label “Project VM”); there atollo shows, read-only, where you are and what you have.",
-              "Le terminal d'un projet (« Terminal » sur sa page) est autre chose : avec la VM active, c'est bash dans la VM du projet, avec les versions du projet (étiquette « VM du projet ») ; là, atollo montre en lecture seule où vous êtes et ce que vous avez.",
-              "Das Terminal eines Projekts („Terminal“ auf seiner Seite) ist etwas anderes: Mit aktiver VM ist es bash in der VM des Projekts, mit den Versionen des Projekts (Beschriftung „Projekt-VM“); dort zeigt atollo schreibgeschützt, wo du bist und was du hast.",
+              "Anche il terminale di un progetto («Terminale» nella sua pagina) gira sul PC, con o senza la VM, con le versioni del progetto e l'ambiente sigillato del kit; nella VM vanno solo gli agenti.",
+              "A project's terminal (“Terminal” on its page) runs on the PC too, with or without the VM, with the project's versions and the kit's sealed environment; only the agents go into the VM.",
+              "Le terminal d'un projet (« Terminal » sur sa page) tourne lui aussi sur le PC, avec ou sans la VM, avec les versions du projet et l'environnement scellé du kit ; seuls les agents vont dans la VM.",
+              "Auch das Terminal eines Projekts („Terminal“ auf seiner Seite) läuft auf dem PC, mit oder ohne VM, mit den Versionen des Projekts und der versiegelten Umgebung des Kits; nur die Agenten gehen in die VM.",
             ),
           ]}
         />
@@ -1441,10 +1441,10 @@ export const SERVICES: TopicTexts = {
       >
         <P>
           {tr(
-            "Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…), con accanto l'etichetta del suo livello: «PC», «PC · senza VM», «VM progetto» o «Agente · VM» (passandoci sopra, il nome della sandbox); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.",
-            "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…), with the label of its level beside it: “PC”, “PC · no VM”, “Project VM” or “Agent · VM” (hovering over it, the sandbox's name); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
-            "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · pwsh », « app · claude »…), avec à côté l'étiquette de son niveau : « PC », « PC · sans VM », « VM du projet » ou « Agent · VM » (au survol, le nom de la sandbox) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
-            "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · pwsh“, „app · claude“…), daneben die Beschriftung ihrer Ebene: „PC“, „PC · ohne VM“, „Projekt-VM“ oder „Agent · VM“ (beim Darüberfahren der Name der Sandbox); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
+            "Il pannello dei terminali sta in basso, sopra il pannello «Attività». Ogni sessione è una scheda («app · pwsh», «app · claude»…), con accanto l'etichetta del suo livello: «PC», «PC · senza VM» o «Agente · VM» (passandoci sopra, il nome della sandbox); «Chiudi il terminale» chiude quella scelta (se dentro gira ancora un programma, l'app chiede conferma) e «Nascondi i terminali» nasconde il pannello. Nella barra di stato un elemento conta i terminali aperti e li mostra o nasconde.",
+            "The terminal panel is at the bottom, above the “Activity” panel. Each session is a tab (“app · pwsh”, “app · claude”…), with the label of its level beside it: “PC”, “PC · no VM” or “Agent · VM” (hovering over it, the sandbox's name); “Close the terminal” closes the selected one (if a program is still running inside, the app asks for confirmation) and “Hide the terminals” hides the panel. In the status bar, an item counts the open terminals and shows or hides them.",
+            "Le panneau des terminaux se trouve en bas, au-dessus du panneau « Activité ». Chaque session est un onglet (« app · pwsh », « app · claude »…), avec à côté l'étiquette de son niveau : « PC », « PC · sans VM » ou « Agent · VM » (au survol, le nom de la sandbox) ; « Fermer le terminal » ferme celui choisi (si un programme y tourne encore, l'application demande confirmation) et « Masquer les terminaux » masque le panneau. Dans la barre d'état, un élément compte les terminaux ouverts et les affiche ou les masque.",
+            "Der Terminalbereich liegt unten, über dem Bereich „Aktivität“. Jede Sitzung ist eine Registerkarte („app · pwsh“, „app · claude“…), daneben die Beschriftung ihrer Ebene: „PC“, „PC · ohne VM“ oder „Agent · VM“ (beim Darüberfahren der Name der Sandbox); „Terminal schließen“ schließt die gewählte (läuft darin noch ein Programm, fragt die App nach einer Bestätigung), und „Terminals ausblenden“ blendet den Bereich aus. In der Statusleiste zählt ein Element die offenen Terminals und blendet sie ein oder aus.",
           )}
         </P>
         <P>

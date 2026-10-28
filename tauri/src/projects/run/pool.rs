@@ -94,7 +94,6 @@ impl Runner {
                     actual_port: None,
                     detected_url: None,
                     pool: Some(pool.to_owned()),
-                    vm_run: None,
                     run: self.next_run(),
                 },
             );

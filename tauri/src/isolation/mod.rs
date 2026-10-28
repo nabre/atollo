@@ -2066,54 +2066,8 @@ impl Vm {
             .any(|l| l.trim() == self.name))
     }
 
-    /// Publishes `port` of the VM on the PC: on `127.0.0.1`, or on the
-    /// local network when `lan` (Settings). The other address, left by a
-    /// start with the other setting, is taken back first, and failing that
-    /// nothing starts: with the local network turned off, the site must not
-    /// stay on it (`--unpublish` of nothing published succeeds, so a
-    /// failure is a real one). A port published already on the same
-    /// address (an action that ended by itself) is fine: `sbx` answers
-    /// `409 … port <address>:<port>/tcp4 is already published` (tried with
-    /// sbx 0.49.2).
-    pub fn publish(&self, env: &KitEnv, port: u16, lan: bool) -> anyhow::Result<()> {
-        self.call(env, &vm::unpublish_args(&self.name, port, !lan), ASK_LIMIT)?;
-        let args = vm::publish_args(&self.name, port, lan);
-        let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        let out = run(&self.sbx, &self.host, env, &args, ASK_LIMIT).map_err(anyhow::Error::msg)?;
-        let text = String::from_utf8_lossy(&out.stderr);
-        anyhow::ensure!(
-            out.status.success() || vm::published_already(&text, port, lan),
-            "sbx ports: {}",
-            text.trim()
-        );
-        Ok(())
-    }
-
-    /// Stops what the action noted as `tag` runs in the VM ([`vm::stop_args`]:
-    /// ending its `sbx exec` on the PC does not), its web `container` if
-    /// any, and takes its `port` back from the PC. Failures only go to the
-    /// log: the daemon's stop at the app's exit ends the VM anyway.
-    pub fn stop_run(
-        &self,
-        env: &KitEnv,
-        tag: &str,
-        container: Option<&str>,
-        port: Option<u16>,
-        lan: bool,
-    ) {
-        let mut steps = vec![vm::stop_args(&self.name, tag, container)];
-        if let Some(p) = port {
-            steps.push(vm::unpublish_args(&self.name, p, lan));
-        }
-        for args in steps {
-            if let Err(e) = self.call(env, &args, ASK_LIMIT) {
-                crate::common::log::warn(&format!("{}: {e:#}", self.name));
-            }
-        }
-    }
-
-    /// The session of the app's terminal for `args` (`vm::kit_terminal_args`,
-    /// `vm::agent_args`), titled `what`; refused while [`Vm::ready`] is not
+    /// The session of the app's terminal for `args` (`vm::agent_session_args`,
+    /// `vm::pi_session_args`), titled `what`; refused while [`Vm::ready`] is not
     /// (an agent's `sbx run` makes its sandbox without [`Vm::start`]).
     pub fn launch(
         &self,
@@ -2250,16 +2204,6 @@ fn sandbox_lock(name: &str) -> std::sync::Arc<Mutex<()>> {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     std::sync::Arc::clone(all.entry(name.to_owned()).or_default())
-}
-
-/// The PHP line of `project` in its VM: its own choice, the kit's, or
-/// `8.4` (the official images have every line the kit offers).
-pub fn php_line(kit: &Kit, project: &str) -> String {
-    crate::versions::project_choice(kit, project)
-        .get("php")
-        .cloned()
-        .or_else(|| crate::versions::kit_choice(kit).get("php").cloned())
-        .unwrap_or_else(|| "8.4".to_owned())
 }
 
 /// Stops the daemon of the kit's `sbx` and the microVMs it runs, at the

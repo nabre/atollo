@@ -181,57 +181,6 @@ fn the_vm_is_linux_of_the_pcs_processor() {
     assert_eq!(guest_target(Target::new(Os::Darwin, Arch::X64)), None);
 }
 
-/// The kit's terminal in the VM: a login bash in its folder, the kit's
-/// tools first on the PATH, their variables passed.
-#[test]
-fn a_kit_terminal_runs_bash_with_the_kits_tools_first() {
-    let tools = crate::isolation::GuestTools {
-        path: vec![
-            "/d/kit/data/apps/linux-x64/node/24.22/bin".into(),
-            "/d/kit/data/apps/linux-x64/python/3.15/bin".into(),
-        ],
-        vars: vec![("JAVA_HOME".into(), "/d/kit/data/apps/linux-x64/java".into())],
-        env_file: Some("/kit/data/app/sandboxes/x/db.env".into()),
-    };
-    let args = kit_terminal_args("atollo-t-x", "/d/sites/shop", &tools, None);
-    // With the session's level line, printed by the VM's shell first.
-    let with = kit_terminal_args("atollo-t-x", "/d/sites/shop", &tools, Some("[Atollo] VM"));
-    assert_eq!(with[..11], args[..11]);
-    assert_eq!(
-        with[11..],
-        [
-            "sh",
-            "-c",
-            &format!(
-                r#"printf '%s\n' "$1" >&2; {}; exec bash -l"#,
-                session_start()
-            ),
-            "sh",
-            "[Atollo] VM",
-        ]
-    );
-    assert_eq!(
-        args,
-        [
-            "exec",
-            "-it",
-            "-w",
-            "/d/sites/shop",
-            "--env-file",
-            "/kit/data/app/sandboxes/x/db.env",
-            "-e",
-            "ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24.22/bin:/d/kit/data/apps/linux-x64/python/3.15/bin",
-            "-e",
-            "JAVA_HOME=/d/kit/data/apps/linux-x64/java",
-            "atollo-t-x",
-            "sh",
-            "-c",
-            &format!("{}; exec bash -l", session_start()),
-        ]
-    );
-    assert_eq!(POLICY_ARGS, ["policy", "init", "balanced"]);
-}
-
 /// An existing sandbox starts again by its name only: `sbx` refuses any
 /// folder after the first, even those it was made with (sbx 0.49.2).
 #[test]
@@ -240,6 +189,7 @@ fn an_existing_sandbox_starts_again_by_its_name() {
         restart_args("atollo-p-shop"),
         ["run", "-d", "--name", "atollo-p-shop"]
     );
+    assert_eq!(POLICY_ARGS, ["policy", "init", "balanced"]);
 }
 
 #[test]
@@ -291,55 +241,6 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
             "/kit/projects/shop"
         ]
     );
-    assert_eq!(
-        publish_args("atollo-shop", 7101, false),
-        ["ports", "atollo-shop", "--publish", "127.0.0.1:7101:7101"]
-    );
-    // The local network when Settings allow it (tried with sbx 0.49.2).
-    assert_eq!(
-        publish_args("atollo-shop", 7101, true)[3],
-        "0.0.0.0:7101:7101"
-    );
-    assert_eq!(
-        unpublish_args("atollo-shop", 7101, false),
-        ["ports", "atollo-shop", "--unpublish", "127.0.0.1:7101:7101"]
-    );
-    // Published already, on the address asked only (sbx 0.49.2's text).
-    let local = "error: publish ports: publish ports: request failed: 409 Conflict: request[0]: port 127.0.0.1:7101/tcp4 is already published";
-    assert!(published_already(local, 7101, false));
-    assert!(!published_already(local, 7101, true), "not on the network");
-    assert!(!published_already(local, 7102, false), "another port");
-    assert!(!published_already("error: daemon not running", 7101, false));
-}
-
-/// Ending `sbx exec` on the PC leaves the action running in the VM (tried
-/// with sbx 0.49.2): it notes its process group, and the stop ends that
-/// group inside the VM, never with a note that is not a plain number.
-#[test]
-fn an_action_in_the_vm_is_stopped_inside_it() {
-    let tag = run_tag("Web Server");
-    assert!(tag.starts_with("web-server-"), "{tag}");
-    assert_eq!(tag.len(), "web-server-".len() + 12);
-    assert_ne!(run_tag("a"), run_tag("A"));
-    assert_eq!(
-        tracked(&tag, "npm start"),
-        format!("mkdir -p /tmp/atollo-runs && echo $$ > /tmp/atollo-runs/{tag} && npm start")
-    );
-    let args = stop_args("atollo-p-shop", &tag, Some("atollo-web-site"));
-    assert_eq!(args[..4], ["exec", "atollo-p-shop", "sh", "-c"]);
-    let script = &args[4];
-    assert!(
-        script.starts_with(&format!("f='/tmp/atollo-runs/{tag}';")),
-        "{script}"
-    );
-    assert!(script.contains("''|*[!0-9]*|0|1) ;;"), "{script}");
-    assert!(script.contains("kill -TERM -$g"), "{script}");
-    assert!(script.contains("kill -KILL -$g"), "{script}");
-    assert!(
-        script.ends_with("; docker rm -f 'atollo-web-site' >/dev/null 2>&1; true"),
-        "{script}"
-    );
-    assert!(stop_args("atollo-p-shop", &tag, None)[4].ends_with("esac; true"));
 }
 
 /// Claude Code and Codex in `sbx`'s own agents, made like the project's
@@ -390,57 +291,6 @@ fn an_agent_gets_the_projects_tools_and_database() {
     );
 }
 
-/// The action's variables go to the VM with `-e`; its folder and line are
-/// one word for the VM's shell.
-#[test]
-fn a_command_line_runs_in_the_vm() {
-    let env = vec![("PORT".to_owned(), "7101".to_owned())];
-    let none = crate::isolation::GuestTools::default();
-    assert_eq!(
-        exec_args("atollo-shop", None, "npm run dev", &env, &none),
-        [
-            "exec",
-            "-e",
-            "PORT=7101",
-            "atollo-shop",
-            "sh",
-            "-lc",
-            "npm run dev"
-        ]
-    );
-    let args = exec_args("atollo-shop", Some("web app"), "npm start", &[], &none);
-    assert_eq!(args.last().unwrap(), "cd 'web app' && npm start");
-    let args = exec_args("atollo-shop", Some("a'b"), "x", &[], &none);
-    assert_eq!(args.last().unwrap(), r"cd 'a'\''b' && x");
-    // With the kit's tools (D-170): first on the PATH, set before the
-    // `cd`; the database's login from a file, never on the line (D-171);
-    // the tools' variables before the action's.
-    let tools = crate::isolation::GuestTools {
-        path: vec!["/d/kit/data/apps/linux-x64/node/24.22/bin".into()],
-        vars: vec![("JAVA_HOME".into(), "/d/j".into())],
-        env_file: Some("/kit/db.env".into()),
-    };
-    let args = exec_args("atollo-shop", Some("web"), "npm start", &env, &tools);
-    assert_eq!(
-        args[..9],
-        [
-            "exec",
-            "--env-file",
-            "/kit/db.env",
-            "-e",
-            "ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24.22/bin",
-            "-e",
-            "JAVA_HOME=/d/j",
-            "-e",
-            "PORT=7101"
-        ]
-    );
-    assert_eq!(
-        args.last().unwrap(),
-        &format!("{}; cd 'web' && npm start", session_start())
-    );
-}
-
 /// The kit's tools first, then what the user installs in the VM's home
 /// (D-181): the kit's folders are read-only there.
 #[test]
@@ -462,65 +312,6 @@ fn the_users_own_installations_go_to_the_vms_home() {
     // library.
     assert!(!TOOLS_FIRST.contains("mkdir") && !TOOLS_FIRST.contains('>'));
     assert_eq!(session_start(), format!("{TOOLS_FIRST}; {MAKE_HOMES}"));
-}
-
-#[test]
-fn a_php_site_is_apache_of_its_line_on_its_port() {
-    let line = web_line(
-        "site",
-        &Web::Php { line: "8.3".into() },
-        "public",
-        7102,
-        &[],
-    );
-    assert!(
-        line.starts_with("docker rm -f 'atollo-web-site' >/dev/null 2>&1; "),
-        "{line}"
-    );
-    assert!(line.contains("--network host"), "{line}");
-    assert!(
-        line.contains(r#"-v "$PWD"/'public':/var/www/html php:8.3-apache"#),
-        "{line}"
-    );
-    assert!(line.contains("Listen 7102"), "{line}");
-    assert!(line.contains("apache2-foreground"), "{line}");
-    let line = web_line("docs", &Web::Static, ".", 7103, &[]);
-    assert!(line.contains("httpd:2.4"), "{line}");
-    assert!(line.contains("/usr/local/apache2/htdocs"), "{line}");
-    assert!(line.contains("httpd-foreground"), "{line}");
-    assert!(!line.contains("Alias"), "{line}");
-}
-
-/// A site's path aliases of the project itself: each folder mounted in the
-/// container and an `Alias` of Apache for it, quoted for the VM's shell.
-#[test]
-fn a_sites_aliases_reach_its_container() {
-    let aliases = vec![(
-        "/media".to_owned(),
-        "/d/kit/projects/my shop/storage/up".to_owned(),
-    )];
-    let line = web_line(
-        "site",
-        &Web::Php { line: "8.4".into() },
-        "public",
-        7104,
-        &aliases,
-    );
-    assert!(
-        line.contains("-v '/d/kit/projects/my shop/storage/up:/srv/alias/0' php:8.4-apache"),
-        "{line}"
-    );
-    assert!(
-        line.contains("/etc/apache2/conf-enabled/atollo-aliases.conf"),
-        "{line}"
-    );
-    assert!(line.contains(r#"Alias "/media" "/srv/alias/0""#), "{line}");
-    assert!(line.contains("Require all granted"), "{line}");
-    let line = web_line("docs", &Web::Static, ".", 7105, &aliases);
-    assert!(
-        line.contains(">> /usr/local/apache2/conf/httpd.conf"),
-        "{line}"
-    );
 }
 
 /// The project's database stays on the PC (D-171): its sandbox, and it

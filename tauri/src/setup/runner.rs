@@ -56,11 +56,6 @@ pub enum Scope {
     /// Every chosen component (and what is not chosen any more removed).
     #[default]
     All,
-    /// The PC's side with the VM on: the system components and the parts of
-    /// the app only (what they need too); the chosen tools are left as
-    /// they are, neither installed nor removed; what is not chosen any
-    /// more is removed, here and elsewhere.
-    System,
     /// The VM's Linux: the chosen tools (agents, AI, languages, databases),
     /// never the system components or the parts of the app, nor what only
     /// finishes on its own system (`router::bootstrap`); nothing removed.
@@ -193,11 +188,8 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     } else {
         only_with_needs(catalog, &opts.only, &installed, target)?
     };
-    // The scope (D-173, D-180): the PC's side keeps the system components
-    // and what runs on the PC also with the VM (`Component::on_pc_with_vm`,
-    // with what that needs there), the VM's Linux the tools that run in it
-    // (`Component::in_vm`); any other chosen tool on the PC is neither
-    // installed nor removed.
+    // The scope (D-180, D-183): the PC gets every chosen component, the
+    // VM's Linux the tools the agents' sandboxes use (`Component::in_vm`).
     let locked = catalog.locked_on(target);
     let tool = |id: &str| {
         catalog.find(id).is_some_and(|c| {
@@ -210,15 +202,6 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     };
     match opts.scope {
         Scope::All => {}
-        Scope::System => {
-            let pc: Vec<&str> = wanted
-                .iter()
-                .copied()
-                .filter(|id| catalog.find(id).is_some_and(Component::on_pc_with_vm))
-                .collect();
-            let keep = catalog.with_needs_on(&pc, target);
-            wanted.retain(|id| locked.contains(id) || keep.contains(id));
-        }
         Scope::Tools => wanted.retain(|id| tool(id)),
     }
     // The agents (LEVELS.md §7, Q11): only for the VM's Linux, only while

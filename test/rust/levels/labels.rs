@@ -24,7 +24,6 @@ fn vm(level: Level, sandbox: Sandbox, program: VmProgram) -> Placement {
             databases: true,
             local_models: false,
         },
-        publish: false,
         program,
     }
 }
@@ -38,7 +37,6 @@ fn project_sandbox() -> Sandbox {
 /// The four labels of §8.3, in Italian and English; none for a refusal.
 #[test]
 fn every_placement_has_the_label_of_its_level() {
-    let shell = vm(Level::Project, project_sandbox(), VmProgram::Shell);
     let pi = vm(
         Level::Agent,
         project_sandbox(),
@@ -57,12 +55,6 @@ fn every_placement_has_the_label_of_its_level() {
             "PC · senza VM",
             "PC · no VM",
         ),
-        (
-            shell,
-            Some(LevelLabel::ProjectVm),
-            "VM progetto",
-            "Project VM",
-        ),
         (pi, Some(LevelLabel::AgentVm), "Agente · VM", "Agent · VM"),
     ];
     for (p, key, it, en) in cases {
@@ -78,15 +70,10 @@ fn every_placement_has_the_label_of_its_level() {
     );
 }
 
-/// The line before a VM session: the sandbox and the folder for project
-/// code, the agent and its sandbox for an agent; nothing on the PC.
+/// The line before a VM session: the agent and its sandbox; nothing on
+/// the PC.
 #[test]
 fn the_banner_names_the_sandbox() {
-    let shell = vm(Level::Project, project_sandbox(), VmProgram::Shell);
-    assert_eq!(
-        banner_line(&shell, "it").as_deref(),
-        Some("[Atollo] VM progetto: atollo-p-shop-x · /d/kit/projects/shop/web")
-    );
     let pi = vm(
         Level::Agent,
         project_sandbox(),
@@ -142,11 +129,15 @@ fn a_refusal_says_why_and_what_to_do() {
 /// sandbox in the VM only, and the text of §8.3.
 #[test]
 fn a_session_label_names_its_sandbox() {
-    let shell = vm(Level::Project, project_sandbox(), VmProgram::Shell);
-    let at = SessionLabel::of(&shell).unwrap();
-    assert_eq!(at, SessionLabel::vm(Level::Project, "atollo-p-shop-x"));
-    assert_eq!(at.label, LevelLabel::ProjectVm);
-    assert_eq!(at.text("it"), "VM progetto");
+    let pi = vm(
+        Level::Agent,
+        project_sandbox(),
+        VmProgram::AgentBinary { agent: Agent::Pi },
+    );
+    let at = SessionLabel::of(&pi).unwrap();
+    assert_eq!(at, SessionLabel::vm(Level::Agent, "atollo-p-shop-x"));
+    assert_eq!(at.label, LevelLabel::AgentVm);
+    assert_eq!(at.text("it"), "Agente · VM");
     let at = SessionLabel::of(&pc(Level::Project)).unwrap();
     assert_eq!(at, SessionLabel::pc(Level::Project));
     assert_eq!(at.sandbox, None);

@@ -115,8 +115,6 @@ struct Entry {
     detected_url: Option<String>,
     /// Served by this shared pool (`servers/mod.rs`): no process of its own.
     pool: Option<String>,
-    /// Running in the project's VM: stopped there too ([`start::VmRun`]).
-    vm_run: Option<start::VmRun>,
     /// The run this entry is for: the threads of a run that was replaced
     /// leave it alone (BUG-V6-10).
     run: u64,
@@ -224,7 +222,7 @@ impl Runner {
     /// shared pool is only marked stopped here: the caller takes its site
     /// out of the pool (`WebServers::detach`).
     pub fn stop(&self, key: &str) {
-        let (job, unpooled, vm_run) = {
+        let (job, unpooled) = {
             let mut entries = self.entries();
             let Some(e) = entries.get_mut(key) else {
                 return;
@@ -235,14 +233,10 @@ impl Runner {
                 e.info.end = Some(now_ms());
                 e.info.clone()
             });
-            (e.job.take(), unpooled, e.vm_run.take())
+            (e.job.take(), unpooled)
         };
-        // Closing the job's last handle ends its processes (KILL_ON_JOB_CLOSE);
-        // in the VM, its own processes are stopped there.
+        // Closing the job's last handle ends its processes (KILL_ON_JOB_CLOSE).
         drop(job);
-        if let Some(vm_run) = vm_run {
-            vm_run.stop();
-        }
         if let Some(info) = unpooled {
             (self.notify)(Event::State(info));
         }
@@ -273,23 +267,6 @@ impl Runner {
                 e.pool.is_none() && matches!(e.info.state, State::Starting | State::Running)
             })
             .count()
-    }
-
-    /// The actions running in the sandbox `sandbox` (LEVELS.md §8.5: «Riavvia»
-    /// and «Ricrea» list and stop them), with their port published on the
-    /// PC and its address, if any.
-    pub fn in_sandbox(&self, sandbox: &str) -> Vec<(RunInfo, Option<(u16, &'static str)>)> {
-        let mut out: Vec<_> = self
-            .entries()
-            .values()
-            .filter(|e| matches!(e.info.state, State::Starting | State::Running))
-            .filter_map(|e| {
-                let run = e.vm_run.as_ref().filter(|r| r.sandbox() == sandbox)?;
-                Some((e.info.clone(), run.published()))
-            })
-            .collect();
-        out.sort_by(|a, b| a.0.key.cmp(&b.0.key));
-        out
     }
 
     /// Forgets the output of an action that ended.

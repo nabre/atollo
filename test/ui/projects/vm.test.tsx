@@ -43,7 +43,6 @@ const REPORT: VmReport = {
     sandbox({ name: "atollo-a-claude-shop-0123", agent: "claude", state: "stopped", mounts: [], hostPorts: [] }),
     sandbox({ name: "atollo-a-codex-shop-0123", agent: "codex", state: "missing", mounts: [], hostPorts: [] }),
   ],
-  published: [{ port: 5173, address: "127.0.0.1", action: "dev" }],
   github: false,
 };
 
@@ -79,7 +78,6 @@ describe("ProjectVm", () => {
     expect(within(mounts).getByText("/d/kit/projects/shop")).toBeTruthy();
     expect(within(own).getByText(/3307 \(mysql shop\)/)).toBeTruthy();
     expect(within(own).getByText(/Sessioni in corso: shop · bash/)).toBeTruthy();
-    expect(screen.getByText(/127\.0\.0\.1:5173 \(dev\)/)).toBeTruthy();
     expect(screen.getByText("GitHub nella VM: no")).toBeTruthy();
   });
 

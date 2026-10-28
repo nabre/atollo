@@ -2304,21 +2304,6 @@
     "fr": "une microVM par projet : terminal, commandes, serveurs et agents isolés du PC ; nécessite un compte Docker",
     "de": "eine microVM pro Projekt: Terminal, Befehle, Server und Agenten vom PC isoliert; braucht ein Docker-Konto"
   },
-  "l'alias {0} punta a un altro progetto, che non è nella VM di questo: non servito": {
-    "en": "alias {0} points to another project, which is not in this one's VM: not served",
-    "fr": "l'alias {0} pointe vers un autre projet, qui n'est pas dans la VM de celui-ci : non servi",
-    "de": "der Alias {0} zeigt auf ein anderes Projekt, das nicht in der VM dieses Projekts ist: nicht ausgeliefert"
-  },
-  "nella VM il sito usa Apache con PHP {0} al posto di Caddy: le regole proprie di Caddy non valgono": {
-    "en": "in the VM the site uses Apache with PHP {0} instead of Caddy: Caddy's own rules do not apply",
-    "fr": "dans la VM le site utilise Apache avec PHP {0} au lieu de Caddy : les règles propres à Caddy ne s'appliquent pas",
-    "de": "in der VM nutzt die Website Apache mit PHP {0} statt Caddy: Caddys eigene Regeln gelten nicht"
-  },
-  "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.": {
-    "en": "With the VM on, every site runs in its project's VM: start it from the project's page. The shared servers are for working without the VM.",
-    "fr": "Avec la VM active, chaque site tourne dans la VM de son projet : démarrez-le depuis la page du projet. Les serveurs partagés servent quand on travaille sans VM.",
-    "de": "Bei aktiver VM läuft jede Website in der VM ihres Projekts: starte sie von der Seite des Projekts. Die gemeinsamen Server dienen der Arbeit ohne VM."
-  },
   "Atollo funziona solo sui sistemi dove gira Docker Sandboxes: Windows x64, macOS con Apple silicon, Linux x64 e Linux ARM64. Questo sistema non è tra questi.": {
     "en": "Atollo works only on the systems Docker Sandboxes runs on: Windows x64, macOS with Apple silicon, Linux x64 and Linux ARM64. This system is not one of them.",
     "fr": "Atollo fonctionne seulement sur les systèmes où tourne Docker Sandboxes : Windows x64, macOS avec Apple silicon, Linux x64 et Linux ARM64. Ce système n'en fait pas partie.",
@@ -2443,11 +2428,6 @@
     "en": "Agents start only in a project's folder: open the terminal in the project's folder, or start the agent from the project's page.",
     "fr": "Les agents ne démarrent que dans le dossier d'un projet : ouvre le terminal dans le dossier du projet, ou lance l'agent depuis la page du projet.",
     "de": "Agenten starten nur im Ordner eines Projekts: Öffne das Terminal im Ordner des Projekts oder starte den Agenten von der Seite des Projekts."
-  },
-  "Con la VM attiva il codice di un progetto parte solo nella cartella di un progetto: aprila dalla pagina del progetto.": {
-    "en": "With the VM active, a project's code starts only in a project's folder: open it from the project's page.",
-    "fr": "Avec la VM active, le code d'un projet ne démarre que dans le dossier d'un projet : ouvre-le depuis la page du projet.",
-    "de": "Mit aktiver VM startet der Code eines Projekts nur im Ordner eines Projekts: Öffne ihn von der Seite des Projekts."
   },
   "La cartella {0} non ha un percorso nella VM (è su una condivisione di rete): sposta il progetto su un disco locale.": {
     "en": "The folder {0} has no path in the VM (it is on a network share): move the project to a local disk.",
@@ -2598,11 +2578,6 @@
     "en": "PC port reached: {0} ({1})",
     "fr": "Port du PC atteint : {0} ({1})",
     "de": "Erreichter Port des PCs: {0} ({1})"
-  },
-  "Porta pubblicata: {0}:{1} ({2})": {
-    "en": "Port published: {0}:{1} ({2})",
-    "fr": "Port publié : {0}:{1} ({2})",
-    "de": "Veröffentlichter Port: {0}:{1} ({2})"
   },
   "Procedo? [s/N]": {
     "en": "Go on? [y/N]",

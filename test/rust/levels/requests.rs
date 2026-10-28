@@ -187,8 +187,7 @@ fn a_malformed_request_is_ignored_and_removed() {
 }
 
 /// A refusal says its reason, its fix and the text in the user's language
-/// (I7): an agent without the VM (R1), an agent outside a project (R8),
-/// a task outside a project with the VM on (R7).
+/// (I7): an agent without the VM (R1), an agent outside a project (R4).
 #[test]
 fn a_refused_reply_carries_reason_fix_and_text() {
     let (_tmp, kit) = kit_with_shop("requests-refused");
@@ -245,16 +244,8 @@ fn a_refused_reply_carries_reason_fix_and_text() {
         .unwrap()
         .contains("cartella di un progetto"));
 
-    let task = reply_of(
-        Origin::EditorTask {
-            command: "npm test".into(),
-        },
-        kit.root(),
-        true,
-    );
-    assert_eq!(task.refusal, Some(Refusal::NotAProject));
     assert!(fx.calls().is_empty(), "nothing prepared for a refusal");
-    let sh = reply_sh(&task, false);
+    let sh = reply_sh(&outside, false);
     assert!(
         sh.contains("placement='refused'\n") && sh.contains("set --\n"),
         "{sh}"
@@ -333,8 +324,7 @@ fn a_pc_reply_carries_only_the_environment_difference() {
 }
 
 /// The words typed after the agent's command reach the agent, after its
-/// own (Pi in the project's VM, R13): its marker named for the project; an
-/// editor's task in the VM runs in the request's folder (R15).
+/// own (Pi in the project's VM, R9): its marker named for the project.
 #[test]
 fn args_are_appended_after_the_agent() {
     let (_tmp, kit) = kit_with_shop("requests-args");
@@ -389,45 +379,6 @@ fn args_are_appended_after_the_agent() {
         reply.banner.as_deref().unwrap().contains("pi in atollo-p-"),
         "{reply:?}"
     );
-
-    // A task: `sh -lc` in the folder of the request, nothing after it.
-    let req = request(
-        &kit,
-        Origin::EditorTask {
-            command: "npm test".into(),
-        },
-        &web,
-    );
-    let facts = facts_of(&kit, &req, true);
-    let reply = reply_to(
-        &fx,
-        &kit,
-        &base,
-        &editor,
-        &Host::default(),
-        &req,
-        &[],
-        &facts,
-        "it",
-    );
-    assert_eq!(reply.placement, Where::Vm, "{reply:?}");
-    assert_eq!(reply.level, Some(Level::Project));
-    let line = reply.argv.last().unwrap();
-    assert!(line.contains("/shop/web' && npm test"), "{line}");
-    assert!(reply.marker.is_none());
-    // Words after a task's line are refused, never run.
-    let reply = reply_to(
-        &fx,
-        &kit,
-        &base,
-        &editor,
-        &Host::default(),
-        &req,
-        &typed,
-        &facts,
-        "it",
-    );
-    assert_eq!(reply.placement, Where::Error);
 }
 
 /// D-179 step 7, §6.8: `agy` (or `antigravity`) typed in a terminal of the

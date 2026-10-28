@@ -217,11 +217,6 @@ fn merge_copy(
     Ok(())
 }
 
-/// The folder of the new project where a creation in its VM makes the
-/// framework (the `create` lines make `{name}` in it), then moved into the
-/// project: the VM reaches only the project's folder, never `projects/`.
-pub(crate) const VM_STAGING: &str = ".atollo-new";
-
 /// The request of the creation of a project from the base `base` in the
 /// new project's folder `dir` (E9, `Origin::Scaffold`): `dir` exists (made
 /// empty by the caller), so the place is the new project.
@@ -266,7 +261,6 @@ pub async fn frameworks_create<R: Runtime>(
         &crate::editor::random_token().or_fail("frameworks")?,
     );
     let (services, servers) = (Arc::clone(&state.services), Arc::clone(&state.servers));
-    let fx = super::levels::AppEffects::of(&app, &state, state.env());
     let busy = crate::projects::frameworks::begin()
         .ok_or_else(|| tr(&state, "È già in corso la creazione di un progetto.", &[]))?;
     let name = name.trim().to_owned();
@@ -325,63 +319,33 @@ pub async fn frameworks_create<R: Runtime>(
         let req = scaffold_request(&kit, &base, &dir);
         let facts = super::levels::facts_now(&kit, &host, &base_env, &req);
         let placement = super::levels::admitted(&req, &facts, lang).inspect_err(|_| undo())?;
-        let needs: Vec<String> = plan_needs(&plan).into_iter().map(str::to_owned).collect();
-        let in_vm = matches!(placement, crate::levels::Placement::Vm { .. });
-        let (mut ready, db_env) = if in_vm {
-            // With the VM (R15): in the new project's sandbox, made ready by
-            // `levels::prepare` with the plan's tools for the VM's Linux
-            // and the kit's PowerShell, whose lines these are. The
-            // project's folder, its workspace, stays.
-            let ready =
-                super::levels::ready(&fx, &kit, &base_env, &req, &facts, &needs, lang, &host)
-                    .inspect_err(|_| undo())?;
-            let db_env = crate::levels::env::pc_environment(
-                &kit,
-                base_env.clone(),
-                crate::levels::Level::Project,
-                None,
-                None,
-            );
-            (ready, db_env)
-        } else {
-            // Without the VM (R5): on the PC, sealed like a project's
-            // programs (D-167), never with the kit's MySQL root, the user's
-            // SSH keys or an agent's command; the plan's tools installed.
-            let base_env =
-                ensure(&app, &task, &kit, lang, &plan_needs(&plan)).inspect_err(|_| undo())?;
-            let env = super::levels::pc_env(&kit, &base_env, &placement, None, lang, &host)
-                .inspect_err(|_| undo())?;
-            (
-                crate::levels::prepare::Ready::on_the_pc(placement, env.clone()),
-                env,
-            )
-        };
-        // In the VM the framework is made in a folder of the project (its
-        // workspace: the VM reaches nothing else of the PC), then added to
-        // it. On the PC a project with files: aside, in the PC's temporary
-        // folder (D-90; removed when `staging` is dropped), then added.
+        // On the PC (R2), sealed like a project's programs (D-167), never
+        // with the kit's MySQL root, the user's SSH keys or an agent's
+        // command; the plan's tools installed.
+        let base_env =
+            ensure(&app, &task, &kit, lang, &plan_needs(&plan)).inspect_err(|_| undo())?;
+        let db_env = super::levels::pc_env(&kit, &base_env, &placement, None, lang, &host)
+            .inspect_err(|_| undo())?;
+        let ready = crate::levels::prepare::Ready::on_the_pc(placement, db_env.clone());
+        // A project with files: the framework is made aside, in the PC's
+        // temporary folder (D-90; removed when `staging` is dropped), then
+        // added.
         let stamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_nanos());
-        let staging = if existing == Existing::Files && !in_vm {
+        let staging = if existing == Existing::Files {
             let rel = format!("frameworks/{stamp}");
             Some(crate::platform::temp::TempWork::new(&kit, &rel).or_fail("frameworks")?)
         } else {
             None
         };
-        let make_at = if in_vm {
-            let at = dir.join(VM_STAGING);
-            std::fs::create_dir_all(&at).or_fail("frameworks")?;
-            at
-        } else {
-            staging
-                .as_ref()
-                .map_or_else(|| kit.projects(), |s| s.path().to_path_buf())
-        };
-        let added = in_vm || existing == Existing::Files;
-        // On the PC an empty project, or the folder made above for the
-        // decision: made again by the creation.
-        if !in_vm && (existing == Existing::Empty || made_now) {
+        let make_at = staging
+            .as_ref()
+            .map_or_else(|| kit.projects(), |s| s.path().to_path_buf());
+        let added = existing == Existing::Files;
+        // An empty project, or the folder made above for the decision: made
+        // again by the creation.
+        if existing == Existing::Empty || made_now {
             std::fs::remove_dir(&dir).or_fail("frameworks")?;
         }
         let no_folder = || {
@@ -435,9 +399,6 @@ pub async fn frameworks_create<R: Runtime>(
                     merge_copy(&made, &dir, std::path::Path::new(""), &mut kept)
                 }
                 .or_fail("frameworks")?;
-                if in_vm {
-                    std::fs::remove_dir_all(&make_at).or_fail("frameworks")?;
-                }
                 for k in kept {
                     let text = crate::common::i18n::t(
                         lang,
@@ -465,17 +426,7 @@ pub async fn frameworks_create<R: Runtime>(
                     .start_for(&name, engine, &db_env)
                     .and_then(|_port| services.project_db_create(&name, engine))
                     .or_fail_chain("database")?;
-                if in_vm {
-                    // Prepared again: the new database's port opened for the
-                    // sandbox and its variables in `db.env` (D-171); the
-                    // steps reach it through the VM's way to the PC.
-                    ready = super::levels::ready(
-                        &fx, &kit, &base_env, &req, &facts, &needs, lang, &host,
-                    )?;
-                    step_vars.extend(db_vars(&crate::isolation::db_in_vm(&made, made.port)));
-                } else {
-                    step_vars.extend(db_vars(&made));
-                }
+                step_vars.extend(db_vars(&made));
                 db = Some(made);
             }
             let vars: Vec<(String, String)> = wanted_env
@@ -511,7 +462,6 @@ pub async fn frameworks_create<R: Runtime>(
             }
             Ok(())
         })();
-        crate::levels::start::scaffold_end(&kit, &ready);
         drop(staging);
         if existing == Existing::Empty && !dir.exists() {
             let _ = std::fs::create_dir(&dir);

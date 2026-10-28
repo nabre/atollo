@@ -14,14 +14,11 @@ export type LevelLabel = "pc" | "projectVm" | "agentVm";
 export type Refusal =
   | { code: "agents_need_vm"; blockers: IsolationBlocker[] }
   | { code: "agent_outside_project" }
-  | { code: "not_a_project" }
   | { code: "no_path_in_vm"; dir: string }
-  | { code: "pools_only_without_vm" }
   | { code: "no_linux_build"; agent: AgentId }
   | { code: "daemon_restart_pending" };
 
-export type Fix =
-  "open_vm_notice" | "open_from_project" | "use_local_disk" | "start_from_project" | "restart_daemon" | "none";
+export type Fix = "open_vm_notice" | "open_from_project" | "use_local_disk" | "restart_daemon" | "none";
 
 /** The error of a refused command: `CmdError` with `refusal` set. Any
  * other error of a command is its plain text. */
@@ -125,7 +122,6 @@ export interface VmReport {
   reason: string | null;
   /** The project's sandbox, then each agent's. */
   sandboxes: SandboxReport[];
-  published: { port: number; address: string; action: string }[];
   github: boolean;
 }
 
@@ -153,7 +149,6 @@ const PREVIEW_REPORT: VmReport = {
       note: null,
     },
   ],
-  published: [],
   github: false,
 };
 

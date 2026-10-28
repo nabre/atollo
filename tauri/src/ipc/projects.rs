@@ -14,11 +14,9 @@ pub async fn projects_list<R: Runtime>(
     let (kit, lang) = (state.kit.clone(), state.lang());
     let app = tauri::Manager::app_handle(&webview).clone();
     tauri::async_runtime::spawn_blocking(move || {
-        // With the VM on, what a project misses is counted on its Linux
-        // (D-173); here too, since it may wait for `sbx`.
-        let tools = super::setup::vm_tools_target(&tauri::Manager::state::<AppState>(&app))
-            .map_or_else(|| kit.clone(), |t| kit.for_target(t));
-        let list = crate::projects::list_in(&kit, &tools, lang);
+        // What a project misses is counted on the PC, where its code runs
+        // (D-183).
+        let list = crate::projects::list_in(&kit, &kit, lang);
         // The interface reads the list after every change of a project:
         // the tray menu follows (D-145).
         crate::app::tray::refresh(&app);
@@ -342,19 +340,20 @@ pub async fn project_install_missing<R: Runtime>(
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
     let (task, kit, lang) = (Arc::clone(&state.setup), state.kit.clone(), state.lang());
     tauri::async_runtime::spawn_blocking(move || {
-        // With the VM on, for its Linux (D-173); asked here, since it may
-        // wait for `sbx`.
+        // On the PC, where the project's code runs (D-183); with the VM on
+        // also for its Linux, where the agents use them. Asked here, since
+        // it may wait for `sbx`.
+        let missing = crate::projects::info(&kit, &dir, lang).missing;
+        let wanted: Vec<&str> = missing.iter().map(String::as_str).collect();
+        let on_pc = ensure(&app, &task, &kit, lang, &wanted).map(|_| ());
         let guest = super::setup::vm_tools_target(&tauri::Manager::state::<AppState>(&app))
             .map(|t| kit.for_target(t));
         if let Some(guest) = guest {
             let missing = crate::projects::info_in(&kit, &guest, &dir, lang).missing;
             let wanted = missing.into_iter().map(|id| (id, None)).collect();
             super::terminals::ensure_guest_tools(&app, &task, &guest, &wanted, &|_| ());
-            return Ok(());
         }
-        let missing = crate::projects::info(&kit, &dir, lang).missing;
-        let wanted: Vec<&str> = missing.iter().map(String::as_str).collect();
-        ensure(&app, &task, &kit, lang, &wanted).map(|_| ())
+        on_pc
     })
     .await
     .or_fail("install")?

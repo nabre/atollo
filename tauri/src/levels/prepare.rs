@@ -171,10 +171,7 @@ pub fn prepare(
         fx.progress(PrepareProgress::Begin {
             project: project.clone(),
             sandbox: sandbox.name().to_owned(),
-            agent: match program {
-                VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => Some(*agent),
-                _ => None,
-            },
+            agent: program.agent(),
             total: steps_of(access),
         });
     }
@@ -298,7 +295,7 @@ fn in_vm(
     // 1. The kit's tools for the VM's Linux, at the project's lines (D-170),
     //    installed when missing; the agent's own build for its session.
     step("Strumenti per il Linux della VM");
-    let wanted = wanted_tools(kit, project, program, needs);
+    let wanted = wanted_tools(kit, project, Some(program), needs);
     let guest = vm::guest_target(kit.target()).map(|t| kit.for_target(t));
     if let Some(guest) = &guest {
         fx.ensure_guest_tools(guest, &wanted);
@@ -405,19 +402,18 @@ fn in_vm(
 
 /// The kit's tools for `project`'s VM running `program`: those the kit
 /// chose (`editor::terminals::chosen_tools`), what the program needs
-/// (`needs`; the kit's PowerShell for a creation, whose lines are
-/// PowerShell's; the agent's own build for `AgentBinary`), at the lines the
-/// project chose (`versions::project_choice`).
+/// (`needs`; the agent's own build for `AgentBinary`), at the lines the
+/// project chose (`versions::project_choice`). `program`: `None` for the
+/// sandbox's tools alone («Verifica strumenti» before a session).
 pub fn wanted_tools(
     kit: &Kit,
     project: &str,
-    program: &VmProgram,
+    program: Option<&VmProgram>,
     needs: &[String],
 ) -> BTreeMap<String, Option<String>> {
     let mut wanted = crate::editor::terminals::chosen_tools(kit);
     let own = match program {
-        VmProgram::Scaffold { .. } => Some("pwsh"),
-        VmProgram::AgentBinary { agent } => Some(agent.id()),
+        Some(VmProgram::AgentBinary { agent }) => Some(agent.id()),
         _ => None,
     };
     for id in needs.iter().map(String::as_str).chain(own) {
@@ -608,12 +604,7 @@ impl SandboxInfo {
                 project.clone(),
                 sandbox.name().to_owned(),
                 workdir.clone(),
-                match program {
-                    VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => {
-                        Some(*agent)
-                    }
-                    _ => None,
-                },
+                program.agent(),
             ),
             _ => Default::default(),
         };

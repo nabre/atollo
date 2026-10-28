@@ -55,21 +55,21 @@ fn or_fail_sends_the_short_or_whole_text() {
 #[test]
 fn a_refusal_serializes_with_its_reason_and_fix() {
     use crate::levels::{Fix, Refusal};
-    let e = CmdError::refused(Refusal::PoolsOnlyWithoutVm, Fix::StartFromProject, "it");
+    let e = CmdError::refused(Refusal::AgentOutsideProject, Fix::OpenFromProject, "it");
     assert_eq!(
         e.to_string(),
-        crate::levels::labels::refusal_text(&Refusal::PoolsOnlyWithoutVm, "it")
+        crate::levels::labels::refusal_text(&Refusal::AgentOutsideProject, "it")
     );
     assert_eq!(
         e.refusal(),
-        Some((&Refusal::PoolsOnlyWithoutVm, Fix::StartFromProject))
+        Some((&Refusal::AgentOutsideProject, Fix::OpenFromProject))
     );
     assert_eq!(
         serde_json::to_value(&e).unwrap(),
         serde_json::json!({
             "message": e.to_string(),
-            "refusal": { "code": "pools_only_without_vm" },
-            "fix": "start_from_project",
+            "refusal": { "code": "agent_outside_project" },
+            "fix": "open_from_project",
         })
     );
     let e = CmdError::refused(

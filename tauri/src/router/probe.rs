@@ -41,9 +41,6 @@ pub struct TargetToolStatus {
     /// translated: the system does its job there (ConPTY on macOS and
     /// Linux, D-177). `available` is false, `unavailable_reason` `None`.
     pub not_needed: Option<String>,
-    /// On the PC's system with the VM on: a tool the VM runs with its build
-    /// for Linux, not needed here (D-174).
-    pub via_vm: bool,
 }
 
 /// Summary of a [`Target`]'s tools on disk inside `data/apps/<target>` and
@@ -121,7 +118,6 @@ pub fn probe_target(kit: &Kit, target: Target, lang: &str) -> TargetSummary {
             first_start,
             unavailable_reason,
             not_needed,
-            via_vm: false,
         });
     }
 

@@ -65,10 +65,10 @@ export const PROJECTS: TopicTexts = {
             "Ein eigenes Projekt kann zur Basis werden: „Als Basis speichern“ auf seiner Seite, und du findest sie als Erstes unter „Meine Basen“.",
           ),
           tr(
-            "Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework: con la VM attiva nella VM del progetto, senza sul PC con l'ambiente sigillato.",
-            "With a framework, the kit installs the tools needed and runs the framework's official commands: with the VM on in the project's VM, without it on the PC with the sealed environment.",
-            "Avec un framework, le kit installe les outils nécessaires et exécute les commandes officielles du framework : avec la VM active dans la VM du projet, sans elle sur le PC avec l'environnement scellé.",
-            "Mit einem Framework installiert das Kit die benötigten Werkzeuge und führt die offiziellen Befehle des Frameworks aus: mit aktiver VM in der VM des Projekts, ohne sie auf dem PC mit der versiegelten Umgebung.",
+            "Con un framework, il kit installa gli strumenti che servono ed esegue i comandi ufficiali del framework: sul PC con l'ambiente sigillato, con o senza la VM.",
+            "With a framework, the kit installs the tools needed and runs the framework's official commands: on the PC with the sealed environment, with or without the VM.",
+            "Avec un framework, le kit installe les outils nécessaires et exécute les commandes officielles du framework : sur le PC avec l'environnement scellé, avec ou sans la VM.",
+            "Mit einem Framework installiert das Kit die benötigten Werkzeuge und führt die offiziellen Befehle des Frameworks aus: auf dem PC mit der versiegelten Umgebung, mit oder ohne VM.",
           ),
           tr(
             "Puoi anche copiare a mano una cartella in projects: compare nell'elenco dopo «Aggiorna».",
@@ -853,10 +853,10 @@ export const PROJECTS: TopicTexts = {
             [
               tr("Terminale", "Terminal", "Terminal", "Terminal"),
               tr(
-                "Apre una console del kit nella cartella del progetto, con le sue versioni. Con la VM attiva, bash nella VM del progetto.",
-                "Opens a kit console in the project folder, with its versions. With the VM on, bash in the project's VM.",
-                "Ouvre une console du kit dans le dossier du projet, avec ses versions. Avec la VM active, bash dans la VM du projet.",
-                "Öffnet eine Konsole des Kits im Projektordner, mit seinen Versionen. Mit aktiver VM bash in der VM des Projekts.",
+                "Apre una console del kit nella cartella del progetto, con le sue versioni, sul PC anche con la VM attiva.",
+                "Opens a kit console in the project folder, with its versions, on the PC even with the VM on.",
+                "Ouvre une console du kit dans le dossier du projet, avec ses versions, sur le PC même avec la VM active.",
+                "Öffnet eine Konsole des Kits im Projektordner, mit seinen Versionen, auf dem PC auch mit aktiver VM.",
               ),
             ],
             [
@@ -1217,10 +1217,10 @@ export const PROJECTS: TopicTexts = {
               "Wenn das Programm den zugewiesenen Port ignoriert und einen anderen in der Ausgabe ausgibt, folgt das Kit diesem.",
             ),
             tr(
-              "«Ferma» chiude l'intero albero di processi dell'azione. Chiudendo Atollo si fermano tutte le azioni. Con la VM attiva l'azione gira nella VM del progetto: «Ferma» la ferma lì dentro e libera la porta.",
-              "“Stop” closes the action's whole process tree. Closing Atollo stops all actions. With the VM on the action runs in the project's VM: “Stop” stops it in there and frees the port.",
-              "« Arrêter » ferme toute l'arborescence de processus de l'action. Fermer Atollo arrête toutes les actions. Avec la VM active, l'action tourne dans la VM du projet : « Arrêter » l'arrête là-dedans et libère le port.",
-              "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn du Atollo schließt, werden alle Aktionen beendet. Mit aktiver VM läuft die Aktion in der VM des Projekts: „Beenden“ beendet sie dort und gibt den Port frei.",
+              "«Ferma» chiude l'intero albero di processi dell'azione. Chiudendo Atollo si fermano tutte le azioni. Le azioni girano sempre sul PC, anche con la VM attiva.",
+              "“Stop” closes the action's whole process tree. Closing Atollo stops all actions. Actions always run on the PC, even with the VM on.",
+              "« Arrêter » ferme toute l'arborescence de processus de l'action. Fermer Atollo arrête toutes les actions. Les actions tournent toujours sur le PC, même avec la VM active.",
+              "„Beenden“ schließt den gesamten Prozessbaum der Aktion. Wenn du Atollo schließt, werden alle Aktionen beendet. Aktionen laufen immer auf dem PC, auch mit aktiver VM.",
             ),
             tr(
               "Le azioni avviate compaiono anche nel pannello «Attività» e nel contatore della barra di stato; nel pannello «Ferma tutto», dopo una conferma, le ferma insieme ai database e ai server web in esecuzione.",
@@ -1549,10 +1549,10 @@ export const PROJECTS: TopicTexts = {
         </P>
         <Callout tone="info">
           {tr(
-            "«Installa ciò che manca» installa i componenti del kit (Node.js, PHP, Python…), non le dipendenze del progetto: per quelle esegui npm install, composer install o simili, con un'azione o nel terminale del progetto. Con la VM attiva i componenti mancanti si contano e si installano per il Linux della VM.",
-            "“Install what is missing” installs the kit's components (Node.js, PHP, Python…), not the project's dependencies: for those run npm install, composer install or similar, with an action or in the project terminal. With the VM on, the missing components are counted and installed for the VM's Linux.",
-            "« Installer ce qui manque » installe les composants du kit (Node.js, PHP, Python…), pas les dépendances du projet : pour celles-ci, exécutez npm install, composer install ou équivalent, avec une action ou dans le terminal du projet. Avec la VM active, les composants manquants sont comptés et installés pour le Linux de la VM.",
-            "„Fehlendes installieren“ installiert die Komponenten des Kits (Node.js, PHP, Python…), nicht die Abhängigkeiten des Projekts: Für diese führst du npm install, composer install oder Ähnliches aus, mit einer Aktion oder im Terminal des Projekts. Mit aktiver VM werden die fehlenden Komponenten für das Linux der VM gezählt und installiert.",
+            "«Installa ciò che manca» installa i componenti del kit (Node.js, PHP, Python…), non le dipendenze del progetto: per quelle esegui npm install, composer install o simili, con un'azione o nel terminale del progetto. I componenti mancanti si contano sul PC, dove si installano sempre; con la VM attiva quelli che servono agli agenti si installano anche per il Linux della VM.",
+            "“Install what is missing” installs the kit's components (Node.js, PHP, Python…), not the project's dependencies: for those run npm install, composer install or similar, with an action or in the project terminal. The missing components are counted on the PC, where they are always installed; with the VM on, those the agents need are also installed for the VM's Linux.",
+            "« Installer ce qui manque » installe les composants du kit (Node.js, PHP, Python…), pas les dépendances du projet : pour celles-ci, exécutez npm install, composer install ou équivalent, avec une action ou dans le terminal du projet. Les composants manquants sont comptés sur le PC, où ils sont toujours installés ; avec la VM active, ceux dont les agents ont besoin sont aussi installés pour le Linux de la VM.",
+            "„Fehlendes installieren“ installiert die Komponenten des Kits (Node.js, PHP, Python…), nicht die Abhängigkeiten des Projekts: Für diese führst du npm install, composer install oder Ähnliches aus, mit einer Aktion oder im Terminal des Projekts. Die fehlenden Komponenten werden auf dem PC gezählt, wo sie immer installiert werden; mit aktiver VM werden die, die die Agenten brauchen, auch für das Linux der VM installiert.",
           )}
         </Callout>
       </Section>
@@ -1713,10 +1713,10 @@ export const PROJECTS: TopicTexts = {
             "„Editor“ öffnet das Projekt in VSCodium, in einem Atollo-Fenster, mit allen Werkzeugen des Kits.",
           ),
           tr(
-            "«Terminale» apre una console del kit nella cartella del progetto. Con la VM attiva si apre nella VM del progetto.",
-            "“Terminal” opens a kit console in the project folder. With the VM on it opens in the project's VM.",
-            "« Terminal » ouvre une console du kit dans le dossier du projet. Avec la VM active, elle s'ouvre dans la VM du projet.",
-            "„Terminal“ öffnet eine Konsole des Kits im Projektordner. Mit aktiver VM öffnet sie sich in der VM des Projekts.",
+            "«Terminale» apre una console del kit nella cartella del progetto, sul PC, con o senza la VM.",
+            "“Terminal” opens a kit console in the project folder, on the PC, with or without the VM.",
+            "« Terminal » ouvre une console du kit dans le dossier du projet, sur le PC, avec ou sans la VM.",
+            "„Terminal“ öffnet eine Konsole des Kits im Projektordner, auf dem PC, mit oder ohne VM.",
           ),
           tr(
             "Le estensioni si scelgono per progetto; quelle installate valgono per tutto l'editor.",
@@ -1784,10 +1784,10 @@ export const PROJECTS: TopicTexts = {
       >
         <P>
           {tr(
-            "«Terminale» apre una console del kit nella cartella del progetto: una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella. Con la VM attiva è invece bash nella microVM del progetto, con gli strumenti del kit per Linux alle versioni del progetto: vede solo la cartella del progetto.",
-            "“Terminal” opens a kit console in the project folder: a tab of the terminal panel inside Atollo, on every system, with the kit's PowerShell 7. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder. With the VM on it is bash in the project's microVM instead, with the kit's tools for Linux at the project's versions: it sees only the project's folder.",
-            "« Terminal » ouvre une console du kit dans le dossier du projet : un onglet du panneau des terminaux dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit. Les outils sont ceux du kit, aux versions choisies pour le projet. L'invite affiche Atollo et le dossier. Avec la VM active, c'est bash dans la microVM du projet, avec les outils du kit pour Linux aux versions du projet : il ne voit que le dossier du projet.",
-            "„Terminal“ öffnet eine Konsole des Kits im Projektordner: einen Tab des Terminalbereichs in Atollo, auf jedem System, mit der PowerShell 7 des Kits. Die Werkzeuge sind die des Kits, in den für das Projekt gewählten Versionen. Die Eingabeaufforderung zeigt Atollo und den Ordner. Mit aktiver VM ist es stattdessen bash in der microVM des Projekts, mit den Werkzeugen des Kits für Linux in den Versionen des Projekts: Es sieht nur den Ordner des Projekts.",
+            "«Terminale» apre una console del kit nella cartella del progetto: una scheda del pannello dei terminali dentro Atollo, su ogni sistema, con la PowerShell 7 del kit. Gli strumenti sono quelli del kit, alle versioni scelte per il progetto. Il prompt mostra Atollo e la cartella. Gira sul PC anche con la VM attiva, nell'ambiente sigillato del kit; nella VM vanno solo gli agenti.",
+            "“Terminal” opens a kit console in the project folder: a tab of the terminal panel inside Atollo, on every system, with the kit's PowerShell 7. The tools are the kit's, at the versions chosen for the project. The prompt shows Atollo and the folder. It runs on the PC even with the VM on, in the kit's sealed environment; only the agents go into the VM.",
+            "« Terminal » ouvre une console du kit dans le dossier du projet : un onglet du panneau des terminaux dans Atollo, sur tous les systèmes, avec le PowerShell 7 du kit. Les outils sont ceux du kit, aux versions choisies pour le projet. L'invite affiche Atollo et le dossier. Il tourne sur le PC même avec la VM active, dans l'environnement scellé du kit ; seuls les agents vont dans la VM.",
+            "„Terminal“ öffnet eine Konsole des Kits im Projektordner: einen Tab des Terminalbereichs in Atollo, auf jedem System, mit der PowerShell 7 des Kits. Die Werkzeuge sind die des Kits, in den für das Projekt gewählten Versionen. Die Eingabeaufforderung zeigt Atollo und den Ordner. Es läuft auch mit aktiver VM auf dem PC, in der versiegelten Umgebung des Kits; nur die Agenten gehen in die VM.",
           )}
         </P>
         <P>
@@ -2016,10 +2016,10 @@ export const PROJECTS: TopicTexts = {
               "Im Editor: der Bereich „Quellcodeverwaltung“ für Commits, Push, Pull, Branches und Vergleiche.",
             ),
             tr(
-              "Nel terminale del progetto o dell'editor: i comandi git e gh, già autenticati. Nella VM del progetto gh e push usano il tuo accesso solo con «GitHub nella VM» acceso.",
-              "In the project or editor terminal: the git and gh commands, already authenticated. In the project's VM gh and push use your access only with “GitHub in the VM” on.",
-              "Dans le terminal du projet ou de l'éditeur : les commandes git et gh, déjà authentifiées. Dans la VM du projet, gh et push n'utilisent votre accès qu'avec « GitHub dans la VM » activé.",
-              "Im Terminal des Projekts oder des Editors: die Befehle git und gh, bereits angemeldet. In der VM des Projekts nutzen gh und push deinen Zugang nur mit eingeschaltetem „GitHub in der VM“.",
+              "Nel terminale del progetto o dell'editor, sul PC: i comandi git e gh, già autenticati.",
+              "In the project or editor terminal, on the PC: the git and gh commands, already authenticated.",
+              "Dans le terminal du projet ou de l'éditeur, sur le PC : les commandes git et gh, déjà authentifiées.",
+              "Im Terminal des Projekts oder des Editors, auf dem PC: die Befehle git und gh, bereits angemeldet.",
             ),
             tr(
               "Con un agente, nella VM: Claude Code, Codex, Pi e Antigravity possono fare commit, creare rami e aprire pull request (verso GitHub con «GitHub nella VM»).",
@@ -2069,10 +2069,10 @@ export const PROJECTS: TopicTexts = {
         <Callout tone="warn">
           {rich(
             tr(
-              "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma il codice del progetto potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi. Vale solo per la sandbox di questo progetto, mai per i terminali del kit. Più dettagli in {0}.",
-              "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But the project's code could act on GitHub on your behalf: turn it on only for projects you trust. It applies only to this project's sandbox, never to the kit's terminals. More details in {0}.",
-              "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais le code du projet pourrait agir sur GitHub en votre nom : activez-le seulement pour les projets de confiance. Cela ne vaut que pour la sandbox de ce projet, jamais pour les terminaux du kit. Plus de détails dans {0}.",
-              "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber der Code des Projekts könnte auf GitHub in deinem Namen handeln: Schalte es nur für Projekte ein, denen du vertraust. Es gilt nur für die Sandbox dieses Projekts, nie für die Terminals des Kits. Mehr Details in {0}.",
+              "Il token non entra nella VM: lo aggiunge il proxy di Docker Sandboxes alle richieste verso GitHub. Ma un agente, o il codice che esegue, potrebbe agire su GitHub a tuo nome: accendilo solo per i progetti di cui ti fidi. Vale solo per la sandbox di questo progetto, mai per i terminali del kit. Più dettagli in {0}.",
+              "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But an agent, or the code it runs, could act on GitHub on your behalf: turn it on only for projects you trust. It applies only to this project's sandbox, never to the kit's terminals. More details in {0}.",
+              "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais un agent, ou le code qu'il exécute, pourrait agir sur GitHub en votre nom : activez-le seulement pour les projets de confiance. Cela ne vaut que pour la sandbox de ce projet, jamais pour les terminaux du kit. Plus de détails dans {0}.",
+              "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber ein Agent oder der Code, den er ausführt, könnte auf GitHub in deinem Namen handeln: Schalte es nur für Projekte ein, denen du vertraust. Es gilt nur für die Sandbox dieses Projekts, nie für die Terminals des Kits. Mehr Details in {0}.",
             ),
             <See key="v" id="vm" />,
           )}

@@ -61,14 +61,6 @@ export function ProjectVm({ project }: { project: string }) {
           </li>
         ))}
       </ul>
-      {data.published.length > 0 && (
-        <p className="text-[12px] text-vsc-desc">
-          {t(
-            "Porte pubblicate sul PC: {0}",
-            data.published.map((p) => `${p.address}:${String(p.port)} (${p.action})`).join(", "),
-          )}
-        </p>
-      )}
       <p className="text-[12px] text-vsc-desc">{data.github ? t("GitHub nella VM: sì") : t("GitHub nella VM: no")}</p>
     </EditorSection>
   );

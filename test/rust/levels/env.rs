@@ -119,6 +119,7 @@ fn origins() -> Vec<Origin> {
         },
         Origin::Pool { pool: "p".into() },
         Origin::Scaffold { base: "b".into() },
+        Origin::Sandbox,
         Origin::AgentButton {
             agent: Agent::Claude,
         },
@@ -701,7 +702,6 @@ fn pi_and_agy_get_their_own_folder_back_only_for_themselves() {
                 databases: true,
                 local_models: false,
             },
-            publish: false,
             program,
         };
         let path = |program: VmProgram, level: Level| {
@@ -710,7 +710,6 @@ fn pi_and_agy_get_their_own_folder_back_only_for_themselves() {
                 .1
                 .path
         };
-        let shell = path(VmProgram::Shell, Level::Project);
         let pi = path(VmProgram::AgentBinary { agent: Agent::Pi }, Level::Agent);
         let agy = path(
             VmProgram::AgentBinary {
@@ -727,7 +726,6 @@ fn pi_and_agy_get_their_own_folder_back_only_for_themselves() {
         let (pi_dir, agy_dir) = (folder(Agent::Pi), folder(Agent::Antigravity));
         assert!(pi_dir.starts_with(&apps));
         for (what, entries, has_pi, has_agy) in [
-            ("shell", &shell, false, false),
             ("pi", &pi, true, false),
             ("agy", &agy, false, true),
             ("claude", &claude, false, false),
@@ -735,8 +733,8 @@ fn pi_and_agy_get_their_own_folder_back_only_for_themselves() {
             assert_eq!(entries.contains(&pi_dir), has_pi, "{what}: {entries:?}");
             assert_eq!(entries.contains(&agy_dir), has_agy, "{what}: {entries:?}");
         }
-        // The rest is the project's terminal's, the agent's folder last.
-        assert_eq!(&pi[..pi.len() - 1], &shell[..]);
+        // The rest is another agent's, the agent's folder last.
+        assert_eq!(&pi[..pi.len() - 1], &claude[..]);
         assert_eq!(pi.last(), Some(&pi_dir));
     }
 }

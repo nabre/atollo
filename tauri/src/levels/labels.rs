@@ -153,20 +153,10 @@ pub fn refusal_text(reason: &Refusal, lang: &str) -> String {
             "Gli agenti partono solo nella cartella di un progetto: apri il terminale nella cartella del progetto, o avvia l'agente dalla pagina del progetto.",
             &[],
         ),
-        Refusal::NotAProject => t(
-            lang,
-            "Con la VM attiva il codice di un progetto parte solo nella cartella di un progetto: aprila dalla pagina del progetto.",
-            &[],
-        ),
         Refusal::NoPathInVm { dir } => t(
             lang,
             "La cartella {0} non ha un percorso nella VM (è su una condivisione di rete): sposta il progetto su un disco locale.",
             &[dir],
-        ),
-        Refusal::PoolsOnlyWithoutVm => t(
-            lang,
-            "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.",
-            &[],
         ),
         Refusal::NoLinuxBuild { agent } => t(
             lang,

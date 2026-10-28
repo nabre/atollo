@@ -279,16 +279,16 @@ export const INSIDE: TopicTexts = {
       <InBrief
         points={[
           tr(
-            "Il cuore di Atollo è il configuratore di Docker Sandboxes (sbx): ogni progetto gira in una microVM sua, con un Linux suo, e vede solo la sua cartella.",
-            "The heart of Atollo is the configurator of Docker Sandboxes (sbx): each project runs in a microVM of its own, with its own Linux, and sees only its folder.",
-            "Le cœur d'Atollo est le configurateur de Docker Sandboxes (sbx) : chaque projet tourne dans sa propre microVM, avec son propre Linux, et ne voit que son dossier.",
-            "Das Herz von Atollo ist der Konfigurator von Docker Sandboxes (sbx): Jedes Projekt läuft in einer eigenen microVM, mit eigenem Linux, und sieht nur seinen Ordner.",
+            "Il cuore di Atollo è il configuratore di Docker Sandboxes (sbx): gli agenti di ogni progetto girano in una microVM, con un Linux suo, e vedono solo la cartella del progetto.",
+            "The heart of Atollo is the configurator of Docker Sandboxes (sbx): each project's agents run in a microVM, with its own Linux, and see only the project's folder.",
+            "Le cœur d'Atollo est le configurateur de Docker Sandboxes (sbx) : les agents de chaque projet tournent dans une microVM, avec son propre Linux, et ne voient que le dossier du projet.",
+            "Das Herz von Atollo ist der Konfigurator von Docker Sandboxes (sbx): Die Agenten jedes Projekts laufen in einer microVM, mit eigenem Linux, und sehen nur den Ordner des Projekts.",
           ),
           tr(
-            "Tre livelli: 1, i comandi che scrivi tu (i terminali del kit e dell'editor), sempre sul PC; 2, il codice del progetto (terminale del progetto, azioni, siti, task, creazione), nella VM del progetto; 3, gli agenti (Claude Code, Codex, Pi, Antigravity), solo nella VM. I database restano sul PC.",
-            "Three levels: 1, the commands you type (the kit's and the editor's terminals), always on the PC; 2, the project's code (project terminal, actions, websites, tasks, creation), in the project's VM; 3, the agents (Claude Code, Codex, Pi, Antigravity), only in the VM. The databases stay on the PC.",
-            "Trois niveaux : 1, les commandes que vous tapez (les terminaux du kit et de l'éditeur), toujours sur le PC ; 2, le code du projet (terminal du projet, actions, sites, tâches, création), dans la VM du projet ; 3, les agents (Claude Code, Codex, Pi, Antigravity), seulement dans la VM. Les bases de données restent sur le PC.",
-            "Drei Stufen: 1, die Befehle, die du tippst (die Terminals des Kits und des Editors), immer auf dem PC; 2, der Code des Projekts (Terminal des Projekts, Aktionen, Websites, Tasks, Anlegen), in der VM des Projekts; 3, die Agenten (Claude Code, Codex, Pi, Antigravity), nur in der VM. Die Datenbanken bleiben auf dem PC.",
+            "Due posti: sul PC tutto ciò che non è un agente, con o senza la VM (i terminali del kit e dell'editor, il codice del progetto: terminale del progetto, azioni, siti, task, creazione; i server web e i database); nella VM solo gli agenti (Claude Code, Codex, Pi, Antigravity).",
+            "Two places: on the PC everything that is not an agent, with or without the VM (the kit's and the editor's terminals, the project's code: project terminal, actions, websites, tasks, creation; the web and database servers); in the VM only the agents (Claude Code, Codex, Pi, Antigravity).",
+            "Deux endroits : sur le PC tout ce qui n'est pas un agent, avec ou sans la VM (les terminaux du kit et de l'éditeur, le code du projet : terminal du projet, actions, sites, tâches, création ; les serveurs web et de bases de données) ; dans la VM seulement les agents (Claude Code, Codex, Pi, Antigravity).",
+            "Zwei Orte: auf dem PC alles, was kein Agent ist, mit oder ohne VM (die Terminals des Kits und des Editors, der Code des Projekts: Terminal des Projekts, Aktionen, Websites, Tasks, Anlegen; die Web- und Datenbankserver); in der VM nur die Agenten (Claude Code, Codex, Pi, Antigravity).",
           ),
           tr(
             "Docker Sandboxes è un componente obbligatorio del kit e Atollo usa solo quello: mai uno installato sul PC. Serve un account Docker gratuito, con «sbx login» nel terminale di Atollo.",
@@ -297,10 +297,10 @@ export const INSIDE: TopicTexts = {
             "Docker Sandboxes ist eine Pflichtkomponente des Kits, und Atollo verwendet nur diese: nie eine auf dem PC installierte. Nötig ist ein kostenloses Docker-Konto, mit „sbx login“ im Terminal von Atollo.",
           ),
           tr(
-            "Quando la VM non può partire, la barra di stato dice «Senza VM»: un clic spiega perché e che cosa fare. Intanto il codice dei progetti gira sul PC, con l'ambiente sigillato del kit; gli agenti sono disattivati, con il motivo.",
-            "When the VM cannot start, the status bar says “No VM”: a click tells why and what to do. Meanwhile the projects' code runs on the PC, with the kit's sealed environment; the agents are disabled, with the reason.",
-            "Quand la VM ne peut pas démarrer, la barre d'état indique « Sans VM » : un clic dit pourquoi et quoi faire. En attendant, le code des projets tourne sur le PC, avec l'environnement scellé du kit ; les agents sont désactivés, avec le motif.",
-            "Wenn die VM nicht starten kann, zeigt die Statusleiste „Ohne VM“: Ein Klick sagt, warum und was zu tun ist. Bis dahin läuft der Code der Projekte auf dem PC, mit der versiegelten Umgebung des Kits; die Agenten sind deaktiviert, mit dem Grund.",
+            "Quando la VM non può partire, la barra di stato dice «Senza VM»: un clic spiega perché e che cosa fare. Gli agenti sono disattivati, con il motivo; il codice dei progetti gira sul PC come sempre, con l'ambiente sigillato del kit.",
+            "When the VM cannot start, the status bar says “No VM”: a click tells why and what to do. The agents are disabled, with the reason; the projects' code runs on the PC as always, with the kit's sealed environment.",
+            "Quand la VM ne peut pas démarrer, la barre d'état indique « Sans VM » : un clic dit pourquoi et quoi faire. Les agents sont désactivés, avec le motif ; le code des projets tourne sur le PC comme toujours, avec l'environnement scellé du kit.",
+            "Wenn die VM nicht starten kann, zeigt die Statusleiste „Ohne VM“: Ein Klick sagt, warum und was zu tun ist. Die Agenten sind deaktiviert, mit dem Grund; der Code der Projekte läuft wie immer auf dem PC, mit der versiegelten Umgebung des Kits.",
           ),
         ]}
       />
@@ -308,10 +308,10 @@ export const INSIDE: TopicTexts = {
       <Section title={tr("Che cos'è", "What it is", "Ce que c'est", "Was das ist")}>
         <P>
           {tr(
-            "Una microVM è un piccolo computer virtuale che parte in pochi secondi. Docker Sandboxes ne crea una per progetto: dentro c'è un Linux con la cartella del progetto, in scrittura, e gli strumenti del kit per Linux, in sola lettura. Il resto del PC e del kit resta fuori: un pacchetto npm o lo script di un repository clonato non può leggere i tuoi documenti, le tue chiavi SSH o gli altri progetti.",
-            "A microVM is a small virtual computer that starts in a few seconds. Docker Sandboxes makes one per project: inside there is a Linux with the project's folder, writable, and the kit's tools for Linux, read-only. The rest of the PC and of the kit stays outside: an npm package or the script of a cloned repository cannot read your documents, your SSH keys or the other projects.",
-            "Une microVM est un petit ordinateur virtuel qui démarre en quelques secondes. Docker Sandboxes en crée une par projet : dedans, un Linux avec le dossier du projet, en écriture, et les outils du kit pour Linux, en lecture seule. Le reste du PC et du kit reste dehors : un paquet npm ou le script d'un dépôt cloné ne peut lire ni vos documents, ni vos clés SSH, ni les autres projets.",
-            "Eine microVM ist ein kleiner virtueller Computer, der in wenigen Sekunden startet. Docker Sandboxes legt eine pro Projekt an: Darin ist ein Linux mit dem Ordner des Projekts, beschreibbar, und den Werkzeugen des Kits für Linux, schreibgeschützt. Der Rest des PCs und des Kits bleibt draußen: Ein npm-Paket oder das Skript eines geklonten Repositorys kann weder deine Dokumente noch deine SSH-Schlüssel noch die anderen Projekte lesen.",
+            "Una microVM è un piccolo computer virtuale che parte in pochi secondi. Docker Sandboxes ne crea una per gli agenti di ogni progetto: dentro c'è un Linux con la cartella del progetto, in scrittura, e gli strumenti del kit per Linux, in sola lettura. Il resto del PC e del kit resta fuori: un agente, e ciò che esegue, non può leggere i tuoi documenti, le tue chiavi SSH o gli altri progetti. Il terminale, le azioni e i siti del progetto girano invece sul PC.",
+            "A microVM is a small virtual computer that starts in a few seconds. Docker Sandboxes makes one for each project's agents: inside there is a Linux with the project's folder, writable, and the kit's tools for Linux, read-only. The rest of the PC and of the kit stays outside: an agent, and what it runs, cannot read your documents, your SSH keys or the other projects. The project's terminal, actions and websites run on the PC instead.",
+            "Une microVM est un petit ordinateur virtuel qui démarre en quelques secondes. Docker Sandboxes en crée une pour les agents de chaque projet : dedans, un Linux avec le dossier du projet, en écriture, et les outils du kit pour Linux, en lecture seule. Le reste du PC et du kit reste dehors : un agent, et ce qu'il exécute, ne peut lire ni vos documents, ni vos clés SSH, ni les autres projets. Le terminal, les actions et les sites du projet tournent en revanche sur le PC.",
+            "Eine microVM ist ein kleiner virtueller Computer, der in wenigen Sekunden startet. Docker Sandboxes legt eine für die Agenten jedes Projekts an: Darin ist ein Linux mit dem Ordner des Projekts, beschreibbar, und den Werkzeugen des Kits für Linux, schreibgeschützt. Der Rest des PCs und des Kits bleibt draußen: Ein Agent, und was er ausführt, kann weder deine Dokumente noch deine SSH-Schlüssel noch die anderen Projekte lesen. Terminal, Aktionen und Websites des Projekts laufen dagegen auf dem PC.",
           )}
         </P>
         <P>
@@ -501,18 +501,18 @@ export const INSIDE: TopicTexts = {
 
       <Section
         title={tr(
-          "Che cosa gira dove: i tre livelli",
-          "What runs where: the three levels",
-          "Ce qui tourne où : les trois niveaux",
-          "Was wo läuft: die drei Stufen",
+          "Che cosa gira dove: due posti, tre livelli",
+          "What runs where: two places, three levels",
+          "Ce qui tourne où : deux endroits, trois niveaux",
+          "Was wo läuft: zwei Orte, drei Stufen",
         )}
       >
         <P>
           {tr(
-            "Atollo dà a ogni programma un livello, secondo chi lo avvia, e il livello decide dove gira. Non si sceglie e non si cambia: lo stesso programma va sempre nello stesso posto.",
-            "Atollo gives every program a level, by who starts it, and the level decides where it runs. You do not choose it and cannot change it: the same program always goes to the same place.",
-            "Atollo donne à chaque programme un niveau, selon qui le lance, et le niveau décide où il tourne. On ne le choisit pas et on ne le change pas : le même programme va toujours au même endroit.",
-            "Atollo gibt jedem Programm eine Stufe, je nachdem, wer es startet, und die Stufe entscheidet, wo es läuft. Man wählt sie nicht und ändert sie nicht: Dasselbe Programm landet immer am selben Ort.",
+            "Atollo dà a ogni programma un livello, secondo chi lo avvia, e il livello decide dove gira. Non si sceglie e non si cambia: lo stesso programma va sempre nello stesso posto. I posti sono due: il PC per i livelli 1 e 2, con o senza la VM; la VM solo per il livello 3, gli agenti.",
+            "Atollo gives every program a level, by who starts it, and the level decides where it runs. You do not choose it and cannot change it: the same program always goes to the same place. There are two places: the PC for levels 1 and 2, with or without the VM; the VM only for level 3, the agents.",
+            "Atollo donne à chaque programme un niveau, selon qui le lance, et le niveau décide où il tourne. On ne le choisit pas et on ne le change pas : le même programme va toujours au même endroit. Les endroits sont deux : le PC pour les niveaux 1 et 2, avec ou sans la VM ; la VM seulement pour le niveau 3, les agents.",
+            "Atollo gibt jedem Programm eine Stufe, je nachdem, wer es startet, und die Stufe entscheidet, wo es läuft. Man wählt sie nicht und ändert sie nicht: Dasselbe Programm landet immer am selben Ort. Es gibt zwei Orte: den PC für die Stufen 1 und 2, mit oder ohne VM; die VM nur für Stufe 3, die Agenten.",
           )}
         </P>
         <Table
@@ -553,10 +553,10 @@ export const INSIDE: TopicTexts = {
                 "Der Code, der mit einem Projekt kommt: das Terminal des Projekts, die Aktionen (npm run dev…), die Websites, die Webserver-Pools, die Tasks des Editors, das Anlegen eines Projekts aus einer Basis.",
               ),
               tr(
-                "Nella VM del progetto (atollo-p-…); un sito in un container della VM, con la porta pubblicata sul PC.",
-                "In the project's VM (atollo-p-…); a website in a container of the VM, with its port published on the PC.",
-                "Dans la VM du projet (atollo-p-…) ; un site dans un conteneur de la VM, avec son port publié sur le PC.",
-                "In der VM des Projekts (atollo-p-…); eine Website in einem Container der VM, mit ihrem Port auf dem PC veröffentlicht.",
+                "Sul PC, come senza VM, con l'ambiente sigillato del kit.",
+                "On the PC, as without the VM, with the kit's sealed environment.",
+                "Sur le PC, comme sans VM, avec l'environnement scellé du kit.",
+                "Auf dem PC, wie ohne VM, mit der versiegelten Umgebung des Kits.",
               ),
               tr(
                 "Sul PC, con l'ambiente sigillato del kit e «Senza VM» nella barra di stato.",
@@ -590,10 +590,10 @@ export const INSIDE: TopicTexts = {
         />
         <P>
           {tr(
-            "Gli strumenti nella VM sono quelli scelti nel kit, alle versioni scelte dal progetto, nella loro build per Linux: se ne manca uno, Atollo lo installa in data\\apps\\linux-x64 (linux-arm64 sui Mac con Apple silicon) prima di aprire la sessione, con l'avanzamento nella barra di stato. Con la VM attiva la pagina Strumenti installa per il Linux della VM gli strumenti scelti e sul PC solo i componenti dell'app; nella matrice la colonna del Linux porta il segno «VM» e la cella del sistema del PC dice «nella VM». Gli strumenti si scaricano una volta nel kit, con lo SHA-256 verificato, e la VM li monta in sola lettura con il PATH alle versioni del progetto: viaggiano con il kit, funzionano senza rete, la VM parte subito con le stesse versioni verificate, non può cambiarli e non ha bisogno dei siti di download. I pacchetti del progetto (node_modules, vendor, .venv) li installa il progetto, dentro la VM.",
-            "The tools in the VM are the ones chosen in the kit, at the versions the project chose, in their build for Linux: when one is missing, Atollo installs it in data\\apps\\linux-x64 (linux-arm64 on Macs with Apple silicon) before opening the session, with the progress in the status bar. With the VM on, the Tools page installs the chosen tools for the VM's Linux and only the app's components on the PC; in the matrix the Linux column bears the “VM” mark and the cell of the PC's system says “in the VM”. The tools are downloaded once into the kit, with the SHA-256 verified, and the VM mounts them read-only with the PATH set to the project's versions: they travel with the kit, work offline, the VM starts at once with the same verified versions, cannot change them and needs no download sites. The project's own packages (node_modules, vendor, .venv) are installed by the project, inside the VM.",
-            "Les outils dans la VM sont ceux choisis dans le kit, aux versions choisies par le projet, dans leur build pour Linux : s'il en manque un, Atollo l'installe dans data\\apps\\linux-x64 (linux-arm64 sur les Mac avec Apple silicon) avant d'ouvrir la session, avec la progression dans la barre d'état. Avec la VM active, la page Outils installe les outils choisis pour le Linux de la VM et seulement les composants de l'application sur le PC ; dans la matrice, la colonne de Linux porte la marque « VM » et la cellule du système du PC indique « dans la VM ». Les outils se téléchargent une fois dans le kit, avec le SHA-256 vérifié, et la VM les monte en lecture seule avec le PATH aux versions du projet : ils voyagent avec le kit, fonctionnent sans réseau, la VM démarre tout de suite avec les mêmes versions vérifiées, ne peut pas les modifier et n'a pas besoin des sites de téléchargement. Les paquets du projet (node_modules, vendor, .venv), c'est le projet qui les installe, dans la VM.",
-            "Die Werkzeuge in der VM sind die im Kit gewählten, in den vom Projekt gewählten Versionen, in ihrem Build für Linux: Fehlt eines, installiert Atollo es in data\\apps\\linux-x64 (linux-arm64 auf Macs mit Apple Silicon), bevor die Sitzung geöffnet wird, mit dem Fortschritt in der Statusleiste. Mit aktiver VM installiert die Seite Werkzeuge die gewählten Werkzeuge für das Linux der VM und auf dem PC nur die Komponenten der App; in der Matrix trägt die Linux-Spalte das Zeichen „VM“ und die Zelle des PC-Systems sagt „in der VM“. Die Werkzeuge werden einmal ins Kit heruntergeladen, mit geprüfter SHA-256, und die VM bindet sie schreibgeschützt ein, mit dem PATH auf die Versionen des Projekts: Sie reisen mit dem Kit, funktionieren ohne Netzwerk, die VM startet sofort mit denselben geprüften Versionen, kann sie nicht verändern und braucht keine Download-Seiten. Die Pakete des Projekts (node_modules, vendor, .venv) installiert das Projekt selbst, in der VM.",
+            "Gli strumenti scelti nel kit si installano sempre sul PC; quelli che servono agli agenti anche nella loro build per Linux, alle versioni scelte dal progetto: se ne manca uno, Atollo lo installa in data\\apps\\linux-x64 (linux-arm64 sui Mac con Apple silicon) prima di aprire l'agente, con l'avanzamento nella barra di stato. Con la VM attiva la pagina Strumenti li installa per il PC e, nella stessa passata, per il Linux della VM; nella matrice la colonna del Linux porta il segno «VM». Gli strumenti per Linux si scaricano una volta nel kit, con lo SHA-256 verificato, e la VM li monta in sola lettura con il PATH alle versioni del progetto: viaggiano con il kit, funzionano senza rete, la VM parte subito con le stesse versioni verificate, non può cambiarli e non ha bisogno dei siti di download. I pacchetti del progetto (node_modules, vendor, .venv) li installa il progetto, nella sua cartella.",
+            "The tools chosen in the kit are always installed on the PC; those the agents need also in their build for Linux, at the versions the project chose: when one is missing, Atollo installs it in data\\apps\\linux-x64 (linux-arm64 on Macs with Apple silicon) before opening the agent, with the progress in the status bar. With the VM on, the Tools page installs them for the PC and, in the same pass, for the VM's Linux; in the matrix the Linux column bears the “VM” mark. The tools for Linux are downloaded once into the kit, with the SHA-256 verified, and the VM mounts them read-only with the PATH set to the project's versions: they travel with the kit, work offline, the VM starts at once with the same verified versions, cannot change them and needs no download sites. The project's own packages (node_modules, vendor, .venv) are installed by the project, in its folder.",
+            "Les outils choisis dans le kit s'installent toujours sur le PC ; ceux dont les agents ont besoin aussi dans leur build pour Linux, aux versions choisies par le projet : s'il en manque un, Atollo l'installe dans data\\apps\\linux-x64 (linux-arm64 sur les Mac avec Apple silicon) avant d'ouvrir l'agent, avec la progression dans la barre d'état. Avec la VM active, la page Outils les installe pour le PC et, dans le même passage, pour le Linux de la VM ; dans la matrice, la colonne de Linux porte la marque « VM ». Les outils pour Linux se téléchargent une fois dans le kit, avec le SHA-256 vérifié, et la VM les monte en lecture seule avec le PATH aux versions du projet : ils voyagent avec le kit, fonctionnent sans réseau, la VM démarre tout de suite avec les mêmes versions vérifiées, ne peut pas les modifier et n'a pas besoin des sites de téléchargement. Les paquets du projet (node_modules, vendor, .venv), c'est le projet qui les installe, dans son dossier.",
+            "Die im Kit gewählten Werkzeuge werden immer auf dem PC installiert; die, die die Agenten brauchen, auch in ihrem Build für Linux, in den vom Projekt gewählten Versionen: Fehlt eines, installiert Atollo es in data\\apps\\linux-x64 (linux-arm64 auf Macs mit Apple Silicon), bevor der Agent geöffnet wird, mit dem Fortschritt in der Statusleiste. Mit aktiver VM installiert die Seite Werkzeuge sie für den PC und im selben Durchgang für das Linux der VM; in der Matrix trägt die Linux-Spalte das Zeichen „VM“. Die Werkzeuge für Linux werden einmal ins Kit heruntergeladen, mit geprüfter SHA-256, und die VM bindet sie schreibgeschützt ein, mit dem PATH auf die Versionen des Projekts: Sie reisen mit dem Kit, funktionieren ohne Netzwerk, die VM startet sofort mit denselben geprüften Versionen, kann sie nicht verändern und braucht keine Download-Seiten. Die Pakete des Projekts (node_modules, vendor, .venv) installiert das Projekt selbst, in seinem Ordner.",
           )}
         </P>
         <P>
@@ -619,16 +619,16 @@ export const INSIDE: TopicTexts = {
               "Ein Agent startet von der Seite des Projekts, aus der Befehlspalette, über sein Profil im Terminal des Editors oder indem du claude, codex, pi oder agy in einem Terminal des PCs im Ordner des Projekts tippst: Der Befehl bittet Atollo, ihn in der VM zu starten, im selben Terminal. Außerhalb eines Projekts oder ohne VM sagt er, warum, und beendet sich.",
             ),
             tr(
-              "Nell'editor i terminali sono di livello 1 e si aprono sul PC; i task girano nella VM del progetto (senza VM sul PC, sigillati); i profili degli agenti ci sono solo con la VM. Le estensioni che eseguono un agente (Claude Code, Codex, Cline…) non si installano: se ne trova una, Atollo la toglie all'avvio dell'editor e l'editor dice perché.",
-              "In the editor the terminals are level 1 and open on the PC; the tasks run in the project's VM (without the VM on the PC, sealed); the agents' profiles are there only with the VM. Extensions that run an agent (Claude Code, Codex, Cline…) are not installed: if it finds one, Atollo removes it at the editor's start and the editor says why.",
-              "Dans l'éditeur, les terminaux sont de niveau 1 et s'ouvrent sur le PC ; les tâches tournent dans la VM du projet (sans VM sur le PC, scellées) ; les profils des agents n'y sont qu'avec la VM. Les extensions qui exécutent un agent (Claude Code, Codex, Cline…) ne sont pas installées : s'il en trouve une, Atollo la retire au démarrage de l'éditeur et l'éditeur dit pourquoi.",
-              "Im Editor sind die Terminals Stufe 1 und öffnen sich auf dem PC; die Tasks laufen in der VM des Projekts (ohne VM auf dem PC, versiegelt); die Profile der Agenten gibt es nur mit der VM. Erweiterungen, die einen Agenten ausführen (Claude Code, Codex, Cline…), werden nicht installiert: Findet Atollo eine, entfernt es sie beim Start des Editors, und der Editor sagt, warum.",
+              "Nell'editor i terminali sono di livello 1 e si aprono sul PC; anche i task girano sul PC, sigillati, con o senza la VM; i profili degli agenti ci sono solo con la VM. Le estensioni che eseguono un agente (Claude Code, Codex, Cline…) non si installano: se ne trova una, Atollo la toglie all'avvio dell'editor e l'editor dice perché.",
+              "In the editor the terminals are level 1 and open on the PC; the tasks run on the PC too, sealed, with or without the VM; the agents' profiles are there only with the VM. Extensions that run an agent (Claude Code, Codex, Cline…) are not installed: if it finds one, Atollo removes it at the editor's start and the editor says why.",
+              "Dans l'éditeur, les terminaux sont de niveau 1 et s'ouvrent sur le PC ; les tâches tournent elles aussi sur le PC, scellées, avec ou sans la VM ; les profils des agents n'y sont qu'avec la VM. Les extensions qui exécutent un agent (Claude Code, Codex, Cline…) ne sont pas installées : s'il en trouve une, Atollo la retire au démarrage de l'éditeur et l'éditeur dit pourquoi.",
+              "Im Editor sind die Terminals Stufe 1 und öffnen sich auf dem PC; auch die Tasks laufen auf dem PC, versiegelt, mit oder ohne VM; die Profile der Agenten gibt es nur mit der VM. Erweiterungen, die einen Agenten ausführen (Claude Code, Codex, Cline…), werden nicht installiert: Findet Atollo eine, entfernt es sie beim Start des Editors, und der Editor sagt, warum.",
             ),
             tr(
-              "Ogni scheda del terminale dice dove gira: «PC», «PC · senza VM», «VM progetto» o «Agente · VM», con il nome della sandbox al passaggio del mouse. All'apertura una riga lo ripete: nei terminali del PC il livello, il terminale e il progetto; nella VM «[Atollo] VM progetto: …» o «[Atollo] Agente · VM: …».",
-              "Every terminal tab says where it runs: “PC”, “PC · no VM”, “Project VM” or “Agent · VM”, with the sandbox's name on hover. On opening a line repeats it: in the PC's terminals the level, the terminal and the project; in the VM “[Atollo] VM progetto: …” or “[Atollo] Agente · VM: …”.",
-              "Chaque onglet du terminal dit où il tourne : « PC », « PC · sans VM », « VM du projet » ou « Agent · VM », avec le nom de la sandbox au survol. À l'ouverture, une ligne le répète : dans les terminaux du PC le niveau, le terminal et le projet ; dans la VM « [Atollo] VM progetto: … » ou « [Atollo] Agente · VM: … ».",
-              "Jeder Tab des Terminals sagt, wo er läuft: „PC“, „PC · ohne VM“, „Projekt-VM“ oder „Agent · VM“, mit dem Namen der Sandbox beim Überfahren mit der Maus. Beim Öffnen wiederholt es eine Zeile: in den Terminals des PCs die Stufe, das Terminal und das Projekt; in der VM „[Atollo] VM progetto: …“ oder „[Atollo] Agente · VM: …“.",
+              "Ogni scheda del terminale dice dove gira: «PC», «PC · senza VM» o «Agente · VM», con il nome della sandbox al passaggio del mouse. All'apertura una riga lo ripete: nei terminali del PC il livello, il terminale e il progetto; per un agente «[Atollo] Agente · VM: …».",
+              "Every terminal tab says where it runs: “PC”, “PC · no VM” or “Agent · VM”, with the sandbox's name on hover. On opening a line repeats it: in the PC's terminals the level, the terminal and the project; for an agent “[Atollo] Agente · VM: …”.",
+              "Chaque onglet du terminal dit où il tourne : « PC », « PC · sans VM » ou « Agent · VM », avec le nom de la sandbox au survol. À l'ouverture, une ligne le répète : dans les terminaux du PC le niveau, le terminal et le projet ; pour un agent « [Atollo] Agente · VM: … ».",
+              "Jeder Tab des Terminals sagt, wo er läuft: „PC“, „PC · ohne VM“ oder „Agent · VM“, mit dem Namen der Sandbox beim Überfahren mit der Maus. Beim Öffnen wiederholt es eine Zeile: in den Terminals des PCs die Stufe, das Terminal und das Projekt; für einen Agenten „[Atollo] Agente · VM: …“.",
             ),
           ]}
         />
@@ -644,10 +644,10 @@ export const INSIDE: TopicTexts = {
       >
         <P>
           {tr(
-            "Nella pagina del progetto, la sezione «VM del progetto» mostra la sandbox del progetto e poi quelle di Claude Code e Codex: per ognuna lo stato (accesa, spenta, non c'è), le cartelle montate (il progetto in lettura e scrittura, il resto in sola lettura), le porte del PC che raggiunge e le sessioni che ci girano; sotto, le porte pubblicate e se GitHub è nella VM. Senza VM mostra il motivo e «Apri l'avviso VM».",
-            "On the project's page, the “Project VM” section shows the project's sandbox and then Claude Code's and Codex's: for each one its state (on, off, not there), the mounted folders (the project read-write, the rest read-only), the PC ports it reaches and the sessions running in it; below, the published ports and whether GitHub is in the VM. Without the VM it shows the reason and “Open the VM notice”.",
-            "Sur la page du projet, la section « VM du projet » montre la sandbox du projet puis celles de Claude Code et Codex : pour chacune son état (allumée, éteinte, absente), les dossiers montés (le projet en lecture et écriture, le reste en lecture seule), les ports du PC qu'elle atteint et les sessions qui y tournent ; en dessous, les ports publiés et si GitHub est dans la VM. Sans VM, elle montre le motif et « Ouvrir l'avis VM ».",
-            "Auf der Seite des Projekts zeigt der Abschnitt „VM des Projekts“ die Sandbox des Projekts und dann die von Claude Code und Codex: für jede ihren Zustand (an, aus, nicht vorhanden), die eingehängten Ordner (das Projekt mit Lese- und Schreibzugriff, der Rest schreibgeschützt), die Ports des PCs, die sie erreicht, und die Sitzungen, die darin laufen; darunter die veröffentlichten Ports und ob GitHub in der VM ist. Ohne VM zeigt er den Grund und „VM-Hinweis öffnen“.",
+            "Nella pagina del progetto, la sezione «VM del progetto» mostra la sandbox del progetto e poi quelle di Claude Code e Codex: per ognuna lo stato (accesa, spenta, non c'è), le cartelle montate (il progetto in lettura e scrittura, il resto in sola lettura), le porte del PC che raggiunge e gli agenti che ci girano; sotto, se GitHub è nella VM. Senza VM mostra il motivo e «Apri l'avviso VM».",
+            "On the project's page, the “Project VM” section shows the project's sandbox and then Claude Code's and Codex's: for each one its state (on, off, not there), the mounted folders (the project read-write, the rest read-only), the PC ports it reaches and the agents running in it; below, whether GitHub is in the VM. Without the VM it shows the reason and “Open the VM notice”.",
+            "Sur la page du projet, la section « VM du projet » montre la sandbox du projet puis celles de Claude Code et Codex : pour chacune son état (allumée, éteinte, absente), les dossiers montés (le projet en lecture et écriture, le reste en lecture seule), les ports du PC qu'elle atteint et les agents qui y tournent ; en dessous, si GitHub est dans la VM. Sans VM, elle montre le motif et « Ouvrir l'avis VM ».",
+            "Auf der Seite des Projekts zeigt der Abschnitt „VM des Projekts“ die Sandbox des Projekts und dann die von Claude Code und Codex: für jede ihren Zustand (an, aus, nicht vorhanden), die eingehängten Ordner (das Projekt mit Lese- und Schreibzugriff, der Rest schreibgeschützt), die Ports des PCs, die sie erreicht, und die Agenten, die darin laufen; darunter, ob GitHub in der VM ist. Ohne VM zeigt er den Grund und „VM-Hinweis öffnen“.",
           )}
         </P>
         <Table
@@ -677,10 +677,10 @@ export const INSIDE: TopicTexts = {
             [
               tr("Riavvia", "Restart", "Redémarrer", "Neu starten"),
               tr(
-                "Ferma e riavvia la sandbox. Se ci girano sessioni (terminali, azioni, agenti), prima le elenca e chiede: si fermano.",
-                "Stops and starts the sandbox again. If sessions run in it (terminals, actions, agents), it lists them first and asks: they stop.",
-                "Arrête et redémarre la sandbox. Si des sessions y tournent (terminaux, actions, agents), elle les liste d'abord et demande : elles s'arrêtent.",
-                "Stoppt die Sandbox und startet sie neu. Laufen darin Sitzungen (Terminals, Aktionen, Agenten), listet sie sie zuerst auf und fragt: Sie werden beendet.",
+                "Ferma e riavvia la sandbox. Se ci girano agenti, prima li elenca e chiede: si fermano.",
+                "Stops and starts the sandbox again. If agents run in it, it lists them first and asks: they stop.",
+                "Arrête et redémarre la sandbox. Si des agents y tournent, elle les liste d'abord et demande : ils s'arrêtent.",
+                "Stoppt die Sandbox und startet sie neu. Laufen darin Agenten, listet sie sie zuerst auf und fragt: Sie werden beendet.",
               ),
             ],
             [
@@ -715,10 +715,10 @@ export const INSIDE: TopicTexts = {
         </P>
         <P>
           {tr(
-            "Una VM non può chiedere al PC di aprire la sandbox di un agente: nel terminale del progetto claude, codex, pi e agy dicono da dove avviare gli agenti (la pagina del progetto, l'editor, o il loro nome scritto in un terminale del PC nella cartella del progetto).",
-            "A VM cannot ask the PC to open an agent's sandbox: in the project's terminal claude, codex, pi and agy say where to start the agents from (the project's page, the editor, or their name typed in a terminal of the PC in the project's folder).",
-            "Une VM ne peut pas demander au PC d'ouvrir la sandbox d'un agent : dans le terminal du projet, claude, codex, pi et agy disent d'où lancer les agents (la page du projet, l'éditeur, ou leur nom tapé dans un terminal du PC dans le dossier du projet).",
-            "Eine VM kann den PC nicht bitten, die Sandbox eines Agenten zu öffnen: Im Terminal des Projekts sagen claude, codex, pi und agy, von wo die Agenten zu starten sind (die Seite des Projekts, der Editor oder ihr Name, in einem Terminal des PCs im Ordner des Projekts getippt).",
+            "Una VM non può chiedere al PC di aprire la sandbox di un agente: dentro la VM claude, codex, pi e agy dicono da dove avviare gli agenti (la pagina del progetto, l'editor, o il loro nome scritto in un terminale del PC nella cartella del progetto).",
+            "A VM cannot ask the PC to open an agent's sandbox: inside the VM claude, codex, pi and agy say where to start the agents from (the project's page, the editor, or their name typed in a terminal of the PC in the project's folder).",
+            "Une VM ne peut pas demander au PC d'ouvrir la sandbox d'un agent : dans la VM, claude, codex, pi et agy disent d'où lancer les agents (la page du projet, l'éditeur, ou leur nom tapé dans un terminal du PC dans le dossier du projet).",
+            "Eine VM kann den PC nicht bitten, die Sandbox eines Agenten zu öffnen: In der VM sagen claude, codex, pi und agy, von wo die Agenten zu starten sind (die Seite des Projekts, der Editor oder ihr Name, in einem Terminal des PCs im Ordner des Projekts getippt).",
           )}
         </P>
       </Section>
@@ -893,10 +893,10 @@ export const INSIDE: TopicTexts = {
         <P>
           {rich(
             tr(
-              "Senza VM il terminale, le azioni e i siti dei progetti girano sul PC con il tuo utente: possono leggere i tuoi file e usare la rete. Il kit ne sigilla l'ambiente (niente variabili verso il tuo profilo vero o le tue chiavi SSH; MySQL con l'utente del progetto, mai l'amministratore; nessun agente), ma è un filtro, non un muro: {0}. Per questo, senza VM, gli agenti non partono.",
-              "Without the VM the projects' terminal, actions and websites run on the PC as your user: they can read your files and use the network. The kit seals their environment (no variables leading to your real profile or your SSH keys; MySQL as the project's user, never the administrator; no agents), but it is a filter, not a wall: {0}. This is why, without the VM, the agents do not start.",
-              "Sans VM, le terminal, les actions et les sites des projets tournent sur le PC avec votre utilisateur : ils peuvent lire vos fichiers et utiliser le réseau. Le kit scelle leur environnement (pas de variables menant à votre vrai profil ou à vos clés SSH ; MySQL avec l'utilisateur du projet, jamais l'administrateur ; aucun agent), mais c'est un filtre, pas un mur : {0}. C'est pourquoi, sans VM, les agents ne démarrent pas.",
-              "Ohne VM laufen Terminal, Aktionen und Websites der Projekte auf dem PC mit deinem Benutzer: Sie können deine Dateien lesen und das Netzwerk nutzen. Das Kit versiegelt ihre Umgebung (keine Variablen zu deinem echten Profil oder deinen SSH-Schlüsseln; MySQL mit dem Benutzer des Projekts, nie dem Administrator; keine Agenten), aber das ist ein Filter, keine Mauer: {0}. Deshalb starten die Agenten ohne VM nicht.",
+              "Il terminale, le azioni e i siti dei progetti girano sul PC con il tuo utente, con o senza la VM: possono leggere i tuoi file e usare la rete. Il kit ne sigilla l'ambiente (niente variabili verso il tuo profilo vero o le tue chiavi SSH; MySQL con l'utente del progetto, mai l'amministratore; nessun agente), ma è un filtro, non un muro: {0}. Per questo gli agenti girano solo nella VM, e senza VM non partono.",
+              "The projects' terminal, actions and websites run on the PC as your user, with or without the VM: they can read your files and use the network. The kit seals their environment (no variables leading to your real profile or your SSH keys; MySQL as the project's user, never the administrator; no agents), but it is a filter, not a wall: {0}. This is why the agents run only in the VM, and without the VM they do not start.",
+              "Le terminal, les actions et les sites des projets tournent sur le PC avec votre utilisateur, avec ou sans la VM : ils peuvent lire vos fichiers et utiliser le réseau. Le kit scelle leur environnement (pas de variables menant à votre vrai profil ou à vos clés SSH ; MySQL avec l'utilisateur du projet, jamais l'administrateur ; aucun agent), mais c'est un filtre, pas un mur : {0}. C'est pourquoi les agents ne tournent que dans la VM, et sans VM ils ne démarrent pas.",
+              "Terminal, Aktionen und Websites der Projekte laufen auf dem PC mit deinem Benutzer, mit oder ohne VM: Sie können deine Dateien lesen und das Netzwerk nutzen. Das Kit versiegelt ihre Umgebung (keine Variablen zu deinem echten Profil oder deinen SSH-Schlüsseln; MySQL mit dem Benutzer des Projekts, nie dem Administrator; keine Agenten), aber das ist ein Filter, keine Mauer: {0}. Deshalb laufen die Agenten nur in der VM, und ohne VM starten sie nicht.",
             ),
             <See key="i" id="isolation" />,
           )}
@@ -944,10 +944,10 @@ export const INSIDE: TopicTexts = {
           )}
         >
           {tr(
-            "Il token non entra nella VM: il proxy di Docker Sandboxes lo aggiunge alle richieste verso GitHub. Ma il codice del progetto (anche un npm install) potrebbe agire su GitHub a tuo nome. La scelta vale solo per la sandbox di quel progetto, mai per i terminali del kit.",
-            "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But the project's code (even an npm install) could act on GitHub on your behalf. The choice applies only to that project's sandbox, never to the kit's terminals.",
-            "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais le code du projet (même un npm install) pourrait agir sur GitHub en votre nom. Le choix ne vaut que pour la sandbox de ce projet, jamais pour les terminaux du kit.",
-            "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber der Code des Projekts (auch ein npm install) könnte auf GitHub in deinem Namen handeln. Die Wahl gilt nur für die Sandbox dieses Projekts, nie für die Terminals des Kits.",
+            "Il token non entra nella VM: il proxy di Docker Sandboxes lo aggiunge alle richieste verso GitHub. Ma un agente, o il codice che esegue (anche un npm install), potrebbe agire su GitHub a tuo nome. La scelta vale solo per la sandbox di quel progetto, mai per i terminali del kit.",
+            "The token never enters the VM: the Docker Sandboxes proxy adds it to the requests to GitHub. But an agent, or the code it runs (even an npm install), could act on GitHub on your behalf. The choice applies only to that project's sandbox, never to the kit's terminals.",
+            "Le jeton n'entre jamais dans la VM : le proxy de Docker Sandboxes l'ajoute aux requêtes vers GitHub. Mais un agent, ou le code qu'il exécute (même un npm install), pourrait agir sur GitHub en votre nom. Le choix ne vaut que pour la sandbox de ce projet, jamais pour les terminaux du kit.",
+            "Das Token gelangt nie in die VM: Der Proxy von Docker Sandboxes fügt es den Anfragen an GitHub hinzu. Aber ein Agent oder der Code, den er ausführt (auch ein npm install), könnte auf GitHub in deinem Namen handeln. Die Wahl gilt nur für die Sandbox dieses Projekts, nie für die Terminals des Kits.",
           )}
         </Callout>
       </Section>
@@ -1006,43 +1006,25 @@ export const INSIDE: TopicTexts = {
 
       <Section
         title={tr(
-          "Le azioni, i siti e i nuovi progetti nella VM",
-          "Actions, websites and new projects in the VM",
-          "Les actions, les sites et les nouveaux projets dans la VM",
-          "Aktionen, Websites und neue Projekte in der VM",
+          "Le azioni, i siti e i nuovi progetti, sul PC",
+          "Actions, websites and new projects, on the PC",
+          "Les actions, les sites et les nouveaux projets, sur le PC",
+          "Aktionen, Websites und neue Projekte, auf dem PC",
         )}
       >
         <Bullets
           items={[
             tr(
-              "Un'azione gira nella VM del progetto, con HOST=0.0.0.0 e la sua PORT; la porta arriva su localhost del PC. «Ferma» la ferma dentro la VM (se non risponde, dopo cinque secondi la chiude) e la porta torna libera.",
-              "An action runs in the project's VM, with HOST=0.0.0.0 and its PORT; the port reaches the PC's localhost. “Stop” stops it inside the VM (if it does not answer, it ends it after five seconds) and the port is freed.",
-              "Une action tourne dans la VM du projet, avec HOST=0.0.0.0 et son PORT ; le port arrive sur le localhost du PC. « Arrêter » l'arrête dans la VM (si elle ne répond pas, elle est terminée après cinq secondes) et le port est libéré.",
-              "Eine Aktion läuft in der VM des Projekts, mit HOST=0.0.0.0 und ihrem PORT; der Port kommt auf localhost des PCs an. „Beenden“ beendet sie in der VM (antwortet sie nicht, wird sie nach fünf Sekunden geschlossen), und der Port wird frei.",
+              "Le azioni, i siti (con un server tutto suo o in un pool della pagina Server Web), i task dell'editor e la creazione di un progetto da una base (il comando di un framework, come composer create-project o npm create) girano sul PC, con l'ambiente sigillato del kit, con o senza la VM.",
+              "The actions, the websites (with their own server or in a pool of the Web Servers page), the editor's tasks and creating a project from a base (a framework's command, such as composer create-project or npm create) run on the PC, with the kit's sealed environment, with or without the VM.",
+              "Les actions, les sites (avec leur propre serveur ou dans un pool de la page Serveurs web), les tâches de l'éditeur et la création d'un projet depuis une base (la commande d'un framework, comme composer create-project ou npm create) tournent sur le PC, avec l'environnement scellé du kit, avec ou sans la VM.",
+              "Die Aktionen, die Websites (mit eigenem Server oder in einem Pool der Seite Webserver), die Tasks des Editors und das Anlegen eines Projekts aus einer Basis (der Befehl eines Frameworks, etwa composer create-project oder npm create) laufen auf dem PC, mit der versiegelten Umgebung des Kits, mit oder ohne VM.",
             ),
             tr(
-              "Il sito di un'azione servito da Apache o Caddy è un container della VM: Apache con il PHP del progetto, o Apache per i soli file; un sito Caddy diventa Apache, e il log lo dice. Gli indirizzi .localhost portano al PC e funzionano come senza VM; gli alias verso cartelle del progetto stesso funzionano, quelli verso un altro progetto no (il log lo dice).",
-              "An action's website served by Apache or Caddy is a container of the VM: Apache with the project's PHP, or Apache for plain files; a Caddy site becomes Apache, and the log says so. .localhost addresses lead to the PC and work as without the VM; aliases to folders of the project itself work, those to another project do not (the log says so).",
-              "Le site d'une action servi par Apache ou Caddy est un conteneur de la VM : Apache avec le PHP du projet, ou Apache pour les simples fichiers ; un site Caddy devient Apache, et le journal le dit. Les adresses .localhost mènent au PC et fonctionnent comme sans VM ; les alias vers des dossiers du projet lui-même fonctionnent, ceux vers un autre projet non (le journal le dit).",
-              "Die Website einer Aktion, die Apache oder Caddy ausliefert, ist ein Container der VM: Apache mit dem PHP des Projekts oder Apache für reine Dateien; eine Caddy-Website wird zu Apache, und das Log sagt es. .localhost-Adressen führen zum PC und funktionieren wie ohne VM; Aliasse auf Ordner des Projekts selbst funktionieren, solche auf ein anderes Projekt nicht (das Log sagt es).",
-            ),
-            tr(
-              "Con «Permetti ai server dei progetti di farsi raggiungere dagli altri PC della rete» nelle Impostazioni, il sito nella VM si apre anche dal telefono, come quello sul PC.",
-              "With “Let other PCs on the network reach the project servers” in Settings, the site in the VM opens from the phone too, like the one on the PC.",
-              "Avec « Permettre aux autres PC du réseau d'accéder aux serveurs des projets » dans les Paramètres, le site dans la VM s'ouvre aussi depuis le téléphone, comme celui sur le PC.",
-              "Mit „Anderen PCs im Netzwerk den Zugriff auf die Projektserver erlauben“ in den Einstellungen öffnet sich die Website in der VM auch vom Telefon aus, wie die auf dem PC.",
-            ),
-            tr(
-              "Anche creare un progetto da una base (il comando di un framework, come composer create-project o npm create) o da un terminale gira nella VM del progetto; senza VM, sul PC con l'ambiente sigillato.",
-              "Creating a project from a base (a framework's command, such as composer create-project or npm create) or from a terminal runs in the project's VM too; without the VM, on the PC with the sealed environment.",
-              "Créer un projet depuis une base (la commande d'un framework, comme composer create-project ou npm create) ou depuis un terminal tourne aussi dans la VM du projet ; sans VM, sur le PC avec l'environnement scellé.",
-              "Auch das Anlegen eines Projekts aus einer Basis (der Befehl eines Frameworks, etwa composer create-project oder npm create) oder aus einem Terminal läuft in der VM des Projekts; ohne VM auf dem PC mit der versiegelten Umgebung.",
-            ),
-            tr(
-              "Anche i server condivisi della pagina Server Web (i pool) con la VM attiva servono i siti dei loro progetti ciascuno nella VM del suo progetto, mai il codice di un progetto sul PC; senza VM girano sul PC, con l'ambiente sigillato.",
-              "The shared servers of the Web Servers page (the pools) too, with the VM on, serve their projects' sites each in its project's VM, never a project's code on the PC; without the VM they run on the PC, with the sealed environment.",
-              "Les serveurs partagés de la page Serveurs web (les pools) aussi, avec la VM active, servent les sites de leurs projets chacun dans la VM de son projet, jamais le code d'un projet sur le PC ; sans VM, ils tournent sur le PC, avec l'environnement scellé.",
-              "Auch die gemeinsamen Server der Seite Webserver (die Pools) liefern mit aktiver VM die Websites ihrer Projekte jeweils in der VM ihres Projekts aus, nie den Code eines Projekts auf dem PC; ohne VM laufen sie auf dem PC, mit der versiegelten Umgebung.",
+              "Accendere la VM non cambia niente per loro: porte, indirizzi .localhost, alias e rete locale funzionano come senza VM. La VM serve solo agli agenti, che lavorano sugli stessi file del progetto.",
+              "Turning the VM on changes nothing for them: ports, .localhost addresses, aliases and the local network work as without the VM. The VM is only for the agents, which work on the same files of the project.",
+              "Activer la VM ne change rien pour eux : ports, adresses .localhost, alias et réseau local fonctionnent comme sans VM. La VM ne sert qu'aux agents, qui travaillent sur les mêmes fichiers du projet.",
+              "Die VM einzuschalten ändert für sie nichts: Ports, .localhost-Adressen, Aliasse und das lokale Netzwerk funktionieren wie ohne VM. Die VM ist nur für die Agenten da, die an denselben Dateien des Projekts arbeiten.",
             ),
           ]}
         />
@@ -1064,12 +1046,6 @@ export const INSIDE: TopicTexts = {
                 "The kit's and the project's MCP servers for the agents in the VM: their commands are programs of the PC, and the agent in the VM does not have them for now.",
                 "Les serveurs MCP du kit et du projet pour les agents dans la VM : leurs commandes sont des programmes du PC, et l'agent dans la VM ne les a pas pour l'instant.",
                 "Die MCP-Server des Kits und des Projekts für die Agenten in der VM: Ihre Befehle sind Programme des PCs, und der Agent in der VM hat sie vorerst nicht.",
-              ),
-              tr(
-                "Il debugger dell'editor: i suoi adattatori avviano da sé i programmi sul PC, anche con la VM attiva.",
-                "The editor's debugger: its adapters start programs on the PC by themselves, even with the VM on.",
-                "Le débogueur de l'éditeur : ses adaptateurs lancent eux-mêmes les programmes sur le PC, même avec la VM active.",
-                "Der Debugger des Editors: Seine Adapter starten Programme selbst auf dem PC, auch mit aktiver VM.",
               ),
             ]}
           />
@@ -1162,10 +1138,10 @@ export const INSIDE: TopicTexts = {
               "Der Docker-Sandboxes-Dienst des Kits startet mit ausgeschalteter SSH-Agent-Weiterleitung, ohne Browser in der VM, ohne Hochladen von Diagnosen und ohne Telemetrie.",
             ),
             tr(
-              "Terminale: sbx exec -it … bash -l, con gli strumenti del kit per Linux in testa al PATH. Azione: sbx exec … sh -lc '<riga>', con HOST=0.0.0.0 e PORT, e la porta pubblicata su 127.0.0.1 del PC, o su 0.0.0.0 con la rete locale (sbx ports); «Ferma» manda TERM al suo gruppo di processi nella VM, KILL dopo cinque secondi, e ritira la porta. Nella VM D:\\a\\b diventa /d/a/b; su macOS e Linux il percorso resta lo stesso.",
-              "Terminal: sbx exec -it … bash -l, with the kit's tools for Linux first on the PATH. Action: sbx exec … sh -lc '<line>', with HOST=0.0.0.0 and PORT, and the port published on the PC's 127.0.0.1, or on 0.0.0.0 with the local network (sbx ports); “Stop” sends TERM to its process group in the VM, KILL after five seconds, and takes the port back. In the VM D:\\a\\b becomes /d/a/b; on macOS and Linux the path stays the same.",
-              "Terminal : sbx exec -it … bash -l, avec les outils du kit pour Linux en tête du PATH. Action : sbx exec … sh -lc '<ligne>', avec HOST=0.0.0.0 et PORT, et le port publié sur 127.0.0.1 du PC, ou sur 0.0.0.0 avec le réseau local (sbx ports) ; « Arrêter » envoie TERM à son groupe de processus dans la VM, KILL après cinq secondes, et retire le port. Dans la VM, D:\\a\\b devient /d/a/b ; sur macOS et Linux, le chemin reste le même.",
-              "Terminal: sbx exec -it … bash -l, mit den Werkzeugen des Kits für Linux vorne im PATH. Aktion: sbx exec … sh -lc '<Zeile>', mit HOST=0.0.0.0 und PORT, und der Port auf 127.0.0.1 des PCs veröffentlicht, mit lokalem Netzwerk auf 0.0.0.0 (sbx ports); „Beenden“ schickt TERM an ihre Prozessgruppe in der VM, KILL nach fünf Sekunden, und nimmt den Port zurück. In der VM wird D:\\a\\b zu /d/a/b; unter macOS und Linux bleibt der Pfad gleich.",
+              "Nella VM partono solo gli agenti, con gli strumenti del kit per Linux in testa al PATH; nessuna porta della VM si pubblica sul PC. Nella VM D:\\a\\b diventa /d/a/b; su macOS e Linux il percorso resta lo stesso.",
+              "Only the agents start in the VM, with the kit's tools for Linux first on the PATH; no port of the VM is published on the PC. In the VM D:\\a\\b becomes /d/a/b; on macOS and Linux the path stays the same.",
+              "Seuls les agents démarrent dans la VM, avec les outils du kit pour Linux en tête du PATH ; aucun port de la VM n'est publié sur le PC. Dans la VM, D:\\a\\b devient /d/a/b ; sur macOS et Linux, le chemin reste le même.",
+              "In der VM starten nur die Agenten, mit den Werkzeugen des Kits für Linux vorne im PATH; kein Port der VM wird auf dem PC veröffentlicht. In der VM wird D:\\a\\b zu /d/a/b; unter macOS und Linux bleibt der Pfad gleich.",
             ),
           ]}
         />
@@ -1204,10 +1180,10 @@ export const INSIDE: TopicTexts = {
             "Wenige Ausnahmen sind offen angegeben: der temporäre Ordner des Systems und, für einige Sekunden, der Schlüsselbund.",
           ),
           tr(
-            "L'ambiente è un filtro, non un muro: il confine vero è la VM di ogni progetto. I programmi dei progetti ricevono in più un ambiente sigillato, l'unica protezione quando la VM manca.",
-            "The environment is a filter, not a wall: the real boundary is each project's VM. The projects' programs also get a sealed environment, the only protection when the VM is missing.",
-            "L'environnement est un filtre, pas un mur : la vraie frontière est la VM de chaque projet. Les programmes des projets reçoivent en plus un environnement scellé, la seule protection quand la VM manque.",
-            "Die Umgebung ist ein Filter, keine Mauer: Die echte Grenze ist die VM jedes Projekts. Die Programme der Projekte erhalten zusätzlich eine versiegelte Umgebung, der einzige Schutz, wenn die VM fehlt.",
+            "L'ambiente è un filtro, non un muro: il confine vero è la VM, dove girano gli agenti. I programmi dei progetti, che girano sul PC con o senza la VM, ricevono in più un ambiente sigillato.",
+            "The environment is a filter, not a wall: the real boundary is the VM, where the agents run. The projects' programs, which run on the PC with or without the VM, also get a sealed environment.",
+            "L'environnement est un filtre, pas un mur : la vraie frontière est la VM, où tournent les agents. Les programmes des projets, qui tournent sur le PC avec ou sans la VM, reçoivent en plus un environnement scellé.",
+            "Die Umgebung ist ein Filter, keine Mauer: Die echte Grenze ist die VM, in der die Agenten laufen. Die Programme der Projekte, die mit oder ohne VM auf dem PC laufen, erhalten zusätzlich eine versiegelte Umgebung.",
           ),
         ]}
       />
@@ -1362,10 +1338,10 @@ export const INSIDE: TopicTexts = {
       >
         <P>
           {tr(
-            "Il terminale di un progetto e le sue azioni sul PC (senza VM) e i terminali del kit e dell'editor ricevono l'ambiente del kit sigillato, senza i programmi degli agenti (al loro posto, gli inoltri verso la VM): un progetto riceve da sé solo ciò che è suo.",
-            "A project's terminal and its actions on the PC (without the VM) and the kit's and the editor's terminals get the kit's environment sealed, without the agents' programs (in their place, the forwarders to the VM): a project receives from it only what is its own.",
-            "Le terminal d'un projet et ses actions sur le PC (sans VM) et les terminaux du kit et de l'éditeur reçoivent l'environnement du kit scellé, sans les programmes des agents (à leur place, les relais vers la VM) : un projet n'en reçoit que ce qui est à lui.",
-            "Das Terminal eines Projekts und seine Aktionen auf dem PC (ohne VM) und die Terminals des Kits und des Editors erhalten die Umgebung des Kits versiegelt, ohne die Programme der Agenten (an ihrer Stelle die Weiterleitungen in die VM): Ein Projekt bekommt daraus nur, was ihm gehört.",
+            "Il terminale di un progetto, le sue azioni, i suoi siti e i suoi task, sul PC con o senza la VM, e i terminali del kit e dell'editor ricevono l'ambiente del kit sigillato, senza i programmi degli agenti (al loro posto, gli inoltri verso la VM): un progetto riceve da sé solo ciò che è suo.",
+            "A project's terminal, actions, websites and tasks, on the PC with or without the VM, and the kit's and the editor's terminals get the kit's environment sealed, without the agents' programs (in their place, the forwarders to the VM): a project receives from it only what is its own.",
+            "Le terminal d'un projet, ses actions, ses sites et ses tâches, sur le PC avec ou sans la VM, et les terminaux du kit et de l'éditeur reçoivent l'environnement du kit scellé, sans les programmes des agents (à leur place, les relais vers la VM) : un projet n'en reçoit que ce qui est à lui.",
+            "Das Terminal eines Projekts, seine Aktionen, Websites und Tasks, auf dem PC mit oder ohne VM, und die Terminals des Kits und des Editors erhalten die Umgebung des Kits versiegelt, ohne die Programme der Agenten (an ihrer Stelle die Weiterleitungen in die VM): Ein Projekt bekommt daraus nur, was ihm gehört.",
           )}
         </P>
         <Bullets
@@ -1405,10 +1381,10 @@ export const INSIDE: TopicTexts = {
         <P>
           {rich(
             tr(
-              "Senza la VM questo è tutto: i programmi dei progetti girano con il tuo utente e leggono ciò che leggi tu. Con la VM ogni progetto vede solo la sua cartella: {0}.",
-              "Without the VM this is all: the projects' programs run as your user and read what you read. With the VM each project sees only its folder: {0}.",
-              "Sans la VM, c'est tout : les programmes des projets tournent avec votre utilisateur et lisent ce que vous lisez. Avec la VM, chaque projet ne voit que son dossier : {0}.",
-              "Ohne die VM ist das alles: Die Programme der Projekte laufen mit deinem Benutzer und lesen, was du liest. Mit der VM sieht jedes Projekt nur seinen Ordner: {0}.",
+              "Sul PC questo è tutto: i programmi dei progetti girano con il tuo utente e leggono ciò che leggi tu, con o senza la VM. Gli agenti invece girano nella VM e vedono solo la cartella del progetto: {0}.",
+              "On the PC this is all: the projects' programs run as your user and read what you read, with or without the VM. The agents instead run in the VM and see only the project's folder: {0}.",
+              "Sur le PC, c'est tout : les programmes des projets tournent avec votre utilisateur et lisent ce que vous lisez, avec ou sans la VM. Les agents, eux, tournent dans la VM et ne voient que le dossier du projet : {0}.",
+              "Auf dem PC ist das alles: Die Programme der Projekte laufen mit deinem Benutzer und lesen, was du liest, mit oder ohne VM. Die Agenten dagegen laufen in der VM und sehen nur den Ordner des Projekts: {0}.",
             ),
             <See key="v" id="vm" />,
           )}

@@ -20,7 +20,7 @@ import {
 } from "../ipc";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { usePoll } from "../shared/poll";
-import { isolationPoll, serversPoll } from "../shared/polls";
+import { serversPoll } from "../shared/polls";
 import { t } from "../i18n";
 import { ComponentLogo } from "../shared/logos";
 import {
@@ -321,10 +321,6 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   const refreshFresh = useCallback(() => {
     void serversPoll.refresh(() => serversList(true));
   }, []);
-  // With the VM on, every site runs in its project's VM and the pools never
-  // start (D-175): they are the box without the VM.
-  const { data: isolation } = usePoll(isolationPoll, null, { onError: "keep", every: 30000 });
-  const vmOn = isolation?.level === "vm";
 
   const run = (id: string, fn: () => Promise<void>) => {
     setBusy(id);
@@ -556,13 +552,6 @@ export function ServersPage({ onGuide }: { onGuide?: (topic: "websites") => void
   return (
     <ViewContainer id="servers" side={side}>
       <div className="px-5 pt-3 empty:hidden">
-        {vmOn && (
-          <Notice tone="info">
-            {t(
-              "Con la VM attiva ogni sito gira nella VM del suo progetto: avvialo dalla pagina del progetto. I server condivisi servono quando si lavora senza VM.",
-            )}
-          </Notice>
-        )}
         <ErrorLine error={error ?? loadError} fix={error ? fix : null} />
       </div>
       {activePool ? (

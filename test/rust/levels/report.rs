@@ -70,11 +70,6 @@ fn the_report_reads_every_sandbox() {
         on: true,
         reason: None,
         ls: Some(ls("shop")),
-        published: vec![PublishedPort {
-            port: 5173,
-            address: "127.0.0.1".into(),
-            action: "dev".into(),
-        }],
         github: true,
     };
     let report = report(&kit, "shop", seen, &|sandbox| {
@@ -138,7 +133,6 @@ fn the_report_reads_every_sandbox() {
     assert!(report.sandboxes[2].info.is_none());
     assert!(report.sandboxes[2].mounts.is_empty());
     assert!(report.github);
-    assert_eq!(report.published[0].port, 5173);
     let json = serde_json::to_value(&report).unwrap();
     assert_eq!(json["vm"], "on");
     assert_eq!(json["sandboxes"][0]["state"], "running");
@@ -518,7 +512,7 @@ fn the_actions_stop_the_sessions_then_prepare() {
     let (_tmp, kit) = kit_with_shop("actions");
     let name = vm::name("shop");
     let req = sandbox_request(&kit, &kit.projects().join("shop"), None);
-    assert_eq!(req.origin, Origin::ProjectTerminal);
+    assert_eq!(req.origin, Origin::Sandbox);
     let facts = facts_of(&kit, &req, true);
     let fx = Calls {
         sessions: vec!["shop · bash".into(), "dev".into()],
@@ -532,7 +526,7 @@ fn the_actions_stop_the_sessions_then_prepare() {
             format!("sessions {name}"),
             format!("end_sessions {name}"),
             format!("stop {name}"),
-            "prepare ProjectTerminal".to_owned(),
+            "prepare Sandbox".to_owned(),
         ]
     );
     let fx = Calls {
@@ -546,7 +540,7 @@ fn the_actions_stop_the_sessions_then_prepare() {
             format!("sessions {name}"),
             format!("end_sessions {name}"),
             format!("remove {name}"),
-            "prepare ProjectTerminal".to_owned(),
+            "prepare Sandbox".to_owned(),
         ]
     );
     let fx = Calls {
@@ -556,10 +550,7 @@ fn the_actions_stop_the_sessions_then_prepare() {
     act(&fx, &req, &facts, VmAction::Refresh).unwrap();
     assert_eq!(
         fx.calls(),
-        [
-            format!("sessions {name}"),
-            "prepare ProjectTerminal".to_owned()
-        ]
+        [format!("sessions {name}"), "prepare Sandbox".to_owned()]
     );
 }
 

@@ -19,13 +19,9 @@ const GATES: &[&str] = &[
     "pty::program(",
     ".start_in(",
     "line_command(",
-    "scaffold_args(",
-    "kit_terminal_args(",
     "pi_session_args(",
     "agy_session_args(",
     "agent_session_args(",
-    "exec_args(",
-    "web_line(",
 ];
 
 /// Where [`GATES`] may be called besides `levels/`: their definitions, and
@@ -38,7 +34,7 @@ const GATES_ALLOWED: &[(&str, &str)] = &[
         "isolation/mod.rs",
         "Vm's lifecycle (launch, agent_session_args); fix_launch is the kit's sbx (§5.2)",
     ),
-    ("projects/run/start.rs", "defines start_in and its sbx exec"),
+    ("projects/run/start.rs", "defines start_in"),
     ("projects/frameworks/runner.rs", "defines line_command"),
     ("ipc/isolation.rs", "isolation_run: the kit's sbx (§5.2)"),
 ];
@@ -159,8 +155,7 @@ fn no_process_outside_levels() {
         "open_launch_then(",
         ".start_in(",
         "line_command(",
-        "scaffold_args(",
-        "exec_args(",
+        "vm_session_args(",
     ] {
         assert!(start.contains(gate), "{gate}");
     }
