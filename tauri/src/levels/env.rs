@@ -107,7 +107,7 @@ pub fn environment(
 /// What goes into the VM of a `Vm` placement of `level` in `project`
 /// running `program` (§3.5, `Vm` steps 1–3): the kit's tools for the VM's
 /// Linux at the project's lines, sealed and without the agents, as the VM
-/// sees them; for `AgentBinary` the agent's own folder back, last; the
+/// sees them; for an agent's session the agent's own folder back, last; the
 /// level. Read from the disk: `levels::prepare` asks again once it has
 /// installed what was missing (D-170).
 pub fn guest_tools(
@@ -124,7 +124,7 @@ pub fn guest_tools(
             let guest = kit.for_target(target);
             let base_guest = KitEnv::build(&guest, &settings, lang, host);
             let mut tools = isolation::project_guest_tools(kit, &guest, project, base_guest);
-            if let VmProgram::AgentBinary { agent } = program {
+            if let VmProgram::Agent { agent } = program {
                 agent_back(kit, &guest, *agent, &mut tools);
             }
             tools
@@ -264,7 +264,7 @@ pub fn level_value(level: Level) -> &'static str {
     }
 }
 
-/// For `VmProgram::AgentBinary { agent }`: the agent's own Linux folder
+/// For `VmProgram::Agent { agent }`: the agent's own Linux folder
 /// back on `tools`' `PATH`, last: it is the program being run, not a
 /// command offered to others.
 fn agent_back(kit: &Kit, guest: &Kit, agent: super::Agent, tools: &mut GuestTools) {

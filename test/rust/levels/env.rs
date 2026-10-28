@@ -602,7 +602,7 @@ fn a_vm_environment_has_only_the_kits_linux_tools() {
             );
             // No agent's folder, but the agent's own for its own session.
             let own = match program {
-                VmProgram::AgentBinary { agent } => crate::isolation::vm::guest_path(
+                VmProgram::Agent { agent } => crate::isolation::vm::guest_path(
                     kit.target().is_windows(),
                     &guest_kit.apps().join(agent.id()),
                 ),
@@ -710,32 +710,35 @@ fn pi_and_agy_get_their_own_folder_back_only_for_themselves() {
                 .1
                 .path
         };
-        let pi = path(VmProgram::AgentBinary { agent: Agent::Pi }, Level::Agent);
+        let pi = path(VmProgram::Agent { agent: Agent::Pi }, Level::Agent);
         let agy = path(
-            VmProgram::AgentBinary {
+            VmProgram::Agent {
                 agent: Agent::Antigravity,
             },
             Level::Agent,
         );
         let claude = path(
-            VmProgram::SbxAgent {
+            VmProgram::Agent {
                 agent: Agent::Claude,
             },
             Level::Agent,
         );
+        let tools = path(VmProgram::Tools, Level::Agent);
         let (pi_dir, agy_dir) = (folder(Agent::Pi), folder(Agent::Antigravity));
         assert!(pi_dir.starts_with(&apps));
         for (what, entries, has_pi, has_agy) in [
             ("pi", &pi, true, false),
             ("agy", &agy, false, true),
             ("claude", &claude, false, false),
+            ("tools", &tools, false, false),
         ] {
             assert_eq!(entries.contains(&pi_dir), has_pi, "{what}: {entries:?}");
             assert_eq!(entries.contains(&agy_dir), has_agy, "{what}: {entries:?}");
         }
-        // The rest is another agent's, the agent's folder last.
-        assert_eq!(&pi[..pi.len() - 1], &claude[..]);
+        // The rest is the sandbox's tools alone, the agent's folder last.
+        assert_eq!(&pi[..pi.len() - 1], &tools[..]);
         assert_eq!(pi.last(), Some(&pi_dir));
+        assert_eq!(claude.last(), Some(&folder(Agent::Claude)));
     }
 }
 

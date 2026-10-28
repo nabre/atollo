@@ -31,7 +31,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::kit::Kit;
-use crate::levels::{Agent, AgentRunner, VmState};
+use crate::levels::{Agent, VmState};
 
 pub const IDS: [&str; 4] = ["claude", "codex", "antigravity", "pi"];
 
@@ -47,28 +47,15 @@ pub fn exe_of(id: &str) -> Option<&'static str> {
     }
 }
 
-/// Where an agent runs when the VM is on (LEVELS.md §4.1, `runsIn`).
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub enum RunsIn {
-    /// A sandbox of `sbx`'s own (`atollo-a-`): Claude Code, Codex.
-    SbxSandbox,
-    /// The project's VM (`atollo-p-`), its build for Linux: Pi, Antigravity.
-    ProjectVm,
-}
-
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentInfo {
     pub id: String,
     pub name: String,
-    /// It can be started in the VM: Claude Code and Codex always (the `sbx`
-    /// images bring them), Pi and Antigravity once their build for the
-    /// VM's Linux is in the kit.
+    /// It can be started in the VM: its build for the VM's Linux is in the
+    /// kit (D-184: every agent runs in the project's sandbox).
     pub installed: bool,
-    /// Claude Code, Codex: brought by the VM, nothing of the kit's.
-    pub provided: bool,
-    /// The version of its build for the VM's Linux (Pi, Antigravity).
+    /// The version of its build for the VM's Linux.
     pub version: Option<String>,
     /// Signed in for the VM, as far as the PC can tell (LEVELS.md §13 item
     /// 12): Antigravity with the Gemini key of the settings, through
@@ -85,7 +72,6 @@ pub struct AgentInfo {
     pub available: bool,
     /// Why not, when not: the VM's blockers and what to do.
     pub unavailable_reason: Option<String>,
-    pub runs_in: RunsIn,
 }
 
 fn json(path: &Path) -> Option<Value> {
@@ -194,27 +180,17 @@ pub fn status(kit: &Kit, vm: &VmState, lang: &str) -> Vec<AgentInfo> {
     let reason = crate::levels::agents::off_reason(vm, lang);
     crate::levels::agents::catalog_agents()
         .map(|(c, agent)| {
-            let provided = agent.runner() == AgentRunner::SbxAgent;
             let kind = vm_sign_in(kit, agent);
             AgentInfo {
                 id: c.id.clone(),
                 name: c.name.clone(),
-                installed: provided || guest.as_ref().is_some_and(|g| c.is_installed(g)),
-                provided,
-                version: guest
-                    .as_ref()
-                    .filter(|_| !provided)
-                    .and_then(|g| c.installed_version(g)),
+                installed: guest.as_ref().is_some_and(|g| c.is_installed(g)),
+                version: guest.as_ref().and_then(|g| c.installed_version(g)),
                 signed_in: kind.is_some(),
                 sign_in_kind: kind.map(str::to_owned),
                 kit_login: kit_login(kit, agent),
                 available: crate::levels::agents_enabled(vm),
                 unavailable_reason: reason.clone(),
-                runs_in: if provided {
-                    RunsIn::SbxSandbox
-                } else {
-                    RunsIn::ProjectVm
-                },
             }
         })
         .collect()

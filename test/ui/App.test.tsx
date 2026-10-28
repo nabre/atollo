@@ -1128,14 +1128,15 @@ describe("App", () => {
   });
 
   it("shows the agents and their sign-in in the VM", async () => {
-    // The preview's agents: Claude Code and Codex brought by the VM, Pi on
-    // the kit's local models, Antigravity not installed for the VM's
-    // Linux; Claude Code's sign-in of the PC still saved in the kit.
+    // The preview's agents: Claude Code and Codex with their builds for the
+    // VM's Linux (D-184), Pi on the kit's local models, Antigravity not
+    // installed for it; Claude Code's sign-in of the PC still saved in the
+    // kit.
     const agents = SAMPLE_AGENTS.map((a) => (a.id === "claude" ? { ...a, kitLogin: true } : a));
     invoke.mockImplementation(answers({ agents_status: agents, agent_launch: null, agent_sign_out: null }));
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "AI" }));
-    expect((await screen.findAllByText("fornito dalla VM")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("2.1.0")).length).toBeGreaterThan(0);
     expect(screen.getAllByText("l'accesso si fa nella VM, al primo avvio dell'agente").length).toBeGreaterThan(0);
     expect(screen.getAllByText("modelli locali del kit, senza accesso").length).toBeGreaterThan(0);
 

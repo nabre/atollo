@@ -1,6 +1,6 @@
 //! What the user can check of a project's VM (LEVELS.md §8.1, §8.2, §8.5):
-//! the report of every sandbox of the project (the project's `atollo-p-…`,
-//! then each agent's `atollo-a-…`) with its state, its mounts, the PC's
+//! the report of the project's sandbox (`atollo-p-…`, every agent in it,
+//! D-184) with its state, its mounts, the PC's
 //! ports it reaches and its `info.json`; «Verifica strumenti», one
 //! `sbx exec` per sandbox running each chosen tool's version command, the
 //! lines compared with the project's; and the actions on a sandbox
@@ -33,7 +33,7 @@ pub struct VmReport {
     pub vm: VmOnOff,
     /// Why it is off (the notice's text); `None` when on.
     pub reason: Option<String>,
-    /// The project's sandbox, then each agent's with a sandbox of its own.
+    /// The project's sandbox (one, D-184).
     pub sandboxes: Vec<SandboxReport>,
     /// «GitHub nella VM» of the project (D-172).
     pub github: bool,
@@ -51,8 +51,6 @@ pub enum VmOnOff {
 #[serde(rename_all = "camelCase")]
 pub struct SandboxReport {
     pub name: String,
-    /// The agent of an agent's sandbox; `None` for the project's.
-    pub agent: Option<Agent>,
     pub state: SandboxRun,
     /// When `sbx` last used it.
     pub last_used: Option<String>,
@@ -62,7 +60,7 @@ pub struct SandboxReport {
     pub host_ports: Vec<HostPortInfo>,
     /// What its read-only `atollo` prints (§8.4), from its last preparation.
     pub info: Option<SandboxInfo>,
-    /// The app's sessions running in it (terminals, actions, agents):
+    /// The app's sessions running in it (the agents'):
     /// «Riavvia» and «Ricrea» stop them.
     pub sessions: Vec<String>,
     /// «Verifica strumenti», after it ran.
@@ -140,16 +138,9 @@ pub enum Verdict {
     NotInVm,
 }
 
-/// The sandboxes of `project`: its own, then each agent's of `sbx`
-/// (Claude Code, Codex); Pi and Antigravity run in the project's.
-pub fn sandboxes_of(project: &str) -> Vec<(String, Option<Agent>)> {
-    let mut out = vec![(vm::name(project), None)];
-    for agent in Agent::ALL {
-        if agent.runner() == super::AgentRunner::SbxAgent {
-            out.push((vm::agent_name(project, agent.id()), Some(agent)));
-        }
-    }
-    out
+/// The sandboxes of `project`: its own, every agent in it (D-184).
+pub fn sandboxes_of(project: &str) -> Vec<String> {
+    isolation::project_sandboxes(project)
 }
 
 /// The state of `name` in `sbx ls --json` (`ls`) and when it was last
@@ -249,7 +240,7 @@ pub fn report(
 ) -> VmReport {
     let sandboxes = sandboxes_of(project)
         .into_iter()
-        .map(|(name, agent)| {
+        .map(|name| {
             let (state, last_used) = sandbox_state(kit, seen.ls.as_deref(), &name);
             let info = read_info(kit, &name);
             SandboxReport {
@@ -258,7 +249,6 @@ pub fn report(
                 sessions: sessions(&name),
                 info,
                 name,
-                agent,
                 state,
                 last_used,
                 tools: None,
@@ -284,11 +274,8 @@ pub struct CheckSpec {
     /// The program's file name, as `PATH` resolves it; `None`: `notInVm`.
     pub program: Option<String>,
     pub args: Vec<String>,
-    /// A folder on `PATH` for this check only (Pi's, Antigravity's build).
+    /// A folder on `PATH` for this check only (an agent's build).
     pub extra_path: Option<String>,
-    /// From the sandbox's image (Claude Code, Codex in their own): any
-    /// path is fine.
-    pub from_image: bool,
 }
 
 impl CheckSpec {
@@ -329,21 +316,14 @@ pub fn check_spec(kit: &Kit, guest: &Kit, id: &str, chosen: Option<String>) -> O
         program,
         args: c.check[1..].to_vec(),
         extra_path,
-        from_image: false,
     })
 }
 
-/// The checks of the sandbox `sandbox` of `project` (`agent`: an agent's
-/// own): the tools of its last preparation (`info.json`), else the kit's
-/// and the project's; each at the project's line, else the kit's choice,
-/// else the line of its default folder; the agent of the sandbox from its
-/// image.
-pub fn check_specs(
-    kit: &Kit,
-    project: &str,
-    sandbox: &str,
-    agent: Option<Agent>,
-) -> Vec<CheckSpec> {
+/// The checks of the sandbox `sandbox` of `project`: the tools of its last
+/// preparation (`info.json`), else the kit's and the project's; each at the
+/// project's line, else the kit's choice, else the line of its default
+/// folder; then every agent whose build is there (D-184).
+pub fn check_specs(kit: &Kit, project: &str, sandbox: &str) -> Vec<CheckSpec> {
     let Some(guest) = vm::guest_target(kit.target()).map(|t| kit.for_target(t)) else {
         return Vec::new();
     };
@@ -355,7 +335,6 @@ pub fn check_specs(
     let catalog = crate::setup::Catalog::get();
     let mut out: Vec<CheckSpec> = tools
         .into_iter()
-        .filter(|(id, _)| !matches!(id.as_str(), "claude" | "codex"))
         .filter_map(|(id, line)| {
             let c = catalog.find(&id)?;
             let chosen = line.or_else(|| kit_lines.get(&id).cloned()).or_else(|| {
@@ -366,19 +345,12 @@ pub fn check_specs(
             check_spec(kit, &guest, &id, chosen)
         })
         .collect();
-    // Pi and Antigravity in the project's VM, when their build is there.
-    if agent.is_none() {
-        for id in ["pi", "antigravity"] {
-            let listed = out.iter().any(|s| s.id == id);
-            if !listed && isolation::agent_in_vm(kit, &guest, id).is_some() {
-                out.extend(check_spec(kit, &guest, id, None));
-            }
-        }
-    }
-    if let Some(agent) = agent {
-        if let Some(mut spec) = check_spec(kit, &guest, agent.id(), None) {
-            spec.from_image = true;
-            out.push(spec);
+    // The agents in the project's sandbox, when their build is there.
+    for agent in Agent::ALL {
+        let id = agent.id();
+        let listed = out.iter().any(|s| s.id == id);
+        if !listed && isolation::agent_in_vm(kit, &guest, id).is_some() {
+            out.extend(check_spec(kit, &guest, id, None));
         }
     }
     out
@@ -434,7 +406,7 @@ pub fn verdict(spec: &CheckSpec, path: Option<&str>, found: Option<&str>, mount:
         return Verdict::Missing;
     };
     let from_kit = path.starts_with(&format!("{}/", mount.trim_end_matches('/')));
-    if !spec.from_image && !from_kit {
+    if !from_kit {
         return Verdict::NotFromKit;
     }
     match (&spec.chosen, found) {
@@ -539,7 +511,7 @@ pub fn check(
         }
         _ => return Err(ActError::NoVm),
     };
-    let specs = check_specs(kit, project, &s.name, s.agent);
+    let specs = check_specs(kit, project, &s.name);
     if s.state != SandboxRun::Running {
         s.tools = Some(not_running(&specs));
         s.note = Some(not_running_note(lang));
@@ -662,14 +634,10 @@ fn in_sandbox(req: &Request, facts: &Facts) -> Result<Placement, ActError> {
 }
 
 /// The request of an action or a check on `project`'s sandbox (`dir` its
-/// folder): the sandbox's own ([`super::Origin::Sandbox`], R9), or the
-/// agent's button for Claude Code's and Codex's sandboxes (R8).
-pub fn sandbox_request(kit: &Kit, dir: &Path, agent: Option<Agent>) -> Request {
+/// folder): the sandbox's own ([`super::Origin::Sandbox`], R8).
+pub fn sandbox_request(kit: &Kit, dir: &Path) -> Request {
     Request {
-        origin: match agent {
-            Some(agent) => super::Origin::AgentButton { agent },
-            None => super::Origin::Sandbox,
-        },
+        origin: super::Origin::Sandbox,
         place: super::place::place_of(kit, dir),
     }
 }

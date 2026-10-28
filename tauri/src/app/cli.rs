@@ -81,13 +81,11 @@ pub enum Models {
     Remove(String),
 }
 
-/// `vm <project> [--agent <id>] [--check] [--restart] [--recreate [--yes]]
-/// [--refresh] [--json]`.
+/// `vm <project> [--check] [--restart] [--recreate [--yes]] [--refresh]
+/// [--json]`.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct VmArgs {
     pub project: String,
-    /// An agent's own sandbox (`claude`, `codex`); without it the project's.
-    pub agent: Option<crate::levels::Agent>,
     /// «Verifica strumenti» in the sandboxes reported.
     pub check: bool,
     /// One action, at most.
@@ -102,20 +100,8 @@ pub fn parse_vm(args: &[OsString]) -> Cli {
     use crate::levels::report::VmAction;
     let mut v = VmArgs::default();
     let mut project = None;
-    let mut rest = args.iter().map(|a| a.to_string_lossy().into_owned());
-    while let Some(arg) = rest.next() {
+    for arg in args.iter().map(|a| a.to_string_lossy().into_owned()) {
         let action = match arg.as_str() {
-            "--agent" => {
-                let agent = rest
-                    .next()
-                    .and_then(|id| crate::levels::Agent::from_id(&id))
-                    .filter(|a| a.runner() == crate::levels::AgentRunner::SbxAgent);
-                match agent {
-                    Some(a) => v.agent = Some(a),
-                    None => return Cli::Unknown("vm --agent".into()),
-                }
-                None
-            }
             "--check" => {
                 v.check = true;
                 None
@@ -766,7 +752,7 @@ pub(crate) fn run_plan(
 /// catalog). `{0}` is the program's name ([`program_name`]), `{1}` the
 /// kit's Antigravity command ([`help_text`]); the target ids
 /// are those of `Target::ALL`.
-pub(crate) const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  vm <progetto>           la VM del progetto: sandbox, cartelle, porte\n      --agent <id>        la sandbox di un agente (claude, codex)\n      --check             verifica gli strumenti nella VM\n      --restart           riavvia la sandbox (con Atollo chiuso)\n      --recreate [--yes]  la rifà: chiede conferma senza --yes\n      --refresh           aggiorna gli strumenti per il Linux della VM\n      --json              il resoconto in JSON\n  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
+pub(crate) const HELP: &str = "Uso: {0} [comando]\n\nComandi:\n  env                     mostra l'ambiente del kit\n      --project <nome>    quello dei programmi di un progetto\n  components              elenca linguaggi e strumenti, con quelli installati\n      --target <id>       per un altro sistema: win32-x64, darwin-arm64,\n                          linux-x64, linux-arm64\n  versions [id]           le versioni salvate; con un id, quelle da scaricare\n  check                   verifica che i programmi installati rispondano\n      --kit               la salute del kit: disco, spazio, percorso, permessi, librerie\n      --files             i file dei programmi: mancanti o cambiati dall'installazione\n  prepare [opzioni]       installa e aggiorna i componenti scelti,\n                          rimuove quelli non scelti\n      --only a,b          solo questi e ciò che serve loro, senza rimuovere\n      --skip a,b          non questi\n      --update-all        aggiorna anche quelli già installati\n      --force             scarica di nuovo\n      --line id=x.y       salva questa versione accanto alla predefinita\n      --target <id>       prepara per un altro sistema (id come per components)\n  sync [opzioni]          allinea istruzioni, skill e server MCP degli agenti\n      --project <cartella> anche le istruzioni di questo progetto\n      --verbose           mostra ogni modifica\n  serve <cartella> <porta> server di file per un sito statico\n  models                  i modelli locali: del catalogo e scaricati\n  models pull <modello>   scarica un id del catalogo o un modello di Hugging Face\n                          (proprietario/nome:quantizzazione), riprende se interrotto\n  models rm <id>          cancella un modello scaricato\n  llm start|stop|status   il server dei modelli locali (chat e agenti)\n  vm <progetto>           la VM del progetto: sandbox, cartelle, porte\n      --check             verifica gli strumenti nella VM\n      --restart           riavvia la sandbox (con Atollo chiuso)\n      --recreate [--yes]  la rifà: chiede conferma senza --yes\n      --refresh           aggiorna gli strumenti per il Linux della VM\n      --json              il resoconto in JSON\n  diagnostics             crea lo zip da allegare a una segnalazione (segreti mascherati)\n  version                 mostra la versione\n  help                    mostra questo aiuto\n\nSenza comando apre la finestra di Atollo.";
 
 /// The program's name in the help: the file it was started from
 /// (`Atollo-0.2.0-win32-x64.exe`, `Atollo.AppImage`, `Atollo`, ...); on

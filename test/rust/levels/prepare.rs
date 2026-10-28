@@ -109,6 +109,11 @@ pub(crate) fn kit_with_shop(name: &str) -> (TempDir, Kit) {
     let (tmp, kit) = prepared_kit(&format!("prepare-{name}"));
     std::fs::create_dir_all(kit.projects().join("shop")).unwrap();
     install(&kit, crate::isolation::COMPONENT);
+    // Claude Code's and Codex's builds for the VM's Linux (D-184).
+    let guest = kit.for_target(vm::guest_target(kit.target()).unwrap());
+    for id in ["claude", "codex"] {
+        install(&guest, id);
+    }
     (tmp, kit)
 }
 
@@ -471,7 +476,7 @@ fn antigravity_gets_its_build_and_the_gemini_key_by_the_proxy() {
     assert_eq!(info.agent, Some(Agent::Antigravity));
     assert!(info.tools.contains_key("antigravity"));
 
-    // The session runs its build with `vm::agy_session_args`.
+    // The session runs its build with `vm::agent_session_args`.
     let args = crate::levels::start::vm_session_args(&kit, &ready, &["--help".into()]).unwrap();
     let program = isolation::agent_in_vm(&kit, &guest, "antigravity").unwrap();
     assert!(program.ends_with("/antigravity/agy"), "{program}");
@@ -485,11 +490,10 @@ fn antigravity_gets_its_build_and_the_gemini_key_by_the_proxy() {
     assert!(!vm_of(&ready).gemini());
 }
 
-/// D-175: Claude Code and Codex get a sandbox of their own with the same
-/// workspace, Linux tools, databases and ports as the project's; never the
-/// local models.
+/// D-184: Claude Code and Codex run in the project's sandbox, with its
+/// workspace, Linux tools, databases and ports; never the local models.
 #[test]
-fn an_agent_sandbox_mirrors_the_projects() {
+fn claude_and_codex_run_in_the_projects_sandbox() {
     let (_tmp, kit) = kit_with_shop("agent");
     for agent in [Agent::Claude, Agent::Codex] {
         let fx = Fake {
@@ -501,7 +505,7 @@ fn an_agent_sandbox_mirrors_the_projects() {
             ..Fake::default()
         };
         let ready = prepared(&kit, &fx, Origin::AgentButton { agent }, true, &[]).unwrap();
-        let name = vm::agent_name("shop", agent.id());
+        let name = vm::name("shop");
         assert_eq!(
             fx.calls(),
             [
@@ -680,7 +684,7 @@ fn prepare_tells_the_agent_and_the_error() {
 fn a_preparation_running_refuses_the_same_again() {
     let (_tmp, kit) = kit_with_shop("claimed");
     let key = format!("{}|{}", kit.root().display(), vm::name("shop"));
-    let program = VmProgram::AgentBinary {
+    let program = VmProgram::Agent {
         agent: Agent::Antigravity,
     };
     let held = Claim::take(format!("{key}|{program:?}")).unwrap();
@@ -883,7 +887,7 @@ fn every_sandbox_of_a_project_has_its_info() {
             Origin::AgentButton {
                 agent: Agent::Claude,
             },
-            vm::agent_name("shop", "claude"),
+            vm::name("shop"),
             Some(Agent::Claude),
             Level::Agent,
         ),
@@ -891,7 +895,7 @@ fn every_sandbox_of_a_project_has_its_info() {
             Origin::AgentButton {
                 agent: Agent::Codex,
             },
-            vm::agent_name("shop", "codex"),
+            vm::name("shop"),
             Some(Agent::Codex),
             Level::Agent,
         ),

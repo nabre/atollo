@@ -180,7 +180,7 @@ pub fn detach<R: Runtime>(app: &AppHandle<R>, id: u64) -> Result<()> {
     let info = ptys.info(id)?;
     let state = app.state::<crate::ipc::AppState>();
     // Where it runs, in the title too (LEVELS.md §8.3).
-    let at = crate::levels::labels::label_text(info.label, info.level, state.lang());
+    let at = crate::levels::labels::label_text(info.label, state.lang());
     let lang = serde_json::to_string(state.lang())?;
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("terminal.html".into()))
         .title(format!("{} · {at} - Atollo", info.title))

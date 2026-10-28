@@ -46,16 +46,11 @@ fn agents_status_follows_the_vm() {
         let why = a.unavailable_reason.as_deref().unwrap();
         assert!(why.contains("Windows Hypervisor Platform"), "{why}");
     }
-    for id in ["claude", "codex"] {
+    // Every agent is the kit's build for the VM's Linux (D-184): none yet.
+    for id in ["claude", "codex", "pi", "antigravity"] {
         let a = info(&s, id);
-        assert!(a.installed && a.provided, "{id}");
+        assert!(!a.installed, "{id}");
         assert_eq!(a.version, None);
-        assert_eq!(a.runs_in, RunsIn::SbxSandbox);
-    }
-    for id in ["pi", "antigravity"] {
-        let a = info(&s, id);
-        assert!(!a.installed && !a.provided, "{id}");
-        assert_eq!(a.runs_in, RunsIn::ProjectVm);
     }
     // Pi for the PC (an earlier Atollo's) is no agent of the VM.
     installed(&kit, "pi", "0.70.1");

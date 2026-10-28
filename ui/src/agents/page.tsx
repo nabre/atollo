@@ -187,16 +187,14 @@ export function AgentEditor({ agent, stats, onChanged }: { agent: AgentInfo; sta
   const { busy, error, run } = useAction(onChanged);
   const [confirm, setConfirm] = useState(false);
   const st = stats.report?.agents.find((x) => x.id === agent.id);
-  const where = agent.provided
-    ? t("Arriva con la sua sandbox di Docker Sandboxes e gira lì, una per progetto.")
-    : t("Gira nella VM del progetto, con la sua versione per Linux.");
+  const where = t("Gira nella VM del progetto, con la sua versione per Linux.");
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <EditorHeader
         icon={<ComponentLogo id={agent.id} size={56} />}
         title={agent.name}
         meta={[
-          <span key="v">{agent.provided ? t("fornito dalla VM") : (agent.version ?? t("installato"))}</span>,
+          <span key="v">{agent.version ?? t("installato")}</span>,
           <span key="in" className={agent.signedIn ? "" : "text-vsc-desc"}>
             {signInText(agent)}
           </span>,

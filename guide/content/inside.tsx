@@ -574,10 +574,10 @@ export const INSIDE: TopicTexts = {
                 "Programme, die selbst entscheiden, was sie ausführen: Claude Code, Codex, Pi, Antigravity und die Erweiterungen des Editors, die einen Agenten ausführen.",
               ),
               tr(
-                "Solo nella VM: Claude Code e Codex in una sandbox ciascuno (atollo-a-…), Pi e Antigravity nella VM del progetto.",
-                "Only in the VM: Claude Code and Codex in a sandbox each (atollo-a-…), Pi and Antigravity in the project's VM.",
-                "Seulement dans la VM : Claude Code et Codex dans une sandbox chacun (atollo-a-…), Pi et Antigravity dans la VM du projet.",
-                "Nur in der VM: Claude Code und Codex in je einer Sandbox (atollo-a-…), Pi und Antigravity in der VM des Projekts.",
+                "Solo nella VM: tutti gli agenti nella sandbox del progetto (atollo-p-…), con le loro build per Linux.",
+                "Only in the VM: every agent in the project's sandbox (atollo-p-…), with their builds for Linux.",
+                "Seulement dans la VM : tous les agents dans la sandbox du projet (atollo-p-…), avec leurs builds pour Linux.",
+                "Nur in der VM: alle Agenten in der Sandbox des Projekts (atollo-p-…), mit ihren Builds für Linux.",
               ),
               tr(
                 "Da nessuna parte: pulsanti, voci della tavolozza, profili dell'editor e installazioni sono disattivati, con il motivo.",
@@ -607,10 +607,10 @@ export const INSIDE: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Claude Code e Codex partono ciascuno nella sua sandbox di agente di Docker Sandboxes, Pi e Antigravity nella VM del progetto con la loro build per Linux: tutti con gli strumenti del kit del progetto nel PATH e il suo database. L'accesso si fa nella VM, al primo avvio dell'agente; la chiave di Gemini delle impostazioni passa dal proxy di Docker Sandboxes, mai dentro la VM. Senza VM nessun agente parte, mai sul PC al posto della VM.",
-              "Claude Code and Codex each start in their own Docker Sandboxes agent sandbox, Pi and Antigravity in the project's VM with their build for Linux: all with the project's kit tools on the PATH and its database. The sign-in happens in the VM, at the agent's first start; the Gemini key of the settings goes through the Docker Sandboxes proxy, never into the VM. Without the VM no agent starts, never on the PC in the VM's place.",
-              "Claude Code et Codex démarrent chacun dans sa sandbox d'agent de Docker Sandboxes, Pi et Antigravity dans la VM du projet avec leur build pour Linux : tous avec les outils du kit du projet dans le PATH et sa base de données. La connexion se fait dans la VM, au premier lancement de l'agent ; la clé Gemini des paramètres passe par le proxy de Docker Sandboxes, jamais dans la VM. Sans VM, aucun agent ne démarre, jamais sur le PC à la place de la VM.",
-              "Claude Code und Codex starten jeweils in ihrer eigenen Agenten-Sandbox von Docker Sandboxes, Pi und Antigravity in der VM des Projekts mit ihrem Build für Linux: alle mit den Werkzeugen des Kits für das Projekt im PATH und seiner Datenbank. Die Anmeldung erfolgt in der VM, beim ersten Start des Agenten; der Gemini-Schlüssel der Einstellungen geht über den Proxy von Docker Sandboxes, nie in die VM. Ohne VM startet kein Agent, nie stattdessen auf dem PC.",
+              "Claude Code, Codex, Pi e Antigravity partono nella sandbox del progetto, ciascuno con la sua build per Linux del kit: tutti con gli strumenti del kit del progetto nel PATH e il suo database. L'accesso si fa nella VM, al primo avvio dell'agente; la chiave di Gemini delle impostazioni passa dal proxy di Docker Sandboxes, mai dentro la VM. Senza VM nessun agente parte, mai sul PC al posto della VM.",
+              "Claude Code, Codex, Pi and Antigravity start in the project's sandbox, each with its kit's build for Linux: all with the project's kit tools on the PATH and its database. The sign-in happens in the VM, at the agent's first start; the Gemini key of the settings goes through the Docker Sandboxes proxy, never into the VM. Without the VM no agent starts, never on the PC in the VM's place.",
+              "Claude Code, Codex, Pi et Antigravity démarrent dans la sandbox du projet, chacun avec son build pour Linux du kit : tous avec les outils du kit du projet dans le PATH et sa base de données. La connexion se fait dans la VM, au premier lancement de l'agent ; la clé Gemini des paramètres passe par le proxy de Docker Sandboxes, jamais dans la VM. Sans VM, aucun agent ne démarre, jamais sur le PC à la place de la VM.",
+              "Claude Code, Codex, Pi und Antigravity starten in der Sandbox des Projekts, jeder mit seinem Build des Kits für Linux: alle mit den Werkzeugen des Kits für das Projekt im PATH und seiner Datenbank. Die Anmeldung erfolgt in der VM, beim ersten Start des Agenten; der Gemini-Schlüssel der Einstellungen geht über den Proxy von Docker Sandboxes, nie in die VM. Ohne VM startet kein Agent, nie stattdessen auf dem PC.",
             ),
             tr(
               "Un agente parte dalla pagina del progetto, dalla tavolozza dei comandi, dal suo profilo nel terminale dell'editor, oppure scrivendo claude, codex, pi o agy in un terminale del PC nella cartella del progetto: il comando chiede ad Atollo di avviarlo nella VM, nello stesso terminale. Fuori da un progetto, o senza VM, dice perché ed esce.",
@@ -625,10 +625,10 @@ export const INSIDE: TopicTexts = {
               "Im Editor sind die Terminals Stufe 1 und öffnen sich auf dem PC; auch die Tasks laufen auf dem PC, versiegelt, mit oder ohne VM; die Profile der Agenten gibt es nur mit der VM. Erweiterungen, die einen Agenten ausführen (Claude Code, Codex, Cline…), werden nicht installiert: Findet Atollo eine, entfernt es sie beim Start des Editors, und der Editor sagt, warum.",
             ),
             tr(
-              "Ogni scheda del terminale dice dove gira: «PC», «PC · senza VM» o «Agente · VM», con il nome della sandbox al passaggio del mouse. All'apertura una riga lo ripete: nei terminali del PC il livello, il terminale e il progetto; per un agente «[Atollo] Agente · VM: …».",
-              "Every terminal tab says where it runs: “PC”, “PC · no VM” or “Agent · VM”, with the sandbox's name on hover. On opening a line repeats it: in the PC's terminals the level, the terminal and the project; for an agent “[Atollo] Agente · VM: …”.",
-              "Chaque onglet du terminal dit où il tourne : « PC », « PC · sans VM » ou « Agent · VM », avec le nom de la sandbox au survol. À l'ouverture, une ligne le répète : dans les terminaux du PC le niveau, le terminal et le projet ; pour un agent « [Atollo] Agente · VM: … ».",
-              "Jeder Tab des Terminals sagt, wo er läuft: „PC“, „PC · ohne VM“ oder „Agent · VM“, mit dem Namen der Sandbox beim Überfahren mit der Maus. Beim Öffnen wiederholt es eine Zeile: in den Terminals des PCs die Stufe, das Terminal und das Projekt; für einen Agenten „[Atollo] Agente · VM: …“.",
+              "Ogni scheda del terminale dice dove gira: «PC» o «Agente · VM», con il nome della sandbox al passaggio del mouse. All'apertura una riga lo ripete: nei terminali del PC il livello, il terminale e il progetto; per un agente «[Atollo] Agente · VM: …».",
+              "Every terminal tab says where it runs: “PC” or “Agent · VM”, with the sandbox's name on hover. On opening a line repeats it: in the PC's terminals the level, the terminal and the project; for an agent “[Atollo] Agente · VM: …”.",
+              "Chaque onglet du terminal dit où il tourne : « PC » ou « Agent · VM », avec le nom de la sandbox au survol. À l'ouverture, une ligne le répète : dans les terminaux du PC le niveau, le terminal et le projet ; pour un agent « [Atollo] Agente · VM: … ».",
+              "Jeder Tab des Terminals sagt, wo er läuft: „PC“ oder „Agent · VM“, mit dem Namen der Sandbox beim Überfahren mit der Maus. Beim Öffnen wiederholt es eine Zeile: in den Terminals des PCs die Stufe, das Terminal und das Projekt; für einen Agenten „[Atollo] Agente · VM: …“.",
             ),
           ]}
         />
@@ -644,10 +644,10 @@ export const INSIDE: TopicTexts = {
       >
         <P>
           {tr(
-            "Nella pagina del progetto, la sezione «VM del progetto» mostra la sandbox del progetto e poi quelle di Claude Code e Codex: per ognuna lo stato (accesa, spenta, non c'è), le cartelle montate (il progetto in lettura e scrittura, il resto in sola lettura), le porte del PC che raggiunge e gli agenti che ci girano; sotto, se GitHub è nella VM. Senza VM mostra il motivo e «Apri l'avviso VM».",
-            "On the project's page, the “Project VM” section shows the project's sandbox and then Claude Code's and Codex's: for each one its state (on, off, not there), the mounted folders (the project read-write, the rest read-only), the PC ports it reaches and the agents running in it; below, whether GitHub is in the VM. Without the VM it shows the reason and “Open the VM notice”.",
-            "Sur la page du projet, la section « VM du projet » montre la sandbox du projet puis celles de Claude Code et Codex : pour chacune son état (allumée, éteinte, absente), les dossiers montés (le projet en lecture et écriture, le reste en lecture seule), les ports du PC qu'elle atteint et les agents qui y tournent ; en dessous, si GitHub est dans la VM. Sans VM, elle montre le motif et « Ouvrir l'avis VM ».",
-            "Auf der Seite des Projekts zeigt der Abschnitt „VM des Projekts“ die Sandbox des Projekts und dann die von Claude Code und Codex: für jede ihren Zustand (an, aus, nicht vorhanden), die eingehängten Ordner (das Projekt mit Lese- und Schreibzugriff, der Rest schreibgeschützt), die Ports des PCs, die sie erreicht, und die Agenten, die darin laufen; darunter, ob GitHub in der VM ist. Ohne VM zeigt er den Grund und „VM-Hinweis öffnen“.",
+            "Nella pagina del progetto, la sezione «VM del progetto» mostra la sandbox del progetto, dove girano tutti gli agenti: lo stato (accesa, spenta, non c'è), le cartelle montate (il progetto in lettura e scrittura, il resto in sola lettura), le porte del PC che raggiunge e gli agenti che ci girano; sotto, se GitHub è nella VM. Senza VM mostra il motivo e «Apri l'avviso VM».",
+            "On the project's page, the “Project VM” section shows the project's sandbox, where every agent runs: its state (on, off, not there), the mounted folders (the project read-write, the rest read-only), the PC ports it reaches and the agents running in it; below, whether GitHub is in the VM. Without the VM it shows the reason and “Open the VM notice”.",
+            "Sur la page du projet, la section « VM du projet » montre la sandbox du projet, où tournent tous les agents : son état (allumée, éteinte, absente), les dossiers montés (le projet en lecture et écriture, le reste en lecture seule), les ports du PC qu'elle atteint et les agents qui y tournent ; en dessous, si GitHub est dans la VM. Sans VM, elle montre le motif et « Ouvrir l'avis VM ».",
+            "Auf der Seite des Projekts zeigt der Abschnitt „VM des Projekts“ die Sandbox des Projekts, in der alle Agenten laufen: ihren Zustand (an, aus, nicht vorhanden), die eingehängten Ordner (das Projekt mit Lese- und Schreibzugriff, der Rest schreibgeschützt), die Ports des PCs, die sie erreicht, und die Agenten, die darin laufen; darunter, ob GitHub in der VM ist. Ohne VM zeigt er den Grund und „VM-Hinweis öffnen“.",
           )}
         </P>
         <Table
@@ -977,10 +977,10 @@ export const INSIDE: TopicTexts = {
               "„Entfernen“, dann „Wirklich entfernen“, löscht die Sandbox mit ihrer Festplatte (ihr Home und /tmp); die Dateien des Projekts bleiben. Bei der nächsten Verwendung legt Atollo eine neue an.",
             ),
             tr(
-              "Eliminare un progetto toglie anche la sua sandbox e quelle dei suoi agenti.",
-              "Deleting a project also removes its sandbox and its agents' ones.",
-              "Supprimer un projet retire aussi sa sandbox et celles de ses agents.",
-              "Ein Projekt zu löschen entfernt auch seine Sandbox und die seiner Agenten.",
+              "Eliminare un progetto toglie anche la sua sandbox, con gli accessi dei suoi agenti.",
+              "Deleting a project also removes its sandbox, with its agents' sign-ins.",
+              "Supprimer un projet retire aussi sa sandbox, avec les connexions de ses agents.",
+              "Ein Projekt zu löschen entfernt auch seine Sandbox, samt den Anmeldungen seiner Agenten.",
             ),
             tr(
               "I dischi delle VM arrivano fino a circa 30 GB ciascuno, ma su NTFS, APFS ed ext4 occupano solo ciò che si scrive.",
@@ -1108,10 +1108,10 @@ export const INSIDE: TopicTexts = {
         <Bullets
           items={[
             tr(
-              "Nomi delle sandbox: atollo-p-<progetto>-<hash> per un progetto (anche Pi e Antigravity girano lì), atollo-a-<agente>-<progetto>-<hash> per Claude Code o Codex. L'hash viene dal nome esatto: due progetti non condividono mai una sandbox. I terminali del kit non hanno sandbox: girano sul PC.",
-              "Sandbox names: atollo-p-<project>-<hash> for a project (Pi and Antigravity run there too), atollo-a-<agent>-<project>-<hash> for Claude Code or Codex. The hash comes from the exact name: two projects never share a sandbox. The kit's terminals have no sandbox: they run on the PC.",
-              "Noms des sandbox : atollo-p-<projet>-<hash> pour un projet (Pi et Antigravity y tournent aussi), atollo-a-<agent>-<projet>-<hash> pour Claude Code ou Codex. Le hash vient du nom exact : deux projets ne partagent jamais une sandbox. Les terminaux du kit n'ont pas de sandbox : ils tournent sur le PC.",
-              "Namen der Sandboxes: atollo-p-<Projekt>-<Hash> für ein Projekt (auch Pi und Antigravity laufen dort), atollo-a-<Agent>-<Projekt>-<Hash> für Claude Code oder Codex. Der Hash stammt vom genauen Namen: Zwei Projekte teilen sich nie eine Sandbox. Die Terminals des Kits haben keine Sandbox: Sie laufen auf dem PC.",
+              "Nomi delle sandbox: atollo-p-<progetto>-<hash> per un progetto, dove girano tutti i suoi agenti. L'hash viene dal nome esatto: due progetti non condividono mai una sandbox. I terminali del kit non hanno sandbox: girano sul PC. Le sandbox atollo-a-… e atollo-t-… di una versione precedente di Atollo si rimuovono da sole.",
+              "Sandbox names: atollo-p-<project>-<hash> for a project, where all its agents run. The hash comes from the exact name: two projects never share a sandbox. The kit's terminals have no sandbox: they run on the PC. The atollo-a-… and atollo-t-… sandboxes of an earlier Atollo are removed by themselves.",
+              "Noms des sandbox : atollo-p-<projet>-<hash> pour un projet, où tournent tous ses agents. Le hash vient du nom exact : deux projets ne partagent jamais une sandbox. Les terminaux du kit n'ont pas de sandbox : ils tournent sur le PC. Les sandbox atollo-a-… et atollo-t-… d'une version précédente d'Atollo se suppriment d'elles-mêmes.",
+              "Namen der Sandboxes: atollo-p-<Projekt>-<Hash> für ein Projekt, in der alle seine Agenten laufen. Der Hash stammt vom genauen Namen: Zwei Projekte teilen sich nie eine Sandbox. Die Terminals des Kits haben keine Sandbox: Sie laufen auf dem PC. Die Sandboxes atollo-a-… und atollo-t-… einer früheren Version von Atollo werden von selbst entfernt.",
             ),
             tr(
               "data\\app\\sandboxes\\<sandbox>\\ è la descrizione di ogni sandbox (spec.yaml, atollo.json con di chi è, le cartelle montate e le porte aperte, db.env con la connessione al database, leggibile solo da te, e guest, la cartella che la VM vede in sola lettura, con atollo); secrets.json annota i comandi di GitHub e della chiave di Gemini registrati.",

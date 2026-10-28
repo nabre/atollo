@@ -33,19 +33,14 @@ fn agents_are_enabled_only_with_the_vm() {
     );
 }
 
-/// Q11 on every system and VM state: Pi and Antigravity only for the VM's
-/// Linux while the VM is on; Claude Code and Codex never (the `sbx`
-/// images bring them); any other component as before.
+/// Q11 on every system and VM state: every agent only for the VM's Linux
+/// while the VM is on (D-184); any other component as before.
 #[test]
 fn installable_on_every_target_and_vm_state() {
     for target in Target::ALL {
         for vm in [VmState::On, off()] {
             let on = agents_enabled(&vm);
-            for id in ["claude", "codex"] {
-                assert!(!installable(component(id), target, &vm), "{id} {target}");
-                assert!(obsolete(component(id), target), "{id} {target}");
-            }
-            for id in ["pi", "antigravity"] {
+            for id in ["claude", "codex", "pi", "antigravity"] {
                 assert_eq!(
                     installable(component(id), target, &vm),
                     on && target.is_linux(),
@@ -64,19 +59,23 @@ fn installable_on_every_target_and_vm_state() {
     assert_eq!(catalog_agents().count(), Agent::ALL.len());
 }
 
-/// The rows of the Tools page: «fornito dalla VM» for Claude Code and
-/// Codex whatever the VM; «serve la VM» with the blockers' text for Pi and
-/// Antigravity without it; nothing for the others.
+/// The rows of the Tools page: «serve la VM» with the blockers' text for
+/// every agent without it; nothing with it, nothing for the others.
 #[test]
 fn the_rows_of_the_agents() {
     for vm in [VmState::On, off()] {
-        assert_eq!(
-            agent_row(component("claude"), &vm, "it"),
-            Some(AgentRow::Provided)
-        );
         assert_eq!(agent_row(component("node"), &vm, "it"), None);
     }
-    assert_eq!(agent_row(component("pi"), &VmState::On, "it"), None);
+    for id in ["claude", "codex", "pi", "antigravity"] {
+        assert_eq!(agent_row(component(id), &VmState::On, "it"), None, "{id}");
+        assert!(
+            matches!(
+                agent_row(component(id), &off(), "it"),
+                Some(AgentRow::NeedsVm { .. })
+            ),
+            "{id}"
+        );
+    }
     let Some(AgentRow::NeedsVm { reason }) = agent_row(component("antigravity"), &off(), "it")
     else {
         panic!("not a row of the VM")
@@ -93,17 +92,13 @@ fn the_rows_of_the_agents() {
     assert!(off_reason(&VmState::Off { blockers: vec![] }, "it").is_some());
     let row = serde_json::to_value(AgentRow::NeedsVm { reason: "x".into() }).unwrap();
     assert_eq!(row, serde_json::json!({"kind": "needsVm", "reason": "x"}));
-    assert_eq!(
-        serde_json::to_value(AgentRow::Provided).unwrap(),
-        serde_json::json!({"kind": "provided"})
-    );
 }
 
 /// An install asked anyway says why not.
 #[test]
 fn a_refused_install_says_why() {
     let claude = refused_install(component("claude"), &VmState::On, "it");
-    assert!(claude.contains("Docker Sandboxes"), "{claude}");
+    assert!(claude.contains("Linux"), "{claude}");
     let pi = refused_install(component("pi"), &off(), "it");
     assert!(pi.contains("Windows Hypervisor Platform"), "{pi}");
     let pi = refused_install(component("pi"), &VmState::On, "it");

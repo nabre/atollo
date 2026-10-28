@@ -33,7 +33,7 @@ fn antigravity_starts_on_a_project_in_its_vm() {
             );
             assert_eq!(
                 program,
-                VmProgram::AgentBinary {
+                VmProgram::Agent {
                     agent: Agent::Antigravity
                 }
             );

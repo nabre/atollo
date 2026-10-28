@@ -2,15 +2,13 @@
 //! project, `atollo-p-<project>-<hash>`, with the project's folder as its workspace
 //! (the folder the commands start in). What runs there:
 //!
-//! - the agents only (D-183): the project's code, its terminal and its web
-//!   servers run on the PC;
+//! - the agents only (D-183), all four in it (D-184): Claude Code, Codex,
+//!   Pi and Antigravity (`agy`), their builds for Linux from the kit
+//!   mounted read-only ([`agent_session_args`]); the project's code, its
+//!   terminal and its web servers run on the PC;
 //! - its databases stay on the PC, the kit's servers (D-171): the VM never
 //!   sees their programs, settings or data, and reaches only their ports
 //!   (`host.docker.internal`, [`host_port_allow`]) as the project's user;
-//! - Claude Code and Codex: `sbx`'s own agents, a sandbox each
-//!   (`atollo-a-claude-<project>-<hash>`), whose keys the proxy of `sbx` adds to
-//!   their requests; Pi and Antigravity (`agy`) in the project's VM, their
-//!   builds for Linux from the kit (D-178, D-179).
 //!
 //! The words given to `sh -lc` are quoted for the VM's shell (POSIX):
 //! never text of the PC's shell.
@@ -62,20 +60,20 @@ pub fn name(project: &str) -> String {
     tagged(&format!("{PREFIX}p-"), project)
 }
 
-/// The sandbox of `agent` for `project`, in a namespace of its own:
-/// `atollo-a-<agent>-<project>-<hash>`, never a project's.
-pub fn agent_name(project: &str, agent: &str) -> String {
-    tagged(&format!("{PREFIX}a-{agent}-"), project)
-}
-
 /// The prefix of the sandboxes an earlier Atollo made for the kit's
 /// terminals (`atollo-t-<terminal>-<hash>`, D-168): the kit's terminals run
 /// on the PC now (D-178), and those left are removed.
 pub const TERMINAL_PREFIX: &str = "atollo-t-";
 
-/// Creates the sandbox: `sbx run -d --name <vm> [--kit <kit>] <agent>
-/// <dir> [<folder>…] [<folder>:ro…]` (`shell` for a project's, a
-/// terminal's or the tools sandbox's, `claude` or `codex` for an agent's),
+/// The prefix of the sandboxes an earlier Atollo made for Claude Code and
+/// Codex (`atollo-a-<agent>-<project>-<hash>`, with `sbx`'s agent images):
+/// every agent runs in its project's sandbox now (D-184), and those left
+/// are removed.
+pub const AGENT_PREFIX: &str = "atollo-a-";
+
+/// Creates the sandbox: `sbx run -d --name <vm> [--kit <kit>] shell
+/// <dir> [<folder>…] [<folder>:ro…]` (`shell`, the only image Atollo
+/// uses: the project's sandbox and the tools sandbox),
 /// its own kit (`kit`, D-169), the `writable` folders mounted too (the
 /// tools sandbox's, D-180), then the `read_only` ones, where the VM cannot
 /// change them.
@@ -85,14 +83,13 @@ pub fn start_args(
     writable: &[std::path::PathBuf],
     read_only: &[std::path::PathBuf],
     kit: Option<&Path>,
-    agent: &str,
 ) -> Vec<String> {
     let mut args: Vec<String> = vec!["run".into(), "-d".into(), "--name".into(), vm.into()];
     if let Some(kit) = kit {
         args.push("--kit".into());
         args.push(kit.display().to_string());
     }
-    args.push(agent.into());
+    args.push("shell".into());
     args.push(dir.display().to_string());
     args.extend(writable.iter().map(|p| p.display().to_string()));
     args.extend(read_only.iter().map(|p| format!("{}:ro", p.display())));
@@ -249,15 +246,6 @@ pub fn check_args(vm: &str, tools: &crate::isolation::GuestTools, script: &str) 
     args
 }
 
-/// The agents `sbx` runs in a sandbox of their own: Atollo's id → `sbx`'s.
-pub fn sbx_agent(agent: &str) -> Option<&'static str> {
-    match agent {
-        "claude" => Some("claude"),
-        "codex" => Some("codex"),
-        _ => None,
-    }
-}
-
 /// An agent's own build for Linux (`program`, the VM's path of the kit's,
 /// mounted read-only) started in the project's VM `vm`, in `dir` (the VM's
 /// path), like a command of the project's terminal: `tools`
@@ -286,66 +274,37 @@ fn binary_session_args(
     args
 }
 
-/// Pi in the project's VM `vm` (D-178): its build for Linux (`pi`, the
-/// VM's path of the kit's, mounted read-only) started in `dir` (the VM's
-/// path) like a command of the project's terminal, with `tools`
-/// ([`tools_options`]): the project's tools first on the `PATH`, its
-/// database's variables; `extra`: what the user typed after `pi` (a
-/// forwarder, LEVELS.md §6.8), passed to Pi as they are.
-pub fn pi_session_args(
-    vm: &str,
-    dir: &str,
-    pi: &str,
-    tools: &crate::isolation::GuestTools,
-    extra: &[String],
-) -> Vec<String> {
-    binary_session_args(vm, dir, pi, tools, &[], extra)
+/// What an agent's build gets in the VM besides the tools: no update of its
+/// own, the kit's build is mounted read-only and the kit updates it.
+/// Antigravity's CLI and Claude Code have a switch for it; Codex and Pi
+/// none (Codex only tells of a new version).
+pub fn agent_vars(agent: &str) -> &'static [(&'static str, &'static str)] {
+    match agent {
+        "antigravity" => &[("AGY_CLI_DISABLE_AUTO_UPDATE", "true")],
+        "claude" => &[("DISABLE_AUTOUPDATER", "1")],
+        _ => &[],
+    }
 }
 
-/// What Antigravity's CLI gets in the VM besides the tools: no update of
-/// its own (the kit's build is mounted read-only; the kit updates it).
-pub const AGY_VARS: [(&str, &str); 1] = [("AGY_CLI_DISABLE_AUTO_UPDATE", "true")];
-
-/// Antigravity's CLI in the project's VM `vm` (D-179, LEVELS.md §9): as
-/// [`pi_session_args`] with its build for Linux (`agy`) and [`AGY_VARS`].
-/// No key and no login of the kit: the Gemini key, when the kit holds one,
-/// reaches Google through the proxy of `sbx` (`secret gemini`), never the
-/// VM; without it `agy` signs in inside the VM.
-pub fn agy_session_args(
-    vm: &str,
-    dir: &str,
-    agy: &str,
-    tools: &crate::isolation::GuestTools,
-    extra: &[String],
-) -> Vec<String> {
-    binary_session_args(vm, dir, agy, tools, &AGY_VARS, extra)
-}
-
-/// The session of an agent in its sandbox `vm` (made by `Vm::start`):
-/// `sbx run --name <vm>`, which attaches to the agent, with the project's
-/// database variables (`--env-file`), the kit's tools for Linux first on
-/// the `PATH` before the image's own (`image_path`, read in the sandbox:
-/// `-e PATH` replaces it), and the tools' variables. `-e` and `--env-file`
-/// apply to the agent's session also on a re-attach (sbx 0.49.2).
+/// The session of `agent` (its id) in the project's sandbox `vm` (D-184):
+/// its build for Linux (`program`, the VM's path of the kit's, mounted
+/// read-only) started in `dir` (the VM's path) like a command of a
+/// terminal, with `tools` ([`tools_options`]): the project's tools first on
+/// the `PATH`, its database's variables; then [`agent_vars`]; `extra`: what
+/// the user typed after the agent's command (a forwarder, LEVELS.md §6.8),
+/// passed as it is. No key and no login of the kit: each agent signs in
+/// inside the sandbox (its home is the VM's); the Gemini key, when the kit
+/// holds one, reaches Google through the proxy of `sbx` (`secret gemini`),
+/// never the VM.
 pub fn agent_session_args(
     vm: &str,
-    image_path: &str,
+    dir: &str,
+    agent: &str,
+    program: &str,
     tools: &crate::isolation::GuestTools,
+    extra: &[String],
 ) -> Vec<String> {
-    let mut args: Vec<String> = vec!["run".into(), "--name".into(), vm.into()];
-    if let Some(file) = &tools.env_file {
-        args.push("--env-file".into());
-        args.push(file.display().to_string());
-    }
-    if !tools.path.is_empty() {
-        args.push("-e".into());
-        args.push(format!("PATH={}:{image_path}", tools.path.join(":")));
-    }
-    for (k, v) in &tools.vars {
-        args.push("-e".into());
-        args.push(format!("{k}={v}"));
-    }
-    args
+    binary_session_args(vm, dir, program, tools, agent_vars(agent), extra)
 }
 
 /// The kit's tools first on the `PATH` (`ATOLLO_PATH`, given with `-e`),

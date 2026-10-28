@@ -205,7 +205,7 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         Scope::Tools => wanted.retain(|id| tool(id)),
     }
     // The agents (LEVELS.md §7, Q11): only for the VM's Linux, only while
-    // it is on; Claude Code and Codex never (the `sbx` images bring them).
+    // it is on (D-184: all four).
     let vm = opts.vm.clone().unwrap_or(crate::levels::VmState::Off {
         blockers: Vec::new(),
     });

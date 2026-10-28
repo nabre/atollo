@@ -10,13 +10,10 @@ export type AgentId = "claude" | "codex" | "antigravity" | "pi";
 export interface AgentInfo {
   id: AgentId;
   name: string;
-  /** It can start in the VM: Claude Code and Codex always (the `sbx`
-   * images bring them), Pi and Antigravity once their build for the VM's
-   * Linux is in the kit. */
+  /** It can start in the VM: its build for the VM's Linux is in the kit
+   * (D-184: every agent runs in the project's sandbox). */
   installed: boolean;
-  /** Claude Code, Codex: brought by the VM, nothing of the kit's. */
-  provided: boolean;
-  /** The version of its build for the VM's Linux (Pi, Antigravity). */
+  /** The version of its build for the VM's Linux. */
   version: string | null;
   /** Signed in for the VM, as far as the PC can tell (LEVELS.md §13 item
    * 12): otherwise the agent signs in inside the VM at its first start. */
@@ -31,25 +28,22 @@ export interface AgentInfo {
   available: boolean;
   /** Why not: the VM's blockers and what to do. */
   unavailableReason: string | null;
-  runsIn: "sbxSandbox" | "projectVm";
 }
 
 const sample = (a: Partial<AgentInfo> & Pick<AgentInfo, "id" | "name">): AgentInfo => ({
   installed: true,
-  provided: false,
   version: null,
   signedIn: false,
   signInKind: null,
   kitLogin: false,
   available: true,
   unavailableReason: null,
-  runsIn: "projectVm",
   ...a,
 });
 
 export const SAMPLE_AGENTS: AgentInfo[] = [
-  sample({ id: "claude", name: "Claude Code", provided: true, runsIn: "sbxSandbox" }),
-  sample({ id: "codex", name: "Codex", provided: true, runsIn: "sbxSandbox" }),
+  sample({ id: "claude", name: "Claude Code", version: "2.1.0" }),
+  sample({ id: "codex", name: "Codex", version: "0.60.0" }),
   sample({ id: "antigravity", name: "Antigravity", installed: false }),
   // Installed on a local model, so the screenshots show the fourth agent
   // (DOC-V7-05).

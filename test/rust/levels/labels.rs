@@ -34,13 +34,14 @@ fn project_sandbox() -> Sandbox {
     }
 }
 
-/// The four labels of §8.3, in Italian and English; none for a refusal.
+/// The two labels of §8.3 (D-184), in Italian and English; none for a
+/// refusal.
 #[test]
 fn every_placement_has_the_label_of_its_level() {
     let pi = vm(
         Level::Agent,
         project_sandbox(),
-        VmProgram::AgentBinary { agent: Agent::Pi },
+        VmProgram::Agent { agent: Agent::Pi },
     );
     let refused = Placement::Refused {
         level: Level::Agent,
@@ -49,12 +50,7 @@ fn every_placement_has_the_label_of_its_level() {
     };
     let cases = [
         (pc(Level::Manual), Some(LevelLabel::Pc), "PC", "PC"),
-        (
-            pc(Level::Project),
-            Some(LevelLabel::Pc),
-            "PC · senza VM",
-            "PC · no VM",
-        ),
+        (pc(Level::Project), Some(LevelLabel::Pc), "PC", "PC"),
         (pi, Some(LevelLabel::AgentVm), "Agente · VM", "Agent · VM"),
     ];
     for (p, key, it, en) in cases {
@@ -65,19 +61,19 @@ fn every_placement_has_the_label_of_its_level() {
     assert_eq!(label_of(&refused), None);
     assert_eq!(label(&refused, "it"), None);
     assert_eq!(
-        serde_json::to_value(LevelLabel::ProjectVm).unwrap(),
-        "projectVm"
+        serde_json::to_value(LevelLabel::AgentVm).unwrap(),
+        "agentVm"
     );
 }
 
-/// The line before a VM session: the agent and its sandbox; nothing on
-/// the PC.
+/// The line before an agent's session: the agent and its sandbox; nothing
+/// on the PC nor for the sandbox's tools.
 #[test]
 fn the_banner_names_the_sandbox() {
     let pi = vm(
         Level::Agent,
         project_sandbox(),
-        VmProgram::AgentBinary { agent: Agent::Pi },
+        VmProgram::Agent { agent: Agent::Pi },
     );
     assert_eq!(
         banner_line(&pi, "it").as_deref(),
@@ -85,19 +81,18 @@ fn the_banner_names_the_sandbox() {
     );
     let claude = vm(
         Level::Agent,
-        Sandbox::Agent {
-            name: "atollo-a-claude-shop-x".into(),
-            agent: Agent::Claude,
-        },
-        VmProgram::SbxAgent {
+        project_sandbox(),
+        VmProgram::Agent {
             agent: Agent::Claude,
         },
     );
     assert_eq!(
         banner_line(&claude, "en").as_deref(),
-        Some("[Atollo] Agent · VM: claude in atollo-a-claude-shop-x")
+        Some("[Atollo] Agent · VM: claude in atollo-p-shop-x")
     );
     assert_eq!(banner_line(&pc(Level::Manual), "it"), None);
+    let tools = vm(Level::Agent, project_sandbox(), VmProgram::Tools);
+    assert_eq!(banner_line(&tools, "it"), None);
 }
 
 /// A refusal says why and what to do; without the VM, its reasons too.
@@ -132,30 +127,27 @@ fn a_session_label_names_its_sandbox() {
     let pi = vm(
         Level::Agent,
         project_sandbox(),
-        VmProgram::AgentBinary { agent: Agent::Pi },
+        VmProgram::Agent { agent: Agent::Pi },
     );
     let at = SessionLabel::of(&pi).unwrap();
-    assert_eq!(at, SessionLabel::vm(Level::Agent, "atollo-p-shop-x"));
+    assert_eq!(at, SessionLabel::vm("atollo-p-shop-x"));
     assert_eq!(at.label, LevelLabel::AgentVm);
     assert_eq!(at.text("it"), "Agente · VM");
     let at = SessionLabel::of(&pc(Level::Project)).unwrap();
     assert_eq!(at, SessionLabel::pc(Level::Project));
     assert_eq!(at.sandbox, None);
-    assert_eq!(at.text("en"), "PC · no VM");
+    assert_eq!(at.text("en"), "PC");
     assert_eq!(SessionLabel::pc(Level::Manual).text("it"), "PC");
     let claude = vm(
         Level::Agent,
-        Sandbox::Agent {
-            name: "atollo-a-claude-shop-x".into(),
-            agent: Agent::Claude,
-        },
-        VmProgram::SbxAgent {
+        project_sandbox(),
+        VmProgram::Agent {
             agent: Agent::Claude,
         },
     );
     assert_eq!(
         SessionLabel::of(&claude),
-        Some(SessionLabel::vm(Level::Agent, "atollo-a-claude-shop-x"))
+        Some(SessionLabel::vm("atollo-p-shop-x"))
     );
     let refused = Placement::Refused {
         level: Level::Agent,

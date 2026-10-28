@@ -833,8 +833,7 @@ fn agents_are_never_planned_without_the_vm() {
     }
 }
 
-/// Q11: with the VM on, Pi and Antigravity only for the VM's Linux;
-/// Claude Code and Codex never downloaded (the `sbx` images bring them).
+/// Q11, D-184: with the VM on, every agent only for the VM's Linux.
 #[test]
 fn agents_only_for_the_vms_linux() {
     let on = Some(crate::levels::VmState::On);
@@ -847,10 +846,7 @@ fn agents_only_for_the_vms_linux() {
             };
             for opts in [vm(on.clone()), tools] {
                 let p = plan(ctx, catalog, &all_agents(), &opts).unwrap();
-                for id in ["claude", "codex"] {
-                    assert!(!p.handle.contains(&id.into()), "{target} {id}");
-                }
-                for id in ["pi", "antigravity"] {
+                for id in ["claude", "codex", "pi", "antigravity"] {
                     let available = catalog.find(id).unwrap().is_available_on(target);
                     assert_eq!(
                         p.handle.contains(&id.into()),

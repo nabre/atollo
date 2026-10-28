@@ -40,7 +40,7 @@ type Act = "install" | "update" | null;
 
 function actOf(c: ComponentInfo, st: ToolStatus): Act {
   if (st.state === "update") return "update";
-  // An agent (LEVELS.md §7): «fornito dalla VM», «serve la VM».
+  // An agent (LEVELS.md §7): «serve la VM».
   if (st.state !== "missing" || c.agent !== null) return null;
   // As the row of «Tutti gli strumenti»: nothing when not made or not
   // needed here (D-177).

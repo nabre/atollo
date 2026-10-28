@@ -338,12 +338,12 @@ fn the_agents_rows_of_the_tools_page() {
             .find(|c| c.id == id)
             .unwrap()
     };
-    for vm in [VmState::On, off.clone()] {
-        for id in ["claude", "codex"] {
-            let c = row(&vm, id);
-            assert_eq!(c.agent, Some(AgentRow::Provided), "{id}");
-            assert!(!c.available && !c.leftover, "{id}");
-        }
+    // Claude Code and Codex as Pi (D-184): a row of the VM without it.
+    for id in ["claude", "codex"] {
+        let c = row(&off, id);
+        assert!(matches!(c.agent, Some(AgentRow::NeedsVm { .. })), "{id}");
+        assert!(!c.available && !c.leftover, "{id}");
+        assert_eq!(row(&VmState::On, id).agent, None, "{id}");
     }
     let pi = row(&off, "pi");
     let Some(AgentRow::NeedsVm { reason }) = &pi.agent else {
@@ -368,6 +368,6 @@ fn the_agents_rows_of_the_tools_page() {
     assert!(pi.installed && pi.leftover);
     assert_eq!(pi.version.as_deref(), Some("0.70.2"));
     let json = serde_json::to_value(row(&off, "claude")).unwrap();
-    assert_eq!(json["agent"], serde_json::json!({"kind": "provided"}));
+    assert_eq!(json["agent"]["kind"], "needsVm");
     assert_eq!(json["leftover"], false);
 }

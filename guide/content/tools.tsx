@@ -180,10 +180,10 @@ export const TOOLS: TopicTexts = {
             [
               tr("Agenti AI", "AI agents", "Agents IA", "KI-Agenten"),
               tr(
-                "Claude Code, Codex, Antigravity, Pi, solo per la VM: Claude Code e Codex «fornito dalla VM» (arrivano con la loro sandbox), Pi e Antigravity installati per il Linux della VM, sempre all'ultima versione. Senza VM: «serve la VM».",
-                "Claude Code, Codex, Antigravity, Pi, for the VM only: Claude Code and Codex “provided by the VM” (they come with their sandbox), Pi and Antigravity installed for the VM's Linux, always at the latest version. Without the VM: “needs the VM”.",
-                "Claude Code, Codex, Antigravity, Pi, seulement pour la VM : Claude Code et Codex « fourni par la VM » (ils arrivent avec leur sandbox), Pi et Antigravity installés pour le Linux de la VM, toujours à la dernière version. Sans VM : « nécessite la VM ».",
-                "Claude Code, Codex, Antigravity, Pi, nur für die VM: Claude Code und Codex „von der VM bereitgestellt“ (sie kommen mit ihrer Sandbox), Pi und Antigravity für das Linux der VM installiert, immer in der neuesten Version. Ohne VM: „braucht die VM“.",
+                "Claude Code, Codex, Antigravity, Pi, solo per la VM: installati per il Linux della VM, sempre all'ultima versione. Senza VM: «serve la VM».",
+                "Claude Code, Codex, Antigravity, Pi, for the VM only: installed for the VM's Linux, always at the latest version. Without the VM: “needs the VM”.",
+                "Claude Code, Codex, Antigravity, Pi, seulement pour la VM : installés pour le Linux de la VM, toujours à la dernière version. Sans VM : « nécessite la VM ».",
+                "Claude Code, Codex, Antigravity, Pi, nur für die VM: für das Linux der VM installiert, immer in der neuesten Version. Ohne VM: „braucht die VM“.",
               ),
             ],
             [

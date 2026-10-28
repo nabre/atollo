@@ -193,7 +193,9 @@ fn terminals_are_level_one() {
 fn tasks_and_agents_go_through_launch() {
     use crate::kit::Target;
     let (_t, kit) = kit_on("cfg-launch", Target::WIN32_X64, &["pwsh/pwsh.exe"]);
-    guest_agent(&kit, "pi");
+    for id in ["pi", "claude", "codex"] {
+        guest_agent(&kit, id);
+    }
     let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     let p = &s["terminal.integrated.profiles.windows"];
     let tasks = &s["terminal.integrated.automationProfile.windows"];
@@ -214,7 +216,7 @@ fn tasks_and_agents_go_through_launch() {
     assert_eq!(
         client_of(&p["Codex"]),
         Some("launch.ps1"),
-        "brought by the VM"
+        "its build for the VM's Linux"
     );
     assert!(
         p.get("Antigravity").is_none(),
@@ -223,6 +225,7 @@ fn tasks_and_agents_go_through_launch() {
 
     // Without the kit's PowerShell: Git Bash with launch.sh.
     let (_t, kit) = kit_on("cfg-launch-sh", Target::WIN32_X64, &["git/bin/bash.exe"]);
+    guest_agent(&kit, "claude");
     let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     let tasks = &s["terminal.integrated.automationProfile.windows"];
     assert_eq!(client_of(tasks), Some("launch.sh"));
@@ -233,6 +236,7 @@ fn tasks_and_agents_go_through_launch() {
 
     // macOS with the kit's PowerShell, Linux without.
     let (_t, mac) = kit_on("cfg-launch-mac", Target::DARWIN_ARM64, &["pwsh/pwsh"]);
+    guest_agent(&mac, "codex");
     let s = merge(&Map::new(), &mac, Path::new(r"C:\Windows"), true);
     assert_eq!(
         client_of(&s["terminal.integrated.automationProfile.osx"]),
@@ -243,6 +247,7 @@ fn tasks_and_agents_go_through_launch() {
         Some("launch.ps1")
     );
     let (_t, linux) = kit_on("cfg-launch-linux", Target::LINUX_X64, &[]);
+    guest_agent(&linux, "claude");
     let s = merge(&Map::new(), &linux, Path::new(r"C:\Windows"), true);
     let tasks = &s["terminal.integrated.automationProfile.linux"];
     assert_eq!(tasks["path"], SH);
@@ -413,6 +418,8 @@ fn linux_profiles_bash_of_the_system_no_cmd() {
     use crate::kit::Target;
     // Git of the kit has no shell on Linux: its key is git/bin/git.
     let (_t, kit) = kit_on("cfg-linux", Target::LINUX_X64, &["git/bin/git"]);
+    guest_agent(&kit, "claude");
+    guest_agent(&kit, "codex");
     write(&kit, Path::new(r"C:\Windows"), true).unwrap();
     let s = read(&kit);
     assert!(s.get("terminal.integrated.profiles.windows").is_none());
@@ -457,7 +464,9 @@ fn macos_profiles_pwsh_default_zsh_and_agents() {
     assert!(s["terminal.integrated.profiles.osx"]
         .get("Antigravity")
         .is_none());
-    guest_agent(&kit, "antigravity");
+    for id in ["antigravity", "claude", "codex"] {
+        guest_agent(&kit, id);
+    }
     let s = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), true);
     assert_eq!(
         shown(&s, "terminal.integrated.profiles.osx"),
@@ -502,8 +511,8 @@ fn guest_agent(kit: &Kit, id: &str) {
 }
 
 /// LEVELS.md §7 (I6): without the VM no agent profile at all, whatever is
-/// installed; with it, Claude Code and Codex (the `sbx` images bring them)
-/// and the agents whose build for the VM's Linux is in the kit, never one
+/// installed; with it, the agents whose build for the VM's Linux is in the
+/// kit (D-184: Claude Code and Codex too), never one
 /// installed for the PC. A default on an agent's profile falls back to
 /// «Atollo»; the profiles come back at the editor's next start.
 #[test]
@@ -514,7 +523,9 @@ fn no_agent_profile_without_the_vm() {
         Target::WIN32_X64,
         &["pwsh/pwsh.exe", "pi/pi.exe", "claude/claude.exe"],
     );
-    guest_agent(&kit, "antigravity");
+    for id in ["antigravity", "claude", "codex"] {
+        guest_agent(&kit, id);
+    }
     let agents = ["Antigravity", "Claude Code", "Codex", "Pi"];
     let off = merge(&Map::new(), &kit, Path::new(r"C:\Windows"), false);
     let p = &off["terminal.integrated.profiles.windows"];

@@ -111,7 +111,7 @@ fn act_and_report(
     input: &mut dyn BufRead,
 ) -> i32 {
     let dir = kit.projects().join(&args.project);
-    let req = report::sandbox_request(kit, &dir, args.agent);
+    let req = report::sandbox_request(kit, &dir);
     let mut failed = false;
     if let Some(action) = args.action {
         if !closed {
@@ -126,7 +126,7 @@ fn act_and_report(
             );
             return 1;
         }
-        let name = sandbox_name(&args.project, args.agent);
+        let name = vm::name(&args.project);
         if action == VmAction::Recreate && !confirm_recreate(&name, args.yes, lang, out, input) {
             let _ = writeln!(out, "  · {}", t(lang, "Nulla è cambiato.", &[]));
             return 1;
@@ -154,12 +154,7 @@ fn act_and_report(
     }
     let mut report = report_of(kit, kit_env, host, lang, &args.project);
     if args.check && report.vm == VmOnOff::On {
-        for s in report
-            .sandboxes
-            .iter_mut()
-            .filter(|s| args.agent.is_none() || s.agent == args.agent)
-        {
-            let req = report::sandbox_request(kit, &dir, s.agent);
+        for s in &mut report.sandboxes {
             let facts = crate::levels::facts::facts(kit, host, kit_env, &req);
             if let Err(e) = report::check(kit, host, kit_env, &req, &facts, &args.project, s, lang)
             {
@@ -179,17 +174,9 @@ fn act_and_report(
             }
         }
     } else {
-        let _ = print_report(&report, args.agent, lang, out);
+        let _ = print_report(&report, lang, out);
     }
-    i32::from(failed || !all_good(&report, args.agent))
-}
-
-/// The sandbox an action takes: the project's, or the agent's own.
-pub fn sandbox_name(project: &str, agent: Option<crate::levels::Agent>) -> String {
-    match agent {
-        Some(a) => vm::agent_name(project, a.id()),
-        None => vm::name(project),
-    }
+    i32::from(failed || !all_good(&report))
 }
 
 /// The report of `project` from the PC, without the app: no sessions and
@@ -263,14 +250,13 @@ fn done_text(action: VmAction, name: &str, lang: &str) -> String {
     }
 }
 
-/// True when the VM is on, the sandbox asked (the project's, or `agent`'s)
-/// is there, and every tool checked is `ok` (or not meant for the VM).
-pub fn all_good(report: &VmReport, agent: Option<crate::levels::Agent>) -> bool {
+/// True when the VM is on, the project's sandbox is there, and every tool
+/// checked is `ok` (or not meant for the VM).
+pub fn all_good(report: &VmReport) -> bool {
     report.vm == VmOnOff::On
         && report
             .sandboxes
             .iter()
-            .filter(|s| s.agent == agent)
             .all(|s| s.state != SandboxRun::Missing)
         && report.sandboxes.iter().all(|s| {
             s.tools.as_ref().is_none_or(|tools| {
@@ -281,14 +267,9 @@ pub fn all_good(report: &VmReport, agent: Option<crate::levels::Agent>) -> bool 
         })
 }
 
-/// The report as text: each sandbox (only `agent`'s with `--agent`) with
-/// its state, mounts, ports and tools.
-pub fn print_report(
-    report: &VmReport,
-    agent: Option<crate::levels::Agent>,
-    lang: &str,
-    out: &mut dyn Write,
-) -> std::io::Result<()> {
+/// The report as text: the project's sandbox with its state, mounts, ports
+/// and tools.
+pub fn print_report(report: &VmReport, lang: &str, out: &mut dyn Write) -> std::io::Result<()> {
     writeln!(
         out,
         "── {} ──",
@@ -300,11 +281,7 @@ pub fn print_report(
             writeln!(out, "    {}", reason.replace('\n', "\n    "))?;
         }
     }
-    for s in report
-        .sandboxes
-        .iter()
-        .filter(|s| agent.is_none() || s.agent == agent)
-    {
+    for s in &report.sandboxes {
         print_sandbox(s, lang, out)?;
     }
     writeln!(
@@ -327,9 +304,7 @@ fn state_text(state: SandboxRun, lang: &str) -> String {
 }
 
 fn print_sandbox(s: &SandboxReport, lang: &str, out: &mut dyn Write) -> std::io::Result<()> {
-    let whose = s
-        .agent
-        .map_or_else(|| t(lang, "Progetto", &[]), |a| a.name().to_owned());
+    let whose = t(lang, "Progetto", &[]);
     writeln!(out)?;
     writeln!(out, "  {whose}: {} ({})", s.name, state_text(s.state, lang))?;
     for m in &s.mounts {

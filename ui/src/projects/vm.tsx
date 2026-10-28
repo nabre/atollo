@@ -1,5 +1,5 @@
-// «VM del progetto» (D-179, docs/app/LEVELS.md §8.1, §8.2, §8.5): each
-// sandbox of the project (its own, then each agent's) with its state, the
+// «VM del progetto» (D-179, docs/app/LEVELS.md §8.1, §8.2, §8.5): the
+// sandbox of the project (every agent in it, D-184) with its state, the
 // folders it mounts (rw/ro), the PC's ports it reaches, the tools found by
 // «Verifica strumenti», and its four actions: «Riavvia», «Ricrea» (asked
 // here first: what is lost, what stays), «Aggiorna strumenti»,
@@ -15,7 +15,6 @@ import {
   type VmAction,
   type VmReport,
 } from "../ipc/levels";
-import type { AgentId } from "../ipc/agents";
 import { useAction, useLoad } from "../shared/hooks";
 import { ActionButton, ErrorLine } from "../shared/common";
 import { openVmNotice } from "../shared/levels";
@@ -23,16 +22,9 @@ import { SandboxPill } from "../shell/isolation";
 import { t } from "../i18n";
 import { codicon, ConfirmDialog, DataTable, EditorSection, IconButton, Link, Notice } from "../workbench";
 
-const AGENT_NAMES: Record<AgentId, string> = {
-  claude: "Claude Code",
-  codex: "Codex",
-  pi: "Pi",
-  antigravity: "Antigravity",
-};
-
-/** Whose sandbox it is, as the panel titles it. */
-function whose(s: SandboxReport): string {
-  return s.agent ? t("Sandbox di {0}", AGENT_NAMES[s.agent]) : t("Sandbox del progetto");
+/** How the panel titles the sandbox. */
+function whose(): string {
+  return t("Sandbox del progetto");
 }
 
 export function ProjectVm({ project }: { project: string }) {
@@ -90,16 +82,16 @@ function SandboxCard({
   const [asked, setAsked] = useState<VmAction | null>(null);
   const act = (action: VmAction) => {
     setAsked(null);
-    actions.run(action, () => projectVmAction(project, s.agent, action).then(() => undefined));
+    actions.run(action, () => projectVmAction(project, action).then(() => undefined));
   };
   const check = () => {
-    checks.run("check", () => projectVmCheck(project, s.agent).then(onChecked));
+    checks.run("check", () => projectVmCheck(project).then(onChecked));
   };
   const off = !on || busy !== null;
   return (
-    <section aria-label={whose(s)} className="space-y-vsc-size40">
+    <section aria-label={whose()} className="space-y-vsc-size40">
       <div className="flex flex-wrap items-center gap-vsc-size80">
-        <span className="font-vsc-semibold text-vsc-fg">{whose(s)}</span>
+        <span className="font-vsc-semibold text-vsc-fg">{whose()}</span>
         <SandboxPill state={s.state} busy={busy !== null && busy !== "check"} />
         <code className="min-w-0 truncate text-[12px] text-vsc-desc" title={s.name}>
           {s.name}
@@ -173,7 +165,7 @@ function SandboxCard({
       {s.tools && <ToolsTable tools={s.tools} />}
       {asked && (
         <ConfirmDialog
-          title={asked === "recreate" ? t("Ricreare {0}?", whose(s)) : t("Riavviare {0}?", whose(s))}
+          title={asked === "recreate" ? t("Ricreare {0}?", whose()) : t("Riavviare {0}?", whose())}
           cancelLabel={t("Annulla")}
           onCancel={() => {
             setAsked(null);

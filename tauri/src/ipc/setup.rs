@@ -45,9 +45,8 @@ pub struct ComponentInfo {
     /// Bootstrap archives pre-downloaded for this target; finishes installing
     /// on first start on that OS.
     pub bootstrap_staged: bool,
-    /// An agent's row (LEVELS.md §7, Q11): «fornito dalla VM» (Claude Code,
-    /// Codex), «serve la VM» with the reason (Pi, Antigravity without the
-    /// VM); `None` for every other component. With one, `available` is
+    /// An agent's row (LEVELS.md §7, Q11): «serve la VM» with the reason
+    /// (without the VM); `None` for every other component. With one, `available` is
     /// false: nothing to install or update.
     pub agent: Option<crate::levels::agents::AgentRow>,
     /// An agent's folder for a system where the kit no longer keeps it (an
@@ -255,9 +254,8 @@ pub(super) fn xcode_missing(
 /// The catalog as the "Linguaggi e strumenti" page shows it, from this PC:
 /// a component with an `unavailableReason` is not available on this
 /// target (see [`unavailable_reason`]). The agents with the VM as `vm`
-/// says (LEVELS.md §7): Pi and Antigravity as installed for the VM's Linux
-/// (their only build the kit keeps, Q11), Claude Code and Codex brought by
-/// the VM; nothing of them installable without it.
+/// says (LEVELS.md §7): as installed for the VM's Linux (their only build
+/// the kit keeps, Q11, D-184); nothing of them installable without it.
 pub(super) fn component_infos(
     kit: &Kit,
     lang: &str,
@@ -309,12 +307,11 @@ pub(super) fn component_infos(
         .collect()
 }
 
-/// Where the Tools page reads `c`'s state for `kit`: Pi's and
-/// Antigravity's on the VM's Linux of `kit`'s system (the only build the
-/// kit keeps, Q11; the same kit on Linux), `kit` for anything else.
+/// Where the Tools page reads `c`'s state for `kit`: an agent's on the
+/// VM's Linux of `kit`'s system (the only build the kit keeps, Q11, D-184;
+/// the same kit on Linux), `kit` for anything else.
 fn agent_kit(kit: &Kit, c: &crate::setup::Component) -> Kit {
     let guest = crate::levels::agents::agent_of(c)
-        .filter(|a| a.runner() == crate::levels::AgentRunner::ProjectVm)
         .and_then(|_| crate::isolation::vm::guest_target(kit.target()))
         .filter(|g| *g != kit.target());
     match guest {

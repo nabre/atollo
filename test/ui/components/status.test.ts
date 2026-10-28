@@ -64,7 +64,7 @@ describe("tool status", () => {
     expect(shownStatus(c, off, false, null, "linux-arm64")).toEqual({ state: "missing", detail: why });
   });
 
-  it("says «fornito dalla VM», «serve la VM» and an install for the PC to remove (LEVELS.md §7)", () => {
+  it("says «serve la VM» and an install for the PC to remove (LEVELS.md §7)", () => {
     const agent = (extra: Partial<ComponentInfo>) =>
       component({ id: "pi", name: "Pi", group: "agents", locked: false, notNeeded: null, ...extra });
     const reason = "Gli agenti girano solo nella VM, che non è attiva.";
@@ -72,17 +72,7 @@ describe("tool status", () => {
       state: "needsVm",
       detail: reason,
     });
-    const claude = shownStatus(
-      agent({ id: "claude", name: "Claude Code", agent: { kind: "provided" } }),
-      undefined,
-      true,
-      null,
-      "win32-x64",
-    );
-    expect(claude.state).toBe("provided");
-    expect(claude.detail).toContain("Docker Sandboxes");
     expect(shownStatus(agent({ leftover: true }), undefined, true, null, "win32-x64").state).toBe("toRemove");
     expect(toolStateLabel("needsVm")).toBe("serve la VM");
-    expect(toolStateLabel("provided")).toBe("fornito dalla VM");
   });
 });

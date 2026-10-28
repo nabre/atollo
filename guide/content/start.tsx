@@ -687,10 +687,10 @@ export const START: TopicTexts = {
                 "Claude Code, Codex, Antigravity und Pi.",
               ),
               tr(
-                "Facoltativi, e solo per la VM: Claude Code e Codex arrivano con la loro sandbox, Pi e Antigravity si installano per il Linux della VM; senza VM non si installa nessun agente. Servono un abbonamento o una chiave API del fornitore; Pi può usare i modelli locali, senza account.",
-                "Optional, and for the VM only: Claude Code and Codex come with their sandbox, Pi and Antigravity are installed for the VM's Linux; without the VM no agent is installed. They require a subscription or an API key from the provider; Pi can use the local models, with no account.",
-                "Facultatifs, et seulement pour la VM : Claude Code et Codex arrivent avec leur sandbox, Pi et Antigravity s'installent pour le Linux de la VM ; sans VM, aucun agent ne s'installe. Il faut un abonnement ou une clé API du fournisseur ; Pi peut utiliser les modèles locaux, sans compte.",
-                "Optional, und nur für die VM: Claude Code und Codex kommen mit ihrer Sandbox, Pi und Antigravity werden für das Linux der VM installiert; ohne VM wird kein Agent installiert. Sie erfordern ein Abonnement oder einen API-Schlüssel des Anbieters; Pi kann die lokalen Modelle verwenden, ohne Konto.",
+                "Facoltativi, e solo per la VM: Claude Code, Codex, Pi e Antigravity si installano per il Linux della VM; senza VM non si installa nessun agente. Servono un abbonamento o una chiave API del fornitore; Pi può usare i modelli locali, senza account.",
+                "Optional, and for the VM only: Claude Code, Codex, Pi and Antigravity are installed for the VM's Linux; without the VM no agent is installed. They require a subscription or an API key from the provider; Pi can use the local models, with no account.",
+                "Facultatifs, et seulement pour la VM : Claude Code, Codex, Pi et Antigravity s'installent pour le Linux de la VM ; sans VM, aucun agent ne s'installe. Il faut un abonnement ou une clé API du fournisseur ; Pi peut utiliser les modèles locaux, sans compte.",
+                "Optional, und nur für die VM: Claude Code, Codex, Pi und Antigravity werden für das Linux der VM installiert; ohne VM wird kein Agent installiert. Sie erfordern ein Abonnement oder einen API-Schlüssel des Anbieters; Pi kann die lokalen Modelle verwenden, ohne Konto.",
               ),
             ],
             [

@@ -26,7 +26,6 @@ export const TOOL_STATES = [
   "missing",
   "notNeeded",
   "needsVm",
-  "provided",
 ] as const;
 
 export type ToolState = (typeof TOOL_STATES)[number];
@@ -43,7 +42,6 @@ const LOOK: Record<ToolState, { icon: IconType; tone: string; spin?: boolean }> 
   missing: { icon: codicon("circle-large"), tone: "text-vsc-desc" },
   notNeeded: { icon: codicon("dash"), tone: "text-vsc-desc" },
   needsVm: { icon: codicon("vm"), tone: "text-vsc-desc" },
-  provided: { icon: codicon("vm-active"), tone: "text-vsc-link" },
 };
 
 export function toolStateLabel(state: ToolState): string {
@@ -59,7 +57,6 @@ export function toolStateLabel(state: ToolState): string {
     missing: t("non esiste"),
     notNeeded: t("non serve"),
     needsVm: t("serve la VM"),
-    provided: t("fornito dalla VM"),
   }[state];
 }
 
@@ -87,9 +84,8 @@ export function shownStatus(
   if (item?.kind === "queued") return { state: "queued", detail: null };
   if (item?.kind === "problem") return { state: "error", detail: item.text };
   // An agent (LEVELS.md §7, Q11): an install for the PC goes with «Applica»;
-  // Claude Code and Codex come with the VM; Pi and Antigravity need it.
+  // every agent needs the VM (D-184).
   if (c.leftover) return { state: "toRemove", detail: leftoverText() };
-  if (c.agent?.kind === "provided") return { state: "provided", detail: providedText(c.name) };
   if (c.agent?.kind === "needsVm") return { state: "needsVm", detail: c.agent.reason };
   if (on !== (c.chosen || c.locked)) return { state: on ? "toInstall" : "toRemove", detail: null };
   if (c.installed) return { state: s?.needsReinstall ? "update" : "installed", detail: null };
@@ -106,11 +102,6 @@ export function leftoverText(): string {
   return t(
     "Installato per il PC da una versione precedente di Atollo: gli agenti girano solo nella VM, si toglie con «Applica».",
   );
-}
-
-/** What Claude Code's or Codex's row says. */
-export function providedText(name: string): string {
-  return t("{0} arriva con la sua sandbox di Docker Sandboxes: Atollo non lo scarica.", name);
 }
 
 /** Something on disk but not all: a download or an installation that did

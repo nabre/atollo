@@ -245,17 +245,13 @@ const AGENT_PROFILES: [(&str, &str, &str); 4] = [
     ("Pi", "pi", "symbol-constant"),
 ];
 
-/// True when `agent` can start in the VM (LEVELS.md §7, Q11): Claude Code
-/// and Codex always (the `sbx` images bring them), Pi and Antigravity once
-/// their build for the VM's Linux is in the kit. What the PC's folder has
-/// does not count: no agent runs on the PC.
+/// True when `agent` can start in the VM (LEVELS.md §7, Q11, D-184): its
+/// build for the VM's Linux is in the kit. What the PC's folder has does
+/// not count: no agent runs on the PC.
 fn has_agent(kit: &Kit, agent: &str) -> bool {
     let Some(agent) = crate::levels::Agent::from_id(agent) else {
         return false;
     };
-    if agent.runner() == crate::levels::AgentRunner::SbxAgent {
-        return true;
-    }
     crate::isolation::vm::guest_target(kit.target()).is_some_and(|t| {
         crate::setup::Catalog::get()
             .find(agent.id())

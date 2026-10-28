@@ -21,42 +21,34 @@ use super::prepare::Ready;
 use super::{Agent, Placement, VmProgram};
 
 /// The arguments of `sbx` for the agent's session of the `Vm` placement of
-/// `ready` (its sandbox started by `prepare`): Claude Code or Codex in their
-/// sandbox (`SbxAgent`, which asks the sandbox its image's `PATH`), Pi's or
-/// Antigravity's Linux build in the project's (`AgentBinary`,
-/// `vm::pi_session_args`, `vm::agy_session_args`). `extra`: what the user
-/// typed after the agent's command (a forwarder, §6.8), after `--` for
-/// `sbx run` **[unverified, Q4]**.
+/// `ready` (its sandbox started by `prepare`): the agent's Linux build from
+/// the kit in the project's sandbox (D-184, `vm::agent_session_args`).
+/// `extra`: what the user typed after the agent's command (a forwarder,
+/// §6.8), after the program.
 pub fn vm_session_args(kit: &Kit, ready: &Ready, extra: &[String]) -> Result<Vec<String>> {
     let (
         Placement::Vm {
             workdir, program, ..
         },
         Some(vm),
-        Environment::Vm { sbx_env, .. },
+        Environment::Vm { .. },
     ) = (&ready.placement, &ready.vm, &ready.env)
     else {
         bail!("levels: not a session in a VM");
     };
     match program {
-        VmProgram::SbxAgent { .. } => {
-            let mut args = vm.agent_session_args(sbx_env)?;
-            if !extra.is_empty() {
-                args.push("--".into());
-                args.extend(extra.iter().cloned());
-            }
-            Ok(args)
-        }
-        VmProgram::AgentBinary { agent } => {
-            let session = match agent {
-                Agent::Pi => vm::pi_session_args,
-                Agent::Antigravity => vm::agy_session_args,
-                Agent::Claude | Agent::Codex => bail!("{}: an agent of sbx", agent.id()),
-            };
+        VmProgram::Agent { agent } => {
             let program = vm::guest_target(kit.target())
                 .and_then(|t| isolation::agent_in_vm(kit, &kit.for_target(t), agent.id()))
                 .ok_or_else(|| anyhow!("{}: no build for the VM's Linux", agent.id()))?;
-            Ok(session(&vm.name, workdir, &program, vm.tools(), extra))
+            Ok(vm::agent_session_args(
+                &vm.name,
+                workdir,
+                agent.id(),
+                &program,
+                vm.tools(),
+                extra,
+            ))
         }
         VmProgram::Tools => bail!("levels: the sandbox's tools open no session"),
     }
@@ -101,7 +93,7 @@ pub fn open_terminal<R: Runtime>(
     let pi = match (&ready.placement, &ready.vm) {
         (
             Placement::Vm {
-                program: VmProgram::AgentBinary { agent: Agent::Pi },
+                program: VmProgram::Agent { agent: Agent::Pi },
                 ..
             },
             Some(vm),

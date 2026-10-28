@@ -212,26 +212,16 @@ fn pty_info_serializes_its_level_label_and_sandbox() {
     use crate::levels::labels::SessionLabel;
     use crate::levels::Level;
     let sessions = Sessions::default();
-    let vm = sessions.insert_at(
-        "shop · VM".into(),
-        Path::new("/p/shop"),
-        SessionLabel::vm(Level::Project, "atollo-p-shop-1a2b"),
-        Box::new(FakeIo::new(1)),
-    );
-    let json = serde_json::to_value(vm.info()).unwrap();
-    assert_eq!(json["level"], "project");
-    assert_eq!(json["label"], "projectVm");
-    assert_eq!(json["sandbox"], "atollo-p-shop-1a2b");
     let agent = sessions.insert_at(
         "shop · claude".into(),
         Path::new("/p/shop"),
-        SessionLabel::vm(Level::Agent, "atollo-a-claude-shop-1a2b"),
+        SessionLabel::vm("atollo-p-shop-1a2b"),
         Box::new(FakeIo::new(2)),
     );
-    assert_eq!(
-        serde_json::to_value(agent.info()).unwrap()["label"],
-        "agentVm"
-    );
+    let json = serde_json::to_value(agent.info()).unwrap();
+    assert_eq!(json["level"], "agent");
+    assert_eq!(json["label"], "agentVm");
+    assert_eq!(json["sandbox"], "atollo-p-shop-1a2b");
     let pc = sessions.insert_at(
         "shop · pwsh".into(),
         Path::new("/p/shop"),
