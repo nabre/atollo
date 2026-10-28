@@ -398,7 +398,8 @@ impl VmEffects for CliVm<'_> {
         else {
             return Ok(());
         };
-        let wanted = crate::levels::prepare::wanted_tools(self.kit, &project, Some(&program), &[]);
+        let wanted =
+            crate::levels::prepare::wanted_tools(self.kit, project.as_deref(), Some(&program), &[]);
         for opts in crate::levels::prepare::guest_plans(&guest, &wanted) {
             let code = super::cli::run_plan(
                 self.kit,

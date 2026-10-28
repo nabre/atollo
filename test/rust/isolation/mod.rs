@@ -74,12 +74,13 @@ fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
         r#"[{{"name":"{shop}","status":"running","last_used_at":"2026-10-25T17:40:30Z"}},
             {{"name":"claude-mine","status":"stopped"}},
             {{"name":"atollo-t-default-0123","status":"stopped"}},
-            {{"name":"atollo-a-claude-shop-0123","status":"stopped"}}]"#
+            {{"name":"atollo-a-claude-shop-0123","status":"stopped"}},
+            {{"name":"atollo-f-sites-0123","status":"stopped"}}]"#
     );
     let vms = vms_of(&kit, &json);
     assert_eq!(
         vms.len(),
-        1,
+        2,
         "the user's own sandbox is not Atollo's; a kit terminal's (D-178) and an agent's own (D-184) are never listed"
     );
     assert_eq!(
@@ -87,6 +88,10 @@ fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
         ["atollo-t-default-0123", "atollo-a-claude-shop-0123"]
     );
     assert!(legacy_vms_in("not json").is_empty());
+    assert_eq!(
+        vms[1].name, "atollo-f-sites-0123",
+        "a folder's (D-187) is listed, never removed as legacy"
+    );
     assert_eq!(vms[0].name, shop);
     assert_eq!(vms[0].owner, Some(owner));
     assert_eq!(vms[0].status, "running");
@@ -135,7 +140,7 @@ fn a_project_gets_the_kits_tools_for_linux_in_its_vm() {
     }
     crate::db::auth::set_project_password(&kit, "shop", "mysql", "pw").unwrap();
     let base = KitEnv::build(&guest, &Default::default(), "it", &Host::default());
-    let tools = project_guest_tools(&kit, &guest, "shop", base);
+    let tools = project_guest_tools(&kit, &guest, Some("shop"), base);
     // The folders the VM mounts read-only: the kit's Linux tools and the
     // global packages of npm (pnpm, yarn, D-180).
     let mounted: Vec<String> = crate::install::guest::vm_mounts(&guest)
@@ -664,5 +669,44 @@ fn a_failed_installation_of_sbx_is_told() {
     assert_eq!(
         serde_json::to_value(Blocker::SbxMissing { failed: None }).unwrap(),
         serde_json::json!({ "code": "sbx_missing" })
+    );
+}
+
+/// D-168, D-187: a folder that is not a project may be a sandbox's
+/// workspace, never the kit, the user's profile, `projects/` or a drive's
+/// root; what is checked is the canonical path, the one mounted.
+#[test]
+fn a_folder_may_be_a_workspace_away_from_the_kit_and_the_profile() {
+    use crate::kit::tests::TempDir;
+    let (_tmp, kit) = crate::test_support::prepared_kit("isolation-workspace");
+    let profile = TempDir::new("isolation-workspace-home");
+    let elsewhere = TempDir::new("isolation-workspace-sites");
+    let site = elsewhere.0.join("shop");
+    std::fs::create_dir_all(&site).unwrap();
+    std::fs::create_dir_all(profile.0.join("code")).unwrap();
+    let home = profile.0.display().to_string();
+    let host = Host::from_pairs(
+        [("USERPROFILE", home.as_str()), ("HOME", home.as_str())]
+            .map(|(k, v)| (k.into(), v.into())),
+    );
+    let canon = plain(&std::fs::canonicalize(&site).unwrap());
+    assert_eq!(vm_workspace(&kit, &host, &site), Some(canon));
+    for refused in [
+        kit.root().to_path_buf(),
+        kit.projects(),
+        kit.root().join("data"),
+        profile.0.clone(),
+        profile.0.join("code"),
+        // A folder holding the profile or the kit.
+        profile.0.parent().unwrap().to_path_buf(),
+    ] {
+        std::fs::create_dir_all(&refused).unwrap();
+        assert_eq!(vm_workspace(&kit, &host, &refused), None, "{refused:?}");
+    }
+    let root = site.ancestors().last().unwrap().to_path_buf();
+    assert_eq!(vm_workspace(&kit, &host, &root), None, "a drive's root");
+    assert_eq!(
+        vm_workspace(&kit, &host, std::path::Path::new("shop")),
+        None
     );
 }

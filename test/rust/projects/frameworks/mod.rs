@@ -95,3 +95,29 @@ fn broken_file_is_reported_not_replaced() {
     assert!(loaded.problem.is_some());
     assert_eq!(loaded.pieces, official());
 }
+
+/// A creation's line asks no question and has no time limit on Composer's
+/// scripts: Laravel's starter kits run `npm install` and a build inside
+/// `artisan install:features`, over Composer's 300 s on a slow disk.
+#[test]
+fn a_creation_line_has_no_composer_timeout() {
+    let kit = crate::kit::Kit::at_target("kit".into(), crate::kit::Target::WIN32_X64);
+    let cmd = line_command(
+        &kit,
+        &crate::env::KitEnv::default(),
+        &[],
+        std::path::Path::new("."),
+        "composer create-project laravel/react-starter-kit app",
+    );
+    let env: Vec<(String, String)> = cmd
+        .get_envs()
+        .filter_map(|(k, v)| Some((k.to_str()?.to_owned(), v?.to_str()?.to_owned())))
+        .collect();
+    for (k, v) in [
+        ("COMPOSER_PROCESS_TIMEOUT", "0"),
+        ("COMPOSER_NO_INTERACTION", "1"),
+        ("CI", "1"),
+    ] {
+        assert!(env.contains(&(k.to_owned(), v.to_owned())), "{k}: {env:?}");
+    }
+}

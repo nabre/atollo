@@ -99,7 +99,7 @@ pub fn environment(
             ..
         } => Some(Environment::Vm {
             sbx_env: isolation::sbx_session_env(base, host),
-            guest: guest_tools(kit, *level, project, program, lang, host),
+            guest: guest_tools(kit, *level, project.as_deref(), program, lang, host),
         }),
         Placement::Refused { .. } => None,
     }
@@ -114,7 +114,7 @@ pub fn environment(
 pub fn guest_tools(
     kit: &Kit,
     level: Level,
-    project: &str,
+    project: Option<&str>,
     program: &VmProgram,
     lang: &str,
     host: &Host,

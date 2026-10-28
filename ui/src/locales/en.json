@@ -1165,5 +1165,6 @@
   "Un cambio vale dalla prossima sessione dell'agente. L'account usato prima resta montato nella sandbox fino a «Ricrea».": "A change applies from the agent's next session. The account used before stays mounted in the sandbox until “Recreate”.",
   "Ambiente Python: .venv pronto.": "Python environment: .venv ready.",
   "Ambiente Python: .venv in preparazione.": "Python environment: .venv being prepared.",
-  "Ambiente Python: .venv non creato: {0}": "Python environment: .venv not created: {0}"
+  "Ambiente Python: .venv non creato: {0}": "Python environment: .venv not created: {0}",
+  "Cartella {0}": "Folder {0}"
 }

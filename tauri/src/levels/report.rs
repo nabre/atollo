@@ -328,7 +328,7 @@ pub fn check_specs(kit: &Kit, project: &str, sandbox: &str) -> Vec<CheckSpec> {
         return Vec::new();
     };
     let tools = read_info(kit, sandbox).map_or_else(
-        || super::prepare::wanted_tools(kit, project, None, &[]),
+        || super::prepare::wanted_tools(kit, Some(project), None, &[]),
         |i| i.tools,
     );
     let kit_lines = crate::versions::kit_choice(&guest);
@@ -517,7 +517,7 @@ pub fn check(
         s.note = Some(not_running_note(lang));
         return Ok(());
     }
-    let mut tools = super::env::guest_tools(kit, level, project, &program, lang, host);
+    let mut tools = super::env::guest_tools(kit, level, Some(project), &program, lang, host);
     let first = super::prepare::guest_path_entries(kit, &s.name, program.agent());
     tools.path.splice(0..0, first);
     let args = vm::check_args(&s.name, &tools, &check_script(&specs));
