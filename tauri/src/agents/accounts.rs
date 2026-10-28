@@ -222,13 +222,14 @@ pub fn sign_out(kit: &Kit, agent: Agent, name: &str) -> Result<()> {
 /// with the variable that points the agent at it; `None` for Antigravity.
 pub fn for_session(
     kit: &Kit,
-    project: &str,
+    project: Option<&str>,
     agent: Agent,
 ) -> Result<Option<(PathBuf, &'static str)>> {
     let Some(var) = env_var(agent) else {
         return Ok(None);
     };
-    let name = chosen(kit, project, agent);
+    // A folder's sandbox takes the default account (D-187).
+    let name = project.map_or_else(|| DEFAULT.to_owned(), |p| chosen(kit, p, agent));
     let name = if valid_name(&name) {
         name
     } else {

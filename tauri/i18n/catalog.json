@@ -2409,11 +2409,6 @@
     "fr": "[Atollo] Agent · VM : {0} dans {1}",
     "de": "[Atollo] Agent · VM: {0} in {1}"
   },
-  "Gli agenti partono solo nella cartella di un progetto: apri il terminale nella cartella del progetto, o avvia l'agente dalla pagina del progetto.": {
-    "en": "Agents start only in a project's folder: open the terminal in the project's folder, or start the agent from the project's page.",
-    "fr": "Les agents ne démarrent que dans le dossier d'un projet : ouvre le terminal dans le dossier du projet, ou lance l'agent depuis la page du projet.",
-    "de": "Agenten starten nur im Ordner eines Projekts: Öffne das Terminal im Ordner des Projekts oder starte den Agenten von der Seite des Projekts."
-  },
   "La cartella {0} non ha un percorso nella VM (è su una condivisione di rete): sposta il progetto su un disco locale.": {
     "en": "The folder {0} has no path in the VM (it is on a network share): move the project to a local disk.",
     "fr": "Le dossier {0} n'a pas de chemin dans la VM (il est sur un partage réseau) : déplace le projet sur un disque local.",
@@ -2738,5 +2733,10 @@
     "en": "The account {0} is used by: {1}. Choose another account in those projects, then delete it.",
     "fr": "Le compte {0} est utilisé par : {1}. Choisissez un autre compte dans ces projets, puis supprimez-le.",
     "de": "Das Konto {0} wird verwendet von: {1}. Wähle in diesen Projekten ein anderes Konto und lösche es dann."
+  },
+  "La cartella {0} non può essere lo spazio di lavoro di una sandbox: è il kit, il profilo, una cartella di sistema, la radice di un disco, la cartella dei progetti o un collegamento. Avvia l'agente nella cartella di un progetto o in un'altra cartella.": {
+    "en": "The folder {0} cannot be a sandbox's workspace: it is the kit, the profile, a system folder, a drive's root, the projects folder or a link. Start the agent in a project's folder or in another folder.",
+    "fr": "Le dossier {0} ne peut pas être l'espace de travail d'une sandbox : c'est le kit, le profil, un dossier système, la racine d'un disque, le dossier des projets ou un lien. Lancez l'agent dans le dossier d'un projet ou dans un autre dossier.",
+    "de": "Der Ordner {0} kann nicht der Arbeitsbereich einer Sandbox sein: Er ist das Kit, das Profil, ein Systemordner, das Stammverzeichnis eines Laufwerks, der Projektordner oder eine Verknüpfung. Starte den Agenten im Ordner eines Projekts oder in einem anderen Ordner."
   }
 }

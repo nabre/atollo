@@ -37,6 +37,7 @@ fn on() -> Facts {
         restart_pending: false,
         linux_build: true,
         guest_tools: tools(),
+        workspace: Some(root().join("elsewhere")),
     }
 }
 
@@ -128,18 +129,17 @@ fn first_row(req: &Request, facts: &Facts) -> Option<Rule> {
     let on = facts.vm == VmState::On;
     let off = !on;
     let wants_agent = req.origin.agent().is_some();
+    // A project, or a folder that may be a sandbox's workspace (D-187).
+    let inside = project || facts.workspace.is_some();
     let rows = [
         (Rule::R1, agent && off),
         (Rule::R2, !agent && project),
         (Rule::R3, !agent && folder),
-        (Rule::R4, agent && folder && on),
-        (Rule::R5, agent && project && on && facts.restart_pending),
-        (
-            Rule::R6,
-            agent && project && on && facts.guest_dir.is_none(),
-        ),
-        (Rule::R7, wants_agent && project && on && !facts.linux_build),
-        (Rule::R8, (tools || wants_agent) && project && on),
+        (Rule::R4, agent && folder && on && facts.workspace.is_none()),
+        (Rule::R5, agent && inside && on && facts.restart_pending),
+        (Rule::R6, agent && inside && on && facts.guest_dir.is_none()),
+        (Rule::R7, wants_agent && inside && on && !facts.linux_build),
+        (Rule::R8, (tools || wants_agent) && inside && on),
     ];
     rows.into_iter().find(|(_, m)| *m).map(|(r, _)| r)
 }
@@ -159,13 +159,16 @@ fn every_facts() -> Vec<Facts> {
             for guest_dir in [None, Some("/k/projects/shop".to_owned())] {
                 for linux_build in [false, true] {
                     for guest_tools in [vec![], tools()] {
-                        all.push(Facts {
-                            vm: vm.clone(),
-                            guest_dir: guest_dir.clone(),
-                            restart_pending,
-                            linux_build,
-                            guest_tools,
-                        });
+                        for workspace in [None, Some(root().join("elsewhere"))] {
+                            all.push(Facts {
+                                vm: vm.clone(),
+                                guest_dir: guest_dir.clone(),
+                                restart_pending,
+                                linux_build,
+                                guest_tools: guest_tools.clone(),
+                                workspace,
+                            });
+                        }
                     }
                 }
             }
@@ -203,11 +206,26 @@ fn check_invariants(req: &Request, facts: &Facts, rule: Rule, p: &Placement) {
             ..
         } => {
             assert_eq!(*level, Level::Agent, "D-183: {at}");
-            let Place::Project { name, dir, .. } = &req.place else {
-                panic!("a VM outside a project: {at}");
-            };
-            assert_eq!(project, name, "{at}");
-            assert_eq!(&mounts.workspace_rw, dir, "{at}");
+            // A project's sandbox, or a folder's (D-187).
+            match (&req.place, sandbox) {
+                (Place::Project { name, dir, .. }, Sandbox::Project { name: sandbox }) => {
+                    assert_eq!(project.as_ref(), Some(name), "{at}");
+                    assert_eq!(&mounts.workspace_rw, dir, "{at}");
+                    assert_eq!(sandbox, &crate::isolation::vm::name(name), "{at}");
+                }
+                (Place::Folder { .. }, Sandbox::Folder { name: sandbox }) => {
+                    let workspace = facts.workspace.as_ref().expect("a folder allowed");
+                    assert_eq!(project, &None, "{at}");
+                    assert_eq!(&mounts.workspace_rw, workspace, "{at}");
+                    assert_eq!(
+                        sandbox,
+                        &crate::isolation::vm::folder_name(workspace),
+                        "{at}"
+                    );
+                    assert!(!host.databases, "no project, no databases: {at}");
+                }
+                _ => panic!("the sandbox does not match the place: {at}"),
+            }
             assert_eq!(mounts.tools_ro, facts.guest_tools, "{at}");
             assert!(
                 workdir.starts_with(facts.guest_dir.as_deref().unwrap()),
@@ -217,9 +235,6 @@ fn check_invariants(req: &Request, facts: &Facts, rule: Rule, p: &Placement) {
                 !host.local_models || req.origin.agent() == Some(Agent::Pi),
                 "{at}"
             );
-            // One sandbox per project, every agent in it (D-184).
-            let Sandbox::Project { name: sandbox } = sandbox;
-            assert_eq!(sandbox, &crate::isolation::vm::name(name), "{at}");
             assert_eq!(program.agent(), req.origin.agent(), "{at}");
             assert_eq!(
                 matches!(program, VmProgram::Tools),
@@ -404,7 +419,11 @@ fn r3_everything_but_an_agent_elsewhere_is_on_the_pc() {
 }
 
 #[test]
-fn r4_an_agent_needs_a_project() {
+fn r4_an_agent_needs_a_folder_that_may_be_a_workspace() {
+    let forbidden = Facts {
+        workspace: None,
+        ..on()
+    };
     for agent in Agent::ALL {
         let r = req(
             Origin::Forwarded {
@@ -414,17 +433,61 @@ fn r4_an_agent_needs_a_project() {
             elsewhere(),
         );
         assert_eq!(
-            decided(&r, &on()),
+            decided(&r, &forbidden),
             (
                 Rule::R4,
                 Placement::Refused {
                     level: Level::Agent,
-                    reason: Refusal::AgentOutsideProject,
+                    reason: Refusal::FolderNotAllowed {
+                        dir: root().join("elsewhere").display().to_string(),
+                    },
                     fix: Fix::OpenFromProject,
                 }
             )
         );
     }
+}
+
+/// D-187: an agent in a folder that is not a project runs in that folder's
+/// sandbox, without a project's databases.
+#[test]
+fn r8_an_agent_in_a_folder_gets_the_folders_sandbox() {
+    let dir = root().join("elsewhere");
+    let facts = Facts {
+        guest_dir: Some("/k/elsewhere".into()),
+        ..on()
+    };
+    let r = req(
+        Origin::AgentButton {
+            agent: Agent::Codex,
+        },
+        elsewhere(),
+    );
+    assert_eq!(
+        decided(&r, &facts),
+        (
+            Rule::R8,
+            Placement::Vm {
+                level: Level::Agent,
+                project: None,
+                sandbox: Sandbox::Folder {
+                    name: crate::isolation::vm::folder_name(&dir),
+                },
+                workdir: "/k/elsewhere".into(),
+                mounts: Mounts {
+                    workspace_rw: dir,
+                    tools_ro: tools(),
+                },
+                host: HostAccess {
+                    databases: false,
+                    local_models: false,
+                },
+                program: VmProgram::Agent {
+                    agent: Agent::Codex
+                },
+            }
+        )
+    );
 }
 
 #[test]
@@ -523,7 +586,7 @@ fn r8_every_agent_runs_in_the_project_vm() {
                 Rule::R8,
                 Placement::Vm {
                     level: Level::Agent,
-                    project: "shop".into(),
+                    project: Some("shop".into()),
                     sandbox: Sandbox::Project {
                         name: crate::isolation::vm::name("shop"),
                     },
@@ -551,7 +614,7 @@ fn r8_the_sandbox_itself_is_the_projects() {
             Rule::R8,
             Placement::Vm {
                 level: Level::Agent,
-                project: "shop".into(),
+                project: Some("shop".into()),
                 sandbox: Sandbox::Project {
                     name: crate::isolation::vm::name("shop"),
                 },
@@ -600,7 +663,7 @@ fn a_refusal_always_has_a_reason_and_a_fix() {
         Refusal::AgentsNeedVm {
             blockers: vec![Blocker::KvmMissing],
         },
-        Refusal::AgentOutsideProject,
+        Refusal::FolderNotAllowed { dir: "C:\\".into() },
         Refusal::NoPathInVm {
             dir: r"\\server\share\shop".into(),
         },

@@ -98,19 +98,27 @@ fn delete_is_refused_while_used() {
 fn a_session_gets_its_projects_account() {
     let (_tmp, kit) = prepared_kit("accounts-session");
     project(&kit, "shop");
-    let (d, var) = for_session(&kit, "shop", Agent::Claude).unwrap().unwrap();
+    let (d, var) = for_session(&kit, Some("shop"), Agent::Claude)
+        .unwrap()
+        .unwrap();
     assert_eq!(var, "CLAUDE_CONFIG_DIR");
     assert_eq!(d, dir(&kit, Agent::Claude, DEFAULT));
     assert!(d.is_dir());
     set(&kit, "shop", Agent::Codex, "lavoro");
-    let (d, var) = for_session(&kit, "shop", Agent::Codex).unwrap().unwrap();
+    let (d, var) = for_session(&kit, Some("shop"), Agent::Codex)
+        .unwrap()
+        .unwrap();
     assert_eq!(
         (d.clone(), var),
         (dir(&kit, Agent::Codex, "lavoro"), "CODEX_HOME")
     );
-    assert!(for_session(&kit, "shop", Agent::Antigravity)
+    assert!(for_session(&kit, Some("shop"), Agent::Antigravity)
         .unwrap()
         .is_none());
+    // A folder's sandbox takes the default account, whatever a project chose
+    // (D-187).
+    let (folder, _) = for_session(&kit, None, Agent::Codex).unwrap().unwrap();
+    assert_eq!(folder, dir(&kit, Agent::Codex, DEFAULT));
     fs::write(d.join("auth.json"), "{}").unwrap();
     fs::write(d.join("config.toml"), "").unwrap();
     sign_out(&kit, Agent::Codex, "lavoro").unwrap();

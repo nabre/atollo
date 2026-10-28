@@ -16,6 +16,7 @@ fn antigravity_starts_on_a_project_in_its_vm() {
         restart_pending: false,
         linux_build: true,
         guest_tools: Vec::new(),
+        workspace: None,
     };
     match super::super::levels::admitted(&req, &facts, "it").unwrap() {
         Placement::Vm {
@@ -63,6 +64,7 @@ fn no_agent_starts_without_the_vm() {
         restart_pending: false,
         linux_build: false,
         guest_tools: Vec::new(),
+        workspace: None,
     };
     let text = super::super::levels::admitted(&req, &facts, "it")
         .unwrap_err()
