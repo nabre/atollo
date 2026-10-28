@@ -2529,6 +2529,11 @@
     "fr": "Préparation de la VM · {0} · {1}",
     "de": "VM wird vorbereitet · {0} · {1}"
   },
+  "La VM è già in preparazione: la sessione si apre appena è pronta.": {
+    "en": "The VM is already being prepared: the session opens as soon as it is ready.",
+    "fr": "La VM est déjà en préparation : la session s'ouvre dès qu'elle est prête.",
+    "de": "Die VM wird bereits vorbereitet: Die Sitzung öffnet sich, sobald sie bereit ist."
+  },
   "Scarico l'immagine della VM…": {
     "en": "Downloading the VM's image…",
     "fr": "Téléchargement de l'image de la VM…",

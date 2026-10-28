@@ -11,8 +11,9 @@
 //! [`Effects`], so that the order and the files can be tested without
 //! Tauri and without `sbx`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use std::sync::{Condvar, Mutex, PoisonError};
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -146,6 +147,10 @@ pub fn prepare(
             (placement, _) => Err(anyhow!("levels: nothing is prepared for {placement:?}")),
         };
     }
+    // A click again while the sandbox is prepared for the same program is
+    // refused: it would make another job, and with `sbx` busy, another
+    // sandbox. Another program waits its turn (a terminal and an action).
+    let (_claim, _turn);
     if let Placement::Vm {
         project,
         sandbox,
@@ -154,6 +159,15 @@ pub fn prepare(
         ..
     } = &placement
     {
+        let key = format!("{}|{}", kit.root().display(), sandbox.name());
+        _claim = Claim::take(format!("{key}|{program:?}")).ok_or_else(|| {
+            anyhow!(t(
+                lang,
+                "La VM è già in preparazione: la sessione si apre appena è pronta.",
+                &[],
+            ))
+        })?;
+        _turn = Turn::wait(&key);
         fx.progress(PrepareProgress::Begin {
             project: project.clone(),
             sandbox: sandbox.name().to_owned(),
@@ -179,6 +193,57 @@ pub fn prepare(
             });
             Err(e)
         }
+    }
+}
+
+/// The preparations running, by sandbox and program: one each.
+static CLAIMS: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+/// The sandboxes being prepared: one preparation each at a time.
+static TURNS: (Mutex<BTreeSet<String>>, Condvar) = (Mutex::new(BTreeSet::new()), Condvar::new());
+
+/// A preparation of a sandbox for a program, until dropped.
+struct Claim(String);
+
+impl Claim {
+    /// `key` claimed; `None` while another preparation holds it.
+    fn take(key: String) -> Option<Claim> {
+        let mut all = CLAIMS.lock().unwrap_or_else(PoisonError::into_inner);
+        all.insert(key.clone()).then_some(Claim(key))
+    }
+}
+
+impl Drop for Claim {
+    fn drop(&mut self) {
+        CLAIMS
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(&self.0);
+    }
+}
+
+/// The turn of a sandbox's preparation, until dropped.
+struct Turn(String);
+
+impl Turn {
+    /// The turn of `key`, once the preparation before it ended.
+    fn wait(key: &str) -> Turn {
+        let (lock, ended) = &TURNS;
+        let mut busy = lock.lock().unwrap_or_else(PoisonError::into_inner);
+        while busy.contains(key) {
+            busy = ended.wait(busy).unwrap_or_else(PoisonError::into_inner);
+        }
+        busy.insert(key.to_owned());
+        Turn(key.to_owned())
+    }
+}
+
+impl Drop for Turn {
+    fn drop(&mut self) {
+        let (lock, ended) = &TURNS;
+        lock.lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remove(&self.0);
+        ended.notify_all();
     }
 }
 
