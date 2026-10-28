@@ -13,8 +13,9 @@ use crate::levels::Origin;
 #[cfg(unix)]
 use crate::test_support::TempDir;
 
-/// What a fake `sbx ls --json` says: the project's sandbox running, Claude
-/// Code's stopped, Codex's not there.
+/// What a fake `sbx ls --json` says: the project's sandbox running, a
+/// legacy agent's sandbox of an earlier Atollo (not reported), another
+/// project's.
 fn ls(project: &str) -> String {
     serde_json::json!([
         {
@@ -23,13 +24,13 @@ fn ls(project: &str) -> String {
             "last_used_at": "2026-10-26T10:00:00Z",
             "workspaces": ["/d/kit/projects/shop"]
         },
-        { "name": vm::agent_name(project, "claude"), "status": "stopped" },
+        { "name": format!("atollo-a-claude-{project}-0123"), "status": "stopped" },
         { "name": "atollo-p-other-0123", "status": "running" }
     ])
     .to_string()
 }
 
-/// §8.1: every sandbox of the project, the project's first, each with its
+/// §8.1: the project's one sandbox (D-184), with its
 /// state from `sbx ls`, its mounts (the workspace rw, the rest ro), the
 /// PC's ports it reaches with what listens there, its `info.json`, and the
 /// app's sessions in it.
@@ -41,7 +42,7 @@ fn the_report_reads_every_sandbox() {
         dbs: vec![shop_db()],
         ..Fake::default()
     };
-    let req = sandbox_request(&kit, &kit.projects().join("shop"), None);
+    let req = sandbox_request(&kit, &kit.projects().join("shop"));
     let placement = decide(&req, &facts_of(&kit, &req, true));
     let base = crate::env::KitEnv::build(&kit, &Default::default(), "it", &Default::default());
     let env =
@@ -80,21 +81,12 @@ fn the_report_reads_every_sandbox() {
         }
     });
     assert_eq!(report.vm, VmOnOff::On);
-    let names: Vec<(&str, Option<Agent>, SandboxRun)> = report
+    let names: Vec<(&str, SandboxRun)> = report
         .sandboxes
         .iter()
-        .map(|s| (s.name.as_str(), s.agent, s.state))
+        .map(|s| (s.name.as_str(), s.state))
         .collect();
-    let claude = vm::agent_name("shop", "claude");
-    let codex = vm::agent_name("shop", "codex");
-    assert_eq!(
-        names,
-        [
-            (name.as_str(), None, SandboxRun::Running),
-            (claude.as_str(), Some(Agent::Claude), SandboxRun::Stopped),
-            (codex.as_str(), Some(Agent::Codex), SandboxRun::Missing),
-        ]
-    );
+    assert_eq!(names, [(name.as_str(), SandboxRun::Running)]);
     let own = &report.sandboxes[0];
     assert_eq!(own.last_used.as_deref(), Some("2026-10-26T10:00:00Z"));
     let windows = kit.target().is_windows();
@@ -130,15 +122,12 @@ fn the_report_reads_every_sandbox() {
     );
     assert_eq!(own.sessions, ["shop · bash"]);
     assert!(own.tools.is_none());
-    assert!(report.sandboxes[2].info.is_none());
-    assert!(report.sandboxes[2].mounts.is_empty());
     assert!(report.github);
     let json = serde_json::to_value(&report).unwrap();
     assert_eq!(json["vm"], "on");
     assert_eq!(json["sandboxes"][0]["state"], "running");
     assert_eq!(json["sandboxes"][0]["mounts"][0]["mode"], "rw");
-    assert_eq!(json["sandboxes"][1]["agent"], "claude");
-    assert_eq!(json["sandboxes"][2]["state"], "missing");
+    assert!(json["sandboxes"][0].get("agent").is_none());
 }
 
 /// §8.4: what the report shows of a sandbox is what its `atollo` prints.
@@ -146,7 +135,7 @@ fn the_report_reads_every_sandbox() {
 fn the_vm_info_follows_the_report() {
     let (_tmp, kit) = kit_with_shop("report-info");
     let name = vm::name("shop");
-    let req = sandbox_request(&kit, &kit.projects().join("shop"), None);
+    let req = sandbox_request(&kit, &kit.projects().join("shop"));
     let placement = decide(&req, &facts_of(&kit, &req, true));
     let base = crate::env::KitEnv::build(&kit, &Default::default(), "it", &Default::default());
     let env =
@@ -165,7 +154,7 @@ fn the_vm_info_follows_the_report() {
     assert_eq!(shown, file);
     // Without `sbx`'s answer (the VM off): made once is stopped.
     assert_eq!(report.vm, VmOnOff::Off);
-    assert_eq!(report.sandboxes[1].state, SandboxRun::Missing);
+    assert_eq!(report.sandboxes.len(), 1);
     sandbox_kit::mark_applied(&kit, &name, "x").unwrap();
     assert_eq!(sandbox_state(&kit, None, &name).0, SandboxRun::Stopped);
 }
@@ -259,7 +248,6 @@ fn spec(id: &str, chosen: Option<&str>) -> CheckSpec {
         program: Some(id.into()),
         args: vec!["--version".into()],
         extra_path: None,
-        from_image: false,
     }
 }
 
@@ -292,7 +280,8 @@ fn versions_are_compared_by_line() {
 }
 
 /// §8.2: a program found outside the kit's tools mounted in the VM (the
-/// image's own) is `notFromKit`; an agent of `sbx` comes from its image.
+/// image's own) is `notFromKit`, an agent's too (D-184: every agent is the
+/// kit's build).
 #[test]
 fn a_tool_outside_the_mount_is_not_from_the_kit() {
     assert_eq!(
@@ -310,13 +299,14 @@ fn a_tool_outside_the_mount_is_not_from_the_kit() {
         verdict(&spec("node", None), Some(&beside), None, MOUNT),
         Verdict::NotFromKit
     );
-    let claude = CheckSpec {
-        from_image: true,
-        ..spec("claude", None)
-    };
     assert_eq!(
-        verdict(&claude, Some("/usr/local/bin/claude"), Some("2.0.1"), MOUNT),
-        Verdict::Ok
+        verdict(
+            &spec("claude", None),
+            Some("/usr/local/bin/claude"),
+            Some("2.0.1"),
+            MOUNT
+        ),
+        Verdict::NotFromKit
     );
     let apache = CheckSpec {
         program: None,
@@ -511,7 +501,7 @@ impl VmEffects for Calls {
 fn the_actions_stop_the_sessions_then_prepare() {
     let (_tmp, kit) = kit_with_shop("actions");
     let name = vm::name("shop");
-    let req = sandbox_request(&kit, &kit.projects().join("shop"), None);
+    let req = sandbox_request(&kit, &kit.projects().join("shop"));
     assert_eq!(req.origin, Origin::Sandbox);
     let facts = facts_of(&kit, &req, true);
     let fx = Calls {
@@ -554,48 +544,17 @@ fn the_actions_stop_the_sessions_then_prepare() {
     );
 }
 
-/// §8.5: `--agent claude` and the agent's row of the panel act on the
-/// agent's own sandbox, decided as the agent's button.
-#[test]
-fn the_actions_take_the_agents_sandbox() {
-    let (_tmp, kit) = kit_with_shop("actions-agent");
-    for agent in [Agent::Claude, Agent::Codex] {
-        let req = sandbox_request(&kit, &kit.projects().join("shop"), Some(agent));
-        let facts = facts_of(&kit, &req, true);
-        let fx = Calls::default();
-        act(&fx, &req, &facts, VmAction::Restart).unwrap();
-        let name = vm::agent_name("shop", agent.id());
-        assert_eq!(
-            fx.calls(),
-            [
-                format!("sessions {name}"),
-                format!("stop {name}"),
-                format!("prepare AgentButton {{ agent: {agent:?} }}"),
-            ]
-        );
-    }
-}
-
-/// Every action goes through `decide`: the VM off, nothing is touched; an
-/// agent's sandbox is refused with its reason and fix (R1).
+/// Every action goes through `decide`: the VM off, nothing is touched; a
+/// pending restart of the daemon refuses it with its reason (R5).
 #[test]
 fn an_action_goes_through_decide() {
     let (_tmp, kit) = kit_with_shop("actions-decide");
     let dir = kit.projects().join("shop");
-    let req = sandbox_request(&kit, &dir, None);
+    let req = sandbox_request(&kit, &dir);
     let fx = Calls::default();
     let e = act(&fx, &req, &facts_of(&kit, &req, false), VmAction::Recreate).unwrap_err();
     assert!(matches!(e, ActError::NoVm), "{e:?}");
     assert!(act_error_text(&e, "it").contains("La VM non è attiva"));
-    let req = sandbox_request(&kit, &dir, Some(Agent::Claude));
-    let e = act(&fx, &req, &facts_of(&kit, &req, false), VmAction::Restart).unwrap_err();
-    match e {
-        ActError::Refused { reason, fix } => {
-            assert!(matches!(reason, Refusal::AgentsNeedVm { .. }));
-            assert_eq!(fix, Fix::OpenVmNotice);
-        }
-        other => panic!("{other:?}"),
-    }
     let mut facts = facts_of(&kit, &req, true);
     facts.restart_pending = true;
     let e = act(&fx, &req, &facts, VmAction::Refresh).unwrap_err();
@@ -609,7 +568,7 @@ fn an_action_goes_through_decide() {
     assert!(fx.calls().is_empty());
     // A check is decided too: off, nothing runs.
     let mut s = report(&kit, "shop", Seen::default(), &|_| Vec::new()).sandboxes[0].clone();
-    let req = sandbox_request(&kit, &dir, None);
+    let req = sandbox_request(&kit, &dir);
     let e = check(
         &kit,
         &Default::default(),
@@ -633,7 +592,7 @@ fn a_check_never_starts_a_sandbox() {
     let dir = kit.projects().join("shop");
     let mut s = report(&kit, "shop", Seen::default(), &|_| Vec::new()).sandboxes[0].clone();
     assert_eq!(s.state, SandboxRun::Missing);
-    let req = sandbox_request(&kit, &dir, None);
+    let req = sandbox_request(&kit, &dir);
     check(
         &kit,
         &Default::default(),
@@ -658,9 +617,9 @@ fn a_check_never_starts_a_sandbox() {
 #[test]
 fn an_action_waits_for_the_sandboxs_lock() {
     let (_tmp, kit) = kit_with_shop("actions-lock");
-    let req = sandbox_request(&kit, &kit.projects().join("shop"), Some(Agent::Codex));
+    let req = sandbox_request(&kit, &kit.projects().join("shop"));
     let facts = facts_of(&kit, &req, true);
-    let lock = action_lock(&vm::agent_name("shop", "codex"));
+    let lock = action_lock(&vm::name("shop"));
     let held = lock.lock().unwrap();
     let fx = std::sync::Arc::new(Calls::default());
     let worker = {
@@ -686,17 +645,8 @@ fn a_recreation_says_what_is_lost_and_what_stays() {
     assert!(!VmAction::Refresh.stops_sessions());
 }
 
-/// The sandboxes of a project: its own, then Claude Code's and Codex's;
-/// Pi and Antigravity run in the project's.
+/// A project has one sandbox, every agent in it (D-184).
 #[test]
-fn a_project_has_its_sandbox_and_one_per_agent_of_sbx() {
-    let all = sandboxes_of("shop");
-    assert_eq!(
-        all,
-        [
-            (vm::name("shop"), None),
-            (vm::agent_name("shop", "claude"), Some(Agent::Claude)),
-            (vm::agent_name("shop", "codex"), Some(Agent::Codex)),
-        ]
-    );
+fn a_project_has_one_sandbox() {
+    assert_eq!(sandboxes_of("shop"), [vm::name("shop")]);
 }

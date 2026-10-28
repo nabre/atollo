@@ -4,7 +4,7 @@
 //! the project's terminal, sealed); in the VM level 3 (Agent) only,
 //! refused without it.
 //!
-//! [`decide`] is the one decision: pure and total, the rules R1–R9 of
+//! [`decide`] is the one decision: pure and total, the rules R1–R8 of
 //! LEVELS.md §3.4 in order. The level comes from the origin
 //! ([`Origin::level`]), never from the caller (I2); the place from a real
 //! folder ([`place::place_of`]); the rest from [`facts::facts`], the only
@@ -81,16 +81,6 @@ impl Agent {
         }
     }
 
-    /// Where it runs in the VM: Claude Code and Codex in a sandbox of
-    /// `sbx`'s own, Pi and Antigravity (their Linux builds from the kit) in
-    /// the project's.
-    pub fn runner(self) -> AgentRunner {
-        match self {
-            Agent::Claude | Agent::Codex => AgentRunner::SbxAgent,
-            Agent::Pi | Agent::Antigravity => AgentRunner::ProjectVm,
-        }
-    }
-
     pub fn from_id(id: &str) -> Option<Agent> {
         Agent::ALL.into_iter().find(|a| a.id() == id)
     }
@@ -99,16 +89,6 @@ impl Agent {
     pub fn from_command(cmd: &str) -> Option<Agent> {
         Agent::ALL.into_iter().find(|a| a.commands().contains(&cmd))
     }
-}
-
-/// Where an agent runs when the VM is on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AgentRunner {
-    /// An agent of `sbx` in a sandbox of its own (`atollo-a-`): Claude, Codex.
-    SbxAgent,
-    /// Its Linux build from the kit, in the project's sandbox (`atollo-p-`):
-    /// Pi, Antigravity.
-    ProjectVm,
 }
 
 /// Who asks. The level follows from it (I2).
@@ -246,8 +226,7 @@ pub struct Facts {
     /// `isolation::restart_pending`: the kit daemon must restart before any
     /// VM opens.
     pub restart_pending: bool,
-    /// For `AgentRunner::ProjectVm` agents: the catalog has a build for the
-    /// VM's Linux target (`Component::is_available_on(guest)`), installed or
+    /// For an agent: the catalog has a build for the VM's Linux target (`Component::is_available_on(guest)`), installed or
     /// installable. `false` for every other origin (not read then).
     pub linux_build: bool,
     /// The kit's tools for the VM's Linux (`kit.for_target(guest).apps()`),
@@ -300,16 +279,15 @@ impl Placement {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Sandbox {
-    /// `atollo-p-<project>-<hash>` (`vm::name`).
+    /// `atollo-p-<project>-<hash>` (`vm::name`): the project's one sandbox,
+    /// every agent in it (D-184).
     Project { name: String },
-    /// `atollo-a-<agent>-<project>-<hash>` (`vm::agent_name`).
-    Agent { name: String, agent: Agent },
 }
 
 impl Sandbox {
     pub fn name(&self) -> &str {
         match self {
-            Sandbox::Project { name } | Sandbox::Agent { name, .. } => name,
+            Sandbox::Project { name } => name,
         }
     }
 }
@@ -333,10 +311,9 @@ pub struct HostAccess {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum VmProgram {
-    /// `sbx run --name <atollo-a-…>`.
-    SbxAgent { agent: Agent },
-    /// pi / agy, Linux build, `sbx exec -it`.
-    AgentBinary { agent: Agent },
+    /// The agent's build for the VM's Linux from the kit, `sbx exec -it`
+    /// (`vm::agent_session_args`).
+    Agent { agent: Agent },
     /// The sandbox made ready for its tools, no session ([`Origin::Sandbox`]).
     Tools,
 }
@@ -345,7 +322,7 @@ impl VmProgram {
     /// The agent it runs; `None` for [`VmProgram::Tools`].
     pub fn agent(&self) -> Option<Agent> {
         match self {
-            VmProgram::SbxAgent { agent } | VmProgram::AgentBinary { agent } => Some(*agent),
+            VmProgram::Agent { agent } => Some(*agent),
             VmProgram::Tools => None,
         }
     }
@@ -362,7 +339,7 @@ pub enum Refusal {
     AgentOutsideProject,
     /// The folder has no path in the VM (network share).
     NoPathInVm { dir: String },
-    /// Pi or Antigravity has no build for the VM's Linux.
+    /// The agent has no build for the VM's Linux.
     NoLinuxBuild { agent: Agent },
     /// The kit's daemon must restart for a security setting
     /// (`isolation::restart_pending`).
@@ -408,17 +385,16 @@ pub enum Rule {
     R6,
     R7,
     R8,
-    R9,
 }
 
-/// The one decision (D-179, D-183): pure, total, no I/O.
+/// The one decision (D-179, D-183, D-184): pure, total, no I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement {
     decided(req, facts).1
 }
 
 /// [`decide`] with the row of §3.4 that gave the placement: everything but
 /// an agent on the PC (R2, R3); an agent refused with the VM off (R1), in
-/// the VM otherwise (R4–R9).
+/// the project's sandbox otherwise (R4–R8).
 pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement) {
     let level = req.origin.level();
     let project = match &req.place {
@@ -481,36 +457,19 @@ pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement) {
         },
         program,
     };
-    let project_sandbox = || Sandbox::Project {
+    let sandbox = Sandbox::Project {
         name: vm::name(name),
     };
     let Some(agent) = req.origin.agent() else {
-        return (Rule::R9, placed(project_sandbox(), VmProgram::Tools, false));
+        return (Rule::R8, placed(sandbox, VmProgram::Tools, false));
     };
-    match agent.runner() {
-        AgentRunner::ProjectVm if !facts.linux_build => {
-            (Rule::R7, refused(Refusal::NoLinuxBuild { agent }))
-        }
-        AgentRunner::SbxAgent => (
-            Rule::R8,
-            placed(
-                Sandbox::Agent {
-                    name: vm::agent_name(name, agent.id()),
-                    agent,
-                },
-                VmProgram::SbxAgent { agent },
-                false,
-            ),
-        ),
-        AgentRunner::ProjectVm => (
-            Rule::R9,
-            placed(
-                project_sandbox(),
-                VmProgram::AgentBinary { agent },
-                agent == Agent::Pi,
-            ),
-        ),
+    if !facts.linux_build {
+        return (Rule::R7, refused(Refusal::NoLinuxBuild { agent }));
     }
+    (
+        Rule::R8,
+        placed(sandbox, VmProgram::Agent { agent }, agent == Agent::Pi),
+    )
 }
 
 /// `dir` with `below` (`/`-separated), one component at a time.

@@ -9,7 +9,7 @@ import type { IsolationBlocker } from "./isolation";
 export type Level = "manual" | "project" | "agent";
 
 /** The label shown on every terminal (8.3). */
-export type LevelLabel = "pc" | "projectVm" | "agentVm";
+export type LevelLabel = "pc" | "agentVm";
 
 export type Refusal =
   | { code: "agents_need_vm"; blockers: IsolationBlocker[] }
@@ -100,14 +100,12 @@ export interface SandboxInfo {
 
 export interface SandboxReport {
   name: string;
-  /** The agent of an agent's own sandbox; null for the project's. */
-  agent: AgentId | null;
   state: SandboxRun;
   lastUsed: string | null;
   mounts: { host: string; guest: string; mode: "rw" | "ro" }[];
   hostPorts: { port: number; what: string }[];
   info: SandboxInfo | null;
-  /** The app's sessions running in it: «Riavvia» and «Ricrea» stop them. */
+  /** The agents' sessions running in it: «Riavvia» and «Ricrea» stop them. */
   sessions: string[];
   /** «Verifica strumenti», once it ran. */
   tools: ToolCheck[] | null;
@@ -120,7 +118,7 @@ export interface VmReport {
   vm: "on" | "off";
   /** Why the VM is off (the notice's text), null when on. */
   reason: string | null;
-  /** The project's sandbox, then each agent's. */
+  /** The project's sandbox, every agent in it (D-184). */
   sandboxes: SandboxReport[];
   github: boolean;
 }
@@ -135,7 +133,6 @@ const PREVIEW_REPORT: VmReport = {
   sandboxes: [
     {
       name: "atollo-p-shop-0123456789abcdef01234567",
-      agent: null,
       state: "running",
       lastUsed: null,
       mounts: [
@@ -158,13 +155,13 @@ export function projectVmReport(project: string, check = false): Promise<VmRepor
   return query<VmReport>("project_vm_report", PREVIEW_REPORT, { project, check });
 }
 
-/** «Verifica strumenti» in one sandbox: the project's, or `agent`'s own. */
-export function projectVmCheck(project: string, agent: AgentId | null): Promise<SandboxReport> {
+/** «Verifica strumenti» in the project's sandbox. */
+export function projectVmCheck(project: string): Promise<SandboxReport> {
   const sandbox = PREVIEW_REPORT.sandboxes[0] as SandboxReport;
-  return query<SandboxReport>("project_vm_check", { ...sandbox, tools: [] }, { project, agent });
+  return query<SandboxReport>("project_vm_check", { ...sandbox, tools: [] }, { project });
 }
 
-/** An action on a sandbox of `project`; the sessions it stopped. */
-export function projectVmAction(project: string, agent: AgentId | null, action: VmAction): Promise<string[]> {
-  return query<string[]>("project_vm_action", [], { project, agent, action });
+/** An action on the sandbox of `project`; the sessions it stopped. */
+export function projectVmAction(project: string, action: VmAction): Promise<string[]> {
+  return query<string[]>("project_vm_action", [], { project, action });
 }

@@ -119,18 +119,16 @@ if (-not $env:ATOLLO_QUIET) {
 if ($env:ATOLLO_LEVEL -eq 'manual' -or $env:ATOLLO_LEVEL -eq 'project') {
     $project = $env:ATOLLO_LEVEL -eq 'project'
     if ($env:ATOLLO_LANG -eq 'it') {
-        $where = if ($project) { 'PC · senza VM' } else { 'PC' }
         $who = if ($project) { 'terminale del progetto' } else { 'editor' }
         $what = 'nessun progetto'
         $agents = 'agenti: inoltrati alla VM del progetto se attiva'
     } else {
-        $where = if ($project) { 'PC · no VM' } else { 'PC' }
         $who = if ($project) { "project's terminal" } else { 'editor' }
         $what = 'no project'
         $agents = "agents: forwarded to the project's VM when it is on"
     }
     if ($env:ATOLLO_TERMINAL) { $who = $env:ATOLLO_TERMINAL }
     if ($env:ATOLLO_PROJECT) { $what = $env:ATOLLO_PROJECT }
-    [Console]::Error.WriteLine("$where · $who · $what · $agents")
-    Remove-Variable project, where, who, what, agents -ErrorAction Ignore
+    [Console]::Error.WriteLine("PC · $who · $what · $agents")
+    Remove-Variable project, who, what, agents -ErrorAction Ignore
 }

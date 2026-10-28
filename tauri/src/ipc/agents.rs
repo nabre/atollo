@@ -43,9 +43,8 @@ pub async fn agents_stats<R: Runtime>(
         .or_fail("stats")
 }
 
-/// Opens an agent on the project, always in the VM (D-178, D-179): Claude
-/// Code and Codex in their `sbx` sandboxes, Pi and Antigravity in the
-/// project's VM with their builds for Linux. Without the VM no agent
+/// Opens an agent on the project, always in the VM (D-178, D-179): in the
+/// project's sandbox with its build for Linux (D-184). Without the VM no agent
 /// starts: the error says why the VM is off and what to do. Never on the
 /// PC.
 #[tauri::command]

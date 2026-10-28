@@ -75,9 +75,7 @@ describe("a refused command's error", () => {
 
 describe("a terminal's label (8.3)", () => {
   it("names the level and the place", () => {
-    expect(labelText("pc", "manual")).toBe("PC");
-    expect(labelText("pc", "project")).toBe("PC · senza VM");
-    expect(labelText("projectVm", "project")).toBe("VM progetto");
-    expect(labelText("agentVm", "agent")).toBe("Agente · VM");
+    expect(labelText("pc")).toBe("PC");
+    expect(labelText("agentVm")).toBe("Agente · VM");
   });
 });

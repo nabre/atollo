@@ -79,19 +79,18 @@ fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
     let vms = vms_of(&kit, &json);
     assert_eq!(
         vms.len(),
-        2,
-        "the user's own sandbox is not Atollo's, a kit terminal's is never listed (D-178)"
+        1,
+        "the user's own sandbox is not Atollo's; a kit terminal's (D-178) and an agent's own (D-184) are never listed"
     );
-    assert_eq!(terminal_vms_in(&json), ["atollo-t-default-0123"]);
-    assert!(terminal_vms_in("not json").is_empty());
+    assert_eq!(
+        legacy_vms_in(&json),
+        ["atollo-t-default-0123", "atollo-a-claude-shop-0123"]
+    );
+    assert!(legacy_vms_in("not json").is_empty());
     assert_eq!(vms[0].name, shop);
     assert_eq!(vms[0].owner, Some(owner));
     assert_eq!(vms[0].status, "running");
     assert_eq!(vms[0].last_used.as_deref(), Some("2026-10-25T17:40:30Z"));
-    assert_eq!(
-        vms[1].owner, None,
-        "an agent's sandbox has no kit of Atollo"
-    );
     assert!(vms_of(&kit, "not json").is_empty());
 
     assert!(is_atollos(&shop) && is_atollos("atollo-t-x-1"));
@@ -105,10 +104,7 @@ fn atollos_sandboxes_are_listed_and_go_with_their_owner() {
         assert!(!is_atollos(name), "{name}");
     }
 
-    let names = project_sandboxes("shop");
-    assert_eq!(names[0], shop);
-    assert!(names.contains(&vm::agent_name("shop", "claude")));
-    assert!(names.contains(&vm::agent_name("shop", "codex")));
+    assert_eq!(project_sandboxes("shop"), std::slice::from_ref(&shop));
 
     let legacy = |dir: &str| kit::Owner::Terminal {
         terminal: "legacy".into(),

@@ -1089,7 +1089,7 @@ fn the_shells_print_their_level_line() {
                 ("ATOLLO_PROJECT", "shop"),
                 ("ATOLLO_LANG", "en"),
             ],
-            Some("PC · no VM · project's terminal · shop · agents: forwarded to the project's VM when it is on"),
+            Some("PC · project's terminal · shop · agents: forwarded to the project's VM when it is on"),
         ),
         (&[("ATOLLO_LANG", "it")], None),
     ];

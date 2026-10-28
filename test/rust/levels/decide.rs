@@ -127,7 +127,7 @@ fn first_row(req: &Request, facts: &Facts) -> Option<Rule> {
     let folder = !project;
     let on = facts.vm == VmState::On;
     let off = !on;
-    let runner = req.origin.agent().map(Agent::runner);
+    let wants_agent = req.origin.agent().is_some();
     let rows = [
         (Rule::R1, agent && off),
         (Rule::R2, !agent && project),
@@ -138,18 +138,8 @@ fn first_row(req: &Request, facts: &Facts) -> Option<Rule> {
             Rule::R6,
             agent && project && on && facts.guest_dir.is_none(),
         ),
-        (
-            Rule::R7,
-            runner == Some(AgentRunner::ProjectVm) && project && on && !facts.linux_build,
-        ),
-        (
-            Rule::R8,
-            runner == Some(AgentRunner::SbxAgent) && project && on,
-        ),
-        (
-            Rule::R9,
-            (tools || runner == Some(AgentRunner::ProjectVm)) && project && on,
-        ),
+        (Rule::R7, wants_agent && project && on && !facts.linux_build),
+        (Rule::R8, (tools || wants_agent) && project && on),
     ];
     rows.into_iter().find(|(_, m)| *m).map(|(r, _)| r)
 }
@@ -227,15 +217,9 @@ fn check_invariants(req: &Request, facts: &Facts, rule: Rule, p: &Placement) {
                 !host.local_models || req.origin.agent() == Some(Agent::Pi),
                 "{at}"
             );
-            match sandbox {
-                Sandbox::Agent { agent, .. } => {
-                    assert_eq!(Some(*agent), req.origin.agent(), "{at}");
-                    assert_eq!(agent.runner(), AgentRunner::SbxAgent, "{at}");
-                }
-                Sandbox::Project { name: sandbox } => {
-                    assert_eq!(sandbox, &crate::isolation::vm::name(name), "{at}")
-                }
-            }
+            // One sandbox per project, every agent in it (D-184).
+            let Sandbox::Project { name: sandbox } = sandbox;
+            assert_eq!(sandbox, &crate::isolation::vm::name(name), "{at}");
             assert_eq!(program.agent(), req.origin.agent(), "{at}");
             assert_eq!(
                 matches!(program, VmProgram::Tools),
@@ -275,10 +259,6 @@ fn the_level_comes_from_the_origin() {
     assert_eq!(Agent::from_command("agy"), Some(Agent::Antigravity));
     assert_eq!(Agent::from_id("gemini"), None);
     assert_eq!(Agent::from_command("bash"), None);
-    assert_eq!(Agent::Claude.runner(), AgentRunner::SbxAgent);
-    assert_eq!(Agent::Codex.runner(), AgentRunner::SbxAgent);
-    assert_eq!(Agent::Pi.runner(), AgentRunner::ProjectVm);
-    assert_eq!(Agent::Antigravity.runner(), AgentRunner::ProjectVm);
 }
 
 /// I8: every origin × {project, project subfolder, folder} × every facts
@@ -304,7 +284,7 @@ fn every_request_has_exactly_one_placement() {
             }
         }
     }
-    assert_eq!(seen.len(), 9, "every row is reachable: {seen:?}");
+    assert_eq!(seen.len(), 8, "every row is reachable: {seen:?}");
     assert!(count > 3000, "{count}");
 }
 
@@ -511,7 +491,8 @@ fn r7_no_linux_build_no_agent() {
         linux_build: false,
         ..on()
     };
-    for agent in [Agent::Pi, Agent::Antigravity] {
+    // Every agent is the kit's build for the VM's Linux (D-184).
+    for agent in Agent::ALL {
         assert_eq!(
             decided(&req(Origin::AgentButton { agent }, in_shop(None)), &facts),
             (
@@ -524,20 +505,18 @@ fn r7_no_linux_build_no_agent() {
             )
         );
     }
-    // Claude Code and Codex come with `sbx`'s images: no build is asked.
-    let claude = req(
-        Origin::AgentButton {
-            agent: Agent::Claude,
-        },
-        in_shop(None),
-    );
-    assert_eq!(decided(&claude, &facts).0, Rule::R8);
 }
 
 #[test]
-fn r8_claude_and_codex_get_their_own_sandbox() {
-    for agent in [Agent::Claude, Agent::Codex] {
-        let r = req(Origin::EditorAgentProfile { agent }, in_shop(Some("web")));
+fn r8_every_agent_runs_in_the_project_vm() {
+    for agent in Agent::ALL {
+        let r = req(
+            Origin::EditorExtension {
+                extension: "x.y".into(),
+                agent,
+            },
+            in_shop(Some("web")),
+        );
         assert_eq!(
             decided(&r, &on()),
             (
@@ -545,9 +524,8 @@ fn r8_claude_and_codex_get_their_own_sandbox() {
                 Placement::Vm {
                     level: Level::Agent,
                     project: "shop".into(),
-                    sandbox: Sandbox::Agent {
-                        name: crate::isolation::vm::agent_name("shop", agent.id()),
-                        agent,
+                    sandbox: Sandbox::Project {
+                        name: crate::isolation::vm::name("shop"),
                     },
                     workdir: "/k/projects/shop/web".into(),
                     mounts: Mounts {
@@ -556,45 +534,9 @@ fn r8_claude_and_codex_get_their_own_sandbox() {
                     },
                     host: HostAccess {
                         databases: true,
-                        local_models: false,
-                    },
-                    program: VmProgram::SbxAgent { agent },
-                }
-            )
-        );
-    }
-}
-
-#[test]
-fn r9_pi_and_antigravity_run_in_the_project_vm() {
-    for agent in [Agent::Pi, Agent::Antigravity] {
-        let r = req(
-            Origin::EditorExtension {
-                extension: "x.y".into(),
-                agent,
-            },
-            in_shop(None),
-        );
-        assert_eq!(
-            decided(&r, &on()),
-            (
-                Rule::R9,
-                Placement::Vm {
-                    level: Level::Agent,
-                    project: "shop".into(),
-                    sandbox: Sandbox::Project {
-                        name: crate::isolation::vm::name("shop"),
-                    },
-                    workdir: "/k/projects/shop".into(),
-                    mounts: Mounts {
-                        workspace_rw: shop_dir(),
-                        tools_ro: tools(),
-                    },
-                    host: HostAccess {
-                        databases: true,
                         local_models: agent == Agent::Pi,
                     },
-                    program: VmProgram::AgentBinary { agent },
+                    program: VmProgram::Agent { agent },
                 }
             )
         );
@@ -602,11 +544,11 @@ fn r9_pi_and_antigravity_run_in_the_project_vm() {
 }
 
 #[test]
-fn r9_the_sandbox_itself_is_the_projects() {
+fn r8_the_sandbox_itself_is_the_projects() {
     assert_eq!(
         decided(&req(Origin::Sandbox, in_shop(None)), &on()),
         (
-            Rule::R9,
+            Rule::R8,
             Placement::Vm {
                 level: Level::Agent,
                 project: "shop".into(),
@@ -633,7 +575,7 @@ fn r9_the_sandbox_itself_is_the_projects() {
     };
     assert_eq!(
         decided(&req(Origin::Sandbox, in_shop(None)), &facts).0,
-        Rule::R9
+        Rule::R8
     );
 }
 
@@ -709,7 +651,7 @@ fn placements_serialize_as_the_ipc_says() {
     assert_eq!(json["where"], "vm");
     assert_eq!(json["level"], "agent");
     assert_eq!(json["sandbox"]["kind"], "project");
-    assert_eq!(json["program"]["kind"], "agentBinary");
+    assert_eq!(json["program"]["kind"], "agent");
     let pc = decide(&req(Origin::ProjectTerminal, in_shop(None)), &on());
     let json = serde_json::to_value(&pc).unwrap();
     assert_eq!(json["where"], "pc");

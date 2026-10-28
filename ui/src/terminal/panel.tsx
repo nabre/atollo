@@ -62,7 +62,7 @@ export function TerminalPanel({
           id: String(s.id),
           label: s.running ? s.title : t("{0} (terminato)", s.title),
           // Where it runs (D-179, LEVELS.md §8.3), the sandbox on hover.
-          tag: labelText(s.label, s.level),
+          tag: labelText(s.label),
           hint: s.sandbox ? t("Gira in {0}", s.sandbox) : undefined,
         }))}
         active={current ? String(current.id) : ""}

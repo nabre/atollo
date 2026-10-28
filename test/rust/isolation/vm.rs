@@ -1,7 +1,7 @@
 use super::*;
 
 /// The project's name readable, then a hash of its exact name: two
-/// projects never share a sandbox, a project never an agent's.
+/// projects never share a sandbox.
 #[test]
 fn the_sandbox_is_named_after_the_project() {
     let shop = name("shop");
@@ -13,19 +13,12 @@ fn the_sandbox_is_named_after_the_project() {
     // Names that look the same are told apart.
     assert_ne!(name("My Shop"), name("my-shop"));
     assert_ne!(name("Shop"), name("shop"));
-    // An agent's sandbox is in its own namespace.
-    assert_ne!(name("shop-claude"), agent_name("shop", "claude"));
-    assert!(agent_name("shop", "claude").starts_with("atollo-a-claude-shop-"));
     // A name of symbols only is its hash; a long one is cut, its hash kept.
     assert_eq!(name("___").len(), "atollo-p-".len() + 24);
     assert_eq!(name(&"a".repeat(100)).len(), NAME_MAX);
     assert_ne!(name(&"a".repeat(100)), name(&"a".repeat(101)));
     // `sbx kit add`'s swap container (`<name>-swap-<8 hex>`) stays within
-    // Docker's 63 characters, for an agent's sandbox too.
-    let claude = agent_name("progetto-prova", "claude");
-    assert!(claude.len() <= NAME_MAX, "{claude}");
-    assert!(claude.starts_with("atollo-a-claude-progetto-"), "{claude}");
-    assert_eq!(agent_name(&"x".repeat(100), "codex").len(), NAME_MAX);
+    // Docker's 63 characters.
     assert_eq!(NAME_MAX + "-swap-".len() + 8, 63);
     // The same project, the same sandbox at every start.
     assert_eq!(name("shop"), shop);
@@ -49,102 +42,79 @@ fn a_folder_is_mounted_read_only_in_an_existing_sandbox() {
     );
 }
 
-/// The kit's terminals have no sandbox any more (D-178): the names an
-/// earlier Atollo gave them are apart from every name it gives now.
+/// The kit's terminals (D-178) and Claude Code and Codex (D-184) have no
+/// sandbox of their own any more: the names an earlier Atollo gave them
+/// are apart from every name it gives now.
 #[test]
-fn no_name_given_now_is_a_kit_terminals() {
-    for name in [
-        name("shop"),
-        agent_name("shop", "claude"),
-        agent_name("t-x", "codex"),
-        name("t-default"),
-    ] {
+fn no_name_given_now_is_a_legacy_one() {
+    for name in [name("shop"), name("t-default"), name("a-claude-shop")] {
         assert!(!name.starts_with(TERMINAL_PREFIX), "{name}");
+        assert!(!name.starts_with(AGENT_PREFIX), "{name}");
     }
 }
 
-/// Pi in the project's VM (D-178): `sbx exec` in the project's sandbox and
-/// folder, the project's tools first on the `PATH` and its database's file,
-/// then Pi's build for Linux from the kit, quoted for the VM's shell.
+/// Every agent in the project's VM (D-184): `sbx exec` in the project's
+/// sandbox and folder, the project's tools first on the `PATH` and its
+/// database's file, then the agent's build for Linux from the kit, quoted
+/// for the VM's shell.
 #[test]
-fn pi_runs_in_the_projects_vm_with_its_tools() {
+fn every_agent_runs_in_the_projects_vm_with_its_tools() {
     let tools = crate::isolation::GuestTools {
         path: vec!["/d/kit/data/apps/linux-x64/node/24".into()],
         vars: vec![("JAVA_HOME".into(), "/d/kit/java".into())],
         env_file: Some(std::path::PathBuf::from("db.env")),
     };
     let vm = name("shop");
-    let pi = "/d/kit/data/apps/linux-x64/pi/pi";
-    let args = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools, &[]);
-    assert_eq!(args[..4], ["exec", "-it", "-w", "/d/kit/projects/shop"]);
-    let at = |s: &str| args.iter().position(|a| a == s).unwrap();
-    assert!(at("--env-file") < at(&vm));
-    assert!(args.contains(&"ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24".to_owned()));
-    assert!(args.contains(&"JAVA_HOME=/d/kit/java".to_owned()));
-    assert!(vm.starts_with("atollo-p-"), "the project's own VM");
-    assert_eq!(args[at(&vm) + 1..at(&vm) + 3], ["sh", "-c"]);
-    let script = &args[at(&vm) + 3];
-    assert!(script.starts_with(TOOLS_FIRST), "{script}");
-    assert!(script.ends_with(r#"exec "$0" "$@""#), "{script}");
-    assert_eq!(
-        args.last().unwrap(),
-        pi,
-        "Pi is the program, nothing after it"
-    );
-    // What the user typed after `pi` (a forwarder) follows, as it is.
-    let typed = ["--continue".to_owned(), "it's \"mine\"".to_owned()];
-    let with = pi_session_args(&vm, "/d/kit/projects/shop", pi, &tools, &typed);
-    assert_eq!(with[..args.len()], args[..]);
-    assert_eq!(with[args.len()..], typed);
-    assert_eq!(sbx_agent("pi"), None, "Pi has no sandbox of `sbx`'s");
-}
-
-/// Antigravity in the project's VM (D-179, LEVELS.md §9): as Pi, its build
-/// for Linux from the kit, its own updates off; no key, no keyring, no
-/// variable of the kit's Antigravity data.
-#[test]
-fn agy_session_args() {
-    let tools = crate::isolation::GuestTools {
-        path: vec!["/d/kit/data/apps/linux-x64/node/24".into()],
-        vars: vec![("JAVA_HOME".into(), "/d/kit/java".into())],
-        env_file: Some(std::path::PathBuf::from("db.env")),
-    };
-    let vm = name("shop");
-    let agy = "/d/kit/data/apps/linux-x64/antigravity/agy";
-    let dir = "/d/kit/projects/shop/web";
-    let args = super::agy_session_args(&vm, dir, agy, &tools, &[]);
-    assert_eq!(args[..4], ["exec", "-it", "-w", dir]);
-    let at = |s: &str| args.iter().position(|a| a == s).unwrap();
-    assert!(vm.starts_with("atollo-p-"), "the project's own VM");
-    assert!(at("--env-file") < at(&vm));
-    assert!(args.contains(&"ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24".to_owned()));
-    let update = at("AGY_CLI_DISABLE_AUTO_UPDATE=true");
-    assert_eq!(args[update - 1], "-e");
-    assert!(update < at(&vm), "an option of sbx exec");
-    assert_eq!(args[at(&vm) + 1..at(&vm) + 3], ["sh", "-c"]);
-    let script = &args[at(&vm) + 3];
-    assert!(script.starts_with(TOOLS_FIRST), "{script}");
-    assert!(script.ends_with(r#"exec "$0" "$@""#), "{script}");
-    assert_eq!(args.last().unwrap(), agy, "agy is the program");
-    for word in &args {
-        for kit_only in ["GEMINI", "GOOGLE_API_KEY", "CP_ANTIGRAVITY", "keyring"] {
-            assert!(!word.contains(kit_only), "{word}");
+    for agent in ["claude", "codex", "pi", "antigravity"] {
+        let program = format!("/d/kit/data/apps/linux-x64/{agent}/{agent}");
+        let args = agent_session_args(&vm, "/d/kit/projects/shop", agent, &program, &tools, &[]);
+        assert_eq!(args[..4], ["exec", "-it", "-w", "/d/kit/projects/shop"]);
+        let at = |s: &str| args.iter().position(|a| a == s).unwrap();
+        assert!(at("--env-file") < at(&vm));
+        assert!(args.contains(&"ATOLLO_PATH=/d/kit/data/apps/linux-x64/node/24".to_owned()));
+        assert!(args.contains(&"JAVA_HOME=/d/kit/java".to_owned()));
+        assert!(vm.starts_with("atollo-p-"), "the project's own VM");
+        assert_eq!(args[at(&vm) + 1..at(&vm) + 3], ["sh", "-c"]);
+        let script = &args[at(&vm) + 3];
+        assert!(script.starts_with(TOOLS_FIRST), "{script}");
+        assert!(script.ends_with(r#"exec "$0" "$@""#), "{script}");
+        assert_eq!(
+            args.last().unwrap(),
+            &program,
+            "the agent is the program, nothing after it"
+        );
+        // Its own updates off, as options of sbx exec.
+        for (k, v) in agent_vars(agent) {
+            let var = at(&format!("{k}={v}"));
+            assert_eq!(args[var - 1], "-e");
+            assert!(var < at(&vm), "an option of sbx exec");
         }
+        for word in &args {
+            for kit_only in ["GEMINI", "GOOGLE_API_KEY", "ANTHROPIC", "OPENAI", "keyring"] {
+                assert!(!word.contains(kit_only), "{agent}: {word}");
+            }
+        }
+        // What the user typed after the agent's command (a forwarder)
+        // follows, as it is.
+        let typed = ["--continue".to_owned(), "it's \"mine\"".to_owned()];
+        let with = agent_session_args(&vm, "/d/kit/projects/shop", agent, &program, &tools, &typed);
+        assert_eq!(with[..args.len()], args[..]);
+        assert_eq!(with[args.len()..], typed);
     }
-    // The words typed after `agy` (a forwarder) follow, as they are.
-    let typed = ["--resume".to_owned(), "a b".to_owned()];
-    let with = super::agy_session_args(&vm, dir, agy, &tools, &typed);
-    assert_eq!(with[..args.len()], args[..]);
-    assert_eq!(with[args.len()..], typed);
-    // Pi's are the same but for agy's own variable.
-    let pi = pi_session_args(&vm, dir, agy, &tools, &[]);
-    let without: Vec<&String> = args
-        .iter()
-        .enumerate()
-        .filter(|(i, _)| *i != update && *i != update - 1)
-        .map(|(_, a)| a)
-        .collect();
-    assert_eq!(without, pi.iter().collect::<Vec<_>>());
+}
+
+/// The kit's builds are read-only in the VM and the kit updates them:
+/// Antigravity's CLI and Claude Code are told not to update themselves;
+/// Codex and Pi have no switch.
+#[test]
+fn the_agents_do_not_update_themselves() {
+    assert_eq!(
+        agent_vars("antigravity"),
+        [("AGY_CLI_DISABLE_AUTO_UPDATE", "true")]
+    );
+    assert_eq!(agent_vars("claude"), [("DISABLE_AUTOUPDATER", "1")]);
+    assert!(agent_vars("codex").is_empty());
+    assert!(agent_vars("pi").is_empty());
 }
 
 /// Where the PC's folders are in the VM: `sbx` mounts `D:\a` at `/d/a`
@@ -196,7 +166,7 @@ fn an_existing_sandbox_starts_again_by_its_name() {
 fn the_sandbox_starts_with_the_project_as_its_workspace() {
     let dir = Path::new("/kit/projects/shop");
     assert_eq!(
-        start_args("atollo-shop", dir, &[], &[], None, "shell"),
+        start_args("atollo-shop", dir, &[], &[], None),
         [
             "run",
             "-d",
@@ -212,8 +182,7 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
             dir,
             &[],
             &["/kit/data/apps/linux-x64".into()],
-            None,
-            "shell"
+            None
         )
         .last()
         .map(String::as_str),
@@ -227,8 +196,7 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
             dir,
             &[],
             &[],
-            Some(Path::new("/kit/data/app/sandboxes/atollo-shop")),
-            "shell"
+            Some(Path::new("/kit/data/app/sandboxes/atollo-shop"))
         ),
         [
             "run",
@@ -240,54 +208,6 @@ fn the_sandbox_starts_with_the_project_as_its_workspace() {
             "shell",
             "/kit/projects/shop"
         ]
-    );
-}
-
-/// Claude Code and Codex in `sbx`'s own agents, made like the project's
-/// sandbox; the others have none.
-#[test]
-fn only_sbx_agents_have_a_sandbox() {
-    assert_eq!(sbx_agent("claude"), Some("claude"));
-    assert_eq!(sbx_agent("codex"), Some("codex"));
-    assert_eq!(sbx_agent("antigravity"), None);
-    assert_eq!(sbx_agent("pi"), None);
-    let dir = Path::new("/p");
-    let claude = agent_name("shop", "claude");
-    assert_eq!(
-        start_args(&claude, dir, &[], &[], None, "claude")[4..],
-        ["claude", "/p"]
-    );
-}
-
-/// The agent's session (D-175): the project's database from its file, the
-/// kit's tools first on the image's own `PATH` (as read in the sandbox),
-/// the tools' variables after.
-#[test]
-fn an_agent_gets_the_projects_tools_and_database() {
-    let tools = crate::isolation::GuestTools {
-        path: vec!["/d/kit/data/apps/linux-x64/node/24.22/bin".into()],
-        vars: vec![("JAVA_HOME".into(), "/d/j".into())],
-        env_file: Some("/kit/db.env".into()),
-    };
-    let image = "/home/agent/.local/bin:/usr/local/bin:/usr/bin:/bin";
-    assert_eq!(
-        agent_session_args("atollo-a-claude-shop", image, &tools),
-        [
-            "run",
-            "--name",
-            "atollo-a-claude-shop",
-            "--env-file",
-            "/kit/db.env",
-            "-e",
-            "PATH=/d/kit/data/apps/linux-x64/node/24.22/bin:/home/agent/.local/bin:/usr/local/bin:/usr/bin:/bin",
-            "-e",
-            "JAVA_HOME=/d/j"
-        ]
-    );
-    let none = crate::isolation::GuestTools::default();
-    assert_eq!(
-        agent_session_args("atollo-a-codex-shop", image, &none),
-        ["run", "--name", "atollo-a-codex-shop"]
     );
 }
 
@@ -358,7 +278,6 @@ fn the_tools_sandbox_mounts_writable_folders_and_reaches_its_hosts() {
         &["/kit/data/npm-global".into()],
         &["/kit/ro".into()],
         None,
-        "shell",
     );
     assert_eq!(
         args[4..],

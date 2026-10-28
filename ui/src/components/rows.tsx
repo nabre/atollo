@@ -8,7 +8,7 @@ import { composerOf, splitVersion, ToolInstallLine, ToolVersions, type KitVersio
 import { ByHandBox } from "./byhand";
 import { LinkProblems, outsideOf } from "./relations";
 import { sizeText } from "./model";
-import { leftoverText, providedText, toolStateLabel } from "./status";
+import { leftoverText, toolStateLabel } from "./status";
 import { ComponentLogo } from "../shared/logos";
 import { Badge, Tag } from "../shared/tags";
 
@@ -229,10 +229,6 @@ export function ComponentRow({
             ) : c.leftover ? (
               <span className="text-vsc-settings-modified" title={leftoverText()}>
                 {toolStateLabel("toRemove")}
-              </span>
-            ) : c.agent?.kind === "provided" ? (
-              <span className="text-vsc-link" title={providedText(c.name)}>
-                {toolStateLabel("provided")}
               </span>
             ) : c.agent?.kind === "needsVm" ? (
               <span className="text-vsc-desc" title={c.agent.reason}>

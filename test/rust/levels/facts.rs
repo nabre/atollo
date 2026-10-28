@@ -59,17 +59,16 @@ fn the_guest_tools_are_the_kits_linux_ones() {
     }
 }
 
-/// Asked for Pi and Antigravity only, from the catalog of the VM's Linux.
+/// Asked for every agent (D-184), from the catalog of the VM's Linux.
 #[test]
-fn a_linux_build_is_asked_for_project_vm_agents_only() {
+fn a_linux_build_is_asked_for_the_agents() {
     let k = kit(Target::WIN32_X64);
     let guest = Target::LINUX_X64;
     for agent in Agent::ALL {
         let origin = Origin::AgentButton { agent };
-        let expected = agent.runner() == AgentRunner::ProjectVm
-            && crate::setup::Catalog::get()
-                .find(agent.id())
-                .is_some_and(|c| c.is_available_on(guest));
+        let expected = crate::setup::Catalog::get()
+            .find(agent.id())
+            .is_some_and(|c| c.is_available_on(guest));
         assert_eq!(linux_build(&k, &origin), expected, "{agent:?}");
     }
     assert!(!linux_build(&k, &Origin::ProjectTerminal));

@@ -26,7 +26,7 @@ import {
   type NavItem,
 } from "../workbench";
 import { groups, sizeText, xcodeMissing } from "./model";
-import { leftoverText, providedText, toolStateLabel } from "./status";
+import { leftoverText, toolStateLabel } from "./status";
 import { ComposerRow, Dependencies } from "./rows";
 import { RustToolchain } from "./rust";
 import type { ComponentsState } from "./state";
@@ -99,10 +99,6 @@ export function ToolPage({
             <span key="state" className="text-vsc-settings-modified">
               {leftoverText()}
             </span>
-          ) : c.agent?.kind === "provided" ? (
-            <span key="state" className="text-vsc-link">
-              {toolStateLabel("provided")}: {providedText(c.name)}
-            </span>
           ) : c.agent?.kind === "needsVm" ? (
             <span key="state" className="text-vsc-desc">
               {toolStateLabel("needsVm")}: {c.agent.reason}
@@ -152,8 +148,8 @@ export function ToolPage({
                 {t("Obbligatorio")}
               </Button>
             ) : c.agent !== null ? (
-              <Button disabled title={c.agent.kind === "needsVm" ? c.agent.reason : providedText(c.name)}>
-                {c.agent.kind === "needsVm" ? toolStateLabel("needsVm") : toolStateLabel("provided")}
+              <Button disabled title={c.agent.reason}>
+                {toolStateLabel("needsVm")}
               </Button>
             ) : on ? (
               <Button

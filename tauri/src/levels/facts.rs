@@ -8,7 +8,7 @@ use crate::env::{Host, KitEnv};
 use crate::isolation::{self, vm};
 use crate::kit::Kit;
 
-use super::{AgentRunner, Facts, Origin, Place, Request};
+use super::{Facts, Origin, Place, Request};
 
 /// Reads the facts for `req`: `isolation::status(kit, host, env, false)`
 /// (cached at most 60 s, `FRESH`), `vm::guest_path`,
@@ -34,13 +34,11 @@ pub fn guest_dir(kit: &Kit, place: &Place) -> Option<String> {
     vm::guest_path(kit.os().is_windows(), dir)
 }
 
-/// True when `origin` asks for a ProjectVm agent (Pi, Antigravity) and the
-/// catalog has its build for the VM's Linux; `false` for every other origin.
+/// True when `origin` asks for an agent and the catalog has its build for
+/// the VM's Linux (D-184: every agent runs its kit's build); `false` for
+/// every other origin.
 pub fn linux_build(kit: &Kit, origin: &Origin) -> bool {
-    let Some(agent) = origin
-        .agent()
-        .filter(|a| a.runner() == AgentRunner::ProjectVm)
-    else {
+    let Some(agent) = origin.agent() else {
         return false;
     };
     let Some(guest) = vm::guest_target(kit.target()) else {

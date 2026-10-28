@@ -334,7 +334,7 @@ fn compute(kit: &Kit, host: &Host, env: &KitEnv) -> Status {
             } else {
                 daemon_settings(kit, sbx, host, env);
                 legacy_global_github(kit, sbx, host, env);
-                legacy_terminals(kit, sbx, host, env);
+                legacy_sandboxes(kit, sbx, host, env);
             }
         }
     }
@@ -665,43 +665,49 @@ fn legacy_global_github(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
     }
 }
 
-/// The sandboxes of the kit's terminals `sbx ls --json` lists
-/// (`atollo-t-…`): made by an earlier Atollo, when the kit's terminals ran
-/// in a VM (D-168, ended by D-178).
-pub(crate) fn terminal_vms_in(json: &str) -> Vec<String> {
+/// True for the name of a sandbox an earlier Atollo made and this one does
+/// not: a kit terminal's (`atollo-t-…`, D-168, ended by D-178), or Claude
+/// Code's and Codex's own (`atollo-a-…`, ended by D-184).
+fn legacy_name(name: &str) -> bool {
+    name.starts_with(vm::TERMINAL_PREFIX) || name.starts_with(vm::AGENT_PREFIX)
+}
+
+/// The legacy sandboxes ([`legacy_name`]) `sbx ls --json` lists.
+pub(crate) fn legacy_vms_in(json: &str) -> Vec<String> {
     let list: Vec<serde_json::Value> = serde_json::from_str(json).unwrap_or_default();
     list.iter()
         .filter_map(|s| s["name"].as_str())
-        .filter(|n| n.starts_with(vm::TERMINAL_PREFIX) && is_atollos(n))
+        .filter(|n| legacy_name(n) && is_atollos(n))
         .map(str::to_owned)
         .collect()
 }
 
-/// The kit's terminals run on the PC (D-178): the sandboxes an earlier
-/// Atollo made for them, those `sbx` lists and those with a kit of a
-/// terminal, are removed with their disks, once per run of the app, off
-/// the status's thread; a failure only goes to the log (best effort, like
+/// The kit's terminals run on the PC (D-178), the agents in their
+/// project's sandbox (D-184): the sandboxes an earlier Atollo made for
+/// them, those `sbx` lists and those with a kit of a terminal or a legacy
+/// name, are removed with their disks, once per run of the app, off the
+/// status's thread; a failure only goes to the log (best effort, like
 /// [`remove_owned`]).
-fn legacy_terminals(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
+fn legacy_sandboxes(kit: &Kit, sbx: &Sbx, host: &Host, env: &KitEnv) {
     static DONE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     if DONE.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return;
     }
     let mut names: std::collections::BTreeSet<String> = kit::all(kit)
         .into_iter()
-        .filter(|(_, owner)| matches!(owner, kit::Owner::Terminal { .. }))
+        .filter(|(name, owner)| matches!(owner, kit::Owner::Terminal { .. }) || legacy_name(name))
         .map(|(name, _)| name)
         .collect();
     if let Ok(out) = run(sbx, host, env, &["ls", "--json"], ASK_LIMIT) {
         if out.status.success() {
-            names.extend(terminal_vms_in(&String::from_utf8_lossy(&out.stdout)));
+            names.extend(legacy_vms_in(&String::from_utf8_lossy(&out.stdout)));
         }
     }
     if names.is_empty() {
         return;
     }
     crate::common::log::info(&format!(
-        "kit terminals run on the PC: removing their sandboxes {names:?}"
+        "removing the sandboxes of an earlier Atollo {names:?}"
     ));
     let names: Vec<String> = names.into_iter().collect();
     let (kit, host, env) = (kit.clone(), host.clone(), env.clone());
@@ -1010,9 +1016,6 @@ pub struct Vm {
     tools: GuestTools,
     /// The PC's ports it may reach ([`Vm::with_host_ports`]).
     host_ports: Vec<u16>,
-    /// What `sbx` runs in it: `shell`, or an agent of `sbx`
-    /// ([`Vm::for_agent`]).
-    agent: String,
     /// The kit's Gemini key for this sandbox through the proxy of `sbx`
     /// ([`Vm::with_gemini`]): Antigravity runs in it.
     gemini: bool,
@@ -1042,20 +1045,18 @@ pub struct VmList {
 }
 
 /// Atollo's sandboxes in `sbx ls --json` (`atollo-…`), with their owner
-/// from their kits; never a kit terminal's (`atollo-t-…`, D-178: removed
-/// by themselves, [`legacy_terminals`]).
+/// from their kits; never a legacy one ([`legacy_name`]: removed by
+/// themselves, [`legacy_sandboxes`]).
 pub(crate) fn vms_of(kit: &Kit, json: &str) -> Vec<VmInfo> {
     let list: Vec<serde_json::Value> = serde_json::from_str(json).unwrap_or_default();
     list.iter()
         .filter_map(|s| {
             let name = s["name"].as_str()?;
-            (name.starts_with(vm::PREFIX) && !name.starts_with(vm::TERMINAL_PREFIX)).then(|| {
-                VmInfo {
-                    name: name.to_owned(),
-                    owner: kit::owner(kit, name),
-                    status: s["status"].as_str().unwrap_or_default().to_owned(),
-                    last_used: s["last_used_at"].as_str().map(str::to_owned),
-                }
+            (name.starts_with(vm::PREFIX) && !legacy_name(name)).then(|| VmInfo {
+                name: name.to_owned(),
+                owner: kit::owner(kit, name),
+                status: s["status"].as_str().unwrap_or_default().to_owned(),
+                last_used: s["last_used_at"].as_str().map(str::to_owned),
             })
         })
         .collect()
@@ -1125,11 +1126,9 @@ pub fn remove_vm(kit: &Kit, host: &Host, env: &KitEnv, name: &str) -> anyhow::Re
     kit::remove(kit, name)
 }
 
-/// The sandboxes of `project`: its own and its agents'.
+/// The sandboxes of `project`: its own, every agent in it (D-184).
 pub fn project_sandboxes(project: &str) -> Vec<String> {
-    let mut names = vec![vm::name(project)];
-    names.extend(["claude", "codex"].map(|a| vm::agent_name(project, a)));
-    names
+    vec![vm::name(project)]
 }
 
 /// The sandboxes of the kit terminal `terminal`, one per folder, from
@@ -1263,7 +1262,6 @@ pub(crate) fn project_vm(
         },
         tools: GuestTools::default(),
         host_ports: Vec::new(),
-        agent: "shell".into(),
         gemini: false,
     })
 }
@@ -1284,7 +1282,6 @@ pub(crate) fn tools_vm(kit: &Kit, host: &Host, dir: &Path, writable: Vec<PathBuf
         owner: kit::Owner::Tools,
         tools: GuestTools::default(),
         host_ports: Vec::new(),
-        agent: "shell".into(),
         gemini: false,
     })
 }
@@ -1320,7 +1317,7 @@ pub fn db_in_vm(db: &crate::db::auth::ProjectDb, port: u16) -> crate::db::auth::
     }
 }
 
-/// The program of the agent `id` (Pi, Antigravity: their own builds) for
+/// The program of the agent `id` (its build from the kit, D-184) for
 /// the VM's Linux (`guest`, the kit scoped to its target), as the VM sees
 /// it, when that build is installed (D-178, D-179).
 pub fn agent_in_vm(kit: &Kit, guest: &Kit, id: &str) -> Option<String> {
@@ -1714,7 +1711,6 @@ impl Vm {
             },
             tools: GuestTools::default(),
             host_ports: Vec::new(),
-            agent: "shell".into(),
             gemini: false,
         }
     }
@@ -1806,7 +1802,6 @@ impl Vm {
                 &self.writable,
                 &self.read_only,
                 Some(&kit_dir),
-                &self.agent,
             ),
             START_LIMIT,
         )?;
@@ -1998,40 +1993,6 @@ impl Vm {
             .collect()
     }
 
-    /// The sandbox of `agent` (one of `sbx`'s, [`vm::sbx_agent`]) for this
-    /// project's VM: its own (`atollo-a-`), the same folders, kit, tools,
-    /// databases and ports as the project's (D-175); `None` for an agent
-    /// `sbx` has none for.
-    pub fn for_agent(mut self, project: &str, agent: &str) -> Option<Vm> {
-        let id = vm::sbx_agent(agent)?;
-        self.name = vm::agent_name(project, id);
-        self.agent = id.to_owned();
-        Some(self)
-    }
-
-    /// The session of the agent in this sandbox, started ([`Vm::start`]):
-    /// `sbx run --name` with the database's variables and the kit's tools
-    /// first on the `PATH` before the image's own, read in the sandbox.
-    pub fn agent_session_args(&self, env: &KitEnv) -> anyhow::Result<Vec<String>> {
-        let args = [
-            "exec".to_owned(),
-            self.name.clone(),
-            "sh".to_owned(),
-            "-c".to_owned(),
-            r#"printf %s "$PATH""#.to_owned(),
-        ];
-        let args: Vec<&str> = args.iter().map(String::as_str).collect();
-        let out = run(&self.sbx, &self.host, env, &args, ASK_LIMIT).map_err(anyhow::Error::msg)?;
-        anyhow::ensure!(
-            out.status.success(),
-            "sbx exec {}: {}",
-            self.name,
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
-        let image_path = String::from_utf8_lossy(&out.stdout).trim().to_owned();
-        Ok(vm::agent_session_args(&self.name, &image_path, &self.tools))
-    }
-
     /// One more folder of the PC mounted read-only (the sandbox's own
     /// `guest` folder: its `info.json` and read-only `atollo`, LEVELS.md
     /// §8.4), once.
@@ -2066,9 +2027,8 @@ impl Vm {
             .any(|l| l.trim() == self.name))
     }
 
-    /// The session of the app's terminal for `args` (`vm::agent_session_args`,
-    /// `vm::pi_session_args`), titled `what`; refused while [`Vm::ready`] is not
-    /// (an agent's `sbx run` makes its sandbox without [`Vm::start`]).
+    /// The session of the app's terminal for `args`
+    /// (`vm::agent_session_args`), titled `what`; refused while [`Vm::ready`] is not.
     pub fn launch(
         &self,
         kit: &Kit,

@@ -4,16 +4,15 @@
 use super::*;
 use crate::app::cli::{parse, Cli};
 use crate::levels::report::{Mode, MountInfo, ToolCheck};
-use crate::levels::Agent;
 use std::ffi::OsString;
 
 fn words(line: &str) -> Vec<OsString> {
     line.split_whitespace().map(OsString::from).collect()
 }
 
-/// The words of `vm`: the project, `--agent` of an agent with a sandbox of
-/// its own, one action at most, `--yes` only with `--recreate`; anything
-/// else is a usage error (exit 2).
+/// The words of `vm`: the project, one action at most, `--yes` only with
+/// `--recreate`; anything else is a usage error (exit 2). No `--agent`:
+/// every agent is in the project's sandbox (D-184).
 #[test]
 fn vm_parses_its_words() {
     assert_eq!(
@@ -24,10 +23,9 @@ fn vm_parses_its_words() {
         })
     );
     assert_eq!(
-        parse(&words("vm shop --agent claude --check --json")),
+        parse(&words("vm shop --check --json")),
         Cli::Vm(VmArgs {
             project: "shop".into(),
-            agent: Some(Agent::Claude),
             check: true,
             json: true,
             ..VmArgs::default()
@@ -59,8 +57,7 @@ fn vm_parses_its_words() {
         "vm shop --yes",
         "vm shop --restart --yes",
         "vm shop --agent",
-        "vm shop --agent pi",
-        "vm shop --agent nobody",
+        "vm shop --agent claude",
         "vm shop --force",
     ] {
         assert!(
@@ -151,14 +148,9 @@ fn recreate_without_a_yes_changes_nothing() {
         .contains("Progetto non trovato: nope"));
 }
 
-fn sandbox(
-    agent: Option<Agent>,
-    state: SandboxRun,
-    tools: Option<Vec<ToolCheck>>,
-) -> SandboxReport {
+fn sandbox(state: SandboxRun, tools: Option<Vec<ToolCheck>>) -> SandboxReport {
     SandboxReport {
-        name: sandbox_name("shop", agent),
-        agent,
+        name: vm::name("shop"),
         state,
         last_used: None,
         mounts: vec![
@@ -207,29 +199,21 @@ fn vm_report(vm: VmOnOff, sandboxes: Vec<SandboxReport>) -> VmReport {
     }
 }
 
-/// Exit 0 only with the VM on, the sandbox asked there, and every tool
+/// Exit 0 only with the VM on, the project's sandbox there, and every tool
 /// checked `ok` (or not meant for the VM).
 #[test]
 fn the_exit_code_says_whether_all_is_good() {
     let good = vm_report(
         VmOnOff::On,
-        vec![
-            sandbox(
-                None,
-                SandboxRun::Running,
-                Some(vec![
-                    tool("node", Verdict::Ok, Some("22"), Some("22.1.0")),
-                    tool("apache", Verdict::NotInVm, None, None),
-                ]),
-            ),
-            sandbox(Some(Agent::Claude), SandboxRun::Missing, None),
-        ],
+        vec![sandbox(
+            SandboxRun::Running,
+            Some(vec![
+                tool("node", Verdict::Ok, Some("22"), Some("22.1.0")),
+                tool("apache", Verdict::NotInVm, None, None),
+            ]),
+        )],
     );
-    assert!(all_good(&good, None));
-    assert!(
-        !all_good(&good, Some(Agent::Claude)),
-        "its sandbox is missing"
-    );
+    assert!(all_good(&good));
     let mut bad = good.clone();
     bad.sandboxes[0].tools = Some(vec![tool(
         "node",
@@ -237,35 +221,31 @@ fn the_exit_code_says_whether_all_is_good() {
         Some("22"),
         Some("20.1.0"),
     )]);
-    assert!(!all_good(&bad, None));
-    let off = vm_report(VmOnOff::Off, vec![sandbox(None, SandboxRun::Stopped, None)]);
-    assert!(!all_good(&off, None));
-    let missing = vm_report(VmOnOff::On, vec![sandbox(None, SandboxRun::Missing, None)]);
-    assert!(!all_good(&missing, None));
+    assert!(!all_good(&bad));
+    let off = vm_report(VmOnOff::Off, vec![sandbox(SandboxRun::Stopped, None)]);
+    assert!(!all_good(&off));
+    let missing = vm_report(VmOnOff::On, vec![sandbox(SandboxRun::Missing, None)]);
+    assert!(!all_good(&missing));
 }
 
-/// The report as text: the reason the VM is off, each sandbox with its
-/// state, its mounts rw/ro, its ports and its tools with expected and
-/// found; only the agent's with `--agent`.
+/// The report as text: the reason the VM is off, the project's sandbox
+/// with its state, its mounts rw/ro, its ports and its tools with expected
+/// and found.
 #[test]
 fn the_report_prints_states_mounts_and_tools() {
     let report = vm_report(
         VmOnOff::Off,
-        vec![
-            sandbox(
-                None,
-                SandboxRun::Running,
-                Some(vec![
-                    tool("node", Verdict::Ok, Some("22"), Some("22.1.0")),
-                    tool("python", Verdict::OtherLine, Some("3.13"), Some("3.12.7")),
-                    tool("go", Verdict::Missing, Some("1.23"), None),
-                ]),
-            ),
-            sandbox(Some(Agent::Codex), SandboxRun::Stopped, None),
-        ],
+        vec![sandbox(
+            SandboxRun::Running,
+            Some(vec![
+                tool("node", Verdict::Ok, Some("22"), Some("22.1.0")),
+                tool("python", Verdict::OtherLine, Some("3.13"), Some("3.12.7")),
+                tool("go", Verdict::Missing, Some("1.23"), None),
+            ]),
+        )],
     );
     let mut out = Vec::new();
-    print_report(&report, None, "it", &mut out).unwrap();
+    print_report(&report, "it", &mut out).unwrap();
     let text = String::from_utf8(out).unwrap();
     for line in [
         "── VM del progetto shop ──",
@@ -278,14 +258,8 @@ fn the_report_prints_states_mounts_and_tools() {
         "    √ node 22.1.0",
         "    x python atteso 3.13, trovato 3.12.7",
         "    x go manca",
-        &format!("  Codex: {} (spenta)", vm::agent_name("shop", "codex")),
         "  · GitHub nella VM: no",
     ] {
         assert!(text.contains(line), "{line:?} in:\n{text}");
     }
-    let mut out = Vec::new();
-    print_report(&report, Some(Agent::Codex), "it", &mut out).unwrap();
-    let text = String::from_utf8(out).unwrap();
-    assert!(!text.contains("Progetto:"), "{text}");
-    assert!(text.contains("Codex:"), "{text}");
 }

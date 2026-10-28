@@ -69,10 +69,10 @@ export const AGENTS: TopicTexts = {
             "Die Anmeldung bei deinem Konto erfolgt beim ersten Start des Agenten und bleibt im Kit, auch auf einem anderen PC.",
           ),
           tr(
-            "Gli agenti girano solo nella VM (livello 3): Claude Code e Codex ciascuno in una sandbox di agente di Docker Sandboxes, che vede solo il progetto; Pi e Antigravity (agy) nella VM del progetto, con la loro build per Linux. Si aprono dalla pagina del progetto, dal profilo dell'editor o scrivendo claude, codex, pi o agy in un terminale del PC nella cartella del progetto. Senza VM nessun agente parte: pulsanti e comandi sono disattivati con il motivo. L'agente nella VM ha gli strumenti del kit del progetto e il suo database; per ora non ha i server MCP del kit e del progetto.",
-            "The agents run only in the VM (level 3): Claude Code and Codex each in a Docker Sandboxes agent sandbox, which sees only the project; Pi and Antigravity (agy) in the project's VM, with their build for Linux. They open from the project's page, from the editor's profile, or by typing claude, codex, pi or agy in a PC terminal in the project's folder. Without the VM no agent starts: buttons and commands are disabled with the reason. The agent in the VM has the project's kit tools and its database; for now it does not have the kit's and the project's MCP servers.",
-            "Les agents ne tournent que dans la VM (niveau 3) : Claude Code et Codex chacun dans une sandbox d'agent de Docker Sandboxes, qui ne voit que le projet ; Pi et Antigravity (agy) dans la VM du projet, avec leur build pour Linux. Ils s'ouvrent depuis la page du projet, depuis le profil de l'éditeur ou en tapant claude, codex, pi ou agy dans un terminal du PC dans le dossier du projet. Sans VM, aucun agent ne démarre : boutons et commandes sont désactivés avec le motif. L'agent dans la VM a les outils du kit du projet et sa base de données ; pour l'instant, il n'a pas les serveurs MCP du kit et du projet.",
-            "Die Agenten laufen nur in der VM (Ebene 3): Claude Code und Codex jeweils in einer Agenten-Sandbox von Docker Sandboxes, die nur das Projekt sieht; Pi und Antigravity (agy) in der VM des Projekts, mit ihrem Build für Linux. Sie öffnen sich über die Seite des Projekts, über das Profil des Editors oder indem du claude, codex, pi oder agy in einem Terminal des PCs im Ordner des Projekts tippst. Ohne VM startet kein Agent: Schaltflächen und Befehle sind mit dem Grund deaktiviert. Der Agent in der VM hat die Werkzeuge des Kits für das Projekt und seine Datenbank; vorerst hat er die MCP-Server des Kits und des Projekts nicht.",
+            "Gli agenti girano solo nella VM (livello 3), tutti nella sandbox del progetto, che vede solo il progetto: Claude Code, Codex, Pi e Antigravity (agy), ciascuno con la sua build per Linux del kit. Si aprono dalla pagina del progetto, dal profilo dell'editor o scrivendo claude, codex, pi o agy in un terminale del PC nella cartella del progetto. Senza VM nessun agente parte: pulsanti e comandi sono disattivati con il motivo. L'agente nella VM ha gli strumenti del kit del progetto e il suo database; per ora non ha i server MCP del kit e del progetto.",
+            "The agents run only in the VM (level 3), all in the project's sandbox, which sees only the project: Claude Code, Codex, Pi and Antigravity (agy), each with its kit's build for Linux. They open from the project's page, from the editor's profile, or by typing claude, codex, pi or agy in a PC terminal in the project's folder. Without the VM no agent starts: buttons and commands are disabled with the reason. The agent in the VM has the project's kit tools and its database; for now it does not have the kit's and the project's MCP servers.",
+            "Les agents ne tournent que dans la VM (niveau 3), tous dans la sandbox du projet, qui ne voit que le projet : Claude Code, Codex, Pi et Antigravity (agy), chacun avec son build pour Linux du kit. Ils s'ouvrent depuis la page du projet, depuis le profil de l'éditeur ou en tapant claude, codex, pi ou agy dans un terminal du PC dans le dossier du projet. Sans VM, aucun agent ne démarre : boutons et commandes sont désactivés avec le motif. L'agent dans la VM a les outils du kit du projet et sa base de données ; pour l'instant, il n'a pas les serveurs MCP du kit et du projet.",
+            "Die Agenten laufen nur in der VM (Ebene 3), alle in der Sandbox des Projekts, die nur das Projekt sieht: Claude Code, Codex, Pi und Antigravity (agy), jeder mit seinem Build des Kits für Linux. Sie öffnen sich über die Seite des Projekts, über das Profil des Editors oder indem du claude, codex, pi oder agy in einem Terminal des PCs im Ordner des Projekts tippst. Ohne VM startet kein Agent: Schaltflächen und Befehle sind mit dem Grund deaktiviert. Der Agent in der VM hat die Werkzeuge des Kits für das Projekt und seine Datenbank; vorerst hat er die MCP-Server des Kits und des Projekts nicht.",
           ),
         ]}
       />
@@ -115,20 +115,20 @@ export const AGENTS: TopicTexts = {
               tr("Claude Code", "Claude Code", "Claude Code", "Claude Code"),
               tr("Anthropic", "Anthropic", "Anthropic", "Anthropic"),
               tr(
-                "Account Claude (abbonamento), con /login nella sua sandbox.",
-                "Claude account (subscription), with /login in its sandbox.",
-                "Compte Claude (abonnement), avec /login dans sa sandbox.",
-                "Claude-Konto (Abonnement), mit /login in seiner Sandbox.",
+                "Account Claude (abbonamento), con /login nella sandbox del progetto.",
+                "Claude account (subscription), with /login in the project's sandbox.",
+                "Compte Claude (abonnement), avec /login dans la sandbox du projet.",
+                "Claude-Konto (Abonnement), mit /login in der Sandbox des Projekts.",
               ),
             ],
             [
               tr("Codex", "Codex", "Codex", "Codex"),
               tr("OpenAI", "OpenAI", "OpenAI", "OpenAI"),
               tr(
-                "Account ChatGPT oppure chiave API, con l'accesso di Codex nella sua sandbox.",
-                "ChatGPT account or an API key, with Codex's sign-in in its sandbox.",
-                "Compte ChatGPT ou clé API, avec la connexion de Codex dans sa sandbox.",
-                "ChatGPT-Konto oder API-Schlüssel, mit der Anmeldung von Codex in seiner Sandbox.",
+                "Account ChatGPT oppure chiave API, con l'accesso di Codex nella sandbox del progetto.",
+                "ChatGPT account or an API key, with Codex's sign-in in the project's sandbox.",
+                "Compte ChatGPT ou clé API, avec la connexion de Codex dans la sandbox du projet.",
+                "ChatGPT-Konto oder API-Schlüssel, mit der Anmeldung von Codex in der Sandbox des Projekts.",
               ),
             ],
             [
@@ -160,10 +160,10 @@ export const AGENTS: TopicTexts = {
         />
         <P>
           {tr(
-            "Gli agenti stanno nella pagina Strumenti, tipo «Agenti AI», e il kit li tiene solo per la VM: Claude Code e Codex sono «fornito dalla VM» (arrivano con la loro sandbox di Docker Sandboxes, niente da installare); Pi e Antigravity si installano nella loro build per il Linux della VM e seguono l'ultima versione. Senza VM le righe dicono «serve la VM» e nessun agente si installa né si aggiorna. Un agente installato per il PC da una versione precedente di Atollo è segnato «da rimuovere» e se ne va al prossimo «Applica».",
-            "The agents are on the Tools page, “AI agents” kind, and the kit keeps them for the VM only: Claude Code and Codex are “provided by the VM” (they come with their Docker Sandboxes sandbox, nothing to install); Pi and Antigravity are installed in their build for the VM's Linux and follow the latest version. Without the VM the rows say “needs the VM” and no agent is installed or updated. An agent installed for the PC by an earlier version of Atollo is marked to be removed and goes at the next “Apply”.",
-            "Les agents se trouvent dans la page Outils, type « Agents IA », et le kit ne les garde que pour la VM : Claude Code et Codex sont « fourni par la VM » (ils arrivent avec leur sandbox Docker Sandboxes, rien à installer) ; Pi et Antigravity s'installent dans leur build pour le Linux de la VM et suivent la dernière version. Sans VM, les lignes indiquent « nécessite la VM » et aucun agent ne s'installe ni ne se met à jour. Un agent installé pour le PC par une version précédente d'Atollo est marqué à retirer et s'en va au prochain « Appliquer ».",
-            "Die Agenten stehen auf der Seite Werkzeuge in der Art „KI-Agenten“, und das Kit hält sie nur für die VM: Claude Code und Codex sind „von der VM bereitgestellt“ (sie kommen mit ihrer Sandbox von Docker Sandboxes, nichts zu installieren); Pi und Antigravity werden in ihrem Build für das Linux der VM installiert und folgen der neuesten Version. Ohne VM sagen die Zeilen „braucht die VM“, und kein Agent wird installiert oder aktualisiert. Ein Agent, den eine frühere Version von Atollo für den PC installiert hat, ist zum Entfernen markiert und geht beim nächsten „Anwenden“.",
+            "Gli agenti stanno nella pagina Strumenti, tipo «Agenti AI», e il kit li tiene solo per la VM: Claude Code, Codex, Pi e Antigravity si installano nella loro build per il Linux della VM e seguono l'ultima versione. Senza VM le righe dicono «serve la VM» e nessun agente si installa né si aggiorna. Un agente installato per il PC da una versione precedente di Atollo è segnato «da rimuovere» e se ne va al prossimo «Applica».",
+            "The agents are on the Tools page, “AI agents” kind, and the kit keeps them for the VM only: Claude Code, Codex, Pi and Antigravity are installed in their build for the VM's Linux and follow the latest version. Without the VM the rows say “needs the VM” and no agent is installed or updated. An agent installed for the PC by an earlier version of Atollo is marked to be removed and goes at the next “Apply”.",
+            "Les agents se trouvent dans la page Outils, type « Agents IA », et le kit ne les garde que pour la VM : Claude Code, Codex, Pi et Antigravity s'installent dans leur build pour le Linux de la VM et suivent la dernière version. Sans VM, les lignes indiquent « nécessite la VM » et aucun agent ne s'installe ni ne se met à jour. Un agent installé pour le PC par une version précédente d'Atollo est marqué à retirer et s'en va au prochain « Appliquer ».",
+            "Die Agenten stehen auf der Seite Werkzeuge in der Art „KI-Agenten“, und das Kit hält sie nur für die VM: Claude Code, Codex, Pi und Antigravity werden in ihrem Build für das Linux der VM installiert und folgen der neuesten Version. Ohne VM sagen die Zeilen „braucht die VM“, und kein Agent wird installiert oder aktualisiert. Ein Agent, den eine frühere Version von Atollo für den PC installiert hat, ist zum Entfernen markiert und geht beim nächsten „Anwenden“.",
           )}
         </P>
         <Callout tone="info" title={tr("Pi", "Pi", "Pi", "Pi")}>
@@ -205,10 +205,10 @@ export const AGENTS: TopicTexts = {
               "Oben neben „Editor“ und „Terminal“ gibt es für jeden verfügbaren Agenten eine Schaltfläche mit seinem Logo („Claude Code öffnen“, „Codex öffnen“, „Pi öffnen“, „Antigravity öffnen“). Klicke auf die des Agenten, den du verwenden möchtest. Ohne VM sind die Schaltflächen deaktiviert, und ihr Tooltip sagt warum.",
             ),
             tr(
-              "L'agente parte nella sua sandbox (Claude Code, Codex) o nella VM del progetto (Pi, Antigravity), nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo con l'etichetta «Agente · VM»; mentre la VM si prepara, la pagina mostra l'avanzamento.",
-              "The agent starts in its sandbox (Claude Code, Codex) or in the project's VM (Pi, Antigravity), in the project's folder, in a tab of the terminal panel inside Atollo labelled “Agent · VM”; while the VM is being prepared, the page shows the progress.",
-              "L'agent démarre dans sa sandbox (Claude Code, Codex) ou dans la VM du projet (Pi, Antigravity), dans le dossier du projet, dans un onglet du panneau des terminaux dans Atollo avec l'étiquette « Agent · VM » ; pendant que la VM se prépare, la page affiche la progression.",
-              "Der Agent startet in seiner Sandbox (Claude Code, Codex) oder in der VM des Projekts (Pi, Antigravity), im Ordner des Projekts, in einer Registerkarte des Terminalbereichs in Atollo mit der Beschriftung „Agent · VM“; während die VM vorbereitet wird, zeigt die Seite den Fortschritt.",
+              "L'agente parte nella sandbox del progetto, nella cartella del progetto, in una scheda del pannello dei terminali dentro Atollo con l'etichetta «Agente · VM»; mentre la VM si prepara, la pagina mostra l'avanzamento.",
+              "The agent starts in the project's sandbox, in the project's folder, in a tab of the terminal panel inside Atollo labelled “Agent · VM”; while the VM is being prepared, the page shows the progress.",
+              "L'agent démarre dans la sandbox du projet, dans le dossier du projet, dans un onglet du panneau des terminaux dans Atollo avec l'étiquette « Agent · VM » ; pendant que la VM se prépare, la page affiche la progression.",
+              "Der Agent startet in der Sandbox des Projekts, im Ordner des Projekts, in einer Registerkarte des Terminalbereichs in Atollo mit der Beschriftung „Agent · VM“; während die VM vorbereitet wird, zeigt die Seite den Fortschritt.",
             ),
           ]}
         />
@@ -236,10 +236,10 @@ export const AGENTS: TopicTexts = {
                 "Vor dem Start bereitet Atollo die VM vor: die Werkzeuge des Kits für ihr Linux in den Versionen des Projekts, die Datenbank des Projekts und, für Pi und Antigravity, ihren Build für Linux; der Fortschritt steht in der Statusleiste.",
               ),
               tr(
-                "Antigravity (agy) è un agente da terminale come Claude Code e Codex: gira nella VM del progetto con la sua build per Linux, come Pi, e accede lì con il tuo account Google o con la chiave API di Gemini (vedi sotto).",
-                "Antigravity (agy) is a terminal agent like Claude Code and Codex: it runs in the project's VM with its build for Linux, like Pi, and signs in there with your Google account or with the Gemini API key (see below).",
-                "Antigravity (agy) est un agent de terminal comme Claude Code et Codex : il tourne dans la VM du projet avec son build pour Linux, comme Pi, et s'y connecte avec votre compte Google ou avec la clé API Gemini (voir plus bas).",
-                "Antigravity (agy) ist ein Terminal-Agent wie Claude Code und Codex: Es läuft in der VM des Projekts mit seinem Build für Linux, wie Pi, und meldet sich dort mit deinem Google-Konto oder mit dem Gemini-API-Schlüssel an (siehe unten).",
+                "Antigravity (agy) è un agente da terminale come Claude Code e Codex: gira nella sandbox del progetto con la sua build per Linux, come gli altri, e accede lì con il tuo account Google o con la chiave API di Gemini (vedi sotto).",
+                "Antigravity (agy) is a terminal agent like Claude Code and Codex: it runs in the project's sandbox with its build for Linux, like the others, and signs in there with your Google account or with the Gemini API key (see below).",
+                "Antigravity (agy) est un agent de terminal comme Claude Code et Codex : il tourne dans la sandbox du projet avec son build pour Linux, comme les autres, et s'y connecte avec votre compte Google ou avec la clé API Gemini (voir plus bas).",
+                "Antigravity (agy) ist ein Terminal-Agent wie Claude Code und Codex: Es läuft in der Sandbox des Projekts mit seinem Build für Linux, wie die anderen, und meldet sich dort mit deinem Google-Konto oder mit dem Gemini-API-Schlüssel an (siehe unten).",
               ),
               tr(
                 "Scrivere claude, codex, pi o agy in un terminale del kit o dell'editor, nella cartella di un progetto, apre l'agente nella VM di quel progetto, nello stesso terminale. Fuori da un progetto, o senza VM, il comando dice perché ed esce: un agente non gira mai sul PC.",
@@ -339,10 +339,10 @@ export const AGENTS: TopicTexts = {
       >
         <P>
           {tr(
-            "Gli agenti accedono dentro la VM, non sul PC: il /login di Claude Code e l'accesso di Codex avvengono nella loro sandbox e restano lì; Pi e Antigravity accedono nella VM del progetto. La pagina AI dice quello che il PC può sapere di quell'accesso:",
-            "The agents sign in inside the VM, not on the PC: Claude Code's /login and Codex's sign-in happen in their sandbox and stay there; Pi and Antigravity sign in in the project's VM. The AI page tells what the PC can know of that sign-in:",
-            "Les agents se connectent dans la VM, pas sur le PC : le /login de Claude Code et la connexion de Codex se font dans leur sandbox et y restent ; Pi et Antigravity se connectent dans la VM du projet. La page IA dit ce que le PC peut savoir de cette connexion :",
-            "Die Agenten melden sich in der VM an, nicht auf dem PC: das /login von Claude Code und die Anmeldung von Codex erfolgen in ihrer Sandbox und bleiben dort; Pi und Antigravity melden sich in der VM des Projekts an. Die Seite KI sagt, was der PC über diese Anmeldung wissen kann:",
+            "Gli agenti accedono dentro la VM, non sul PC: il /login di Claude Code e gli accessi di Codex, Pi e Antigravity avvengono nella sandbox del progetto e restano lì, fino a «Ricrea». La pagina AI dice quello che il PC può sapere di quell'accesso:",
+            "The agents sign in inside the VM, not on the PC: Claude Code's /login and the sign-ins of Codex, Pi and Antigravity happen in the project's sandbox and stay there, until “Recreate”. The AI page tells what the PC can know of that sign-in:",
+            "Les agents se connectent dans la VM, pas sur le PC : le /login de Claude Code et les connexions de Codex, Pi et Antigravity se font dans la sandbox du projet et y restent, jusqu'à « Recréer ». La page IA dit ce que le PC peut savoir de cette connexion :",
+            "Die Agenten melden sich in der VM an, nicht auf dem PC: das /login von Claude Code und die Anmeldungen von Codex, Pi und Antigravity erfolgen in der Sandbox des Projekts und bleiben dort, bis „Neu erstellen“. Die Seite KI sagt, was der PC über diese Anmeldung wissen kann:",
           )}
         </P>
         <Table

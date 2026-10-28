@@ -358,11 +358,15 @@ fn e10_an_agent_is_prepared_in_its_sandbox() {
     let base = base_of(&kit);
     let dir = kit.projects().join("shop");
     assert!(crate::ipc::agents::agent_request(&kit, "gemini", &dir).is_err());
-    for (id, sandbox) in [
-        ("claude", crate::isolation::vm::agent_name("shop", "claude")),
-        ("codex", crate::isolation::vm::agent_name("shop", "codex")),
-        ("pi", crate::isolation::vm::name("shop")),
-    ] {
+    // Every agent in the project's sandbox (D-184), its build for Linux.
+    let sandbox = crate::isolation::vm::name("shop");
+    for id in ["claude", "codex"] {
+        install(
+            &kit.for_target(crate::isolation::vm::guest_target(kit.target()).unwrap()),
+            id,
+        );
+    }
+    for id in ["claude", "codex", "pi"] {
         let req = crate::ipc::agents::agent_request(&kit, id, &dir).unwrap();
         assert_eq!(req.origin.level(), Level::Agent);
         let fx = Fake::default();

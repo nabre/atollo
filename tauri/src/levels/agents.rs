@@ -7,9 +7,9 @@
 //! buttons, the palette and the editor's profiles all read it.
 //!
 //! Where the kit keeps an agent (Q11, decided by the user, 26/10/2026):
-//! only for the VM. Pi and Antigravity as their builds for the VM's Linux
-//! ([`kept_on`]); Claude Code and Codex not at all, the `sbx` agent images
-//! bring them ([`AgentRow::Provided`]). An agent's folder for any other
+//! only for the VM, every agent as its build for the VM's Linux
+//! ([`kept_on`], D-184: all four run in the project's sandbox). An agent's
+//! folder for any other
 //! system (an install of an earlier Atollo for the PC) is [`obsolete`]:
 //! never on a `PATH` (`env::strip_agents`), removed by the next «Applica»
 //! of the Tools page, which lists it among what goes.
@@ -32,7 +32,7 @@ use crate::isolation;
 use crate::kit::{Kit, Target};
 use crate::setup::{Catalog, Component, Group};
 
-use super::{Agent, AgentRunner, VmState};
+use super::{Agent, VmState};
 
 /// True exactly when the VM is on (LEVELS.md §7: `agentsEnabled`).
 pub fn agents_enabled(vm: &VmState) -> bool {
@@ -69,11 +69,10 @@ pub fn agent_of(c: &Component) -> Option<Agent> {
         .flatten()
 }
 
-/// The kit keeps `agent` for `target` (Q11): Pi and Antigravity for the
-/// VM's Linux only (every VM is Linux); Claude Code and Codex for no
-/// system, the `sbx` agent images bring them.
-pub fn kept_on(agent: Agent, target: Target) -> bool {
-    agent.runner() == AgentRunner::ProjectVm && target.is_linux()
+/// The kit keeps `agent` for `target` (Q11, D-184): every agent for the
+/// VM's Linux only (every VM is Linux).
+pub fn kept_on(_agent: Agent, target: Target) -> bool {
+    target.is_linux()
 }
 
 /// `c` may be installed or updated for `target` with the VM as `vm` says:
@@ -116,23 +115,15 @@ pub fn off_reason(vm: &VmState, lang: &str) -> Option<String> {
 }
 
 /// Why the agent `c` is not installed now (an install asked anyway), in
-/// `lang`: brought by the VM (Claude Code, Codex), the VM off, or a
-/// system that is not the VM's Linux.
+/// `lang`: the VM off, or a system that is not the VM's Linux.
 pub fn refused_install(c: &Component, vm: &VmState, lang: &str) -> String {
-    match agent_of(c).map(Agent::runner) {
-        Some(AgentRunner::SbxAgent) => t(
+    off_reason(vm, lang).unwrap_or_else(|| {
+        t(
             lang,
-            "{0} arriva con la sandbox di Docker Sandboxes: Atollo non lo scarica.",
+            "{0} si installa solo per il Linux della VM.",
             &[&c.name],
-        ),
-        _ => off_reason(vm, lang).unwrap_or_else(|| {
-            t(
-                lang,
-                "{0} si installa solo per il Linux della VM.",
-                &[&c.name],
-            )
-        }),
-    }
+        )
+    })
 }
 
 /// What an agent's row of the Tools page (and its tile in the quick panel)
@@ -140,22 +131,17 @@ pub fn refused_install(c: &Component, vm: &VmState, lang: &str) -> String {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum AgentRow {
-    /// Claude Code, Codex: «fornito dalla VM»; the kit downloads nothing.
-    Provided,
-    /// Pi, Antigravity without the VM: «serve la VM», nothing installed or
-    /// updated; `reason`: [`off_reason`].
+    /// Without the VM: «serve la VM», nothing installed or updated;
+    /// `reason`: [`off_reason`].
     NeedsVm { reason: String },
 }
 
 /// The row of `c` with the VM as `vm` says; `None` for every other
-/// component, and for Pi and Antigravity while the VM is on (installed for
-/// its Linux as any tool).
+/// component, and for an agent while the VM is on (installed for its Linux
+/// as any tool).
 pub fn agent_row(c: &Component, vm: &VmState, lang: &str) -> Option<AgentRow> {
-    let agent = agent_of(c)?;
-    match agent.runner() {
-        AgentRunner::SbxAgent => Some(AgentRow::Provided),
-        AgentRunner::ProjectVm => off_reason(vm, lang).map(|reason| AgentRow::NeedsVm { reason }),
-    }
+    agent_of(c)?;
+    off_reason(vm, lang).map(|reason| AgentRow::NeedsVm { reason })
 }
 
 /// The levels as the interface reads them (LEVELS.md §4.1): the payload

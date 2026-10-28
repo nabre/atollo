@@ -1,5 +1,5 @@
-// «VM del progetto» (LEVELS.md §8.1, §8.2, §8.5): each sandbox of the
-// project with its state pill, its mounts rw/ro and the PC's ports; the
+// «VM del progetto» (LEVELS.md §8.1, §8.2, §8.5): the project's sandbox
+// (every agent in it, D-184) with its state pill, its mounts rw/ro and the PC's ports; the
 // tools table after «Verifica strumenti»; the four actions, «Ricrea»
 // asked in the page first; without the VM, the reason and the notice.
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -18,7 +18,6 @@ afterEach(() => {
 function sandbox(over: Partial<SandboxReport>): SandboxReport {
   return {
     name: "atollo-p-shop-0123",
-    agent: null,
     state: "running",
     lastUsed: null,
     mounts: [
@@ -38,11 +37,7 @@ const REPORT: VmReport = {
   project: "shop",
   vm: "on",
   reason: null,
-  sandboxes: [
-    sandbox({ sessions: ["shop · bash"] }),
-    sandbox({ name: "atollo-a-claude-shop-0123", agent: "claude", state: "stopped", mounts: [], hostPorts: [] }),
-    sandbox({ name: "atollo-a-codex-shop-0123", agent: "codex", state: "missing", mounts: [], hostPorts: [] }),
-  ],
+  sandboxes: [sandbox({ sessions: ["shop · claude"] })],
   github: false,
 };
 
@@ -55,7 +50,7 @@ function answer(report: VmReport, more: Record<string, unknown> = {}) {
 }
 
 describe("ProjectVm", () => {
-  it("lists the project's sandbox, then each agent's, with its state, mounts and ports", async () => {
+  it("lists the project's sandbox with its state, mounts and ports", async () => {
     answer(REPORT);
     render(<ProjectVm project="shop" />);
     const own = await screen.findByRole("region", { name: "Sandbox del progetto" });
@@ -66,18 +61,14 @@ describe("ProjectVm", () => {
       .getAllByRole("region")
       .map((r) => r.getAttribute("aria-label"))
       .filter((l) => l !== null);
-    expect(regions).toEqual(["Sandbox del progetto", "Sandbox di Claude Code", "Sandbox di Codex"]);
+    expect(regions).toEqual(["Sandbox del progetto"]);
     expect(within(own).getByText("accesa").closest("[data-tone]")?.getAttribute("data-tone")).toBe("ready");
-    const claude = screen.getByRole("region", { name: "Sandbox di Claude Code" });
-    expect(within(claude).getByText("spenta").closest("[data-tone]")?.getAttribute("data-tone")).toBe("off");
-    const codex = screen.getByRole("region", { name: "Sandbox di Codex" });
-    expect(within(codex).getByText("non c'è")).toBeTruthy();
     const mounts = within(own).getByRole("list", { name: "Cartelle montate" });
     expect(within(mounts).getByText("lettura e scrittura")).toBeTruthy();
     expect(within(mounts).getByText("sola lettura")).toBeTruthy();
     expect(within(mounts).getByText("/d/kit/projects/shop")).toBeTruthy();
     expect(within(own).getByText(/3307 \(mysql shop\)/)).toBeTruthy();
-    expect(within(own).getByText(/Sessioni in corso: shop · bash/)).toBeTruthy();
+    expect(within(own).getByText(/Sessioni in corso: shop · claude/)).toBeTruthy();
     expect(screen.getByText("GitHub nella VM: no")).toBeTruthy();
   });
 
@@ -121,7 +112,7 @@ describe("ProjectVm", () => {
     const own = await screen.findByRole("region", { name: "Sandbox del progetto" });
     fireEvent.click(within(own).getByRole("button", { name: "Verifica strumenti" }));
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_vm_check", { project: "shop", agent: null });
+      expect(invoke).toHaveBeenCalledWith("project_vm_check", { project: "shop" });
     });
     const table = await within(own).findByRole("table", { name: "Strumenti nella VM" });
     const rows = within(table).getAllByRole("row").slice(1);
@@ -138,17 +129,17 @@ describe("ProjectVm", () => {
     const own = await screen.findByRole("region", { name: "Sandbox del progetto" });
     fireEvent.click(within(own).getByRole("button", { name: "Aggiorna strumenti" }));
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", agent: null, action: "refresh" });
+      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", action: "refresh" });
     });
-    const claude = screen.getByRole("region", { name: "Sandbox di Claude Code" });
-    // No session in it: «Riavvia» runs at once.
-    fireEvent.click(within(claude).getByRole("button", { name: "Riavvia" }));
+  });
+
+  it("runs «Riavvia» at once when no session runs in the sandbox", async () => {
+    answer({ ...REPORT, sandboxes: [sandbox({})] });
+    render(<ProjectVm project="shop" />);
+    const own = await screen.findByRole("region", { name: "Sandbox del progetto" });
+    fireEvent.click(within(own).getByRole("button", { name: "Riavvia" }));
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_vm_action", {
-        project: "shop",
-        agent: "claude",
-        action: "restart",
-      });
+      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", action: "restart" });
     });
   });
 
@@ -161,7 +152,7 @@ describe("ProjectVm", () => {
     expect(within(dialog).getByText("Ricreare Sandbox del progetto?")).toBeTruthy();
     expect(within(dialog).getByText(/Si perde: la home della VM/)).toBeTruthy();
     expect(within(dialog).getByText(/Resta: il progetto, i suoi database/)).toBeTruthy();
-    expect(within(dialog).getByText("Si fermano: shop · bash")).toBeTruthy();
+    expect(within(dialog).getByText("Si fermano: shop · claude")).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Annulla" }));
     await waitFor(() => {
       expect(screen.queryByRole("alertdialog")).toBeNull();
@@ -172,7 +163,7 @@ describe("ProjectVm", () => {
     const again = await screen.findByRole("alertdialog");
     fireEvent.click(within(again).getByRole("button", { name: "Ricrea" }));
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", agent: null, action: "recreate" });
+      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", action: "recreate" });
     });
   });
 
@@ -182,11 +173,11 @@ describe("ProjectVm", () => {
     const own = await screen.findByRole("region", { name: "Sandbox del progetto" });
     fireEvent.click(within(own).getByRole("button", { name: "Riavvia" }));
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText("Si fermano: shop · bash")).toBeTruthy();
+    expect(within(dialog).getByText("Si fermano: shop · claude")).toBeTruthy();
     expect(invoke).not.toHaveBeenCalledWith("project_vm_action", expect.anything());
     fireEvent.click(within(dialog).getByRole("button", { name: "Riavvia" }));
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", agent: null, action: "restart" });
+      expect(invoke).toHaveBeenCalledWith("project_vm_action", { project: "shop", action: "restart" });
     });
   });
 

@@ -13,7 +13,6 @@ use super::{Level, Placement, Refusal};
 #[serde(rename_all = "camelCase")]
 pub enum LevelLabel {
     Pc,
-    ProjectVm,
     AgentVm,
 }
 
@@ -21,28 +20,22 @@ pub enum LevelLabel {
 pub fn label_of(placement: &Placement) -> Option<LevelLabel> {
     match placement {
         Placement::Pc { .. } => Some(LevelLabel::Pc),
-        Placement::Vm {
-            level: Level::Agent,
-            ..
-        } => Some(LevelLabel::AgentVm),
-        Placement::Vm { .. } => Some(LevelLabel::ProjectVm),
+        Placement::Vm { .. } => Some(LevelLabel::AgentVm),
         Placement::Refused { .. } => None,
     }
 }
 
-/// The text of the label of `placement` in `lang` (§8.3): «PC» for level 1,
-/// «PC · senza VM» for level 2 on the PC, «VM progetto», «Agente · VM».
+/// The text of the label of `placement` in `lang` (§8.3): «PC» on the PC
+/// (levels 1 and 2, D-183), «Agente · VM» in the project's sandbox.
 pub fn label(placement: &Placement, lang: &str) -> Option<String> {
-    Some(label_text(label_of(placement)?, placement.level(), lang))
+    Some(label_text(label_of(placement)?, lang))
 }
 
-/// The text of `label` for a session of `level` in `lang` (§8.3).
-pub fn label_text(label: LevelLabel, level: Level, lang: &str) -> String {
-    match (label, level) {
-        (LevelLabel::Pc, Level::Project) => t(lang, "PC · senza VM", &[]),
-        (LevelLabel::Pc, _) => t(lang, "PC", &[]),
-        (LevelLabel::ProjectVm, _) => t(lang, "VM progetto", &[]),
-        (LevelLabel::AgentVm, _) => t(lang, "Agente · VM", &[]),
+/// The text of `label` in `lang` (§8.3).
+pub fn label_text(label: LevelLabel, lang: &str) -> String {
+    match label {
+        LevelLabel::Pc => t(lang, "PC", &[]),
+        LevelLabel::AgentVm => t(lang, "Agente · VM", &[]),
     }
 }
 
@@ -71,7 +64,7 @@ impl SessionLabel {
         })
     }
 
-    /// A session on the PC at `level` (Manual, or Project without the VM).
+    /// A session on the PC at `level` (Manual or Project).
     pub fn pc(level: Level) -> SessionLabel {
         SessionLabel {
             level,
@@ -80,16 +73,12 @@ impl SessionLabel {
         }
     }
 
-    /// A session in the sandbox `name` at `level` (Project or Agent).
+    /// An agent's session in the sandbox `name`.
     #[cfg(test)]
-    pub fn vm(level: Level, name: &str) -> SessionLabel {
+    pub fn vm(name: &str) -> SessionLabel {
         SessionLabel {
-            level,
-            label: if level == Level::Agent {
-                LevelLabel::AgentVm
-            } else {
-                LevelLabel::ProjectVm
-            },
+            level: Level::Agent,
+            label: LevelLabel::AgentVm,
             sandbox: Some(name.to_owned()),
         }
     }
@@ -97,39 +86,27 @@ impl SessionLabel {
     /// The label's text in `lang`.
     #[cfg(test)]
     pub fn text(&self, lang: &str) -> String {
-        label_text(self.label, self.level, lang)
+        label_text(self.label, lang)
     }
 }
 
-/// The line printed on stderr before a VM session starts (by the PC side,
-/// so it does not depend on the VM's shell); `None` on the PC, whose shells
-/// print their own banner (profile.ps1, bashrc), and for a refusal.
+/// The line printed on stderr before an agent's session starts (by the PC
+/// side, so it does not depend on the VM's shell); `None` on the PC, whose
+/// shells print their own banner (profile.ps1, bashrc), for the sandbox's
+/// tools (no session) and for a refusal.
 pub fn banner_line(placement: &Placement, lang: &str) -> Option<String> {
     let Placement::Vm {
-        level,
-        sandbox,
-        workdir,
-        program,
-        ..
+        sandbox, program, ..
     } = placement
     else {
         return None;
     };
-    Some(match (level, program) {
-        (
-            Level::Agent,
-            super::VmProgram::SbxAgent { agent } | super::VmProgram::AgentBinary { agent },
-        ) => t(
-            lang,
-            "[Atollo] Agente · VM: {0} in {1}",
-            &[agent.id(), sandbox.name()],
-        ),
-        _ => t(
-            lang,
-            "[Atollo] VM progetto: {0} · {1}",
-            &[sandbox.name(), workdir],
-        ),
-    })
+    let agent = program.agent()?;
+    Some(t(
+        lang,
+        "[Atollo] Agente · VM: {0} in {1}",
+        &[agent.id(), sandbox.name()],
+    ))
 }
 
 /// Why `reason` refused a request and what to do, in `lang` (the reply's

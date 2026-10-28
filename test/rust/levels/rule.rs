@@ -19,8 +19,6 @@ const GATES: &[&str] = &[
     "pty::program(",
     ".start_in(",
     "line_command(",
-    "pi_session_args(",
-    "agy_session_args(",
     "agent_session_args(",
 ];
 
@@ -32,7 +30,7 @@ const GATES_ALLOWED: &[(&str, &str)] = &[
     ("isolation/vm.rs", "the pure sbx argument builders"),
     (
         "isolation/mod.rs",
-        "Vm's lifecycle (launch, agent_session_args); fix_launch is the kit's sbx (§5.2)",
+        "Vm's lifecycle (launch); fix_launch is the kit's sbx (§5.2)",
     ),
     ("projects/run/start.rs", "defines start_in"),
     ("projects/frameworks/runner.rs", "defines line_command"),

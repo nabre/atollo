@@ -8,6 +8,8 @@ Status: **design, phase 1**; step 1 of 12.2 (types, `place_of`, `facts`, `decide
 
 > **D-183 (28/10/2026) supersedes this document where they differ: two places.** Everything but an agent runs on the PC, with or without the VM: the kit's and the editor's terminals (level 1), the project's code (level 2: its terminal, actions, sites, editor tasks, project creation, sealed as D-167 says) and the Web Server pools. The VM runs the agents (level 3) only. `decide` has nine rules (§3.4). The VM rows of level 2 below (R14–R17 of the old table, §6.3–6.5 in the VM, sites in containers, published ports, scaffolding in the VM) are removed from the code; the rest of this document still holds for the agents.
 
+> **D-184 (28/10/2026): one sandbox per project.** Every agent (Claude Code, Codex, Pi, Antigravity) runs in the project's sandbox `atollo-p-…` with the kit's build for the VM's Linux (`VmProgram::Agent`, `vm::agent_session_args`); `sbx`'s own agent sandboxes `atollo-a-…` are gone (those of an earlier Atollo are removed at the first status). `Origin::Sandbox` (`VmProgram::Tools`) is the sandbox itself for «Verifica strumenti», «Riavvia», «Ricrea», «Aggiorna». `decide` has eight rules (§3.4); the labels are «PC» and «Agente · VM» (§8.3).
+
 Contents:
 
 1. [Purpose and threat model](#1-purpose-and-threat-model)
@@ -359,7 +361,7 @@ The status used is the one at the moment of the request: no level is cached in f
 ```rust
 /// The one decision (D-179): pure, total, no I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement;
-/// `decide` with the row (`Rule::R1` … `Rule::R9`) that gave the placement:
+/// `decide` with the row (`Rule::R1` … `Rule::R8`) that gave the placement:
 /// for the tests and the log.
 pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 ```
@@ -372,7 +374,7 @@ pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 | `ProjectTerminal`, `EditorTask`, `Action`, `Site`, `Pool`, `Scaffold` | 2 Project |
 | `AgentButton`, `EditorAgentProfile`, `Forwarded`, `EditorExtension`   | 3 Agent   |
 
-Rules (D-183), evaluated top to bottom; the first that matches gives the placement. "Project" in the Place column means `Place::Project`, "Folder" means `Place::Folder`, "any" means either.
+Rules (D-183, D-184), evaluated top to bottom; the first that matches gives the placement. "Project" in the Place column means `Place::Project`, "Folder" means `Place::Folder`, "any" means either.
 
 | #   | Level | Origin                             | Place   | `vm` | Other facts         | Placement                                                                                                                  |
 | --- | ----- | ---------------------------------- | ------- | ---- | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -382,11 +384,10 @@ Rules (D-183), evaluated top to bottom; the first that matches gives the placeme
 | R4  | 3     | any                                | Folder  | On   | —                   | `Refused { AgentOutsideProject, OpenFromProject }`                                                                         |
 | R5  | 3     | any                                | Project | On   | `restart_pending`   | `Refused { DaemonRestartPending, RestartDaemon }`                                                                          |
 | R6  | 3     | any                                | Project | On   | `guest_dir == None` | `Refused { NoPathInVm { dir }, UseLocalDisk }`                                                                             |
-| R7  | 3     | agent with `runner() == ProjectVm` | Project | On   | `!linux_build`      | `Refused { NoLinuxBuild { agent }, None }`                                                                                 |
-| R8  | 3     | agent with `runner() == SbxAgent`  | Project | On   | —                   | `Vm { Agent, sandbox: Agent{agent_name(project, id)}, program: SbxAgent, host: {databases: true, local_models: false} }`  |
-| R9  | 3     | agent with `runner() == ProjectVm` | Project | On   | —                   | `Vm { Agent, sandbox: Project{name(project)}, program: AgentBinary, host: {databases: true, local_models: agent == Pi} }` |
+| R7  | 3     | any agent                          | Project | On   | `!linux_build`      | `Refused { NoLinuxBuild { agent }, None }`                                                                                 |
+| R8  | 3     | any agent, or `Sandbox`            | Project | On   | —                   | `Vm { Agent, sandbox: Project{name(project)}, program: Agent { agent } or Tools, host: {databases: true, local_models: agent == Pi} }` |
 
-Totality: levels 1 and 2 are covered by R2/R3 for every place and VM state; level 3 by R1, R4–R9. In every `Vm` placement `mounts` is `{ workspace_rw: project dir, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`) and `workdir` is `guest_dir` joined with `below`. A `Pc` placement's `dir` is the place's folder (`Place::dir`: the project's folder joined with `below`, or the folder). A refusal's `fix` is always `reason.fix()`. Rows can overlap (R5 and R6): the first wins. The test `every_request_has_exactly_one_placement` enumerates all origins × {project, project subfolder, folder} × every fact combination (VM on, off with and without blockers, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) and checks that a row matches, that the first row matching (the table written row by row in the test) is the one `decided` reports, and the invariants (12.3).
+Totality: levels 1 and 2 are covered by R2/R3 for every place and VM state; level 3 by R1, R4–R8. In every `Vm` placement `mounts` is `{ workspace_rw: project dir, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`) and `workdir` is `guest_dir` joined with `below`. A `Pc` placement's `dir` is the place's folder (`Place::dir`: the project's folder joined with `below`, or the folder). A refusal's `fix` is always `reason.fix()`. Rows can overlap (R5 and R6): the first wins. The test `every_request_has_exactly_one_placement` enumerates all origins × {project, project subfolder, folder} × every fact combination (VM on, off with and without blockers, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) and checks that a row matches, that the first row matching (the table written row by row in the test) is the one `decided` reports, and the invariants (12.3).
 
 Note on `Forwarded { from }`: `from` is kept for the log and the label only; it never changes the row. A forwarder only exists on the PC (level 1, or level 2 without the VM); level-2 sessions in the VM have no forwarders, so an agent cannot be started from inside a project VM (section 6.8).
 

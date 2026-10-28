@@ -8,6 +8,8 @@ Stato: **progetto, fase 1**; fatto il passo 1 di 12.2 (tipi, `place_of`, `facts`
 
 > **D-183 (28/10/2026) prevale su questo documento dove differiscono: due posti.** Tutto tranne un agente gira sul PC, con o senza la VM: i terminali del kit e dell'editor (livello 1), il codice del progetto (livello 2: il suo terminale, le azioni, i siti, i task dell'editor, la creazione dei progetti, sigillati come dice D-167) e i pool del Server web. La VM esegue solo gli agenti (livello 3). `decide` ha nove regole (§3.4). Le righe del livello 2 nella VM qui sotto (R14–R17 della vecchia tabella, §6.3–6.5 nella VM, siti in container, porte pubblicate, creazione nella VM) sono tolte dal codice; il resto del documento vale ancora per gli agenti.
 
+> **D-184 (28/10/2026): una sandbox per progetto.** Ogni agente (Claude Code, Codex, Pi, Antigravity) gira nella sandbox del progetto `atollo-p-…` con la build del kit per il Linux della VM (`VmProgram::Agent`, `vm::agent_session_args`); le sandbox di agente di `sbx` `atollo-a-…` non ci sono più (quelle di un Atollo precedente si tolgono al primo stato). `Origin::Sandbox` (`VmProgram::Tools`) è la sandbox stessa per «Verifica strumenti», «Riavvia», «Ricrea», «Aggiorna». `decide` ha otto regole (§3.4); le etichette sono «PC» e «Agente · VM» (§8.3).
+
 Indice:
 
 1. [Scopo e modello delle minacce](#1-scopo-e-modello-delle-minacce)
@@ -361,7 +363,7 @@ Lo stato usato è quello del momento della richiesta: nessun livello resta più 
 ```rust
 /// L'unica decisione (D-179): pura, totale, senza I/O.
 pub fn decide(req: &Request, facts: &Facts) -> Placement;
-/// `decide` con la riga (`Rule::R1` … `Rule::R9`) che ha dato il collocamento:
+/// `decide` con la riga (`Rule::R1` … `Rule::R8`) che ha dato il collocamento:
 /// per le prove e il log.
 pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 ```
@@ -374,7 +376,7 @@ pub fn decided(req: &Request, facts: &Facts) -> (Rule, Placement);
 | `ProjectTerminal`, `EditorTask`, `Action`, `Site`, `Pool`, `Scaffold` | 2 Progetto |
 | `AgentButton`, `EditorAgentProfile`, `Forwarded`, `EditorExtension`   | 3 Agente   |
 
-Regole (D-183), valutate dall'alto in basso; la prima che corrisponde dà il collocamento. «Project» nella colonna Luogo è `Place::Project`, «Folder» è `Place::Folder`, «any» l'uno o l'altro.
+Regole (D-183, D-184), valutate dall'alto in basso; la prima che corrisponde dà il collocamento. «Project» nella colonna Luogo è `Place::Project`, «Folder» è `Place::Folder`, «any» l'uno o l'altro.
 
 | #   | Livello | Origine                            | Luogo   | `vm` | Altri fatti         | Collocamento                                                                                                               |
 | --- | ------- | ---------------------------------- | ------- | ---- | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
@@ -384,11 +386,10 @@ Regole (D-183), valutate dall'alto in basso; la prima che corrisponde dà il col
 | R4  | 3       | any                                | Folder  | On   | —                   | `Refused { AgentOutsideProject, OpenFromProject }`                                                                         |
 | R5  | 3       | any                                | Project | On   | `restart_pending`   | `Refused { DaemonRestartPending, RestartDaemon }`                                                                          |
 | R6  | 3       | any                                | Project | On   | `guest_dir == None` | `Refused { NoPathInVm { dir }, UseLocalDisk }`                                                                             |
-| R7  | 3       | agente con `runner() == ProjectVm` | Project | On   | `!linux_build`      | `Refused { NoLinuxBuild { agent }, None }`                                                                                 |
-| R8  | 3       | agente con `runner() == SbxAgent`  | Project | On   | —                   | `Vm { Agent, sandbox: Agent{agent_name(project, id)}, program: SbxAgent, host: {databases: true, local_models: false} }`  |
-| R9  | 3       | agente con `runner() == ProjectVm` | Project | On   | —                   | `Vm { Agent, sandbox: Project{name(project)}, program: AgentBinary, host: {databases: true, local_models: agent == Pi} }` |
+| R7  | 3       | qualsiasi agente                   | Project | On   | `!linux_build`      | `Refused { NoLinuxBuild { agent }, None }`                                                                                 |
+| R8  | 3       | qualsiasi agente, o `Sandbox`      | Project | On   | —                   | `Vm { Agent, sandbox: Project{name(project)}, program: Agent { agent } o Tools, host: {databases: true, local_models: agent == Pi} }` |
 
-Totalità: i livelli 1 e 2 sono coperti da R2/R3 per ogni luogo e stato della VM; il livello 3 da R1, R4–R9. In ogni collocamento `Vm`, `mounts` è `{ workspace_rw: cartella del progetto, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`) e `workdir` è `guest_dir` unito a `below`. Il `dir` di un collocamento `Pc` è la cartella del luogo (`Place::dir`: quella del progetto unita a `below`, o la cartella). Il `fix` di un rifiuto è sempre `reason.fix()`. Le righe possono sovrapporsi (R5 e R6): vince la prima. La prova `every_request_has_exactly_one_placement` enumera tutte le origini × {progetto, sottocartella del progetto, cartella} × ogni combinazione di fatti (VM attiva, spenta con e senza motivi, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) e verifica che una riga corrisponda, che la prima riga che corrisponde (la tabella scritta riga per riga nella prova) sia quella che riporta `decided`, e le invarianti (12.3).
+Totalità: i livelli 1 e 2 sono coperti da R2/R3 per ogni luogo e stato della VM; il livello 3 da R1, R4–R8. In ogni collocamento `Vm`, `mounts` è `{ workspace_rw: cartella del progetto, tools_ro: facts.guest_tools }` (`[kit.for_target(guest).apps()]`) e `workdir` è `guest_dir` unito a `below`. Il `dir` di un collocamento `Pc` è la cartella del luogo (`Place::dir`: quella del progetto unita a `below`, o la cartella). Il `fix` di un rifiuto è sempre `reason.fix()`. Le righe possono sovrapporsi (R5 e R6): vince la prima. La prova `every_request_has_exactly_one_placement` enumera tutte le origini × {progetto, sottocartella del progetto, cartella} × ogni combinazione di fatti (VM attiva, spenta con e senza motivi, `restart_pending`, `guest_dir`, `linux_build`, `guest_tools`) e verifica che una riga corrisponda, che la prima riga che corrisponde (la tabella scritta riga per riga nella prova) sia quella che riporta `decided`, e le invarianti (12.3).
 
 Su `Forwarded { from }`: `from` serve solo al log e all'etichetta; non cambia mai la riga. Un inoltro esiste solo sul PC (livello 1, o livello 2 senza VM); le sessioni di livello 2 nella VM non hanno inoltri, quindi un agente non si avvia dall'interno della VM di un progetto (sezione 6.8).
 

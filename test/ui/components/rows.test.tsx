@@ -1,6 +1,5 @@
-// The agents' rows of «Tutti gli strumenti» (LEVELS.md §7, Q11): Claude
-// Code and Codex «fornito dalla VM», Pi and Antigravity «serve la VM» with
-// the reason without it, an install for the PC «da rimuovere»; none of them
+// The agents' rows of «Tutti gli strumenti» (LEVELS.md §7, Q11, D-184):
+// every agent «serve la VM» with the reason without it, an install for the PC «da rimuovere»; none of them
 // can be ticked or installed there.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -57,20 +56,14 @@ function row(c: ComponentInfo) {
 }
 
 describe("the agents' rows", () => {
-  it("says «fornito dalla VM» for Claude Code and Codex", () => {
-    const box = row(agent("claude", "Claude Code", { agent: { kind: "provided" } }));
-    expect(box.disabled).toBe(true);
-    expect(screen.getByText("fornito dalla VM").title).toContain("Docker Sandboxes");
-  });
-
-  it("says «serve la VM» with the reason for Pi without the VM", () => {
-    const box = row(agent("pi", "Pi", { agent: { kind: "needsVm", reason: REASON } }));
+  it("says «serve la VM» with the reason for an agent without the VM", () => {
+    const box = row(agent("claude", "Claude Code", { agent: { kind: "needsVm", reason: REASON } }));
     expect(box.disabled).toBe(true);
     expect(screen.getByText("serve la VM").title).toBe(REASON);
   });
 
   it("says an install for the PC goes with «Applica»", () => {
-    row(agent("codex", "Codex", { agent: { kind: "provided" }, leftover: true, present: true }));
+    row(agent("codex", "Codex", { agent: { kind: "needsVm", reason: REASON }, leftover: true, present: true }));
     expect(screen.getByText("da rimuovere").title).toContain("«Applica»");
   });
 });

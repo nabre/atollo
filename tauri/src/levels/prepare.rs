@@ -25,7 +25,7 @@ use crate::isolation::{self, vm, Vm};
 use crate::kit::Kit;
 
 use super::env::Environment;
-use super::{Agent, Level, Placement, Sandbox, VmProgram};
+use super::{Agent, Level, Placement, VmProgram};
 
 /// What `prepare` needs from the app, so that it can be tested without
 /// Tauri and without `sbx`.
@@ -304,7 +304,7 @@ fn in_vm(
             std::fs::create_dir_all(&dir).with_context(|| dir.display().to_string())?;
         }
     }
-    if let VmProgram::AgentBinary { agent } = program {
+    if let VmProgram::Agent { agent } = program {
         guest
             .as_ref()
             .and_then(|guest| isolation::agent_in_vm(kit, guest, agent.id()))
@@ -340,12 +340,6 @@ fn in_vm(
         mounts.tools_ro.clone(),
     )
     .ok_or_else(|| anyhow!(t(lang, "Docker Sandboxes (sbx) non è nel kit.", &[])))?;
-    let vm = match sandbox {
-        Sandbox::Project { .. } => vm,
-        Sandbox::Agent { agent, .. } => vm
-            .for_agent(project, agent.id())
-            .ok_or_else(|| anyhow!("levels: {} has no sandbox of sbx", agent.id()))?,
-    };
     anyhow::ensure!(
         vm.name == sandbox.name(),
         "levels: {} is not {}",
@@ -379,7 +373,7 @@ fn in_vm(
     //    inside the VM.
     let antigravity = matches!(
         program,
-        VmProgram::AgentBinary {
+        VmProgram::Agent {
             agent: Agent::Antigravity
         }
     );
@@ -402,7 +396,7 @@ fn in_vm(
 
 /// The kit's tools for `project`'s VM running `program`: those the kit
 /// chose (`editor::terminals::chosen_tools`), what the program needs
-/// (`needs`; the agent's own build for `AgentBinary`), at the lines the
+/// (`needs`; the agent's own build for an agent's session), at the lines the
 /// project chose (`versions::project_choice`). `program`: `None` for the
 /// sandbox's tools alone («Verifica strumenti» before a session).
 pub fn wanted_tools(
@@ -413,7 +407,7 @@ pub fn wanted_tools(
 ) -> BTreeMap<String, Option<String>> {
     let mut wanted = crate::editor::terminals::chosen_tools(kit);
     let own = match program {
-        Some(VmProgram::AgentBinary { agent }) => Some(agent.id()),
+        Some(VmProgram::Agent { agent }) => Some(agent.id()),
         _ => None,
     };
     for id in needs.iter().map(String::as_str).chain(own) {
@@ -636,15 +630,7 @@ impl SandboxInfo {
     /// the databases with their address and user, the PC's ports; never a
     /// password.
     pub fn text(&self, lang: &str) -> String {
-        let label = super::labels::label_text(
-            if self.level == Level::Agent {
-                super::labels::LevelLabel::AgentVm
-            } else {
-                super::labels::LevelLabel::ProjectVm
-            },
-            self.level,
-            lang,
-        );
+        let label = super::labels::label_text(super::labels::LevelLabel::AgentVm, lang);
         let mut out = vec![format!("Atollo · {label}")];
         out.push(t(lang, "Sandbox: {0}", &[&self.sandbox]));
         out.push(t(lang, "Progetto: {0}", &[&self.project]));

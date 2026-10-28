@@ -428,7 +428,7 @@ fn vm_reply(kit: &Kit, ready: &Ready, args: &[String], lang: &str) -> Result<Rep
         argv,
         env,
     );
-    if let VmProgram::AgentBinary { agent: Agent::Pi } = program {
+    if let VmProgram::Agent { agent: Agent::Pi } = program {
         reply.marker = Some(format!("{project}.pi"));
     }
     Ok(reply)
