@@ -207,8 +207,13 @@ struct Claim(String);
 impl Claim {
     /// `key` claimed; `None` while another preparation holds it.
     fn take(key: String) -> Option<Claim> {
-        let mut all = CLAIMS.lock().unwrap_or_else(PoisonError::into_inner);
-        all.insert(key.clone()).then_some(Claim(key))
+        // The lock let go first, and no `Claim` made for a key held: its
+        // drop would take the lock again and free the key of the other.
+        let fresh = CLAIMS
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(key.clone());
+        fresh.then(|| Claim(key))
     }
 }
 
