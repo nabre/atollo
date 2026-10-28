@@ -479,6 +479,11 @@
     "fr": "Le projet utilise pnpm, yarn ou bun : le panneau utilise npm. Si nécessaire, modifiez les commandes dans panel.json.",
     "de": "Das Projekt verwendet pnpm, yarn oder bun: Das Panel verwendet npm. Ändere bei Bedarf die Befehle in panel.json."
   },
+  "Il progetto ha più di {0} file e cartelle: gli strumenti sono quelli dei file letti, i più vicini alla cartella del progetto.": {
+    "en": "The project has more than {0} files and folders: the tools are those of the files read, the ones nearest to the project's folder.",
+    "fr": "Le projet a plus de {0} fichiers et dossiers : les outils sont ceux des fichiers lus, les plus proches du dossier du projet.",
+    "de": "Das Projekt hat mehr als {0} Dateien und Ordner: Die Werkzeuge sind die der gelesenen Dateien, der dem Projektordner nächsten."
+  },
   "Electron apre la sua finestra: qui vedi solo i log.": {
     "en": "Electron opens its own window: here you only see the logs.",
     "fr": "Electron ouvre sa propre fenêtre : ici, vous ne voyez que les journaux.",

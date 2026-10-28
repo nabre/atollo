@@ -1,5 +1,9 @@
 # Novità
 
+## Prossimo rilascio
+
+- **Strumenti da tutti i file del progetto** (D-186): componenti e versioni si leggono a ogni profondità della cartella del progetto (non più solo nella radice e nei primi livelli), anche da `rust-toolchain.toml`, `.tool-versions` e `packageManager`; aprendo un progetto i file cambiati si applicano in background; nella creazione guidata si applicano le versioni dichiarate dai file del framework.
+
 ## Rilascio 0.8.0 alpha (28/10/2026): due posti, una sandbox
 
 - **Due posti, più semplici** (D-183): terminali, azioni (`npm run dev`), siti, task dell'editor, creazione dei progetti e server web girano sempre sul PC, anche con la VM accesa; la VM serve solo agli agenti. Niente più porte pubblicate dalla VM, siti in container o pool disattivati con la VM.

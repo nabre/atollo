@@ -25,6 +25,7 @@ mod php;
 mod python;
 mod rust;
 mod site;
+pub mod walk;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -33,6 +34,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::common::i18n::t as tr;
+
+pub use walk::Walk;
 
 pub use overrides::{
     remove_action, save_action, set_default_action, set_site_with_options, ActionEdit, SiteKind,
@@ -182,6 +185,10 @@ pub struct Project {
     pub custom: bool,
     /// Id of the action of the main button.
     pub default: Option<String>,
+    /// The walk of its files stopped at its budget (D-186): the tools are
+    /// those of the files read.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub partial: bool,
 }
 
 /// Folders that do not hold sources.
@@ -298,37 +305,6 @@ fn php_server(dir: &Path, root: &str) -> String {
     )
 }
 
-/// One walk of the project: 3 levels, at most 3000 files, no IGNORED folders.
-fn walk_files(dir: &Path, on_file: &mut dyn FnMut(&str)) {
-    fn walk(d: &Path, depth: u32, seen: &mut u32, on_file: &mut dyn FnMut(&str)) {
-        // Below the root, links are not entered (a DirEntry's type is the
-        // link's own); the root itself is checked here.
-        if depth > 3 || *seen > 3000 || (depth == 0 && crate::platform::safe_path::is_link(d)) {
-            return;
-        }
-        let Ok(entries) = fs::read_dir(d) else {
-            return;
-        };
-        for e in entries.flatten() {
-            let name = e.file_name().to_string_lossy().into_owned();
-            if name.starts_with('.') {
-                continue;
-            }
-            let Ok(t) = e.file_type() else { continue };
-            if t.is_dir() {
-                if !IGNORED.contains(&name.as_str()) {
-                    walk(&e.path(), depth + 1, seen, on_file);
-                }
-                continue;
-            }
-            *seen += 1;
-            on_file(&name);
-        }
-    }
-    let mut seen = 0;
-    walk(dir, 0, &mut seen, on_file);
-}
-
 fn ext_of(name: &str) -> String {
     Path::new(name)
         .extension()
@@ -377,12 +353,16 @@ fn language_of(ext: &str) -> Option<&'static str> {
 
 /// Languages by number of files, most used first.
 pub fn languages(dir: &Path) -> Vec<String> {
+    languages_in(&walk::walk(dir))
+}
+
+fn languages_in(walk: &Walk) -> Vec<String> {
     let mut count: BTreeMap<&'static str, usize> = BTreeMap::new();
-    walk_files(dir, &mut |name| {
+    for name in walk.names() {
         if let Some(l) = language_of(&ext_of(name)) {
             *count.entry(l).or_default() += 1;
         }
-    });
+    }
     let mut list: Vec<(&str, usize)> = count.into_iter().collect();
     list.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(b.0)));
     list.into_iter().map(|(l, _)| l.to_owned()).collect()
@@ -411,9 +391,10 @@ fn need_of_ext(ext: &str) -> Option<&'static str> {
 
 fn need_of_file(name: &str) -> Option<&'static str> {
     Some(match name {
+        "package.json" => "node",
         "requirements.txt" | "pyproject.toml" | "Pipfile" | "manage.py" => "python",
         "composer.json" => "php",
-        "Cargo.toml" => "rust",
+        "Cargo.toml" | "rust-toolchain.toml" | "rust-toolchain" => "rust",
         "go.mod" => "go",
         "pom.xml" | "build.gradle" => "java",
         "build.gradle.kts" => "kotlin",
@@ -431,11 +412,15 @@ fn need_of_file(name: &str) -> Option<&'static str> {
     })
 }
 
-/// The database servers a project uses (D-73), from its root: SQLite files,
-/// `.env` (Laravel's `DB_CONNECTION`, `DATABASE_URL`) and the drivers in
-/// its manifests (npm, pip, Composer). A `.env` or a driver of MariaDB
-/// means the kit's MySQL, its only SQL server.
-fn databases(dir: &Path) -> BTreeSet<&'static str> {
+/// The manifests read for the drivers of the databases, at any depth
+/// (D-186): at most this many of them.
+const MANIFESTS_READ: usize = 200;
+
+/// The database servers a project uses (D-73): SQLite files, `.env` of its
+/// root (Laravel's `DB_CONNECTION`, `DATABASE_URL`) and the drivers in its
+/// manifests (npm, pip, Composer) at any depth (D-186). A `.env` or a
+/// driver of MariaDB means the kit's MySQL, its only SQL server.
+fn databases(dir: &Path, walk: &Walk) -> BTreeSet<&'static str> {
     let mut found = BTreeSet::new();
     if exists(dir, "wp-config.php")
         || exists(dir, "wp-settings.php")
@@ -459,10 +444,19 @@ fn databases(dir: &Path) -> BTreeSet<&'static str> {
             }
         }
     }
-    let manifests = read("package.json")
-        + &read("requirements.txt")
-        + &read("pyproject.toml")
-        + &read("composer.json");
+    let manifests: String = walk
+        .files
+        .iter()
+        .filter(|f| {
+            matches!(
+                walk::name_of(f),
+                "package.json" | "requirements.txt" | "pyproject.toml" | "composer.json"
+            )
+        })
+        .take(MANIFESTS_READ)
+        .map(|f| read(f))
+        .collect::<Vec<_>>()
+        .join("\n");
     let has = |words: &[&str]| {
         words.iter().any(|w| {
             manifests.match_indices(w).any(|(i, _)| {
@@ -498,11 +492,12 @@ fn databases(dir: &Path) -> BTreeSet<&'static str> {
     if has(&["sqlite3", "better-sqlite3", "aiosqlite"]) {
         found.insert("sqlite");
     }
-    walk_files(dir, &mut |name| {
-        if [".sqlite", ".sqlite3", ".db"].contains(&ext_of(name).as_str()) {
-            found.insert("sqlite");
-        }
-    });
+    if walk
+        .names()
+        .any(|name| [".sqlite", ".sqlite3", ".db"].contains(&ext_of(name).as_str()))
+    {
+        found.insert("sqlite");
+    }
     found
 }
 
@@ -522,11 +517,54 @@ pub(crate) fn env_wants_mariadb(dir: &Path) -> bool {
     })
 }
 
-/// Ids of the kit's components the project needs, sorted. Only ids that
-/// exist in the catalog are kept (all of the above are, today).
+/// The ids of the tools `.tool-versions` (asdf, mise) names that the kit
+/// has.
+fn tool_versions_ids(text: &str) -> Vec<&'static str> {
+    text.lines()
+        .filter_map(|l| l.split_whitespace().next())
+        .filter_map(|tool| {
+            Some(match tool {
+                "nodejs" | "node" => "node",
+                "python" => "python",
+                "ruby" => "ruby",
+                "golang" | "go" => "go",
+                "java" => "java",
+                "php" => "php",
+                "rust" => "rust",
+                "deno" => "deno",
+                "bun" => "bun",
+                "dotnet" | "dotnet-core" => "dotnet",
+                "dart" => "dart",
+                "zig" => "zig",
+                "julia" => "julia",
+                "kotlin" => "kotlin",
+                "pnpm" | "yarn" => "pnpm",
+                "R" | "r" => "r",
+                _ => return None,
+            })
+        })
+        .collect()
+}
+
+/// pnpm or yarn as `package.json` names them (`"packageManager":
+/// "pnpm@9.1.0"`).
+fn wants_pnpm(package_json: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(package_json)
+        .ok()
+        .and_then(|v| v["packageManager"].as_str().map(str::to_owned))
+        .is_some_and(|pm| pm.starts_with("pnpm@") || pm.starts_with("yarn@"))
+}
+
+/// Ids of the kit's components the project needs, sorted: what every file
+/// at any depth names (D-186). Only ids that exist in the catalog are kept
+/// (all of the above are, today).
 pub fn requires(dir: &Path) -> Vec<String> {
+    requires_in(dir, &walk::walk(dir))
+}
+
+fn requires_in(dir: &Path, walk: &Walk) -> Vec<String> {
     let mut found = BTreeSet::new();
-    walk_files(dir, &mut |name| {
+    for (rel, name) in walk.files.iter().map(|f| (f.as_str(), walk::name_of(f))) {
         let lower = name.to_ascii_lowercase();
         let id = need_of_file(name)
             .or_else(|| need_of_ext(&ext_of(name)))
@@ -542,7 +580,13 @@ pub fn requires(dir: &Path) -> Vec<String> {
         if name == "CMakeLists.txt" {
             found.insert("cc");
         }
-    });
+        if name == ".tool-versions" {
+            found.extend(tool_versions_ids(&read(dir, rel)));
+        }
+        if name == "package.json" && depth_ok(rel) && wants_pnpm(&read(dir, rel)) {
+            found.insert("pnpm");
+        }
+    }
     // A `.htaccess` is PHP; Apache where the catalog has it and for rules
     // of its own (Caddy serves the stock ones, detect/php.rs).
     if php::HTACCESS.iter().any(|f| exists(dir, f)) {
@@ -552,13 +596,19 @@ pub fn requires(dir: &Path) -> Vec<String> {
         }
     }
     found.extend(container::servers(dir).into_keys());
-    found.extend(databases(dir));
+    found.extend(databases(dir, walk));
     let catalog = crate::setup::Catalog::get();
     found
         .into_iter()
         .filter(|id| catalog.find(id).is_some())
         .map(str::to_owned)
         .collect()
+}
+
+/// `package.json` files read for `packageManager`: those of the project's
+/// own folders, not of a vendored package deep in its tree.
+fn depth_ok(rel: &str) -> bool {
+    walk::depth(rel) <= 4
 }
 
 /// The lines of the kit's components that the project's containers name
@@ -595,6 +645,9 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
     let mut results = detect_folder(dir, lang);
+    // One walk of the whole folder for the languages and the tools
+    // (D-186); the actions stay those of the root and its subprojects.
+    let walk = walk::walk(dir);
 
     // Composite projects: frontend\, backend\, api\… each with its manifest.
     for sub in list_dir(dir) {
@@ -648,14 +701,22 @@ pub fn detect(dir: &Path, lang: &str) -> Project {
             let reasons: Vec<&str> = results.iter().map(|r| r.reason.as_str()).collect();
             tr(lang, "Rilevato da: {0}", &[&reasons.join(", ")])
         },
-        languages: languages(dir),
-        requires: requires(dir),
+        languages: languages_in(&walk),
+        requires: requires_in(dir, &walk),
         lines: lines(dir),
         actions: results.iter().flat_map(|r| r.actions.clone()).collect(),
         warnings: results.iter().flat_map(|r| r.warnings.clone()).collect(),
         custom: false,
         default: None,
+        partial: walk.cut,
     };
+    if walk.cut {
+        project.warnings.push(tr(
+            lang,
+            "Il progetto ha più di {0} file e cartelle: gli strumenti sono quelli dei file letti, i più vicini alla cartella del progetto.",
+            &[&walk::MAX_ENTRIES.to_string()],
+        ));
+    }
     // MariaDB's driver of Laravel on the kit's MySQL: its grammar
     // writes types MySQL does not have (a native `uuid` column).
     if env_wants_mariadb(dir) {

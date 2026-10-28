@@ -511,7 +511,10 @@ pub async fn frameworks_create<R: Runtime>(
                 crate::common::log::warn(&format!("{name}: action {}: {e:#}", a.name));
             }
         }
-        crate::versions::pin_newest(&kit, &name);
+        // On the project's folder, its files merged (never the staging
+        // folder): the versions its files declare first, then the newest
+        // of the others (`settle_project` ends with `pin_newest`; a
+        // `pin_newest` before it hid every declared version, D-186).
         settle_project(&app, &task, &kit, lang, &name, &dir);
         // A new project: the pools are scanned again for its site.
         servers.invalidate();

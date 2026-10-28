@@ -262,12 +262,21 @@ fn fingerprint(kit: &Kit, lang: &str) -> String {
     crate::common::fsx::join_rel(kit.apps(), "tools/vcruntime/vcruntime140.dll")
         .is_file()
         .hash(&mut h);
+    let pin_files: std::collections::BTreeSet<&str> =
+        known().projects.iter().map(|s| s.file.as_str()).collect();
     for (project, dir) in project_dirs(kit) {
         project.hash(&mut h);
         crate::versions::project_choice(kit, &project).hash(&mut h);
-        for spec in &known().projects {
-            if let Ok(m) = fs::metadata(dir.join(&spec.file)) {
-                (&spec.file, m.len(), m.modified().ok()).hash(&mut h);
+        // The pin files at any depth (D-186): one added, removed or changed
+        // in a subfolder builds the matrix again.
+        let walk = crate::detect::walk::walk(&dir);
+        for rel in walk
+            .files
+            .iter()
+            .filter(|f| pin_files.contains(crate::detect::walk::name_of(f)))
+        {
+            if let Ok(m) = fs::metadata(dir.join(rel.replace('/', std::path::MAIN_SEPARATOR_STR))) {
+                (rel, m.len(), m.modified().ok()).hash(&mut h);
             }
         }
     }
@@ -353,6 +362,27 @@ pub fn settle(kit: &Kit, lang: &str, project: &str) -> Vec<(String, String)> {
         }
     }
     downloads
+}
+
+/// What decides a project's settle (D-186): the tools its files need and
+/// its pin files at any depth (name, size, time). The same value while
+/// none of them changed.
+pub fn project_fingerprint(dir: &Path) -> u64 {
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    crate::detect::requires(dir).hash(&mut h);
+    let pin_files: std::collections::BTreeSet<&str> =
+        known().projects.iter().map(|s| s.file.as_str()).collect();
+    let walk = crate::detect::walk::walk(dir);
+    for rel in walk
+        .files
+        .iter()
+        .filter(|f| pin_files.contains(crate::detect::walk::name_of(f)))
+    {
+        if let Ok(m) = fs::metadata(dir.join(rel.replace('/', std::path::MAIN_SEPARATOR_STR))) {
+            (rel, m.len(), m.modified().ok()).hash(&mut h);
+        }
+    }
+    h.finish()
 }
 
 /// The saved matrix while nothing it was made from changed; otherwise (or

@@ -310,6 +310,70 @@ fn settle_project<R: Runtime>(
     crate::versions::pin_newest(kit, project);
 }
 
+/// A project opened (its page asks its status): when what its files need or
+/// pin changed since the last look of this run (D-186), it is settled
+/// again in the background as a clone is ([`settle_project`]): the missing
+/// tools installed, the declared versions chosen where the user chose none,
+/// the downloads started. At most one settle per project at a time, and a
+/// look at most every [`SETTLE_EVERY`].
+pub(super) fn settle_when_changed<R: Runtime>(
+    app: &AppHandle<R>,
+    task: &Arc<SetupTask>,
+    kit: &Kit,
+    lang: &'static str,
+    project: &str,
+    dir: &std::path::Path,
+) {
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    use std::time::Instant;
+    // project → (last look, fingerprint seen); in `BUSY` while settling.
+    static SEEN: Mutex<Option<HashMap<String, (Instant, u64)>>> = Mutex::new(None);
+    static BUSY: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    {
+        let seen = SEEN
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if seen
+            .as_ref()
+            .and_then(|m| m.get(project))
+            .is_some_and(|(at, _)| at.elapsed() < SETTLE_EVERY)
+        {
+            return;
+        }
+        let mut busy = BUSY
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if busy.iter().any(|p| p == project) {
+            return;
+        }
+        busy.push(project.to_owned());
+    }
+    let (app, task, kit) = (app.clone(), Arc::clone(task), kit.clone());
+    let (project, dir) = (project.to_owned(), dir.to_path_buf());
+    std::thread::spawn(move || {
+        let print = crate::versions::relations::project_fingerprint(&dir);
+        let changed = {
+            let mut seen = SEEN
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let map = seen.get_or_insert_with(HashMap::new);
+            let before = map.insert(project.clone(), (Instant::now(), print));
+            before.is_none_or(|(_, b)| b != print)
+        };
+        if changed {
+            settle_project(&app, &task, &kit, lang, &project, &dir);
+        }
+        BUSY.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retain(|p| p != &project);
+    });
+}
+
+/// How often an open project's files are looked at again
+/// ([`settle_when_changed`]).
+const SETTLE_EVERY: std::time::Duration = std::time::Duration::from_secs(30);
+
 /// `ids` and, transitively, what they need on `target`, in catalog order.
 fn with_needs<'a>(
     catalog: &'a Catalog,
