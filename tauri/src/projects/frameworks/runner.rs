@@ -96,10 +96,14 @@ pub fn line_command(
     cmd
 }
 
-/// Runs `cmd` (a line of a creation, on the PC or in the new project's
-/// VM: `levels::start::scaffold_command`) in a job of its own, without
-/// input. Every line of output goes to `out`. A failure returns its last
-/// line of output.
+/// The lines of output a failure returns: a tool that runs others
+/// (Composer's scripts, Laravel's `install:features`) ends with a generic
+/// line, the cause is above it.
+const TAIL: usize = 12;
+
+/// Runs `cmd` (a line of a creation: `levels::start::scaffold_command`) in
+/// a job of its own, without input. Every line of output goes to `out`. A
+/// failure returns its last [`TAIL`] lines of output.
 pub fn run_command(
     mut cmd: std::process::Command,
     out: &(dyn Fn(&str) + Sync),
@@ -114,7 +118,7 @@ pub fn run_command(
     if cancelled() {
         cancel();
     }
-    let last = Mutex::new(String::new());
+    let last = Mutex::new(std::collections::VecDeque::<String>::new());
     let pipes: [Option<Box<dyn Read + Send>>; 2] = [
         child
             .stdout
@@ -134,9 +138,13 @@ pub fn run_command(
                 let mut emit = |l: String| {
                     if !l.trim().is_empty() {
                         out(&l);
-                        *last
+                        let mut last = last
                             .lock()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner) = l;
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
+                        if last.len() == TAIL {
+                            last.pop_front();
+                        }
+                        last.push_back(l);
                     }
                 };
                 // A character split across two reads waits for the
@@ -163,7 +171,7 @@ pub fn run_command(
     match status {
         Ok(s) if s.success() => Ok(()),
         Ok(s) if last.is_empty() => Err(format!("exit code {}", s.code().unwrap_or(-1))),
-        Ok(_) => Err(last),
+        Ok(_) => Err(Vec::from(last).join("\n")),
         Err(e) => Err(e.to_string()),
     }
 }

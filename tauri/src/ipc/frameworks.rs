@@ -217,6 +217,28 @@ fn merge_copy(
     Ok(())
 }
 
+/// On Windows, why a failed line may come from the folder `at` itself: `&`,
+/// `%`, `!` or `^` in its path break the `.cmd` launchers of npm, Composer
+/// and the other tools run through cmd (`npm run`, `npx`, scripts), whatever
+/// the framework. `None` elsewhere, or for a path without them.
+fn cmd_path_hint(kit: &Kit, at: &std::path::Path, lang: &str) -> Option<String> {
+    if !kit.target().is_windows() {
+        return None;
+    }
+    let found: Vec<String> = crate::diagnostics::health::risky_chars(&at.display().to_string())
+        .into_iter()
+        .filter(|c| matches!(c, '&' | '%' | '!' | '^'))
+        .map(|c| format!("«{c}»"))
+        .collect();
+    (!found.is_empty()).then(|| {
+        crate::common::i18n::t(
+            lang,
+            "Il percorso {0} contiene {1}: su Windows i comandi di npm e degli altri strumenti avviati da cmd non lo gestiscono. Sposta il kit in una cartella con solo lettere, cifre, trattini e spazi.",
+            &[&at.display().to_string(), &found.join(" ")],
+        )
+    })
+}
+
 /// The request of the creation of a project from the base `base` in the
 /// new project's folder `dir` (E9, `Origin::Scaffold`): `dir` exists (made
 /// empty by the caller), so the place is the new project.
@@ -374,8 +396,16 @@ pub async fn frameworks_create<R: Runtime>(
                     return crate::common::i18n::t(lang, "Creazione annullata.", &[]).into();
                 }
                 crate::common::log::warn(&format!("frameworks: {command}: {last}"));
-                crate::common::i18n::t(lang, "Comando non riuscito: {0}\n{1}", &[&command, &last])
-                    .into()
+                let mut text = crate::common::i18n::t(
+                    lang,
+                    "Comando non riuscito: {0}\n{1}",
+                    &[&command, &last],
+                );
+                if let Some(hint) = cmd_path_hint(&kit, at, lang) {
+                    text.push_str("\n\n");
+                    text.push_str(&hint);
+                }
+                text.into()
             })
         };
         let result = (|| -> CmdResult<()> {

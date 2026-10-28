@@ -5,6 +5,7 @@
 - **Due posti, più semplici** (D-183): terminali, azioni (`npm run dev`), siti, task dell'editor, creazione dei progetti e server web girano sempre sul PC, anche con la VM accesa; la VM serve solo agli agenti. Niente più porte pubblicate dalla VM, siti in container o pool disattivati con la VM.
 - **Una sandbox per progetto, tutti gli agenti dentro** (D-184): Claude Code, Codex, Pi e Antigravity girano nella sandbox del progetto con la loro versione per Linux del kit, che li installa e li aggiorna; ogni agente accede lì una volta, fino a «Ricrea». Le sandbox di agente di prima si tolgono da sole; le etichette dei terminali sono «PC» e «Agente · VM».
 - **Strumenti sempre anche sul PC**: con la VM accesa gli strumenti scelti si installano sul PC e, per quelli che servono agli agenti, anche per il Linux della VM; i progetti contano ciò che manca sul PC.
+- **Creazione dei progetti: errori leggibili**: se un comando della creazione fallisce, il messaggio riporta le ultime righe dell'output e non più solo l'ultima (per esempio il passo che fallisce dentro `artisan install:features` dei kit di Laravel); su Windows dice anche quando il percorso del kit contiene `&`, `%`, `!` o `^`, che rompono i comandi di npm avviati da cmd.
 
 ## Rilascio 0.7.5 alpha (28/10/2026): una VM per clic
 

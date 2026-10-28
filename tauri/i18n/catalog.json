@@ -2713,5 +2713,10 @@
     "en": "{0} does not start from here. Agents start from the project's page, from the editor, or by typing their name in a terminal of the PC in the project's folder.",
     "fr": "{0} ne démarre pas d'ici. Les agents se lancent depuis la page du projet, depuis l'éditeur, ou en tapant leur nom dans un terminal du PC dans le dossier du projet.",
     "de": "{0} startet nicht von hier. Agenten starten von der Seite des Projekts, aus dem Editor oder durch Eingabe ihres Namens in einem Terminal des PCs im Ordner des Projekts."
+  },
+  "Il percorso {0} contiene {1}: su Windows i comandi di npm e degli altri strumenti avviati da cmd non lo gestiscono. Sposta il kit in una cartella con solo lettere, cifre, trattini e spazi.": {
+    "en": "The path {0} contains {1}: on Windows the commands of npm and of the other tools started through cmd cannot handle it. Move the kit to a folder with only letters, digits, dashes and spaces.",
+    "fr": "Le chemin {0} contient {1} : sous Windows, les commandes de npm et des autres outils lancés par cmd ne le gèrent pas. Déplacez le kit dans un dossier avec seulement des lettres, des chiffres, des tirets et des espaces.",
+    "de": "Der Pfad {0} enthält {1}: Unter Windows kommen die Befehle von npm und der anderen über cmd gestarteten Werkzeuge damit nicht zurecht. Verschiebe das Kit in einen Ordner mit nur Buchstaben, Ziffern, Bindestrichen und Leerzeichen."
   }
 }

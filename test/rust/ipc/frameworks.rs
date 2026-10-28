@@ -127,3 +127,21 @@ fn generated_db_credentials_win_over_the_base() {
         "DB_PASSWORD=\nAPP_KEY=k\n"
     );
 }
+
+/// A failed line on Windows says when the folder's path has a character
+/// that breaks cmd's launchers (`npm run`, Composer's scripts); never
+/// elsewhere, nor for a path without one.
+#[test]
+fn a_cmd_character_in_the_path_is_told() {
+    use crate::kit::{Kit, Target};
+    let win = Kit::at_target("kit".into(), Target::WIN32_X64);
+    let linux = Kit::at_target("kit".into(), Target::LINUX_X64);
+    let risky = Path::new(r"D:\sp ace & co\projects");
+    let hint = super::cmd_path_hint(&win, risky, "it").unwrap();
+    assert!(hint.contains("«&»"), "{hint}");
+    assert!(super::cmd_path_hint(&win, Path::new(r"D:\kit (1)\projects"), "it").is_none());
+    assert!(super::cmd_path_hint(&linux, risky, "it").is_none());
+    for lang in crate::common::i18n::LANGS {
+        assert!(super::cmd_path_hint(&win, Path::new(r"D:\a%b"), lang).is_some());
+    }
+}
