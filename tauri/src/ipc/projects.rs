@@ -362,12 +362,16 @@ pub async fn project_install_missing<R: Runtime>(
 /// Git state and agent instructions of a project, for its page.
 #[tauri::command]
 pub async fn project_status<R: Runtime>(
+    app: AppHandle<R>,
     webview: Webview<R>,
     state: State<'_, AppState>,
     project: String,
 ) -> CmdResult<crate::projects::ProjectStatus> {
     ensure_main(&webview)?;
     let dir = project_dir(&state.kit, Some(&project), state.lang())?;
+    // Its page is open: what its files need, settled in the background
+    // when they changed (D-186).
+    super::settle_when_changed(&app, &state.setup, &state.kit, state.lang(), &project, &dir);
     let root = state.kit.projects();
     tauri::async_runtime::spawn_blocking(move || crate::projects::status(&dir, &root))
         .await

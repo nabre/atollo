@@ -64,6 +64,21 @@
     { "component": "bun", "file": ".bun-version", "whole": true, "line": true },
     { "component": "typst", "file": "typst.toml", "regex": "(?m)^compiler\\s*=\\s*\"([^\"]+)\"", "minimum": true },
     { "component": "cmake", "file": "CMakeLists.txt", "regex": "(?i)cmake_minimum_required\\s*\\(\\s*VERSION\\s+(\\d+\\.\\d+(?:\\.\\d+)?)", "minimum": true },
-    { "component": "rust", "file": "Cargo.toml", "regex": "(?m)^rust-version\\s*=\\s*\"([^\"]+)\"", "minimum": true }
+    { "component": "rust", "file": "Cargo.toml", "regex": "(?m)^rust-version\\s*=\\s*\"([^\"]+)\"", "minimum": true },
+    { "component": "rust", "file": "rust-toolchain.toml", "regex": "(?m)^\\s*channel\\s*=\\s*[\"']([^\"']+)[\"']", "line": true },
+    { "component": "rust", "file": "rust-toolchain", "whole": true, "line": true },
+    { "component": "node", "file": ".tool-versions", "regex": "(?m)^nodejs\\s+(\\S+)", "line": true },
+    { "component": "python", "file": ".tool-versions", "regex": "(?m)^python\\s+(\\S+)", "line": true },
+    { "component": "ruby", "file": ".tool-versions", "regex": "(?m)^ruby\\s+(\\S+)", "line": true },
+    { "component": "go", "file": ".tool-versions", "regex": "(?m)^golang\\s+(\\S+)", "line": true },
+    { "component": "java", "file": ".tool-versions", "regex": "(?m)^java\\s+(?:[a-z]+-)?(\\d+)", "line": true },
+    { "component": "php", "file": ".tool-versions", "regex": "(?m)^php\\s+(\\S+)", "line": true },
+    { "component": "dotnet", "file": ".tool-versions", "regex": "(?m)^dotnet(?:-core)?\\s+(\\S+)", "line": true },
+    { "component": "deno", "file": ".tool-versions", "regex": "(?m)^deno\\s+(\\S+)", "line": true },
+    { "component": "bun", "file": ".tool-versions", "regex": "(?m)^bun\\s+(\\S+)", "line": true },
+    { "component": "dart", "file": ".tool-versions", "regex": "(?m)^dart\\s+(\\S+)", "line": true },
+    { "component": "zig", "file": ".tool-versions", "regex": "(?m)^zig\\s+(\\S+)", "line": true },
+    { "component": "julia", "file": ".tool-versions", "regex": "(?m)^julia\\s+(\\S+)", "line": true },
+    { "component": "rust", "file": ".tool-versions", "regex": "(?m)^rust\\s+(\\S+)", "line": true }
   ]
 }

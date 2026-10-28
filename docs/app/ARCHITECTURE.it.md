@@ -130,7 +130,8 @@ tauri\src\
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner,
                               mine (le basi salvate da un progetto, «Le mie basi», D-162)
   detect\                     tipo, linguaggi e azioni di un progetto: mod, node, php, python, rust, go,
-                              site, container, overrides (panel.json)
+                              site, container, overrides (panel.json), walk (un giro di tutto il
+                              progetto, a ogni profondità, con un limite: gli strumenti che servono, D-186)
   editor\                     editor e console
     mod  window               server web di VSCodium; finestre editor-<n> (D-69)
     cfg  ext  theme           impostazioni e profili del terminale (i terminali sul PC, task e agenti attraverso
