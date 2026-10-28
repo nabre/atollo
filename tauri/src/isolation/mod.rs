@@ -1775,9 +1775,13 @@ pub fn project_guest_tools(
     );
     let mut tools = guest_view(kit, guest, &env);
     // The project's local environments for the VM's Linux (D-188): paths
-    // under its own folder only, the one the sandbox mounts read-write.
-    let dir = kit.projects().join(project);
-    if let Some(at) = vm::guest_path(kit.target().is_windows(), &dir) {
+    // under its own folder only, the one the sandbox mounts read-write; a
+    // folder's sandbox (D-187) has none.
+    let dir = project.map(|p| kit.projects().join(p));
+    let at = dir
+        .as_ref()
+        .and_then(|d| vm::guest_path(kit.target().is_windows(), d));
+    if let (Some(dir), Some(at)) = (dir, at) {
         for (name, value) in crate::projects::envs::vm_vars(&dir, &at) {
             tools.vars.retain(|(n, _)| !n.eq_ignore_ascii_case(&name));
             tools.vars.push((name, value));
