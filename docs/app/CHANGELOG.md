@@ -1,5 +1,9 @@
 # Novità
 
+## Rilascio 0.7.5 alpha (28/10/2026): una VM per clic
+
+- **Una preparazione della VM alla volta**: cliccare di nuovo «Terminale» o un agente mentre la VM del progetto si prepara non avvia più un'altra preparazione (con il suo lavoro, le sue installazioni e, con `sbx` occupato, «cannot create sandbox»): il clic ripetuto dice che la VM è già in preparazione e che la sessione si apre appena è pronta. Sessioni diverse della stessa sandbox (il terminale e un'azione) aspettano il loro turno invece di sovrapporsi.
+
 ## Rilascio 0.7.4 alpha (27/10/2026): un'app più reattiva
 
 - **La finestra non si blocca più** mentre Atollo legge le cartelle, controlla i processi o chiede lo stato della VM: «Applica» negli Strumenti, le installazioni, le impostazioni, le versioni dei progetti, «Libera spazio» e gli altri comandi pesanti lavorano in background (D-182). Anche la fine di un'installazione non ferma più la finestra.
