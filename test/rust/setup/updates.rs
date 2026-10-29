@@ -28,7 +28,7 @@ fn real_check_of_a_kit() {
             latest.versions.get(&c.id)
         );
     }
-    for u in pending(&kit, &crate::levels::VmState::On).items {
+    for u in pending(&kit, true).items {
         eprintln!(
             "new: {} {} -> {} ({})",
             u.id, u.installed, u.latest, u.notes
@@ -65,7 +65,7 @@ fn notes_of_a_version() {
 fn pending_updates() {
     let (_tmp, kit) = prepared_kit("updates");
     assert!(stale(&kit));
-    let empty = pending(&kit, &crate::levels::VmState::On);
+    let empty = pending(&kit, true);
     assert_eq!(empty.checked, None);
     assert!(empty.items.is_empty());
 
@@ -89,7 +89,7 @@ fn pending_updates() {
     };
     crate::common::fsx::write_json(&file(&kit), &latest).unwrap();
     assert!(!stale(&kit));
-    let list = pending(&kit, &crate::levels::VmState::On);
+    let list = pending(&kit, true);
     assert_eq!(list.checked, Some(latest.checked));
     assert_eq!(list.items.len(), 1);
     let u = &list.items[0];
@@ -100,5 +100,5 @@ fn pending_updates() {
     assert!(u.notes.starts_with("https://"));
     // Up to date: nothing.
     gh.save_version(&kit, "2.103.0").unwrap();
-    assert!(pending(&kit, &crate::levels::VmState::On).items.is_empty());
+    assert!(pending(&kit, true).items.is_empty());
 }

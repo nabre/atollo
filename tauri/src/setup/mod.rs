@@ -5,6 +5,7 @@
 //! `data\kit\` (`kit_files`) and the app's own update (`self_update`).
 //! The installers of the components are in `install`.
 
+pub mod agents;
 pub mod catalog;
 pub mod checkup;
 pub mod downloads;

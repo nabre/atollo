@@ -207,9 +207,9 @@ fn summary(kit: &Kit) -> String {
 }
 
 fn ports(kit: &Kit) -> String {
-    crate::common::ports::ports_taken(kit)
+    crate::ports::ports_taken(kit)
         .iter()
-        .filter(|(_, o)| !matches!(o, crate::common::ports::Owner::Editor))
+        .filter(|(_, o)| !matches!(o, crate::ports::Owner::Editor))
         .map(|(p, o)| format!("{p:<6} {o:?}\n"))
         .collect()
 }

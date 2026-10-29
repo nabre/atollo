@@ -154,7 +154,7 @@ pub(super) fn install_now<R: Runtime>(
         target: Some(kit.target()),
         only: vec![id.clone()],
         at: line.map(|l| vec![(id, l)]).unwrap_or_default(),
-        vm: Some(vm),
+        agents: crate::levels::agents_enabled(&vm),
         ..Options::default()
     };
     state.setup.start(opts, false, setup_notify(app))?;

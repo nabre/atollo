@@ -390,7 +390,7 @@ pub async fn updates_list<R: Runtime>(
     off_main(&webview, "updates", |_, state| {
         Ok(crate::setup::updates::pending(
             &state.kit,
-            &crate::levels::agents::known_vm(),
+            crate::levels::agents_enabled(&crate::levels::agents::known_vm()),
         ))
     })
     .await
@@ -409,7 +409,7 @@ pub async fn updates_check<R: Runtime>(
         crate::setup::updates::check(&kit, &env, token)?;
         anyhow::Ok(crate::setup::updates::pending(
             &kit,
-            &crate::levels::agents::known_vm(),
+            crate::levels::agents_enabled(&crate::levels::agents::known_vm()),
         ))
     })
     .await

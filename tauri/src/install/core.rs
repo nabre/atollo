@@ -245,10 +245,10 @@ impl Installer for Git {
             fs::create_dir_all(ctx.kit.home())?;
             // Git trusts the repositories inside the kit only (D-137);
             // github::sync_git rewrites it at every start as the kit moves.
-            let safe = crate::github::safe_pattern(ctx.kit.root());
+            let safe = safe_pattern(ctx.kit.root());
             let text = format!("[init]\n\tdefaultBranch = main\n[safe]\n\tdirectory = {safe}\n");
             write_atomic(&gitconfig, text.as_bytes())?;
-            crate::github::remember_safe_value(ctx.kit, &safe);
+            remember_safe_value(ctx.kit, &safe);
         }
         Ok(())
     }
@@ -728,6 +728,27 @@ impl Installer for Gh {
             kind,
             Inner::Auto,
         )
+    }
+}
+
+/// `safe.directory` for the kit's folder: `D:/kit/*` (Git 2.46 and later
+/// read a trailing `/*` as "everything inside").
+pub(crate) fn safe_pattern(root: &std::path::Path) -> String {
+    let root = root.display().to_string().replace('\\', "/");
+    format!("{}/*", root.trim_end_matches('/'))
+}
+
+/// The `safe.directory` value this kit wrote last
+/// (`data/app/safe-directory.txt`): after a move it names the old folder,
+/// the one to replace.
+pub(crate) fn safe_marker(kit: &Kit) -> std::path::PathBuf {
+    kit.app_dir().join("safe-directory.txt")
+}
+
+/// Remembers `value` as the kit's own `safe.directory`.
+pub(crate) fn remember_safe_value(kit: &Kit, value: &str) {
+    if let Err(e) = crate::common::fsx::write_atomic(&safe_marker(kit), value.as_bytes()) {
+        crate::common::log::warn(&format!("github: safe.directory marker: {e}"));
     }
 }
 

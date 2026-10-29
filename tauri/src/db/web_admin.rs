@@ -112,7 +112,7 @@ fn random_bytes() -> Result<[u8; 3]> {
 /// when the system refuses the address (logged).
 pub fn free_address(kit: &Kit, name: &str) -> Result<(Ipv4Addr, u16)> {
     let mut host = private_loopback(random_bytes()?);
-    let taken = crate::common::ports::ports_taken(kit);
+    let taken = crate::ports::ports_taken(kit);
     // Ports owned by Atollo stay bound until the end: the system does not
     // give them again.
     let mut refused = Vec::new();

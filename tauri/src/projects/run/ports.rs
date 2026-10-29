@@ -57,7 +57,7 @@ pub(super) fn load_ports(kit: &Kit) -> (Ports, BTreeMap<String, ProjectPorts>) {
 }
 
 /// The ports of the projects' actions as their `ports.json` keep them,
-/// under `project|action` keys (for [`crate::common::ports`]).
+/// under `project|action` keys (for [`crate::ports`]).
 pub(crate) fn saved_ports(kit: &Kit) -> BTreeMap<String, u16> {
     load_ports(kit).0.ports
 }
@@ -154,9 +154,9 @@ impl Runner {
         // Nor the port of a pool or a database version, even one not
         // running now (BUG-V5-07): the projects' own are those above.
         used.extend(
-            crate::common::ports::ports_taken(&self.kit)
+            crate::ports::ports_taken(&self.kit)
                 .into_iter()
-                .filter(|(_, o)| !matches!(o, crate::common::ports::Owner::Project { .. }))
+                .filter(|(_, o)| !matches!(o, crate::ports::Owner::Project { .. }))
                 .map(|(p, _)| p),
         );
         let (from, to) = self.port_range;
@@ -210,10 +210,10 @@ impl Runner {
             }
             // Not the port of a pool, of a database version or the editor's
             // (BUG-V5-05); the projects' own below, from memory.
-            crate::common::ports::refuse_taken(
+            crate::ports::refuse_taken(
                 &self.kit,
                 n,
-                |o| matches!(o, crate::common::ports::Owner::Project { .. }),
+                |o| matches!(o, crate::ports::Owner::Project { .. }),
                 lang,
             )?;
         }

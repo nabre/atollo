@@ -14,6 +14,7 @@
 
 pub mod backup;
 mod names;
+pub mod release;
 mod root;
 mod target;
 
@@ -142,6 +143,11 @@ impl Kit {
         self.volume
     }
     /// Downloaded programs for this target: `data/apps/<os>-<arch>`.
+    /// Where the editor's server program is (`vscodium-server`).
+    pub fn editor_server(&self) -> PathBuf {
+        self.apps().join("vscodium-server")
+    }
+
     pub fn apps(&self) -> PathBuf {
         self.data().join("apps").join(self.target.as_str())
     }

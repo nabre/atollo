@@ -41,6 +41,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::common::i18n::t as tr;
 use crate::env::KitEnv;
+use crate::install::{remember_safe_value, safe_marker, safe_pattern};
 use crate::kit::Kit;
 use crate::platform::jobs;
 
@@ -198,27 +199,6 @@ fn git_config(kit: &Kit, env: &KitEnv, args: &[&str]) -> Result<std::process::Ex
         .stderr(Stdio::null())
         .status()
         .context("git config --global")
-}
-
-/// `safe.directory` for the kit's folder: `D:/kit/*` (Git 2.46 and later
-/// read a trailing `/*` as "everything inside").
-pub(crate) fn safe_pattern(root: &std::path::Path) -> String {
-    let root = root.display().to_string().replace('\\', "/");
-    format!("{}/*", root.trim_end_matches('/'))
-}
-
-/// The `safe.directory` value this kit wrote last
-/// (`data/app/safe-directory.txt`): after a move it names the old folder,
-/// the one to replace.
-fn safe_marker(kit: &Kit) -> PathBuf {
-    kit.app_dir().join("safe-directory.txt")
-}
-
-/// Remembers `value` as the kit's own `safe.directory`.
-pub(crate) fn remember_safe_value(kit: &Kit, value: &str) {
-    if let Err(e) = crate::common::fsx::write_atomic(&safe_marker(kit), value.as_bytes()) {
-        crate::common::log::warn(&format!("github: safe.directory marker: {e}"));
-    }
 }
 
 /// A value of `safe.directory` written by a kit: `*` (before D-137), the

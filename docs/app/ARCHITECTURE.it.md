@@ -62,16 +62,17 @@ Nella radice restano solo i file di configurazione (workspace, lint, formattazio
 
 ## Motore Rust (`tauri\src`)
 
-Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`app\cli.rs`). In cima resta solo `main.rs`; tutto il resto sta in una cartella per area (D-87, D-166). Si leggono per livelli: chi sta sopra chiama chi sta sotto, mai il contrario.
+Un solo binario, `Atollo.exe`: la finestra (Tauri 2) e la riga di comando (`app\cli.rs`). In cima resta solo `main.rs`; tutto il resto sta in una cartella per area (D-87, D-166). Si leggono per livelli (D-189): una cartella usa solo cartelle del suo livello o di uno più basso; dentro un livello gli archi ammessi sono elencati uno per uno, e un arco verso l'alto è debito, elencato con il suo motivo. `test/rust/layers.rs` controlla ogni riferimento `crate::` (commenti e stringhe esclusi): un arco nuovo fallisce, e così un elenco che nomina un arco sparito, quindi il debito può solo calare.
 
 | Livello | Moduli | Cosa fanno |
 | --- | --- | --- |
-| Avvio | `main.rs`, `app\` | ordine di avvio («Avvio», sopra), l'app e le sue finestre, l'icona nell'area di notifica, la riga di comando |
-| IPC | `ipc\` | l'unico ingresso dell'interfaccia: i comandi (controllano la finestra, traducono gli errori, chiamano il dominio) e i nomi degli eventi che Rust manda (`ipc\events.rs`) |
-| Dominio | le cartelle per area (sotto) | componenti, versioni, progetti, editor e console, agenti, modelli locali, database, server web, GitHub, isolamento, diagnostica |
-| Infrastruttura | `common\`, `kit\`, `env\`, `net\`, `router\` | file, log, orologio, lingue, impostazioni, porte; percorsi del kit; ambiente; rete e controlli; sistemi operativi di destinazione |
-| Piattaforma | `platform\` | lo strato astratto sopra il sistema operativo: la stessa API su Windows, macOS e Linux (sotto) |
-| Sistemi | `os\windows\`, `os\unix\`, `os\macos\`, `os\linux\` | il codice di ciascun sistema, solo dietro `platform\` |
+| 4 Interfaccia | `main.rs`, `app\`, `ipc\` | ordine di avvio («Avvio», sopra), l'app, le sue finestre, l'icona nell'area di notifica, la riga di comando; l'unico ingresso dell'interfaccia: i comandi (controllano la finestra, traducono gli errori, chiamano il dominio) e gli eventi (`ipc\events.rs`) |
+| 3 Domini | `projects\`, `detect\`, `db\`, `servers\`, `agents\`, `llm\`, `github\`, `diagnostics\`, `ports\` | i progetti e ciò che serve loro, database, server web, agenti e i loro account, modelli locali, GitHub, diagnostica; `ports` dice chi tiene ogni porta |
+| 2 Nucleo | `isolation\`, `editor\`, `levels\` | Docker Sandboxes (la sandbox), il terminale e l'editor, i livelli che mettono ogni programma sul PC o in una sandbox |
+| 1 Strumenti | `setup\`, `install\`, `versions\`, `router\` | il catalogo (con gli id e le regole d'installazione degli agenti, `setup\agents.rs`), gli installatori, le linee su disco e la loro scelta, i sistemi di destinazione |
+| 0 Infrastruttura | `common\`, `kit\`, `os\`, `platform\`, `env\`, `net\` | file, log, orologio (`stamp`), lingue, impostazioni, prove delle porte; percorsi del kit e nomi dei rilasci (`kit\release.rs`); il codice di ciascun sistema dietro `platform\` (sotto); l'ambiente del kit; rete e controlli |
+
+Il debito rimasto con D-189 (25 archi verso l'alto, da 41): `env` legge le cartelle e le linee degli strumenti (`setup`, `versions`), `kit` ricolloca i componenti quando il kit si sposta (`install`); gli strumenti leggono ancora in qualche punto progetti, rilevamento, database, GitHub e la sandbox; il nucleo raggiunge i domini per i database, gli account e le impostazioni di una sessione, ed `editor` manda gli eventi dell'interfaccia; `diagnostics` nomina la versione dell'app. Ognuno è in `DEBT` di `test/rust/layers.rs` con il punto da cui parte.
 
 ```
 tauri\src\
@@ -82,8 +83,8 @@ tauri\src\
   common\                     ciò che usano tutte le aree: fsx (file del kit: lettura, JSON, scrittura atomica,
                               sotto), log (segreti mascherati), time (now_secs, now_ms), i18n (lingua e
                               cataloghi), settings (data\app\settings.json, una modifica alla volta:
-                              `Settings::update`; file della chiave di Gemini), ports (chi ha ogni porta: pool,
-                              versioni dei database, azioni, editor, modelli locali, D-141, sotto), jobs (il
+                              `Settings::update`; file della chiave di Gemini), ports (le prove: qualcosa risponde,
+                              una porta è libera), jobs (il
                               lavoro lungo che l'interfaccia segue: installazioni, aggiornamenti, la
                               preparazione di una VM, ognuno un `Job` con passo, byte e stato, l'evento `job`,
                               LEVELS.md §8.6)
@@ -171,6 +172,8 @@ tauri\src\
     auth\                     password e .env (D-74): mod, env, project, names, scripts, lock
     phpmyadmin  mongo_express phpMyAdmin (D-107); mongo-express (D-147)
     web_admin                 ciò che i due condividono: un indirizzo di loopback e una porta propri, un token (D-141)
+  ports\                      chi ha ogni porta: pool, versioni dei database, azioni, editor, modelli locali
+                              (D-141, sotto; uscito da common con D-189)
   github\                     account GitHub del kit (D-70): mod (accesso, helper di Git), repos (elenco, clone,
                               rinomina, eliminazione)
   levels\                     i tre livelli (D-179, LEVELS.it.md): mod (`Origin`, `Placement`, `decide`), place,

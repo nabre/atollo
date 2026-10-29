@@ -288,7 +288,7 @@ impl KitEnv {
     /// install/web/php_ini.rs): `CP_PHP`, `PHPRC` and, with `/` for Apache,
     /// `CP_PHP_FWD` and `CP_PHPRC_FWD`.
     pub fn set_php(&mut self, data: &Path, php_dir: &Path) {
-        let ini = crate::install::php_ini_dir(data, php_dir);
+        let ini = php_ini_dir(data, php_dir);
         self.set_path("CP_PHP", php_dir);
         self.set("CP_PHP_FWD", php_dir.to_string_lossy().replace('\\', "/"));
         self.set_path("PHPRC", &ini);
@@ -441,7 +441,7 @@ impl KitEnv {
         }
         // Kit mode on NTFS/ReFS: the programs' leftovers are for the owner only.
         if let Some(tmp) = &self.private_tmp {
-            if let Err(e) = crate::editor::restrict_dir_to_owner(tmp) {
+            if let Err(e) = crate::platform::files::restrict_dir_to_owner(tmp) {
                 crate::common::log::warn(&format!("{}: owner-only access: {e:#}", tmp.display()));
             }
         }
@@ -514,7 +514,7 @@ fn agent_vars(env: &mut KitEnv, cx: &Cx) -> PathBuf {
     // Pi (D-152): its folder in the kit's home, no update check, no
     // telemetry. The address and key of the local models are not here:
     // only Pi's session in the VM has them (`levels::prepare`, `pi.env`).
-    env.set_path("PI_CODING_AGENT_DIR", crate::agents::sync::pi::dir(&home));
+    env.set_path("PI_CODING_AGENT_DIR", pi_agent_dir(&home));
     env.set("PI_SKIP_VERSION_CHECK", "1");
     env.set("PI_TELEMETRY", "0");
     program_tmp
@@ -664,6 +664,53 @@ fn write_python_shim(dir: &Path) -> std::io::Result<()> {
         crate::platform::files::set_executable(&file)?;
     }
     Ok(())
+}
+
+/// The folder of a conda environment with the launchers of the
+/// component's own programs (D-125): on the PATH in place of `bin`, which
+/// also holds those of every dependency (`openssl`, `tput`, `kinit`,
+/// `envsubst`... 30 programs for Ruby's 16, 56 for MongoDB's 2, 156 for
+/// R's 2).
+pub const CONDA_LAUNCHERS: &str = "kit-bin";
+
+/// `<home>\.pi\agent`, Pi's folder in the kit.
+pub fn pi_agent_dir(home: &Path) -> PathBuf {
+    home.join(".pi").join("agent")
+}
+
+/// The folder of the `php.ini` of the PHP in `php_dir` (PHPRC, `-c`,
+/// Apache's PHPIniDir): `data\php\<line>`, one per line of PHP, since each
+/// line comes with its own `php.ini-development` (5.6 does not know the
+/// directives of 8.4). `data\php` for a folder of an older kit's layout,
+/// not named after its line.
+///
+/// The PHP of macOS and Linux (`data/apps/<target>/php/<line>`) gets
+/// `data/php/<target>/<line>`: one kit can hold the same line for Windows
+/// and for Unix, and the two `php.ini` cannot be one file (Windows needs its
+/// `extension=` lines and `ext` folder, static-php-cli has neither).
+/// Windows keeps `data\php\<line>`, as before the targets.
+pub fn php_ini_dir(data: &Path, php_dir: &Path) -> PathBuf {
+    let mut root = data.join("php");
+    if let Some(target) = php_target(data, php_dir) {
+        if target.os != crate::kit::Os::Win32 {
+            root = root.join(target.as_str());
+        }
+    }
+    match php_dir.file_name().and_then(|n| n.to_str()) {
+        Some(line) if crate::versions::valid_line(line) => root.join(line),
+        _ => root,
+    }
+}
+
+/// The target of the PHP folder `php_dir`, from the `<os>-<arch>` folder it
+/// sits in under `data` (`data/apps/<target>/…`); `None` for a folder of an
+/// older kit's layout, without one (Windows only). Folders above `data` are
+/// not looked at: the kit's own folder could have any name.
+pub(crate) fn php_target(data: &Path, php_dir: &Path) -> Option<crate::kit::Target> {
+    let rel = php_dir.strip_prefix(data).unwrap_or(php_dir);
+    rel.components()
+        .filter_map(|c| c.as_os_str().to_str())
+        .find_map(crate::kit::Target::parse)
 }
 
 #[cfg(test)]

@@ -221,7 +221,7 @@ pub fn listen(kit: &Kit, on_message: impl Fn(String) + Send + 'static) {
             if let Some(Err(e)) = failed {
                 crate::common::log::warn(&format!("instance socket: {e}; TCP on 127.0.0.1"));
             }
-            let token = match crate::editor::random_token() {
+            let token = match crate::platform::random::token() {
                 Ok(t) => t,
                 Err(e) => {
                     crate::common::log::warn(&format!("instance token: {e:#}"));

@@ -256,12 +256,6 @@ impl std::fmt::Display for SystemLibsMissing {
 
 impl std::error::Error for SystemLibsMissing {}
 
-/// The files a MySQL build carries that the kit never runs (D-110): the
-/// test suite, debug symbols (`.pdb`), the debug plugins and server (most of
-/// the Linux ARM64 build's 1.8 GB), relative to the build's folder.
-pub const STRIP_DIRS: [&str; 2] = ["mysql-test", "lib/plugin/debug"];
-pub const STRIP_FILES: [&str; 2] = ["bin/mysqld-debug", "bin/mysqld-debug.exe"];
-
 /// The `lib/private/libaio.so.1` of the server in `basedir` points to the
 /// system's `libaio.so.1t64` when that is the only one, and is not there
 /// otherwise (a kit moved to a PC with `libaio.so.1`); a missing library is

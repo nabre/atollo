@@ -27,6 +27,7 @@ mod caddy;
 pub mod conda;
 mod conpty;
 mod core;
+pub(crate) use core::{remember_safe_value, safe_marker, safe_pattern};
 mod db;
 mod editor;
 mod flow;

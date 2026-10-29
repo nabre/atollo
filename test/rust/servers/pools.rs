@@ -323,11 +323,8 @@ fn pool_ports_are_not_those_of_databases_projects_or_editor() {
 
     servers.save_profile(profile(8095), "en").unwrap();
     servers.save_profile(profile(8095), "en").unwrap();
-    let taken = crate::common::ports::ports_taken(&kit);
-    assert_eq!(
-        taken[&8095],
-        crate::common::ports::Owner::Pool("legacy".into())
-    );
+    let taken = crate::ports::ports_taken(&kit);
+    assert_eq!(taken[&8095], crate::ports::Owner::Pool("legacy".into()));
     // A new pool's port is none of theirs either.
     let (mut store, mut dirty) = (load_store(&kit), false);
     let auto = servers.assign_or_get_port(&mut store, &mut dirty, "auto", None);

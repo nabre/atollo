@@ -486,7 +486,7 @@ pub fn guest_plans(
                 .iter()
                 .filter_map(|(c, line)| Some((c.id.clone(), (*line)?.clone())))
                 .collect(),
-            vm: Some(super::VmState::On),
+            agents: true,
             ..Options::default()
         });
     }

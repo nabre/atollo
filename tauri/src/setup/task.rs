@@ -477,7 +477,7 @@ impl SetupTask {
                 update_all: opts.update_all,
                 force: opts.force,
                 scope: runner::Scope::Tools,
-                vm: Some(crate::levels::VmState::On),
+                agents: true,
                 ..Options::default()
             };
             runner::run(&guest_ctx, &tools, &mut sink)

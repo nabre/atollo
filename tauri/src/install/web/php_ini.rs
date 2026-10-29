@@ -3,47 +3,15 @@
 //! user's; an older kit's single `php.ini` moved to the default line.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{Context, Result};
 
 use crate::common::fsx::write_atomic;
+use crate::env::php_target;
 use crate::install::pattern;
 
-/// The folder of the `php.ini` of the PHP in `php_dir` (PHPRC, `-c`,
-/// Apache's PHPIniDir): `data\php\<line>`, one per line of PHP, since each
-/// line comes with its own `php.ini-development` (5.6 does not know the
-/// directives of 8.4). `data\php` for a folder of an older kit's layout,
-/// not named after its line.
-///
-/// The PHP of macOS and Linux (`data/apps/<target>/php/<line>`) gets
-/// `data/php/<target>/<line>`: one kit can hold the same line for Windows
-/// and for Unix, and the two `php.ini` cannot be one file (Windows needs its
-/// `extension=` lines and `ext` folder, static-php-cli has neither).
-/// Windows keeps `data\php\<line>`, as before the targets.
-pub fn php_ini_dir(data: &Path, php_dir: &Path) -> PathBuf {
-    let mut root = data.join("php");
-    if let Some(target) = php_target(data, php_dir) {
-        if target.os != crate::kit::Os::Win32 {
-            root = root.join(target.as_str());
-        }
-    }
-    match php_dir.file_name().and_then(|n| n.to_str()) {
-        Some(line) if crate::versions::valid_line(line) => root.join(line),
-        _ => root,
-    }
-}
-
-/// The target of the PHP folder `php_dir`, from the `<os>-<arch>` folder it
-/// sits in under `data` (`data/apps/<target>/…`); `None` for a folder of an
-/// older kit's layout, without one (Windows only). Folders above `data` are
-/// not looked at: the kit's own folder could have any name.
-fn php_target(data: &Path, php_dir: &Path) -> Option<crate::kit::Target> {
-    let rel = php_dir.strip_prefix(data).unwrap_or(php_dir);
-    rel.components()
-        .filter_map(|c| c.as_os_str().to_str())
-        .find_map(crate::kit::Target::parse)
-}
+pub use crate::env::php_ini_dir;
 
 /// The `php.ini` of the PHP in `php_dir`: written from that PHP's own
 /// `php.ini-development` when missing (then it is the user's); an existing

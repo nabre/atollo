@@ -802,7 +802,7 @@ fn all_agents() -> Choice {
 
 fn vm(vm: Option<crate::levels::VmState>) -> Options {
     Options {
-        vm,
+        agents: vm.as_ref().is_some_and(crate::levels::agents_enabled),
         ..Options::default()
     }
 }
