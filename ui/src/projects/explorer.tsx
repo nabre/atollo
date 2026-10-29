@@ -24,7 +24,7 @@ import {
   type RunInfo,
 } from "../ipc";
 import { AgentButtons } from "../agents";
-import { groupOf, useFrameworks } from "../frameworks";
+import { groupOf, useCreationRunning, useFrameworks } from "../frameworks";
 import { GithubRepositories } from "../github";
 import type { GuideTopicId } from "../guide";
 import { useAction, useLoad } from "../shared/hooks";
@@ -112,7 +112,7 @@ function Projects({
   const [base, setBase] = useState("");
   const [preset, setPreset] = useState<{ base: string; at: number } | null>(null);
   /** The wizard runs its commands: its tab stays open. */
-  const [wizardRunning, setWizardRunning] = useState(false);
+  const wizardRunning = useCreationRunning();
   const fw = useFrameworks();
   const { load: loadFrameworks } = fw;
   useEffect(loadFrameworks, [loadFrameworks]);
@@ -449,7 +449,6 @@ function Projects({
               onBase={setBase}
               onOpen={tabs.show}
               onCreated={load}
-              onRunning={setWizardRunning}
               onSettings={onSettings}
               onGuide={onGuide}
             />

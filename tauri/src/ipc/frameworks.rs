@@ -1,6 +1,7 @@
 //! New project from frameworks (projects/frameworks/, DECISIONS.md D-83).
 
 use super::*;
+use crate::projects::frameworks::progress;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -77,10 +78,16 @@ pub fn frameworks_plan<R: Runtime>(
 }
 
 /// Progress of a creation (`framework` event): a command starting, or a
-/// line of its output.
+/// line of its output. The whole creation is `frameworks_state`, its end
+/// the `framework-end` event.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FrameworkEvent {
+    /// The creation's id (`progress::Creation::id`).
+    pub id: u64,
+    /// Lines of output so far, this one included: one already in the
+    /// state read is not added again.
+    pub seq: usize,
     /// 1-based number of the command; 0 = installing the kit's tools.
     pub step: usize,
     pub total: usize,
@@ -309,12 +316,20 @@ pub async fn frameworks_create<R: Runtime>(
                 })
         })
         .transpose()?;
-    tauri::async_runtime::spawn_blocking(move || {
+    let total = plan.create.len() + plan.steps.len();
+    let id = progress::start(&base, &addons, &name, &wanted_env, total);
+    let end_app = app.clone();
+    let joined = tauri::async_runtime::spawn_blocking(move || {
         use crate::projects::frameworks::Existing;
         let _busy = busy;
-        let total = plan.create.len() + plan.steps.len();
         let emit = |step: usize, command: Option<String>, line: Option<String>| {
+            let text = command
+                .as_ref()
+                .map(|c| format!("> {c}"))
+                .or_else(|| line.clone());
             let event = FrameworkEvent {
+                id,
+                seq: progress::record(id, step, text),
                 step,
                 total,
                 command,
@@ -346,6 +361,10 @@ pub async fn frameworks_create<R: Runtime>(
         // command; the plan's tools installed.
         let base_env =
             ensure(&app, &task, &kit, lang, &plan_needs(&plan)).inspect_err(|_| undo())?;
+        if crate::projects::frameworks::cancelled() {
+            undo();
+            return Err(crate::common::i18n::t(lang, "Creazione annullata.", &[]).into());
+        }
         let db_env = super::levels::pc_env(&kit, &base_env, &placement, None, lang, &host)
             .inspect_err(|_| undo())?;
         let ready = crate::levels::prepare::Ready::on_the_pc(placement, db_env.clone());
@@ -515,13 +534,27 @@ pub async fn frameworks_create<R: Runtime>(
         // folder): the versions its files declare first, then the newest
         // of the others (`settle_project` ends with `pin_newest`; a
         // `pin_newest` before it hid every declared version, D-186).
+        let text = crate::common::i18n::t(lang, "Preparo i linguaggi del progetto…", &[]);
+        emit(total, None, Some(text));
         settle_project(&app, &task, &kit, lang, &name, &dir);
         // A new project: the pools are scanned again for its site.
         servers.invalidate();
         Ok(name)
     })
-    .await
-    .or_fail("frameworks")?
+    .await;
+    let result = joined.unwrap_or_else(|e| Err(fail("frameworks", e)));
+    let error = |e: &CmdError| serde_json::to_value(e).unwrap_or_default();
+    let end = progress::finish(id, result.clone().map_err(|e| error(&e)));
+    let _ = end_app.emit_to(MAIN, super::events::FRAMEWORK_END, &end);
+    result
+}
+
+/// The creation running now, or the last one: the wizard shows it again
+/// after another page or a reload of the window (D-190).
+#[tauri::command]
+pub fn frameworks_state<R: Runtime>(webview: Webview<R>) -> CmdResult<progress::Creation> {
+    ensure_main(&webview)?;
+    Ok(progress::snapshot())
 }
 
 /// The projects' folders and what is in them, for the wizard's name. Off

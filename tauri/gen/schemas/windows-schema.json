@@ -399,6 +399,12 @@
           "markdownDescription": "Enables the frameworks_set command without any pre-configured scope."
         },
         {
+          "description": "Enables the frameworks_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-frameworks-state",
+          "markdownDescription": "Enables the frameworks_state command without any pre-configured scope."
+        },
+        {
           "description": "Enables the frameworks_targets command without any pre-configured scope.",
           "type": "string",
           "const": "allow-frameworks-targets",
@@ -1321,6 +1327,12 @@
           "type": "string",
           "const": "deny-frameworks-set",
           "markdownDescription": "Denies the frameworks_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the frameworks_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-frameworks-state",
+          "markdownDescription": "Denies the frameworks_state command without any pre-configured scope."
         },
         {
           "description": "Denies the frameworks_targets command without any pre-configured scope.",

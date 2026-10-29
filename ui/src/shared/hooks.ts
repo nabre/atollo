@@ -3,7 +3,8 @@
 // `useBatched` when they come many at a time) and state read again every few seconds
 // (`useEvery`); a value read once or every few seconds, with what a failed
 // read does (`useLoad`); an action with its wait and its error (`useAction`);
-// a copy to the clipboard (`useCopy`).
+// a copy to the clipboard (`useCopy`); a value kept while its page is not
+// shown (`useKept`).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorText, fixOf, type Fix } from "../ipc/levels";
 import { frameBatch } from "./frame";
@@ -260,4 +261,27 @@ export function useCopy(resetMs?: number) {
     setCopied(false);
   }, []);
   return { copied, copy, reset };
+}
+
+/** The values of `useKept`, by key, for as long as the window is open. */
+const kept = new Map<string, unknown>();
+
+/**
+ * As useState, but the value stays when the component goes away: the next
+ * one with the same `key` starts from it (a page shown again, a form half
+ * filled in). `null` keeps nothing, as useState.
+ */
+export function useKept<T>(key: string | null, initial: T): [T, (next: T | ((current: T) => T)) => void] {
+  const [value, setValue] = useState<T>(() => (key !== null && kept.has(key) ? (kept.get(key) as T) : initial));
+  const set = useCallback(
+    (next: T | ((current: T) => T)) => {
+      setValue((current) => {
+        const v = typeof next === "function" ? (next as (current: T) => T)(current) : next;
+        if (key !== null) kept.set(key, v);
+        return v;
+      });
+    },
+    [key],
+  );
+  return [value, set];
 }

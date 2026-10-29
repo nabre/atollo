@@ -504,6 +504,7 @@ macro_rules! command_handler {
             $crate::ipc::frameworks::frameworks_create,
             $crate::ipc::frameworks::frameworks_cancel,
             $crate::ipc::frameworks::frameworks_targets,
+            $crate::ipc::frameworks::frameworks_state,
             $crate::ipc::projects::project_clone,
             $crate::ipc::projects::project_site,
             $crate::ipc::projects::project_install_missing,

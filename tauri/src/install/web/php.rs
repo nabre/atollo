@@ -328,29 +328,34 @@ impl Installer for Php {
 
 /// An older kit had one Composer for every PHP, in `tools\`: each folder of
 /// PHP gets a copy with its launchers (its next update brings its own), then
-/// the old one goes. At start, with `versions::migrate`.
+/// the old one goes. A folder of PHP whose Composer has no `composer.ps1`
+/// (an older kit's) gets its launchers again. At start, with
+/// `versions::migrate`.
 pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
     let tools = kit.apps().join("tools");
     let old = tools.join("composer.phar");
     let Some(php) = crate::setup::Catalog::get().find("php") else {
         return Ok(());
     };
-    if !old.is_file() {
-        return Ok(());
-    }
     let dirs = std::iter::once(crate::versions::default_dir(kit, php)).chain(
         crate::versions::saved(kit, php)
             .into_iter()
             .map(|l| crate::versions::saved_dir(kit, php, &l.line)),
     );
     for dir in dirs.filter(|d| d.join("php.exe").is_file() || join_rel(d, "bin/php").is_file()) {
-        if !dir.join("composer.phar").is_file() {
+        if old.is_file() && !dir.join("composer.phar").is_file() {
             fs::copy(&old, dir.join("composer.phar")).with_context(|| dir.display().to_string())?;
         }
-        composer_launchers(&dir)?;
+        if dir.join("composer.phar").is_file()
+            && (old.is_file() || !dir.join("composer.ps1").is_file())
+        {
+            composer_launchers(&dir)?;
+        }
     }
-    for name in ["composer.phar", "composer.cmd", "composer"] {
-        let _ = fs::remove_file(tools.join(name));
+    if old.is_file() {
+        for name in ["composer.phar", "composer.cmd", "composer"] {
+            let _ = fs::remove_file(tools.join(name));
+        }
     }
     Ok(())
 }
@@ -361,15 +366,25 @@ pub fn adopt_composer(kit: &crate::kit::Kit) -> Result<()> {
 pub const COMPOSER_UNIX: &[u8] =
     b"#!/bin/sh\nd=\"$(dirname \"$0\")\"\nexec \"$d/php\" \"$d/../composer.phar\" \"$@\"\n";
 
-/// `composer.cmd` and `composer` (Git Bash / POSIX sh) next to `composer.phar`
-/// in a folder of PHP: they run it with the `php.exe` or `bin/php` beside them,
-/// so each version of PHP uses its own Composer. A folder of static-php-cli
-/// (`bin/php`, macOS and Linux) also gets `bin/composer` ([`COMPOSER_UNIX`]),
-/// since `bin/` is the folder on the PATH there.
+/// `composer.cmd`, `composer.ps1` and `composer` (Git Bash / POSIX sh) next
+/// to `composer.phar` in a folder of PHP: they run it with the `php.exe` or
+/// `bin/php` beside them, so each version of PHP uses its own Composer.
+/// PowerShell takes `composer.ps1` before `composer.cmd`: through cmd.exe
+/// the `^` of `vendor/package:^1.2` would be lost, and the wizard's lines
+/// run with PowerShell (D-190). A folder of static-php-cli (`bin/php`, macOS
+/// and Linux) also gets `bin/composer` ([`COMPOSER_UNIX`]), since `bin/` is
+/// the folder on the PATH there.
 pub fn composer_launchers(dir: &Path) -> Result<()> {
     write_atomic(
         &dir.join("composer.cmd"),
         b"@\"%~dp0php.exe\" \"%~dp0composer.phar\" %*\r\n",
+    )?;
+    write_atomic(
+        &dir.join("composer.ps1"),
+        b"$php = Join-Path $PSScriptRoot 'bin/php'\r\n\
+          if (-not (Test-Path -LiteralPath $php)) { $php = Join-Path $PSScriptRoot 'php.exe' }\r\n\
+          & $php (Join-Path $PSScriptRoot 'composer.phar') @args\r\n\
+          exit $LASTEXITCODE\r\n",
     )?;
     let sh = dir.join("composer");
     write_atomic(

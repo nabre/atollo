@@ -5,7 +5,7 @@
 // logo, the variables of .env and the database. The official ones come with
 // the app; a changed one shows the bar of a modified setting and goes back
 // with «Ripristina». Also the plan of a combination, shown here to try the
-// instructions and in the wizard.
+// instructions and in the wizard, and the wizard's creation in progress.
 export {
   addPiece,
   bases,
@@ -30,3 +30,5 @@ export { PieceLogo } from "./tags";
 export { IntegrationGroup, PieceGroup } from "./editor";
 export { FrameworksTree } from "./tree";
 export { AddonChoice, PlanSummary, TryGroup } from "./plan";
+export { markSeen, startCreation, useCreation, useCreationRunning } from "./creation";
+export type { Creation } from "./creation";

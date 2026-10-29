@@ -10,10 +10,11 @@
 //!
 //! Here the pieces and their loading and saving; the checks in `validate`,
 //! the combinations in `plan`, the project's folder in `target`, running
-//! the lines in `runner`.
+//! the lines in `runner`, where the creation is in `progress`.
 
 pub mod mine;
 mod plan;
+pub mod progress;
 mod runner;
 mod target;
 mod validate;

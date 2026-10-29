@@ -12,6 +12,8 @@ export const UPDATES = "updates";
 export const OPEN_PROJECT = "open-project";
 /** A step of a new project from a framework. */
 export const FRAMEWORK = "framework";
+/** The end of a new project from a framework, with all of it. */
+export const FRAMEWORK_END = "framework-end";
 /** The GitHub account's state. */
 export const GITHUB = "github";
 /** The editor started, stopped or restarted. */

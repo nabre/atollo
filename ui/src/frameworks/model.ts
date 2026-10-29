@@ -14,6 +14,7 @@ import {
   type FrameworkVariant,
   type FrameworksView,
 } from "../ipc";
+import { useKept } from "../shared/hooks";
 import { t } from "../i18n";
 
 /** The name of a slot of additions (one of each goes in a project). */
@@ -344,10 +345,11 @@ export function integrationsOf(pieces: FrameworkPiece[], base: string): { slot: 
 }
 export const TRY_TAB = "fw-try";
 
-/** Chooses a base and its additions (one per slot). */
-export function useCombination(pieces: FrameworkPiece[]) {
-  const [base, setBase] = useState<string>("");
-  const [addons, setAddons] = useState<string[]>([]);
+/** Chooses a base and its additions (one per slot); with `keep`, the choice
+ * stays for the next time the page is shown (useKept). */
+export function useCombination(pieces: FrameworkPiece[], keep: string | null = null) {
+  const [base, setBase] = useKept<string>(keep && `${keep}.base`, "");
+  const [addons, setAddons] = useKept<string[]>(keep && `${keep}.addons`, []);
   const chosen = bases(pieces).some((b) => b.id === base) ? base : (bases(pieces)[0]?.id ?? "");
   const available = addonsFor(pieces, chosen);
   const picked = addons.filter((a) => available.some((p) => p.id === a));
@@ -356,7 +358,7 @@ export function useCombination(pieces: FrameworkPiece[]) {
     const sameSlot = (a: string) => slot !== undefined && slot !== "" && pieces.find((p) => p.id === a)?.slot === slot;
     setAddons(on ? [...picked.filter((a) => !sameSlot(a)), id] : picked.filter((a) => a !== id));
   };
-  return { base: chosen, setBase, addons: picked, toggle, available };
+  return { base: chosen, setBase, addons: picked, setAddons, toggle, available };
 }
 
 /** The plan of a combination, asked again when it changes. */

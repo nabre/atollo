@@ -59,4 +59,12 @@ fn composer_for_each_php() {
         cmd.contains(r#""%~dp0php.exe" "%~dp0composer.phar""#),
         "{cmd}"
     );
+    // PowerShell's launcher: the `^` of a version constraint reaches
+    // Composer, cmd.exe would drop it.
+    let ps1 = fs::read_to_string(tmp.0.join("composer.ps1")).unwrap();
+    assert!(
+        ps1.contains("& $php (Join-Path $PSScriptRoot 'composer.phar') @args\r\n"),
+        "{ps1}"
+    );
+    assert!(ps1.ends_with("exit $LASTEXITCODE\r\n"), "{ps1}");
 }

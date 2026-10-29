@@ -3,7 +3,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { act, browserPreview, engineText, query, subscribe } from "./core";
-import { FRAMEWORK } from "./events";
+import { FRAMEWORK, FRAMEWORK_END } from "./events";
 
 export interface FrameworkAction {
   name: string;
@@ -86,6 +86,10 @@ export interface FrameworkTarget {
 
 /** Progress of a creation: a command starting, or a line of its output. */
 export interface FrameworkEvent {
+  /** The creation's id (FrameworkCreation.id). */
+  id: number;
+  /** Lines of output so far, this one included. */
+  seq: number;
   /** 1-based number of the command; 0 = installing the kit's tools. */
   step: number;
   total: number;
@@ -214,10 +218,54 @@ export function frameworksTargets(): Promise<FrameworkTarget[]> {
   return query<FrameworkTarget[]>("frameworks_targets", SAMPLE_TARGETS);
 }
 
+/** The creation running now, or the last one, as the app keeps it. */
+export interface FrameworkCreation {
+  /** 0 = none since the app started. */
+  id: number;
+  running: boolean;
+  base: string;
+  addons: string[];
+  name: string;
+  env: EnvVar[];
+  step: number;
+  total: number;
+  /** Lines of output since the start, those dropped from `log` too. */
+  lines: number;
+  /** The last lines; a command starting is "> command". */
+  log: string[];
+  /** Why it stopped, as the command's error (errorText, fixOf). */
+  error: unknown;
+  created: string | null;
+}
+
+export const NO_CREATION: FrameworkCreation = {
+  id: 0,
+  running: false,
+  base: "",
+  addons: [],
+  name: "",
+  env: [],
+  step: 0,
+  total: 0,
+  lines: 0,
+  log: [],
+  error: null,
+  created: null,
+};
+
+export function frameworksState(): Promise<FrameworkCreation> {
+  return query<FrameworkCreation>("frameworks_state", NO_CREATION);
+}
+
 export function frameworksCancel(): Promise<void> {
   return act("frameworks_cancel");
 }
 
 export function onFramework(handler: (e: FrameworkEvent) => void): Promise<() => void> {
   return subscribe<FrameworkEvent>(FRAMEWORK, handler);
+}
+
+/** The end of a creation, with all of it. */
+export function onFrameworkEnd(handler: (c: FrameworkCreation) => void): Promise<() => void> {
+  return subscribe<FrameworkCreation>(FRAMEWORK_END, handler);
 }

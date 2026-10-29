@@ -67,6 +67,7 @@ const COMMANDS: &[&str] = &[
     "frameworks_create",
     "frameworks_cancel",
     "frameworks_targets",
+    "frameworks_state",
     "project_clone",
     "project_site",
     "project_install_missing",

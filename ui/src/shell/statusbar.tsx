@@ -1,12 +1,13 @@
 // The status bar's entries shared by its items (App.tsx): the entry
-// itself, as VSCodium's label, the VM's pill and the jobs' item
-// (LEVELS.md §8.6).
+// itself, as VSCodium's label, the VM's pill, the jobs' item (LEVELS.md
+// §8.6) and the wizard's creation (D-190).
 import { useEffect, useState, type ReactNode } from "react";
-import type { Job } from "../ipc";
+import { errorText, type Job } from "../ipc";
+import { useCreation } from "../frameworks";
 import { OPEN_VM_NOTICE } from "../shared/levels";
 import { IsolationDialog, useIsolation, vmPill, VmPillBadge } from "./isolation";
 import { t } from "../i18n";
-import { Icon } from "../workbench";
+import { Codicon, Icon } from "../workbench";
 import { activeJobs, bytesPercent, JobBar, overallPercent, stepText } from "./jobs";
 
 /** A status bar entry, as VSCodium's label: the bar's height, 5px beside
@@ -150,5 +151,38 @@ ${pill.todo}`}
         />
       )}
     </>
+  );
+}
+
+/** The new project the wizard makes: while it runs, then how it ended
+ * until the wizard has shown it. Its own component: the creation's lines
+ * render it, not the bar. */
+export function CreationItem({ onOpen }: { onOpen: () => void }) {
+  const c = useCreation();
+  if (c.running) {
+    return (
+      <StatusItem title={t("Nuovo progetto")} onClick={onOpen} className="max-w-[320px] min-w-0">
+        <Icon name="loading" spin size={14} className="[--vscode-icon-foreground:currentColor]" />
+        <span role="status" className="min-w-0 truncate">
+          {t("Creo il progetto {0}…", c.name)}
+        </span>
+      </StatusItem>
+    );
+  }
+  if (c.run === c.seen) return null;
+  if (c.error !== null) {
+    return (
+      <StatusItem title={errorText(c.error)} onClick={onOpen} tone="error">
+        <Codicon name="error" size={14} />
+        <span role="status">{t("Creazione di {0} non riuscita", c.name)}</span>
+      </StatusItem>
+    );
+  }
+  if (c.created === null) return null;
+  return (
+    <StatusItem title={t("Nuovo progetto")} onClick={onOpen}>
+      <Codicon name="wand" size={14} />
+      <span role="status">{t("Progetto {0} creato.", c.created)}</span>
+    </StatusItem>
   );
 }

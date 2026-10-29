@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-frameworks-state"
+description = "Enables the frameworks_state command without any pre-configured scope."
+commands.allow = ["frameworks_state"]
+
+[[permission]]
+identifier = "deny-frameworks-state"
+description = "Denies the frameworks_state command without any pre-configured scope."
+commands.deny = ["frameworks_state"]
