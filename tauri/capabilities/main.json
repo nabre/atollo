@@ -77,6 +77,7 @@
     "allow-frameworks-create",
     "allow-frameworks-cancel",
     "allow-frameworks-targets",
+    "allow-frameworks-state",
     "allow-project-clone",
     "allow-project-site",
     "allow-project-install-missing",

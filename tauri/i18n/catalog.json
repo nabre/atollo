@@ -1289,6 +1289,11 @@
     "fr": "Création annulée.",
     "de": "Erstellung abgebrochen."
   },
+  "Preparo i linguaggi del progetto…": {
+    "en": "Preparing the project's languages…",
+    "fr": "Préparation des langages du projet…",
+    "de": "Sprachen des Projekts werden vorbereitet…"
+  },
   "Il comando di creazione non ha fatto la cartella {0}.": {
     "en": "The creation command did not make the folder {0}.",
     "fr": "La commande de création n'a pas créé le dossier {0}.",

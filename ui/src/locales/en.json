@@ -1166,5 +1166,7 @@
   "Ambiente Python: .venv pronto.": "Python environment: .venv ready.",
   "Ambiente Python: .venv in preparazione.": "Python environment: .venv being prepared.",
   "Ambiente Python: .venv non creato: {0}": "Python environment: .venv not created: {0}",
-  "Cartella {0}": "Folder {0}"
+  "Cartella {0}": "Folder {0}",
+  "Creo il progetto {0}…": "Creating project {0}…",
+  "Creazione di {0} non riuscita": "Creating {0} failed"
 }

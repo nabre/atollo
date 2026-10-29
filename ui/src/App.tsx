@@ -28,7 +28,7 @@ import { ProjectsPage, useRuns, WIZARD_TAB } from "./projects";
 import { ActivityPanel, useRunning, type Running } from "./shell/activity";
 import { TitleBar } from "./shell/titlebar";
 import { useJobs, VmPreparing } from "./shell/jobs";
-import { JobsItem, StatusItem, VmItem } from "./shell/statusbar";
+import { CreationItem, JobsItem, StatusItem, VmItem } from "./shell/statusbar";
 import { useAgents } from "./agents";
 import type { AiPane } from "./ai";
 import { useSetup } from "./components/setup";
@@ -385,6 +385,10 @@ export function App() {
         info={info}
         editor={editor}
         onJob={openJob}
+        onCreation={() => {
+          projectTabs.show(WIZARD_TAB);
+          setPage("projects");
+        }}
         runs={runs}
         running={running}
         panelOpen={panelOpen}
@@ -649,6 +653,7 @@ function StatusBar({
   info,
   editor,
   onJob,
+  onCreation,
   runs,
   running,
   panelOpen,
@@ -659,6 +664,8 @@ function StatusBar({
   editor: EditorStatus | null;
   /** Opens a job's details in the Activity panel. */
   onJob: (id: string) => void;
+  /** Opens the wizard of the new project being made. */
+  onCreation: () => void;
   runs: Record<string, RunInfo>;
   /** What runs in the kit, counted by the Activity item. */
   running: Running;
@@ -710,6 +717,7 @@ function StatusBar({
       </StatusItem>
       {info && <VmItem jobs={jobs} />}
       <JobsItem jobs={jobs} onJob={onJob} />
+      <CreationItem onOpen={onCreation} />
       <span className="flex-1" />
       {sessions > 0 && (
         <StatusItem

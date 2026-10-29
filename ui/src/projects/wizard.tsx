@@ -4,34 +4,28 @@
 // the variables of .env. The summary shows the kit's tools and the commands;
 // «Crea il progetto» installs the tools, runs the commands with their output
 // here and opens the project. A tab of the Projects editor, beside the
-// projects' pages (explorer.tsx); the instructions are in Settings.
+// projects' pages (explorer.tsx); the instructions are in Settings. The
+// creation goes on on other pages and its progress is here again when the
+// page comes back (frameworks/creation.ts, D-190); the choices stay too.
 import { useEffect, useRef, useState } from "react";
-import {
-  errorText,
-  fixOf,
-  frameworksCancel,
-  frameworksCreate,
-  frameworksTargets,
-  onFramework,
-  type EnvVar,
-  type Fix,
-  type FrameworkEvent,
-  type FrameworkTarget,
-} from "../ipc";
+import { errorText, fixOf, frameworksCancel, frameworksTargets, type EnvVar, type FrameworkTarget } from "../ipc";
 import {
   AddonChoice,
   basesByCategory,
   groupOf,
   PieceLogo,
   PlanSummary,
+  markSeen,
+  startCreation,
   textOf,
   useCombination,
+  useCreation,
   usePlan,
   type Frameworks,
 } from "../frameworks";
 import { ErrorLine } from "../shared/common";
 import type { GuideTopicId } from "../guide";
-import { useBatched, useLoad, useSubscription } from "../shared/hooks";
+import { useKept, useLoad } from "../shared/hooks";
 import { t } from "../i18n";
 import {
   Button,
@@ -48,8 +42,6 @@ import {
   TextField,
   ToggleButton,
 } from "../workbench";
-
-const MAX_LOG = 600;
 
 /** 12px text in a field (the component reads the variable). */
 const SMALL = "[--vscode-font-size:12px]";
@@ -124,7 +116,6 @@ export function NewProjectWizard({
   onBase,
   onOpen,
   onCreated,
-  onRunning,
   onSettings,
   onGuide,
 }: {
@@ -137,13 +128,11 @@ export function NewProjectWizard({
   onOpen: (project: string) => void;
   /** A project was made: the list reads again. */
   onCreated: () => void;
-  /** The commands run (the tab cannot close meanwhile) or ended. */
-  onRunning: (running: boolean) => void;
   onSettings?: (() => void) | undefined;
   onGuide?: ((topic: GuideTopicId) => void) | undefined;
 }) {
   const { view, pieces } = fw;
-  const { base, setBase, addons, toggle, available } = useCombination(pieces);
+  const { base, setBase, addons, setAddons, toggle, available } = useCombination(pieces, "wizard");
   const { plan, error: planError } = usePlan(pieces, base, addons);
   useEffect(() => {
     if (preset) setBase(preset.base);
@@ -151,37 +140,45 @@ export function NewProjectWizard({
   useEffect(() => {
     if (base) onBase(base);
   }, [base, onBase]);
-  const [name, setName] = useState("");
+  const [name, setName] = useKept("wizard.name", "");
   const [group, setGroup] = useState<{ id: string; base: string } | null>(null);
   /** Values changed (or null: removed) of the plan's variables, by key. */
-  const [envEdits, setEnvEdits] = useState<Record<string, string | null>>({});
-  const [envAdded, setEnvAdded] = useState<EnvVar[]>([]);
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<{ step: number; total: number }>({ step: 0, total: 0 });
-  const [log, setLog] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [envEdits, setEnvEdits] = useKept<Record<string, string | null>>("wizard.envEdits", {});
+  const [envAdded, setEnvAdded] = useKept<EnvVar[]>("wizard.envAdded", []);
+  const creation = useCreation();
+  const { running, log, created } = creation;
+  const error = creation.error === null ? null : errorText(creation.error);
   // A refusal of the levels (D-179): what to do about it.
-  const [fix, setFix] = useState<Fix | null>(null);
-  const [created, setCreated] = useState<string | null>(null);
+  const fix = creation.error === null ? null : fixOf(creation.error);
   const logBox = useRef<HTMLDivElement>(null);
 
-  const { data: targets, reload: loadTargets } = useLoad<FrameworkTarget[]>(frameworksTargets, [], {
+  const { data: targets } = useLoad<FrameworkTarget[]>(frameworksTargets, [], {
     onError: "keep",
+    key: `${String(creation.run)}:${String(running)}`,
   });
 
-  // A command prints many lines a second: the step and the log change once
-  // a frame, with every event of it.
-  const pushEvent = useBatched<FrameworkEvent>((events) => {
-    const steps = events.filter((e) => e.command !== null || e.line === null);
-    const last = steps.at(-1);
-    if (last) setProgress({ step: last.step, total: last.total });
-    const lines = events.flatMap((e) => {
-      const text = e.command !== null ? `> ${e.command}` : e.line;
-      return text === null ? [] : [text];
-    });
-    if (lines.length > 0) setLog((l) => [...l, ...lines].slice(-MAX_LOG));
-  });
-  useSubscription(onFramework, pushEvent);
+  // A creation running when the window was opened again: its choices.
+  useEffect(() => {
+    if (running && name === "" && creation.name !== "") {
+      setBase(creation.base);
+      setAddons(creation.addons);
+      setName(creation.name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the creation is known
+  }, [creation.run, running]);
+  // Done: the list reads again, the name is the project's now and the
+  // next one starts empty.
+  useEffect(() => {
+    if (!running && creation.run !== creation.seen && (created !== null || creation.error !== null)) {
+      markSeen(creation.run);
+      if (created !== null) {
+        setName("");
+        setEnvEdits({});
+        setEnvAdded([]);
+        onCreated();
+      }
+    }
+  }, [running, creation.run, creation.seen, creation.error, created, setName, setEnvEdits, setEnvAdded, onCreated]);
   useEffect(() => {
     const box = logBox.current;
     if (box) box.scrollTop = box.scrollHeight;
@@ -200,31 +197,8 @@ export function NewProjectWizard({
   const target = targets.find((x) => x.name.toLowerCase() === wanted);
   const usable = targets.filter((x) => x.state !== "git");
 
-  const finish = () => {
-    setRunning(false);
-    onRunning(false);
-    loadTargets();
-  };
   const create = () => {
-    setRunning(true);
-    onRunning(true);
-    setError(null);
-    setFix(null);
-    setCreated(null);
-    setLog([]);
-    setProgress({ step: 0, total: 0 });
-    frameworksCreate(base, addons, target?.name ?? name.trim(), env).then(
-      (project) => {
-        finish();
-        setCreated(project);
-        onCreated();
-      },
-      (e: unknown) => {
-        finish();
-        setError(errorText(e));
-        setFix(fixOf(e));
-      },
-    );
+    startCreation(base, addons, target?.name ?? name.trim(), env);
   };
 
   /** The group of bases shown: the one picked while this base was chosen,
@@ -425,9 +399,11 @@ export function NewProjectWizard({
           <EditorSection id="wizard-progress" title={t("Avanzamento")}>
             {running && (
               <p className="text-vsc-desc">
-                {progress.step === 0
+                {t("Progetto {0}", creation.name)}
+                {" · "}
+                {creation.step === 0
                   ? t("Installo gli strumenti del kit che servono…")
-                  : t("Comando {0} di {1}", progress.step, progress.total)}
+                  : t("Comando {0} di {1}", creation.step, creation.total)}
               </p>
             )}
             <div

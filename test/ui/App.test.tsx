@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import {
+  NO_CREATION,
   NOTHING_OPEN,
   SAMPLE_AGENTS,
   SAMPLE_EDITOR,
@@ -14,6 +15,8 @@ import {
   SAMPLE_TARGETS,
   SAMPLE_UPDATE,
   type AgentInfo,
+  type FrameworkCreation,
+  type FrameworkEvent,
   type Job,
   type OpenNow,
   type ProjectInfo,
@@ -57,6 +60,7 @@ function answers(overrides: Record<string, unknown> = {}): (cmd: string) => Prom
       notes: [],
     },
     frameworks_create: "app",
+    frameworks_state: NO_CREATION,
     frameworks_targets: [...SAMPLE_TARGETS, { name: "repo", state: "git" }],
     update_status: SAMPLE_UPDATE,
     eject_list: NOTHING_OPEN,
@@ -73,6 +77,9 @@ let jobListener: ((e: { payload: Job }) => void) | null = null;
 let runListener: ((e: { payload: RunEvent }) => void) | null = null;
 let closeListener: ((e: { payload: OpenNow }) => void) | null = null;
 let openProjectListener: ((e: { payload: string }) => void) | null = null;
+// The wizard's creation listens once for the whole window (and this file).
+let frameworkListener: ((e: { payload: FrameworkEvent }) => void) | null = null;
+let frameworkEndListener: ((e: { payload: FrameworkCreation }) => void) | null = null;
 /** Every listener of `levels-changed`: the agents, the Tools page, the tiles. */
 const levelsListeners = new Set<(e: { payload: unknown }) => void>();
 vi.mock("@tauri-apps/api/event", () => ({
@@ -81,6 +88,8 @@ vi.mock("@tauri-apps/api/event", () => ({
       levelsListeners.add(handler);
       return Promise.resolve(() => levelsListeners.delete(handler));
     }
+    if (name === "framework") frameworkListener = handler;
+    if (name === "framework-end") frameworkEndListener = handler;
     if (name === "setup") setupListener = handler;
     if (name === "job") jobListener = handler;
     if (name === "run") runListener = handler;
@@ -652,6 +661,85 @@ describe("App", () => {
       });
     });
     expect(await screen.findByText(/Progetto app creato/)).toBeTruthy();
+  });
+
+  it("keeps the creation and its progress while other pages are shown", async () => {
+    let finish: (project: string) => void = () => undefined;
+    const answer = answers();
+    invoke.mockImplementation((cmd) =>
+      cmd === "frameworks_create"
+        ? new Promise((resolve) => {
+            finish = resolve;
+          })
+        : answer(cmd),
+    );
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Nuovo progetto da una base" }));
+    const groups = within(await screen.findByRole("group", { name: "Gruppi di basi" }));
+    fireEvent.click(groups.getByRole("button", { name: /JavaScript/ }));
+    fireEvent.click(await screen.findByRole("radio", { name: /Vite/ }));
+    fireEvent.change(screen.getByLabelText("Nome del progetto"), { target: { value: "sito" } });
+    const create = screen.getByRole<HTMLButtonElement>("button", { name: "Crea il progetto" });
+    await waitFor(() => {
+      expect(create.disabled).toBe(false);
+    });
+    fireEvent.click(create);
+    const event = (seq: number, command: string | null, line: string | null): FrameworkEvent => ({
+      id: 100,
+      seq,
+      step: 1,
+      total: 2,
+      command,
+      line,
+    });
+    act(() => {
+      frameworkListener?.({ payload: event(1, "npm create vite@9 'sito'", null) });
+      frameworkListener?.({ payload: event(2, null, "Scaffolding project") });
+    });
+    expect(await screen.findByText("Scaffolding project")).toBeTruthy();
+
+    // Another page: the status bar tells, and brings back the wizard with
+    // its progress and its choices.
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    await screen.findByRole("list", { name: "Impostazioni" });
+    expect(screen.queryByText("Scaffolding project")).toBeNull();
+    fireEvent.click(await screen.findByText("Creo il progetto sito…"));
+    expect(await screen.findByText("Scaffolding project")).toBeTruthy();
+    expect(screen.getByText("> npm create vite@9 'sito'")).toBeTruthy();
+    expect(screen.getByText(/Comando 1 di 2/)).toBeTruthy();
+
+    // A line already there is not added again.
+    act(() => {
+      frameworkListener?.({ payload: event(2, null, "Scaffolding project") });
+    });
+    await waitFor(() => {
+      expect(screen.getAllByText("Scaffolding project").length).toBe(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Impostazioni" }));
+    await screen.findByRole("list", { name: "Impostazioni" });
+    act(() => {
+      frameworkEndListener?.({
+        payload: {
+          ...NO_CREATION,
+          id: 100,
+          base: "vite",
+          name: "sito",
+          step: 2,
+          total: 2,
+          lines: 2,
+          log: ["> npm create vite@9 'sito'", "Scaffolding project"],
+          created: "sito",
+        },
+      });
+      finish("sito");
+    });
+    // Ended on another page: the status bar says so until the wizard shows it.
+    fireEvent.click(await screen.findByText("Progetto sito creato."));
+    expect(await screen.findByText("Apri il progetto")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getAllByText(/Progetto sito creato/).length).toBe(1);
+    });
   });
 
   it("turns a project's star at once, and back when Rust refuses", async () => {

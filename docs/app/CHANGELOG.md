@@ -1,5 +1,10 @@
 # Novità
 
+## Rilascio 0.9.6 alpha (29/10/2026): progetti creati di nuovo
+
+- **La creazione dei progetti PHP funziona di nuovo su Windows** (D-190): nel wizard «Nuovo progetto» `composer` perdeva il `^` delle versioni (`symfony/skeleton:^8.1` diventava `8.1`, «Could not find package») e la creazione si fermava al primo comando. Ora accanto a `composer.cmd` c'è `composer.ps1`, scritto anche nei kit esistenti all'avvio.
+- **L'avanzamento non si perde**: la creazione continua mentre usi altre pagine e, tornando al wizard, ritrovi avanzamento, log, esito e le scelte fatte, anche dopo una ricarica della finestra. La barra di stato dice «Creo il progetto …», poi l'esito; un clic riporta al wizard.
+
 ## Rilascio 0.9.5 alpha (29/10/2026): account per progetto, agenti ovunque
 
 - **Codice in strati** (D-189, interno): il motore è diviso in cinque livelli (infrastruttura, strumenti, nucleo con sandbox e terminale, domini, interfaccia) e un test impedisce i legami verso l'alto; i legami di questo tipo scendono da 41 a 25, e quelli rimasti sono elencati con il loro motivo.

@@ -12,6 +12,9 @@ pub const UPDATES: &str = "updates";
 pub const OPEN_PROJECT: &str = "open-project";
 /// A step of a new project from a framework (`FrameworkEvent`).
 pub const FRAMEWORK: &str = "framework";
+/// The end of a new project from a framework, with all of it
+/// (`projects::frameworks::progress::Creation`).
+pub const FRAMEWORK_END: &str = "framework-end";
 /// The GitHub account's state (`GithubStatus`).
 pub const GITHUB: &str = "github";
 /// The editor started, stopped or restarted (`EditorStatus`).
@@ -48,6 +51,7 @@ pub const ALL: &[&str] = &[
     UPDATES,
     OPEN_PROJECT,
     FRAMEWORK,
+    FRAMEWORK_END,
     GITHUB,
     EDITOR_STATUS,
     CLOSE_REQUESTED,
