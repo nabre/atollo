@@ -1307,12 +1307,8 @@ pub(crate) fn folder_vm(kit: &Kit, host: &Host, dir: &Path, read_only: Vec<PathB
 ///
 /// Elsewhere (`D:\Siti\shop`) it may.
 pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
-    let by_root = |p: &Path| cfg!(unix) && p.parent() == Some(Path::new("/"));
-    if !dir.is_absolute()
-        || dir
-            .ancestors()
-            .any(|p| !by_root(p) && crate::platform::safe_path::is_link(p))
-    {
+    use crate::platform::safe_path::{is_link, is_root_link};
+    if !dir.is_absolute() || dir.ancestors().any(|p| !is_root_link(p) && is_link(p)) {
         return None;
     }
     let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));

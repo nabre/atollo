@@ -46,6 +46,12 @@ pub fn is_reparse(meta: &fs::Metadata) -> bool {
     meta.file_type().is_symlink() || meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
 }
 
+/// Any user may make a folder, or a junction, at a drive's root: no link
+/// is the system's alone.
+pub fn is_root_link(_path: &Path) -> bool {
+    false
+}
+
 /// The bytes the file `path` takes on the disk: what a sparse or
 /// compressed file has written (`GetCompressedFileSizeW`), its size when
 /// that cannot be read.
