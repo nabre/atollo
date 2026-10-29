@@ -1,7 +1,7 @@
 {
   "name": "atollo-ui",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.9.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
@@ -19,7 +19,7 @@
     "@vscode-elements/react-elements": "2.4.0",
     "@vscode/codicons": "0.0.45",
     "@xterm/addon-fit": "0.11.0",
-    "@xterm/addon-unicode11": "0.9.0",
+    "@xterm/addon-unicode11": "0.9.1",
     "@xterm/addon-webgl": "0.19.0",
     "@xterm/xterm": "6.0.0",
     "react": "19.3.0",
