@@ -16,6 +16,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::isolation::vm;
 
+pub use crate::setup::agents::Agent;
+
 pub mod agents;
 pub mod env;
 pub mod facts;
@@ -35,60 +37,6 @@ pub enum Level {
     Manual = 1,
     Project = 2,
     Agent = 3,
-}
-
-/// The agents Atollo knows (the catalog's `agents` group).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Agent {
-    Claude,
-    Codex,
-    Pi,
-    Antigravity,
-}
-
-impl Agent {
-    pub const ALL: [Agent; 4] = [Agent::Claude, Agent::Codex, Agent::Pi, Agent::Antigravity];
-
-    /// The catalog id: "claude", "codex", "pi", "antigravity".
-    pub fn id(self) -> &'static str {
-        match self {
-            Agent::Claude => "claude",
-            Agent::Codex => "codex",
-            Agent::Pi => "pi",
-            Agent::Antigravity => "antigravity",
-        }
-    }
-
-    /// The name the user reads: "Claude Code", "Codex", "Pi", "Antigravity".
-    pub fn name(self) -> &'static str {
-        match self {
-            Agent::Claude => "Claude Code",
-            Agent::Codex => "Codex",
-            Agent::Pi => "Pi",
-            Agent::Antigravity => "Antigravity",
-        }
-    }
-
-    /// The commands a user types for it: ["claude"], ["codex"], ["pi"],
-    /// ["agy", "antigravity"].
-    pub fn commands(self) -> &'static [&'static str] {
-        match self {
-            Agent::Claude => &["claude"],
-            Agent::Codex => &["codex"],
-            Agent::Pi => &["pi"],
-            Agent::Antigravity => &["agy", "antigravity"],
-        }
-    }
-
-    pub fn from_id(id: &str) -> Option<Agent> {
-        Agent::ALL.into_iter().find(|a| a.id() == id)
-    }
-
-    #[cfg(test)]
-    pub fn from_command(cmd: &str) -> Option<Agent> {
-        Agent::ALL.into_iter().find(|a| a.commands().contains(&cmd))
-    }
 }
 
 /// Who asks. The level follows from it (I2).

@@ -24,6 +24,7 @@ mod llm;
 mod net;
 mod os;
 mod platform;
+mod ports;
 mod projects;
 mod router;
 mod servers;
@@ -496,3 +497,7 @@ mod test_support;
 #[cfg(test)]
 #[path = "../../test/rust/main.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../../test/rust/layers.rs"]
+mod layers;

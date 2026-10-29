@@ -62,16 +62,17 @@ Only the configuration files (workspace, lint, formatting, CI) and the README st
 
 ## Rust engine (`tauri\src`)
 
-A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`app\cli.rs`). Only `main.rs` stays at the top; everything else is in one folder per area (D-87, D-166). They read by layers: a layer above calls the one below, never the reverse.
+A single binary, `Atollo.exe`: the window (Tauri 2) and the command line (`app\cli.rs`). Only `main.rs` stays at the top; everything else is in one folder per area (D-87, D-166). They read by layers (D-189): a folder uses only folders of its own layer or of a lower one; inside a layer the edges allowed are listed one by one, and an edge upward is debt, listed with its reason. `test/rust/layers.rs` checks every `crate::` reference (comments and strings left out): a new edge fails, and so does a list naming an edge that is gone, so the debt only shrinks.
 
 | Layer | Modules | What they do |
 | --- | --- | --- |
-| Startup | `main.rs`, `app\` | startup order ("Startup", above), the app and its windows, the tray, the command line |
-| IPC | `ipc\` | the interface's only entry point: the commands (they check the window, translate the errors, call the domain) and the names of the events Rust sends (`ipc\events.rs`) |
-| Domain | the folders per area (below) | components, versions, projects, editor and console, agents, local models, databases, web servers, GitHub, isolation, diagnostics |
-| Infrastructure | `common\`, `kit\`, `env\`, `net\`, `router\` | files, log, clock, languages, settings, ports; kit paths; environment; network and checks; target operating systems |
-| Platform | `platform\` | the abstract layer over the operating system: the same API on Windows, macOS and Linux (below) |
-| Systems | `os\windows\`, `os\unix\`, `os\macos\`, `os\linux\` | the code of each system, behind `platform\` only |
+| 4 Interface | `main.rs`, `app\`, `ipc\` | startup order ("Startup", above), the app, its windows, the tray, the command line; the interface's only entry point: the commands (they check the window, translate the errors, call the domain) and the events (`ipc\events.rs`) |
+| 3 Domains | `projects\`, `detect\`, `db\`, `servers\`, `agents\`, `llm\`, `github\`, `diagnostics\`, `ports\` | projects and what they need, databases, web servers, agents and their accounts, local models, GitHub, diagnostics; `ports` names who keeps each port |
+| 2 Core | `isolation\`, `editor\`, `levels\` | Docker Sandboxes (the sandbox), the terminal and the editor, the levels that place every program on the PC or in a sandbox |
+| 1 Tools | `setup\`, `install\`, `versions\`, `router\` | the catalog (with the agents' ids and install rules, `setup\agents.rs`), the installers, the lines on disk and their choice, the target systems |
+| 0 Infrastructure | `common\`, `kit\`, `os\`, `platform\`, `env\`, `net\` | files, log, clock (`stamp`), languages, settings, port probes; kit paths and release names (`kit\release.rs`); the code of each system behind `platform\` (below); the kit's environment; network and checks |
+
+The debt left at D-189 (25 edges upward, down from 41): `env` reads the tools' folders and lines (`setup`, `versions`), `kit` relocates the components when the kit moves (`install`); the tools still read projects, detection, databases, GitHub and the sandbox in a few places; the core reaches the domains for a session's databases, accounts and settings, and `editor` emits the interface's events; `diagnostics` names the app's version. Each is in `DEBT` of `test/rust/layers.rs` with where it starts.
 
 ```
 tauri\src\
@@ -82,8 +83,7 @@ tauri\src\
   common\                     what every area uses: fsx (kit files: reading, JSON, atomic writes, below), log
                               (masked secrets), time (now_secs, now_ms), i18n (language and catalogs), settings
                               (data\app\settings.json, one change at a time: `Settings::update`; Gemini key
-                              file), ports (who has each port: pools, database versions, actions, editor, local
-                              models, D-141, below), jobs (the long work the interface follows: installs,
+                              file), ports (the probes: something answers, a port is free), jobs (the long work the interface follows: installs,
                               updates, a VM's preparation, each a `Job` with its step, bytes and state, the
                               event `job`, LEVELS.md §8.6)
   kit\                        mod (paths, first run, move), target (Os, Arch, Target), root (bundle), names
@@ -169,6 +169,8 @@ tauri\src\
     auth\                     passwords and .env (D-74): mod, env, project, names, scripts, lock
     phpmyadmin  mongo_express phpMyAdmin (D-107); mongo-express (D-147)
     web_admin                 what the two share: a loopback address and a port of their own, a token (D-141)
+  ports\                      who has each port: pools, database versions, actions, editor, local models
+                              (D-141, below; moved out of common by D-189)
   github\                     the kit's GitHub account (D-70): mod (sign-in, Git helper), repos (list, clone,
                               rename, deletion)
   levels\                     the three levels (D-179, LEVELS.md): mod (`Origin`, `Placement`, `decide`), place,

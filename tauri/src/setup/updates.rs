@@ -60,7 +60,7 @@ fn watched(kit: &Kit) -> impl Iterator<Item = &'static Component> + '_ {
     Catalog::get().all().iter().filter(move |c| {
         c.version.is_none()
             && crate::install::installer(&c.id).is_some()
-            && !crate::levels::agents::obsolete(c, kit.target())
+            && !super::agents::obsolete(c, kit.target())
             && c.is_installed(kit)
     })
 }
@@ -126,12 +126,12 @@ pub fn notes_url(c: &Component, version: &str) -> String {
 }
 
 /// The watched components whose latest version is newer than the one
-/// installed, in the catalog's order; an agent only while the VM (`vm`)
-/// is on (LEVELS.md §7). Nothing is asked.
-pub fn pending(kit: &Kit, vm: &crate::levels::VmState) -> Updates {
+/// installed, in the catalog's order; an agent only while the agents are
+/// `enabled` (the VM on, LEVELS.md §7). Nothing is asked.
+pub fn pending(kit: &Kit, enabled: bool) -> Updates {
     let latest = load(kit);
     let items = watched(kit)
-        .filter(|c| crate::levels::installable(c, kit.target(), vm))
+        .filter(|c| super::agents::installable(c, kit.target(), enabled))
         .filter_map(|c| {
             let installed = c.installed_version(kit)?;
             let new = latest.versions.get(&c.id)?;

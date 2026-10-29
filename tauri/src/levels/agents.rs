@@ -30,7 +30,7 @@ use crate::common::i18n::t;
 use crate::env::{Host, KitEnv};
 use crate::isolation;
 use crate::kit::{Kit, Target};
-use crate::setup::{Catalog, Component, Group};
+use crate::setup::{Catalog, Component};
 
 use super::{Agent, VmState};
 
@@ -62,35 +62,16 @@ pub fn known_vm() -> VmState {
     )
 }
 
-/// The agent `c` is, if it is one (the catalog's `agents` group).
-pub fn agent_of(c: &Component) -> Option<Agent> {
-    (c.group == Group::Agents)
-        .then(|| Agent::from_id(&c.id))
-        .flatten()
-}
-
-/// The kit keeps `agent` for `target` (Q11, D-184): every agent for the
-/// VM's Linux only (every VM is Linux).
-pub fn kept_on(_agent: Agent, target: Target) -> bool {
-    target.is_linux()
-}
-
 /// `c` may be installed or updated for `target` with the VM as `vm` says:
 /// any component but an agent; an agent only where the kit keeps it
 /// ([`kept_on`]) and while the agents are enabled. The one filter of the
 /// runner's plans (first start, «Aggiorna tutto», an install, the tools of
 /// a VM) and of the updates listed.
 pub fn installable(c: &Component, target: Target, vm: &VmState) -> bool {
-    agent_of(c).is_none_or(|agent| kept_on(agent, target) && agents_enabled(vm))
+    crate::setup::agents::installable(c, target, agents_enabled(vm))
 }
 
-/// `c` is an agent the kit never keeps for `target`: what is on disk of it
-/// there (an install of an earlier Atollo for the PC) goes at the next run
-/// that removes. Never decided by the VM's state: Pi's Linux build stays
-/// while the VM is off for a moment.
-pub fn obsolete(c: &Component, target: Target) -> bool {
-    agent_of(c).is_some_and(|agent| !kept_on(agent, target))
-}
+pub use crate::setup::agents::{agent_of, obsolete};
 
 /// Why the agents are disabled, in `lang`: the VM's blockers, each with
 /// what to do; `None` while the VM is on.

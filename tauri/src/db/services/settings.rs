@@ -132,10 +132,10 @@ fn update_settings<T>(
 /// are checked by the caller, which may move them. Called before
 /// [`update_settings`], never inside it.
 fn refuse_other_owner(kit: &Kit, engine: DbEngine, port: u16, lang: &str) -> Result<()> {
-    crate::common::ports::refuse_taken(
+    crate::ports::refuse_taken(
         kit,
         port,
-        |o| matches!(o, crate::common::ports::Owner::Db { engine: e, .. } if *e == engine),
+        |o| matches!(o, crate::ports::Owner::Db { engine: e, .. } if *e == engine),
         lang,
     )
 }

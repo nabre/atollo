@@ -20,7 +20,6 @@
 //! path of `shellPath` follows the kit when it moves.
 
 use std::fs;
-use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde_json::{json, Map, Value};
@@ -32,10 +31,7 @@ use crate::kit::Kit;
 /// The provider of the local models in Pi's `models.json`.
 pub const PROVIDER: &str = "atollo";
 
-/// `<home>\.pi\agent`, Pi's folder in the kit.
-pub fn dir(home: &Path) -> PathBuf {
-    home.join(".pi").join("agent")
-}
+pub use crate::env::pi_agent_dir as dir;
 
 /// The local model Pi uses: the one chosen for it when it is on disk;
 /// without a choice, while Pi has no provider of the cloud, the first

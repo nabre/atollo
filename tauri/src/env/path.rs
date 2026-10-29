@@ -171,7 +171,7 @@ pub(super) fn path_var(env: &mut KitEnv, cx: &Cx, dirs: LangDirs, tools: OsTools
     // component's own programs (D-125); `bin` while it has none.
     let own_bin = |rel: &str| {
         let bin = app(rel);
-        let launchers = bin.with_file_name(crate::install::conda::LAUNCHERS);
+        let launchers = bin.with_file_name(super::CONDA_LAUNCHERS);
         if launchers.is_dir() {
             launchers
         } else {

@@ -32,7 +32,7 @@ pub const PROJECT_VAR: &str = "ATOLLO_PROJECT";
 pub const TERMINAL_VAR: &str = "ATOLLO_TERMINAL";
 /// `data/kit/forward`: the forwarders of the agents' commands, first on
 /// every PC `PATH` (LEVELS.md §6.8, written by `setup::kit_files`).
-pub const FORWARD_DIR: &str = "forward";
+pub use crate::setup::kit_files::FORWARD_DIR;
 
 /// What a project's programs never get from the kit's environment: the
 /// way to the user's real profile, the user's SSH keys (the agent's

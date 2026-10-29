@@ -48,7 +48,7 @@ pub(super) fn try_load_store(kit: &Kit) -> Result<StoredServers> {
 }
 
 /// The port of every pool, by id, as `servers.json` keeps them (read
-/// without `store_lock`, for [`crate::common::ports`]).
+/// without `store_lock`, for [`crate::ports`]).
 pub(crate) fn pool_ports(kit: &Kit) -> BTreeMap<String, u16> {
     load_store(kit).ports
 }
@@ -303,7 +303,7 @@ impl WebServers {
             .ports
             .values()
             .copied()
-            .chain(crate::common::ports::ports_taken(&self.kit).into_keys())
+            .chain(crate::ports::ports_taken(&self.kit).into_keys())
             .collect();
         // A free port no other pool has; failing that (every one taken by
         // other programs), one no other pool has, which the start reports
@@ -588,10 +588,10 @@ impl WebServers {
             // second never starts and its sites answer from the first. Nor
             // one of a database version, of a project or of the editor
             // (BUG-V5-05): the pool, or that one, would not start.
-            crate::common::ports::refuse_taken(
+            crate::ports::refuse_taken(
                 &self.kit,
                 p,
-                |o| matches!(o, crate::common::ports::Owner::Pool(o) if *o == id),
+                |o| matches!(o, crate::ports::Owner::Pool(o) if *o == id),
                 lang,
             )?;
             store.ports.insert(id.clone(), p);

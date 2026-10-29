@@ -56,7 +56,7 @@ pub fn kit_processes(kit: &Kit) -> Vec<KitProcess> {
             .find_map(|r| path.strip_prefix(r).ok())
             .map(Path::to_path_buf)
     };
-    let server = inside(&crate::editor::server_dir(kit));
+    let server = inside(&kit.editor_server());
     let webview = inside(&super::webview::fixed_folder(kit));
     let under = |rel: &Option<PathBuf>, dir: &Option<PathBuf>| matches!((rel, dir), (Some(r), Some(d)) if r.starts_with(d));
     ours.iter()
@@ -202,7 +202,7 @@ fn kit_root_of(path: &Path, name: &str, is_kit: impl Fn(&Path) -> bool) -> Optio
     }
     let app = name.eq_ignore_ascii_case("Atollo.exe")
         || name == "Atollo"
-        || crate::setup::self_update::is_release_name(name);
+        || crate::kit::release::is_release_name(name);
     app.then(|| path.parent())
         .flatten()
         .filter(|d| is_kit(d))

@@ -71,7 +71,7 @@ pub const AGENTS_DIR: &str = "agents";
 /// (`levels::env::FORWARD_DIR`): a command of an agent there asks the app to
 /// run the agent in the project's VM, whatever the PC has installed after
 /// it (LEVELS.md §6.8).
-pub const FORWARD_DIR: &str = crate::levels::env::FORWARD_DIR;
+pub const FORWARD_DIR: &str = "forward";
 
 /// What a forwarder says when the kit's PowerShell is missing (Windows'
 /// `cmd`: its client is `launch.ps1`).
@@ -174,7 +174,7 @@ pub fn vm_stand_in(cmd: &str, lang: &str) -> String {
 /// LF, executable, only when they changed.
 pub fn write_guest(guest: &std::path::Path, lang: &str) -> Result<()> {
     let mut files = vec![(format!("{GUEST_BIN}/atollo"), vm_atollo(lang))];
-    for agent in crate::levels::Agent::ALL {
+    for agent in super::agents::Agent::ALL {
         for cmd in agent.commands() {
             files.push((
                 format!("{GUEST_AGENTS}/{}/{cmd}", agent.id()),
@@ -278,7 +278,7 @@ fn generated() -> Vec<(String, String)> {
         out.push((format!("bin/{stem}.cmd"), mysql_launcher_cmd(stem)));
         out.push((format!("bin/{stem}"), mysql_launcher_sh(stem)));
     }
-    for agent in crate::levels::Agent::ALL {
+    for agent in super::agents::Agent::ALL {
         for cmd in agent.commands() {
             let id = agent.id();
             out.push((format!("{FORWARD_DIR}/{cmd}.cmd"), forward_cmd(cmd, id)));

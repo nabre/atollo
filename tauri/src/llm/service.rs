@@ -7,7 +7,7 @@
 //! start, a stop, a restart after the models changed), started inside its
 //! job with every process it starts (the router runs one per model), its
 //! output in `data/app/logs/llm.log`, a port of its own that no other part
-//! of Atollo takes ([`crate::common::ports::Owner::Llm`]); stopped with "Ferma
+//! of Atollo takes ([`crate::ports::Owner::Llm`]); stopped with "Ferma
 //! tutto", "Rimuovi l'unità" and when the app closes.
 
 use std::fs::OpenOptions;
@@ -164,10 +164,10 @@ impl Llm {
     fn port(&self, lang: &str) -> Result<u16> {
         let saved = settings::load(&self.kit).port;
         if let Some(p) = saved {
-            crate::common::ports::refuse_taken(
+            crate::ports::refuse_taken(
                 &self.kit,
                 p,
-                |o| matches!(o, crate::common::ports::Owner::Llm),
+                |o| matches!(o, crate::ports::Owner::Llm),
                 lang,
             )?;
             if !is_port_free(p) {
@@ -182,7 +182,7 @@ impl Llm {
             }
             return Ok(p);
         }
-        let taken = crate::common::ports::ports_taken(&self.kit);
+        let taken = crate::ports::ports_taken(&self.kit);
         let Some(p) = settings::PORTS
             .clone()
             .find(|p| !taken.contains_key(p) && is_port_free(*p))

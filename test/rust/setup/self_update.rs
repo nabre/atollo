@@ -62,7 +62,7 @@ fn asset_names_per_target() {
         };
         assert_eq!(name, expected);
         assert_eq!(name.ends_with(".exe"), target.is_windows());
-        assert!(is_release_name(name), "{name}");
+        assert!(crate::kit::release::is_release_name(name), "{name}");
     }
 }
 
@@ -73,7 +73,7 @@ fn release_names() {
         "Atollo-0.2.0-win32-x64.exe",
         "Atollo-10.0.1-linux-arm64.AppImage",
     ] {
-        assert!(is_release_name(name), "{name}");
+        assert!(crate::kit::release::is_release_name(name), "{name}");
     }
     for name in [
         "Atollo.exe",
@@ -85,7 +85,7 @@ fn release_names() {
         "Atollo-0.2.0-",
         "Other-0.2.0-win32-x64.exe",
     ] {
-        assert!(!is_release_name(name), "{name}");
+        assert!(!crate::kit::release::is_release_name(name), "{name}");
     }
     assert_eq!(
         unversioned("Atollo-0.2.0-linux-x64.AppImage"),

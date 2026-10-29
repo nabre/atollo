@@ -125,10 +125,15 @@ pub fn mysql_release_for(
     ))
 }
 
-/// The parts of a MySQL build the kit never runs (D-110, `mysql::STRIP_*`
-/// of the service): removed from the new tree before the swap.
+/// The files a MySQL build carries that the kit never runs (D-110): the
+/// test suite, debug symbols (`.pdb`), the debug plugins and server (most of
+/// the Linux ARM64 build's 1.8 GB), relative to the build's folder.
+pub const STRIP_DIRS: [&str; 2] = ["mysql-test", "lib/plugin/debug"];
+pub const STRIP_FILES: [&str; 2] = ["bin/mysqld-debug", "bin/mysqld-debug.exe"];
+
+/// The parts of a MySQL build the kit never runs ([`STRIP_DIRS`],
+/// [`STRIP_FILES`]): removed from the new tree before the swap.
 pub fn strip_mysql(tree: &Path) -> Result<()> {
-    use crate::db::services::mysql::{STRIP_DIRS, STRIP_FILES};
     for dir in STRIP_DIRS {
         let path = crate::common::fsx::join_rel(tree, dir);
         if path.is_dir() {

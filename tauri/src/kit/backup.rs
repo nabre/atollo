@@ -119,7 +119,7 @@ pub fn export(root: &Path, dest: &Path, zip: bool) -> Result<Exported> {
         bytes,
     };
     let marker = serde_json::to_string_pretty(&manifest)? + "\n";
-    let name = format!("Atollo-{}", crate::agents::sync::stamp());
+    let name = format!("Atollo-{}", crate::common::time::stamp());
     let path = if zip {
         let path = dest.join(format!("{name}.zip"));
         let part = dest.join(format!("{name}.zip.part"));
@@ -308,7 +308,7 @@ pub fn apply_pending(root: &Path) -> Result<Option<PathBuf>> {
         return Ok(None);
     }
     let from = staging(root);
-    let aside = root.join(format!("{ASIDE}{}", crate::agents::sync::stamp()));
+    let aside = root.join(format!("{ASIDE}{}", crate::common::time::stamp()));
     fs::create_dir_all(aside.join("data"))?;
     fs::create_dir_all(root.join("data"))?;
     let mut done: Vec<(PathBuf, PathBuf)> = Vec::new();

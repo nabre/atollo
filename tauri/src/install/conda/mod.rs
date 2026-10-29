@@ -39,7 +39,7 @@ use std::path::PathBuf;
 use crate::kit::Kit;
 
 pub(super) use keep::{keep, wanted};
-pub use launchers::{launchers_of_older_installations, write_launchers, LAUNCHERS};
+pub use launchers::{launchers_of_older_installations, write_launchers};
 pub use reinstall::reinstall;
 pub use sweep::{forget, free, status, sweep, Status};
 

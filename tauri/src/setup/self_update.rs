@@ -45,7 +45,8 @@ use crate::net::verify::{self, Expect};
 use crate::net::{GhAsset, Net};
 
 pub const REPO: &str = "nabre/atollo";
-const TAG_PREFIX: &str = "app-v";
+pub use crate::kit::release::parse_version;
+use crate::kit::release::{release_rest, TAG_PREFIX};
 
 #[derive(Debug, Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -117,15 +118,6 @@ struct Staged {
     file: Option<String>,
 }
 
-/// `1.2.3` from `app-v1.2.3` (or `1.2.3`), as numbers for comparing.
-pub fn parse_version(text: &str) -> Option<(u64, u64, u64)> {
-    let v = text.strip_prefix(TAG_PREFIX).unwrap_or(text);
-    let mut parts = v.split('.');
-    let n = |p: Option<&str>| p.and_then(|s| s.parse().ok());
-    let out = (n(parts.next())?, n(parts.next())?, n(parts.next())?);
-    parts.next().is_none().then_some(out)
-}
-
 /// The release asset of this kit's system for `version`:
 /// `Atollo-<version>-<target>.exe` (Windows), `.app.zip` (macOS),
 /// `.AppImage` (Linux). The `.tar.gz` of Linux, named the same way, is
@@ -137,20 +129,6 @@ pub fn asset_name(kit: &Kit, version: &str) -> String {
         Os::Linux => "AppImage",
     };
     format!("Atollo-{version}-{}.{ext}", kit.target().as_str())
-}
-
-/// What follows the version in a release name (`win32-x64.exe` of
-/// `Atollo-0.3.0-win32-x64.exe`); `None` for any other name.
-fn release_rest(name: &str) -> Option<&str> {
-    let (version, rest) = name.strip_prefix("Atollo-")?.split_once('-')?;
-    let numbers =
-        version.starts_with(|c: char| c.is_ascii_digit()) && parse_version(version).is_some();
-    (numbers && !rest.is_empty()).then_some(rest)
-}
-
-/// A release name, as the app keeps it on disk (`Atollo-0.3.0-win32-x64.exe`).
-pub fn is_release_name(name: &str) -> bool {
-    release_rest(name).is_some()
 }
 
 /// `name` without its version (`Atollo-linux-x64.AppImage`); any other

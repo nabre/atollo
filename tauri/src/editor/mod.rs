@@ -105,7 +105,7 @@ pub struct Editor {
 
 /// Where the server program is.
 pub fn server_dir(kit: &Kit) -> PathBuf {
-    kit.apps().join("vscodium-server")
+    kit.editor_server()
 }
 
 /// The files started (`out\server-main.js`, `node.exe`) are there: the
@@ -464,12 +464,7 @@ fn free_ports() -> impl Iterator<Item = u16> {
     PORTS.filter(|p| TcpListener::bind(SocketAddrV4::new(Ipv4Addr::LOCALHOST, *p)).is_ok())
 }
 
-/// 32 random bytes of the system (`platform::random`) as 64 hex digits.
-pub fn random_token() -> Result<String> {
-    let mut bytes = [0u8; 32];
-    crate::platform::random::fill(&mut bytes)?;
-    Ok(crate::common::hex(&bytes))
-}
+pub use crate::platform::random::token as random_token;
 
 // restrict_to_owner: protected DACL with full access for the owner only
 // (mode 600 on Unix); it fails on disks without permissions (FAT32/exFAT):
@@ -477,7 +472,7 @@ pub fn random_token() -> Result<String> {
 // inherited by every file and folder created in it afterwards (temporary
 // files included), so they are private from the start; on Unix the folder
 // gets mode 700 and what is inside cannot be reached.
-pub(crate) use crate::platform::files::{restrict_dir_to_owner, restrict_to_owner};
+pub(crate) use crate::platform::files::restrict_to_owner;
 
 fn append_log(path: &Path, line: &str) {
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {

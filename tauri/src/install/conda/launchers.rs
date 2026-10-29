@@ -11,12 +11,7 @@ use crate::install::installer;
 use crate::kit::Kit;
 use crate::setup::Catalog;
 
-/// The folder of a conda environment with the launchers of the
-/// component's own programs (D-125): on the PATH in place of `bin`, which
-/// also holds those of every dependency (`openssl`, `tput`, `kinit`,
-/// `envsubst`... 30 programs for Ruby's 16, 56 for MongoDB's 2, 156 for
-/// R's 2).
-pub const LAUNCHERS: &str = "kit-bin";
+use crate::env::CONDA_LAUNCHERS as LAUNCHERS;
 
 /// The programs of `bin/` that `package` put in the environment `prefix`,
 /// from its record in `conda-meta` (`files`), sorted.

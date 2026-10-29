@@ -44,10 +44,10 @@ pub struct Options {
     /// After this run, the chosen tools for this target too (the VM's
     /// Linux, D-173), in the same task.
     pub then_tools_for: Option<Target>,
-    /// The VM as the caller found it, for the agents (LEVELS.md §7, Q11:
-    /// installed only for the VM's Linux, while it is on); `None`: not
-    /// asked, the agents are left out.
-    pub vm: Option<crate::levels::VmState>,
+    /// The agents are enabled, the VM on as the caller found it (LEVELS.md
+    /// §7, Q11: installed only for the VM's Linux, while it is on); `false`
+    /// (not asked): the agents are left out.
+    pub agents: bool,
 }
 
 /// What a run prepares of the choice (D-173).
@@ -206,13 +206,10 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
     }
     // The agents (LEVELS.md §7, Q11): only for the VM's Linux, only while
     // it is on (D-184: all four).
-    let vm = opts.vm.clone().unwrap_or(crate::levels::VmState::Off {
-        blockers: Vec::new(),
-    });
     wanted.retain(|id| {
         catalog
             .find(id)
-            .is_some_and(|c| crate::levels::installable(c, target, &vm))
+            .is_some_and(|c| super::agents::installable(c, target, opts.agents))
     });
     let removes = opts.only.is_empty() && opts.scope != Scope::Tools;
     // What the chosen components need on this target only (Zig for C and
@@ -225,7 +222,7 @@ pub fn plan(ctx: &Ctx, catalog: &Catalog, choice: &Choice, opts: &Options) -> Re
         if wanted.contains(c.id.as_str()) {
             plan.handle.push(c.id.clone());
         } else if removes
-            && (!choice.is_chosen(&c.id) || crate::levels::agents::obsolete(c, target))
+            && (!choice.is_chosen(&c.id) || super::agents::obsolete(c, target))
             && !kept.contains(c.id.as_str())
             && has_trace(ctx.kit, c)
         {
@@ -263,7 +260,7 @@ pub fn remove_elsewhere(
         let other = kit.for_target(target);
         let kept = catalog.needs_only_on(&chosen, target);
         for c in catalog.in_page_order() {
-            let unwanted = !choice.is_chosen(&c.id) || crate::levels::agents::obsolete(c, target);
+            let unwanted = !choice.is_chosen(&c.id) || super::agents::obsolete(c, target);
             if unwanted && !kept.contains(c.id.as_str()) && has_trace(&other, c) {
                 out.push((target, c.id.clone()));
             }

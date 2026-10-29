@@ -146,13 +146,6 @@ fn lock_staleness_follows_the_heartbeat() {
 }
 
 #[test]
-fn stamp_format() {
-    assert_eq!(civil_from_days(0), (1970, 1, 1));
-    assert_eq!(civil_from_days(20_740), (2026, 10, 14));
-    assert_eq!(stamp().len(), 15);
-}
-
-#[test]
 fn canonical_sorts_keys() {
     let a: Value = serde_json::from_str(r#"{"b":1,"a":{"y":2,"x":[1,"s"]}}"#).unwrap();
     let b: Value = serde_json::from_str(r#"{"a":{"x":[1,"s"],"y":2},"b":1}"#).unwrap();

@@ -2,6 +2,7 @@
 
 ## Prossimo rilascio
 
+- **Codice in strati** (D-189, interno): il motore è diviso in cinque livelli (infrastruttura, strumenti, nucleo con sandbox e terminale, domini, interfaccia) e un test impedisce i legami verso l'alto; i legami di questo tipo scendono da 41 a 25, e quelli rimasti sono elencati con il loro motivo.
 - **Agenti anche fuori dai progetti** (D-187): `claude`, `codex`, `pi` o `agy` scritti in un terminale in una cartella qualsiasi aprono l'agente nella sandbox di quella cartella, con l'account predefinito e senza i database dei progetti. Il kit, il profilo, le cartelle di sistema e la radice di un disco non diventano mai una sandbox. Le sandbox delle cartelle compaiono nell'elenco delle VM, da cui si rimuovono.
 - **Creazione dei progetti Laravel**: gli script di Composer non hanno più il limite di 300 secondi; i kit di avvio di Laravel (React, Vue, Livewire) eseguono `npm install` e la build dentro `artisan install:features` e su un disco lento o in una cartella sincronizzata superavano il limite («exceeded the timeout of 300 seconds»).
 - **Account degli agenti per progetto** (D-185): ogni progetto sceglie, per Claude Code, Codex e Pi, l'account da usare nella sua sandbox («VM» → «Account degli agenti»). L'accesso si fa una volta nella sandbox e resta nel kit: lo usano tutti i progetti che scelgono lo stesso account, e non si perde con «Ricrea».
