@@ -1292,7 +1292,9 @@ pub(crate) fn folder_vm(kit: &Kit, host: &Host, dir: &Path, read_only: Vec<PathB
 /// is the folder the VM gets (D-168). What the VM writes there the PC must
 /// never run, so it is refused:
 ///
-/// - when it or a folder above it is a link or a junction;
+/// - when it or a folder above it is a link or a junction, but for one
+///   right under `/` on Unix, which only root can make (macOS's `/var`,
+///   `/tmp`, `/etc` lead to `/private`);
 /// - a drive's root;
 /// - anything in the kit or in the user's profile, or holding either (the
 ///   kit's programs and launchers, the profile's start files, PowerShell
@@ -1305,7 +1307,12 @@ pub(crate) fn folder_vm(kit: &Kit, host: &Host, dir: &Path, read_only: Vec<PathB
 ///
 /// Elsewhere (`D:\Siti\shop`) it may.
 pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
-    if !dir.is_absolute() || dir.ancestors().any(crate::platform::safe_path::is_link) {
+    let by_root = |p: &Path| cfg!(unix) && p.parent() == Some(Path::new("/"));
+    if !dir.is_absolute()
+        || dir
+            .ancestors()
+            .any(|p| !by_root(p) && crate::platform::safe_path::is_link(p))
+    {
         return None;
     }
     let canon = |p: &Path| std::fs::canonicalize(p).ok().map(|p| plain(&p));

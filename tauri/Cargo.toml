@@ -1,6 +1,6 @@
 [package]
 name = "atollo"
-version = "0.9.3"
+version = "0.9.4"
 description = "Atollo — Universal Portable Dev & AI Workspace"
 authors = ["nabre"]
 license = "MIT"
