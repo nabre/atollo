@@ -126,7 +126,7 @@ pub fn info_in(kit: &Kit, tools: &Kit, dir: &Path, lang: &str) -> ProjectInfo {
     ProjectInfo {
         settings,
         extensions,
-        local_env: envs::status(dir),
+        local_env: envs::status(kit, dir),
         id,
         modified: modified(dir),
         empty,
