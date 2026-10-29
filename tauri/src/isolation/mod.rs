@@ -1300,7 +1300,8 @@ pub(crate) fn folder_vm(kit: &Kit, host: &Host, dir: &Path, read_only: Vec<PathB
 ///   read-only, reachable again through it): a project is a project's
 ///   sandbox, never a folder's; `projects/` itself never;
 /// - the system's folders (Windows, Program Files, ProgramData; `/etc`,
-///   `/usr`…), or one holding them.
+///   `/usr`…), or one holding them; macOS's per-user temporary folders
+///   (`/private/var/folders`) are the user's, not the system's.
 ///
 /// Elsewhere (`D:\Siti\shop`) it may.
 pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
@@ -1319,6 +1320,7 @@ pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
         .into_iter()
         .flatten()
         .collect();
+    let personal = guarded.len();
     if kit.target().is_windows() {
         guarded.extend(
             [
@@ -1351,10 +1353,16 @@ pub fn vm_workspace(kit: &Kit, host: &Host, dir: &Path) -> Option<PathBuf> {
             .map(PathBuf::from),
         );
     }
-    let near = guarded
-        .iter()
-        .filter_map(|p| canon(p))
-        .any(|p| dir.starts_with(&p) || p.starts_with(&dir));
+    // macOS's per-user temporary folders and caches (`$TMPDIR`) live under
+    // `/var` (`/private/var/folders/…`): the user's, not the system's. The
+    // kit and the profile stay guarded wherever they are.
+    let users = Path::new("/private/var/folders");
+    let near = guarded.iter().enumerate().any(|(i, p)| {
+        canon(p).is_some_and(|p| {
+            let system = i >= personal && dir.starts_with(users);
+            (dir.starts_with(&p) && !system) || p.starts_with(&dir)
+        })
+    });
     (!near).then_some(dir)
 }
 
