@@ -1,6 +1,6 @@
 # Novità
 
-## Prossimo rilascio
+## Rilascio 0.9.0 alpha (29/10/2026): account per progetto, agenti ovunque
 
 - **Codice in strati** (D-189, interno): il motore è diviso in cinque livelli (infrastruttura, strumenti, nucleo con sandbox e terminale, domini, interfaccia) e un test impedisce i legami verso l'alto; i legami di questo tipo scendono da 41 a 25, e quelli rimasti sono elencati con il loro motivo.
 - **Agenti anche fuori dai progetti** (D-187): `claude`, `codex`, `pi` o `agy` scritti in un terminale in una cartella qualsiasi aprono l'agente nella sandbox di quella cartella, con l'account predefinito e senza i database dei progetti. Il kit, il profilo, le cartelle di sistema e la radice di un disco non diventano mai una sandbox. Le sandbox delle cartelle compaiono nell'elenco delle VM, da cui si rimuovono.
