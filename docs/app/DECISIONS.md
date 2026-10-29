@@ -1988,7 +1988,7 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
 
   | Strumento | Sul PC | Nella sandbox degli agenti |
   | --- | --- | --- |
-  | Python | `.venv`, creato vuoto da Atollo | `.venv-linux`, creato vuoto dalla sessione |
+  | Python | `data/projects/<p>/venv` (dati del kit), creato vuoto da Atollo | `.venv-linux`, creato vuoto dalla sessione |
   | Ruby | `BUNDLE_PATH=vendor/bundle` | `BUNDLE_PATH=vendor/bundle-linux` |
   | Rust | `target/` di Cargo | `CARGO_TARGET_DIR=target/linux` |
   | Julia | `JULIA_PROJECT=@.` | `JULIA_PROJECT=@.` |
@@ -1998,7 +1998,8 @@ Resta valido il «niente Windows Terminal»; la console classica come unica cons
   | Go, Java, Kotlin, .NET, Dart, Deno, Bun, Zig, Typst | cache condivise del kit (`env::langs`) | quelle della home della VM |
   | Android, TinyTeX, server, agenti | non si applica | non si applica |
 
-  - **PC.** `levels::env::pc_environment` aggiunge il passo 3b dopo le linee del progetto (`envs::apply_pc`): `.venv\Scripts` (o `.venv/bin`) primo sul `PATH` e `VIRTUAL_ENV`, solo se il `.venv` esiste; le variabili di Ruby, Julia, R. Vale per i livelli 1 e 2 (terminali, azioni, task).
+  - **PC.** `levels::env::pc_environment` aggiunge il passo 3b dopo le linee del progetto (`envs::apply_pc`): `UV_PROJECT_ENVIRONMENT` all'ambiente del progetto nei dati del kit (`envs::pc_venv`, `data/projects/<p>/venv`), e i suoi programmi (`Scripts` o `bin`) primi sul `PATH` con `VIRTUAL_ENV`, solo se esiste; le variabili di Ruby, Julia, R. Vale per i livelli 1 e 2 (terminali, azioni, task).
+  - **Sicurezza** (revisione del 29/10/2026). L'ambiente del PC non sta mai nella cartella del progetto: la sandbox degli agenti la monta in scrittura, e un agente manipolato potrebbe mettere un `python.exe` o un `git.exe` nel suo `Scripts`, che sarebbe primo sul `PATH` di ogni terminale del PC. Un `.venv` del progetto (fatto dall'utente o da un agente) non va mai sul `PATH`; nel progetto resta solo `.venv-linux`, che gira nella VM.
   - **Creazione.** In background, mai sul thread della finestra: dopo la clonazione e la creazione dal wizard (`ipc::settle_project`) e all'apertura della pagina del progetto (`settle_when_changed`, anche senza cambiamenti). Con l'ambiente sigillato del progetto alle sue linee: `uv venv .venv`, o `python -m venv .venv` senza uv. **Vuoto**: installare le dipendenze (`uv sync`, `pip install`, `bundle install`) esegue il codice dei pacchetti, e aprire un progetto clonato non lo fa mai; resta un'azione dell'utente. Un errore va nel log e nella pagina (`ProjectInfo.localEnv`: `ready`, `missing`, `failed` con il motivo). In un repository Git `/.venv/` e `/.venv-linux/` vanno nel `.gitignore`.
   - **VM.** `isolation::project_guest_tools` aggiunge `envs::vm_vars`: solo percorsi sotto la cartella del progetto, quella che la sandbox monta in scrittura, mai un altro percorso del PC. Ogni sessione nella VM (`vm::LOCAL_ENV` in `session_start`) crea `.venv-linux` vuoto con l'`uv` del kit se manca e lo mette primo sul `PATH` con `VIRTUAL_ENV`; se uv deve scaricare un Python, la rete è quella della sandbox; un errore lascia la sessione com'è.
   - Il rilevamento (D-186) non entra in `.venv-linux`, `vendor/bundle-linux` e `target/linux`: cartelle nascoste o dentro `vendor` e `target`, già escluse.

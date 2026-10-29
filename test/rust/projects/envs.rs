@@ -18,6 +18,13 @@ fn venv(dir: &Path, name: &str) {
     fs::write(dir.join(name).join("pyvenv.cfg"), "home = x\n").unwrap();
 }
 
+/// The PC's environment of the project in `dir`: in the kit's data.
+fn pcv(kit: &Kit, dir: &Path) -> PathBuf {
+    let v = pc_venv(kit, dir).unwrap();
+    assert!(v.starts_with(kit.project_data()), "{}", v.display());
+    v
+}
+
 fn env_with_path(dirs: &[PathBuf]) -> KitEnv {
     let mut env = KitEnv::default();
     let sep = env.path_sep().to_string();
@@ -48,9 +55,11 @@ fn the_tools_come_from_the_projects_files() {
     assert!(tools(&project(&node, &["package.json", "composer.json"])).is_empty());
 }
 
-/// On the PC `.venv` is first on the `PATH` with `VIRTUAL_ENV` only once it
-/// exists, `Scripts` on Windows and `bin` elsewhere; applied again it
-/// changes nothing.
+/// On the PC the project's environment in the kit's data is uv's, and
+/// first on the `PATH` with `VIRTUAL_ENV` only once it exists, `Scripts` on
+/// Windows and `bin` elsewhere; applied again it changes nothing. A
+/// `.venv` in the project's folder, which the agents' sandbox can write,
+/// never reaches the `PATH`.
 #[test]
 fn the_venv_is_used_on_the_pc_only_when_it_exists() {
     let tmp = TempDir::new("envs-pc");
@@ -62,17 +71,32 @@ fn the_venv_is_used_on_the_pc_only_when_it_exists() {
         apply_pc(&kit, &dir, &mut env);
         assert_eq!(env.get("VIRTUAL_ENV"), None, "{target:?}");
         assert_eq!(env.path_entries(), [tools_dir.display().to_string()]);
+        let v = pcv(&kit, &dir);
+        assert_eq!(
+            env.get("UV_PROJECT_ENVIRONMENT"),
+            Some(v.display().to_string()).as_deref()
+        );
     }
-    venv(&dir, VENV);
-    for (target, bin) in [(Target::WIN32_X64, "Scripts"), (Target::LINUX_X64, "bin")] {
+    // Written by an agent in the sandbox: not the PC's.
+    venv(&dir, ".venv");
+    for target in [Target::WIN32_X64, Target::LINUX_X64] {
         let kit = Kit::at_target(tmp.0.clone(), target);
         let mut env = env_with_path(std::slice::from_ref(&tools_dir));
         apply_pc(&kit, &dir, &mut env);
-        let first = dir.join(VENV).join(bin).display().to_string();
+        assert_eq!(env.path_entries(), [tools_dir.display().to_string()]);
+        assert_eq!(env.get("VIRTUAL_ENV"), None);
+    }
+    for (target, bin) in [(Target::WIN32_X64, "Scripts"), (Target::LINUX_X64, "bin")] {
+        let kit = Kit::at_target(tmp.0.clone(), target);
+        let v = pcv(&kit, &dir);
+        venv(v.parent().unwrap(), VENV);
+        let mut env = env_with_path(std::slice::from_ref(&tools_dir));
+        apply_pc(&kit, &dir, &mut env);
+        let first = v.join(bin).display().to_string();
         assert_eq!(env.path_entries()[0], first, "{target:?}");
         assert_eq!(
             env.get("VIRTUAL_ENV"),
-            Some(dir.join(VENV).display().to_string()).as_deref()
+            Some(v.display().to_string()).as_deref()
         );
         let once = env.get("PATH").unwrap().to_owned();
         apply_pc(&kit, &dir, &mut env);
@@ -153,15 +177,17 @@ fn the_venv_is_made_by_uv_or_python() {
         };
         fs::write(uv_dir.join(exe("uv")), "").unwrap();
         fs::write(py_dir.join(exe("python")), "").unwrap();
+        let at = tmp.0.join("data").join("venv");
+        let shown = at.display().to_string();
         let both = env_with_path(&[py_dir.clone(), uv_dir.clone()]);
-        let (program, args) = create_command(&both, windows).unwrap();
+        let (program, args) = create_command(&both, windows, &at).unwrap();
         assert_eq!(program, uv_dir.join(exe("uv")));
-        assert_eq!(args, ["venv", VENV]);
+        assert_eq!(args, ["venv", shown.as_str()]);
         let python = env_with_path(std::slice::from_ref(&py_dir));
-        let (program, args) = create_command(&python, windows).unwrap();
+        let (program, args) = create_command(&python, windows, &at).unwrap();
         assert_eq!(program, py_dir.join(exe("python")));
-        assert_eq!(args, ["-m", "venv", VENV]);
-        assert!(create_command(&KitEnv::default(), windows).is_none());
+        assert_eq!(args, ["-m", "venv", shown.as_str()]);
+        assert!(create_command(&KitEnv::default(), windows, &at).is_none());
         fs::remove_file(uv_dir.join(exe("uv"))).unwrap();
         fs::remove_file(py_dir.join(exe("python"))).unwrap();
     }
@@ -180,27 +206,30 @@ fn ensure_makes_the_venv_once() {
     fs::write(uv_dir.join("uv"), "").unwrap();
     let env = env_with_path(std::slice::from_ref(&uv_dir));
     let runs = Cell::new(0);
-    let make = |_: &Path, args: &[String], at: &Path, _: &KitEnv| {
+    let v = pcv(&kit, &dir);
+    let make = |_: &Path, args: &[String], _: &Path, _: &KitEnv| {
         runs.set(runs.get() + 1);
-        assert_eq!(args, ["venv", VENV]);
-        venv(at, VENV);
+        assert_eq!(args, ["venv".to_owned(), v.display().to_string()]);
+        venv(v.parent().unwrap(), VENV);
         Ok(())
     };
-    assert_eq!(status(&dir), Some(LocalEnv::Missing));
+    assert_eq!(status(&kit, &dir), Some(LocalEnv::Missing));
     assert_eq!(ensure_pc(&kit, &dir, &env, &make), Some(LocalEnv::Ready));
     assert_eq!(ensure_pc(&kit, &dir, &env, &make), Some(LocalEnv::Ready));
     assert_eq!(runs.get(), 1, "made once");
     let ignore = fs::read_to_string(dir.join(".gitignore")).unwrap();
-    assert_eq!(ignore, "/.venv/\n/.venv-linux/\n");
+    assert_eq!(ignore, "/.venv-linux/\n");
+    assert!(!dir.join(".venv").exists(), "never in the project's folder");
 
     let broken = TempDir::new("envs-ensure-fail");
     let dir = project(&broken, &["pyproject.toml"]);
+    let kit = Kit::at_target(broken.0.clone(), Target::LINUX_X64);
     let fail = |_: &Path, _: &[String], _: &Path, _: &KitEnv| Err("no Python 3.13".to_owned());
     let failed = LocalEnv::Failed {
         reason: "no Python 3.13".into(),
     };
     assert_eq!(ensure_pc(&kit, &dir, &env, &fail), Some(failed.clone()));
-    assert_eq!(status(&dir), Some(failed));
+    assert_eq!(status(&kit, &dir), Some(failed));
     assert!(!dir.join(".gitignore").exists(), "not a Git repository");
 
     let node = TempDir::new("envs-ensure-node");
@@ -219,12 +248,12 @@ fn gitignore_gets_only_what_it_lacks() {
     let dir = project(&tmp, &[]);
     fs::create_dir_all(dir.join(".git")).unwrap();
     fs::write(dir.join(".gitignore"), "node_modules\r\n.venv").unwrap();
-    ignore(&dir, &[VENV, VENV_LINUX]).unwrap();
+    ignore(&dir, &[".venv", VENV_LINUX]).unwrap();
     assert_eq!(
         fs::read_to_string(dir.join(".gitignore")).unwrap(),
         "node_modules\r\n.venv\r\n/.venv-linux/\r\n"
     );
-    ignore(&dir, &[VENV, VENV_LINUX]).unwrap();
+    ignore(&dir, &[".venv", VENV_LINUX]).unwrap();
     assert_eq!(
         fs::read_to_string(dir.join(".gitignore")).unwrap(),
         "node_modules\r\n.venv\r\n/.venv-linux/\r\n"

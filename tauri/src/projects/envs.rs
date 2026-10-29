@@ -32,9 +32,13 @@ use serde::Serialize;
 use crate::env::KitEnv;
 use crate::kit::Kit;
 
-/// Python's environment on the PC.
-pub const VENV: &str = ".venv";
-/// Python's environment in the VM's Linux.
+/// Python's environment on the PC, in the kit's data of the project
+/// (`data/projects/<p>/venv`, [`pc_venv`]): never in the project's folder,
+/// which the agents' sandbox mounts read-write; programs there would come
+/// first on the `PATH` of every terminal of the PC.
+pub const VENV: &str = "venv";
+/// Python's environment in the VM's Linux, in the project's folder (the
+/// sandbox writes it; the PC never runs it).
 pub const VENV_LINUX: &str = ".venv-linux";
 /// What a session in the VM reads to make and use [`VENV_LINUX`]
 /// (`isolation::vm::LOCAL_ENV`).
@@ -92,16 +96,28 @@ fn venv_ready(venv: &Path) -> bool {
     venv.join("pyvenv.cfg").is_file()
 }
 
+/// The PC's Python environment of the project in `dir` (a folder of
+/// `projects/`): `data/projects/<p>/venv`, out of every sandbox's reach;
+/// `None` for a folder that is not a project's.
+pub fn pc_venv(kit: &Kit, dir: &Path) -> Option<PathBuf> {
+    let name = dir.strip_prefix(kit.projects()).ok()?.to_str()?;
+    crate::projects::state::ProjectState::of(kit, name).map(|s| s.dir().join(VENV))
+}
+
 /// The PC's side of `dir`'s local environments in `env` (built for `kit`'s
-/// target): `.venv`'s programs first on the `PATH` and `VIRTUAL_ENV`, only
-/// when it exists; Ruby's, Julia's and R's variables. Applied again it
+/// target): the project's [`pc_venv`] for uv (`UV_PROJECT_ENVIRONMENT`)
+/// and, when it exists, its programs first on the `PATH` and
+/// `VIRTUAL_ENV`; Ruby's, Julia's and R's variables. Applied again it
 /// changes nothing.
 pub fn apply_pc(kit: &Kit, dir: &Path, env: &mut KitEnv) {
     let windows = kit.target().is_windows();
     for tool in tools(dir) {
         match tool {
             Tool::Python => {
-                let venv = dir.join(VENV);
+                let Some(venv) = pc_venv(kit, dir) else {
+                    continue;
+                };
+                env.set("UV_PROJECT_ENVIRONMENT", venv.display().to_string());
                 if venv_ready(&venv) {
                     let bin = venv_bin(&venv, windows);
                     crate::editor::terminals::strip(env, std::slice::from_ref(&bin));
@@ -181,13 +197,13 @@ fn note_failure(dir: &Path, reason: Option<String>) {
     }
 }
 
-/// The state of `dir`'s Python environment; `None` for a folder that is
-/// not a Python project.
-pub fn status(dir: &Path) -> Option<LocalEnv> {
+/// The state of `dir`'s Python environment on the PC; `None` for a folder
+/// that is not a Python project.
+pub fn status(kit: &Kit, dir: &Path) -> Option<LocalEnv> {
     if !tools(dir).contains(&Tool::Python) {
         return None;
     }
-    if venv_ready(&dir.join(VENV)) {
+    if pc_venv(kit, dir).is_some_and(|v| venv_ready(&v)) {
         return Some(LocalEnv::Ready);
     }
     let failed = FAILED.lock().unwrap_or_else(PoisonError::into_inner);
@@ -212,31 +228,41 @@ fn which(env: &KitEnv, name: &str, windows: bool) -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
-/// What makes an empty `.venv` with `env` (the project's environment on
-/// the PC, at its Python line): `uv venv`, else Python's own `venv`; `None`
-/// without either program. Nothing of the project runs.
-pub fn create_command(env: &KitEnv, windows: bool) -> Option<(PathBuf, Vec<String>)> {
+/// What makes an empty environment at `venv` with `env` (the project's
+/// environment on the PC, at its Python line): `uv venv`, else Python's own
+/// `venv`; `None` without either program. Nothing of the project runs.
+pub fn create_command(env: &KitEnv, windows: bool, venv: &Path) -> Option<(PathBuf, Vec<String>)> {
+    let at = venv.display().to_string();
     if let Some(uv) = which(env, "uv", windows) {
-        return Some((uv, vec!["venv".into(), VENV.into()]));
+        return Some((uv, vec!["venv".into(), at]));
     }
     let python = which(env, "python", windows).or_else(|| which(env, "python3", windows))?;
-    Some((python, vec!["-m".into(), "venv".into(), VENV.into()]))
+    Some((python, vec!["-m".into(), "venv".into(), at]))
 }
 
 /// How [`ensure_pc`] runs a program: its path, its words, its folder, its
 /// environment; its error text when it fails.
 pub type Run<'a> = dyn Fn(&Path, &[String], &Path, &KitEnv) -> Result<(), String> + 'a;
 
-/// Makes `dir`'s `.venv` when it is a Python project without one, with
-/// `run` (the program, its words, the folder; its error text): once made,
-/// nothing runs again. A failure is kept for [`status`] and goes to the
-/// log; the project works without it. `.venv` goes in `.gitignore`.
+/// Makes the project's [`pc_venv`] when `dir` is a Python project without
+/// one, with `run` (the program, its words, the folder; its error text):
+/// once made, nothing runs again. A failure is kept for [`status`] and goes
+/// to the log; the project works without it. `.venv-linux`, which the
+/// sandbox makes in the project's folder, goes in `.gitignore`.
 pub fn ensure_pc(kit: &Kit, dir: &Path, env: &KitEnv, run: &Run<'_>) -> Option<LocalEnv> {
     if !tools(dir).contains(&Tool::Python) {
         return None;
     }
-    if !venv_ready(&dir.join(VENV)) {
-        let Some((program, args)) = create_command(env, kit.target().is_windows()) else {
+    let venv = pc_venv(kit, dir)?;
+    if !venv_ready(&venv) {
+        if let Some(parent) = venv.parent() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                let reason = e.to_string();
+                note_failure(dir, Some(reason.clone()));
+                return Some(LocalEnv::Failed { reason });
+            }
+        }
+        let Some((program, args)) = create_command(env, kit.target().is_windows(), &venv) else {
             let reason = "uv or Python not installed".to_owned();
             note_failure(dir, Some(reason.clone()));
             return Some(LocalEnv::Failed { reason });
@@ -248,10 +274,10 @@ pub fn ensure_pc(kit: &Kit, dir: &Path, env: &KitEnv, run: &Run<'_>) -> Option<L
         }
         note_failure(dir, None);
     }
-    if let Err(e) = ignore(dir, &[VENV, VENV_LINUX]) {
+    if let Err(e) = ignore(dir, &[VENV_LINUX]) {
         crate::common::log::warn(&format!("{}: .gitignore: {e:#}", dir.display()));
     }
-    status(dir)
+    status(kit, dir)
 }
 
 /// [`ensure_pc`] with the kit's programs, without a window, to their end.

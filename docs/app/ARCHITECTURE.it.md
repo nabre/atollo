@@ -130,7 +130,7 @@ tauri\src\
     fastcgi                   php-cgi e php-fpm
     frameworks\               «Nuovo progetto» (D-83): mod (catalogo e modifiche), validate, plan, target, runner,
                               mine (le basi salvate da un progetto, «Le mie basi», D-162)
-    envs                      ambienti locali dei progetti (D-188): `.venv` sul PC, `.venv-linux` e i nomi per
+    envs                      ambienti locali dei progetti (D-188): quello del PC in data/projects/<p>/venv, `.venv-linux` e i nomi per
                               Linux nella sandbox degli agenti, le variabili di Ruby, Rust, Julia e R
   detect\                     tipo, linguaggi e azioni di un progetto: mod, node, php, python, rust, go,
                               site, container, overrides (panel.json), walk (un giro di tutto il
