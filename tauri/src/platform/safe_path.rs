@@ -39,6 +39,12 @@ pub fn is_link(path: &Path) -> bool {
     fs::symlink_metadata(path).is_ok_and(|m| is_reparse(&m))
 }
 
+/// `path` is where only the system makes links: right under `/` on Unix
+/// (macOS's `/var` → `/private/var`); nowhere on Windows.
+pub fn is_root_link(path: &Path) -> bool {
+    crate::os::current::files::is_root_link(path)
+}
+
 /// No link or junction at `root` or on the way from it down to `path`
 /// (both already lexical). A step that does not exist ends the walk:
 /// nothing behind it can be read.

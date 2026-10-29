@@ -20,6 +20,12 @@ pub fn is_reparse(meta: &fs::Metadata) -> bool {
     meta.file_type().is_symlink()
 }
 
+/// A link right under `/`, which only root can make (macOS's `/var`,
+/// `/tmp`, `/etc` lead to `/private`): the system's.
+pub fn is_root_link(path: &Path) -> bool {
+    path.parent() == Some(Path::new("/"))
+}
+
 /// The bytes the file takes on the disk: its blocks of 512 bytes, so a
 /// sparse file counts what is written.
 pub fn allocated(_path: &Path, meta: &fs::Metadata) -> u64 {
